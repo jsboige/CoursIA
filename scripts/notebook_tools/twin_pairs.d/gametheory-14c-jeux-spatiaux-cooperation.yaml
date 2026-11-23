@@ -1,0 +1,10 @@
+- name: "GameTheory-14c Jeux Spatiaux Cooperation"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets sont des simulations pedagogiques from-scratch de la cooperation spatiale (dilemme du prisonnier iteré sur grille tore, 8 voisins) ; ils n'appellent aucun solveur externe ni moteur de simulation requis. Le C# rejoue la meme dynamique avec le BCL .NET (tableaux 2D, indices modulaires pour le tore) a la place de numpy. Le twin preserve le meme controle de melange (TFT disperse -> 0.0000), le meme balayage de blocs centres (seuils 2x2..10x10), le meme effet de bruit et les memes trois exercices. SOTA-OK signifie ici que les deux carnets remplissent leur objectif de simulation cellulaire sans remplacer un moteur requis."
+  known_differences:
+    - "2026-11-22 : port C# complet du jumeau Python (25 cellules, 9 code). Les tirages aleatoires utilisent le RNG .NET a graine fixee (42) declaree en tete de cellule ; la reproductibilite est interne au carnet C#, pas une reproduction des tirages python. Les conclusions deterministes (le melange tue la cooperation, le seuil de cluster, le retournement boule de neige induit par le bruit) tiennent des deux cotes."
+    - "Python s'appuie sur numpy pour les tableaux et le melange ; C# utilise les structures BCL (tableaux 2D, Random). Les figures (diagramme de phase, bruit) sont regenerees cote C# avec le meme contenu informationnel."

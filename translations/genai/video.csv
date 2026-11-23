@@ -5064,7 +5064,7 @@ param_grid = {
 # Exercice: Analyser les resultats et identifier les parametres optimaux
 # df_results = explore_params(param_grid, ""a cat walking"", pipe)",,,,,,,,600970a88f01b8bf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb,cell-0,markdown,fr,550a2009638311d5,"# HunyuanVideo
- - Generation Video Haute Qualite**Module :** 02-Video-Advanced  **Niveau :** Intermediaire  **Technologies :** HunyuanVideo 1.5 (Tencent), ComfyUI API ou diffusers  **Duree estimee :** 60 minutes  **VRAM :** ~12 GB (API) ou ~18 GB (local avec INT8)  ## Objectifs d'Apprentissage- [ ] Comprendre l'architecture HunyuanVideo et ses avantages- [ ] Choisir entre API ComfyUI (production) et diffusers (pedagogique)- [ ] Generer des videos text-to-video avec des prompts detailles- [ ] Explorer les paramètres de generation (steps, guidance_scale, num_frames, fps)- [ ] Contrôler la resolution et la duree des videos- [ ] Sauvegarder les résultats en MP4 avec imageio- [ ] Analyser la qualite et les metriques de generation## Prerequis### Mode API ComfyUI (recommande pour production)- Service ComfyUI-Video demarre (docker-compose comfyui-video)- Pas de dependances Python lourdes cote client### Mode Local diffusers (pedagogique)- GPU avec 18+ GB VRAM (RTX 3090 / RTX 4090)- Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `bitsandbytes`, `imageio`**Navigation :** [<< 01-5](../01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | [Index](../README.md) | [Suivant >>](02-2-LTX-Video-Lightweight.ipynb)
+ - Generation Video Haute Qualite**Module :** 02-Video-Advanced  **Niveau :** Intermediaire  **Technologies :** HunyuanVideo 1.5 (Tencent), ComfyUI API ou diffusers  **Duree estimee :** 60 minutes  **VRAM :** ~12 GB (API) ou ~18 GB (local avec INT8)  ## Objectifs d'Apprentissage- [ ] Comprendre l'architecture HunyuanVideo et ses avantages- [ ] Choisir entre API ComfyUI (production) et diffusers (pedagogique)- [ ] Generer des videos text-to-video avec des prompts detailles- [ ] Explorer les paramètres de generation (steps, guidance_scale, num_frames, fps)- [ ] Contrôler la resolution et la duree des videos- [ ] Sauvegarder les résultats en MP4 avec imageio- [ ] Analyser la qualite et les metriques de generation## Prerequis### Mode API ComfyUI (recommande pour production)- Service ComfyUI-Video demarre (docker-compose comfyui-video)- Pas de dependances Python lourdes cote client### Mode Local diffusers (pedagogique)- GPU avec 18+ GB VRAM (RTX 3090 / RTX 4090)- Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `bitsandbytes`, `imageio`**Navigation :** [<< 01-5](../01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | [Index](../README.md) | [Suivant >>](02-2-Generation-Video-Legere.ipynb)
 
 **Parcours :** après la mise en place de l'environnement (imports, `.env`, vérification du backend ComfyUI), le notebook enchaîne une génération de référence, l'exploration de la guidance scale, un test de résolution et durée, et une comparaison de trois prompts — chaque sortie de démonstration étant suivie de sa lecture. Quatre exercices (negative prompts, prompts cinématographiques, métriques de qualité, optimisation VRAM) concluent le parcours.",,,,,,,,550a2009638311d5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb,cell-1,code,fr,4c6fba4aefc30bba,"# Parameters
@@ -6206,7 +6206,7 @@ Trois points à retenir :
 - `num_frames` doit valoir 4k+1 : selon la mesure datée de la section « Note sur les frames », les valeurs 16, 24 et 32 sont rejetées par le serveur.
 
 Les exercices 1 à 4 restent à faire. Le mode local (`diffusers`) n'a pas été exécuté dans ce run : il n'y a pas de mesure locale à comparer.",,,,,,,,b72506681217f05d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-0,markdown,fr,21401983495f33b5,"# LTX-Video - Generation Video Rapide et Legere
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-0,markdown,fr,21401983495f33b5,"# LTX-Video - Generation Video Rapide et Legere
 
 **Module :** 02-Video-Advanced  
 **Niveau :** Intermediaire  
@@ -6230,7 +6230,7 @@ serie : le chemin `diffusers` standard, **video seule**, ~2B parametres (valeur 
 fiche du modele, non mesuree dans ce carnet), un pic de 14.1 GB mesure sur RTX 4090.
 
 La **generation suivante** de cette meme famille est deja presente dans la serie :
-[02-5 - LTX-2, generation audiovisuelle conjointe (Video + Audio)](02-5-LTX2-Audiovisual.ipynb)
+[02-5 - LTX-2, generation audiovisuelle conjointe (Video + Audio)](02-5-Video-Audio-Conjoint.ipynb)
 (LTX-2 / LTX-2.3, 22B, chemin `ltx-pipelines`).
 
 Les deux restent **deux carnets distincts** parce que la fonctionnalite n'est pas
@@ -6244,7 +6244,7 @@ equivalente :
 | **VRAM** | 14.1 GB pic mesure (RTX 4090) | ~14-24 GB (GGUF Q4 / fp8-cast) |
 
 Ce carnet n'exerce donc que la **video seule** : la generation audio conjointe n'y a
-aucun equivalent, et elle ne s'exerce que dans [02-5](02-5-LTX2-Audiovisual.ipynb).
+aucun equivalent, et elle ne s'exerce que dans [02-5](02-5-Video-Audio-Conjoint.ipynb).
 
 La regle de la serie n'est pas « une generation par carnet » :
 [02-3 Wan](02-3-Wan-Video-Generation.ipynb) traite Wan 2.1 **et** Wan 2.2 dans un seul
@@ -6260,7 +6260,7 @@ carnets sans regle de decoupage explicite, cette lecture n'y est pas posee.
 - Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `imageio`, `imageio-ffmpeg`
 
 **Navigation :** [<< 02-1](02-1-HunyuanVideo-Generation.ipynb) | [Index](../README.md) | [Suivant >>](02-3-Wan-Video-Generation.ipynb)",,,,,,,,21401983495f33b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-1,code,fr,aa62658284702950,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-1,code,fr,aa62658284702950,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -6289,12 +6289,12 @@ run_img2vid = True                 # Tester image-to-video
 save_as_mp4 = True                 # Sauvegarder en MP4
 save_results = True
 ",,,,,,,,aa62658284702950,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,ca225672,markdown,fr,dddf3d189678c2fb,"## Setup de l'environnement
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,ca225672,markdown,fr,dddf3d189678c2fb,"## Setup de l'environnement
 
 Vérification des dépendances, chargement de la configuration depuis le fichier `.env` (recherche dans les dossiers parents), et vérification de la disponibilité du GPU.
 
 Deux modes d'exécution existent (`notebook_mode` : `interactive` ou `batch`) ; ce carnet a été rejoué en **batch** : les widgets d'interaction sont désactivés et les sorties affichées sont celles du mode batch — la cellule interactive de fin de carnet affichera simplement « Mode batch - Interface interactive desactivee ». La configuration est lue depuis le `.env` du répertoire `GenAI/`, jamais affiché en chemin absolu : la sortie reste identique d'une machine à l'autre.",,,,,,,,dddf3d189678c2fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-2,code,fr,b5dcb9f0dfdbc611,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-2,code,fr,b5dcb9f0dfdbc611,"# Setup environnement et imports
 import os
 import sys
 import json
@@ -6357,8 +6357,8 @@ print(f""LTX-Video - Generation Video Rapide et Legere"")
 print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}"")
 print(f""Frames : {num_frames}, Steps : {num_inference_steps}, CFG : {guidance_scale}"")",,,,,,,,b5dcb9f0dfdbc611,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,l5yxeky5zub,markdown,fr,0f52198f70abe98c,"La sortie confirme le socle : `.env` chargé depuis `GenAI/.env`, helpers GenAI importés, et la configuration effective récapitulée — **mode batch**, **25 frames**, **20 steps**, **CFG 7.5**. Avec la résolution 704×480 et 8 fps définis en tête de carnet, chaque génération produira ~3 secondes de vidéo. La cellule suivante vérifie la disponibilité du GPU et des dépendances : c'est elle qui détermine si la génération sera exécutée localement ou basculera en mode pédagogique, sans génération vidéo.",,,,,,,,0f52198f70abe98c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-3,code,fr,19a52f35694c690f,"# Chargement .env et verification GPU
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,l5yxeky5zub,markdown,fr,0f52198f70abe98c,"La sortie confirme le socle : `.env` chargé depuis `GenAI/.env`, helpers GenAI importés, et la configuration effective récapitulée — **mode batch**, **25 frames**, **20 steps**, **CFG 7.5**. Avec la résolution 704×480 et 8 fps définis en tête de carnet, chaque génération produira ~3 secondes de vidéo. La cellule suivante vérifie la disponibilité du GPU et des dépendances : c'est elle qui détermine si la génération sera exécutée localement ou basculera en mode pédagogique, sans génération vidéo.",,,,,,,,0f52198f70abe98c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-3,code,fr,19a52f35694c690f,"# Chargement .env et verification GPU
 # Chargement variables d'environnement
 from dotenv import load_dotenv
 
@@ -6454,7 +6454,7 @@ print(f""\nDevice : {device}"")
 print(f""Generation activee : {run_generation}"")
 print(f""Image-to-video activee : {run_img2vid}"")
 ",,,,,,,,19a52f35694c690f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-4,markdown,fr,4d8ca8c488c5d83c,"## Section 1 : Architecture LTX-Video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-4,markdown,fr,4d8ca8c488c5d83c,"## Section 1 : Architecture LTX-Video
 
 LTX-Video est un modèle de generation video developpe par Lightricks, concu pour etre
 rapide et leger tout en maintenant une qualite acceptable. Il supporte trois modes :
@@ -6476,7 +6476,7 @@ text-to-video, image-to-video et video-to-video.
 | Modes | Text/Image/Video | Text uniquement |
 | Qualite | Bonne | Très bonne |
 | Resolution | Jusqu'a 720x480 | Jusqu'a 720p |",,,,,,,,4d8ca8c488c5d83c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-5,code,fr,07e8cd9cd0fca166,"# Chargement du pipeline LTX-Video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-5,code,fr,07e8cd9cd0fca166,"# Chargement du pipeline LTX-Video
 pipe_t2v = None
 
 if run_generation:
@@ -6561,14 +6561,14 @@ if run_generation:
 else:
     print(""Chargement pipeline desactive"")
 ",,,,,,,,07e8cd9cd0fca166,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-6,markdown,fr,14ba7342fcdbd9c1,"## Section 2 : Generation text-to-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-6,markdown,fr,14ba7342fcdbd9c1,"## Section 2 : Generation text-to-video
 
 LTX-Video excelle dans la generation rapide de videos courtes a partir de prompts textuels.
 Son architecture legere permet des itérations plus rapides que HunyuanVideo.
 
 
 La cellule suivante fait tout en un appel : prompt, 20 étapes de débruitage, guidance 7.5 — puis extrait quelques frames pour l'inspection visuelle et sauvegarde la vidéo complète en MP4 dans le dossier d'export.",,,,,,,,14ba7342fcdbd9c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-7,code,fr,1b638fce93d4fb3c,"# Generation text-to-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-7,code,fr,1b638fce93d4fb3c,"# Generation text-to-video
 print(""\n--- GENERATION TEXT-TO-VIDEO ---"")
 print(""="" * 40)
 
@@ -6695,7 +6695,7 @@ else:
     print(""Generation desactivee"")
     print(f""\nExemple de code pour generer :"")
     print(f""  result = generate_ltx_video('{prompt_1[:50]}...', seed=42)"")",,,,,,,,1b638fce93d4fb3c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,ed8c05a0,markdown,fr,178bc9f5c2b2ae0d,"### Exercice 1 : Estimateur de VRAM pour LTX-Video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,ed8c05a0,markdown,fr,178bc9f5c2b2ae0d,"### Exercice 1 : Estimateur de VRAM pour LTX-Video
 
 **Objectif** : Implementer une fonction qui estime la consommation VRAM de LTX-Video en fonction des paramètres de generation, et determine si une configuration est realisable sur le GPU disponible.
 
@@ -6706,7 +6706,7 @@ LTX-Video est conçu pour être léger, mais la consommation exacte dépend de l
 - `# Étape 2` : Le VAE slicing divise la consommation VAE par 2. Le CPU offload reduit encore la VRAM mais ralentit la generation
 - `# Étape 3` : Si la VRAM estimee depasse la VRAM disponible, proposer une configuration degradee (reduire frames puis resolution)
 - `# Indice` : les mesures de ce carnet sont 13.3 GB après chargement (cellule de chargement) et 14.1 GB de pic en génération à 704x480 et 25 frames (cellule de génération). Une seule résolution et un seul nombre de frames sont mesurés : la dépendance à ces deux paramètres reste à estimer",,,,,,,,178bc9f5c2b2ae0d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,9c2f560d,code,fr,70c9a0c7df82ee6c,"def estimate_ltx_vram(width: int, height: int, num_frames: int,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,9c2f560d,code,fr,70c9a0c7df82ee6c,"def estimate_ltx_vram(width: int, height: int, num_frames: int,
                        vae_slicing: bool = True, dtype: str = ""bfloat16"") -> dict:
     """"""
     Estime la VRAM requise pour LTX-Video avec une configuration donnee.
@@ -6738,7 +6738,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,9c2f5
 
 # Test avec la configuration par defaut du notebook
 print(""Exercice a completer"")",,,,,,,,70c9a0c7df82ee6c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-8,markdown,fr,85c59f7b8a63f6b6,"### Lecture du résultat : image-to-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-8,markdown,fr,85c59f7b8a63f6b6,"### Lecture du résultat : image-to-video
 
 La cellule précédente part d'une image fixe dessinée par PIL (un paysage schématique
 en 704x480) et demande au modèle de l'animer. Les valeurs ci-dessous sont celles de
@@ -6777,7 +6777,7 @@ le texte que pour décrire le *mouvement* à appliquer. Le prompt utilisé ici �
 moving slowly, grass swaying in the wind » — ne décrit pas une scène, il décrit une
 animation.
 ",,,,,,,,85c59f7b8a63f6b6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-9,code,fr,2a6cfc57b5dd586b,"# Image-to-video : animation d'image statique
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-9,code,fr,2a6cfc57b5dd586b,"# Image-to-video : animation d'image statique
 if run_img2vid:
     print(""\n--- IMAGE-TO-VIDEO ---"")
     print(""="" * 40)
@@ -6926,7 +6926,7 @@ else:
     print(""Image-to-video desactive"")
     print(""\nPrincipe : LTXImageToVideoPipeline prend une image PIL + prompt"")
     print(""et genere une video qui anime l'image de maniere coherente."")",,,,,,,,2a6cfc57b5dd586b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,066f5d1a,markdown,fr,2998e7e80ae9af2a,"### Exercice 2 : Générateur de prompts image-to-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,066f5d1a,markdown,fr,2998e7e80ae9af2a,"### Exercice 2 : Générateur de prompts image-to-video
 
 **Objectif** : Créer une fonction qui genere automatiquement un prompt d'animation optimise a partir d'une description du contenu d'une image statique.
 
@@ -6937,7 +6937,7 @@ En mode image-to-video, le prompt ne decrit pas la scene (l'image le fait déjà
 - `# Étape 2` : Detecter le type de scene a partir de mots-cles dans la description (ex: ""sky"" + ""clouds"" = paysage, ""person"" + ""face"" = portrait)
 - `# Étape 3` : Construire le prompt d'animation en combinant les mouvements naturels du type detecte avec des mots-cles de qualite (smooth, natural, subtle)
 - `# Indice` : LTX-Video prefere des prompts d'animation courts et descriptifs (pas de phrases complexes)",,,,,,,,2998e7e80ae9af2a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,0d180b80,code,fr,12b81513a6230aad,"def generate_animation_prompt(image_description: str, style: str = ""natural"") -> str:
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,0d180b80,code,fr,12b81513a6230aad,"def generate_animation_prompt(image_description: str, style: str = ""natural"") -> str:
     """"""
     Genere un prompt d'animation optimise pour LTX-Video image-to-video.
     
@@ -6963,7 +6963,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,0d180
 
 # Test avec differentes descriptions
 print(""Exercice a completer"")",,,,,,,,12b81513a6230aad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-10,markdown,fr,abdaed1c5f34c7b9,"### Lecture du résultat : vitesse vs qualité
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-10,markdown,fr,abdaed1c5f34c7b9,"### Lecture du résultat : vitesse vs qualité
 
 Les trois configurations ci-dessus ont tourné sur le même prompt, la même graine et la
 même résolution ; seul le nombre d'étapes de débruitage change.
@@ -7000,7 +7000,7 @@ steps. Le compromis vitesse/qualité que l'on trouve dans la littérature suppos
 par étape dominant ; ici il ne l'est pas, et itérer directement à 20-40 steps reste peu
 coûteux.
 ",,,,,,,,abdaed1c5f34c7b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-11,code,fr,d95b1c3c2d0f1f90,"# Comparaison vitesse vs qualite
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-11,code,fr,d95b1c3c2d0f1f90,"# Comparaison vitesse vs qualite
 if run_generation and pipe_t2v is not None:
     print(""\n--- COMPARAISON VITESSE VS QUALITE ---"")
     print(""="" * 45)
@@ -7073,7 +7073,7 @@ else:
     print(""  10 steps : ~5s, preview rapide"")
     print(""  20 steps : ~12s, usage general"")
     print(""  40 steps : ~25s, meilleure qualite"")",,,,,,,,d95b1c3c2d0f1f90,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,f00e39e9,markdown,fr,eeb83013a50c51f2,"### Exercice 3 : Analyseur de coherence temporelle
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,f00e39e9,markdown,fr,eeb83013a50c51f2,"### Exercice 3 : Analyseur de coherence temporelle
 
 **Objectif** : Implementer une fonction qui mesure la coherence temporelle d'une sequence video en calculant les différences pixel-wise entre frames consecutives.
 
@@ -7084,7 +7084,7 @@ La coherence temporelle est un indicateur cle de la qualite video : des sauts br
 - `# Étape 2` : Calculer la différence absolue moyenne (MAD) entre chaque paire de frames consecutives : `np.mean(np.abs(f1 - f2))`
 - `# Étape 3` : Définir des seuils de classification : variation < 5 = ""statique"", 5-20 = ""fluide"", 20-40 = ""mouvement rapide"", > 40 = ""instable""
 - `# Indice` : Une video de bonne qualite a une variabilite reguliere entre frames, sans pics soudains",,,,,,,,eeb83013a50c51f2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,f49f0700,code,fr,3fd45ec34b30dfbc,"def analyze_temporal_coherence(frames: list) -> dict:
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,f49f0700,code,fr,3fd45ec34b30dfbc,"def analyze_temporal_coherence(frames: list) -> dict:
     """"""
     Analyse la coherence temporelle d'une sequence de frames.
     
@@ -7111,7 +7111,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,f49f0
 
 # Test avec des frames synthetiques
 print(""Exercice a completer"")",,,,,,,,3fd45ec34b30dfbc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-12,markdown,fr,bfc226ba57f53461,"## Bonnes pratiques et comparaison
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-12,markdown,fr,bfc226ba57f53461,"## Bonnes pratiques et comparaison
 
 ### Quand utiliser LTX-Video vs HunyuanVideo
 
@@ -7136,7 +7136,7 @@ exécuté.
 | `height` / `width` | à passer explicitement en i2v | le pipeline retombe sur 512x704 et ignore l'image source |
 | pipeline i2v | partager les composants du t2v | sinon seconde copie des poids, dépassement de VRAM et effondrement des performances |
 ",,,,,,,,bfc226ba57f53461,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,pk922nfntxj,markdown,fr,65868f6cf55706f8,"## Exercice 4 : Comparaison Vitesse/Qualité LTX-Video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,pk922nfntxj,markdown,fr,65868f6cf55706f8,"## Exercice 4 : Comparaison Vitesse/Qualité LTX-Video
 
 **Durée estimée :** 15-20 minutes
 
@@ -7157,7 +7157,7 @@ Comprendre les compromis entre vitesse de génération et qualité vidéo avec L
 - La qualité subjective peut être évaluée en comparant les frames générées
 - Utilisez `np.mean(np.abs(frame1 - frame2))` pour mesurer la différence entre frames
 - Le ratio qualité/temps est : `subjective_quality / generation_time`",,,,,,,,65868f6cf55706f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,j94u53agwj,markdown,fr,0541c398a33a11bf,"### Critères de succès
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,j94u53agwj,markdown,fr,0541c398a33a11bf,"### Critères de succès
 
 - [ ] `benchmark_ltx_configs()` retourne un DataFrame avec toutes les métriques
 - [ ] `recommend_config()` sélectionne la bonne configuration selon la priorité
@@ -7166,10 +7166,10 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,j94u5
 - [ ] Analyse du rapport qualité/temps pour chaque configuration
 
 ***",,,,,,,,0541c398a33a11bf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,6d97f2ed,markdown,fr,a8cc3cc11fb9257c,"### Benchmarks et mode interactif
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,6d97f2ed,markdown,fr,a8cc3cc11fb9257c,"### Benchmarks et mode interactif
 
 La cellule suivante prépare les configurations du benchmark (nombre d'étapes et CFG). Ses appels restent en commentaire : la fonction `benchmark_ltx_configs()` est à compléter (exercice 4). Le mode interactif est présenté après les exercices.",,,,,,,,a8cc3cc11fb9257c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,5g73d2p52x7,code,fr,753b50473793f791,"# Test et analyse
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,5g73d2p52x7,code,fr,753b50473793f791,"# Test et analyse
 if run_generation and pipe_t2v is not None:
     test_prompt = ""a red sports car driving on a coastal highway, sunset, cinematic""
     
@@ -7191,8 +7191,8 @@ if run_generation and pipe_t2v is not None:
     #     print(f""  {priority}: {rec['label']}"")
 else:
     print(""Benchmark désactivé (pipeline non disponible)"")",,,,,,,,753b50473793f791,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,omgz5rmv8zc,markdown,fr,0d9344aa5796f597,"La cellule précédente a préparé quatre configurations de génération — `Rapide` (10 steps, CFG 5.0), `Standard` (20, 7.5), `Qualité` (30, 7.5) et `CFG élevé` (20, 9.0) — sans les exécuter : les appels à `benchmark_ltx_configs()` y sont laissés en commentaire, en attente de l'implémentation des deux cellules suivantes.",,,,,,,,0d9344aa5796f597,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,fn1wu7uxfo6,code,fr,cf3d41701323aa56,"import pandas as pd
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,omgz5rmv8zc,markdown,fr,0d9344aa5796f597,"La cellule précédente a préparé quatre configurations de génération — `Rapide` (10 steps, CFG 5.0), `Standard` (20, 7.5), `Qualité` (30, 7.5) et `CFG élevé` (20, 9.0) — sans les exécuter : les appels à `benchmark_ltx_configs()` y sont laissés en commentaire, en attente de l'implémentation des deux cellules suivantes.",,,,,,,,0d9344aa5796f597,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,fn1wu7uxfo6,code,fr,cf3d41701323aa56,"import pandas as pd
 
 # Exercice: Fonction pour recommander la meilleure configuration
 def recommend_config(df_results: pd.DataFrame, priority: str = ""balanced"") -> Dict:
@@ -7212,8 +7212,8 @@ def recommend_config(df_results: pd.DataFrame, priority: str = ""balanced"") -> 
     #   - ""quality"" : maximiser quality_score
     #   - ""balanced"" : maximiser quality_score / time
     pass",,,,,,,,cf3d41701323aa56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,r77ytreg2hq,markdown,fr,8b34d209f1b58791,"La fonction `recommend_config()` (cellule précédente) et la fonction `benchmark_ltx_configs()` (cellule suivante) forment un couple : la seconde produit le DataFrame de mesures — étiquette, steps, CFG, temps, pic VRAM, score de qualité —, la première en déduit la recommandation selon la priorité choisie.",,,,,,,,8b34d209f1b58791,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,z9exy9o8q6,code,fr,859ee4bbfc833066,"# Exercice: Fonction de benchmark de configurations LTX-Video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,r77ytreg2hq,markdown,fr,8b34d209f1b58791,"La fonction `recommend_config()` (cellule précédente) et la fonction `benchmark_ltx_configs()` (cellule suivante) forment un couple : la seconde produit le DataFrame de mesures — étiquette, steps, CFG, temps, pic VRAM, score de qualité —, la première en déduit la recommandation selon la priorité choisie.",,,,,,,,8b34d209f1b58791,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,z9exy9o8q6,code,fr,859ee4bbfc833066,"# Exercice: Fonction de benchmark de configurations LTX-Video
 def benchmark_ltx_configs(prompt: str, configs: List[Dict]) -> pd.DataFrame:
     """"""
     Teste plusieurs configurations et retourne un DataFrame de resultats.
@@ -7247,8 +7247,8 @@ def benchmark_ltx_configs(prompt: str, configs: List[Dict]) -> pd.DataFrame:
     
     # Exercice: Convertir en DataFrame pandas
     pass",,,,,,,,859ee4bbfc833066,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,j2pdq622ti,markdown,fr,5b0b328bebcd06b1,"La cellule suivante est le mode interactif : elle n'est exécutée que si `notebook_mode` vaut `interactive` et `skip_widgets` est faux. Elle demande alors un prompt par `input()` et génère une vidéo avec la graine 123. Sinon, elle affiche « Mode batch - Interface interactive desactivee ».",,,,,,,,5b0b328bebcd06b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-13,code,fr,c5b80928e92f5e78,"# Mode interactif
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,j2pdq622ti,markdown,fr,5b0b328bebcd06b1,"La cellule suivante est le mode interactif : elle n'est exécutée que si `notebook_mode` vaut `interactive` et `skip_widgets` est faux. Elle demande alors un prompt par `input()` et génère une vidéo avec la graine 123. Sinon, elle affiche « Mode batch - Interface interactive desactivee ».",,,,,,,,5b0b328bebcd06b1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-13,code,fr,c5b80928e92f5e78,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
     print(""="" * 40)
@@ -7300,10 +7300,10 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(""Passage a la suite du notebook"")
 else:
     print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,c5b80928e92f5e78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,hjxi4njdt5u,markdown,fr,482e98ba46fecde1,"### Lecture du résultat : mode batch
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,hjxi4njdt5u,markdown,fr,482e98ba46fecde1,"### Lecture du résultat : mode batch
 
 La sortie « Mode batch - Interface interactive desactivee » indique que ce carnet a été exécuté en mode batch : la branche interactive n'a pas été empruntée, aucun prompt utilisateur n'a été demandé, aucune vidéo supplémentaire n'a été générée. C'est le comportement attendu en exécution automatisée (Papermill) : les cellules d'interaction sont conçues pour rester inertes.",,,,,,,,482e98ba46fecde1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-14,code,fr,74c4462b92cdbd39,"# Statistiques de session et prochaines etapes
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-14,code,fr,74c4462b92cdbd39,"# Statistiques de session et prochaines etapes
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
 
@@ -7339,7 +7339,7 @@ print(f""3. Module 03-1 : Comparaison benchmark de tous les modeles video"")
 print(f""4. Combiner LTX image-to-video avec 01-4 (Real-ESRGAN) pour upscaling"")
 
 print(f""\nNotebook 02-2 LTX-Video Lightweight termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,74c4462b92cdbd39,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,cell-fd7fad1e,markdown,fr,10363d1f225b910e,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-fd7fad1e,markdown,fr,10363d1f225b910e,"## Conclusion
 
 Ce notebook a mesuré LTX-Video sur une RTX 4090 (24 GB) : une génération text-to-video de 25 frames en 704x480, 20 steps, prend 2.8 s avec un pic de 14.1 GB de VRAM (cellule de génération). Les sorties de ce carnet ont été produites en mode batch : le mode interactif n'a donc pas été exécuté.
 
@@ -7349,7 +7349,7 @@ Trois points à retenir :
 - **L'image-to-video réutilise les composants du text-to-video** : un seul jeu de poids reste en mémoire (cellule image-to-video et sa lecture).
 - **Les quatre exercices restent à compléter** : l'estimateur de VRAM, le générateur de prompts, l'analyseur de cohérence temporelle et le benchmark de configurations.
 
-**Pour aller plus loin** : le notebook [02-3 Wan](02-3-Wan-Video-Generation.ipynb) présente un autre modèle vidéo, le notebook [02-4 SVD](02-4-SVD-Image-to-Video.ipynb) traite l'animation d'images fixes, et le notebook [02-5 LTX-2](02-5-LTX2-Audiovisual.ipynb) est la **génération suivante** de la même famille Lightricks — même lignée, mais **avec génération audio conjointe**, que ce carnet n'exerce pas.",,,,,,,,10363d1f225b910e,,,,,,,,,,,,,,,
+**Pour aller plus loin** : le notebook [02-3 Wan](02-3-Wan-Video-Generation.ipynb) présente un autre modèle vidéo, le notebook [02-4 SVD](02-4-SVD-Image-to-Video.ipynb) traite l'animation d'images fixes, et le notebook [02-5 LTX-2](02-5-Video-Audio-Conjoint.ipynb) est la **génération suivante** de la même famille Lightricks — même lignée, mais **avec génération audio conjointe**, que ce carnet n'exerce pas.",,,,,,,,10363d1f225b910e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,b254bf28,markdown,fr,feec0a62a43a8377,"# Wan 2.1/2.2 - Generation Video Multilingue
 
 **Module :** 02-Video-Advanced  
@@ -7378,7 +7378,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,b254bf
 - GPU avec 10+ GB VRAM
 - Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `imageio`
 
-**Navigation :** [<< 02-2](02-2-LTX-Video-Lightweight.ipynb) | [Index](../README.md) | [Suivant >>](02-4-SVD-Image-to-Video.ipynb)",,,,,,,,feec0a62a43a8377,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-2](02-2-Generation-Video-Legere.ipynb) | [Index](../README.md) | [Suivant >>](02-4-SVD-Image-to-Video.ipynb)",,,,,,,,feec0a62a43a8377,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,e77ed8a5,code,fr,74f737469f92738c,"# Parametres Papermill - JAMAIS modifier ce commentaire
 import os
 
@@ -8383,7 +8383,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-0,m
 - Notebooks 02-1 a 02-3 completes pour comparaison
 - Packages : `diffusers>=0.30`, `transformers`, `torch`, `accelerate`, `imageio`, `imageio-ffmpeg`, `Pillow`
 
-**Navigation :** [<< 02-3](02-3-Wan-Video-Generation.ipynb) | [Index](../README.md) | [02-5 LTX-2 >>](02-5-LTX2-Audiovisual.ipynb)",,,,,,,,451e369496092f26,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-3](02-3-Wan-Video-Generation.ipynb) | [Index](../README.md) | [02-5 LTX-2 >>](02-5-Video-Audio-Conjoint.ipynb)",,,,,,,,451e369496092f26,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-1,code,fr,744bc8d40dd6ca41,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -8854,7 +8854,7 @@ chunks de frames gère déjà la VRAM du décodeur.
 | **LTX-Video** | Text/Img/Vid | 14.1 GB (mesuré dans 02-2) | Rapide | Prototypage rapide |
 | **Wan** | Text-to-video | ~10 GB (non mesuré dans la série) | Moyenne | Prompts multilingues |
 
-Seule la ligne SVD est mesurée dans ce carnet (sortie de la cellule de première animation, Section 2 : « VRAM pic : 10.9 GB »). La valeur LTX-Video provient de la sortie committée de `02-2-LTX-Video-Lightweight.ipynb` (« VRAM pic : 14.1 GB », mesuré dans le carnet 02-2). Les valeurs HunyuanVideo et Wan sont des ordres de grandeur que les sorties de la série ne mesurent pas : `02-1` et `02-3` n'affichent que « VRAM pic : 0.0 GB » (backend ComfyUI distant).
+Seule la ligne SVD est mesurée dans ce carnet (sortie de la cellule de première animation, Section 2 : « VRAM pic : 10.9 GB »). La valeur LTX-Video provient de la sortie committée de `02-2-Generation-Video-Legere.ipynb` (« VRAM pic : 14.1 GB », mesuré dans le carnet 02-2). Les valeurs HunyuanVideo et Wan sont des ordres de grandeur que les sorties de la série ne mesurent pas : `02-1` et `02-3` n'affichent que « VRAM pic : 0.0 GB » (backend ComfyUI distant).
 
 **Licence** : Stable Video Diffusion Community License — aucune exclusion
 territoriale, l'utilisateur possède les outputs (détails dans la cellule licence
@@ -9465,7 +9465,7 @@ simple reste statique. C'est ce que l'**Exercice 1** (`compare_image_categories`
 explore : comparer l'amplitude de mouvement générée sur des catégories d'images de
 textures croissantes.
 ",,,,,,,,256986d64da2f1b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-00,markdown,fr,c251f1ca6f2dbc65,"# LTX-2 - Generation Audiovisuelle Conjointe (Video + Audio)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-00,markdown,fr,c251f1ca6f2dbc65,"# LTX-2 - Generation Audiovisuelle Conjointe (Video + Audio)
 
 **Module :** 02-Video-Advanced
 **Niveau :** Avance
@@ -9485,14 +9485,14 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-00,ma
 ## Prerequis
 
 - GPU avec 20+ GB VRAM (RTX 3090 24GB minimum ; GGUF Q4 ~14 GB recommande, fp8-cast ~22 GB borderline)
-- [Notebook 02-2](02-2-LTX-Video-Lightweight.ipynb) (LTX-Video 0.9) — generation precedente de la lignee Lightricks, complete pour comparaison
+- [Notebook 02-2](02-2-Generation-Video-Legere.ipynb) (LTX-Video 0.9) — generation precedente de la lignee Lightricks, complete pour comparaison
 - Checkpoint LTX-2.3 telecharge (~44 GB) + spatial upsampler
 - **Gemma 3 12B telecharge** (text encoder, necessite acceptation licence sur HuggingFace)
 - Packages : `torch`, `bitsandbytes`, `imageio`, `imageio-ffmpeg`, `av`
 
 **Navigation :** [<< 02-4 SVD](02-4-SVD-Image-to-Video.ipynb) | [Index](../README.md) | [Comparaison >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)
 ",,,,,,,,c251f1ca6f2dbc65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-01,code,fr,80383da434048bba,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-01,code,fr,80383da434048bba,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -9548,10 +9548,10 @@ save_results = True
 print(f""LTX-2 Audiovisual | runtime={runtime_path} | quant={quantization}"")
 print(f""  {num_frames}f @ {width}x{height} | audio={audio} | run_generation={run_generation}"")
 ",,,,,,,,80383da434048bba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-02,code,fr,d7a1ea74a47bcb51,"# Parameters
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-02,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-03,code,fr,20fb0d26859c6f56,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-03,code,fr,20fb0d26859c6f56,"# Setup environnement et imports
 import os
 import sys
 import json
@@ -9610,7 +9610,7 @@ print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}"")
 print(f""Modele : {model_repo} ({model_file})"")
 print(f""Quantization : {quantization} | Frames : {num_frames}, Steps : {num_inference_steps}, CFG : {guidance_scale}"")",,,,,,,,20fb0d26859c6f56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-04,markdown,fr,93546cf0c11eafaa,"## Licence : LTX-2 Community License (important)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-04,markdown,fr,93546cf0c11eafaa,"## Licence : LTX-2 Community License (important)
 
 LTX-2.3 est distribue sous la **LTX-2 Community License Agreement** (date de licence : 5 janvier 2026).
 Ce n'est **PAS** une licence OSI approuvee (contrairement a MIT/Apache). Points cles a comprendre :
@@ -9627,7 +9627,7 @@ Ce n'est **PAS** une licence OSI approuvee (contrairement a MIT/Apache). Points 
 
 Cette serie l'utilise dans un cadre strictement pedagogique (generation d'exemples synthetiques neutres), conforme a l'usage autorise.
 ",,,,,,,,93546cf0c11eafaa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-05,code,fr,572be8fe6f490c66,"# Chargement .env et verification GPU + dependances LTX-2
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-05,code,fr,572be8fe6f490c66,"# Chargement .env et verification GPU + dependances LTX-2
 print(""\n--- VERIFICATION GPU ---"")
 print(""="" * 40)
 
@@ -9705,7 +9705,7 @@ print(f""Generation activee : {run_generation}"")
 print(f""Quantization : {quantization}"")
 print(f""Diagnostic CUDA : {cuda_diag or 'OK'}"")
 ",,,,,,,,572be8fe6f490c66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-06,markdown,fr,227833ac7cf53137,"## Section 1 : Architecture LTX-2 et generation audiovisuelle conjointe
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-06,markdown,fr,227833ac7cf53137,"## Section 1 : Architecture LTX-2 et generation audiovisuelle conjointe
 
 LTX-2 (Lightricks) est le **premier modèle fondationnel audio-video base sur DiT** (Diffusion Transformer). La différence essentielle avec tous les autres notebooks de cette serie : il genere **video ET audio synchronises dans une seule passe de diffusion**, au lieu d'une video muette qu'il faut ensuite sonoriser separement.
 
@@ -9730,7 +9730,7 @@ LTX-2 (Lightricks) est le **premier modèle fondationnel audio-video base sur Di
 
 La nouveaute majeure est la **colonne Audio** : aucun autre modèle de la serie ne genere de son. Traditionnellement, une video generee doit etre sonorisee dans un pipeline secondaire (TTS pour la voix, foley pour les effets, musique). LTX-2 supprime cette étape en produisant les deux de maniere coherente dans la même passe.
 ",,,,,,,,227833ac7cf53137,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-07,code,fr,def2f1b6a494dcee,"# Chargement du pipeline LTX-2 (API ltx-pipelines, NON diffusers) - chemin REFERENCE
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-07,code,fr,def2f1b6a494dcee,"# Chargement du pipeline LTX-2 (API ltx-pipelines, NON diffusers) - chemin REFERENCE
 #
 # LTX-2 s'invoque via un module CLI (python -m ltx_pipelines.ti2vid_two_stages ...).
 # On prepare les chemins vers les checkpoints + Gemma, puis on appelle le pipeline.
@@ -9787,13 +9787,13 @@ else:
     print(""Chargement pipeline ltx_pipelines desactive (run_generation=False ou runtime_path != ltx_pipelines)"")
     print(f""runtime_path = {runtime_path} | run_generation = {run_generation}"")
 ",,,,,,,,def2f1b6a494dcee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-08,markdown,fr,abb9cbe92a14587d,"## Section 2 : Generation text-to-audiovideo
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-08,markdown,fr,abb9cbe92a14587d,"## Section 2 : Generation text-to-audiovideo
 
 LTX-2 prend un prompt textuel et produit un fichier MP4 contenant **la video ET sa bande-son synchronisees**. On invoque le pipeline deux-etages recommande (`ti2vid_two_stages`) qui produit une meilleure coherence qu'un pipeline mono-stage.
 
 Le pipeline s'execute comme un sous-module (CLI Lightricks). On encapsule l'appel dans une fonction Python qui reconstruit la commande et capture le fichier de sortie.
 ",,,,,,,,abb9cbe92a14587d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-09,code,fr,8ab2ca9850541ce8,"# Generation text-to-audiovideo conjointe (chemin ltx_pipelines = REFERENCE officielle Lightricks)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-09,code,fr,8ab2ca9850541ce8,"# Generation text-to-audiovideo conjointe (chemin ltx_pipelines = REFERENCE officielle Lightricks)
 def generate_ltx2_audiovideo(prompt: str, negative_prompt: str = """",
                               seed: int = 42, gen_audio: bool = True) -> Dict[str, Any]:
     '''
@@ -9898,7 +9898,7 @@ else:
     print(f""\nExemple d'appel (path reference) :"")
     print(f""  result = generate_ltx2_audiovideo('{prompt_1[:50]}...', seed=42)"")
 ",,,,,,,,8ab2ca9850541ce8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ace1f3fa,markdown,fr,4b21c0f034eb446a,"## Section 2b : Chemin production sur RTX 3090 — ComfyUI + GGUF Q4
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ace1f3fa,markdown,fr,4b21c0f034eb446a,"## Section 2b : Chemin production sur RTX 3090 — ComfyUI + GGUF Q4
 
 La section précédente (ltx-pipelines `fp8-cast`) est l'API officielle Lightricks, mais elle est **borderline sur 24 GB** : le transformer 22B en fp8 = ~22 GB de poids seuls, laissant ~2 GB pour les activations sur 97 frames => OOM probable. C'est exactement le point ou la **communaute** a construit une solution robuste pour les GPU consumers : **ComfyUI + format GGUF quantize Q4**.
 
@@ -9953,7 +9953,7 @@ Paramètres annoncés par le workflow communautaire RuneXX T2V_Basic (non mesur�
 
 L'endpoint `comfyui-video` (port 8189, GPU 3090) est protege par **ComfyUI-Login** (bcrypt + session cookie chiffre). L'auth **FONCTIONNE** : `POST /login` (form `password` = `COMFYUI_VIDEO_PASSWORD`, la cle centralisee du `.env`) renvoie un cookie de session, verifie `bcrypt.checkpw(.env_password, hash) == True` + HTTP 302. Le piege (qui avait fait croire a tort a un ""drift / cle perdue"") : ComfyUI-Login regenere le hash bcrypt depuis `COMFYUI_PASSWORD` (env conteneur, mappe depuis la cle `.env` `COMFYUI_VIDEO_PASSWORD`) **uniquement au restart du container**, pas a chaud — un `.env` modifie sans `docker compose restart` laisse un hash stale en RAM. Règle : après tout changement de `COMFYUI_VIDEO_PASSWORD`, restart le container. La centralisation des secrets (`.secrets/master.env` + `render_envs.py` + le self-check entrypoint, PR #3160) rend ce drift desormais visible dans les logs. **Pour la génération, le prérequis n'est pas l'auth mais la présence des modèles GGUF** (cf tableau ci-dessus) : dans l'exécution committée de la cellule de génération, le graphe a été soumis (`prompt_id` renvoyé) et le statut est `success`.
 ",,,,,,,,4b21c0f034eb446a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2av11,markdown,fr,df30bbb6d388149d,"Le diagramme ci-dessous rend le **graphe de noeuds ComfyUI** de generation
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2av11,markdown,fr,df30bbb6d388149d,"Le diagramme ci-dessous rend le **graphe de noeuds ComfyUI** de generation
 audiovisuelle LTX-2 sous forme de flowchart (les etiquettes d'arcs = types de
 connexions ComfyUI : MODEL, CLIP, COND, LATENT...).
 
@@ -9989,7 +9989,7 @@ flowchart LR
 > -- avant remux dans le MP4 final. Echantillonner un latent **joint** est ce qui
 > synchronise nativement l'image et le son.
 ",,,,,,,,df30bbb6d388149d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,f16f29a5,code,fr,a13a09059b2e7593,"# Chemin ComfyUI + GGUF Q4 : appel API /prompt (audio+video conjoint) — VERIFIE sur RTX 3090.
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,f16f29a5,code,fr,a13a09059b2e7593,"# Chemin ComfyUI + GGUF Q4 : appel API /prompt (audio+video conjoint) — VERIFIE sur RTX 3090.
 #
 # Construit le graphe de workflow LTX-2 GGUF, l'envoie a ComfyUI (auth ComfyUI-Login),
 # poll /history puis recupere le MP4 audiovisuel via /view. Ce graphe a PRODUIT la sortie
@@ -10167,7 +10167,7 @@ else:
     print(""    duree et taille exactes : voir la sortie committée de cette cellule."")
     print(""  - Activer : run_generation=True dans la cellule de parametres, apres (a) telechargement"")
     print(""    des modeles GGUF et (b) demarrage du container comfyui-video (GPU 3090, port 8189)."")",,,,,,,,a13a09059b2e7593,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-10,markdown,fr,53662ee79d820142,"## Interpretation : pourquoi la generation conjointe change tout
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-10,markdown,fr,53662ee79d820142,"## Interpretation : pourquoi la generation conjointe change tout
 
 ### Le pipeline traditionnel (video muette puis sonorisation)
 
@@ -10194,7 +10194,7 @@ LTX-2 est conçu pour produire **les deux modalites dans la même passe de diffu
 
 Le trade-off : LTX-2 sacrifie la flexibilite (un seul modèle, moins de contrôle granulaire par étape) mais gagne la coherence native (propriété du modèle, non mesurée dans ce carnet). Pour des usages ou la synchro audio-video est critique (scenettes animees, paysages sonores), c'est un gain qualitatif decisif.
 ",,,,,,,,53662ee79d820142,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-11,markdown,fr,c9a18cd22ade9614,"### Exercice 1 : Estimateur de VRAM pour LTX-2 avec quantization
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-11,markdown,fr,c9a18cd22ade9614,"### Exercice 1 : Estimateur de VRAM pour LTX-2 avec quantization
 
 **Objectif** : Implementer une fonction qui estime la consommation VRAM de LTX-2 (22B) en fonction de la quantization et des paramètres de generation, et determine si une configuration est realisable sur le GPU disponible.
 
@@ -10208,7 +10208,7 @@ Le stub ci-dessous (docstring et valeur par défaut) mentionne encore `int8` et 
 - `# Étape 3` : Ajouter le cout d'activation (~0.3 GB par 512x768x97 frames, ordre de grandeur d'enseignement non mesuré dans ce carnet). Si total > VRAM disponible, proposer une config reduite (baisser frames puis resolution)
 - `# Indice` : Le VAE slicing et le CPU offload reduisent encore la VRAM mais ralentissent la generation
 ",,,,,,,,c9a18cd22ade9614,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-12,code,fr,9da38405d37bd157,"def estimate_ltx2_vram(width: int, height: int, num_frames: int,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-12,code,fr,9da38405d37bd157,"def estimate_ltx2_vram(width: int, height: int, num_frames: int,
                        quantization: str = ""int4_nf4"",
                        gemma_quantized: bool = True) -> dict:
     '''
@@ -10242,7 +10242,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-12,co
 # Test avec la configuration par defaut du notebook
 print(""Exercice a completer"")
 ",,,,,,,,9da38405d37bd157,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-13,markdown,fr,9e79ed2911df1525,"### Exercice 2 : Planificateur de prompts audiovisuels
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-13,markdown,fr,9e79ed2911df1525,"### Exercice 2 : Planificateur de prompts audiovisuels
 
 **Objectif** : Créer une fonction qui compose un prompt LTX-2 exploitant la capacite conjointe audio+video du modèle. Un bon prompt LTX-2 decrit a la fois la scene visuelle ET le son attendu, car le modèle genere les deux ensemble.
 
@@ -10254,7 +10254,7 @@ Contrairement a un prompt video-only (ou le son est ajoute après), un prompt LT
 - `# Étape 3` : Combiner la description visuelle + les indices audio coherents + des mots de qualite (cinematic, natural sound, synchronized) en un prompt LTX-2 unique
 - `# Indice` : LTX-2 repond bien aux descriptions audio explicites (""natural ambient sound"", ""clear dialogue"", ""dynamic foley"")
 ",,,,,,,,9e79ed2911df1525,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-14,code,fr,2553019080e5aaee,"def build_av_prompt(visual_description: str, audio_description: str = """",
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-14,code,fr,2553019080e5aaee,"def build_av_prompt(visual_description: str, audio_description: str = """",
                    mood: str = ""cinematic"") -> str:
     '''
     Compose un prompt LTX-2 exploitant la generation audiovisuelle conjointe.
@@ -10283,7 +10283,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-14,co
 # Test avec differentes scenes
 print(""Exercice a completer"")
 ",,,,,,,,2553019080e5aaee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-15,markdown,fr,c62f9ab56ea5fa83,"### Exercice 3 : Analyseur de synchronisation audio-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-15,markdown,fr,c62f9ab56ea5fa83,"### Exercice 3 : Analyseur de synchronisation audio-video
 
 **Objectif** : Implementer une fonction qui mesure la qualite de synchronisation entre la piste audio et la sequence video d'un MP4 genere par LTX-2. La synchronisation native est LE feature de LTX-2 ; cet exercice construit une metrique pour la quantifier.
 
@@ -10295,7 +10295,7 @@ L'idee : comparer l'**enveloppe d'energie audio** (ou les onsets sonores apparai
 - `# Étape 3` : Calculer la cross-correlation decalee entre les deux enveloppes ; le lag au pic de correlation = decalage audio-video (ideal = 0). Un decalage < 40 ms est imperceptible
 - `# Indice` : Utilisez `np.correlate(audio_env, motion_env, mode='full')` puis trouvez l'argmax
 ",,,,,,,,c62f9ab56ea5fa83,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-16,code,fr,af574f0dca6d1c15,"def analyze_av_sync(video_path: str) -> dict:
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-16,code,fr,af574f0dca6d1c15,"def analyze_av_sync(video_path: str) -> dict:
     '''
     Analyse la synchronisation audio-video d'un fichier MP4.
 
@@ -10323,9 +10323,9 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-16,co
 # Test (necessite un MP4 genere par LTX-2)
 print(""Exercice a completer"")
 ",,,,,,,,af574f0dca6d1c15,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-17,markdown,fr,458c8b8986e4db5b,"## Section 3 : Comparaison LTX-2 vs LTX-Video 0.9
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-17,markdown,fr,458c8b8986e4db5b,"## Section 3 : Comparaison LTX-2 vs LTX-Video 0.9
 
-LTX-Video 0.9 ([notebook 02-2](02-2-LTX-Video-Lightweight.ipynb)) et LTX-2 partagent la lignee Lightricks mais différent radicalement. Le tableau suivant resume les compromis pour choisir le bon modèle selon le cas d'usage.
+LTX-Video 0.9 ([notebook 02-2](02-2-Generation-Video-Legere.ipynb)) et LTX-2 partagent la lignee Lightricks mais différent radicalement. Le tableau suivant resume les compromis pour choisir le bon modèle selon le cas d'usage.
 
 | Critere | LTX-Video 0.9 (02-2) | LTX-2 (02-5) |
 |---------|----------------------|--------------|
@@ -10349,7 +10349,7 @@ LTX-Video 0.9 ([notebook 02-2](02-2-LTX-Video-Lightweight.ipynb)) et LTX-2 parta
 | GPU 8-12 GB | Aucun des deux sans déchargement CPU | Pic LTX-Video 0.9 mesuré à 14.1 GB (02-2), poids GGUF Q4 de LTX-2 ~14 GB |
 | Scene avec son diegetique (vagues, orage) | LTX-2 | Audio coherent appris |
 ",,,,,,,,458c8b8986e4db5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-18,code,fr,f1fad4a0299ba584,"# Statistiques de session et prochaines etapes
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-18,code,fr,f1fad4a0299ba584,"# Statistiques de session et prochaines etapes
 print(""\n--- STATISTIQUES DE SESSION ---"")
 print(""="" * 40)
 
@@ -10403,7 +10403,7 @@ print(f""3. Module 03-1 : benchmark comparatif LTX-2 vs LTX-Video 0.9 vs Hunyuan
 print(f""4. Combiner LTX-2 audio-video avec le notebook Audio pour post-traitement foley"")
 
 print(f""\nNotebook 02-5 LTX-2 Audiovisual termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,f1fad4a0299ba584,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-19,markdown,fr,d3f92797454cefb3,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-19,markdown,fr,d3f92797454cefb3,"## Conclusion
 
 Ce notebook a introduit **LTX-2**, le premier modèle fondationnel audio-video base sur DiT. Les points cles :
 
@@ -10468,7 +10468,7 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison
 > modeles tournent cote serveur, la VRAM locale n'est plus un facteur. Les metriques
 > et la grille comparative restent identiques.
 
-**Navigation :** [<< 02-5 LTX-2](../02-Advanced/02-5-LTX2-Audiovisual.ipynb) | [Index](../README.md) | [Suivant >>](03-2-Video-Workflow-Orchestration.ipynb)",,,,,,,,ce2204650123771d,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-5 LTX-2](../02-Advanced/02-5-Video-Audio-Conjoint.ipynb) | [Index](../README.md) | [Suivant >>](03-2-Video-Workflow-Orchestration.ipynb)",,,,,,,,ce2204650123771d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-params,code,fr,94ab717dcd847deb,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -18929,7 +18929,7 @@ width = 896
 num_frames = 25
 num_inference_steps = 20
 ",,,,,,,,755cae51acabd832,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,f5900edf,code,fr,3e4ebee39c2b49ed,"# Parameters
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,f5900edf,code,fr,3e4ebee39c2b49ed,"# Parameters
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,3e4ebee39c2b49ed,,,,,,,,,,,,,,,
@@ -18940,7 +18940,7 @@ skip_widgets = True
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,svd-license-conformity,markdown,fr,af1e504f18c566bd,"### Licence : Stable Video Diffusion Community License — executable, conforme en UE
 
 Avant de charger le moindre poids, on verifie la licence firsthand. C'est la lecon du
-notebook [02-6 MiniMax H3](02-6-MiniMax-H3-Architecture-Licensing.ipynb) : une licence peut
+notebook [02-6 MiniMax H3](02-6-Video-Architecture-Licensing.ipynb) : une licence peut
 rendre un modele techniquement excellent **inutilisable** selon la juridiction, et cette
 conformite se decide **avant** d'ecrire une ligne de code.
 
@@ -18964,12 +18964,12 @@ fait qu'une etude descriptive. C'est la licence — non la capacite technique �
 cette difference d'execution : deux modeles video de qualite comparable, conformite
 radicalement differente.
 ",,,,,,,,af1e504f18c566bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,068dcdf2,markdown,fr,8683655742157369,"# MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et une bifurcation juridique
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,068dcdf2,markdown,fr,8683655742157369,"# MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et une bifurcation juridique
 
 > **Verdict SOTA : INTRINSIC pour l'auto-hébergement UE + voie service cloud ouverte.** Ce notebook sépare deux instruments juridiques distincts qui gouvernent MiniMax H3 :
 >
 > - **La *MiniMax H3 Community License*** (les **poids** téléchargeables) interdit explicitement l'usage, l'hébergement **et l'affichage des Outputs** dans l'Union Européenne (territoire exclu) → **INTRINSIC, définitif** pour tout déploiement auto-hébergé en UE (Sections 1 à 5).
-> - **Les *Terms of Service* de la plateforme MiniMax / Hailuo** (le **service** hébergé, souscrit et facturé) sont un **second instrument** : un contrat de service souscrit depuis la France n'hérite pas d'une licence de poids qu'on n'a jamais acceptée. Ces ToS ne contiennent **aucune exclusion UE** (Section 6, lue *firsthand* ; l invocation concrète se fait dans [`04-5-MiniMax-H3-Cloud-Video`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb)).
+> - **Les *Terms of Service* de la plateforme MiniMax / Hailuo** (le **service** hébergé, souscrit et facturé) sont un **second instrument** : un contrat de service souscrit depuis la France n'hérite pas d'une licence de poids qu'on n'a jamais acceptée. Ces ToS ne contiennent **aucune exclusion UE** (Section 6, lue *firsthand* ; l invocation concrète se fait dans [`04-5-Video-Cloud-API`](../04-Applications/04-5-Video-Cloud-API.ipynb)).
 >
 > Ce couple de verdicts est *plus* honnête qu'un INTRINSIC global : il dit exactement ce qui est fermé (auto-hébergement) et ce qui reste ouvert (invocation du service souscrit). Cette transparence est elle-même une compétence d'ingénierie ML.
 
@@ -18978,13 +18978,13 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing
 - Code modèle : [GitHub `MiniMax-AI/MiniMax-H3`](https://github.com/MiniMax-AI/MiniMax-H3).
 - *Terms of Service* du service (Section 6) : [minimax.io/terms-of-service-v2](https://www.minimax.io/terms-of-service-v2.html), [Hailuo Video ToS](https://hailuoai.video/doc/terms-of-service.html), [MiniMax Open Platform ToS](https://platform.minimax.io/protocol/terms-of-service) — lues *firsthand*, articles cités *verbatim*.
 ",,,,,,,,8683655742157369,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,66d2480b,markdown,fr,ef4997e456bcfdc6,"## Le contexte : un « Sora at home » qui fait vibrer la communauté
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,66d2480b,markdown,fr,ef4997e456bcfdc6,"## Le contexte : un « Sora at home » qui fait vibrer la communauté
 
 MiniMax H3 (aussi *Hailuo 3.0* / 海螺3), open-sourcé fin juillet / début août 2026, est arrivé **#1 du benchmark *Artificial Analysis* video editing** (Elo ~1130) au lancement. Sa promesse séduit : un modèle **omni-modal unifié** (texte, image, vidéo, audio en entrée) produisant de la vidéo jusqu'à **2K / 15 s / 24 fps** avec **audio stéréo natif** (32 kHz, 11 langues) — le tout en *open-weights*, donc en principe auto-hébergeable. C'est le « Sora at home » : la même ambition qu'OpenAI Sora, mais en poids téléchargeables plutôt qu'en API fermée.
 
 Ce notebook examine pourquoi, **pour notre contexte (France / UE, dépôt public, écoles partenaires)**, cette promesse se heurte à un obstacle qui n'est pas technique mais **juridique** — et comment raisonner sobrement cette décision de déploiement.
 ",,,,,,,,ef4997e456bcfdc6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,ebb793c9,markdown,fr,a7c9a716cbda0839,"## Section 1 — La licence *MiniMax H3 Community License* : une restriction territoriale explicite
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,ebb793c9,markdown,fr,a7c9a716cbda0839,"## Section 1 — La licence *MiniMax H3 Community License* : une restriction territoriale explicite
 
 Lisons les clauses pivots (verbatim, numérotation originale) :
 
@@ -19006,11 +19006,11 @@ Deux points sont souvent mal compris et méritent d'être soulignés :
 
 La seule voie vers un usage UE des **poids** est une **licence commerciale séparée** (Art. II, dernier § : *« you are welcome to contact us about obtaining a license »*) — une démarche *provider-side* qui dépend de MiniMax (Nanonoble Pte. Ltd.), pas de l'utilisateur.
 ",,,,,,,,a7c9a716cbda0839,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,342fb707,markdown,fr,b52723ea4cbae3e9,"## Section 2 — Vérificateur de juridiction : coder la conformité
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,342fb707,markdown,fr,b52723ea4cbae3e9,"## Section 2 — Vérificateur de juridiction : coder la conformité
 
 Plutôt qu'un discours, codons le raisonnement. La fonction suivante **parse la clause *Excluded Territories*** et décide, pour une localisation de déploiement donnée, si l'usage de MiniMax H3 y est autorisé. Ce code tourne localement (aucun appel au modèle) — il analyse le texte de licence, pas le modèle.
 ",,,,,,,,b52723ea4cbae3e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,4521098c,code,fr,29581f975aadb173,"# Excluded Territories au sens de l'Art. I.5 (verbatim license).
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,4521098c,code,fr,29581f975aadb173,"# Excluded Territories au sens de l'Art. I.5 (verbatim license).
 # Couverture par code pays / région ISO, pour le raisonnement de conformité.
 EXCLUDED_TERRITORIES = {
     ""European Union"": {
@@ -19063,7 +19063,7 @@ contextes = [
 for cc, label in contextes:
     print(deployment_verdict(cc, label))
 ",,,,,,,,29581f975aadb173,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,d82b7ad5,markdown,fr,cb7837b002d1aeff,"## Section 3 — Architecture : ce qui fait la force du modèle (et que nous ne pouvons pas exercer ici)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,d82b7ad5,markdown,fr,cb7837b002d1aeff,"## Section 3 — Architecture : ce qui fait la force du modèle (et que nous ne pouvons pas exercer ici)
 
 Bien que nous ne puissions pas exécuter H3, comprendre son architecture est légitime et précieux. Le dépôt [`MiniMax-AI/MiniMax-H3`](https://github.com/MiniMax-AI/MiniMax-H3) révèle les composants clés :
 
@@ -19081,11 +19081,11 @@ Bien que nous ne puissions pas exécuter H3, comprendre son architecture est lé
 
 **Pourquoi c'est un excellent cas pédagogique** : H3 combine une capacité absente de nos autres notebooks (vidéo 2K **+ audio natif synchronisé** dans un seul modèle omni-modal) — exactement le genre de prouesse technique qu'un cours SOTA voudrait montrer. La licence nous oblige à le faire *différemment* : par l'analyse, pas l'exécution.
 ",,,,,,,,cb7837b002d1aeff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,610790bf,markdown,fr,1faa822143f8c627,"## Section 4 — Matrice de décision : H3 vs ses alternatives
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,610790bf,markdown,fr,1faa822143f8c627,"## Section 4 — Matrice de décision : H3 vs ses alternatives
 
 Face à une licence géo-restreinte, la compétence clé est de **raisonner en alternatives**. Le code suivant construit une matrice comparant MiniMax H3 aux autres modèles vidéo de la série (et à Sora), pour aider à décider quoi utiliser selon la juridiction.
 ",,,,,,,,1faa822143f8c627,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,3a5172c7,code,fr,b87c2ea3b20ef6d2,"# Matrice de decision : modeles video de la serie + Sora, selon 5 axes de conformite/usage.
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,3a5172c7,code,fr,b87c2ea3b20ef6d2,"# Matrice de decision : modeles video de la serie + Sora, selon 5 axes de conformite/usage.
 # 'geo_restricted' = True si la licence exclut des territoires (UE en particulier).
 MODELES = [
     {
@@ -19161,7 +19161,7 @@ alt = [m for m in utilisables_en_ue(MODELES) if m[""audio_natif""]]
 for m in alt:
     print(f""  - {m['nom']:<16} | res {m['resolution_max']} | notebook {m['notebook_series']}"")
 ",,,,,,,,b87c2ea3b20ef6d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,5b5e561c,markdown,fr,c6f6706d9562a128,"## Section 5 — Cadre de décision : « puis-je légalement déployer ce modèle ici ? »
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,5b5e561c,markdown,fr,c6f6706d9562a128,"## Section 5 — Cadre de décision : « puis-je légalement déployer ce modèle ici ? »
 
 MiniMax H3 illustre un cadre de raisonnement général, utile pour **tout** modèle qu'on envisage d'intégrer en production ou en enseignement :
 
@@ -19173,7 +19173,7 @@ MiniMax H3 illustre un cadre de raisonnement général, utile pour **tout** mod�
 
 Ce notebook incarne l'option **(b)** appliquée à l'enseignement : étudier le modèle sans l'exécuter. C'est honnête (verdict INTRINSIC documenté, pas de contournement) et pédagogiquement riche (la décision de conformité *est* la leçon).
 ",,,,,,,,c6f6706d9562a128,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,5c7a3fd2,markdown,fr,7cabff233ac2d7fd,"## Section 6 — La bifurcation juridique : licence des poids ≠ ToS du service
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,5c7a3fd2,markdown,fr,7cabff233ac2d7fd,"## Section 6 — La bifurcation juridique : licence des poids ≠ ToS du service
 
 La Section 5 conclut l'analyse de la *Community License* (les poids). Mais H3 est aussi accessible via un **service cloud hébergé** par MiniMax (la plateforme *Hailuo* / *Hailuo AI*), que l'on peut *consommer* sans jamais télécharger les poids. **Ces deux voies sont régies par deux instruments juridiques distincts** — c'est l'erreur de raisonnement la plus coûteuse en production que de les confondre.
 
@@ -19219,17 +19219,17 @@ Cette conclusion est **supportée** par la lecture *firsthand* des trois instrum
 2. **Une clause région-États-Unis spécifique** existe dans l'Open Platform ToS : *""If you select the United States as the service region, you […] may not: […]""*. Elle est **déclenchée par la sélection de région = US** — inapplicable à un utilisateur France opérant en région non-US. C'est un garde-fou anti-contournement pour le marché US, pas un ban UE.
 3. **Un sign-off légal formel** (validation conforme par un conseil juridique, ou confirmation écrite de MiniMax) irait au-delà de la lecture publique des ToS. Ce notebook documente ce que les ToS **publiques** disent — suffisant pour une décision de conception pédagogique, pas un avis juridique.
 
-**Verdict net** : la voie service cloud Hailuo est **ouverte depuis la France** sous les ToS du service (aucune exclusion UE, Outputs sans restriction territoriale). C'est un **second instrument**, distinct de la Community License qui reste INTRINSIC pour l'auto-hébergement. Le notebook **[`04-5-MiniMax-H3-Cloud-Video`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb)** (famille *Applications / cloud-API*) montre comment l'invoquer concrètement : loader idempotent (sans rebrûler de quota), scénarios omni-modaux en HD/2K avec audio natif — ce que l'auto-hébergement UE ne peut pas faire, et que le service seul achète *sans rebrûler de quota* et *sans automatisation de compte consommateur*.
+**Verdict net** : la voie service cloud Hailuo est **ouverte depuis la France** sous les ToS du service (aucune exclusion UE, Outputs sans restriction territoriale). C'est un **second instrument**, distinct de la Community License qui reste INTRINSIC pour l'auto-hébergement. Le notebook **[`04-5-Video-Cloud-API`](../04-Applications/04-5-Video-Cloud-API.ipynb)** (famille *Applications / cloud-API*) montre comment l'invoquer concrètement : loader idempotent (sans rebrûler de quota), scénarios omni-modaux en HD/2K avec audio natif — ce que l'auto-hébergement UE ne peut pas faire, et que le service seul achète *sans rebrûler de quota* et *sans automatisation de compte consommateur*.
 ",,,,,,,,7cabff233ac2d7fd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,15991a46,markdown,fr,15f710c63700cfd5,"## Exercices
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,15991a46,markdown,fr,15f710c63700cfd5,"## Exercices
 
 Les trois exercices suivants s'exercent sur la **décision de conformité** — la compétence distinctive de ce notebook. Aucun n'exécute le modèle (la licence l'interdit). Complétez les stubs.
 ",,,,,,,,15f710c63700cfd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,0eab69f7,markdown,fr,11ec53d718e548ab,"### Exercice 1 — Étendre le vérificateur aux *Hosted Services* (API)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,0eab69f7,markdown,fr,11ec53d718e548ab,"### Exercice 1 — Étendre le vérificateur aux *Hosted Services* (API)
 
 La licence couvre aussi l'usage via API (Art. I.8 *Hosted Services*). Écrivez `can_call_api(country_code, provider_region)` qui renvoie `False` si **soit** le pays de l'appelant, **soit** la région du provider est un territoire exclu — car l'Output serait consommé/affiché dans un territoire exclu.
 ",,,,,,,,11ec53d718e548ab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,9e7f9d75,code,fr,b6be339709a604f1,"def can_call_api(country_code: str, provider_region: str) -> bool:
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,9e7f9d75,code,fr,b6be339709a604f1,"def can_call_api(country_code: str, provider_region: str) -> bool:
     """"""True si un appel API MiniMax H3 est autorise pour cet appelant + ce provider.
 
     Rappel (Art. V.4) : les Outputs ne peuvent etre ni utilises ni affiches hors
@@ -19248,11 +19248,11 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing
 # print(can_call_api(""JP"", ""CN""))   # attendu : True (les deux applicables)
 # print(can_call_api(""JP"", ""US""))   # attendu : False (US exclue)
 ",,,,,,,,b6be339709a604f1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,8d86b702,markdown,fr,5209e226814a2a9c,"### Exercice 2 — Sélectionneur de modèle conforme
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,8d86b702,markdown,fr,5209e226814a2a9c,"### Exercice 2 — Sélectionneur de modèle conforme
 
 Écrivez `choisir_modele_conforme(exigences)` qui, étant donné un dictionnaire d'exigences (pays, `audio_natif` booléen, `open_weights` booléen), renvoie la **liste** des modèles de `MODELES` qui satisfont **toutes** les contraintes — typiquement pour recommander une alternative UE à H3.
 ",,,,,,,,5209e226814a2a9c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,a79619eb,code,fr,9532f80b79daf694,"def choisir_modele_conforme(exigences: dict) -> list:
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,a79619eb,code,fr,9532f80b79daf694,"def choisir_modele_conforme(exigences: dict) -> list:
     """"""Renvoie les modeles de MODELES satisfaisant toutes les exigences.
 
     exigences cles possibles :
@@ -19273,11 +19273,11 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing
 #     print(f""  conforme : {m['nom']}"")
 # # attendu : LTX-2 (UE-ok, audio natif, open-weights). H3 exclu (UE), Sora exclu (pas open-weights).
 ",,,,,,,,9532f80b79daf694,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,6e7b339a,markdown,fr,038f57a9c5663f5a,"### Exercice 3 — Détecteur de clause de territorialité dans une licence arbitraire
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,6e7b339a,markdown,fr,038f57a9c5663f5a,"### Exercice 3 — Détecteur de clause de territorialité dans une licence arbitraire
 
 Écrivez `detecte_restriction_territoriale(texte_licence)` qui prend le texte brut d'une licence et renvoie la liste des noms de pays/régions mentionnés dans une clause d'exclusion géographique (regardez les motifs comme *« excluding »*, *« Excluded Territories »*, *« not permitted in »*). Ceci généralise le raisonnement au-delà de H3.
 ",,,,,,,,038f57a9c5663f5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,361f977c,code,fr,e729d93cc1e09d12,"def detecte_restriction_territoriale(texte_licence: str) -> list:
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,361f977c,code,fr,e729d93cc1e09d12,"def detecte_restriction_territoriale(texte_licence: str) -> list:
     """"""Renvoie les entites geographiques citees dans une clause d'exclusion.
 
     Recherche des amorces de clause ('excluding', 'Excluded Territories',
@@ -19303,14 +19303,14 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing
 # print(detecte_restriction_territoriale(extrait))
 # # attendu : les 4 territoires exclus
 ",,,,,,,,e729d93cc1e09d12,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,9d861ba1,markdown,fr,b28e17198ed5be05,"## Conclusion — transparence et conformité comme compétences (verdict double)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,9d861ba1,markdown,fr,b28e17198ed5be05,"## Conclusion — transparence et conformité comme compétences (verdict double)
 
 MiniMax H3 est techniquement remarquable (#1 video editing, omni-modal, audio natif). Sa gouvernance se scinde en **deux instruments juridiques**, et ce notebook rend un verdict **double** :
 
 | Voie | Instrument | Verdict | État |
 |---|---|---|---|
 | **Auto-hébergement** (poids) | *MiniMax H3 Community License* | **INTRINSIC** — UE exclue (Art. I.5), Outputs couverts (Art. V.4) | Définitif. Licence commerciale requise pour débloquer. |
-| **Service cloud** (Hailuo souscrit) | *Hailuo Video ToS* + *Open Platform ToS* | **Ouverte** — aucune exclusion UE, Outputs sans restriction territoriale. Entitlement **par série** (probe 2026-08-10) : H3 plan-gated (400 TokenPlan 2013), `video-01` couvert | Notebooks dédiés : [`04-5`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb) (H3, squelette idempotent) et [`04-5b`](../04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01`/`v1`, voie de génération réelle). |
+| **Service cloud** (Hailuo souscrit) | *Hailuo Video ToS* + *Open Platform ToS* | **Ouverte** — aucune exclusion UE, Outputs sans restriction territoriale. Entitlement **par série** (probe 2026-08-10) : H3 plan-gated (400 TokenPlan 2013), `video-01` couvert | Notebooks dédiés : [`04-5`](../04-Applications/04-5-Video-Cloud-API.ipynb) (H3, squelette idempotent) et [`04-5b`](../04-Applications/04-5b-Video-Cloud-API-v1.ipynb) (`video-01`/`v1`, voie de génération réelle). |
 
 Ce couple est *plus* honnête qu'un INTRINSIC global : il nomme exactement ce qui est fermé (l'auto-hébergement) et ce qui reste ouvert (le service souscrit). Cinq leçons à retenir :
 
@@ -19318,7 +19318,7 @@ Ce couple est *plus* honnête qu'un INTRINSIC global : il nomme exactement ce qu
 2. **La portée compte autant que l'octroi.** Une licence peut autoriser un usage mais en restreindre l'affichage, la redistribution, ou les Outputs — comme la Community License des poids.
 3. **Un modèle peut avoir plusieurs instruments juridiques.** La licence des *poids* et le contrat de *service* sont distincts ; classer l'un par héritage supposé de l'autre, sans lire le second, est l'erreur la plus coûteuse. C'est exactement ce que les étudiants rencontreront en entreprise.
 4. **La conformité est une décision de conception, pas une après-pensée.** Choisir tôt entre (a) licence commerciale, (b) usage descriptif, (c) alternative permissive, (d) service souscrit — c'est ce que fait ce notebook.
-5. **L'idempotence est une exigence de service, pas une politesse.** Un service sous quota (5 générations/jour) impose un loader idempotent (implanté dans le notebook [`04-5`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb)) : artefact présent → chargé, génération → flag explicite. Une ré-exécution ne rebrûle jamais le quota.
+5. **L'idempotence est une exigence de service, pas une politesse.** Un service sous quota (5 générations/jour) impose un loader idempotent (implanté dans le notebook [`04-5`](../04-Applications/04-5-Video-Cloud-API.ipynb)) : artefact présent → chargé, génération → flag explicite. Une ré-exécution ne rebrûle jamais le quota.
 
 **Trois régimes, trois verdicts — le triptyque de la série** : le même besoin (« générer une vidéo avec un modèle SOTA ») se présente sous trois régimes juridiques et techniques distincts dans la série, et chacun porte un verdict SOTA différent :
 
@@ -19327,19 +19327,19 @@ Ce couple est *plus* honnête qu'un INTRINSIC global : il nomme exactement ce qu
 | **`02-7`** | CogVideoX-2b | Apache-2.0 | **locale**, RTX 3090, ~16 GB | 480×720 @ 8 fps, **muet** |
 | **`02-5`** | LTX-2 | licence permissive, UE OK | **locale**, audiovisuel | vidéo + audio conjoints |
 | **`02-6`** | MiniMax H3 (ce notebook) | Community License, **UE exclue** | **impossible** (auto-hébergement) | — (descriptif, INTRINSIC) |
-| **[`04-5`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb)** | MiniMax H3 (service) | *product terms* du service | **cloud**, 5 générations/jour — entitlement H3 plan-gated (TokenPlan 2013) | **HD/2K + audio stéréo natif** (à l'activation du plan) |
-| **[`04-5b`](../04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb)** | MiniMax video-01 (service) | *product terms* du service | **cloud**, `/v1` — plan couvrant `video-01` (vérifié par probe 2026-08-10) | génération réelle (gate : provision de la clé à la lane) |
+| **[`04-5`](../04-Applications/04-5-Video-Cloud-API.ipynb)** | MiniMax H3 (service) | *product terms* du service | **cloud**, 5 générations/jour — entitlement H3 plan-gated (TokenPlan 2013) | **HD/2K + audio stéréo natif** (à l'activation du plan) |
+| **[`04-5b`](../04-Applications/04-5b-Video-Cloud-API-v1.ipynb)** | MiniMax video-01 (service) | *product terms* du service | **cloud**, `/v1` — plan couvrant `video-01` (vérifié par probe 2026-08-10) | génération réelle (gate : provision de la clé à la lane) |
 
 Le contraste `02-7` ↔ `04-5` **quantifie** exactement ce que le service cloud achète : 480×720@8fps muet en local permissif, contre HD/2K sonore par le service. C'est la charge pédagogique de H3 — le même modèle, deux voies, et le service seul débloque le format HD + l'audio natif omni-modal.
 
 **États réversibles** :
 - Si une licence commerciale UE est obtenue auprès de MiniMax → ce notebook évolue vers une exécution locale réelle (ComfyUI workflow + VRAM mesurée, comme `02-3-Wan`).
-- En attendant, l'alternative UE pédagogiquement équivalente pour « vidéo + audio natif » est **LTX-2** (`02-5-LTX2-Audiovisual`, licence permissive, exécutable).
-- La voie service cloud est juridiquement ouverte mais **gated en deux étapes** : provision de `MINIMAX_GENAI_API_KEY` (absente de la machine au 2026-08-15) **et** entitlement de la série (probe 2026-08-10 : H3 → 400 TokenPlan 2013 ; `video-01`/`v1` → couvert). Les loaders idempotents sont posés dans **[`04-5`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb)** (H3) et **[`04-5b`](../04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb)** (video-01).
+- En attendant, l'alternative UE pédagogiquement équivalente pour « vidéo + audio natif » est **LTX-2** (`02-5-Video-Audio-Conjoint`, licence permissive, exécutable).
+- La voie service cloud est juridiquement ouverte mais **gated en deux étapes** : provision de `MINIMAX_GENAI_API_KEY` (absente de la machine au 2026-08-15) **et** entitlement de la série (probe 2026-08-10 : H3 → 400 TokenPlan 2013 ; `video-01`/`v1` → couvert). Les loaders idempotents sont posés dans **[`04-5`](../04-Applications/04-5-Video-Cloud-API.ipynb)** (H3) et **[`04-5b`](../04-Applications/04-5b-Video-Cloud-API-v1.ipynb)** (video-01).
 - **Surveillance licence (re-vérifiée firsthand le 2026-08-15)** : le `LICENSE` de `MiniMaxAI/MiniMax-H3` (daté du 2 août 2026) exclut toujours l'UE — *« Excluded Territories » means the European Union, the United Kingdom, the Republic of Korea and the United States of America*. Aucun changement depuis la vérification initiale.
 
 ***
-*Note : ce notebook n'embarque aucun poids H3 et n'affiche aucun Output de la *Community License* — conformément à l'Art. V.4. Les Outputs du service cloud (notebook [`04-5`](../04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb), lorsqu'activée) proviennent du service Hailuo souscrit, sous les *Terms of Service* de la plateforme (Section 6) — un instrument distinct, qui n'exclut pas l'UE. Le code des Sections 2-5 analyse le texte de licence et raisonne sur la conformité ; ses sorties sont produites localement par ce raisonnement.*
+*Note : ce notebook n'embarque aucun poids H3 et n'affiche aucun Output de la *Community License* — conformément à l'Art. V.4. Les Outputs du service cloud (notebook [`04-5`](../04-Applications/04-5-Video-Cloud-API.ipynb), lorsqu'activée) proviennent du service Hailuo souscrit, sous les *Terms of Service* de la plateforme (Section 6) — un instrument distinct, qui n'exclut pas l'UE. Le code des Sections 2-5 analyse le texte de licence et raisonne sur la conformité ; ses sorties sont produites localement par ce raisonnement.*
 ",,,,,,,,b28e17198ed5be05,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,28814eb6,markdown,fr,326dde25828b51bb,"# CogVideoX - Generation Video depuis Texte (Open Weights)
 
@@ -19368,10 +19368,10 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,288
 
 La famille `02-Video-Advanced` comprend deux notebooks qui se completent :
 
-- **[02-6](02-6-MiniMax-H3-Architecture-Licensing.ipynb)** montre *pourquoi* un modele puissant (MiniMax H3, #1 Artificial Analysis) est **hors d'atteinte** en UE/UK/Coree/USA — sa licence communautaire *MiniMax H3 Community License* exclut explicitement l'usage, l'hebergement et l'affichage des Outputs sur ces territoires (Art. I.3 + I.5 + V.4). Verdict SOTA `INTRINSIC`.
+- **[02-6](02-6-Video-Architecture-Licensing.ipynb)** montre *pourquoi* un modele puissant (MiniMax H3, #1 Artificial Analysis) est **hors d'atteinte** en UE/UK/Coree/USA — sa licence communautaire *MiniMax H3 Community License* exclut explicitement l'usage, l'hebergement et l'affichage des Outputs sur ces territoires (Art. I.3 + I.5 + V.4). Verdict SOTA `INTRINSIC`.
 - **Ce notebook (02-7)** montre ce que la famille *peut* faire quand le modele est licite : generation video reelle sur un modele open-weights **permissif** (Apache-2.0). Le couple (descriptif INTRINSIC + executif SOTA-OK) est la valeur pedagogique — pas chaque moitie isolement.
 
-**Navigation :** [<< 02-6](02-6-MiniMax-H3-Architecture-Licensing.ipynb) | [Index](../README.md) | [Suivant >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)
+**Navigation :** [<< 02-6](02-6-Video-Architecture-Licensing.ipynb) | [Index](../README.md) | [Suivant >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)
 ",,,,,,,,326dde25828b51bb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,14c54909,code,fr,5de3d804b57eb805,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
@@ -19933,9 +19933,9 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb,417
 
 - **Modele** : <https://huggingface.co/THUDM/CogVideoX-2b> (Apache-2.0)
 - **Pipeline diffusers** : <https://huggingface.co/docs/diffusers/api/pipelines/cogvideox>
-- **Couplage pedagogique** : [02-6 MiniMax H3 (descriptif INTRINSIC)](02-6-MiniMax-H3-Architecture-Licensing.ipynb) — le contraste entre ce notebook et 02-6 illustre la grille de decision licence-vs-capacite.
+- **Couplage pedagogique** : [02-6 MiniMax H3 (descriptif INTRINSIC)](02-6-Video-Architecture-Licensing.ipynb) — le contraste entre ce notebook et 02-6 illustre la grille de decision licence-vs-capacite.
 
-**Navigation serie Video** : [02-1 HunyuanVideo](02-1-HunyuanVideo-Generation.ipynb) · [02-2 LTX-Video](02-2-LTX-Video-Lightweight.ipynb) · [02-3 Wan](02-3-Wan-Video-Generation.ipynb) · [02-4 SVD](02-4-SVD-Image-to-Video.ipynb) · [02-5 LTX-2](02-5-LTX2-Audiovisual.ipynb) · [02-6 MiniMax H3](02-6-MiniMax-H3-Architecture-Licensing.ipynb) · **02-7 CogVideoX (ce notebook)**
+**Navigation serie Video** : [02-1 HunyuanVideo](02-1-HunyuanVideo-Generation.ipynb) · [02-2 LTX-Video](02-2-Generation-Video-Legere.ipynb) · [02-3 Wan](02-3-Wan-Video-Generation.ipynb) · [02-4 SVD](02-4-SVD-Image-to-Video.ipynb) · [02-5 LTX-2](02-5-Video-Audio-Conjoint.ipynb) · [02-6 MiniMax H3](02-6-Video-Architecture-Licensing.ipynb) · **02-7 CogVideoX (ce notebook)**
 ",,,,,,,,2fd166c13407895d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,daa7eca4,code,fr,44a05400b4a4b962,"# Parameters
 notebook_mode = ""batch""
@@ -19974,7 +19974,7 @@ Trois idees a retenir. **(1) L'API Sora comme contrat asynchrone** : le notebook
 
 Prochaines etapes dans la serie : `04-4-Production-Video-Pipeline` chaine ces briques en un pipeline reel, et `04-5`/`04-5b` repetent l'exercice de comparaison sur les API cloud MiniMax.
 ",,,,,,,,8fb74302000996dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,banner,markdown,fr,5d33590e1b3365de,"# MiniMax H3 (Hailuo) — Génération vidéo par le service cloud
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,banner,markdown,fr,5d33590e1b3365de,"# MiniMax H3 (Hailuo) — Génération vidéo par le service cloud
 
 **Module :** 04-Applications
 **Niveau :** Applications
@@ -19994,14 +19994,14 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 ### Prérequis
 
 - Python 3.10+
-- Notebooks [02-6 (Architecture & Licensing)](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) et [02-5 (LTX-2 Audiovisuel)](../02-Advanced/02-5-LTX2-Audiovisual.ipynb)
+- Notebooks [02-6 (Architecture & Licensing)](../02-Advanced/02-6-Video-Architecture-Licensing.ipynb) et [02-5 (LTX-2 Audiovisuel)](../02-Advanced/02-5-Video-Audio-Conjoint.ipynb)
 - Clé `MINIMAX_GENAI_API_KEY` configurée dans l'environnement (optionnelle en mode squelette)
 - Packages : `httpx`, `matplotlib`, `Pillow`
 
-> **Verdict SOTA : service cloud Hailuo — voie OUVERTE en UE** (ToS du service lus firsthand, aucune exclusion UE, Outputs sans restriction territoriale). Nuance d'entitlement (probe 2026-08-10) : la **série H3** reste plan-gated (400 TokenPlan 2013) — une réponse HTTP 200 avec identifiant de tâche est conservée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01`, `/v1`). Auto-hébergement des poids reste **INTRINSIC** en UE — voir [02-6](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb).
+> **Verdict SOTA : service cloud Hailuo — voie OUVERTE en UE** (ToS du service lus firsthand, aucune exclusion UE, Outputs sans restriction territoriale). Nuance d'entitlement (probe 2026-08-10) : la **série H3** reste plan-gated (400 TokenPlan 2013) — une réponse HTTP 200 avec identifiant de tâche est conservée dans [04-5b](04-5b-Video-Cloud-API-v1.ipynb) (`video-01`, `/v1`). Auto-hébergement des poids reste **INTRINSIC** en UE — voir [02-6](../02-Advanced/02-6-Video-Architecture-Licensing.ipynb).
 
-**Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [04-5b MiniMax video-01 v1 >>](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb)",,,,,,,,5d33590e1b3365de,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,params,code,fr,d5de0b60d8d647c5,"# Paramètres Papermill - JAMAIS modifier ce commentaire
+**Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [04-5b MiniMax video-01 v1 >>](04-5b-Video-Cloud-API-v1.ipynb)",,,,,,,,5d33590e1b3365de,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,params,code,fr,d5de0b60d8d647c5,"# Paramètres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -20025,7 +20025,7 @@ enable_scenario_2 = True              # text_only_ambiance_sonore (t2v + audio n
 # Contient : response.json (task_id, model, prompt, resolution, duration, date UTC)
 #            + keyframe_*.png (frames extraites) + waveform.png (forme d'onde audio)
 ARTIFACTS_DIR = ""assets/h3-cloud""",,,,,,,,d5de0b60d8d647c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,setup,code,fr,d2b96c1bfd6dc3f4,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,setup,code,fr,d2b96c1bfd6dc3f4,"# Setup environnement et imports
 import os
 import json
 import time
@@ -20073,9 +20073,9 @@ print(""httpx disponible :"", HTTPX_OK)
 # --- Point d'ancrage des artefacts (relatif au notebook, exécuté in-place) ---
 ARTIFACTS_PATH = (Path.cwd() / ARTIFACTS_DIR).resolve()
 print(""ARTIFACTS_DIR résolu :"", ARTIFACTS_PATH)",,,,,,,,d2b96c1bfd6dc3f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,intro,markdown,fr,546c94624a5ecd8b,"## Section 1 — Pourquoi invoquer le *service cloud* Hailuo ?
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,intro,markdown,fr,546c94624a5ecd8b,"## Section 1 — Pourquoi invoquer le *service cloud* Hailuo ?
 
-Le notebook [02-6 (Architecture & Licensing)](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) établit une **bifurcation juridique** décisive pour MiniMax H3 (Hailuo 3.0) :
+Le notebook [02-6 (Architecture & Licensing)](../02-Advanced/02-6-Video-Architecture-Licensing.ipynb) établit une **bifurcation juridique** décisive pour MiniMax H3 (Hailuo 3.0) :
 
 | Instrument juridique | Périmètre | Statut en UE |
 |----------------------|-----------|--------------|
@@ -20102,8 +20102,8 @@ Le service Hailuo limite à **5 générations par jour**. Une ré-exécution du 
 - `MINIMAX_SPEND_QUOTA = 0` (défaut) → on ne charge **que** les artefacts déjà commités (PNG + JSON). Zéro appel réseau.
 - `MINIMAX_SPEND_QUOTA = 1` + clé présente + artefact absent → **seulement alors** on invoque le service.
 - **Aucun `.mp4` n'est commité** : la trace d'une génération, lorsqu'elle existe, peut réunir la réponse JSON avec son `task_id`, les images et la forme d'onde ; l'identifiant atteste une réponse du service, les fichiers permettent d'examiner le résultat. Les originaux HD vont sur un GDrive privé (noté en prose, jamais dans le dépôt).
-- **Ce carnet ne commit aucun de ces artefacts** : `assets/h3-cloud/` ne contient que l'image de référence d'entrée du scénario image-to-video. Les deux scénarios s'exécutent donc en **mode squelette** (colonne `Artefact` = `non` du tableau de statut) : aucune génération n'a eu lieu sur ce carnet — la clé n'était pas présente au run, et le plan bloque de toute façon la série H3 (verdict SOTA en tête de carnet). La trace d'une requête acceptée est embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01` sur `/v1`, sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).",,,,,,,,546c94624a5ecd8b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,functions,code,fr,43bc55eaea6cd157,"# Définition des scénarios + chargeur idempotent
+- **Ce carnet ne commit aucun de ces artefacts** : `assets/h3-cloud/` ne contient que l'image de référence d'entrée du scénario image-to-video. Les deux scénarios s'exécutent donc en **mode squelette** (colonne `Artefact` = `non` du tableau de statut) : aucune génération n'a eu lieu sur ce carnet — la clé n'était pas présente au run, et le plan bloque de toute façon la série H3 (verdict SOTA en tête de carnet). La trace d'une requête acceptée est embarquée dans [04-5b](04-5b-Video-Cloud-API-v1.ipynb) (`video-01` sur `/v1`, sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).",,,,,,,,546c94624a5ecd8b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,functions,code,fr,43bc55eaea6cd157,"# Définition des scénarios + chargeur idempotent
 # Deux scénarios omni-modaux qui exercent la capacité DISTINCTIVE du service
 # (HD/2K + audio natif synchronisé), et NON cinq t2v triviaux (Prong B).
 
@@ -20380,7 +20380,7 @@ print(""Fonctions définies : artefact_present, charger_artifacts, invoquer_serv
 print(f""Scénarios configurés : {len(SCENARIOS)}"")
 for n, s in SCENARIOS.items():
     print(f""  - {n} : {s['mode']}, {s['resolution']}, audio={s['audio']}"")",,,,,,,,43bc55eaea6cd157,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,execution,code,fr,8e2801dbfc8f319f,"# Bloc d'exécution idempotent : charge OU invoque, jamais les deux aveuglément
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,execution,code,fr,8e2801dbfc8f319f,"# Bloc d'exécution idempotent : charge OU invoque, jamais les deux aveuglément
 print(""État des scénarios (mode"", ""GÉNÉRATION"" if MINIMAX_SPEND_QUOTA else ""SQUELETTE"", "")"")
 print(""="" * 78)
 
@@ -20423,7 +20423,7 @@ print(""-"" * len(hdr))
 print(f""Clé présente : {'oui' if key_provisioned else 'non'} | ""
       f""MINIMAX_SPEND_QUOTA : {MINIMAX_SPEND_QUOTA} | ""
       f""httpx : {'ok' if HTTPX_OK else 'absent'}"")",,,,,,,,8e2801dbfc8f319f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,visualization,code,fr,ae6462af4ca29781,"# Visualisation comparative : ce que chaque voie (UE-légale) offre
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,visualization,code,fr,ae6462af4ca29781,"# Visualisation comparative : ce que chaque voie (UE-légale) offre
 # Chart 100% déterministe — aucune clé, aucun réseau requis.
 labels = [""H3 service cloud\n(ce notebook)"", ""CogVideoX-2b local\n[02-7]"", ""LTX-2 local\n[02-5]""]
 # Scores normalisés 0-10 sur 4 axes (approx. pédagogique)
@@ -20452,7 +20452,7 @@ fig.tight_layout()
 plt.show()
 print(""Figure : le service cloud H3 maximise résolution/audio/omni-référence ; ""
       ""le score 'Légal UE auto-héberg.' est abaissé car les poids ne peuvent pas être hébergés localement."")",,,,,,,,ae6462af4ca29781,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,interpretation,markdown,fr,ccfb5c1e52a5dae1,"### Interprétation — Bifurcation licence-poids vs ToS-service
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,interpretation,markdown,fr,ccfb5c1e52a5dae1,"### Interprétation — Bifurcation licence-poids vs ToS-service
 
 **Sortie obtenue** : tableau de statut (2 scénarios omni-modaux) + comparatif visuel des trois voies UE-légales.
 
@@ -20467,10 +20467,10 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 1. Le service cloud est l'**unique voie légale en UE** pour la pleine capacité H3 (HD/2K + audio stéréo + omni-référence).
 2. L'idempotence (`MINIMAX_SPEND_QUOTA`) protège le quota quotidien de 5 générations — une ré-exécution sans artefact ne déclenche aucun appel réseau.
-3. La trace d'une génération peut associer **PNG + JSON `task_id`** : l'identifiant correspond à une tâche, tandis que les fichiers donnent accès au résultat (les `.mp4` HD restent sur GDrive privé) — mais **ce carnet n'en commit aucun** : la série H3 y est bloquée par le plan, et les deux scénarios tournent en mode squelette (colonne `Artefact` = `non`). Les traces de la famille cloud : réponse à une requête embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
+3. La trace d'une génération peut associer **PNG + JSON `task_id`** : l'identifiant correspond à une tâche, tandis que les fichiers donnent accès au résultat (les `.mp4` HD restent sur GDrive privé) — mais **ce carnet n'en commit aucun** : la série H3 y est bloquée par le plan, et les deux scénarios tournent en mode squelette (colonne `Artefact` = `non`). Les traces de la famille cloud : réponse à une requête embarquée dans [04-5b](04-5b-Video-Cloud-API-v1.ipynb) (sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
 
 > **Note technique** : le `task_id` dans `response.json` est un identifiant de tâche renvoyé par le service. Il permet de retrouver la tâche mais, seul, ne prouve ni la fin de la génération ni l'intégrité du résultat. Il est repris dans les exercices ci-dessous — qui rendront donc `None` tant qu'aucun `response.json` n'est commité pour ce carnet, ce qui est le cas aujourd'hui (cf. §1).",,,,,,,,ccfb5c1e52a5dae1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex1-md,markdown,fr,051f8c607fadcdf4,"## Section 2 — Exercices
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex1-md,markdown,fr,051f8c607fadcdf4,"## Section 2 — Exercices
 
 ### Exercice 1 — Parser une réponse JSON Hailuo (extraire task_id + statut)
 
@@ -20478,13 +20478,13 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 **Contexte** : le fichier `response.json` conserve la réponse du service à une requête. En extraire les métadonnées permet d'identifier la tâche et son statut ; la fin de la génération et son résultat se vérifient séparément.
 
-> **Pour ce carnet, `response.json` est absent** : la série H3 y est bloquée par le plan (cf. §1) et aucun artefact de génération n'est commité. L'exercice porte donc sur le contrat de parsing — il rend `None` tant que le fichier est absent, ce qui est le comportement attendu et non une panne. Une réponse à une requête réelle de la famille cloud est dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb).
+> **Pour ce carnet, `response.json` est absent** : la série H3 y est bloquée par le plan (cf. §1) et aucun artefact de génération n'est commité. L'exercice porte donc sur le contrat de parsing — il rend `None` tant que le fichier est absent, ce qui est le comportement attendu et non une panne. Une réponse à une requête réelle de la famille cloud est dans [04-5b](04-5b-Video-Cloud-API-v1.ipynb).
 
 **Indices** :
 - `# Étape 1` : ouvrir le JSON depuis `ARTIFACTS_PATH / name / ""response.json""`.
 - `# Étape 2` : extraire les 7 champs ci-dessus avec `.get()` (valeurs absentes -> `None`).
 - `# Étape 3` : retourner un dictionnaire typé ; retour `None` si le fichier est absent.",,,,,,,,051f8c607fadcdf4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex1-code,code,fr,20e0ba55f097aca2,"def parse_hailuo_response(name: str) -> dict:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex1-code,code,fr,20e0ba55f097aca2,"def parse_hailuo_response(name: str) -> dict:
     """"""Extrait les champs de preuve du response.json d'un scénario Hailuo.
 
     Args:
@@ -20500,7 +20500,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 
 print(""Exercice 1 — parser response.json :"", parse_hailuo_response(""image_plus_prompt_orchestre""))",,,,,,,,20e0ba55f097aca2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex2-md,markdown,fr,ae33de508fba3025,"### Exercice 2 — Statistiques d'une piste audio (sur les échantillons, pas sur le dessin)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex2-md,markdown,fr,ae33de508fba3025,"### Exercice 2 — Statistiques d'une piste audio (sur les échantillons, pas sur le dessin)
 
 **Objectif** : calculer des statistiques d'amplitude (RMS, crête, dynamique) **sur les échantillons PCM de la piste audio** d'un scénario — jamais sur l'image de la forme d'onde. Ces nombres répondent à deux questions mesurables : la piste est-elle **présente**, et son énergie est-elle **non nulle**.
 
@@ -20519,7 +20519,7 @@ Le contrat de mesure est celui du corpus ([02-3-MusicGen](../../Audio/02-Advance
 - `# Étape 2` : décoder les échantillons en échelle [-1, 1] (par ex. `ffmpeg -i <piste> -ac 1 -f wav` vers un wav temporaire, puis le module `wave` + numpy : entiers 16 bits divisés par 32768.0).
 - `# Étape 3` : appliquer le contrat ci-dessus ; retourner `{""rms"": float, ""peak"": float, ""dynamic_range"": float}` ou `None` si la piste est absente (NON_TESTE — distinct d'un zéro mesuré).
 ",,,,,,,,ae33de508fba3025,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex2-code,code,fr,8300acf81e452ff5,"def audio_track_stats(name: str) -> dict:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex2-code,code,fr,8300acf81e452ff5,"def audio_track_stats(name: str) -> dict:
     """"""Statistiques d'amplitude sur la PISTE AUDIO DÉCODÉE (échantillons PCM) d'un scénario.
 
     Échelle flottante [-1, 1] ; dynamic_range = 20·log10(peak/rms) en dB
@@ -20542,17 +20542,17 @@ if stats_ex2 is None:
           ""les artefacts sont une preuve d'exécution, pas un .mp4 — cf. Section 1)"")
 else:
     print(""Exercice 2 — stats piste audio :"", stats_ex2)",,,,,,,,8300acf81e452ff5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex3-md,markdown,fr,3d798a1e64549c57,"### Exercice 3 — Tableau comparatif coût/qualité (cloud-H3 vs local-CogVideoX vs local-LTX-2)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex3-md,markdown,fr,3d798a1e64549c57,"### Exercice 3 — Tableau comparatif coût/qualité (cloud-H3 vs local-CogVideoX vs local-LTX-2)
 
 **Objectif** : construire un tableau de comparaison synthétique (résolution, audio natif, licence UE, coût/génération, latence, reversibilité) pour les trois voies UE-légales, afin de décider quelle voie utiliser selon le cas d'usage.
 
-**Contexte** : la décision cloud-vs-local dépend du volume, de la confidentialité et de la réversibilité. Ce tableau est la synthèse opérationnelle du verdict SOTA de [02-6](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb).
+**Contexte** : la décision cloud-vs-local dépend du volume, de la confidentialité et de la réversibilité. Ce tableau est la synthèse opérationnelle du verdict SOTA de [02-6](../02-Advanced/02-6-Video-Architecture-Licensing.ipynb).
 
 **Indices** :
 - `# Étape 1` : définir une liste de dictionnaires (un par voie) avec les 6 champs.
 - `# Étape 2` : les coûts H3 cloud viennent de la grille MiniMax Open Platform (~$0.5-1/génération 2K).
 - `# Étape 3` : indiquer la **reversibilité** (le cloud n'est pas réversible ; les poids CogVideoX/LTX-2 le sont). Retourner la liste, ou None.",,,,,,,,3d798a1e64549c57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex3-code,code,fr,6fa3219fb83750b9,"def build_comparison_table() -> list:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,ex3-code,code,fr,6fa3219fb83750b9,"def build_comparison_table() -> list:
     """"""Construit le tableau comparatif des trois voies de génération vidéo en UE.
 
     Returns:
@@ -20565,16 +20565,16 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 
 print(""Exercice 3 — tableau comparatif :"", build_comparison_table())",,,,,,,,6fa3219fb83750b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,conclusion,markdown,fr,163e6761e1fefb78,"## Section 3 — Conclusion
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,conclusion,markdown,fr,163e6761e1fefb78,"## Section 3 — Conclusion
 
 ### Verdict SOTA consolidé
 
 | Notebook | Voie | Verdict | Ce qu'elle offre en UE |
 |----------|------|---------|------------------------|
-| [02-6](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) | H3 *poids* auto-hébergés | **INTRINSIC** | Rien (UE exclue par la Community License) |
+| [02-6](../02-Advanced/02-6-Video-Architecture-Licensing.ipynb) | H3 *poids* auto-hébergés | **INTRINSIC** | Rien (UE exclue par la Community License) |
 | [02-7](../02-Advanced/) | CogVideoX-2b local | Local libre | 480p, muet, Apache-2.0 |
 | **04-5 (ce notebook)** | **H3 service cloud** | **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)** | **HD/2K + audio stéréo + omni-référence** — capacité du service, non exerçable sur ce carnet : la série y est bloquée par le plan |
-| [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) | video-01 /v1 cloud | **SOTA-OK (plan-couvert)** | Vidéo muette ; une réponse HTTP 200 et un identifiant de tâche sont conservés dans la sortie du carnet |
+| [04-5b](04-5b-Video-Cloud-API-v1.ipynb) | video-01 /v1 cloud | **SOTA-OK (plan-couvert)** | Vidéo muette ; une réponse HTTP 200 et un identifiant de tâche sont conservés dans la sortie du carnet |
 
 ### Réversibilité et souveraineté
 
@@ -20583,28 +20583,28 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 ### Points à retenir
 
-1. **Bifurcation juridique** : licence des poids (UE exclue, INTRINSIC) ≠ ToS du service (UE ouverte, SOTA-OK). L'**entitlement** est une troisième dimension, distincte des deux précédentes : la série H3 y est bloquée par le plan (400 TokenPlan 2013) → `RECOVERABLE-USER-HAND` sur ce carnet. Le verdict complet est identique à celui porté par [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb).
+1. **Bifurcation juridique** : licence des poids (UE exclue, INTRINSIC) ≠ ToS du service (UE ouverte, SOTA-OK). L'**entitlement** est une troisième dimension, distincte des deux précédentes : la série H3 y est bloquée par le plan (400 TokenPlan 2013) → `RECOVERABLE-USER-HAND` sur ce carnet. Le verdict complet est identique à celui porté par [04-5b](04-5b-Video-Cloud-API-v1.ipynb).
 2. **Idempotence** : `MINIMAX_SPEND_QUOTA=0` protège le quota de 5 générations/jour ; une réponse JSON et des fichiers de résultat **permettraient** de documenter une génération — ici il n'y en a aucun (mode squelette, colonne `Artefact` = `non`).
 3. **Capacité distinctive** : HD/2K + audio stéréo natif synchronisé + entrées omni-références — illustrée par deux scénarios en mode squelette, sans résultat généré dans ce carnet.
-4. **Aucun `.mp4` commité** : les originaux HD vont sur GDrive privé. Sur ce carnet, le dépôt ne garde même pas de preuve légère (aucun artefact H3 commité) ; les traces de la famille : réponse à une requête embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (sortie de cellule) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
+4. **Aucun `.mp4` commité** : les originaux HD vont sur GDrive privé. Sur ce carnet, le dépôt ne garde même pas de preuve légère (aucun artefact H3 commité) ; les traces de la famille : réponse à une requête embarquée dans [04-5b](04-5b-Video-Cloud-API-v1.ipynb) (sortie de cellule) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
 
-> **Pour aller plus loin** : combiner ce notebook avec [02-5 (LTX-2)](../02-Advanced/02-5-LTX2-Audiovisual.ipynb) pour un pipeline hybride cloud-souverain (H3 cloud pour la qualité, LTX-2 local pour la réversibilité).",,,,,,,,163e6761e1fefb78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,footer,markdown,fr,91c4c6f9c6993707,"***
+> **Pour aller plus loin** : combiner ce notebook avec [02-5 (LTX-2)](../02-Advanced/02-5-Video-Audio-Conjoint.ipynb) pour un pipeline hybride cloud-souverain (H3 cloud pour la qualité, LTX-2 local pour la réversibilité).",,,,,,,,163e6761e1fefb78,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,footer,markdown,fr,91c4c6f9c6993707,"***
 
 **Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
 
 *MiniMax H3 (Hailuo) — Génération vidéo par le service cloud · Module 04-Applications · voie cloud OUVERTE en UE (ToS service), auto-hébergement INTRINSIC (Community License).*",,,,,,,,91c4c6f9c6993707,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,18bb67e1,code,fr,2b69304f3d382e6c,"# Parameters
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,18bb67e1,code,fr,2b69304f3d382e6c,"# Parameters
 MINIMAX_SPEND_QUOTA = 1
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,2b69304f3d382e6c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,05aa98a2,markdown,fr,4c4c1824966fda79,"# MiniMax video-01 (v1) — Service cloud generation video via `/v1/video_generation`
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,05aa98a2,markdown,fr,4c4c1824966fda79,"# MiniMax video-01 (v1) — Service cloud generation video via `/v1/video_generation`
 
 **Module :** 04-Applications
 **Niveau :** Applications
 **Technologies :** MiniMax Hailuo API (Open Platform), httpx, matplotlib, Pillow
-**Prerequisites :** [02-6-MiniMax-H3-Architecture-Licensing.ipynb](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) (bifurcation juridique UE/locked-territory), [04-5-MiniMax-H3-Cloud-Video.ipynb](04-5-MiniMax-H3-Cloud-Video.ipynb) (chemin cloud H3/v2)
+**Prerequisites :** [02-6-Video-Architecture-Licensing.ipynb](../02-Advanced/02-6-Video-Architecture-Licensing.ipynb) (bifurcation juridique UE/locked-territory), [04-5-Video-Cloud-API.ipynb](04-5-Video-Cloud-API.ipynb) (chemin cloud H3/v2)
 
 ***
 
@@ -20620,7 +20620,7 @@ Ce notebook documente le **chemin cloud V1** : endpoint `/v1`, modele `video-01`
 **Statut cle** : `MINIMAX_GENAI_API_KEY` non livree au worker **au moment de la redaction** (cf. `Minimax-H3 verdict requalification`, PR #10312). Notebook **execut-able SANS cle** : la sonde HTTP et les fonctions de lecture sont des stubs type-checkes qui rendent un verdict structurel sur les payloads/responses (`DESCRIPTIF_STUB`), **sans POST reel**.
 
 La cle a neanmoins ete delivree depuis : la **sortie commitee** de la cellule de validation enregistre une requete reelle acceptee (`""sent"": true`, `""actual_status"": 200`, `task_id` `431137218855159`, plafond d'une requete annonce pour cette sonde). Le regime « sans POST reel » decrit donc le **mode par defaut sans cle**, pas la sortie de ce carnet — les deux regimes coexistent ici, et la section « Lecture chiffree » montre le second.",,,,,,,,4c4c1824966fda79,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,3356d140,code,fr,d448910f0d3d40c4,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,3356d140,code,fr,d448910f0d3d40c4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -20637,7 +20637,7 @@ if ""MINIMAX_SPEND_QUOTA"" not in globals():
 MINIMAX_VIDEO_ENDPOINT = ""https://api.minimax.io/v1/video_generation""
 MINIMAX_VIDEO_MODEL = ""video-01""
 ",,,,,,,,d448910f0d3d40c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b3f3c0b,code,fr,16a2bce80eb394df,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,5b3f3c0b,code,fr,16a2bce80eb394df,"# Setup environnement et imports
 import os
 import json
 import time
@@ -20684,13 +20684,13 @@ print(f""OutDir: assets/video01-v1-cloud/  ({_OUT_DIR.exists()})"")
 print(f""UTC   : {datetime.now(timezone.utc).isoformat(timespec='seconds')}"")
 print(""="" * 70)
 ",,,,,,,,16a2bce80eb394df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,530cdf98,markdown,fr,bb84fab9d8769f09,"## Section 1 — Verdict table serie × endpoint (pivot G.9)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,530cdf98,markdown,fr,bb84fab9d8769f09,"## Section 1 — Verdict table serie × endpoint (pivot G.9)
 
 Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au service**. La sonde par-serie × par-endpoint tranche, pas un refus isole. Tableau ci-dessous recapitule les POST non-brulants envoyes en cycle 196 (une requete video-01/v1 acceptee ; les autres reponses sont des refus) :
 
 | Serie / Modele | Endpoint | HTTP | Message | Verdict |
 |----------------|----------|------|---------|---------|
-| `MiniMax-H3` | `/v2/video_generation` | 400 | `TokenPlan or Credit does not currently support MiniMax-H3 series models` (2013) | **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)** — l'entitlement de la serie H3 est bloque par le plan ; le ToS du service, lui, reste ouvert en UE. Ce verdict est celui que porte [04-5](04-5-MiniMax-H3-Cloud-Video.ipynb) |
+| `MiniMax-H3` | `/v2/video_generation` | 400 | `TokenPlan or Credit does not currently support MiniMax-H3 series models` (2013) | **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)** — l'entitlement de la serie H3 est bloque par le plan ; le ToS du service, lui, reste ouvert en UE. Ce verdict est celui que porte [04-5](04-5-Video-Cloud-API.ipynb) |
 | `MiniMax-Hailuo-02` | `/v2/video_generation` | 400 | `this model is not supported by /v2/video_generation` | endpoint H3-only, pas refusal d'entitlement |
 | `video-01` | `/v2/video_generation` | 400 | idem | idem |
 | `Hailuo-01` | `/v2/video_generation` | 400 | idem | idem |
@@ -20702,7 +20702,7 @@ Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au se
 **Lecon sur `/v1/models`** : cet endpoint enumere **uniquement les modeles texte** (chat-completions : `MiniMax-M3`, `M2.7`, `M2.5`, `M2.1`, `M2`). Surface **separée** pour les modeles video (`/v1/video_generation`, `/v2/video_generation`). Ne pas l'utiliser pour enumerer les candidats video.
 
 **Lecon sur les endpoints /v1 vs /v2** : `/v2/video_generation` est H3-only (la serie refusee) ; `/v1/video_generation` couvre `video-01`/`Hailuo` (la serie qui marche). Series differentes sur endpoints differents — POST `/v2` avec `video-01` renvoie « not supported by this endpoint », PAS un refus d'entitlement.",,,,,,,,bb84fab9d8769f09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,1e78d332,code,fr,cd3d77d7c29c84e3,"# Sonde POST non-brulante : definie pour reutilisation future (cle dispo + spend_quota=True)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,1e78d332,code,fr,cd3d77d7c29c84e3,"# Sonde POST non-brulante : definie pour reutilisation future (cle dispo + spend_quota=True)
 # IMPORTANT : par defaut NO_POST=True. La sonde ne brulera jamais de generation sans :
 #   (a) cle reellement disponible
 #   (b) MINIMAX_SPEND_QUOTA=1 (consentement explicite)
@@ -20780,7 +20780,7 @@ def probe_minimax_video(
             ""verdict"": f""EXC_{type(e).__name__}"",
         }
 ",,,,,,,,cd3d77d7c29c84e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,07a68054,markdown,fr,57c30d4ccd4172c3,"## Section 2 — Methodologie de probe (le « comment »)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,07a68054,markdown,fr,57c30d4ccd4172c3,"## Section 2 — Methodologie de probe (le « comment »)
 
 Cinq regles enseignees par ce notebook :
 
@@ -20789,7 +20789,7 @@ Cinq regles enseignees par ce notebook :
 3. **Secrets-hygiene regle 2/3** : `os.getenv(""MINIMAX_GENAI_API_KEY"")` **SANS** default literal. Si manquant : mode descriptif explicite (pas de « absent » maquille en cle partielle).
 4. **Plafond annonce pour la session de probe** — consigne de l'operateur pour limiter la depense, distincte de la regle du service. La fonction teste la cle et l'autorisation de POST, mais ne compte pas les appels : il faut suivre ce plafond separement.
 5. **Refus scope serie × endpoint ≠ refus du service** — extrapoler un seul 400 a l'ensemble du service est une **erreur G.9** classique. Sonder les autres series + endpoints AVANT de remonter un verdict d'entitlement.",,,,,,,,57c30d4ccd4172c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,58232ace,code,fr,24fdfc933b555702,"# Validation : mode descriptif par defaut ; generation reelle si cle + MINIMAX_SPEND_QUOTA=1
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,58232ace,code,fr,24fdfc933b555702,"# Validation : mode descriptif par defaut ; generation reelle si cle + MINIMAX_SPEND_QUOTA=1
 _spend_enabled = bool(MINIMAX_SPEND_QUOTA and _KEY_AVAILABLE)
 result = probe_minimax_video(
     payload={""prompt"": ""a cat walking in a garden"", ""duration"": 6, ""resolution"": ""720p""},
@@ -20807,7 +20807,7 @@ print(f""Endpoint : {result['endpoint']}"")
 print(f""Model    : {result['model']}"")
 print(""="" * 70)
 ",,,,,,,,24fdfc933b555702,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,4431ef15,markdown,fr,836c15eed45667cd,"### Interpretation — le verdict DESCRIPTIF_STUB est une feature, pas un echec
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,4431ef15,markdown,fr,836c15eed45667cd,"### Interpretation — le verdict DESCRIPTIF_STUB est une feature, pas un echec
 
 Tant que `MINIMAX_GENAI_API_KEY` n'est pas livree, le notebook reste **execut-able SANS cle** et rend un verdict structurel (`DESCRIPTIF_STUB`) sur la forme des requetes/responses. C'est la **meme posture cle que 04-5** : key-gated skeleton.
 
@@ -20816,7 +20816,7 @@ Trois garanties portees par ce mode descriptif :
 - **0 generation reelle debit** — la sonde ne POST jamais sans `no_post=False` ET cle ET quota=1. Plafond=1 du cycle 196 preserve.
 - **Verdict structurel reproductible** — la sortie de la sonde est deterministe (meme payload, meme verdict). Permet de tester les exercices sans dependre d'un service externe.
 - **Migration vers mode generation triviale** : passer `MINIMAX_SPEND_QUOTA=1`, livrer `MINIMAX_GENAI_API_KEY`, appeler `probe_minimax_video(payload=..., no_post=False)`. La sonde bascule en mode reel sans autre changement de code.",,,,,,,,836c15eed45667cd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,41e8ef86,markdown,fr,b794e04001fdca7c,"## Section 3 — Exercices
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,41e8ef86,markdown,fr,b794e04001fdca7c,"## Section 3 — Exercices
 
 ### Exercice 1 — Predire le verdict d'une sonde sur une serie/endpoint inconnus
 
@@ -20830,7 +20830,7 @@ def predict_verdict(series: str, endpoint: str) -> str:
 ```
 
 **Hint** : utiliser un `dict` littera `{ (serie, endpoint): verdict }` ou un `set` de combinaisons valides.",,,,,,,,b794e04001fdca7c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b4ada2b,code,fr,bb18a1a7eb5b8e8d,"def predict_verdict(series: str, endpoint: str) -> str:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,5b4ada2b,code,fr,bb18a1a7eb5b8e8d,"def predict_verdict(series: str, endpoint: str) -> str:
     """"""A partir de la table Section 1, renvoie le verdict d'une combinaison serie/endpoint.
 
     Cas a supporter :
@@ -20852,14 +20852,14 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
     # TODO etudiant : implementer la table de verdit et la logique de lookup.
     return None  # placeholder
 ",,,,,,,,bb18a1a7eb5b8e8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b79f8d7,markdown,fr,18fb851ff29e4710,"### Exercice 2 — Compteur de debit journalier (anti-burn-quota)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,5b79f8d7,markdown,fr,18fb851ff29e4710,"### Exercice 2 — Compteur de debit journalier (anti-burn-quota)
 
 **Objectif** : ecrire une fonction `daily_debit_count(log_path)` qui parse un fichier de log ligne-par-ligne (format `timestamp|status|model|task_id`) et renvoie le nombre de requetes acceptees (status=200), sur la journee courante (UTC), sans etablir leur achevement.
 
 **Application** : c'est exactement le garde-fou qui empeche de bruler le quota 5/jour du provider en cycle d'audit — verifier AVANT chaque POST reel.
 
 **Hint** : utiliser `datetime.now(timezone.utc).date()` pour comparer au timestamp de chaque ligne.",,,,,,,,18fb851ff29e4710,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,c37f87eb,code,fr,0e39f1e6ec60de02,"def daily_debit_count(log_path: Path) -> int:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,c37f87eb,code,fr,0e39f1e6ec60de02,"def daily_debit_count(log_path: Path) -> int:
     """"""Compte les generations reussies (status=200) sur la journee courante (UTC).
 
     Format attendu par ligne : ""timestamp|status|model|task_id""
@@ -20875,12 +20875,12 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
     # ET meme journee UTC, compter.
     return None  # placeholder
 ",,,,,,,,0e39f1e6ec60de02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,148b7944,markdown,fr,7146533b1118f7e4,"### Exercice 3 — Tableau comparatif video-01/v1 vs H3/v2 (verdict SOTA consolide)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,148b7944,markdown,fr,7146533b1118f7e4,"### Exercice 3 — Tableau comparatif video-01/v1 vs H3/v2 (verdict SOTA consolide)
 
 **Objectif** : construire un tableau comparatif synthetique des **deux** chemins cloud documentes dans le depot (ce notebook + 04-5) avec les colonnes : `(endpoint, modele, audio_natif, resolution_max, licence_ue, depense_par_5gen, verdict_entitlement)`. Renvoyer une `list[dict]`.
 
 **Application** : c'est le recapitulatif qu'attend un lecteur choisit sa voie : si l'audio natif est requis → H3/v2 avec licence UE bloquee dans certains territoires ; sinon → video-01/v1 plan-couvert, video muet suffit. Le choix depend du cas d'usage.",,,,,,,,7146533b1118f7e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,52cfe930,code,fr,2241abb3522d8dcd,"def build_cloud_video_comparison_table() -> list:
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,52cfe930,code,fr,2241abb3522d8dcd,"def build_cloud_video_comparison_table() -> list:
     """"""Construit le tableau comparatif video-01/v1 vs H3/v2 (chemins cloud MiniMax documentes).
 
     Returns:
@@ -20891,26 +20891,26 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
     # connues de la probe cycle 196.
     return None  # placeholder
 ",,,,,,,,2241abb3522d8dcd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,618f3667,markdown,fr,7e836182ec5a5e83,"## Section 4 — Verdict SOTA consolide (cross-series)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,618f3667,markdown,fr,7e836182ec5a5e83,"## Section 4 — Verdict SOTA consolide (cross-series)
 
 | Notebook | Endpoint | Modele | Verdict | Audio | UE-licence | Cout indicatif |
 |----------|----------|--------|---------|-------|-----------|----------------|
 | CogVideoX-2b local | local (RTX 3090) | `THUDM/CogVideoX-2b` | **SOTA-OK** | muet | Apache-2.0 | 0 (cout GPU local) |
-| [04-5 MiniMax-H3/v2 cloud](04-5-MiniMax-H3-Cloud-Video.ipynb) | `/v2/video_generation` | `MiniMax-H3` | **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)** | **oui (HD/2K + audio natif synchronise)** | ToS service : UE ouverte (la Community License ne concerne que les poids auto-heberges, hors ligne) | ~5 generations / 5j |
+| [04-5 MiniMax-H3/v2 cloud](04-5-Video-Cloud-API.ipynb) | `/v2/video_generation` | `MiniMax-H3` | **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)** | **oui (HD/2K + audio natif synchronise)** | ToS service : UE ouverte (la Community License ne concerne que les poids auto-heberges, hors ligne) | ~5 generations / 5j |
 | **04-5b MiniMax-video-01/v1 (ce notebook)** | **`/v1/video_generation`** | **`video-01`** | **SOTA-OK (plan-couvert)** | muet | UE (Pas d'exclusion territoriale trouvee dans les 3 instruments lus) | identique 04-5 |
 | [04-4 Production Video Pipeline](04-4-Production-Video-Pipeline.ipynb) | orchestrateur local | multiplexe + chainage de scenes | **verdict herite des briques** (pas de SOTA propre a l'orchestrateur) | selon briques | selon briques | selon briques |
 
 **Verdict concentre** :
 
 - Pour la **video sans audio** en UE : **video-01/v1** est la voie cloud immediatement disponible avec le plan actuel (quota annonce de 5 generations / jour ; reponses acceptees dans l'audit et la sortie de ce carnet).
-- Pour la **video + audio natif** : seul **H3/v2** le permet (HD/2K + audio stereo). H3 est bloque par 2013 TokenPlan dans cette org — verdict **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)**, **identique** a celui porte par [04-5](04-5-MiniMax-H3-Cloud-Video.ipynb) ; l'escalade `RECOVERABLE-USER-HAND` est necessaire si le use-case exige l'audio.
+- Pour la **video + audio natif** : seul **H3/v2** le permet (HD/2K + audio stereo). H3 est bloque par 2013 TokenPlan dans cette org — verdict **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)**, **identique** a celui porte par [04-5](04-5-Video-Cloud-API.ipynb) ; l'escalade `RECOVERABLE-USER-HAND` est necessaire si le use-case exige l'audio.
 - Pour la **video offline / pas de cle API / GPU disponible** : `02-7` CogVideoX-2b local (Apache-2.0).
 
 **Lecon G.9 retenons** : extrapoler un refus isole a l'ensemble d'un service est une erreur frequente. Sonder serie × endpoint en tableau, pas par un seul POST.
 
 ***
 
-**Navigation** : [<< 04-5 H3/v2 cloud](04-5-MiniMax-H3-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
+**Navigation** : [<< 04-5 H3/v2 cloud](04-5-Video-Cloud-API.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
 
 *MiniMax video-01 (v1) — Generation video par service cloud `/v1/video_generation`, modele `video-01` (Hailuo line, muet), plan-couvert UE.*",,,,,,,,7e836182ec5a5e83,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,bec0f46c,code,fr,d8cfd07b7b0f3965,"# Parameters
@@ -21810,7 +21810,7 @@ La sortie « Mode batch - Interface interactive desactivee » indique que la cel
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb,lecture-stats-session,markdown,fr,37d40fc2bc564555,"### Lecture du résultat : bilan de la session
 
 La sortie récapitule la session du 2026-08-15 06:49:42 : modèle `tencent/HunyuanVideo`, quantification INT8, device cuda, 25 frames à 20 steps (CFG 7.0) en 896x512, et « VRAM pic session : N/A (backend distant ComfyUI) ». Elle liste les fichiers générés — de `hunyuan_timelapse_44.mp4` (13.4 KB) à `hunyuan_cfg_42.mp4` (288.4 KB) — puis les quatre prochaines étapes du Module 02 (LTX-Video, Wan, SVD, Module 03).",,,,,,,,37d40fc2bc564555,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,t2v-lecture,markdown,fr,da1f60d6d543aeaf,"### Lecture du résultat : text-to-video
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,t2v-lecture,markdown,fr,da1f60d6d543aeaf,"### Lecture du résultat : text-to-video
 
 La figure montre 8 frames prises parmi les 25 générées (1, 4, 7, 11, 14, 18, 21, 25) pour le prompt « a butterfly landing on a colorful flower in a garden, macro photography, soft bokeh background, natural lighting ». On y voit un fond vert flou, en bokeh, avec une tache claire jaune-vert au centre-droit. Le papillon et la fleur annoncés par le prompt ne sont pas identifiables sur ces miniatures, et les huit frames se ressemblent beaucoup : à cette échelle, le mouvement est peu visible.
 
@@ -21822,10 +21822,10 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,fb9ed064
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,3e4ebee39c2b49ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,7b27ffd8,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,7b27ffd8,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb,b3f1d90c,markdown,fr,b9234273c617e6e5,"### Lecture de la matrice
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb,b3f1d90c,markdown,fr,b9234273c617e6e5,"### Lecture de la matrice
 
 La liste « utilisables en UE » ne retient pas HunyuanVideo. Sa licence, la *Tencent Hunyuan Community License*, définit le *Territory* comme « the worldwide territory, excluding the territory of the European Union, United Kingdom and South Korea » (section 1, point l), et son en-tête annonce la même exclusion en capitales. Le champ `geo_restricted_ue` se déduit donc de la clause territoriale du texte primaire, et non d'un résumé du modèle.
 
@@ -22121,7 +22121,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 
 ## Section 3 : Effets stop-motion et color grading
 ",,,,,,,,d3e03997467f2dc2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,9c7fe07f,markdown,fr,4f58e1f30d5682a2,"### Exemple guidé — Les contrôles de la mesure (pourquoi le PNG ne mesure rien)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,9c7fe07f,markdown,fr,4f58e1f30d5682a2,"### Exemple guidé — Les contrôles de la mesure (pourquoi le PNG ne mesure rien)
 
 L'exercice 2 exige une mesure sur les échantillons ; les deux contrôles qui le prouvent sont joués ici sur des **signaux synthétiques locaux** (aucun service, aucune clé, aucun réseau) :
 
@@ -22129,7 +22129,7 @@ L'exercice 2 exige une mesure sur les échantillons ; les deux contrôles qui le
 2. **Invariance au rendu** : deux PNG différents du même signal. Les dessins diffèrent (taille, gris moyen — statistiques d'image), les mesures sur échantillons ne changent pas : la source de la mesure est la piste décodée, jamais le dessin.
 
 Application directe du contrat de mesure du corpus ([02-3-MusicGen](../../Audio/02-Advanced/02-3-MusicGen-Generation.ipynb) c22).",,,,,,,,4f58e1f30d5682a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,9be7c4de,code,fr,e5e2a5ec99198876,"# Exemple guidé : contrôles de la mesure audio (100% local, déterministe).
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb,9be7c4de,code,fr,e5e2a5ec99198876,"# Exemple guidé : contrôles de la mesure audio (100% local, déterministe).
 import io
 import numpy as np
 from PIL import Image
@@ -22176,7 +22176,7 @@ for tag, figsize, dpi in ((""A"", (8, 2), 100), (""B"", (4, 1.2), 200)):
           f""  (statistique d'image : le dessin change)"")
 print(f""  mesures sur échantillons (source PCM) : {stats_pcm(sig)}"")
 print(""  -> identiques quel que soit le rendu : la mesure ne lit jamais le dessin."")",,,,,,,,e5e2a5ec99198876,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,6db27ef8,markdown,fr,97f21048b5293cda,"**Lecture chiffree — le verdict OK atteste une requete acceptee.** La sortie commitee de la cellule de validation rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a soumis une requete avec le quota journalier autorise — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : cette reponse provient du service ; elle ne montre ni la fin de la generation ni un fichier video obtenu.
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb,6db27ef8,markdown,fr,97f21048b5293cda,"**Lecture chiffree — le verdict OK atteste une requete acceptee.** La sortie commitee de la cellule de validation rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a soumis une requete avec le quota journalier autorise — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : cette reponse provient du service ; elle ne montre ni la fin de la generation ni un fichier video obtenu.
 
 **Et le mode descriptif ?** Tant que `MINIMAX_GENAI_API_KEY` n'est pas livree, le notebook reste **execut-able SANS cle** et rend un verdict structurel (`DESCRIPTIF_STUB`) sur la forme des requetes/responses. C'est la **meme posture cle que 04-5** : key-gated skeleton.
 
@@ -22559,13 +22559,13 @@ MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb,c
 ffmpeg-python permet d'interroger les metadonnees d'un fichier video sans le decoder entierement.
 C'est beaucoup plus rapide que de charger la video complete.
 ",,,,,,,,6820487531051c1a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,a29l0601,markdown,fr,73e5ee9ce80ae5bb,"### Lecture du résultat : l'environnement vérifié d'un coup
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,a29l0601,markdown,fr,73e5ee9ce80ae5bb,"### Lecture du résultat : l'environnement vérifié d'un coup
 
 La sortie confirme une **NVIDIA GeForce RTX 4090** — 24.0 GB de VRAM entièrement libres, CUDA 12.6 — puis valide les **six** dépendances de la chaîne text-to-video avec leurs versions : `diffusers` 0.39.0 (le pipeline `LTXPipeline`), `transformers` 5.13.0 (l'encodeur de texte T5-XXL), `sentencepiece` 0.2.2 et `protobuf` 7.35.1 — indispensables pour reconstruire le tokenizer du T5 depuis le binaire `spiece.model` —, enfin `imageio` 2.37.4 et `imageio-ffmpeg` 0.6.0 pour l'export MP4. Le drapeau final `Device : cuda` et les deux autorisations (`Generation activee : True`, `Image-to-video activee : True`) disent que ce carnet s'exécutera en **mode réel** : les vidéos des sections suivantes sont de vraies générations mesurées, pas des illustrations préchargées.",,,,,,,,73e5ee9ce80ae5bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,a29l0802,markdown,fr,6066922c219ebf75,"### Lecture du résultat : 13.3 GB résidents, 16 secondes de chargement
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,a29l0802,markdown,fr,6066922c219ebf75,"### Lecture du résultat : 13.3 GB résidents, 16 secondes de chargement
 
 Le pipeline vient du Hub (`Lightricks/LTX-Video`) : les barres de progression de la sortie couvrent **cinq** composants — dont les fichiers de poids répartis en deux shards de checkpoint, le plus volumineux étant l'encodeur T5-XXL. Sur cette RTX 4090 à 24 GB, le code prend la branche **placement direct** : l'offload CPU (échange des couches GPU ↔ RAM) n'est activé que sous 16 GB de VRAM. À l'issue du chargement, **13.3 GB** résident en VRAM — le reste de la carte couvrira le pic de génération, mesuré à 14.1 GB en fin de session. Le VAE est découpé par lots (`pipe.vae.enable_slicing()`, forme courante de l'API depuis diffusers 0.33) pour borner la mémoire du décodage des frames ; la résolution de travail est 704×480.",,,,,,,,6066922c219ebf75,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,a29l3403,markdown,fr,af0b8eb60a2fb60f,"### Lecture du résultat : le bilan de session
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,a29l3403,markdown,fr,af0b8eb60a2fb60f,"### Lecture du résultat : le bilan de session
 
 Le pic VRAM de la session est de **14.1 GB** — à peine 0.8 GB au-dessus des 13.3 GB du pipeline résident : la génération elle-même est presque gratuite en mémoire. Les trois artefacts produits pèsent ensemble moins de 130 Ko : `ltx_demo.mp4` (**33.1 KB**), `ltx_img2vid.mp4` (**92.6 KB**) et l'image de test (2.7 KB) — à mettre en regard des ~13 GB de poids du modèle : c'est la compression vidéo, pas le réseau, qui fixe la taille des fichiers. La VRAM est explicitement libérée (`torch.cuda.empty_cache()`) avant la conclusion.",,,,,,,,af0b8eb60a2fb60f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-1-Educational-Video-Generation.ipynb,02c896ab,markdown,fr,7d427a6b259fe2f1,"### Interpretation : Transitions
@@ -22582,6 +22582,6 @@ Sur l'execution commise, les sept slides (4 a 8 s d'affichage) produisent chacun
 1. Les transitions sont generees frame par frame en memoire avant l'encodage
 2. La consommation memoire est proportionnelle au nombre total de frames
 3. Pour de longues videos, il faudrait un encodage en streaming plutot qu'en memoire",,,,,,,,7d427a6b259fe2f1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,c5c51543,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,c5c51543,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,

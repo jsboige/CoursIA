@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tests for scripts/quarto_render_timing.py.
+"""Tests for scripts/ci/quarto_render_timing.py.
 
 The script is a measurement, not a gate (it always exits 0 -- a Quarto
 log-format change must degrade the report, never break a build). What must

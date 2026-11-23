@@ -37,7 +37,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-RGQR = REPO_ROOT / "scripts" / "regen_quarto_render.py"
+RGQR = REPO_ROOT / "scripts" / "ci" / "regen_quarto_render.py"
 
 # CB-01 est tracked sur origin/main (CB-00 ne l'est pas encore -- PR #19310
 # non mergee). On l'utilise comme cible de reference pour les temoins qui ont

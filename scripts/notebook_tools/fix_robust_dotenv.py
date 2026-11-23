@@ -127,7 +127,7 @@ def main():
             'Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb',
             'Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb',
             'Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb',
-            'Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb',
+            'Video/02-Advanced/02-2-Generation-Video-Legere.ipynb',
             'Video/02-Advanced/02-3-Wan-Video-Generation.ipynb',
             'Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb',
             'Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb',

@@ -644,7 +644,7 @@ def test_canonical_transition_scoped_series_02ml_310_accepted():
     # elargissement, il ne fuit pas.
     assert ckd.accepted_canonical_transition(
         a, b,
-        nb_path=("MyIA.AI.Notebooks/Complexity/"
+        nb_path=("MyIA.AI.Notebooks/InformationCalcul/Complexity/"
                  "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"),
     ) is False
 
@@ -664,7 +664,7 @@ def test_canonical_transition_scoped_series_does_not_leak_outside():
     # c'est le carnet jumeau ``GameTheory-annexe/`` qui garde la frontiere
     # du prefixe -- ``GameTheory-annexe/`` n'est pas ``GameTheory/``.
     for path in (
-        "MyIA.AI.Notebooks/Complexity/"
+        "MyIA.AI.Notebooks/InformationCalcul/Complexity/"
         "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb",
         "MyIA.AI.Notebooks/GameTheory-annexe/x.ipynb",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours-autre/x.ipynb",

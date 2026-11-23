@@ -50,7 +50,7 @@ Les paramètres `entries` et `seed` choisissent la règle d'entrée :
 
 Le tirage ne dépend d'aucun état du portefeuille : à graine égale, toutes les variantes reçoivent les mêmes lignes, comme dans le carnet.
 
-Les paramètres `start_date` et `end_date` (format `AAAA-MM-JJ`) bornent la fenêtre.
+Les paramètres `start` et `end` (format `AAAA-MM-JJ`), lus sans défaut, bornent la fenêtre (contrat #27482).
 
 ## Résultats
 
