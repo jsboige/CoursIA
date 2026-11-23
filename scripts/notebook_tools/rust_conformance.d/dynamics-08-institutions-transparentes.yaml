@@ -1,0 +1,210 @@
+# Triplet Dynamics-08 : jumeau Python + jumeau C# + portage Rust (issue #27963, lot 8 Rust std).
+# Les trois carnets ont exactement la meme structure 42 cellules (memes indices) :
+# les cotes se correspondent par index. Cote Rust = evcxr + std seul (aucune crate).
+# Le jumeau C# imprime la meme information dans un format propre (accents,
+# espacement simple) : les grandeurs numeriques et les unilettes se comparent
+# sur les trois cotes ; les mesures textuelles byte-exactes (cloture, lignes de
+# matrice, enonces de theoremes, Open Problem 3) comparent Python contre Rust,
+# le cote C# etant declare absent avec motif pour chacune.
+- name: "Dynamics-08 Institutions transparentes"
+  family: Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Rust.ipynb
+  measures:
+    - id: atomes_certifies
+      description: "Taille du vocabulaire d'atomes des certificats (6)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Atomes certifies : (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "Atomes certifiés : (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "Atomes certifies : (\\d+)"
+          transform: int
+    - id: regles_inference
+      description: "Nombre de regles d'inference de la cloture finie (9)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "regles : (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "règles : (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "regles : (\\d+)"
+          transform: int
+    - id: action_cupod_db
+      description: "Action de CUPOC contre DefectBot a k par defaut (D, exemple 3.1 de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "CUPOD +contre DefectBot +-> (\\w)"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "CUPOD +contre DefectBot +-> (\\w)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "CUPOD +contre DefectBot +-> (\\w)"
+          transform: text
+    - id: gains_ligne_du
+      description: "Ligne de gains de DUPOC dans la matrice 7x7 (3 1 5 5 1 1 1), chiffres seuls"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m)^  DU +(3 +1 +5 +5 +1 +1 +1)$"
+          transform: digits
+        csharp:
+          cell: 14
+          pattern: "(?m)^DUPOC +(3 1 5 5 1 1 1)$"
+          transform: digits
+        rust:
+          cell: 14
+          pattern: "(?m)^  DU +(3 +1 +5 +5 +1 +1 +1)$"
+          transform: digits
+    - id: bascule_cupod_k
+      description: "Borne k a laquelle CUPOD bascule contre DefectBot (2 tours)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "k atteint (\\d+) tours"
+          transform: int
+        csharp:
+          cell: 25
+          pattern: "bascule à k=(\\d+)"
+          transform: int
+        rust:
+          cell: 25
+          pattern: "k atteint (\\d+) tours"
+          transform: int
+    - id: verif_premisses
+      description: "Premisses du verificateur independant (8)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: "(\\d+) premisses"
+          transform: int
+        csharp:
+          cell: 29
+          pattern: "(\\d+) premisses"
+          transform: int
+        rust:
+          cell: 29
+          pattern: "(\\d+) premisses"
+          transform: int
+    - id: paires_comparees
+      description: "Paires ordonnees comparees moteur contre verificateur (49)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "Paires ordonnees comparees : (\\d+)"
+          transform: int
+        csharp:
+          cell: 31
+          pattern: "Paires ordonnees comparees : (\\d+)"
+          transform: int
+        rust:
+          cell: 31
+          pattern: "Paires ordonnees comparees : (\\d+)"
+          transform: int
+    - id: desaccords_verificateur
+      description: "Desaccords moteur / verificateur sur les 49 paires (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "Desaccords moteur / verificateur : (\\d+)"
+          transform: int
+        csharp:
+          cell: 31
+          pattern: "Desaccords moteur / verificateur : (\\d+)"
+          transform: int
+        rust:
+          cell: 31
+          pattern: "Desaccords moteur / verificateur : (\\d+)"
+          transform: int
+    - id: cloture_coopbot_k3
+      description: "Cloture(k=3) du certificat de CooperateBot, liste exacte"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "clot\\(k=3\\)=\\[([^\\]]*)\\]"
+          transform: text
+        csharp:
+          absent: "le jumeau C# imprime 'clôture=...' sans crochets ni quotes, format non comparable"
+        rust:
+          cell: 10
+          pattern: "clot\\(k=3\\)=\\[([^\\]]*)\\]"
+          transform: text
+    - id: ligne_actions_ci
+      description: "Ligne d'actions de CIMCIC dans la matrice 7x7 (D D D D D C D), theoreme 5.2(b) mis a part"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m)^  CI +(D(?: +D){4} +C +D)$"
+          transform: text
+        csharp:
+          absent: "le jumeau C# espace les jetons simple (C D D...), format non comparable cote texte"
+        rust:
+          cell: 14
+          pattern: "(?m)^  CI +(D(?: +D){4} +C +D)$"
+          transform: text
+    - id: theoreme_52a
+      description: "Theoreme 5.2(a) reproduit : outcome(CIMCIC, CIMCIC) = ('C', 'C')"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Theoreme 5\\.2\\(a\\) reproduit : outcome\\(CIMCIC, CIMCIC\\) = \\('C', 'C'\\)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# resume 'CIMCIC/CIMCIC : (C, C, 3, 3)' sans enoncer le theoreme"
+        rust:
+          cell: 17
+          pattern: "Theoreme 5\\.2\\(a\\) reproduit : outcome\\(CIMCIC, CIMCIC\\) = \\('C', 'C'\\)"
+          transform: text
+    - id: open_problem_3
+      description: "Open Problem 3 (p. 18) : la conjecture outcome(DUPOC(k), CUPOD(k)) == (D, C) reste OUVERTE"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "outcome\\(DUPOC\\(k\\), CUPOD\\(k\\)\\) == \\(D, C\\)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# resume 'Open Problem 3 reste ouvert' sans ecrire la conjecture"
+        rust:
+          cell: 35
+          pattern: "outcome\\(DUPOC\\(k\\), CUPOD\\(k\\)\\) == \\(D, C\\)"
+          transform: text
