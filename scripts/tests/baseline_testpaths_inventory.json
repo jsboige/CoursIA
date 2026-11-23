@@ -1,88 +1,12 @@
 {
   "description": "Dette connue des sens d'inventaire de #25366 (dossiers de tests non triés, basenames dupliqués) et du sens fichier de #26759 (fichiers qu'aucune jambe ne collecte). Ratchet T4 : ces entrées sont tolérées, tout finding NOUVEAU fait rougir la garde. Régénération : python scripts/check_testpaths_coverage.py --inventory --write-baseline scripts/tests/baseline_testpaths_inventory.json",
-  "duplicate_basenames": {
-    "test_catastrophe.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_compression.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_epsilon_machine.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_feature_dynamics.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_jlens_traces.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_lens_agreement.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_multiscale_agency.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_phat_self_reference.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_reversibility_budget.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_salience_valence_dissociation.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_self_sorting.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_sensitivity.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_sorting_metrics.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_strategic_morphodynamics.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_time_arrow.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_utils.py": [
-      "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/tests",
-      "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests"
-    ],
-    "test_workspace.py": [
-      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
-      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ]
-  },
+  "duplicate_basenames": {},
   "unplayed": [
     "MyIA.AI.Notebooks/GenAI/PostTraining/verifiers/test_lean_rlvr_verifier.py",
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/helpers/test_claude_cli.py",
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks/helpers/test_claudish_client.py",
     "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/test_adk_runtime.py",
     "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/test_llm_client.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_anti_derive_notebook.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_causal_organs.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_discovery_organs.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_iv_organs.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_organs.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_sensitivity_organs.py",
-    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_fairness_organs.py",
     "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/test_dm.py",
     "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/wf_framework/test_portfolio_metrics.py",
     "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/wf_framework/test_wf_framework.py",
@@ -166,7 +90,5 @@
     "scripts/tts_verification/test_mos_protocol.py",
     "scripts/tts_verification/test_syllable_variability.py"
   ],
-  "unwatched": [
-    "MyIA.AI.Notebooks/Probas/Causalite/tests"
-  ]
+  "unwatched": []
 }

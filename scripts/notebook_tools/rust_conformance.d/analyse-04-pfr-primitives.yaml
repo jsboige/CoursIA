@@ -6,8 +6,8 @@
 # Le cote C# n'existe pas pour cette serie (ANALYSE est Python + Rust seulement).
 - name: "ANALYSE-04 Primitives PFR"
   family: "SymbolicAI/Lean (ANALYSE)"
-  python: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb
-  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Rust.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Rust.ipynb
   measures:
     - id: ruzsa_test4_dxx
       description: "d[X;X] du test 4 (loi {0: 0.5, 1: 0.5} sur Z/4Z, non uniforme sur le groupe)"
