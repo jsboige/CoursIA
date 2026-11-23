@@ -59,7 +59,7 @@ Durée totale estimée : **~4-5 h** pour l'ensemble du parcours. Kernel Python 3
 | 01 | [Modèle de Toulmin](Argumentation-01-Toulmin-Model-Python.ipynb) | Déployer un argument en claim, données, garantie, appui, modalisateur et réfutation ; auditer sa complétude puis traduire les réfutations en attaques de Dung | Découverte | [Schémas de Walton](#autour-de-01--argumentation-informelle) |
 | 02 | [Détection des sophismes](Argumentation-02-Fallacies-Detection-Python.ipynb) | Charger la taxonomie Argumentum, extraire le tissu argumentatif et repérer les passages fallacieux avec un détecteur inspectable | Découverte | [Cartes Argumentum](#autour-de-02--sophismes-et-taxonomie) |
 | 03 | Sémantiques de Dung — [Python](Argumentation-03-Dung-AF-Semantics-Python.ipynb) · [Rust](Argumentation-03-Dung-AF-Semantics-Rust.ipynb) | Reconstruire les sémantiques grounded, preferred et stable en Python, sur des cas où elles ne donnent pas le même verdict ; retrouver les mêmes résultats dans le portage Rust autonome, exécuté avec evcxr | Découverte | [Valeurs, classement et ADF](#autour-de-03--argumentation-abstraite) |
-| 04 | [Dialogues protocolisés](Argumentation-04-Dialogues-Protocolises-Python.ipynb) | Lire les protocoles inquiry et persuasion de Walton–Krabbe comme des machines à états sur des actes de parole, avec des conditions de terminaison testables | Licence | [Mémoire de débat](#autour-de-04--dialogues-et-mémoire) |
+| 04 | [Dialogues protocolisés](Argumentation-04-Dialogues-Protocolises-Python.ipynb) ([C#](Argumentation-04-Dialogues-Protocolises-CSharp.ipynb)) | Lire les protocoles inquiry et persuasion de Walton–Krabbe comme des machines à états sur des actes de parole, avec des conditions de terminaison testables | Licence | [Mémoire de débat](#autour-de-04--dialogues-et-mémoire) |
 | 05 | [Vérification formelle](Argumentation-05-Formal-Verification-Python.ipynb) | Formaliser des arguments en logique propositionnelle, du premier ordre et modale ; interroger Tweety en mode fail-loud | Licence | [Routage et richesse des solveurs](#autour-de-05--vérification-formelle) |
 | 06 | [JTMS](Argumentation-06-JTMS-Python.ipynb) | Construire un moteur de croyances non monotones : étiquettes IN/OUT, rétractation en cascade et détection des boucles impaires | Licence | [ATMS et révision AGM](#autour-de-06--raisonnement-non-monotone) |
 | 07 | [Orchestration](Argumentation-07-Orchestration-Python.ipynb) | Composer les agents précédents en pipeline coordonné, avec orchestration déterministe par état et comparaison au mode conversationnel | Licence | [Canaux et modes d'orchestration](#autour-de-07--orchestration) |
@@ -90,7 +90,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 ### Autour de 04 — Dialogues et mémoire
 
-- [04b — Base de connaissances](Argumentation-04b-Knowledge-Base-Python.ipynb) : conserver la mémoire d'un débat, peupler transitivement les propositions et requêter support et attaque par négation lexicale. Le carnet mesure aussi ce que cette mémoire ne fait pas : elle ne transforme pas une contradiction en inférence arbitraire.
+- [04b — Base de connaissances](Argumentation-04b-Knowledge-Base-Python.ipynb) ([C#](Argumentation-04b-Knowledge-Base-CSharp.ipynb)) : conserver la mémoire d'un débat, peupler transitivement les propositions et requêter support et attaque par négation lexicale. Le carnet mesure aussi ce que cette mémoire ne fait pas : elle ne transforme pas une contradiction en inférence arbitraire.
 
 ### Autour de 05 — Vérification formelle
 
