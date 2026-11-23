@@ -303,12 +303,30 @@ REGISTRE: tuple[Entree, ...] = (
         # de branche ne survivra pas au squash, la comparaison tiendra par
         # la SOURCE du script puis par l'identite derivee a la fin du jour
         # de la reference.
-        reference=Reference(21.0, "2026-11-15",
-                            "PR #26349 merge de main (b73e66c94e4), "
-                            "re-mesure du 2026-11-15 sur l'arbre fusionne",
+        #
+        # NEUVIEME REBASAGE (2026-11-22, #23175) -- et le troisieme qui
+        # change la GRANDEUR : l'instrument reconnait le kernel `rust`.
+        # La vague de portage Python->Rust a pose 25 carnets `-Rust.ipynb`
+        # sur main entre le 19 et le 22/11 (git log --diff-filter=A), plus
+        # le temoin docker `witness-rust.ipynb` — soit 26 kernelspec
+        # `rust` -- kernel absent de la liste connue, meme
+        # classe de retard que .net-csharp (245), coursia-ml-training (49),
+        # pyphi (10) et coursia-py313 (2). Sur le meme arbre aligne
+        # (origin/main = cd62365c02), l'instrument d'avant rend 46 et
+        # l'instrument corrige 28 : le pouls RECULE publie ce jour par
+        # l'organe (25 -> 46) portait donc 18 unites d'artefact d'instrument
+        # pour ~3 d'increment reel du depot. Comparer 28 a 21 fabriquerait
+        # un verdict sur deux grandeurs : la reference repart NEUVE, comme
+        # le demande le critere 2 de l'issue. Le suffixe `-rust` reste
+        # hors LANG_SUFFIXES (langue potentiellement single-rendering) :
+        # c'est le kernel connu qui empeche l'ambiguite, pas le suffixe.
+        reference=Reference(28.0, "2026-11-22",
+                            "issue #23175, visite du 2026-11-22 -- re-mesure "
+                            "sur l'arbre aligne origin/main = cd62365c02, "
+                            "instrument corrige (kernel rust)",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@0ed9229a6b579541747f106ef93d405a7c377eb3")),
+                                        "@60e0bd6f6405b4cd66c432d05ff344c5642a0044")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -417,6 +435,42 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@dfa29e000a1cb77d13b825b90f0d5a2165214ab6")),
+            # Reference rebassee precedente (neuvieme point) : la mesure
+            # combinee des correctifs #5081 et #26349 sur l'arbre fusionne
+            # b73e66c94e4 (merge de branche 0ed9229a, 2026-11-15). Le sha
+            # de branche est mort au squash : comme pour le point 25
+            # ci-dessus, la serie declare l'identite RESOLVABLE de main —
+            # le squash #26349 (27e3e88afb, 2026-11-17, instrument
+            # byte-identique au merge : diff vide sur le fichier) — et date
+            # le point du jour ou cette identite est devenue derivable.
+            Reference(21.0, "2026-11-17",
+                      "issue #23175, reference rebassee precedente "
+                      "(PR #26349 merge de main b73e66c94e4 ; identite "
+                      "resoluble = squash 27e3e88afb)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@27e3e88afb76b73335b7651e064629573c96ec45")),
+            # Pouls du 2026-11-22 AVANT le neuvieme rebasage, publie par
+            # l'organe sur #5081 : la vague de portage -Rust (25 carnets
+            # `-Rust.ipynb` + le temoin docker witness-rust, kernelspec
+            # rust non reconnu) portait
+            # la grandeur de 21 a 46 -- dont 18 unites d'artefact
+            # d'instrument, revelees par le correctif (46 -> 28 sur le meme
+            # arbre). Le point reste dans la serie : l'increment REEL du
+            # depot se lit 21 -> 28, pas 21 -> 46.
+            # Produit par l'instrument au merge de branche 0ed9229a
+            # (2026-11-15), sha mort au squash et non ancetre de main :
+            # comme pour les points 25 et 21 ci-dessus, le point declare
+            # l'identite RESOLVABLE de main -- le squash #26349
+            # (27e3e88afb, instrument byte-identique au merge, diff vide
+            # sur le fichier) -- ancetre de toute derivee du 2026-11-22.
+            Reference(46.0, "2026-11-22",
+                      "issue #23175, pouls du 2026-11-22 publie par "
+                      "l'organe sur #5081 (avant correctif kernel rust ; "
+                      "identite resoluble = squash 27e3e88afb)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@27e3e88afb76b73335b7651e064629573c96ec45")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit

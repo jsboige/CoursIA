@@ -399,10 +399,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | [Opérations de Base sur les Videos](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb) | ALPHA | Non |
 | 2 | [Bonus Slideshow Vidéo - Générateur de Slideshow…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb) | BETA | Oui |
-| 3 | [GPT-5 Video Understanding - Comprehension Video par IA](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) | BETA | Non |
-| 4 | [Qwen2.5-VL Video Analysis - Comprehension Video Locale](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) | BETA | Non |
-| 5 | [Video Enhancement - Real-ESRGAN et Interpolation de…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | ALPHA | Non |
-| 6 | [AnimateDiff - Introduction a la Generation…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | BETA | Non |
+| 3 | [GPT-5 Video Understanding - Comprehension Video par IA](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-Comprehension-Video-API.ipynb) | BETA | Non |
+| 4 | [Qwen2.5-VL Video Analysis - Comprehension Video Locale](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb) | BETA | Non |
+| 5 | [Video Enhancement - Real-ESRGAN et Interpolation de…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb) | ALPHA | Non |
+| 6 | [AnimateDiff - Introduction a la Generation…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb) | BETA | Non |
 | 7 | [HunyuanVideo](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | BETA | Non |
 | 8 | [LTX-Video - Generation Video Rapide et Legere](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb) | BETA | Non |
 | 9 | [Wan 2.1/2.2 - Generation Video Multilingue](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb) | BETA | Non |
