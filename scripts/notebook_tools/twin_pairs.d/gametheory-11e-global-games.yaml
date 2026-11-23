@@ -1,0 +1,11 @@
+- name: "GameTheory-11e Global Games"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux cotes sont solver-free par construction : la forme close gaussienne et la recherche de racine sont ecrites sur la stdlib Python et sur la BCL .NET, sans solveur externe d'un cote comme de l'autre ; aucune asymetrie de machinerie a corriger."
+  known_differences:
+    - "erf : la source Python utilise math.erf de la stdlib ; le noyau .net-csharp disponible sur cette machine expose un System.Math sans Math.Erf (TFM anterieur a .NET 7), donc erf est calculee dans le carnet C# (serie de Taylor pour |x| <= 2, fraction continue de Lentz pour |x| > 2), ecart maximal mesure 1.1e-15 sur la plage utile."
+    - "Aleatoire : le tirage Python (numpy.default_rng(42), PCG64) et le tirage C# (Random .NET + Box-Muller, graine 2024) ne produisent pas la meme suite, aucun generateur .NET ne reproduisant le PCG64 ; les six signaux du carnet Python sont CITES dans le jumeau C#, et la loi du tirage C# est verifiee par le calcul sur 200000 echantillons."
+    - "Culture d'affichage : le jumeau C# force CultureInfo.InvariantCulture pour un separateur decimal point, comme le jumeau Python."
