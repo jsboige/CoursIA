@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-11-22 (myia-po-2024:CoursIA) PR #28046 : REBASELINE cote C# -- fournee SVG #26783 tranche 3 : 6 appels GetLatestFactorGraphHtml().DisplayAs("text/html") -> GetLatestFactorGraphDisplay().Display() (mecanisme dual-mime #28029 : SVG canonique + HTML presente dans la meme sortie), re-execution complete kernel .net-csharp (0 erreur, execution_count contigus), bannieres probe stripees via strip_probe_banner.py --variant both --apply. Sources de calcul inchangees, seuls rendu et sorties fraiches. Jumeau Python non touche (hors diff de la PR). --update en DERNIERE operation (cf #8957).'
   - '2026-10-07 (myia-po-2027:CoursIA) #19779 : csharp_sha rebaseline -- 3 fixes audit #18556 tranche
     7/8/8b cote C# seul : teaser final "Prochaine etape" reoriente Infer-2b (notebook ANTERIEUR, 2b
     < 7) -> Infer-8-TrueSkill, le vrai suivant ; remarque P(C1 ET C2) affinee (dependance POSITIVE
