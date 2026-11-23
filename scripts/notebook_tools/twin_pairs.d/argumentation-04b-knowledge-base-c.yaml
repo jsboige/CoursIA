@@ -1,0 +1,7 @@
+- name: "Argumentation-04b-Knowledge-Base C#"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Portage BCL de la base de connaissances (Proposition/Argument/KnowledgeBase) : population transitive, support/attaque par negation lexicale, is_consistent, entails (test d'appartenance), et les limites mesurees (non-inference, double negation, ecrasement des homonymes) reproduites a l'identique du jumeau Python. Identifiants d'arguments : Guid au lieu des UUID Python (affichage tronque)."

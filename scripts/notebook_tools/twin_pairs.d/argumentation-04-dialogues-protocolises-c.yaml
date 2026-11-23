@@ -1,0 +1,7 @@
+- name: "Argumentation-04-Dialogues-Protocolises C#"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Portage BCL des protocoles inquiry/persuasion (tables de transitions fideles au jumeau Python) + grounding execute sur le VRAI Tweety via le shade IKVM du depot (org.tweetyproject.tweety-dung.dll, #r ../Tweety/...) : SimpleGroundedReasoner natif, 0 JVM, 0 pont jpype. Domicile IKVM reconstruit au setup (pattern Tweety-03-Dung : cache nuget vers %TEMP% + AppContext IKVM.Home) ; la verification par instanciation vit dans une cellule separee du #r, car le bind de compilation charge l'assembly avant l'execution des instructions de la cellule. Classifieur de schemas : pose manuelle 'expert_opinion' au raccord (le classifieur lexical demeure du cote Python, carnet 01b)."
