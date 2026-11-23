@@ -199,7 +199,7 @@ def test_cli_json_en_ligne_porte_la_reverif(monkeypatch, capsysbinary):
     monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
     monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
         {}, {"active": False, "measured": False, "parked": [], "reason": "test"}))
-    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json"],
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json", "--voie", "lourd"],
                    run=lambda argv, timeout: "", maintenant=NOW,
                    lire_fils=lambda n: complets if n == 26534 else [])
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
@@ -248,7 +248,7 @@ def test_cache_de_secours_ne_declenche_pas_la_passe(tmp_path, monkeypatch, capsy
 
     def _panne(argv, timeout):
         raise subprocess.CalledProcessError(1, argv, output="", stderr="HTTP 401")
-    code = tr.main(["--lane", LANE], run=_panne, maintenant=NOW,
+    code = tr.main(["--lane", LANE, "--voie", "lourd"], run=_panne, maintenant=NOW,
                    lire_fils=lambda n: (_ for _ in ()).throw(AssertionError(
                        "la lecture de secours ne declenche pas la passe")))
     sortie = capsysbinary.readouterr().out.decode("utf-8")

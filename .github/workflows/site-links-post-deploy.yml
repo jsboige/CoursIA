@@ -68,6 +68,16 @@ jobs:
         run: |
           python scripts/ci/check_site_links.py --json
 
+      - name: Check the published JupyterLite lot
+        # Pli 2.2 de l'Epic #27543 : le lot de carnets Python publie sous
+        # /jupyterlite/ doit repondre -- chaque carnet du manifeste, dans
+        # ses deux formes (fichier brut et page JupyterLite).
+        # Un manifeste absent = lot non deploye : ce n'est pas un lien
+        # casse, le garde le dit et sort en vert (le job de construction du
+        # site, lui, a echoue -- c'est la qu'il faut regarder).
+        run: |
+          python scripts/ci/check_jupyterlite_lot.py --json
+
       - name: Summary on failure
         if: failure()
         run: |
