@@ -1,0 +1,498 @@
+# Triplet GameTheory-21 : jumeau Python + portage Rust (issue #27965, spec Rust portage).
+# Les deux carnets ont exactement la meme structure 27 cellules (memes indices de
+# cellules code : 4, 5, 8, 11, 14, 15, 18, 19, 23, 24, 25) : les cotes se
+# correspondent par index. Cote Rust = evcxr, std seul (aucune crate externe ;
+# census Arrow 64^3 reproduit integralement, ordre de product conserve,
+# dictateurs 3, 2, 1). Tolerance unique : egalite stricte du texte (spec : aucune
+# grandeur flottante calculee ; « 0.5 nul » de la cellule 11 est du texte litteral).
+# Le cote C# n'existe pas dans le depot au moment du portage (aucun fichier
+# GameTheory-21-*-CSharp.ipynb ; consigne spec #27965 : jumeau C# aucun).
+# Timeout d'execution (spec #27965) : min(15 x duree du bloc commite, 300 s) --
+# duree mesuree 12.483406 s -> timeout 187 s, kernel rust a cwd = dossier du carnet
+# (les cellules 18/19 lisent game_theory_lean/SocialChoice/ en relatif).
+- name: "GameTheory-21 Capstone Choix Social"
+  family: "GameTheory (SocialChoice capstone)"
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Rust.ipynb
+  measures:
+    - id: regles_definies
+      description: "Ligne de chargement des trois regles de la cellule 4 (litteral)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "(Regles definies : borda, pluralite, dictateur\\.)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "(Regles definies : borda, pluralite, dictateur\\.)"
+          transform: text
+    - id: axiomes_borda
+      description: "Ligne Borda du tableau des axiomes : Pareto OK, IIA VIOLE, non-dictature OK"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(Borda +OK +VIOLE +OK +2/3 -> impossible)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(Borda +OK +VIOLE +OK +2/3 -> impossible)"
+          transform: text
+    - id: axiomes_pluralite
+      description: "Ligne Pluralite du tableau des axiomes (Pareto OK, IIA VIOLE)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(Pluralite +OK +VIOLE +OK +2/3 -> impossible)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(Pluralite +OK +VIOLE +OK +2/3 -> impossible)"
+          transform: text
+    - id: axiomes_dictateur
+      description: "Ligne Dictateur(v1) du tableau (Pareto OK, IIA OK, non-dictature VIOLE)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(Dictateur\\(v1\\) +OK +OK +VIOLE +2/3 -> impossible)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(Dictateur\\(v1\\) +OK +OK +VIOLE +2/3 -> impossible)"
+          transform: text
+    - id: iia_plu_p1
+      description: "Temoin IIA pluralite P1 : scores et ordre social (calcules)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Pluralite : P1 (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "Pluralite : P1 (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+    - id: iia_plu_p2
+      description: "Temoin IIA pluralite P2 : scores et ordre social (calcules)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "P2 (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "P2 (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+    - id: iia_borda_p1
+      description: "Temoin IIA Borda P1' : scores et ordre social (calcules)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Borda     : P1' (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "Borda     : P1' (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+    - id: iia_borda_p2
+      description: "Temoin IIA Borda P2' : scores et ordre social (calcules)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "P2' (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "P2' (scores \\{[^}]*\\} -> ordre \\[[^\\]]*\\])"
+          transform: text
+    - id: controles_20663
+      description: "Ligne 5/5 OK des controles de non-regression (contre-exemples review #20663)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(Controles de non-regression \\(contre-exemples review #20663\\) : 5/5 OK)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(Controles de non-regression \\(contre-exemples review #20663\\) : 5/5 OK)"
+          transform: text
+    - id: candidats_census
+      description: "Nombre de candidats IIA + Pareto enumeres (64^3, groupe par trois chiffres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "enumeres : ([\\d ]+) \\(64 fonctions x 3 paires\\)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "enumeres : ([\\d ]+) \\(64 fonctions x 3 paires\\)"
+          transform: text
+    - id: nb_profils
+      description: "Profils de 3 electeurs sur 3 alternatives (6^3, calcule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "3 alternatives : (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "3 alternatives : (\\d+)"
+          transform: int
+    - id: nb_survivants
+      description: "Survivants du recensement (ordre total strict sur tous les profils)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "strict sur les \\d+ profils\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "strict sur les \\d+ profils\\) : (\\d+)"
+          transform: int
+    - id: survivant1_dictateur
+      description: "Electeur dictateur du survivant 1 (ordre de product conserve)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "survivant 1 : electeur dictateur n° (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "survivant 1 : electeur dictateur n° (\\d+)"
+          transform: int
+    - id: survivant2_dictateur
+      description: "Electeur dictateur du survivant 2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "survivant 2 : electeur dictateur n° (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "survivant 2 : electeur dictateur n° (\\d+)"
+          transform: int
+    - id: survivant3_dictateur
+      description: "Electeur dictateur du survivant 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "survivant 3 : electeur dictateur n° (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "survivant 3 : electeur dictateur n° (\\d+)"
+          transform: int
+    - id: ecartes_census
+      description: "Regles ecartees (ordre social non total sur un profil, groupe par trois chiffres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "non total sur un profil\\) : ([\\d ]+)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "non total sur un profil\\) : ([\\d ]+)"
+          transform: text
+    - id: verdict_census
+      description: "Verdict du census : les survivants sont exactement les dictatures"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Verdict : (les survivants sont exactement les dictatures)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "Verdict : (les survivants sont exactement les dictatures)"
+          transform: text
+    - id: duel_ab
+      description: "Duel majoritaire A vs B du profil cyclique (score et vainqueur calcules)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "A vs B : (\\d+-\\d+ -> \\w+)"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "A vs B : (\\d+-\\d+ -> \\w+)"
+          transform: text
+    - id: borda_cycle
+      description: "Scores de Borda sur le profil cyclique (egalite parfaite, calculee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Scores de Borda sur le meme profil : (\\{[^}]*\\})"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "Scores de Borda sur le meme profil : (\\{[^}]*\\})"
+          transform: text
+    - id: pluralite_cycle
+      description: "Scores de pluralite sur le profil cyclique (calcules)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Scores de pluralite : (\\{[^}]*\\})"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "Scores de pluralite : (\\{[^}]*\\})"
+          transform: text
+    - id: m_proposants
+      description: "Appariement optimal pour les proposants (trie, calcule par Gale-Shapley)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "pour les proposants : (\\{[^}]*\\}) \\(\\d+ demandes\\)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "pour les proposants : (\\{[^}]*\\}) \\(\\d+ demandes\\)"
+          transform: text
+    - id: nb_demandes_gs
+      description: "Nombre de demandes du deferred acceptance cote proposants"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\((\\d+) demandes\\)"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "\\((\\d+) demandes\\)"
+          transform: int
+    - id: m_disposantes
+      description: "Appariement optimal pour les disposantes (trie, calcule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "pour les disposantes : (\\{[^}]*\\})"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "pour les disposantes : (\\{[^}]*\\})"
+          transform: text
+    - id: stable_proposants
+      description: "Verdict de stabilite de l'appariement optimal proposants"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "optimal proposants +stable : (\\w+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "optimal proposants +stable : (\\w+)"
+          transform: text
+    - id: stable_disposantes
+      description: "Verdict de stabilite de l'appariement optimal disposantes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "optimal disposantes +stable : (\\w+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "optimal disposantes +stable : (\\w+)"
+          transform: text
+    - id: rangs_proposants
+      description: "Rangs obtenus par les proposants dans l'appariement qu'ils initient (ligne du tableau)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "opt\\. proposants +(\\d+ +\\d+ +\\d+ +\\d+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "opt\\. proposants +(\\d+ +\\d+ +\\d+ +\\d+)"
+          transform: text
+    - id: rangs_disposantes
+      description: "Rangs des proposants dans l'appariement optimal disposantes (ligne du tableau)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "opt\\. disposantes +(\\d+ +\\d+ +\\d+ +\\d+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "opt\\. disposantes +(\\d+ +\\d+ +\\d+ +\\d+)"
+          transform: text
+    - id: verdict_rangs
+      description: "Comparaison finale des rangs (True : optimalite proposants)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "qu'il initie : (True|False)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "qu'il initie : (True|False)"
+          transform: text
+    - id: enonce_arrow
+      description: "Premiere ligne de la docstring du theoreme arrow lue dans Arrow.lean (au meme commit du lake)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(Théorème d'impossibilité d'Arrow :)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(Théorème d'impossibilité d'Arrow :)"
+          transform: text
+    - id: signature_arrow
+      description: "Debut de la signature Lean du theoreme arrow (lue dans Arrow.lean)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "theorem arrow \\(f : (SWF [^)]+)\\)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "theorem arrow \\(f : (SWF [^)]+)\\)"
+          transform: text
+    - id: nb_modules_lake
+      description: "Nombre de modules du lake SocialChoice (inventaire mesure a l'execution)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "(\\d+) modules \\(plus leurs miroirs _en\\)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "(\\d+) modules \\(plus leurs miroirs _en\\)"
+          transform: int
+    - id: modules_lake
+      description: "Liste triee des modules du lake (mesuree, jamais figee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "miroirs _en\\) : ((?:[A-Z][A-Za-z]+, )+[A-Z][A-Za-z]+)"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "miroirs _en\\) : ((?:[A-Z][A-Za-z]+, )+[A-Z][A-Za-z]+)"
+          transform: text
+    - id: nb_theoremes
+      description: "Total theoremes/lemmes du lake (mesure a l'execution)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "(\\d+) theoremes/lemmes"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "(\\d+) theoremes/lemmes"
+          transform: int
+    - id: nb_sorry
+      description: "Compte sorry du lake (zero certifie par la CI)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "lemmes, (\\d+) 'sorry'\\."
+          transform: int
+        rust:
+          cell: 19
+          pattern: "lemmes, (\\d+) 'sorry'\\."
+          transform: int
+    - id: exo1_titre
+      description: "Ligne de titre du stub exercice 1 Copeland (C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(Exercice a completer : copeland\\(CYCLE, ALTS\\) doit rendre un dict)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(Exercice a completer : copeland\\(CYCLE, ALTS\\) doit rendre un dict)"
+          transform: text
+    - id: exo2_titre
+      description: "Ligne de titre du stub exercice 2 manipulation de Borda"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "(Exercice a completer : manipule_borda\\(PROFIL_ARROW, ALTS, 1\\) doit rendre un ordre)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "(Exercice a completer : manipule_borda\\(PROFIL_ARROW, ALTS, 1\\) doit rendre un ordre)"
+          transform: text
+    - id: exo3_titre
+      description: "Ligne de titre du stub exercice 3 paire bloquante (paire_bloquante orthographiee comme la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "(Exercice a completer : construisez M2 et rendez la paire bloquante rendue)"
+          transform: text
+        rust:
+          cell: 25
+          pattern: "(Exercice a completer : construisez M2 et rendez la paire bloquante rendue)"
+          transform: text

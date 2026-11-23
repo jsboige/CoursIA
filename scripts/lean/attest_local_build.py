@@ -550,8 +550,24 @@ def _pivot_candidates(base_manifest: dict, head_manifest: dict | None) -> list[P
     return out
 
 
-def _declared_packages(lake_dir: Path) -> list[str]:
-    """Noms des paquets declares par le `lake-manifest.json` d'un lake.
+#: Type de paquet lake qui vit a SON `dir` : il ne se materialise jamais
+#: sous `.lake/packages/<nom>`, donc l'exiger la rendra toujours absent.
+#:
+#: Mesure du 22/11 sur ai-01, lac `busybeaver_lean` : le manifeste declare
+#: `Foundation` en `type: path`, `dir: .lake/packages/pa196/PA196/vendor/Foundation`
+#: (paquet herite du `git` `pa196`). Le repertoire EXISTE dans le pivot
+#: prechauffe, mais `_packages_absent` le cherchait sous
+#: `.lake/packages/Foundation` -- absent -- et le lac entier etait ecarte avec
+#: le motif `packages incomplets : Foundation absent`. Instance : issue
+#: #27923 (bloque #27658 puis #27587).
+PATH_PACKAGE_TYPE = "path"
+
+
+def _declared_packages(lake_dir: Path) -> list[dict]:
+    """Paquets declares par le `lake-manifest.json` d'un lake.
+
+    Chaque entree porte `name`, `type` et `dir` (`dir` vaut `None` pour un
+    paquet de type `git`).
 
     Manifeste absent, illisible ou sans tableau `packages` : la liste est
     VIDE. L'exigence porte alors sur le critere general (`.lake/packages`
@@ -567,14 +583,21 @@ def _declared_packages(lake_dir: Path) -> list[str]:
     packages = payload.get("packages")
     if not isinstance(packages, list):
         return []
-    names: list[str] = []
+    entries: list[dict] = []
     for entry in packages:
         if not isinstance(entry, dict):
             continue
         name = entry.get("name")
-        if isinstance(name, str) and name:
-            names.append(name)
-    return names
+        if not isinstance(name, str) or not name:
+            continue
+        ptype = entry.get("type")
+        pdir = entry.get("dir")
+        entries.append({
+            "name": name,
+            "type": ptype if isinstance(ptype, str) and ptype else "git",
+            "dir": pdir if isinstance(pdir, str) and pdir else None,
+        })
+    return entries
 
 
 #: Lake ecrit un nom de paquet entre guillemets quand le nom nu n'est pas
@@ -632,6 +655,27 @@ def _package_is_resolved(package_dir: Path, name: str) -> bool:
     return any(package_dir.glob("lakefile.*"))
 
 
+def _path_package_served(owner: Path, packages_dir: Path, dir_rel: str) -> Path:
+    """Repertoire EFFECTIVEMENT servi pour un paquet de type `path`.
+
+    Un paquet `path` vit a son `dir`, relatif au lake qui le declare -- il
+    ne se materialise JAMAIS sous `.lake/packages/<nom>`. Deux cas :
+
+    - `dir` SOUS `.lake/packages` : le contenu servi est celui du cache
+      chaud, parce que la jonction `<lake>/.lake/packages` ->
+      `<pivot>/.lake/packages` sert exactement ce repertoire -> on regarde
+      dans `packages_dir` ;
+    - `dir` AILLEURS (paquet frere dans l'arbre du depot) : le contenu
+      servi est celui du proprietaire lui-meme -> on regarde dans `owner`.
+    """
+    rel = Path(dir_rel.replace("\\", "/"))
+    try:
+        under = rel.relative_to(WARM_PACKAGES)
+    except ValueError:
+        return owner / rel
+    return packages_dir / under
+
+
 def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     """Paquets declares par `manifest_owner` et NON materialises dans
     `packages_dir`.
@@ -639,9 +683,20 @@ def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     Le manifeste peut venir d'un lake et le dossier de paquets d'un autre :
     c'est la question qui compte -- « le pivot sait-il servir les paquets
     que le lake demande ? ». Liste VIDE = rien ne manque.
+
+    Un paquet de type `path` se verifie a SON `dir` (relatif au lake qui le
+    declare), pas sous `.lake/packages/<nom>` : exiger la materialisation
+    d'un paquet `path` la declare TOUJOURS absent, quel que soit son
+    prechauffage (#27923).
     """
     missing: list[str] = []
-    for name in _declared_packages(manifest_owner):
+    for entry in _declared_packages(manifest_owner):
+        name = entry["name"]
+        if entry["type"] == PATH_PACKAGE_TYPE and entry["dir"]:
+            served = _path_package_served(manifest_owner, packages_dir, entry["dir"])
+            if not served.is_dir():
+                missing.append("{} absent (dir {})".format(name, entry["dir"]))
+            continue
         dir_name = _package_dir_name(name)
         package_dir = packages_dir / dir_name
         if not package_dir.is_dir():
@@ -802,20 +857,10 @@ def manifest_at_head(repo: str, head: str) -> dict | None:
         repo,
         "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
     )
-    if not isinstance(payload, dict):
-        return None
-    content = payload.get("content")
-    if not isinstance(content, str):
-        return None
-    try:
-        raw = base64.b64decode(content).decode("utf-8")
-    except (ValueError, UnicodeDecodeError):
-        return None
-    try:
-        manifest = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    return manifest if isinstance(manifest, dict) else None
+    # Le decodage de la payload REST est PORTÉ par le module partage
+    # (`lean_build_attestation`) : la garde lit le meme manifeste par le meme
+    # decodeur -- une seule definition du "contenu illisible".
+    return attestation.manifest_from_api_payload(payload)
 
 
 def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
@@ -1611,9 +1656,26 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         },
     }
     if not lakes:
+        # #27875 : le cas frequent est un lake INTRODUIT par la PR et non
+        # declare au manifeste (l'entree arrive dans une PR empilee). Le
+        # message nomme le lake et le geste : sans cela, le blocage rendu
+        # par la garde est muet.
+        undeclared = attestation.undeclared_lakes(files, head_manifest)
+        if undeclared:
+            raise OrganError(
+                "le diff de #{} INTRODUIT le lake {} mais le manifeste "
+                "`scripts/lean/ci_lakes.json` ne le declare pas a la tete : "
+                "declarez-le (dans cette PR, ou dans une PR empilee mergee "
+                "d'abord), puis relancez l'attestation -- aucune attestation "
+                "ne peut couvrir un lake non declare.".format(
+                    pr, ", ".join(undeclared)
+                )
+            )
         raise OrganError(
             "aucun lake connu n'est touche par le diff de #{} -- rien a "
-            "construire (la garde ne bloquera pas cette PR)".format(pr)
+            "construire ; la garde Lean attend une attestation, qui ne peut "
+            "pas etre produite tant qu'aucun lake declare ne porte le "
+            "diff".format(pr)
         )
     if dry_run:
         result["dry_run"] = True
