@@ -19,8 +19,7 @@ from lean_material_map import DECLARATION_RE
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LAKE_ROOT = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean"
-README = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/README.md"
+LEAN_ROOT = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean"
 FIXTURE = REPO_ROOT / "scripts/lean/fixtures/stacks_adjoint_tags_excerpt.txt"
 UPSTREAM_ENTRY_RE = re.compile(
     r"^\s*add_to_stacks\s+(?P<tag>[A-Z0-9]{4})\s+"
@@ -70,7 +69,9 @@ def _declared_names(source: str) -> set[str]:
     return names
 
 
-def _validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -> tuple[list[str], set[str]]:
+def _validate_provenance(
+    readme_text: str, excerpt_text: str, lake_root: Path, readme_dir: Path
+) -> tuple[list[str], set[str]]:
     """Retourne les écarts et les tags rencontrés dans les deux sources."""
     errors: list[str] = []
     upstream, fixture_pin = parse_upstream_excerpt(excerpt_text)
@@ -122,7 +123,7 @@ def _validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -
             if not file_path.is_relative_to(lake_root.resolve()) or not file_path.is_file():
                 errors.append(f"ligne {tag}: module local introuvable: {relative_file}")
                 continue
-            link_target = (README.parent / dict(local_links)[relative_file]).resolve()
+            link_target = (readme_dir / dict(local_links)[relative_file]).resolve()
             if link_target != file_path:
                 errors.append(f"ligne {tag}: lien local incorrect: {relative_file}")
             names = _declared_names(file_path.read_text(encoding="utf-8"))
@@ -141,22 +142,34 @@ def _validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -
 
 
 def validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -> list[str]:
-    """Retourne les écarts entre le README, la source épinglée et le lake."""
-    errors, _ = _validate_provenance(readme_text, excerpt_text, lake_root)
+    """Vérifie la provenance pour un README situé à côté du lake."""
+    errors, _ = _validate_provenance(readme_text, excerpt_text, lake_root, lake_root.parent)
     return errors
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--json", action="store_true", help="sortie JSON")
-    parser.add_argument("--readme", type=Path, default=README)
+    parser.add_argument("--readme", type=Path)
     parser.add_argument("--excerpt", type=Path, default=FIXTURE)
-    parser.add_argument("--lake", type=Path, default=LAKE_ROOT)
+    parser.add_argument("--lake", type=Path)
     args = parser.parse_args()
+    readme, lake = args.readme, args.lake
+    if readme is None or lake is None:
+        roots = [LEAN_ROOT / name for name in ("GROTH", "Grothendieck")]
+        candidates = [root for root in roots if root.is_dir()]
+        if not candidates:
+            parser.error(f"répertoire GROTH ou Grothendieck introuvable sous {LEAN_ROOT}")
+        if len(candidates) > 1:
+            parser.error("répertoires GROTH et Grothendieck présents ; préciser --readme et --lake")
+        groth_root = candidates[0]
+        readme = readme or groth_root / "README.md"
+        lake = lake or groth_root / "grothendieck_lean"
     errors, tags = _validate_provenance(
-        args.readme.read_text(encoding="utf-8"),
+        readme.read_text(encoding="utf-8"),
         args.excerpt.read_text(encoding="utf-8"),
-        args.lake,
+        lake,
+        readme.parent,
     )
     result = {"ok": not errors, "tags": sorted(tags), "errors": errors}
     if args.json:
