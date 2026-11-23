@@ -1,4 +1,4 @@
-- name: Image 05-0b Démoscène procédurale
+- name: GenAI Image 05-0b Demoscene Intros Procedurales
   family: GenAI/Image/05-History
   python: MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-Python.ipynb
   csharp: MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-CSharp.ipynb

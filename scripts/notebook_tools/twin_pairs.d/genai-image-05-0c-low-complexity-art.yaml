@@ -1,4 +1,4 @@
-- name: Image 05-0c Art à description courte
+- name: GenAI Image 05-0c Low Complexity Art
   family: GenAI/Image/05-History
   python: MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb
   csharp: MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-CSharp.ipynb
