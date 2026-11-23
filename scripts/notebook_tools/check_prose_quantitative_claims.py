@@ -266,7 +266,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -275,7 +275,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -283,7 +283,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -381,7 +381,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md",
         motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
         raison=(
             "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
@@ -1237,6 +1237,24 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         raison=(
             "Meme recit c.977, attribution du modele sur les 2 jumeaux. "
             "Fait passe figure."
+        ),
+    ),
+    # Parametre DEFINITOIRE de l'enonce de l'exercice exact-cover de
+    # Search-08 (review Hermes #28088, 22/11) : la grille de l'exercice EST
+    # 3x5 par construction -- le pavage par trominos se definit sur ces
+    # dimensions. Meme classe que le canon de Gosper ci-dessus : propriete
+    # du probleme enonce, pas un compteur d'etat du depot qui derive.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-08-DancingLinks.ipynb"
+        ),
+        motif=re.compile(r"grille de 3 lignes par 5 colonnes"),
+        raison=(
+            "« 3 lignes par 5 colonnes » = dimensions de la grille de "
+            "l'exercice de couverture exacte (enonce) : parametre du probleme, "
+            "pas une mesure qui derive avec le depot. Les dimensions vivent "
+            "dans l'enonce ET dans la cellule de code de l'exercice."
         ),
     ),
     # Tranche accents de la serie Sudoku (#16638) : trois lignes PRE-EXISTANTES
