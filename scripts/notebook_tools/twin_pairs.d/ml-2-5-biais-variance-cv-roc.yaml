@@ -1,0 +1,10 @@
+- name: "ML 2.5 Biais variance CV ROC"
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "La régression logistique est exécutée avec ML.NET L-BFGS. Les vrais CART, RandomForestClassifier, KNeighborsRegressor et découpages scikit-learn sont invoqués via Python.NET. Le C# calcule les métriques, les seuils et les graphiques."
+  known_differences:
+    - "Le pipeline ML.NET ajoute une normalisation entraînée à l'intérieur de chaque pli et a une implémentation L-BFGS distincte. Les mesures réelles du C# diffèrent en conséquence de celles du Python."
+    - "Sur Wisconsin, la classe positive est bénigne des deux côtés. Les cartes SVG, les six exercices typés et les réponses repliées remplacent matplotlib et les questions interactives Python."
