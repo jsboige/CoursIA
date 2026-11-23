@@ -2,7 +2,8 @@
 # Lot 6 de l'Epic Origami #26510).
 # Les deux carnets ont exactement la meme structure 24 cellules (mêmes indices) :
 # les cotes se correspondent par index. Cote Rust = evcxr + smartcore 0.7.0.
-# Le cote C# n'existe pas pour cette serie (Python + Rust seulement).
+# Le carnet 2.7 n'a pas de cote C# (jumeau Rust seul) ; les carnets voisins 2.7b et
+# 2.7c ont le leur, hors de ce registre.
 # Les cartes ASCII (cellules 3, 5, 7, 12, 14) sont des RENDUS, hors registre :
 # comparees qualitativement dans le body de la PR (droite contre croissant,
 # enclaves a k = 1, bandes verticales sans standardisation).
