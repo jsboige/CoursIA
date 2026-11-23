@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_age, tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import tapis_age, tapis_ancre, tapis_labels, tapis_origami, tapis_rapide, tapis_rotation
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
@@ -64,7 +64,8 @@ def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
                  key=lambda pr: pr.get("created_at") or "")
     rapport = tapis_universel.rapport(etats_=etats_, file=file,
                                       lane=lane, maintenant=maintenant,
-                                      lecture={})
+                                      lecture={},
+                                      ecartees=tapis_labels.ecartees(metas))
     rapport.update({
         "graine": graine, "voie": "leger", "pool": len(metas),
         "fenetre": fenetre or {},

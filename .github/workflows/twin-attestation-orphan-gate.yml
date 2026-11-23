@@ -1,0 +1,155 @@
+name: Twin attestation orphan gate
+
+# Purpose
+# -------
+# BLOCKING gate: refuse une PR qui AJOUTE une attestation de parite citant un
+# blob qui n'existera jamais sur `main`.
+#
+# Pourquoi une porte et pas une vigilance
+# ----------------------------------------
+# Une attestation de parite (`scripts/notebook_tools/twin_pairs.d/<paire>/NNNN-*.yaml`)
+# atteste le sha GIT d'un jumeau a un instant donne. Quand elle est prise sur un
+# etat de branche INTERMEDIAIRE -- avant la derniere modification du carnet
+# dans la branche -- elle cite un blob qui n'arrive jamais sur `main` : le
+# squash ecrit l'ARBRE de la branche, pas son HISTORIQUE.
+#
+# Le blob cite existe dans l'historique de la branche, donc le test de branche
+# est VERT ; apres le squash, il n'existe plus sur `main`, et
+# `scripts/notebook_tools/tests/test_twin_registry_integrity.py::test_audit_shas_exist_in_file_history`
+# le classe « fabrique » et rougit `main` -- au detriment de TOUTE la flotte.
+#
+# Mesures fondatrices (2026-11-21/22) :
+#   * #27860 -- attestation `dynamics-04c-.../0003`, python_sha `7abe7001cb` ;
+#   * #27773 -- attestation `ict-15-.../0001`, csharp_sha `bf908d37a1`.
+# Dans les deux cas, tous les controles de BRANCHE etaient verts.
+#
+# Ce que la porte refuse
+# ----------------------
+# Une attestation AJOUTE ou MODIFIE par la PR dont un sha atteste n'est ni le
+# blob du jumeau a la tete de la revision, ni un blob joignable depuis la base.
+#
+# Ce que la porte NE refuse pas
+# -----------------------------
+# Une attestation heritee de la base : la bloquer condamnerait toute PR
+# touchant le registre tant que la base porte la dette. Le predicat porte sur
+# l'AGGREGATION (ce que la PR introduit), pas sur l'etat absolu du registre.
+#
+# Le geste de correction
+# ----------------------
+# « attestation NNNN orpheline apres squash : retirer, ou resceller en
+# derniere operation » -- c'est-a-dire emettre l'attestation APRES la derniere
+# modification du carnet (le cas normal), ou ne pas l'emmettre du tout.
+#
+# Paths watched
+# -------------
+#   - scripts/notebook_tools/twin_pairs.d/** (le registre lui-meme)
+#   - scripts/ci/check_twin_attestation_orphans.py (l'organe)
+#   - scripts/notebook_tools/check_twin_parity.py (la source des helpers de
+#     joignabilite que l'organe importe : une evolution de ce module change le
+#     verdict)
+#
+# Limite connue et assumee
+# -----------------------
+# L'evenement `pull_request` execute le fichier de workflow tire du commit de
+# fusion de la PR (fork compris) : la porte ajoutee par une PR s'applique donc
+# a cette PR meme. C'est `pull_request_target` qui lit la branche par defaut.
+# Les limites reelles d'une PR de fork sont ailleurs (approbation de
+# maintainer, `GITHUB_TOKEN` en lecture seule), et aucune n'atteint cette
+# porte, qui ne fait que lire.
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/notebook_tools/twin_pairs.d/**'
+      - 'scripts/ci/check_twin_attestation_orphans.py'
+      - 'scripts/notebook_tools/check_twin_parity.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: twin-attestation-orphan-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  attestation-orphan:
+    name: "Twin attestation orphan gate (#27969)"
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate the orphan attestations
+        # `PR_BASE`/`PR_HEAD` sont lus dans l'evenement, jamais deduits de la
+        # forme du checkout : le checkout d'un evenement `pull_request`
+        # materialise la REF DE MERGE, dont la forme ne dit rien de la tete de
+        # la PR. La comparaison porte sur (base, tete de la PR) -- c'est elle
+        # qui dit ce que la PR INTRODUIT.
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set +e
+          BASE=origin/main
+          HEAD_SHA="$(git rev-parse HEAD)"
+          if [ "$EVENT" = "pull_request" ]; then
+            BASE="$PR_BASE"
+            HEAD_SHA="$PR_HEAD"
+          fi
+          echo "Twin attestation orphan : base=$BASE  head=$HEAD_SHA"
+          python scripts/ci/check_twin_attestation_orphans.py \
+              --base "$BASE" --head "$HEAD_SHA" --gate --json \
+              > twin_attestation_orphans.json 2>twin_attestation_orphans_stderr.log
+          EXIT=$?
+          set -e
+          if [ -s twin_attestation_orphans_stderr.log ]; then
+            echo "Twin-attestation-orphan tool diagnostics (stderr, non-fatal):"
+            cat twin_attestation_orphans_stderr.log
+          fi
+          # Garde : un rapport illisible doit faire echouer la porte avec un
+          # motif CLAIR, pas avec une traceback qui masque le verdict.
+          if ! python3 -c "import json; json.load(open('twin_attestation_orphans.json'))" 2>/dev/null; then
+            echo "::error title=Twin attestation orphan report unparseable::The JSON report could not be parsed. Tool exit was $EXIT. The report tail and stderr are shown below."
+            echo "--- report tail (last 400 chars) ---"
+            tail -c 400 twin_attestation_orphans.json || true
+            echo "--- stderr ---"
+            cat twin_attestation_orphans_stderr.log 2>/dev/null || true
+            exit 1
+          fi
+          # rc=2 = incident d'entree (git illisible, YAML illisible) : la porte
+          # ne peut pas se prononcer, elle NE BLOQUE PAS (forme TRANCHE17 :
+          # l'incident d'instrument est neutre, jamais un verdict rouge).
+          if [ "$EXIT" = "2" ]; then
+            echo "::notice title=Twin attestation orphan gate indeterminate::L'organe n'a pas pu lire son entree (rc=2) : la porte ne se prononce pas. Le rapport est dans twin_attestation_orphans.json."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          import sys
+
+          data = json.load(open("twin_attestation_orphans.json"))
+          orphelines = data.get("orphelines") or []
+
+          if not data.get("gate_fail"):
+              print("::notice title=Twin attestation orphan gate::Aucune attestation orpheline introduite par cette revision (base=%s, head=%s, attestations examinees=%s)."
+                    % (data.get("base"), data.get("head"), data.get("examines")))
+              sys.exit(0)
+
+          print("::error title=Twin attestation orpheline::Cette PR INTRODUIT %d attestation(s) de parite orpheline(s) : le blob atteste n'existe ni sur la base ni a la tete de la revision, il n'arrivera donc jamais sur `main`." % len(orphelines))
+          for o in orphelines:
+              print("- %s : %s=%s" % (o["attestation"], o["cle"], o["sha"]))
+          print("Geste : attestation orpheline apres squash : retirer, ou resceller en derniere operation (apres la derniere modification du carnet).")
+          sys.exit(1)
+          PY
