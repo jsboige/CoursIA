@@ -1,0 +1,311 @@
+# Triplet Metajeux-06 : jumeau Python + portage Rust (issue #27936, spec Rust portage).
+# Les deux carnets ont exactement la meme structure 33 cellules (memes indices de
+# cellules code : 1, 3, 5, ..., 29) : les cotes se correspondent par index.
+# Cote Rust = evcxr, std seul (aucune crate externe ; ordres faibles par odometre
+# + BTreeSet, BFS VecDeque, recensement exhaustif 720x720 recrit dans l'ordre
+# exact de la source -- l'ordre d'enumeration EST le resultat compare).
+# Le cote C# n'existe pas pour cette serie (Metajeux est Python + Rust seulement).
+- name: "Metajeux-06 Chemin Minimal 3x2 Ordinal"
+  family: "GameTheory (Metajeux)"
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Rust.ipynb
+  measures:
+    - id: substrat3x2_faibles
+      description: "Nombres de Fubini F6 : ordres faibles sur 6 cases (odometre + canonique, dedup)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Substrat 3x2 \\(ici\\).*?ordres faibles = (\\d+)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Substrat 3x2 \\(ici\\).*?ordres faibles = (\\d+)"
+          transform: int
+    - id: substrat3x2_chambres
+      description: "Chambres strictes 3x2 (720 x 720 jeux) derivees du meme denomrement"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Substrat 3x2 \\(ici\\).*?chambres = (\\d+)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Substrat 3x2 \\(ici\\).*?chambres = (\\d+)"
+          transform: int
+    - id: tables_liees_3x2
+      description: "Tables liees (ex aequo) sur 6 cases, futures faces des murs"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Avec ex aequo 3x2     : (\\d+) tables liees"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Avec ex aequo 3x2     : (\\d+) tables liees"
+          transform: int
+    - id: mur_partiel_strict
+      description: "Le jeu Mur partiel n'est pas une chambre (Ligne indifferente 2~3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Mur partiel \\(Ligne indifferente 2~3\\).*?strict \\(chambre\\) : (\\w+)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "Mur partiel \\(Ligne indifferente 2~3\\).*?strict \\(chambre\\) : (\\w+)"
+          transform: text
+    - id: swap_egale_scission
+      description: "Le swap de singletons appartient aux scissions de la fusion inverse (fermeture des generateurs)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Le swap de singletons = fusion puis scission dans l'autre sens : (\\w+)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "Le swap de singletons = fusion puis scission dans l'autre sens : (\\w+)"
+          transform: text
+    - id: treillis6_asymetries
+      description: "Arcs non reciproques du treillis des ordres faibles F6 (0 : modele ferme symetrique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "n=6 \\| stricts=720 faibles=4683 \\| treillis : asymetries=(\\d+), degre moyen=[\\d.]+"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "n=6 \\| stricts=720 faibles=4683 \\| treillis : asymetries=(\\d+), degre moyen=[\\d.]+"
+          transform: int
+    - id: treillis6_excentricite
+      description: "Excentricite du centre tout-lie dans le treillis F6 (diametre 10 = 2 x valeur)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "n=6 \\| stricts=720 faibles=4683.*?excentricite du centre tout-lie=(\\d+) -> diametre"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "n=6 \\| stricts=720 faibles=4683.*?excentricite du centre tout-lie=(\\d+) -> diametre"
+          transform: int
+    - id: census2_raccourcis
+      description: "Recensement 2x2 modele ferme : paires raccourcies par les murs (0, contrairement au modele dirige de GT-20)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "raccourcis \\(d_treillis < d_perm\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "raccourcis \\(d_treillis < d_perm\\) : (\\d+)"
+          transform: int
+    - id: census2_egalites
+      description: "Recensement 2x2 modele ferme : egalites d_perm = d_treillis (48 des 576 paires)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "egalites \\(aucun gain a traverser\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "egalites \\(aucun gain a traverser\\) : (\\d+)"
+          transform: int
+    - id: census3_raccourcis
+      description: "Recensement exhaustif 3x2 : paires ordonnees raccourcies par les murs sur 720 x 720"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "raccourcis \\(d_treillis < d_perm\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 13
+          pattern: "raccourcis \\(d_treillis < d_perm\\) : (\\d+)"
+          transform: int
+    - id: census3_part
+      description: "Part des paires raccourcies 3x2 en % (77760 / 518400, quotient exact d'entiers)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "raccourcis \\(d_treillis < d_perm\\) : \\d+  \\(([\\d.]+) %\\)"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "raccourcis \\(d_treillis < d_perm\\) : \\d+  \\(([\\d.]+) %\\)"
+          transform: float
+    - id: census3_exemple_dperm
+      description: "Distance permutoedre de l'exemple de raccourci temoin (identite -> antipode partiel, tie-break b > a)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "exemple : \\(1, 2, 3, 4, 5, 6\\) -> \\(1, 5, 6, 4, 3, 2\\) : d_perm = (\\d+), d_treillis"
+          transform: int
+        rust:
+          cell: 13
+          pattern: "exemple : \\(1, 2, 3, 4, 5, 6\\) -> \\(1, 5, 6, 4, 3, 2\\) : d_perm = (\\d+), d_treillis"
+          transform: int
+    - id: produit_atteints
+      description: "BFS directe sur le produit des chambres : jeux atteints depuis Identite (connectivite du produit)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "BFS directe sur le produit des 518 400 chambres : (\\d+) jeux atteints"
+          transform: int
+        rust:
+          cell: 15
+          pattern: "BFS directe sur le produit des 518 400 chambres : (\\d+) jeux atteints"
+          transform: int
+    - id: produit_concordance
+      description: "Lemme de decomposition : d_jeu(Identite, Renversement) directe = 15 + 15 par cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "concordance : (\\w+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "concordance : (\\w+)"
+          transform: text
+    - id: chemin_perm_pas
+      description: "Longueur du chemin de chambres Identite -> Renversement produit par le constructeur BFS"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Chemin de chambres Identite -> Renversement \\(cote Ligne\\) : (\\d+) pas"
+          transform: int
+        rust:
+          cell: 17
+          pattern: "Chemin de chambres Identite -> Renversement \\(cote Ligne\\) : (\\d+) pas"
+          transform: int
+    - id: chemin_murs_pas
+      description: "Longueur du chemin par les murs (10 pas, 5 fusions + 5 scissions)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Chemin par les murs  Identite -> Renversement \\(cote Ligne\\) : (\\d+) pas"
+          transform: int
+        rust:
+          cell: 17
+          pattern: "Chemin par les murs  Identite -> Renversement \\(cote Ligne\\) : (\\d+) pas"
+          transform: int
+    - id: verdict_permutoedre
+      description: "Verdict du verificateur independant sur le chemin de chambres (re-derivation, Loi II)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "VALIDE \\[permutoedre\\] : (\\d+) pas, minimalite certifiee par recherche exhaustive independante"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "VALIDE \\[permutoedre\\] : (\\d+) pas, minimalite certifiee par recherche exhaustive independante"
+          transform: int
+    - id: verdict_treillis
+      description: "Verdict du verificateur independant sur le chemin des murs"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "VALIDE \\[treillis\\] : (\\d+) pas, minimalite certifiee par recherche exhaustive independante"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "VALIDE \\[treillis\\] : (\\d+) pas, minimalite certifiee par recherche exhaustive independante"
+          transform: int
+    - id: controle3_distance_reelle
+      description: "Controle negatif detour 12 pas : distance reelle mesuree par le verificateur (doit refuser)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "INVALIDE : non minimal \\(12 pas, distance reelle (\\d+)\\)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "INVALIDE : non minimal \\(12 pas, distance reelle (\\d+)\\)"
+          transform: int
+    - id: geodesiques_s6
+      description: "Geodesiques Identite -> Renversement sur le permutoedre S6 (292864 chemins minimaux)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "sur une table 3x2 : (\\d+)"
+          transform: int
+        rust:
+          cell: 23
+          pattern: "sur une table 3x2 : (\\d+)"
+          transform: int
+    - id: exo1_stub
+      description: "Ligne de titre du stub exercice 1 (C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "Exercice 1 : a completer \\(chemin retour Renversement -> Identite par les murs\\)"
+          transform: text
+        rust:
+          cell: 25
+          pattern: "Exercice 1 : a completer \\(chemin retour Renversement -> Identite par les murs\\)"
+          transform: text
+    - id: exo2_stub
+      description: "Ligne de titre du stub exercice 2 (C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "Exercice 2 : a completer \\(combien des antipodes de distance 15 sont raccourcis par les murs\\)"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "Exercice 2 : a completer \\(combien des antipodes de distance 15 sont raccourcis par les murs\\)"
+          transform: text
+    - id: exo3_stub
+      description: "Ligne de titre du stub exercice 3 (C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: "Exercice 3 : a completer \\(chemin minimal vers une table portant un ex aequo triple\\)"
+          transform: text
+        rust:
+          cell: 29
+          pattern: "Exercice 3 : a completer \\(chemin minimal vers une table portant un ex aequo triple\\)"
+          transform: text

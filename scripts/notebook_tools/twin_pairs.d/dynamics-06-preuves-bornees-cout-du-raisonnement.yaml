@@ -5,4 +5,5 @@
   parity_level: semantic
   known_differences:
     - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27679) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (DUPOC(k) sous borne moteur MAX_DEPTH=3, courbe de variation k, compteurs de profondeur/etats/cout, exercices dont l'Open Problem 3 Critch-Dennis-Russell laisse ouvert) ; le code C# n'utilise que la BCL, aucune dependance externe."
+    - "2026-11-22 (myia-po-2024:CoursIA, PR CoursIA #27975) : ligne Navigation des jumeaux Python et C# enrichie du lien [jumeau Rust] vers le nouveau carnet Rust -- edition markdown-only de la cellule 0, aucun changement de cellule de code ni de sortie."
     - "La cellule 32 (scaffold de l'exercice 4) porte '#nullable enable' en tete : les annotations '? ' de l'enonce etudiant s'exercent alors dans un contexte d'annotations conforme, sans warning CS8632 dans la sortie committee."
