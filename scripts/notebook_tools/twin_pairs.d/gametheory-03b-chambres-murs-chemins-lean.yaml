@@ -1,0 +1,7 @@
+- name: "GameTheory-03b Chambres-Murs-Chemins-Lean"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, #27681) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source et ajoute le miroir .NET de Basic.lean (section 10-bis) ainsi que les BFS et plus courts chemins des sections 5-10 en C# natif ; les compteurs et partitions mesures (576 chambres, 1728 murs de codim 1, distribution [1,6,19,42,71,96,106,96,71,42,19,6,1]) sont identiques des deux cotes."
