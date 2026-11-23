@@ -873,6 +873,61 @@ def test_prelecture_clean_puis_garde_finale_joue_les_tests_d_arbre(tmp_path):
     assert any("premerge_combined_check.py" in flat for flat in runner.flat())
 
 
+# --- #26799 : la prelecture REST passe AVANT les etapes couteuses ------------
+
+
+#: Une PR qui touche le registre des twin-pairs ET un carnet : elle declenche
+#: les DEUX collisions (5bis et 5bis.bis) quand elle va jusque-la.
+VUE_COUTEUSE = default_view(
+    files=(
+        "scripts/notebook_tools/twin_pairs.d/une-paire/0001-2026-01-01-x.yaml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/Lean-01-un-carnet.ipynb",
+    )
+)
+
+
+def test_etat_bloque_refuse_sans_payer_b0_ni_collisions(tmp_path):
+    """Une PR `blocked` est refusee SANS payer l'organe B.0 ni les collisions.
+
+    Mesure du 2026-11-23 sur trois PRs bloquees (#28166, #28168, #28171) :
+    la collision d'index twin coute 90 s a 131 s, la collision de slot 39 s
+    a 52 s, l'organe B.0 7 s a 8 s -- et la lecture REST qui revele l'etat
+    `blocked` coute 0,8 s. Le deplacement de la prelecture avant l'etape 4
+    fait passer une PR bloquee de ~150 s a ~1 s.
+    """
+    runner = ScriptedRunner(
+        views={123: VUE_COUTEUSE},
+        pulls=[{"mergeable_state": "blocked", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "mergeable-state:blocked"
+    flat = runner.flat()
+    assert not any("check_unaddressed_nits.py" in f for f in flat)
+    assert not any("check_twin_index_collisions.py" in f for f in flat)
+    assert not any("twin_open_claims.py" in f for f in flat)
+    assert not any("check_slot_reservation.py" in f for f in flat)
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_etat_clean_paye_b0_et_collisions(tmp_path):
+    """Le CONTROLE de l'assertion ci-dessus : la meme PR, etat `clean`, paie
+    bien B.0 et les collisions -- le deplacement de la prelecture n'a donc
+    pas supprime les etapes, il les a seulement rendues conditionnelles."""
+    runner = ScriptedRunner(
+        views={123: VUE_COUTEUSE},
+        pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    flat = runner.flat()
+    assert any("check_unaddressed_nits.py" in f for f in flat)
+    assert any("check_twin_index_collisions.py" in f for f in flat)
+    assert any("check_slot_reservation.py" in f for f in flat)
+
+
 def test_prelecture_unstable_ne_saute_pas_les_tests_d_arbre(tmp_path):
     runner = _unstable_runner(DEFAULT_CHECK_RUNS)
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
