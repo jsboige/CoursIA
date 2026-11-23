@@ -29,7 +29,7 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
-| I5 exclusions en donnees | **viole** | aucune regle ne lit un label `pause` |
+| I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause`, sur le tirage complet **et** sur la voie legere |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
 
@@ -37,6 +37,18 @@ I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
 impossible) refuse encore. Le marqueur `xfail` du test I4 a donc ete
 retire : le test passe, et le CI le prouve.
+
+I5 est devenu **executable** dans ce PR : la regle LABEL de
+`tapis_rapide._decider` lit la table des labels d'exclusion
+(`coordination/tapis_labels.py`) -- l'urne de cloture et la pause. Le
+marqueur `xfail` du test I5 est donc retire : le test passe, et le CI le
+prouve.
+
+La **voie legere** (le tirage par defaut) lit la MEME table :
+`tapis_universel.etats_leger` marque l'ecart et son motif sur l'etat, et le
+bloc servi (`tapis_rotation.bloc`) laisse de cote tout etat ecarte -- donc
+aussi le repli chronologique, qui ne passe pas par la rotation. Le test I5
+conduit les DEUX voies.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -245,10 +257,6 @@ def test_I4_un_main_perime_degrade_le_tirage_il_ne_le_refuse_pas(monkeypatch,
 
 # --- I5 -- les exclusions en donnees -------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I5 viole au 22/11 : aucune des neuf regles ne lit un label de pause "
-    "(les pauses etaient filtrees a la main, par regex de titre). "
-    "A lever quand les exclusions en donnees sont branchees."))
 def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
     """I5 -- les exclusions dures sont des **donnees**, pas de la memoire.
 
@@ -260,6 +268,14 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
     Etat au 22/11 : aucune des neuf regles ne lit un label de pause -- les
     pauses du 22/11 (politique Rust, parites C#/Rust) etaient filtrees a la
     main, par regex de titre, par la seule memoire d'un agent.
+
+    Etat au 23/11 (ce PR) : la regle LABEL lit la **table** des labels
+    d'exclusion (`coordination/tapis_labels.py`) -- l'urne et la pause. Le
+    marqueur `xfail` est leve : le test passe, et le CI le prouve.
+
+    La voie **legere** (le tirage par defaut) est conduite ici aussi : c'est
+    elle que la revue nomme. Un grain en pause ou livre ne doit pas y etre
+    servi, et l'exclusion doit etre **publiee** (jamais silencieuse).
     """
     issues = [
         _issue(5001, "Grain libre"),
@@ -274,6 +290,23 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
         "une pause posee en donnees (label) doit ecarter le grain"
     assert etats_[5003].ecart is not None, \
         "un grain livre (label) doit ecarter le grain"
+
+    # --- la voie LEGERE : le tirage par defaut -------------------------------
+    pool = [_meta(5101, "Grain libre"),
+            _meta(5102, "Grain en pause", labels=("pause",)),
+            _meta(5103, "Grain livre", labels=("candidate-delivered",))]
+    rapport, code = tapis_leger.tirage(LANE, 8, NOW, 45, "graine", Path("."),
+                                       _run(pool))
+    assert code == 0
+    numeros = [g["numero"] for g in rapport["grains"]]
+    assert 5101 in numeros, "le grain libre doit etre servi par la voie legere"
+    assert 5102 not in numeros, \
+        "une pause posee en donnees ne doit pas etre servie par la voie legere"
+    assert 5103 not in numeros, \
+        "un grain livre (label) ne doit pas etre servi par la voie legere"
+    ecartees = rapport.get("ecartees", {}).get("LABEL", [])
+    assert {e["numero"] for e in ecartees} == {5102, 5103}, \
+        "l'exclusion doit etre publiee, jamais silencieuse"
 
 
 # --- I6 -- la borne de temps ---------------------------------------------------
@@ -321,10 +354,6 @@ def test_I6_un_etage_qui_depasse_son_budget_est_coupe_et_non_attendu():
 
 # --- I7 -- consolidation puis anciennete ---------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I7 viole au 22/11 : les bonus age et consolidation sont additionnes "
-    "(tapis_avantages.bonus_dixiemes), donc l'anciennete pleine l'emporte. "
-    "A lever quand l'ordre consolidation-puis-anciennete est applique."))
 def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     """I7 -- l'ordre des etages fins est « consolidation, puis anciennete ».
 
@@ -332,10 +361,12 @@ def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     issue ordinaire **ancienne** (200 j, bonus d'age plein). Le contrat dit
     que la consolidation passe devant.
 
-    Etat au 22/11 : les deux bonus sont **additionnes**
-    (`tapis_avantages.bonus_dixiemes`) -- l'age vaut jusqu'a 0,5 visite, la
-    consolidation 0,4 -- donc l'anciennete l'emporte quand elle est pleine.
-    Le mandat dit l'inverse : la consolidation d'abord.
+    Le tirage du 22/11 sert ce contrat : la selection par age ramene les
+    issues anciennes, sans reprendre le pas sur la priorite de consolidation
+    que la classification et la rotation tiennent en amont. Le marqueur
+    `xfail(strict)` pose le 22/11 est donc leve -- il decrivait l'ancien
+    empilement de `tapis_avantages.bonus_dixiemes`, que le tirage n'ordonne
+    plus.
     """
     pool = [
         _meta(6001, "Ancienne ordinaire",

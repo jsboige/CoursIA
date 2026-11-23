@@ -1,0 +1,7 @@
+date: '2026-11-23'
+by: myia-po-2024:CoursIA
+python_sha: 5ad78833e049f71de9b648fc7c4bf51ddcfa4bb6
+csharp_sha: b38a2a01be8e2191055eec2f012e88f8039a99d3
+content_python_sha: f5e9d6f388e5e40a9c028645ece1d8a13f1d5c2848d14791ed92b238f39c8308
+content_csharp_sha: 4a8c3e0b01f153f8f8d930b3fe5ff8c5894fc67d61a2b318b8821cc646182689
+reason: Ancres Referenced BOOK_MAPPING (#19274, PR #28217) : cellule markdown '## References' ajoutee des DEUX cotes (palier 11, ancres neuves verifiees TOC des deux editions) — markdown-only, aucune re-execution due.
