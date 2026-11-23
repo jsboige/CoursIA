@@ -347,6 +347,69 @@ ACCENT_PAIRS = {
     "essayee": "essayée",
     "specialites": "spécialités",
     "legerete": "légèreté",
+    # #16638, quatrieme fournee : residu mesure sur la tranche
+    # `Search/Part1-Foundations` du rollout deaccents (2 084 candidats `auto`
+    # restants apres cure canonique, 22/11). MEME critere que #21277, forme
+    # par forme, compte cite = occurrences markdown de la serie temoin :
+    #   (a) la graphie desaccentuee n'est PAS un mot francais valide -- les
+    #       formes valides non accentuees du meme residu (borne, trouve,
+    #       explore, guide, prouve, conjecture, limite, risque, passe...)
+    #       restent HORS table : tri contextuel, pas cure globale ;
+    #   (b) aucune n'est un mot anglais (la serie ne porte aucun jumeau `_en`)
+    #       ; les anglicismes -tion/-ence du residu (interpretation,
+    #       verification, temperature...) vont dans CONTEXTUAL_PAIRS, pas ici ;
+    #   (c) la forme accentuee est unique -- `enonce` (énoncé/énonce),
+    #       `coute` (coûte/coûté) hesitent et restent hors table.
+    "etre": "être",
+    "etres": "êtres",
+    "parite": "parité",
+    "parites": "parités",
+    "memoire": "mémoire",
+    "memoires": "mémoires",
+    "lineaire": "linéaire",
+    "lineaires": "linéaires",
+    "itineraire": "itinéraire",
+    "itineraires": "itinéraires",
+    "arete": "arête",
+    "aretes": "arêtes",
+    "vallee": "vallée",
+    "vallees": "vallées",
+    "ecart": "écart",
+    "ecarts": "écarts",
+    "frontiere": "frontière",
+    "frontieres": "frontières",
+    "succes": "succès",
+    "etroite": "étroite",
+    "bibliotheque": "bibliothèque",
+    "bibliotheques": "bibliothèques",
+    "honnete": "honnête",
+    "piege": "piège",
+    "pieges": "pièges",
+    "elagage": "élagage",
+    "negatif": "négatif",
+    "reponse": "réponse",
+    "reponses": "réponses",
+    "echec": "échec",
+    "echecs": "échecs",
+    "lecon": "leçon",
+    "lecons": "leçons",
+    "probabilite": "probabilité",
+    "probabilites": "probabilités",
+    "ecrire": "écrire",
+    "dela": "delà",
+    "integralite": "intégralité",
+    "difficulte": "difficulté",
+    "difficultes": "difficultés",
+    "priorite": "priorité",
+    "priorites": "priorités",
+    "theoreme": "théorème",
+    "theoremes": "théorèmes",
+    "centralite": "centralité",
+    "centralites": "centralités",
+    "correlee": "corrélée",
+    "proteines": "protéines",
+    "polyedre": "polyèdre",
+    "communautes": "communautés",
     # #21277, troisieme fournee : forme relevee par l'audit visuel du site
     # deploye (EPIC #10921, criterion 5) -- le titre et les intertitres de
     # section "### Prerequis" sortaient sans accent sur le site public.

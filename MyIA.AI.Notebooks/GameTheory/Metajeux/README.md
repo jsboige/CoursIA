@@ -33,7 +33,7 @@ d'autres séries suivent le parcours.
 | 03 | [Abstraction à dette](Metajeux-03-Abstraction-a-Dette-Python.ipynb) | **Abstraire** : résoudre un jeu abstrait plus petit, relever la stratégie, chiffrer l'exploitabilité dans le jeu d'origine — la courbe de dette est le livrable | 19 |
 | 04 | [Chemin minimal](Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | **Témoigner** : un constructeur produit le chemin minimal (Robinson-Goforth 2×2), un vérificateur séparé re-dérive validité et minimalité | 20 |
 | 05 | [Témoins d'impossibilité](Metajeux-05-Temoins-Impossibilite-Python.ipynb) | **Réfuter** : prouver qu'aucun chemin plus court n'existe, par la structure produit des chambres | 20b |
-| 06 | [Chemin minimal 3×2](Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb) · [jumeau C#](Metajeux-06-Chemin-Minimal-3x2-Ordinal-CSharp.ipynb) | **Transposer** : sur un second substrat, le verdict 2×2 tombe — 15,0 % des paires raccourcissent en traversant les murs, le diamètre se contracte de 15 à 10 | 20c |
+| 06 | [Chemin minimal 3×2](Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb) · [jumeau C#](Metajeux-06-Chemin-Minimal-3x2-Ordinal-CSharp.ipynb) · [Rust](Metajeux-06-Chemin-Minimal-3x2-Ordinal-Rust.ipynb) |
 
 Ordre de lecture interne : `01 → 02 → 03 → 04 → 05 → 06` — la marche 02 casse ce que 01 pose,
 la marche 06 casse ce que 04-05 avaient attesté sur le premier substrat. `03b` se lit après la
