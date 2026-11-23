@@ -9,6 +9,7 @@ from generate_curriculum_rdf import (
     VOCAB,
     build_graph,
     build_interfaces_graph,
+    build_taxonomy_graph,
     validate_graph,
 )
 
@@ -191,3 +192,59 @@ def test_interfaces_reject_missing_usage():
         assert "usage" in str(error)
     else:
         raise AssertionError("un contrat sans usage doit être refusé")
+
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+TAXONOMY_DIR = REPO_ROOT / "docs" / "curriculum" / "taxonomy"
+
+
+def test_taxonomy_merge_emits_concepts_only_and_joins_catalogue_notebooks():
+    """Fusion --taxonomy-dir (#25001) : concepts sans structure, jointure par URI.
+
+    Témoin sur données réelles : catalogue réel + 9 taxonomies réelles. La
+    fusion n'émet ni série ni carnet de la taxonomie (une seule source de
+    structure : le catalogue) ; chaque lien cursus:concept atterrit sur un
+    nœud carnet du catalogue.
+    """
+    import json
+
+    catalog = json.loads((REPO_ROOT / "COURSE_CATALOG.generated.json").read_text(encoding="utf-8"))
+    graph = build_graph(catalog)
+    notebooks_before = set(graph.subjects(RDF.type, VOCAB.Notebook))
+    concepts_graph = build_taxonomy_graph(TAXONOMY_DIR)
+
+    # Concepts seuls : aucune structure de taxonomie ne s'ajoute.
+    assert not set(concepts_graph.subjects(RDF.type, VOCAB.Series))
+    assert not set(concepts_graph.subjects(RDF.type, VOCAB.Subseries))
+    assert not set(concepts_graph.subjects(RDF.type, VOCAB.Notebook))
+
+    graph += concepts_graph
+    notebooks_after = set(graph.subjects(RDF.type, VOCAB.Notebook))
+    assert notebooks_after == notebooks_before  # aucun doublon de carnet
+
+    linked = [
+        notebook for notebook in notebooks_after
+        if (notebook, VOCAB.concept, None) in graph
+    ]
+    assert linked, "aucun carnet du catalogue ne reçoit de concept"
+    assert any(True for _ in graph.triples((None, VOCAB.requiresConcept, None)))
+
+
+def test_merged_graph_conforms_and_dangling_prerequisite_is_refused():
+    """Le graphe fusionné passe les formes ; un prérequis pendant est refusé."""
+    import json
+
+    catalog = json.loads((REPO_ROOT / "COURSE_CATALOG.generated.json").read_text(encoding="utf-8"))
+    graph = build_graph(catalog)
+    graph += build_taxonomy_graph(TAXONOMY_DIR)
+    conforms, report = validate_graph(graph)
+    assert conforms, report
+
+    # Témoin négatif : un requiresConcept vers un concept absent du graphe
+    # viole sh:class cursus:CurriculumConcept de ConceptShape.
+    concept = next(graph.subjects(RDF.type, VOCAB.CurriculumConcept))
+    dangling = URIRef("https://github.com/jsboige/CoursIA/cursus/concept/00000000-0000-0000-0000-00000000dead")
+    graph.add((concept, VOCAB.requiresConcept, dangling))
+    conforms, report = validate_graph(graph)
+    assert not conforms
+    assert "requiresConcept" in report
