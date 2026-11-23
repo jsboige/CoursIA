@@ -80,7 +80,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 ### Autour de 02 — Sophismes et taxonomie
 
-- [02b — Cartes Argumentum](Argumentation-02b-Argumentum-Cards-Python.ipynb) : produire un deck imprimable à partir de la taxonomie. Ce carnet de production consomme le socle ontologique plutôt que d'ajouter une méthode de détection.
+- [02b — Cartes Argumentum](Argumentation-02b-Argumentum-Cards-Python.ipynb) · [jumeau C#](Argumentation-02b-Argumentum-Cards-CSharp.ipynb) : produire un deck imprimable à partir de la taxonomie. Ce carnet de production consomme le socle ontologique plutôt que d'ajouter une méthode de détection.
 
 ### Autour de 03 — Argumentation abstraite
 
