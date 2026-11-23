@@ -2,16 +2,17 @@
 
 Incidents fondateurs (mesures du 2026-11-14) : un tirage servi sur un main
 local en retard de 605 commits (« sature, tout est livre » -- faux), et un
-avertissement de picker perime lu puis ignore. La garde REFUSE. Ces tests
-pinnnent :
+avertissement de picker perime lu puis ignore. Ces tests pinnnent :
 
-* le controle positif : main en retard -> refus, remede `git pull --ff-only` ;
-* le controle positif : module du tirage divergent d'origin/main -> refus ;
+* le controle positif : main en retard -> DEGRADE (file servie + avertissement),
+  remede `git pull --ff-only` (invariant I4 de #28114, 22/11) ;
+* le controle positif : module du tirage divergent d'origin/main -> DEGRADE ;
 * le controle NEGATIF : un clone a jour, organes conformes, PASSE ;
 * l'echappatoire explicite `--allow-stale` -- dite dans la sortie JSON ;
 * le clone pas sur main (worktree) : la mesure porte sur le main local ;
 * la mesure impossible : fail-closed, jamais un vert sur un fetch rate ;
-* le cablage dans tapis_rapide.main (refus = sortie 4, sans repli picker).
+* le cablage dans tapis_rapide.main (refus = sortie 4, sans repli picker ;
+  degradation = sortie 0 + avertissement sur stderr).
 
 Aucun test ne touche le reseau : l'origin est un depot nu local (file://),
 comme test_session_hygiene.py.
@@ -108,14 +109,23 @@ def test_clone_a_jour_passe(tmp_path):
 # --- controle positif : main en retard ---------------------------------------
 
 
-def test_main_en_retard_refuse_avec_remede(tmp_path):
-    """Incident po-2024 (14/11) : 605 commits de retard -> refus + remede."""
+def test_main_en_retard_degrade_avec_remede(tmp_path):
+    """Main en retard -> DEGRADE, plus refus (invariant I4 de #28114).
+
+    Mesure du 22/11 qui a change l'etat : `main` local a 2 commits de retard
+    -> `TIRAGE REFUSE [MAIN_PERIME]` et sortie 4 ; po-2028:CoursIA-2, a 123
+    commits, n'a plus eu de picker du tout. Un depot qui bouge en permanence
+    ne peut pas bloquer le tirage : l'etat degrade, la file est servie.
+    """
     clone, origin = _mini_depot(tmp_path)
     _avancer_origin(tmp_path, origin, n=3)
     v = mf.garder(clone, run=mf.run_defaut)
-    assert v["refuse"] is True and v["ok"] is False
+    assert v["refuse"] is False and v["ok"] is False
+    assert v["degrade"] is True, f"un main en retard degrade, il ne refuse pas : {v}"
     assert v["ecart"] == 3, f"3 commits d'avance attendus, lu {v['ecart']}"
     assert [r["code"] for r in v["raisons"]] == ["MAIN_PERIME"]
+    assert [r["code"] for r in v["raisons_degradees"]] == ["MAIN_PERIME"]
+    assert v["raisons_dures"] == []
     assert "3 commit" in v["raisons"][0]["motif"]
     assert "pull --ff-only" in v["raisons"][0]["remede"]
 
@@ -123,17 +133,17 @@ def test_main_en_retard_refuse_avec_remede(tmp_path):
 # --- controle positif : organe divergent -------------------------------------
 
 
-def test_organe_divergent_refuse_puis_repasse(tmp_path):
-    """Incident po-2028 (14/11) : l'organe differe d'origin/main -> refus.
+def test_organe_divergent_degrade_puis_repasse(tmp_path):
+    """L'organe differe d'origin/main -> DEGRADE (I4), jamais un blocage.
 
     Controle negatif jumeau dans le meme test : le fichier remis a son
-    contenu d'origin/main, le refus tombe.
+    contenu d'origin/main, la degradation tombe.
     """
     clone, _ = _mini_depot(tmp_path)
     chemin = clone / "scripts/coordination/gh_bulk.py"
     chemin.write_text("# modifie localement, divergent d'origin/main\n", encoding="utf-8")
     v = mf.garder(clone, run=mf.run_defaut)
-    assert v["refuse"] is True
+    assert v["refuse"] is False and v["degrade"] is True
     assert v["organes_divergents"] == ["scripts/coordination/gh_bulk.py"]
     assert v["raisons"][0]["code"] == "ORGANE_DIVERGENT"
     chemin.write_text("# scripts/coordination/gh_bulk.py\n", encoding="utf-8")
@@ -195,7 +205,8 @@ def test_worktree_frais_passe_malgre_main_partage_en_retard(tmp_path):
     assert v["refuse"] is False and v["ok"] is True, f"causes : {v}"
     assert v["ref_mesure"] == "HEAD" and v["ecart"] == 0
     v_principal = mf.garder(clone, run=mf.run_defaut)
-    assert v_principal["refuse"] is True
+    assert v_principal["refuse"] is False
+    assert v_principal["degrade"] is True
     assert v_principal["ecart"] == 3
     assert [r["code"] for r in v_principal["raisons"]] == ["MAIN_PERIME"]
 
@@ -243,20 +254,61 @@ def test_main_freshness_force_outre_l_echappatoire(tmp_path, monkeypatch):
 # --- cablage dans tapis_rapide.main ------------------------------------------
 
 
-def test_tapis_refuse_le_tirage_sur_main_perime(monkeypatch, capsys):
-    """Le refus de garde se rend par la sortie 4, remede sur stderr, JSON sur stdout."""
-    verdict = {"ok": False, "refuse": True, "outre_passe": False, "ecart": 605,
-               "raisons": [{"code": "MAIN_PERIME",
-                            "motif": "le main local est en retard de 605 commit(s) sur origin/main",
-                            "remede": "git pull --ff-only"}]}
+def test_tapis_refuse_le_tirage_sur_une_mesure_impossible(monkeypatch, capsys):
+    """Le REFUS de garde se rend par la sortie 4, remede sur stderr, JSON sur stdout.
+
+    Le refus ne porte plus que la mesure impossible (I4 de #28114) : un etat
+    inconnu ne se sert pas.
+    """
+    verdict = {"ok": False, "refuse": True, "degrade": False, "outre_passe": False,
+               "ecart": None, "raisons_dures": [], "raisons_degradees": [],
+               "raisons": [{"code": "MESURE_IMPOSSIBLE",
+                            "motif": "git fetch origin main a echoue : reseau coupe",
+                            "remede": "retablir le fetch (reseau, credential) puis relancer"}]}
     monkeypatch.setattr(mf, "garder", lambda depot, allow_stale=False: dict(verdict))
     rc = tr.main(["--lane", "myia-po-2024:CoursIA-2"])
     assert rc == 4, "le refus de fraicheur doit se rendre par la sortie 4 (pas le 3 du repli)"
     capture = capsys.readouterr()
-    assert "TIRAGE REFUSE [MAIN_PERIME]" in capture.err
-    assert "605" in capture.err and "pull --ff-only" in capture.err
+    assert "TIRAGE REFUSE [MESURE_IMPOSSIBLE]" in capture.err
+    assert "reseau coupe" in capture.err and "retablir le fetch" in capture.err
     assert "pick_idle_grain" not in capture.err, "le refus ne doit PAS imprimer le repli picker"
-    assert json.loads(capture.out)["ecart"] == 605
+    assert json.loads(capture.out)["raisons"][0]["code"] == "MESURE_IMPOSSIBLE"
+
+
+def test_tapis_sert_la_file_sur_un_main_perime_avec_un_avertissement(monkeypatch,
+                                                                      capsys):
+    """I4 : un `main` perime DEGRADE le tirage -- file servie, avertissement dit.
+
+    La mesure du 22/11 : `tapis_rapide.py` rendait `TIRAGE REFUSE [MAIN_PERIME]`
+    et sortait en 4 des que le main local a 2 commits de retard ; po-2028 a
+    123 commits n'a plus eu de picker du tout. Le contrat : la file est
+    servie, l'avertissement est dit sur stderr et porte dans le rapport JSON
+    (`fraicheur.degrade`), et stdout reste le rapport du tirage.
+    """
+    verdict = {"ok": False, "refuse": False, "degrade": True, "outre_passe": False,
+               "ecart": 2, "raisons_dures": [],
+               "raisons_degradees": [{"code": "MAIN_PERIME",
+                                      "motif": "le main local est en retard de 2 commit(s) "
+                                              "sur origin/main",
+                                      "remede": "git pull --ff-only"}],
+               "raisons": [{"code": "MAIN_PERIME",
+                            "motif": "le main local est en retard de 2 commit(s) sur origin/main",
+                            "remede": "git pull --ff-only"}]}
+    monkeypatch.setattr(mf, "garder", lambda depot, allow_stale=False: dict(verdict))
+    monkeypatch.setattr(gh_selection, "lire_metadonnees_issues",
+                        lambda *a, **k: ([], 0.0))
+    monkeypatch.setattr(gh_bulk, "lire_citations_mergees", lambda *a, **k: {})
+    monkeypatch.setattr(gh_bulk, "lire_prs_ouvertes", lambda *a, **k: [])
+    monkeypatch.setattr(tapis_origami, "mesurer",
+                        lambda *a, **k: (set(), {"measured": False, "active": False}))
+    rc = tr.main(["--lane", "L", "--json"])
+    capture = capsys.readouterr()
+    assert rc == 0, "un main perime ne doit pas rendre le tirage (sortie 4)"
+    assert "TIRAGE DEGRADE [MAIN_PERIME]" in capture.err
+    assert "2 commit" in capture.err and "pull --ff-only" in capture.err
+    rapport = json.loads(capture.out)
+    assert rapport["fraicheur"]["degrade"] is True
+    assert rapport["fraicheur"]["raisons_degradees"][0]["code"] == "MAIN_PERIME"
 
 
 def test_tapis_propage_allow_stale_et_le_dit_dans_le_rapport(monkeypatch, capsys):

@@ -1410,11 +1410,21 @@ def main():
                   f"{result.get('changed_notebooks', 0)} changed notebooks "
                   f"(base={result['base']}).")
             return 0
-        print(f"FAIL: kernel-drift regression in {len(findings)} notebook(s):",
+        # L'exemption C.4 (`## Diagnostic dérive`) vaut sur les DEUX chemins :
+        # un finding acknowledge n'est pas un echec -- le mode `--json` le
+        # respecte deja (l.1359). Le chemin texte l'annonçait et l'ignorait :
+        # il affichait « acknowledged » et rendait quand meme rc 1.
+        bloquants = [f for f in findings if not f.get("acknowledged")]
+        acquittes = [f for f in findings if f.get("acknowledged")]
+        if not bloquants:
+            print(f"OK: {len(acquittes)} kernel-drift regression(s) "
+                  f"acknowledged via ## Diagnostic dérive (exemption C.4), "
+                  f"base={result['base']}.")
+            return 0
+        print(f"FAIL: kernel-drift regression in {len(bloquants)} notebook(s):",
               file=sys.stderr)
-        for f in findings:
-            tag = " [ACKNOWLEDGED via ## Diagnostic dérive]" if f.get("acknowledged") else ""
-            print(f"  {f['notebook']}{tag}", file=sys.stderr)
+        for f in bloquants:
+            print(f"  {f['notebook']}", file=sys.stderr)
             for k in f["kernel_diffs"]:
                 print(f"    - {k}", file=sys.stderr)
             if f["signature_drift_cells"]:
@@ -1423,6 +1433,9 @@ def main():
             if f.get("output_added_cells"):
                 print(f"    - (advisory) output added on cells: "
                       f"{f['output_added_cells']}", file=sys.stderr)
+        for f in acquittes:
+            print(f"  {f['notebook']} [ACKNOWLEDGED via ## Diagnostic dérive]",
+                  file=sys.stderr)
         return 1
 
 
@@ -1451,7 +1464,14 @@ def main_with_args(argv):
               f"{result.get('changed_notebooks', 0)} changed notebooks "
               f"(base={result['base']}).")
         return 0
-    print(f"FAIL: {len(findings)} drift(s)", file=sys.stderr)
+    # Meme exemption C.4 que le chemin texte de `main` : un finding
+    # acknowledge ne fait pas echouer (alignement sur le mode `--json`).
+    bloquants = [f for f in findings if not f.get("acknowledged")]
+    if not bloquants:
+        print(f"OK: {len(findings)} drift(s) acknowledged via "
+              f"## Diagnostic dérive (exemption C.4).")
+        return 0
+    print(f"FAIL: {len(bloquants)} drift(s)", file=sys.stderr)
     return 1
 
 
