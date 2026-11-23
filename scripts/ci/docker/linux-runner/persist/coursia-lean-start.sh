@@ -36,6 +36,16 @@ set -uo pipefail
 # 2026-09-09 que ce fichier existe pour fermer (#16578).
 MASTER_ENV="${COURSIA_MASTER_ENV:-/mnt/d/Dev/CoursIA/.secrets/master.env}"
 REPO_DIR="${COURSIA_REPO_DIR:-/mnt/d/Dev/CoursIA}"
+# Le superviseur est lance par un CHEMIN ABSOLU, jamais relatif. Le
+# predicat per-checkout (#21527) reconnait un superviseur par la forme
+# "$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh <mode>" de sa
+# cmdline : un argv relatif (`./scripts/...`) porte un chemin qui ne
+# contient pas REPO_DIR, donc le predicat ne voit pas le superviseur
+# qu'il a lui-meme lance -- faux negatif, et purge a tort de la
+# sentinelle alors que le superviseur est vivant. Un argv relatif est de
+# plus indiscernable entre deux checkouts, ce que le predicat refuse par
+# construction : le chemin absolu est la seule forme admise.
+SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
 ARG="${1:-2}"
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
@@ -133,7 +143,7 @@ export COURSIA_RUNNER_CGROUP_PARENT="coursia-ci.slice"
 cd "$REPO_DIR" || exit 1
 
 if [ "$ARG" = "stop" ]; then
-  exec ./scripts/ci/docker/linux-runner/supervise.sh stop
+  exec "$SUPERVISE" stop
 fi
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------
 # Meme bloc que coursia-waiters-start.sh, avec le predicat PAR-JAMBE que
@@ -141,8 +151,33 @@ fi
 # propre predicat ») : `supervise\.sh lean`. Un predicat global ferait
 # que chaque jambe refuserait de purger SA sentinelle tant qu'une AUTRE
 # tourne -- un verrou par jambe garde par un test global ne garde rien.
+#
+# ET PER-CHECKOUT, PAS PER-MACHINE (#21527) : `pgrep -f 'supervise\.sh lean'`
+# reconnait un superviseur de n'importe quel checkout, qui bloque alors le
+# purge d'UNE sentinelle qui ne lui appartient pas. Le predicat par-checkout
+# ne voit que le superviseur de CE depot, dans le mode `lean`.
 if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh lean' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" lean >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh lean' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi
@@ -159,4 +194,4 @@ if [ -f "$COURSIA_RUNNER_STATE_DIR/lean-pids" ]; then
     rm -f "$COURSIA_RUNNER_STATE_DIR/lean-pids"
   fi
 fi
-exec ./scripts/ci/docker/linux-runner/supervise.sh lean "$ARG"
+exec "$SUPERVISE" lean "$ARG"

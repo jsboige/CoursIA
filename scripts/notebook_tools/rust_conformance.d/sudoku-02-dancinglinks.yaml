@@ -1,0 +1,45 @@
+- name: "Sudoku-02 DancingLinks"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Rust.ipynb
+  measures:
+    - id: solution_grid
+      description: "Grille resolue du puzzle de reference (81 chiffres, ordre de lecture)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Solution trouvee en [^\\n]*:\\n(.*?)Solution valide"
+          transform: digits
+        rust:
+          cell: 4
+          pattern: "((?:\\d{9}\\n){9})"
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# ne materialise pas la grille dans ses sorties commitees
+            : il delega a DlxLib et importe `Sudoku-00-Environment-CSharp.ipynb`
+            (la resolution y est operee, pas affichee). Cote declare ABSENT,
+            pas mesure : la comparaison porte sur les deux cotes qui publient
+            la grandeur. La reprise du cote C# suppose une sortie qui affiche
+            la grille (re-execution C.2 du carnet C#) -- hors de ce portage.
+    - id: resolution_ok
+      description: "Le puzzle de reference est resolu et la solution verifiee"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 16
+          pattern: "Solution valide: (True|False)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "crate : resolu=(true|false)"
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `solution_grid` : le cote C# affiche un statut de
+            benchmark (« Status: Success »), pas la validation de ce puzzle.

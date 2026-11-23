@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-08
+
 # Secrets management — central source of truth
 
 **Objectif :** une gestion propre et durable de TOUS les secrets de l'infrastructure GenAI / CoursIA, pour que le drift (un secret édité à un endroit mais pas ailleurs) soit mécaniquement impossible.
@@ -53,7 +55,7 @@ python scripts/secrets/render_envs.py --check
 | LLM APIs payantes | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY` | notebooks | Oui (facturation) |
 | Hubs / git | `CIVITAI_TOKEN`, `GITHUB_TOKEN` = `GITHUB_ACCESS_TOKEN` | services + notebooks | Oui |
 | Client API keys (server↔client) | `WHISPER_API_KEY`, `VLLM_API_KEY`, `TTS_API_KEY`, `QWEN_ASR_API_KEY`, `MUSICGEN_API_KEY`, `DEMUCS_API_KEY`, `FUNASR_API_KEY` | 1 service + notebooks | Moyen |
-| Qdrant vector DB (client) | `QDRANT_API_KEY` | notebooks RAG / SemanticKernel / Argument_Analysis | Moyen (flip serveur = op inter-repo roo-extensions) |
+| Qdrant vector DB (client) | `QDRANT_API_KEY` | notebooks RAG / SemanticKernel / ArgumentAnalysis | Moyen (flip serveur = op inter-repo roo-extensions) |
 | Tokens client ComfyUI | `COMFYUI_VIDEO_TOKEN`, `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` | notebooks → services ComfyUI | Moyen |
 | Session | `SECRET_KEY` | 1 service | Oui |
 

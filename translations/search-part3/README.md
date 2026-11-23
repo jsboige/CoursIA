@@ -1,12 +1,12 @@
 # CSV de synchro traduction — série Search/Part3-Advanced
 
-**Statut** : Phase 2 rollout (Epic #4957 / #1650). 10ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/Argument_Analysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808), `Sudoku/` (PR #5809), `Search/Part1-Foundations/` (PR #5810), `Search/Part2-CSP/` (PR #5811) et `Search/Part4-Metaheuristics/` (PR #5812).
+**Statut** : Phase 2 rollout (Epic #4957 / #1650). 10ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/ArgumentAnalysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808), `Sudoku/` (PR #5809), `Search/Part1-Foundations/` (PR #5810), `Search/Part2-CSP/` (PR #5811) et `Search/Part4-Metaheuristics/` (PR #5812).
 
 ## Couvert
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-part3.csv`](search-part3.csv) | `Search/Part3-Advanced/` | 6 (Search-11-Bridge / Search-12-PatternDatabases + jumeau C# / Search-13-LDS + jumeau C# / Search-14-WeightedAstar + jumeau C#) | 102 (header + 1 748 lignes CSV-escaped, 20 colonnes) |
+| [`search-part3.csv`](search-part3.csv) | `Search/Part3-Advanced/` | 5 au seed 2026-07-09 (Search-12-PatternDatabases-Csharp seul / Search-13-LDS + jumeau C# / Search-14-WeightedAstar + jumeau C# ; Search-11-Bridge absent du CSV au seed — le compte courant vit dans le CSV) | 102 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 1 748 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Search/Part3-Advanced = **owner po-2025 strict** (PRs récentes #5425 #5287 #5283 #4724 #4713 #4341 #4288 = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
@@ -14,7 +14,7 @@
 
 **Note cross-language** : la série Search/Part3-Advanced est cross-language (Python 3.10+ natif + jumeaux C# co-localisés via `-Csharp.ipynb` suffix sur Search-12/13/14). Le script d'extraction prend **les deux familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles.
 
-**Note substance mince** : 6 notebooks / 102 cellules — substance modeste (≈17 cellules/nb en moyenne). C'est le **plus petit** des 4 sous-séries Search. Conforme à l'atomicité G.4 (1 feature, 2 fichiers CSV+README, < 3000 lignes, 1 domaine). Cohérent avec le pattern c.384/c.385/c.386 Search-rollout structuré.
+**Note substance mince** : au seed 2026-07-09, notebooks 5 et cellules 102 — substance modeste (moyenne ≈20 par nb à l'époque). C'est le **plus petit** des 4 sous-séries Search. Conforme à l'atomicité G.4 (une feature, un CSV + un README, sous le plafond de taille, un domaine). Cohérent avec le pattern c.384/c.385/c.386 Search-rollout structuré.
 
 ## Régénération
 
@@ -37,7 +37,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 102 cellules / 6 notebooks Search/Part3-Advanced (Search-11/12/13/14 + jumeaux C#)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 102, notebooks couverts 5 Search/Part3-Advanced (Search-12/13/14 + jumeaux C# — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché
@@ -47,7 +47,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 - Issue #4957 — design infrastructure synchronisation traduction
 - Epic #1650 — traduction multilingue du dépôt
-- `translations/symbolicai/README.md` — 1ère série (Argument_Analysis)
+- `translations/symbolicai/README.md` — 1ère série (ArgumentAnalysis)
 - `translations/probas-infer/README.md` — 2ᵉ série (Probas/Infer)
 - `translations/mlnet/README.md` — 3ᵉ série (ML/ML.Net)
 - `translations/planners/README.md` — 4ᵉ série (Planners)

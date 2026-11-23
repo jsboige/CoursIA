@@ -168,6 +168,31 @@ def _read_notebook_at_ref(nb_path: Path, ref: str) -> dict | None:
         return None
 
 
+def cell_ids_at_ref(nb_path: Path, ref: str) -> set[str]:
+    """Les identifiants de cellules d'un carnet a un ref donne.
+
+    Sert a reconnaitre un carnet RENOMME : les ids de cellules (nbformat
+    4.5) survivent au renommage ET a la re-execution, alors que la
+    similarite de contenu, non.
+
+    Mesure (13/11) : un carnet dont la sortie image a disparu tombe a
+    ~1 % de similarite de contenu -- `git diff -M50%` le rend `D` + `A`
+    et ne le voit plus comme un renommage. Deux carnets sans rapport ne
+    partagent aucun id de cellule : l'intersection non vide est donc un
+    signal de renommage, et non une coincidence de contenu.
+
+    Rend l'ensemble vide si le carnet est illisible a ce ref.
+    """
+    data = _read_notebook_at_ref(nb_path, ref)
+    if data is None:
+        return set()
+    ids: set[str] = set()
+    for cell in data.get("cells") or []:
+        if isinstance(cell, dict) and cell.get("id"):
+            ids.add(str(cell["id"]))
+    return ids
+
+
 def _path_exists_at_ref(nb_path: Path, ref: str) -> bool:
     """True si le chemin existe a ce ref (``git cat-file -e``), False sinon.
 
@@ -443,16 +468,28 @@ def _diff_families(base_agg: dict[str, int], head_agg: dict[str, int],
 
 def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None,
                   threshold: float = DEFAULT_DELTA_THRESHOLD,
-                  min_base: int = DEFAULT_MIN_BASE_BYTES) -> dict:
-    """Compare le volume de rendu d'un notebook entre base_ref et head_ref."""
+                  min_base: int = DEFAULT_MIN_BASE_BYTES,
+                  head_path: Path | None = None) -> dict:
+    """Compare le volume de rendu d'un notebook entre base_ref et head_ref.
+
+    `nb_path` est le chemin du carnet A LA BASE ; `head_path` est son chemin
+    A LA TETE. Ils different pour un carnet RENOMME : la base porte l'ancien
+    chemin, la tete le nouveau.
+
+    Sans `head_path`, un carnet renomme est lu comme un carnet NOUVEAU
+    (absent de la base) -- donc EXEMPT, et jamais mesure. C'est ce qui
+    rendait invisible la perte de volume d'une descente en sous-series (qui
+    renomme ET re-execute dans la meme PR).
+    """
+    head_file = head_path if head_path is not None else nb_path
     if head_ref is None:
         try:
-            nb_head = json.loads(nb_path.read_text(encoding="utf-8"))
+            nb_head = json.loads(head_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as e:
             return {"notebook": str(nb_path), "error": f"head unreadable: {e}"}
         head_label = "working_tree"
     else:
-        nb_head = _read_notebook_at_ref(nb_path, head_ref)
+        nb_head = _read_notebook_at_ref(head_file, head_ref)
         if nb_head is None:
             return {"notebook": str(nb_path), "error": f"head_ref {head_ref} unreadable"}
         head_label = head_ref
@@ -471,6 +508,7 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None,
         head_agg = _aggregate_by_family(_summarize_outputs(nb_head))
         return {
             "notebook": str(nb_path),
+            "head_path": str(head_file),
             "base_ref": base_ref,
             "head_ref": head_label,
             "new_file": True,

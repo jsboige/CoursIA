@@ -2,9 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de retouche d'image utilisant l'API OpenAI GPT-4o
-Ce script prend une image en entrée, l'envoie à l'API OpenAI pour retouche,
-et sauvegarde l'image retouchée.
+Script de retouche d'image utilisant un modèle de chat courant.
+Ce script prend une image en entrée, l'envoie à une API OpenAI-compatible
+pour retouche, et sauvegarde l'image retouchée.
+
+Cible par défaut (#22783) : la façade OpenAI-compatible du cluster
+(`https://models.myia.io/v1`), qui sert un modèle de chat courant acceptant
+les images en entrée. Le vLLM local (Swift) expose un modèle texte et ne peut
+pas servir ce rôle ; le repli est donc le modèle de chat courant du mapping
+(`docs/genai/model-mapping-openai.md`).
 """
 
 import os
@@ -12,6 +18,7 @@ import base64
 import requests
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 import argparse
 
@@ -34,8 +41,12 @@ def encode_image(image_path):
 
 def retouche_image(image_path, instructions, output_path):
     """
-    Retouche une image en utilisant l'API OpenAI GPT-4o.
-    
+    Retouche une image en utilisant un modèle de chat courant.
+
+    La cible et la clé se lisent dans l'environnement (LLM_BASE_URL,
+    LLM_VISION_MODEL, CLAUDISH_PROXY_KEY ou OPENAI_API_KEY) ; aucun secret
+    n'est écrit dans le code.
+
     Args:
         image_path (str): Chemin vers l'image à retoucher
         instructions (str): Instructions de retouche pour l'IA
@@ -44,24 +55,38 @@ def retouche_image(image_path, instructions, output_path):
     Returns:
         bool: True si la retouche a réussi, False sinon
     """
-    # Récupérer la clé API depuis les variables d'environnement
-    api_key = os.getenv("OPENAI_API_KEY")
+    # Point d'entrée visé : la façade du cluster par défaut, la route OpenAI
+    # directe reste accessible par variable d'environnement (LLM_BASE_URL).
+    api_base = os.getenv("LLM_BASE_URL", "https://models.myia.io/v1").rstrip("/")
+    # Comparaison du nom d'hote, pas d'une sous-chaine : une chaine peut
+    # apparaitre a n'importe quel endroit de l'URL (CodeQL : sanitisation
+    # incomplete de l'URL).
+    host = (urlparse(api_base).hostname or "").lower()
+    if host == "models.myia.io":
+        api_key = os.getenv("CLAUDISH_PROXY_KEY") or os.getenv("OPENAI_API_KEY")
+    else:
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("CLAUDISH_PROXY_KEY")
     if not api_key:
-        print("Erreur: Clé API OpenAI non trouvée. Vérifiez votre fichier .env")
+        print("Erreur: aucune clé API trouvée (CLAUDISH_PROXY_KEY pour la façade "
+              "du cluster, OPENAI_API_KEY pour la route OpenAI directe). "
+              "Vérifiez votre fichier .env")
         return False
-    
+
+    # Modèle de chat courant accepté en vision (le Swift local est un modèle texte).
+    model = os.getenv("LLM_VISION_MODEL", "gpt-5.6-sol")
+
     # Encoder l'image en base64
     base64_image = encode_image(image_path)
-    
+
     # Préparer les headers pour la requête API
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    
+
     # Préparer le payload pour la requête API
     payload = {
-        "model": "gpt-4o",
+        "model": model,
         "messages": [
             {
                 "role": "system",
@@ -87,10 +112,10 @@ def retouche_image(image_path, instructions, output_path):
     }
     
     try:
-        # Envoyer la requête à l'API OpenAI
-        print("Envoi de la requête à l'API OpenAI...")
+        # Envoyer la requête à l'API OpenAI-compatible visée
+        print(f"Envoi de la requête à {api_base} (modèle {model})...")
         response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
+            f"{api_base}/chat/completions",
             headers=headers,
             json=payload
         )

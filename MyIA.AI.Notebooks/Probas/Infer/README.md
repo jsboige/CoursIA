@@ -2,13 +2,13 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : le **corpus bayésien** (19 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien), **analyse de survie** (modèles de risque, censure)). Le **corpus de théorie de la décision** (10 notebooks, [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : le **corpus bayésien** (ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien), **analyse de survie** (modèles de risque, censure)). Le **corpus de théorie de la décision** ([`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
 ## Pourquoi cette sous-série
 
-Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les **19 notebooks** du corpus bayésien (réseaux bayésiens, TrueSkill, LDA, HMM) — voir la table *Vue d'ensemble* ci-dessous pour la liste exhaustive. Le corpus de théorie de la décision (10 notebooks) et la preuve formelle Lean 4 de l'indice de Gittins vivent dans la sous-série [`DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md).
+Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre le corpus bayésien (réseaux bayésiens, TrueSkill, LDA, HMM) — voir la table *Vue d'ensemble* ci-dessous pour la liste exhaustive. Le corpus de théorie de la décision et la preuve formelle Lean 4 de l'indice de Gittins vivent dans la sous-série [`DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md).
 
 | Algorithme | Force | Limite | Cas d'usage |
 | ---------- | ----- | ------ | ---------- |
@@ -32,6 +32,8 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 
 **Double approche** : Cette série est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les mêmes modèles avec un moteur d'inférence différent. Voir [PyMC/](../PyMC/) pour la comparaison.
 
+> **Paires jumelles (Infer.NET ↔ PyMC)** — déclaration de maintenance (EPIC #24197, section C) : ces deux séries enseignent le *même plan* sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; elles ne sont pas des doublons. Un changement pédagogique commun (un modèle ajouté ou retiré du plan, une notion renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre. Exceptions connues au plan commun (carnet sans jumeau de l'autre côté) : Infer `01b-Premiers-Modeles` et `08b-TrueSkill-Formules-Fermees` ; PyMC `Observabilite-OTel`.
+
 **Applications réelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systèmes de recommandation, diagnostic médical.
 
 ## Objectifs d'apprentissage
@@ -48,16 +50,14 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [Infer-1-Setup](Infer-1-Setup.ipynb) | 15 min | Installation, premier modèle |
-| 2 | [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) | 50 min | Postérieurs, mélanges, Dirichlet |
-| 2b | [Infer-2b-Debugging-Bonnes-Pratiques](Infer-2b-Debugging-Bonnes-Pratiques.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
-| 3 | [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
-| 4 | [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
-| 5 | [Infer-5-Causal-Inference](Infer-5-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
-| 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
-| 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
-| 8b | [Infer-8b-TrueSkill-Formules-Fermees](Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | 30 min | Formes fermées V(t)/W(t) de Herbrich-Minka-Graepel 2007, vérification exacte contre le moteur EP, diagnostics de convergence EP et ordonnancement des messages |
-| 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
+| 1 | [Infer-01-Setup](Infer-01-Setup.ipynb) | 15 min | Installation, premier modèle ; [suite d’introduction : Infer-01b](#autour-de-01) |
+| 2 | [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb) · [Approfondissement](#autour-de-02) | 50 min | Postérieurs, mélanges, Dirichlet |
+| 3 | [Infer-03-Factor-Graphs](Infer-03-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
+| 4 | [Infer-04-Bayesian-Networks](Infer-04-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
+| 5 | [Infer-05-Causal-Inference](Infer-05-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
+| 7 | [Infer-07-Skills-IRT](Infer-07-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
+| 8 | [Infer-08-TrueSkill](Infer-08-TrueSkill.ipynb) · [Approfondissement](#autour-de-08) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
+| 9 | [Infer-09-Classification](Infer-09-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
 | 12 | [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
@@ -68,6 +68,143 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
 | 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjuguée (Gamma), Weibull par transformée, S(t) forme fermée, censure à droite exécutée (statistiques suffisantes `Gamma(nObs, lambda)` vs Kaplan–Meier) |
+
+## Approfondissements
+
+Les notebooks lettrés complètent un palier précis du parcours principal. Leurs prérequis, objectifs, contenus détaillés et références restent associés à leur notebook parent.
+
+### Autour de 01
+
+#### [Infer-01b : Premiers modèles — introduction à Infer.NET](Infer-01b-Premiers-Modeles.ipynb)
+
+Cette accrétion fait le lien entre la configuration de l’environnement et les mélanges gaussiens :
+elle passe d’un premier modèle à variable `Variable<T>`, puis à l’apprentissage, la prédiction et
+la comparaison de modèles. Le carnet utilise des observations de temps de trajet définies dans le
+code pour illustrer ces mécanismes ; il ne constitue pas une validation sur des données réelles.
+
+**Enchaînement** : [Infer-01-Setup](Infer-01-Setup.ipynb) →
+[Infer-01b : Premiers modèles](Infer-01b-Premiers-Modeles.ipynb) →
+[Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb).
+
+**Durée estimée indiquée par le carnet** : 2 h 30. Cette accrétion s’ajoute au parcours numéroté.
+
+**Prérequis** : Infer-01-Setup ; C# et .NET Interactive ; notions de probabilités, loi normale
+et inférence bayésienne.
+
+**Acquis ciblés** :
+
+- Représenter une quantité incertaine par `Variable<T>`, déclarer les dépendances du modèle et
+  interroger `InferenceEngine` pour obtenir des distributions postérieures conditionnées par les
+  observations (`ObservedValue`).
+- Distinguer précision et variance dans les paramètres gaussiens, puis interpréter la distribution
+  prédictive et les probabilités qu’elle induit.
+- Séparer définition, entraînement et prédiction dans des classes C# réutilisables (`CyclisteBase`,
+  `EntrainementCycliste`, `PredictionCycliste`), puis reprendre cette structure pour un mélange.
+- Mettre à jour les a priori d’une période avec les postérieurs de la précédente afin de poursuivre
+  l’apprentissage en ligne.
+- Représenter un mélange avec `Variable.Discrete` et `Variable.Switch`, puis comparer une
+  gaussienne simple au mélange au moyen de la preuve logarithmique (`log evidence` / facteur de
+  Bayes).
+
+### Autour de 02
+
+#### [Infer-02b : Debugging et Bonnes Pratiques](Infer-02b-Debugging-Bonnes-Pratiques.ipynb)
+
+**Repère de parcours** : Troubleshooting, diagnostics et algorithmes.
+
+**Durée estimée** : 45 min | **Prérequis** : Tous les notebooks précédents
+
+**Objectifs** :
+
+- Diagnostiquer les erreurs courantes
+- Comparer EP vs VMP
+- Maîtriser les outils de debug Infer.NET
+- Appliquer les bonnes pratiques
+
+**Sections** :
+
+1. Erreurs courantes et solutions
+2. Comparaison EP vs VMP
+3. Outils de debug (ShowFactorGraph, BrowserMode)
+4. Bonnes pratiques de modélisation
+5. Checklist de debugging
+6. Fonctions de diagnostic
+7. Exercice : Debugger un modèle bugué
+
+**Problèmes courants** :
+
+| Problème | Symptôme | Solution |
+|----------|----------|----------|
+| Observed + Inferred | PointMass | Ne pas ObservedValue sur variable inférée |
+| Label switching | Modes symétriques | Priors asymétriques |
+| Variance nulle | IsPointMass = true | Vérifier prior, observations |
+| Convergence lente | Iterations > 50 | Vérifier graphe, utiliser VMP |
+
+**Comparaison EP vs VMP** :
+
+| Critère | EP | VMP |
+|---------|-----|-----|
+| Exactitude | Exact (gaussiennes) | Approximation |
+| Vitesse | Plus lent | Rapide |
+| Convergence | Garantie | Peut diverger |
+
+**Bonnes pratiques** :
+
+1. Nommer toutes les variables : `.Named("theta")`
+2. Vérifier le factor graph systématiquement
+3. Tester avec données simulées
+4. Choisir priors informatifs (Beta(2,2) > Beta(1,1))
+5. Valider posteriors (variance > 0, IsProper = true)
+
+### Autour de 08
+
+#### [Infer-8b : TrueSkill — Formules Fermées](Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb)
+
+**Durée** : 30 min | **Prérequis** : [Infer-08-TrueSkill](Infer-08-TrueSkill.ipynb)
+
+**Objectifs** :
+
+- Dériver les fonctions de troncature V(t) et W(t) (cas à 2 joueurs)
+- Implémenter la mise à jour closed-form — O(1) par match, sans inférence compilée
+- Vérifier numériquement la cohérence exacte avec le moteur EP d'Infer.NET
+- Comprendre le terme de dynamique τ² (équilibre contraction / regrowth)
+
+**Concepts clés** :
+
+| Composant | Formule | Description |
+|-----------|---------|-------------|
+| Troncature | V(t) = φ(t)/Φ(t) | Ratio densité/CDF de la Gaussienne réduite |
+| Troncature | W(t) = V(t)(V(t)+t) | Contraction de la variance |
+| Mise à jour | μ' = μ ± (σ²/c)·V(t) | Déplacement du skill, signé gagnant/perdant |
+| Variance | σ'² = σ²(1 − (σ²/c²)·W(t)) | Contraction bornée par le ratio σ²/c² |
+| Dynamique | σ² ← σ² + τ² | Régrowth entre matchs : l'incertitude d'un inactif remonte |
+
+**Applications** : Vélocité de production Xbox Live — la lettre isole la contribution algorithmique du papier (Herbrich, Minka & Graepel, NeurIPS 2007) que le moteur EP d'Infer-8 calcule sous le capot.
+
+**Contenus ajoutés (croissance [#17981](https://github.com/jsboige/CoursIA/issues/17981))** :
+
+- Diagnostics de convergence EP sur matchs couplés — trajectoire, point fixe, et écart mesuré au postérieur exact (quadrature 1D) : l'approximation factorisée est surconfiante, le schéma online O(1) reste plus fidèle
+- Ordonnancement des messages — séquentiel (Gauss-Seidel) vs parallèle (Jacobi) : même point fixe, vitesse de convergence mesurée (~2× moins de balayages en séquentiel)
+
+#### [Infer-08b Python : du calcul au service web](Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb)
+
+**Durée** : 35 min | **Prérequis** : [Infer-08-TrueSkill](Infer-08-TrueSkill.ipynb)
+
+Jumeau Python du carnet C# précédent : les mêmes formes fermées de Herbrich,
+Minka et Graepel sont déroulées en Python pur, puis appliquées en ligne aux
+matchs 1v1, aux équipes, au free-for-all et au match nul. Trois exercices
+prolongent le cours sans empêcher son exécution de bout en bout.
+
+La dernière section transforme ce même carnet en service `POST
+/probas/trueskill` avec Jupyter Kernel Gateway : une requête JSON décrit une
+séquence de parties et reçoit les postérieurs `(mu, sigma)` de chaque joueur.
+Le [guide du gateway](gateway/README.md) donne le contrat, le lanceur avec
+preflight et des appels `curl` réellement exécutés. Le service suit le patron
+du carnet Z3 Sudoku (Epic [#19571](https://github.com/jsboige/CoursIA/issues/19571),
+pli 0 v2) ; la bibliothèque `trueskill` sert d'oracle indépendant dans les
+tests, tandis que le moteur reste la forme fermée enseignée dans le carnet.
+
+---
 
 > **Théorie de la décision** : les notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus les companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/).
 
@@ -95,7 +232,7 @@ dotnet --version
 ### 2. Kernel dotnet-interactive
 
 ```bash
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
@@ -269,9 +406,9 @@ Les notebooks 1-3 introduisent les concepts fondamentaux de la programmation pro
 
 | Structure | Usage | Exemple |
 |-----------|-------|---------|
-| Variable.If | Conditionnement binaire | P(Y\|X=true) |
+| Variable.If | Conditionnement binaire | P(Y\ | X=true) |
 | Variable.Case | Conditionnement multi-value | Switch sur enum |
-| Explaining away | Causes alternatives | P(A\|B,C) < P(A\|C) |
+| Explaining away | Causes alternatives | P(A\ | B,C) < P(A\ |
 
 **Applications** : Murder Mystery, Monty Hall (2/3 vs 1/3), systèmes experts
 
@@ -304,9 +441,9 @@ Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compé
 
 | Concept | Formule | Description |
 |---------|---------|-------------|
-| CPT | P(X \| Parents(X)) | Table de probabilité conditionnelle |
+| CPT | P(X \ | Parents(X)) | Table de probabilité conditionnelle |
 | D-séparation | - | Critère graphique d'indépendance |
-| do-calculus | P(Y \| do(X)) ≠ P(Y \| X) | Intervention vs observation |
+| do-calculus | P(Y \ | do(X)) ≠ P(Y \ | X) |
 | Hiérarchique | θᵢ ~ F(λ) | Pooling partiel entre groupes |
 
 **Applications** : Wet Grass, diagnostic médical, modèle Rats (8 laboratoires)
@@ -339,8 +476,8 @@ Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compé
 |--------|---------|-------|
 | IRT | P(correct) = σ(ability - difficulty) | Compétence continue |
 | DINA | ηᵢⱼ = Πₖ αⱼₖ^qᵢₖ | Compétences binaires |
-| Slip | P(erreur \| maîtrise) | Erreur d'inattention |
-| Guess | P(succès \| non-maîtrise) | Réponse au hasard |
+| Slip | P(erreur \ | maîtrise) | Erreur d'inattention |
+| Guess | P(succès \ | non-maîtrise) | Réponse au hasard |
 
 **Applications** : Tests éducatifs, diagnostic de compétences, adaptive testing
 
@@ -379,36 +516,6 @@ Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compé
 
 ---
 
-### Infer-8b : TrueSkill — Formules Fermées
-
-**Durée** : 30 min | **Prérequis** : [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb)
-
-**Objectifs** :
-
-- Dériver les fonctions de troncature V(t) et W(t) (cas à 2 joueurs)
-- Implémenter la mise à jour closed-form — O(1) par match, sans inférence compilée
-- Vérifier numériquement la cohérence exacte avec le moteur EP d'Infer.NET
-- Comprendre le terme de dynamique τ² (équilibre contraction / regrowth)
-
-**Concepts clés** :
-
-| Composant | Formule | Description |
-|-----------|---------|-------------|
-| Troncature | V(t) = φ(t)/Φ(t) | Ratio densité/CDF de la Gaussienne réduite |
-| Troncature | W(t) = V(t)(V(t)+t) | Contraction de la variance |
-| Mise à jour | μ' = μ ± (σ²/c)·V(t) | Déplacement du skill, signé gagnant/perdant |
-| Variance | σ'² = σ²(1 − (σ²/c²)·W(t)) | Contraction bornée par le ratio σ²/c² |
-| Dynamique | σ² ← σ² + τ² | Régrowth entre matchs : l'incertitude d'un inactif remonte |
-
-**Applications** : Vélocité de production Xbox Live — la lettre isole la contribution algorithmique du papier (Herbrich, Minka & Graepel, NeurIPS 2007) que le moteur EP d'Infer-8 calcule sous le capot.
-
-**Contenus ajoutés (croissance [#17981](https://github.com/jsboige/CoursIA/issues/17981))** :
-
-- Diagnostics de convergence EP sur matchs couplés — trajectoire, point fixe, et écart mesuré au postérieur exact (quadrature 1D) : l'approximation factorisée est surconfiante, le schéma online O(1) reste plus fidèle
-- Ordonnancement des messages — séquentiel (Gauss-Seidel) vs parallèle (Jacobi) : même point fixe, vitesse de convergence mesurée (~2× moins de balayages en séquentiel)
-
----
-
 ## Classification et Sélection (Notebooks 7-8)
 
 Les notebooks 7-8 couvrent la classification bayésienne et la sélection de modèles.
@@ -436,7 +543,7 @@ Les notebooks 7-8 couvrent la classification bayésienne et la sélection de mod
 
 | Modèle | Formule | Description |
 |--------|---------|-------------|
-| Probit | P(y=1\|x) = Φ(w·x) | CDF gaussienne |
+| Probit | P(y=1\ | x) = Φ(w·x) | CDF gaussienne |
 | BPM | Moyenne du posterior sur w | Classification robuste |
 | Beta-Binomial | Hiérarchique pour proportions | Test A/B |
 
@@ -467,8 +574,8 @@ Les notebooks 7-8 couvrent la classification bayésienne et la sélection de mod
 
 | Concept | Formule | Interprétation |
 |---------|---------|----------------|
-| Evidence | P(D\|M) = ∫ P(D\|θ)P(θ\|M)dθ | Vraisemblance marginale |
-| Bayes Factor | BF₁₂ = P(D\|M₁) / P(D\|M₂) | >10 = forte evidence |
+| Evidence | P(D\ | M) = ∫ P(D\ | θ)P(θ\ | M)dθ | Vraisemblance marginale |
+| Bayes Factor | BF₁₂ = P(D\ | M₁) / P(D\ | M₂) |
 | ARD | wᵢ ~ N(0, λᵢ⁻¹) | λᵢ → ∞ si non pertinent |
 
 **Applications** : Comparaison polynômes, feature selection, model averaging
@@ -536,9 +643,9 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 | Modèle | Formule | Description |
 |--------|---------|-------------|
-| Honest | P(label\|true, worker) = α_worker | Capacité unique |
+| Honest | P(label\ | true, worker) = α_worker | Capacité unique |
 | Biased | C_worker[true, observed] | Matrice de confusion |
-| Uncertainty | H(c \| y₁:ₙ) | Entropie pour active learning |
+| Uncertainty | H(c \ | y₁:ₙ) | Entropie pour active learning |
 
 **Applications** : Amazon Mechanical Turk, contrôle qualité, optimisation budget annotation
 
@@ -570,7 +677,7 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 | Algorithme | Formule | Usage |
 |------------|---------|-------|
 | Forward | αₜ(k) = P(x₁:ₜ, zₜ=k) | Probabilité jointe |
-| Backward | βₜ(k) = P(xₜ₊₁:T \| zₜ=k) | Complément |
+| Backward | βₜ(k) = P(xₜ₊₁:T \ | zₜ=k) | Complément |
 | Posterior | γₜ(k) ∝ αₜ(k)·βₜ(k) | État à chaque t |
 
 **Note** : Infer.NET ne supporte pas nativement les HMM complets. Implémentation manuelle Forward-Backward recommandée.
@@ -612,56 +719,6 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ---
 
-## Référence (Infer-2b)
-
-### Infer-2b : Debugging et Bonnes Pratiques
-
-**Durée** : 60 min | **Prérequis** : Tous les notebooks précédents
-
-**Objectifs** :
-
-- Diagnostiquer les erreurs courantes
-- Comparer EP vs VMP
-- Maîtriser les outils de debug Infer.NET
-- Appliquer les bonnes pratiques
-
-**Sections** :
-
-1. Erreurs courantes et solutions
-2. Comparaison EP vs VMP
-3. Outils de debug (ShowFactorGraph, BrowserMode)
-4. Bonnes pratiques de modélisation
-5. Checklist de debugging
-6. Fonctions de diagnostic
-7. Exercice : Debugger un modèle bugué
-
-**Problèmes courants** :
-
-| Problème | Symptôme | Solution |
-|----------|----------|----------|
-| Observed + Inferred | PointMass | Ne pas ObservedValue sur variable inférée |
-| Label switching | Modes symétriques | Priors asymétriques |
-| Variance nulle | IsPointMass = true | Vérifier prior, observations |
-| Convergence lente | Iterations > 50 | Vérifier graphe, utiliser VMP |
-
-**Comparaison EP vs VMP** :
-
-| Critère | EP | VMP |
-|---------|-----|-----|
-| Exactitude | Exact (gaussiennes) | Approximation |
-| Vitesse | Plus lent | Rapide |
-| Convergence | Garantie | Peut diverger |
-
-**Bonnes pratiques** :
-
-1. Nommer toutes les variables : `.Named("theta")`
-2. Vérifier le factor graph systématiquement
-3. Tester avec données simulées
-4. Choisir priors informatifs (Beta(2,2) > Beta(1,1))
-5. Valider posteriors (variance > 0, IsProper = true)
-
----
-
 ## Théorie de la Décision (arc autonome)
 
 Les notebooks de théorie de la décision --- fondements de l'utilité (axiomes vNM, aversion au risque), utilité multi-attributs, réseaux de décision, valeur de l'information (EVPI/EVSI), systèmes experts (Minimax/regret), décisions séquentielles (MDPs), Thompson Sampling bayésien, plus les companions Lean (preuve formelle du théorème vNM, cohérence de de Finetti et indice de Gittins) --- constituent désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/).
@@ -689,14 +746,14 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 
 | Concept | Formule | Description |
 |---------|---------|-------------|
-| do-opérateur | `P(Y\|do(X))` | Intervention : coupe les arcs entrants de X |
-| Backdoor | `Σ_u P(Y\|X,u)P(u)` | Ajustement quand le confondeur U est observé |
-| Front-door | `Σ_m P(M\|X)Σ_{x'} P(Y\|M,x')P(x')` | Ajustement par médiateur quand U est inobservable |
+| do-opérateur | `P(Y\ | do(X))` | Intervention : coupe les arcs entrants de X |
+| Backdoor | `Σ_u P(Y\ | X,u)P(u)` | Ajustement quand le confondeur U est observé |
+| Front-door | `Σ_m P(M\ | X)Σ_{x'} P(Y\ | M,x')P(x')` |
 | Simpson | agrégé ≠ conditionnel | Renversement : la conclusion s'inverse |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-5 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-04-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-04-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-5 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-04-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
 
-**Ponts causaux** : Infer-5 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-5](../PyMC/PyMC-05-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+**Ponts causaux** : Infer-5 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-5](../PyMC/PyMC-05-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 **Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
 
@@ -706,9 +763,9 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 
 ### Infer-16 : Processus Gaussiens et frontières non-linéaires
 
-Prolongement naturel de la classification bayésienne : là où [Infer-9](Infer-9-Classification.ipynb) (Bayes Point Machine) trace un **hyperplan**, le processus gaussien place un **prior sur des fonctions** (noyau RBF) et infère une frontière **courbe** et **incertaine**.
+Prolongement naturel de la classification bayésienne : là où [Infer-9](Infer-09-Classification.ipynb) (Bayes Point Machine) trace un **hyperplan**, le processus gaussien place un **prior sur des fonctions** (noyau RBF) et infère une frontière **courbe** et **incertaine**.
 
-**Durée** : 55 min | **Prérequis** : [Infer-9-Classification](Infer-9-Classification.ipynb) (BPM, modèle probit), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb), [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) (prior partagé = plus robuste qu'un prior isolé)
+**Durée** : 55 min | **Prérequis** : [Infer-09-Classification](Infer-09-Classification.ipynb) (BPM, modèle probit), [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb), [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) (prior partagé = plus robuste qu'un prior isolé)
 
 **Objectifs** :
 
@@ -728,7 +785,7 @@ Prolongement naturel de la classification bayésienne : là où [Infer-9](Infer-
 | Sparse GP | `SparseGPFixed(gp, basis)` | Approximation sur $m$ points inducteurs, coût $O(nm^2)$ |
 | Full GP | basis = inputs ($m = n$) | Équivalent au GP non-sparse, coût $O(n^3)$ |
 
-**Positionnement** : [Infer-9](Infer-9-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-16 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
+**Positionnement** : [Infer-9](Infer-09-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-16 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
 
 **Applications** : classification non-linéaire, régression avec incertitude calibrée, géostatistique (krigeage), optimisation bayésienne (l'acquisition exploite le posterior GP).
 
@@ -740,7 +797,7 @@ Prolongement naturel de la classification bayésienne : là où [Infer-9](Infer-
 
 Cas d'école du **pooling partiel** : quand les données sont **structurées en groupes** (élèves dans des classes, patients dans des hôpitaux, mesures répétées), ni le *complete pooling* (un seul paramètre global qui gomme la variabilité entre groupes) ni le *no pooling* (un paramètre indépendant par groupe qui surajuste les groupes clairsemés) ne sont satisfaisants. La solution bayésienne donne à chaque groupe son propre paramètre `theta[c]`, mais tous tirés d'une **loi de population commune** `(mu, tau)` — les groupes mal informés **rétractent** (*shrinkage*) vers la moyenne globale.
 
-**Durée** : 50 min | **Prérequis** : [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (prior gaussien, précision), [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) (modèle Rats hiérarchique en deux cellules)
+**Durée** : 50 min | **Prérequis** : [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb) (prior gaussien, précision), [Infer-04-Bayesian-Networks](Infer-04-Bayesian-Networks.ipynb) (modèle Rats hiérarchique en deux cellules)
 
 **Objectifs** :
 
@@ -759,7 +816,7 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 | Indexation | `y[i] ~ Gaussian(theta[classOfI[i]], obsPrec)` | Rattachement observation → groupe |
 | Shrinkage | `theta[c]` ↔ compromis données/moyenne | Plus fort pour les groupes clairsemés |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-12 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-04-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-12 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
 
 **Applications** : estimations par établissement/classe, essais multi-centres, mesures répétées par sujet, modèles de recommandation (cf [Infer-15](Infer-15-Recommenders.ipynb)), régressions à coefficients variables par groupe.
 
@@ -771,7 +828,7 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 
 Le **filtre de Kalman** (Kalman, 1960) est l'analogue à état **continu** du HMM d'[Infer-14](Infer-14-Sequences.ipynb) : l'état caché $x_t$ (position, température, prix) évolue linéairement avec un bruit gaussien (la *dynamique*, variance $Q$), et on l'observe à travers un autre bruit gaussien (le *capteur*, variance $R$). Parce que tout est **linéaire et gaussien**, l'inférence est **exactement conjugée** : le postérieur reste gaussien à chaque pas, calculable en temps fermé — c'est le cas d'école où Infer.NET (EP) résout l'inférence de manière **exacte**, sans MCMC ni approximation variationnelle.
 
-**Durée** : 55 min | **Prérequis** : [Infer-14-Sequences](Infer-14-Sequences.ipynb) (HMM, structure markovienne), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (conjugaison gaussienne)
+**Durée** : 55 min | **Prérequis** : [Infer-14-Sequences](Infer-14-Sequences.ipynb) (HMM, structure markovienne), [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb) (conjugaison gaussienne)
 
 **Objectifs** :
 
@@ -798,7 +855,7 @@ Le **filtre de Kalman** (Kalman, 1960) est l'analogue à état **continu** du HM
 
 Le **point de rupture** (*change-point*) modélise une série qui suit un régime stable, puis **bascule** une seule fois vers un autre régime à un instant `cp` inconnu. Contrairement au HMM d'[Infer-14](Infer-14-Sequences.ipynb) (état discret récurrent) et au filtre de Kalman d'[Infer-17](Infer-17-Kalman-Filter.ipynb) (état continu récurrent), l'inconnue n'est pas une trajectoire d'états mais **un unique entier** — l'indice de la rupture. L'idiome Infer.NET : un *a priori* `Variable.DiscreteUniform(N)` sur `cp`, une sélection de vraisemblance `Variable.If(block.Index <= cp)` / `IfNot` à l'intérieur d'un `Variable.ForEach` sur la plage temporelle, et le moteur **EP** qui retourne un postérieur **`Discrete`** sur la localisation de la rupture.
 
-**Durée** : 50 min | **Prérequis** : [Infer-14-Sequences](Infer-14-Sequences.ipynb) (`Variable.ForEach`), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (conjugaison), [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) (Bayes factors)
+**Durée** : 50 min | **Prérequis** : [Infer-14-Sequences](Infer-14-Sequences.ipynb) (`Variable.ForEach`), [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb) (conjugaison), [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) (Bayes factors)
 
 **Objectifs** :
 
@@ -817,7 +874,7 @@ Le **point de rupture** (*change-point*) modélise une série qui suit un régim
 | Initialisation EP | `taux.InitialiseTo(...)` | EP déterministe : amorcer les taux évite les optima locaux |
 | Concentration | entropie $H(\text{cp})$ | $H \to 0$ = rupture certaine ; le Bayes factor teste sa réalite (cf. Infer-10) |
 
-**Positionnement** : [Infer-14](Infer-14-Sequences.ipynb) et [Infer-17](Infer-17-Kalman-Filter.ipynb) infèrent un état **récurrent** (un par pas) ; Infer-18 infère un **indice structurel unique** couplé à toute la plage — un usage du `If` sur une plage qu'aucun autre notebook n'exploite. Sur le cas gaussien, EP récupère le vrai point caché **exactement** (mode = 50, masse 0,998) ; sur les catastrophes minières (1851–1962), le mode du postérieur tombe en **1891** (intervalle crédible à 90 % : **1886–1892** ; taux 3,1 → 0,9, rapport 3,3×), soit le résultat canonique de la littérature. Le notebook pointe aussi vers [Infer-5 (Causal)](Infer-5-Causal-Inference.ipynb) : un point de rupture est un changement de mécanisme générateur.
+**Positionnement** : [Infer-14](Infer-14-Sequences.ipynb) et [Infer-17](Infer-17-Kalman-Filter.ipynb) infèrent un état **récurrent** (un par pas) ; Infer-18 infère un **indice structurel unique** couplé à toute la plage — un usage du `If` sur une plage qu'aucun autre notebook n'exploite. Sur le cas gaussien, EP récupère le vrai point caché **exactement** (mode = 50, masse 0,998) ; sur les catastrophes minières (1851–1962), le mode du postérieur tombe en **1891** (intervalle crédible à 90 % : **1886–1892** ; taux 3,1 → 0,9, rapport 3,3×), soit le résultat canonique de la littérature. Le notebook pointe aussi vers [Infer-5 (Causal)](Infer-05-Causal-Inference.ipynb) : un point de rupture est un changement de mécanisme générateur.
 
 **Applications** : contrôle qualité (dérive de production), finance (changement de régime de marché), épidémiologie, surveillance de capteurs, datation d'événements structurels en sciences sociales et climatiques.
 
@@ -901,7 +958,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb   # 19 notebooks (Infer-11 = Topic-Models)
++-- Infer-01-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb   # socle numéroté (Infer-11 = Topic-Models)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
 +-- README.md
@@ -909,7 +966,7 @@ Infer/
 +-- scripts/                      # Scripts de maintenance
 ```
 
-> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) (post-renumérotation #5200).
+> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) (post-renumérotation #5200).
 
 ## Domaines d'Application
 
@@ -973,15 +1030,15 @@ Infer/
 
 ## FAQ / Troubleshooting
 
-Pour un guide complet, voir [Infer-2b-Debugging-Bonnes-Pratiques](Infer-2b-Debugging-Bonnes-Pratiques.ipynb).
+Pour un guide complet, voir [Infer-02b-Debugging-Bonnes-Pratiques](Infer-02b-Debugging-Bonnes-Pratiques.ipynb).
 
 | Problème | Solution |
 | --- | --- |
 | `The type 'Variable' does not contain a definition for...` | Vérifier que le namespace `MicrosoftResearch.Infer` est importé. Le notebook 1 (Setup) couvre la configuration |
-| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 6 (Debugging) détaille les stratégies de diagnostic |
+| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook [Infer-02b (Debugging)](Infer-02b-Debugging-Bonnes-Pratiques.ipynb) détaille les stratégies de diagnostic |
 | `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
-| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 6 compare les algorithmes EP/VMP/Gibbs |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook [Infer-02b](Infer-02b-Debugging-Bonnes-Pratiques.ipynb) compare les algorithmes EP/VMP/Gibbs |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 
 ### Erreur de compilation
 
@@ -1033,11 +1090,11 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 
 ### Ce que vous avez appris
 
-Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-1-Setup](Infer-1-Setup.ipynb) à [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), dont le **capstone formel** Lean 4 ([DecInfer-08b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
+Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-01-Setup](Infer-01-Setup.ipynb) à [Infer-03-Factor-Graphs](Infer-03-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), dont le **capstone formel** Lean 4 ([DecInfer-07b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
 
 - **Penser en factor graphs et message passing** — Infer.NET propose trois moteurs sur le graphe de facteurs : EP (message passing déterministe, rapide, par défaut, approximatif), VMP (déterministe, converge sur les modèles complexes) et Gibbs (échantillonnage, exact asymptotiquement). Les factor graphs (rendus via `FactorGraphHelper` et Graphviz) exposent la *structure* du modèle, pas seulement ses posteriors.
 - **Lire et choisir son algorithme d'inférence** — contrairement à un échantillonneur générique, Infer.NET **compile un algorithme dédié par modèle** (reflection + Roslyn). Vous savez désormais quand le message passing déterministe (EP/VMP) sur modèles conjugués et structurés est avantageux, et quand il faut céder la place à MCMC.
-- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [DecInfer-08b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
+- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [DecInfer-07b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
 ### Prochaines étapes
 
@@ -1047,6 +1104,6 @@ Cette série vous a fait parcourir l'arc complet de la programmation probabilist
 
 ### Le fil rouge
 
-Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([DecInfer-08b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/DecInfer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
+Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([DecInfer-07b-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/DecInfer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
 
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !

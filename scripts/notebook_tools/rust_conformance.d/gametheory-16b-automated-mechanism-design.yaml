@@ -1,0 +1,120 @@
+# Conformite differentielle du couple GameTheory-16b (Automated
+# Mechanism Design, issue #27943).
+#
+# Le portage Rust (kernel evcxr, `std` seul) reprend le carnet Python a
+# l'identique : meme domaine fini (2 agents, 2 types, 2 issues), meme
+# generateur d'AMD (enumeration + argmax strict), meme verificateur
+# separate (DSIC standard contre sur-durci, temoin de la dictature de
+# l'agent 1), meme impossibilite « paiement strictement positif => IR
+# viole » (4096 candidats, 0 IR-admissibles). Les dicts Python dont
+# l'ordre se lit dans une sortie deviennent des BTreeMap, les tuples
+# non indexables passent par un helper pay_i, et le rendu des grandeurs
+# Python (True, (0, 1), None) est reproduit par le formatage {:?} de
+# Rust (specifie et mesure : (0u8, 1u8) -> « (0, 1) »,
+# Option::None -> « None »).
+#
+# Les deux cotes ont la MEME structure de cellules (19 cellules, 7 code
+# aux memes index) : la correspondance des cellules est directe.
+#
+# Le cote C# est absent du triplet : pas de jumeau C# dans le depot. Si
+# un carnet C# correspondant arrive un jour, rouvrir ce fichier pour
+# ajouter le chemin et les cotes C#.
+#
+# Ecarts de forme DECLARES :
+#
+# - la cellule 1 (imports et types de base) produit AUCUNE sortie des
+#   deux cotes : tout y finit par une instruction `;` ou une definition
+#   (`const`, `fn`, `let`) -- rien a comparer, aucune mesure declaree
+#   pour elle (l'organe rend « cellule sans sortie » sur une mesure
+#   posee sur une cellule vide, y compris quand les DEUX cotes sont
+#   vides ; c'est le commentaire d'en-tete qui porte l'ecart) ;
+# - les cellules evcxr sont PLATES (pas de bloc englobant) et se
+#   terminent par une instruction `;` : AUCUN execute_result « () »
+#   n'est attendu cote Rust, les patterns des deux cotes sont identiques
+#   (\A\s*(.*?)\s*\Z), sans saut d'echo ;
+# - les cellules d'exercices 5/10/15 (stubs sans erreur volontaire,
+#   C.1) impriment leur banniere « Exercice N a completer » : comparees
+#   comme toute autre sortie.
+- name: "GameTheory-16b Automated Mechanism Design"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Rust.ipynb
+  measures:
+    - id: c3_text
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c12_text
+      description: "Sortie de la cellule 12, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c15_text
+      description: "Sortie de la cellule 15, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text

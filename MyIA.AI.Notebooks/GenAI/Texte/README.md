@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 42
-breakdown: Texte=42
-maturity: BETA=37, DRAFT=3, ALPHA=2
+pedagogical_count: 52
+breakdown: Texte=52
+maturity: BETA=44, ALPHA=4, DRAFT=4
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -20,66 +20,106 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 - **Raisonnement avancé** : modèles o4-mini, gpt-5-thinking
 - **Production enterprise** : gestion de sessions, retry, batch processing
 - **Déploiement local** : vLLM, quantification, optimisation des coûts
-- **Test-time scaling (ICR)** : routeur agentique, mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
+- **Test-time scaling (ICR)** : routeur agentique, évaluation d'agents (succès, coût, ablation, sûreté), mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
 - **Analyse linguistique (TAL)** : lemmatisation, dépendances syntaxiques, entités nommées avec spaCy, et leur comparaison à la tokenisation BPE (notebook 23)
 
 ## Contenu détaillé
 
-### Tier 1 : Fondations (Débutant)
+## Comment lire ce README
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 1 | `1_OpenAI_Intro.ipynb` | Introduction à l'API OpenAI, tokens, Chat Completions, Responses API | 45 min |
-| 2 | `2_PromptEngineering.ipynb` | Zero-shot, few-shot, Chain-of-Thought, modèles raisonnants | 50 min |
+Choisissez votre vitesse de lecture : suivez les numéros nus dans le parcours principal, puis ouvrez les approfondissements d’un palier quand vous souhaitez creuser. Les sous-séries et les sections « Pour aller plus loin » donnent accès aux prolongements de recherche. Voir aussi [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-### Tier 2 : Sorties Structurées (Intermédiaire)
+- Vous découvrez : suivez le parcours principal de haut en bas.
+- Vous creusez un palier : ouvrez les approfondissements associés à son numéro.
+- Vous cherchez la recherche en cours : consultez les sous-séries et « Pour aller plus loin ».
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
-| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits et tête d'attention fine-tunée (jevlike) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 55 min |
-| 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
-| 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
+## Parcours principal (Découverte → Avancé)
 
-### Tier 3 : Augmentation (Intermédiaire)
+| # | Notebook | Ce qu’on y apprend | Public | Durée | Pour approfondir |
+|---|---|---|---|---|---|
+| 1 | [01_OpenAI_Intro.ipynb](01_OpenAI_Intro.ipynb) | Introduction à l'API OpenAI, tokens, Chat Completions, Responses API | Découverte | 45 min | — |
+| 2 | [02_PromptEngineering.ipynb](02_PromptEngineering.ipynb) | Zero-shot, few-shot, Chain-of-Thought, modèles raisonnants | Découverte | 50 min | — |
+| 3 | [03_Structured_Outputs.ipynb](03_Structured_Outputs.ipynb) | JSON Schema, Pydantic, mode strict, extraction de données | Intermédiaire | 55 min | [Autour de 3](#autour-de-03) |
+| 4 | [04_Function_Calling.ipynb](04_Function_Calling.ipynb) | Tools API, appels parallèles, boucle agentique | Intermédiaire | 60 min | — |
+| 5 | [05_RAG_Modern.ipynb](05_RAG_Modern.ipynb) | RAG, embeddings, chunking, Responses API multi-turn, citations | Intermédiaire | 65 min | — |
+| 6 | [06_PDF_Web_Search.ipynb](06_PDF_Web_Search.ipynb) | Support PDF (base64/file_id), web_search intégré | Intermédiaire | 50 min | — |
+| 7 | [07_Code_Interpreter.ipynb](07_Code_Interpreter.ipynb) | Code interpreter, analyse de données, génération de graphiques | Intermédiaire | 55 min | — |
+| 8 | [08_Reasoning_Models.ipynb](08_Reasoning_Models.ipynb) | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | Avancé | 60 min | — |
+| 9 | [09_Production_Patterns.ipynb](09_Production_Patterns.ipynb) | Conversations API, background mode, retry, batch processing | Avancé | 70 min | [Autour de 9](#autour-de-09) |
+| 10 | [10_LocalLlama.ipynb](10_LocalLlama.ipynb) | Serveur OpenAI-compatible auto-hébergé (vLLM) : 3 étages honnêtement nommés (local étudiant / auto-hébergé du cours / repli distant OpenRouter), multi-endpoints, benchmarking | Avancé | 60 min | [Autour de 10](#autour-de-10) |
+| 11 | [11_Quantization.ipynb](11_Quantization.ipynb) | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | Avancé | 60 min | [Autour de 11](#autour-de-11) |
+| 12 | [12_Test_Time_Scaling.ipynb](12_Test_Time_Scaling.ipynb) | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | Avancé | 60 min | — |
+| 13 | [13_Agentic_Orchestration.ipynb](13_Agentic_Orchestration.ipynb) | Routeur agentique : function calling (pont NB-04) pour laisser un LLM choisir le moteur par sous-tâche (mode "Agentic" d'ICR) | Avancé | 60 min | [Autour de 13](#autour-de-13) |
+| 14 | [14_Persistent_Memory.ipynb](14_Persistent_Memory.ipynb) | Mémoire vectorielle persistante (baseline BoW + cosine, pont NB-05 RAG) qui rétrocède les leçons aux runs suivants (agent "Memory" d'ICR) | Avancé | 55 min | [Autour de 14](#autour-de-14) |
+| 15 | [15_Tree_of_Thoughts_Search.ipynb](15_Tree_of_Thoughts_Search.ipynb) | Tree-of-Thoughts sur cryptarithmes (SEND+MORE=MONEY) : recherche DFS colonne par colonne avec propagation de retenue (pont séries Search/Sudoku) | Avancé | 60 min | — |
+| 16 | [16_Scaling_Test_Time_Compute.ipynb](16_Scaling_Test_Time_Compute.ipynb) | Courbes de scaling Snell 2024 : estimateur pass@k, BoN vs Reflexion, frontière compute-optimale selon la difficulté | Avancé | 65 min | — |
+| 17 | [17_Native_Reasoning_vs_Scaling.ipynb](17_Native_Reasoning_vs_Scaling.ipynb) | Raisonnement natif (deepseek-r1, reasoning tokens) vs scaling hand-rolled (BoN), comparaison cost-normalisée en tokens | Avancé | 60 min | — |
+| 18 | [18_Semantic_Kernel_Plugins.ipynb](18_Semantic_Kernel_Plugins.ipynb) | Moteurs exposés en plugins Semantic Kernel (`@kernel_function`) composables via le kernel (pont série SemanticKernel) | Avancé | 60 min | — |
+| 19 | [19_OWUI_Orchestration.ipynb](19_OWUI_Orchestration.ipynb) | Orchestration sans code via Open WebUI v0.9.0 (Automations RRULE / Task Management / Calendar) ; trois niveaux d'abstraction (produit OWUI vs LangGraph vs CrewAI) ; migration async 0.8→0.9 ; skeleton API OpenAI-compatible avec graceful skip (`OWUI_API_KEY`) | Avancé | 60 min | — |
+| 20 | [20_OWUI_Native_API.ipynb](20_OWUI_Native_API.ipynb) | Compagnon du 19 : introspection de la **vraie surface API native** OWUI v0.9.6 (routes REST auth-free : santé/version/config ; couche authentifiée Bearer) via `urllib` standard ; graceful skip honnête si `OWUI_API_KEY` absente (Stop & Repair, pas de sortie fabriquée) | Avancé | 60 min | — |
+| 21 | [21_LoRA_FineTuning.ipynb](21_LoRA_FineTuning.ipynb) | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | Avancé | 75 min | — |
+| 22 | [22_Evaluating_Generated_Text.ipynb](22_Evaluating_Generated_Text.ipynb) | Évaluation des sorties générées : **BLEU** (précision n-gram avec clipping) et **ROUGE** (rappel) construits à la main et mesurés — deux métriques lexicales aveugles au sens — puis **juge LLM** avec protocole anti-biais (paire évaluée dans les deux ordres à T=0, ne tranche que si les deux passes coïncident), 3 exercices C.1 | Intermédiaire | — | [Autour de 22](#autour-de-22) |
+| 23 | [23_Du_Notebook_A_L_Application.ipynb](23_Du_Notebook_A_L_Application.ipynb) | **Servir le RAG du 05** : extraction fidèle du pipeline (corpus Lincoln-Douglas, chunking, embeddings, k-NN, génération citée) puis passage au service — API **FastAPI** (`/health`, `/query`) sur port dynamique testée par appels `httpx` réels, UI **Gradio** passant uniquement par l'API (test des sources déterministes : deux canaux, mêmes chunks), mesure du coût par couche (transport pur de l'ordre de la milliseconde, surcout `/query` noyé dans la variance de génération — négatif sur 2 questions sur 3 au run commis), normalisation des scalaires numpy pour le contrat JSON, arrêt propre des services, 3 exercices C.1 | Avancé | — | — |
+| 24 | [24_Generative_Agents_MiniMonde.ipynb](24_Generative_Agents_MiniMonde.ipynb) | **Simuler un petit monde** : 5 agents, grille 5×5, deux jours — flux de mémoire noté par le LLM, récupération à trois composantes (récence 0,995/h, importance, pertinence par embeddings), réflexion au seuil dont les insights citent leurs preuves, planification journalière, boucle d'action avec dialogues conditionnés par la récupération propre à chaque agent ; expérience de propagation rejouée avec vérification anti-hallucination — au run commis 50 appels LLM réels, vernissage 40 % / candidature 0 % contre 52 % / 32 % au papier (écart d'échelle, mesuré), 3 exercices C.1 | Avancé | 60 min | — |
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 5 | `5_RAG_Modern.ipynb` | RAG, embeddings, chunking, Responses API multi-turn, citations | 65 min |
-| 6 | `6_PDF_Web_Search.ipynb` | Support PDF (base64/file_id), web_search intégré | 50 min |
-| 7 | `7_Code_Interpreter.ipynb` | Code interpreter, analyse de données, génération de graphiques | 55 min |
+## Approfondissements (Approfondissement)
 
-### Tier 4 : Fonctionnalités Avancées
+Les lettres prolongent le numéro nu du même palier. Les prérequis techniques propres à une extension sont indiqués avec sa description et détaillés dans la section « Prérequis ».
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 8 | `8_Reasoning_Models.ipynb` | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | 60 min |
-| 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
-| 9b | `9b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
-| 10 | `10_LocalLlama.ipynb` | Serveur OpenAI-compatible auto-hébergé (vLLM) : 3 étages honnêtement nommés (local étudiant / auto-hébergé du cours / repli distant OpenRouter), multi-endpoints, benchmarking | 60 min |
-| 10b | `10b_Inference_Mechanics.ipynb` | KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM | 75 min |
-| 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM | 50 min |
-| 10d | `10d_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
-| 10e | `10e_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 70,11 tok/s GPU (vs 99.4% pad TensorSharp) — subprocess .NET 8 self-contained, harnais versionné `tools/llamasharp-bakeoff/` (#15570) | 50 min |
-| 10f | `10f_ORTGenAI_DotNet_BakeOff.ipynb` | Phase 3 du bake-off : ONNX Runtime GenAI 0.15.2 charge Qwen3-4B ONNX int4 avec l’EP CUDA prouvée, rejoue les quatre invites communes et tranche le go/no-go par axe face à TensorSharp et LLamaSharp | 45 min |
-| 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
-| 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
+### Autour de 03
+- **3b — [03b_Typed_Decisions_System1.ipynb](03b_Typed_Decisions_System1.ipynb)** : Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) — **60 min**
+- **3c — [03c_Constrained_Decoding_Python.ipynb](03c_Constrained_Decoding_Python.ipynb)** : Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même)
+- **3d — [03d_JEPA_PredictionLatente_System1.ipynb](03d_JEPA_PredictionLatente_System1.ipynb)** : Prédiction latente sans génération : DM-JEPA 1.7 (moteur non-autorégressif, 349 M paramètres) exécuté via le harnais de validation local (#21997) — le distracteur qui partage l'ancre coule (rang moyen 5,7 sur 6), la négation reste au rang du hasard (3,75 contre 3,5), baseline du tri aléatoire à côté ; les chiffres de la page de validation reproduits en direct — **35 min**
 
-### Tier 5 : Test-Time Scaling approfondi (ICR)
+### Autour de 09
+- **9b — [09b_Prompt_Security_RedTeam.ipynb](09b_Prompt_Security_RedTeam.ipynb)** : Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 — **70 min**
+- **9c — [09c_Production_Routage_Repli.ipynb](09c_Production_Routage_Repli.ipynb)** : Choisir le bon modèle au bon moment : catalogue et prix, banque de questions à réponse vérifiable, baselines locale et distante, routage par politique (coût × difficulté × budget), cascade petit-vers-grand sur seuil de confiance, repli sur panne fournisseur simulée, synthèse du coût par stratégie
+- **9d — [09d_Production_Caches.ipynb](09d_Production_Caches.ipynb)** : Payer une fois, servir mille fois : remplissage du cache sur inférence réelle, embeddings et similarité, cache exact, cache sémantique (seuil et prix), cache de préfixe fournisseur lu dans `cached_tokens`
+- **9e — [09e_Production_Exploitation.ipynb](09e_Production_Exploitation.ipynb)** : L'exploitation en production : coût par requête mesuré sur appels réels, budget (trajectoire, seuil d'alerte, date de franchissement), shadow, canary et auto-rollback sur erreurs réelles, SLO et error budget
+
+### Autour de 10
+- **10b — [10b_Inference_Mechanics.ipynb](10b_Inference_Mechanics.ipynb)** : KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM — **75 min**
+- **10c — [10c_Long_Context_Strategies.ipynb](10c_Long_Context_Strategies.ipynb)** : Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM — **50 min**
+- **10d — [10d_TensorSharp_DotNet_Inference.ipynb](10d_TensorSharp_DotNet_Inference.ipynb)** : Bake-off bindings .NET en deux parties : pilote TensorSharp (défaut `<pad>` rendu falsifiable, `RECOVERABLE-LOCAL`), puis jambe ORT GenAI (ONNX int4, EP CUDA prouvée) qui rejoue le protocole commun, dresse le tableau à trois moteurs et tranche le go/no-go par axe — **100 min**
+- **10e — [10e_LLamaSharp_DotNet_BakeOff.ipynb](10e_LLamaSharp_DotNet_BakeOff.ipynb)** : Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 70,11 tok/s GPU (vs 99.4% pad TensorSharp) — subprocess .NET 8 self-contained, harnais versionné `tools/llamasharp-bakeoff/` (#15570) — **50 min**
+- **10g — [10g_Speculative_Decoding.ipynb](10g_Speculative_Decoding.ipynb)** : Décodage spéculatif from scratch : un b-gramme (draft) propose *k* tokens, un 4-gramme (cible) les vérifie en un passage ; taux d'acceptation **décroissant** avec *k* (0,59 → 0,17), tokens par passage qui **sature** (→ 2,3), et speedup `mu/(1+k.r)` balayé sur k×r — le point de bascule où le décodage redevient plus lent que la cible seule. Auto-contenu, CPU, sans vLLM ; le speedup réel sur endpoint est `RECOVERABLE-MACHINE` — **55 min**
+- **10h — [10h_Roofline_Memory_Bandwidth.ipynb](10h_Roofline_Memory_Bandwidth.ipynb)** : Roofline from scratch sur CPU : les deux plafonds (calcul et bande passante) et l'intensité arithmétique qui tranche — le décodage (1 token) est limité par la **bande passante**, le prefill par le **calcul** ; le batch et le décodage spéculatif (10g) comme deux leviers qui élèvent l'intensité vers la crête, mesures à l'appui *(prérequis : voir la description et la section « Prérequis » ci-dessus ; les lettres prolongent le palier 10.)* — **40 min**
+
+### Autour de 11
+- **11b — [11b_Materiel_Debit_Cout.ipynb](11b_Materiel_Debit_Cout.ipynb)** : Ferme la chaîne format → VRAM → bande passante → coût : roofline construit sur les débits et pics **mesurés** de la carte (stream triad, matmul fp16/fp32), empreinte VRAM par format (fp32/fp16/bf16 natifs + int8/int4 `bitsandbytes`), débits préfill/décodage relevés des timings Ollama (`qwen3.5:4b`), fermeture du toit (débit prédit par `bande passante / taille des poids` vs débit observé, écart lu), coût local par million de jetons (watts `nvidia-smi` mesurés + hypothèses déclarées, seuil de bascule face aux grilles API) — chaque grandeur étiquetée Mesuré/Cité, 3 exercices C.1 — **60 min**
+
+### Autour de 13
+- **13b — [13b_Agent_Evaluation.ipynb](13b_Agent_Evaluation.ipynb)** : Versant **mesure** du 13 : taux de succès par correcteur déterministe, coût par trajectoire (tours/appels/tokens/latence), delta d'ablation (retrait d'un moteur de la boîte à outils) et sûreté (instruction hostile dissimulée dans le contenu d'un outil) ; route LLM déclarée à l'exécution (routeur DeepSeek self-hosted, repli OpenAI gpt-5.2 affiché), juge LLM avec garde-fou anti-biais A/B puis B/A, 3 exercices C.1 — **45 min**
+
+### Autour de 14
+- **14b — [14b_Paginated_Memory-Python.ipynb](14b_Paginated_Memory-Python.ipynb)** : Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330) — **70 min**
+  Son [jumeau C#](14b_Paginated_Memory-CSharp.ipynb) reprend les mêmes structures en BCL, sans modèle ni service externe ; son [portage Rust](14b_Paginated_Memory-Rust.ipynb) (std seul, kernel evcxr) les reprend en structures pures `VecDeque`/`Rc` avec sorties conformes au Python (#27968) ; les coûts sont des unités pédagogiques en caractères et l’archive reste O(N).
+
+### Autour de 22
+- **22b — [22b_Profil_Cognitif_CHC.ipynb](22b_Profil_Cognitif_CHC.ipynb)** : Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1
+- **22c — [22c_DSPy_Prompt_Compile.ipynb](22c_DSPy_Prompt_Compile.ipynb)** : **Du prompt écrit au prompt compilé** : le pipeline RAG de `05_RAG_Modern` (même document, même chunking) passe du prompt f-string fixe à un **programme DSPy** compilé contre une métrique. Organe natif branché bout en bout (`dspy.Signature`, `dspy.ChainOfThought`, `BootstrapFewShot`) — pas de réimplémentation. Mesure honnête sur un **jeu de test séparé** du jeu d'optimisation : fidélité moyenne 0.95 (manuel) → 1.00 (compilé), coût de compilation compté en appels au modèle ; limites montrées par la mesure (saturation de la métrique sur un jeu réduit, longueurs de réponse qui doublent selon la métrique choisie). Endpoint **Ollama local** par défaut (reproductible sans clé API), 3 exercices C.1
+
+
+## Sous-séries
+
+### TransformerVariants — variantes modernes du Transformer
+
+La sous-série part du notebook [TV-00a — RoPE from scratch](TransformerVariants/TV-00a-RoPE-from-scratch.ipynb), puis confronte les variantes codées à la main aux modèles industriels. Son [README](TransformerVariants/README.md) donne le parcours détaillé, les prérequis d’exécution et les résultats mesurés. Le notebook MoE du parcours initial a été livré dans la série [DataScienceWithAgents](../../ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb), comme le documente le README de la sous-série.
+
+| # | Notebook | Ce qu’on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| TV-00a | [RoPE from scratch](TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | Rotation par paires de dimensions, invariance de position relative mesurée et comparaison au PE additif | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-00b | [Attention variants from scratch](TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | Comparaison MHA, MQA, GQA et fenêtre glissante SWA | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-00d | [Encodeurs from scratch](TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | Encodeur seul et encodeur-décodeur, avec ablations de position, transfert de masque et génération seq2seq | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-01 | [Attention variants SOTA](TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | Mesures d’attention, KV-cache, champ réceptif, préremplissage et décodage sur Mistral-7B | Bloc B (GPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-02 | [MoE SOTA](TransformerVariants/TV-02-MoE-SOTA.ipynb) | Routage et charge mesurés sur OLMoE, comparés au notebook 3.4c | Bloc B (GPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-03 | [Internalisation du CoT](TransformerVariants/TV-03-Internalisation-CoT.ipynb) | Comparaison multi-seed entre CoT supervisé et entraînement answer-only | Recherche | [README de la sous-série](TransformerVariants/README.md) |
+| TV-04 | [DiscoLoop](TransformerVariants/TV-04-DiscoLoop.ipynb) | Boucles et canaux mixtes sur une tâche d’indirection double | Recherche | [README de la sous-série](TransformerVariants/README.md) |
+
+### Résultats mesurés de l’arc Test-Time Scaling approfondi (ICR)
 
 Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment du test (Best-of-N, Tree-of-Thoughts, Reflexion, routeur adaptatif). Les notebooks 13 à 18 approfondissent cet arc en s'inspirant du projet de référence [Iterative-Contextual-Refinements (ICR)](https://github.com/ryoiki-tokuien/Iterative-Contextual-Refinements) : on passe d'un routeur codé en dur à une orchestration agentique, on rend la mémoire persistante, on attaque des problèmes de recherche où le single-shot échoue, on quantifie les compromis de scaling, on compare au raisonnement natif, puis on expose le tout comme plugins réutilisables.
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 13 | `13_Agentic_Orchestration.ipynb` | Routeur agentique : function calling (pont NB-04) pour laisser un LLM choisir le moteur par sous-tâche (mode "Agentic" d'ICR) | 60 min |
-| 14 | `14_Persistent_Memory.ipynb` | Mémoire vectorielle persistante (baseline BoW + cosine, pont NB-05 RAG) qui rétrocède les leçons aux runs suivants (agent "Memory" d'ICR) | 55 min |
-| 14b | `14b_Paginated_Memory-Python.ipynb` | Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330) | 70 min |
-| 15 | `15_Tree_of_Thoughts_Search.ipynb` | Tree-of-Thoughts sur cryptarithmes (SEND+MORE=MONEY) : recherche DFS colonne par colonne avec propagation de retenue (pont séries Search/Sudoku) | 60 min |
-| 16 | `16_Scaling_Test_Time_Compute.ipynb` | Courbes de scaling Snell 2024 : estimateur pass@k, BoN vs Reflexion, frontière compute-optimale selon la difficulté | 65 min |
-| 17 | `17_Native_Reasoning_vs_Scaling.ipynb` | Raisonnement natif (deepseek-r1, reasoning tokens) vs scaling hand-rolled (BoN), comparaison cost-normalisée en tokens | 60 min |
-| 18 | `18_Semantic_Kernel_Plugins.ipynb` | Moteurs exposés en plugins Semantic Kernel (`@kernel_function`) composables via le kernel (pont série SemanticKernel) | 60 min |
-| 19 | `19_OWUI_Orchestration.ipynb` | Orchestration sans code via Open WebUI v0.9.0 (Automations RRULE / Task Management / Calendar) ; trois niveaux d'abstraction (produit OWUI vs LangGraph vs CrewAI) ; migration async 0.8→0.9 ; skeleton API OpenAI-compatible avec graceful skip (`OWUI_API_KEY`) | 60 min |
-| 20 | `20_OWUI_Native_API.ipynb` | Compagnon du 19 : introspection de la **vraie surface API native** OWUI v0.9.6 (routes REST auth-free : santé/version/config ; couche authentifiée Bearer) via `urllib` standard ; graceful skip honnête si `OWUI_API_KEY` absente (Stop & Repair, pas de sortie fabriquée) | 60 min |
 
 **Figures clés de l'arc test-time scaling.** Trois sorties matplotlib des notebooks [16](16_Scaling_Test_Time_Compute.ipynb) et [17](17_Native_Reasoning_vs_Scaling.ipynb) matérialisent les compromis quantifiés par Snell 2024 — le cœur pédagogique du Tier 5.
 
@@ -108,7 +148,7 @@ Ce verdict décrit **une réalisation, pas une loi** : la Réflexion résout ici
 
 Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-### Tier 6 : Fine-tuning (Avancé)
+### Repères sur le fine-tuning
 
 Les tiers 1 à 5 exploitent un LLM **tel quel** (prompting, structuration, augmentation, scaling au moment du test). Le notebook 21 franchit le pas suivant : **adapter le modèle lui-même** à une tâche précise sans tout réentraîner. La technique est **LoRA / QLoRA** (Low-Rank Adaptation) : on gèle les poids du modèle de base et on n'entraîne que de petits *adaptateurs* de bas rang — quelques millions de paramètres au lieu de quelques milliards — ce qui tient dans 8 Go de VRAM et évite l'oubli catastrophistique des connaissances pré-entraînées.
 
@@ -116,22 +156,73 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 
 Le notebook **22c** ferme la boucle ouverte par le 22 : après avoir *mesuré* les sorties générées, on les *optimise*. Il ne réécrit ni le pipeline RAG de `05_RAG_Modern` ni les métriques du 22 — il les branche sur DSPy et compare, sur un jeu de test que l'optimiseur n'a jamais vu, le prompt écrit à la main et le prompt compilé. La leçon centrale est mesurée, pas affirmée : un gain modeste (+0.05 de fidélité moyenne, dont +0.20 sur une question) obtenu pour un coût de compilation compté en appels, et deux limites démontrées — une métrique qui sature ne peut pas guider l'optimisation, et le choix de la métrique change la sortie.
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
-| 22 | `22_Evaluating_Generated_Text.ipynb` | Évaluation des sorties générées : **BLEU** (précision n-gram avec clipping) et **ROUGE** (rappel) construits à la main et mesurés — deux métriques lexicales aveugles au sens — puis **juge LLM** avec protocole anti-biais (paire évaluée dans les deux ordres à T=0, ne tranche que si les deux passes coïncident), 3 exercices C.1 | — |
-| 22b | `22b_Profil_Cognitif_CHC.ipynb` | Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1 | — |
-| 22c | `22c_DSPy_Prompt_Compile.ipynb` | **Du prompt écrit au prompt compilé** : le pipeline RAG de `05_RAG_Modern` (même document, même chunking) passe du prompt f-string fixe à un **programme DSPy** compilé contre une métrique. Organe natif branché bout en bout (`dspy.Signature`, `dspy.ChainOfThought`, `BootstrapFewShot`) — pas de réimplémentation. Mesure honnête sur un **jeu de test séparé** du jeu d'optimisation : fidélité moyenne 0.95 (manuel) → 1.00 (compilé), coût de compilation compté en appels au modèle ; limites montrées par la mesure (saturation de la métrique sur un jeu réduit, longueurs de réponse qui doublent selon la métrique choisie). Endpoint **Ollama local** par défaut (reproductible sans clé API), 3 exercices C.1 | — |
 
-### Tier 7 : Analyse linguistique (TAL)
+### Repère : analyse linguistique
 
 Les notebooks TAL classiques (23–26 : pipeline spaCy, n-grammes, CRF, PCFG/CYK) ont migré vers leur série dédiée : [`MyIA.AI.Notebooks/NLP/`](../../NLP/README.md) (EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271)). Cette série-ci reste centrée sur l'ingénierie des LLM — prompts, RAG, fine-tuning, scaling — et renvoie à la série NLP pour la tradition symbolique/probabiliste du traitement des langues.
+
+### Repère : du notebook à l’application
+
+Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cellules devient un **service**. Le RAG du `05_RAG_Modern` (même corpus, même chunking, mêmes fonctions — extraction fidèle, chaque cellule citant son origine) est servi par une API **FastAPI** locale sur un port dynamique, testée par des appels `httpx` réels, puis exposé par une UI **Gradio** qui ne connaît que l'URL de l'API — jamais le pipeline. La leçon centrale est mesurée, pas affirmée : le transport pur HTTP coûte quelques millisecondes (médiane 2.0 ms sur 20 appels de `GET /health` au run commis), et sur `/query` le surcout de l'API est noyé dans la variance de génération — parfois négatif. Servir est une décision d'usage (qui peut appeler), pas de performance. Tous les services s'arrêtent proprement en fin de carnet. Le numéro 23 est réutilisé — les TAL historiques qui le portaient ont migré en série NLP (tier 7 ci-dessus).
+
+
+### Repère : agents génératifs — mémoire, réflexion et planification
+
+Le carnet **24** descend d'un cran dans l'échelle après le service du tier 8 : il simule un **petit monde** — 5 agents sur une grille 5×5, deux jours de jeu — d'après Park et al. 2023 (*Generative Agents: Interactive Simulacra of Human Behavior*, UIST '23, arXiv 2304.03442). L'architecture du papier est reproduite terme à terme sur le vrai moteur : flux de mémoire noté par le LLM à la création, récupération à trois composantes (récence qui décroît de 0,995 par heure de jeu depuis le dernier accès, importance 1-10, pertinence par similarité d'embeddings), réflexion au seuil d'importance cumulée dont les insights citent leurs preuves, planification journalière rejouée chaque matin, et boucle d'action où un dialogue n'existe que si deux agents partagent une case. L'expérience de propagation du papier est rejouée à notre échelle, avec sa vérification anti-hallucination : un agent qui « dit » savoir ne compte que si sa mémoire porte effectivement l'information. Au run commis, 50 appels LLM réels au stack vLLM local donnent une propagation de 40 % sur le vernissage et 0 % sur la candidature, contre 52 % et 32 % chez les 25 agents du papier — l'écart est un effet d'échelle, et le carnet dit lequel. 3 exercices C.1.
+
 
 ## Prérequis
 
 ### Configuration API
 1. Copier `.env.example` vers `.env`
 2. Ajouter votre clé API OpenAI : `OPENAI_API_KEY=sk-...`
+3. Les paramètres d'échantillonnage ne sont pas universels : `gpt-5-mini` refuse `temperature` (HTTP 400) quand `gpt-4o-mini` l'accepte. La table mesurée [docs/genai/parametres-par-modele.md](../../../docs/genai/parametres-par-modele.md) dit, par modèle utilisé dans les carnets, ce que chaque paramètre devient — et la garde `param_guard` (série 00-GenAI-Environment) le signale dans le carnet plutôt que de perdre le paramètre en silence.
+
+### Service REST local Structured Outputs
+
+Le cœur [`structured_outputs_core.py`](structured_outputs_core.py) reprend l'extraction de la §5 du carnet 3 : il accepte un JSON Schema racine objet ou une classe Pydantic v2, prépare le schéma pour le mode strict, appelle un endpoint OpenAI-compatible puis valide la réponse contre le schéma strict envoyé avant de la retourner. Le mode strict rend obligatoires toutes les propriétés déclarées, même celles qui étaient optionnelles dans le schéma d'origine ; si une propriété peut être absente, déclarez-la nullable et attendez une valeur `null`. Les références `$ref` externes sont rejetées pour que la validation reste autonome. Le service [`structured_outputs_service.py`](structured_outputs_service.py) expose ce même cœur sur `POST /texte/extract`.
+
+Depuis le répertoire `MyIA.AI.Notebooks/GenAI/Texte`, installez les dépendances propres au service, puis démarrez-le sur la boucle locale :
+
+```bash
+python -m pip install -r requirements-structured-outputs.txt
+export OPENAI_API_KEY='…'
+# Optionnel : endpoint local/OpenAI-compatible et modèle servi.
+export OPENAI_BASE_URL='http://127.0.0.1:5002/v1'
+export OPENAI_MODEL='nom-du-modele'
+uvicorn structured_outputs_service:app --host 127.0.0.1 --port 8000
+```
+
+`OPENAI_BASE_URL` et `OPENAI_MODEL` sont facultatifs. En leur absence, le SDK OpenAI utilise son URL par défaut et le cœur choisit `gpt-5-mini`. Une valeur présente mais invalide pour la clé, l'URL ou le modèle provoque une erreur ; aucune clé ne doit figurer dans le corps HTTP. Le serveur d'exemple écoute sur `127.0.0.1` ; choisissez explicitement un contrôle d'accès avant tout bind sur une interface réseau.
+
+Contrat de la requête :
+
+```json
+{
+  "prompt": "Extrais le score et le commentaire de ce texte.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "score": {"type": "integer", "minimum": 0, "maximum": 100},
+      "commentaire": {"type": "string"}
+    },
+    "required": ["score", "commentaire"]
+  },
+  "model": "nom-du-modele"
+}
+```
+
+`model` est facultatif. Les réponses ont toujours un des trois corps ci-dessous : succès (`200`, JSON validé), entrée ou schéma invalide (`422`) et échec de configuration, d'API ou de validation de la réponse (`502`). Les clés inconnues dans le corps de la requête sont rejetées.
+
+```json
+{"status": "ok", "data": {"score": 88, "commentaire": "Réponse validée."}}
+{"status": "invalid", "error": "entrée invalide : vérifiez prompt, schema et model"}
+{"status": "error", "error": "échec de l'extraction structurée"}
+```
+
+Les messages HTTP restent génériques pour ne pas exposer les détails des exceptions ou du contenu fourni. Le cœur Python conserve ses exceptions détaillées pour les usages locaux.
+
+Les tests du cœur injectent un client OpenAI-compatible déterministe. Le test loopback lance Uvicorn et fait une vraie requête HTTP locale, mais ne contacte aucun LLM : il vérifie le transport et le contrat seulement. Le test d'inférence réelle et l'intégration au carnet restent à faire avec une API disponible.
 
 ### Pour les notebooks locaux (10, 10b et 11)
 - Docker avec support GPU pour servir le modèle réel avec vLLM
@@ -166,31 +257,23 @@ dépôt.
 
 ## Parcours suggéré
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│  1_OpenAI_Intro ─────► 2_PromptEngineering                     │
-│        │                      │                                 │
-│        │                      └──────► 8_Reasoning_Models       │
-│        │                                                        │
-│        └──────► 3_Structured_Outputs                           │
-│                       │                                         │
-│                       └──────► 4_Function_Calling              │
-│                                      │                          │
-│                    ┌─────────────────┼─────────────────┐       │
-│                    │                 │                 │       │
-│                    ▼                 ▼                 ▼       │
-│           5_RAG_Modern      7_Code_Interpreter  9_Production   │
-│                 │                                    │          │
-│                 └──────► 6_PDF_Web_Search     9b_RedTeam       │
-│                                                       │         │
-│                                                       └─attack/defend stack self-hosted
-│                                                                 │
-│  10_LocalLlama (indépendant, prérequis: 1)                     │
-│        └──────► 10b_Inference_Mechanics                        │
-│                         └──────► 11_Quantization               │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    N1["1_OpenAI_Intro"] --> N2["2_PromptEngineering"]
+    N1 --> N3["3_Structured_Outputs"]
+    N2 --> N8["8_Reasoning_Models"]
+    N3 --> N4["4_Function_Calling"]
+    N4 --> N5["5_RAG_Modern"]
+    N4 --> N7["7_Code_Interpreter"]
+    N4 --> N9["9_Production"]
+    N5 --> N6["6_PDF_Web_Search"]
+    N9 --> N9b["9b_RedTeam<br/>(attack/defend stack self-hosted)"]
+    N9 --> N9c["09c_Routage_Repli"]
+    N9c --> N9d["09d_Caches"]
+    N9d --> N9e["09e_Exploitation"]
+    N10["10_LocalLlama<br/>(indépendant, prérequis: 1)"] --> N10b["10b_Inference_Mechanics"]
+    N10b --> N10c["10c_Long_Context_Strategies"]
+    N10b --> N11["11_Quantization"]
 ```
 
 ## APIs couvertes
@@ -203,6 +286,10 @@ dépôt.
 | **Tools/Functions** | 4, 6, 7 | Function calling moderne |
 | **File Upload** | 6, 7 | Support PDF et fichiers |
 | **Reasoning** | 2, 8 | Modèles o4-mini, gpt-5-thinking |
+
+## Décodage spéculatif — deux implémentations 10g
+
+[Python](10g_Speculative_Decoding.ipynb) · [C#](10g_Speculative_Decoding-CSharp.ipynb). Les mêmes n-grammes, corpus et budgets exposent les taux d'acceptation et les coûts modélisés. Trois exercices ouverts portent sur un sampler avec traces P/Q/résidu, le choix de k avec callback observé, et la génération d'arbres avec parcours et compteurs reconstruits. La BCL conserve les algorithmes pédagogiques du source ; aucun endpoint LLM n'est mesuré.
 
 ## Technologies et écosystème
 
@@ -242,9 +329,9 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 3. **Tier 3** (augmentation) : [5_RAG_Modern](05_RAG_Modern.ipynb) et [6_PDF_Web_Search](06_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](07_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
 
-4. **Tier 4** (production et local) : [8_Reasoning_Models](08_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](09_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
+4. **Tier 4** (production et local) : [8_Reasoning_Models](08_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](09_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [9c_Production_Routage_Repli](09c_Production_Routage_Repli.ipynb) arbitre ensuite quel modèle servir et vers qui se replier, [9d_Production_Caches](09d_Production_Caches.ipynb) évite l'appel par les caches (exact, sémantique, préfixe) et [9e_Production_Exploitation](09e_Production_Exploitation.ipynb) gouverne le service en production (coût, budget, shadow, canary, SLO), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM, et [11b_Materiel_Debit_Cout](11b_Materiel_Debit_Cout.ipynb) referme la chaîne jusqu'au coût : format → VRAM mesurée → bande passante → débit observé (toit fermé) → prix par million de jetons sur le matériel de la flotte.
 
-5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), mémoire paginée d'agent ([14b](14b_Paginated_Memory-Python.ipynb) : fenêtre glissante, résumé progressif, éviction, mémoire vectorielle paginée, mémoire multi-domaine), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
+5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), évaluation d'agents — succès, coût, ablation, sûreté ([13b](13b_Agent_Evaluation.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), mémoire paginée d'agent ([14b](14b_Paginated_Memory-Python.ipynb) : fenêtre glissante, résumé progressif, éviction, mémoire vectorielle paginée, mémoire multi-domaine), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
 Le schéma ci-dessous résume comment les cinq tiers s'enchaînent pour maîtriser les LLMs : du prompt one-shot (tier 1) aux patterns de production puis à l'arc test-time scaling approfondi (tiers 4-5), en passant par les sorties structurées (tier 2) et l'augmentation RAG/code interpreter (tier 3).
 
@@ -265,7 +352,7 @@ flowchart TD
     subgraph T4["Tier 4 · Avancé & production"]
         D1["8-9 : Reasoning & Production"]
         D1b["9b : Red-team sécurité LLM (sibling adversarial de 9)"]
-        D2["10-11 : Local, KV-cache & Quantization"]
+        D2["10-11b : Local, KV-cache, Quantization & coût"]
         D3["12 : Test-Time Scaling"]
     end
     subgraph T5["Tier 5 · Test-time scaling approfondi (ICR)"]
@@ -342,3 +429,7 @@ Les notebooks 10, 10b et 11 utilisent vLLM : le 10 déploie et compare les endpo
 - [Responses API](https://platform.openai.com/docs/api-reference/responses)
 - [Reasoning Models](https://platform.openai.com/docs/guides/reasoning)
 - [Function Calling](https://platform.openai.com/docs/guides/function-calling)
+
+## Roofline : deux implémentations CPU
+
+[10h en Python](10h_Roofline_Memory_Bandwidth.ipynb) et [10h en C#](10h_Roofline_Memory_Bandwidth-CSharp.ipynb) mesurent une somme et un produit matriciel en Float32 avant de projeter une couche analytique. NumPy et TorchSharp exploitent des noyaux différents : leurs débits ne sont pas des pics matériels certifiés ni des mesures de LLM.

@@ -7,7 +7,7 @@ content_csharp_sha: d23b05bafa7c63ba63c6ffba81c32a1d18f097daada9b23caa0bda3b6c31
 reason: >-
   Re-attestation de parite -- canari hr_separator (#15227, lane myia-po-2024:CoursIA),
   markdown-only. Le separateur decoratif standalone de la cellule markdown d'index 14 (sur 15, derniere) du cote C#
-  (App-11b-Picross-CSharp.ipynb) est converti d'une regle horizontale en asterisques par
+  (App-11-Picross-CSharp.ipynb) est converti d'une regle horizontale en asterisques par
   scripts/notebook_tools/fix_hr_separator.py, dans le cadre de son allowlist (hors
   frontmatter, bloc cloture et setext). Cote C# SEUL : le jumeau Python ne porte aucun
   separateur standalone equivalent, verifie sur origin/main par parcours JSON complet de

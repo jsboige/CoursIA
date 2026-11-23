@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import gh_identity  # noqa: E402
 
@@ -55,12 +55,35 @@ def test_pin_respecte_gh_token_deja_pose(monkeypatch):
     assert gh_identity.resolve_gh_token() == "tok-deja-pose"
 
 
-def test_pin_epingle_le_jeton_resolu(monkeypatch):
+def test_pin_epingle_le_jeton_resolu(monkeypatch, gh_token_env):
+    """Le jeton resolu est epingle dans l'environnement du processus.
+
+    Le fixture `gh_token_env` porte la restauration : `pin_gh_token()` ecrit
+    `os.environ["GH_TOKEN"]` DIRECTEMENT, et le `monkeypatch.delenv` du
+    debut n'a rien enregistre (la variable etait absente) -- l'ecriture
+    survivait donc au test, laissait un jeton fictif pose pour toute la
+    session pytest et masquait 12 echecs REELS du picker (#21994).
+    """
     monkeypatch.delenv("GH_TOKEN", raising=False)
     monkeypatch.delenv("COURSIA_GH_PINNING", raising=False)
     monkeypatch.setattr(gh_identity, "resolve_gh_token", lambda: "tok-machine")
     assert gh_identity.pin_gh_token() == "tok-machine"
     assert os.environ["GH_TOKEN"] == "tok-machine"
+
+
+def test_le_pin_ne_laisse_pas_de_jeton_derriere_lui(monkeypatch, gh_token_env):
+    """Non-regression #21994 : un pin reussi se restaure.
+
+    Le jeton ecrit par `pin_gh_token()` doit disparaitre de l'environnement
+    une fois le test fini -- sinon le verdict des modules suivants depend de
+    l'ordre de leurs fichiers.
+    """
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.setattr(gh_identity, "resolve_gh_token", lambda: "tok-machine")
+    assert gh_identity.pin_gh_token() == "tok-machine"
+    assert os.environ["GH_TOKEN"] == "tok-machine"  # le pin ecrit bien
+    assert gh_token_env.restore() is None  # la restauration l'efface
+    assert os.environ.get("GH_TOKEN") is None
 
 
 def test_pin_pinning_off_avertit_et_ne_epingle_pas(monkeypatch, capsys):
@@ -136,3 +159,45 @@ def test_gh_env_pose_le_jeton_resolu(monkeypatch):
     env = gh_identity.gh_env({"PATH": "/bin"})
     assert env["GH_TOKEN"] == "tok-env"
     assert env["PATH"] == "/bin"
+
+
+# --- #17437/Q187 : l'App PROPRE a la lane coordinatrice, auteur de dossier ----
+
+
+def test_coordinator_lane_app_est_un_auteur_de_dossier_accepte():
+    """Q187 (2026-11-14) : l'App propre a la lane coordinatrice (App 5763709,
+    cle dediee) signe des dossiers. Litteral EXPLICITE, pas derive du
+    prefixe ``coursia-lane-`` : ce test epingle l'appartenance ET la non
+    derivation (un slug construit par forme ne doit pas passer)."""
+    assert gh_identity.COORDINATOR_LANE_APP_LOGIN == "coursia-coord-ai01[bot]"
+    assert gh_identity.COORDINATOR_LANE_APP_LOGIN in gh_identity.ACCEPTED_DOSSIER_AUTHORS
+    # L'App de MACHINE reste un auteur accepte (elle signe, elle ne
+    # neutralise pas -- cf check_adjoint_prevalidation).
+    assert (gh_identity.APP_LOGIN_PREFIX + "ai-01[bot]"
+            in gh_identity.ACCEPTED_DOSSIER_AUTHORS)
+
+
+def test_coordinator_lane_app_hors_prefixe_de_lane_est_refuse_par_forme():
+    """Fail-closed par forme : l'ensemble ne derive PAS de ``APP_DOSSIER_LANES``
+    -- un login qui n'est que la RESSEMBLANCE du slug coordinateur sous le
+    prefixe de lane est refuse, comme tout login absent de la table figee."""
+    for impostor in (
+        "coursia-lane-coord-ai01[bot]",   # slug coordinateur sous prefixe de lane
+        "coursia-coord-ai01",             # forme nue sans type ni suffixe
+        "coursia-coord-ai01[bot]x",       # suffixe valide plus caractere parasite
+        "coursia-coord-ai02[bot]",        # slug voisin inexistant
+    ):
+        assert impostor not in gh_identity.ACCEPTED_DOSSIER_AUTHORS, impostor
+
+
+def test_coordinator_lane_app_normalisee_passe_le_predicat():
+    """``is_accepted_dossier_author`` compare sur le login NORMALISE : la
+    forme GraphQL nue typee ``Bot`` (login sans suffixe) est repliee en
+    forme REST suffixee et acceptee ; l'homonyme UTILISATEUR type ``User``
+    reste nu et est refuse."""
+    assert gh_identity.is_accepted_dossier_author(
+        {"login": "coursia-coord-ai01", "__typename": "Bot"}) is True
+    assert gh_identity.is_accepted_dossier_author(
+        {"login": "coursia-coord-ai01[bot]"}) is True
+    assert gh_identity.is_accepted_dossier_author(
+        {"login": "coursia-coord-ai01", "__typename": "User"}) is False

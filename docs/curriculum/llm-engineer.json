@@ -118,8 +118,7 @@
       "branch": "inference-service",
       "notebooks": [
         "GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb",
-        "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb",
-        "GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb"
+        "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb"
       ]
     },
     {

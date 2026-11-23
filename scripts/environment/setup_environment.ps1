@@ -56,7 +56,7 @@ function Test-Administrator {
 function Save-Checkpoint {
     param($CheckpointName)
     $Checkpoints[$CheckpointName] = $true
-    $Checkpoints | ConvertTo-Json | Out-File -FilePath $CheckpointFile -Encoding UTF8
+    [System.IO.File]::WriteAllText($CheckpointFile, ($Checkpoints | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
     Write-Action "Checkpoint: $CheckpointName" "SUCCESS"
 }
 
@@ -392,7 +392,7 @@ if ($AutoFix) {
                 Save-Checkpoint "dotnet_interactive_install"
             } else {
                 Write-Action "Installation de .NET Interactive..." "INFO"
-                dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701 2>&1 | Out-Null
+                dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 2>&1 | Out-Null
                 if ($LASTEXITCODE -eq 0) {
                     Write-Action ".NET Interactive installé avec succès" "SUCCESS"
                     Save-Checkpoint "dotnet_interactive_install"
@@ -513,7 +513,7 @@ Packages échoués: $($FailedRequired -join ', ')
 Tests d'import réussis: $PassedTests/$($TestPackages.Count)
 "@
 
-$LogContent | Out-File -FilePath $LogFile -Encoding UTF8
+[System.IO.File]::WriteAllText($LogFile, ($LogContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "`nLog sauvegardé: $LogFile" -ForegroundColor Gray
 
 # Code de sortie

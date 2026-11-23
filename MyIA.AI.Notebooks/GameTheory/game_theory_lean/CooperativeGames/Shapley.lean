@@ -13,10 +13,16 @@
   caractérisation axiomatique et l'unicité ; **ancrages à confirmer** sur
   l'ouvrage, le PDF n'étant pas acquis sur cette machine).
 
-  Convention i18n (cycle 39 ratifiée, voir `docs/lean/i18n-inventory-cycle-38.md`) :
+  Convention i18n (cycle 39 ratifiée, voir `../../../../docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md`) :
   en-têtes, sections, docstrings et commentaires intra-preuve en français ;
   le code Lean tactique (noms de symboles, références Mathlib, énoncés de lemmes,
   preuves) reste en anglais pour préserver la compatibilité Mathlib.
+
+  Jumeau EN (`Shapley_en.lean`) du canonique FR (`Shapley.lean`), selon
+  l'EPIC #4980 de la convention i18n Lean FR+EN (voir #4980). Code tactique byte-identique
+  modulo l'enveloppe de namespace (`CooperativeGames_en` anti-collision) et l'import
+  inter-namespace (`import CooperativeGames.Basic_en` au lieu de `CooperativeGames.Basic`).
+  Le code tactique Lean est 100% byte-identique entre les jumeaux.
 -/
 
 import CooperativeGames.Basic

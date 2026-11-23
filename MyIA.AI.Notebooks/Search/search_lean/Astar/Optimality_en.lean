@@ -1,6 +1,6 @@
 import Mathlib
-import Astar.Graph
-import Astar.Heuristic
+import Astar.Graph_en
+import Astar.Heuristic_en
 
 /-!
 # Astar.Optimality — f-bound (abstract lemma: suffix bound)
@@ -28,7 +28,7 @@ Graph-Search variant without re-opening (cf #14824) — is not proved.
 
 namespace Astar_en
 
-open Astar
+open Astar_en
 
 variable {V : Type*} (G : WeightedGraph V)
 

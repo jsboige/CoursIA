@@ -98,6 +98,26 @@ _LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # beneficie aussi, uniformement.
 _INLINE_SPAN_RE = re.compile(r"`[^`\n]*`")
 _BARE_URL_RE = re.compile(r"\bhttps?://\S+")
+# #21277 (suite) : une CITATION -- blockquote `>` ou guillemets «...» / "..." --
+# n'est curee que si elle porte sa PROPRE preuve de contexte francais. Sans cette
+# garde, une citation anglaise dans une cellule francaise herite du contexte FR de
+# la cellule (`cell_fr`, ≥2 marqueurs sur la cellule entiere) et y est "corrigee" :
+# `element` -> `element` (signal c.6757419949, Riemann200/13-bernoulli cellule 15).
+# La preuve se mesure sur le TEXTE DE LA CITATION, jamais sur la cellule : une
+# phrase anglaise n'y porte aucun mot-outil FR, donc elle traverse la cure intacte.
+_BLOCKQUOTE_RE = re.compile(r"^\s{0,3}>\s?(.*)$")
+# guillemets : francais «...» et doubles "..." (les deux sont des citations)
+_INLINE_QUOTE_RE = re.compile(r"«[^»\n]*»|\"[^\"]*\"")
+
+# #17222 : un libelle de lien qui NOMME le fichier cible porte le meme defaut
+# qu'une cible accentuee (#7135/#7145) -- l'accentuer le decouple du fichier
+# reel. Cas mesure sur la serie PyMC : [PyMC-10-Model-Selection] rendait
+# [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb), un libelle qui
+# nomme un carnet qui n'existe pas. Regle : le libelle est masque quand son
+# texte (casse et espaces normalises) est contenu dans la cible du meme lien.
+# Le test est volontairement conservateur -- laisser une prose non curee est
+# benin, corrompre une reference de fichier ne l'est pas.
+_LABELLED_LINK_RE = re.compile(r"\[([^\]\n]*)\](\([^)\n]*\))")
 
 
 def _preserve_case(match_str: str, suggestion: str) -> str:
@@ -114,10 +134,19 @@ def _preserve_case(match_str: str, suggestion: str) -> str:
     return suggestion
 
 
-def _cure_line(line: str) -> tuple[str, int]:
+def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     """Cure une ligne de markdown : accentue les formes stripped dans la PROSE,
     en protegeant les cibles de liens ]( ... ), les spans de code inline et les
     URLs nues (#14613 point 4).
+
+    `fr_context` porte la preuve de contexte francais quand l'appelant la
+    connait a un grain plus large que la ligne (cellule de carnet, #21277) :
+    une puce `- Representation : PDDL 2.1+` n'a aucun mot-outil et serait sinon
+    laissee non curee dans une cellule francaise.
+
+    #21277 (suite) : les citations (blockquote `>`, guillemets «...» / "..."
+    inline) sont curees sur leur PROPRE preuve FR ; une citation anglaise
+    traverse la cure intacte, meme dans une cellule francaise.
 
     Retourne (ligne_curee, n_cures).
     """
@@ -131,9 +160,52 @@ def _cure_line(line: str) -> tuple[str, int]:
         masked_spans.append(m.group(0))
         return "\x00MS{}\x00".format(len(masked_spans) - 1)
 
-    masked = _LINK_TARGET_RE.sub(_mask, line)
+    # 1bis. #21277 (suite) : les citations. Un blockquote `>` n'est cure que sur
+    # sa PROPRE preuve FR ; un blockquote anglais (aucun mot-outil FR dans son
+    # texte) est retourne tel quel -- c'est le FP fondeur (Riemann200/13-bernoulli
+    # cellule 15, signal c.6757419949 : `element` -> `element` dans une citation
+    # anglaise d'une cellule francaise).
+    bq = _BLOCKQUOTE_RE.match(line)
+    if bq:
+        if _is_english_quote(bq.group(1)):
+            return line, 0  # citation anglaise : non curee, masquee en bloc
+        fr_context = True  # citation francaise : curee sur sa propre preuve
+    # (les guillemets inline sont masques plus bas, APRES les spans de
+    #  lien/code/URL -- voir #25613 : un titre de lien entre guillemets masque
+    #  en premier creait un placeholder imbrique que la restauration ne levait
+    #  pas -> fuite \x00MS0\x00 dans la cible du lien)
+
+    def _mask_filename_label(m):
+        label, target = m.group(1), m.group(2)
+        stripped = label.strip().lower()
+        if stripped and stripped in target.lower():
+            masked_spans.append("[" + label + "]")
+            ph_label = "\x00MS{}\x00".format(len(masked_spans) - 1)
+            masked_spans.append(target)
+            ph_target = "\x00MS{}\x00".format(len(masked_spans) - 1)
+            return ph_label + ph_target
+        return m.group(0)
+
+    labelled = _LABELLED_LINK_RE.sub(_mask_filename_label, line)
+    masked = _LINK_TARGET_RE.sub(_mask, labelled)
     masked = _INLINE_SPAN_RE.sub(_mask, masked)
     masked = _BARE_URL_RE.sub(_mask, masked)
+    # guillemets inline «...» / "..." : masques s'ils ne portent PAS de preuve
+    # FR, UNIQUEMENT dans un contexte deja francais (fr_context), et APRES les
+    # spans de lien/code/URL ci-dessus -- une citation en PROSE seule. Un titre
+    # de lien entre guillemets est deja masquee en bloc par `_LINK_TARGET_RE` ;
+    # le masquer en premier (l'ordre ancien) creait un placeholder imbrique que
+    # la restauration n'aurait pas levé -> fuite \x00MS0\x00 (#25613).
+    if fr_context:
+        def _mask_quote(m):
+            if _is_english_quote(m.group(0)):
+                masked_spans.append(m.group(0))
+                return "\x00MS{}\x00".format(len(masked_spans) - 1)
+            return m.group(0)  # citation FR : reste curee
+        masked = _INLINE_QUOTE_RE.sub(_mask_quote, masked)
+    # Zone grise FR/EN : sans preuve de contexte francais, les formes en
+    # collision sont masquees (elles traverseront la cure intactes).
+    masked = _mask_en_colliding(masked, masked_spans, fr_context)
 
     # 2. curer la prose (hors spans masques)
     n = [0]
@@ -146,11 +218,25 @@ def _cure_line(line: str) -> tuple[str, int]:
         n[0] += 1
         return _preserve_case(m.group(0), suggestion)
 
+    # #21277 : formes hors table canonique -- curees UNIQUEMENT sur preuve de
+    # contexte francais (ce sont aussi des mots anglais valides). Sans preuve,
+    # elles traversent la ligne intactes.
+    if fr_context:
+        def _repl_ctx(m):
+            suggestion = CONTEXTUAL_PAIRS.get(m.group(0).lower())
+            if suggestion is None:
+                return m.group(0)
+            n[0] += 1
+            return _preserve_case(m.group(0), suggestion)
+
+        masked = _CONTEXT_RE.sub(_repl_ctx, masked)
+
     cured = _CURE_RE.sub(_repl, masked)
 
     # 3. restaurer les spans proteges (byte-identiques a l'original)
-    for i, original in enumerate(masked_spans):
-        cured = cured.replace("\x00MS{}\x00".format(i), original, 1)
+    # Restaurer les contenants avant leurs spans internes déjà masqués.
+    for i in reversed(range(len(masked_spans))):
+        cured = cured.replace("\x00MS{}\x00".format(i), masked_spans[i], 1)
     return cured, n[0]
 
 
@@ -166,6 +252,10 @@ def _cure_source(source) -> tuple[object, int]:
         cured_lines = []
         total = 0
         in_fence = False
+        # #21277 : preuve de contexte FR au grain CELLULE (deux marqueurs
+        # distincts), heritee par chaque ligne -- une puce `- Representation :`
+        # n'a aucun mot-outil propre.
+        cell_fr = _fr_context_cell(source)
         for ln in lines:
             # #14613 point 4 : une fence reproduit souvent une sortie LITTERALE
             # de programme (« Entrainement PPO ... : eval deterministe finale =
@@ -179,7 +269,7 @@ def _cure_source(source) -> tuple[object, int]:
             if in_fence:
                 cured_lines.append(ln)
                 continue
-            cl, n = _cure_line(ln)
+            cl, n = _cure_line(ln, fr_context=cell_fr)
             cured_lines.append(cl)
             total += n
         return "\n".join(cured_lines), total
@@ -195,6 +285,9 @@ def _cure_source(source) -> tuple[object, int]:
     original = list(source)
     new_chunks = []
     total = 0
+    # #21277 : contexte FR de la CELLULE, calcule sur la source entiere (les
+    # chunks sont joints pour la mesure seulement, jamais pour la reecriture).
+    cell_fr = _fr_context_cell("".join(original))
     in_fence = False  # l'etat persiste d'un chunk a l'autre de la MEME cellule
     for chunk in original:
         lines = chunk.split("\n")
@@ -207,7 +300,7 @@ def _cure_source(source) -> tuple[object, int]:
             if in_fence:
                 cured_lines.append(ln)
                 continue
-            cl, n = _cure_line(ln)
+            cl, n = _cure_line(ln, fr_context=cell_fr)
             cured_lines.append(cl)
             total += n
         new_chunks.append("\n".join(cured_lines))
@@ -300,10 +393,182 @@ _EN_COLLIDING_FORMS = {
     "equivalent", "creation", "episode", "episodes",
 }
 _EN_COLLIDING = {k for k in ACCENT_PAIRS if k in _EN_COLLIDING_FORMS}
+
+# #21277 -- formes FR hors table canonique. Elles sont AUSSI des mots anglais
+# valides, donc elles n'entrent PAS dans `das.ACCENT_PAIRS` (source de la
+# DETECTION : les y mettre ferait signaler tout carnet anglais comme
+# « accents retires »). Elles vivent ici, et ne sont curees que sur PREUVE de
+# contexte francais -- la meme doctrine que `_EN_COLLIDING`, prise par l'autre
+# bout : au lieu de masquer une forme du dictionnaire, on n'applique une forme
+# hors dictionnaire que dans un contexte identifie comme francais.
+CONTEXTUAL_PAIRS = {
+    "representation": "représentation",
+    "representations": "représentations",
+    "decomposition": "décomposition",
+    "decompositions": "décompositions",
+    "precedence": "précédence",
+    "evaluation": "évaluation",
+    "evaluations": "évaluations",
+    # #21277, deuxieme fournee : residu mesure sur la serie temoin
+    # (`SymbolicAI/Planners`, 891 occurrences hors table sur `main`). Ces formes
+    # ne sont PAS des mots anglais -- elles restent neanmoins hors de
+    # `ACCENT_PAIRS` parce que la detection s'en servirait pour signaler des
+    # carnets anglais qu'elles traversent occasionnellement (noms propres,
+    # citations, `std::cout`). Cure seulement sur preuve de contexte FR.
+    # Critere d'entree ici : la graphie desaccentuee n'est PAS un mot francais
+    # valide (sinon la cure fabrique un homographe : `trouve`, `calcule`,
+    # `charge`, `passe`, `fixe`, `donne`, `ferme`, `vise`, `assemble`,
+    # `execute`, `explore`, `instancie`, `simplifie`, `tranche` sont EXCLUS pour
+    # cette raison) et la forme accentuee est unique (`degenere`, `pondere`
+    # hesitent entre participe et present : exclus aussi).
+    "etat": "état",
+    "etats": "états",
+    "cout": "coût",
+    "couts": "coûts",
+    "predicat": "prédicat",
+    "predicats": "prédicats",
+    "problemes": "problèmes",
+    "optimalite": "optimalité",
+    "precondition": "précondition",
+    "preconditions": "préconditions",
+    "deplacer": "déplacer",
+    "admissibilite": "admissibilité",
+    "complexite": "complexité",
+    "pedagogique": "pédagogique",
+    "modelisation": "modélisation",
+    "modeliser": "modéliser",
+    "qualite": "qualité",
+    "duree": "durée",
+    "resoudre": "résoudre",
+    "decomposer": "décomposer",
+    "depot": "dépôt",
+    "hypothese": "hypothèse",
+    "depart": "départ",
+    "litterature": "littérature",
+    "necessaire": "nécessaire",
+    "eviter": "éviter",
+    "simultanement": "simultanément",
+    "tetes": "têtes",
+    "negatifs": "négatifs",
+    "cooperatifs": "coopératifs",
+    "competitifs": "compétitifs",
+    "capacite": "capacité",
+    "naif": "naïf",
+    "reel": "réel",
+    "verifier": "vérifier",
+    "independamment": "indépendamment",
+    "parallelisme": "parallélisme",
+    "reduit": "réduit",
+    "booleennes": "booléennes",
+    # #16638, tranche Search/Part1-Foundations (quatrieme fournee, 22/11) :
+    # anglicismes -tion/-ence et cognats du residu mesure (145 occurrences
+    # markdown). Ils ne sont PAS des mots anglais valides au sens strict pour
+    # certains (equilibre, serie), mais ils traversent la prose EN et les
+    # noms propres assez souvent pour exiger la preuve de contexte FR
+    # (cellule : >= 2 marqueurs FR distincts, #21277). Cure contextuelle
+    # seulement -- jamais globale.
+    "interpretation": "interprétation",
+    "interpretations": "interprétations",
+    "verification": "vérification",
+    "verifications": "vérifications",
+    "resolution": "résolution",
+    "generations": "générations",
+    "temperature": "température",
+    "temperatures": "températures",
+    "equilibre": "équilibre",
+    "equilibres": "équilibres",
+    "unite": "unité",
+    "unites": "unités",
+    "serie": "série",
+    "region": "région",
+    "regions": "régions",
+}
+
+
+def _build_context_re(pairs):
+    """Regex des formes contextuelles (memes frontieres que le coeur)."""
+    forms = sorted(pairs.keys(), key=len, reverse=True)
+    return re.compile(r"\b(?:" + "|".join(re.escape(f) for f in forms) + r")\b",
+                      re.IGNORECASE)
+
+
+_CONTEXT_RE = _build_context_re(CONTEXTUAL_PAIRS)
 _FR_MARKER_RE = re.compile(
     r"\b(le|la|les|des|du|de|une|et|ou|dans|pour|sur|avec|par|au|aux|ce|cet|"
     r"cette|ces|sont|nous|vous|il|elle|ils|elles|qui|que|quoi|dont|mais|donc|"
     r"puis|en)\b")
+
+
+def _fr_markers(text: str) -> set[str]:
+    """Marqueurs FR distincts presents dans `text` (minuscules)."""
+    return {m.group(0).lower() for m in _FR_MARKER_RE.finditer(text)}
+
+
+# #25613 : une citation se juge ANGLAISE par un signal POSITIF -- la presence
+# d'un mot fonctionnel anglais (the, by, of, is, ...). Compter les marqueurs FR
+# ne distingue PAS les deux contre-exemples adjoints : « the element defined by
+# de Finetti » (anglais, mais porte "de") et « Un probleme de methode »
+# (francais non accentue, "de" est son SEUL marqueur FR) sont a l'identique sur
+# ce critere. Un mot-outil anglais ne figure jamais dans une phrase francaise :
+# c'est le discriminateur fiable.
+# COMPROMIS CONSERVATEUR : or, in, as, at, by, it, is sont AUSSI des mots
+# francais legitimes. Une citation FR qui en porte un est classee ANGLAISE par
+# le discriminateur ci-dessus et retournee telle quelle (non curee) -- temoin
+# « Un probleme en or » (or = le metal) conserve "probleme". On prefere
+# SOUS-curer ce cas rare (citation FR courte sans autre marqueur) a risquer de
+# curer une citation EN genuine portant le meme mot. Le temoin de test le fige
+# comme comportement ATTENDU, pas un defaut.
+_EN_QUOTE_MARKER_RE = re.compile(
+    r"\b(the|by|of|to|in|and|for|with|that|this|it|is|are|was|were|been|"
+    r"from|as|at|we|you|or)\b")
+
+
+def _is_english_quote(text: str) -> bool:
+    """True si la citation porte un mot fonctionnel anglais (-> non curee)."""
+    return bool(_EN_QUOTE_MARKER_RE.search(text.lower()))
+
+
+def _fr_context_line(text: str) -> bool:
+    """Preuve de contexte FR au niveau LIGNE : un seul mot-outil suffit (regle
+    #14613 inchangee pour les `.md`)."""
+    return bool(_FR_MARKER_RE.search(text))
+
+
+def _fr_context_cell(text: str, min_markers: int = 2) -> bool:
+    """Preuve de contexte FR au niveau CELLULE (#21277).
+
+    Un seul mot-outil suffit sur une ligne, mais pas sur une cellule entiere :
+    une cellule anglaise de plusieurs lignes contient presque toujours un
+    marqueur isole, et les noms propres francais en portent un sans que la
+    phrase soit francaise (« de Broglie », « de Finetti »). Deux marqueurs
+    DISTINCTS sont donc exiges -- `le` + `de` ne suffisent pas.
+    """
+    # `_FR_MARKER_RE` est sensible a la casse : sans `lower()`, « La » et
+    # « Le » (debut de phrase) ne comptent pas et une cellule francaise tombe
+    # sous le seuil (mesure sur le temoin #14613 « La recompense par episode »).
+    return len(_fr_markers(text.lower())) >= min_markers
+
+
+def _mask_en_colliding(masked: str, spans: list[str], fr_ok: bool,
+                       placeholder: str = "MS") -> str:
+    """Masque les formes EN/FR en collision quand aucune preuve FR n'existe.
+
+    Un span masque est invisible pour le coeur de cure (`_CURE_RE` ne matche
+    aucun de ses caracteres) : la forme traversera la cure intacte, puis sera
+    restauree byte-identique par l'appelant. Doctrine
+    accent-cure-defense-in-depth : ne pas toucher vaut mieux que risquer.
+    """
+    if not _EN_COLLIDING or fr_ok:
+        return masked
+
+    def _mask_form(m):
+        spans.append(m.group(0))
+        return "\x00{}{}\x00".format(placeholder, len(spans) - 1)
+
+    return _CURE_RE.sub(
+        lambda m: _mask_form(m) if m.group(0).lower() in _EN_COLLIDING
+        else m.group(0),
+        masked)
 
 
 def _fence_mask(lines: list[str]) -> list[bool]:
@@ -379,17 +644,16 @@ def _cure_markdown_line(line: str) -> tuple[str, int]:
 
     masked = _INLINE_CODE_RE.sub(_mask, line)
     masked = _HTML_ATTR_RE.sub(_mask, masked)
-    if _EN_COLLIDING and not _FR_MARKER_RE.search(masked):
-        # Pas de preuve de contexte francais : neutraliser les formes en
-        # collision en les masquant (le coeur ne les verra pas).
-        def _mask_form(m):
-            spans.append(m.group(0))
-            return "\x00MD{}\x00".format(len(spans) - 1)
-        masked = _CURE_RE.sub(
-            lambda m: _mask_form(m) if m.group(0).lower() in _EN_COLLIDING
-            else m.group(0),
-            masked)
-    cured, n = _cure_line(masked)
+    # Preuve de contexte FR au grain LIGNE (regle #14613, inchangee pour les
+    # `.md` : les decks n'ont pas de notion de cellule).
+    fr_ok = _fr_context_line(masked)
+    if not fr_ok:
+        # Pas de preuve : neutraliser les formes en collision en les masquant
+        # (le coeur ne les verra pas).
+        masked = _mask_en_colliding(masked, spans, fr_ok=False, placeholder="MD")
+    # Transmettre la preuve au coeur : sinon `_cure_line` re-masque avec son
+    # defaut (False) et une ligne francaise perdrait ses cures (#21277).
+    cured, n = _cure_line(masked, fr_context=fr_ok)
     for i, original in enumerate(spans):
         cured = cured.replace("\x00MD{}\x00".format(i), original, 1)
     return cured, n
@@ -528,11 +792,23 @@ def cure_notebook(path: Path, write: bool, check_scope: bool = False):
         import detect_markdown_deaccent as dmd
         shadow = {"cells": shadow_cells}
         auto = dmd.find_candidates(shadow).get("auto") or {}
+        # #21277 : une forme de `CONTEXTUAL_PAIRS` restee non curee ne dit PAS
+        # « la table ne sait pas la curer » -- elle dit « le contexte FR de
+        # cette cellule n'a pas ete etabli » (titre, ligne de tableau). Les deux
+        # cas sont donc rapportes separement : sans cette distinction, la
+        # deuxieme fournee se serait annoncee « incomplete » sur des formes
+        # qu'elle cure des qu'une preuve FR existe.
         hors_table = {w: c for w, c in auto.items()
-                      if w.lower() not in ACCENT_PAIRS}
+                      if w.lower() not in ACCENT_PAIRS
+                      and w.lower() not in CONTEXTUAL_PAIRS}
+        contextual_uncured = {w: c for w, c in auto.items()
+                              if w.lower() in CONTEXTUAL_PAIRS}
         if hors_table:
             result["hors_table"] = hors_table
             result["hors_table_total"] = sum(hors_table.values())
+        if contextual_uncured:
+            result["contextual_uncured"] = contextual_uncured
+            result["contextual_uncured_total"] = sum(contextual_uncured.values())
     except Exception:
         pass  # le rapport est un service, jamais un bloqueur de cure
     return result
@@ -605,6 +881,13 @@ def main(argv=None) -> int:
             print(f"  ATTENTION: {res['hors_table_total']} forme(s) hors table — "
                   f"le detecteur les voit encore, la table ne les cure pas "
                   f"(cures incompletes, pas un succes) : {detail}")
+        if res.get("contextual_uncured"):
+            detail = ", ".join(f"{w} (x{c})" for w, c
+                               in sorted(res["contextual_uncured"].items(),
+                                         key=lambda kv: -kv[1]))
+            print(f"  INFO: {res['contextual_uncured_total']} forme(s) en cure "
+                  f"contextuelle, contexte FR non etabli sur cette cellule "
+                  f"(titre, ligne de tableau) : {detail}")
 
     if args.check:
         if res["cures"] > 0 or (args.scope and res.get("code_hits", 0) > 0):

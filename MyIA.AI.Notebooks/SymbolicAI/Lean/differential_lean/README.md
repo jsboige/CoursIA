@@ -44,13 +44,39 @@ La sortie de `#print axioms` est le **témoin** : l'amont annonce n'utiliser que
 `Classical.choice` et `Quot.sound`. Ce lake **mesure** cette annonce sur trois points
 d'entrée ; il ne la reprend pas sur parole, et il ne réécrit aucune preuve.
 
+## Le second témoin — conjecture de Poincaré (Pli 1, sub-grain 2)
+
+`Poincare.lean` (et son jumeau `Poincare_en.lean`) importe le module amont qui **énonce** la
+conjecture de Poincaré et demande au noyau la liste des axiomes dont cet énoncé dépend.
+
+| | |
+|---|---|
+| Module importé | `DifferentialGeometry.Topology.ThreeManifold.Poincare` |
+| Énoncé amont | `Topology/ThreeManifold/Poincare.lean:12` |
+| Théorème | `DifferentialGeometry.Topology.poincare_conjecture` |
+
+L'énoncé porte sur une variété `M` de dimension 3, séparée, compacte et simplement connexe,
+et conclut `Nonempty (M ≃ₜ Metric.sphere (0 : EuclideanSpace ℝ (Fin 4)) 1)`.
+
+Ce fichier ne **déclare** aucun axiome et ne **prouve** rien : il interroge une dépendance.
+La question qu'il pose est celle du sub-grain : *l'énoncé tel que l'amont le porte
+dépend-il d'un axiome prohibé* (`sorryAx`, `native_decide.*`) ? La réponse est la sortie de
+`#print axioms`, telle quelle, dans le journal de mesures.
+
+Le chemin d'élaboration est plus lourd que celui du sub-grain 1 : l'énoncé importe
+`Topology/PiecewiseLinear/Moise352Producer` **et**
+`Geometry/Flow/RicciFlow/Surgery/Skeleton/PoincareEndgame`, dont la fermeture
+`RicciFlow/Surgery` n'était pas encore construite dans le cache de la machine au moment de
+la visite. Les temps correspondants sont dans la table **Mesures relevées**.
+
+
 ## Construire
 
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean
 lake update                 # récupère l'amont épinglé et Mathlib v4.33.1
 lake exe cache get          # oleans Mathlib précompilés
-lake build                  # élabore DifferentialTour + DifferentialTour_en
+lake build                  # élabore DifferentialTour, DifferentialTour_en, Poincare, Poincare_en
 ```
 
 `lake build` n'est **pas** branché sur la CI du dépôt : inscrire ce lake dans la matrice
@@ -81,6 +107,27 @@ téléchargement.
 **Total ≈ 2 953 s (49 min)** pour la visite complète ; le build des trois fermetures à
 lui seul ≈ 2 359 s (39 min), **dominé par Bonnet–Myers** (détail des fermetures dans
 la table ci-dessous).
+
+### Second témoin — Poincaré (2026-10-21)
+
+Exécuté le **2026-10-21** sur `myia-po-2025`, **hors CI**, sur cette branche, avec
+`LEAN_NUM_THREADS=4` (le parallélisme par défaut de lake sur cette machine, 20 cœurs,
+provoquait des échecs de lecture de fichiers à travers le filtre antivirus temps réel —
+mesuré sur quatre builds ; à 4 fils, zéro échec de lecture sur les 22 909 jobs). Le
+store physique du paquet `DifferentialGeometry` vit sur `D:\dgpkg` (jonction — le
+relogement des artefacts > 260 caractères, `LongPathsEnabled` étant inopérant pour
+`lean.exe`) ; les avertissements git « local changes » sur `mathlib`/`batteries` sont
+la signature de cette jonction, pas des modifications réelles des paquets.
+
+| Étape | rc | Temps | Jobs |
+|---|---:|---:|---:|
+| `lake build` (défaut : `DifferentialTour` + `_en`, `Poincare` + `_en`) | 0 | **11 253 s (3 h 07 min 33 s)** | 22 909 / 22 909 |
+| `lake env lean Poincare.lean` (`#print axioms`) | 0 | 31 s | — |
+
+Le défaut `lake build` incluait pour la première fois la fermeture
+`RicciFlow/Surgery` (jusqu'à `Skeleton/PoincareEndgame`), absente du cache au moment
+de la visite du 2026-10-07 — d'où l'écart avec les 70 s d'alors. Horodatages UTC du
+run : 18:55:10Z → 22:02:43Z.
 
 ### Fermetures d'imports (modules `DifferentialGeometry.*`, Mathlib exclu)
 

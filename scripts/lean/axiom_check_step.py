@@ -16,9 +16,30 @@ environment variables, never via cwd --
                         project root, exactly what `lake build` compiles)
   PROJECT_PATH          repo-relative lake root
   DISPLAY_NAME          job label
-  ALLOW                 comma-separated extra whitelisted axioms
+  ALLOW                 comma-separated extra whitelisted axioms, OR
+                        '@<repo-relative path>' to a file source of truth,
+                        one name per line (#21905)
   FAIL_ON_SORRY         'true' (default) gates on transitive sorryAx
   INCLUDE_I18N_SIBLINGS 'true' keeps `_en` siblings in the '*' derivation
+
+The step also REPORTS the i18n surface it did (or did not) inspect: the
+`_en` modules are derived from the same `filter_i18n_siblings` call, and
+the log says whether they are in or out (#22453 -- a gate that silently
+skips half of a bilingual lake reads like a gate that inspected all of it).
+
+The report names the MODE it applied, because the two modes do not read
+`INCLUDE_I18N_SIBLINGS` the same way (#24160):
+
+  '*' (joker)        the flag decides -- it keeps the `_en` siblings in the
+                    derived list or drops them; the log says INCLUS/EXCLUS
+                    and prints the flag value that drove it.
+  explicit list     the LIST is authoritative -- a `_en` module it names IS
+                    inspected, whatever the flag says (lean-axiom.yml: the
+                    input is "Ignored when target-modules is an explicit
+                    list"). The log says INCLUS and prints the flag value
+                    WITH ITS REAL EFFECT (none), so an INCLUS next to
+                    include_i18n=false is not read as if the flag had
+                    driven it.
 
 Both roots come from GITHUB_WORKSPACE + PROJECT_PATH, never from the cwd
 (the #8712 defect). stdlib-only at import time; lean_server and
@@ -72,6 +93,8 @@ if not project_path.is_dir():
     sys.exit(f"lake project path does not exist: {project_path}")
 
 modules_raw = os.environ["MODULES"].strip()
+include_i18n = (os.environ.get("INCLUDE_I18N_SIBLINGS", "false").strip().lower()
+                == "true")
 if modules_raw == "*":
     sys.path.insert(0, str(repo_root / "scripts" / "lean"))
     from check_target_coverage import (  # noqa: E402
@@ -79,22 +102,59 @@ if modules_raw == "*":
         filter_i18n_siblings,
     )
 
-    modules = sorted(discover_modules(project_path, None))
     # i18n `_en` siblings are excluded by default: any path SEGMENT
     # ending in `_en` (dir or stem -- e.g. `Conway/Life_en.lean`), not
     # only a root-level stem. Mirrors the FR-only measurement of #10889;
     # a caller that wants the full bilingual surface opts in via
     # `include-i18n-siblings: "true"`. The filter lives in the script
     # (unit-tested) so the gate never carries a second copy of the rule.
-    if os.environ.get("INCLUDE_I18N_SIBLINGS", "false").strip().lower() != "true":
-        modules = sorted(filter_i18n_siblings(modules))
+    #
+    # The EXCLUDED surface is DERIVED from that same call (#22453): the
+    # set difference `discovered - filter(discovered)` is what the gate
+    # skipped, and it is printed below. A gate that silently inspects
+    # half a bilingual lake reads like a gate that inspected all of it.
+    discovered = set(discover_modules(project_path, None))
+    fr_only = set(filter_i18n_siblings(discovered))
+    i18n_siblings = sorted(discovered - fr_only)
+    # JOKER mode: the flag is the only thing that decides the `_en`
+    # surface -- it keeps the siblings in the derived module list or
+    # drops them. The label says so, and names the flag value (#24160).
+    i18n_status = "INCLUS" if include_i18n else "EXCLUS"
+    i18n_note = f"mode joker, include_i18n={str(include_i18n).lower()}"
+    modules = sorted(discovered) if include_i18n else sorted(fr_only)
     if not modules:
         sys.exit("target-modules='*' enumerated no modules under "
                  f"{project_path} (no .lean outside .lake/?). "
                  "A gate that inspects nothing must fail, not pass silently.")
 else:
+    sys.path.insert(0, str(repo_root / "scripts" / "lean"))
+    from check_target_coverage import filter_i18n_siblings  # noqa: E402
+
     modules = [m.strip() for m in modules_raw.split(",") if m.strip()]
-allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
+    # An explicit list may already name `_en` modules (the gametheory
+    # entry does): the SAME filter says which ones, so the rule stays in
+    # one place. Those modules ARE inspected -- they are in the list.
+    i18n_siblings = sorted(set(modules) - set(filter_i18n_siblings(set(modules))))
+    # EXPLICIT-LIST mode: the LIST is authoritative, not the flag. A `_en`
+    # module the list names is inspected whatever `include_i18n` says
+    # (lean-axiom.yml: the input is "Ignored when target-modules is an
+    # explicit list"), so the gate's BEHAVIOUR does not depend on the
+    # flag here. The label used to announce "INCLUS (liste explicite)"
+    # unconditionally, which read as if the flag had driven the outcome:
+    # the same INCLUS appeared next to include_i18n=false. The flag value
+    # is now read and printed with its real effect -- none (#24160).
+    i18n_status = "INCLUS"
+    i18n_note = (f"mode liste explicite, include_i18n="
+                 f"{str(include_i18n).lower()} sans effet")
+# ALLOW accepte la liste a virgules historique OU '@<chemin>' vers un
+# fichier source de verite (un nom par ligne, #21905). Le parsing vit
+# dans allow_list.py (unit-teste) pour que le gate ne porte pas une
+# seconde copie de la regle -- meme design rule que check_target_coverage
+# pour target-modules '*'.
+sys.path.insert(0, str(repo_root / "scripts" / "lean"))
+from allow_list import parse_allow  # noqa: E402
+
+allow = parse_allow(os.environ.get("ALLOW", ""), repo_root)
 display_name = os.environ["DISPLAY_NAME"]
 
 fail_on_sorry = os.environ.get("FAIL_ON_SORRY", "true").strip().lower() == "true"
@@ -110,6 +170,18 @@ print(f"=== Proof integrity axiom check ({display_name}) ===")
 print(f"Project: {project_path}")
 print(f"Gate on sorry: {'yes' if fail_on_sorry else 'no (reported, not gated)'}")
 print(f"Modules: {modules}")
+if i18n_siblings:
+    _shown = i18n_siblings[:12]
+    _omitted = len(i18n_siblings) - len(_shown)
+    print(f"i18n siblings (_en): {len(i18n_siblings)} {i18n_status} ({i18n_note})"
+          f" -> {_shown}"
+          + (f" ... (+{_omitted} more)" if _omitted else ""))
+else:
+    # The mode is named even when the count is zero: "0" means two
+    # different things depending on the branch -- "the lake has no `_en`
+    # module" (joker) or "the list names no `_en` module" (explicit
+    # list, whose `_en` siblings outside the list are NOT gated).
+    print(f"i18n siblings (_en): 0 ({i18n_note})")
 print(f"Additional allow-list: {allow if allow else '(none)'}")
 print()
 for mod in modules:

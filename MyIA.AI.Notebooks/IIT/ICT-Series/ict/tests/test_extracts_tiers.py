@@ -15,6 +15,7 @@ ils valident les artefacts committes, pas seulement des fixtures.
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -298,3 +299,54 @@ def test_validator_dry_run_skips_crypto(capsys):
     names = [c["check"] for c in verdict["checks"]]
     assert "roundtrip_encrypted" not in names
     assert verdict["dry_run"] is True
+
+
+# ---------------------------------------------------------------------------
+# 5. Blob historique committé — chargement via la passphrase .env.example
+# ---------------------------------------------------------------------------
+
+def _passphrase_from_env_example() -> str:
+    """Lit ICT_S6B_PASSPHRASE dans le .env.example committé.
+
+    La passphrase y est publiée par design (décision user #7742) : le
+    chiffrement achète la non-indexabilité, pas la confidentialité.
+    """
+    env_example = SERIES_DIR / ".env.example"
+    for line in env_example.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith("ICT_S6B_PASSPHRASE"):
+            value = line.split("=", 1)[1]
+            # Convention .env : un blanc avant `#` ouvre un commentaire de fin
+            # de ligne (la ligne porte une exemption `# OK: <raison>` depuis
+            # l'issue #21013 -- sans ce retrait, le commentaire entre dans la
+            # passphrase et le decryptage echoue sur InvalidToken).
+            value = re.split(r"\s+#", value, maxsplit=1)[0]
+            return value.strip().strip('"')
+    raise AssertionError("ICT_S6B_PASSPHRASE absente du .env.example")
+
+
+def test_committed_historical_blob_loads_with_env_example_passphrase():
+    blob = CORPUS_DIR / "encrypted" / "historical_cases.json.gz.enc"
+    assert blob.exists(), "blob historique committé absent du corpus"
+    loaded = et.load_encrypted_definitions(
+        blob, passphrase=_passphrase_from_env_example()
+    )
+    names = sorted(s["source_name"] for s in loaded)
+    assert names == [
+        "Hitler Discours Anschluss 12/03/1938",
+        "Matsui Iwane - Greater Asianism 1933",
+    ]
+    for source in loaded:
+        assert source["extracts"], "source sans extrait"
+        assert source["extracts"][0]["text"], "extrait au texte vide"
+        assert source.get("provenance"), "provenance absente"
+    # l'émission reste opaque : le résumé ne porte jamais les textes
+    summary = et.opaque_summary(loaded)
+    assert summary["n_sources"] == 2
+    assert "text" not in json.dumps(summary)
+
+
+def test_committed_historical_blob_rejects_wrong_passphrase():
+    blob = CORPUS_DIR / "encrypted" / "historical_cases.json.gz.enc"
+    with pytest.raises(Exception):
+        et.load_encrypted_definitions(blob, passphrase="mauvaise-passphrase")

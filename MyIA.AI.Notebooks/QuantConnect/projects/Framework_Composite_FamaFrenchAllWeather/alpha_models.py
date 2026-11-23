@@ -111,11 +111,15 @@ class FamaFrenchAlpha(AlphaModel):
     def _risk_adjusted_momentum(self, algorithm, symbol):
         """Risk-adjusted momentum: 12m-1m return / 63d realized volatility."""
         try:
-            history = algorithm.history(symbol, self.lookback + 5, Resolution.DAILY)
+            # Demande le double de la fenetre visee : sur une demi-seance (cloture 13:00),
+            # history(N, DAILY) rend ~21 barres de moins (#20286). Le tranchage est
+            # OBLIGATOIRE ici : closes.iloc[0] vise le point le plus ancien de la fenetre
+            # cible, pas du tampon demande.
+            history = algorithm.history(symbol, 2 * self.lookback + 10, Resolution.DAILY)
             if len(history) < self.lookback:
                 return None
 
-            closes = history['close']
+            closes = history['close'].iloc[-(self.lookback + 5):]
 
             # 12m-1m momentum (skip recent month to avoid reversal)
             past_price = closes.iloc[0]

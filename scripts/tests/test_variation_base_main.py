@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for ``scripts/variation_base_main.py`` (--base main filter, #18940).
+"""Unit tests for ``scripts/ci/variation_base_main.py`` (--base main filter, #18940).
 
 Le filtre elimine les PRs empilees sur une branche de feature du comptage
 G-VAR-2/3. Le contrat est :
@@ -19,7 +19,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 from variation_base_main import filter_base_main, MAIN_BRANCH  # noqa: E402
 

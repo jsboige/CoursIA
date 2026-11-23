@@ -33,11 +33,16 @@ testable sans reproduire la mort d'un vrai worker).
 
 from __future__ import annotations
 
+import os
 import re
+import signal
 import subprocess
 import sys
 import textwrap
+import time
 from pathlib import Path
+
+import pytest
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
@@ -127,18 +132,20 @@ def test_fin_de_parcours_points_partiels_non_tue():
     # Mode 2, run 35276661841 : des octets vivants SANS \n (points de fin
     # de parcours -q) doivent maintenir la fraicheur. Un garde qui
     # n'ecouterait que les lignes completes croirait a un silence et
-    # tuerait ce run a 1,0 s de limite -- c'est exactement le faux
-    # positif qui a bloque la PR #16240 a [99%].
+    # tuerait ce run avant sa fin -- c'est exactement le faux positif
+    # qui a bloque la PR #16240 a [99%]. La marge de 3 s absorbe les pauses
+    # d'ordonnancement sous xdist ; la sortie reste sans ligne pendant 4,8 s,
+    # donc un lecteur readline-only echoue toujours avant EOF.
     code, out, verdict = _run_watchdog(
         _child("""
             import sys, time
-            for i in range(16):
+            for i in range(32):
                 sys.stdout.write(".")
                 sys.stdout.flush()
                 time.sleep(0.15)
             raise SystemExit(0)
         """),
-        idle_limit=1.0,
+        idle_limit=3.0,
     )
     assert code == 0
     assert "XDIST-WATCHDOG" not in verdict
@@ -310,26 +317,43 @@ def test_le_workflow_cable_le_garde_autour_de_pytest():
     # unique) ramenerait la classe #16288 -- 14 a 17 min de silence puis le
     # mur -- sans qu'aucun test ne rougisse. Precedent de la meme famille :
     # #16422 (une suite de tests ecrite par personne -- cablee nulle part).
+    #
+    # Revue ai-01 11/11 (job 130763938091) : la jambe a DEUX branches
+    # (restreinte sur une ligne, complete multi-lignes) et l'ancienne regex
+    # `[^\n]*--` etait gourmande -- sur la branche d'une ligne elle lisait le
+    # DERNIER `--` (`--tb=short`) et capture `tb=short`, pas `pytest`. Le
+    # garde enveloppait bien pytest ; c'est le test qui ne savait plus le
+    # voir. Ici CHAQUE invocation du garde est controlee (finditer), le
+    # separateur est un `--` ISOLE PAR DES BLANCS (jamais le `--` interne
+    # d'une option comme `--idle-limit`), la continuation `\` en fin de
+    # ligne est admise, et le premier jeton apres le separateur doit etre
+    # `pytest` en EGALITE STRICTE (un `"pytest" in ...` serait satisfait par
+    # `echo pas-pytest` -- mutation mesuree).
     racine = Path(__file__).resolve().parents[2]
     workflow = racine / ".github" / "workflows" / "scripts-tests.yml"
     texte = workflow.read_text(encoding="utf-8")
-    assert "scripts/ci/xdist_watchdog.py" in texte, (
+    invocations = list(re.finditer(r"xdist_watchdog\.py\b", texte))
+    assert invocations, (
         "le garde anti-blocage n'est plus invoque par scripts-tests.yml"
     )
-    # La commande surveillee : premier jeton suivant le '--' de l'enveloppe,
-    # la continuation de ligne shell (`\` en fin de ligne) autorisant le
-    # report sur la ligne suivante. Egalite STRICTE et non appartenance :
-    # un test ecrit avec `"pytest" in ...` est satisfait par `echo pas-pytest`
-    # -- mutation mesuree, le controle de non-vacuite l'a attrapee.
-    enveloppe = re.search(
-        r"xdist_watchdog\.py[^\n]*--\s*(?:\\\s*\n\s*)?(\S+)", texte
-    )
-    assert enveloppe, "invocation du garde introuvable dans scripts-tests.yml"
-    assert enveloppe.group(1) == "pytest", (
-        "le garde doit envelopper l'invocation pytest de la jambe, pas autre "
-        "chose : un garde qui surveille une commande d'un autre genre ne "
-        "protege pas la jambe ou le blocage a ete mesure"
-    )
+    for inv in invocations:
+        reste = texte[inv.end():]
+        separateur = re.search(r"(?<=\s)--(?=\s)", reste)
+        assert separateur, (
+            "invocation du garde sans separateur '--' isole par des blancs "
+            f"(offset {inv.start()})"
+        )
+        apres = reste[separateur.end():]
+        # Continuation shell : `\` en fin de ligne + indentation de suite.
+        apres = re.sub(r"\\\s*\n\s*", " ", apres)
+        jetons = apres.split()
+        premier = jetons[0] if jetons else ""
+        assert premier == "pytest", (
+            "le garde doit envelopper l'invocation pytest de la jambe, pas "
+            f"autre chose (trouve {premier!r} apres le '--' a l'offset "
+            f"{inv.start()}) : un garde qui surveille une commande d'un "
+            "autre genre ne protege pas la jambe ou le blocage a ete mesure"
+        )
 
 
 def test_regex_marqueurs():
@@ -482,3 +506,170 @@ def test_exit_collect_crash_mappe_vers_1_via_main(capsys):
         xdist_watchdog.run = orig_run
     assert code == 1
 
+
+# --- #19915 -- le verdict ne prescrit plus un rejeu mesure comme nul -------
+#
+# Census du 2026-10-19 (7 j, 113 jobs collect-crash sur 394 jobs CPU
+# rouges) : la mort qui precede la collision est toujours de MASSE (7 a 12
+# workers, meme horodatage). Les reproductions consecutives du 2026-10-18
+# (4/4) et du 2026-10-19 (2/2) mesurent un rejeu qui REPRODUIT : prescrire
+# "le CI doit rejouer le job" dans cette classe coute un cycle de CI pour
+# un resultat nul. Le verdict doit donc distinguer les deux classes et
+# nommer le runner, seul discriminant de la signature.
+
+
+def _child_multi_death(n_dead: int, worker: str = "gw8") -> list[str]:
+    """Enfant : n_dead workers morts puis la collision du master.
+
+    Le code est produit a plat (une instruction par ligne, aucune
+    indentation) -- ``python -c`` l'execute tel quel, et un dedent sur un
+    texte indenté partiellement casserait l'enfant.
+    """
+    lines = []
+    for i in range(n_dead):
+        gw = f"gw{i}"
+        lines.append(f'print("[{gw}] node down: Not properly terminated", '
+                     f"flush=True)")
+        lines.append(f'print("replacing crashed worker {gw}", flush=True)')
+    lines.append('print("INTERNALERROR> KeyError: <WorkerController '
+                 f'{worker}>", flush=True)')
+    lines.append("import time")
+    lines.append("time.sleep(300)")
+    return _child("\n".join(lines))
+
+
+def test_verdict_collect_crash_mort_systematique_ne_prescrit_pas_le_rejeu():
+    # 7 workers morts (le regime mesure) : le verdict doit dire
+    # "SYSTEMATIQUE" et ne doit PLUS prescrire le rejeu.
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(7), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "COLLECT_CRASH" in verdict
+    assert "SYSTEMATIQUE" in verdict
+    # La prescription historique est retiree de la classe systematique.
+    assert "doit rejouer le job" not in verdict
+    # ... et le verdict pointe le runner, pas la PR.
+    assert "cote runner" in verdict
+
+
+def test_verdict_collect_crash_mort_isolee_conserve_la_piste_du_rejeu():
+    # Un seul worker mort : la seule classe ou un rejeu garde un sens.
+    # Le verdict doit le dire -- et ne pas appliquer le libelle
+    # "SYSTEMATIQUE" (qui est le cas mesure, lui).
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(1), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "mort isolee" in verdict
+    assert "SYSTEMATIQUE" not in verdict
+
+
+def test_le_verdict_collect_crash_nomme_le_runner(monkeypatch):
+    # Le runner est le discriminant de la signature #19915 (113/113 des cas
+    # mesures sur le pool docker ephemere, 0 sur les wsl). L'annotation
+    # doit le nommer : c'est la seule surface lisible sans le log.
+    monkeypatch.setenv("RUNNER_NAME", "myia-po-2024-linux-docker-1")
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(7), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "myia-po-2024-linux-docker-1" in verdict
+
+
+def test_le_verdict_collect_crash_annonce_le_runner_inconnu(monkeypatch):
+    # Hors CI, RUNNER_NAME n'est pas pose : le verdict doit le dire
+    # explicitement plutot que d'emettre un nom vide.
+    monkeypatch.delenv("RUNNER_NAME", raising=False)
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(7), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "runner inconnu" in verdict
+
+
+def test_le_mode_1_garde_son_verdict_propre():
+    # Non-regression : le verdict mode 1 (silence) garde son contenu --
+    # le nom du runner et le libelle systematique sont ajoutes au mode 3,
+    # qui est la classe de la signature #19915.
+    code, out, verdict = _run_watchdog(
+        _child("""
+            import time
+            time.sleep(300)
+        """),
+        idle_limit=0.2,
+    )
+    assert code == wd.EXIT_BLOCKED
+    assert "BLOQUE" in verdict
+    assert "SYSTEMATIQUE" not in verdict
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="lecture des etats /proc Linux")
+def test_sigterm_arrete_le_groupe_et_le_wrapper(tmp_path):
+    pidfile = tmp_path / "pids"
+    child = textwrap.dedent("""
+        import os, subprocess, sys, time
+        grandchild = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+        with open(sys.argv[1], "w") as f:
+            f.write(f"{os.getpid()} {grandchild.pid}")
+        time.sleep(60)
+    """)
+    wrapper = subprocess.Popen(
+        [sys.executable, str(CI_DIR / "xdist_watchdog.py"), "--idle-limit",
+         "30", "--", sys.executable, "-c", child, str(pidfile)],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    pids = []
+    try:
+        deadline = time.monotonic() + 5
+        while not pidfile.exists() or not pidfile.read_text():
+            assert wrapper.poll() is None
+            assert time.monotonic() < deadline
+            time.sleep(0.02)
+        pids = [int(pid) for pid in pidfile.read_text().split()]
+        wrapper.send_signal(signal.SIGTERM)
+        assert wrapper.wait(timeout=5) == -signal.SIGTERM
+        deadline = time.monotonic() + 5
+        while True:
+            # Un zombie a deja cesse de s'executer, meme s'il attend init.
+            alive = []
+            for pid in pids:
+                try:
+                    state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
+                    if state != "Z":
+                        alive.append(pid)
+                except FileNotFoundError:
+                    pass
+            if not alive:
+                break
+            assert time.monotonic() < deadline, f"processus encore actifs : {alive}"
+            time.sleep(0.02)
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait()
+        if pids:
+            try:
+                os.killpg(pids[0], signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="signaux POSIX")
+def test_sigint_conserve_le_comportement_du_wrapper():
+    wrapper = subprocess.Popen(
+        [sys.executable, str(CI_DIR / "xdist_watchdog.py"), "--idle-limit",
+         "30", "--", sys.executable, "-u", "-c",
+         "import time; print('pret', flush=True); time.sleep(0.5)"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    try:
+        assert wrapper.stdout.readline().strip() == "pret"
+        wrapper.send_signal(signal.SIGINT)
+        assert wrapper.wait(timeout=5) == -signal.SIGINT
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait()
+        wrapper.stdout.close()

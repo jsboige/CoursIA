@@ -1,0 +1,99 @@
+{
+  "per_seed": {
+    "0": {
+      "concentration": 3.466666666666667,
+      "explore_share_static": 0.2,
+      "explore_share_stationary": 0.075,
+      "grip": {
+        "opponent": 0.8333333333333334,
+        "sham_rate": 0.6083333333333334,
+        "static": 0.7166666666666668
+      },
+      "grip_stationary": {
+        "opponent": 1.0,
+        "static": 0.6708333333333332
+      },
+      "impasse_ok": 0.21428571428571427,
+      "rate_ratio": 5.352941176470588,
+      "switch_count": 30
+    },
+    "1": {
+      "concentration": 3.076923076923077,
+      "explore_share_static": 0.2,
+      "explore_share_stationary": 0.041666666666666664,
+      "grip": {
+        "opponent": 0.8625,
+        "sham_rate": 0.7166666666666666,
+        "static": 0.5291666666666666
+      },
+      "grip_stationary": {
+        "opponent": 1.0,
+        "static": 0.525
+      },
+      "impasse_ok": 0.1875,
+      "rate_ratio": 4.374999999999999,
+      "switch_count": 26
+    },
+    "42": {
+      "concentration": 2.2857142857142856,
+      "explore_share_static": 0.2,
+      "explore_share_stationary": 0.020833333333333332,
+      "grip": {
+        "opponent": 0.6583333333333332,
+        "sham_rate": 0.4541666666666666,
+        "static": 0.6166666666666667
+      },
+      "grip_stationary": {
+        "opponent": 0.9791666666666666,
+        "static": 0.5958333333333333
+      },
+      "impasse_ok": 0.125,
+      "rate_ratio": 2.8000000000000003,
+      "switch_count": 14
+    },
+    "7": {
+      "concentration": 1.6,
+      "explore_share_static": 0.2,
+      "explore_share_stationary": 0.075,
+      "grip": {
+        "opponent": 0.8333333333333334,
+        "sham_rate": 0.6583333333333334,
+        "static": 0.5583333333333333
+      },
+      "grip_stationary": {
+        "opponent": 1.0,
+        "static": 0.625
+      },
+      "impasse_ok": 0.42857142857142855,
+      "rate_ratio": 1.7499999999999998,
+      "switch_count": 20
+    },
+    "99": {
+      "concentration": 1.2307692307692308,
+      "explore_share_static": 0.2,
+      "explore_share_stationary": 0.0625,
+      "grip": {
+        "opponent": 0.8333333333333334,
+        "sham_rate": 0.5958333333333332,
+        "static": 0.5833333333333334
+      },
+      "grip_stationary": {
+        "opponent": 0.9333333333333333,
+        "static": 0.6208333333333333
+      },
+      "impasse_ok": 0.2,
+      "rate_ratio": 1.2727272727272727,
+      "switch_count": 26
+    }
+  },
+  "predictions": {
+    "P1": false,
+    "P2": true,
+    "P3": true,
+    "P4": false,
+    "P5": true,
+    "concentration_median": 2.2857142857142856,
+    "rate_ratio_median": 2.8000000000000003,
+    "verdict": "REFUTED"
+  }
+}

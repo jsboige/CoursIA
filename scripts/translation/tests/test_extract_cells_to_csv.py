@@ -479,12 +479,15 @@ def test_target_langs_seven():
 def test_columns_order_and_completeness():
     # Schéma ratifié : notebook, cell_id, cell_type, src_lang, src_hash, puis
     # text_<lang> pour [fr]+TARGET, puis hash_<lang> pour [fr]+TARGET, puis
-    # translate_policy (#10326 : politique per-row, lue par T1 depuis
-    # cell.metadata.translate, honorée par T3) en queue pour rester
-    # rétro-compatible avec les CSV générés par la tranche 1.
+    # src_hash_<lang> pour TARGET (#20836 : trace par langue cible du src_hash
+    # sur lequel la traduction a été faite, posée par T3 et lue par T2 pour le
+    # verdict STALE_TRAD), puis translate_policy (#10326 : politique per-row,
+    # lue par T1 depuis cell.metadata.translate, honorée par T3) en queue pour
+    # rester rétro-compatible avec les CSV générés par la tranche 1.
     expected = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
     expected += [f"text_{l}" for l in ["fr"] + e.TARGET_LANGS]
     expected += [f"hash_{l}" for l in ["fr"] + e.TARGET_LANGS]
+    expected += [f"src_hash_{l}" for l in e.TARGET_LANGS]
     expected += ["translate_policy"]
     assert e.COLUMNS == expected
 

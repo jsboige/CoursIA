@@ -44,7 +44,7 @@
 3. **Distillation grade C** : `docs/ict/hoffman-interface-distillation-case12.md`.
 4. **Ligne matrice dissociations** : update `docs/ict/dissociations-matrix.md` strate 5.
 5. **Pre-enregistrement scellé** AVANT code (pattern case 8/10).
-6. **Bibliographie Prakash et al. 2017 archivée GDrive** (déjà fait case 11).
+6. **Bibliographie** : préprint Prakash et al. (30 juillet 2017) archivé au gisement le 2026-10-25 — la mention antérieure « déjà fait case 11 » était inexacte, le fichier était absent du gisement.
 
 ## Hors scope
 

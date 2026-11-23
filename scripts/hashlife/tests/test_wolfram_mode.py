@@ -12,8 +12,10 @@ Teste :
    relu et verifier.
 
 Note sur l'environnement : ces tests dependent de l'organe ict.wolfram_step
-(PR #19793). Le dossier `MyIA.AI.Notebooks/IIT/ICT-Series` doit etre dans
-sys.path. Le conftest.py ajoute ce chemin automatiquement.
+(PR #19793). Route ict (#25381, acceptance 4) : un `ict` installe est
+prioritaire (voie contractuelle) ; sans installation, repli hermetique
+sur le chemin du checkout -- le conftest.py porte le motif ecrit (le job
+scripts-tests.yml n'installe pas le package ict).
 """
 from __future__ import annotations
 
@@ -26,8 +28,12 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ICT_PATH = REPO_ROOT / "MyIA.AI.Notebooks" / "IIT" / "ICT-Series"
-if str(ICT_PATH) not in sys.path:
-    sys.path.insert(0, str(ICT_PATH))
+
+try:  # ict installe ? (pip install -e, voie contractuelle #25381)
+    import ict  # noqa: F401
+except ImportError:  # repli hermetique : chemin du checkout
+    if str(ICT_PATH) not in sys.path:
+        sys.path.insert(0, str(ICT_PATH))
 
 from ict.wolfram_step import wolfram_trajectory  # noqa: E402
 
@@ -188,6 +194,8 @@ class TestWolframJsonRoundtrip:
             env={**__import__("os").environ, "PYTHONPATH": env_path},
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
         assert out_path.exists()

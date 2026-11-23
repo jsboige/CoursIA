@@ -173,14 +173,15 @@ class TestDieboldMariano:
             result_uncorrected["dm_stat"], rel=1e-3,
         )
 
-    def test_forecast_horizon_affects_lag(self):
+    def test_forecast_horizon_affects_statistic(self):
         rng = np.random.default_rng(11)
         errs_a = rng.standard_normal(200)
         errs_b = rng.standard_normal(200) * 1.5
-        # h=1 → lag=1, h=10 → lag=9, different HAC variance
-        r1 = diebold_mariano_test(errs_a, errs_b, h=1, small_sample=False)
-        r10 = diebold_mariano_test(errs_a, errs_b, h=10, small_sample=False)
-        # Different HAC lag should give different variance → different DM stat
+        # Since #21945 the HAC lag is n^(1/3) (independent of h); h now
+        # acts only through the HLN small-sample correction (default on).
+        r1 = diebold_mariano_test(errs_a, errs_b, h=1)
+        r10 = diebold_mariano_test(errs_a, errs_b, h=10)
+        # Different HLN correction should give a different DM stat
         assert r1["dm_stat"] != pytest.approx(r10["dm_stat"], rel=1e-3)
 
     def test_return_keys_complete(self):

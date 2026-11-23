@@ -149,17 +149,19 @@ choix social en Lean 4.
 
 ### Complémentaire, pas doublon
 
-Ce projet et [`social_choice_lean/`](../../social_choice_lean/) couvrent la même
-théorie au travers de **cadres différents** : Peters utilise le `LinearOrder`
-strict de Mathlib, tandis que `social_choice_lean/` utilise le `PrefOrder`
-réflexif-total-transitif (plus proche de la tradition d'économie du bien-être).
-Lire les deux montre comment le choix du cadre modèle les définitions et les
-preuves.
+Ce projet et les preuves au `PrefOrder` — [`game_theory_lean/SocialChoice/`](../../game_theory_lean/SocialChoice/) —
+couvrent la même théorie au travers de **cadres différents** : Peters utilise le `LinearOrder`
+strict de Mathlib, tandis que le `PrefOrder` réflexif-total-transitif (plus proche de la
+tradition d'économie du bien-être) y porte Arrow / Sen / l'électeur médian. Lire les deux montre
+comment le choix du cadre modèle les définitions et les preuves.
+
+L'ancien dossier `social_choice_lean/` n'en garde plus qu'une coquille documentaire : ses
+fichiers Lean ont été absorbés dans `game_theory_lean/SocialChoice/` (#6058).
 
 ### Où aller ensuite
 
 - **Notebook compagnon** : prévu (pas encore créé) — un tour pédagogique des résultats
   de Peters, auquel ce projet servirait de backend.
 - **Amont** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Nos preuves** : [`social_choice_lean/`](../../social_choice_lean/) — Arrow / Sen /
+- **Nos preuves** : [`game_theory_lean/SocialChoice/`](../../game_theory_lean/SocialChoice/) — Arrow / Sen /
   électeur médian dans le cadre `PrefOrder`.

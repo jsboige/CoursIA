@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # SCIENTIFIC_REVIEW_CARD — Template de revue scientifique
 
 **Statut** : template canonique (c.997, refondu #14831 — sign-off user 2026-09-21)

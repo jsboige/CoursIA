@@ -1,59 +1,54 @@
 # Architecture et surface fonctionnelle
 
-[← README AI-Engine-WordPress](../README.md)
+[← AI Engine (WordPress)](../README.md) | [↑ Plateformes conversationnelles](../../README.md) | [Instance jetable →](../instance-jetable/README.md)
 
-Ce dossier regroupe ce qui relève de la structure d'AI-Engine : la
-surface fonctionnelle vue de haut niveau (sections 1 à 3 ci-dessous,
-déplacées du README parent lors de la réorganisation #12127) et le
-découpage en modules du tableau de bord. Les sections RAG, MCP server
-et intégration WordPress restent présentées dans le
-[README parent](../README.md) tant que leurs dossiers ne sont pas
-créés.
+Avant de piloter AI Engine par son API ou de visiter ses écrans, il faut savoir comment le plugin est découpé. Ce dossier donne cette carte : AI Engine n'est pas un bloc, mais un ensemble de modules qu'on active séparément, et cette structure explique à la fois l'empreinte réelle d'une installation et l'endroit où chaque fonction se configure.
 
-## Sommaire
+Il s'adresse à qui découvre le plugin et veut situer ce qu'il va lire ensuite, et à qui doit décider quoi activer sur un site. Aucun prérequis technique : le dossier ne contient pas de carnet, il oriente vers ceux qui rendent chaque partie exécutable.
 
-1. [Vue d'ensemble](#vue-densemble)
-2. [Fonctionnalités GenAI cœur](#fonctionnalités-genai-cœur)
-3. [Multi-provider et self-hosting](#multi-provider-et-self-hosting)
-4. [L'architecture en modules](architecture-en-modules.md)
+## Comment lire ce README
 
-## Vue d'ensemble
+Les séries du dépôt se lisent à plusieurs vitesses, selon le principe décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-AI-Engine en deux pages : ce que c'est, qui l'utilise, pourquoi on en
-parle à côté d'Open WebUI. Statistiques publiques (100K+ installations
-actives, 4.9/5 étoiles, version 3.7.0 août 2026, license GPL).
+- Vous **découvrez** : lisez « La carte en bref », puis la note sur l'architecture en modules.
+- Vous **creusez un palier** : la section « Où chaque partie devient exécutable » relie chaque famille de modules aux carnets qui la mesurent.
+- Vous cherchez **ce qui reste ouvert** : « Pour aller plus loin » renvoie au comparatif et au cas d'usage, qui discutent ce que cette carte ne tranche pas.
 
-→ le développement chiffré vit dans le
-[comparatif](../02-Comparatif/comparatif-owui-vs-ai-engine.md), au
-niveau catégorie.
+## La carte en bref
 
-## Fonctionnalités GenAI cœur
+*Niveau Découverte.*
 
-Chatbots, Workspace (plein écran dans wp-admin), Copilot pour l'éditeur
-WordPress, AI Forms (text/image/audio/file avec logique conditionnelle),
-génération d'image et de vision. Comparaison avec les surfaces
-équivalentes d'Open WebUI (chat, canaux, prompts).
+AI Engine est une extension de WordPress, distribuée en version gratuite sous licence libre et complétée par une offre payante. Les supports du dépôt portent sur la version 3.7.0 gratuite, celle qu'installe l'[instance jetable](../instance-jetable/README.md).
 
-→ détail et mesures dans la
-[section dédiée du comparatif](../02-Comparatif/comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur).
+**Ce que le plugin apporte à un site.** Des chatbots intégrables aux pages, un espace de conversation dans l'administration, un assistant dans l'éditeur de contenus, des formulaires pilotés par un modèle, la génération de textes et d'images, la recherche sur le contenu du site par embeddings, et un serveur MCP qui expose le site à des agents distants. Toutes ces fonctions ne sont pas ouvertes par la version gratuite : les carnets de la série mesurent cette frontière au lieu de la supposer.
 
-## Multi-provider et self-hosting
+**Le moteur se choisit.** Le plugin se branche sur plusieurs fournisseurs distants, et sur tout serveur compatible OpenAI par un environnement de type `custom` : c'est par ce connecteur qu'un moteur auto-hébergé le sert. AI Engine n'embarque pas de moteur local.
 
-AI-Engine supporte **neuf providers distants** (OpenAI, Anthropic,
-Google, Mistral, xAI/Grok, Perplexity, OpenRouter, Replicate, Azure)
-plus un connecteur **Custom OpenAI-compatible** pour les moteurs
-auto-hébergés (Ollama, LM Studio, vLLM, llama.cpp, LocalAI). Côté
-Open WebUI, c'est la même philosophie avec OpenAI-compatible + Ollama
-natif ; la différence est qu'AI-Engine ne fournit pas son propre
-moteur local — il s'appuie sur l'écosystème WordPress existant.
+**Trois familles de modules.** Le tableau de bord range les modules en trois familles activables indépendamment : celle qui décide ce que voit le visiteur du site, celle qui décide ce que le serveur sait faire, et celle qui décide ce que voit l'administrateur. La note [L'architecture en modules](architecture-en-modules.md) en donne le tableau et tire deux conséquences pratiques : un déploiement minimal n'active qu'une petite partie du plugin, et le protocole MCP se configure dans les deux sens à deux endroits distincts — consommer des serveurs externes d'un côté, exposer le site de l'autre.
 
-→ [section correspondante du comparatif](../02-Comparatif/comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting).
+## Où chaque partie devient exécutable
 
-## L'architecture en modules
+*Niveau Approfondissement.* La carte se vérifie sur l'instance jetable, par les carnets de la série [« AI Engine par son API »](../03-Functional/README.md).
 
-Le plugin ne s'installe pas d'un bloc : son tableau de bord expose
-trois familles de modules activables indépendamment (Client, Server,
-Admin), et le protocole MCP s'y configure dans les deux sens à des
-endroits distincts. Voir
-[`architecture-en-modules.md`](architecture-en-modules.md), extrait du
-[cas d'usage éditorial](../04-Cas-Usage-livresagites/livresagites-parcours.md).
+| Ce que la carte annonce | Où on le mesure |
+|---|---|
+| Un chatbot est un document de configuration que l'API lit et réécrit | [Chatbots](../03-Functional/03-1-Chatbots/README.md) |
+| Un formulaire est un contenu WordPress, avec son brouillon et sa publication | [Formulaires](../03-Functional/03-2-Forms/README.md) |
+| Les embeddings se rangent par environnement, et ce rangement est un contrôle d'accès | [RAG et embeddings](../03-Functional/03-3-RAG-et-Embeddings/README.md) |
+| Le site est un catalogue d'outils pour agents, avec sa propre autorisation | [Serveur MCP](../03-Functional/03-4-MCP-Server/README.md) |
+| Le moteur se déclare dans la configuration du plugin, usage par usage | [Multi-provider](../03-Functional/03-5-Multi-Provider/README.md) |
+| Les écrans d'administration qui portent ces réglages | [Tour de la plateforme](../00-Tour-Plateforme/README.md) |
+
+## Pour aller plus loin
+
+*Niveau Recherche.*
+
+- **Ce plugin plutôt qu'une plateforme autonome ?** Le [comparatif avec Open WebUI](../02-Comparatif/comparatif-owui-vs-ai-engine.md) aligne les deux produits critère par critère — [fonctionnalités](../02-Comparatif/comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur), [RAG](../02-Comparatif/comparatif-owui-vs-ai-engine.md#rag-et-embeddings), [MCP](../02-Comparatif/comparatif-owui-vs-ai-engine.md#mcp-model-context-protocol), [coût](../02-Comparatif/comparatif-owui-vs-ai-engine.md#coût) — sans chercher à les classer : ils visent des usages différents et cohabitent souvent.
+- **Ce qu'une installation réelle fait de cette carte** : le [cas d'usage éditorial](../04-Cas-Usage-livresagites/livresagites-parcours.md) suit plusieurs fonctions du plugin sur une installation observée, à un niveau architectural.
+- **Les deux sens du MCP devant un même agent** : le carnet [Consommer et exposer le MCP](../03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb) mesure ce qui arrive quand un agent reçoit deux catalogues à la fois.
+
+## Ressources
+
+- [L'architecture en modules](architecture-en-modules.md) — la note de ce dossier.
+- [Les fonctionnalités par l'API](../03-Functional/README.md) — l'ordre de lecture des carnets.
+- [Fiche du plugin sur wordpress.org](https://wordpress.org/plugins/ai-engine/) — la source publique des versions et de la licence.

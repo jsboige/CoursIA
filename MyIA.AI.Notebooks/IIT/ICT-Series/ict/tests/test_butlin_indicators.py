@@ -16,9 +16,13 @@ résultats).
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 
 from ict.butlin_indicators import (
+    ACC_LESION_THEORETICAL,
     ARCHITECTURES,
     BAND_COLLAPSE,
     K_SYMBOLS,
@@ -35,6 +39,10 @@ from ict.butlin_indicators import (
     has_shared_weight_chain,
     run_protocol,
 )
+
+# Le JSON committé : sortie de run_protocol() (CLI ``--json``), CRLF à la
+# livraison -- json.loads accepte les deux fins de ligne.
+RESULTS_JSON = Path(__file__).resolve().parents[1] / "results" / "butlin_indicators_results.json"
 
 
 def test_shift_inserts_head_and_shifts():
@@ -122,11 +130,39 @@ def test_s2_verdicts_still_blind_to_puppet():
     """S2 (cycle ou chaîne partagée) : guérit le faux négatif Twin, reste
     aveugle au faux positif Puppet — exact 2/3."""
     s2 = {n: (has_cycle(a["nodes"], a["edges"])
-              or has_shared_weight_chain(a["nodes"], a["edges"]))
+              or has_shared_weight_chain(a["nodes"], a["edges"], a["weights"]))
           for n, a in ARCHITECTURES.items()}
     assert s2 == {"real": True, "twin": True, "puppet": True}
     truth = {n: a["truth"] for n, a in ARCHITECTURES.items()}
     assert sum(s2[n] == truth[n] for n in truth) == 2
+
+
+def test_shared_weight_chain_per_architecture():
+    """Le prédicat de chaîne seul : vrai sur la chaîne déroulée du Twin
+    (arêtes h_{t-1} -> h_t, même ensemble de poids), faux sur Real et Puppet
+    (un seul nœud ``shift``, sa seule arête est une boucle, relevant de S1)."""
+    chain = {n: has_shared_weight_chain(a["nodes"], a["edges"], a["weights"])
+             for n, a in ARCHITECTURES.items()}
+    assert chain == {"real": False, "twin": True, "puppet": False}
+
+
+def test_shared_weight_chain_requires_an_edge_and_shared_weights():
+    """Le prédicat exige une arête directe entre deux nœuds distincts ``shift``
+    de MÊME ensemble de poids. Deux nœuds ``shift`` disjoints ne suffisent pas
+    (le compteur d'origine rendait vrai ici) ; deux nœuds reliés mais de poids
+    distincts ne suffisent pas non plus."""
+    disjoint_nodes = {"in": "input", "a": "shift", "b": "shift", "out": "output"}
+    disjoint_edges = [("in", "a"), ("a", "out"), ("in", "b"), ("b", "out")]
+    shared = {"a": "W", "b": "W"}
+    assert has_shared_weight_chain(disjoint_nodes, disjoint_edges, shared) is False
+    # Arête directe, poids partagés : chaîne réelle.
+    assert has_shared_weight_chain(disjoint_nodes, disjoint_edges + [("a", "b")],
+                                   shared) is True
+    # Arête directe, poids distincts : pas une chaîne à poids partagés.
+    assert has_shared_weight_chain(disjoint_nodes, disjoint_edges + [("a", "b")],
+                                   {"a": "W1", "b": "W2"}) is False
+    # Une boucle n'est pas une chaîne (c'est S1).
+    assert has_shared_weight_chain(disjoint_nodes, [("a", "a")], shared) is False
 
 
 def test_causal_probe_identifies_carriers():
@@ -169,3 +205,30 @@ def test_protocol_verdict_supported():
     assert out["structural"]["s2_exact"] == 2
     assert all(c == 3 for c in out["c_exact_by_seed"])
     assert T_STEPS == 8
+
+
+def test_calibration_values_cited_by_pr():
+    """Rejeu de la calibration sur graines 11/22/33 : les accuracies lésées
+    citées dans le body de la PR (0.228 / 0.232 / 0.248), la fenêtre et la
+    valeur théorique 0.234375 (1/8 + 7/8 · 1/8)."""
+    cal = calibrate()
+    assert cal["seeds"] == [11, 22, 33]
+    assert [r["acc_lesion_real"] for r in cal["by_seed"]] == [0.228, 0.232, 0.248]
+    assert [r["delta_real"] for r in cal["by_seed"]] == [0.772, 0.768, 0.752]
+    assert cal["acc_lesion_window"] == [0.10, 0.35]
+    assert cal["acc_lesion_theoretical"] == ACC_LESION_THEORETICAL == 0.234375
+    assert cal["bands_ok"] is True
+
+
+def test_artifact_carries_replayable_calibration():
+    """Le JSON committé porte le bloc ``calibration`` ; le rejouer depuis les
+    graines seules redonne exactement ce bloc (types JSON, arrondis à 6 décimales)."""
+    artifact = json.loads(RESULTS_JSON.read_text(encoding="utf-8"))
+    assert artifact["calibration"] == calibrate()
+
+
+def test_artifact_is_run_protocol_output():
+    """Le JSON committé est égal (après parsing) à la sortie de run_protocol() :
+    il se régénère par ``--json``, aucune valeur n'est éditée à la main."""
+    artifact = json.loads(RESULTS_JSON.read_text(encoding="utf-8"))
+    assert artifact == run_protocol()

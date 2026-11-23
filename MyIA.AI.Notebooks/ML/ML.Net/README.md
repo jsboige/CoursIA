@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML-ML.Net
-pedagogical_count: 23
-breakdown: ML.Net=23
-maturity: BETA=23
+pedagogical_count: 29
+breakdown: ML.Net=29
+maturity: BETA=28, ALPHA=1
 -->
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)
@@ -13,7 +13,7 @@ ML.NET — la bibliothèque open-source de Microsoft — apporte le machine lear
 
 > **Jumeaux de parité (C# ⇄ Python/scikit-learn).** Plusieurs notebooks de cette série disposent d'un **jumeau Python** co-localisé (`*-Python.ipynb`) qui couvre le **même concept pédagogique** avec les outils canoniques de l'écosystème Python (scikit-learn, statsmodels) — un contrepoint direct au pipeline ML.NET. Dès l'introduction ([ML-01-Python](ML-01-Introduction-Python.ipynb)), le même workflow (régression, classification) se code en quelques lignes de scikit-learn. Là où ML.NET `RandomizedPca` détecte les anomalies, le jumeau utilise `sklearn.PCA` + erreur de reconstruction ; là où `ForecastBySsa` prévoit les séries temporelles, le jumeau emploie `statsmodels` STL + SARIMA ; là où `MatrixFactorization` recommande, le jumeau applique `NMF`. Cette parité permet de voir qu'un **même problème** se modélise idiomatiquement dans deux écosystèmes, et que les concepts (résidu de reconstruction, facteurs latents, décomposition tendance/saisonnalité) sont universels — seuls les outils diffèrent. Les jumeaux sont signalés dans les tables des notebooks ci-dessous.
 
-Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : préparation des données et feature engineering (ML-02), entraînement et AutoML (ML-03), évaluation rigoureuse par cross-validation et importance des variables (ML-04), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-05), interopérabilité ONNX (ML-06), systèmes de recommandation (ML-07), clustering non-supervisé par K-Means (ML-08) et détection d'anomalies par Randomized PCA (ML-09), puis l'introspection critique des benchmarks de détection d'anomalies (ML-09b), et enfin le Matrix Profile multidimensionnel, qui détecte sans rien apprendre (ML-09c) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
+Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : préparation des données et feature engineering (ML-02), entraînement et AutoML (ML-03), évaluation rigoureuse par cross-validation et importance des variables (ML-04), que prolonge la validité statistique d'une comparaison entre modèles (ML-04b, complément Python et C#), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-05), interopérabilité ONNX (ML-06), systèmes de recommandation (ML-07), clustering non-supervisé par K-Means (ML-08) et détection d'anomalies par Randomized PCA (ML-09), puis l'introspection critique des benchmarks de détection d'anomalies (ML-09b), et enfin le Matrix Profile multidimensionnel, qui détecte sans rien apprendre (ML-09c) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
 
@@ -31,31 +31,63 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 ### Fondamentaux (ML-01 à ML-04)
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 01 | [ML-01-Introduction](ML-01-Introduction.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min |
-| 02 | [ML-02-Data&Features](ML-02-Data&Features.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data&Features-Python.ipynb)* | 40-50 min |
-| 03 | [ML-03-Entrainement&AutoML](ML-03-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement&AutoML-Python.ipynb)* | 45-60 min |
-| 04 | [ML-04-Evaluation](ML-04-Evaluation.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min |
+| # | Notebook | Contenu | Durée | Pour approfondir |
+|---|----------|---------|-------|------------------|
+| 01 | [ML-01-Introduction-CSharp](ML-01-Introduction-CSharp.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min | — |
+| 02 | [ML-02-Data-Features-CSharp](ML-02-Data-Features-CSharp.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data-Features-Python.ipynb)* | 40-50 min | — |
+| 03 | [ML-03-Entrainement-AutoML-CSharp](ML-03-Entrainement-AutoML-CSharp.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement-AutoML-Python.ipynb)* | 45-60 min | — |
+| 04 | [ML-04-Evaluation-CSharp](ML-04-Evaluation-CSharp.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min | [04b](#approfondissement-04-evaluation) |
 
-### Fonctionnalités avancées (ML-05 à ML-09c)
+### Fonctionnalités avancées (ML-05 à ML-09)
 
-| # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée |
-|---|----------|---------|------------------------------------------|-------|
-| 05 | [ML-05-TimeSeries](ML-05-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
+| # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée | Pour approfondir |
+|---|----------|---------|---------------------------------------------|-------|------------------|
+| 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min | [05b](#approfondissement-05-series-temporelles) |
+| 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min | — |
+| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min | [07b](#approfondissement-07-recommandation) |
+| 08 | [ML-08-Clustering-CSharp](ML-08-Clustering-CSharp.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min | — |
+| 09 | [ML-09-Anomaly-Detection-CSharp](ML-09-Anomaly-Detection-CSharp.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min | [09b](#approfondissement-09-detection-anomalies) · [09c](#approfondissement-09-detection-anomalies) |
+
+### Approfondissements
+
+<a id="approfondissement-04-evaluation"></a>
+
+#### Autour de 04 — Évaluation
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
+| 04b | [ML-04b-ModelComparison-Validity](ML-04b-ModelComparison-Validity-Python.ipynb) | Validité statistique des comparaisons de modèles : variance d'un split, bootstrap, t-test corrigé (Nadeau-Bengio), Bonferroni | [Python](ML-04b-ModelComparison-Validity-Python.ipynb) / [C#](ML-04b-ModelComparison-Validity-CSharp.ipynb) | 45-60 min |
+
+<a id="approfondissement-05-series-temporelles"></a>
+
+#### Autour de 05 — Séries temporelles
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
 | 05b | [ML-05b-Series-Temporelles-Classiques](ML-05b-Series-Temporelles-Classiques-Python.ipynb) | **Socle statistique des séries temporelles** : ADF (stationnarité), ACF/PACF (ordres p/q), ARIMA/SARIMA, lissage exponentiel, backtest glissant | *standalone Python (statsmodels — le socle que ML-05 suppose)* | 60-75 min |
-| 06 | [ML-06-ONNX](ML-06-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min |
-| 07 | [ML-07-Recommendation](ML-07-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min |
-| 08 | [ML-08-Clustering](ML-08-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
-| 09 | [ML-09-Anomaly-Detection](ML-09-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
-| 09b | [ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
-| 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *standalone Python (stumpy — la réponse constructive à ML-09b)* | 45-60 min |
+
+<a id="approfondissement-07-recommandation"></a>
+
+#### Autour de 07 — Recommandation
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
+| 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
+
+<a id="approfondissement-09-detection-anomalies"></a>
+
+#### Autour de 09 — Détection d'anomalies
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
+| 09b | [ML-09b Python](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) · [C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) | **Évaluer des détecteurs** : SPC, vrai MLP de prévision, AUC/seuil/densité/annotations/position sur cinq séries UCR | Python.NET + scikit-learn ; mêmes données et budgets | 90 min |
+| 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *Python + C# (STUMPY via Python.NET)* | 45-60 min |
 
 ### TP Pratique
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| TP | [TP-prevision-ventes](TP-prevision-ventes.ipynb) | Régression avec ML.NET + Infer.NET bayésien | 45-60 min |
+| TP | [TP-Prevision-Ventes-CSharp](TP-Prevision-Ventes-CSharp.ipynb) | Régression avec ML.NET + Infer.NET bayésien | 45-60 min |
 
 ## Parcours d'apprentissage
 
@@ -66,11 +98,13 @@ Le parcours débute par le notebook 1 qui présente l'écosystème ML.NET et con
 Le notebook 2 plonge dans la préparation des données — l'étape la plus chronophage en pratique. Vous apprendrez à manipuler `IDataView`, la structure colonnaire performante de ML.NET, à charger des fichiers CSV, à encoder des variables catégorielles, à gérer les valeurs manquantes, et à concaténer des features. Ce notebook utilise le dataset taxi-fare pour un exercice concret de prédiction de prix immobiliers.
 
 ![Régression linéaire : prix d'une maison selon sa taille — droite apprise sur 4 points d'entraînement (cercles bleus) avec 15 points test (carrés orange), évaluation par hold-out et prédiction unique (étoile rouge, 2.5 kpi → 2.76)](assets/readme/ml-regression.png)
-*Figure extraite du jumeau Python ML-01-Introduction-Python (cellule 17, output 0). La relation linéaire entre la taille (en milliers de pieds carrés) et le prix (en centaines de milliers de dollars) est apprise sur un split entraînement/test explicite ; l'étoile rouge matérialise une prédiction ponctuelle (2.5 kpi → 2.76). Le pipeline ML.NET `IDataView` → `EstimatorChain` produit la même droite côté C# — limitation illustrative assumée : la figure documente le concept de régression linéaire et la mécanique split/prédiction, pas le code ML.NET lui-même (voir cellules 9-22 de `ML-01-Introduction.ipynb`).*
+*Figure extraite du jumeau Python ML-01-Introduction-Python (cellule 17, output 0). La relation linéaire entre la taille (en milliers de pieds carrés) et le prix (en centaines de milliers de dollars) est apprise sur un split entraînement/test explicite ; l'étoile rouge matérialise une prédiction ponctuelle (2.5 kpi → 2.76). Le pipeline ML.NET `IDataView` → `EstimatorChain` produit la même droite côté C# — limitation illustrative assumée : la figure documente le concept de régression linéaire et la mécanique split/prédiction, pas le code ML.NET lui-même (voir cellules 9-22 de `ML-01-Introduction-CSharp.ipynb`).*
 
 Le notebook 3 introduit l'entraînement proprement dit. Vous découvrirez SDCA (Stochastic Dual Coordinate Ascent) pour la régression linéaire, LightGBM pour les problèmes non linéaires, et surtout l'AutoML de ML.NET qui automatise la recherche d'hyperparamètres et la sélection d'algorithme. Vous verrez aussi les dangers du surapprentissage et comment l'arrêter précocement.
 
 Le notebook 4 est le plus dense et le plus crucial : évaluation rigoureuse. Vous apprendrez à mesurer un modèle avec R², MAE, RMSE, à utiliser la validation croisée pour estimer la généralisation, et à expliquer les prédictions avec la Permutation Feature Importance (PFI) et le Feature Contribution Calculation (FCC). Ce notebook transforme un "modèle qui marche" en un modèle que vous comprenez et pouvez justifier.
+
+Le complément **4b** ([ML-04b-ModelComparison-Validity-Python](ML-04b-ModelComparison-Validity-Python.ipynb), et [son jumeau C#](ML-04b-ModelComparison-Validity-CSharp.ipynb)) prolonge le notebook 4 par la question qu'un score seul ne tranche pas : quand le modèle A affiche un R² plus élevé que le modèle B, A est-il *vraiment* meilleur ? Le carnet montre qu'un seul découpage train/test, ou une moyenne ± écart-type en validation croisée, ne suffit pas à conclure. Il construit ensuite un intervalle de confiance bootstrap sur la différence entre deux modèles, applique le t-test corrigé de Nadeau et Bengio (le t-test naïf sur les plis paraît significatif là où le test corrigé ne l'est pas), puis aborde la taille d'effet et la correction de Bonferroni quand on compare plusieurs modèles à la fois. Ses exercices à compléter portent sur l'intervalle bootstrap du RMSE et sur sa stabilité.
 
 ### Phase 2 : Fonctionnalités avancées (ML-05 à ML-09c, ~4h30)
 
@@ -82,7 +116,7 @@ Le notebook **5b** ([ML-05b-Series-Temporelles-Classiques-Python](ML-05b-Series-
 *Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 7, output 0). La série journalière court sur 2023-01 → 2025-01 (deux ans), valeurs de 50 à 250 ventes/jour, avec un split explicite Train/Test au 2024-01-01 (matérialisé en rouge pointillé). On y lit la tendance haussière de fond et la saisonnalité hebdomadaire superposée — les deux ingredients que `ForecastBySsa` et la décomposition STL cherchent à séparer.*
 
 ![Décomposition STL sur la série d'entraînement (période = 7 jours) — 4 panneaux : Observé, Tendance, Saisonnalité, Bruit/Résidu](assets/readme/ml-ts-stl.png)
-*Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 11, output 0). La décomposition STL sépare la série Observée en trois composantes additives : Tendance (croissance lente 105 → 155 sur 2023), Saisonnalité (cycle hebdomadaire d'amplitude ±35), Bruit/Résidu (écart ±20, stationnaire). La période 7 jours est explicite dans le titre de la figure. La décomposition permet d'attaquer le forecast composante par composante plutôt que sur le signal brut — limitation illustrative assumée : la figure montre la décomposition Python (statsmodels), pas la sortie `ForecastBySsa` côté ML.NET (le résultat conceptuel est équivalent mais l'API diffère ; voir cellules 9-18 de `ML-05-TimeSeries.ipynb`).*
+*Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 11, output 0). La décomposition STL sépare la série Observée en trois composantes additives : Tendance (croissance lente 105 → 155 sur 2023), Saisonnalité (cycle hebdomadaire d'amplitude ±35), Bruit/Résidu (écart ±20, stationnaire). La période 7 jours est explicite dans le titre de la figure. La décomposition permet d'attaquer le forecast composante par composante plutôt que sur le signal brut — limitation illustrative assumée : la figure montre la décomposition Python (statsmodels), pas la sortie `ForecastBySsa` côté ML.NET (le résultat conceptuel est équivalent mais l'API diffère ; voir cellules 9-18 de `ML-05-TimeSeries-CSharp.ipynb`).*
 
 ![Prévision SARIMA vs réel sur les 90 premiers jours de 2024 — ventes réelles, prévision, intervalle de confiance 95%](assets/readme/ml-ts-forecast.png)
 *Figure extraite du jumeau Python ML-05-TimeSeries-Python (cellule 20, output 0). Sur la fenêtre de test (2024-01-01 → 2024-04-01, soit 90 jours), la prévision SARIMA (orange) suit la réalité (bleu) avec un intervalle de confiance 95% (zone orange pâle) qui capture l'essentiel de la variabilité — l'écart-type grandit aux extrema, signature d'un modèle qui reconnaît l'incertitude. La figure compare explicitement `statsmodels SARIMA` côté Python, pas `ForecastBySsa` côté ML.NET ; les deux approches traitent la saisonnalité 7 jours mais la décomposition du signal diffère. Limitation illustrative assumée : un forecast réussi sur 90 jours n'est pas un forecast réussi sur 90 jours avec un seul hyperparamètre — la robustesse multi-seed + walk-forward est traitée dans les cellules 22-28 du notebook ML-05-TimeSeries-Python.*
@@ -91,7 +125,7 @@ Le notebook 6 présente l'interopérabilité ONNX — le pont entre l'écosystè
 
 Le notebook 7 explore les systèmes de recommandation — un domaine où ML.NET brille vraiment en production. Vous implémenterez la factorisation matricielle (collaborative filtering), apprendrez à générer des recommendations Top-N, à mesurer la qualité avec Precision@K et NDCG, et à gérer le "cold start problem" (nouveaux utilisateurs ou items sans historique). Deux exemples concrets : recommandation de films et recommandation e-commerce.
 
-Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-03) ni en clustering (ML-08). Le notebook 10 ([ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb)) pousse la critique plus loin : il montre qu'un détecteur de **1924** (Statistical Process Control, `M+3σ`) bat un auto-encodeur sur un benchmark trivial, identifie les **4 pièges** que Wu & Keogh (2020) imputent aux benchmarks de détection d'anomalies, puis bascule sur l'**UCR Archive** — le benchmark honnête où les méthodes simples échouent enfin. C'est le chaînon entre ML-09 et le Matrix Profile. Le notebook 11 ([ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb)) ferme ce chaînon par une réponse constructive : le Matrix Profile n'a **aucune phase d'entraînement**, donc structurellement rien à surapprendre — et sur une anomalie conjointe dont les trois marginales ne bougent pas, il la classe **première** là où la carte `M+3σ` et l'ACP de ML-09 ne la voient pas du tout.
+Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-03) ni en clustering (ML-08). Le prolongement [ML-09b](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) compare SPC et un MLP de prévision sur des séries UCR réelles et distingue les effets de densité, annotations et position. [ML-09c](ML-09c-MatrixProfile-Multidim-Python.ipynb) compare ensuite profils univariés, condensations et voisins communs. L'absence d'ajustement paramétrique n'empêche pas le surajustement du protocole ; les résultats restent propres aux séries et aux métriques présentées.
 
 ![Clustering K-Means sur données RFM — vérité terrain (Dormants/Réguliers/VIP) à gauche, clusters retrouvés par K-Means à droite](assets/readme/ml-clustering.png)
 *Figure extraite du jumeau Python ML-08-Clustering-Python (cellule 12, output 0). Deux panneaux côte-à-côte : à gauche la vérité terrain (générée par mixture gaussienne puis cachée à l'algorithme), à droite les clusters retrouvés par K-Means (K=3). Les axes sont Frequency (achats/mois, 0-30) × Monetary (EUR, 0-700). Les trois segments Dormants (rouge, <5 achats/mois, <100 EUR), Réguliers (vert, 5-15 achats, 100-300 EUR), VIP (bleu, 15+ achats, 300+ EUR) sont correctement identifiés — limitation illustrative assumée : la figure documente la capacité distinctive de K-Means à retrouver une partition linéairement séparable dans l'espace RFM normalisé, pas les cas réels où les segments se chevauchent ou ne sont pas gaussiens (voir cellules 13-18 du notebook pour les limites et les métriques Davies-Bouldin / silhouette).*
@@ -111,7 +145,7 @@ Derrière chaque concept de cette série se cache une application réelle :
 - **Feature engineering de textes** (ML-02) : les transformations d'encodage de texte vues dans ce notebook sont les mêmes qu'utilisent les moteurs de recherche pour transformer du texte brut en features numériques.
 - **Prévision de ventes quotidiennes** (ML-05) : l'algorithme SSA détecte les cycles et saisonnalités dans les données de vente — applicable à la gestion de stock, la prévision de charge pour le cloud, ou l'anticipation de la demande produit.
 - **Export ONNX de modèles Hugging Face** (ML-06) : servir un modèle BERT d'analyse de sentiments ou un Whisper de transcription dans une application .NET d'entreprise, sans dépendance Python. C'est exactement le scénario que rencontrent les équipes qui adoptent le ML sans migrer leur stack.
-- **Recommandation de films** (ML-07) : la factorisation matricielle est le même principe que celui derrière les recommendations Netflix, Amazon, ou Spotify — uniquement ici, tout tourne dans un process .NET.
+- **Recommandation de films** (ML-07) : la factorisation matricielle est le même principe que celui derrière les recommendations Netflix, Amazon, ou Spotify — uniquement ici, tout tourne dans un process .NET. Le carnet 07b mesure la limite de ce principe : un item que personne n'a noté n'a aucune coordonnée latente, et la façon dont les recommandateurs récents contournent cet angle mort — tokeniser l'item en codes quantifiés — rapporte ici un changement de nature (un item devient une suite de bits qu'on peut produire) sans gain de rappel démontré.
 - **Régression bayésienne pour les ventes** (TP) : combiner régression classique et inférence bayésienne pour prédire non seulement un chiffre, mais aussi la plage de confiance. Essentiel pour les décisions financières ou logistiques où l'incertitude a un coût réel.
 
 ## Prérequis détaillés
@@ -143,7 +177,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 
 ## Contenu détaillé
 
-### ML-01-Introduction
+### ML-01-Introduction-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -151,7 +185,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Pipeline | Chargement, transformation, entraînement |
 | Prediction | Modèle et prédiction simple |
 
-### ML-02-Data&Features
+### ML-02-Data-Features-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -160,7 +194,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Transformations | One-hot encoding, normalisation |
 | Concatenation | Combinaison de features |
 
-### ML-03-Entrainement&AutoML
+### ML-03-Entrainement-AutoML-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -169,7 +203,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | AutoML | Recherche automatique d'hyperparamètres |
 | Comparaison | Benchmarking des algorithmes |
 
-### ML-04-Evaluation
+### ML-04-Evaluation-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -178,7 +212,18 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | PFI | Permutation Feature Importance |
 | Confusion Matrix | Évaluation classification |
 
-### TP-prevision-ventes
+### ML-04b-ModelComparison-Validity-Python
+
+| Section | Contenu |
+|---------|---------|
+| Données | Jeu `diabetes` (bundle scikit-learn, sans téléchargement) |
+| Variance d'un split | Classement des modèles qui change d'une graine à l'autre |
+| k-fold | Moyenne ± écart-type des R² par pli, et pourquoi leur chevauchement ne suffit pas à conclure |
+| Bootstrap | Intervalle de confiance sur la différence entre deux modèles |
+| Nadeau-Bengio | t-test corrigé pour la validation croisée, face au t-test naïf sur les plis |
+| Taille d'effet, Bonferroni | « Significatif » n'est pas « important » ; correction des comparaisons multiples |
+
+### TP-Prevision-Ventes-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -186,7 +231,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Régression bayésienne | Prévision avec incertitude |
 | Application | Cas d'usage ventes |
 
-### ML-05-TimeSeries
+### ML-05-TimeSeries-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -195,7 +240,19 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | AutoML | Optimisation d'hyperparamètres |
 | Intervalles de confiance | Quantification de l'incertitude |
 
-### ML-06-ONNX
+### ML-05b-Series-Temporelles-Classiques-Python
+
+| Section | Contenu |
+|---------|---------|
+| Données | `daily-sales.csv`, la série de ventes quotidiennes de ML-05 (fournie dans le dossier) |
+| Décomposition | `seasonal_decompose` : tendance, saisonnalité, résidu (série synthétique, puis série réelle) |
+| Stationnarité | Test ADF (H0, p-value, conclusion écrite) et différenciation d=1 |
+| ACF / PACF | Lecture des ordres p et q, cas pédagogique d'un AR(2) synthétique |
+| SARIMA | Grille par AIC, diagnostic des résidus (ACF, Ljung-Box), prévision avec intervalle de confiance |
+| Lissage exponentiel | Simple, Holt, Holt-Winters (saisonnalité 7) |
+| Backtest glissant | Naïf, Holt-Winters et SARIMA comparés sur un horizon de 7 jours (walk-forward) |
+
+### ML-06-ONNX-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -204,7 +261,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Export ML.NET | Sauvegarder en ONNX |
 | Hugging Face | Intégration BERT, Whisper |
 
-### ML-07-Recommendation
+### ML-07-Recommendation-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -213,7 +270,17 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Cold Start | Gérer nouveaux utilisateurs/items |
 | Métriques | Precision@K, Recall@K, NDCG |
 
-### ML-08-Clustering
+### ML-07b-SemanticIDs-Recommandation-Python
+
+| Section | Contenu |
+|---------|---------|
+| Objet | Tokeniser un item en **identifiants sémantiques** : plongement de contenu puis quantification résiduelle (3 niveaux × 32 codes, soit 15 bits par item contre 1024 bits en float32) |
+| Démarrage à froid | Les colonnes des items froids sont vides : populaire et collaboratif rendent un score constant et un rappel exactement nul, le contenu voit tous les items |
+| Tests appariés | Quatre contrastes, bootstrap sur les utilisateurs et McNemar : **un seul** franchit le seuil (populaire contre contenu sur le chaud, +2,62 pts, p = 0,0038) |
+| Ce que la mesure refuse de dire | Que la quantification vaille mieux que le contenu direct : les deux écarts de signe opposé sont non concluants, et le balayage des tailles de dictionnaire ne montre pas de tendance monotone |
+| Exercices | Trois stubs sans erreur volontaire : deux niveaux suffisent-ils, le partage du premier code aide-t-il, et lequel des deux modèles résiste à un contenu bruité |
+
+### ML-08-Clustering-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -222,7 +289,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Évaluation | AverageDistance (inertie), DaviesBouldinIndex (séparation) |
 | Choix de K | Méthode du coude (elbow method), Thorndike 1953 |
 
-### ML-09-Anomaly-Detection
+### ML-09-Anomaly-Detection-CSharp
 
 | Section | Contenu |
 |---------|---------|
@@ -233,26 +300,32 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 
 ### ML-09b-TSAD-Benchmark-Flaws-Python
 
+[Jumeau C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) : C# charge et prépare les données, construit les fenêtres et cibles, mesure les métriques et trace les figures ; le vrai StandardScaler/MLPRegressor est appelé via Python.NET. Les cinq membres UCR sont vérifiés contre le manifeste versionné puis cachés localement sans redistribution.
+
 | Section | Contenu |
 |---------|---------|
-| SPC (1924) | Baseline Statistical Process Control : `\\|x - mean\\| > 3*std` en une ligne |
-| Auto-encodeur | Reconstruction de fenêtres (`MLPRegressor`) — perd face à SPC sur un benchmark trivial |
-| Piège 1 — trivialité | Un algorithme centenaire résout le benchmark → rien de difficile |
-| Piège 2 — densité | Anomalie < 1 % (réaliste) vs > 50 % (benchmarks défaillants, Wu & Keogh) |
-| Piège 3 — étiquettes | Décaler la GT fait chuter l'AUC du même détecteur |
-| Piège 4 — run-to-failure | « Prédire la fin » gagne sans détecter si l'anomalie est tardive |
-| UCR Archive | Benchmark honnête (anomalies variées, densité réaliste) où SPC échoue enfin |
+| SPC | Score global descriptif et décision >3 distingués de l'AUC |
+| MLP de prévision | Fenêtres de 20 points, horizon de 2 pas conservé, 32 neurones, maximum 1200 itérations ; scaler et réseau ajustés sur première moitié uniquement |
+| Baseline simple | Comparaison mesurée, sans preuve de trivialité générale |
+| Densité | Prévalence et accuracy de règles constantes ; AUC constante 0.5 avec les deux classes |
+| Étiquettes | Décalages artificiels 0/30/120, sans preuve d'une erreur réelle d'annotation |
+| Position | Baseline croissante indépendante du signal |
+| Trois séries entraînées | Résultats propres aux séries/étiquettes/protocole, pas certification d'un benchmark « honnête » |
+
+Les trois exercices ouverts sont répartis, avec gardes multi-fixtures : diagnostic SPC, densité/métriques constantes et effet de position. L'AUC globale inclut train et préfixe sans prévision ; SPC reste transductif. Les figures gardent les alertes SPC aux coordonnées réelles sur le signal.
 
 ### ML-09c-MatrixProfile-Multidim-Python
+
+Le [jumeau C#](ML-09c-MatrixProfile-Multidim-CSharp.ipynb) construit les signaux et classe les résultats en C#, en appelant STUMPY et l’ACP scikit-learn via Python.NET. Il emploie les mêmes graines NumPy et les mêmes budgets ; les figures sont des SVG statiques.
 
 | Section | Contenu |
 |---------|---------|
 | Matrix Profile | Distance à la sous-séquence la plus proche (`stumpy.stump`) — aucune phase d'entraînement |
-| Anomalie conjointe | Trois capteurs dont les **marginales ne bougent pas** : la carte `M+3σ` de ML-09b et l'ACP de ML-09 restent aveugles |
+| Anomalie conjointe | Trois capteurs aux marginales proches : comparaison des rangs avec la carte `M+3σ` et l'ACP |
 | Condensation | `min` (ET logique) vs `max` (OU) sur les profils univariés |
-| mSTAMP | Profil à `K` dimensions (`stumpy.mstump`) — `K=3` redevient aveugle : plus de dimensions peut être pire |
-| Effondrement à `k=1` | L'anomalie répétée devient sa propre plus proche voisine ; `k>=2` la restaure |
-| Décalage de `m` points | Le discord tombe *avant* l'anomalie — le piège 3 de ML-09b, vu de l'intérieur |
+| mSTAMP | Profil à `K` dimensions (`stumpy.mstump`) — dans cet exemple, `K=3` manque la cible parmi les 15 premiers pics |
+| Effondrement à `k=1` | dans cet exemple, la répétition masque le pic pour `k=1` et `k=2,3` le font ressortir |
+| Chevauchement | Une fenêtre peut commencer jusqu'à `m-1` points avant l'événement et le chevaucher |
 
 ## Dataset
 
@@ -268,7 +341,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 dotnet --version  # doit afficher 9.x.x
 
 # 2. Installer .NET Interactive
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # 3. Vérification
@@ -311,29 +384,33 @@ jupyter kernelspec list  # doit montrer .net-csharp
 ### Parcours fondamental (débutant)
 
 ```text
-ML-01-Introduction (bases)
+ML-01-Introduction-CSharp (bases)
     |
-ML-02-Data&Features (données)
+ML-02-Data-Features-CSharp (données)
     |
-ML-03-Entrainement&AutoML (modèles)
+ML-03-Entrainement-AutoML-CSharp (modèles)
     |
-ML-04-Evaluation (validation)
+ML-04-Evaluation-CSharp (validation)
     |
-TP-prevision-ventes (application)
+ML-04b-ModelComparison-Validity-Python (comparaison statistique, facultatif, Python)
+    |
+TP-Prevision-Ventes-CSharp (application)
 ```
 
 ### Parcours avancé (ML.NET moderne)
 
 ```text
-ML-05-TimeSeries (forecasting)
+ML-05-TimeSeries-CSharp (forecasting)
     |
-ML-06-ONNX (interopérabilité)
+ML-05b-Series-Temporelles-Classiques-Python (socle statistique des séries temporelles)
     |
-ML-07-Recommendation (systèmes de recommandation)
+ML-06-ONNX-CSharp (interopérabilité)
     |
-ML-08-Clustering (clustering non-supervisé)
+ML-07-Recommendation-CSharp (systèmes de recommandation)
     |
-ML-09-Anomaly-Detection (détection d'anomalies)
+ML-08-Clustering-CSharp (clustering non-supervisé)
+    |
+ML-09-Anomaly-Detection-CSharp (détection d'anomalies)
     |
 ML-09b-TSAD-Benchmark-Flaws (introspection des benchmarks)
     |
@@ -347,7 +424,7 @@ ML-09c-MatrixProfile-Multidim (Matrix Profile, détection sans apprentissage)
 | Problème | Solution |
 |----------|----------|
 | `The type 'MLContext' could not be found` | Vérifier que ML.NET est installé via `#r "nuget: Microsoft.ML"` dans le notebook. Le notebook 1 (Introduction) couvre la configuration |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | `IDataView` performance sur grands datasets | Utiliser `TextLoader` avec le schéma explicite plutôt que le chargement dynamique. ML.NET est optimisé pour les charges batch |
 | ONNX export échoue | Tous les trainers ML.NET ne supportent pas l'export ONNX. Vérifier la compatibilité dans le notebook 6 (ONNX) |
 | Modèle ML.NET en dehors de Jupyter | Utiliser `mlContext.Model.Save()` pour sérialiser le modèle .zip, puis le charger dans une application console ou web |
@@ -359,11 +436,11 @@ ML-09c-MatrixProfile-Multidim (Matrix Profile, détection sans apprentissage)
 dotnet --version  # doit afficher 9.x.x
 
 # Installer .NET Interactive globalement
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Si déjà installé mais kernel absent, mettre à jour
-dotnet tool update --global Microsoft.dotnet-interactive
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Vérifier
@@ -442,18 +519,32 @@ Voir la licence du repository principal.
 
 ### Ce que vous avez appris
 
-Cette série vous a fait passer du **premier pipeline ML en C#** ([ML-01](ML-01-Introduction.ipynb)) à une **application complète de bout en bout**, en consolidant trois acquis cibles pour un praticien .NET :
+Cette série vous a fait passer du **premier pipeline ML en C#** ([ML-01](ML-01-Introduction-CSharp.ipynb)) à une **application complète de bout en bout**, en consolidant trois acquis cibles pour un praticien .NET :
 
-- **Construire et justifier un pipeline ML.NET complet** — de `MLContext` au `PredictionEngine`, vous savez enchaîner chargement ([ML-02](ML-02-Data&Features.ipynb)), entraînement ([ML-03](ML-03-Entrainement&AutoML.ipynb)) et prédiction, en laissant l'AutoML explorer l'espace des algorithmes (SDCA, LightGBM) plutôt que de choisir à l'aveugle.
-- **Évaluer rigoureusement et expliquer** — [ML-04](ML-04-Evaluation.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score.
-- **Servir en production sans quitter .NET** — les notebooks avancés couvrent les cas où ML.NET excelle en entreprise : prévision par [SSA](ML-05-TimeSeries.ipynb), [interop ONNX](ML-06-ONNX.ipynb) (modèles scikit-learn/PyTorch/Hugging Face consommés en C#), [recommandation](ML-07-Recommendation.ipynb) par factorisation matricielle. Le R&D reste en Python, la production tourne en .NET.
+- **Construire et justifier un pipeline ML.NET complet** — de `MLContext` au `PredictionEngine`, vous savez enchaîner chargement ([ML-02](ML-02-Data-Features-CSharp.ipynb)), entraînement ([ML-03](ML-03-Entrainement-AutoML-CSharp.ipynb)) et prédiction, en laissant l'AutoML explorer l'espace des algorithmes (SDCA, LightGBM) plutôt que de choisir à l'aveugle.
+- **Évaluer rigoureusement et expliquer** — [ML-04](ML-04-Evaluation-CSharp.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score. Et quand il faut dire qu'un modèle en bat un autre, [ML-04b](ML-04b-ModelComparison-Validity-Python.ipynb) vous apprend à examiner son incertitude (bootstrap, t-test corrigé approximatif) plutôt qu'à l'affirmer à partir d'un seul chiffre.
+- **Servir en production sans quitter .NET** — les notebooks avancés couvrent les cas où ML.NET excelle en entreprise : prévision par [SSA](ML-05-TimeSeries-CSharp.ipynb), [interop ONNX](ML-06-ONNX-CSharp.ipynb) (modèles scikit-learn/PyTorch/Hugging Face consommés en C#), [recommandation](ML-07-Recommendation-CSharp.ipynb) par factorisation matricielle. Le R&D reste en Python, la production tourne en .NET.
 
 ### Prochaines étapes
 
-- **Approfondir l'incertitude** — le [TP capstone](TP-prevision-ventes.ipynb) introduit la régression bayésienne via Infer.NET ; la série [Probas/Infer](../../Probas/Infer/README.md) en est le prolongement natural (même moteur probabiliste, même stack .NET).
+- **Approfondir l'incertitude** — le [TP capstone](TP-Prevision-Ventes-CSharp.ipynb) introduit la régression bayésienne via Infer.NET ; la série [Probas/Infer](../../Probas/Infer/README.md) en est le prolongement natural (même moteur probabiliste, même stack .NET).
 - **Aller plus loin en ML appliqué** — *Hands-On AI Trading* (cité en Ressources) montre ML.NET en production sur un pipeline de trading réel ; les notebooks [DataScienceWithAgents](../DataScienceWithAgents/README.md) (Python) donnent le contrepoint agentique du même métier.
-- **Déployer des LLM/NLP** — [ML-06 ONNX](ML-06-ONNX.ipynb) ouvre la voie : servir BERT, Whisper ou d'autres modèles Hugging Face dans une appli .NET via ONNX Runtime, sans dépendance Python.
+- **Déployer des LLM/NLP** — [ML-06 ONNX](ML-06-ONNX-CSharp.ipynb) ouvre la voie : servir BERT, Whisper ou d'autres modèles Hugging Face dans une appli .NET via ONNX Runtime, sans dépendance Python.
 
 ### Le fil rouge
 
 Le fil rouge de cette série est le **paradoxe résolu** du ML en .NET : faire du machine learning sérieux **sans quitter sa stack applicative**. La où l'orthodoxie voudrait qu'on prototypé en Python puis réécrive en C# pour produire, ML.NET + ONNX court-circuite ce détour — l'entraînement, l'évaluation et le déploiement coexistent dans le même runtime, et les modèles Python viennent à .NET plutôt que l'inverse. Maitriser cette série, c'est savoir choisir le **bon niveau de la stack** (ML.NET natif pour les workflows .NET, ONNX pour l'import de modèles exotiques, Infer.NET pour l'incertitude) plutôt que de plaquer un seul outil sur tous les problèmes.
+
+### Parité ML-04b
+
+Le [jumeau C#](ML-04b-ModelComparison-Validity-CSharp.ipynb) utilise MathNet pour les moindres carrés et les statistiques, ML.NET FastForest et FastTree pour les arbres, et Python.NET pour les données diabetes et les indices scikit-learn. Les scores des arbres peuvent différer des modèles scikit-learn.
+
+
+## Parité du socle ML-05b
+
+Le [socle Python](ML-05b-Series-Temporelles-Classiques-Python.ipynb) et son [jumeau C#](ML-05b-Series-Temporelles-Classiques-CSharp.ipynb) exécutent les mêmes données, diagnostics ADF/ACF/PACF, seize configurations SARIMA, lissages et douze fenêtres expansives. Le C# orchestre les expériences et figures statiques, avec les vraies API statsmodels via Python.NET ; le SSA natif ML.NET reste un modèle différent. Non-rejet, égalité après arrondi et preuve statistique d'équivalence sont distingués ; aucun modèle en échec n'est remplacé par le naïf.
+### Parité ML-07b
+
+Les identifiants sémantiques ont leur parcours [Python](ML-07b-SemanticIDs-Recommandation-Python.ipynb) et leur [jumeau C#](ML-07b-SemanticIDs-Recommandation-CSharp.ipynb). Le C# construit le corpus et calcule profils, scores PMI, classements et bootstrap ; il appelle les vrais SVD/KMeans scikit-learn via Python.NET, et confronte McNemar MathNet à SciPy. Les paramètres et budgets sont communs ; les générateurs aléatoires diffèrent, donc les scores aussi. La SVD collaborative est calculée en float32, puis son produit est accumulé en double C#. Les bits affichés mesurent les codes idéaux, hors livres et stockage réel.
+
+Le C# requiert CPython accessible à Python.NET (`PYTHONNET_PYDLL`, et si nécessaire `PYTHONHOME`/`PYTHONPATH`) avec NumPy, SciPy et scikit-learn ; le Python utilise aussi pandas. Environnement exécuté : CPython 3.13.16, NumPy 2.4.4, SciPy 1.17.0, scikit-learn 1.9.1, pandas 3.0.2 ; packages NuGet MathNet.Numerics 5.0.0 et PythonNet 3.0.5. Les exercices restent ouverts et leurs réponses sont contrôlées ; un score froid nul n'implique pas une impossibilité générale de hit.

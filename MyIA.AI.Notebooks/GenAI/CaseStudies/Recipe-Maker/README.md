@@ -21,14 +21,14 @@ Générateur automatisé de recettes culinaires utilisant des agents IA.
 
 ## Technologies
 
-- **Python** : Traitement de données, génération de texte
+- **Python** : orchestration du notebook, génération du PDF (`reportlab`), relecture du PDF (`pypdf`)
 - **Semantic Kernel** : Orchestration d'agents
 - **OpenAI** : Modèles de langage
 
 ## Prérequis
 
 ```bash
-pip install openai pandas numpy semantic-kernel
+pip install openai semantic-kernel python-dotenv pydantic reportlab pypdf
 ```
 
 ---

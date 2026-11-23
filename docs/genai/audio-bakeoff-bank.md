@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Banc de référence TTS — schéma v1, append idempotent
 
 > Cadrage : issue [#19695](https://github.com/jsboige/CoursIA/issues/19695) — `feat(audio): banc de référence persistant des moteurs TTS : accumulate wer/RTF/VRAM par (motor, extract, seed) pour les runs à venir`. Dispatch coordinateur `ai-01` posé le 07/10/2026 09:08Z sur la lane `myia-po-2027:CoursIA-2`. Échéance interne : avant les issues soeurs `CosyVoice3 #19692` et `S2 Pro local #19694`.

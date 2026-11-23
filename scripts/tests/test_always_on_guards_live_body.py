@@ -28,12 +28,20 @@ REPO_ROOT = os.path.abspath(
 WORKFLOW = os.path.join(
     REPO_ROOT, ".github", "workflows", "always-on-guards.yml"
 )
-
-# Sites ecrivant le litteral canonique dans always-on-guards.yml (job unique
-# `always-on-guards`, 20 etapes, consommateurs aux indices 5-7 et 9-14).
-# Valeur IDENTIQUE a la base de #15697 : c'est l'invariant que le corps
-# revendique (« point unique de changement, les sites sont inchanges »).
+# #22331 -- les cinq organes de BODY ont quitte ce workflow pour le script
+# partage `always_on_body_organs.sh`, appele par `always-on-guards-body.yml`.
+# L'invariant du corps de #15697 n'est donc plus « neuf sites dans CE
+# fichier » mais « neuf sites dans l'ensemble des porteurs » : quatre restent
+# dans le workflow de contenu, cinq vivent desormais dans le script. Le pin
+# reste EXACT a neuf, et la repartition est pinnee a part pour qu'une
+# consolidation ulterieure (ou une duplication revenue) se voie.
+BODY_ORGANS_SCRIPT = os.path.join(
+    REPO_ROOT, "scripts", "ci", "always_on_body_organs.sh"
+)
 PR_BODY_WRITE_SITES = 9
+# 4 sites dans `always-on-guards.yml`, 5 dans le script partage (mesure #22331).
+PR_BODY_WRITE_SITES_WORKFLOW = 4
+PR_BODY_WRITE_SITES_SCRIPT = 5
 
 
 def _doc():
@@ -89,12 +97,27 @@ def test_consumer_sites_unchanged():
     """Les organes restent inchanges : NEUF sites ecrivent /tmp/pr_body.txt
     depuis ``${PR_BODY:-}`` -- le point unique de changement tient. Le pin
     est EXACT, pas un plancher : c'est l'invariant que le corps revendique,
-    et un ``>= N`` laisserait passer la suppression de sites consommateurs."""
+    et un ``>= N`` laisserait passer la suppression de sites consommateurs.
+
+    #22331 -- le pin porte sur les PORTEURS, plus sur le seul workflow de
+    contenu : le split a deplace cinq des neuf sites dans
+    ``scripts/ci/always_on_body_organs.sh`` (appele une fois par
+    ``always-on-guards-body.yml``). Compter le seul workflow de contenu
+    ferait passer une LIVRAISON pour une perte (4 constate contre 9 pinne) ;
+    compter l'ensemble garde le sens de l'invariant et voit, lui, une vraie
+    suppression. La repartition est pinnee separement : une consolidation
+    (5 -> 1 site mutualise) est un changement d'architecture qui doit se
+    discuter, pas passer en silence.
+    """
     run_all = "\n".join(
         str(s.get("run", "")) for s in _steps(_doc())
     )
     literal = 'printf \'%s\' "${PR_BODY:-}" > /tmp/pr_body.txt'
-    assert run_all.count(literal) == PR_BODY_WRITE_SITES
+    with open(BODY_ORGANS_SCRIPT, encoding="utf-8") as f:
+        script = f.read()
+    assert run_all.count(literal) == PR_BODY_WRITE_SITES_WORKFLOW
+    assert script.count(literal) == PR_BODY_WRITE_SITES_SCRIPT
+    assert run_all.count(literal) + script.count(literal) == PR_BODY_WRITE_SITES
 
 
 FAKE_GH = textwrap.dedent(
@@ -143,6 +166,24 @@ def _bash_exe():
     pytest.skip("Git Bash introuvable -- le bash System32 (WSL) ne lit pas les chemins Windows")
 
 
+def _posix_path(*leading):
+    """PATH en entrees POSIX ':'-separees, pour un enfant bash.
+
+    bash (Git Bash / runner Linux) n'accepte ni les separateurs Windows ni
+    un PATH mixte : un PATH ':'-separe d'entrees ';'-separees est re-parse
+    par MSYS et le repertoire du gh factice se perd -- le gh REEL repond
+    alors (mesure : le test a lu le vrai corps de #15587 au lieu du
+    fixture). On convertit donc TOUT le PATH en entrees POSIX
+    ':'-separees, les repertoires du fake gh en tete.
+    """
+    entries = [
+        p.replace("\\", "/")
+        for p in os.environ.get("PATH", "").split(os.pathsep)
+        if p
+    ]
+    return ":".join([str(p).replace("\\", "/") for p in leading] + entries)
+
+
 def _run_bootstrap(tmp_path, fake_body, fail=False):
     """Extrait le bloc `run:` du bootstrap et l'execute avec le gh factice."""
     boot = _bootstrap(_steps(_doc()))
@@ -164,19 +205,7 @@ def _run_bootstrap(tmp_path, fake_body, fail=False):
     )
     if fail:
         env["GH_FAKE_FAIL"] = "1"
-    # bash (Git Bash / runner Linux) n'accepte ni les separateurs Windows ni
-    # un PATH mixte : un PATH ':'-sepague d'entrees ';'-separees est
-    # re-parse par MSYS et le bin/ du gh factice se perd -- le gh REEL
-    # repond alors (mesure : le test a lu le vrai corps de #15587 au lieu
-    # du fixture). On convertit TOUT le PATH en entrees POSIX ':'-separees.
-    path_entries = [
-        p.replace("\\", "/")
-        for p in os.environ.get("PATH", "").split(os.pathsep)
-        if p
-    ]
-    env["PATH"] = ":".join(
-        [str(bindir).replace("\\", "/")] + path_entries
-    )
+    env["PATH"] = _posix_path(bindir)
     out = subprocess.run(
         [_bash_exe(), str(script).replace("\\", "/")],
         capture_output=True, text=True, encoding="utf-8", env=env,
@@ -200,7 +229,7 @@ def test_bootstrap_decides_on_exit_code_not_output_emptiness():
     assert "|| true)" not in run, (
         "le rc de `gh api` est avale : le document d'erreur restera dans $LIVE"
     )
-    assert '|| LIVE=""' in run, "le repli doit vider $LIVE sur rc non nul"
+    assert '&& LIVE=$(gh api' in run, "le repli doit suivre le code de sortie"
 
 
 def test_bootstrap_writes_live_body(tmp_path):
@@ -232,3 +261,43 @@ def test_bootstrap_multiline_body_survives_heredoc(tmp_path):
     _, genv = _run_bootstrap(tmp_path, live)
     m = re.search(r"PR_BODY<<(\S+)\n(.*?)\n\1\n", genv, re.S)
     assert m and m.group(2) == live
+
+
+@pytest.mark.parametrize("workflow,output_key,output_file", [
+    ("always-on-guards.yml", "PR_BODY", "GITHUB_ENV"),
+    ("always-on-guards-body.yml", "PR_BODY", "GITHUB_ENV"),
+    ("always-on-commenters.yml", "pr_body", "GITHUB_OUTPUT"),
+])
+@pytest.mark.parametrize("live,fail,expected", [
+    ("", False, ""),
+    ("Grain: LIVE/courant", False, "Grain: LIVE/courant"),
+    ("", True, "Grain: PAYLOAD/photographie"),
+])
+def test_bootstraps_use_successful_empty_body(
+    tmp_path, workflow, output_key, output_file, live, fail, expected
+):
+    """Les trois blocs traitent une réponse vide comme un succès API."""
+    path = os.path.join(REPO_ROOT, ".github", "workflows", workflow)
+    with open(path, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    boot = next(
+        step for job in doc["jobs"].values() for step in job["steps"]
+        if "#15697" in step.get("name", "")
+    )
+    gh = tmp_path / "gh"
+    gh.write_text(FAKE_GH, encoding="utf-8")
+    gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
+    output = tmp_path / "output"
+    env = dict(os.environ, PATH=_posix_path(tmp_path),
+               GH_REPO="jsboige/CoursIA", PR_NUMBER="1",
+               PAYLOAD_BODY="Grain: PAYLOAD/photographie", GH_FAKE_BODY=live,
+               GH_FAKE_FAIL="1" if fail else "0")
+    env[output_file] = str(output)
+    result = subprocess.run([_bash_exe(), "-c", boot["run"]], env=env,
+                            capture_output=True, text=True, encoding="utf-8")
+    assert result.returncode == 0, result.stderr
+    contents = output.read_text(encoding="utf-8")
+    match = re.fullmatch(rf"{output_key}<<(\S+)\n(.*?)\n\1\n", contents, re.S)
+    assert match, contents
+    assert match.group(2) == expected
+    assert ("::warning::" in result.stdout) == fail

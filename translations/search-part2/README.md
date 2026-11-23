@@ -1,12 +1,12 @@
 # CSV de synchro traduction — série Search/Part2-CSP
 
-**Statut** : Phase 2 rollout (Epic #4957 / #1650). 8ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/Argument_Analysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808), `Sudoku/` (PR #5809) et `Search/Part1-Foundations/` (PR #5810).
+**Statut** : Phase 2 rollout (Epic #4957 / #1650). 8ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/ArgumentAnalysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808), `Sudoku/` (PR #5809) et `Search/Part1-Foundations/` (PR #5810).
 
 ## Couvert
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-part2.csv`](search-part2.csv) | `Search/Part2-CSP/` | 18 (CSP-1-Fundamentals → CSP-9-Distributed, jumeaux C# co-localisés, MRV/AC-3/FC/MAC/Allens/STP/TCSP/CP-SAT/Hybridation/DisCSP ABT/AWC/Privacy) | 784 (header + 18 709 lignes CSV-escaped, 20 colonnes) |
+| [`search-part2.csv`](search-part2.csv) | `Search/Part2-CSP/` | 18 au seed 2026-07-09 (CSP-1-Fundamentals → CSP-9-Distributed, jumeaux C# co-localisés, MRV/AC-3/FC/MAC/Allens/STP/TCSP/CP-SAT/Hybridation/DisCSP ABT/AWC/Privacy — le compte courant vit dans le CSV) | 784 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 18 709 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Search/Part2-CSP = **owner po-2025 strict** (PRs récentes = `Jean-Sylvain Boige` per git log récent #5700 #5460 #5384 #5371 #5277 #5276 #5275 #5274 #5270). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
@@ -35,7 +35,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 784 cellules / 18 notebooks Search/Part2-CSP (MRV/AC-3/FC/MAC + Allen + STP + TCSP + OR-Tools CP-SAT + Hybridation + DisCSP ABT/AWC/Privacy + jumeaux C#)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 784, notebooks couverts 18 Search/Part2-CSP (MRV/AC-3/FC/MAC + Allen + STP + TCSP + OR-Tools CP-SAT + Hybridation + DisCSP ABT/AWC/Privacy + jumeaux C# — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché
@@ -45,7 +45,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 - Issue #4957 — design infrastructure synchronisation traduction
 - Epic #1650 — traduction multilingue du dépôt
-- `translations/symbolicai/README.md` — 1ère série (Argument_Analysis)
+- `translations/symbolicai/README.md` — 1ère série (ArgumentAnalysis)
 - `translations/probas-infer/README.md` — 2ᵉ série (Probas/Infer)
 - `translations/mlnet/README.md` — 3ᵉ série (ML/ML.Net)
 - `translations/planners/README.md` — 4ᵉ série (Planners)

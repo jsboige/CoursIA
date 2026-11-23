@@ -1,17 +1,21 @@
 # Curriculum V2 Meta-Analysis — Final Summary
 
+> **Etat mesure au 2026-10-20** (issue #21633, re-measure causale pre-enregistree, verifiee firsthand sur les scripts et les resultats re-executees). Le bloc du 2026-10-17 ci-dessous re-qualifiait les chiffres S3/S4 comme « walk-forward intra-IS ». La cause profonde est maintenant identifiee et mesuree : dans `s3_hmm_regime.py` et `s4_inverse_vol_ridge_v2.py`, le regime qui pilote l'allocation d'un jour etait estime par un HMM **ajuste sur le meme bloc qu'il etiquette**, lu en **probabilites lissees** (conditionnees a l'ensemble du bloc, donc au futur), **nomme par la moyenne du bloc** (second relire du futur), **sans decalage de decision** — les +0.669 (S3) et +0.325 (S4) etaient en grande partie portees par cette lecture du futur, pas par un signal previsible. Re-measure pre-enregistree (8 points, issue #21633) : fit causal sur la fenetre strictement anterieure (refit 22 j / tenu par pli), nommage sur l'entrainement, decalage 1 jour, cotes 10bp/5bp, references 50/50 SPY-TLT + SPY detenu (S3) / equal-weight + SPY detenu (S4), delta-Sharpe par Ledoit-Wolf (HAC) + Holm, multi-seed par bootstrap de blocs de la tranche d'entrainement, et **temoin de fuite** = rejeu de la version in-sample dans le meme harnais. Resultats (donnees 2017-01-04 → 2026-10-20) : **S3 = NO BEATS** (daily : delta -0.49 vs 50/50, -0.65 vs SPY detenu, Holm p=0.032, 0/4 seeds positifs ; long-horizon : delta -0.94 / -1.39) ; **S4 = INCONCLUSIVE** (delta +0.24 vs equal-weight et +0.20 vs SPY detenu, Holm p=0.38, CI95 bootstrap couvrant 0). Temoins de fuite : S3 daily **+1.13** de Sharpe porte par la lecture du futur (in-sample 1.360 vs causal 0.226), S3 weekly +0.70, S4 **-1.05** (le re-ajustement in-sample y nuisait). Le status KEEPER de S3 et S4 est **retire** ; la construction de portefeuille « S3 + S4 v2 mensuel, Sharpe ~1.12 » (section 4) est **retiree** avec eux. Portee du bloc : les verdicts/deltas S3/S4 de tout le document (Executive Summary, sections S3/S4, lecons, section 4, tableau de status) sont surclasses par ce bloc ; l'historique est conserve tel quel ci-dessous. Preuves : `scripts/results/s3_hmm_regime/verdict.md` et `scripts/results/s4_inverse_vol_ridge_v2/verdict.md`.
+
+> **Etat mesure au 2026-10-17** (issue #21055, retour lecteur externe re-verifie firsthand). Ce que le document ci-dessous dit : strategies S3/S4 « validees sur strict OOS 2027 ». Ce qui est mesure au source : a la date de redaction (2026-05-16), le dataset s'arrete au 2026-05-01 (`build_dataset_v2.py`, `end = 2026-05-01`) et le script `s3_hmm_regime.py` ne calcule **aucune metrique sur le holdout 2027** — `oos_mask = df.index >= "2027-01-01"` sert uniquement a retirer ces lignes (`is_data = df[~oos_mask]`), puis le backtest KEEPER tourne sur la periode IS complete avec des labels predits en walk-forward (expanding 5-fold). Les delta Sharpe +0.669 / MaxDD -39.1% (S3) et +0.325 / -17.7% (S4) sont donc des resultats **walk-forward intra-IS**, pas des resultats OOS 2027 : l'etiquette « strict OOS 2027 » decrit un engagement prospectif jamais execute a la date de redaction. Les conclusions relatives (S3 > S4 > composites S2/S5/S7/S8) restent valables en intra-IS walk-forward ; toute lecture « validee sur donnees 2027 » du tableau ci-dessous est retiree. Portee du bloc : ligne 5 (Methodology), lignes 16-17 et tableau Executive Summary ; le reste du document (methodologie detaillee, stages, retraction M15 #11395) est inchange. Historique conserve tel quel ci-dessous.
+
 Date: 2026-05-16
 Author: po-2025 (CPU-only, coursia-ml-training env)
 Methodology: Walk-forward 5-fold expanding, OOS 2027 strict, multi-seed block bootstrap (22-day blocks), seeds [0, 1, 7, 42], tx costs 10bps rebalance + 50bps stress.
 
 ## 1. Executive Summary
 
-**4 KEEPERS confirmed** across 8 stages tested (S1–S8). The Curriculum V2 pipeline identifies two actionable strategies for portfolio construction:
+**4 KEEPERS confirmed** across 8 stages tested (S1–S8). The Curriculum V2 pipeline identifies two actionable strategies for portfolio construction — **superseded 2026-10-20** (#21633, bloc en tête : S3 NO BEATS / S4 INCONCLUSIVE en causal, keepers retirés) :
 
 | Strategy | Delta Sharpe | Seeds Positive | MaxDD | Universe |
 |----------|-------------|---------------|-------|----------|
-| S3 HMM Regime | +0.669 | 4/4 (p=0.0625) | -39.1% | SPY/TLT/sectors |
-| S4 v2 Regime+Ridge | +0.325 | 4/4 (p=0.0625) | -17.7% | SPY/TLT/sectors |
+| S3 HMM Regime — **retiré 2026-10-20** | +0.669 (in-sample, surclassé) | 4/4 (p=0.0625) | -39.1% | SPY/TLT/sectors |
+| S4 v2 Regime+Ridge — **retiré 2026-10-20** | +0.325 (in-sample, surclassé) | 4/4 (p=0.0625) | -17.7% | SPY/TLT/sectors |
 
 Both KEEPERS use the **anti-FAANG/Mag7 universe** (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP) and are validated with walk-forward 5-fold expanding windows, strict OOS 2027 holdout, and 4-seed block bootstrap.
 
@@ -42,9 +46,11 @@ Both KEEPERS use the **anti-FAANG/Mag7 universe** (SPY, TLT, XLF, XLK, XLE, XLV,
 
 ### S3: HMM Regime Detection
 
+**Surclassé le 2026-10-20** (#21633) : re-measure causale pré-enregistrée = **NO BEATS** (daily delta -0.49 vs 50/50, -0.65 vs SPY detenu, Holm p=0.032 ; long-horizon -0.94 / -1.39). Le +0.669 ci-dessous était porté par la lecture du futur (témoin : +1.13 de Sharpe in-sample lissé). Tableau historique conservé :
+
 | Variant | Verdict | Delta | Seeds | Switches/yr |
 |---------|---------|-------|-------|-------------|
-| S3 Daily | **BEATS** | +0.669 | 4/4 | ~5.0 |
+| S3 Daily | **BEATS** (in-sample, surclassé) | +0.669 | 4/4 | ~5.0 |
 | S3 Long-Horizon | (included in S3 Daily) | +0.669 | 4/4 | — |
 
 **Architecture**: 2-state MarkovRegression (bull/bear) → regime-conditional allocation (risk-on/risk-off).
@@ -55,10 +61,12 @@ Both KEEPERS use the **anti-FAANG/Mag7 universe** (SPY, TLT, XLF, XLK, XLE, XLV,
 
 ### S4: Inverse-Volatility Weighting with Ridge
 
+**Surclassé le 2026-10-20** (#21633) : re-measure causale pré-enregistrée = **INCONCLUSIVE** (delta +0.24 vs equal-weight, +0.20 vs SPY detenu, Holm p=0.38, CI95 bootstrap couvrant 0). Témoin de fuite négatif : **-1.05** de Sharpe (le ré-ajustement in-sample sur les blocs de test *nuisait*). Tableau historique conservé :
+
 | Variant | Verdict | Delta | Seeds | MaxDD |
 |---------|---------|-------|-------|-------|
 | S4 v1 Ridge | NO BEATS | +0.022 | 4/4 | -82.4% |
-| S4 v2 Regime+Ridge | **BEATS** | +0.325 | 4/4 | -17.7% |
+| S4 v2 Regime+Ridge | **BEATS** (in-sample, surclassé) | +0.325 | 4/4 | -17.7% |
 
 **Architecture**: HMM regime detection → regime-conditional inverse-vol Ridge → monthly rebalance.
 
@@ -139,6 +147,8 @@ Both KEEPERS use the **anti-FAANG/Mag7 universe** (SPY, TLT, XLF, XLK, XLE, XLV,
 
 ## 4. Recommended Portfolio Construction
 
+**Retirée le 2026-10-20** (#21633) : elle reposait sur les keepers S3/S4, retirés par la re-measure causale (bloc en tête du document). Bloc historique conservé :
+
 Based on KEEPERS only:
 
 ```
@@ -166,9 +176,9 @@ Regime switches: ~5/year
 | S1 M15 LSTM h=32 | NO BEATS | — | 84 | RETIRED (#11395) |
 | S2 DM Ensemble | NO BEATS | -0.068 | 0/4 | CLOSED |
 | S2 GSP Cross-Asset | NO BEATS | — | — | CLOSED |
-| S3 HMM Regime | **BEATS** | +0.669 | 4/4 | **KEEPER** |
+| S3 HMM Regime | **BEATS** (in-sample, surclassé) | +0.669 | 4/4 | ~~KEEPER~~ **retiré 2026-10-20** (causal NO BEATS) |
 | S4 v1 Ridge | NO BEATS | +0.022 | 4/4 | CLOSED |
-| S4 v2 Regime+Ridge | **BEATS** | +0.325 | 4/4 | **KEEPER** |
+| S4 v2 Regime+Ridge | **BEATS** (in-sample, surclassé) | +0.325 | 4/4 | ~~KEEPER~~ **retiré 2026-10-20** (causal INCONCLUSIVE) |
 | S5 LASSO Stop-Loss | NO BEATS | -0.311 | 0/4 | CLOSED |
 | S6 Cost Forecasting | GO (POC) | — | — | CALIBRATION NEEDED |
 | S7 Composite | NO BEATS | -0.006 | 1/4 | CLOSED |

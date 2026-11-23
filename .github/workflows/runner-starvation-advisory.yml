@@ -1,66 +1,148 @@
-name: Runner starvation advisory (waiter+lean)
+name: Runner starvation advisory (ephemeral)
 
-# Sonde d'extinction multi-labels (issue #14846, grain c.1063 myia-po-2027).
-# Le 2026-09-05 entre 20:26Z et 00:52Z, le pool `coursia-waiter` est tombe
-# sans rougir nulle part : 28 runners enregistres, 0 en ligne, 4h20 de gel
-# de tous les merges (le `PR gate` est le seul check requis par la protection
-# de `main`, sa jambe same-repo tourne sur ce label -- `pr-gate.yml:107`).
-# L'organe `scripts/ci/check_runner_starvation.py` mesurait deja le predicat
-# EXTINCTION (zero runner online sur le label), mais le seul workflow qui
-# l'appelait (`linux-runner-starvation-advisory.yml`) ne couvrait que
-# `coursia-linux`. Cette sonde etend la couverture a deux des trois labels
-# requis par `pr-gate.yml` (waiter) + workflows bloquants (lean) ;
-# `coursia-linux` reste couvert par son workflow dedie
-# (`linux-runner-starvation-advisory.yml`, cron 19,49).
+# Sonde d'extinction d'un pool de runners self-hosted (issue #14846, grain c.1063
+# myia-po-2027) -- vise `coursia-ephemeral` depuis le 2026-10-23 (le label
+# `coursia-lean` qu'elle mesurait n'existe plus, cf plus bas).
 #
-# Pourquoi une matrice et pas 2 workflows dedies : un seul cron centralise
-# l'observabilite, les 2 sondes partagent la fenetre STARVATION et le secret
-# RUNNERS_READ_PAT, et la matrice GitHub Actions parallellise les 2 mesures
-# sans collision de rate-limit. Schedule dediee (cron offset 19,49 pour
-# coursia-linux + 23,53 pour les 2 autres -- l'offset disjoint evite de
-# charger le meme runner sur 2 vagues consecutives).
+# Correction #22183 (2026-10-23) : le paragraphe qui etait ici affirmait que
+# le label `coursia-waiter` n'etait « plus couvert depuis #20835 / #17436,
+# le pool etant vide par construction ». Cette premisse etait vraie jusqu'a
+# #21063 et FAUSSE depuis : la jambe `pull_request` du `pr-gate.yml` est
+# re-routee sur `coursia-waiter` (pr-gate.yml ligne 172) et le pool de
+# 16 slots est consomme a pleine charge. L'extinction du 2026-10-23
+# (0 runner online au label, 126 runs `PR gate` en file, ~10 h sans signal)
+# n'a ete mesuree par aucun organe, justement parce que ce header le
+# declarait sans consommateur. Le label est a nouveau couvert par son
+# workflow dedie `coursia-waiter-starvation-advisory.yml` (livre par la
+# meme PR).
+#
+# L'organe `scripts/ci/check_runner_starvation.py` mesure le predicat
+# EXTINCTION (zero runner online sur le label) et la STARVATION (file qui ne
+# draine pas), parametre par `--label`. `coursia-linux` est couvert par son
+# workflow dedie (`linux-runner-starvation-advisory.yml`, cron 19,49) et
+# `coursia-waiter` par le sien (`coursia-waiter-starvation-advisory.yml`,
+# cron 11,41, livre par #22183).
+#
+# LE LABEL `coursia-lean` N'EXISTE PLUS (mesure 2026-10-23T18:45Z) :
+# `gh api .../actions/runners` rend 40 runners tous online, repartis en
+# `coursia-ephemeral` (24), `coursia-linux` (23), `coursia-waiter` (16),
+# `coursia-persistent` (7), `coursia-fast-guards` (1) -- et ZERO porteur de
+# `coursia-lean`. Aucun `runs-on` de main ne route plus vers lui : les jambes
+# Lean sont passees a `[self-hosted, coursia-ephemeral, coursia-linux]`.
+# Cette sonde le mesurait encore et rougissait donc a chaque passage depuis
+# le 2026-10-22 (succes 17:20Z, echec 20:37Z) avec
+# `EXTINCTION ... (offline: aucun)` -- le rouge permanent que la garde anti-FP
+# du predicat STARVATION interdit ailleurs. Elle vise desormais
+# `coursia-ephemeral`, le pool qui sert effectivement les jobs Lean ; son
+# seul membre hors `coursia-linux` est `myia-po-2024-fast-guards`, qu'aucune
+# autre sonde ne surveille.
+#
+# Pourquoi une sonde et pas un check bloquant : un seul cron centralise
+# l'observabilite, la sonde partage la fenetre STARVATION et le secret
+# RUNNERS_READ_PAT, et la matrice GitHub Actions parallellise les mesures
+# sans collision de rate-limit. Schedule dediee (cron offset 11,41 pour
+# coursia-waiter, 19,49 pour coursia-linux + 23,53 pour lean -- l'offset
+# disjoint evite de charger le meme runner sur 2 vagues consecutives).
 #
 # Acceptance #14846 A1 verifiee par construction :
 #   - predicat EXTINCTION : si 0 runner online sur un label -> ::error::
 #   - predicat STARVATION : si jobs queued > seuil SANS aucun in_progress ->
 #     ::error:: (symptome distinct de l'extinction -- file profonde qui ne
 #     draine pas)
-#   - WARN floor configurable par label (waiter = 1, lean = 1)
+#   - WARN floor configurable par label (ephemeral = 2)
 #
-# Acceptance A2 (persistance systemd) deja livree par PR #14981 (waiter) +
-# PR #15401 (lean). Acceptance A3 (verification systemctl is-enabled po-2024)
-# -> DM coord, hors scope worker.
+# Acceptance A2 (persistance systemd) deja livree par PR #15401 (lean).
+# Acceptance A3 (verification systemctl is-enabled po-2024) -> DM coord,
+# hors scope worker.
 #
-# ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
-# pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
+# ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch + un heartbeat
+# workflow_run, jamais pull_request/push -- un run rouge ne peut jamais
+# bloquer une PR (workflow_run ne cree pas de check-run sur une PR). Le nom
 # porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
+#
+# #15332 : le scheduler GitHub a cesse de livrer l'evenement schedule le
+# 2026-09-09 (4 h sans AUCUN declenchement planifie, depot entier, 159
+# workflows) -- un organe porte par schedule seul meurt de la panne qu'il
+# observe. Cette sonde etait le seul des trois advisories de starvation
+# sans jambe `workflow_run` : mesure du 2026-11-12 sur son propre historique
+# (API `runs?event=schedule`), la jambe `schedule` n'est livree que toutes
+# les ~8 h -- 18:28Z, 10:22Z, 02:33Z, 21:36Z, 14:44Z, 06:47Z -- alors que le
+# cron declare `23,53 * * * *` (30 min). C'est le meme phenomene que chez
+# ses deux freres (linux : 13:19Z, 04:23Z, 23:43Z ; waiter : 16:13Z,
+# 07:39Z, 00:33Z) -- EUX survivent parce que leur heartbeat workflow_run les
+# relance ; elle, non. Le pool `coursia-ephemeral` sert les jobs Lean : une
+# observation arrive avec 8 h de retard quand le scheduler se tait.
+#
+# Le heartbeat s'ancre sur « Secret Scan » et « Enrich-quality gate », qui se
+# declenchent sur CHAQUE push et CHAQUE pull_request du depot :
+#   - jambe « pull_request » : elle se declenche sur l'activite PR, qui
+#     continue quand le scheduler se tait -- c'est cette jambe qui compte le
+#     plus : un pool eteint bloque les jobs de PR, donc les merges s'arretent ;
+#   - jambe « Enrich-quality gate » : job unique ubuntu-latest, declenche par
+#     pull_request sur MyIA.AI.Notebooks/**/*.ipynb -- evenement que GitHub
+#     delivre sans le parc (#23195). C'est la SEULE jambe hebergee des deux
+#     ancres (mesure du 2026-10-29 : Secret Scan a 25 % en pull_request et
+#     100 % en push ; Enrich-quality gate a 100 % en pull_request).
+# L'organe scripts/ci/check_heartbeat_anchor_independence.py re-mesure ce
+# fait a chaque passage et rougit si l'ancre cesse de l'etre -- une jambe
+# declaree redevient ainsi une jambe prouvee.
+# La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
+# uniquement -- les runs workflow_run ne faussent pas la mesure).
+#
+# PORTE DE MESURE (#22937) : le heartbeat se declenche sur chaque fin
+# d'ancre. Chaque passage complet paie ~9 appels API (compteur `gh_calls` du
+# script ; l'inventaire des runners en ajoute 1, volontairement non compte)
+# sur le jeton de depot (budget 1000 req/h) : la paire de sondes a sature le
+# jeton le 2026-10-28 22:04Z (« API rate limit exceeded for installation ») ->
+# 18 rouges sur main en 10 min. La porte (MEASURE_EVERY_N_RUNS) borne la
+# MESURE : un passage complet sur 4, les autres ne paient que la lecture de
+# la cadence servie (1 appel). Le RUN existe toujours et son rapport de
+# cadence servie (#15332) est emis a chaque passage -- c'est la SURVIVANCE de
+# l'observateur qui est la garantie, pas la frequence de la lecture
+# complete. La jambe `schedule` n'est jamais gatee : elle est la cadence de
+# reference de l'advisory.
 
 on:
   schedule:
-    - cron: '23,53 * * * *'  # waiter + lean (offset distinct du cron linux 19,49)
+    - cron: '23,53 * * * *'  # lean (offset distinct du cron linux 19,49)
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Secret Scan", "Enrich-quality gate"]
+    types: [completed]
 
 permissions:
   contents: read   # checkout du script
   actions: read    # lecture des runs/jobs (predicat STARVATION)
 
-concurrency:
-  group: runner-starvation-advisory
-  cancel-in-progress: false
-
 jobs:
   starve:
     name: Runner starvation advisory (${{ matrix.label }})
+    # Heartbeat workflow_run declenche par une PR de fork : job saute (mesure
+    # du 2026-10-16, cf linux-runner-starvation-advisory.yml) -- GitHub
+    # attribue ce run a l'auteur de la PR de fork (triggering_actor) ; quand
+    # un run plus recent le remplace dans le groupe de concurrence, il passe
+    # « cancelled » et GitHub envoie a cette personne un email « Run
+    # cancelled » (des eleves de l'APP3 en ont recu plusieurs dans la nuit
+    # du 15 au 16/10 pour leurs PRs de TP). Les runs internes, le schedule et
+    # le dispatch continuent d'alimenter l'observateur.
+    #
+    # La concurrence vit au niveau du JOB, plus du workflow : au niveau
+    # workflow, un run en attente est annule AVANT l'evaluation de ce `if`,
+    # et l'email part quand meme. Un job saute n'entre pas dans le groupe.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    concurrency:
+      group: runner-starvation-advisory
+      cancel-in-progress: false
     # ubuntu-latest (#16134, 2026-09-14).
     #
     # Ce job portait ce commentaire : « un observateur qui tourne sur le label
     # qu'il observe mourrait avec lui ». Le raisonnement est juste, la
     # conclusion ne l'etait pas -- `coursia-linux` n'est pas un abri, c'est une
-    # troisieme jambe du MEME parc que `coursia-waiter` et `coursia-lean`.
+    # deuxieme jambe du MEME parc que l'ancien `coursia-lean`.
     # Changer de label ne change pas de risque : une reconstruction d'image
-    # invalide les trois ensembles (le garde de fraicheur de #14801 est
+    # invalide les deux ensembles (le garde de fraicheur de #14801 est
     # fail-closed et compare le checkout vivant a l'image), et plus aucune des
-    # trois ne peut alors heberger l'observateur.
+    # deux ne peut alors heberger l'observateur.
     #
     # Mesure du 2026-09-14 : 01:44Z -> 07:11Z sans un seul run pour un cron
     # declare `23,53 * * * *`. Le run de 07:12Z n'a tourne que parce qu'une
@@ -76,19 +158,41 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: coursia-waiter
-            warn_floor: 1
-            starve_minutes: "15"
-          - label: coursia-lean
-            warn_floor: 1
+          - label: coursia-ephemeral
+            warn_floor: 2
             starve_minutes: "15"
     steps:
+      # PORTE DE MESURE (#22937), borne corrigee : le calcul se fait dans le
+      # SHELL. L'operateur `%` n'existe pas dans les expressions GitHub --
+      # une porte ecrit `github.run_number % 12 == 0` ne s'evalue pas, et le
+      # job ne part jamais (ou part toujours) : la porte serait un decor.
+      # Ici le reste se fait en arithmetique bash, et les etapes qui paient
+      # (checkout + mesure complete) ne s'executent que sur les runs
+      # mesurants : les autres ne font aucun checkout et aucun appel.
+      #
+      # La jambe `schedule` n'est JAMAIS gatee : elle est la cadence de
+      # reference de l'advisory, et elle porte le rapport de cadence servie
+      # (#15332) qui prouve la survie de l'observateur.
+      - name: Porte de mesure
+        id: gate
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          MEASURE_EVERY_N: "12"
+        run: |
+          if [ "$EVENT_NAME" != "workflow_run" ] || [ $((RUN_NUMBER % MEASURE_EVERY_N)) -eq 0 ]; then
+            echo "measure=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "measure=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.measure == 'true'
         with:
           sparse-checkout: |
             .github/workflows/runner-starvation-advisory.yml
             scripts/ci/check_runner_starvation.py
       - name: Measure starvation on ${{ matrix.label }}
+        if: steps.gate.outputs.measure == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
@@ -96,4 +200,19 @@ jobs:
           STARVE_MINUTES: ${{ matrix.starve_minutes }}
           WARN_FLOOR: ${{ matrix.warn_floor }}
           WINDOW_MAX_MINUTES: "360"
-        run: python scripts/ci/check_runner_starvation.py --label "$LABEL" --warn-floor "$WARN_FLOOR" --starve-minutes "$STARVE_MINUTES" --window-max-minutes "$WINDOW_MAX_MINUTES"
+          # #15332 : mesurer la cadence SERVIE (runs event=schedule de CE
+          # workflow uniquement) contre la cadence declaree du cron.
+          SELF_WORKFLOW: runner-starvation-advisory.yml
+          DECLARED_CADENCE_MINUTES: "30"
+          CADENCE_WARN_MINUTES: "360"
+          # #22937 : borne la MESURE complete. La porte vit au niveau du JOB
+          # (etape « Porte de mesure », calcul en shell) : les runs non
+          # mesurants ne checkoutent pas et n'appellent pas l'API. Le
+          # compteur reste aligne sur la porte du shell (12).
+          MEASURE_EVERY_N_RUNS: "12"
+        # `python3`, pas `python` : le job est declare `ubuntu-latest`, mais le
+        # detecteur de #17444 classe TOUT job a `python` nu sans
+        # `actions/setup-python` comme vulnerable a un routage self-hosted (les
+        # runners `coursia-linux` portent `python3`, pas `python`). C'etait le
+        # dernier membre de la classe sur `main`.
+        run: python3 scripts/ci/check_runner_starvation.py --label "$LABEL" --warn-floor "$WARN_FLOOR" --starve-minutes "$STARVE_MINUTES" --window-max-minutes "$WINDOW_MAX_MINUTES"

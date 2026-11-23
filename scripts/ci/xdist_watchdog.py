@@ -90,6 +90,31 @@ tel, pas laisse finir pour avoir un ``exit 1`` sans diagnostic. Verdict
 distinct (``COLLECT_CRASH_EXIT = 4``) pour que le triage post-mortem
 puisse separer cette signature du silence mode 1.
 
+Ce que le verdict PRESCRIT a ete mesure, puis repris (#19915, census du
+2026-10-19, 7 jours 2026-10-12..19, 113 jobs collect-crash sur 394 jobs
+``Scripts Tests (CPU)`` rouges) :
+
+  * la mort qui precede la collision est toujours de MASSE -- 7 a 12
+    workers morts, tous au meme horodatage, jamais un seul worker. Le
+    seuil ``SYSTEMATIC_DEATH_MIN_WORKERS = 2`` separe donc la mort
+    isolee (seule classe ou un rejeu garde un sens) de la mort
+    systematique ;
+  * l'id ``gwN`` est un COMPTEUR DE VIE, pas un rang de worker : il est
+    alloue par execnet et incremente a chaque remplacement de worker
+    (``xdist/multi.py:189``). ``gw11`` n'implique donc pas 12 workers
+    concurrentS, et le budget de relance par defaut de xdist
+    (``numprocesses * 4`` = 16 pour ``-n 4``) explique la montee ;
+  * les 113 cas sont sur les 4 runners ``myia-po-2024-linux-docker-*`` et
+    ZERO sur les 14 ``myia-ai-01-wsl-*`` : la cause est cote runner
+    (caps memoire/pids de l'ephemere), pas dans le contenu de la PR.
+
+Consequence sur le verdict : prescrire « le CI doit rejouer le job » n'a
+plus de fondement dans la classe systematique -- les reproductions
+consecutives du 2026-10-18 (4/4 sur le pool docker) et du 2026-10-19 (2/2
+sur la meme PR) mesurent un rejeu qui REPRODUIT. Le verdict nomme desormais
+le runner et distingue les deux classes au lieu de prescrire un rejeu
+mesure comme nul.
+
 Usage :
 
   python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest <paths> \\
@@ -102,9 +127,13 @@ import argparse
 import os
 import re
 import signal
+import shutil
+import uuid
 import subprocess
 import sys
 import threading
+import tempfile
+from pathlib import Path
 import time
 
 # Marqueurs de mort xdist, tels qu'ils apparaissent dans le log du job
@@ -136,6 +165,43 @@ VERDICT_PREFIX = "XDIST-WATCHDOG"
 # sur exit 1 sans plus jamais rien emettre. Attendre un second marqueur
 # manquerait les cas ou la premiere collision est LA collision.
 COLLECT_CRASH_MIN = 1
+
+# Mode 3 : seuil de mort MASSIVE (#19915, census du 2026-10-19, lane
+# myia-ai-01:CoursIA-2, 7 jours 2026-10-12..19, 113 jobs collect-crash
+# sur 394 jobs CPU rouges).
+#
+# CE QUE LE CENSUS A MESURE, ET QUI CHANGE LA PRESCRIPTION DU VERDICT :
+#
+#   * le nombre de workers morts avant la collision est TOUJOURS compris
+#     entre 7 et 12 (46 jobs a 7, 50 a 8, 7 a 9, 4 a 10, 1 a 11, 5 a 12) ;
+#     il n'y a AUCUN cas a 1 worker mort ;
+#   * les horodatages de mort sont tous IDENTIQUES (premier = dernier
+#     "node down") : la mort est un KILL DE MASSE, pas des crashes
+#     individuels ;
+#   * le nombre de "replacing crashed worker" egale exactement le nombre
+#     de "node down" : chaque worker mort a ete remplace ;
+#   * l'id gw maximal observe est gw8 (46 jobs), gw9 (49), gw10 (8),
+#     gw11 (4), gw12 (1), gw13 (5) -- ce sont des COMPTEURS DE VIE, pas
+#     des rangs de worker : l'id est alloue par execnet (`_autoidcounter`,
+#     xdist/multi.py:189) et incremente a chaque remplacement, donc gw11
+#     n'implique pas 12 workers ;
+#   * les 113 cas sont sur les 4 runners `myia-po-2024-linux-docker-*`,
+#     ZERO sur les 14 `myia-ai-01-wsl-*` ; la cause est cote runner (caps
+#     memoire/pids de l'ephemere), pas dans le contenu de la PR.
+#
+# CONTRADICTION EXPLICITE de la prescription historique. Le verdict
+# prescrivait "le CI doit rejouer le job (defaut transient : aucun des 7
+# cas signes sur 10 rouges echantillonnes ne s'est reproduit a la 2e
+# tentative, mesure du 2026-10-08)". La mesure du 2026-10-08 est
+# DEPASSEE par les reproductions consecutives du 2026-10-18 (4/4 sur le
+# pool docker) et du 2026-10-19 (2/2 sur la meme PR) : un rejeu sur le
+# meme pool REPRODUIT. Prescrire le rejeu dans ce cas coute un cycle de
+# CI pour un resultat mesure comme nul.
+#
+# Le seuil vaut 2 : la seule classe ou un rejeu garde un sens est la mort
+# ISOLEE (un seul worker). Le corpus mesure ne contient aucun cas de
+# mort isolee -- le seuil est donc un garde-fou, pas une description.
+SYSTEMATIC_DEATH_MIN_WORKERS = 2
 
 # Prefixe qui fait du verdict une ANNOTATION du check-run, pas seulement une
 # ligne de log. C'est la seule surface par laquelle un lecteur -- humain ou
@@ -260,7 +326,7 @@ class _StreamState:
 PIPE_CHUNK_BYTES = 65536
 
 
-def _pump(stream, state: _StreamState, echo) -> None:
+def _pump(stream, state: _StreamState, echo, on_crash=None) -> None:
     """Recopie la sortie du fils en mesurant l'activite par OCTET.
 
     On lit le tube par chunks bruts (``os.read`` sur le fd) et on
@@ -289,7 +355,10 @@ def _pump(stream, state: _StreamState, echo) -> None:
         while b"\n" in pending:
             raw, pending = pending.split(b"\n", 1)
             line = raw.decode("utf-8", errors="replace") + "\n"
+            previous_deaths = len(state.dead_workers)
             state.record(line)
+            if on_crash and len(state.dead_workers) > previous_deaths:
+                on_crash()
             echo(line)
     if pending:
         line = pending.decode("utf-8", errors="replace")
@@ -309,7 +378,11 @@ def _kill_tree(proc: subprocess.Popen) -> None:
             return
         except (ProcessLookupError, PermissionError, OSError):
             pass
-    proc.kill()
+    if proc.poll() is None:
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
 
 
 def _emit(message: str) -> None:
@@ -318,6 +391,32 @@ def _emit(message: str) -> None:
     sys.stdout.flush()
     sys.stderr.write(message + "\n")
     sys.stderr.flush()
+
+
+class _TerminationRequested(BaseException):
+    """Interruption SIGTERM du point d’entree CLI."""
+
+
+def _diagnostic_snapshot(directory, emit) -> None:
+    """Rapporte au mieux les tests actifs et les compteurs mémoire."""
+    if directory is None:
+        return
+    try:
+        for path in sorted(Path(directory.name).glob("gw[0-9]*")):
+            try:
+                value = path.read_text(encoding="utf-8", errors="replace")
+                emit(f"XDIST-DIAGNOSTIC {path.name}: {value}")
+            except Exception:
+                pass
+        try:
+            events = Path("/sys/fs/cgroup/memory.events").read_text(
+                encoding="ascii", errors="replace"
+            )
+            emit("XDIST-DIAGNOSTIC memory.events: " + ", ".join(events.splitlines()))
+        except Exception:
+            pass
+    except Exception:
+        pass  # La surveillance et son verdict priment sur le diagnostic.
 
 
 def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
@@ -337,29 +436,61 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
         emit = _emit
 
     state = _StreamState()
+    diagnostics = None
+    child_env = None
+    # La CI passe explicitement pytest au watchdog ; ne pas instrumenter les
+    # autres commandes qui utilisent aussi ce wrapper.
+    if argv and Path(argv[0]).name in {"pytest", "pytest.exe"}:
+        try:
+            diagnostics = tempfile.TemporaryDirectory(prefix="coursia-xdist-")
+            child_env = os.environ.copy()
+            child_env["COURSIA_XDIST_DIAGNOSTICS"] = diagnostics.name
+            # Nom unique par exécution : ne masque aucun plugin utilisateur,
+            # notamment celui qui s'appellerait xdist_diagnostics.
+            module_name = "_coursia_xdist_" + uuid.uuid4().hex
+            shutil.copyfile(Path(__file__).with_name("xdist_diagnostics.py"),
+                            Path(diagnostics.name) / (module_name + ".py"))
+            previous = child_env.get("PYTHONPATH")
+            child_env["PYTHONPATH"] = os.pathsep.join(
+                [previous, diagnostics.name] if previous is not None else [diagnostics.name]
+            )
+            argv = [argv[0], "-p", module_name, *argv[1:]]
+        except OSError:
+            if diagnostics is not None:
+                try:
+                    diagnostics.cleanup()
+                except OSError:
+                    pass
+            diagnostics = None
+            child_env = None
     kwargs: dict = {}
     if os.name == "posix":
         kwargs["start_new_session"] = True
-    proc = subprocess.Popen(
-        argv,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        bufsize=-1,
-        **kwargs,
-    )
-    started = time.monotonic()
-
-    reader = threading.Thread(
-        target=_pump, args=(proc.stdout, state, echo), daemon=True
-    )
-    reader.start()
-
+    proc = None
+    reader = None
     try:
+        proc = subprocess.Popen(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=-1,
+            env=child_env,
+            **kwargs,
+        )
+        started = time.monotonic()
+
+        reader = threading.Thread(
+            target=_pump, args=(proc.stdout, state, echo,
+                                lambda: _diagnostic_snapshot(diagnostics, emit)), daemon=True
+        )
+        reader.start()
+
         while True:
             if proc.poll() is not None:
                 break
             idle = state.idle_for()
             if idle > idle_limit:
+                _diagnostic_snapshot(diagnostics, emit)
                 _verdict_blocked(state, idle, idle_limit, started, emit)
                 _kill_tree(proc)
                 proc.wait(timeout=30)
@@ -368,20 +499,39 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
             # qu'aucun progres pytest ne soit emis = le run va finir sur
             # un exit 1 ININTERPRETABLE (pas un test qui echoue, pas un
             # blocage par silence, mais une collision interne du master
-            # xdist). On tue tout de suite, on nome la collision, on
-            # laisse le CI rejouer le job (le defaut est transient :
-            # aucun des 7 cas signes sur 10 rouges echantillonnes ne
-            # s'est reproduit a la 2e tentative, cf issue #19915).
+            # xdist). On tue tout de suite, on nome la collision ; la
+            # prescription de rejeu est bornee par la classe de mort
+            # (_verdict_collect_crash) : un rejeu n'a de sens qu'en mort
+            # ISOLEE ; en mort SYSTEMATIQUE (7 a 12 workers morts avant la
+            # collision, census #19915 du 2026-10-19), un rejeu sur le meme
+            # pool REPRODUIT la signature (4/4 le 2026-10-18, 2/2 le
+            # 2026-10-19) -- signaler l'hote, ne pas rejouer sur le meme pool
+            # (issue #19915).
             if state.collect_crash_detected():
                 _verdict_collect_crash(state, idle, started, emit)
                 _kill_tree(proc)
                 proc.wait(timeout=30)
                 return EXIT_COLLECT_CRASH
             time.sleep(0.5)
+    except _TerminationRequested:
+        # La session POSIX du fils ne recoit pas le SIGTERM du wrapper.
+        # Tuer tout son groupe avant de propager l'annulation.
+        if proc is not None:
+            _kill_tree(proc)
+            proc.wait(timeout=30)
+        raise
     finally:
         # Le fils est mort ou tue : le lecteur atteint l'EOF, on ne bloque pas
         # la sortie du wrapper sur un pipe theoriquement ouvert.
-        reader.join(timeout=10)
+        if reader is not None and reader.ident is not None:
+            reader.join(timeout=10)
+        if diagnostics:
+            if state.dead_workers:
+                _diagnostic_snapshot(diagnostics, emit)
+            try:
+                diagnostics.cleanup()
+            except OSError:
+                pass  # Un diagnostic ne modifie pas le verdict pytest.
 
     # La conjonction est re-testee UNE FOIS la boucle sortie. Sans ce
     # controle la course est ouverte : la boucle teste tous les 0,5 s et
@@ -425,6 +575,12 @@ def _verdict_collect_crash(state: _StreamState, idle: float,
     silence de sortie) et le triage post-mortem depend du code d'exit.
     """
     wall = time.monotonic() - started
+    # Le runner qui porte le job : c'est le discriminant de la signature
+    # #19915 (113/113 des cas mesures sur `po-2024-linux-docker-*`, 0 sur
+    # `ai-01-wsl-*`). Le nom dans l'annotation evite au triage d'ouvrir le
+    # job pour rien -- c'est la seule surface que lisible sans le log.
+    runner = os.environ.get("RUNNER_NAME") or "(runner inconnu)"
+    dead = list(state.dead_workers)
     collisions = (
         ", ".join(state.collision_workers)
         if state.collision_workers
@@ -436,13 +592,24 @@ def _verdict_collect_crash(state: _StreamState, idle: float,
          f"``KeyError: <WorkerController>`` detectee(s) avant le premier "
          f"progres pytest, signature #19915 (collecte xdist impossible)")
     emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: workers en collision : "
-         f"{collisions} ; wall du wrapper {wall:.0f} s, {state.line_count} "
-         f"lignes ({state.byte_count} octets) emises au total, idle observe "
-         f"{idle:.0f} s")
-    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
-         f"processus -- le CI doit rejouer le job (defaut transient : "
-         f"aucun des 7 cas signes sur 10 rouges echantillonnes ne s'est "
-         f"reproduit a la 2e tentative, mesure du 2026-10-08)")
+         f"{collisions} ; runner {runner} ; wall du wrapper {wall:.0f} s, "
+         f"{state.line_count} lignes ({state.byte_count} octets) emises au "
+         f"total, idle observe {idle:.0f} s")
+    if len(dead) >= SYSTEMATIC_DEATH_MIN_WORKERS:
+        emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: mort SYSTEMATIQUE -- "
+             f"{len(dead)} workers sont morts AVANT la collision "
+             f"({', '.join(dead)}) ; la signature n'est PAS un transient : "
+             f"un rejeu sur le meme runner la reproduit (mesure 2026-10-18 : "
+             f"4/4 sur le pool `po-2024-linux-docker-*` ; 2026-10-19 : 2/2 "
+             f"sur la meme PR ; 0 sur `ai-01-wsl-*`) ; la cause est cote "
+             f"runner (caps memoire/pids de l'ephemere), pas dans le contenu "
+             f"de la PR -- ne pas rejouer sur le meme pool")
+    else:
+        emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
+             f"processus -- mort isolee ({len(dead)} worker mort avant la "
+             f"collision) ; aucun cas de mort isolee dans le corpus mesure "
+             f"(7 j : les 113 cas collect-crash sont des morts massives de 7 "
+             f"a 12 workers) ; un rejeu du job peut etre tente")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -471,4 +638,15 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    def _on_sigterm(signum, frame):
+        # Un second SIGTERM ne doit pas interrompre le nettoyage en cours.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        raise _TerminationRequested()
+
+    signal.signal(signal.SIGTERM, _on_sigterm)
+    try:
+        sys.exit(main())
+    except _TerminationRequested:
+        # Conserver le statut d'un processus termine par SIGTERM.
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        os.kill(os.getpid(), signal.SIGTERM)

@@ -17,10 +17,20 @@
   Poids de prior égaux (1, 1). Le monopole de période 2 (l'entrant reste
   dehors) paie l'incumbent 5.
 
-  Voir le fichier original pour les encodages d'actions (plans réduits,
-  `Fin 4`). Parce que l'équilibre de forme normale admet aussi des menaces
-  non crédibles, on impose un raffinement *de crédibilité* décidable tenant
-  lieu de rationalité séquentielle en dernière période.
+  Encodages d'actions (plans réduits, `Fin 4`, bit 0 = Accommodate/Out,
+  bit 1 = Fight/In) :
+  - plan de l'incumbent `a1` : `a1.val = 2*r1 + r2` où `r1` est la
+    réponse de période 1 et `r2` la réponse de période 2 si l'entrée a lieu ;
+  - plan de l'entrant `a2` : `a2.val = 2*eF + eA` où `eF` (resp. `eA`) est
+    la décision d'entrée de période 2 après avoir observé Fight (resp.
+    Accommodate) en période 1.
+
+  Parce que l'équilibre de forme normale admet aussi des menaces non
+  crédibles (« je me bats en période 2 », jamais exécutée si testée), on
+  impose un raffinement *de crédibilité* décidable tenant lieu de
+  rationalité séquentielle en dernière période : la réponse de période 2 de
+  chaque type doit être une meilleure réponse de stade (le rationnel
+  accommode, le dur se bat).
 
   Résultats (tous par `decide` + éta-expansion des stratégies) :
   - `gRep` (information incomplète, réputation possible) a un BNE crédible
@@ -32,7 +42,9 @@
     paiement 4.
   - `reputation_pays` : 4 < 5 dans toute paire d'équilibres crédibles —
     l'incitation de l'incumbent à se battre vient *uniquement* de
-    l'incertitude de l'entrant sur son type, i.e. de la réputation.
+    l'incertitude de l'entrant sur son type, i.e. de la réputation. Le type
+    rationnel se bat en période 1 même si se battre est myopiquement
+    dominé (`rational_fights_in_equilibrium`).
 
   Voir #2610 (formalisation GT-Lean, phase bayésienne 5).
 -/
@@ -57,26 +69,31 @@ def entryOf (a1 a2 : Fin 4) : Nat :=
 
 /-! ### Stage payoffs -/
 
-/-- Paiement sur deux périodes de l'incumbent *rationnel* : se battre coûte -/
+/-- Paiement sur deux périodes de l'incumbent *rationnel* : se battre coûte
+    en période 1 (0 contre 2), le monopole paie 5, et la réponse de
+    période 2 est payée aux valeurs de stade (Fight 0, Accommodate 2). -/
 def incRational (a1 a2 : Fin 4) : Int :=
   (if planR1 a1 = 1 then 0 else 2) +
   (if entryOf a1 a2 = 0 then 5
    else if planR2 a1 = 1 then 0 else 2)
 
-/-- Paiement sur deux périodes de l'incumbent *dur* (engagement) : se battre -/
+/-- Paiement sur deux périodes de l'incumbent *dur* (engagement) : se battre
+    est intrinsèquement préféré (3 contre 0) dans les deux périodes. -/
 def incTough (a1 a2 : Fin 4) : Int :=
   (if planR1 a1 = 1 then 3 else 0) +
   (if entryOf a1 a2 = 0 then 5
    else if planR2 a1 = 1 then 3 else 0)
 
-/-- Paiement de l'entrant en période 2 : 0 dehors, 2 s'il entre et -/
+/-- Paiement de l'entrant en période 2 : 0 dehors, 2 s'il entre et que
+    l'incumbent accommode, -3 s'il entre et que l'incumbent se bat. -/
 def entrantU (a1 a2 : Fin 4) : Int :=
   if entryOf a1 a2 = 0 then 0
   else if planR2 a1 = 1 then -3 else 2
 
 /-! ### The two games -/
 
-/-- Le jeu de réputation : l'entrant ne connaît pas le type de -/
+/-- Le jeu de réputation : l'entrant ne connaît pas le type de l'incumbent
+    (rationnel ou dur, poids égaux). -/
 def gRep : BayesGame2 where
   nT1 := 2
   nT2 := 1
@@ -87,7 +104,8 @@ def gRep : BayesGame2 where
     if t1.val = 0 then incRational a1 a2 else incTough a1 a2
   u2 := fun _ _ a1 a2 => entrantU a1 a2
 
-/-- Le benchmark à information complète : l'incumbent est connu pour être -/
+/-- Le benchmark à information complète : l'incumbent est connu pour être
+    rationnel (un seul type). Mêmes actions, mêmes tables de paiement. -/
 def gNoRep : BayesGame2 where
   nT1 := 1
   nT2 := 1
@@ -97,7 +115,8 @@ def gNoRep : BayesGame2 where
   u1 := fun _ _ a1 a2 => incRational a1 a2
   u2 := fun _ _ a1 a2 => entrantU a1 a2
 
-/-- Vérification : le benchmark est exactement le jeu de réputation -/
+/-- Vérification : le benchmark est exactement le jeu de réputation restreint
+    au type rationnel — pas un jeu sans rapport. -/
 theorem gNoRep_restriction :
     ∀ a1 a2 : Fin 4,
       gNoRep.u1 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 =
@@ -117,17 +136,19 @@ séquentielle en *dernière* période est une condition finie et
 décidable sur les plans : la réponse de période 2 de chaque type doit
 être une meilleure réponse de stade. -/
 
-/-- Crédibilité dans le jeu de réputation : le type rationnel accommode -/
+/-- Crédibilité dans le jeu de réputation : le type rationnel accommode en
+    période 2 (2 > 0), le type dur se bat (3 > 0). -/
 @[reducible] def credRep (s1 : Strategy1 gRep) : Prop :=
   planR2 (s1 ⟨0, by decide⟩) = 0 ∧ planR2 (s1 ⟨1, by decide⟩) = 1
 
-/-- Crédibilité dans le benchmark : l'incumbent (rationnel) -/
+/-- Crédibilité dans le benchmark : l'incumbent (rationnel) accommode en
+    période 2. -/
 @[reducible] def credNoRep (s1 : Strategy1 gNoRep) : Prop :=
   planR2 (s1 ⟨0, by decide⟩) = 0
 
 /-! ### Canonical strategy constructors (reputation game) -/
 
-/-- Stratégies de l'incumbent dans `gRep`, depuis les deux plans -/
+/-- Stratégies de l'incumbent dans `gRep`, depuis les deux plans dépendants du type. -/
 def mkRepS1 (x y : Fin 4) : Strategy1 gRep :=
   fun t1 => if t1.val = 0 then x else y
 
@@ -170,7 +191,9 @@ theorem gRep_bne_credible :
     credRep (mkRepS1 ⟨2, by decide⟩ ⟨3, by decide⟩) := by
   decide
 
-/-- Sur les stratégies canoniques, le BNE crédible de `gRep` est unique : -/
+/-- Sur les stratégies canoniques, le BNE crédible de `gRep` est unique : les
+    deux types d'incumbent se battent en période 1 (le type rationnel
+    fusionne), et l'entrant entre s'il a observé Accommodate. -/
 theorem gRep_unique_aux :
     ∀ x y z : Fin 4,
       isBNE gRep (mkRepS1 x y) (mkRepS2 z) →
@@ -178,7 +201,9 @@ theorem gRep_unique_aux :
         x = ⟨2, by decide⟩ ∧ y = ⟨3, by decide⟩ ∧ z = ⟨1, by decide⟩ := by
   decide
 
-/-- Sur les stratégies canoniques, tout BNE crédible de `gRep` paie -/
+/-- Sur les stratégies canoniques, tout BNE crédible de `gRep` paie exactement
+    5 à l'incumbent rationnel (dissuasion : 0 en période 1, monopole 5 en
+    période 2). -/
 theorem gRep_payoff_aux :
     ∀ x y z : Fin 4,
       isBNE gRep (mkRepS1 x y) (mkRepS2 z) →
@@ -206,7 +231,9 @@ theorem gRep_credible_payoff (s1 : Strategy1 gRep) (s2 : Strategy2 gRep)
   rw [repS2_eta s2] at h ⊢
   exact gRep_payoff_aux _ _ _ h hc
 
-/-- Dans tout BNE crédible du jeu de réputation le type *rationnel* se bat -/
+/-- Dans tout BNE crédible du jeu de réputation le type *rationnel* se bat en
+    période 1, bien que se battre soit myopiquement dominé (valeur de stade
+    0 < 2) : le motif de fusion / signalisation. -/
 theorem rational_fights_in_equilibrium
     (s1 : Strategy1 gRep) (s2 : Strategy2 gRep)
     (h : isBNE gRep s1 s2) (hc : credRep s1) :
@@ -217,7 +244,9 @@ theorem rational_fights_in_equilibrium
   rw [hu.1]
   decide
 
-/-- Dans tout BNE crédible du jeu de réputation, l'entrée de période 2 est -/
+/-- Dans tout BNE crédible du jeu de réputation, l'entrée de période 2 est
+    dissuagée contre les deux types : l'entrant observe Fight sur le chemin
+    et reste dehors. -/
 theorem reputation_deters_entry
     (s1 : Strategy1 gRep) (s2 : Strategy2 gRep)
     (h : isBNE gRep s1 s2) (hc : credRep s1) :
@@ -285,7 +314,12 @@ theorem gNoRep_credible_payoff
 
 /-! ### Punchline -/
 
-/-- **La réputation paie.** Dans tout équilibre crédible, l'incumbent -/
+/-- **La réputation paie.** Dans tout équilibre crédible, l'incumbent rationnel
+    gagne strictement plus sous information incomplète (5, entrée dissuacée
+    par la fusion avec le type dur) que sous information complète (4, l'entrée
+    a lieu et est accommodée). La valeur de la réputation est exactement
+    l'incertitude de l'entrant sur le type de l'incumbent : le type connu, le
+    même incumbent avec les mêmes paiements ne peut rien dissuader. -/
 theorem reputation_pays
     (s1 : Strategy1 gRep) (s2 : Strategy2 gRep)
     (t1 : Strategy1 gNoRep) (t2 : Strategy2 gNoRep)

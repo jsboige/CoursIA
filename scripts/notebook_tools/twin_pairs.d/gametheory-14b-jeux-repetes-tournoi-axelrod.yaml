@@ -1,0 +1,9 @@
+- name: "GameTheory-14b Jeux Repetes Tournoi Axelrod"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le moteur de tournoi et les huit stratégies sont l'objet pédagogique ; Python utilise NumPy pour ses tirages et C# la BCL. Les mêmes expériences et budgets sont exécutés."
+  known_differences:
+    - "Les générateurs pseudo-aléatoires diffèrent ; les scores et classements issus des mêmes graines peuvent différer."

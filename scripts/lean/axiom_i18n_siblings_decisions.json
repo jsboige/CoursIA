@@ -1,0 +1,321 @@
+{
+  "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
+  "generated-at": "2026-11-23T01:04:08Z",
+  "generated-by": "myia-po-2024:CoursIA",
+  "organ": "scripts/lean/axiom_i18n_siblings.py",
+  "issue": 24107,
+  "lakes": [
+    {
+      "lake": "sudoku",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 5,
+      "i18n-declarations": 46
+    },
+    {
+      "lake": "kelly",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 5,
+      "i18n-declarations": 42
+    },
+    {
+      "lake": "minimax",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 4,
+      "i18n-declarations": 22
+    },
+    {
+      "lake": "search",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 30
+    },
+    {
+      "lake": "assignment",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 16
+    },
+    {
+      "lake": "discrepancy",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 26,
+      "i18n-declarations": 240
+    },
+    {
+      "lake": "argumentation",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 33
+    },
+    {
+      "lake": "calibration",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 5,
+      "i18n-declarations": 44
+    },
+    {
+      "lake": "conwaycgt",
+      "decision": "false",
+      "reason": "pas de cle `axiom-target-modules` : la jambe Proof integrity est sautee pour ce lake (le workflow la conditionne a `matrix.axiom-target-modules != ''`) ; l'opt-in n'a aucune surface a couvrir",
+      "mode": "SKIPPED",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "erc20",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 4,
+      "i18n-declarations": 17
+    },
+    {
+      "lake": "finiteness",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 1,
+      "i18n-declarations": 7
+    },
+    {
+      "lake": "gamedefs",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 116
+    },
+    {
+      "lake": "gamedefsext",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 14,
+      "i18n-declarations": 226
+    },
+    {
+      "lake": "asymmetricinformation",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 51
+    },
+    {
+      "lake": "learningtheory",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 30,
+      "i18n-declarations": 242
+    },
+    {
+      "lake": "decisiontheory",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
+      "mode": "WILDCARD",
+      "i18n-modules": 14,
+      "i18n-declarations": 101
+    },
+    {
+      "lake": "gametheory",
+      "decision": "false",
+      "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
+      "mode": "EXPLICIT",
+      "i18n-modules": 25,
+      "i18n-declarations": 653
+    },
+    {
+      "lake": "mathlibexamples",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 5,
+      "i18n-declarations": 50
+    },
+    {
+      "lake": "socialchoicepeters",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 7,
+      "i18n-declarations": 49
+    },
+    {
+      "lake": "tegmarkmuh",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "iit",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 1,
+      "i18n-declarations": 19
+    },
+    {
+      "lake": "serre100",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 55
+    },
+    {
+      "lake": "percolation",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 7,
+      "i18n-declarations": 71
+    },
+    {
+      "lake": "geometry",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "hecke",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 8,
+      "i18n-declarations": 143
+    },
+    {
+      "lake": "formal_groups",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 5,
+      "i18n-declarations": 16
+    },
+    {
+      "lake": "combinators",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "compression",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 2,
+      "i18n-declarations": 96
+    },
+    {
+      "lake": "sensitivity",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 10,
+      "i18n-declarations": 130
+    },
+    {
+      "lake": "riemann200",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "galois",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 2,
+      "i18n-declarations": 45
+    },
+    {
+      "lake": "planning",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 3,
+      "i18n-declarations": 18
+    },
+    {
+      "lake": "mimo",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 6,
+      "i18n-declarations": 57
+    },
+    {
+      "lake": "formal_logic",
+      "decision": "false",
+      "reason": "liste de modules explicite sans module `_en` : la surface i18n est vide, l'opt-in ne change rien",
+      "mode": "EXPLICIT",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "grothendieck",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 98,
+      "i18n-declarations": 747
+    },
+    {
+      "lake": "knot",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
+      "mode": "WILDCARD",
+      "i18n-modules": 24,
+      "i18n-declarations": 810
+    },
+    {
+      "lake": "linear",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "conway",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` porte des ancres reportees qui sont gouvernees par l'allow-list du lac (`axiom-allow-axioms`) -- la source ne dit pas si l'ancre resolue au build y est couverte, seule la CI le dit (le gate reel compare les noms resolus)",
+      "mode": "WILDCARD",
+      "i18n-modules": 42,
+      "i18n-declarations": 860
+    },
+    {
+      "lake": "busybeaver",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    }
+  ]
+}

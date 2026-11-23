@@ -44,7 +44,7 @@ OpenAI-compatible TTS API with 3 models: Kokoro, TADA 3B ML, and Qwen3 TTS.
 - **Model**: Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
 - **VRAM**: ~4GB
 - **Speed**: Medium
-- **Voices**: Multiple (default, female, male, custom1-3)
+- **Voices**: speakers natifs CustomVoice en snake_case (`serena`, `aiden`, `vivian`, …) ; alias OpenAI acceptes via remappage gateway (`alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`)
 
 ## Setup
 
@@ -102,17 +102,27 @@ response = requests.post(
 )
 ```
 
-### Using Qwen3
+### Using Qwen3 (CustomVoice)
 ```python
 response = requests.post(
     "http://localhost:8196/qwen/v1/audio/speech",
+    headers={"Authorization": "Bearer <API_KEY>"},  # variable API_KEY du .env tts-multi
     json={
-        "model": "qwen3",
-        "input": "Hello, world!",
-        "voice": "alloy"
+        "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "input": "Bonjour le monde !",
+        "voice": "serena",           # speaker natif CustomVoice (snake_case)
+        "language": "French",
+        "response_format": "wav"
     }
 )
 ```
+
+**Forme vérifiée en live** (2026-10-17) : cette requête exacte rend HTTP 200 avec un WAV PCM 16-bit mono 24 kHz. Points mesurés :
+
+- le champ `model` prend l'identifiant complet `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice`, pas un alias court ;
+- les speakers natifs CustomVoice s'écrivent en snake_case (`serena`, `aiden`, `vivian`) ; les alias OpenAI (`alloy`, `echo`, …) passent par la table de remappage du gateway (`remap_voice_for_qwen`) ;
+- `language` est respecté (`French` pour le narrateur français) ;
+- l'authentification est Bearer sur la variable `API_KEY` du service.
 
 ## API Endpoints
 
@@ -200,13 +210,26 @@ TADA_TTS_URL=http://localhost:8196/tada/v1/audio/speech
 QWEN_TTS_URL=http://localhost:8196/qwen/v1/audio/speech
 ```
 
+Pour le client CustomVoice (`prosody_lab/qwen_tts_client.py`, série Audio v4), deux variables sont **obligatoires** — les défauts embarqués du client prédatent le routage par chemin du gateway :
+
+```bash
+# Le prefix /qwen est OBLIGATOIRE : sans lui, la requete tombe sur Kokoro
+# (route par defaut du gateway) et rend une voix anglaise silencieusement.
+QWEN_GATEWAY_URL=http://localhost:8196/qwen
+# Le modele servi par tts-qwen est CustomVoice ; l'identifiant VoiceDesign
+# pris par defaut par le client n'est pas servi par ce conteneur.
+QWEN_MODEL=Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
+```
+
+Sans ces deux surcharges, un appel « Qwen » du client aboutit à Kokoro sans aucune erreur — risque de regression documente dans #19454 (la docstring « verified live sans prefix /qwen » du client decrit un deploiement direct-vLLM anterieur au gateway-proxy).
+
 ## Voice Mapping
 
 | OpenAI Voice | Kokoro | TADA | Qwen3 |
 |--------------|--------|------|-------|
-| alloy | af_sky | default | default |
-| echo | am_adam | default | female |
-| fable | af_bella | default | male |
-| onyx | am_michael | default | custom1 |
-| nova | af_nova | default | custom2 |
-| shimmer | af_sarah | default | custom3 |
+| alloy | af_sky | default | serena |
+| echo | am_adam | default | aiden |
+| fable | af_bella | default | vivian |
+| onyx | am_michael | default | dylan |
+| nova | af_nova | default | ono_anna |
+| shimmer | af_sarah | default | sohee |

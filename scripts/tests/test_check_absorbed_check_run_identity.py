@@ -413,18 +413,25 @@ def test_mismatches_temoin_negatif_renommage_rougit(monkeypatch):
     )
 
 
-def test_retirer_tranche10_du_registre_re_exige_la_tranche(monkeypatch):
+def test_le_filet_exige_la_tranche_alignee_et_suit_la_constante_du_registre(
+        monkeypatch):
     """Le registre est l'unique source de verite des exemptions (Hermes #19207).
 
     Reserve Hermes (review au head b6c2e61162) : le filet ne doit PAS porter
     de copie locale des constantes d'exemption. Le temoin monkeypatche la
     constante du REGISTRE -- jamais un alias du filet -- pour prouver que la
-    liaison est vivante : retirer TRANCHE10 de
-    `fast_lane_registry.TRANCHE_ALIGNMENT_EN_COURS` (le geste naturel a la
-    fin du programme #12567) doit faire reagir le filet dans la MEME
-    execution, sans aucune modification locale. Une copie figee (ou un
-    `from ... import` alias) laisserait le vert vert pour la mauvaise
-    raison.
+    liaison est vivante : un changement de
+    `fast_lane_registry.TRANCHE_ALIGNMENT_EN_COURS` doit faire reagir le
+    filet dans la MEME execution, sans aucune modification locale. Une copie
+    figee (ou un `from ... import` alias) laisserait le vert vert pour la
+    mauvaise raison.
+
+    L'etat du registre a change le 2026-11-12 (#25510, tranche T-A) :
+    TRANCHE10 est ALIGNEE (job renomme byte-identique + declencheur
+    `pull_request` retire), donc elle n'est PLUS dans la constante
+    d'exemption et le filet l'EXIGE. Le sens du temoin est donc inverse :
+    on exige d'abord, puis on reimporte l'exemption pour prouver que la
+    liaison est toujours vivante.
     """
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
@@ -437,18 +444,21 @@ def test_retirer_tranche10_du_registre_re_exige_la_tranche(monkeypatch):
     assert tranche10, "TRANCHE10 vide : le temoin ne prouverait rien"
     tranche10_names = {g.name for g in tranche10}
 
-    # Etat reel (constante du registre non patchee) : TRANCHE10 est exempte.
+    # Etat reel (constante du registre non patchee) : TRANCHE10 est alignee,
+    # le filet l'exige et verifie son alignement byte-identique.
     demanded_before = {g.name for g in caci.absorbed_guards()}
-    assert not (tranche10_names & demanded_before), (
-        f"TRANCHE10 exigee alors qu'elle est declaree en alignement en "
-        f"cours dans le registre : {sorted(tranche10_names & demanded_before)}"
+    assert tranche10_names <= demanded_before, (
+        f"TRANCHE10 alignee mais non exigee par le filet : "
+        f"{sorted(tranche10_names - demanded_before)}"
     )
 
-    # Retrait de TRANCHE10 de l'exemption REGISTRE : le filet doit l'exiger.
-    monkeypatch.setattr(fl_reg, "TRANCHE_ALIGNMENT_EN_COURS", frozenset())
+    # Reimport de l'exemption par la constante du REGISTRE : le filet doit
+    # cesser de l'exiger DANS LA MEME EXECUTION.
+    monkeypatch.setattr(fl_reg, "TRANCHE_ALIGNMENT_EN_COURS",
+                        frozenset({"TRANCHE10"}))
     demanded_after = {g.name for g in caci.absorbed_guards()}
-    assert tranche10_names <= demanded_after, (
-        f"TRANCHE10 retiree du registre mais toujours non exigee par le "
-        f"filet -- le filet ne lit pas la constante registre au moment de "
-        f"l'appel. Manquants : {sorted(tranche10_names - demanded_after)}"
+    assert not (tranche10_names & demanded_after), (
+        f"TRANCHE10 toujours exigee alors que la constante du registre la "
+        f"declare en alignement en cours : "
+        f"{sorted(tranche10_names & demanded_after)}"
     )

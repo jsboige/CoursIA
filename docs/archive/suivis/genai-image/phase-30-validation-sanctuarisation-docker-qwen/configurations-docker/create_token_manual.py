@@ -12,14 +12,19 @@ def main():
     print("🔧 Création manuelle du token ComfyUI-Login")
     print("=" * 50)
     
-    # Utiliser le token bcrypt qui était dans le .env et qui était valide
-    # Token original: $2b$12$NErya5UooY9bJnscVc/ec.hpVDX.nYM86/88bXIkF/hh2VeKRvU5ka
-    # Ce token a 60 caractères, ce qui est correct pour bcrypt
-    
-    valid_token = "$2b$12$NErya5UooY9bJnscVc/ec.hpVDX.nYM86/88bXIkF/hh2VeKRvU5ka"
-    
-    print(f"✅ Token bcrypt valide identifié:")
-    print(f"   Hash: {valid_token}")
+    # Le hash bcrypt vient de l'environnement : aucun token n'est ecrit en clair
+    # dans un fichier suivi (regle 2 de secrets-hygiene.md, cf. #21839). Le litteral
+    # qui vivait ici etait mort : remplace par l'unification des tokens de phase-31,
+    # et #21098 a mesure que le mot de passe ne correspondait plus au service.
+    valid_token = os.getenv("COMFYUI_LOGIN_TOKEN_HASH")
+    if not valid_token:
+        raise RuntimeError(
+            "COMFYUI_LOGIN_TOKEN_HASH absent : ce script n'ecrit plus de token par "
+            "defaut (cf. #21839). Renseigner le hash bcrypt courant du service."
+        )
+
+    print("Token bcrypt lu depuis l'environnement :")
+    print(f"   Hash de {len(valid_token)} caracteres (60 attendus pour bcrypt)")
     
     # Créer le répertoire custom_nodes s'il n'existe pas
     custom_nodes_path = Path("custom_nodes/ComfyUI-Login")

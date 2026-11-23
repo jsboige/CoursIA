@@ -1,0 +1,10 @@
+- name: RLPT-00 Reward Model Bradley Terry
+  family: RL/PostTraining
+  python: MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: 'PyTorch et TorchSharp-cpu 0.107.0 exécutent réellement embedding, autograd et Adam CPU ; la génération des paires et la perte Bradley–Terry sont le contenu pédagogique.'
+  known_differences:
+  - 'NumPy et System.Random produisent des corpus différents ; les métriques de chaque run ne sont pas identiques.'
+  - 'MathNet.Numerics calcule Spearman et le fit C# ; SciPy et NumPy assurent ces métriques côté Python. Les figures Matplotlib sont des SVG statiques C#.'

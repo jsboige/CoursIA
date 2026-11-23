@@ -199,4 +199,17 @@ date_cycle | #issue | chaperon | axe | statut | preuve | note
 
 ***
 
-Co-Authored-By: Claude Haiku 4.5 (1M context) <noreply@anthropic.com>
+## Correctif du plafond de pool (2026-10-30, lane myia-po-2023:CoursIA)
+
+Réserve écrite du body #16473, verbatim : « l'organe s'arrête à `--limit 400` alors que le dépôt porte **599 issues ouvertes** — son verdict « orphelin » est donc un **minorant** tant que la limite n'est pas relevée ».
+
+L'organe ne se contente plus de relever le plafond (défaut 400 → 1000) : il **mesure** la saturation et la rend visible — bloc `pool {count, limit, truncated}` au JSON, avertissement explicite en markdown. Une capture hors-ligne antérieure à ce bloc ne rend jamais « complet » : elle n'en sait rien, et le rapport se taît plutôt que d'affirmer un scan qu'il ne peut pas prouver.
+
+Mesure live 2026-10-30 (deux exécutions, même code, même instant) :
+
+| Pool | scannées | rattachées (chaperon) | rattachées (parent) | orphelines |
+|---|---|---|---|---|
+| `--limit 400` (ancien défaut) | 400 | 50 | 74 | 276 |
+| défaut `--limit 1000` | 691 | 186 | 223 | 282 |
+
+Le compte net bouge peu (+6), mais la **composition** change du tout au tout : 128 orphelines n'apparaissaient qu'au-delà du plafond, et **122 des 276 « orphelines » mesurées à 400 (44 %) étaient fausses** — leur parent vivait hors de la fenêtre, donc `attached_specific`, résolu contre les issues du *même* fetch, ne pouvait pas les rattacher. C'est le second coût du plafond, et le plus grand : il ne masquait pas seulement le stock, il le **re-classait**. Les 122 se répartissent intégralement en `attached_specific` (0 résidu inexpliqué).

@@ -1,0 +1,23 @@
+{
+  "phases": 12,
+  "etapes": 26,
+  "sections_3e": 151,
+  "sections_4e": 159,
+  "sections_couvertes_4e": 94,
+  "sections_couvertes_3e": 86,
+  "chapitres_couverts_4e": 16,
+  "chapitres_couverts_3e": 15,
+  "chapitres_apparies": 28,
+  "sections_communes_entre_editions": 95,
+  "sections_renommees": 25,
+  "sections_regroupees": 3,
+  "sections_absentes_de_la_3e": 38,
+  "chapitres_4e_sans_pendant_3e": [
+    "15",
+    "21",
+    "24"
+  ],
+  "chapitres_3e_sans_pendant_4e": [
+    "19"
+  ]
+}

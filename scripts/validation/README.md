@@ -4,7 +4,7 @@ Validation infrastructure for CoursIA notebook quality gates.
 
 ## matrix.yml
 
-Per-family validation configuration for all 11 notebook series. Declares:
+Per-family validation configuration for all notebook series. Declares:
 
 - **kernel**: which Jupyter kernel each family requires
 - **strategy**: execution method (`papermill`, `cell-by-cell`, `cloud-only`)
@@ -54,10 +54,10 @@ Activation: Phase 2 (#623), post-20 mai 2026.
 
 ### Known limitations
 
-- **.NET Interactive**: `System.Collections.Immutable 9.0` binding failure affects 16 notebooks (ML.NET, Sudoku C#, Probas)
+- **.NET Interactive**: `System.Collections.Immutable 9.0` binding failure affects notebooks in ML.NET, Sudoku C# and Probas
 - **Lean 4**: Requires WSL kernel, cold start ~60s
 - **OpenSpiel**: Requires WSL + custom kernel, not available on all machines
-- **GenAI**: Docker services must be UP; 7 notebooks need API keys (OpenAI, ComfyUI)
+- **GenAI**: Docker services must be UP; notebooks need API keys (OpenAI, ComfyUI)
 - **QC Cloud projects**: Cannot be validated locally (cloud-only strategy)
 
 ## Related tools

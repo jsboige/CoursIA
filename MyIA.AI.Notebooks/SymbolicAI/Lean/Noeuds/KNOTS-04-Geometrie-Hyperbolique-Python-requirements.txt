@@ -1,0 +1,15 @@
+# KNOTS sub-series (ex Lean-17) — Python dependencies
+# Install: pip install -r KNOTS-04-Geometrie-Hyperbolique-Python-requirements.txt
+#
+# These tools cover the hyperbolic geometry computations used in the
+# Lean-17d companion notebook: ideal tetrahedra shapes, Bloch-Wigner volume,
+# Dehn fillings and orientation reversal.
+
+# SnapPy — 3-manifold topology, ideal tetrahedra shapes, hyperbolic volume,
+# Dehn fillings (Manifold.dehn_fill), orientation reversal
+# Native C++ core, no SageMath needed for volume computation
+snappy>=3.2
+
+# mpmath — independent Bloch-Wigner recomputation (Li2 + Arg + Log) at 50 digits,
+# used as the cross-check of the value SnapPy computes by its own route
+mpmath>=1.3

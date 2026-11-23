@@ -70,7 +70,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "translation"))
 from check_perimeter import ALL_LANGS  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_ARG_DATA = _REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data"
+_ARG_DATA = _REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data"
 DEFAULT_FALLACIES = _ARG_DATA / "argumentum_fallacies_taxonomy.csv"
 DEFAULT_VIRTUES = _ARG_DATA / "argumentum_virtues_taxonomy.csv"
 DEFAULT_SCENARII = (
@@ -79,21 +79,32 @@ DEFAULT_SCENARII = (
 
 # Copie verbatim de `Cards/Scenarii/Argumentum Scenarii - Cards.csv` au commit
 # epingle du sous-module Argumentum (cf NOTICE-SCENARII).
-SCENARII_UPSTREAM_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
-SCENARII_BLOB_SHA1 = "9f20eb808a1d22c9c1a5dd1b96460b0d6a23db60"
+SCENARII_UPSTREAM_COMMIT = "9038690dd8a329dadfc2fdea587f1b87130cf861"
+SCENARII_BLOB_SHA1 = "640d868fa902c0614733f49b698d7c012baedc49"
 
-# Ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) : le gitlink du
-# sous-module Argumentum a derive APRES le build (0ab05d66 -> 65af9c38 le
-# 06/10 -> edb39554), et la reproductibilite ne doit plus se lire depuis un pin
-# amont que le depot ne pointe plus. Elle se lit depuis le commit du depot ou
-# le dataset est entre sur main : a ce commit, le gitlink etait encore le pin
-# amont. Ce sont des constantes de provenance, pas des valeurs capturees au
-# vol -- un manifeste qui dependrait du commit courant casserait le test de
+# Ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578, rejoue a chaque
+# resynchronisation) : la reproductibilite ne se lit pas depuis le sous-module
+# vivant, dont le gitlink derive, mais depuis un commit que le depot atteint.
+# Elle se lit ici depuis le commit de `main` qui epingle le pin amont copie :
+# son arbre porte le gitlink `BUILD_GITLINK_COMMIT`, d'ou la copie verbatim a
+# ete extraite. Ce sont des constantes de provenance, pas des valeurs capturees
+# au vol -- un manifeste qui dependrait du commit courant casserait le test de
 # regeneration bit-identique. La resynchronisation (cf NOTICE) les met a jour.
 SCENARII_COPY_REPO_PATH = "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/argumentum_scenarii_cards.csv"
-BUILD_REPO_COMMIT = "4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe"
-BUILD_GITLINK_COMMIT = "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
-ARGUMENTUM_SUBMODULE_PATH = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+# 0dd7c8557cb (2026-10-31) : bump du gitlink a88947e5 -> 9038690 (i18n zh/ar/fa).
+BUILD_REPO_COMMIT = "0dd7c8557cb5e6dd98db43cf89a8dc7e0dcf7c8c"
+BUILD_GITLINK_COMMIT = "9038690dd8a329dadfc2fdea587f1b87130cf861"
+# Chemin du sous-module tel qu'il vit AUJOURD'HUI dans l'arbre (suit les
+# renommages du depot, cf #25000).
+ARGUMENTUM_SUBMODULE_PATH = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum"
+# Chemin du meme sous-module **dans l'arbre de `BUILD_REPO_COMMIT`**. Il ne suit
+# pas les renommages : c'est une coordonnee historique, interrogee par
+# `git ls-tree BUILD_REPO_COMMIT`. Les deux valeurs divergent legitimement des
+# qu'un renommage posterieur au commit de build deplace le repertoire -- et
+# `git ls-tree` rend alors rc=0 avec une sortie VIDE, pas une erreur, si l'on
+# interroge la mauvaise (mesure du 2026-11-08, Scripts Tests rouge sur #25195).
+# Ne pas "resynchroniser" celle-ci sur l'autre par un balayage de renommage.
+BUILD_GITLINK_TREE_PATH = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
 
 LANGS = tuple(ALL_LANGS)
 LANG_NAMES = {
@@ -407,6 +418,21 @@ def _scen_field(row: dict, field: str, lang: str) -> str:
     return row[f"{field}_{lang}"].strip()
 
 
+def _without_terminal_period(definition: str) -> str:
+    """Retire le point final de la definition avant de l'envelopper (#22422).
+
+    Le gabarit de consigne place la definition entre parentheses puis ajoute un
+    point : une definition deja ponctuee produisait ``(….).``, double
+    ponctuation visible par l'eleve dans une sortie committee. On ne retire
+    qu'**un** point terminal, apres trim des espaces, pour ne pas amputer une
+    definition qui se terminerait par des points de suspension.
+    """
+    cleaned = definition.strip()
+    if cleaned.endswith(".") and not cleaned.endswith(".."):
+        cleaned = cleaned[:-1].rstrip()
+    return cleaned
+
+
 def render_prompt(pair: Pair, texts: dict, lang: str = "en") -> str:
     """Consigne donnee au LLM enseignant pour une paire, dans la langue ``lang``.
 
@@ -420,6 +446,7 @@ def render_prompt(pair: Pair, texts: dict, lang: str = "en") -> str:
     """
     key = ("F" if pair.polarity == "fallacy" else "V") + str(pair.node_pk)
     title, definition, _ = texts["nodes"][key][lang]
+    definition = _without_terminal_period(definition)
     row = texts["scenarios"][pair.scenario_path]
     talker = _scen_field(row, "smoothTalker", lang)
     drawer = _scen_field(row, "drawer", lang)
@@ -439,10 +466,18 @@ def render_prompt(pair: Pair, texts: dict, lang: str = "en") -> str:
 
 def prompt_contains_example(pair: Pair, texts: dict, lang: str,
                             min_len: int = EXAMPLE_MIN_LEN) -> bool:
-    """Vrai si un champ exemple du noeud (>= ``min_len`` caracteres) figure dans le prompt."""
+    """Vrai si un champ exemple du noeud (>= ``min_len`` caracteres) figure dans le prompt.
+
+    L'exemple est compare **normalise comme le prompt** : ``render_prompt`` retire
+    le point terminal de la definition (#22422), donc un exemple qui *est* cette
+    definition ne serait plus un sous-texte litteral. Sans cette normalisation le
+    detecteur devient aveugle et laisse passer la fuite qu'il doit attraper
+    (regression mesuree sur le test ``test_example_detector_is_not_blind``).
+    """
     key = ("F" if pair.polarity == "fallacy" else "V") + str(pair.node_pk)
     prompt = render_prompt(pair, texts, lang)
-    return any(len(e) >= min_len and e in prompt for e in texts["nodes"][key][lang][2])
+    return any(len(e) >= min_len and _without_terminal_period(e) in prompt
+               for e in texts["nodes"][key][lang][2])
 
 
 # --------------------------------------------------------------------------
@@ -474,6 +509,20 @@ def write_splits(pairs: list[Pair], out_dir: Path) -> dict[str, Path]:
     return paths
 
 
+# Licence du dataset derive : le texte editorial Argumentum est sous CC BY-SA
+# 4.0 (LICENSE-CONTENT.md amont, decision owner du 2026-09-21, commit amont
+# 956384ac). Bloc statique par construction -- il ne depend d'aucun commit
+# courant (cf. la garde du manifeste commit-independant ci-dessus).
+DATASET_LICENCE = {
+    "dataset": "CC-BY-SA-4.0",
+    "attribution": "Argumentum",
+    "base": "texte editorial Argumentum (LICENSE-CONTENT.md, commit amont "
+            "956384ac, decision owner 2026-09-21)",
+    "note": "BY-SA 4.0 section 3(b) : un jeu derive ne peut pas ajouter de "
+            "restriction (NC) au-dela de la licence amont",
+}
+
+
 def build_manifest(pairs: list[Pair], nodes: list[Node], params: dict, sources: dict) -> dict:
     """Parametres, sources (SHA de blob) et comptes : ce qui rend le dataset rejouable.
 
@@ -494,6 +543,7 @@ def build_manifest(pairs: list[Pair], nodes: list[Node], params: dict, sources: 
     return {
         "params": params,
         "sources": sources,
+        "licence": DATASET_LICENCE,
         "files": files,
         "counts": {s: counts[s] for s in SPLITS},
         "nodes": dict(Counter(n.polarity for n in nodes)),

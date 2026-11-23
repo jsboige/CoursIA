@@ -8,10 +8,12 @@ description: >
   shared scripts/lean/axiom_check_step.py -- one copy of the rule for both
   callers, extracted verbatim from the workflow's heredoc.
 
-  Opt-in: the matrix entry carries the key `axiom-target-modules` (absent =
-  the caller passes '' = this action is never reached). '*' derives the
-  module list at runtime (#10889) -- exactly what `lake build` compiles,
-  FR-only by default (`_en` siblings excluded unless opted in).
+  Opt-in: the matrix entry carries `axiom-target-modules` for its standard
+  profile, or `axiom-blocking-target-modules` for an additional blocking
+  profile (absent = the caller passes '' = this action is never reached).
+  '*' derives the module list at runtime (#10889) -- exactly what `lake
+  build` compiles, FR-only by default (`_en` siblings excluded unless opted
+  in).
 
 inputs:
   project-path:

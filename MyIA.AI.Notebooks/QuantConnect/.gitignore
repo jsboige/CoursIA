@@ -98,7 +98,9 @@ datasets/
 *.csv
 *.parquet
 *.feather
-!assets/*.csv  # Keep example datasets
+# Negations : le commentaire va sur sa propre ligne (un # en fin de ligne fait partie du motif)
+!assets/*.csv
+!ML-Training-Pipeline/shadow/passes.csv
 
 # ===============================
 # IDEs

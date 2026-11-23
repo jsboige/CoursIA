@@ -1,0 +1,38 @@
+# Sonde T9 -- surface PREVIEW de la couche agents C# de Semantic Kernel
+# generee le 2026-11-04 par csharp_preview_surface_probe.cs
+# packages : Agents.Core 1.81.0 (stable) + Agents.Orchestration 1.81.0-preview + Agents.Magentic 1.81.0-preview
+# aucune requete LLM, aucune cle API ; mesure de SURFACE, pas de comportement
+
+ASSEMBLAGES DEPLOYES (prefixe Microsoft.SemanticKernel.Agents) :
+   Microsoft.SemanticKernel.Agents.Abstractions.dll                  27 type(s) public(s)
+   Microsoft.SemanticKernel.Agents.Core.dll                          17 type(s) public(s)
+   Microsoft.SemanticKernel.Agents.Magentic.dll                      11 type(s) public(s)
+   Microsoft.SemanticKernel.Agents.Orchestration.dll                 29 type(s) public(s)
+   Microsoft.SemanticKernel.Agents.Runtime.Abstractions.dll          15 type(s) public(s)
+   Microsoft.SemanticKernel.Agents.Runtime.Core.dll                  10 type(s) public(s)
+
+union dedoublonnee (nom court) : 108  <- PLANCHER, pas un compte de types
+
+CONTROLE POSITIF -- les cinq topologies doivent etre PRESENTES dans la surface PREVIEW
+   present OK  ConcurrentOrchestration        <- Microsoft.SemanticKernel.Agents.Orchestration.dll
+   present OK  SequentialOrchestration        <- Microsoft.SemanticKernel.Agents.Orchestration.dll
+   present OK  GroupChatOrchestration         <- Microsoft.SemanticKernel.Agents.Orchestration.dll
+   present OK  HandoffOrchestration           <- Microsoft.SemanticKernel.Agents.Orchestration.dll
+   present OK  MagenticOrchestration          <- Microsoft.SemanticKernel.Agents.Magentic.dll
+
+CONTROLE NEGATIF DE PROVENANCE -- la surface STABLE ne doit PAS porter ces types
+   absent  OK  ConcurrentOrchestration
+   absent  OK  SequentialOrchestration
+   absent  OK  GroupChatOrchestration
+   absent  OK  HandoffOrchestration
+   absent  OK  MagenticOrchestration
+
+SURFACE PREVIEW -- fragments de nom (reprise / telemetry / workflow)
+   fragment "Checkpoint" -> AUCUN
+   fragment "OpenTelemetry" -> AUCUN
+   fragment "Telemetry" -> AUCUN
+   fragment "Workflow" -> AUCUN
+   fragment "Resume" -> AUCUN
+   fragment "Persistence" -> AUCUN
+
+VERDICT controles : negatif=OK positif=OK

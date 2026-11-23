@@ -26,6 +26,61 @@ At daily resolution every order goes out as `MarketOnClose`: submitted at 10:00 
 
 Out of sample, with no refusal, the fix changes no order. On the coded window the gap comes from February 2015 alone and carries no sign worth keeping. What the fix brings is a backtest that measures the strategy as described.
 
+## Parameters
+
+| Parameter | Values | Default | Role |
+|---|---|---|---|
+| `mode` | `strategy`, `spy`, `6040` | `strategy` | `strategy` keeps the code's decision; `spy` holds SPY at 100%; `6040` holds SPY at 60% and BND at 40%, rebalanced at the start of each month, one minute after the open |
+| `start_date` | date `%Y%m%d` | 2015-01-01 | start of the window |
+| `end_date` | date `%Y%m%d` | 2024-12-31 | end of the window |
+
+All three modes trace the portfolio value at each SPY open (chart `shadow`, series `e0` to `e4`). In reference mode, the strategy rebalance and the re-send of refused buys do nothing. Without parameters the strategy's decision is unchanged: the control below checks it order by order.
+
+## Verdict against held references (#21420)
+
+The protocol was written in #21420 before the first backtest, on the model of #21329. For a risk-parity portfolio the 60/40 is the natural reference; SPY held sets the `NO BEATS` threshold. Both references run inside the same algorithm as the strategy, under the same brokerage model and with the same 280-day warm-up.
+
+The compared series are the portfolio value at each SPY open. The tests go through `Paradox46Benchmarks/significance.py`, with a zero risk-free rate:
+
+- Ledoit-Wolf Sharpe difference;
+- stationary bootstrap;
+- Newey-West difference of means.
+
+On each window, the Holm correction covers the six p-values.
+
+Verdict rule, written before the measurement:
+
+- `BEATS`: positive Sharpe difference, significant (Holm < 0.05) against both references;
+- `NO BEATS`: strategy Sharpe below that of SPY held;
+- `INCONCLUSIVE`: every other case.
+
+**Harmlessness control: held.** In `strategy` mode, on the coded window, the instrumented code (project 38101154) reproduces the backtest of the original code (`6f35c6d89be8a9fd8525acacd14c4a6b`, project 38101150):
+
+- 438 orders out of 438, with no difference in date, symbol or quantity;
+- 27 QC statistics out of 27.
+
+The strategy's orders are submitted at 10:00 New York time and filled at the close, on both windows; none is placed at midnight.
+
+| Window | Sessions | Strategy Sharpe (zero rate) | SPY held (zero rate) | 60/40 (zero rate) | Holm p (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Coded, 2015-01-02 → 2024-12-31 | 2516 | 0.710 | 0.786 | 0.802 | 1.0 / 1.0 | **NO BEATS** |
+| Out of sample, 2025-01-02 → 2026-07-21 | 387 | 1.230 | 1.034 | 1.158 | 1.0 / 1.0 | **INCONCLUSIVE** |
+
+QC statistics (computed by QC with its own risk-free rate). Their Sharpe ratios do not compare with those of the table above: QC subtracts a non-zero risk-free rate and starts from its own daily series, whereas the protocol uses a zero rate on the portfolio value at the open. The ranking of the portfolios can therefore change from one table to the other, and the verdict is read on the table above.
+
+| Window | Mode | QC Sharpe (QC's rate, different scale) | CAGR | Max drawdown | Orders | Backtest |
+|---|---|---|---|---|---|---|
+| Coded | strategy | 0.360 | 7.29% | 18.4% | 438 | `5475762624cf4a91e21c1e6a6cf24f98` |
+| Coded | SPY held | 0.533 | 12.97% | 33.7% | 1 | `626f0da67dc03f843c7a48f1eba06a5e` |
+| Coded | 60/40 | 0.442 | 8.41% | 21.7% | 201 | `68a3e2b47da02e8dc69f2a6f053ca650` |
+| Out of sample | strategy | 0.721 | 16.26% | 10.9% | 80 | `fdcf4ba6a6258b501ab14f079f267862` |
+| Out of sample | SPY held | 0.651 | 18.49% | 18.7% | 2 | `2497915228110d7587d702ca01caf3d7` |
+| Out of sample | 60/40 | 0.554 | 12.80% | 11.2% | 30 | `52ff8a147efaeb9be1dd305382824769` |
+
+The out-of-sample backtest was requested up to 2026-10-19 but stops on 2026-07-21: the QC nodes used cut backtests about 90 days before the current date. No parameter was tuned on that period.
+
+**Reading.** On the coded window the strategy is below both references in Sharpe. Against the 60/40, at almost the same annual volatility (8.9% against 9.0%), it returns less per year for a slightly smaller max drawdown. Out of sample its Sharpe is the highest of the three, with no significant difference: over 387 sessions, the 95% bootstrap interval of the difference against SPY held runs from −1.27 to +1.57. Its mean daily return stays below that of SPY held there; its lower volatility carries the Sharpe. The current code therefore beats neither reference measurably, and falls below SPY held on its own window.
+
 ## Why This Strategy Hit a Ceiling
 
 ### Root Cause: Anti-Pattern in Bull Markets

@@ -42,6 +42,27 @@ Le Sharpe est calculé à taux sans risque nul sur les valeurs à chaque clôtur
 
 Aucune différence n'est significative (p Holm 0.2952 partout, les intervalles de confiance à 95 % contiennent zéro). Le gate devance les références en ratio de Sharpe estimé (Sharpe +0.35 / +0.43 / +0.38) avec une pire baisse nettement plus faible, mais l'écart reste dans le bruit d'échantillonnage : **l'avantage descriptif de la mesure du 2026-09-30 n'est pas reproduit comme significatif**. Les backtests de grille (`gate_sma30`, `gate_sma70`, `gate_roc10`, `gate_roc30`, `gate_monthly`) et de frais doublés (`gate_fees2`) ne sont **pas** lancés : le protocole préinscrit les rend conditionnels à une significativité qui n'est pas là.
 
+### Calendrier des références détenues (#20264)
+
+Les tableaux et le bootstrap ci-dessus décrivent la version antérieure à cette correction : leur référence `sixty40` décidait souvent sur une tranche de dividende à minuit, sans barre de cotation. Ils restent une mesure historique, **pas un recalcul du test avec la référence corrigée**. Le verdict historique `NO BEATS` n'est pas remplacé par un nouveau verdict statistique.
+
+Les modes `spy` et `sixty40` ne souscrivent pas Bitcoin : ils quittent l'initialisation avant l'ajout de BTCUSD. Dans `sixty40`, les avis de dividende d'IEF pouvaient donc consommer la garde de mois avant la première barre. Le rééquilibrage ne consomme désormais le mois que si la tranche contient une barre de SPY ou d'IEF ; les tranches vides et les barres hors univers ne suffisent pas. La règle programmée du mode `gate` et son bras `settled` ne changent pas.
+
+Mesure sur les nœuds QC, frais inclus, protocole fixé avant les backtests ([#20264, protocole](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6204828547)) :
+
+| Fenêtre `sixty40` | Variante | Ordres émis à minuit NY | Sharpe QC | CAGR | Drawdown max | Ordres | Backtest |
+|---|---|---|---|---|---|---|---|
+| 2016-01-01 → 2024-12-31 | avant | 161 | 0,487 | 9,042 % | 21,1 % | 179 | `c7d868b6a8d2dd9b42f151287f2fd37b` |
+| | après | 0 | 0,493 | 9,096 % | 21,1 % | 186 | `ddef3d6d07b7a6fa96f1bdafeb23eee2` |
+| 2025-01-01 → 2026-06-30 (fenêtre distincte) | avant | 27 | 0,590 | 13,284 % | 10,5 % | 29 | `c5c2ee8e1c15d07559021593d05aacec` |
+| | après | 0 | 0,589 | 13,256 % | 10,5 % | 30 | `b8497e2c7c2019ef7abfe1bda808e948` |
+
+Le Sharpe QC déduit un taux sans risque : il ne se compare pas directement au Sharpe à taux nul du tableau #19929. Les variations avant/après (+0,006 puis −0,001) restent sous le seuil descriptif de 0,05 fixé d'avance. Ces fenêtres ont déjà été observées ; la seconde est distincte de la première, pas un échantillon neuf de sélection.
+
+Les quatre prédictions tiennent : aucun ordre corrigé à minuit, aucun refus, code du signal `gate` et du bras `settled` inchangé, et témoin `spy` inchangé. Pour ce dernier, sur 2016-01-01 → 2026-06-30, les trois ordres ont les mêmes horaires, symboles, quantités, types, états et prix avant/après (`84f525aacb41ec2a7af2c74dd9444866` / `fed61744a1585055fe540df1ae33ef62`) : Sharpe QC 0,598, CAGR 15,130 %, drawdown 33,6 %. Les tests CPU exercent aussi une tranche vide suivie d'une barre, une barre hors univers et l'unicité de décision mensuelle.
+
+Il s'agit d'une **correction de calendrier**, pas d'une amélioration de stratégie démontrée. Une émission à minuit n'est pas ici une preuve de lecture du futur ; elle mélangeait des décisions sur cours précédents avec celles prises sur la première clôture du mois.
+
 ### Réserves d'exécution (mesuré tel qu'implémenté)
 
 Ces chiffres sont ceux du code **tel qu'implémenté**, pas d'un basculement QQQ/SHY parfait. Compteurs d'exécution du backtest `gate` : **134 tentatives de cible** (67 vers QQQ, 67 vers SHY), exposition brute moyenne **0.966**, rotation **22.154 / an**, frais rapportés à l'equity **0.101 % / an**.

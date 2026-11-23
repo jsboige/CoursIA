@@ -32,6 +32,7 @@ Modes (convention check_docs_links.py)
     python check_notebook_navlinks.py               # scan complet tracked-only (defaut, exit 1 si broken)
     python check_notebook_navlinks.py --baseline    # ecrit scripts/tests/baseline_nb_navlinks.json
     python check_notebook_navlinks.py --check       # check vs baseline (exit 1 si NEW broken)
+    python check_notebook_navlinks.py --check --diff-base origin/main  # NEW bloquent seulement s'ils sont imputables au diff
     python check_notebook_navlinks.py --family Search  # limiter a une famille
     python check_notebook_navlinks.py NB.ipynb      # un seul notebook
     python check_notebook_navlinks.py --json        # sortie machine
@@ -346,6 +347,46 @@ def _load_baseline():
     return keys
 
 
+def _changed_since(base):
+    """Chemins changes entre `base` et HEAD (`git diff --name-only base...HEAD`).
+
+    Meme diff que le workflow d'origine (`pr_files.txt`). C'est le checker qui
+    le calcule a partir de la base, comme les gardes soeurs (`--base` du
+    cliquet split-reading, `--diff` de prose-counts) : la voie rapide n'a donc
+    pas de jeton de liste a fournir. Git en echec = diff inconnu = ensemble
+    vide, fail-closed comme un fichier absent.
+    """
+    proc = subprocess.run(
+        ["git", "-c", "core.quotePath=false", "diff", "--name-only", f"{base}...HEAD"],
+        cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        print(f"WARN: git diff {base}...HEAD en echec, diff inconnu (fail-closed) : "
+              f"{proc.stderr.strip()}", file=sys.stderr)
+        return set()
+    return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+
+
+def _partition_new_by_diff(new, diff):
+    """(blocking, warning) sur les NEW findings selon l'imputabilite au diff.
+
+    Imputable = le notebook du finding est dans le diff (le lien casse vit
+    DANS le notebook, donc la PR qui touche ce notebook le cause). Plus
+    simple que `check_notebook_nav_chain._partition_new_by_diff` (pas de
+    logique de serie/README ici : un lien casse est ancre a SON notebook).
+    Diff vide = fail-closed : tout NEW bloque (decision c.5854935546
+    transposable, navlinks n'a pas de `candidate-delivered` a tolerer).
+    """
+    blocking, warning = [], []
+    for key in new:
+        notebook = key[0]  # (notebook, cell_idx, line_no, target)
+        if not diff or notebook in diff:
+            blocking.append(key)
+        else:
+            warning.append(key)
+    return blocking, warning
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Verifie les liens relatifs casses dans les cellules markdown des notebooks .ipynb."
@@ -356,6 +397,13 @@ def main(argv=None):
                         help="Ecrire le baseline (snapshot des broken actuels)")
     parser.add_argument("--check", action="store_true",
                         help="Comparer au baseline ; exit 1 si NEW broken (regression)")
+    parser.add_argument("--diff-base", metavar="REF", dest="diff_base",
+                        help="Avec --check : limite la portee bloquante au diff "
+                             "(`git diff --name-only REF...HEAD`). Les NEW hors "
+                             "diff deviennent des avertissements ; les NEW "
+                             "imputables (notebook du diff) blocquent. C'est la "
+                             "forme de la voie rapide (cf #20582 pour nav-chain "
+                             "et #21016 pour navlinks).")
     parser.add_argument("--json", action="store_true", help="Sortie JSON machine-readable")
     parser.add_argument("--quiet", action="store_true", help="Sortie minimale (CI)")
     parser.add_argument(
@@ -405,9 +453,29 @@ def main(argv=None):
         fixed = [k for k in known
                  if not any(b["notebook"] == k[0] and b["cell_idx"] == k[1]
                             and b["line_no"] == k[2] and b["target"] == k[3] for b in broken)]
+        if args.diff_base:
+            # Decision c.5854935546 transposable (#21016) : la jambe ne rougit
+            # que sur un NEW IMPUTABLE a la PR (notebook du diff). Un NEW sur
+            # un notebook hors diff est un avertissement : il n'est pas le fait
+            # de cette PR (typiquement un orphelin ne du merge d'une AUTRE PR
+            # entre-temps, ou une degradation de baseline deja assumee par
+            # une autre lane).
+            diff = _changed_since(args.diff_base)
+            blocking, warning = _partition_new_by_diff(
+                [(b["notebook"], b["cell_idx"], b["line_no"], b["target"]) for b in new_broken],
+                diff,
+            )
+            if warning and not args.quiet:
+                print(f"WARN: {len(warning)} NEW broken navlink(s) hors diff "
+                      f"(non imputables a cette PR, ne blocquent pas):")
+                for nb, ci, ln, tgt in warning:
+                    print(f"  {nb} cell{ci} L{ln}: ({tgt})")
+            new_broken = [b for b in new_broken
+                          if (b["notebook"], b["cell_idx"], b["line_no"], b["target"]) in set(blocking)]
         if new_broken:
             if not args.quiet:
-                print(f"FAIL: {len(new_broken)} NEW broken navlink(s) vs baseline:")
+                print(f"FAIL: {len(new_broken)} NEW broken navlink(s) vs baseline"
+                      + (" (imputables au diff)" if args.diff_base else "") + ":")
                 for b in new_broken:
                     print(f"  {b['notebook']} cell{b['cell_idx']} L{b['line_no']} [{b['kind']}]: "
                           f"[{b['text']}]({b['target']})")

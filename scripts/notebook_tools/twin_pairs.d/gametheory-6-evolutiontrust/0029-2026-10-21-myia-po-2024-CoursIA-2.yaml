@@ -1,0 +1,7 @@
+date: '2026-10-21'
+by: myia-po-2024:CoursIA-2
+reason: 'PR #21662 (#21763) : le jumeau C# seme ses tirages, le carnet Python non. Les quatre points du contrat C# sont desormais appliques cote Python (`random.Random(42)` par instance, generateur cree seulement si le bruit est actif, `rng_seed = 1` incremente a chaque match, `axl.Tournament(..., seed=42)`). Deux executions completes du carnet (23/23, session unique) produisent des sorties byte-identiques. Audit firsthand du carnet Python au head d609b9ebde ; cote C# inchange (csharp_sha identique a l''audit 0028). Niveau de parite `semantic` preserve.'
+python_sha: 1f47763a057a801890a888465fdbae1fb193b836
+csharp_sha: aed250229ab5503d5939eedae397307807c21c9c
+content_python_sha: da442f684e6db30d8ce4d915bd4771bbfd5f81c12ccc8630207881ca1baa6ce9
+content_csharp_sha: 896d0a9659dd54cff895d1f7632baac528566196de594ed03063f20adc1216fe

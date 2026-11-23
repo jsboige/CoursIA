@@ -6,6 +6,7 @@ dans l'ordre FAILURE / CANCELLED / SUCCESS -- non chronologique. Un fold
 premiere-occurrence retient le FAILURE perime : c'est le defaut mesure par
 ai-01. Le fold latest-wins retient le SUCCESS : #16232 est MERGED.
 """
+import itertools
 import sys
 from pathlib import Path
 
@@ -140,6 +141,71 @@ def test_tie_break_id_puis_ordre_quand_started_at_identiques():
     assert fold_latest(legs_sans_id)["X"]["conclusion"] == "success"
 
 
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : une jambe `skipped` plus RECENTE ne remplace pas une
+    jambe anterieure non-skipped du meme nom.
+
+    `skipped` compte comme VERT (GREEN) : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et une PR ROUGE se debloquerait d'elle-meme. Le repli garde le
+    verdict reel.
+    """
+    legs = [
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    state = render("ab", legs)
+    assert state["latest_reds"] == ["PR gate"]
+    assert state["latest"]["PR gate"]["conclusion"] == "failure"
+
+
+def test_un_verdict_reel_remplace_un_skipped_anterieur():
+    """Le repli joue dans un seul sens : un VERDIT reel remplace toujours un
+    skip anterieur, et l'ordre de la liste ne decide de rien."""
+    legs = [
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T2", "id": 2},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    legs_inverse = list(reversed(legs))
+    assert fold_latest(legs_inverse)["PR gate"]["conclusion"] == "failure"
+
+
+def test_un_skipped_seul_reste_vert_dans_la_vue_latest():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT -- sinon le gate bloquerait des PRs dont le
+    job n'a rien a mesurer."""
+    legs = [{"name": "Lean CI", "conclusion": "skipped", "started_at": "T1", "id": 1}]
+    state = render("ab", legs)
+    assert state["latest_reds"] == []
+    assert state["latest"]["Lean CI"]["conclusion"] == "skipped"
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN, et aucun appelant ne retrie. Le repli doit tenir dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    state = render("ab", legs)
+    assert state["latest_reds"] == ["PR gate"]
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le repli ne doit dependre d'aucun ordre d'arrivee."""
+    lot = [
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+    ]
+    for permutation in itertools.permutations(lot):
+        assert fold_latest(list(permutation))["PR gate"]["conclusion"] == "failure"
+
+
 def test_fold_latest_preserve_les_champs_bruts_de_la_jambe():
     """#16889 : la jambe rendue est la BRUTE enrichie des champs canoniques --
     un consommateur qui lit isRequired ou databaseId sur une jambe du rollup
@@ -171,6 +237,12 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     dans la vue latest, 2 = erreur d'instrument."""
     import scripts.check_run_state as m
 
+    # #21463 : main() lit AUSSI le jeu des checks requis (protection de
+    # branche). On le moque a None (indeterminable) pour garder ce test SANS
+    # RESEAU : le code de sortie porte sur la vue latest seule, et
+    # missing_required (None) n'y participe pas.
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+
     monkeypatch.setattr(m, "collect", lambda pr=None, sha=None:
                         ("94e31d7e", REST_16232_ALWAYS_ON))
     assert m.main(["--sha", "94e31d7e"]) == 0
@@ -188,6 +260,50 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
         raise RuntimeError("gh api ... -> 1: not found")
     monkeypatch.setattr(m, "collect", boom)
     assert m.main(["--sha", "ab"]) == 2
+
+
+def test_main_missing_required_check_is_non_green(monkeypatch, capsys):
+    """#21463 : un check requis ABSENT de la tete (jamais poste) rend le
+    verdict NON-vert (exit 1), meme si la vue latest est toute verte -- la
+    classe 'gate absent' que le fold par nom ne voit pas (la liste plate ne la
+    contient tout simplement pas)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    # La tete ne porte PAS `PR gate`, mais la branche l'exige :
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: {"PR gate"})
+    assert m.main(["--sha", "ab"]) == 1
+    out = capsys.readouterr().out
+    assert "missing_required" in out and "PR gate" in out
+
+
+def test_main_missing_required_indeterminable_stays_green(monkeypatch, capsys):
+    """#21463 : protection de branche illisible (None) = aucune absence n'est
+    AFFIRMEE -- le verdict reste vert si la vue latest l'est. Un 403 ne doit
+    ni blanchir ni rougir la classe gate-absent (fail-closed cote
+    determination, pas cote verdict)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+    assert m.main(["--sha", "ab"]) == 0
+
+
+def test_render_missing_required_tri_state():
+    """#21463 : `missing_required` distingue TROIS etats -- None (protection
+    illisible), [] (aucun manque), et une liste non vide (absence reelle). Les
+    deux premiers doivent rester indiscernables d'un vert."""
+    import scripts.check_run_state as m
+
+    legs = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    assert m.render("ab", legs, None)["missing_required"] is None
+    assert m.render("ab", legs, {"Always-on guards"})["missing_required"] == []
+    assert m.render("ab", legs, {"PR gate"})["missing_required"] == ["PR gate"]
 
 
 def test_collect_reads_every_page(monkeypatch):
@@ -250,3 +366,89 @@ def test_head_sha_leve_quand_les_deux_chemins_tombent(monkeypatch):
 
     with pytest.raises(RuntimeError):
         m._head_sha(19912)
+
+
+# --- 18/11/2026 (#27242) : le jeu des checks requis est une propriete de la
+# --- branche CIBLEE, pas de `main`. Une PR empilee (base = branche de feature,
+# --- non protegee) n'exige AUCUN check ; `pr-gate.yml` ne se declenche que sur
+# --- `base: main`, donc son `PR gate` n'y est jamais poste. Lire la protection
+# --- de `main` affirmait un check absent : un « BLOQUEE sans rouge visible »
+# --- (#21463) sur une PR que GitHub juge CLEAN.
+
+def test_une_branche_non_protegee_exige_aucun_check(monkeypatch):
+    """404 « Branch not protected » = branche lisible, aucun check requis :
+    le jeu est CONNU et VIDE (set()), pas indeterminable (None)."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError("gh api repos/jsboige/CoursIA/branches/feature/x/"
+                           "protection... -> 1: gh: Branch not protected "
+                           "(HTTP 404)")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._required_contexts(base="feature/x") == set()
+
+
+def test_une_branche_introuvable_laisse_indeterminable(monkeypatch):
+    """404 « Branch not found » n'est PAS une reponse « aucun check » : on ne
+    sait toujours pas, donc None (fail-closed cote determination)."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError("gh api ... -> 1: gh: Branch not found (HTTP 404)")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._required_contexts(base="feature/inexistante") is None
+
+
+def test_pr_base_lit_la_branche_ciblee(monkeypatch):
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        assert args[:2] == ["api", "repos/jsboige/CoursIA/pulls/27242"]
+        return '{"base": {"ref": "feature/tapis-bascule-legere"}}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._pr_base(27242) == "feature/tapis-bascule-legere"
+
+
+def test_pr_base_illisible_rend_none(monkeypatch):
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError("gh api ... -> 1: down")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._pr_base(27242) is None
+
+
+def test_main_sur_une_pr_empilee_n_annonce_aucun_requis_manquant(monkeypatch,
+                                                                   capsys):
+    """Le cas mesure (#27242) : la tete ne porte pas `PR gate`, la PR est
+    empilee sur une branche non protegee -- l'instrument ne doit PAS annoncer
+    un check requis absent (le verdict reste vert, exit 0)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    monkeypatch.setattr(m, "_pr_base", lambda pr: "feature/tapis-bascule-legere")
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: set())
+    assert m.main(["--pr", "27242"]) == 0
+    out = capsys.readouterr().out
+    assert "MISSING-REQUIRED" not in out
+    assert "base feature/tapis-bascule-legere" in out
+
+
+def test_main_emploie_la_base_de_la_pr_pour_la_protection(monkeypatch):
+    """La protection lue est celle de la branche ciblee de la PR, pas celle de
+    `main` : c'est le point du correctif."""
+    import scripts.check_run_state as m
+
+    vues = []
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", []))
+    monkeypatch.setattr(m, "_pr_base", lambda pr: "feature/tapis-banc-replay")
+    monkeypatch.setattr(m, "_required_contexts",
+                        lambda *a, **k: vues.append(k.get("base")) or set())
+    assert m.main(["--pr", "27251"]) == 0
+    assert vues == ["feature/tapis-banc-replay"]

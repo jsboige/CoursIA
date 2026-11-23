@@ -112,14 +112,16 @@ CONFIG_PATH = Path(__file__).resolve().parent / "kernel_suffix_canon.json"
 # (`CSharp` / `Python`) et que l'arbitrage 25/09 l'etend (`Lean`,
 # `Lean-Python`).
 KERNEL_CANONICAL = {"csharp": "CSharp", "python": "Python",
-                    "lean": "Lean", "lean-python": "Lean-Python"}
+                    "lean": "Lean", "lean-python": "Lean-Python",
+                    "rust": "Rust"}
 
 # Quelles familles de NOYAU un suffixe peut nommer sans mentir. Cas non trivial :
 # `-Lean-Python` nomme un notebook PYTHON qui pilote Lean (subprocess lake/lean,
 # LeanDojo, REPL -- cf rename_notebooks.py) : son kernelspec est `python3*`, et
 # c'est COHERENT. Un kernelspec `lean4*` n'a pas besoin de suffixe compose.
 SUFFIX_KERNEL_COMPAT = {"csharp": {"csharp"}, "python": {"python"},
-                        "lean": {"lean"}, "lean-python": {"python"}}
+                        "lean": {"lean"}, "lean-python": {"python"},
+                        "rust": {"rust"}}
 
 # Environnements Python du depot dont le nom ne commence pas par `python`.
 # Mesures dans l'arbre, pas supposes : `coursia-ml-training` (27 notebooks),
@@ -147,6 +149,8 @@ def kernel_family(kernelspec: str | None) -> str | None:
         return "lean"
     if low.startswith("python") or low in PYTHON_ENV_NAMES:
         return "python"
+    if low.startswith("rust"):
+        return "rust"
     return None
 
 

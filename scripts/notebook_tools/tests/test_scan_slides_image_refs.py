@@ -76,3 +76,94 @@ def test_main_single_deck(tmp_path, capsys):
     rc = main(["--repo", str(tmp_path), "--deck", "fixture-deck"])
     assert rc == 0
     assert "fixture-deck" in capsys.readouterr().out
+
+
+def _make_public_deck(root: Path):
+    """Deck au layout Slidev : visuels sous public/images/, references /images/..."""
+    deck = root / "slides" / "deck-public"
+    (deck / "public" / "images").mkdir(parents=True)
+    for n in ("e_active.png", "f_nowhere.png"):
+        (deck / "public" / "images" / n).write_bytes(b"x")
+    (deck / "slides.md").write_text(
+        "# deck\n\n![schema](/images/e_active.png)\n", encoding="utf-8"
+    )
+    return deck
+
+
+def test_public_images_layout_is_scanned(tmp_path):
+    """Regression du 2026-11-01 : public/images/ etait omis en silence (01-introduction)."""
+    _make_public_deck(tmp_path)
+    results = scan_slides_dir(tmp_path / "slides")
+    assert len(results) == 1
+    assert results[0]["deck"] == "deck-public"
+    assert results[0]["total"] == 2
+    assert results[0]["classes"]["ACTIVE"] == ["e_active.png"]
+    assert results[0]["classes"]["NOWHERE"] == ["f_nowhere.png"]
+
+
+def test_both_layouts_are_unioned(tmp_path):
+    """Un deck qui porte les deux emplacements compte l'union, dedoublonnee par nom."""
+    deck = _make_deck(tmp_path)
+    (deck / "public" / "images").mkdir(parents=True)
+    (deck / "public" / "images" / "g_public.png").write_bytes(b"x")
+    (deck / "public" / "images" / "a_active.png").write_bytes(b"x")  # doublon par nom
+    results = scan_slides_dir(tmp_path / "slides")
+    assert results[0]["total"] == 5
+    assert results[0]["classes"]["NOWHERE"] == ["d_nowhere.png", "g_public.png"]
+
+
+def test_main_deck_without_any_images_dir(tmp_path, capsys):
+    deck = tmp_path / "slides" / "deck-vide"
+    deck.mkdir(parents=True)
+    (deck / "slides.md").write_text("# vide\n", encoding="utf-8")
+    rc = main(["--repo", str(tmp_path), "--deck", "deck-vide"])
+    assert rc == 2
+    assert "public/images/" in capsys.readouterr().err
+
+
+def test_mounted_vue_component_reference_is_active(tmp_path):
+    """Un composant Vue monte par une diapositive rend ses imports (#25776).
+
+    Regression : ``scan_deck`` ne lisait que les ``*.md`` du deck, donc
+    l'image importee par ``components/IntelligencePyramid.vue`` tombait en
+    NOWHERE alors que le composant est monte par ``slides.md``.
+    """
+    deck = _make_deck(tmp_path)
+    (deck / "images" / "e_vue.png").write_bytes(b"x")
+    (deck / "components").mkdir()
+    (deck / "components" / "Pyramid.vue").write_text(
+        "<template><img src='/images/e_vue.png' /></template>\n",
+        encoding="utf-8",
+    )
+    (deck / "slides.md").write_text(
+        "# deck\n\n"
+        "![schema](images/a_active.png)\n"
+        "<!-- Image: images/b_trapped.png -->\n"
+        "<Pyramid />\n",
+        encoding="utf-8",
+    )
+    results = scan_slides_dir(tmp_path / "slides")
+    c = results[0]["classes"]
+    assert "e_vue.png" in c["ACTIVE"]
+    assert "e_vue.png" not in c["NOWHERE"]
+    # CONTROLE POSITIF : une image vraiment orpheline reste NOWHERE.
+    assert c["NOWHERE"] == ["d_nowhere.png"]
+    assert results[0]["total"] == 5
+
+
+def test_unmounted_vue_component_stays_nowhere(tmp_path):
+    """Un composant non monte ne rend rien : ses images restent NOWHERE.
+
+    Portee declaree du scan : seule une source de reference *montée* compte.
+    """
+    deck = _make_deck(tmp_path)
+    (deck / "images" / "e_vue.png").write_bytes(b"x")
+    (deck / "components").mkdir()
+    (deck / "components" / "Orphan.vue").write_text(
+        "<template><img src='/images/e_vue.png' /></template>\n",
+        encoding="utf-8",
+    )
+    results = scan_slides_dir(tmp_path / "slides")
+    c = results[0]["classes"]
+    assert "e_vue.png" in c["NOWHERE"]
+    assert "e_vue.png" not in c["ACTIVE"]

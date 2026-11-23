@@ -42,7 +42,9 @@ Conventions (portees des notebooks sources) :
   global -- deux appels sur les memes donnees rendent des sorties identiques
   au bit pres.
 * La source verifiee de cette factorisation est ICT-43
-  (``ICT-22c-GeometryOfTruth-Python.ipynb``, #16897). Le probing d'ICT-42 n'existe ni
+  (``ICT-22c-GeometryOfTruth-Python.ipynb``, #16897 -- carnet descendu en
+  ``ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb``
+  par le mouvement 2 de #16741, consommateur de cet organe). Le probing d'ICT-42 n'existe ni
   sur ``main`` ni sur sa branche crosscoder (#16749) : l'organe est ecrit pour
   l'accueillir tel quel (memes conventions, memes cles ``MM`` / ``LR`` /
   ``MMIID``) le jour ou il sera extrait a son tour.
@@ -76,6 +78,8 @@ def _check_inputs(X: "np.ndarray", y: "np.ndarray"):
     y = np.asarray(y)
     if X.ndim != 2:
         raise ValueError(f"X doit etre 2D [n, d], recu de forme {X.shape}")
+    if not np.isfinite(X).all():
+        raise ValueError("X doit contenir uniquement des valeurs finies")
     if y.ndim != 1 or y.shape[0] != X.shape[0]:
         raise ValueError(
             f"y doit etre 1D de longueur n={X.shape[0]}, recu de forme {y.shape}"
@@ -187,6 +191,8 @@ def probe_accuracy(
     X, y = _check_inputs(X, y)
     theta = np.asarray(theta, dtype=float)
     mu_train = np.asarray(mu_train, dtype=float)
+    if not np.isfinite(theta).all() or not np.isfinite(mu_train).all():
+        raise ValueError("theta et mu_train doivent etre finis")
     score = X @ theta - float(mu_train @ theta)
     return float(((score > 0.0) == (y == 1)).mean())
 

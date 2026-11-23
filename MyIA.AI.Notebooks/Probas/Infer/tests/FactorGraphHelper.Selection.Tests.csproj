@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>FactorGraphHelper.Selection.Tests</AssemblyName>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../FactorGraphHelper.cs" Link="FactorGraphHelper.cs" />
+  </ItemGroup>
+  <!-- FactorGraphDisplay (dual-mime SVG/HTML, #26783) enregistre ses formatters via
+       Microsoft.DotNet.Interactive.Formatting : le helper ne compile plus sans cet
+       assemblage, le harnais le reference donc explicitement (meme pin que
+       MyIA.AI.Notebooks.csproj, qui build en CI sur les deux OS). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Interactive" Version="1.0.0-beta.24568.1" />
+  </ItemGroup>
+</Project>

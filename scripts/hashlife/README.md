@@ -7,6 +7,9 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 | Fichier | Role |
 |---------|------|
 | `k_trajectory.py` | CLI principal -- modes `measure`, `verify-corpus`, `bounds`, `wolfram`, `wolfram-4classes`, `wolfram-ksf`, `wolfram-blocks`, `wolfram-seed-test` |
+| `hashlife_speedup.py` | Rapport d'acceleration HashLife vs simulation naive par classe de motif -- exposant d'echelle `alpha` avec son R2 et son enveloppe de repetitions, et temoin d'etat final (empreinte) sur les deux voies (pli 3 de l'Epic #19742) |
+| `hashlife_speedup_results.json` | Verbatim mesure d'acceleration (mediane de 3 repetitions, un sous-processus froid par point, empreinte d'etat final par point) |
+| `HASHLIFE-SPEEDUP-VERDICT.md` | Verdict falsifiable `REDUCIBLE` / `IRREDUCIBLE` par motif, et sa robustesse sous incertitude |
 | `wolfram_cross_classes_results.json` | Verbatim mesure 4 classes Wolframe (pli 4) |
 | `wolfram_ksf_results.json` | Verbatim KSF 4 classes (pli 7) |
 | `wolfram_blocks_results.json` | Verbatim block decomposition 4 classes (pli 8) |
@@ -18,7 +21,7 @@ Instrumentation pour mesurer la **complexite de trajectoire** (compression LZ fe
 | `WOLFRAM-VERDICT-KSF.md` | Falsifiable verdict KSF R30 vs R110 (pli 7) |
 | `WOLFRAM-VERDICT-BLOCKS.md` | Falsifiable verdict block decomposition R30 vs R110 (pli 8) |
 | `WOLFRAM-VERDICT-SEED-TEST.md` | Falsifiable verdict seed specialise + 3 complexites (pli 9) |
-| `tests/` | Pytests des plis 3, 4, 7, 8 et 9 |
+| `tests/` | Pytests des plis 3, 4, 7, 8 et 9, et du rapport d'acceleration HashLife |
 
 ## Modes CLI
 
@@ -66,9 +69,18 @@ python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 -
 python scripts/hashlife/k_trajectory.py --mode wolfram-seed-test --n-cells 512 --n-steps 512 \
     --json-out scripts/hashlife/wolfram_seed_test_results.json
 
+# Rapport d'acceleration HashLife (pli 3 Epic #19742) -- 3 repetitions, medianes
+python scripts/hashlife/hashlife_speedup.py --repeats 3 \
+    --json-out scripts/hashlife/hashlife_speedup_results.json
+
 # Tests pytest
 python -m pytest scripts/hashlife/tests/ -v
 ```
+
+Note : `hashlife_speedup.py` relance chaque point dans un **sous-processus neuf**
+(`--worker`). L'organe memoise globalement (`lru_cache`), donc dans un meme
+processus un motif rechauffe le cache du suivant et la mesure releve l'ordre des
+appels au lieu de l'algorithme.
 
 ## Resultats notables
 
