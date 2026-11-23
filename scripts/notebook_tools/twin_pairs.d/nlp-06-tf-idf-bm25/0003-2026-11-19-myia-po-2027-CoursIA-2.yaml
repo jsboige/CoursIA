@@ -1,0 +1,8 @@
+date: '2026-11-19'
+by: myia-po-2027:CoursIA-2
+python_sha: 0840b827d5c2bbf1277cf98405fb7de0eab396fd
+csharp_sha: 1caf2ca856052fdb14636c73910f8f36b4a9a3d6
+content_python_sha: cd92ace40d4df1140d7a7e75954ba033ff7c392d5230f5419ba5932f2056de34
+content_csharp_sha: e71a1067b0af80dc429ab61074542507cad2c58dbaee018fe77a9724cb1c0e88
+known_differences:
+  - "§5 (balayage 231 requêtes, mécanisme k1/b) ajouté côté Python seulement ; non porté au jumeau C# — asymétrie pédagogique assumée (review #27372)"

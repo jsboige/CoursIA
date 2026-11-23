@@ -133,7 +133,7 @@ by shears alone — see the body of the proof); only `KT_trivial_alexander`
 proof body). -/
 noncomputable def alexanderPolynomial (k : Knot) : AlexanderPoly := alexanderPolynomialAux k.diagram
 
-/-! #### Controls: the definition discriminates
+/-! #### Checks: the definition discriminates
 
 A definition catching neither the unknot nor the trefoil would be a
 disguised `True` and removing the `sorry` would be cosmetic (same
@@ -298,7 +298,7 @@ theorem alexander_trefoilMutant :
   simp (config := { decide := true }) [alexanderEntry]
   ring
 
-/-- Discrimination control on the figure-eight knot (4_1): under the
+/-- Discrimination check on the figure-eight knot (4_1): under the
 designated normalization (minor omitting the first row and the last column),
 the function returns t³ − 2·t² + 2·t on the canonical planar code (#17595).
 
@@ -3751,7 +3751,7 @@ theorem conwayMutant_trivial_alexander :
 
 The NOTE in `Knots.Mutation_en` (limit of the canonical witness) called for
 an intermediate diagram: no one-shot map superposes the designated PDs. The
-c165 Python probe (engine controlled against the proven values −t⁶/11n34 and
+c165 Python probe (engine validated against the proven values −t⁶/11n34 and
 t⁵/11n42) swept the family of 96 sphere mutations of the Conway census
 (4 rotations × 24 re-attachments of the 4 boundary points) against the KT
 census under full combinatorial isomorphism (list reordering + label
