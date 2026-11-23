@@ -6062,8 +6062,10 @@ def test_14216_ce1_mutation_scope_toujours_vrai_fp1_rougit(monkeypatch):
     """#14216 contrôle positif par mutation : désactiver le scope (retour
     inconditionnel True = sémantique par-PR d'avant le fix) rend la
     reproduction fp1 VERTE — la preuve que le test mord."""
+    # #27873 — la signature porte le corps de la reserve (discrimination
+    # persona/user) : le monkeypatch suit.
     monkeypatch.setattr(mod, "_override_scopes_reserve",
-                        lambda b, a: True)
+                        lambda b, a, nit_body=None: True)
     assert _pr_14216(UNSCOPED_OVERRIDE_14216)["blocked"] is False
 
 
@@ -6071,8 +6073,10 @@ def test_14216_ce2_mutation_scope_toujours_faux_vp1_rougit(monkeypatch):
     """#14216 contrôle négatif par mutation : un scope qui refuse tout
     (jamais de levée d'autrui, même nommée) fait rougir vp1 — la porte du
     scope explicite est bien portée par le détecteur testé."""
+    # #27873 — la signature porte le corps de la reserve (discrimination
+    # persona/user) : le monkeypatch suit.
     monkeypatch.setattr(mod, "_override_scopes_reserve",
-                        lambda b, a: False)
+                        lambda b, a, nit_body=None: False)
     assert _pr_14216(SCOPED_OVERRIDE_14216)["blocked"] is True
 
 
