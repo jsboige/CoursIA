@@ -182,6 +182,28 @@ def test_pr_mode_flags_touched_doc_with_unrefreshed_header(git_tree: Path) -> No
     assert _reasons(report) == ["STALE_DATE"]
 
 
+def test_doc_touched_then_restored_to_base_is_not_the_prs_revision(
+    git_tree: Path,
+) -> None:
+    # #27838: the PR edited a doc, then a later commit of the same PR put it
+    # back byte-identical to the base. Its net diff is empty, so its header is
+    # not the PR's to refresh -- the PR's own commits alone must not redden it.
+    old = "> REFERENCE — vivante — dernière révision 2026-10-20"
+    body = f"{old}\n# Reference\n"
+    _write(git_tree, "docs/reference/doc.md", body)
+    _commit(git_tree, when="2026-10-20 12:00:00 +0000")
+    _git(git_tree, "tag", "-f", "base0")
+
+    _write(git_tree, "docs/reference/doc.md", body + "edit\n")
+    _commit(git_tree, when="2026-10-21 12:00:00 +0000")
+    _write(git_tree, "docs/reference/doc.md", body)  # restored to the base
+    _commit(git_tree, when="2026-10-23 12:00:00 +0000")
+
+    report = ref.run(root=git_tree, baseline=1, base="base0")
+    assert report["verdict"] == "CONFORME", report["findings"]
+    assert report["date_checked"] == 0
+
+
 def test_git_failure_is_a_find_not_a_pass(tmp_path: Path) -> None:
     # Not a git repo: reading the PR's own commits fails -> finding, never a
     # pass. (The finding is GIT_LOG_FAILED since the rework: the PR's own
