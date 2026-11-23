@@ -1,0 +1,11 @@
+- name: "Complexity-06b Aaronson Gottesman"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Le tableau CHP, la dérivation de Pauli et l'état complet sont natifs en C# ; le troisième juge Stim est appelé effectivement par Python.NET.
+  known_differences:
+    - "Les réalisations aléatoires et chronos diffèrent ; la comparaison de Stim exclut le coût du pont. Les données dépendent de la machine, tandis que les tailles, graines et budgets de tirages sont conservés."
+    - "2026-11-22 (myia-po-2023:CoursIA-2, #26901) : après la descente de la série sous InformationCalcul/, le #load du pont (cellule 0) est réancré sur ../../Config/PythonNetLoader.cs (l'ancien ../Config/ pointait vers un InformationCalcul/Config/ inexistant) et le lien croisé de fin de carnet (cellule 33) sur ../../Physique/, puis re-exécution C# ENTIÈRE (Python.NET, Stim 1.15.0). Attestation : les deux blobs se déplacent, la parité sémantique et le verdict SOTA-OK sont inchangés. --update en DERNIÈRE opération (cf #8957)."

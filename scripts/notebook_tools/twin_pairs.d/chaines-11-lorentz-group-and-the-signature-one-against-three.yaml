@@ -1,0 +1,12 @@
+- name: "Chaines-11 Lorentz group and the signature one against three"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le contenu porte sur la forme de Killing du groupe de Lorentz en arithmetique exacte (identites de Jacobi 216/216 triples, fermeture de la base, kappa diagonale (J1..J3 = -4, K1..K3 = +4) et hors-diagonale nulle, signature (3, 3) par signes de pivots puis critere de Sylvester puis elimination symetrique exacte, conservation par boosts et rotations des deux formes D et PL, contre-test cite de l'unite frappee). Python calcule en entiers natifs et fractions.Fraction ; C# en System.Numerics.BigInteger avec des types exacts locaux Rationnel (rationnel reduit), Outils (algebre de matrices), Killing (elimination symetrique a pivot de plus grand module et complement de Schur) et Grams (signes des pivots, mineurs principaux de Sylvester). Aucun moteur externe canonique ne produit ces resultats : les deux cotes derivent les memes valeurs a la main."
+  known_differences:
+    - "C# emploie System.Numerics.BigInteger partout et un type local Rationnel (rationnel reduit) la ou la source Python se fie aux entiers natifs et a fractions.Fraction ; les valeurs (216, fermeture, diagonale -4/+4, signature (3, 3), conservations, contre-test cite) coincident."
+    - "C# etablit chaque conformite par une egalite exacte testee (comparaisons == sur Rationnel et .All(...) par element, affichees avec la valeur) : fermeture, Jacobi, kappa diagonale et hors-diagonale, K^2 = I, R^2 = -I, K^T D + D K et R^T D + D R nulles, R^T PL + PL R attendu [[0, -4], [-4, 0]] ; la source Python imprime les memes verdicts booleens par comparaison numpy allclose, sans levée d'exception d'aucun côté."
+    - "Les trois exercices sont des stubs compilables a TODO etudiant cote C#, des cellules d'exercice a completer cote Python ; aucune solution n'est revelee d'un cote ni de l'autre."
+    - "BCL seulement cote C# (System, System.Collections.Generic, System.Globalization, System.Linq, System.Numerics) ; aucun NuGet, aucun appel externe, aucune figure."
