@@ -5468,7 +5468,7 @@ MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05-CountingHarder-Perm
 
 - **Carnet suivant** : [Complexity-05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) — la même fonction devient une loi de probabilité : $|\mathrm{perm}|^2$ gouverne la sortie d'un interféromètre, et le mur du comptage devient un candidat d'avantage quantique.
 - **Dans la même série** : [Complexity-02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb) — le mur exponentiel de l'énumération, côté existence ; [Complexity-06 — Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) — l'autre bord de la frontière quantique.
-- **Carnet voisin d'une autre série** : [ANALYSE-12 — Compter les couplages parfaits](../SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) — le même pont permanente ↔ couplages, cette fois avec une preuve formelle de l'autre côté.
+- **Carnet voisin d'une autre série** : [ANALYSE-12 — Compter les couplages parfaits](../SymbolicAI/Lean/Analyse/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) — le même pont permanente ↔ couplages, cette fois avec une preuve formelle de l'autre côté.
 - **Lectures** : les références complètes (Valiant 1979, Aaronson-Arkhipov 2011, Minc 1978) figurent en fin de section « À retenir ».
 ",,,,,,,,0ad2a31280bc07b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,fin-verif-05b,markdown,fr,07919891d2da0e7c,"## Vérifiez votre compréhension
@@ -5489,7 +5489,7 @@ MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05b-AaronsonArkhipov-P
 
 - **Carnet suivant** : [Complexity-06 — Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) — l'autre versant : non plus compter pour prédire la sortie d'une machine quantique, mais simuler la machine elle-même, et mesurer où le classique rend son tablier.
 - **Dans la même série** : [Complexity-05 — Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent-Python.ipynb) — la définition $n!$ mesurée dont ce carnet part ; [Complexity-06b — Aaronson-Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb) — l'arbitre exécutable qui refuse une porte $T$.
-- **Carnet voisin d'une autre série** : [ANALYSE-12 — Compter les couplages parfaits](../SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) — le permanent comme pont, cette fois côté preuve formelle.
+- **Carnet voisin d'une autre série** : [ANALYSE-12 — Compter les couplages parfaits](../SymbolicAI/Lean/Analyse/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) — le permanent comme pont, cette fois côté preuve formelle.
 - **Lectures** : les six références (Aaronson-Arkhipov 2013, Valiant 1979, Ryser 1963, Jerrum-Sinclair-Vigoda 2004, Mezzadri 2007, Aaronson 2013) figurent en fin de section « À retenir ».
 ",,,,,,,,696c3e025fdb92ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb,3f111b27,markdown,fr,b9dc0f8955f44598,"## 0.1. Prérequis quantiques : qubit, ket, Bell, GHZ
