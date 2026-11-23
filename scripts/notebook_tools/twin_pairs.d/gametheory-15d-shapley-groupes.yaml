@@ -1,0 +1,11 @@
+- name: "GameTheory-15d Shapley-Groupes"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Portage C# BCL .NET 9 pur (0 NuGet, convention marathon #4956) du jumeau Python GameTheory-15d (valeurs de Shapley de groupes, Flores-Molina-Tejada 2019, 4OR 17(2):141-172). Python = numpy + networkx + matplotlib (jeux de connectivite, valeurs de Shapley exactes et Monte-Carlo, centralites, figures). C# = arithmetique rationnelle exacte via System.Numerics.BigInteger + fractions reduites, graphes par masques bit, centralites (degre, intermediaison, Spearman) et 4 figures SVG manuscrites -- numpy/networkx/matplotlib reimplémentes from-scratch en BCL (0 NuGet). Les deux cotes sont solver-free by design : aucune bibliotheque SOTA de theorie des jeux n'existe a brancher ; le calcul exact de Shapley de groupes (formule exacte en 2^(n-|C|) sous-ensembles) et le Monte-Carlo sont l'objet pedagogique. Asymetrie documentee : (1) le Monte-Carlo C# utilise le PRNG natif .NET (System.Random), distinct du PRNG NumPy du jumeau Python -- les cellules stochastiques n'affichent que des proprietes ROBUSTES (estimation bornee a ~2-3 SE de la valeur exacte, SE > 0, rang stable), jamais une reproduction bit-exacte de NumPy ; (2) les figures matplotlib Python sont remplacees par 4 figures SVG ecrites a la main (convention BCL 0-NuGet, documentee). Verdict SOTA-OK : pas de moteur tiers applicable par convention from-scratch assumee des deux cotes, couverture mathematique paritaire."
+  known_differences:
+    - "Python = numpy + networkx + matplotlib ; C# = BCL .NET 9 pur (System.Linq, System.Numerics.BigInteger, System.Collections.Generic, 0 NuGet), calcul de Shapley de groupes from-scratch via masques bit + arithmetique rationnelle exacte."
+    - "Monte-Carlo : PRNG .NET (System.Random) cote C# vs PRNG NumPy cote Python -- les cellules stochastiques (section 5) n'affichent que des proprietes robustes, jamais une reproduction bit-exacte."
+    - "Figures : 4 figures SVG manuscrites cote C# vs figures matplotlib cote Python (convention BCL 0-NuGet, documentee)."
