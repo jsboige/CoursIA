@@ -46,11 +46,6 @@
           "version": "3.0.5",
           "decision": "to_converge",
           "reason": "Aucun motif ecrit ne l'impose : les carnets concernes portent une version anterieure sans contrainte documentee (le recensement les nomme). La convergence est une montee d'epinglage suivie d'une re-execution (regle C.2). Suivi : #27787."
-        },
-        {
-          "version": "3.2.1",
-          "decision": "to_converge",
-          "reason": "Epinglage superieur a la canonique, mesure le 2026-11-21 dans un carnet de recherche (`GenAI/_research/RAG04-BPE-Parite-Natif-vs-Qwen-CSharp.ipynb`). Aucun motif ecrit : soit la canonique monte avec preuve, soit le carnet redescend a 3.1.0. Suivi : #27787."
         }
       ]
     },
@@ -66,26 +61,14 @@
       "ecosystem": "nuget",
       "canonical": "3.5.2",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "3.4.1",
-          "decision": "to_converge",
-          "reason": "La serie SemanticWeb avait converge vers 3.4.1 du temps ou c'etait la canonique ; l'ecart est un retard depuis que la canonique a ete portee a 3.5.2, pas un choix documente. Convergence = montee + re-execution de la serie. Suivi : #27787."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "Microsoft.ML",
       "ecosystem": "nuget",
       "canonical": "5.0.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "4.0.2",
-          "decision": "to_converge",
-          "reason": "Aucune contrainte ecrite : le carnet epingle une version anterieure de la canonique (Microsoft.ML 4.0.2, avec Microsoft.ML.FastTree 4.0.2). Convergence = montee + re-execution. Suivi : #27787."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "SkiaSharp",
