@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1446** carnets Python, **555** eligibles, **891** refuses.
+Census : **1451** carnets Python, **559** eligibles, **892** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -79,7 +79,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Chaines | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Coalitions | 4 | 2 | 2 | 0 | 0 | 0 | 2 | 1 |
 | Complexity | 27 | 23 | 4 | 0 | 0 | 0 | 1 | 3 |
-| Compression | 12 | 9 | 3 | 1 | 0 | 0 | 0 | 2 |
+| Compression | 13 | 10 | 3 | 1 | 0 | 0 | 0 | 2 |
 | Constructeur | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | DataScienceWithAgents | 109 | 40 | 69 | 44 | 5 | 3 | 26 | 27 |
 | DecisionTheory | 15 | 2 | 13 | 0 | 0 | 0 | 0 | 13 |
@@ -88,18 +88,20 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | FallacyDetection | 5 | 2 | 3 | 0 | 0 | 1 | 1 | 1 |
 | FineTuning | 11 | 0 | 11 | 11 | 0 | 0 | 4 | 8 |
 | Fondations | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
+| GameTheory-17-MultiAgent-RL | 4 | 3 | 1 | 0 | 0 | 0 | 0 | 1 |
 | HumorDetection | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | ICT-Series | 100 | 81 | 19 | 9 | 1 | 3 | 0 | 14 |
 | Image | 33 | 5 | 28 | 7 | 21 | 22 | 4 | 24 |
+| Infer | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | InformationQuantique | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | InformationTheory | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
-| Lean | 126 | 99 | 27 | 1 | 5 | 4 | 11 | 18 |
+| Lean | 128 | 101 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 14 | 11 | 3 | 1 | 0 | 0 | 2 | 2 |
 | Metajeux | 7 | 5 | 2 | 1 | 0 | 0 | 1 | 0 |
-| MyIA.AI.Notebooks/GameTheory | 70 | 48 | 22 | 2 | 3 | 3 | 8 | 11 |
+| MyIA.AI.Notebooks/GameTheory | 67 | 45 | 22 | 2 | 3 | 3 | 8 | 11 |
 | MyIA.AI.Notebooks/IIT | 6 | 1 | 5 | 0 | 0 | 0 | 0 | 5 |
 | MyIA.AI.Notebooks/NLP | 11 | 8 | 3 | 0 | 0 | 0 | 3 | 1 |
 | MyIA.AI.Notebooks/Probas | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 |
@@ -152,7 +154,7 @@ par classe :
 |---|---|---:|
 | `dependance_locale` | un module de la serie a une dependance absente de la distribution | 18 |
 | `hors_serie` | le carnet importe un module d'une autre serie, non livre par le bundle | 23 |
-| `absent_distribution` | l'import est une roue pure que le carnet n'installe pas lui-meme | 172 |
+| `absent_distribution` | l'import est une roue pure que le carnet n'installe pas lui-meme | 173 |
 
 Ces trois classes sont mesurees sur la population que le critere acceptait
 **avant** l'alignement -- un carnet deja refuse pour un GPU ou une cle n'y
@@ -161,7 +163,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 760 | 555 |
+| Carnets eligibles | 765 | 559 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -248,6 +250,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb` | Compression | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb` | Compression | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb` | Compression | python3 | lxml==6.1.3 | - |
+| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb` | Compression | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb` | Constructeur | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb` | DataScienceWithAgents | python3 | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6 | - |
@@ -305,6 +308,9 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb` | FallacyDetection | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb` | Fondations | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb` | Fondations | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-Python.ipynb` | GameTheory-17-MultiAgent-RL | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17e-Bayesian-Persuasion-Python.ipynb` | GameTheory-17-MultiAgent-RL | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb` | GameTheory-17-MultiAgent-RL | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GenAI/HumorDetection/01_humor_intro.ipynb` | HumorDetection | python3 | - | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -392,6 +398,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0e-MDL-Mesure-Unique-Python.ipynb` | Image | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0f-Groupes-De-Frise-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb` | Infer | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb` | InformationQuantique | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/InformationTheory/InformationTheory-03-Code-de-Hamming-Et-Decodage-Par-Syndrome.ipynb` | InformationTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/InformationTheory/InformationTheory-08-Theorie-De-L-Information-Des-Reseaux.ipynb` | InformationTheory | python3 | numpy==2.4.6 | - |
@@ -428,6 +435,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb` | Lean | python3 | pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-05-Dynamique-Tresses-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-06-Empilements-Cercles-Python.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/01-formes-modulaires-sl2z-hecke.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/02-monstrous-moonshine-invariant-j.ipynb` | Lean | python3 | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-chaine-de-modularite-vers-fermat.ipynb` | Lean | python3 | - | - |
@@ -437,6 +445,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb` | Lean | python3-lean | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb` | Lean | python3-lean | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -567,9 +576,6 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17e-Bayesian-Persuasion-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
-| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-20-Capstone-Coalitions-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | networkx==3.6.1, numpy==2.4.6, pandas==3.0.2 | - |
@@ -748,6 +754,7 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | Dynamics | cle, reseau | - |
 | FallacyDetection | import_absent, reseau, suffisance | fallacy_detection (1) |
 | FineTuning | gpu, import_absent, suffisance | torchvision (4), bitsandbytes (1) |
+| GameTheory-17-MultiAgent-RL | suffisance | - |
 | ICT-Series | cle, gpu, reseau, suffisance | - |
 | Image | cle, gpu, import_absent, reseau, suffisance | CLIP_.clip (1), calculate_metrics (1), clip (1), dnnlib (1), generate_images (1), guided_diffusion.script_util (1) |
 | Jauge | gpu | - |
