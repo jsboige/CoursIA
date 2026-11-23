@@ -82,6 +82,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Câblage CI : matrice `ci_lakes.json` pour les lakes migrés (dont `knot_lean` depuis #13751 et `conway_lean` depuis #25256). Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`). See #8738 (step 3), #8752 (livraison) |
 | [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
+| [reference/axler-companions-distillation.md](reference/axler-companions-distillation.md) | Comparaison des deux compagnons Axler (linear-algebra-done-right-lean Apache-2.0 vs Axler-Solutions sans licence) et règle de distillation par verbe d'énoncé — Fille 3.2 de l'Epic Origami #24838 ; typologie mesurée sur 7 sections, gap ch. 10, application aux marches 3+ de la Fille 3.1 |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/gh-posting-hygiene-detail.md](reference/gh-posting-hygiene-detail.md) | Posting gh — détail : incidents de référence (sièges, OS, remédiation, le trompe-l'œil du rouge `tag_required` sur #17270/#17326) |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
@@ -308,6 +309,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
+| [curriculum/manifeste-dependances.md](curriculum/manifeste-dependances.md) | Manifeste des dépendances du cursus par famille de noyau — verdict d'inclusion dans l'image CPU, motifs mesurés ou déclarés, conflits de versions, manifeste consolidé (généré par `scripts/notebook_tools/dependency_manifest.py`, #27544) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
