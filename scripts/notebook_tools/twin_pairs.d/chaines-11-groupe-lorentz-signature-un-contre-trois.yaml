@@ -1,0 +1,8 @@
+- name: "Chaines-11 Groupe Lorentz Signature Un Contre Trois"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-23 (myia-po-2028:claudish, #28049) : jumeau C# cree depuis le jumeau Python -- meme plan de 37 cellules (14 code), 0 erreur d'execution ; les valeurs porteuses coincident verbatim : six generateurs a residus d'algebre nuls (6/6, entrees non nulles cumulees 0), crochets de l'eq. 80 exacts, Jacobi 216/216 triples d'identite nulle, forme de Killing diag(-4,-4,-4,4,4,4) de signature (3, 3), eq. 79 et eq. 81 en signature (1, 3) par pivots ET par Sylvester des deux cotes."
+    - "Le C# imprime des verdicts CONFORME ligne a ligne (attendu entre parentheses) la ou le Python imprime les memes valeurs sans ce format ; micro-variations d'impression seulement, aucune valeur divergente."
