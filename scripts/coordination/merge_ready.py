@@ -242,6 +242,11 @@ import check_run_state  # noqa: E402
 # #17437 : normalisation de l'auteur d'une review (orthographe REST des
 # identites App) -- source unique de la forme canonique, jamais recopiee.
 import gh_identity  # noqa: E402
+# #28131 (voie L1) : verdict LOCAL du garde de perimetre quand son run
+# heberge est encore en file. La grammaire du perimetre reste dans
+# l'organe (`scripts/check_pr_perimeter.py`) : ce module ne fait que
+# l'appeler, jamais la recopier.
+import merge_ready_perimeter as perimeter  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -2693,7 +2698,22 @@ def combined_pass_context() -> CombinedPassContext | None:
     return CombinedPassContext(worktree=worktree)
 
 
-def combined_tree_reason(
+def _one_line(text: str, limit: int = 600) -> str:
+    """Aplatit une queue de sortie en UNE ligne bornee (#28147).
+
+    Le motif journalise doit rester lisible en une ligne : les retours a la
+    ligne sont remplaces par un espace, les blancs sont reduits, et la queue
+    est tronquee par la fin au-dela de ``limit``.
+    """
+    flat = " ".join((text or "").split())
+    if not flat:
+        return ""
+    if len(flat) <= limit:
+        return flat
+    return flat[: limit - 3] + "..."
+
+
+def _combined_tree(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
 ) -> tuple[str | None, str | None]:
     """Etape 5quinquies : les tests d'integrite passent-ils sur ``main`` + tete ?
@@ -2705,12 +2725,12 @@ def combined_tree_reason(
     tests » n'est pas « ils passent ». ``MERGE_READY_COMBINED_CHECK=0``
     retire l'etape (rollback operateur, jamais un reglage de lane).
 
-    La raison (la section FAILURES de pytest) est rendue avec le motif : le
-    journal portait `FAILED <id>`, ce qui dit QUOI a rougi mais pas POURQUOI
-    -- et une PR approuvee sautee sur un test qui ne la concerne pas se
-    demande alors qu'on suppose au lieu de mesurer (22/11 : deux PRs
-    approuvees sautees sur `test_guard_gauntlet`, aucune ne touchant le
-    gauntlet).
+    Le motif porte la QUEUE de sortie pytest aplatie en une ligne (#28147) ;
+    la RAISON est rendue A PART : la section FAILURES de pytest. Le journal
+    portait `FAILED <id>`, ce qui dit QUOI a rougi mais pas POURQUOI -- et
+    force le lecteur a DEVINER pourquoi une PR approuvee a ete sautee
+    (22/11 : deux PRs approuvees sautees sur `test_guard_gauntlet`, aucune
+    ne touchant le gauntlet).
     """
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
         return None, None
@@ -2739,10 +2759,30 @@ def combined_tree_reason(
         return "combined-tree-conflict", detail
     if res.returncode == 1 and verdict == "RED":
         failed = payload.get("failed") or []
-        return (f"combined-tree-red:{failed[0] if failed else 'unnamed'}",
-                detail)
-    return (f"combined-tree-unreadable:"
-            f"{payload.get('reason') or 'rc-' + str(res.returncode)}", detail)
+        reason = f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
+        tail = _one_line(payload.get("output_tail") or "")
+        if tail:
+            reason = f"{reason} | pytest-tail: {tail}"
+        return reason, detail
+    unreadable = (f"combined-tree-unreadable:"
+                  f"{payload.get('reason') or 'rc-' + str(res.returncode)}")
+    tail = _one_line(payload.get("output_tail") or "")
+    if tail:
+        unreadable = f"{unreadable} | pytest-tail: {tail}"
+    return unreadable, detail
+
+
+def combined_tree_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> str | None:
+    """Le MOTIF de l'etape 5quinquies, seul : ``None`` si l'organe rend GREEN.
+
+    L'API publique reste celle d'avant : UN motif, en une ligne. La raison
+    du rouge (section FAILURES de pytest) est rendue par `_combined_tree`,
+    qui la rend A PART -- elle ne pollue pas le motif journalise.
+    """
+    reason, _detail = _combined_tree(runner, pr, head, gh_env)
+    return reason
 
 
 def stacked_parent_state(
@@ -3019,6 +3059,9 @@ def unstable_state_reason(
 
     jobs = advisory_jobs()
     advisory_count = 0
+    # #28131 (voie L1) : le garde de perimetre heberge est en file, le merge
+    # n'attend pas la file -- on mesure LOCALEMENT, avec le meme organe.
+    local_perimeter = 0
     for name in sorted(latest):
         if name == gate_leg["name"]:
             continue
@@ -3027,6 +3070,17 @@ def unstable_state_reason(
             continue
         done = latest_done.get(name)
         if done is None:
+            if name == perimeter.PERIMETER_CHECK_NAME:
+                verdict = perimeter.local_perimeter_verdict(
+                    runner, pr, head, gh_env, REPO
+                )
+                if verdict.blocking is False:
+                    local_perimeter += 1
+                    continue
+                return (
+                    f"mergeable-state:unstable:{name}:{verdict.detail}",
+                    verdict.detail,
+                )
             return (f"mergeable-state:unstable:{name}:no-completed-leg", "")
         if done.get("conclusion") not in CHECK_GREEN:
             return (
@@ -3048,7 +3102,8 @@ def unstable_state_reason(
         )
     return (
         None,
-        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded",
+        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded"
+        + (f"+{local_perimeter} perimeter-local" if local_perimeter else ""),
     )
 
 
@@ -3297,7 +3352,7 @@ def evaluate_pr(
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.
-    reason, detail = combined_tree_reason(runner, pr, view_head, gh_env)
+    reason, detail = _combined_tree(runner, pr, view_head, gh_env)
     if reason is not None:
         return skip(reason, stack_state, stack_inc, detail)
     # 6. REST : mergeable + tete.

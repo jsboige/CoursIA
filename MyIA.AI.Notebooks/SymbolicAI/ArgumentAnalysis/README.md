@@ -80,7 +80,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 ### Autour de 02 — Sophismes et taxonomie
 
-- [02b — Cartes Argumentum](Argumentation-02b-Argumentum-Cards-Python.ipynb) : produire un deck imprimable à partir de la taxonomie. Ce carnet de production consomme le socle ontologique plutôt que d'ajouter une méthode de détection.
+- [02b — Cartes Argumentum](Argumentation-02b-Argumentum-Cards-Python.ipynb) · [jumeau C#](Argumentation-02b-Argumentum-Cards-CSharp.ipynb) : produire un deck imprimable à partir de la taxonomie. Ce carnet de production consomme le socle ontologique plutôt que d'ajouter une méthode de détection.
 
 ### Autour de 03 — Argumentation abstraite
 
@@ -95,7 +95,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 ### Autour de 05 — Vérification formelle
 
 - [05b — Routage multi-backend](Argumentation-05b-Multi-Backend-Routing-Python.ipynb) : router PL, logique modale, Dung et FOL vers les bons solveurs, avec une sentinelle « décider ou échouer bruyamment » pour les prouveurs externes EProver et Mace4.
-- [05c — Matrice de richesse formelle](Argumentation-05c-Formal-Richness-Matrix-Python.ipynb) : distinguer ce qu'un solveur décide réellement de ce que son simple branchement suggère ; classer les résultats substantiels, indisponibles, honnêtement absents ou théâtraux.
+- [05c — Matrice de richesse formelle](Argumentation-05c-Formal-Richness-Matrix-Python.ipynb) · [Rust](Argumentation-05c-Formal-Richness-Matrix-Rust.ipynb) : distinguer ce qu'un solveur décide réellement de ce que son simple branchement suggère ; classer les résultats substantiels, indisponibles, honnêtement absents ou théâtraux.
 
 ### Autour de 06 — Raisonnement non monotone
 

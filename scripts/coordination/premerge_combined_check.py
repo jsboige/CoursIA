@@ -141,7 +141,7 @@ def failure_detail(output: str, limit: int = 4000) -> str:
             debut = i
     if debut is None:
         for i, ligne in enumerate(lignes):
-            if ligne.startswith("FAILED ") or ligne.startswith("ERROR "):
+            if ligne.startswith(("FAILED ", "ERROR ")):
                 debut = i
     if debut is None:
         return ""
@@ -190,6 +190,11 @@ class Verdict:
     #: La section FAILURES de pytest : la raison du rouge, lisible par
     #: l'appelant (22/11). Vide quand le verdict n'est pas un rouge de test.
     failure_detail: str = ""
+    #: Queue de la sortie pytest (stdout + stderr) sur un verdict NON vert
+    #: (#28147). Sans elle, le skip de `merge_ready` ne porte que
+    #: l'identifiant du test rouge -- et l'on suppose la cause au lieu de la
+    #: mesurer. Bornee : les derniers caracteres suffisent.
+    output_tail: str = ""
 
     @property
     def exit_code(self) -> int:
@@ -233,6 +238,27 @@ def _fichier_de(entree: str) -> str:
     inventaire du depot -- dont le verdict ne change pas avec la fusion).
     """
     return entree.split("::", 1)[0]
+
+
+#: Taille de la queue de sortie conservee sur un verdict non vert (#28147).
+#: Bornee : le motif de journal doit rester lisible en une ligne, et la cause
+#: d'un rouge (traceback, assertion, timeout) est presque toujours en fin de
+#: sortie, pas au debut.
+TAIL_MAX_CHARS = 1200
+
+
+def _tail(output: str, limit: int = TAIL_MAX_CHARS) -> str:
+    """Queue bornee de la sortie pytest (stdout + stderr).
+
+    Vide si la sortie est vide. Tronquee par la FIN, prefixee de ``...`` --
+    le debut de la sortie est de la collecte, la fin porte la cause.
+    """
+    text = (output or "").strip()
+    if not text:
+        return ""
+    if len(text) <= limit:
+        return text
+    return "..." + text[-limit:]
 
 
 def pytest_command(tests: list[str], workers: int) -> list[str]:
@@ -331,6 +357,7 @@ def check(runner: Runner, repo: Path, *, base: str, head: str,
             if res.timed_out:
                 verdict.reason = "timeout"
                 verdict.failure_detail = failure_detail(output)
+                verdict.output_tail = _tail(output)
             elif res.returncode == 0:
                 verdict.verdict = "GREEN"
             elif res.returncode == 1:
@@ -338,10 +365,12 @@ def check(runner: Runner, repo: Path, *, base: str, head: str,
                 verdict.failed = parse_failed(output)
                 verdict.failure_detail = failure_detail(output)
                 verdict.reason = "tests-failed"
+                verdict.output_tail = _tail(output)
             else:
                 verdict.reason = f"pytest-rc-{res.returncode}"
                 verdict.failed = parse_failed(output)
                 verdict.failure_detail = failure_detail(output)
+                verdict.output_tail = _tail(output)
     finally:
         # Un worktree REPRIS n'est pas retire ici : il sert au candidat
         # suivant de la passe. Seul celui que l'organe a pose lui-meme est
