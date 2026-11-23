@@ -12,6 +12,47 @@ import json
 import sys
 
 
+def _refusal_block(name: str, label: str, rel_path, repo_root, kind: str) -> str:
+    """Bloc de refus du piege du cwd (#27724).
+
+    `kind` = "absent" (le chemin n'existe pas sous la racine resolue) ou
+    "null" (le fichier existe mais git n'a pas de blob a HEAD : non commis).
+    Le message nomme la paire, le fichier, la racine resolue -- et donne la
+    commande correcte, sinon le worker reessaie la meme commande a l'identique.
+    """
+    if rel_path is None:
+        detail = f"chemin {label} non declare dans le fichier de paire"
+        rel_path = "<absent du yaml>"
+    elif kind == "absent":
+        detail = "absent de la racine resolue"
+    else:
+        detail = ("present sur disque mais sans blob a HEAD dans la racine "
+                  "resolue (non commis ?)")
+    lignes = [
+        f"[REFUS] paire '{name}' : {label} '{rel_path}' {detail}.",
+        f"  Racine resolue : {repo_root}",
+        "  L'attestation enregistre les blobs de HEAD de CETTE racine -- "
+        "elle attestait les blobs d'un autre arbre (piege du cwd, #27724).",
+    ]
+    if kind == "absent":
+        lignes.append(
+            "  Commande correcte : lancer depuis le worktree de la PR, p. ex. :"
+        )
+        lignes.append(
+            f"    git -C <worktree> rev-parse --show-toplevel   "
+            f"# doit nommer le worktree, pas cette racine")
+        lignes.append(
+            "    puis : python scripts/notebook_tools/check_twin_parity.py "
+            "--pair '<nom>' --update --by <machine:workspace>")
+        lignes.append(
+            "  ou conserver le cwd et passer --repo-root <worktree>.")
+    else:
+        lignes.append(
+            "  Commande correcte : committer le carnet d'abord (l'attestation "
+            "lit HEAD, pas le disque), puis relancer --update.")
+    return "\n".join(lignes)
+
+
 def run_update(args, organ, reg_path, repo_root):
     """Mode --update, extrait verbatim (T7, #26364)."""
     _audit_dir = organ._audit_dir
@@ -51,6 +92,11 @@ def run_update(args, organ, reg_path, repo_root):
         target = all_pairs
     updates: dict[str, dict] = {}
     skipped: list[str] = []
+    # Piege du cwd (#27724) : lance depuis le clone principal alors que la
+    # PR vit dans un worktree, --update attestait les blobs de main -- sha
+    # null (carnet absent) ou fantome (carnet a un autre etat), sans erreur.
+    # Une paire refusee n'est JAMAIS ecrite ; l'exit non nul en rend compte.
+    refusals: list[str] = []
     # No-op detection (#9399 critere 2) : un rebaseline qui n'apporte
     # aucune information nouvelle (SHAs de comparaison identiques au
     # `_latest_audit`) est un "faux audit" -- dater une attestation
@@ -59,7 +105,32 @@ def run_update(args, organ, reg_path, repo_root):
     no_op: list[str] = []
     forced_no_op: list[str] = []
     for pp in target:
+        # Garde #27724, membre 1 : chaque cote de la paire doit exister sous
+        # la racine resolue AVANT toute ecriture. C'est le detecteur du
+        # lancement depuis le mauvais arbre (le carnet neuf de la PR n'y
+        # existe pas).
+        name = pp.get("name", "?")
+        pair_refused = False
+        for label in ("python", "csharp"):
+            rel = pp.get(label)
+            if rel is not None and (repo_root / rel).exists():
+                continue
+            refusals.append(_refusal_block(name, label, rel, repo_root, "absent"))
+            pair_refused = True
+        if pair_refused:
+            continue
         audit, cur_py, is_noop = update_pair(repo_root, pp, by=args.by)
+        # Garde #27724, membre 2 : un sha attendu null = moitie de paire
+        # invisible a HEAD (fichier present mais non commis, ou chemin non
+        # declare). Ecrire l'attestation produirait un sha null/fantome.
+        nulls = [f for f in ("python_sha", "csharp_sha",
+                             "content_python_sha", "content_csharp_sha")
+                 if audit.get(f) is None]
+        if nulls:
+            cote = "python" if "python_sha" in nulls else "csharp"
+            refusals.append(_refusal_block(
+                name, cote, pp.get(cote), repo_root, "null"))
+            continue
         if cur_py is None:
             skipped.append(pp.get("name", "?"))
             continue
@@ -164,6 +235,17 @@ def run_update(args, organ, reg_path, repo_root):
             f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
             file=sys.stderr,
         )
+    if refusals:
+        # #27724 : les blocs de refus ont deja nomme paire/fichier/racine et
+        # donne la commande correcte. On les rejoue en un seul bloc pour que
+        # le bilan final les contienne.
+        for bloc in refusals:
+            print(bloc, file=sys.stderr)
+        print(
+            f"[REFUS] {len(refusals)} attestation(s) refusee(s) -- piege du "
+            f"cwd (#27724) : aucune ecriture pour ces paires.",
+            file=sys.stderr,
+        )
     # Bilan no-op vs reelles (#9399 critere 2) -- informe le worker de
     # la portee reelle de sa commande. Sans --force, les paires no-op ne
     # sont PAS ecrites ; le worker voit la liste et peut relancer --force
@@ -201,24 +283,28 @@ def run_update(args, organ, reg_path, repo_root):
     # Exit code (#10430 acceptance) :
     #   0 = ecrit OK (peut inclure des no_op informes sur stderr)
     #   1 = au moins une paire DEMANDEE n'a pas pu etre ecrite parce que
-    #       son bloc d'audit etait introuvable / indentation non reconnue.
-    #       L'AVERTISSEMENT ci-dessus a deja liste les paires concernees ;
-    #       l'exit non-zero est le signal que le worker doit inspecter
-    #       l'indentation et relancer --update (ou investiguer le fichier).
+    #       son bloc d'audit etait introuvable / indentation non reconnue,
+    #       OU a ete REFUSEE par la garde du cwd (#27724 : chemin absent de
+    #       la racine resolue / sha null). Les blocs de refus ont deja
+    #       nomme paire/fichier/racine et donne la commande correcte ;
+    #       l'exit non-zero est le signal que le worker doit corriger la
+    #       commande, pas la re-lancer a l'identique.
     #   2 = aucun nom de paire trouve (path `Aucune paire nommee` plus haut).
     # Le commentaire historique qui disait « 0 meme si toutes les cibles
     # etaient no-op » est REVOQUE ici : un worker qui voit exit=0 et 0
     # ligne ecrite conclut legitimement « rien a faire ». Si le probleme
     # reel est que le scanner est aveugle (entrees manquees), c'est
     # INVISIBLE. L'exit 1 ferme la boucle.
-    # Garder la garde sur les paires skippees (`notebook absent de git`)
-    # en dehors de cette logique : ce n'est PAS un failed-rebaseline, juste
-    # une mise en garde environnementale.
+    # #27724 : les paires skippees (`notebook absent de git`, cur_py None)
+    # sont desormais couvertes par la garde du cwd -- le skip silencieux
+    # ETAIT le piege. La branche `skipped` reste en filet defensif.
     # #10430 exit 1 : un rebaseline IGNORE (header d'audit introuvable /
     # indentation non reconnue) ne doit pas laisser le worker conclure
     # « rien a faire ». Ce mode d'echec est propre au mono-fichier legacy :
     # en mode file-per-audit (#14911) il n'existe plus de header inline a
     # manquer -- les audits sont des fichiers (glob, jamais aveugles).
+    if refusals:
+        return 1
     if not reg_path.is_dir() and updated < len(updates):
         return 1
     return 0
