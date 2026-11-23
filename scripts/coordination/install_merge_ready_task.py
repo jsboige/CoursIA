@@ -45,9 +45,12 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import importlib.util
+import json
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 TASK_NAME = r"CoursIA\merge_ready"
@@ -74,6 +77,36 @@ WSH_PATH = (
 # (voir sync_repo). Les autres machines passent --repo explicitement.
 DEFAULT_REPO = Path(r"D:\CoursIA-wt-merge-ready")
 INTERVAL_MINUTES = 20
+
+# --- miroir du journal ------------------------------------------------------------
+#
+# Pourquoi ce miroir existe (mesure du 2026-11-23)
+# -------------------------------------------------
+# L'organe ecrit son stdout A LA FIN de sa boucle : `merge_ready.py` fait
+# `for verdict in results: print(_describe(verdict))` -- une impression par
+# PR, mais apres la boucle. Mesure : le run du 23/11 a evalue 191 PRs entre
+# 00:36Z et 06:38Z, et le journal de la tache
+# (`logs\merge_ready_20261123.log`) en pesait 76 octets a 08:00Z -- les deux
+# seules lignes du lanceur (« run start », « depot synchronise »). Les 191
+# verdicts etaient pourtant deja dans `journal.jsonl`, une ligne par PR,
+# ecrite au fil de l'evaluation.
+#
+# Autrement dit : le journal de l'organe est en temps reel, le journal de la
+# tache ne l'est pas. Un run de six heures ne laisse aucune trace lisible de
+# son travail tant qu'il n'est pas fini -- et un run qui n'est jamais fini
+# (le budget de duree n'existait pas dans la copie executee) ne laisse rien.
+#
+# Le miroir lit le journal pendant le run et ecrit UNE LIGNE PAR PR dans le
+# journal de la tache, avec la duree de l'evaluation. Il ne touche ni
+# l'organe ni son code : il lit ce que l'organe ecrit deja.
+
+#: Nom du journal de l'organe, dans le dossier de la tache.
+JOURNAL_FILENAME = "journal.jsonl"
+#: Delai entre deux scrutations du journal pendant le run (s).
+JOURNAL_POLL_S = 5.0
+#: Ecart au-dela duquel deux lignes consecutives n'appartiennent plus au
+#: meme passage (meme convention que l'organe de duree, `DEFAULT_MAX_GAP_S`).
+DEFAULT_MAX_GAP_S = 900.0
 
 
 def _run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
@@ -284,6 +317,191 @@ def sync_repo(repo: Path) -> tuple[bool, str]:
     return True, "origin/main"
 
 
+def journal_path() -> Path:
+    """Chemin du journal de l'organe.
+
+    Derive de ``LOG_DIR.parent`` -- le dossier de la tache -- et non
+    recalcule : c'est le meme emplacement que
+    ``merge_ready.default_journal_path`` (et que la recopie qu'en fait
+    ``merge_ready_pass_timing.py``). La copie ne derive pas en silence --
+    un test verrouille l'egalite des trois. Passer par ``LOG_DIR`` rend
+    aussi le lanceur hermetique : un test qui redirige ``LOG_DIR`` ne lit
+    jamais le journal de la machine.
+    """
+    return LOG_DIR.parent / JOURNAL_FILENAME
+
+
+def timing_module():
+    """L'organe de duree (`merge_ready_pass_timing.py`), charge par chemin.
+
+    Il vit dans le meme repertoire que ce lanceur. Il n'est pas importe au
+    chargement : il ne sert qu'au miroir, et son absence ne doit pas
+    empecher la tache de tourner (le miroir tombe alors en mode « sans
+    duree », il continue d'ecrire les verdicts).
+
+    Charge par chemin et non par `import` : le lanceur est execute comme un
+    script depuis un dossier de travail arbitraire (System32 au reveil), ou
+    le repertoire du script n'est pas dans `sys.path`.
+    """
+    path = Path(__file__).resolve().parent / "merge_ready_pass_timing.py"
+    if not path.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "merge_ready_pass_timing_mirror", path
+        )
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        # Le module doit etre dans `sys.modules` AVANT son execution : les
+        # `@dataclass` de l'organe y lisent leur propre module, et
+        # l AttributeError (module absent) les ferait echouer.
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    except Exception:  # noqa: BLE001 -- l'absence de l'organe n'est pas fatale
+        sys.modules.pop("merge_ready_pass_timing_mirror", None)
+        return None
+    return module
+
+
+def _duree_texte(state: dict, ts, max_gap: float) -> str:
+    """La duree de l'evaluation decrite par la ligne courante.
+
+    Meme convention que l'organe de duree : l'ecart entre deux lignes
+    consecutives du journal est le cout d'evaluation de la PR de la ligne
+    SUIVANTE (la ligne est ecrite apres l'evaluation). La premiere ligne
+    d'un passage n'a pas de predecesseur : son cout n'est pas mesurable et
+    n'est pas invente. Un ecart superieur au `--max-gap` coupe le passage
+    (meme convention) : la duree n'est donc pas annoncee non plus.
+    """
+    prev_ts = state.get("prev_ts")
+    if ts is None or prev_ts is None:
+        return "duree n.d. (premiere ligne du passage)"
+    delta = (ts - prev_ts).total_seconds()
+    if delta < 0:
+        return "duree n.d. (horodatage en retrait)"
+    if delta > max_gap:
+        return (
+            f"duree n.d. (ecart {delta:.0f} s > {max_gap:.0f} s : "
+            "passage coupe comme par l'organe de duree)"
+        )
+    return f"duree {delta:.1f} s"
+
+
+def _drain_journal(journal: Path, log_fh, state: dict, parse_ts, max_gap: float) -> None:
+    """Ecrit dans le journal de la tache les lignes de journal nouvelles.
+
+    `state` porte l'offset lu, le reliquat de ligne incomplete et
+    l'horodatage precedent (pour la duree). Une ligne partielle (le
+    journal ecrit en append, une ligne peut etre lue a moitie) n'est pas
+    rendue : elle est mise en attente et rendue au tour suivant, une fois
+    complete.
+    """
+    offset = state["offset"]
+    try:
+        size = journal.stat().st_size
+    except OSError:
+        return
+    if size <= offset:
+        return
+    with journal.open("rb") as fh:
+        fh.seek(offset)
+        chunk = fh.read(size - offset)
+    state["offset"] = offset + len(chunk)
+    state["pending"] += chunk
+    while b"\n" in state["pending"]:
+        raw, state["pending"] = state["pending"].split(b"\n", 1)
+        text = raw.decode("utf-8", "replace").strip()
+        if not text:
+            continue
+        try:
+            data = json.loads(text)
+        except ValueError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        pr = data.get("pr")
+        verdict = str(data.get("verdict") or "?")
+        reason = str(data.get("reason") or "")
+        ts = parse_ts(data.get("ts")) if parse_ts is not None else None
+        label = f"PR #{pr}" if pr is not None else "PR ?"
+        motif = f" -- {reason}" if reason else ""
+        log_fh.write(
+            f"journal : {label} {verdict}{motif} "
+            f"({_duree_texte(state, ts, max_gap)})\n"
+        )
+        # Flush a chaque PR : c'est le point de la demande (« log ligne par
+        # ligne, avec flush a chaque PR »). Sans flush, le tampon de 8 Ko
+        # du lanceur retiendrait les lignes jusqu'a la fin du run -- c'est
+        # exactement le symptome que le miroir supprime.
+        log_fh.flush()
+        state["mirrored"] += 1
+        if ts is not None:
+            state["prev_ts"] = ts
+
+
+def mirror_journal(
+    journal: Path,
+    log_fh,
+    start_offset: int,
+    stop_event: threading.Event,
+    poll_s: float = JOURNAL_POLL_S,
+) -> int:
+    """Suit le journal de l'organe pendant le run et l'ecrit ligne par ligne.
+
+    Renvoie le nombre de lignes mises en miroir. Ne leve jamais : une
+    panne du miroir ne doit pas arreter la tache (le journal de l'organe
+    reste la source de verite).
+    """
+    timing = timing_module()
+    parse_ts = getattr(timing, "parse_ts", None) if timing is not None else None
+    max_gap = float(getattr(timing, "DEFAULT_MAX_GAP_S", DEFAULT_MAX_GAP_S))
+    state = {"offset": start_offset, "pending": b"", "prev_ts": None, "mirrored": 0}
+    try:
+        while True:
+            _drain_journal(journal, log_fh, state, parse_ts, max_gap)
+            if stop_event.wait(poll_s):
+                break
+        # Dernier tour : le journal a pu grossir pendant la derniere
+        # scrutation (la fin du run ecrit ses lignes d'un coup).
+        _drain_journal(journal, log_fh, state, parse_ts, max_gap)
+    except Exception:  # noqa: BLE001 -- le miroir ne doit jamais casser le run
+        return int(state.get("mirrored") or 0)
+    return int(state.get("mirrored") or 0)
+
+
+def append_pass_timing(repo: Path, journal: Path, log_fh) -> str:
+    """Ajoute au journal de la tache le rapport de duree de l'organe.
+
+    L'organe de duree existe deja (`merge_ready_pass_timing.py`, #26799) :
+    il mesure la duree d'un passage, groupee par classe, a partir du
+    journal de l'organe. Il n'etait appele par PERSONNE -- sa sortie
+    vivait dans le stdout d'un run manuel. L'appeler ici rend la mesure
+    lisible dans le journal de la tache, sans rien reimplementer : c'est
+    l'organe qui parle, avec ses propres regles.
+    """
+    organ = repo / "scripts" / "coordination" / "merge_ready_pass_timing.py"
+    if not organ.is_file():
+        log_fh.write(f"organe de duree absent : {organ}\n")
+        log_fh.flush()
+        return "absent"
+    res = subprocess.run(
+        [sys.executable, str(organ), "--journal", str(journal)],
+        capture_output=True,
+        check=False,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=str(repo),
+    )
+    log_fh.write(getattr(res, "stdout", "") or "")
+    stderr = getattr(res, "stderr", "") or ""
+    if stderr:
+        log_fh.write(stderr)
+    log_fh.flush()
+    return f"rc={getattr(res, 'returncode', 0)}"
+
+
 def cmd_run(repo: Path) -> int:
     """Invoque par la tache planifiee (via le lanceur VBS masque) : journal
     horodate, pas de TTY.
@@ -303,6 +521,21 @@ def cmd_run(repo: Path) -> int:
             return 2
         fh.write(f"depot synchronise sur {msg}\n")
         fh.flush()
+        # Le journal de l'organe est lu PENDANT le run : une ligne par PR,
+        # avec la duree de l'evaluation, dans le journal de la tache.
+        # L'organe n'imprime ses verdicts qu'apres sa boucle (mesure du
+        # 23/11 : 191 PRs evaluees, 76 octets dans le log de la tache) --
+        # sans ce miroir, un run long ne laisse aucune trace lisible.
+        journal = journal_path()
+        start_offset = journal.stat().st_size if journal.exists() else 0
+        stop_event = threading.Event()
+        mirror = threading.Thread(
+            target=mirror_journal,
+            args=(journal, fh, start_offset, stop_event),
+            daemon=True,
+            name="merge-ready-journal-mirror",
+        )
+        mirror.start()
         # cwd=repo : la tache planifiee demarre hors depot (System32), et les
         # organes que merge_ready lance appellent `git` sans `-C`. Sans ce
         # cwd, check_slot_reservation.py sortait en rc=2 a chaque tour et
@@ -315,6 +548,17 @@ def cmd_run(repo: Path) -> int:
             stderr=subprocess.STDOUT,
             cwd=str(repo),
         )
+        # Le miroir s'arrete AVANT les ecritures du lanceur : un seul
+        # redacteur a la fois sur le journal de la tache.
+        stop_event.set()
+        mirror.join(timeout=60)
+        fh.write("\n--- duree des passages (organe merge_ready_pass_timing.py) ---\n")
+        fh.flush()
+        try:
+            append_pass_timing(repo, journal, fh)
+        except Exception as exc:  # noqa: BLE001 -- le rapport est un bonus
+            fh.write(f"rapport de duree indisponible : {exc}\n")
+            fh.flush()
         fh.write(
             f"=== {_dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} "
             f"run end rc={proc.returncode} ===\n"
