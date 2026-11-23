@@ -1,0 +1,107 @@
+# Conformité différentielle de Complexity-03-HierarchieTemporelle (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "Complexity-03-HierarchieTemporelle"
+  family: "InformationCalcul/Complexity"
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Rust.ipynb
+  measures:
+    - id: c2_text
+      description: "Sortie de la cellule 2, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 2 diffère du texte Python (ligne 1 : « Runtime observé : .NET 10.0.14; budgets calculés exactement … » contre « n |    n² |           2ⁿ » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c4_text
+      description: "Sortie de la cellule 4, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 4 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c6_text
+      description: "Sortie de la cellule 6, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 6 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c9_text
+      description: "Sortie de la cellule 9, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 9 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c11_text
+      description: "Sortie de la cellule 11, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 11 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_text
+      description: "Sortie de la cellule 13, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 13 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
