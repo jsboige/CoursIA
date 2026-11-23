@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import tapis_rapide
 
 #: Le label d'urne : il route l'issue, il ne la livre pas.
-LABEL_LIVRE = "candidate-delivered"
+from coordination.tapis_labels import LABEL_LIVRE
 
 NOTE_URNE = ("label candidate-delivered : urne de cloture (coordinateur, adjoint) "
               "-- signal, pas preuve : verifie l'artefact, puis rends la main")
