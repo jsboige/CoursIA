@@ -1,0 +1,11 @@
+- name: "Complexity-03d ETH Refutation Annoncee"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Mesure chronometrique de l'enumeration exacte from-scratch des deux cotes, solver-free by design : l'enumeration mesuree EST le sujet du carnet, aucun moteur externe n'est sautable."
+  known_differences:
+    - "Python stdlib (random, perf_counter) cote Python ; BCL (Random, Stopwatch) cote C# -- instances et chronometres distincts, la parite porte sur la structure du verdict, pas sur les valeurs absolues."
+    - "Pentes mesurees different par machine : Python 0.92 (cache) / 1.11 (memoire), pente globale 1.321 hors fenetre puis reparee par le re-examen par regimes ; C# 0.89 / 1.09, pente globale 1.068 dans la fenetre. Les deux cotes concluent H1 CONFIRME APRES EXAMEN et s_3 = 1 (mur exact 2^n)."
+    - "2026-11-21 (myia-po-2023:CoursIA) creation de la paire avec le jumeau C# (#27307) : memes verdicts H1 CONFIRME APRES EXAMEN et s_3 = 1 des deux cotes. --update en DERNIERE operation (cf #8957)."

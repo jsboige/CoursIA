@@ -266,6 +266,9 @@ def test_registre_absent_le_module_reste_importable(tmp_path):
     ci.mkdir(parents=True)
     (tmp_path / "scripts" / "notebook_tools").mkdir()
     shutil.copyfile(CI_DIR / "fast_lane_registry.py", ci / "fast_lane_registry.py")
+    # Les corps des commentaires vivent dans un module voisin (#27572) :
+    # l'arbre copie doit le porter, sinon l'import du registre meurt.
+    shutil.copyfile(CI_DIR / "fast_lane_commenters.py", ci / "fast_lane_commenters.py")
     code = (
         "import json, sys\n"
         f"sys.path.insert(0, {str(ci)!r})\n"

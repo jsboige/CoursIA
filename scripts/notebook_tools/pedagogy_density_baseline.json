@@ -426,10 +426,10 @@
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb": 1609.0,
     "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb": 1687.25,
     "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb": 1215.25,
-    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb": 1212.286,
-    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb": 1528.2,
-    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb": 1476.385,
-    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb": 1377.231,
+    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-Comprehension-Video-API.ipynb": 1212.286,
+    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb": 1528.2,
+    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb": 1476.385,
+    "MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb": 1377.231,
     "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb": 1213.588,
     "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb": 1013.625,
     "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb": 1018.933,
@@ -1457,7 +1457,7 @@
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb": 965.071,
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb": 1346.5,
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb": 1665.0,
-    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-Csharp.ipynb": 812.125,
-    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 1564.0
+    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-CSharp.ipynb": 812.125,
+    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-CSharp.ipynb": 1564.0
   }
 }
