@@ -7,15 +7,15 @@ import Mathlib.Tactic
 This module formalises the counting lemmas on which the Gelfand–Kirillov
 dimension computation of the notebook `GROTH-05b-GelfandKirillov-Python.ipynb`
 (issue #27589) rests: the cumulative Hilbert function of a polynomial ring,
-its strict growth, the free-algebra word count, and the submultiplicativity
-lemma that forces exponential growth for a graded algebra generated in
-degree one.
+its strict growth, the free-algebra word count, and the
+submultiplicativity lemma that forces exponential growth for a graded
+algebra generated in degree one.
 
 This module **does not define** the Gelfand–Kirillov dimension: Mathlib does
-not carry it, and the notebook says so. It does not prove Smoktunowicz's gap
-theorem either, nor the `log(dim A_n) / log n` asymptotics. It holds the
-counting facts a student can replay, at the exact frontier the notebook
-designates:
+not carry it, and the notebook says so. It does not prove Smoktunowicz's
+gap theorem either, nor the `log(dim A_n) / log n` asymptotics. It holds
+the counting facts a student can replay, at the exact frontier the
+notebook designates:
 
 -  `hilbertCumule d n`: monomials of degree at most `n` in `d` variables,
    `C(n + d, d)`;

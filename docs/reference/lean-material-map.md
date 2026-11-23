@@ -28,6 +28,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/GameTheory/assignment_lean` | 7 | 6 | declare | couverte | 1 hors site (3 carnets) | - | 2026-08-23 |
 | `MyIA.AI.Notebooks/Search/search_lean` | 7 | 6 | declare | couverte | ok (1) | - | 2026-07-09 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean` | 7 | 0 | declare | couverte | non consomme | - | 2026-10-04 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 7 | 6 | declare | couverte | ok (1) | - | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` | 7 | 6 | declare | couverte | 1 hors site (2 carnets) | - | 2026-09-19 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 7 | 5 | declare | couverte | non consomme | - | 2026-01-29 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean` | 7 | 6 | declare | couverte | ok (2) | - | 2026-08-15 |
@@ -35,7 +36,6 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | non consomme | 1 / 1 | 2026-06-10 |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | ok (14) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | ok (4) | 2 / 2 | 2026-05-29 |
 | `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean` | 5 | 2 | declare | couverte | ok (1) | - | 2026-10-31 |
@@ -61,7 +61,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ### Reconciliation
 
-527 modules + 387 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 951 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+528 modules + 388 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 953 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 
