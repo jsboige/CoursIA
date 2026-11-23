@@ -752,6 +752,51 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
     assert duplicate_basenames(tmp_path) == {}
 
 
+def test_duplicate_basenames_tolerance_la_paire_entierement_exclue(
+    tmp_path: Path,
+) -> None:
+    """T1-finale #25366 : une paire dont TOUS les répertoires portent un
+    marqueur CI-EXCLUDED est tolérée — même symétrie que le tri des dossiers
+    (« les exclusions déclarées comptent comme triées »). Cas mesuré : la
+    paire test_utils.py des deux projets-exemple Vibe-Coding, décision
+    écrite au tri po-2023 (#27066) que ce sens n'implémentait pas."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    assert (
+        duplicate_basenames(
+            tmp_path,
+            {
+                "scripts/alpha/tests": "exemple pedagogique",
+                "scripts/beta/tests": "exemple pedagogique",
+            },
+        )
+        == {}
+    )
+    # Sans la population exclue, la même paire reste comptée : l'argument
+    # est un filtre, pas un déplacement du seuil.
+    assert duplicate_basenames(tmp_path) == {
+        "test_x.py": ["scripts/alpha/tests", "scripts/beta/tests"]
+    }
+
+
+def test_duplicate_basenames_compte_la_paire_mixte_exclue_vivante(
+    tmp_path: Path,
+) -> None:
+    """Une collision MIXTE — un répertoire CI-EXCLUDED, un répertoire vivant
+    — reste comptée : le répertoire vivant collisionne réellement en CI."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    assert duplicate_basenames(
+        tmp_path, {"scripts/alpha/tests": "exemple pedagogique"}
+    ) == {"test_x.py": ["scripts/alpha/tests", "scripts/beta/tests"]}
+
+
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
