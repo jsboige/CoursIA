@@ -29,6 +29,8 @@ Côté NTFS : `calibration_lean` (checkout physique 1,04 Go, rev `db584cd6` conf
 | `520045ab` | `lakes/planning_lean` (11,1 Go) | git clean, rev exact, **8795 oleans**, `Mathlib.lean` présent |
 | `0df444a3` | `ffl-foundation-pilot` (7,2 Go) | rev exact, **8852 oleans** |
 
+**Remesure oleans (point du CR 23/11).** Les compteurs de la table sont des comptes d'artefacts, mesurés par `find <donateur> -name '*.olean' | wc -l` — c'est cette commande qui fait foi (la citation `.lean` de la leçon 3 était erronée et est corrigée ci-dessous). Remesurés le 2026-11-23 : conway_lean **8776** (dont 8326 dans le `mathlib` embarqué du `.lake/packages`), planning_lean **8648** (8265), ffl-foundation-pilot **8907** (8322) — dérive mineure de reconstructions depuis le geste, l'ordre relatif des donneurs est inchangé.
+
 Les victimes incluent des checkouts **partiels** (3,4–4,7 Go, clone interrompu) : les brancher sur le donateur complet les répare au passage — un checkout partiel ne peut servir aucun build complet.
 
 ## Garde pré-geste
@@ -73,4 +75,4 @@ Les victimes incluent des checkouts **partiels** (3,4–4,7 Go, clone interrompu
 
 1. **Le scan NTFS seul sous-voit la machine** : le clone `D:/Dev/CoursIA-2` n'avait que 2 checkouts, le WSL en portait 31 — l'inventaire doit couvrir les deux côtés du paravirtuel avant de décider l'économie.
 2. **`git rev-parse --short` ment par la longueur** : le même rev s'affiche `db584cd6d4` (10) dans un projet et `db584cd6d46` (11) dans un autre (désambiguïsation contextuelle) — grouper par short-10 a failli créer un faux groupe ; regrouper sur le rev complet.
-3. **Le contrôle de complétude est `find -name '*.lean' | wc -l` + git clean + rev exact**, pas la taille : deux checkouts de 7,2 Go peuvent ne pas être équivalents (complet vs clone interrompu rattrapé).
+3. **Le contrôle de complétude est `find -name '*.olean' | wc -l` + git clean + rev exact**, pas la taille : deux checkouts de 7,2 Go peuvent ne pas être équivalents (complet vs clone interrompu rattrapé). Le compte d'oleans mesure les artefacts de build — ce qu'un donateur doit réellement fournir ; le compte de fichiers `.lean` (`find -name '*.lean' | wc -l`) reste un contrôle secondaire côté sources.
