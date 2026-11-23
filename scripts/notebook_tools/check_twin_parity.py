@@ -184,6 +184,7 @@ from twin_open_claims import collect_open_claims, repo_slug  # noqa: E402
 # twin_open_claims ci-dessus. Ils n'importent PAS cet organe (injection
 # en parametre) : aucun cycle d'import, aucune double identite.
 import twin_parity_attest  # noqa: E402
+import twin_parity_base  # noqa: E402
 import twin_parity_census  # noqa: E402
 import twin_parity_cli  # noqa: E402
 
@@ -1060,12 +1061,21 @@ def update_pair(
     # signature `rec_X != cur_X` -- sans cette discrimination, le fix
     # violerait le design-gate #9399 critere 2 (metadata-only drift DOIT
     # rester no-op, Sudoku-08/14 BDD du 2026-08-04).
+    #
+    # Cette discrimination a un second versant (#28122) : HEAD porte la
+    # BRANCHE, or la destination du squash est `main`. Un blob enregistre par
+    # un commit de la branche reste joignable depuis HEAD tout en n'etant pas
+    # dans `main` -- le squash l'ecrasera. La base est donc interrogee en
+    # complement (module frere `twin_parity_base`, comme le decoupage T7 de
+    # #26364 l'a fait pour les modes d'ecriture).
     if is_noop and latest:
         rec_py = latest.get("python_sha")
         rec_cs = latest.get("csharp_sha")
         py_orphan = rec_py is not None and not _blob_ancestor_in(repo_root, rec_py)
         cs_orphan = rec_cs is not None and not _blob_ancestor_in(repo_root, rec_cs)
-        if py_orphan or cs_orphan:
+        if (py_orphan or cs_orphan
+                or twin_parity_base.orphan_a_venir(
+                    _self(), repo_root, latest, cur_py, cur_cs)):
             is_noop = False
     return audit, cur_py, is_noop
 
