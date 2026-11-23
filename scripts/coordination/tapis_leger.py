@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import tapis_age, tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
 from coordination import tapis_service, tapis_universel
 # L'import de l'occupation est sur **sa propre ligne** : la PR d'age (#28022)
 # modifie la ligne d'import voisine, et deux ancres distinctes fusionnent sans
@@ -112,11 +112,20 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     debut = time.monotonic()
     classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
     ancres = tapis_ancre.lire(lane)
+    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
+    # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue
+    # anterieure au 01/11 dans les 60 premiers grains d'un pool de 455).
+    # Les CONTENEURS passent avec : leurs racines labellisees `consolidation`
+    # font de leurs membres des consolidations (revue ai-01 du 22/11).
+    ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant,
+                                          classe["conteneurs"])
     file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
                                          grains, max(grains * CANDIDATS_MULT, grains),
-                                         lane, maintenant, ancres=ancres)
+                                         lane, maintenant, ancres=ancres,
+                                         ages_g=ages, exclus_g=exclus)
     tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
-                          fenetre["reprises"]["grains"])
+                          fenetre["reprises"]["grains"],
+                          reboucle=False, reinit=reinit)
     tapis_ancre.proposer(lane, "conteneurs",
                           fenetre["primaires"]["conteneurs"],
                           fenetre["reprises"]["conteneurs"])
