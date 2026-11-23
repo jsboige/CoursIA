@@ -90,11 +90,23 @@ _STUDENT_HINTS = ("jsboigeEPF/", "jsboigeECE/", "jsboigeEpita/")
 # « po-2023 python3 == coursia-py313-argu » — plusieurs noms, un seul
 # environnement. Prefixe (et non nom exact) pour couvrir aussi le
 # `coursia-py313` nu porte par Complexity-02c, meme famille de nommage.
+#
+# Kernel `rust`, ajoute apres mesure du 2026-11-22 (#23175, meme classe
+# que les blocs precedents) : la vague de portage Python->Rust a pose
+# 25 carnets `-Rust.ipynb` sur main entre le 19 et le 22/11 (git log
+# --diff-filter=A), plus le temoin docker `witness-rust.ipynb` — soit
+# 26 kernelspec `rust`. 18 d'entre eux (17 `-Rust` + le temoin) etaient
+# classes ambigus par « kernel LU mais inconnu », et l'entree
+# padding-nommage du registre anti-entropie passait de 25 a 46 sur ce
+# seul artefact d'instrument. Le suffixe `-rust` reste hors LANG_SUFFIXES
+# (langue potentiellement single-rendering) : c'est le kernel connu qui
+# empeche l'ambiguite, pas le suffixe.
 _KNOWN_KERNEL_PREFIXES = (
     "python", "ir", "julia-", "java", "javascript", "typescript",
     "dotnet-interactive", "csharp", "fsharp", "pwsh", "lean", "sas",
     "sql", "soql", "xcube", "xeus", "conda",
     ".net-csharp", "coursia-ml-training", "pyphi", "coursia-py313",
+    "rust",
 )
 
 # Classification finale — chaque notebook est classifié dans exactement 1 case.
