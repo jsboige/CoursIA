@@ -65,7 +65,7 @@ theorem take_cons_drop_eq {α : Type _} (l : List α) (i : Nat)
 /-- The `arcPartition` fold is insensitive to the orientation of an
     isolated pair: reversing the pair at position `i` does not change the
     produced partition. This is the fold-level counterpart of
-    `mergePair_symm` — the related R3 surgery rewrites the triangle's pairs
+    `mergePair_symm` — the connected R3 surgery rewrites the triangle's pairs
     with orientations that differ from one diagram to another, and this
     lemma absorbs those differences (issue #16650, second brick). -/
 theorem foldl_mergePair_swap (pairs : List (Nat × Nat)) (i : Nat)
@@ -514,7 +514,7 @@ lemma foldl_mergeStep_congr {Q₁ Q₂ : List (List Nat)}
 /-- **The fold is insensitive to the permutation of two adjacent pairs**:
     swapping positions `i` and `i + 1` of the pair list does not change the
     `SameClass` relation of the fold's result. Third brick of the R3 invariance
-    (issue #16650): the related R3 surgery moves the rewritten crossings in the
+    (issue #16650): the connected R3 surgery moves the rewritten crossings in the
     fold's list, `foldl_mergePair_swap` absorbs the orientation,
     `mergePair_mergePair_comm_equiv` the commutation of the two merges, and the
     congruence `foldl_mergeStep_congr` transports the equivalence through the
@@ -605,7 +605,7 @@ theorem kinoshitaTerasaka_arcPartition :
        [18, 19], [20, 21], [16, 17]] := by
   decide
 
-/-- Control: arc partition of the sphere mutant — 11 arcs; the boundary
+/-- Check: arc partition of the sphere mutant — 11 arcs; the boundary
 arcs [13] and [22] are preserved, the census-Conway arc [9, 7, 8] becomes
 [9, 11, 12] (boundary point 9 re-attaches into the 10-11-12 arc), the
 signature of the (8 ↔ 11) (13 ↔ 22) re-attachment. -/

@@ -10,10 +10,8 @@ Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
     [--cache-s 300] [--graine S] [--lecture <dossier>] [--allow-stale]
-    (sorties : 0 tirage (aussi sur le cache de secours de moins de 12 h) ;
-     3 lecture incomplete sans secours ; 4 main perime ou organe divergent ;
-     aucune sortie ne renvoie au tapis lourd (#26926) ; une mesure Origami en
-     echec ne bloque pas le tirage -- fail-OPEN)
+    (sorties : 0 tirage (aussi via le cache de secours de moins de 12 h) ; 3 lecture incomplete ;
+     4 main perime ; le tapis lourd n'est jamais appele (#26926) ; fail-OPEN)
 """
 from __future__ import annotations
 
@@ -26,9 +24,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_dernier_grain,
-                         tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_sature, tapis_service, tapis_voie_leger)
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
+                         tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
+                         tapis_attente, tapis_sature, tapis_service,
+                         tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -36,16 +35,15 @@ from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
 from coordination.tapis_visites import evenements_info
 
-# Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
-# pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
-# toujours APRES les grains, avec leur procedure --paths (#26926).
+# Part au plus des conteneurs (EPIC, parapluie) : la lane recoit des grains, pas des Epics ;
+# ils completent la liste apres les grains, avec leur procedure --paths (#26926).
 PART_CONTENEURS = 0.25
 CLAIM_VIVANT_H = 48  # au-dela, un claim est tenu pour abandonne (meme borne que l'organe)
 # Plafond EPIC (#22500) : meme fenetre que l'organe check_lane_claim.py epic_visit_cap.
 PLAFOND_EPIC_J = 7
 # Une issue rendue par [RELEASED] n'est pas resservie pendant ce delai : la lane suivante
 # re-mesurait la meme barriere (38 cycles sans grain servable, po-2023, 13/11).
-RELACHE_J = 3
+RELACHE_J = tapis_attente.RELACHE_J
 PROFONDEUR_FAMILLE = 5
 LABEL_LIVRE = "candidate-delivered"
 LABEL_CONSOLIDATION = "consolidation"
@@ -55,8 +53,9 @@ LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
 # Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
 # n'ont plus d'usage ici.
 # EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
-CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "LIVREE", "MERGEE", "COUVERTE",
-         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
+# PAUSE : une [RELEASED] qui porte une condition (#27726).
+CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "PAUSE", "LIVREE", "MERGEE",
+         "COUVERTE", "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -207,18 +206,6 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
     return f"plafond EPIC (#22500) : {quoi} il y a {age} j (< {PLAFOND_EPIC_J} j)"
 
 
-def _relachee(evts: list[Evt], maintenant: datetime) -> str | None:
-    """Le dernier marqueur du fil est un [RELEASED] de moins de RELACHE_J jours,
-    quelle que soit la lane : son motif (barriere, siege) vaut encore."""
-    if not evts or evts[-1].marque != "RELEASED":
-        return None
-    ev = evts[-1]
-    age = round((maintenant - ev.quand).total_seconds() / 86400, 1)
-    if age >= RELACHE_J:
-        return None
-    return f"rendue par {ev.lane or '?'} il y a {age} j (< {RELACHE_J} j) : lire son motif"
-
-
 def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None:
     """Claims vivants (< 48 h) : le mien remonte, celui d'une autre lane ecarte
     -- sauf sur un conteneur, ou seul un claim sans `paths:` ecarte."""
@@ -246,9 +233,13 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LIVREE", lambda: _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
+        # La pause passe AVANT les ecarts de recul (COUVERTE, RELACHEE) : une
+        # attente decisionnelle datee ne se ressert pas en second temps
+        # (#27059), ni sous couvert d'une PR qui cite l'issue (#27726).
+        ("PAUSE", lambda: tapis_attente.pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
-        ("RELACHEE", lambda: _relachee(evts, ctx["maintenant"])),
+        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"])),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]
@@ -281,7 +272,11 @@ def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             filles.setdefault(p, []).append((n, ouvertes[n].get("created_at")))
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
-           "prs_par_issue": _prs_par_issue(lecture.prs)}
+           "prs_par_issue": _prs_par_issue(lecture.prs),
+           # Les numeros encore ouverts (issues ET PRs) : la levee d'une pause
+           # se mesure sur l'etat de la cible citee (#27726).
+           "ouverts": set(ouvertes) | {pr["number"] for pr in lecture.prs
+                                       if pr.get("number")}}
     return ouvertes, parents, filles, ctx
 
 
@@ -398,10 +393,13 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif})
+            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif,
+                                       "feuille": not e.conteneur})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
         "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
+                    "servables_feuilles": sum(e.ecart is None and not e.conteneur for e in etats_),
+                    "servables_conteneurs": sum(e.ecart is None and e.conteneur for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
@@ -447,10 +445,9 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
                  fraicheur: dict | None, lire_fils: object) -> int:
     """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
     try:
-        if args.lecture:
-            lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
-        else:
-            lecture = gh_bulk.lire_tout(depot, args.cache_s, run, args.jours)
+        lecture = (gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
+                   if args.lecture else
+                   gh_bulk.lire_tout(depot, args.cache_s, run, args.jours))
     except gh_bulk.LectureIncomplete as exc:
         # Secours (#26926) : la derniere lecture COMPLETE du cache (< 12 h), jamais
         # le tapis lourd (240 s, grains non verifies). Un rejeu n'a pas de secours.
@@ -479,6 +476,7 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
         lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    r["journal_service"] = tapis_acceptance.journaliser_service(r, args.lane, args.lecture, run)
     if reverif is not None:
         r["reverif_fils"] = reverif
     if fraicheur is not None:
