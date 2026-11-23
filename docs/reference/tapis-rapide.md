@@ -88,6 +88,7 @@ groupée, sans sonde par issue.
 | `LIVREE` | dernier commentaire `[INFO] candidate-delivered`, le mot pouvant suivre `lane X —` sur la ligne du tag (forme de #20603), sauf s'il est nié juste avant (`pas`, `non`, `not`) ; ou, hors conteneur et hors consolidation, `[DELIVERED]` sans clause `paths:` que rien ne rouvre ensuite |
 | `MERGEE` | hors conteneur et hors consolidation : un commit de `origin/main` la **ferme** depuis moins de `--jours` jours (mot de fermeture devant `#N`, ou `#N` dans la portée du sujet `type(zone,#N):` ; un `See #N` ou `Part of #N` compte comme une visite, pas comme une livraison), et aucun `[NOT-DELIVERED]`, `[RELEASED]`, `[CLAIMED]`, `[CLAIMED-AMEND]` ou `[CLOSURE REVIEW] verdict: KEEP` postérieur ne la rouvre |
 | `COUVERTE` | hors conteneur : une PR ouverte (brouillons compris) cite `#N` ; si la PR porte `lane <votre lane>`, le motif dit « votre PR » |
+| `PAUSE` | le **dernier** marqueur du fil est un `[RELEASED]` qui porte une **condition** `attend: #N` (issue ou PR visée) ou `attend: Q<id>` (question user). L'écart ne porte **aucun délai** : il tient jusqu'à la levée de la condition — la cible visée fermée, ou un marqueur postérieur. Un `[RELEASED]` qui porte `attend:` n'est jamais un `RELACHEE` (voir [la pause explicite](#la-pause-explicite--attend-n-27726)) |
 | `RELACHEE` | le **dernier** marqueur du fil est un `[RELEASED]` de moins de 3 jours (`RELACHE_J`), quelle que soit la lane, la vôtre comprise. Son motif (barrière mesurée, siège trop petit) vaut encore : sans cet écart, chaque lane re-mesurait la même barrière (mesure po-2023 du 13/11 : 38 cycles sans grain servable, 23 issues concernées). Un `[CLAIMED]` ou un `[NOT-DELIVERED]` postérieur lève l'écart |
 | `PLAFOND` | conteneur hors `consolidation` : une visite d'une **autre** lane de moins de 7 jours (`PLAFOND_EPIC_J`, même fenêtre que l'organe `check_lane_claim.py epic_visit_cap`, #22500) — un marqueur `[CLAIMED]`/`[CLAIMED-AMEND]`/`[DELIVERED]` dans son fil ou la création d'une de ses filles ouvertes. Le tapis ne sert pas un EPIC que le gate L898 refuserait ; les visites de **votre** lane n'arment rien (#25443) |
 | `RECLAMEE` | claim ouvert d'une autre lane de moins de 48 h ; sur un conteneur, un claim récent d'une autre lane écarte déjà via `PLAFOND` (une remise de main `[OVERRIDE]` bornée `paths:` reste une note) |
@@ -116,6 +117,35 @@ tranche ; il ne passe donc jamais devant un grain (vos claims restent en tête).
 - les **chemins occupés**, en entier, lane par lane (`chemins_occupes` en JSON), et les PRs ouvertes qui le
   citent (`prs_ouvertes`).
 
+## La pause explicite — `attend: #N` (#27726)
+
+Un `[RELEASED]` peut porter une **condition** : une ligne `attend: #N` (issue ou PR visée) ou
+`attend: Q<id>` (question user). Le grain est alors écarté par le code `PAUSE`, et le motif nomme la
+condition — c'est ce qui rend le tableau du coordinateur lisible sans ouvrir les fils :
+
+```
+[RELEASED] lane myia-po-2024:CoursIA-3 -- cadrage demande au mainteneur
+attend: Q-c.2344a
+```
+
+**Pas de délai.** L'écart `PAUSE` tient jusqu'à la levée de la condition, pas trois jours comme
+`RELACHEE` : une attente plus longue revenait au tirage, et la lane suivante re-mesurait la même
+attente. Mesure du 21/11 (#27726) : #27553 et #27554, en attente du GO du mainteneur, étaient servis
+en grains 1 et 2 du tapis de `myia-ai-01:CoursIA-2`.
+
+**Comment la condition se lève.** Une condition `#N` se mesure sur l'état de la cible : l'issue ou la
+PR visée fermée, la pause tombe et le grain redevient servable. Une condition sans numéro
+(`attend: Q…`) n'est pas mesurable par la lecture : elle tient jusqu'à un marqueur postérieur
+(`[CLAIMED]`, ou un `[RELEASED]` sans condition), qui rend le grain de nouveau servable.
+
+**Ce que la pause ne prétend pas lire.** Toutes les lanes écrivent sous le login partagé `jsboige` :
+un commentaire du mainteneur ne se distingue pas d'un commentaire de lane. La forme lit donc un
+**état** (la cible fermée) ou un **marqueur**, pas une intention.
+
+**Et `RELACHEE` ne s'y applique pas.** Un `[RELEASED]` qui porte `attend:` n'est jamais une remise
+de main à 3 jours : la fenêtre `RELACHE_J` est contournée, sans quoi la pause repasserait par le
+tirage au bout de trois jours.
+
 ## Les items éteints — l'urne de clôture (#26973)
 
 Deux écarts ne sont pas des écarts : ce sont des **extinctions**. Un `GEL` se résorbe (l'item
@@ -137,6 +167,7 @@ Chaque ligne porte le numéro, le code et le **motif** de l'extinction : l'urne 
 la mesure, elle décide (fermer, ou donner une tranche). Les deux mesures sont fail-OPEN — une
 panne n'éteint rien, donc une panne ne fait pas disparaître un item de la liste. Le `--json`
 expose la même liste sous `eteints`.
+
 
 ## La re-décision des fils tronqués (#27179)
 

@@ -898,8 +898,45 @@ def _diff_signatures_ordinal_raw(base_sig, head_sig):
     return diffs
 
 
-def _partition_output_added(diffs, base_nb, head_nb):
-    """Separate signatures introduced by a first output from actual drift."""
+def _cell_output_text(cell):
+    """Concatenated text of a cell's outputs (stream + text/plain data)."""
+    parts = []
+    for o in cell.get("outputs", []):
+        t = o.get("text")
+        if t is None and isinstance(o.get("data"), dict):
+            t = o["data"].get("text/plain")
+        if t:
+            parts.append("".join(t) if isinstance(t, list) else t)
+    return "".join(parts)
+
+
+def _output_text_survives(base_cell, head_cell):
+    """True quand le texte de sortie de la base est encore present en tete.
+
+    Distingue l'ADDITION d'un print (le contenu de base survit, une ligne
+    float s'ajoute apres lui -- PR #27915) du REMPLACEMENT de sortie (le
+    texte de base a disparu, cas ``test_existing_non_float_output_is_not_
+    treated_as_empty`` : la, il existe bien une valeur de reference qui a
+    derive et le verdict drift se maintient).
+    """
+    b = _cell_output_text(base_cell)
+    return bool(b) and b in _cell_output_text(head_cell)
+
+
+def _partition_output_added(diffs, base_nb, head_nb, base_sig=None):
+    """Separate signatures introduced by a first output from actual drift.
+
+    #25413 etendu (cas mesure PR #27915, cellule c371d193) : la classe
+    ``added`` couvre aussi une cellule commune dont la sortie de base
+    EXISTAIT mais ne portait aucun texte float-array, ET dont le texte
+    de base survit dans la sortie de tete -- une PR qui ajoute un print
+    de valeurs mesurees a une cellule existante produit exactement ce
+    profil (signature de base vide, signature de tete neuve), qui n'est
+    pas une derive de repr mais une addition de contenu. Si le texte de
+    base a disparu (remplacement de sortie), le verdict drift se
+    maintient. Les additions partent en advisory ``output_added_cells``,
+    jamais en ``signature_drift_cells`` bloquant.
+    """
     base_cells = [c for c in base_nb.get("cells", [])
                   if c.get("cell_type") == "code"]
     head_cells = [c for c in head_nb.get("cells", [])
@@ -926,8 +963,16 @@ def _partition_output_added(diffs, base_nb, head_nb):
                 if len(candidates) == len(head_candidates) == 1:
                     twin = candidates[0]
             b_idx = base_ids.get(twin, -1)
+        base_sig_empty = (base_sig is not None
+                          and 0 <= b_idx < len(base_sig)
+                          and base_sig[b_idx] == ())
+        base_survives = (base_sig_empty
+                         and 0 <= b_idx < len(base_cells)
+                         and 0 <= h_idx < len(head_cells)
+                         and _output_text_survives(base_cells[b_idx],
+                                                   head_cells[h_idx]))
         if (0 <= b_idx < len(base_cells) and 0 <= h_idx < len(head_cells)
-                and base_cells[b_idx].get("outputs") == []
+                and (base_cells[b_idx].get("outputs") == [] or base_survives)
                 and head_cells[h_idx].get("outputs")):
             added.append(cell)
         else:
@@ -939,7 +984,8 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     """Compare signatures; use actual outputs when notebooks are available."""
     diffs = _diff_signatures_raw(base_sig, head_sig, base_nb, head_nb)
     if base_nb is not None and head_nb is not None:
-        return _partition_output_added(diffs, base_nb, head_nb)[0]
+        return _partition_output_added(diffs, base_nb, head_nb,
+                                       base_sig=base_sig)[0]
     return [i for i in diffs if not (i < len(base_sig)
             and _is_output_added(base_sig[i], head_sig[i] if i < len(head_sig) else ()))]
 
@@ -957,7 +1003,8 @@ def output_added_cells(base_sig, head_sig, base_nb=None, head_nb=None):
     """
     if base_nb is not None and head_nb is not None:
         diffs = _diff_signatures_raw(base_sig, head_sig, base_nb, head_nb)
-        return _partition_output_added(diffs, base_nb, head_nb)[1]
+        return _partition_output_added(diffs, base_nb, head_nb,
+                                       base_sig=base_sig)[1]
     return _output_added_ordinal(base_sig, head_sig)
 
 

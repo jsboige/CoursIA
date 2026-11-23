@@ -138,51 +138,25 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
                         citations=classe["citations"],
                         lu_a=_iso(maintenant), secondes=round(secondes, 1),
                         appels=0), reseau=True)
+    # Cap de livraisons EPIC (#21067) : le garde arbitre (charge en vol,
+    # item K=2 / famille K=4) vivait dans le seul pick_idle_grain, retire du
+    # tirage depuis #26926 -- rebranche sur la voie reelle, fail-OPEN.
+    from coordination import tapis_cap_livraisons
+    file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
+        file, classe["grains"] + classe["conteneurs"], lane, maintenant,
+        classe["prs"], run=run)
     rapport = _rapport(lane, graine, maintenant, classe["metas"],
                        phases["selection_s"], secondes, budget_s, classe["etats"],
                        file, classe["prs"], origami, phases, fenetre)
+    rapport["cap_livraisons"] = {"mesure": cap_mesure, "ecartes": temoins_cap,
+                                 "fenetre_j": tapis_cap_livraisons.FENETRE_J}
     return rapport, 0
 
 
-def texte(r: dict) -> str:
-    """La sortie courte de la voie leger : l'etat de chaque grain et l'action.
-
-    Elle dit ce que le chemin lourd dit, et une chose de plus : **ou** se
-    qualifie un grain, et **quand** (avant l'action).
-    """
-    lu = r["lecture"]
-    lignes = [f"Tapis leger -- lane {r['lane']} -- {r['maintenant']} "
-              f"-- source : GitHub + origin/main local (rotation universelle)"]
-    lignes.append(f"{lu['issues']} issues ouvertes ; rotation sur metadonnees seules "
-                  f"(selection {lu['selection_s']} s, citations {lu['phases'].get('citations_s')} s, "
-                  f"PRs {lu['phases'].get('prs_s')} s, budget {lu['budget_s']} s) ; "
-                  f"file de {len(r['grains'])} grain(s)")
-    fen = r.get("fenetre") or {}
-    if fen.get("blocs", 1) > 1:
-        lignes.append(f"Fenetre : bloc {fen['bloc']}/{fen['blocs']} du pool classe "
-                      f"(taille {fen['taille']}) -- la fenetre avance d'un bloc par "
-                      f"tranche de 4 h : le pool entier est couvert en "
-                      f"{fen['blocs']} tranches.")
-    non_visites = fen.get("non_visites") or []
-    if non_visites:
-        apercu = ", ".join(f"#{n}" for n in non_visites[:12])
-        suite = " ..." if len(non_visites) > 12 else ""
-        lignes.append(f"Fenetre : {len(non_visites)} numero(s) du pool non visite(s) "
-                      f"a cette tranche -- delai max de requalification "
-                      f"{fen.get('delai_max_h')} h : {apercu}{suite}.")
-    elif fen.get("delai_max_h"):
-        lignes.append(f"Fenetre : pool entier visite -- delai max de "
-                      f"requalification {fen['delai_max_h']} h.")
-    lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits :")
-    lignes += [f"  #{p['numero']}  {p['age_j']} j  {p['titre'][:90]}"
-               for p in r["vos_prs"]]
-    lignes.append("\nGrains -- qualifier avant action, puis servir :")
-    for g in r["grains"]:
-        lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
-        lignes.append(f"      {g['action']}")
-    q = r["qualification"]
-    lignes.append(f"\nQualification : {q['organe']} -- {q['quand']} ; {q['ecarts']}.")
-    return "\n".join(lignes)
+# La sortie texte de la voie leger vit dans tapis_leger_texte (extraction
+# pour tenir le plafond de lignes de ce module) ; l'alias garde les
+# appelants intacts (tapis_voie_leger, tests).
+from coordination.tapis_leger_texte import texte  # noqa: E402,F401
 
 
 def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
