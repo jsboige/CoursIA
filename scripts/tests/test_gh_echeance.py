@@ -16,13 +16,14 @@ production.
 
 from __future__ import annotations
 
+import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, gh_selection, tapis_leger
+from coordination import gh_bulk, gh_issues, gh_selection, tapis_leger
 
 LANE = "myia-ai-01:CoursIA-2"
 NOW = datetime(2026, 11, 22, 21, 0, tzinfo=UTC)
@@ -95,3 +96,44 @@ def test_le_tirage_passe_une_echance_unique_aux_trois_etages(monkeypatch):
     assert len(vus) == 3, "les trois etages du tirage doivent etre appeles"
     assert all(e is not None for e in vus), "chaque etage recoit une echeance"
     assert len(set(vus)) == 1, "les etages partagent UNE echeance, pas trois"
+
+
+def test_un_appel_qui_porte_des_corps_garde_le_plafond_large():
+    """Les lectures qui portent des corps ne sont pas coupees par le plafond court.
+
+    Mesure du 23/11 sur ce siege : la page du pool (50 issues, corps + 12
+    commentaires) dure **3,76 s**, la qualification d'un lot de 50 dure
+    **2,05 s**, la page de metadonnees (sans corps) **0,78 s**. Le plafond
+    court (15 s, celui des appels de metadonnees) couperait les deux
+    lectures longues sur un reseau lent -- sans mesure derriere : elles
+    gardent le plafond large, la mesure a l'appui.
+    """
+    vus: list = []
+
+    def faux(argv, timeout):
+        vus.append(timeout)
+        return json.dumps({"data": {"repository": {"issues": {
+            "pageInfo": {"hasNextPage": False}, "nodes": []}}}})
+
+    gh_bulk._page_issues(faux, "jsboige/CoursIA", None, 1)
+
+    assert vus, "la page du pool doit etre lue"
+    assert all(t == gh_bulk.TIMEOUT_S_CORPS for t in vus), \
+        "la page du pool garde le plafond large"
+    assert gh_bulk.TIMEOUT_S_CORPS >= gh_bulk.TIMEOUT_S
+
+
+def test_la_qualification_d_un_lot_garde_le_plafond_large():
+    """La qualification ciblee (corps + 12 commentaires) aussi."""
+    vus: list = []
+
+    def faux(argv, timeout):
+        vus.append(timeout)
+        return json.dumps({"data": {"repository": {"i0": {"number": 1}}}})
+
+    lues = gh_issues.lire_champs(faux, "jsboige/CoursIA", [1], "number",
+                                 "qualification")
+
+    assert lues, "le lot doit etre lu"
+    assert vus == [gh_bulk.TIMEOUT_S_CORPS], \
+        "la qualification garde le plafond large"

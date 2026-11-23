@@ -28,6 +28,13 @@ TIMEOUT_S = 15
 #: Le `git fetch` est un aller-retour reseau (mesure du 22/11 : 18 a 20 s) :
 #: il a son propre plafond, plus large que celui d'un appel.
 FETCH_TIMEOUT_S = 90
+#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un
+#: lot) dure plus longtemps qu'un appel de metadonnees : mesure du 23/11 sur
+#: ce siege, 3,76 s pour la page du pool (50 issues, corps + 12 commentaires)
+#: et 2,05 s pour la qualification d'un lot de 50. Le plafond de 15 s les
+#: couperait sur un reseau lent, sans mesure derriere : ils gardent le
+#: plafond large, mesure a l'appui.
+TIMEOUT_S_CORPS = 90
 #: L'echeance UNIQUE d'un tirage de lane, partagee par ses etages.
 MUR_TIRAGE_S = 60
 # Un 502/504 se resorbe en relisant la meme page en plus petit.
@@ -96,7 +103,8 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
     for taille in TAILLES_PAGE:
         argv = ["gh", "api", "graphql", "-f", f"query={QUERY}", "-f", f"owner={owner}",
                 "-f", f"name={name}", "-F", f"n={taille}"]
-        texte = _appel(run, argv + (["-f", f"after={after}"] if after else []), "issues", page)
+        texte = _appel(run, argv + (["-f", f"after={after}"] if after else []), "issues",
+                       page, timeout=TIMEOUT_S_CORPS)
         if texte is None:
             continue
         try:
