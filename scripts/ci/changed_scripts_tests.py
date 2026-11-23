@@ -163,6 +163,11 @@ EXTRA_SELECTORS: dict[str, tuple[str, ...]] = {
         "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb",
     ),
     "tests": ("scripts/ci/", "scripts/notebook_tools/"),
+    # arete #13737 V3 : test_quarto_csharp_kernel_fix.py relit scripts/ci/ via
+    # une ancre __file__ (SCRIPT_DIR = parents[2] / "ci") -- le relogement V3
+    # de quarto_csharp_kernel_fix.py en scripts/ci/ a cree cette arete, que la
+    # derivation parent-dir ne voit pas (garde #22468).
+    "scripts/notebook_tools/tests": ("scripts/ci/",),
     "scripts/lean/tests": ("scripts/ci/",),
     "scripts/translation/tests": ("scripts/ci/",),
 }

@@ -1,0 +1,11 @@
+- name: "Dynamics-04c Cooperation Payorienne Kripke"
+  family: GameTheory/Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : la mesure porte sur l'evaluation bornee des clauses du FairBot payorien sur des cadres de Kripke finis (moteur jouet recopie de Tweety-03b cote Python, reecrit sur la seule BCL cote C#). Aucun moteur externe canonique : les deux cotes rejouent les memes evaluations et refutations."
+  known_differences:
+    - "Le titre C# porte le suffixe '(C#)' en cellule 0 ; le contenu suit le meme fil (27 cellules, 9 de code, 18 titres markdown dans le meme ordre)."
+    - "Le moteur modal C# est reecrit de zero sur la BCL ; le Python est une copie pedagogique declaree du laboratoire Tweety-03b. Les valeurs porteuses (matrice C/C=3, C/D=0, D/C=5, D/D=1 ; evaluations []P, []P->P, <>P ; refutations bornees par saturation) coincident."
+    - "Micro-variations de formulation dans les enonces des exercices 1 et 2 (cells 14-15) ; les consignes portent la meme tache."

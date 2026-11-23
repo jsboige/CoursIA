@@ -12,9 +12,11 @@ import re
 import subprocess
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
+    Lecture, LectureIncomplete, issue)
 
 Run = Callable[[list[str], int], str]
 
@@ -40,33 +42,6 @@ QUERY = """query($owner:String!,$name:String!,$n:Int!,$after:String){
    pageInfo{hasNextPage endCursor}
    nodes{number title body createdAt updatedAt labels(first:20){nodes{name}}
     comments(last:12){totalCount nodes{createdAt author{login} body}}}}}}"""
-
-
-class LectureIncomplete(RuntimeError):
-    """Une lecture n'a pas abouti : rien ne doit etre servi."""
-
-    def __init__(self, lecture: str, page: object, cause: str) -> None:
-        super().__init__(f"lecture {lecture} incomplete (page {page}) : {cause}")
-        self.lecture, self.page, self.cause = lecture, page, cause
-
-
-@dataclass
-class Lecture:
-    """Les trois lectures d'un tirage, et ce qu'elles ont coute."""
-
-    issues: list[dict]
-    prs: list[dict]
-    citations: dict[int, list[dict]] = field(default_factory=dict)
-    lu_a: str = ""
-    appels: int = 0
-    secondes: float = 0.0
-    depuis_cache: bool = False
-    fetch_note: str | None = None  # fetch d'origin/main tente et echoue (sinon None)
-
-    @property
-    def origin_main_le(self) -> str | None:
-        """Dernier commit de la fenetre : chaque commit de squash cite sa PR."""
-        return max((c["date"] for cs in self.citations.values() for c in cs), default=None)
 
 
 def run_defaut(argv: list[str], timeout: int) -> str:
@@ -105,19 +80,6 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
         except (ValueError, KeyError, TypeError) as exc:
             raise LectureIncomplete("issues", page, f"reponse illisible : {exc}") from exc
     raise LectureIncomplete("issues", page, f"502/504 ou timeout aux tailles {TAILLES_PAGE}")
-
-
-def issue(node: dict) -> dict:
-    """Une issue GraphQL a plat, aux champs de `issues.json`."""
-    com = node.get("comments") or {}
-    return {"number": node["number"], "title": node.get("title") or "",
-            "body": node.get("body") or "", "created_at": node.get("createdAt") or "",
-            "updated_at": node.get("updatedAt") or "",
-            "labels": [lab["name"] for lab in (node.get("labels") or {}).get("nodes") or []],
-            "comments_total": com.get("totalCount") or 0,
-            "comments": [{"created_at": c.get("createdAt") or "",
-                          "author": (c.get("author") or {}).get("login") or "",
-                          "body": (c.get("body") or "")[:600]} for c in com.get("nodes") or []]}
 
 
 def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict]:

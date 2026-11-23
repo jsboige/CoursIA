@@ -1,117 +1,149 @@
-# Théorie de la Décision — arc bayésien, formel et causal
+# Théorie de la décision — de la croyance à l'action
 
-[← Série Probas](../README.md) · [Corpus bayésien Infer.NET](../Infer/README.md) · [Corpus bayésien PyMC](../PyMC/README.md) · [Règles de décision EDT/CDT/CCDT/UDT](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) · [Lake Lean `decision_theory_lean`](decision_theory_lean/)
+[↑ Série Probas](../README.md)
 
-Un posterior n'est pas une fin en soi : c'est l'**entrée** d'une décision. Savoir que la tumeur est maligne avec 70 % de probabilité ne dit pas s'il faut opérer ; connaître la distribution de rendement d'un actif ne dit pas combien y investir. Cet arc prolonge la modélisation probabiliste de la série [Probas](../README.md) jusqu'au **choix d'action sous incertitude** : comment transformer une croyance quantifiée en la meilleure décision possible, et comment **prouver** que cette décision est optimale.
+Une loi a posteriori est l'entrée d'une décision, pas son résultat. Savoir qu'un patient est probablement malade ne dit pas s'il faut le traiter ; connaître la loi du rendement d'un actif ne dit pas combien y investir. Il manque ce que vaut chaque issue pour celui qui décide, et une règle pour arbitrer entre des actes aux conséquences incertaines. Ce dossier construit les deux. Il part de la fonction d'utilité et du principe de l'utilité espérée maximale, passe aux décisions structurées par un réseau, au prix d'une information et aux critères qui tiennent quand les probabilités manquent, puis aux décisions répétées, où chaque action modifie ce que l'on saura ensuite.
 
-L'arc rassemble des notebooks répartis en trois traitements complémentaires du même socle théorique — plus leur extension actuarielle descendue en sous-série dédiée — et un lake Lean 4 qui en certifie les théorèmes phares :
+Le même cours y est écrit deux fois. [DecInfer](DecInfer/README.md) le déroule en C# sur Infer.NET, [DecPyMC](DecPyMC/README.md) en Python sur PyMC, et les sept premières étapes portent le même numéro des deux côtés. La théorie ne dépend pas du moteur : une utilité espérée se calcule aussi bien par propagation de messages que par échantillonnage, et lire les deux versions montre ce que la méthode numérique change sans la confondre avec le principe. Autour de cette paire, la sous-série [Actuariat](Actuariat/README.md) applique la décision bayésienne au métier de l'assurance, un carnet posé à la racine du dossier compare les règles de décision elles-mêmes, un banc fait calculer la même valeur de l'information par les deux moteurs, et un projet Lean 4 énonce et vérifie les théorèmes que le cours cite. Le dossier s'adresse à des étudiants de licence avancée et de master qui ont suivi l'une des deux séries bayésiennes, [Infer](../Infer/README.md) ou [PyMC](../PyMC/README.md). Aucune connaissance de la théorie de la décision n'est supposée : les axiomes sont introduits depuis le début.
 
-| Composant | Notebooks | Stack | Ce qu'il apporte |
-|-----------|-----------|-------|------------------|
-| [`DecInfer/`](DecInfer/README.md) | Arc C# + companions **Lean 4** | Infer.NET (.NET 9) + kernel Lean | L'arc de référence : des axiomes vNM aux MDP et bandits, avec ses companions à **preuve formelle native** |
-| [`DecPyMC/`](DecPyMC/README.md) | 8 = socle 1-7 + capstone 08 (Python) | PyMC (NUTS/MCMC) | Le miroir Python : mêmes concepts, échantillonnage stochastique, diagnostics ArviZ ; le capstone (08) ouvre la sous-série Actuariat |
-| [`Actuariat/`](Actuariat/README.md) | 5 (Python) | PyMC (NUTS/MCMC) | La **sous-série actuarielle** T1-T5 : prime pure, fréquence × sévérité, crédibilité, ruine, valeur de l'information en souscription |
-| [`Causalite/`](../Causalite/README.md) | 4 (Python) | `dowhy` (PyWhy) | Le **capstone causal** : l'échelle de Pearl et le do-calculus, plus les méthodes quasi-expérimentales (DiD, RDD, contrôle synthétique) |
-| [`ReglesDeDecision-01`](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) | 1 (Python) | SCM finis + `dowhy` | Le **choix de la règle de décision** : conditionnement EDT, intervention CDT, conséquences causales CCDT et procédure UDT comparés sur les mêmes modèles |
-| [`decision_theory_lean`](decision_theory_lean/) | *(lake, hors compte)* | Lean 4 + Mathlib | La **couche de certification** : utilité espérée vNM, cohérence de de Finetti, escompte de Gittins, démontrés `0 sorry` |
+## Comment lire ce README — Découverte
 
-## Pourquoi cet arc — la double question de la rationalité
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue le parcours principal, les approfondissements et les prolongements de recherche.
 
-La programmation probabiliste répond à une première question : *comment modéliser l'incertitude ?* La théorie de la décision en pose une seconde, distincte : *comment agir face à cette incertitude ?* Jusqu'à la restructuration de la série, ces deux fils étaient imbriqués dans le corpus bayésien, ce qui masquait leur dualité. Les extraire dans un arc autonome rend le passage **visible** : le fil « décision » consomme les posteriors du fil « inférence » comme entrée, mais raisonne avec ses propres outils — fonctions d'utilité, diagrammes d'influence, équation de Bellman.
+- **Vous découvrez** : choisissez un moteur, C# ou Python, et suivez sa sous-série dans l'ordre des numéros. La table du parcours principal donne, question par question, le carnet de chaque côté.
+- **Vous creusez un palier** : la dernière colonne de la table renvoie aux carnets compagnons et aux suites. La section « Approfondissements » décrit les compagnons Lean, le banc qui confronte les deux moteurs et les exercices du carnet sur les règles de décision.
+- **Vous cherchez la recherche en cours** : « Pour aller plus loin » dit ce que la formalisation Lean démontre et ce qu'elle laisse énoncé sans preuve, et où se prolongent les questions de causalité, d'apprentissage et de jeux.
 
-L'arc double délibérément chaque concept sur **deux moteurs d'inférence** — Infer.NET (message passing déterministe) et PyMC (échantillonnage MCMC) — non pas pour opposer « exact » et « approché » (les deux stacks recouvrent des méthodes approchées), mais pour montrer que la **théorie de la décision est indépendante du moteur** : l'utilité espérée se calcule aussi bien par propagation de messages que par échantillonnage. Le lecteur y gagne une compréhension des compromis pratiques sans confondre la méthode numérique et le principe décisionnel.
+## Parcours principal — Licence avancée et Master
 
-**À qui s'adresse cet arc** : quiconque a suivi le corpus bayésien ([`Infer/`](../Infer/README.md) ou [`PyMC/`](../PyMC/README.md)) et veut passer de la *croyance* à l'*action*. Aucun prérequis en théorie de la décision — les axiomes de von Neumann–Morgenstern sont introduits *ex nihilo*. Les deux notebooks à kernel Lean 4 demandent des bases en preuve formelle, mais leurs résultats sont lisibles sans elles.
+Chaque ligne pose une question et donne le carnet qui y répond de chaque côté de la paire. Il suffit de suivre un seul des deux moteurs : les numéros se suivent dans chaque sous-série.
 
-## Objectifs pédagogiques
-
-À l'issue de cet arc, on sait :
-
-- **Fonder** une décision rationnelle sur les axiomes de von Neumann–Morgenstern et maximiser l'utilité espérée plutôt que la valeur monétaire ;
-- **Modéliser** l'aversion au risque (CARA, CRRA, Arrow–Pratt) et les décisions multi-critères (MAUT, swing weights) ;
-- **Structurer** une décision par un diagramme d'influence et en extraire la politique optimale ;
-- **Chiffrer** la valeur d'une information avant de l'acquérir (EVPI, EVSI) et raisonner sous incertitude sévère (Minimax, regret) ;
-- **Résoudre** le séquentiel par programmation dynamique (MDP, équation de Bellman) et arbitrer exploration/exploitation (Thompson Sampling, indice de Gittins, UCB1) ;
-- **Distinguer** corrélation et causalité par le do-calculus de Pearl, et exécuter une estimation d'effet causal avec l'outil de référence `dowhy` ;
-- **Certifier** formellement les théorèmes de représentation (vNM), de cohérence (de Finetti) et d'escompte (Gittins) dans un assistant de preuve.
-
-## Parcours — l'histoire de la décision, des fondations au pont causal
+| Question | Carnets | Ce qu'on y apprend | Prérequis et public | Pour approfondir |
+|---|---|---|---|---|
+| Qu'est-ce qu'un choix rationnel ? | [DecInfer-01](DecInfer/DecInfer-01-Utility-Foundations.ipynb) · [DecPyMC-01](DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | Une loterie représente un choix risqué. Quatre axiomes (complétude, transitivité, continuité, indépendance) décrivent des préférences rationnelles, et le théorème de représentation en tire une fonction d'utilité : préférer revient à maximiser une utilité espérée. Les deux carnets l'appliquent à la même décision médicale. Après un test positif, la probabilité d'être malade vaut `65,9 %` du côté Infer.NET ; l'échantillonneur de PyMC rend `66.3%`, à côté de la même valeur analytique. Tous deux montrent ensuite comment mesurer une utilité par indifférence. | Licence avancée : probabilités conditionnelles, règle de Bayes. | [DecInfer-01b](DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb) : le théorème de représentation en Lean 4. [DecInfer-01c](DecInfer/DecInfer-01c-Lean-Coherence.ipynb) : pourquoi les prix d'un parieur cohérent sont des probabilités. |
+| Combien vaut un pari risqué ? | [DecInfer-02](DecInfer/DecInfer-02-Utility-Money.ipynb) · [DecPyMC-02](DecPyMC/DecPyMC-02-Utility-Money.ipynb) | Le paradoxe de Saint-Pétersbourg : l'espérance du jeu croît sans borne alors que son équivalent certain, sous utilité logarithmique, reste à 4 euros. Suivent les familles CARA et CRRA, les coefficients d'Arrow-Pratt, l'équivalent certain, la prime de risque et la dominance stochastique, puis un choix de placements selon l'aversion au risque. Chaque carnet estime enfin le profil de risque d'un agent à partir de ses choix ; côté PyMC, l'incertitude sur ce profil se propage jusqu'à la prime de risque. DecInfer-02 ajoute le paradoxe d'Allais, que l'utilité espérée ne reproduit pas. | Licence avancée : dérivées, espérance. | Suite métier : [Actuariat-01](Actuariat/Actuariat-01-Prime-Pure-Chargement.ipynb), où la prime de risque est distinguée de la prime pure et de la prime commerciale. |
+| Comment décider sur plusieurs critères ? | [DecInfer-03](DecInfer/DecInfer-03-Multi-Attribute.ipynb) · [DecPyMC-03](DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | Fonction de valeur et fonction d'utilité, indépendance préférentielle qui autorise la forme additive, poids fixés par la méthode des swing weights, forme multiplicative, méthode SMART, analyse de sensibilité. Sur l'achat d'une voiture, les deux carnets retiennent l'hybride avec la même valeur, `0,768` et `0.768`. Tous deux apprennent ensuite les poids à partir de choix observés ; DecPyMC-03 ajoute une simulation quand les attributs sont incertains et un modèle de choix discret. | Licence avancée : étapes 01 et 02. | Les exercices des deux carnets, listés dans les README des sous-séries. |
+| Dans quel ordre observer et décider ? | [DecInfer-04](DecInfer/DecInfer-04-Decision-Networks.ipynb) · [DecPyMC-04](DecPyMC/DecPyMC-04-Decision-Networks.ipynb) | Un réseau de décision ajoute au réseau bayésien des nœuds de décision et d'utilité, et des arcs informationnels qui disent ce que l'on sait au moment de choisir. La politique optimale se calcule par induction arrière. Les exemples sont communs aux deux carnets : un test médical positif dans `18,5 %` des cas, une étude de marché qui vaut `24 000 EUR`, une décision en deux temps, le choix d'un site d'aéroport. DecInfer-04 affiche les graphes de facteurs compilés par le moteur ; DecPyMC-04 rend la probabilité que chaque site soit le meilleur. | Licence avancée et Master : réseaux bayésiens ([Infer-04](../Infer/Infer-04-Bayesian-Networks.ipynb) ou [PyMC-04](../PyMC/PyMC-04-Bayesian-Networks.ipynb)). | Les exercices des deux carnets, listés dans les README des sous-séries. |
+| Faut-il payer pour savoir ? | [DecInfer-05](DecInfer/DecInfer-05-Value-Information.ipynb) · [DecPyMC-05](DecPyMC/DecPyMC-05-Value-Information.ipynb) | La valeur de l'information parfaite (EVPI) plafonne ce que l'on paierait pour tout savoir ; celle d'un test imparfait (EVSI) se compare à son coût. Les deux carnets traitent un forage pétrolier, avec des montants différents : l'information parfaite vaut `390 000 EUR` dans DecInfer-05 et `90k EUR` dans DecPyMC-05, et le test sismique paie son coût dans le premier, pas dans le second. Une annexe de DecPyMC-05 reprend les gains et les probabilités du carnet jumeau et les fait calculer par trois instruments indépendants. | Master : étapes 01 à 04. | Le banc [`voi/`](voi/README.md), décrit plus bas. Suite métier : [Actuariat-05](Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb). |
+| Que faire quand les probabilités manquent ? | [DecInfer-06](DecInfer/DecInfer-06-Expert-Systems.ipynb) · [DecPyMC-06](DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | Un système expert bayésien pose d'abord un diagnostic à plusieurs sources, qui conclut à une grippe à `67,7 %` des deux côtés. Quand les probabilités manquent, les critères Minimax, Minimax Regret et Hurwicz remplacent l'utilité espérée. Sur un même tableau de placements ils ne retiennent pas la même option : l'utilité espérée choisit les actions, le Minimax les obligations, le regret minimax l'immobilier. DecPyMC-06 estime en plus la fiabilité de capteurs et compare un modèle conjugué, exact, à un modèle hiérarchique, où l'échantillonnage devient nécessaire. | Master : étapes 01 à 05. | Les exercices des deux carnets, listés dans les README des sous-séries. |
+| Comment décider plusieurs fois de suite ? | [DecInfer-07](DecInfer/DecInfer-07-Sequential.ipynb) · [DecPyMC-07](DecPyMC/DecPyMC-07-Sequential.ipynb) | Les processus de décision markoviens et l'équation de Bellman : l'itération de valeur converge en `14` itérations sur l'exemple commun, l'itération de politique se stabilise à la troisième. Les bandits manchots posent le dilemme entre explorer et exploiter et introduisent l'indice de Gittins. Dans un POMDP l'état n'est plus observé : sur le problème du tigre, trois écoutes concordantes portent la croyance de 50 % à `85,0 %`, `97,0 %` puis `99,5 %`. Une maintenance prédictive conclut de continuer. | Master : étapes 01 à 06. | [DecInfer-07b](DecInfer/DecInfer-07b-Lean-Gittins.ipynb) : le bandit actualisé et l'indice de Gittins écrits en Lean 4. Suite pratique : la série [RL](../../RL/README.md). |
+| Explorer ou exploiter ? | [DecInfer-08](DecInfer/DecInfer-08-Thompson-Sampling.ipynb) · dernière partie de [DecPyMC-07](DecPyMC/DecPyMC-07-Sequential.ipynb) | Le bandit devient un programme probabiliste : le moteur calcule lui-même la loi a posteriori de chaque bras, et le Thompson Sampling joue le bras dont un tirage de cette loi est le plus élevé. Dans DecInfer-08, sur 15 répétitions de 200 tours, son regret cumulé moyen vaut `6,1`, contre `17,5` pour ε-greedy et `19,3` pour UCB1. DecPyMC-07 traite le même algorithme par la formule conjuguée, puis par échantillonnage. | Master : bandits de l'étape 07, lois Beta. | Exercices de DecInfer-08 : quatrième bras, bandit non stationnaire, loi a priori informative. |
+| Comment une décision devient-elle un tarif ? | [DecPyMC-08](DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb), puis [Actuariat-01](Actuariat/Actuariat-01-Prime-Pure-Chargement.ipynb) | Le passage au métier de l'assurance. DecPyMC-08 pose les quatre questions de l'assureur (tarifer, mutualiser, capitaliser, souscrire) et calcule de bout en bout un premier tarif : une prime pure de `208.50`, une prime commerciale de `305.79` après deux chargements. La sous-série Actuariat reprend ensuite chaque question avec des modèles bayésiens. | Master : étapes 02 et 07 au minimum. | La sous-série [Actuariat](Actuariat/README.md), décrite plus bas. |
+| Que compte-t-on comme conséquence de son choix ? | [ReglesDeDecision-01](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb), puis [DecInfer-09](DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) | Sur un même modèle causal fini, énuméré exactement, trois calculs distincts : conditionner sur l'acte (règle évidentielle, EDT), intervenir sur l'acte (règle causale, CDT), intervenir sur la procédure qui produit l'acte (lignée UDT). Deux versions du cas du tabagisme ont les mêmes probabilités conditionnelles. Quand fumer cause le cancer, les deux règles recommandent d'arrêter. Dans le cas de Fisher, où un gène cause à la fois l'envie de fumer et le cancer, la règle évidentielle recommande encore d'arrêter (`8.0` contre `5.0`) et la règle causale de fumer (`7.0` contre `6.0`). Le carnet traite ensuite le problème de Newcomb, la décision causale conditionnelle (CCDT), qui coïncide avec la règle évidentielle sur toute une famille de mondes générés, et un dilemme du prisonnier où choisir une politique mène à coopérer. DecInfer-09 reprend ces règles face à un prédicteur. | Master : probabilités conditionnelles, différence entre observer et intervenir ([Causalite-00](../Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb)). Outils : Python, numpy, pandas, dowhy. | Trois exercices, décrits plus bas. Le dossier frère [Causalité](../Causalite/README.md). |
 
 ```mermaid
 flowchart TD
-    BAY["Corpus bayésien<br/>Infer/ · PyMC/<br/>(posteriors)"]
-    F["<b>Fondations</b><br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
-    S["<b>Structure de décision</b><br/>multi-attributs · diagrammes d'influence<br/>valeur de l'information"]
-    R["<b>Robustesse & séquentiel</b><br/>Minimax/regret · MDP · Bellman"]
-    B["<b>Bandits</b><br/>Thompson Sampling · Gittins · UCB1"]
-    C["<b>Pont causal (capstone)</b><br/>échelle de Pearl · do-calculus · dowhy"]
-    LAKE["Lake decision_theory_lean<br/>vNM · de Finetti · Gittins"]
-    BAY -->|"posterior = entrée"| F
-    F --> S --> R --> B --> C
-    B -.->|"formalisation"| LAKE
+    BAY["Séries Infer et PyMC<br/>lois a posteriori"]
+    F["<b>Fondations</b> (01-02)<br/>axiomes · utilité de l'argent<br/>aversion au risque"]
+    S["<b>Décisions structurées</b> (03-05)<br/>plusieurs critères · réseaux de décision<br/>valeur de l'information"]
+    R["<b>Robustesse et séquentiel</b> (06-07)<br/>Minimax, regret · MDP · Bellman · POMDP"]
+    B["<b>Bandits bayésiens</b><br/>DecInfer-08 · fin de DecPyMC-07"]
+    ACT["<b>Actuariat</b><br/>DecPyMC-08, puis Actuariat 01 à 05"]
+    REG["<b>Règles de décision</b><br/>ReglesDeDecision-01, puis DecInfer-09"]
+    VOI["Banc voi<br/>deux moteurs, une valeur exacte"]
+    LAKE["Lake decision_theory_lean<br/>compagnons 01b, 01c, 07b"]
+    BAY -->|"la loi a posteriori entre dans la décision"| F
+    F --> S --> R --> B
+    R --> ACT
+    F -->|"utilité espérée d'un acte"| REG
+    S -.->|"étape 05"| VOI
     F -.->|"formalisation"| LAKE
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
+    R -.->|"formalisation"| LAKE
+    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub ; ne pas harmoniser le ton avec le stroke (libelle sinon illisible)
     classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
     class LAKE lean;
 ```
 
-Le parcours suit une progression unique, portée en parallèle par les deux moteurs (Infer.NET et PyMC) :
+À la sortie du parcours, on sait :
 
-1. **Fondations** — On pose les axiomes de rationalité (von Neumann–Morgenstern), on dérive la fonction d'utilité, on modélise l'aversion au risque (paradoxe de Saint-Pétersbourg, CARA/CRRA). C'est ici qu'intervient le **premier notebook Lean** ([DecInfer-01b](DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb)) : la direction saine du théorème de représentation vNM, prouvée `0 sorry`.
-2. **Structure de décision** — On passe des choix isolés aux décisions structurées : critères multiples (MAUT), diagrammes d'influence (nœuds de chance / décision / utilité), et surtout la **valeur de l'information** (EVPI, EVSI) — combien vaut un test avant de l'acheter.
-3. **Robustesse & séquentiel** — Décision sous incertitude sévère (Minimax, regret) puis passage au temps : processus de décision markoviens (MDP), équation de Bellman, itération valeur/politique.
-4. **Bandits** — L'arbitrage exploration/exploitation : Thompson Sampling (posterior Beta-Bernoulli calculé par le moteur), comparé à ε-greedy et UCB1. C'est ici qu'intervient le **second notebook Lean** ([DecInfer-07b](DecInfer/DecInfer-07b-Lean-Gittins.ipynb)) : l'indice de Gittins et les identités d'escompte géométrique.
-5. **Pont causal (capstone)** — [Causalite-01 — Do-Calculus](../Causalite/Causalite-01-Calcul-Do-Python.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
-6. **Règles de décision sous corrélation** — [ReglesDeDecision-01](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) reprend la distinction observation/intervention au moment où elle change la **valeur d'un acte**. Sur des modèles causaux finis énumérés exactement, le carnet compare EDT, CDT, CCDT et l'intervention sur une procédure, de Fisher et Newcomb au cas d'Egan et au dilemme du prisonnier. Il mesure aussi la condition de reconnaissance sous laquelle l'avantage reproductif des agents CDT du problème de Dai s'inverse.
+- fonder une décision sur des axiomes de préférence et maximiser une utilité espérée plutôt qu'une valeur monétaire ;
+- modéliser l'aversion au risque (CARA, CRRA, coefficients d'Arrow-Pratt) et décider sur plusieurs critères (utilité multi-attributs, swing weights) ;
+- structurer une décision par un réseau et en extraire la politique optimale ;
+- chiffrer la valeur d'une information avant de l'acquérir (EVPI, EVSI) et choisir un critère quand les probabilités manquent (Minimax, regret) ;
+- résoudre une décision séquentielle par programmation dynamique (processus de décision markoviens, équation de Bellman) et arbitrer entre explorer et exploiter (Thompson Sampling, UCB1, indice de Gittins) ;
+- distinguer ce qu'un acte indique de ce qu'il cause, et dire sur lequel des deux s'appuie chaque règle de décision ;
+- lire dans un assistant de preuve ce qui est démontré et ce qui reste énoncé.
 
-## Structure et contenu
+## Approfondissements — Master et Recherche
 
-### `DecInfer/` — l'arc de référence (Infer.NET + Lean 4)
+### Autour de 01 et de 07 : les carnets compagnons en Lean 4
 
-Douze notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP), **trois à kernel Lean 4** (companions natifs de preuve formelle) et **un à kernel Python** (notebook 11). C'est l'arc canonique, le plus complet ; il va des axiomes vNM (notebook 1) jusqu'aux théories de la décision face à un prédicteur (notebook 11, EDT/CDT/UDT — descendu de GameTheory), avec les preuves Lean de vNM (notebook 2), de de Finetti (notebook 2b) et de Gittins (notebook 8b) intercalées à leur place pédagogique. **Détail notebook par notebook** : [`DecInfer/README.md`](DecInfer/README.md).
+[DecInfer-01b](DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb) reprend le théorème de représentation de l'étape 01 et en démontre une direction : si une fonction d'utilité représente une préférence, cette préférence satisfait les quatre axiomes. [DecInfer-01c](DecInfer/DecInfer-01c-Lean-Coherence.ipynb) explique pourquoi les degrés de croyance d'un agent cohérent sont des probabilités : un système de prix de paris qui n'est pas additif expose à un livret de mises perdant dans tous les états du monde. Ces deux carnets demandent des bases de Lean 4, mais se lisent sans exécuter : les signatures et les axiomes utilisés sont affichés dans les sorties.
 
-### `DecPyMC/` — le miroir Python (MCMC)
+[DecInfer-07b](DecInfer/DecInfer-07b-Lean-Gittins.ipynb) réécrit en Lean 4 le bandit actualisé de l'étape 07, définit un indice de Gittins et énonce son théorème d'optimalité, sans le prouver. Il travaille en nombres flottants, sans Mathlib, pour rester lisible. Le [README de DecInfer](DecInfer/README.md) décrit ces carnets en détail.
 
-L'extension actuarielle — le passage de la décision bayésienne au métier de l'assurance : prime pure et chargement (T1), fréquence × sévérité hiérarchique (T2), crédibilité de Bühlmann–Straub (T3), ruine et processus de Cramér–Lundberg (T4), valeur de l'information en souscription (T5) — descend en sous-série dédiée : [**Actuariat/**](Actuariat/README.md) (ex-DecPyMC-8 à 12, régradués T1-T5).
+### La paire et le banc `voi/` : deux moteurs, une valeur exacte
 
-### `Causalite/` — le capstone causal (dowhy)
+Les étapes 01 à 07 ont le même numéro et le même titre des deux côtés. Sur les étapes 03, 04 et 06, et sur les processus de décision markoviens de l'étape 07, les deux carnets traitent les mêmes exemples et retrouvent les mêmes valeurs. Ils se séparent là où le moteur change la question. Infer.NET propage des messages dans un graphe de facteurs et rend une loi ; PyMC rend des tirages, et la décision hérite de leur dispersion. Chaque README de la paire donne la correspondance étape par étape. Qui modifie une étape commune dans l'un des deux dossiers vérifie l'autre.
 
-Quatre notebooks-ponts, dont [Causalite-01 — Do-Calculus](../Causalite/Causalite-01-Calcul-Do-Python.ipynb) en tête, qui relient l'arc décision au reste du dépôt par la question causale : le do-calculus (Causalite-01), l'identification nommée d'estimands (Causalite-02), le contrefactuel individuel (Causalite-03) et les méthodes quasi-expérimentales (Causalite-07). Exécutés sur `dowhy` (kernel `coursia-ml-training`). **Détail** : [`Causalite/README.md`](../Causalite/README.md).
+L'étape 05 est la seule où les deux carnets ne posent pas le même problème chiffré. Le banc [`voi/`](voi/README.md) y remédie. Un contrat JSON décrit un problème de valeur de l'information : états, lois a priori, actions, gains, vraisemblance du signal, coût du test. Deux adaptateurs indépendants le font calculer par Infer.NET et par PyMC, et un comparateur journalise l'accord ou le désaccord à partir de leurs sorties. Deux moteurs qui s'accordent à peu près ne disent pas lequel a raison : un troisième adaptateur traduit le même contrat en fractions exactes pour une formalisation Lean hébergée dans la série GameTheory, qui donne la valeur de référence.
 
-### `ReglesDeDecision-01` — la règle qui évalue l'acte
+L'annexe D de [DecPyMC-05](DecPyMC/DecPyMC-05-Value-Information.ipynb) exécute les trois instruments. Sur le forage, la valeur du test imparfait vaut `253000` pour le calcul du carnet, pour Lean et pour Infer.NET, et `252796` pour PyMC : l'écart est le bruit de l'échantillonnage. Un second contrat, où le signal ne dépend pas de l'état, sert de contrôle ; la valeur y est nulle pour les quatre calculs.
 
-[ReglesDeDecision-01](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) distingue trois calculs sur un même modèle causal : conditionner sur l'acte (EDT), intervenir sur l'acte (CDT) et intervenir sur la procédure qui produit les actes (UDT). L'opérationnalisation de la CCDT d'Edgington reproduit les valeurs publiées par Mohajeri, puis est confrontée à des mondes adéquats et à un témoin négatif Newcomb. Le cas d'Egan et une simulation de population inspirent les limites : une coïncidence mesurée sur une famille de modèles n'est pas une preuve universelle, et un gain reproductif n'est pas un verdict normatif.
+### Exercices des carnets
 
-### `decision_theory_lean` — la couche de certification (hors compte notebooks)
+Chaque sous-série liste ses exercices dans son README. Le carnet [ReglesDeDecision-01](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) en propose trois, du plus mécanique au plus ouvert.
 
-Le lake Lean 4 [`decision_theory_lean`](decision_theory_lean/), à la racine de la série Probas (visible des deux pistes), formalise trois résultats canoniques :
+- **Un gène moins déterminant** : relâcher l'hypothèse selon laquelle le gène décide entièrement du fait de fumer, puis chercher à partir de quand la recommandation de la règle évidentielle bascule alors que celle de la règle causale ne change pas.
+- **La description des conséquences** : retirer ou ajouter une composante à la conséquence d'un acte, et observer si la coïncidence entre CCDT et la règle évidentielle tient encore.
+- **Une population qui apprend** : faire varier la part d'agents causalistes, ajouter une réplication proportionnelle au gain, et discuter ce que cette dynamique mesure.
 
-- **Utility** — la représentation d'utilité espérée de von Neumann–Morgenstern : les quatre axiomes (complétude, transitivité, indépendance, continuité/Archimède), la **direction saine** du théorème (représentation ⟹ rationalité) et la stabilité affine, démontrées **sans aucun `sorry`**. La direction d'existence (Herstein–Milnor 1953) est documentée comme jalon ouvert.
-- **Coherence** — la cohérence de de Finetti / Dutch Book : la direction constructive (cas fini) et le cas mono-ticket sont **clos sans `sorry`** ; des prix de pari incohérents exposent l'agent à un livret de paris à perte sûre, via l'identité d'inclusion–exclusion. **Vitrine notebook** : [DecInfer-01c-Lean-Coherence](DecInfer/DecInfer-01c-Lean-Coherence.ipynb), companion dédié extrait des sections 7-8 de DecInfer-01b (G4b, #14873) (`#check`/`#print axioms` sur `non_additive_implies_dutch_book` et `single_coherent_iff_prob_bounds`, EPIC visibilité #11703).
-- **Gittins** — le bandit actualisé à horizon infini : les **briques de l'escompte géométrique sont entièrement prouvées** ; le théorème phare d'optimalité de l'indice reste **énoncé mais intraitable** dans le Mathlib actuel (pas de formalisation MDP/Bellman), maintenu en `sorry` documenté — un jalon honnête, non un trou masqué.
+Les cellules d'exercice s'exécutent sans erreur tant qu'elles ne sont pas complétées.
 
-Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs). **Détail** : [`decision_theory_lean/README.md`](decision_theory_lean/README.md).
+## Sous-séries — ce que contient chaque dossier
 
-## Prérequis et démarrage
+### DecInfer — Licence avancée et Master
 
-**Prérequis pédagogique** : le corpus bayésien correspondant — [`Infer/`](../Infer/README.md) pour la piste C#, [`PyMC/`](../PyMC/README.md) pour la piste Python (notamment les réseaux bayésiens et les posteriors Beta). Aucune connaissance préalable en théorie de la décision.
+[DecInfer](DecInfer/README.md) est la version C# du cours, sur le moteur Infer.NET. Ses carnets 01 à 07 suivent le plan commun, des axiomes de préférence aux processus de décision markoviens. Des carnets compagnons, 01b, 01c et 07b, énoncent et vérifient en Lean 4 les théorèmes sur lesquels le cours repose. Le carnet 08 fait calculer au moteur les lois a posteriori d'un bandit et compare le Thompson Sampling à deux autres stratégies. Le carnet 09, en Python, examine ce que devient la règle de décision quand un prédicteur est corrélé au choix ; il se lit après le carnet des règles de décision de ce dossier. Prérequis : les réseaux bayésiens de la série [Infer](../Infer/README.md).
 
-**Environnements** :
+### DecPyMC — Licence avancée et Master
 
-- **Piste Infer.NET (`DecInfer/`)** : .NET 9.0 + `dotnet-interactive`. Voir [`../README.md`](../README.md#installation) pour l'installation du kernel.
-- **Piste PyMC (`DecPyMC/`), pont causal (`Causalite/`) et règles de décision (`ReglesDeDecision-01`)** : Python 3.12+ (PyMC 6 et ArviZ 1.x ne s'installent pas sur une version antérieure), dépendances `pymc`, `arviz`, `dowhy` dans [`../requirements.txt`](../requirements.txt). Les notebooks `DecPyMC` et `ReglesDeDecision` déclarent le kernel `python3` ; la plupart des `Causalité` déclarent encore `coursia-ml-training`, un kernel propre aux machines de la flotte ([#17654](https://github.com/jsboige/CoursIA/issues/17654)).
-- **Companions Lean (`DecInfer-01b`, `DecInfer-01c`, `DecInfer-07b`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
+[DecPyMC](DecPyMC/README.md) est la version Python, sur PyMC. Ses carnets 01 à 07 suivent le même plan. L'échantillonneur rend des tirages de la loi a posteriori, pas une formule, et la décision hérite de cette incertitude : le carnet 04 calcule la probabilité que chaque site d'aéroport soit le meilleur. De l'étape 01 à l'étape 06, chaque carnet ajoute un modèle que la formule ne résout pas et affiche ses diagnostics de convergence. Six figures tirées des carnets illustrent la progression dans le README. Le carnet 08 ouvre sur l'actuariat. Prérequis : la modélisation bayésienne de la série [PyMC](../PyMC/README.md).
 
-Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-01`) et se lit dans l'ordre numérique — la progression est cumulative.
+### Actuariat — Master
 
-## Références
+[Actuariat](Actuariat/README.md) applique la décision bayésienne au métier de l'assurance, dans l'ordre où les questions se posent à un assureur : à quel prix couvrir un risque (01), comment tarifer des segments dont les historiques sont inégaux (02), quel poids donner à l'expérience propre d'un groupe (03), combien de capital immobiliser pour traverser les mauvaises années (04), quand payer pour mieux connaître un candidat (05). Les données sont simulées, à vérité connue, ce qui permet de mesurer l'erreur d'un tarif. Deux portefeuilles reviennent d'un carnet à l'autre : une assurance automobile aux sinistres fréquents et légers, une responsabilité civile médicale aux sinistres rares et lourds. Aucune connaissance actuarielle n'est supposée. La porte d'entrée est [DecPyMC-08](DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb).
 
-- Von Neumann, J. & Morgenstern, O. (1944). *Theory of Games and Economic Behavior*.
-- Howard, R. A. & Matheson, J. E. (1984). *Influence Diagrams*.
-- Gittins, J. C. (1979). *Bandit Processes and Dynamic Allocation Indices*. Weber, R. (1992), preuve simplifiée.
-- Pearl, J. (2009). *Causality: Models, Reasoning, and Inference* (2ᵉ éd.).
-- de Finetti, B. (1937). *La prévision : ses lois logiques, ses sources subjectives*.
+### `voi/` et `decision_theory_lean/` — Master et Recherche
 
----
+Ces deux dossiers ne contiennent pas de carnets. [`voi/`](voi/README.md) est le banc décrit plus haut : deux contrats JSON, un adaptateur C# qui appelle Infer.NET, un adaptateur Python qui appelle PyMC, un adaptateur vers Lean, un comparateur et ses tests. Le résultat de sa dernière comparaison est conservé dans `comparison.json`. [`decision_theory_lean/`](decision_theory_lean/README.md) est le projet Lean 4 que lisent les carnets compagnons. Il regroupe trois bibliothèques, `Utility`, `Coherence` et `Gittins` ; « Pour aller plus loin » dit ce que chacune démontre.
 
-*Cet arc fait partie de la série [Probas](../README.md) du dépôt [CoursIA](https://github.com/jsboige/CoursIA). Documentation détaillée de chaque notebook dans les README des sous-séries.*
+## Installation — pratique, tous niveaux
+
+Le dossier utilise trois noyaux Jupyter. Aucun carnet ne demande de GPU.
+
+- **Carnets C#** (DecInfer 01 à 08, hors lettres) : noyau `.net-csharp` de .NET Interactive, avec le SDK .NET 9. Chaque carnet télécharge lui-même les paquets NuGet d'Infer.NET. Les commandes d'installation sont dans le [README de DecInfer](DecInfer/README.md).
+- **Carnets Python** (DecPyMC, Actuariat, `ReglesDeDecision-01`, DecInfer-09) : noyau `python3`. Les dépendances sont celles de la série Probas, listées dans [requirements.txt](../requirements.txt) : PyMC 6 et ArviZ 1, qui demandent Python 3.12 ou plus récent, et `dowhy` pour les deux carnets sur les règles de décision.
+- **Carnets Lean** (DecInfer 01b, 01c et 07b) : noyau `lean4-wsl`, Lean 4 exécuté sous WSL. Les deux premiers importent le lake, qui doit avoir été construit avec Mathlib. La construction est décrite dans le [README du lake](decision_theory_lean/README.md), l'installation du noyau dans [kernels-runtime.md](../../../docs/reference/kernels-runtime.md).
+
+```bash
+python -m pip install -r MyIA.AI.Notebooks/Probas/requirements.txt
+jupyter lab MyIA.AI.Notebooks/Probas/DecisionTheory/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb
+```
+
+Plusieurs carnets chargent des fichiers voisins par chemin relatif : ouvrez-les depuis leur dossier, dans un clone complet du dépôt.
+
+## Pour aller plus loin — Recherche
+
+**Formalisations Lean.** Le lake [`decision_theory_lean/`](decision_theory_lean/README.md) regroupe trois bibliothèques, chacune avec un jumeau anglais suffixé `_en`. `Utility` et `Coherence` sont démontrées sans `sorry` : une direction du théorème de représentation (une utilité qui représente une préférence la rend rationnelle), et le lien entre cohérence des paris et probabilités, avec sa lecture du côté de l'assureur. Deux résultats y sont nommés comme jalons ouverts et ne sont pas formalisés : l'existence d'une utilité pour toute préférence rationnelle, et la caractérisation complète de la cohérence par une mesure de probabilité. Dans `Gittins`, les identités de l'actualisation géométrique sont prouvées ; le théorème d'optimalité de l'indice est énoncé, non prouvé. Sa démonstration demande une formalisation des processus de décision markoviens que Mathlib ne fournit pas encore.
+
+**Ce que le carnet des règles de décision ne tranche pas.** Il exhibe les conséquences chiffrées de définitions précises et s'arrête là. La coïncidence entre CCDT et la règle évidentielle est vérifiée sur une famille de modèles, pas démontrée en général ; elle dépend de la façon dont on décrit les conséquences d'un acte, et le problème de Newcomb sert de témoin où elle ne s'applique pas. La corrélation entre deux exécutions d'une même procédure est représentée par une disposition commune : c'est un modèle de l'idée, pas une preuve de sa validité. Dans une population où personne ne reconnaît les types, les agents causalistes gagnent davantage (`4.638` contre `2.690` en gain moyen) ; l'avantage s'inverse dès que la reconnaissance dépasse un seuil, `r* = 0.5135` pour une minorité de 10 %. Un gain dans un environnement mesure le succès d'une politique, pas sa rationalité.
+
+**Observer ou intervenir.** Le carnet des règles de décision suppose acquise la différence entre conditionner et intervenir. Le dossier frère [Causalité](../Causalite/README.md) de la série Probas la construit, de l'association au contrefactuel, avec l'outil `dowhy` : [Causalite-00](../Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb) suffit comme prérequis, [Causalite-01](../Causalite/Causalite-01-Calcul-Do-Python.ipynb) développe le do-calculus.
+
+**Du calcul d'une politique à son apprentissage.** L'étape 07 calcule une politique optimale à partir d'un modèle connu. La série [RL](../../RL/README.md) traite le cas où l'agent doit l'apprendre par interaction.
+
+**Décider face à un autre décideur.** Les carnets sur les règles de décision s'arrêtent à un prédicteur ou à une population donnés. La série [Théorie des jeux](../../GameTheory/README.md) étudie le cas où chaque agent modélise l'autre ; [GameTheory-04e](../../GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb) en donne le point de départ.
+
+## Ressources — tous niveaux
+
+- [La série Infer](../Infer/README.md) et [la série PyMC](../PyMC/README.md) : les fondations d'inférence bayésienne, en C# et en Python.
+- Les README des sous-séries, [DecInfer](DecInfer/README.md), [DecPyMC](DecPyMC/README.md) et [Actuariat](Actuariat/README.md) : le détail carnet par carnet, les exercices et l'installation.
+- Chaque carnet se termine par sa bibliographie. Cinq textes fondent l'ensemble :
+  - Von Neumann, J. & Morgenstern, O. (1944). *Theory of Games and Economic Behavior*.
+  - Howard, R. A. & Matheson, J. E. (1984). *Influence Diagrams*.
+  - Gittins, J. C. (1979). *Bandit Processes and Dynamic Allocation Indices*. Weber, R. (1992), preuve simplifiée.
+  - Pearl, J. (2009). *Causality: Models, Reasoning, and Inference* (2ᵉ éd.).
+  - de Finetti, B. (1937). *La prévision : ses lois logiques, ses sources subjectives*.
+
+[↑ Série Probas](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md)

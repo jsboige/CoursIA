@@ -82,7 +82,7 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
-from os.path import dirname, abspath
+from os.path import dirname, abspath, join
 from typing import Any
 
 try:
@@ -90,7 +90,10 @@ try:
     from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE, LANE_TOKEN
     from verifier_cleanup import classify_one
 except ImportError:  # charge depuis scripts/ en invocation directe
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/ ; les deux
+    # autres modules restent a la racine de scripts/.
     sys.path.insert(0, dirname(abspath(__file__)))
+    sys.path.insert(0, join(dirname(abspath(__file__)), "ci"))
     import gh_identity  # type: ignore[no-redef]
     from check_adjoint_prevalidation import (  # type: ignore[no-redef]
         QUALIFYING_LANES,

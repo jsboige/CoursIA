@@ -1,0 +1,14 @@
+- name: GameTheory-13e Revision Croyances
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: 'Z3 décide la consistance des deux côtés : z3-solver 5.4.1.0
+    en Python ; Microsoft.Z3 4.12.2 et chargeur canonique vers la bibliothèque 5.4.1.0
+    en C#.'
+  known_differences:
+  - La politique aléatoire utilise les générateurs NumPy et .NET distincts ; le témoin
+    reset peut différer, les sorties et la prose indiquent les valeurs de chaque exécution.
+  - L’incision est gloutonne locale, non un optimum global ; sept prédicats finis
+    sont testés, sans prétendre établir les postulats AGM généraux.

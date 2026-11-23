@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1702
-breakdown: SymbolicAI=408, GenAI=323, Search=173, GameTheory=149, ML=142, QuantConnect=125, IIT=114, Probas=96, RL=41, Sudoku=41, Complexity=33, NLP=20, Physique=16, Compression=13, CaseStudies=6, cross-series=2
-maturity: BETA=1560, DRAFT=76, ALPHA=62, TEMPLATE=4
+total: 1786
+breakdown: SymbolicAI=415, GenAI=335, Search=179, GameTheory=170, ML=157, QuantConnect=125, IIT=110, Probas=96, Complexity=44, RL=44, Sudoku=42, Physique=23, NLP=20, Compression=17, CaseStudies=6, cross-series=3
+maturity: BETA=1650, DRAFT=76, ALPHA=56, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -33,9 +33,9 @@ Dernière mise à jour : 2026-08-05
 
 **[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
 
-**[Complexity](Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
+**[Complexity](InformationCalcul/Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
 
-**[Information et calcul](InformationCalcul/README.md)** — Le hub qui rassemble les séries sœurs qui nourrissent les séries d'IA : théorie de l'information et codage, compression, traitement du signal, cryptographie — et, à terme, les séries Complexity et Compression qui rejoindront ce hub (leur déplacement vers le hub est à venir). C'est le socle théorique « mesurer, coder, compresser, protéger l'information » sur lequel repose le calcul. Modèle : [SymbolicAI](SymbolicAI/README.md).
+**[Information et calcul](InformationCalcul/README.md)** — Le hub qui rassemble les séries sœurs qui nourrissent les séries d'IA : théorie de l'information et codage, compression, traitement du signal, cryptographie — et les séries Complexity et Compression, désormais rattachées au hub. C'est le socle théorique « mesurer, coder, compresser, protéger l'information » sur lequel repose le calcul. Modèle : [SymbolicAI](SymbolicAI/README.md).
 
 **[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
 

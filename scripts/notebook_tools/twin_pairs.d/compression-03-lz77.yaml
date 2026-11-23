@@ -1,7 +1,7 @@
 - name: "Compression-03 LZ77"
   family: Compression
-  python: MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Compression/Compression-03-LZ77-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Les deux côtés implémentent le parse LZ77, les références chevauchantes, les flux LZData et la recherche par suffixes from-scratch pour enseigner l’algorithme. C# utilise uniquement la BCL .NET 9; ZLibStream est une comparaison mesurée, pas un remplacement du parse."
