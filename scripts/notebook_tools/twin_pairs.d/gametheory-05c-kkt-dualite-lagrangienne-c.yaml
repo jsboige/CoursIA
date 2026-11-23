@@ -1,0 +1,7 @@
+- name: "GameTheory-05c-KKT-Dualite-Lagrangienne C#"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb. Execution reelle sur kernel .net-csharp : 9 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
