@@ -8,8 +8,10 @@ sans jamais l'ecrire.
 """
 
 import importlib.util
+import json
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -331,3 +333,168 @@ def test_le_journal_avance_pendant_la_passe(tmp_path, monkeypatch):
     # La ligne de fin reste la DERNIERE : le controle d'hygiene la lit.
     derniere = texte.rstrip().splitlines()[-1]
     assert "run end rc=0" in derniere, derniere
+
+
+# --- miroir du journal (23/11) ----------------------------------------------------
+#
+# Mesure du 2026-11-23 : l'organe ecrit son stdout APRES sa boucle (une
+# impression par PR, en fin de run). Le run du 23/11 a evalue 191 PRs entre
+# 00:36Z et 06:38Z ; le journal de la tache pesait 76 octets a 08:00Z. Le
+# miroir lit le journal de l'organe PENDANT le run et ecrit une ligne par PR
+# dans le journal de la tache, avec la duree de l'evaluation.
+
+
+def _ligne_journal(ts: str, pr: int, verdict: str, reason: str) -> str:
+    return json.dumps(
+        {"ts": ts, "pr": pr, "verdict": verdict, "reason": reason}
+    ) + "\n"
+
+
+def test_le_miroir_ecrit_une_ligne_par_pr_avec_la_duree(tmp_path):
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text(
+        _ligne_journal("2026-11-23T00:36:10Z", 28144, "skipped", "draft")
+        + _ligne_journal("2026-11-23T00:38:10Z", 28145, "merged", "")
+        + _ligne_journal(
+            "2026-11-23T00:39:10Z", 28146, "skipped", "no-coordinator-approval"
+        ),
+        encoding="utf-8",
+    )
+    log = tmp_path / "run.log"
+    stop = threading.Event()
+    stop.set()
+    with log.open("a", encoding="utf-8") as fh:
+        mirrored = imod.mirror_journal(journal, fh, 0, stop, poll_s=0.01)
+    lines = [
+        l
+        for l in log.read_text(encoding="utf-8").splitlines()
+        if l.startswith("journal :")
+    ]
+    assert mirrored == 3
+    assert len(lines) == 3
+    assert lines[0].startswith("journal : PR #28144 skipped -- draft")
+    # La premiere ligne d'un passage n'a pas de predecesseur : son cout n'est
+    # pas mesurable, il n'est pas invente.
+    assert "duree n.d." in lines[0]
+    assert lines[1].startswith("journal : PR #28145 merged")
+    assert "duree 120.0 s" in lines[1]
+    assert "duree 60.0 s" in lines[2]
+
+
+def test_le_miroir_ne_rejoue_pas_les_lignes_precedentes(tmp_path):
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text(
+        _ligne_journal("2026-11-23T00:36:10Z", 28144, "skipped", "draft"),
+        encoding="utf-8",
+    )
+    log = tmp_path / "run.log"
+    stop = threading.Event()
+    stop.set()
+    with log.open("a", encoding="utf-8") as fh:
+        assert imod.mirror_journal(journal, fh, 0, stop, poll_s=0.01) == 1
+        # Second passage : on repart de la taille du journal, les lignes
+        # deja mises en miroir ne sont pas reecrites.
+        offset = journal.stat().st_size
+        assert imod.mirror_journal(journal, fh, offset, stop, poll_s=0.01) == 0
+    lines = [
+        l
+        for l in log.read_text(encoding="utf-8").splitlines()
+        if l.startswith("journal :")
+    ]
+    assert len(lines) == 1
+
+
+def test_une_ligne_incomplete_est_attendue_puis_rendue(tmp_path):
+    # Le journal ecrit en append : une ligne peut etre lue a moitie. Elle
+    # n'est pas rendue telle quelle -- elle attend la fin de ligne.
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text('{"ts": "2026-11-23T00:36:10Z", "pr": 28144,', encoding="utf-8")
+    log = tmp_path / "run.log"
+    stop = threading.Event()
+    stop.set()
+    with log.open("a", encoding="utf-8") as fh:
+        assert imod.mirror_journal(journal, fh, 0, stop, poll_s=0.01) == 0
+        with journal.open("a", encoding="utf-8") as jf:
+            jf.write(' "verdict": "skipped", "reason": "draft"}\n')
+        assert imod.mirror_journal(journal, fh, 0, stop, poll_s=0.01) == 1
+    lines = [
+        l
+        for l in log.read_text(encoding="utf-8").splitlines()
+        if l.startswith("journal :")
+    ]
+    assert len(lines) == 1
+    assert lines[0].startswith("journal : PR #28144 skipped -- draft")
+
+
+def test_un_ecart_superieur_au_max_gap_nest_pas_une_duree(tmp_path):
+    # Meme convention que l'organe de duree : au-dela du `--max-gap`, deux
+    # lignes consecutives n'appartiennent pas au meme passage.
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text(
+        _ligne_journal("2026-11-23T00:36:10Z", 28144, "skipped", "draft")
+        + _ligne_journal("2026-11-23T02:00:00Z", 28145, "skipped", "draft"),
+        encoding="utf-8",
+    )
+    log = tmp_path / "run.log"
+    stop = threading.Event()
+    stop.set()
+    with log.open("a", encoding="utf-8") as fh:
+        imod.mirror_journal(journal, fh, 0, stop, poll_s=0.01)
+    lines = [
+        l
+        for l in log.read_text(encoding="utf-8").splitlines()
+        if l.startswith("journal :")
+    ]
+    assert "duree n.d." in lines[1]
+
+
+def test_un_journal_absent_ne_casse_pas_le_miroir(tmp_path):
+    log = tmp_path / "run.log"
+    stop = threading.Event()
+    stop.set()
+    with log.open("a", encoding="utf-8") as fh:
+        assert (
+            imod.mirror_journal(tmp_path / "absent.jsonl", fh, 0, stop, poll_s=0.01)
+            == 0
+        )
+
+
+def test_le_chemin_du_journal_est_celuide_l_organe_de_duree(tmp_path, monkeypatch):
+    # L'organe de duree recopie deja `merge_ready.default_journal_path` (son
+    # propre test verrouille l'egalite) : verrouiller le lanceur sur l'organe
+    # ferme la chaine.
+    monkeypatch.setattr(imod, "LOG_DIR", tmp_path / "cablage" / "logs")
+    timing = imod.timing_module()
+    assert timing is not None
+    assert imod.journal_path() == tmp_path / "cablage" / "journal.jsonl"
+
+
+def test_le_chemin_du_journal_vise_le_dossier_de_l_organe():
+    # Sur une machine, le chemin vise doit etre celui de l'organe lui-meme.
+    timing = imod.timing_module()
+    assert timing is not None
+    assert imod.journal_path() == timing.default_journal_path()
+
+
+def test_le_rapport_de_duree_est_ecrit_dans_le_log(tmp_path):
+    journal = tmp_path / "journal.jsonl"
+    journal.write_text(
+        _ligne_journal("2026-11-23T00:36:10Z", 28144, "skipped", "draft")
+        + _ligne_journal("2026-11-23T00:38:10Z", 28145, "merged", ""),
+        encoding="utf-8",
+    )
+    log = tmp_path / "run.log"
+    with log.open("a", encoding="utf-8") as fh:
+        rc = imod.append_pass_timing(HERE.parents[1], journal, fh)
+    assert rc == "rc=0"
+    text = log.read_text(encoding="utf-8")
+    assert "passages" in text
+
+
+def test_le_rapport_de_duree_signale_un_organe_absent(tmp_path):
+    log = tmp_path / "run.log"
+    with log.open("a", encoding="utf-8") as fh:
+        rc = imod.append_pass_timing(tmp_path, tmp_path / "journal.jsonl", fh)
+    assert rc == "absent"
+    assert "organe de duree absent" in log.read_text(encoding="utf-8")
+
