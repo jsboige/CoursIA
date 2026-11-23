@@ -220,7 +220,7 @@ TROISIEME FAUX REFUS MESURE (#27576, 2026-11-20)
    d'un carnet deja sur `main` se voyait imputer les AUTRES occupants du slot
    sur la base : App-02 porte `App-02-GraphColoring-CSharp` ET
    `App-02-GraphColoring-Python` en plus du jumeau Python, SL-12b porte
-   `SL-12b-PavlovDLS-Reproduction` -- des doubles occupations LIVREES sur
+   `SL-12b-PavlovDLS-Reproduction-Python` -- des doubles occupations LIVREES sur
    `main`, AVANT la PR (mesure : #26603 et #26617 approuvees, ecartees en
    `slot-collision-on-merge:taken_on_base`). Quand le jumeau de la cible
    siege deja dans ce slot sur la base (relation `_twin_in_base`, §7), les
@@ -231,7 +231,7 @@ TROISIEME FAUX REFUS MESURE (#27576, 2026-11-20)
    sources (revision, PR ouverte, table declaree) restent bloquants, et un
    item NEUF pose sur un slot occupe reste `taken_on_base`. Resoudre la
    collision heritee (renumeroter `App-02-GraphColoring-*` et
-   `SL-12b-PavlovDLS-Reproduction`) est un grain de contenu separe, qui
+   `SL-12b-PavlovDLS-Reproduction-Python`) est un grain de contenu separe, qui
    demande un argument pedagogique ecrit.
 
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
@@ -1380,7 +1380,7 @@ def self_test():
          set(), [STATE_PREEXISTING_ON_BASE]),
         ("VRAI POSITIF  SL-12b : jumeau C# d'un item assis, autre sujet herite",
          ["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb"],
-         merge(group_by_slot(["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
+         merge(group_by_slot(["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
                               "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb"],
                              SOURCE_BASE)),
          set(), [STATE_PREEXISTING_ON_BASE]),
