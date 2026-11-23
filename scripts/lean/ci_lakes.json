@@ -573,6 +573,22 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json",
         "scripts/lean/allow_axioms_conway.txt"
       ]
+    },
+    {
+      "lake": "busybeaver",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean",
+      "display-name": "busybeaver_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "true",
+      "axiom-include-i18n-siblings": "false",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lake-manifest.json"
+      ]
     }
   ]
 }
