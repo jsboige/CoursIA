@@ -1,0 +1,10 @@
+- name: "Frontieres-07 SALBP Assembly Line Balancing Audit"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-07-SALBP-AssemblyLineBalancing-Audit-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le Python et le C# invoquent OR-Tools CP-SAT pour les deux objectifs SALBP ainsi que le vrai moteur CBC pour la formulation PLNE indépendante. C# utilise Google.OrTools.LinearSolver/CBC et Python utilise PuLP/CBC. RPW et la validation de l'affectation restent en dehors des deux solveurs."
+  known_differences:
+    - "Les durées et arcs tirés avec NumPy sont fournis au C# en entrées structurelles. Aucun objectif, statut ou temps n'est fourni. Les mêmes cinq cas faciles et vingt candidats sont résolus à chaque exécution, avec les mêmes limites de 10 et 20 secondes."
+    - "Les versions et l'interface CBC ainsi que les temps dépendent du système. Les rapports C# présentent le meilleur bound accessible par LinearSolver et rangent les exports dans un répertoire temporaire. Le SVG autonome représente les points de Pareto fraîchement calculés."
