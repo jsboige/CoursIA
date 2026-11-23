@@ -1,0 +1,14 @@
+- name: "ICT-15 IntegratedComplexity"
+  family: IIT/ICT-Series
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design des deux cotes : le banc Phi/F/K est une implementation maison (paquet ict Python / port BCL .NET 9), sans moteur externe contourne. Le verdict INTRINSIC du carnet porte sur la formule integrale de Phi_dyn (intractable, documente des deux cotes a l'identique), pas sur un outil installable."
+  known_differences:
+    - "Edition du 22/11 (#27773) : le bandeau du jumeau C# ne dit plus « même plan de 26 cellules » mais « même plan de cellules » -- le garde prose-counts refuse un cardinal en prose (issue #9377). Aucun changement de fond : les deux jumeaux comptent 26 cellules, dont 8 cellules de code ; seule la phrase du bandeau bouge, ce qui deplace le content_sha du jumeau C# (2c6362e7 -> 1b0147f4)."
+    - "RNG : numpy PCG64 (Python) vs xorshift64* seedé (C#). Les deux cotes sont deterministes par graine, mais les trajectoires ne sont pas bit-identiques : les gains et taus different numeriquement, les verdicts de gate se comparent qualitativement. Signatures reproduites : c_fold=2.604 (identique, Cardan C# vs np.roots), S2 1500 etats/11 distincts, S3 3010/6 ; S1 varie avec le tirage (Python 216/12, C# 251/10 sur la graine 0)."
+    - "Compresseur de la jambe K : zlib niveau 9 (Python) vs System.IO.Compression.DeflateStream Optimal (C#) -- meme famille deflate, l'overhead constant de framing s'annule dans le contraste shuffle (documente dans la docstring des deux cotes). L'exercice 1 teste la robustesse au compresseur : LZMA vs zlib cote Python, Brotli (fenetre 16 MiB) vs Deflate cote C#."
+    - "Repartition des cellules code : la cellule source 5 (generation des trajectoires + sortie de signature) est portee dans la cellule d'appareil C# (index 3, fonctions TrajS1/TrajS2/TrajS3 + sanity check en fin de cellule) ; la position 5 du jumeau porte un exercice preliminaire 0 (sensibilite du reservoir d'etats de S2 au bruit). Le jumeau compte donc 4 exercices (0 a 3) contre 3 a la source."
+    - "Rendu figure Gate 5 : matplotlib (Python) vs ScottPlot 5.0.55 (C#), plus une table numerique c/k affichee en console cote C# ; normalisation min-max et ligne du pli identiques des deux cotes."
+    - "Sur le tirage C# commite : Gate 4 rend NE CONVERGE PAS (comme la source), Gate 5 rend DECALE (spread 3 pas) la ou la source rend COINCIDENT (spread 2) -- le changepoint de F est sensible au tirage du bruit SDE ; ecart documente, pas un defaut de portage (protocole identique : meme grille 9 points, meme seed 7, meme sigma 0.45)."
