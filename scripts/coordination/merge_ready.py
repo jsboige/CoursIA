@@ -2621,6 +2621,21 @@ def find_stacked_parents(body: str | None) -> list[int]:
     return list(seen)
 
 
+def _one_line(text: str, limit: int = 600) -> str:
+    """Aplatit une queue de sortie en UNE ligne bornee (#28147).
+
+    Le motif journalise doit rester lisible en une ligne : les retours a la
+    ligne sont remplaces par un espace, les blancs sont reduits, et la queue
+    est tronquee par la fin au-dela de ``limit``.
+    """
+    flat = " ".join((text or "").split())
+    if not flat:
+        return ""
+    if len(flat) <= limit:
+        return flat
+    return flat[: limit - 3] + "..."
+
+
 def combined_tree_reason(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
 ) -> str | None:
@@ -2655,8 +2670,16 @@ def combined_tree_reason(
         return "combined-tree-conflict"
     if res.returncode == 1 and verdict == "RED":
         failed = payload.get("failed") or []
-        return f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
-    return f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+        reason = f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
+        tail = _one_line(payload.get("output_tail") or "")
+        if tail:
+            reason = f"{reason} | pytest-tail: {tail}"
+        return reason
+    unreadable = f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+    tail = _one_line(payload.get("output_tail") or "")
+    if tail:
+        unreadable = f"{unreadable} | pytest-tail: {tail}"
+    return unreadable
 
 
 def stacked_parent_state(
