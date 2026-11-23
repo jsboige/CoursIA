@@ -46,9 +46,20 @@ from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 ```
 
 L'attachement est un geste d'interface (ni l'API REST ni le MCP ne l'exposent).
-Tant qu'il n'est pas fait, la compilation du consommateur échoue sur
-l'`ImportError` ci-dessus — échec fermé et explicite, jamais une replique
-silencieuse du module.
+Tant qu'il n'est pas fait, la **compilation du consommateur passe** : c'est le
+**lancement** qui échoue, dans `Initialize()`, sur `No module named 'SharedPCM'`
+(mesuré le 2026-11-04 sur un projet jetable, #20188). Une compilation verte ne
+prouve donc pas l'attachement ; les deux preuves sont `read_project`, qui liste
+`SharedPCM/pouches_pcm.py` parmi les fichiers du consommateur, et un backtest
+court qui franchit `Initialize()`. L'échec reste fermé et explicite, jamais une
+réplique silencieuse du module.
+
+Ordre des gestes pour attacher la bibliothèque à un consommateur existant
+(#28076) : « Add Library » dans l'interface, puis fermer les onglets du projet
+(l'éditeur réécrit sinon sa copie ouverte par-dessus les envois API) ; envoyer
+ensuite l'état de `main` par l'API, retirer du cloud l'ancienne copie
+`portfolio_construction.py` quand le dépôt ne la porte plus, contrôler
+`read_project` et les empreintes, puis lancer le backtest.
 
 **Contrainte de nommage (mesurée au 2026-10-17) :** QC Cloud refuse les
 underscores dans les noms de bibliothèque (« Only letters, numbers and '/' are
@@ -66,6 +77,9 @@ d'équivalence sont cités dans la PR d'extraction.
 | `Framework_Composite_FamaFrenchAllWeather` | FamaFrench 0.20 / AllWeather 0.80 | 31 j |
 | `Framework_Composite_TrendWeather` | TrendStocks 0.75 / AllWeather 0.25 | 31 j |
 | `composite-c1-multiasset` | Momentum 1/3 / MACD 1/3 / RelStrength 1/3 (sous-classe `CappedPouchesPCM`, plafond de 40 % par ligne) | 7 j |
+| `MomentumRegime-AdaptiveWeights` | SectorMomentum 0.85 / RegimeSwitching 0.15 (paramètres `sm_allocation` / `rs_allocation`) | 31 j |
+| `EMA-Cross-Alpha` | EMACross 1.0 (poche unique) | 1 j |
+| `TrendStocks-Alpha` | TrendStocks 1.0 (poche unique) | 7 j |
 
 Duplication restante hors périmètre de l'extraction : `TrendWeatherPointInTime`
 conserve son `portfolio_construction.py` **par gel délibéré** — la candidate

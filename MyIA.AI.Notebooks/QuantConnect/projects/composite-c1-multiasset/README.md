@@ -20,7 +20,7 @@ lean backtest --algorithm composite-c1-multiasset/main.py
 ### QC Cloud
 Create a new project, upload all `.py` files, compile and run a backtest.
 
-Le projet importe `SharedPCM.pouches_pcm` : attacher d'abord le projet `SharedPCM` comme bibliothèque (voir `../SharedPCM/README.md`), sinon la compilation échoue sur l'import.
+Le projet importe `SharedPCM.pouches_pcm` : attacher d'abord le projet `SharedPCM` comme bibliothèque (voir `../SharedPCM/README.md`). Sans elle, la compilation passe quand même et le lancement échoue dans `Initialize()` sur `No module named 'SharedPCM'` : vérifier l'attachement par `read_project`, pas par la compilation.
 
 ## Backtest Metrics
 
