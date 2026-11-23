@@ -49,7 +49,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-23-ERC20-Invariant-Companion.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\VERIF-02-ERC20-Invariant-Companion.ipynb",
     "cell_index": 14,
     "line_no": 9,
     "text": "# Etape 3 : collecter l'invariant Σ=totalSupply a chaque etape (200 lignes).",

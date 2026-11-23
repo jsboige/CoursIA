@@ -1,7 +1,7 @@
 - name: "Complexity-01 Step Counting"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-01-StepCounting-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-01-StepCounting-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Solver-free by design : le contenu porte sur le comptage élémentaire d'opérations, les algorithmes à boucles et une machine de Turing pédagogique. Les deux notebooks construisent ces mécanismes directement ; aucun moteur externe canonique ne produit ces résultats. C# utilise BigInteger pour les budgets et tailles exponentiels, Python ses entiers arbitraires."

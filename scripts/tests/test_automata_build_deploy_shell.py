@@ -10,7 +10,7 @@ SCRIPT = Path(__file__).resolve().parents[1] / "environment/automata-build-deplo
 
 
 @pytest.fixture
-def deployment(tmp_path: Path):
+def deployment(tmp_path: Path, bash: str, stub_as_function):
     sub = tmp_path / "sub"
     project = sub / "src/Automata/Automata.csproj"
     project.parent.mkdir(parents=True)
@@ -19,7 +19,10 @@ def deployment(tmp_path: Path):
     commands.mkdir()
     dotnet = commands / "dotnet"
     output = project.parent / "bin/Release/net8.0"
-    dotnet.write_text(f'#!/bin/bash\nmkdir -p "{output}"\nprintf CharSetSolver > "{output}/Microsoft.Automata.dll"\n')
+    # Chemins en forme POSIX : MSYS bash mange les antislashs (issue #27685).
+    # newline="\n" : un shebang CRLF casse l'interpreteur sous msys.
+    dotnet.write_text(f'#!/bin/bash\nmkdir -p "{output.as_posix()}"\nprintf CharSetSolver > "{output.as_posix()}/Microsoft.Automata.dll"\n',
+                      newline="\n")
     dotnet.chmod(0o755)
     # Le deuxième déplacement échoue uniquement lors de la publication.
     mv = commands / "mv"
@@ -29,17 +32,20 @@ if [[ "$1" == */.deploy-stage.*/deploy ]]; then
   if [[ "${FAIL_PUBLISH:-0}" == 1 ]]; then exit 1; fi
 fi
 exec /bin/mv "$@"
-''')
+''', newline="\n")
     mv.chmod(0o755)
     cache = tmp_path / "nuget"
     cache.mkdir()
     codedom = cache / "system.codedom/8.0.0/lib/net8.0/System.CodeDom.dll"
     env = os.environ.copy()
-    env.update(PATH=f'{commands}:{env["PATH"]}', NUGET_PACKAGES=str(cache))
+    env.update(PATH=os.pathsep.join((str(commands), env["PATH"])),
+               NUGET_PACKAGES=cache.as_posix())
+    stub_as_function(commands, ("dotnet", "mv"), env)
 
     def run(*args: str, fail_publish: bool = False, signal: str = "") -> subprocess.CompletedProcess:
-        return subprocess.run(["bash", str(SCRIPT), str(sub), *args], text=True,
+        return subprocess.run([bash, SCRIPT.as_posix(), sub.as_posix(), *args],
                               capture_output=True, check=False,
+                              encoding="utf-8", errors="replace",
                               env=env | {"FAIL_PUBLISH": str(int(fail_publish)), "TEST_SIGNAL": signal})
 
     return sub, codedom, run

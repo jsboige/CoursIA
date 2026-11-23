@@ -11,7 +11,7 @@ SCRIPT = Path(__file__).resolve().parents[1] / "environment/z3-build-deploy.sh"
 
 
 @pytest.fixture
-def deployment(tmp_path: Path):
+def deployment(tmp_path: Path, bash: str, stub_as_function):
     sub = tmp_path / "sub"
     project = sub / "solutions/Z3.Linq/Z3.Linq.csproj"
     project.parent.mkdir(parents=True)
@@ -29,13 +29,15 @@ def deployment(tmp_path: Path):
         path.write_text(content)
 
     def stub(name: str, body: str) -> None:
+        # newline="\n" : un shebang CRLF casse l'interpreteur sous msys.
         path = commands / name
-        path.write_text("#!/bin/bash\n" + body + "\n")
+        path.write_text("#!/bin/bash\n" + body + "\n", newline="\n")
         path.chmod(0o755)
 
     stub("uname", 'if [[ "$1" == -s ]]; then echo "$TEST_OS"; else echo "$TEST_ARCH"; fi')
     output = project.parent / "bin/Release/net8.0"
-    stub("dotnet", f'mkdir -p "{output}"; echo CollectionHandling > "{output}/Z3.Linq.dll"; echo win > "{output}/libz3.dll"')
+    # Chemins en forme POSIX : MSYS bash mange les antislashs (issue #27685).
+    stub("dotnet", f'mkdir -p "{output.as_posix()}"; echo CollectionHandling > "{output.as_posix()}/Z3.Linq.dll"; echo win > "{output.as_posix()}/libz3.dll"')
     # La wheel est synthétique ; sa corruption provoque une vraie erreur CRC zipfile.
     wheel_writer = tmp_path / "wheel.py"
     wheel_writer.write_text('''import os, pathlib, sys, zipfile
@@ -50,17 +52,20 @@ if os.environ.get("CORRUPT") == "1":
     stub("python3", f'''if [[ "$1" == -m ]]; then
   while [[ "$1" != -d ]]; do shift; done
   shift
-  exec "{sys.executable}" "{wheel_writer}" "$1"
+  exec "{Path(sys.executable).as_posix()}" "{wheel_writer.as_posix()}" "$1"
 fi
-exec "{sys.executable}" "$@"''')
+exec "{Path(sys.executable).as_posix()}" "$@"''')
     env = os.environ.copy()
-    env.update(PATH=f'{commands}:{env["PATH"]}', NUGET_PACKAGES=str(nuget), HOME=str(tmp_path))
+    env.update(PATH=os.pathsep.join((str(commands), env["PATH"])),
+               NUGET_PACKAGES=nuget.as_posix(), HOME=tmp_path.as_posix())
+    stub_as_function(commands, ("uname", "dotnet", "python3"), env)
 
     def run(os_name: str, arch: str, lib: str, force: str = "1", corrupt: str = "0"):
         run_env = env | {"TEST_OS": os_name, "TEST_ARCH": arch, "TEST_LIB": lib,
                          "Z3_FORCE": force, "CORRUPT": corrupt}
-        return subprocess.run(["bash", str(SCRIPT), str(sub)], env=run_env,
-                              text=True, capture_output=True, check=False)
+        return subprocess.run([bash, SCRIPT.as_posix(), sub.as_posix()], env=run_env,
+                              encoding="utf-8", errors="replace",
+                              capture_output=True, check=False)
 
     return sub, run
 

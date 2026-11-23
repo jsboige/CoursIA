@@ -11,6 +11,12 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 | [decidable_instance_propagation.md](decidable_instance_propagation.md) | **Piège** : l'instance `Decidable` ne se propage pas à travers une `def : Prop` (2026-08-07, #9568). La première cause des `Decidable` manquants qui ne sont pas des `sorry`. |
 | [l902_tactic_pitfalls.md](l902_tactic_pitfalls.md) | **Piège** : `rfl` direct impossible sur les fields de constructors polymorphes d'univers (`Equivalence.refl`, `CategoryTheory.yoneda`, `Sieve`). 4 strategies testées (Tier 1-4), 3 FAIL, 1 PASS. Solution canonique : argument `(e : C ≌ D)` ou retrait pragmatique (2026-08-12, PR #10638). |
 
+## Migration de toolchain
+
+| Document | Sujet |
+|---|---|
+| [migration-4.35.md](migration-4.35.md) | Recette de migration de l'ancre Lean vers la v4.35.0 : ce que le bump de `lean-toolchain` change (et ne change pas), les pièges rencontrés (`lake build` en 143/SIGTERM, `rfl` sur constructor polymorphe d'univers, `knot` en timeout) et les mesures qui les bornent. EPIC #27478. |
+
 ## Prover multi-agent & LLM
 
 | Document | Sujet |

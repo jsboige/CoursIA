@@ -41,7 +41,7 @@ import detect_degraded_mode as ddm  # noqa: E402
 
 
 # La confession VERBATIM du commit multié 66e2a429bb (cellule 26 du
-# 01-5-Kokoro-TTS-Local reel) : elle est le cas fondateur, on ne l'invente pas.
+# 01-5-TTS-Local-ONNX reel) : elle est le cas fondateur, on ne l'invente pas.
 KOKORO_CONFESSION = "  OpenAI API key non configuree - comparaison skippee"
 # Second aveu reel du meme commit (cellule 8) : la resolution .env ratee.
 ENV_CONFESSION = "WARNING: .env non trouve dans GenAI"
@@ -115,7 +115,7 @@ def test_kokoro_confession_verbatim_leve(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "mutilated"], cwd=tmp_path,
                    capture_output=True, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
 
     result = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     assert "error" not in result, result
@@ -135,7 +135,7 @@ def test_env_not_found_confession_leve(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "env lost"], cwd=tmp_path,
                    capture_output=True, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     result = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     kinds = [f["pattern"] for f in result["findings"]]
     assert "NOT_FOUND" in kinds, kinds
@@ -152,7 +152,7 @@ def test_skipped_pattern_leve(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "skipped"], cwd=tmp_path,
                    capture_output=True, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     result = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     kinds = [f["pattern"] for f in result["findings"]]
     assert "SKIPPED" in kinds, kinds
@@ -200,7 +200,7 @@ def test_variation_de_compteur_multiset(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "twice"], cwd=tmp_path,
                    capture_output=True, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     result = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     assert result["stats"]["findings_count"] == 1, result
 
@@ -240,7 +240,7 @@ def test_branch_behind_main_compare_au_merge_base(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "main: confession apparaît"],
                    cwd=tmp_path, capture_output=True, check=True)
     main_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
 
     # D : branche PR depuis B (detour par main serait un rebase) -- autre
     # fichier seulement ; le notebook reste la version PROPRE de B.
@@ -263,7 +263,7 @@ def test_branch_behind_main_compare_au_merge_base(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "pr: degradation"], cwd=tmp_path,
                    capture_output=True, check=True)
     pr_degraded = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                                 capture_output=True, text=True, check=True).stdout.strip()
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     r2 = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, pr_degraded)
     kinds = [f["pattern"] for f in r2["findings"]]
     assert "NON_CONFIGURED" in kinds, (kinds, "la PR doit etre jugee contre le merge-base, pas contre main")
@@ -311,10 +311,10 @@ def test_cli_new_file_exempt(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "new nb"], cwd=tmp_path,
                    capture_output=True, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     base_sha = subprocess.run(
         ["git", "rev-parse", "HEAD~2"], cwd=tmp_path,
-        capture_output=True, text=True, check=True).stdout.strip()
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     result = subprocess.run(
         [sys.executable, str(TOOL), "new.ipynb", "--base", base_sha,
          "--head", head_sha, "--check", "--json"],
@@ -339,7 +339,7 @@ def test_finding_nomme_cellule_et_octets(tmp_path):
     subprocess.run(["git", "commit", "-q", "-m", "mutilated"], cwd=tmp_path,
                    capture_output=True, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     f = r["findings"][0]
     assert f["pattern"] and isinstance(f["cell_index"], int)
@@ -380,7 +380,7 @@ def test_stack_down_whisper_leve(tmp_path):
     subprocess.run(["git", "add", "case.ipynb"], cwd=tmp_path, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "re-exec"], cwd=tmp_path, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     patterns_hit = {f["pattern"] for f in r["findings"]}
     assert "STACK_DOWN_PULL_ACCESS" in patterns_hit
@@ -403,7 +403,7 @@ def test_stack_down_comfy_leve(tmp_path):
     subprocess.run(["git", "add", "case.ipynb"], cwd=tmp_path, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "re-exec"], cwd=tmp_path, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     patterns_hit = {f["pattern"] for f in r["findings"]}
     assert "STACK_DOWN_HTTP_REQ_EXC" in patterns_hit
@@ -420,7 +420,7 @@ def test_stack_down_herite_pas_de_finding(tmp_path):
     subprocess.run(["git", "add", "case.ipynb"], cwd=tmp_path, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "noisy"], cwd=tmp_path, check=True)
     head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
-                              capture_output=True, text=True, check=True).stdout.strip()
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", check=True).stdout.strip()
     r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
     assert r["findings"] == []
 
@@ -435,7 +435,7 @@ def test_stack_down_cas_fondateur_d6dd2ae(tmp_path):
     # Sanity check : la branche doit exister localement.
     res = subprocess.run(
         ["git", "cat-file", "-e", "d6dd2ae68^{commit}"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO_ROOT,
     )
     if res.returncode != 0:
         import pytest
@@ -443,7 +443,7 @@ def test_stack_down_cas_fondateur_d6dd2ae(tmp_path):
     # Lire le notebook tel qu'il etait sur ce commit
     res = subprocess.run(
         ["git", "show", f"d6dd2ae68:{target}"],
-        capture_output=True, text=True, cwd=REPO_ROOT, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO_ROOT, check=True,
     )
     nb = json.loads(res.stdout)
     findings = ddm.extract_confessions(nb)
@@ -462,14 +462,14 @@ def test_stack_down_cas_repare_c98e48196(tmp_path):
     target = "MyIA.AI.Notebooks/GenAI/Aspire/02-Aspire-GenAiStack-Reel.ipynb"
     res = subprocess.run(
         ["git", "cat-file", "-e", "c98e48196^{commit}"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO_ROOT,
     )
     if res.returncode != 0:
         import pytest
         pytest.skip("commit c98e48196 introuvable localement")
     res = subprocess.run(
         ["git", "show", f"c98e48196:{target}"],
-        capture_output=True, text=True, cwd=REPO_ROOT, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO_ROOT, check=True,
     )
     nb = json.loads(res.stdout)
     findings = ddm.extract_confessions(nb)

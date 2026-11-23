@@ -52,6 +52,12 @@ LANDING_PAGES = [
     # — la racine ne garde que index.qmd ; le glob "*.qmd" ci-dessus ne la
     # couvre plus, elle est listee explicitement.
     "docs/parcours.qmd",
+    # Carte des prerequis (#27556) : page GENERE par
+    # scripts/curriculum/generate_prereq_map.py depuis docs/curriculum/taxonomy/.
+    # Listee ici pour survivre a la regeneration de la liste de rendu (meme
+    # raison que docs/parcours.qmd : un ajout a la main dans _quarto.yml est
+    # ecrase par cette regeneration avant chaque rendu de deploiement).
+    "docs/curriculum/prerequis.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
     # quarto render standalone -> HTML 176 Ko, exit 0, sans front-matter).
@@ -86,7 +92,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GameTheory/",            # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
-    "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
+    "MyIA.AI.Notebooks/InformationCalcul/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
     "MyIA.AI.Notebooks/Physique/",                 # serie Physique numerique (EPIC #23161) -- Integrales deplaces de Probas/Applications/ (T1)
     "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (203 rendus, 221 git-tracked - 18 sous /archive/ ; sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
@@ -122,7 +128,7 @@ NOTEBOOK_SUBTREES = (
     # (ex SymbolicAI/Geometry/, tranche 19 #18423).
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
-    "MyIA.AI.Notebooks/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
     "MyIA.AI.Notebooks/Physique/",                     # serie Physique #23161 (Jauge : Noether, jauge U(1)/SU(2), reseau de Wilson)
     # Prefix famille : couvre OR-tools-Stiegler.ipynb au niveau racine de
     # SymbolicAI/ (38 cellules, pedagogique). Les sous-repertoires deja
@@ -130,6 +136,7 @@ NOTEBOOK_SUBTREES = (
     # (precedent Integrations-DotNet/ <- Aspire/, tranche 18 #13581).
     "MyIA.AI.Notebooks/SymbolicAI/",                  # tranche finale #18423 (prefix famille, +1 racine)
     "MyIA.AI.Notebooks/InformationCalcul/InformationTheory/",  # serie InformationTheory #27077 (codage de canal, sous la famille InformationCalcul)
+    "MyIA.AI.Notebooks/InformationCalcul/Automata/",  # serie Automata #27158 (automates et langages formels, jumeaux Python/C#)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
@@ -174,6 +181,17 @@ NOTEBOOKS_HORS_PERIMETRE = {
     # Sondes d'outillage : reproduction du bug .NET #17361, smoke runtime.
     "scripts/notebook_tools/probes/dotnet-restore-bug-17361.ipynb",
     "scripts/notebook_tools/verify_runtime_smoke.ipynb",
+    # Temoins d'integration de l'image d'apprentissage (#27545, pli 1.2) :
+    # executes par le workflow learning-image-ghcr (#27546) dans le
+    # conteneur pour prouver chaque famille de noyau, jamais rendus pour
+    # le site -- precedent sondes d'outillage ci-dessus.
+    "docker-configurations/notebook-runner/witness/witness-python3.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-global-313.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-net-csharp.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-net-fsharp.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-net-powershell.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-rust.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-lean4.ipynb",
 }
 
 # Sous-arbres `docs/` dont les `*.md` non-README sont rendus en HTML par
