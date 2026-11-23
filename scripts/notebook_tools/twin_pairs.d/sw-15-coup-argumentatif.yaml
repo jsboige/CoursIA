@@ -4,7 +4,7 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "dotNetRDF 3.5.2 natif pour RDF, SPARQL et SHACL ; Python.NET 3.0.5 appelle owlrl 7.1.4 pour la fermeture OWL-RL, le meme moteur que le Python. Les quatre gestes executes : diff 17 triplets (4 vocabulaire + 13 instances), SHACL cas A conforme / cas B rejete (3 violations), delta owlrl 35 triplets, bascule Dung {RA4} -> {RA3, RA5}, provenance SPARQL."
+  bridge_verdict_reason: "dotNetRDF 3.5.2 natif pour RDF, SPARQL et SHACL ; Python.NET 3.1.0 appelle owlrl 7.1.4 pour la fermeture OWL-RL, le meme moteur que le Python. Les quatre gestes executes : diff 17 triplets (4 vocabulaire + 13 instances), SHACL cas A conforme / cas B rejete (3 violations), delta owlrl 35 triplets, bascule Dung {RA4} -> {RA3, RA5}, provenance SPARQL."
   known_differences:
     - "Le C# utilise un pont Python.NET pour OWL-RL ; les fermetures sont comparees sous forme N-Triples textuelle, y compris les sujets litteraux produits par owlrl."
     - "Le calcul de Dung (projection AF + etiquetage grounded) est un algorithme pur ecrit nativement des deux cotes ; aucune bibliotheque n'est invoquee."
