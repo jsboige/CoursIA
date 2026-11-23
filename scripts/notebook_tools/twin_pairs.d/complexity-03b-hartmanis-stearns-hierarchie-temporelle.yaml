@@ -1,0 +1,8 @@
+- name: "Complexity-03b Hartmanis-Stearns Hierarchie Temporelle"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27311) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (diagonalisation sous budget, machines de Turing multitetes, borne de simulation, subset-sum) ; le code C# n'utilise que la BCL (BigInteger pour les grands decompteurs), aucune dependance externe."
+    - "Le calcul Python utilise les entiers arbitraires natifs ; le port C# utilise System.Numerics.BigInteger."

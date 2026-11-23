@@ -10,25 +10,25 @@
   ],
   "notebooks": [
     "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
@@ -109,7 +109,7 @@
       "decimal_path": "1.1.4",
       "depth": 2,
       "label_fr": "Introduction à la planification (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -117,7 +117,7 @@
       "decimal_path": "1.1.5",
       "depth": 2,
       "label_fr": "PDDL : bases (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -125,7 +125,7 @@
       "decimal_path": "1.1.6",
       "depth": 2,
       "label_fr": "Recherche dans l'espace d'états (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -157,7 +157,7 @@
       "decimal_path": "1.2.4",
       "depth": 2,
       "label_fr": "Fast Downward (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -165,7 +165,7 @@
       "decimal_path": "1.2.5",
       "depth": 2,
       "label_fr": "Heuristiques de planification (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -173,7 +173,7 @@
       "decimal_path": "1.2.6",
       "depth": 2,
       "label_fr": "Domaines classiques (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -205,7 +205,7 @@
       "decimal_path": "1.3.2",
       "depth": 2,
       "label_fr": "Programmation par contraintes (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -221,7 +221,7 @@
       "decimal_path": "1.3.4",
       "depth": 2,
       "label_fr": "Planification temporelle (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -237,7 +237,7 @@
       "decimal_path": "1.3.6",
       "depth": 2,
       "label_fr": "Planification hiérarchique (jumeau C#)",
-      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb"
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb"
     },
     {
       "level": "notebook",
@@ -308,7 +308,7 @@
           "cell_id": "cell-4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "e868c323"
         }
       ],
@@ -380,11 +380,11 @@
           "cell_id": "00811572"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "904a4deb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "e0dc89a7"
         },
         {
@@ -415,11 +415,11 @@
           "cell_id": "cell-4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "81beaf48"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "c0a5c9b7"
         },
         {
@@ -427,11 +427,11 @@
           "cell_id": "61da6810"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "1926d390"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "7df45571"
         },
         {
@@ -494,7 +494,7 @@
           "cell_id": "cell-14"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "af408776"
         }
       ],
@@ -614,7 +614,7 @@
           "cell_id": "61da6810"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "1926d390"
         }
       ],
@@ -657,11 +657,11 @@
           "cell_id": "983bab2b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "ca92eee1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "59fb7ef4"
         }
       ],
@@ -684,7 +684,7 @@
           "cell_id": "85660f8a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "50d4579c"
         },
         {
@@ -736,11 +736,11 @@
           "cell_id": "e013bfde"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "256d0c4c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "331cb66f"
         },
         {
@@ -779,7 +779,7 @@
           "cell_id": "c8183f7b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "6c432c7c"
         }
       ],
@@ -810,7 +810,7 @@
           "cell_id": "c209a094"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "fbdaf508"
         },
         {
@@ -837,7 +837,7 @@
           "cell_id": "f1a412c5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "a921b736-546d-4121-8652-01facd716b15"
         },
         {
@@ -864,7 +864,7 @@
           "cell_id": "107f350f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "256d0c4c"
         }
       ],
@@ -884,11 +884,11 @@
       "definition_en": "Replacing the parameters of an action schema with every compatible object, which produces the concrete actions that search applies to states.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "48b0f4a7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "1b715aa7"
         }
       ],
@@ -994,7 +994,7 @@
           "cell_id": "cell-16"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "84c1ff43"
         }
       ],
@@ -1052,15 +1052,15 @@
           "cell_id": "cell-22"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "c813a1ab"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "26192bce"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-astar"
         },
         {
@@ -1076,11 +1076,11 @@
           "cell_id": "cell-19"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "33e308f0"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "9dae61ce"
         }
       ],
@@ -1139,27 +1139,27 @@
           "cell_id": "1e5261cd"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "3c860517"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "6afbde6f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-bfs"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "c896af4e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "0f7e534b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "6e38d7ea"
         },
         {
@@ -1195,15 +1195,15 @@
           "cell_id": "cell-14"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "2ffde62f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "8d398b7d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-dfs"
         }
       ],
@@ -1263,11 +1263,11 @@
           "cell_id": "a19716d6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "668e5d32"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-greedy"
         },
         {
@@ -1279,11 +1279,11 @@
           "cell_id": "cell-21"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "9cbfe0ee"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "1dcac91d"
         }
       ],
@@ -1335,15 +1335,15 @@
           "cell_id": "84b24b6e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "f350db4b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "59a4be4c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-consistance"
         },
         {
@@ -1379,7 +1379,7 @@
           "cell_id": "cell-17"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "fd8be130"
         }
       ],
@@ -1411,15 +1411,15 @@
           "cell_id": "ef4f71d1"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "6bc8a095"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "e658a8a5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-prongb"
         }
       ],
@@ -1451,11 +1451,11 @@
           "cell_id": "hs-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "hcs-code"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "5736a4d3"
         }
       ],
@@ -1479,11 +1479,11 @@
           "cell_id": "cell-22"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "69e1146e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "6cf1bbb8"
         }
       ],
@@ -1515,7 +1515,7 @@
           "cell_id": "cell-31"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "e5ccbdcf"
         }
       ],
@@ -1544,7 +1544,7 @@
           "cell_id": "cell-3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "fd2a1001"
         }
       ],
@@ -1567,7 +1567,7 @@
           "cell_id": "cd0d1805"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "3b745c48"
         }
       ],
@@ -1595,7 +1595,7 @@
           "cell_id": "lmcut-section"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "a1c61a45"
         }
       ],
@@ -1624,11 +1624,11 @@
           "cell_id": "cell-24"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "4838a41a"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "262efac2"
         },
         {
@@ -1658,19 +1658,19 @@
           "cell_id": "cell-13"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "3b99f00d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "9bf43932"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "ee675613"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "19cfe0d3"
         }
       ],
@@ -1730,7 +1730,7 @@
           "cell_id": "intro-section"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "5736a4d3"
         },
         {
@@ -1770,19 +1770,19 @@
           "cell_id": "b500d2eb"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "0324a371"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "f63d96a4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "328ef2b4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "0d747276"
         },
         {
@@ -1826,15 +1826,15 @@
           "cell_id": "hadd-inadmissible-demo-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "421a8ea3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "f8111015"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "67483724"
         }
       ],
@@ -1871,15 +1871,15 @@
           "cell_id": "09f5f325"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "e9c02272"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "7ca7d946"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "3b745c48"
         }
       ],
@@ -1912,15 +1912,15 @@
           "cell_id": "landmark-guard-md"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "d7a5928e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "33038e62"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "landmark-guard-cs-md"
         }
       ],
@@ -1943,7 +1943,7 @@
           "cell_id": "relaxation-section"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "0324a371"
         },
         {
@@ -1991,7 +1991,7 @@
           "cell_id": "6f2dcee2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "55e527da"
         }
       ],
@@ -2159,11 +2159,11 @@
           "cell_id": "983bab2b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "543ceee5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "interp-blocks-tower"
         },
         {
@@ -2218,19 +2218,19 @@
           "cell_id": "e955d826"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "b56df42e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "fbdaf508"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "6cbb2cf2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "8eeda23c"
         },
         {
@@ -2238,7 +2238,7 @@
           "cell_id": "cell-18"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "8514a849-1b40-401b-a5e4-9f373432fd65"
         }
       ],
@@ -2289,19 +2289,19 @@
           "cell_id": "22d8bf02"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "ff8958ba"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "d1adcb66"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "9962c1a5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "interp-gripper"
         }
       ],
@@ -2344,11 +2344,11 @@
           "cell_id": "55b0f01e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "16cebaac"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "d6d76b25"
         },
         {
@@ -2395,15 +2395,15 @@
           "cell_id": "24a6f858"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "7dcb0307"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "d81d2045"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "interp-comparative"
         }
       ],
@@ -2458,7 +2458,7 @@
           "cell_id": "cell-first-example"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "24bc9869"
         }
       ],
@@ -2481,11 +2481,11 @@
           "cell_id": "cell-ortools-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "5ca01359"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "a385a2e9"
         },
         {
@@ -2497,7 +2497,7 @@
           "cell_id": "cell-21"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "432015dd"
         }
       ],
@@ -2517,27 +2517,27 @@
       "definition_en": "Two mechanisms for solving a CSP: backtracking search enumerates choices and drops those that violate a constraint, propagation derives what the constraints impose (here the earliest start dates implied by precedences). Their combination is exhaustive, hence optimal, but its cost explodes with instance size.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "24bc9869"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "9dd0ff3e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "1cddf928"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "28a105c9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "43666cbf"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "b356e340"
         }
       ],
@@ -2581,7 +2581,7 @@
           "cell_id": "cfdaec9e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "432015dd"
         }
       ],
@@ -2621,15 +2621,15 @@
           "cell_id": "cell-jss-interpretation"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "36a2b4a9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "350a2024"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "1cddf928"
         }
       ],
@@ -2725,11 +2725,11 @@
           "cell_id": "0e3fcafe"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "43666cbf"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "b356e340"
         }
       ],
@@ -2757,7 +2757,7 @@
           "cell_id": "cell-2"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "bf25f895-098a-4f89-8216-3775863fa4fc"
         }
       ],
@@ -2796,11 +2796,11 @@
           "cell_id": "cell-15"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "9d61498b-98bb-4d28-8fba-26538ce08071"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "be120d1c-f4ea-446e-90d9-61fec5228b66"
         },
         {
@@ -2840,11 +2840,11 @@
           "cell_id": "cell-9"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "a989637d-fde9-4593-a12d-f66457f1dc92"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "34a87be1-8984-42a0-8480-6042abdbeb11"
         }
       ],
@@ -2864,11 +2864,11 @@
       "definition_en": "The thirteen possible qualitative relations between two time intervals (before, meets, overlaps, during, equals, and their inverses).",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "a286df0e-86f2-4441-ae36-16f1508ffc62"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "c8dd5548-0705-46b5-a2fb-3ae93b8358a2"
         }
       ],
@@ -2888,11 +2888,11 @@
       "definition_en": "Graph of distance constraints between time points; it is consistent if and only if its distance graph has no negative cycle, which the Floyd-Warshall algorithm detects.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "9ad7e450-ea3e-4323-8fea-f475854ecedd"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "7daf4e07-9ed7-421d-aae6-cef76930f3d2"
         }
       ],
@@ -2940,19 +2940,19 @@
           "cell_id": "7969390e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "0af6f97a-e55e-4e85-8257-007530743e45"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "91dd4758-156c-4ccc-80ff-eb99121ca072"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "7b296434-9a72-4785-b7da-36bca150d488"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "c34c1746"
         }
       ],
@@ -3010,7 +3010,7 @@
           "cell_id": "cell-4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "714647de-9b71-463b-a1c2-adfec91b4814"
         }
       ],
@@ -3033,11 +3033,11 @@
           "cell_id": "cell-5"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "f0315310-5c54-40fd-98e8-464377800273"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "af384f44-383e-442e-97fa-ab222cdd96e9"
         }
       ],
@@ -3060,11 +3060,11 @@
           "cell_id": "cell-6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "f0315310-5c54-40fd-98e8-464377800273"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "8514a849-1b40-401b-a5e4-9f373432fd65"
         }
       ],
@@ -3165,19 +3165,19 @@
           "cell_id": "p9-methodsel-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "d7c5cf9d-c4cb-45c2-8e12-d41b09c2bf77"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "90c0ec0b-ab76-4bbc-9cb4-7ef63c6cd56b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "a55a7abe-1911-4d64-950d-708acaeb4ba3"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "1d0cf867-686f-43a1-b135-6059f0110550"
         }
       ],
@@ -3239,15 +3239,15 @@
           "cell_id": "htn-aries-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "9cb9cb29"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "aa984523"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "12d701f7"
         }
       ],
@@ -3956,15 +3956,15 @@
           "cell_id": "d7a0c608"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "827d081f"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "5585495d"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "interp-sanity"
         }
       ],
@@ -3996,15 +3996,15 @@
           "cell_id": "cell-27"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "dba4f5b7"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "29901bcc"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
           "cell_id": "10ae6cfe"
         }
       ],
@@ -4033,11 +4033,11 @@
           "cell_id": "hs-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "hcs-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "hcs-interp"
         },
         {
@@ -4066,55 +4066,55 @@
       "definition_en": "The result of a hand-written algorithm is checked against that of a proven engine on the same problem: the same plan cost is expected, and gaps in expanded nodes are explained.",
       "citations": [
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
           "cell_id": "fd2a1007"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "t2-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
           "cell_id": "t2-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "2d42918e"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
           "cell_id": "907b4bd6"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "e4ea329b"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
           "cell_id": "3d2a4092"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "t6-intro"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "t6-interp"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
           "cell_id": "c6c1fad4"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
           "cell_id": "d73caa57"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
           "cell_id": "f7ab8cd8-fb7a-4167-8dcc-4e5b95d0a60c"
         },
         {
-          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb",
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
           "cell_id": "12d701f7"
         }
       ],

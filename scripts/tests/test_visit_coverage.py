@@ -296,3 +296,56 @@ def test_propriete_du_tapis_une_visite_chacun_avant_deux():
 def test_propriete_du_tapis_autre_graine_et_deuxieme_lane():
     _servir(_pool(), f"{AUTRE}|2026-11-20|1")
     _servir(_pool(), "myia-po-2025:CoursIA-2|2026-11-20|5")
+
+
+# --- l'atteignabilite : le claim de la lane n'est pas une violation ---------
+
+def test_un_claim_visite_de_la_lane_n_est_pas_une_violation_d_equite():
+    """Un claim que la lane tient en tete n'est pas une issue republiee.
+
+    `atteignable` mesure l'equite sur le meme pool que `invariant` : le pool
+    exclut les claims de la lane. La boucle de controle doit les exclure
+    aussi, sinon l'organe rend rc 1 sur le fonctionnement normal du tirage
+    (le coordinateur tient des claims) et masque les vraies violations.
+
+    Sans cette exclusion, le test echoue : le claim passe en tete de tour
+    (c'est ce que fait `ordonner`), il est donc servi alors que les deux
+    jamais-visitees attendent -- et l'organe le compte comme une violation.
+    """
+    etats_ = [_etat(numero=1, visites=2, visites_total=2, mon_claim=True),
+              _etat(numero=2, visites=0),
+              _etat(numero=3, visites=0)]
+    r = vc.atteignable(etats_, LANE, NOW)
+    assert r["equite"] == []
+    assert r["jamais_visitees"] == 2
+
+# --- le parcage Origami : le role suit le tirage -----------------------------
+
+def test_le_parcage_origami_passe_le_role_de_worker_a_attente(monkeypatch):
+    """Un EPIC Origami parqué n'est pas un travail de worker : son depliage est
+    reserve au coordinateur. Sans le parcage, l'organe le comptait « worker »
+    alors que le tirage ne le sert jamais (mesure du 21/11 : cinq sur
+    vingt et un)."""
+    etats_ = [_etat(numero=18205, titre="EPIC origami : geometrie differentielle")]
+    monkeypatch.setattr(
+        vc.tapis_origami, "mesurer",
+        lambda lecture, **kw: ({18205: "pli non deplie"},
+                               {"measured": True, "parked": [18205],
+                                "reason": "mesure faite"}))
+    vc.parer_origami(etats_, None)
+    assert etats_[0].ecart == "ORIGAMI"
+    assert vc.role(etats_[0]) == "attente"
+
+
+def test_une_mesure_origami_en_panne_ne_parque_rien(monkeypatch):
+    """fail-OPEN, comme le tirage : une mesure absente ne fait pas disparaitre
+    une issue du pool, elle se dit."""
+    etats_ = [_etat(numero=18205, titre="EPIC origami : geometrie differentielle")]
+    monkeypatch.setattr(
+        vc.tapis_origami, "mesurer",
+        lambda lecture, **kw: ({}, {"measured": False, "parked": [],
+                                    "reason": "rejeu hors ligne"}))
+    etat = vc.parer_origami(etats_, None)
+    assert etats_[0].ecart is None
+    assert vc.role(etats_[0]) == "worker"
+    assert etat["measured"] is False
