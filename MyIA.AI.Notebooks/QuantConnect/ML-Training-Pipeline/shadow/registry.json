@@ -160,6 +160,26 @@
       },
       "fee_model": "barème de frais actions US intégré à Lean, multiplicateur fee_mult à 1",
       "fingerprint": "bab80288133ee46b"
+    },
+    {
+      "id": "drk-kernel-v2",
+      "kind": "qc",
+      "sha": "fc56eec4cc09e0aa9adbea0287227bb980e4f761",
+      "frozen_on": "2026-11-22",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/DeterministicRiskKernel-QC:39759406",
+      "params": {},
+      "fee_model": "5 points de base par côté (ProportionalFeeModel)",
+      "fingerprint": "0d0137663fe4c11a"
+    },
+    {
+      "id": "halloween-v2",
+      "kind": "qc",
+      "sha": "fc56eec4cc09e0aa9adbea0287227bb980e4f761",
+      "frozen_on": "2026-11-22",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC:39759410",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (IBKR Margin)",
+      "fingerprint": "cbde5f3e5b5743d5"
     }
   ]
 }
