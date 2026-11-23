@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`sudoku.csv`](sudoku.csv) | `Sudoku/` | 36 (Sudoku-0-Environment → Sudoku-19-Lean-Propagation, parité C#/Python via paires miroir 1-15 et 18, + 0-Environment C# only, 16-NeuralNetwork et 17-LLM Python only, 19-Lean natif) | 1 223 (header + 32 362 lignes CSV-escaped, 20 colonnes) |
+| [`sudoku.csv`](sudoku.csv) | `Sudoku/` | 36 au seed 2026-07-09 (Sudoku-0-Environment → Sudoku-19-Lean-Propagation, parité C#/Python via paires miroir 1-15 et 18, + 0-Environment C# only, 16-NeuralNetwork et 17-LLM Python only, 19-Lean natif — le compte courant vit dans le CSV) | 1 223 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 32 362 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Sudoku = **owner po-2025 strict** (toutes les PRs récentes #5473 #5404 #5406 #5407 #5454 #5639 #5769 #5778 = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
@@ -35,7 +35,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 1 223 cellules / 36 notebooks Sudoku (16 paires miroir C#/Python + 1 mono C# + 2 mono Python + 1 Lean)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 1 223, notebooks couverts 36 Sudoku (16 paires miroir C#/Python + 1 mono C# + 2 mono Python + 1 Lean — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché

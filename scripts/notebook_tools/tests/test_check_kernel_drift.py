@@ -322,6 +322,44 @@ def test_diff_signatures_added_cell_printing_intervals_not_reported():
     ) == []
 
 
+def test_diff_signatures_common_cell_gaining_float_not_reported():
+    """#25413 etendu -- cas mesure PR #27915, cellule c371d193.
+
+    Une cellule COMMUNE (meme id base/tete) dont la sortie de base
+    EXISTAIT mais ne portait aucun texte float-array et qui en gagne une
+    a la tete est une addition de contenu : la PR ajoute un print de
+    marges mesurees a une cellule existante. Le partitionneur ne la
+    classait pas ``added`` (sa base avait des sorties non vides), elle
+    restait en derive bloquante alors que rien n'avait derive -- la
+    signature de base etait vide, il n'existait aucune valeur de
+    reference a faire deriver. Elle part desormais en advisory
+    ``output_added_cells``, comme la conversion exercice -> exemple de
+    #25413.
+    """
+    base = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    head = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"
+                                "marge : [-0.2021, 0.2404]\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    b_sig, h_sig = ckd.float_signatures(base), ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == []
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-work"]
+
+
+def test_diff_signatures_common_cell_real_drift_still_reported():
+    """Controle positif du jumeau id-aligne : le fix ne rend pas l'organe aveugle.
+
+    Une cellule commune dont la base PORTAIT une signature float et dont
+    la valeur change reellement (au-dela de la tolerance 1 ULP) reste
+    une derive signalee.
+    """
+    assert _id_aligned_diffs(
+        [("c-work", "[1.0, 1.0]\n")],
+        [("c-work", "[2.0, 3.0]\n")],
+    ) == ["c-work"]
+
+
 # --- #25413 : une sortie qui APPARAIT dans une cellule vide a la base ------
 # n'est PAS une derive de signature : c'est une addition de contenu (la
 # conversion exercice -> exemple guide). Le guard ne la rapporte ni en
@@ -1181,3 +1219,31 @@ def test_multiple_reidentified_heads_do_not_prove_output_added(monkeypatch):
     result = _patched_run(monkeypatch, base, head)
     assert result["findings"][0]["signature_drift_cells"] == ["new1", "new2"]
     assert result["output_added"] == []
+
+
+def test_le_mode_texte_respecte_l_exemption_c4(monkeypatch, tmp_path, capsys):
+    """L'exemption C.4 (`## Diagnostic dérive`) vaut sur le mode TEXTE comme
+    sur le mode `--json` : un finding acknowledge rend rc 0 (#27917).
+
+    Le chemin texte annonçait « [ACKNOWLEDGED via ## Diagnostic dérive] » et
+    rendait quand meme rc 1 : la lane lisait un echec la ou le drift etait
+    documente et assume.
+    """
+    body = tmp_path / "pr_body.md"
+    body.write_text("## Diagnostic dérive\n\ncause (a) : environnement.\n",
+                    encoding="utf-8")
+    monkeypatch.setenv("PR_BODY_FILE", str(body))
+    base = _nb("python3", "3.11", "")
+    head = _nb("other-kernel", "3.11", "[1.0, 2.0]")
+    monkeypatch.setattr(ckd, "resolve_base", lambda ref: "base")
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob",
+                        lambda ref, _: base if ref == "base" else head)
+
+    assert ckd.main_with_args(["base", "--explain"]) == 0
+    assert "acknowledged" in capsys.readouterr().out
+
+    # Sans la section d'exemption, le meme drift reste rouge.
+    monkeypatch.delenv("PR_BODY_FILE")
+    assert ckd.main_with_args(["base", "--explain"]) == 1
+    assert "FAIL" in capsys.readouterr().err
