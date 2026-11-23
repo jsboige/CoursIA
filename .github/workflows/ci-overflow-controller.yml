@@ -112,9 +112,11 @@ jobs:
     # 2026-11-23 : 1 000 jobs `coursia-linux` en file, 6 jobs heberges sur 20,
     # le passage de 08:07Z annule et celui de 08:28Z en attente. La variable
     # restait `true` sans personne pour la rebasculer. Les waiters (1 vCPU /
-    # 1 Gio) portent `gh` et `python3`, et `pr-gate.yml` y fait deja
-    # `setup-python` + `pip install pyyaml` : un passage du controleur
-    # (~320 appels `gh`, quelques minutes) tient dans ce gabarit.
+    # 512 Mio / 128 pids : `WAITER_*` de `supervise.sh`) portent `gh` et
+    # `python3`, et `pr-gate.yml` y fait deja `setup-python` +
+    # `pip install pyyaml`. Un passage du controleur tient dans ce gabarit :
+    # 362 s et 92,8 Mio de pointe, un appel `gh` a la fois (mesure du
+    # 2026-11-23).
     runs-on: [self-hosted, coursia-waiter]
     # Garde same-repo au niveau job, forme du pool : les deux declencheurs
     # sont `schedule` et `workflow_dispatch`, donc aucun fork ne peut
