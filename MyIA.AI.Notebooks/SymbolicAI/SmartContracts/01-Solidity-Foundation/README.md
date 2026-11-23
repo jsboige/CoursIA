@@ -22,8 +22,8 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 3 | [SC-03-Solidity-Basics-Python](SC-03-Solidity-Basics-Python.ipynb) | Structure minimale d'un contrat, types valeur (`uint`, `address`, `bool`, `bytes`), variables d'état vs locales, conversions explicites — premier déploiement réel sur `anvil` | Découverte | — |
-| 4 | [SC-04-Functions-State-Python](SC-04-Functions-State-Python.ipynb) | Le cœur du langage : les trois data locations (`storage`, `memory`, `calldata`) et leur coût en gas, la visibilité (`public`/`external`/`internal`/`private`), les modifiers d'accès (`view`, `pure`, `payable`) | Licence | — |
+| 3 | [SC-03-Solidity-Basics-Python](SC-03-Solidity-Basics-Python.ipynb) · [C#](SC-03-Solidity-Basics-CSharp.ipynb) | Structure minimale d'un contrat, types valeur (`uint`, `address`, `bool`, `bytes`), variables d'état vs locales, conversions explicites — premier déploiement réel sur `anvil` | Découverte | — |
+| 4 | [SC-04-Functions-State-Python](SC-04-Functions-State-Python.ipynb) · [C#](SC-04-Functions-State-CSharp.ipynb) | Le cœur du langage : les trois data locations (`storage`, `memory`, `calldata`) et leur coût en gas, la visibilité (`public`/`external`/`internal`/`private`), les modifiers d'accès (`view`, `pure`, `payable`) | Licence | — |
 | 5 | [SC-05-Inheritance-Python](SC-05-Inheritance-Python.ipynb) | Héritage simple et multiple via `is`, interfaces pour l'abstraction, contrats `abstract` et `override` — la préparation directe aux standards ERC de la partie suivante | Licence | — |
 | 6 | [SC-06-Errors-Events-Python](SC-06-Errors-Events-Python.ipynb) | `require` (conditions d'entrée, gas rembourseé), `revert` (erreurs complexes), `assert` (invariants internes), custom errors économes en gas depuis 0.8.4, et les events pour le logging hors-chaîne | Licence | — |
 
@@ -45,6 +45,7 @@ Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [Smar
 ## Installation
 
 - **Prérequis d'entrée** : [00-Foundations](../00-Foundations/README.md) complété — Foundry installé, `web3`/`py-solc-x` disponibles, pattern compile-deploy-call en main.
+- **Compagnons C# SC-03 et SC-04** : .NET 9 avec kernel .NET Interactive, Nethereum.Web3 7.1.0 restauré via NuGet et `solc` 0.8.28 sur le PATH ; Anvil écoute sur `127.0.0.1:8545`, chaîne 31337.
 - **Python 3.10+** avec `pip install web3 py-solc-x`.
 - **`anvil` sur le PATH et lancé** avant l'exécution : chaque notebook se connecte à un nœud local. Sans `anvil` actif, les cellules de déploiement échouent en `ConnectionRefusedError`.
 - **`py-solc-x` télécharge le compilateur** au premier appel (`solcx.install_solc`) ; le versioning se fait via `foundry-lib/` au niveau de la série.

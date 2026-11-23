@@ -290,6 +290,125 @@ def test_merge_of_main_into_the_branch_does_not_redden(git_tree: Path) -> None:
     assert report["date_checked"] == 1
 
 
+# ---------------------------------------------------------------------------
+# PR mode: the conflict-resolving merge is one of the PR's revisions (#27861)
+# ---------------------------------------------------------------------------
+
+
+def _merge_with_conflict_resolved(tree: Path, doc: str, resolution: str, when: str) -> None:
+    """Start a merge that conflicts on ``doc``, resolve it by hand and commit
+    -- the founder shape of #27861 (PR #27242, merge 2b0573f8): the revision
+    lives INSIDE the merge commit, invisible to ``--no-merges``."""
+    subprocess.run(
+        ["git", "-C", str(tree), "merge", "--no-ff", "-m", "merge main", "main"],
+        check=False,
+        capture_output=True,
+    )  # exits 1: conflict on doc -- expected
+    _write(tree, doc, resolution)
+    env = os.environ.copy()
+    env["GIT_AUTHOR_DATE"] = when
+    env["GIT_COMMITTER_DATE"] = when
+    _git(tree, "add", "-A", env=env)
+    _git(tree, "commit", "-q", "-m", "merge main (conflit resolu)", env=env)
+
+
+def test_conflict_resolving_merge_counts_as_revision(git_tree: Path) -> None:
+    """The founder false positive of #27861: the PR merges main, resolves the
+    conflict on the doc IN the merge and the refreshed header is part of the
+    resolution. Pre-fix, ``--no-merges`` measured the doc at its last ordinary
+    commit (the branch's, dated before) and reddened the correct header."""
+    doc = "docs/reference/doc.md"
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n")
+    _commit(git_tree)  # 2026-10-25, tagged base0
+
+    # the PR revises the doc and refreshes the header to its own date
+    _git(git_tree, "checkout", "-q", "-b", "pr")
+    _write(git_tree, doc, f"{_header('2026-10-26')}\n# Reference\n\nrevu sur la branche\n")
+    _commit(git_tree, when="2026-10-26 12:00:00 +0000")
+
+    # main rewrites the same lines (squash shape): the merge will conflict
+    _git(git_tree, "checkout", "-q", "main")
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n\nmain\n")
+    _commit(git_tree, when="2026-10-27 12:00:00 +0000")
+
+    # the PR merges main and the RESOLUTION carries the refreshed header,
+    # dated at the merge -- pre-fix: STALE_DATE en-tete 10-29 != 10-26
+    _git(git_tree, "checkout", "-q", "pr")
+    _merge_with_conflict_resolved(
+        git_tree,
+        doc,
+        f"{_header('2026-10-29')}\n# Reference\n\nrevu sur la branche, main\n",
+        "2026-10-29 12:00:00 +0000",
+    )
+
+    report = ref.run(root=git_tree, baseline=1, base="base0")
+    assert report["verdict"] == "CONFORME", report["findings"]
+    assert report["date_checked"] == 1
+
+
+def test_conflict_resolving_merge_with_unrefreshed_header_reddens(git_tree: Path) -> None:
+    """Non-weakening control: a conflict resolution is a real revision, so a
+    header left at the pre-merge date is a genuine STALE_DATE. Pre-fix the
+    merge was invisible and this stale header passed; the fix must not only
+    clear false positives -- it must catch this one (#27861 constraint)."""
+    doc = "docs/reference/doc.md"
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n")
+    _commit(git_tree)  # 2026-10-25, tagged base0
+
+    _git(git_tree, "checkout", "-q", "-b", "pr")
+    _write(git_tree, doc, f"{_header('2026-10-26')}\n# Reference\n\nrevu sur la branche\n")
+    _commit(git_tree, when="2026-10-26 12:00:00 +0000")
+
+    _git(git_tree, "checkout", "-q", "main")
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n\nmain\n")
+    _commit(git_tree, when="2026-10-27 12:00:00 +0000")
+
+    # the resolution revises the doc but KEEPS the pre-merge header date
+    _git(git_tree, "checkout", "-q", "pr")
+    _merge_with_conflict_resolved(
+        git_tree,
+        doc,
+        f"{_header('2026-10-26')}\n# Reference\n\nrevu sur la branche, main\n",
+        "2026-10-29 12:00:00 +0000",
+    )
+
+    report = ref.run(root=git_tree, baseline=1, base="base0")
+    assert report["verdict"] == "VIOLATION"
+    assert _reasons(report) == ["STALE_DATE"]
+    assert report["date_checked"] == 1
+
+
+def test_trivial_merge_does_not_become_the_prs_revision(git_tree: Path) -> None:
+    """The #24482 constraint survives the fix: a merge whose tree EQUALS the
+    auto-merge on docs/ (a plain update-branch) revises nothing -- the docs
+    main modified through it must stay main's business, not the PR's. Without
+    the auto-merge comparison, this would count doc.md at the merge date
+    (2026-10-29) and redden its untouched 2026-10-25 header."""
+    doc = "docs/reference/doc.md"
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n")
+    _commit(git_tree)  # 2026-10-25
+    _git(git_tree, "tag", "-f", "base0")  # the PR starts from the tree that owns doc.md
+
+    _git(git_tree, "checkout", "-q", "-b", "pr")
+    _write(git_tree, "docs/reference/other.md", f"{_header('2026-10-26')}\n# Other\n")
+    _commit(git_tree, when="2026-10-26 12:00:00 +0000")
+
+    # main appends to doc.md on a DIFFERENT line: the merge below is clean
+    _git(git_tree, "checkout", "-q", "main")
+    _write(git_tree, doc, f"{_header('2026-10-25')}\n# Reference\n\nmain\n")
+    _commit(git_tree, when="2026-10-27 12:00:00 +0000")
+
+    _git(git_tree, "checkout", "-q", "pr")
+    env = os.environ.copy()
+    env["GIT_AUTHOR_DATE"] = "2026-10-29 12:00:00 +0000"
+    env["GIT_COMMITTER_DATE"] = "2026-10-29 12:00:00 +0000"
+    _git(git_tree, "merge", "-q", "--no-ff", "-m", "merge main", "main", env=env)
+
+    report = ref.run(root=git_tree, baseline=2, base="base0")
+    assert report["verdict"] == "CONFORME", report["findings"]
+    assert report["date_checked"] == 1  # other.md only; doc.md is main's business
+
+
 def test_positive_control_still_reddens(git_tree: Path) -> None:
     """The signal the organ exists for is untouched by the rework: the PR
     revises a doc in its OWN commit and leaves the header at the old date.

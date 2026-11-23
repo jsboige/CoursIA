@@ -53,6 +53,11 @@ _LAKES_FIELD_RE = re.compile(r"^lakes?\s*:\s*(.+)$", re.MULTILINE)
 #: Champ etiquete qui porte le nombre de jobs.
 _JOBS_FIELD_RE = re.compile(r"^jobs\s*:\s*(\d+)\s*$", re.MULTILINE)
 
+#: Champ etiquete qui marque une attestation posee sur un build **tombe en
+#: timeout** (budget de temps) : la compilation locale n'a pas acheve, l'autorite
+#: de compilation est la CI (cache chaud). #27516 volet 3.
+_TIMEOUT_FIELD_RE = re.compile(r"^timeout\s*:\s*\S", re.MULTILINE)
+
 #: Fichiers dont la presence dans un diff rend la PR soumise a la garde Lean.
 #: `lakefile.*` couvre `lakefile.lean` et `lakefile.toml` ; les deux fichiers
 #: d'outillage (`lean-toolchain`, `lake-manifest.json`) sont eux aussi
@@ -106,10 +111,14 @@ def first_line(body: str) -> str:
 def parse_attestation(body: str) -> dict | None:
     """Attestation contenue dans un corps de commentaire, ou None.
 
-    Retourne ``{"sha": ..., "lakes": [...], "jobs": int | None}`` quand le
-    corps porte le tag en premiere ligne non vide ET un champ `tete:` a 40
-    hex. Le SHA est pris dans le champ etiquete ; a defaut de champ, aucun
-    SHA n'est lu ailleurs dans le corps (cf. docstring du module).
+    Retourne ``{"sha": ..., "lakes": [...], "jobs": int | None,
+    "timeout": bool}`` quand le corps porte le tag en premiere ligne non vide
+    ET un champ `tete:` a 40 hex. Le SHA est pris dans le champ etiquete ; a
+    defaut de champ, aucun SHA n'est lu ailleurs dans le corps (cf. docstring
+    du module). `timeout` est vrai quand le champ etiquete `timeout:` est
+    present : l'attestation atteste un build **tombé en timeout** (budget de
+    temps), non un build reussi -- la distinction porte dans le champ, jamais
+    dans la prose (#27516 volet 3).
     """
     if first_line(body) != ATTESTATION_TAG:
         return None
@@ -126,7 +135,8 @@ def parse_attestation(body: str) -> dict | None:
         ]
     jobs_match = _JOBS_FIELD_RE.search(str(body or ""))
     jobs = int(jobs_match.group(1)) if jobs_match else None
-    return {"sha": match.group(1), "lakes": lakes, "jobs": jobs}
+    timeout = bool(_TIMEOUT_FIELD_RE.search(str(body or "")))
+    return {"sha": match.group(1), "lakes": lakes, "jobs": jobs, "timeout": timeout}
 
 
 def _comment_author(comment: dict) -> str:
@@ -173,16 +183,24 @@ def render_attestation(
     pr: int | None = None,
     duration_s: float | None = None,
     extra: str | None = None,
+    timeout: bool = False,
 ) -> str:
     """Corps d'un commentaire d'attestation, au format canonique.
 
     La premiere ligne est le tag : la garde reconnait l'attestation par elle,
     pas par la presence du SHA ailleurs dans le corps.
+
+    `timeout=True` ajoute le champ etiquete `timeout: defer` : l'attestation
+    atteste alors un build tombe en timeout (budget de temps), non un build
+    reussi -- la distinction porte dans le champ, jamais dans la prose
+    (#27516 volet 3).
     """
     lines = [ATTESTATION_TAG, ""]
     if pr is not None:
         lines.append(f"PR #{pr}")
     lines.append(f"tete: {sha}")
+    if timeout:
+        lines.append("timeout: defer")
     lake_list = [str(item) for item in (lakes or []) if str(item).strip()]
     lines.append("lakes: " + (", ".join(lake_list) if lake_list else "-"))
     if jobs is not None:
