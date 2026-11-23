@@ -58,8 +58,8 @@
       "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 80 lignes depuis la mesure du 13/11 (2917 -> 2997)"
     },
     "scripts/notebook_tools/check_twin_parity.py": {
-      "lines": 2383,
-      "note": "Parite des jumeaux : cible T7 (`_main`, 1 088 lignes). Plafond pose sur la taille du 13/11. Le plafond DESCEND : la scission T7 du 16/11 (#26933) a tire `_main` dans trois modules freres (twin_parity_attest.py, twin_parity_census.py, twin_parity_cli.py) -- 3 321 -> 2 367 lignes. Releve au 22/11 dans cette PR (#28121) : le repli legacy limite aux fichiers .yaml ajoute 16 lignes de garde (2 367 -> 2 383) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici"
+      "lines": 2522,
+      "note": "Parite des jumeaux : cible T7 (`_main`, 1 088 lignes). Plafond pose sur la taille du 13/11. Le plafond DESCEND : la scission T7 du 16/11 (#26933) a tire `_main` dans trois modules freres (twin_parity_attest.py, twin_parity_census.py, twin_parity_cli.py) -- 3 321 -> 2 367 lignes. Releve au 22/11 (#28121) : repli legacy limite aux fichiers .yaml, 2 367 -> 2 383. Releve au 23/11 dans cette PR (#27098 organe 1, decision coordinateur 22/11) : cote `rust:` optionnel (empreintes blob+contenu, DRIFT Rust, numbering, verify-recorded-sha, sonde stale-branch) -- 2383 -> 2522 lignes."
     },
     "scripts/notebook_tools/generate_catalog.py": {
       "lines": 3089,

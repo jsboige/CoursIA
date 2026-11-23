@@ -56,6 +56,10 @@ ALLOWED_KEYS = {
     # Optionnel (#12933) : justification d'une divergence de numerotation python/csharp
     # documentee (lue par check_twin_parity.py au verdict NUMBERING-DRIFT).
     "numbering_exception",
+    # Optionnel (#27098 organe 1) : troisieme jumeau Rust d'un triplet. Lu par
+    # check_twin_parity.py (empreintes blob+contenu, DRIFT sur le cote Rust,
+    # numbering aligne sur le python). Les paires binaires ne la portent pas.
+    "rust",
 }
 # Plancher d'entrees (post-migration #8542 : 116 paires sur origin/main). En
 # mode file-per-entry, une entree perdue = un fichier supprime ; ce plancher le
@@ -149,8 +153,12 @@ def test_no_duplicate_notebook_paths():
     seen: dict[str, str] = {}
     collisions = []
     for entry in _entries():
-        for side in ("python", "csharp"):
+        # rust (#27098 organe 1) : conditionnel -- les paires binaires n'ont pas la cle,
+        # et un path absent ne compte pas comme doublon (garder None hors de ``seen``).
+        for side in ("python", "csharp", "rust"):
             path = entry.get(side)
+            if not path:
+                continue
             if path in seen:
                 collisions.append(f"{path} : {seen[path]} et {entry.get('name')}")
             else:
@@ -190,8 +198,12 @@ def test_audit_shas_are_git_blob_shas():
     bad = []
     for entry in _entries():
         for audit in _all_audit_records(entry):
-            for key in ("python_sha", "csharp_sha"):
+            # rust_sha (#27098) : valide SEULEMENT si present (les audits des
+            # paires binaires n'en portent jamais -- absence != invalide).
+            for key in ("python_sha", "csharp_sha", "rust_sha"):
                 sha = audit.get(key)
+                if sha is None:
+                    continue
                 if not isinstance(sha, str) or not SHA_RE.match(sha):
                     bad.append(f"{entry.get('name', '?')}.{key} = {sha!r}")
     assert not bad, f"shas invalides : {bad}"
@@ -202,7 +214,7 @@ def test_registered_notebooks_exist_on_disk():
     missing = [
         f"{e.get('name', '?')} -> {p}"
         for e in _entries()
-        for p in (e.get("python"), e.get("csharp"))
+        for p in (e.get("python"), e.get("csharp"), e.get("rust"))
         if p and not (repo_root / p).exists()
     ]
     assert not missing, f"notebooks introuvables : {missing}"
@@ -594,13 +606,14 @@ def _add_head_tree_blobs(repo_root: Path, path_blobs: dict, blob_paths: dict) ->
 
 
 def _declared_paths() -> set[str]:
-    """Ensemble des paths de carnets declares dans le registre (python + csharp),
-    normalises en ``/``. Sert a distinguer un cross-file (sha d'un AUTRE carnet
-    enregistre) d'un renommage (sha d'un ancien path non declare -- ex. carnet
-    renomme avant d'etre enregistre sous son nom courant)."""
+    """Ensemble des paths de carnets declares dans le registre (python + csharp
+    + rust optionnel, #27098), normalises en ``/``. Sert a distinguer un
+    cross-file (sha d'un AUTRE carnet enregistre) d'un renommage (sha d'un
+    ancien path non declare -- ex. carnet renomme avant d'etre enregistre sous
+    son nom courant)."""
     out: set[str] = set()
     for entry in _entries():
-        for side in ("python", "csharp"):
+        for side in ("python", "csharp", "rust"):
             rel = entry.get(side)
             if rel:
                 out.add(str(rel).replace("\\", "/"))
@@ -711,7 +724,8 @@ def test_audit_shas_exist_in_file_history():
         latest = _latest_audit(entry)
         if not isinstance(latest, dict):
             continue
-        for sha_key, path_key in (("python_sha", "python"), ("csharp_sha", "csharp")):
+        for sha_key, path_key in (("python_sha", "python"), ("csharp_sha", "csharp"),
+                                  ("rust_sha", "rust")):
             rel = entry.get(path_key)
             sha = latest.get(sha_key)
             if not rel or not isinstance(sha, str) or not SHA_RE.match(sha):
