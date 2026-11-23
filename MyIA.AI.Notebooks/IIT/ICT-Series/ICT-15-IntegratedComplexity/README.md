@@ -4,7 +4,7 @@ Sous-série de la [série ICT](../README.md). Le retour à la théorie fondatric
 
 | Carnet | Ce qu'il démontre et sa place dans l'escalier |
 |---|---|
-| [ICT-15-IntegratedComplexity-Python](ICT-15-IntegratedComplexity-Python.ipynb) | **Tête de la sous-série** — convergence Φ/F/K sur le banc cross-substrat, gate de convergence sur le squelette de Thom |
+| [ICT-15-IntegratedComplexity-Python](ICT-15-IntegratedComplexity-Python.ipynb) · [C#](ICT-15-IntegratedComplexity-CSharp.ipynb) | **Tête de la sous-série** — convergence Φ/F/K sur le banc cross-substrat, gate de convergence sur le squelette de Thom |
 | [ICT-15b-SensitivityCanonicity-Python](ICT-15b-SensitivityCanonicity-Python.ipynb) | **Raffinement : canonicité** — la stabilité du verdict de convergence aux perturbations contrôlées du substrat (bruit d'implémentation, recalibrage des coarse-grainings), protocole de re-mesure multi-graines |
 | [ICT-15c-MetaProxyObstruction-Python](ICT-15c-MetaProxyObstruction-Python.ipynb) | **Obstruction 1 : méta-proxy** — quand un proxy Φ/F/K cache une divergence de régime (faux-positif de convergence) ; banc adversarial sur substrats où le triplet co-varie par construction |
 | [ICT-15d-CechObstruction-Python](ICT-15d-CechObstruction-Python.ipynb) | **Obstruction 2 : cohomologique** — cochaîne de Čech pondérée, une obstruction intra-substrat qui ne se réduit ni à un proxy Φ/F/K ni à la sensibilité de Huang ; module `ict.cech_obstruction` |

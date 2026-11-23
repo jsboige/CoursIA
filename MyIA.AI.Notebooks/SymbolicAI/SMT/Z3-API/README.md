@@ -44,21 +44,21 @@ Ce README suit la [signalétique de lecture du dépôt](https://github.com/jsboi
 | 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) — jumeau [C#](Z3-04-Strings-Regex-CSharp.ipynb) | `String`, `Re` (théorie des chaînes Z3) | Découverte | — |
 | 05 | [Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) — jumeau [C#](Z3-05-Quantifiers-Proofs-CSharp.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | Découverte | — |
 | 06 | [Optimisation avancée](Z3-06-Advanced-Optimization-Python.ipynb) — jumeau [C#](Z3-06-Advanced-Optimization-CSharp.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | Découverte | — |
-| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-08-Ordonnancement-Python.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | Découverte | — |
+| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-08-Ordonnancement-Python.ipynb) — jumeau [C#](Z3-08-Ordonnancement-CSharp.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | Découverte | — |
 | 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-09-Enigme-Einstein-Python.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | Découverte | — |
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-10-Cryptarithmetic-Python.ipynb) — jumeau [C#](Z3-10-Cryptarithmetic-CSharp.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | Découverte | — |
-| 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | Découverte | — |
+| 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) · [jumeau Rust](Z3-11-Graph-Coloring-Rust.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | Découverte | — |
 | 12 | [Arithmétique réelle](Z3-12-Real-Arithmetic-Python.ipynb) — jumeau [C#](Z3-12-Real-Arithmetic-CSharp.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | Découverte | — |
 | 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) — jumeau [C#](Z3-13-UnsatCores-CSharp.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | Découverte | [Autour de 13](#autour-de-13) |
 | 14 | [Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) — jumeau [C#](Z3-14-BitVectors-Overflow-CSharp.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | Découverte | — |
-| 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | Découverte | — |
+| 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) — jumeau [C#](Z3-15-Nested-Arrays-2D-CSharp.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | Découverte | — |
 | 16 | [Meal-Planner déclaratif](Z3-16-Meal-Planner-Python.ipynb) — jumeau [C#](Z3-16-Meal-Planner-CSharp.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | Découverte | [Autour de 16](#autour-de-16) |
-| 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | Découverte | — |
-| 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | Découverte | — |
+| 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) — jumeau [C#](Z3-17-Array-Theory-CSharp.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | Découverte | — |
+| 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) — jumeau [C#](Z3-18-Sudoku-Modes-CSharp.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | Découverte | — |
 | 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) — jumeau [C#](Z3-19-Optimization-Lexicographic-CSharp.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | Découverte | — |
 | 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) **(BETA)** | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | Découverte | — |
 
-> **Les jumeaux C#** : les notebooks 01 à 06, le 10, le 12, le 13, le 14, le 16 et les compagnons 16d et 16e existent chacun en version .NET (`Z3-01-Introduction-CSharp.ipynb`, …), accessibles directement depuis la colonne *Notebook* ci-dessus. Chaque jumeau rejoue le parcours du notebook Python via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage — et se repère au suffixe `CSharp` du fichier et à l'exposant `ᶜˢ` (01ᶜˢ–06ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13ᶜˢ, 14ᶜˢ, 16ᶜˢ, 16dᶜˢ, 16eᶜˢ) utilisé dans le reste du README.
+> **Les jumeaux C#** : les notebooks 01 à 06, le 08, le 10, le 12, le 13, le 14, le 16, le 17 et le 18 existent chacun en version .NET (`Z3-01-Introduction-CSharp.ipynb`, …), accessibles directement depuis la colonne *Notebook* ci-dessus. Chaque jumeau rejoue le parcours du notebook Python via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage — et se repère au suffixe `CSharp` du fichier et à l'exposant `ᶜˢ` (01ᶜˢ–06ᶜˢ, 08ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13ᶜˢ, 14ᶜˢ, 16ᶜˢ, 16dᶜˢ, 16eᶜˢ, 17ᶜˢ, 18ᶜˢ) utilisé dans le reste du README.
 
 ## Approfondissements (Découverte)
 
@@ -106,7 +106,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 | Z3-04, Z3-04ᶜˢ | Ch. 6 Regular expressions (p. 166) | `String`, `Re` (théorie des chaînes) |
 | Z3-05, Z3-05ᶜˢ | Ch. 20 First-Order Logic (p. 559) | `ForAll`, `Exists`, réfutation, `unknown` |
 | Z3-06, Z3-06ᶜˢ | Ch. 14 MaxSAT/MaxSMT (p. 383) | `Optimize`, MaxSAT, Pareto |
-| Z3-08 | Ch. 10 Knapsack problems (p. 332) | `Optimize.minimize`, ordonnancement |
+| Z3-08, Z3-08ᶜˢ | Ch. 10 Knapsack problems (p. 332) | `Optimize.minimize`, ordonnancement |
 | Z3-09 | §8.2 Zebra puzzle (p. 232), Ch. 8 | Einstein's riddle / Zebra puzzle |
 | Z3-10, Z3-10ᶜˢ | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
 | Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
