@@ -259,7 +259,7 @@ def test_les_deux_avantages_sont_distincts_et_cumulables():
     """Une vieille consolidation cumule l'age ET la consolidation : les deux
     motifs restent nommes, et ils somment au bonus effectif.
 
-    La part de l'age est PLANNONNEE (0,3 visite) quand la consolidation est
+    La part de l'age est PLAFONNEE (0,3 visite) quand la consolidation est
     presente : la consolidation passe devant l'anciennete (I7), donc l'age ne
     peut pas manger le budget de la premiere. Le rapport le dit -- un motif
     plafonne ne se presente pas comme le bonus plein."""
