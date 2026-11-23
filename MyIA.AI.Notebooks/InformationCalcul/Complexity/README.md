@@ -195,6 +195,8 @@ réelle en exposant, invisible en instance — le pli « preuve annoncée » ouv
 et 07c trouve ici son instrument de mesure, sans préjuger de la validité des preuves
 (aucun build Lean n'est lancé).
 
+[Complexity-03d : la réfutation annoncée de l'ETH (C#)](Complexity-03d-ETH-Refutation-Annoncee-Lean-CSharp.ipynb) accompagne la [version Python](Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb). Les trois surfaces Lean sont relues telles quelles et la mesure du mur est rejouée en BCL pure : comptage bit-parallèle avec un `long` par affectation (l'empreinte du tableau `int64` de NumPy, pour que les deux régimes cache/mémoire se voient au même $n$), re-examen pré-enregistré par régime, budget normalisé à $C = 1$ jusqu'à $2^{162}$. Le générateur .NET n'est pas celui de NumPy : les instances, les comptes `#sat` et les temps diffèrent du carnet Python — les verdicts (H1 confirmée après examen, H2 confirmée et renforcée) sont identiques.
+
 Le notebook 03e ouvre le pli **machine** : quand une barrière d'exposant tombe (3SUM sous
 $n^2$), la question pédagogique devient « sur quelle machine, au juste ? » — et la réponse
 vit dans un fichier qui n'importe rien : machine word RAM de neuf instructions,
