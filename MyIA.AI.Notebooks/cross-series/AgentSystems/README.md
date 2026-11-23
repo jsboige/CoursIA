@@ -4,7 +4,7 @@
 une **méthode d'orchestration** qui mobilise à la fois la perception (GenAI/ML),
 le raisonnement symbolique (une spine composable, la valeur d'information comme
 critère de décision), la recherche (la boucle de décision) et la compression (le
-rejeu d'une politique amortie). Ce projet la démontre sur une ou plusieurs
+rejeu d'une politique amortie). Ce projet la démontre sur un ou plusieurs
 carnets, chacun isolant une capacité de la boucle.
 
 ## Carnets
@@ -15,8 +15,10 @@ carnets, chacun isolant une capacité de la boucle.
 | [AgentSystems-02 — Perception active](AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb) / [Rust](AgentSystems-02-Perception-Active-Valeur-Information-Rust.ipynb) | La **perception active** : ne lire que les capteurs dont la **valeur d'information** (baisse du risque bayésien qu'elle rend possible) vaut le coût de l'observation — la politique *observer ce qui compte* opposée à *lire tout*. | Autoportant (théorie de la décision) |
 
 Le deuxième angle du projet — la **perception active** (ne lire que les capteurs
-dont la **valeur d'information** justifie le coût) — fait l'objet d'un carnet
-compagnon.
+dont la **valeur d'information** justifie le coût) — est porté par
+**AgentSystems-02**, en deux jumeaux : une version Python (référence) et une
+version Rust (portage `std` seul, sorties comparées à la référence par le
+registre de conformité).
 
 ## La thèse transversale
 
