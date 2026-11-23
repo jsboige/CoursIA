@@ -191,6 +191,50 @@ def test_relachee_trois_jours_puis_resservie():
     assert etat(lec, 6).ecart == "RELACHEE"    # un conteneur rendu aussi
 
 
+def test_pause_explicite_ecarte_sans_delai():
+    """#27726 : un [RELEASED] qui porte `attend: #N` ecarte le grain SANS
+    delai. Au-dela des 3 jours de RELACHEE, la condition tient encore : la
+    cible citee (#27553) est ouverte."""
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- en attente du GO\nattend: #27553")
+    lec = lecture([issue(1, comments=[pause]), issue(27553),
+                   issue(2, comments=[com(24 * 5,
+                                          f"[RELEASED] lane {AUTRE} -- attente\nattend: Q-c.2344a")])])
+    e1 = etat(lec, 1)
+    assert e1.ecart == "PAUSE"
+    assert "attend #27553" in e1.motif      # le motif nomme la condition
+    assert etat(lec, 2).ecart == "PAUSE"    # une question user : meme code
+
+
+def test_pause_levee_et_reprise_par_un_marqueur_posterieur():
+    """La condition se leve quand la cible citee est fermee ; un marqueur
+    posterieur rend le grain de nouveau servable."""
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- attente\nattend: #27553")
+    # la cible (#27553) n'est plus dans la lecture : elle est fermee -> levee
+    assert etat(lecture([issue(1, comments=[pause])]), 1).ecart is None
+    # la cible est ouverte -> la pause tient
+    lec = lecture([issue(1, comments=[pause]), issue(27553)])
+    assert etat(lec, 1).ecart == "PAUSE"
+    # un marqueur posterieur : l'issue redevient servable
+    lec = lecture([issue(1, comments=[pause, com(2, f"[CLAIMED] lane {AUTRE} -- je reprends")]),
+                   issue(27553)])
+    assert etat(lec, 1).ecart == "RECLAMEE"
+
+
+def test_pause_une_pr_ciblee_et_le_role_d_attente():
+    """La cible peut etre une PR ouverte ; le role du code PAUSE est
+    l'attente (visit_coverage), pas un role de service."""
+    from coordination import visit_coverage as vc
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- attente du merge\nattend: #27900")
+    prs = [{"number": 27900, "title": "Fix(x,#1): y", "body": f"Grain: x -- lane {AUTRE}"}]
+    lec = lecture([issue(1, comments=[pause])], prs=prs)
+    assert etat(lec, 1).ecart == "PAUSE"     # la PR citee est encore ouverte
+    assert etat(lecture([issue(1, comments=[pause])]), 1).ecart is None  # fermee -> levee
+    e = tr.Etat(numero=1, titre="Grain", labels=[], cree_le="2026-10-01T00:00:00Z",
+                 parent=None, famille=1, conteneur=False, consolidation=False,
+                 ecart="PAUSE", motif="pause de x il y a 5.0 j : attend #27900")
+    assert vc.role(e) == "attente"
+
+
 def test_livree_info_avec_lane_avant_le_mot():
     """Forme de #20603 (13/11) : le mot vient apres `lane X --` sur la ligne du tag."""
     lec = lecture([
@@ -541,8 +585,13 @@ def test_cli_json_sur_un_dossier(tmp_path, capsysbinary):
     assert code == 0 and len(sortie["grains"]) == 6
     assert sortie["vos_prs"] == [{"numero": 900, "titre": "Ma PR", "age_j": 1.2}]
     assert sortie["ecartees"]["COUVERTE"] == [{"numero": 1, "motif":
-                                               "votre PR #900 la cite : portez-la au merge"}]
+                                               "votre PR #900 la cite : portez-la au merge",
+                                               "feuille": True}]
     assert sortie["lecture"]["issues"] == 7 and sortie["maintenant"] == tr._iso(NOW)
+    # L'assiette (#25082) : le tirage dit combien de feuilles il sert.
+    assert (sortie["lecture"]["servables_feuilles"] + sortie["lecture"]["servables_conteneurs"]
+            == sortie["lecture"]["servables"])
+    assert sortie["lecture"]["servables_conteneurs"] == 3  # les 3 familles de l'EPIC
     assert set(sortie) >= {"grains", "vos_prs", "ecartees", "lecture"}
 
 
@@ -656,8 +705,14 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # extraite de tapis_equilibre.py pour que le module du classement tienne son
 # plafond, #27242, 19/11) ; tapis_citations.py la vingt-septieme (les citations des
 # PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
-# belt_equite.py la vingt-huitieme (l'equite du dispatch : un grain deja servi ne
-# passe pas devant les premieres visites, #27338).
+# belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
+# passe pas devant les premieres visites, #27338) ; tapis_acceptance.py la
+# vingt-cinquieme (les criteres d'acceptation de #25082 mesures sur le service
+# effectif, 20/11) ; tapis_assiette.py la vingt-sixieme (la composition du pool :
+# feuilles contre conteneurs, #25082, 21/11) ; tapis_attente.py la vingt-septieme
+# (les ecarts d'ATTENTE) ; tapis_leger_texte.py la sortie texte de la voie
+# leger ; tapis_cap_livraisons.py le cap de livraisons EPIC (#21067).
+
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -700,7 +755,12 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("belt_equite.py", 110),
                                               ("tapis_tete.py", 30),
                                               ("tapis_ecarts_fond.py", 50),
-                                              ("tapis_voie_leger.py", 40)])
+                                              ("tapis_voie_leger.py", 40),
+                                              ("tapis_acceptance.py", 300),
+                                              ("tapis_assiette.py", 200),
+                                              ("tapis_attente.py", 60),
+                                              ("tapis_leger_texte.py", 80),
+                                              ("tapis_cap_livraisons.py", 160)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

@@ -18,6 +18,7 @@ Aucun test ne touche le reseau : l'organe de qualification est simule.
 from __future__ import annotations
 
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -25,9 +26,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_ancre, tapis_rotation, tapis_vagues  # noqa: E402
+from coordination import tapis_age, tapis_ancre, tapis_rotation, tapis_vagues  # noqa: E402
 from coordination import tapis_qualification as tq  # noqa: E402
 from coordination.tapis_preuve import Preuve  # noqa: E402
+
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -76,7 +78,14 @@ def _ordre(n: int) -> list[_Grain]:
 
 def _vagues(accepte: set[int], monkeypatch, max_vagues: int = 4,
             arrete: bool = False, pool: int = 48, grains: int = GRAINS):
-    """Les vagues sur un pool de `pool` grains, sans reseau."""
+    """Les vagues sur un pool de `pool` grains, sans reseau.
+
+    L'etat d'ancre est ISOLE (un repertoire temporaire par appel) : sinon la
+    file d'attente accumulee par les tests precedents -- ou par les tours
+    reels de la lane -- separe le pool et le nombre de vagues change.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT,
+                       tempfile.mkdtemp(prefix="tapis-vagues-"))
     simule = _simule(accepte, arrete)
     monkeypatch.setattr(tapis_vagues.tq, "qualifier", simule)
     servis, ecartees, rapport = tapis_vagues.vagues(
@@ -86,9 +95,17 @@ def _vagues(accepte: set[int], monkeypatch, max_vagues: int = 4,
 
 
 def test_la_vague_suivante_ouvre_la_file(monkeypatch):
-    """La vague 0 entierement ecartee ouvre la vague 1 : la file se remplit."""
-    bloc1, _ = tapis_rotation.bloc(_ordre(48), [], GRAINS, TAILLE, LANE,
-                                     MAINTENANT, bloc_suivant=1)
+    """La vague 0 entierement ecartee ouvre la vague 1 : la file se remplit.
+
+    Les vagues suivent la selection par AGE (mandat du 22/11) : la vague 1
+    est le bloc SUIVANT de l'ordre d'age, pas un retour au debut de la
+    rotation par numero.
+    """
+    grains = _ordre(48)
+    bloc1, _ = tapis_rotation.bloc(grains, [], GRAINS, TAILLE, LANE,
+                                     MAINTENANT, bloc_suivant=1,
+                                     ages_g=tapis_age.trier(grains, MAINTENANT),
+                                     exclus_g=set())
     accepte = {bloc1[0].numero}
     services, ecartees, rapport, _ = _vagues(accepte, monkeypatch, grains=1)
     assert rapport["vagues"][0]["servis"] == 0
@@ -99,7 +116,7 @@ def test_la_vague_suivante_ouvre_la_file(monkeypatch):
 
 def test_le_plafond_de_vagues_tient_la_file(monkeypatch):
     """Une file qui ne se remplit pas s'arrete au plafond : 4 vagues au plus."""
-    _, _, rapport, _ = _vagues({1000}, monkeypatch)
+    _, _, rapport, _ = _vagues({1000}, monkeypatch, pool=192)
     assert rapport["vagues_jouees"] == rapport["vagues_max"] == 4
 
 
@@ -121,7 +138,8 @@ def test_la_file_pleine_arrete_le_balayage(monkeypatch):
 
 def test_le_plafond_de_vagues_tient(monkeypatch):
     """Un pool qui ne donne rien ne fait pas balayer le pool entier."""
-    services, ecartees, rapport, _ = _vagues(set(), monkeypatch, max_vagues=3)
+    services, ecartees, rapport, _ = _vagues(set(), monkeypatch, max_vagues=3,
+                                              pool=192)
     assert rapport["vagues_jouees"] == 3
     assert rapport["vagues_max"] == 3
     assert services == []

@@ -7,22 +7,18 @@ ai-01:CoursIA) : #3 ouverte, jamais visitee apres quatre tranches. L'ancre
 porte le **numero** du dernier grain qualifie.
 
 **Le curseur n'avance que sur un verdict TERMINAL** (peer, 19/11) : le
-tirage PROPOSE (`proposer`), la qualification DECIDE (`avancer`). Un tirage
-sans action ne la deplace pas.
+tirage PROPOSE, la qualification DECIDE.
 
-**Le curseur ne se fige pas sur un INCONNU** (contre-exemple execute le
-19/11) : une lecture impossible (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`,
-`ABSENT`) ne DECIDE pas le grain -- elle ne doit pas non plus RETIRER la
-couverture des autres : ces numeros sont PARKES (`inconnus`), ils ne
-bloquent pas le curseur et reviennent au tour suivant.
+**Le curseur ne se fige pas sur un INCONNU** (contre-exemple du 19/11) :
+une lecture impossible ne DECIDE pas le grain : ces numeros sont PARKES.
 
-**Un tour qui boucle est un tour de plus, pas une fin** : quand la
-selection revient en deca du curseur (le pool a ete couvert), le curseur
-recommence au plus petit numero et le compteur `tour` s'incremente.
+**Un tour qui boucle est un tour de plus, pas une fin** : le curseur
+recommence au plus petit numero, et le compteur `tour` s'incremente.
 
 **La tranche PRIMAIRE et la REPRISE sont deux choses distinctes** (19/11, DM
 du coordinateur) : les confondre figeait la rotation. La primaire porte le
 curseur ; la reprise des illisibles parkes revient au service SANS la place.
+
 
 L'arithmetique de la selection vit dans `coordination.tapis_tranche`, la
 persistance dans `coordination.tapis_etat`.
@@ -30,6 +26,7 @@ persistance dans `coordination.tapis_etat`.
 from __future__ import annotations
 
 from coordination import tapis_avance, tapis_etat, tapis_retry
+from coordination.tapis_non_tente import NON_TENTE
 from coordination.tapis_etat import (ancre_de, inconnus_de, lire,  # noqa: F401
                                     phase_de, tour_de)
 from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
@@ -58,7 +55,8 @@ def boucle(proposes: list[int], ancre: int | None) -> bool:
 
 
 def proposer(lane: str, classe: str, primaires: list[int],
-             reprises: list[int] | None = None) -> dict:
+             reprises: list[int] | None = None, reboucle: bool = True,
+             reinit: bool = False) -> dict:
     """Enregistre les numeros PROPOSES par le tirage, sans bouger l'ancre.
 
     `primaires` est la tranche **primaire** (celle que le curseur sert) ;
@@ -70,9 +68,15 @@ def proposer(lane: str, classe: str, primaires: list[int],
 
     Le tirage **selectionne** ; il ne qualifie pas : un tirage sans action
     laisse le curseur en place.
+
+    `reboucle=False` : pas de rebouclage par NUMERO (la selection par age
+    ne se sert pas des numeros au-dessus de l'ancre). `reinit=True` : le
+    tour est couvert -- la file d'attente est rendue, le tour recommence.
     """
     etat = lire(lane)
-    if boucle(list(primaires), etat[classe]["ancre"]):
+    if reinit:
+        etat[classe]["attente"] = {}
+    if reboucle and boucle(list(primaires), etat[classe]["ancre"]):
         etat[classe]["tour"] = etat[classe].get("tour", 0) + 1
         etat[classe]["ancre"] = 0
         etat[classe]["attente"] = {}
@@ -124,7 +128,13 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None,
         # numeros que le lot a reellement pris en charge (revue du 19/11).
         ancre = tapis_avance.avancer(cible, ancre, couvert, att, inc)
         etat[c]["ancre"] = ancre
-        etat[c]["attente"] = {n: b for n, b in att.items()
-                              if ancre is None or n > ancre}
+        # Une entree EN ATTENTE n'est pas retiree par le curseur : elle attend
+        # son verdict, et c'est elle qui exclut la selection par age (mandat du
+        # 22/11). Un grain REFUSE est une DECISION : il sort de la file ; un
+        # grain PARKE NON_TENTE reste en attente ET dans la file de reprise.
+        etat[c]["attente"] = {
+            n: b for n, b in att.items()
+            if ancre is None or n > ancre
+            or (not b and (n not in inc or inc[n].get("code") == NON_TENTE))}
     ecrire(lane, etat)
     return etat

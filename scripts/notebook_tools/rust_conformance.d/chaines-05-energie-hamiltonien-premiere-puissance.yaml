@@ -1,0 +1,107 @@
+# Conformité différentielle de Chaines-05-Energie-Hamiltonien-Premiere-Puissance (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "Chaines-05-Energie-Hamiltonien-Premiere-Puissance"
+  family: "Physique/Chaines"
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb
+  rust: MyIA.AI.Notebooks/Physique/Chaines/Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Rust.ipynb
+  measures:
+    - id: c4_text
+      description: "Sortie de la cellule 4, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c13_text
+      description: "Sortie de la cellule 13, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c15_text
+      description: "Sortie de la cellule 15, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c18_text
+      description: "Sortie de la cellule 18, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c22_text
+      description: "Sortie de la cellule 22, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text

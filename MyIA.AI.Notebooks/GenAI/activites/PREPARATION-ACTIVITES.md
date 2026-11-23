@@ -101,7 +101,7 @@ Cette session contient **10 activités pratiques complètes** sur l'IA Générat
 | Fichier | Contenu |
 |---------|---------|
 | [Activités-GenAI.md](./Activités-GenAI.md) | Document principal avec les 10 activités |
-| [INTRO-GENAI.md](../INTRO-GENAI.md) | Introduction outils GenAI |
+| [INTRO-GENAI.md](../Vibe-Coding/docs/INTRO-GENAI.md) | Introduction outils GenAI |
 | `Intelligence Artificielle - 8 - IA Générative.pptx` | Slides de cours |
 
 ### Environnement Technique
@@ -374,8 +374,8 @@ Pour référence rapide lors des activités :
 
 **Ressources techniques** :
 - Guides dans [docs/](../)
-- Roo Code : [Roo-Code/](../../Roo-Code/)
-- Claude Code : [Claude-Code/docs/](../../Claude-Code/docs/)
+- Roo Code : [Roo-Code/](../Vibe-Coding/Roo-Code/)
+- Claude Code : [Claude-Code/docs/](../Vibe-Coding/Claude-Code/)
 
 **Communauté** :
 - Microsoft Semantic-Kernel : https://github.com/microsoft/semantic-kernel
