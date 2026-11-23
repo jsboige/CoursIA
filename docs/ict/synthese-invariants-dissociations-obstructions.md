@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 # ICT — trois régimes de lecture d'une trajectoire : invariants, dissociations, obstructions
 

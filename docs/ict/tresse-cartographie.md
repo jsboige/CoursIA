@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 # ICT — Cartographie de la tresse (Thom / Grothendieck / Schmidhuber / Friston) + hiérarchie de sobriété + deux ponts Conway
 

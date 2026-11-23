@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 ## Note de conception — tranche ICT-14 « FreeEnergySurprise » (ICT-14 + ICT-14b) — phase 2
 
