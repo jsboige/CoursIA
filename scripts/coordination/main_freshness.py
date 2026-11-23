@@ -90,6 +90,9 @@ from pathlib import Path
 #: developpe ces fichiers passe par --allow-stale, en le sachant.
 ORGANES = (
     "scripts/coordination/tapis_rapide.py",
+    # Le RECUL du #27059 : quelles issues sont servables et l'ordre du palier
+    # de recul -- un module extrait de tapis_rapide.py, meme contrat.
+    "scripts/coordination/tapis_recul.py",
     "scripts/coordination/tapis_marqueurs.py",
     "scripts/coordination/tapis_sature.py",
     "scripts/coordination/gh_bulk.py",
