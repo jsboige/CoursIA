@@ -1,0 +1,198 @@
+- name: "ANALYSE-02b Entropie de Shannon"
+  family: "SymbolicAI/Lean (ANALYSE)"
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Rust.ipynb
+  measures:
+    - id: facteur_ln2
+      description: "Facteur de conversion bits -> nats, ln(2) (cellule des helpers)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "ln\\(2\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 2
+          pattern: "ln\\(2\\) = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "ln\\(2\\) = ([\\d.]+)"
+          transform: float
+    - id: h_p05_bits
+      description: "Entropie en bits de la piece p = 0.5 (ligne de la table H(p))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "0\\.5\\s+([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 3
+          pattern: "0\\.5\\s+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 3
+          pattern: "0\\.5\\s+([\\d.]+)"
+          transform: float
+    - id: h_a_bits
+      description: "H(X) en bits pour A = {0, 1, 2} uniforme dans Z/8Z (renommage indifferent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "H\\(X\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 6
+          pattern: "H\\(X\\) = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 6
+          pattern: "H\\(X\\) = ([\\d.]+)"
+          transform: float
+    - id: h2_q09
+      description: "H2(q) en bits pour le canal binaire symetrique de fidelite q = 0.9"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "q = 0\\.9: H2 = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 9
+          pattern: "q = 0\\.9: H2 = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "q = 0\\.9: H2 = ([\\d.]+)"
+          transform: float
+    - id: h2_q10_zero
+      description: >
+        H2(q) pour q = 1.0, comparee en TEXTE : le piege du zero negatif du
+        portage Rust (format! de -0.0 affiche -0.0000 alors que Python ecrit
+        0.0000). La comparaison float echouerait silencieusement (-0.0 == 0.0
+        en IEEE 754), d'ou transform text sur la chaine formatee.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "q = 1\\.0: H2 = (-?[\\d.]+)"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "q = 1\\.0: H2 = (-?[\\d.]+)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "q = 1\\.0: H2 = (-?[\\d.]+)"
+          transform: text
+    - id: exces_sous_modularite
+      description: "Exces H(X,Z) + H(Y,Z) - H(X,Y,Z) - H(Z) de la sous-modularite (canal q=0.9, Z = X xor Y)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "exces = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 12
+          pattern: "exces = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "exces = ([\\d.]+)"
+          transform: float
+    - id: ecart_somme_strict
+      description: "Cas strict H(X+X') - H(X) pour A = {0, 1, 2} dans Z/8Z"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "H\\(X\\+X'\\) - H\\(X\\) = \\+([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 15
+          pattern: "H\\(X\\+X'\\) - H\\(X\\) = \\+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 15
+          pattern: "H\\(X\\+X'\\) - H\\(X\\) = \\+([\\d.]+)"
+          transform: float
+    - id: inegalite_somme_ternaire
+      description: "Booleen H(X+X') <= log2|A+A| sur le cas strict (casse libre entre langues)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 15
+          pattern: "inegalite = (\\w+)"
+          transform: text
+        csharp:
+          cell: 15
+          pattern: "inegalite = (\\w+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "inegalite = (\\w+)"
+          transform: text
+    - id: exo1_attendu
+      description: "Ligne Attendu de l'exercice 1 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Attendu : ecart == divergence"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "Attendu : ecart == divergence"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "Attendu : ecart == divergence"
+          transform: text
+    - id: exo2_attendu
+      description: "Ligne Attendu de l'exercice 2 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Attendu : H\\(Z\\|X,Y\\) = 0 exactement"
+          transform: text
+        csharp:
+          cell: 20
+          pattern: "Attendu : H\\(Z\\|X,Y\\) = 0 exactement"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "Attendu : H\\(Z\\|X,Y\\) = 0 exactement"
+          transform: text
+    - id: exo3_attendu
+      description: "Ligne Attendu de l'exercice 3 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "Attendu : deux groupes possibles"
+          transform: text
+        csharp:
+          cell: 22
+          pattern: "Attendu : deux groupes possibles"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "Attendu : deux groupes possibles"
+          transform: text
