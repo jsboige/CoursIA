@@ -48,6 +48,7 @@ flowchart BT
 | SW-02 (Py) | [SW-02-RDFBasics-Python](SW-02-RDFBasics-Python.ipynb) | Le même socle RDF avec rdflib | 45 min | MIROIR |
 | SW-03 | [SW-03-GraphOperations-CSharp](SW-03-GraphOperations-CSharp.ipynb) | Lire/écrire des graphes, fusionner, sélectionner par pattern, requêter les triplets avec LINQ, manipuler les listes RDF | 50 min | FONDATION |
 | SW-03 (Py) | [SW-03-GraphOperations-Python](SW-03-GraphOperations-Python.ipynb) | Les mêmes opérations de graphes avec rdflib | 50 min | MIROIR |
+| SW-03 (Rust) | [SW-03-GraphOperations-Rust](SW-03-GraphOperations-Rust.ipynb) | Les mêmes opérations de graphes avec les crates oxigraph (oxrdf, oxttl, oxrdfxml) — streaming natif et listes RDF à la main | 50 min | MIROIR |
 | SW-04 | [SW-04-SPARQL-CSharp](SW-04-SPARQL-CSharp.ipynb) | SPARQL : SELECT, FILTER, jointures implicites, OPTIONAL, UNION, ORDER BY / LIMIT | 45 min | FONDATION |
 | SW-04 (Py) | [SW-04-SPARQL-Python](SW-04-SPARQL-Python.ipynb) | SPARQL avec rdflib | 45 min | MIROIR |
 | SW-05 | [SW-05-LinkedData-CSharp](SW-05-LinkedData-CSharp.ipynb) | Les endpoints publics DBpedia et Wikidata, le client SPARQL distant, les requêtes fédérées avec SERVICE | 50 min | FONDATION |

@@ -276,6 +276,7 @@ COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
+TWIN_ATTEST_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_attestation_squash.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # Issue #20774 : au merge, le slot-reservation-guard doit lire la source
 # `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
@@ -639,6 +640,10 @@ class PRVerdict:
     stack: str | None = None
     #: Incidents de mesure de la porte STACK, quand la porte en a publie.
     stack_incidents: tuple[str, ...] | None = None
+    #: La RAISON du rouge quand elle est mesurable (section FAILURES de
+    #: pytest, 22/11) : sans elle, le journal dit QUOI a rouge et force le
+    #: lecteur a DEVINER pourquoi.
+    detail: str | None = None
 
     def journal_dict(self) -> dict:
         row = {
@@ -653,6 +658,8 @@ class PRVerdict:
         }
         if self.stack_incidents:
             row["stack_incidents"] = list(self.stack_incidents)
+        if self.detail:
+            row["detail"] = self.detail
         return row
 
 
@@ -2484,6 +2491,76 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def twin_attestation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.ter : l'attestation jumelle doit decrire l'ARBRE DE FUSION.
+
+    Le squash-merge re-hashe l'arbre : un blob atteste sur la branche peut ne
+    jamais atterrir sur `main`. Le test
+    ``test_audit_shas_exist_in_file_history`` verifie que le sha atteste par la
+    derniere attestation d'une paire est un blob que le carnet a reellement eu
+    dans son historique, sous le path declare -- un sha qui n'atterrit jamais
+    sur `main` le fait rougir.
+
+    La CI de PR ne voit pas cette classe : elle travaille sur
+    ``refs/pull/N/merge``, ou les commits intermediaires restent joignables ;
+    seul l'arbre de fusion revele l'orphelin. D'ou la place de cette porte :
+    elle est la DERNIERE ligne de defense, celle qui evite que `main` ne
+    rougisse (mesure du 2026-11-23 : `test_audit_shas_exist_in_file_history` a
+    gele `main` environ 3 h ; les squashes de #28094 et #27869 ont orpheline
+    des ``csharp_sha``).
+
+    Cout nul pour les PRs qui ne touchent pas le registre twin (filtre
+    prefixe). Pour les autres : un fetch, puis l'organe partage
+    (``check_twin_attestation_squash.py``), qui simule le squash et compare la
+    derniere attestation de chaque paire touchee aux blobs de l'arbre de
+    fusion.
+
+    Fail-closed, sans exception : un timeout, une sortie vide, une lecture
+    impossible ou un conflit de fusion font sauter le merge. « Je n'ai pas pu
+    lire » n'est jamais « c'est propre » -- c'est la regle que 5bis applique
+    deja pour les collisions d'index.
+
+    Codes de l'organe : 0 = conforme, 1 = defaut trouve (MISMATCH, NODESC,
+    CONFLICT), 2 = mesure impossible.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-attestation-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, _repo_relative(TWIN_ATTEST_PATH),
+         "--base", "origin/main", "--head", head, "--json"]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 2:
+        # Mesure impossible : timeout, erreur git, sortie vide.
+        return "twin-attestation-unreadable:rc=2"
+    # rc = 1 : l'organe a lu et a trouve un defaut. Le motif nomme la paire
+    # et les cotes en cause -- il est journalise tel quel.
+    try:
+        data = json.loads(res.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return "twin-attestation-unreadable:sortie-illisible"
+    if not isinstance(data, dict):
+        return "twin-attestation-unreadable:sortie-illisible"
+    verdict = str(data.get("verdict") or "?").lower()
+    reason = str(data.get("reason") or "").strip()
+    if not reason:
+        return f"twin-attestation-{verdict}:defaut-non-nomme"
+    return f"twin-attestation-{verdict}:{reason[:180]}"
+
+
 def slot_reservation_reason(
     runner: Runner, pr: int, head: str, files: list[dict]
 ) -> str | None:
@@ -2621,6 +2698,77 @@ def find_stacked_parents(body: str | None) -> list[int]:
     return list(seen)
 
 
+@dataclass
+class CombinedPassContext:
+    """Contexte de passe pour l'etape 5quinquies (22/11).
+
+    Une passe evalue jusqu'a une centaine de candidats, et l'etape jouait un
+    worktree NEUF a chaque fois -- ``worktree add`` puis ``worktree remove``,
+    38 s + 9 s par candidat (mesure du coordinateur sur l'arbre de main).
+    Ce contexte donne a la passe UN worktree, reutilise par
+    ``checkout --detach`` : l'organe n'y fait plus qu'un changement de tete
+    entre deux candidats.
+
+    Le worktree est nomme par le PID de la passe : deux passes concurrentes
+    ne se partagent donc jamais le meme dossier. Un partage ferait jouer les
+    tests d'un candidat sur l'arbre d'un AUTRE -- un verdict faux.
+
+    La BASE, elle, reste resolue par l'organe a chaque candidat : elle doit
+    etre COURANTE, sinon l'organe rate le conflit entre deux PRs fusionnees
+    contre le meme ``main@T`` (fenetre residuelle de #24828). Mesure du
+    22/11 : le ``main`` n'ajoute que ~0,4 s au fetch (18,9 s avec, 18,5 s
+    pour la seule tete) -- le cout du fetch est l'aller-retour reseau, pas
+    la ref. Un ``main`` par passe n'economiserait que 2 % du fetch et
+    acheterait une base perimee.
+    """
+    worktree: Path
+    #: Vrai des que l'organe a ete invoque au moins une fois dans la passe.
+    #: Le worktree n'existe alors que si l'organe l'a pose : une passe qui
+    #: n'a evalue AUCUN candidat (porte STACK refuse, rollback operateur)
+    #: n'a rien a retirer, et ne lance donc rien du tout.
+    used: bool = False
+
+    def cleanup(self, runner: Runner, gh_env: dict[str, str]) -> None:
+        """Retire le worktree de la passe.
+
+        Le retrait est fait par l'ORGANE (``--cleanup``), pas par un ``git``
+        lance ici : l'organe sait deja poser et retirer ce worktree, et la
+        passe ne doit pas payer un aller-retour reseau pour le faire.
+
+        Rien n'est lance si l'organe n'a jamais ete invoque : une passe sans
+        evaluation ne laisse pas de worktree, et une passe qui n'a rien
+        demande au disque ne demande rien au disque en sortant.
+        """
+        if not self.used:
+            return
+        rm = runner.run(
+            [sys.executable, _repo_relative(COMBINED_PATH), "--cleanup",
+             "--worktree", _repo_relative(self.worktree)],
+            env=gh_env,
+        )
+        if rm.returncode != 0:
+            # Un worktree que git refuse de retirer est RAPPORTE, pas detruit.
+            print(f"worktree de passe non retire : {self.worktree}",
+                  file=sys.stderr)
+
+
+#: Contexte de passe courant (module-level : la chaine d'appels de l'etape
+#: 5quinquies est profonde, on ne la remplit pas de parametres).
+COMBINED_CTX: CombinedPassContext | None = None
+
+
+def combined_pass_context() -> CombinedPassContext | None:
+    """Prepare le contexte de passe ; ``None`` si l'etape est indisponible.
+
+    ``None`` n'est pas un echec : l'organe retombe alors sur son comportement
+    d'avant (un worktree par candidat).
+    """
+    if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
+        return None
+    worktree = REPO_ROOT / ".tmp" / f"premerge-passe-{os.getpid()}"
+    return CombinedPassContext(worktree=worktree)
+
+
 def _one_line(text: str, limit: int = 600) -> str:
     """Aplatit une queue de sortie en UNE ligne bornee (#28147).
 
@@ -2636,24 +2784,35 @@ def _one_line(text: str, limit: int = 600) -> str:
     return flat[: limit - 3] + "..."
 
 
-def combined_tree_reason(
+def _combined_tree(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
-) -> str | None:
+) -> tuple[str | None, str | None]:
     """Etape 5quinquies : les tests d'integrite passent-ils sur ``main`` + tete ?
 
-    ``None`` si l'organe rend GREEN (exit 0). Sinon un motif de skip :
+    ``(None, None)`` si l'organe rend GREEN (exit 0). Sinon un motif de skip
+    et la RAISON du rouge :
     ``combined-tree-red:<premier test rouge>``, ``combined-tree-conflict``, ou
     ``combined-tree-unreadable:<etape>`` -- « je n'ai pas pu jouer les
     tests » n'est pas « ils passent ». ``MERGE_READY_COMBINED_CHECK=0``
     retire l'etape (rollback operateur, jamais un reglage de lane).
+
+    Le motif porte la QUEUE de sortie pytest aplatie en une ligne (#28147) ;
+    la RAISON est rendue A PART : la section FAILURES de pytest. Le journal
+    portait `FAILED <id>`, ce qui dit QUOI a rougi mais pas POURQUOI -- et
+    force le lecteur a DEVINER pourquoi une PR approuvee a ete sautee
+    (22/11 : deux PRs approuvees sautees sur `test_guard_gauntlet`, aucune
+    ne touchant le gauntlet).
     """
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
-        return None
-    res = runner.run(
-        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
-         "--json"],
-        env=gh_env,
-    )
+        return None, None
+    argv = [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr),
+            "--head", head, "--json"]
+    ctx = COMBINED_CTX
+    if ctx is not None:
+        argv += ["--worktree", _repo_relative(ctx.worktree),
+                 "--reuse-worktree"]
+        ctx.used = True
+    res = runner.run(argv, env=gh_env)
     payload: dict = {}
     lines = (res.stdout or "").strip().splitlines()
     if lines:
@@ -2663,23 +2822,38 @@ def combined_tree_reason(
                 payload = parsed
         except ValueError:
             payload = {}
+    detail = payload.get("failure_detail") or None
     verdict = payload.get("verdict")
     if res.returncode == 0 and verdict == "GREEN":
-        return None
+        return None, None
     if res.returncode == 1 and verdict == "CONFLICT":
-        return "combined-tree-conflict"
+        return "combined-tree-conflict", detail
     if res.returncode == 1 and verdict == "RED":
         failed = payload.get("failed") or []
         reason = f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
         tail = _one_line(payload.get("output_tail") or "")
         if tail:
             reason = f"{reason} | pytest-tail: {tail}"
-        return reason
-    unreadable = f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+        return reason, detail
+    unreadable = (f"combined-tree-unreadable:"
+                  f"{payload.get('reason') or 'rc-' + str(res.returncode)}")
     tail = _one_line(payload.get("output_tail") or "")
     if tail:
         unreadable = f"{unreadable} | pytest-tail: {tail}"
-    return unreadable
+    return unreadable, detail
+
+
+def combined_tree_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> str | None:
+    """Le MOTIF de l'etape 5quinquies, seul : ``None`` si l'organe rend GREEN.
+
+    L'API publique reste celle d'avant : UN motif, en une ligne. La raison
+    du rouge (section FAILURES de pytest) est rendue par `_combined_tree`,
+    qui la rend A PART -- elle ne pollue pas le motif journalise.
+    """
+    reason, _detail = _combined_tree(runner, pr, head, gh_env)
+    return reason
 
 
 def stacked_parent_state(
@@ -3087,9 +3261,10 @@ def evaluate_pr(
     disposition = review_disposition(view, view_head)
 
     def skip(reason: str, stack: str | None = None,
-             stack_incidents: tuple[str, ...] | None = None) -> PRVerdict:
+             stack_incidents: tuple[str, ...] | None = None,
+             detail: str | None = None) -> PRVerdict:
         return PRVerdict(pr, view_head, "skipped", reason, False, disposition,
-                         stack, stack_incidents)
+                         stack, stack_incidents, detail)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -3185,6 +3360,13 @@ def evaluate_pr(
     reason = twin_collision_reason(runner, pr, view_head, view.get("files") or [])
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
+    # 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) :
+    # le squash-merge re-hashe l'arbre, un blob atteste sur la branche peut
+    # ne jamais atterrir sur `main` -- et la CI de PR ne le voit pas (elle
+    # travaille sur `refs/pull/N/merge`). Fail-closed comme 5bis.
+    reason = twin_attestation_reason(runner, pr, view_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason, stack_state, stack_inc)
     # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).
     # Independant de 5bis : 5bis = twin-pair registry, 5bis.bis = slot de carnet.
     reason = slot_reservation_reason(runner, pr, view_head, view.get("files") or [])
@@ -3248,9 +3430,9 @@ def evaluate_pr(
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.
-    reason = combined_tree_reason(runner, pr, view_head, gh_env)
+    reason, detail = _combined_tree(runner, pr, view_head, gh_env)
     if reason is not None:
-        return skip(reason, stack_state, stack_inc)
+        return skip(reason, stack_state, stack_inc, detail)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(
         runner, pr, gh_env, retries=retries
@@ -3366,6 +3548,11 @@ def emit_output(
     print(f"== merge_ready ({mode}, max {args.max}) ==")
     for verdict in results:
         print(_describe(verdict))
+        # La raison du rouge, quand elle est mesurable : sans elle, le
+        # lecteur doit DEVINER pourquoi une PR approuvee a ete sautee (22/11).
+        if verdict.detail:
+            for ligne in verdict.detail.splitlines():
+                print(f"  | {ligne}")
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
@@ -3559,6 +3746,16 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     # (revue du 16/11).
     warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
 
+    # --- contexte de l'etape 5quinquies (22/11) --------------------------------
+    #
+    # UN worktree pour toute la passe : l'etape jouait un `worktree add` +
+    # un `worktree remove` par candidat (38 s + 9 s, mesure du coordinateur).
+    # L'organe y fait un `checkout --detach` d'un candidat a l'autre. Le
+    # contexte echoue sans rien casse : `combined_pass_context` rend `None`
+    # et l'etape retombe sur son comportement d'avant.
+    global COMBINED_CTX
+    COMBINED_CTX = combined_pass_context()
+
     def _budget_depasse() -> bool:
         if args.pass_budget_s <= 0:
             return False
@@ -3740,6 +3937,10 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         stopped_reason = f"unexpected-error:{exc}"
                         break
                     continue
+
+    if COMBINED_CTX is not None:
+        COMBINED_CTX.cleanup(active_runner, gh_env)
+        COMBINED_CTX = None
 
     emit_output(
         args, results, stopped_reason, exit_code,
