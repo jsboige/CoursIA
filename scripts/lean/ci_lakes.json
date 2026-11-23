@@ -394,16 +394,16 @@
     },
     {
       "lake": "compression",
-      "project-path": "MyIA.AI.Notebooks/Compression/Compression_lean",
+      "project-path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean",
       "display-name": "compression_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/Compression/Compression_lean/**.lean",
-        "MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json"
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/**.lean",
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lake-manifest.json"
       ],
       "axiom-include-i18n-siblings": "true"
     },

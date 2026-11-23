@@ -1,0 +1,11 @@
+- name: "Chaines-08 Corollaires Quantique Racines"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-08-Corollaires-Quantique-Racines-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-08-Corollaires-Quantique-Racines-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le carnet rejoue en arithmetique exacte l'equation 73 (48 cartes, 1728 paires de Born), le check CHSH (M^2 = 2I - 2 sy(x)sy, M^4 = 4M^2, (2sqrt(2))^2 = 8) et les comptes du census avec contre-test. Python calcule en entiers natifs, complexes entiers et Fraction ; C# en System.Numerics.BigInteger, entiers gaussiens locaux et rationnel exact reduit. Aucun moteur externe canonique : les deux cotes derivent les memes valeurs a la main."
+  known_differences:
+    - "C# ajoute des lignes de synthese CONFORME et des controles executables qui levent sur ecart (VerifC10/VerifC11) ; le Python imprime les memes verdicts sans lever (20 lignes porteuses C# contre 15 Python)."
+    - "Micro-variations d'impression : '#maps' (C#) contre '#{maps}' (Python), 'Tally imprime (CITE)' (C#) contre 'Tally imprime' (Python) — memes chiffres 14+5+2=21."
+    - "Les valeurs porteuses (48 cartes = 24 propres + 24 impropres, 1728 paires preservees, identites M^2/M^4, classes 4 et 0 atteintes, 8 = 2 x 2^2, 21 entrees 6+12+3, 5 deplacees) coincident verbatim cellule par cellule."

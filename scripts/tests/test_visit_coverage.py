@@ -10,6 +10,7 @@ Aucun test ne touche le reseau.
 """
 import importlib.util
 import json
+import re
 import subprocess
 from datetime import timedelta
 from pathlib import Path
@@ -142,10 +143,40 @@ def test_bilan_par_role_compte_et_borne():
     r = vc.bilan(etats_, lecture([]), NOW)
     urne = r["roles"]["urne"]
     assert urne["issues"] == 25 and urne["sans_visite"] == 25
-    assert len(urne["numeros_sans_visite"]) == vc.LIMITE_LISTE
+    # le JSON rend la liste COMPLETE : la borne est une borne d'affichage
+    assert len(urne["numeros_sans_visite"]) == 25
     assert urne["numeros_sans_visite"][0] == 25  # la plus ancienne d'abord
     assert r["urgences"]["nombre"] == 25
     assert r["jamais_visitees_nombre"] == 25
+
+
+def test_le_json_rend_les_25_numeros_et_le_texte_annonce_les_5_manquants():
+    """#27725 : la borne `LIMITE_LISTE` vaut pour l'affichage, pas pour la
+    donnee. Le JSON rend les 25 numeros ; le texte en montre 20 et DIT qu'il
+    en cache 5 -- une troncature invisible est un mensonge de l'organe."""
+    etats_ = [_etat(numero=n, ecart="LIVREE", motif="dernier commentaire [INFO] candidate-delivered",
+                    cree=(NOW - timedelta(days=10 + n)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+              for n in range(1, 26)]
+    r = vc.bilan(etats_, lecture([]), NOW)
+    assert len(r["roles"]["urne"]["numeros_sans_visite"]) == 25
+    assert len(r["jamais_visitees"]) == 25
+    assert len(r["urgences"]["numeros"]) == 25
+
+    texte = vc._texte(r, "test")
+    ligne = next(x for x in texte.splitlines() if x.strip().startswith("urne"))
+    assert "et 5 autres" in ligne
+    # les 20 affiches sont la tete de la liste complete, dans le meme ordre
+    affiches = [int(x) for x in re.findall(r"#(\d+)", ligne.split("a 0 :")[1].split(";")[0])]
+    assert len(affiches) == vc.LIMITE_LISTE
+    assert affiches == r["roles"]["urne"]["numeros_sans_visite"][:vc.LIMITE_LISTE]
+
+
+def test_le_texte_dit_le_nombre_cache_pour_chaque_liste_bornee():
+    """Une liste de 21 numeros : 20 affiches, 1 cache, et le texte le dit."""
+    assert vc._liste_texte([]) == "aucune"
+    assert vc._liste_texte([1, 2]) == "#1, #2"
+    assert vc._liste_texte(list(range(1, 22))) .endswith("... et 1 autre")
+    assert vc._liste_texte(list(range(1, 26))).endswith("... et 5 autres")
 
 
 def test_bilan_compte_les_visitees_non_avancees():
@@ -296,3 +327,56 @@ def test_propriete_du_tapis_une_visite_chacun_avant_deux():
 def test_propriete_du_tapis_autre_graine_et_deuxieme_lane():
     _servir(_pool(), f"{AUTRE}|2026-11-20|1")
     _servir(_pool(), "myia-po-2025:CoursIA-2|2026-11-20|5")
+
+
+# --- l'atteignabilite : le claim de la lane n'est pas une violation ---------
+
+def test_un_claim_visite_de_la_lane_n_est_pas_une_violation_d_equite():
+    """Un claim que la lane tient en tete n'est pas une issue republiee.
+
+    `atteignable` mesure l'equite sur le meme pool que `invariant` : le pool
+    exclut les claims de la lane. La boucle de controle doit les exclure
+    aussi, sinon l'organe rend rc 1 sur le fonctionnement normal du tirage
+    (le coordinateur tient des claims) et masque les vraies violations.
+
+    Sans cette exclusion, le test echoue : le claim passe en tete de tour
+    (c'est ce que fait `ordonner`), il est donc servi alors que les deux
+    jamais-visitees attendent -- et l'organe le compte comme une violation.
+    """
+    etats_ = [_etat(numero=1, visites=2, visites_total=2, mon_claim=True),
+              _etat(numero=2, visites=0),
+              _etat(numero=3, visites=0)]
+    r = vc.atteignable(etats_, LANE, NOW)
+    assert r["equite"] == []
+    assert r["jamais_visitees"] == 2
+
+# --- le parcage Origami : le role suit le tirage -----------------------------
+
+def test_le_parcage_origami_passe_le_role_de_worker_a_attente(monkeypatch):
+    """Un EPIC Origami parqué n'est pas un travail de worker : son depliage est
+    reserve au coordinateur. Sans le parcage, l'organe le comptait « worker »
+    alors que le tirage ne le sert jamais (mesure du 21/11 : cinq sur
+    vingt et un)."""
+    etats_ = [_etat(numero=18205, titre="EPIC origami : geometrie differentielle")]
+    monkeypatch.setattr(
+        vc.tapis_origami, "mesurer",
+        lambda lecture, **kw: ({18205: "pli non deplie"},
+                               {"measured": True, "parked": [18205],
+                                "reason": "mesure faite"}))
+    vc.parer_origami(etats_, None)
+    assert etats_[0].ecart == "ORIGAMI"
+    assert vc.role(etats_[0]) == "attente"
+
+
+def test_une_mesure_origami_en_panne_ne_parque_rien(monkeypatch):
+    """fail-OPEN, comme le tirage : une mesure absente ne fait pas disparaitre
+    une issue du pool, elle se dit."""
+    etats_ = [_etat(numero=18205, titre="EPIC origami : geometrie differentielle")]
+    monkeypatch.setattr(
+        vc.tapis_origami, "mesurer",
+        lambda lecture, **kw: ({}, {"measured": False, "parked": [],
+                                    "reason": "rejeu hors ligne"}))
+    etat = vc.parer_origami(etats_, None)
+    assert etats_[0].ecart is None
+    assert vc.role(etats_[0]) == "worker"
+    assert etat["measured"] is False

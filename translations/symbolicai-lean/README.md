@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`symbolicai-lean.csv`](symbolicai-lean.csv) | `SymbolicAI/Lean/` (série numérotée Lean-1 à Lean-18, avec sous-niveaux a/b/c/d/e/f) | 28 | 1178 (21 colonnes) |
+| [`symbolicai-lean.csv`](symbolicai-lean.csv) | `SymbolicAI/Lean/` (série numérotée Lean-1 à Lean-18, avec sous-niveaux a/b/c/d/e/f) | 28 au seed 2026-07-16 (le compte courant vit dans le CSV) | 1178 au seed 2026-07-16 (21 colonnes à l'époque — schéma et comptes courants mesurables dans le CSV) |
 
 **Note owner-lane** : l'extraction i18n est **safe owner-lane** (artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks). Les cellules `code` (Lean 4) et `markdown` (prose pédagogique FR) sont toutes indexées ; les T3 (colonnes cibles `text_en`/`hash_en`/…) restent vides en attente du run moteur Argumentum (gated #1650 Phase 1).
 

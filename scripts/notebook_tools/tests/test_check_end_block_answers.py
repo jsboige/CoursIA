@@ -32,14 +32,17 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 NOTEBOOK_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 
 PANEL_27611 = {
+    "GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-CSharp.ipynb",
     "GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb",
     "GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb",
     "GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb",
     "GameTheory/GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb",
     "GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb",
+    "GameTheory/GameTheory-18-Capstone-Metajeux-CSharp.ipynb",
     "GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-CSharp.ipynb",
+    "GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-CSharp.ipynb",
     "GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb",

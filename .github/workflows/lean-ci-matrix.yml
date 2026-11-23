@@ -165,10 +165,10 @@ on:
       # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
       # formel de la serie Compression : 0 sorry de naissance, axiom
       # target-modules "*" -- parametres au manifeste)
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/**.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lake-manifest.json'
       # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
       # critere 2 -- 0 sorry verifie, axiom target-modules "*", Mathlib
       # epingle db584cd6d4 -- parametres au manifeste)
@@ -441,10 +441,10 @@ on:
       # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
       # formel de la serie Compression : 0 sorry de naissance, axiom
       # target-modules "*" -- parametres au manifeste)
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/**.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lake-manifest.json'
       # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
       # critere 2 -- 0 sorry verifie, axiom target-modules "*", Mathlib
       # epingle db584cd6d4 -- parametres au manifeste)
