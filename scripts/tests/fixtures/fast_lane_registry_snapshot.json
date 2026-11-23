@@ -3458,5 +3458,41 @@
    ],
    "commenters": []
   }
+ ],
+ "TRANCHE55": [
+  {
+   "name": "Dependency manifest freshness (advisory, non-blocking)",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/dependency_manifest.py",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "MyIA.AI.Notebooks/**/*.ipynb",
+    "MyIA.AI.Notebooks/**/requirements*.txt",
+    "MyIA.AI.Notebooks/**/environment*.yml",
+    "MyIA.AI.Notebooks/**/pyproject.toml",
+    "docs/curriculum/manifeste-dependances.*",
+    "scripts/notebook_tools/dependency_manifest.py",
+    "scripts/notebook_tools/dependency_manifest_policy.json",
+    "scripts/notebook_tools/tests/test_dependency_manifest_refresh.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": false,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": false,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
  ]
 }

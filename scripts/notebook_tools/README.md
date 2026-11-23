@@ -17,6 +17,7 @@ Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
 | **Relevé runtime kernels** | `measure_kernels_runtime.py` | Lance les kernelspecs Jupyter et exporte les versions Python/numpy effectives en JSON |
 | **Versions de bibliothèques** | `notebook_lib_versions.py`, `lib_version_manifest.json` | Recense les littéraux de version des cellules de code (`#r "nuget: X, v"`, `pip install x==v`, URL de build Tweety) et classe chaque site contre les canoniques du manifeste (#23073) |
+| **Manifeste des dépendances** | `dependency_manifest.py`, `dependency_manifest_policy.json` | Table des dépendances par famille de noyau (verdict d'inclusion dans l'image CPU, motifs mesurés ou déclarés, conflits de versions, manifeste consolidé) — Epic #27543 pli 1 (#27544) |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
 | **Catalogue & dashboards** | `generate_catalog.py`, `generate_curriculum_rdf.py`, `query_curriculum.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Catalogue, export RDF interrogeable du cursus, figures README + dashboards |
@@ -28,6 +29,55 @@ Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 | **Rendu pédagogique** | `knot_diagram.py` | Diagrammes de nœuds 2D depuis un PD-code SnapPy — Python pur (faces par système de rotation, plongement de Tutte, arcs Bezier, halo sur/sous), substitut portable au rendu POSIX `draw`+`mpost` de Spherogram (#21908) |
 
 Tests unitaires dans `scripts/notebook_tools/tests/`.
+
+## Manifester les dépendances du cursus par famille de noyau
+
+`dependency_manifest.py` repond a la question du pli 1 de l'Epic #27543 :
+**que doit contenir l'image d'apprentissage CPU, et qu'en reste-t-il exclu ?**
+Il lit `git ls-files` (aucun reseau), enumere les fichiers
+`requirements*.txt` / `environment*.yml` du depot, les rattache a leur serie et
+sous-serie, lit le `kernelspec` des carnets (famille de noyau : Python, .NET,
+Lean, Rust), mesure sur la **source des cellules** les besoins GPU, cle d'API
+et service reseau, puis rend pour chaque groupe un **verdict**
+(`inclus` / `exclu` / `service optionnel`) **motive**.
+
+Chaque motif porte son **origine** : `mesure` (deduit d'une lecture du depot)
+ou `declaration` (regle de la politique versionnee
+`dependency_manifest_policy.json`, contestable). Le motif `licence` existe
+mais sa liste est vide a dessein : hors ligne, aucune source du depot
+n'etablit de contrainte de licence, et simuler un inventaire serait une
+invention.
+
+```bash
+python scripts/notebook_tools/dependency_manifest.py --write   # ecrit docs/curriculum/manifeste-dependances.{md,json}
+python scripts/notebook_tools/dependency_manifest.py --print    # table sur la sortie standard
+python scripts/notebook_tools/dependency_manifest.py --check    # garde de fraicheur : 0 frais, 1 perime, 2 incident
+```
+
+Les sorties versionnees decrivent l'etat du depot : elles derivent. La mode
+`--check` est la **garde de fraicheur** : il regenere le manifeste dans un
+depot donne et le compare aux sorties committes. Deux champs sont ignores
+dans la comparaison -- `generated_from` (le SHA de generation) et
+`counts.tracked_files` (le nombre de fichiers suivis) -- parce qu'ils
+**decrivent l'etat du depot, pas le contenu du manifeste** : les ignorer
+evite un rouge sur chaque commit sans changement de fond. Tout le reste est
+compare, groupe par groupe (indexes par leur nom, pas par leur rang), et le
+SHA est neutralise dans le Markdown comme dans le JSON.
+
+Trois verdicts, jamais deux : `frais` (0), `perime` (1) et `incident` (2).
+`incident` signifie que la sortie commitee est absente ou illisible : ce
+n'est **pas** un verdict de perimetre, c'est un verdict inconnu, et les deux
+ne se confondent jamais.
+
+Le **manifeste consolide** produit (paquets des series incluses, version
+retenue, series contributrices) est la seule source de paquets de l'image
+1.2 ; les **conflits de versions** entre series sont nommes, classes
+(`pin_exact_divergent`, `specifier_divergent`, `incompatible`) et proposes.
+Les **lacunes de declaration** (paquet importe mais non declare) sont
+listees : l'image ne l'installera pas, le carnet echouera a l'execution.
+Les besoins de **cle d'API** sont publies comme un **nombre** de variables,
+jamais comme des noms : un nom de variable n'est pas un secret, mais il
+n'apporte rien a la decision d'image et le scanner de secrets le refuse.
 
 ## Recenser les versions de bibliothèques chargées par les carnets
 
