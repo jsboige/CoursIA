@@ -10,6 +10,7 @@ de git reel.
 """
 
 import importlib.util
+import os
 import base64
 import json
 import re
@@ -585,6 +586,12 @@ class ScriptedRunner:
             return mr.RunResult(self.nits_rc, "", "")
         if c[:1] == ["git"] and "fetch" in c:
             return mr.RunResult(self.fetch_rc, "", "")
+        if c[:1] == ["git"] and "rev-parse" in c:
+            # La base RESOLUE du contexte de passe (22/11).
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:1] == ["git"] and "worktree" in c:
+            # Retrait du worktree de passe : rien a faire dans un test.
+            return mr.RunResult(0, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
             return mr.RunResult(self.twin_rc, self.twin_stdout, "")
         if len(c) > 1 and "twin_open_claims.py" in c[1]:
@@ -3734,8 +3741,79 @@ def test_stacked_on_main_self_reference_is_explicit(tmp_path):
 
 
 def _combined_calls(runner):
+    """Appels d'EVALUATION de l'organe (les tests d'arbre fusionne).
+
+    Le retrait du worktree de passe passe par le meme binaire en mode
+    ``--cleanup`` : ce n'est pas une evaluation, et il ne doit pas etre
+    compte comme telle.
+    """
     return [c for c in runner.cmds()
-            if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+            if len(c) > 1 and "premerge_combined_check.py" in c[1]
+            and "--cleanup" not in c]
+
+
+def _cleanup_calls(runner):
+    return [c for c in runner.cmds() if "--cleanup" in c]
+
+
+def test_le_contexte_de_passe_nomme_un_worktree_par_passe():
+    """Une passe = UN worktree, nomme par le PID de la passe.
+
+    Deux passes concurrentes ne doivent jamais partager le dossier : les
+    tests d'un candidat joueraient alors sur l'arbre d'un autre.
+    """
+    ctx = mr.combined_pass_context()
+    assert ctx is not None
+    assert "premerge-passe-" in ctx.worktree.name
+    assert str(os.getpid()) in ctx.worktree.name
+
+
+def test_le_contexte_de_passe_est_eteint_par_le_rollback_operateur(monkeypatch):
+    """`MERGE_READY_COMBINED_CHECK=0` retire l'etape : pas de contexte."""
+    monkeypatch.setenv(mr.COMBINED_DISABLE_ENV, "0")
+    assert mr.combined_pass_context() is None
+
+
+def test_l_etape_5quinquies_recoit_le_worktree_de_passe(tmp_path):
+    """L'argv de l'etape porte le worktree de la passe et le reutilise.
+
+    Sans `--reuse-worktree`, l'organe refait un `worktree add` et un
+    `worktree remove` par candidat : 38 s + 9 s, mesures.
+    """
+    runner = ScriptedRunner(views={123: default_view()})
+    rc, _, _ = run_organ(tmp_path, runner)
+    calls = _combined_calls(runner)
+    assert calls, "l'organe premerge doit etre invoque"
+    argv = calls[0]
+    assert "--reuse-worktree" in argv
+    worktree = argv[argv.index("--worktree") + 1]
+    assert worktree.startswith(".tmp/premerge-passe-")
+    # Aucun chemin absolu de la machine dans l'argv (#26102).
+    assert not any(str(mr.REPO_ROOT) in tok for tok in argv)
+    # Le retrait du worktree passe par l'ORGANE (`--cleanup`), jamais par un
+    # `git` lance par la passe.
+    cleanups = _cleanup_calls(runner)
+    assert cleanups, "le worktree de la passe doit etre retire"
+    assert not any(c[:1] == ["git"] for c in runner.cmds())
+
+
+def test_une_passe_sans_evaluation_ne_retire_rien(tmp_path, monkeypatch):
+    """Aucune evaluation -> aucun worktree pose -> aucun retrait.
+
+    Une passe dont toutes les PRs sont refusees en amont (porte STACK)
+    n'a rien demande au disque : elle ne doit rien demander en sortant.
+    """
+    monkeypatch.setattr(
+        mr.gate, "default_stack_index", lambda: {124: "entree-de-la-partenaire"}
+    )
+    monkeypatch.setattr(
+        mr.gate, "stack_reasons",
+        lambda target, index: ["stack top: raison de test"],
+    )
+    runner = ScriptedRunner(views={123: default_view()})
+    run_organ(tmp_path, runner)
+    assert _combined_calls(runner) == []
+    assert _cleanup_calls(runner) == []
 
 
 def test_combined_green_merges_and_judges_the_view_head(tmp_path):
@@ -3757,6 +3835,32 @@ def test_combined_red_skips_and_names_the_first_red_test(tmp_path):
     assert lines[-1]["verdict"] == "skipped"
     assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_red_ecrit_la_raon_dans_le_journal(tmp_path):
+    """Le journal porte la RAISON du rouge, pas seulement son identifiant.
+
+    Deux PRs approuvees ont ete sautees sur un test qui ne les concernait
+    pas (22/11) : `FAILED <id>` obligeait a DEVINER la cause. La section
+    FAILURES de pytest la donne.
+    """
+    stdout = json.dumps({"verdict": "RED",
+                         "failed": ["scripts/x/test_a.py::test_u"],
+                         "failure_detail": "E   assert proc.returncode == 0\n"})
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout=stdout)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
+    assert "assert proc.returncode == 0" in lines[-1]["detail"]
+
+
+def test_le_journal_dune_pr_sans_detail_ne_porte_pas_la_cle(tmp_path):
+    """Une ligne sans raison n'invente pas une cle vide."""
+    runner = ScriptedRunner(prs=(401,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert "detail" not in lines[0]
 
 
 def test_combined_conflict_skips(tmp_path):
