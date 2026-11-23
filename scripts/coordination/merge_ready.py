@@ -242,6 +242,11 @@ import check_run_state  # noqa: E402
 # #17437 : normalisation de l'auteur d'une review (orthographe REST des
 # identites App) -- source unique de la forme canonique, jamais recopiee.
 import gh_identity  # noqa: E402
+# #28131 (voie L1) : verdict LOCAL du garde de perimetre quand son run
+# heberge est encore en file. La grammaire du perimetre reste dans
+# l'organe (`scripts/check_pr_perimeter.py`) : ce module ne fait que
+# l'appeler, jamais la recopier.
+import merge_ready_perimeter as perimeter  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -393,6 +398,68 @@ PENDING_MERGEABLE_REASONS = ("mergeable-state:unknown", "mergeable-state:absent"
 #: Nombre de LECTURES de rechauffage en parallele. Le rechauffage ne touche
 #: qu'a des lectures : les merges restent strictement sequentiels.
 WARMUP_MAX_WORKERS = 8
+
+#: Motif d'arret d'une passe qui a epuise son budget de DUREE. Il se
+#: distingue de `max-merges-reached` (nombre de merges) : la passe s'est
+#: arretee parce qu'elle a dure trop longtemps, pas parce qu'elle a assez
+#: merge.
+PASS_BUDGET_REASON = "pass-budget-exceeded"
+
+#: Budget de DUREE d'une passe, en secondes (issue #28009).
+#:
+#: La cadence nominale de la tache planifiee est de 20 min ; une passe qui
+#: deborde se chevauche avec la suivante, et la machine sert deux passes
+#: pour un seul tour. Mesures publiees le 22/11 (issue #26799) :
+#:
+#: | passage | PRs evaluees | etendue | fusions |
+#: |---|---|---|---|
+#: | 3523 (21/11 21:56Z) | 220 | 33 min | 0 |
+#: | 3524 (21/11 22:30Z) | 220 | 1 h 54 | 6 |
+#: | 3525 (22/11 00:25Z) | 173 | 3 h 48 | 1 |
+#:
+#: 45 min (2700 s) : deux fois la cadence nominale. La borne laisse une passe
+#: normale se terminer (la plus longue mesuree avant le depassement est
+#: 1 h 54, qui **debordera** -- c'est voulu : une passe a l'arret propre
+#: vaut mieux qu'une passe qui chevauche la suivante) et arrete la derive
+#: (3 h 48).
+#:
+#: La borne se lit ENTRE deux PRs : elle n'interrompt jamais un merge en
+#: cours, et une PR non evaluee est journalisee avec ce motif (jamais une PR
+#: disparue du bilan). La passe suivante **continue** apres la derniere PR
+#: evaluee (curseur de reprise, `PASS_CURSOR_FILENAME`) : la file est relue
+#: a chaque tour, mais son POINT DE DEPART avance.
+PASS_BUDGET_S = 2700.0
+
+#: Verdict d'une PR que la passe n'a pas EVALUEE (arret sur le budget de
+#: duree, #28009).
+#:
+#: Distinct de `skipped` : une PR `skipped` a ete EVALUEE puis refusee ; une
+#: PR `unevaluated` n'a pas ete regardee. La ligne existe pour que la PR ne
+#: disparaisse pas du bilan ; elle ne porte AUCUN cout d'evaluation, et
+#: `merge_ready_pass_timing.py` l'ignore (il filtre sur `verdict` -- jamais
+#: sur `review`, qui porte le litteral voisin `not-evaluated` pour une autre
+#: raison : la porte de review n'a pas ete atteinte).
+VERDICT_NOT_EVALUATED = "unevaluated"
+
+#: Curseur de reprise d'une passe (revue du 22/11, #28009).
+#:
+#: `list_open_prs` rend les PRs **triees par numero croissant** ; sans
+#: curseur, une passe arretee par le budget de duree repart de la file
+#: entiere et s'arrete **au meme endroit** -- les PRs au-dessus de ce point
+#: ne sont jamais evaluees (mesure du coordinateur sur le journal du 22/11 :
+#: la borne aurait arrete la passe a #27652, et toutes les PRs au-dessus
+#: seraient restees invisibles).
+#:
+#: Le curseur est le numero de la derniere PR **EVALUEE** : la passe
+#: suivante commence apres elle, puis **boucle** (les PRs du dessous passent
+#: en second temps). Chaque PR ouverte est donc evaluee en un nombre borne
+#: de passes.
+#:
+#: Il vit dans un fichier a cote du journal -- meme dossier, meme duree de
+#: vie, aucun mot de plus dans le journal (qui reste le contrat entre
+#: l'organe qui produit et celui qui mesure). Un curseur illisible vaut
+#: « depuis le debut » : la passe n'est jamais bloquee par son curseur.
+PASS_CURSOR_FILENAME = "pass_cursor.json"
 
 
 class CannotRunError(Exception):
@@ -560,7 +627,7 @@ class PRVerdict:
 
     pr: int
     head: str | None
-    verdict: str  # skipped | would-merge | merged | merge-failed | run-error
+    verdict: str  # skipped | would-merge | merged | merge-failed | run-error | unevaluated
     reason: str | None
     merged: bool
     #: Disposition de review classee a ``head`` (point 1 de #17672) ; une ligne
@@ -594,9 +661,68 @@ def utc_now_iso() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _clock() -> float:
+    """Horloge monotone du run.
+
+    Point d'injection pour les tests : la borne de duree d'une passe (#28009)
+    se lit sur cette horloge, et un test doit pouvoir la faire avancer sans
+    attendre 45 minutes.
+    """
+    return time.monotonic()
+
+
 def default_journal_path() -> Path:
     base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
     return base / "CoursIA" / "merge_ready" / "journal.jsonl"
+
+
+def pass_cursor_path(journal_path: Path) -> Path:
+    """Le fichier de curseur de reprise : a cote du journal, jamais dedans."""
+    return journal_path.parent / PASS_CURSOR_FILENAME
+
+
+def read_pass_cursor(journal_path: Path) -> int | None:
+    """Le numero apres lequel la prochaine passe commence.
+
+    `None` = depuis le debut de la file. Un curseur absent, illisible ou
+    aberrant vaut `None` : le curseur ameliore la fairness, il ne bloque
+    jamais une passe (fail-OPEN, comme le reste du harnais).
+    """
+    try:
+        brut = json.loads(pass_cursor_path(journal_path).read_text(encoding="utf-8"))
+        valeur = int(brut["after"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return valeur if valeur > 0 else None
+
+
+def write_pass_cursor(journal_path: Path, after: int | None) -> None:
+    """Ecrit le curseur de reprise ; `None` le retire.
+
+    Un echec d'ecriture n'interrompt PAS la passe : le curseur est un
+    raccourci, pas une condition de service.
+    """
+    chemin = pass_cursor_path(journal_path)
+    try:
+        chemin.parent.mkdir(parents=True, exist_ok=True)
+        if after is None:
+            chemin.unlink(missing_ok=True)
+            return
+        chemin.write_text(json.dumps({"after": int(after)}), encoding="utf-8")
+    except (OSError, TypeError, ValueError):
+        pass
+
+
+def _ordonner_apres_curseur(prs: list[int], curseur: int | None) -> list[int]:
+    """Les PRs **au-dessus** du curseur d'abord, puis celles du dessous.
+
+    La passe **boucle** : elle ne s'arrete plus toujours au meme endroit.
+    L'ordre reste croissant par numero dans chaque groupe (c'est l'ordre de
+    `list_open_prs`).
+    """
+    if curseur is None:
+        return list(prs)
+    return sorted(prs, key=lambda n: (0 if n > curseur else 1, n))
 
 
 # Une retenue decidee par le coordinateur (collision, ordre de stack,
@@ -1747,6 +1873,79 @@ def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
     return view
 
 
+#: Pagination de la liste des fichiers d'une PR. ``gh pr view --json files``
+#: plafonne a **100** fichiers ; le REST ``/pulls/{n}/files`` est pagine et
+#: porte jusqu'a 3 000 fichiers. La troncature de la vue ne peut pas etre
+#: toleree : le controle de perimetre est fail-closed (un fichier hors
+#: perimetre cache derriere le plafond doit bloquer), donc une liste tronquee
+#: rendait la PR **non mergeable** — mesure sur #27684 (146 fichiers, 100
+#: listes, skip `files-truncated:100/146`).
+PR_FILES_PER_PAGE = 100
+PR_FILES_MAX_PAGES = 30
+
+
+def fetch_pr_files(
+    runner: Runner, pr: int, view: dict, gh_env: dict[str, str]
+) -> list[dict] | None:
+    """Liste COMPLETE des fichiers d'une PR, ou ``None`` si elle est illisible.
+
+    Deux sources :
+
+    - la vue ``gh pr view --json files`` : complete quand sa taille atteint
+      ``changedFiles`` — aucun appel supplementaire dans ce cas ;
+    - le REST ``/pulls/{n}/files``, pagine, lu jusqu'a epuisement, quand la
+      vue est tronquee.
+
+    La forme rendue est celle de la vue (``{"path": ...}``) pour que les
+    consommateurs (perimetre, attestation Lean, collisions twin/slot) ne
+    changent pas : le REST nomme le champ ``filename``.
+
+    ``None`` = liste illisible (quota, 5xx, stdout non-JSON) : l'appelant
+    garde le comportement fail-closed.
+    """
+    listed = view.get("files") or []
+    changed = view.get("changedFiles")
+    if isinstance(changed, int) and len(listed) >= changed:
+        return list(listed)
+    fichiers: list[dict] = []
+    for page in range(1, PR_FILES_MAX_PAGES + 1):
+        res = runner.run(
+            [
+                "gh", "api",
+                f"repos/{REPO}/pulls/{pr}/files"
+                f"?per_page={PR_FILES_PER_PAGE}&page={page}",
+            ],
+            env=gh_env,
+        )
+        if res.returncode != 0:
+            return None
+        try:
+            data = _json_stdout(res, f"gh api pulls/{pr}/files page {page}")
+        except UnexpectedError:
+            return None
+        if not isinstance(data, list):
+            return None
+        for row in data:
+            if not isinstance(row, dict):
+                return None
+            chemin = row.get("filename") or row.get("path")
+            if not isinstance(chemin, str) or not chemin.strip():
+                # Fail-closed (reserve 1 de NanoClaw, #27749) : une ligne sans
+                # nom de fichier ne vaut pas « fichier hors perimetre » — un
+                # chemin vide ne matche aucune exclusion, donc la garde le
+                # lirait comme du hors harnais. La ligne est ILLISIBLE : on
+                # rend `None` comme pour une lecture impossible, et l'appelant
+                # bloque sur `files-unreadable` au lieu de trancher sur une
+                # liste incomplete.
+                return None
+            fichiers.append({"path": chemin})
+        if len(data) < PR_FILES_PER_PAGE:
+            break
+        if isinstance(changed, int) and len(fichiers) >= changed:
+            break
+    return fichiers
+
+
 def _review_voice_state(review: dict) -> str | None:
     """L'etat REEL d'une review, ou le verdict type de son corps (canal COMMENT).
 
@@ -1989,6 +2188,57 @@ def coordinator_approval_reason(
     return "coordinator-approval-stale"
 
 
+def _lean_manifest_at_head(
+    runner: Runner, gh_env: dict[str, str], head: str
+) -> dict | None:
+    """Le manifeste `ci_lakes.json` a la TETE de la PR, ou None.
+
+    La lecture est TOLERANTE : un manifeste illisible ne leve pas d'exception
+    dans la garde -- l'absence d'information laisse la decision au motif
+    generique (le blocage fail-closed est conserve).
+    """
+    path = "repos/{}/contents/{}?ref={}".format(
+        REPO, lean_build_attestation.LEAN_MANIFEST_RELATIVE, head
+    )
+    res = runner.run(["gh", "api", path], env=gh_env)
+    if res.returncode != 0:
+        return None
+    try:
+        payload = json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return None
+    return lean_build_attestation.manifest_from_api_payload(payload)
+
+
+def lean_undeclared_lakes(
+    runner: Runner, gh_env: dict[str, str], head: str, touched: list[str]
+) -> list[str]:
+    """Les lakes INTRODUITS par le diff et non declares au manifeste (#27875).
+
+    Seule une PR qui touche un `lakefile.*` est concernee : les autres ne
+    paient aucune lecture.
+    """
+    if not any(lean_build_attestation.lake_root_of_path(p) for p in touched):
+        return []
+    manifest = _lean_manifest_at_head(runner, gh_env, head)
+    if manifest is None:
+        return []
+    return lean_build_attestation.undeclared_lakes(touched, manifest)
+
+
+def _lean_attestation_reason(undeclared: list[str]) -> str:
+    """Le motif rendu quand l'attestation manque ou est perimee.
+
+    Un lake INTRODUIT par la PR et non declare au manifeste rend le motif
+    generique muet (« pas d'attestation ») alors que le blocage est
+    STRUCTUREL : aucune attestation ne peut couvrir un lake que le manifeste
+    ne declare pas. On nomme donc le lake -- le motif porte le geste.
+    """
+    if undeclared:
+        return "lean:lake-not-declared:" + ",".join(undeclared)
+    return "lean:no-local-build-attestation"
+
+
 def lean_build_attestation_reason(
     view: dict, head: str, runner: Runner, gh_env: dict[str, str]
 ) -> str | None:
@@ -2013,7 +2263,10 @@ def lean_build_attestation_reason(
     commit de contenu posterior la perime.
 
     Motifs : ``lean:no-local-build-attestation`` (aucune attestation, ou
-    attestation perimee) et ``lean:local-build-attestation-unverifiable``
+    attestation perimee), ``lean:lake-not-declared:<racine>`` (la PR INTRODUIT
+    un lake que le manifeste ne declare pas : aucune attestation ne peut le
+    couvrir tant que la declaration n'est pas posee) et
+    ``lean:local-build-attestation-unverifiable``
     (preuve illisible : base absente, ou chaine de commits illisible).
     """
     touched = lean_build_attestation.lean_paths(
@@ -2021,11 +2274,14 @@ def lean_build_attestation_reason(
     )
     if not touched:
         return None
+    # #27875 : un lake INTRODUIT par la PR et non declare au manifeste rend
+    # le blocage muet -- on le nomme des la detection.
+    undeclared = lean_undeclared_lakes(runner, gh_env, head, touched)
     attestation = lean_build_attestation.attestation_from_comments(
         view.get("comments") or []
     )
     if attestation is None:
-        return "lean:no-local-build-attestation"
+        return _lean_attestation_reason(undeclared)
     attested = str(attestation.get("sha") or "")
     if attested == head:
         return None
@@ -2045,7 +2301,7 @@ def lean_build_attestation_reason(
         return "lean:local-build-attestation-unverifiable"
     if current == read:
         return None
-    return "lean:no-local-build-attestation"
+    return _lean_attestation_reason(undeclared)
 
 
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
@@ -2677,6 +2933,9 @@ def unstable_state_reason(
 
     jobs = advisory_jobs()
     advisory_count = 0
+    # #28131 (voie L1) : le garde de perimetre heberge est en file, le merge
+    # n'attend pas la file -- on mesure LOCALEMENT, avec le meme organe.
+    local_perimeter = 0
     for name in sorted(latest):
         if name == gate_leg["name"]:
             continue
@@ -2685,6 +2944,17 @@ def unstable_state_reason(
             continue
         done = latest_done.get(name)
         if done is None:
+            if name == perimeter.PERIMETER_CHECK_NAME:
+                verdict = perimeter.local_perimeter_verdict(
+                    runner, pr, head, gh_env, REPO
+                )
+                if verdict.blocking is False:
+                    local_perimeter += 1
+                    continue
+                return (
+                    f"mergeable-state:unstable:{name}:{verdict.detail}",
+                    verdict.detail,
+                )
             return (f"mergeable-state:unstable:{name}:no-completed-leg", "")
         if done.get("conclusion") not in CHECK_GREEN:
             return (
@@ -2706,7 +2976,8 @@ def unstable_state_reason(
         )
     return (
         None,
-        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded",
+        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded"
+        + (f"+{local_perimeter} perimeter-local" if local_perimeter else ""),
     )
 
 
@@ -2801,16 +3072,33 @@ def evaluate_pr(
     if view.get("isDraft"):
         return skip("draft")
     # 2. perimetre (b), fail-closed.
-    for file_row in view.get("files") or []:
+    # La liste de fichiers est COMPLETE avant le controle : `gh pr view --json
+    # files` plafonne a 100 (mesure : #27684, 146 fichiers) et la troncature
+    # rendait la PR non mergeable au lieu de signaler un fichier hors
+    # perimetre. `fetch_pr_files` pagine le REST quand la vue est tronquee.
+    changed = view.get("changedFiles")
+    if not isinstance(changed, int):
+        # Sans le nombre de fichiers modifies, l'exhaustivite n'est pas
+        # demontrable : fail-closed, comme avant le correctif.
+        return skip("files-unknown-count")
+    fichiers = fetch_pr_files(runner, pr, view, gh_env)
+    if fichiers is None:
+        # Liste illisible (quota, 5xx) : fail-closed — mais le motif dit
+        # qu'il s'agit d'une LECTURE, pas d'un contenu de PR.
+        return skip("files-unreadable")
+    if len(fichiers) < changed:
+        # Le REST plafonne a 3 000 fichiers : au-dela, la liste reste
+        # incomplete et le controle de perimetre ne peut pas etre trustworthy.
+        return skip(f"files-truncated:{len(fichiers)}/{changed}")
+    if len(fichiers) != len(view.get("files") or []):
+        # Les consommateurs en aval (attestation Lean, collisions twin/slot)
+        # lisent `view["files"]` : ils doivent voir la liste COMPLETE.
+        view = dict(view)
+        view["files"] = fichiers
+    for file_row in fichiers:
         reason = scope_exclusion(str((file_row or {}).get("path") or ""))
         if reason is not None:
             return skip(reason)
-    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
-    # plafond cacherait peut-etre un fichier hors perimetre -> fail-closed.
-    changed = view.get("changedFiles")
-    listed = len(view.get("files") or [])
-    if not isinstance(changed, int) or changed > listed:
-        return skip(f"files-truncated:{listed}/{changed}")
     reason = grain_exclusion(view.get("body"), view.get("headRefName"))
     if reason is not None:
         return skip(reason)
@@ -2973,7 +3261,13 @@ def evaluate_pr(
 
 
 def append_journal(path: Path, verdict: PRVerdict) -> None:
-    """Une ligne JSON par PR evaluee ; repertoire cree si absent."""
+    """Une ligne JSON par PR evaluee ; repertoire cree si absent.
+
+    Une PR que la passe n'a pas EVALUEEe (arret sur le budget de duree,
+    #28009) ecrit elle aussi une ligne -- verdict ``unevaluated`` -- pour que
+    la file reste lisible ; elle ne porte aucun cout d'evaluation et
+    ``merge_ready_pass_timing.py`` l'ignore.
+    """
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
@@ -3024,6 +3318,7 @@ def emit_output(
     stopped_reason: str | None,
     exit_code: int,
     warmup: dict | None = None,
+    not_evaluated: list[PRVerdict] | None = None,
 ) -> None:
     """Resume humain sur stdout, ou payload machine unique en --json."""
     if args.json:
@@ -3033,6 +3328,12 @@ def emit_output(
             "stopped_reason": stopped_reason,
             "exit_code": exit_code,
             "results": [v.journal_dict() for v in results],
+            # Les PRs que la passe n'a pas EVALUEEes (arret sur le budget de
+            # duree, #28009) : elles ne sont pas dans `results`, et le bilan
+            # doit les nommer -- une PR de la file ne disparait pas.
+            "not_evaluated": [
+                {"pr": v.pr, "reason": v.reason} for v in (not_evaluated or [])
+            ],
         }
         if warmup:
             payload["warmup"] = warmup
@@ -3067,6 +3368,18 @@ def emit_output(
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
+    if not_evaluated:
+        # Les PRs non evaluees sont nommees une par une : le compte seul
+        # dirait « combien », pas « lesquelles » -- et une PR de la file qui
+        # n'apparait nulle part est une PR que l'on croit perdue.
+        print(
+            "non evaluees : %d PRs (motif : %s) -- %s"
+            % (
+                len(not_evaluated),
+                PASS_BUDGET_REASON,
+                ", ".join(f"#{v.pr}" for v in not_evaluated),
+            )
+        )
     if warmup:
         # Le cout du rechauffage est nomme : c'est lui qui pesait sur le
         # jeton partage du coordinateur (revue du 16/11).
@@ -3180,6 +3493,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     results: list[PRVerdict] = []
     stopped_reason: str | None = None
     exit_code = 0
+    # Borne de DUREE de la passe (#28009). L'horloge demarre AVANT la lecture
+    # de la file : la borne couvre la passe entiere (liste + rechauffage +
+    # boucle), pas seulement la boucle. Elle se lit ENTRE deux PRs, donc elle
+    # n'interrompt jamais un merge en cours.
+    pass_started = _clock()
     try:
         prs, warm_candidates = list_open_prs(active_runner, gh_env)
     except UnexpectedError as exc:
@@ -3188,7 +3506,20 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         emit_output(args, results, f"unexpected-error:{exc}", 1)
         return 1
 
+    # Curseur de reprise (revue du 22/11) : la passe continue apres la
+    # derniere PR EVALUEEe de la passe precedente, puis boucle. Sans lui, une
+    # passe arretee par le budget repart de la file entiere et s'arrete au
+    # MEME endroit -- les PRs du haut ne sont jamais vues (file affamee).
+    curseur = read_pass_cursor(journal_path)
+    prs = _ordonner_apres_curseur(prs, curseur)
+
     merged_count = 0
+    #: Derniere PR **EVALUEE** de cette passe : c'est le curseur que la
+    #: passe suivante reprend (revue du 22/11).
+    dernier_evalue: int | None = None
+    #: La file entiere a-t-elle ete parcourue ? Si oui, le curseur se remet a
+    #: zero : la passe suivante repart du debut.
+    file_parcourue = False
     #: PRs dont l'etat de mergeabilite etait « en cours de calcul » a leur
     #: tour : elles sont PARQUEES, pas refusees, et rejouees en fin de
     #: passe (#26799).
@@ -3205,6 +3536,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     # (revue du 16/11).
     warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
 
+    def _budget_depasse() -> bool:
+        if args.pass_budget_s <= 0:
+            return False
+        return (_clock() - pass_started) >= args.pass_budget_s
+
     for pr in prs:
         # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
         # reels en --apply, would-merge en dry-run : le dry-run doit refléter
@@ -3212,6 +3548,9 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         # restantes ne sont pas evaluees (le journal ne couvre que l'evalue).
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
+            break
+        if _budget_depasse():
+            stopped_reason = PASS_BUDGET_REASON
             break
         if MAIN_RED_HOLD_NUMBER in holds or pr in holds:
             reason = holds.get(MAIN_RED_HOLD_NUMBER, holds.get(pr, "hold.txt"))
@@ -3223,8 +3562,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                 stopped_reason = f"unexpected-error:{exc}"
                 exit_code = 1
                 break
+            dernier_evalue = pr
             continue
         try:
+            # Cette PR est EVALUEEe : le curseur de reprise doit le dire.
+            dernier_evalue = pr
             view = fetch_pr_view(active_runner, pr, gh_env)
             decision = evaluate_pr(view, pr, active_runner, gh_env)
             if decision.verdict == "would-merge":
@@ -3280,6 +3622,40 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
             # constat faux (le bilan, lui, compte les erreurs isolees).
             continue
+    else:
+        # La boucle s'est achevee SANS arret : toute la file a ete parcourue.
+        file_parcourue = True
+
+    # Curseur de reprise (revue du 22/11) : la passe suivante continue apres
+    # la derniere PR EVALUEEe de celle-ci, puis boucle. Une passe qui a
+    # parcouru toute la file remet le curseur a zero : la suivante repart du
+    # debut. Le curseur ne remplace pas la file relue a chaque tour -- il
+    # en change le POINT DE DEPART.
+    write_pass_cursor(journal_path, None if file_parcourue else dernier_evalue)
+
+    # PRs NON EVALUEES : la passe s'est arretee sur son budget de duree avant
+    # de les atteindre. Elles sont journalisees avec un motif nomme -- jamais
+    # une PR disparue du bilan (#28009). Elles ne sont PAS dans `results` :
+    # `results` ne compte que les PRs EVALUEES, et le bilan distingue les
+    # deux comptes (le compte « evaluee(s) » reste exact). La passe suivante
+    # les atteint : la file est relue a chaque tour et le curseur de reprise
+    # fait avancer son point de depart (revue du 22/11).
+    not_evaluated: list[PRVerdict] = []
+    if stopped_reason == PASS_BUDGET_REASON:
+        deja = {v.pr for v in results} | {parked for parked, _ in replay_queue}
+        for pr in prs:
+            if pr in deja:
+                continue
+            left = PRVerdict(
+                pr, None, VERDICT_NOT_EVALUATED, PASS_BUDGET_REASON, False
+            )
+            not_evaluated.append(left)
+            try:
+                append_journal(journal_path, left)
+            except UnexpectedError as exc:
+                stopped_reason = f"unexpected-error:{exc}"
+                exit_code = 1
+                break
 
     # --- rejeu des PRs parkees ------------------------------------------------
     #
@@ -3349,6 +3725,7 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             "candidates": len(warm_candidates),
             "pool": len(prs),
         },
+        not_evaluated=not_evaluated,
     )
     return exit_code
 
@@ -3395,6 +3772,19 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--pass-budget-s",
+        type=float,
+        default=PASS_BUDGET_S,
+        metavar="S",
+        help=(
+            "budget de duree d'une passe, en secondes (defaut "
+            f"{int(PASS_BUDGET_S)} s). Depasse, la passe s'arrete PROPREMENT "
+            "et les PRs restantes sont journalisees avec le motif "
+            f"'{PASS_BUDGET_REASON}' ; la passe suivante continue apres la "
+            "derniere PR evaluee (curseur de reprise)."
+        ),
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="sortie machine (un seul objet JSON) sur stdout",
@@ -3402,6 +3792,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.max < 0:
         parser.error("--max doit etre >= 0")
+    if args.pass_budget_s < 0:
+        parser.error("--pass-budget-s doit etre >= 0")
     return args
 
 
