@@ -309,7 +309,7 @@ def deleted_dispatchers(ref: str) -> list[dict]:
     it is empty -- yet ``--all`` found a deletion on a ref ``main`` does not
     carry and ``rev-list -n 1 --all`` returned the rename commit ``88edc37b4``
     instead, so the pre-rename path ``.../Lean/galois_lean`` was reported
-    lost while the live job gates ``.../Lean/GALOIS/galois_lean``.
+    lost while the live job gates ``.../Lean/Galois/galois_lean``.
 
     For each deletion commit, ``<sha>^:<path>`` holds the last version that
     existed on the ref's history, so ``had_gate`` and ``gated_paths`` are read
@@ -346,10 +346,96 @@ def _is_under(path: str, parent: str) -> bool:
     return len(p) > len(q) and p[:len(q)] == q
 
 
-def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
+def rename_proven(ref: str, old_path: str, new_path: str) -> bool:
+    """True when git's OWN rename detection proves ``old_path`` became ``new_path``.
+
+    The shape of a path is not a proof of filiation: a lake that moves into a
+    sub-directory keeps its former parent, but a lake whose PARENT directory
+    is renamed (``Lean/GALOIS`` -> ``Lean/Galois``) lands under a parent the
+    former path never names, and the filiation rule of ``_moved_successor``
+    can no longer be checked on the string. What proves it there is git
+    itself: the files of the lake MOVED from the old path to the new one.
+
+    The proof is built from two git facts, both read at ``ref``:
+
+    * the commit at which the old path disappeared from the tree
+      (``git log --diff-filter=D``) ;
+    * the rename entries of THAT commit (``git diff --name-status -M``) :
+      a ``R`` whose source lies under the old path.
+
+    A **chain** of renamings is followed, not a single hop: when the parent
+    directory is renamed twice in a row (``Lean/GOL`` -> ``Lean/GameOfLife``
+    -> ``Lean/JeuDeLaVie``, measured 2026-11-15), the first hop lands on an
+    intermediate path that is not the successor, and the proof has to walk
+    to the last hop to say anything (without it, the guard declares PERDU a
+    lake whose coverage never moved -- the same false loss, one hop deeper).
+
+    A lake that was copied (same content, new path, old path still there) or
+    recreated differently is NOT a rename: the old path is still present at
+    ``ref``, or no ``R`` entry links the two paths, and the answer is False.
+
+    The memoisation is keyed on the **working directory** as well: the git
+    commands read the repository of the current directory, so the same
+    ``(ref, old, new)`` asked in two repositories are two questions
+    (measured 2026-11-15 : a test on a throw-away repository inherited the
+    answer computed for another one).
+    """
+    return _rename_proven_at(os.getcwd(), ref, old_path, new_path)
+
+
+@functools.lru_cache(maxsize=None)
+def _rename_proven_at(cwd: str, ref: str, old_path: str, new_path: str) -> bool:
+    old = old_path.replace("\\", "/").rstrip("/")
+    new = new_path.replace("\\", "/").rstrip("/")
+    if not old or not new or old == new:
+        return False
+    current = old
+    seen: set[str] = set()
+    for _ in range(8):
+        if current in seen:
+            return False
+        seen.add(current)
+        # `--full-history` : sans lui, l'historique LIMITE AU CHEMIN est
+        # simplifie par TREESAME, et le commit qui a supprime le chemin peut
+        # disparaitre de la reponse selon la FORME du `ref`. Mesure
+        # 2026-11-15 : au `ref` de la branche, le deuxieme saut
+        # (`Lean/GameOfLife/conway_lean` -> `Lean/JeuDeLaVie/conway_lean`,
+        # commit `cb4649d`) est trouve ; au `ref` de FUSION (la forme que la
+        # CI checkout, `refs/pull/N/merge`), le meme chemin est TREESAME au
+        # premier parent (il n'a jamais existe sur `main`), git ne suit donc
+        # que ce parent, et le commit du renommage disparait de la reponse :
+        # la filiation devenait INPROUVABLE et la garde declarait PERDU un
+        # lake dont la couverture n'a pas bouge. `--full-history` desactive
+        # cette simplification : le commit qui a retire le chemin est lu
+        # quel que soit le `ref`.
+        commit = _git("log", "-n", "1", "--diff-filter=D", "--format=%H",
+                      "--full-history", ref, "--", current).strip()
+        if not commit:
+            return False
+        out = _git("diff", "--name-status", "-M", f"{commit}^", commit)
+        moved_to = None
+        for line in out.splitlines():
+            cols = line.split("\t")
+            if len(cols) >= 3 and cols[0].startswith("R"):
+                src = cols[1].replace("\\", "/")
+                dst = cols[2].replace("\\", "/")
+                if src == current or src.startswith(current + "/"):
+                    suffix = src[len(current):]
+                    moved_to = dst[: len(dst) - len(suffix)] if dst.endswith(suffix) else dst
+                    break
+        if moved_to is None:
+            return False
+        if moved_to == new or new.startswith(moved_to + "/"):
+            return True
+        current = moved_to
+    return False
+
+
+def _moved_successor(d: dict, gated_now: set[str], exists_at,
+                     rename_proof=None) -> str | None:
     """The live gated path that took over ``d``'s lake, if the move is provable.
 
-    Four evidences are required together, and each closes one way of being
+    Five evidences are required together, and each closes one way of being
     wrong:
 
     * **absence** -- none of the dispatcher's former project-paths may still
@@ -357,7 +443,7 @@ def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
       that still lives there and is simply not gated any more: that is a real
       loss, and treating it as a move would hide it;
     * **filiation** -- the successor must live *under the former parent
-      directory* (``.../Lean/galois_lean`` -> ``.../Lean/GALOIS/galois_lean``).
+      directory* (``.../Lean/galois_lean`` -> ``.../Lean/Galois/galois_lean``).
       A same-basename path in an unrelated subtree is a homonym, not a
       successor: crediting it would report a move nobody made and silence the
       real loss (#23908, review Hermes du 31/10) ;
@@ -366,11 +452,20 @@ def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
       cannot witness that *each* of its lakes survived, so the whole
       dispatcher would be credited on one lake's evidence and the other's
       loss would be reported nowhere. It stays ``lost`` (fail-closed,
-      #23908) ;
+      #23908). The count is on the DISTINCT paths: the same lake passed by
+      two gate jobs is ONE lake, not two ;
     * **a single successor** -- exactly one gated path today carries the same
       lake basename and exists in the tree. Two candidates make the move
       unprovable, and a candidate that does not exist credits a coverage
       nobody holds.
+
+    When the former PARENT DIRECTORY was renamed, the successor is no longer
+    under the former parent, and the filiation evidence above cannot be read
+    on the string. The move is then credited on git's own rename detection
+    (``rename_proof``), which proves the lake's files moved from the old path
+    to the new one. Without that proof -- no probe, or a probe that says no --
+    the dispatcher stays ``lost`` (fail-closed): the shape of a path is never
+    taken for a proof.
 
     No probe, or a dispatcher that passed no project-path, yields ``None``:
     the caller keeps it "lost" (§ fail-closed).
@@ -381,17 +476,39 @@ def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
     if any(exists_at(p) for p in old):
         return None
     names = {Path(p).name for p in old}
-    if len(old) != 1 or len(names) != 1:
+    # "One lake" is counted on the DISTINCT paths, not on the number of
+    # `project-path:` lines: a dispatcher whose two gate jobs pass the SAME
+    # lake gates ONE lake (measured 2026-11-15 : `lean-conway.yml` lists
+    # `.../Lean/GOL/conway_lean` twice -- that directory was renamed
+    # `JeuDeLaVie` on 2026-11-22, #26056). Counting the lines made that
+    # dispatcher unprovable -- and its coverage was reported lost.
+    distinct_old = sorted(set(old))
+    if len(distinct_old) != 1 or len(names) != 1:
         return None  # multi-lake dispatcher: no single successor can witness it
-    parent = str(Path(old[0]).parent)
+    old_path = distinct_old[0]
+    parent = str(Path(old_path).parent)
     candidates = sorted(g for g in gated_now
                         if Path(g).name in names and g not in old and exists_at(g)
                         and _is_under(g, parent))
-    return candidates[0] if len(candidates) == 1 else None
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        return None  # ambiguous: two successors, the move is unprovable
+    if rename_proof is None:
+        return None
+    # Second shape: the lake's PARENT directory was renamed. The successor is
+    # then outside the former parent, and only git's rename detection can
+    # witness the filiation.
+    alt = sorted(g for g in gated_now
+                 if Path(g).name in names and g not in old and exists_at(g)
+                 and not _is_under(g, parent))
+    proven = [g for g in alt if rename_proof(old_path, g)]
+    return proven[0] if len(proven) == 1 else None
+
 
 
 def classify_deleted(deleted: list[dict], gated_now: set[str],
-                     exists_at=None) -> dict:
+                     exists_at=None, rename_proof=None) -> dict:
     """Partition deleted dispatchers into lost / relocated / never.
 
     "Perdu" means lost COVERAGE, not lost FILE: a dispatcher that had the
@@ -406,6 +523,13 @@ def classify_deleted(deleted: list[dict], gated_now: set[str],
     and needs ``exists_at`` to prove the old path is gone (see
     ``_moved_successor``). Without that probe the second shape stays "lost":
     an absent evidence is not a proof of absence.
+
+    A THIRD shape appears when the lake's parent DIRECTORY is renamed
+    (``Lean/GALOIS`` -> ``Lean/Galois``): the successor is then no longer
+    under the former parent, and the filiation can no longer be read on the
+    path string. It is credited on ``rename_proof`` -- git's own rename
+    detection, which proves the lake's files moved from the old path to the
+    new one. Without that proof the dispatcher stays "lost" (fail-closed).
     """
     lost, relocated, never = [], [], []
     for d in deleted:
@@ -415,7 +539,7 @@ def classify_deleted(deleted: list[dict], gated_now: set[str],
         if d["gated_paths"] and set(d["gated_paths"]) <= gated_now:
             relocated.append(d)
             continue
-        successor = _moved_successor(d, gated_now, exists_at)
+        successor = _moved_successor(d, gated_now, exists_at, rename_proof)
         if successor:
             relocated.append({**d, "moved_to": successor})
             continue
@@ -483,7 +607,8 @@ def measure(ref: str) -> dict:
     ungated = sorted(p for p in manifest_paths
                      if p and p not in set(gated_paths))
     parts = classify_deleted(deleted, set(gated_paths),
-                             exists_at=lambda p: path_exists_at(ref, p))
+                             exists_at=lambda p: path_exists_at(ref, p),
+                             rename_proof=lambda old, new: rename_proven(ref, old, new))
     lost, relocated = parts["lost"], parts["relocated"]
     never = parts["never"]
     justified = justified_ungated(ref, ungated)
