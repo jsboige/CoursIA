@@ -8,19 +8,38 @@ Le programme est **gradué** : chaque notebook principal ne suppose que ce qui l
 
 ## Le programme
 
-| Pos. | Notebook | Public | Contenu | Statut |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 00 | [Lean-38 — L'escalier d'entrée](../Lean-38-Capstone-Geometry-Lean-Python.ipynb) | Découverte | **L'escalier d'entrée** : de la figure au noyau — la montée Python ⟹ Lean qui relie les méthodes de la série, jusqu'à la preuve formelle du fil rouge dans le lac companion (carnet de la série parente) | Livré |
-| 01 | [Geometry-01-From-Figure-To-Equation.ipynb](Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | De la figure à l'équation : coordonnées, hypothèses et conclusion en polynômes, vérification numérique sur figures aléatoires, pourquoi ce n'est pas une preuve, Schwartz–Zippel et la preuve probabiliste | Livré |
-| 02 | [Geometry-02-From-Equation-To-Proof.ipynb](Geometry-02-From-Equation-To-Proof.ipynb) | Licence | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`), conditions de non-dégénérescence | Livré (#17588) |
-| 02b | [Geometry-02b-Saturation-Nullstellensatz-Python.ipynb](Geometry-02b-Saturation-Nullstellensatz-Python.ipynb) | Licence | Accrétion du 02 : l'astuce de Ritt–Rabinowitsch nommée — saturation $I : g^\infty$ calculée comme idéal du plan par élimination (générateurs exhibés, chaîne $I{:}g^n$ stabilisée), Nullstellensatz faible→fort dérivé avec cofacteurs vérifiés, témoin négatif **non dégénéré** trouvé par l'organe Z3 de la série | Livré (#24400) |
-| 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.ipynb) | Licence | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch) ; fil rouge (milieu de l'hypoténuse) et Ceva ; témoin négatif (un énoncé faux rejeté) | Livré (#17511) |
-| 03b | [Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.ipynb) | Licence | Accrétion du 03 : le théorème du papillon — la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures | Livré (#17511) |
-| 04 | [Geometry-04-DD-AR-Python.ipynb](Geometry-04-DD-AR-Python.ipynb) | Licence | Base de déduction à règles (DD) et raisonnement algébrique (AR), la moitié symbolique d'AlphaGeometry : fermeture à point fixe, trace de preuve lisible, la limite combinatoire sans construction, AR (`sympy.groebner`) en oracle ; fil rouge et témoin négatif réfuté deux fois | Livré |
-| 04b | [Geometry-04b-IMO-AG-30-Python.ipynb](Geometry-04b-IMO-AG-30-Python.ipynb) | Recherche | Accrétion du 04 : le benchmark IMO-AG-30 (Sinha et al. 2024), puis **IMO 2008 P1 — un des deux problèmes que seul Wu résout — prouvé en entier** (six points, cercle centré au circoncentre, 0,3 s) ; le littéral `CYCLIC` du benchmark réduit par la même chaîne ; la frontière du langage DD mesurée ; un énoncé faux rejeté trois fois ; le proposeur neuronal démontré à échelle de jouet | Livré |
-| 05 | [Geometry-05-Pont-Formel-Python.ipynb](Geometry-05-Pont-Formel-Python.ipynb) | Recherche | **Le pont formel** : le fil rouge énoncé et **prouvé au noyau** dans le lac companion [`geometry_lean`](geometry_lean/), confronté au même théorème décidé par Gröbner — reste nul et certificat de cofacteurs d'un côté, terme de preuve de l'autre, et ce que chacun garantit | Livré |
+| 00 | [Lean-38 — L'escalier d'entrée](../Lean-38-Capstone-Geometry-Lean-Python.ipynb) | De la figure au noyau : la montée Python ⟹ Lean relie les méthodes de la série jusqu'à la preuve formelle du fil rouge dans le lac companion. C'est le carnet de la série parente, livré. | Découverte | — |
+| 01 | [Geometry-01-From-Figure-To-Equation.ipynb](Geometry-01-From-Figure-To-Equation.ipynb) | Coordonnées, hypothèses et conclusion en polynômes ; vérification numérique sur des figures aléatoires, ses limites comme preuve, Schwartz–Zippel et la preuve probabiliste. Livré. | Découverte | — |
+| 02 | [Geometry-02-From-Equation-To-Proof.ipynb](Geometry-02-From-Equation-To-Proof.ipynb) | Idéal engendré par les hypothèses, appartenance, bases de Gröbner (`sympy.groebner`) et conditions de non-dégénérescence. Livré (#17588). | Licence | [02b](#autour-de-02) |
+| 03 | [Geometry-03-Wu-Method-Python.ipynb](Geometry-03-Wu-Method-Python.ipynb) | Pseudo-division, ensemble caractéristique (basic-set de Chou), test de Wu, non-dégénérescences auto-générées ; vérification croisée Gröbner (Rabinowitsch), fil rouge (milieu de l'hypoténuse), Ceva et témoin négatif (un énoncé faux rejeté). Livré (#17511). | Licence | [03b](#autour-de-03) |
+| 04 | [Geometry-04-DD-AR-Python.ipynb](Geometry-04-DD-AR-Python.ipynb) | Base de déduction à règles (DD) et raisonnement algébrique (AR), moitié symbolique d'AlphaGeometry : fermeture à point fixe, trace de preuve lisible, limite combinatoire sans construction et AR (`sympy.groebner`) en oracle ; fil rouge et témoin négatif réfuté deux fois. Livré. | Licence | [04b](#autour-de-04) |
+| 05 | [Geometry-05-Pont-Formel-Python.ipynb](Geometry-05-Pont-Formel-Python.ipynb) | Le fil rouge est énoncé et **prouvé au noyau** dans le lac companion [`geometry_lean`](geometry_lean/), puis confronté au même théorème décidé par Gröbner : reste nul et certificat de cofacteurs d'un côté, terme de preuve de l'autre, et ce que chacun garantit. Livré. | Recherche | — |
 
-Les notebooks 01, 02 et 03 forment la **première volée** : ils se mergent ensemble, dans l'ordre — le premier état public de la série est déjà une progression complète.
+## Comment lire ce README
+
+- Vous découvrez la preuve automatique en géométrie : suivez le parcours principal dans l'ordre.
+- Vous voulez approfondir une méthode : ouvrez l'accrétion indiquée sous le numéro correspondant.
+- Vous creusez les pistes de recherche : consultez l'accrétion autour de 04, puis le pont formel du parcours principal ; les références sont dans « Pourquoi une série de plus ».
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
+## Approfondissements
+
+### Autour de 02
+
+[Geometry-02b-Saturation-Nullstellensatz-Python.ipynb](Geometry-02b-Saturation-Nullstellensatz-Python.ipynb) nomme l'astuce de Ritt–Rabinowitsch : saturation $I : g^\infty$ calculée comme idéal du plan par élimination (générateurs exhibés, chaîne $I{:}g^n$ stabilisée), Nullstellensatz faible→fort dérivé avec cofacteurs vérifiés, témoin négatif **non dégénéré** trouvé par l'organe Z3 de la série. Accrétion de 02, public Licence, livrée (#24400).
+
+### Autour de 03
+
+[Geometry-03b-Ritt-Decomposition-Python.ipynb](Geometry-03b-Ritt-Decomposition-Python.ipynb) prolonge la méthode par le théorème du papillon : la conclusion est un quotient, scission de Ritt, bord dégénéré où l'énoncé est **muet** et non faux, contrôle sur 400 figures. Accrétion de 03, public Licence, livrée (#17511).
+
+### Autour de 04
+
+[Geometry-04b-IMO-AG-30-Python.ipynb](Geometry-04b-IMO-AG-30-Python.ipynb) confronte DD + AR au benchmark IMO-AG-30 (Sinha et al. 2024), puis prouve en entier **IMO 2008 P1 — un des deux problèmes que seul Wu résout** (six points, cercle centré au circoncentre, 0,3 s). Il réduit le littéral `CYCLIC` du benchmark par la même chaîne, mesure la frontière du langage DD, rejette trois fois un énoncé faux et démontre le proposeur neuronal à échelle de jouet. Accrétion de 04, public Recherche, livrée.
+
+Les notebooks 01, 02 et 03 forment la **première volée** : ils se lisent dans l'ordre — le premier état public de la série est déjà une progression complète.
 
 ## Le fil rouge
 

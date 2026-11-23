@@ -434,6 +434,19 @@ jobs:
         allow-axioms: ${{ matrix.axiom-allow-axioms || '' }}
         fail-on-sorry: ${{ matrix.axiom-fail-on-sorry || 'true' }}
         include-i18n-siblings: ${{ matrix.axiom-include-i18n-siblings || 'false' }}
+    # Le wrapper lean-conway.yml portait aussi une seconde jambe, bloquante,
+    # sur les deux modules showcase. Les trois cles restent optionnelles :
+    # hors conway, une valeur matricielle absente interpole en '' et le step
+    # est saute, sans modifier le profil advisory existant.
+    - name: Proof integrity blocking (${{ matrix.display-name }})
+      if: matrix.axiom-blocking-target-modules != ''
+      uses: ./.github/actions/lean-axiom
+      with:
+        project-path: ${{ matrix.project-path }}
+        display-name: ${{ matrix.display-name }} (blocking)
+        target-modules: ${{ matrix.axiom-blocking-target-modules }}
+        allow-axioms: ${{ matrix.axiom-blocking-allow-axioms || '' }}
+        fail-on-sorry: ${{ matrix.axiom-blocking-fail-on-sorry || 'true' }}
     # Contrat certifie (#17374, herite du wrapper lean-social-choice.yml
     # supprime) : opt-in par cle `certified-subdir` du manifeste -- une entree
     # sans la cle saute le step (comportement exact des autres lakes). Porte

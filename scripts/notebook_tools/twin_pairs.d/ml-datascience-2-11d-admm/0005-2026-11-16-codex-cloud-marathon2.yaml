@@ -1,0 +1,13 @@
+date: '2026-11-16'
+by: codex-cloud:marathon2
+python_sha: 3325422f5200a38ee0248bddd147c45649a8902c
+csharp_sha: f19b3654cacf0e46f3ad763a8e314f74fa185811
+content_python_sha: 90398ce89f0413ebad64ea5dd5e4857be0c534cf0ebd7718d4dec7661fa80e88
+content_csharp_sha: e0707ce190f959de184038d1f3ad2dc16d66e115f5411ac72d8da5d10bf55f65
+reason: >-
+  Remplacement consolide du lot de notre PR 26872, tete publique
+  1df5487003a42ee2c6e4dc7773ff00c833f3dab8. Ses attestations 0001 a 0004
+  restent intactes dans la PR precedente et ne sont ni importees ni reecrites.
+  Contenu scientifique relu, delta final approuve par root au 3ce4ddb7d ;
+  deux sources reexecutees par vrai Papermill avec blocs par cellule renouveles,
+  navigation entrante et rubriques pedagogiques corrigees, dimensions conservees.

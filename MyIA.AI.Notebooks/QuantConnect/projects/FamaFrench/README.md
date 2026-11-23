@@ -44,7 +44,9 @@ Standardized #1630 backbone run (QC Cloud project `33251801`, backtest `697e96af
 | Probabilistic Sharpe Ratio | 11.9% |
 | Tradeable dates | 1761 |
 
-Interpretation: strong positive Sharpe 0.445 (3rd-best no-ML backbone, close to GlobalMacro-Regime 0.454) with the 2nd-highest CAGR (11.1%, after HAR-RV-J-Kelly 14.1%). The risk-adjusted momentum factor rotation (12m-1m return / 63d realized vol, dynamic top_n) combined with the SMA200 regime filter, USMV risk-off and per-position -12% stop-loss survives the 2018-2025 alignment with only a mild Sharpe drop vs the author's 2015-2024 v3.0 (0.540 -> 0.445; MaxDD stable 24.2% -> 24.1%) -- the strategy is genuinely robust, not period-overfit, in contrast to the broader "simple factor collapse" finding (this is a risk-adjusted momentum rotation, not static factor exposure). Below the FamaFrenchAllWeather composite (0.684) -- the framework composite adds value over the standalone rotation. Promoted Tier 4 -> 2 (Historique). totalOrders = 0 = wrapper extraction artifact (CAGR 11.1% implies real trades).
+Interprétation : le run aligné donne un Sharpe de 0,445 (troisième meilleur socle sans ML, proche des 0,454 de GlobalMacro-Regime) et un CAGR de 11,1 % (deuxième après les 14,1 % de HAR-RV-J-Kelly). La v3.0 antérieure de l'auteur indiquait un Sharpe de 0,540 et une pire baisse de 24,2 %, mais sa fenêtre exacte reste indéterminée ci-dessus ; le run aligné indique une pire baisse de 24,1 %. Ces chiffres historiques portent sur des périodes différentes qui se chevauchent : ils ne démontrent ni la robustesse de la stratégie ni l'absence de surajustement à une période. La rotation combine momentum ajusté du risque, filtre SMA200, repli sur USMV et stop par position ; elle illustre ces mécanismes plutôt qu'une exposition factorielle statique.
+
+Le chiffre historique de 0,684 pour le composite est conservé comme résultat rapporté : il ne démontre pas que le framework apporte de la valeur par rapport à cette rotation autonome, car l'identité des fenêtres, des implémentations et du protocole de comparaison n'est pas établie par ces chiffres. La [mesure du composite](../Framework_Composite_FamaFrenchAllWeather/README.md#mesure-19621--no-beats) conclut elle-même à `NO BEATS` et ne démontre pas d'apport de Sharpe de sa tranche factorielle. Le test de ligue ci-dessous compare la stratégie autonome à SPY et au 60/40 : `INCONCLUSIVE` sur 2018–2025 et `NO BEATS` sur la courte fenêtre 2025–2026. La promotion Tier 4 → 2 (Historique) rappelle le classement antérieur. `totalOrders = 0` était un artefact d'extraction du wrapper ; le contrôle ultérieur ci-dessous compte 249 ordres.
 
 ## Demi-séances (#20286)
 
@@ -71,6 +73,81 @@ Sharpe calculé par QC, taux sans risque inclus. Les quatre prédictions fixées
 - hors échantillon, aucun mois ne commence par une demi-séance, et les deux variantes sont identiques au centime.
 
 L'effet est minime. Le rééquilibrage du 2017-07-03 n'envoie aucun ordre, et celui du 2023-07-03 en envoie deux, sur SIZE et USMV. Les écarts suivants viennent de ces deux ajustements. L'écart de Sharpe est nul au millième, sous le seuil de 0.05 fixé d'avance, et les chiffres publiés plus haut ne sont pas réécrits. Ce n'est pas un verdict de stratégie : il s'agit de la correction d'un défaut, mesurée sur des fenêtres déjà vues.
+
+## Verdict de ligue (#25615)
+
+Mesure de la rotation de facteurs contre les deux références de la ligue — **SPY détenu** et
+**60/40** (SPY 60 % / BND 40 %, rééquilibré en début de mois) — sur les deux fenêtres du
+protocole. Tous les chiffres proviennent de QC Cloud (projet `39232628`), lus à
+`completed: true` le 2026-11-11.
+
+### Contrôle d'innocuité
+
+Le code actuel est rejoué le même jour dans un projet séparé (témoin `39232629`). Le mode
+`strategy` du code modifié reproduit les ordres et les statistiques QC du témoin **au centime**
+: 249 ordres, Sharpe 0.446, CAGR 11.084 %, pire baisse 24.2 %, net 108.821 %, equity
+$208 821.43, frais −$575.11, volume $4 209 471.51. Le paramètre `mode`, la trace `shadow` et le
+compteur `invalid_orders` ne modifient pas le comportement du mode `strategy`.
+
+### Fenêtre 1 — 2018-01-01 → 2025-01-01 (dans l'échantillon, 1761 séances)
+
+| Mode | Sharpe QC | CAGR | Pire baisse | Net | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| strategy | 0.446 | 11.084 % | 24.2 % | +108.82 % | 249 | `7a099a68` |
+| SPY détenu | 0.464 | 12.807 % | 33.6 % | +132.60 % | 1 | `5c880591` |
+| 60/40 | 0.354 | 8.293 % | 21.7 % | +74.73 % | 145 | `7de755d1` |
+
+### Fenêtre 2 — 2025-01-01 → 2026-07-31 (hors échantillon, 395 séances)
+
+La fin effective, lue sur la trace, est le 2026-07-31 : la fenêtre n'est pas rognée par la
+coupure de fin des nœuds QC. Elle ne couvre qu'environ 19 mois — sa puissance statistique est
+faible, et c'est dit dès le protocole.
+
+| Mode | Sharpe QC | CAGR | Pire baisse | Net | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| strategy | 0.406 | 12.083 % | 14.5 % | +19.75 % | 68 | `af0b87f2` |
+| SPY détenu | 0.561 | 16.351 % | 18.7 % | +27.03 % | 2 | `88b38ddc` |
+| 60/40 | 0.444 | 11.228 % | 11.1 % | +18.31 % | 29 | `2807bbc3` |
+
+### Significativité (taux sans risque nul)
+
+`Paradox46Benchmarks/significance.py`, sur les traces `shadow` journalières (contrat #18923).
+Le Sharpe est annualisé par racine de 252, taux sans risque nul : il ne recopie pas le Sharpe
+QC, qui retranche le taux. Correction de Holm sur les six p-valeurs de chaque fenêtre.
+
+**Fenêtre 1** — Sharpe 0-rate : strategy **0.7495**, SPY détenu 0.7215, 60/40 0.7201.
+
+| Contre | Écart de Sharpe | p Ledoit-Wolf | p de Holm |
+|---|---|---|---|
+| SPY détenu | +0.028 | 0.861 | 1.000 |
+| 60/40 | +0.029 | 0.870 | 1.000 |
+
+**Fenêtre 2** — Sharpe 0-rate : strategy **0.874**, SPY détenu 0.972, 60/40 1.066.
+
+| Contre | Écart de Sharpe | p Ledoit-Wolf | p de Holm |
+|---|---|---|---|
+| SPY détenu | −0.098 | 0.815 | 1.000 |
+| 60/40 | −0.192 | 0.640 | 1.000 |
+
+### Verdict
+
+- **Fenêtre 1 : `INCONCLUSIVE`.** L'écart de Sharpe est positif contre les deux références,
+  mais sa p de Holm (Ledoit-Wolf) vaut 1.000, très au-dessus de 0.05 : le `BEATS` n'est pas
+  atteint. Le Sharpe ponctuel de la stratégie n'est pas inférieur à celui de SPY détenu : le
+  `NO BEATS` non plus.
+- **Fenêtre 2 : `NO BEATS`.** Le Sharpe ponctuel de la stratégie est inférieur à celui de SPY
+  détenu (0.874 < 0.972), et l'écart est négatif contre les deux références, sans être
+  significatif sur 19 mois.
+
+### Lecture
+
+Le registre `docs/qc/qc-strategies-status.md` classait la rotation *Needs-improvement* sur une
+seule mesure (Sharpe QC 0.445 sur 2018-2025). Ce verdict l'affine : la rotation ne bat pas SPY
+détenu sur la fenêtre codée — l'écart de Sharpe est de l'ordre du bruit — et elle reste en
+deçà en hors-échantillon. Le filtre SMA200 et le repli sur USMV améliorent la pire baisse
+(24.2 % contre 33.6 % en fenêtre 1), pas le Sharpe. Ce n'est pas un verdict de suppression :
+c'est la mesure manquante, posée sur les deux fenêtres du protocole et contre les deux
+références de la ligue.
 
 ## Files
 

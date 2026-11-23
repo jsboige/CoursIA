@@ -146,6 +146,20 @@ le scanner le signale sans le compter dans son code retour. Il valait 23 (02)
 et 3 (S3) dans #22318 ; l'écart porte sur un indicateur que le scanner déclare
 lui-même bruité d'un run à l'autre.
 
+## Suite — le relevé devenu opposable (#24171)
+
+Le point ci-dessus — *un compteur n'est pas opposable d'une machine à l'autre* —
+n'a pas reçu de réponse par l'embarquement de polices dans le dépôt (choix de
+licence qui dépasse ce lot), mais par l'**artefact versionné** : le scanner
+`scripts/notebook_tools/scan_slidev_overflow.py` sait désormais écrire son
+relevé sous forme d'artefact (hash de chaque image mesurée, empreinte de la
+machine, empreinte de contenu) et **comparer deux artefacts** au lieu de
+rejouer un compteur. Le premier relevé de rendu produit sous cette forme, sur
+le deck `06-apprentissage`, est dans [`docs/captures/24171/`](../24171/README.md)
+— avec les **deux contraintes d'export** que cette documentation ne portait pas
+et qui font échouer une mesure deck par deck (`--range` obligatoire ;
+`--output` effacé à chaque invocation).
+
 ## Contenu du dossier
 
 ```

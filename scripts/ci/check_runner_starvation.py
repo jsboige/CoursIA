@@ -99,6 +99,24 @@ DEFAULT_CADENCE_WARN_MINUTES = 360.0
 DEFAULT_JOB_READ_BUDGET = 120
 DEFAULT_IN_PROGRESS_SAMPLE = 20
 RUNS_PAGE_SIZE = 100
+# Cutoff de la profondeur VIVANTE (#26719). Il DOIT rester egal au defaut du
+# CLI `--cutoff` de `scripts/ci/gh_queue_health.py` : la note de profondeur
+# annonce « la MEME mesure que --live-depth », et un cutoff different ferait
+# porter les deux chiffres sur deux populations differentes. Le test de
+# non-regression de `tests/test_runner_starvation_live_depth.py` compare les
+# deux valeurs a la source.
+LIVE_DEPTH_CUTOFF = "2026-08-20"
+# #26739 -- le seuil de saturation PARTAGE avec le balayeur de portes stale
+# (meme valeur que `QUEUE_SATURATED_N` dans son workflow) : en dessous, la
+# mesure complete de la profondeur vivante ne peut pas changer le verdict de
+# saturation, donc elle n'est pas payee (114 appels par invocation, sur un
+# quota horaire partage par tous les workflows du depot).
+LIVE_DEPTH_SATURATION_THRESHOLD = 800
+# Inventaire DECLARE des hotes de pool (#20697 point 4). Vit a cote de l'organe
+# pour que le defaut soit resolu sans argument : une sonde dont le predicat
+# depend d'un fichier qu'aucun workflow ne passe resterait inerte.
+DEFAULT_DECLARED_HOSTS = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "declared_runner_hosts.json")
 
 
 @dataclass
@@ -246,6 +264,305 @@ class InventoryUnavailable(RunnerInventory):
 
 
 @dataclass
+class DeclaredHosts:
+    """Inventaire DECLARE des hotes de pool (#20697 point 4).
+
+    Le predicat `evaluate_host_loss` ne voit que les hotes PRESENTS dans
+    l'inventaire mesure. Un hote dont ZERO runner est enregistre n'y figure
+    pas du tout : c'est precisement le cas fondateur de #20697 -- dix
+    conteneurs vivants sur `myia-ai-01-wsl`, zero runner inscrit cote GitHub
+    pendant environ deux jours, aucun signal. Le predicat exige `offline > 0`
+    et ne peut donc pas voir l'absence totale.
+
+    Ce que `scripts/ci/declared_runner_hosts.json` apporte est la seule chose
+    qui manquait : la liste de ce qui DEVRAIT exister, comparee a ce qui est
+    mesure. Le fichier est une DECLARATION d'intention (qui sert quel label),
+    pas une photo : c'est au superviseur qui cree ou retire des slots de le
+    tenir a jour, et l'avertissement nomme le fichier pour que le geste soit
+    evident.
+
+    `hosts` est restreint au label mesure par `load_declared_hosts` : un hote
+    declare pour `coursia-linux` ne doit pas alerter quand la sonde tourne sur
+    `coursia-waiter`, sinon chaque passage crie sur les hotes des autres.
+    """
+    hosts: dict[str, int] = field(default_factory=dict)  # host -> slots attendus
+    source: str = ""
+    error: str = ""
+    available: bool = True
+
+
+def load_declared_hosts(path: str | None, label: str) -> DeclaredHosts:
+    """Charge l'inventaire declare, restreint au label mesure.
+
+    Absence du fichier par defaut = pas d'erreur (compatibilite : l'organe
+    reste utilisable sans declaration). Un chemin DEMANDE explicitement et
+    introuvable, ou un fichier illisible, rend `available=False` avec sa
+    raison -- l'appelant en fait une note, jamais un rouge : un inventaire
+    qu'on ne sait pas lire ne prouve pas qu'un hote a disparu.
+    """
+    if not path:
+        return DeclaredHosts(available=False, error="aucun chemin d'inventaire declare")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        return DeclaredHosts(available=False, source=path,
+                             error=f"fichier absent ({path})")
+    except (OSError, json.JSONDecodeError) as exc:
+        return DeclaredHosts(available=False, source=path,
+                             error=f"illisible ({exc})")
+    entries = data.get("hosts")
+    if not isinstance(entries, list):
+        return DeclaredHosts(available=False, source=path,
+                             error="champ 'hosts' absent ou non-liste")
+    hosts: dict[str, int] = {}
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+        host = item.get("host")
+        labels = item.get("labels") or []
+        if not isinstance(host, str) or not host:
+            continue
+        if label not in labels:
+            continue
+        slots = item.get("slots")
+        hosts[host] = int(slots) if isinstance(slots, int) and slots > 0 else 0
+    return DeclaredHosts(hosts=hosts, source=path)
+
+
+# ---------------------------------------------------------------------------
+# MIROIR D'OBJETS (#26453) -- l'alerte `[WARN][mirror]` doit REMONTER ici.
+# ---------------------------------------------------------------------------
+# Incident mesure : le miroir d'ai-01 n'etait plus rafraichi depuis le
+# 26/10, et personne ne l'a vu pendant 19 jours. Le superviseur ecrivait bien
+# une ligne d'alerte, mais dans un journal que personne ne lisait : l'alerte
+# n'atteignait AUCUNE surface. Ce bloc la branche sur un organe qu'une lane
+# lit (le rapport de ce script, et son payload JSON).
+#
+# Les trois sources sont LOCALES a l'hote qui porte le miroir :
+#   - `<parent du miroir>/.objects-mirror.fails` : compteur d'echecs
+#     consecutifs (pose par `mirror_one_shot`, cf #26459) ;
+#   - `<parent du miroir>/.objects-mirror.ok` : horodatage du dernier fetch
+#     REUSSI (le meme PR) ;
+#   - `<state_dir>/objects-mirror.log` : journal du superviseur, d'ou la
+#     derniere ligne `[WARN][mirror]` VERBATIM (cause + compteur).
+#
+# Hors de l'hote du miroir (runner GitHub-hosted, machine qui ne porte pas le
+# parc), AUCUN de ces fichiers n'existe : le retour est `available=False` avec
+# une raison. C'est une NOTE, jamais un rouge -- l'absence du miroir ici ne
+# prouve pas qu'il est casse ailleurs.
+DEFAULT_MIRROR_FAIL_WARN = 3
+# Fraicheur maximale du compteur pour qu'une panne soit dite ACTIVE : au
+# dela, la boucle de rafraichissement est arretee (service desactive, hote
+# eteint) -- c'est un constat DIFFERENT d'un miroir qui echoue, et le
+# confondre produirait un rouge permanent sur un etat fige depuis des
+# semaines. La comparaison se fait sur la date de MODIFICATION du compteur,
+# qui est reecrite a chaque echec ET a chaque succes.
+DEFAULT_MIRROR_COUNTER_FRESH_S = 600.0
+DEFAULT_MIRROR_STATE_DIR = "/var/lib/coursia-runner"
+DEFAULT_MIRROR_PATH = "/opt/hostedtoolcache/coursia-mirror.git"
+MIRROR_WARN_MARKER = "[WARN][mirror]"
+# Taille de la queue de journal lue : la ligne d'alerte est en FIN de
+# journal (les echecs s'y accumulent), et le journal peut avoir grossi.
+MIRROR_LOG_TAIL_BYTES = 64 * 1024
+
+
+@dataclass
+class MirrorState:
+    """Etat du miroir d'objets, tel que l'hote qui le porte l'ecrit."""
+
+    available: bool = False
+    reason: str = ""
+    fails: int | None = None
+    counter_age_s: float | None = None
+    ok_age_s: float | None = None
+    warn_line: str = ""
+    log_path: str = ""
+    fails_path: str = ""
+    threshold: int = DEFAULT_MIRROR_FAIL_WARN
+
+
+def _read_int_file(path: str) -> tuple[int | None, float | None]:
+    """(valeur, age en secondes) d'un fichier d'entier ; (None, None) sinon."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            raw = fh.read().strip()
+    except OSError:
+        return None, None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None, None
+    try:
+        age = max(0.0, time.time() - os.path.getmtime(path))
+    except OSError:
+        age = None
+    return value, age
+
+
+def _tail_lines(path: str, max_bytes: int = MIRROR_LOG_TAIL_BYTES) -> list[str]:
+    """Dernieres lignes d'un journal, sans le charger entier en memoire."""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - max_bytes))
+            raw = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return []
+    return raw.splitlines()
+
+
+def read_mirror_state(state_dir: str, mirror_path: str,
+                      threshold: int = DEFAULT_MIRROR_FAIL_WARN) -> MirrorState:
+    """Lit l'etat du miroir d'objets sur l'hote qui le porte.
+
+    Aucun acces reseau : ce sont les fichiers que le superviseur ecrit deja
+    (#26459). La lecture est best-effort et LOCALE : hors de l'hote du
+    miroir, elle rend `available=False` avec une raison -- jamais une
+    erreur, jamais un rouge.
+    """
+    state = MirrorState(threshold=threshold)
+    parent = os.path.dirname(os.path.abspath(mirror_path)) or "/"
+    fails_path = os.path.join(parent, ".objects-mirror.fails")
+    ok_path = os.path.join(parent, ".objects-mirror.ok")
+    log_path = os.path.join(state_dir, "objects-mirror.log")
+    state.fails_path = fails_path
+    state.log_path = log_path
+
+    fails, age = _read_int_file(fails_path)
+    state.fails = fails
+    state.counter_age_s = age
+    if os.path.exists(ok_path):
+        try:
+            state.ok_age_s = max(0.0, time.time() - os.path.getmtime(ok_path))
+        except OSError:
+            state.ok_age_s = None
+
+    for line in reversed(_tail_lines(log_path)):
+        if MIRROR_WARN_MARKER in line:
+            state.warn_line = line.strip()
+            break
+
+    if state.fails is None and not state.warn_line:
+        state.reason = (
+            f"ni compteur d'echecs ({fails_path}) ni journal ({log_path}) "
+            f"lisibles -- ce passage tourne hors de l'hote qui porte le miroir")
+        return state
+    state.available = True
+    return state
+
+
+def mirror_verdict(state: MirrorState,
+                   counter_fresh_s: float = DEFAULT_MIRROR_COUNTER_FRESH_S,
+                   ) -> tuple[list[str], list[str], list[str]]:
+    """(errors, warnings, notes) de l'etat du miroir.
+
+    La panne ACTIVE (compteur d'echecs >= seuil ET compteur fraichement
+    reecrit) est un ROUGE : la boucle tourne et le miroir echoue -- c'est
+    exactement l'incident du 26/10, ou le miroir etait fige depuis 19 jours.
+    Un compteur fige (vieux) est une NOTE : la boucle est arretee ou l'etat
+    estancien, et la cause n'est pas la meme -- un rouge permanent sur un
+    etat fige apprendrait a etre ignore (cf la discipline anti-FP de cet
+    organe).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    notes: list[str] = []
+    if not state.available:
+        notes.append(f"miroir: etat non lisible ici ({state.reason}) -- "
+                     f"ce passage ne conclut rien sur le miroir")
+        return errors, warnings, notes
+
+    fails = state.fails
+    age = state.counter_age_s
+    if fails is None:
+        notes.append("miroir: compteur d'echecs illisible "
+                     f"({state.fails_path}) -- l'etat du miroir n'est pas "
+                     f"conclu")
+    else:
+        fresh = age is not None and age <= counter_fresh_s
+        if fails >= state.threshold and fresh:
+            line = state.warn_line or (f"{MIRROR_WARN_MARKER} refresh en echec "
+                                       f"{fails} fois de suite")
+            errors.append(
+                f"MIROIR FIGE: {line} -- {fails} echec(s) consecutifs "
+                f"(seuil {state.threshold}), compteur reecrit il y a "
+                f"{age:.0f}s. La boucle de rafraichissement tourne et echoue : "
+                f"chaque checkout retelecharge l'historique complet depuis le "
+                f"serveur. Verifier la propriete du miroir (chown) et le reseau."
+            )
+        elif fails >= state.threshold:
+            notes.append(
+                f"miroir: {fails} echec(s) consecutifs recorded(s) (seuil "
+                f"{state.threshold}) MAIS le compteur n'est plus reecrit "
+                f"(dernier ecrit il y a {age:.0f}s) : la boucle de "
+                f"rafraichissement est arretee ou l'etat est fige depuis "
+                f"longtemps -- cause differente d'un miroir qui echoue, donc "
+                f"pas un rouge."
+                if age is not None else
+                f"miroir: {fails} echec(s) consecutifs records (seuil "
+                f"{state.threshold}), age du compteur inconnu -- pas un rouge."
+            )
+        else:
+            notes.append(f"miroir: {fails} echec(s) consecutif(s) (seuil "
+                         f"{state.threshold}) -- aucun gel constate")
+    if state.ok_age_s is not None:
+        notes.append(f"miroir: dernier rafraichissement reussi il y a "
+                     f"{state.ok_age_s:.0f}s")
+    return errors, warnings, notes
+
+
+def run_mirror_only(args) -> int:
+    """Verdict du MIROIR SEUL : aucun appel API, aucun inventaire.
+
+    Ce mode sert le job de PR (#26465). Le job tourne sur le slot
+    auto-heberge qui **porte** le miroir : c'est la seule surface ou
+    l'etat est local, et la ou la conclusion peut atterrir sur la PR --
+    donc sur une surface qu'une lane lit sans y penser.
+
+    La lecture reste best-effort : hors de l'hote du miroir, l'etat est
+    illisible et le verdict est une NOTE, jamais un rouge (discipline
+    anti-FP : l'absence du miroir ici ne prouve rien sur le miroir
+    ailleurs).
+
+    Le cout est nul en quota : ce mode ne lit que des fichiers locaux.
+    """
+    state = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                               threshold=args.mirror_fail_warn)
+    errors, warnings, notes = mirror_verdict(state)
+    payload = {
+        "status": "ERROR" if errors else "OK",
+        "errors": errors,
+        "warnings": warnings,
+        "notes": notes,
+        "measurement": "mirror-only",
+        "gh_calls": 0,
+        "mirror": {
+            "available": state.available,
+            "reason": state.reason,
+            "fails": state.fails,
+            "threshold": state.threshold,
+            "counter_age_s": state.counter_age_s,
+            "ok_age_s": state.ok_age_s,
+            "warn_line": state.warn_line,
+            "log_path": state.log_path,
+            "fails_path": state.fails_path,
+        },
+    }
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        for n in notes:
+            print(f"[runner-starvation] {n}")
+        for w in warnings:
+            print(f"::warning::[runner-starvation] {w}")
+        for e in errors:
+            print(f"::error::[runner-starvation] {e}")
+    return 1 if errors else 0
+
+
+@dataclass
 class JobRow:
     workflow: str
     run_number: int
@@ -287,6 +604,12 @@ class Starvation:
     # chemin ne peut pas etre ecartee sans risque de cacher une
     # affamescence), et comptes a part.
     unknown_path_reads: int = 0
+    # Nombre de runs `queued` VUS par cette sonde : la liste rendue par
+    # `_collect_window`, donc bornee a SA fenetre d'examen. C'est le chiffre
+    # que la note de profondeur confronte a la profondeur VIVANTE de
+    # `gh_queue_health` : quand les deux divergent, le rapport nomme les DEUX
+    # au lieu d'en choisir un (#26719).
+    queued_runs_seen: int = 0
 
     @property
     def complete(self) -> bool:
@@ -547,6 +870,10 @@ def fetch_starvation(
     # peuvent affamer (#22215).
     queued_runs = _collect_window(repo, "queued", window_max_minutes, now,
                                   workflow, result, seen_runs)
+    # Ce que CETTE sonde voit de la file : sa population dans sa fenetre
+    # d'examen. La note de profondeur vivante le confronte au chiffre de
+    # l'organe voisin (#26719), sans jamais fondre les deux.
+    result.queued_runs_seen = len(queued_runs)
     queued_runs.sort(key=lambda r: r.get("created_at") or "")
     for run in queued_runs:
         created = _parse_iso(run.get("created_at"))
@@ -695,9 +1022,12 @@ def gate_measurement(
 
     La jambe `schedule` n'est PAS concernee : elle est la cadence de
     REFERENCE de l'advisory, elle mesure toujours. Le gate ne s'applique
-    qu'aux runs `workflow_run` -- ce qui laisse intact l'advisory
-    `runner-starvation-advisory.yml` (coursia-lean), qui n'a pas de
-    heartbeat workflow_run et n'est donc jamais gate.
+    qu'aux runs `workflow_run` -- jusqu'au #25510 (E1, 2026-11-12) cela
+    laissait intact l'advisory `runner-starvation-advisory.yml`
+    (coursia-ephemeral), le seul des trois sans heartbeat ; il en a recu un
+    depuis, avec la meme porte que ses deux freres : la sonde observe le
+    pool qui sert les jobs Lean, elle ne peut pas dependre du seul
+    scheduler (#15332).
 
     `every_n <= 1` desactive la porte : le defaut est volontairement
     inerte, pour qu'un appelant tiers ne change pas de comportement sans
@@ -775,8 +1105,89 @@ class Verdict:
     notes: list[str] = field(default_factory=list)
 
 
+def _live_queue_depth(repo: str) -> tuple[int | None, int | None, str, int]:
+    """La profondeur VIVANTE de la file -- la MEME mesure que
+    `scripts/ci/gh_queue_health.py --live-depth`.
+
+    Renvoie (profondeur, majorant, raison, appels API) :
+
+    - (N, None, "", k) : la profondeur est MESUREE (N runs vivants) ;
+    - (None, M, "", k) : la mesure n'a pas ete payee -- le brut de la file
+      est sous le seuil de saturation, ce qui PROUVE que la file n'est pas
+      saturee ; M est alors un MAJORANT de la profondeur vivante (le brut
+      majore la vivante), jamais une profondeur ;
+    - (None, None, raison, k) : la mesure est impossible (import absent,
+      API muette, instrument incomplet).
+
+    La fonction ne porte aucun transport propre : elle appelle l'organe
+    voisin, ce qui la rend monkeypatchable -- les tests ne touchent jamais
+    l'API.
+
+    L'organe voisin est importe depuis CE repertoire, et l'import est sous
+    try/except : `check_runner_starvation.py` s'execute seul (workflows,
+    copie hors depot) et ne doit JAMAIS planter parce qu'un organe voisin
+    manque ou a casse. Son absence devient une raison, pas une exception.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import gh_queue_health
+    except Exception as exc:  # organe voisin absent ou casse : jamais un crash
+        return None, None, f"{type(exc).__name__}: {exc}", 0
+    kwargs = dict(
+        repo=repo,
+        cutoff=gh_queue_health.parse_date(LIVE_DEPTH_CUTOFF),
+        cutoff_date=LIVE_DEPTH_CUTOFF,
+        now=datetime.now(timezone.utc),
+        no_job_events=gh_queue_health.NO_JOB_EVENTS,
+        no_job_min_age_hours=gh_queue_health.DEFAULT_NO_JOB_MIN_AGE_HOURS,
+        max_workers=8,
+    )
+    try:
+        if hasattr(gh_queue_health, "measure_queue_depth"):
+            # #26739 -- l'organe voisin lit le BRUT d'abord (UN appel) et ne
+            # mesure la vivante que si le brut ATTEINT le seuil de
+            # saturation : le brut MAJORE la vivante, donc un brut sous le
+            # seuil PROUVE que la file n'est pas saturee et la mesure ne
+            # peut rien changer au verdict. Elle n'est alors pas payee
+            # (114 appels economises).
+            report = gh_queue_health.measure_queue_depth(
+                saturation_threshold=LIVE_DEPTH_SATURATION_THRESHOLD, **kwargs)
+        else:
+            # Organe voisin d'une version anterieure : la mesure complete
+            # est la seule voie disponible.
+            report = gh_queue_health.live_depth_report(**kwargs)
+    except Exception as exc:  # API muette, instrument en erreur
+        return None, None, f"{type(exc).__name__}: {exc}", 0
+    try:
+        calls = int(gh_queue_health.api_call_count())
+    except Exception:
+        calls = 0
+    if not isinstance(report, dict):
+        return None, None, f"reponse inattendue: {str(report)[:200]}", calls
+    if (report.get("depth_kind") or "live") == "raw-upper-bound":
+        bound = report.get("depth")
+        if not isinstance(bound, int):
+            return None, None, "reponse inattendue: majorant absent", calls
+        return None, bound, "", calls
+    if not isinstance(report.get("live_depth"), int):
+        return None, None, f"reponse inattendue: {str(report)[:200]}", calls
+    parse_failures = report.get("parse_failures") or 0
+    if parse_failures:
+        # Fail-closed, comme l'organe voisin : une profondeur calculee sur
+        # une population partiellement illisible n'est pas publiee.
+        return None, None, (f"instrument incomplet: {parse_failures} run(s) de "
+                            f"date illisible"), calls
+    return report["live_depth"], None, "", calls
+
+
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
-             label: str = DEFAULT_LABEL) -> Verdict:
+             label: str = DEFAULT_LABEL,
+             declared: DeclaredHosts | None = None,
+             live_depth: int | None = None,
+             live_depth_bound: int | None = None,
+             live_depth_error: str = "") -> Verdict:
     v = Verdict()
 
     if inv.available:
@@ -860,6 +1271,63 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
             f"file saine ni famine."
         )
 
+    # Profondeur VIVANTE de la file (#26719) : la MEME mesure que
+    # `scripts/ci/gh_queue_health.py --live-depth` (population queued MOINS
+    # les classes de fantomes mesurees). La sonde, elle, compte des RUNS dans
+    # sa fenetre d'examen : quand les deux chiffres divergent, on les NOMME
+    # tous les deux -- un seul ferait croire a une file saine ou a une famine
+    # selon qui le lit. Le predicat STARVATION reste au niveau des JOBS :
+    # cette note informe, elle ne juge pas.
+    if live_depth is not None:
+        v.notes.append(
+            f"profondeur VIVANTE de la file: {live_depth} run(s) (fantomes "
+            f"exclus -- meme mesure que scripts/ci/gh_queue_health.py "
+            f"--live-depth)"
+        )
+        if st.queued_runs_seen != live_depth:
+            gap = st.queued_runs_seen - live_depth
+            if gap > 0:
+                cause = (
+                    f"l'ecart est la classe de fantomes mesuree par "
+                    f"scripts/ci/gh_queue_health.py (pre-cutoff, pr-closed, "
+                    f"scheduled-orphan, no-job) et la part de file plus "
+                    f"vieille que la fenetre d'examen de cette sonde"
+                )
+            else:
+                cause = (
+                    f"ecart NEGATIF : cette sonde voit MOINS de runs que la "
+                    f"profondeur vivante -- restriction --workflow ou fenetre "
+                    f"d'examen plus etroite de son cote, jamais un fantome "
+                    f"supplementaire"
+                )
+            v.notes.append(
+                f"profondeur de file divergente: {st.queued_runs_seen} run(s) "
+                f"queued vu(s) par cette sonde vs {live_depth} run(s) de "
+                f"profondeur VIVANTE -- ecart {gap:+d}, {cause}"
+            )
+    elif live_depth_bound is not None:
+        # La mesure n'a pas ete payee : le brut de la file est sous le
+        # seuil de saturation, ce qui PROUVE que la file n'est pas saturee.
+        # Ce qui est annonce est un MAJORANT de la profondeur vivante (le
+        # brut majore la vivante), jamais une profondeur -- et l'ecart avec
+        # ce que la sonde voit n'est donc PAS affine : on ne l'affirme pas.
+        v.notes.append(
+            f"profondeur VIVANTE NON MESUREE: au plus {live_depth_bound} "
+            f"run(s) vivants (majorant -- le brut de la file est sous le "
+            f"seuil de saturation {LIVE_DEPTH_SATURATION_THRESHOLD} ; "
+            f"mesure complete non payee)"
+        )
+    elif live_depth_error:
+        # Mesure TENTEE et echouee : on le dit, et ca reste une WARNING --
+        # un instrument indisponible ne rend ni la file saine ni la famine
+        # prouvee. Sans raison fournie, l'appelant ne mesure pas la
+        # profondeur (appelant historique) : silence, pas une affirmation.
+        v.warnings.append(
+            f"PROFONDEUR VIVANTE non mesuree ({live_depth_error}) -- le "
+            f"verdict porte sur les jobs affames, pas sur la profondeur de "
+            f"la file"
+        )
+
     if st.starved and not st.in_progress:
         oldest = max(r.age_min or 0 for r in st.starved)
         message = (
@@ -908,8 +1376,18 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
     # pool global reste vert (les autres hotes du label tournent). Cas
     # fondateur : myia-ai-01-wsl 0 online / 10 offline pendant ~2 jours,
     # EXTINCTION muette car d'autres hotes du label restaient online.
-    if inv.available:
-        v.warnings.extend(evaluate_host_loss(inv))
+    # Inventaire vide = LABEL INCONNU, deja nomme ci-dessus : la perte par
+    # hote n'a rien a comparer et dirait N fois la meme chose (un hote declare
+    # serait « absent » par construction). On ne l'evalue que si le label a au
+    # moins une entree mesuree.
+    if inv.available and (inv.online or inv.offline):
+        v.warnings.extend(evaluate_host_loss(inv, declared))
+    if declared is not None and not declared.available and declared.error:
+        # Un inventaire declare qu'on ne sait pas lire ne prouve pas qu'un
+        # hote a disparu : note, jamais un rouge (meme discipline que
+        # l'inventaire non lisible ci-dessus).
+        v.notes.append(f"inventaire declare non lu ({declared.error}) -- "
+                       f"predicat POOL ABSENT non evalue")
 
     v.status = "ERROR" if v.errors else "OK"
     return v
@@ -930,7 +1408,8 @@ def _host_of(runner_name: str) -> str:
     return _HOST_SUFFIX.sub("", runner_name)
 
 
-def evaluate_host_loss(inv: RunnerInventory) -> list[str]:
+def evaluate_host_loss(inv: RunnerInventory,
+                       declared: DeclaredHosts | None = None) -> list[str]:
     """Warnings de perte de pool par hote (#20697 point 4).
 
     Constat fondateur (12:45Z) : le pool `myia-ai-01-wsl` est reste 0 online
@@ -970,6 +1449,28 @@ def evaluate_host_loss(inv: RunnerInventory) -> list[str]:
                 f"POOL LOSS: host {host} a 0 runner online et {counts['offline']} offline -- "
                 f"conteneurs listes mais aucun ne s'inscrit (superviseur mort ? #20697)"
             )
+
+    # POOL ABSENT -- le residu du point 4 (#20697). L'hote DECLARE n'apparait
+    # ni en online ni en offline : zero runner inscrit cote GitHub, alors que
+    # ses conteneurs peuvent tourner. Le predicat ci-dessus exige `offline > 0`
+    # et ne peut donc structurellement pas le voir : c'est le cas fondateur
+    # (10 conteneurs vivants, 0 runner inscrit, ~2 jours sans signal).
+    # Un hote declare qui apparait, meme offline, est deja couvert (ou non)
+    # par le predicat precedent : on ne double pas le message.
+    if declared is not None and declared.available:
+        for host, slots in sorted(declared.hosts.items()):
+            if host in by_host:
+                continue
+            attendu = (f"{slots} slot(s) attendu(s)" if slots
+                       else "nombre de slots non chiffre")
+            out.append(
+                f"POOL ABSENT: host {host} declare ({attendu}) n'a AUCUN runner "
+                f"dans l'inventaire du label -- ni online ni offline : le "
+                f"superviseur ne s'inscrit plus (conteneurs peut-etre vivants, "
+                f"invisibles cote GitHub). Declaration: {declared.source} ; "
+                f"si l'hote est retire volontairement, mettre ce fichier a jour "
+                f"(#20697)"
+            )
     return out
 
 
@@ -977,6 +1478,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", default=os.environ.get("REPO", DEFAULT_REPO))
     ap.add_argument("--label", default=os.environ.get("LABEL", DEFAULT_LABEL))
+    ap.add_argument("--declared-hosts",
+                    default=os.environ.get("DECLARED_HOSTS_FILE", DEFAULT_DECLARED_HOSTS),
+                    help="inventaire DECLARE des hotes de pool (#20697 point 4) ; "
+                         "les hotes declares pour le label mesure qui n'ont AUCUN "
+                         "runner dans l'inventaire rendent un warning POOL ABSENT. "
+                         "Vide = predicat desactive.")
     ap.add_argument("--starve-minutes", type=float,
                     default=float(os.environ.get("STARVE_MINUTES", DEFAULT_STARVE_MINUTES)))
     ap.add_argument("--warn-floor", type=int, default=DEFAULT_WARN_FLOOR)
@@ -1012,8 +1519,39 @@ def main() -> int:
                          "workflow_run, une mesure complete sur N passages ; "
                          "les autres ne paient que la lecture de la cadence "
                          "servie (1 appel). 0 ou 1 = porte inactive")
+    ap.add_argument("--mirror-state-dir",
+                    default=os.environ.get("COURSIA_RUNNER_STATE_DIR",
+                                           DEFAULT_MIRROR_STATE_DIR),
+                    help=" repertoire d'etat du superviseur des runners "
+                         "(journal `objects-mirror.log`) -- #26453")
+    ap.add_argument("--mirror-path",
+                    default=os.environ.get("COURSIA_RUNNER_MIRROR_PATH",
+                                           DEFAULT_MIRROR_PATH),
+                    help="chemin du miroir d'objets ; son parent porte le "
+                         "compteur `.objects-mirror.fails` et l'horodatage "
+                         "`.objects-mirror.ok` -- #26453")
+    ap.add_argument("--mirror-fail-warn", type=int,
+                    default=int(os.environ.get("COURSIA_RUNNER_MIRROR_FAIL_WARN",
+                                               DEFAULT_MIRROR_FAIL_WARN)),
+                    help="nombre d'echecs consecutifs du miroir au-dela "
+                         "duquel l'alerte `[WARN][mirror]` est attendue")
+    ap.add_argument("--mirror-off", action="store_true",
+                    help="desactive la lecture de l'etat du miroir")
+    ap.add_argument("--mirror-only", action="store_true",
+                    help="n'evalue QUE l'etat local du miroir : aucun appel "
+                         "API, aucune lecture de cadence, aucun inventaire. "
+                         "C'est le mode du job de PR (#26465) : il tourne sur "
+                         "le slot auto-heberge qui PORTE le miroir, donc la "
+                         "seule surface ou l'etat est local, et son verdict "
+                         "arrive sur la PR.")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
+
+    # Le mode miroir seul court AVANT tout le reste : il ne doit payer aucun
+    # appel API. Le job de PR s'execute sur chaque PR du depot -- un appel
+    # par PR sur la quota partagee `jsboige` serait un cout reel.
+    if args.mirror_only:
+        return run_mirror_only(args)
 
     # La cadence servie est lue AVANT la porte de mesure : c'est elle qui
     # porte le rapport #15332, et elle ne doit jamais dependre du passage
@@ -1043,6 +1581,30 @@ def main() -> int:
 
     inv: RunnerInventory | None = None
     st: Starvation | None = None
+    # Profondeur VIVANTE (#26719) : remplie par le passage complet, jamais
+    # par le passage econome (cf `if measure:` plus bas).
+    live_depth: int | None = None
+    live_depth_bound: int | None = None
+    live_depth_error = ""
+    # Le cout de la mesure de profondeur, en appels API (#26739 : le quota
+    # horaire est partage par tous les workflows du depot).
+    depth_calls = 0
+    # Le MIROIR est lu HORS de la porte de mesure : l'alerte `[WARN][mirror]`
+    # ne doit pas dependre du fait que le passage complet soit econome
+    # (4 runs sur 1). Un miroir fige fait tomber les checkouts, donc la
+    # famine qu'on cherche a mesurer -- c'est une CAUSE, pas une note.
+    mirror: MirrorState | None = None
+    if not args.mirror_off:
+        mirror = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                                   threshold=args.mirror_fail_warn)
+        m_errors, m_warnings, m_notes = mirror_verdict(mirror)
+        v.errors.extend(m_errors)
+        v.warnings.extend(m_warnings)
+        v.notes.extend(m_notes)
+    # #15332 : le chemin cadence-only n'appelle pas load_declared_hosts, mais
+    # le payload annonce toujours `declared_hosts`. Sans cette initialisation,
+    # la porte de mesure economisait la lecture ET cassait le passage.
+    declared: DeclaredHosts | None = None
     if measure:
         token = os.environ.get("RUNNERS_READ_PAT") or None
         inv = fetch_inventory(args.repo, args.label, token)
@@ -1053,8 +1615,38 @@ def main() -> int:
             job_read_budget=args.job_read_budget,
             in_progress_sample=args.in_progress_sample,
         )
-        full = evaluate(inv, st, args.warn_floor, label=args.label)
+        declared = load_declared_hosts(args.declared_hosts, args.label)
+        # Profondeur VIVANTE (#26719) : une SECONDE lecture de la file (elle
+        # pagine toute la population queued et sonde les classes de
+        # fantomes). On ne la paie que sur un passage qui a REELLEMENT lu la
+        # file : une sonde sans aucun appel (lecture injectee) n'a rien
+        # mesure, et annoncer une profondeur venue d'ailleurs serait un
+        # chiffre sans provenance. Un echec est absorbe ici : il devient une
+        # WARNING du verdict, jamais une erreur.
+        #
+        # #26739 -- la porte se FERME encore : la mesure n'a lieu que si un
+        # job AFFAME est detecte (le seul cas ou la note aide a lire le
+        # verdict). Sans affame, la note de profondeur n'apporte rien au
+        # verdict, et la mesurer coutait 114 appels API par passage sur un
+        # quota horaire partage par tous les workflows du depot.
+        if st.starved and st.stats.calls:
+            (live_depth, live_depth_bound, live_depth_error,
+             depth_calls) = _live_queue_depth(args.repo)
+        full = evaluate(inv, st, args.warn_floor, label=args.label,
+                        declared=declared, live_depth=live_depth,
+                        live_depth_bound=live_depth_bound,
+                        live_depth_error=live_depth_error)
         v.notes = full.notes + v.notes
+        # #26739 -- le cout du passage, nomme : le quota horaire est partage
+        # par tous les workflows du depot, un organe qui consomme 114 appels
+        # par passage doit pouvoir le dire dans sa sortie.
+        total_calls = (calls.calls
+                       + (st.stats.calls if st is not None else 0)
+                       + depth_calls)
+        v.notes.append(
+            f"api-quota: {total_calls} appel(s) API sur ce passage "
+            f"(dont {depth_calls} pour la profondeur vivante)"
+        )
         v.warnings = full.warnings + v.warnings
         v.errors = full.errors + v.errors
     v.status = "ERROR" if v.errors else "OK"
@@ -1073,10 +1665,26 @@ def main() -> int:
         },
         "online_runners": inv.online if (inv is not None and inv.available) else None,
         "offline_runners": inv.offline if (inv is not None and inv.available) else None,
+        "declared_hosts": (sorted(declared.hosts) if declared is not None
+                           and declared.available else None),
         "starved_jobs": [r.__dict__ for r in st.starved] if st is not None else [],
         "in_progress_jobs": len(st.in_progress) if st is not None else None,
+        # Profondeur VIVANTE (#26719) : la surface machine de la mesure que
+        # la note annonce -- un lecteur compare les deux chiffres sans
+        # concatener de la prose.
+        "live_depth": live_depth,
+        "live_depth_error": live_depth_error,
+        # #26739 -- quand la mesure n'a pas ete payee, ce qui est annonce
+        # est un MAJORANT de la profondeur vivante (le brut de la file est
+        # sous le seuil de saturation, ce qui PROUVE que la file n'est pas
+        # saturee). Un lecteur machine sait ainsi qu'il n'a pas un chiffre
+        # de profondeur mais une borne.
+        "live_depth_upper_bound": live_depth_bound,
+        "live_depth_api_calls": depth_calls,
+        "queued_runs_seen": st.queued_runs_seen if st is not None else None,
         "unexamined_runs": st.unexamined if st is not None else None,
-        "gh_calls": calls.calls + (st.stats.calls if st is not None else 0),
+        "gh_calls": calls.calls + (st.stats.calls if st is not None else 0)
+        + depth_calls,
         "gh_failures": [
             {"endpoint": ep, "returncode": code, "message": msg}
             for ep, code, msg in calls.failures
@@ -1089,6 +1697,20 @@ def main() -> int:
         "budget_unread_runs": len(st.budget_unread) if st is not None else None,
         "in_progress_unread_runs": st.in_progress_unread if st is not None else None,
         "listing_failed": sorted(st.listing_failed) if st is not None else [],
+        # L'etat du miroir d'objets (#26453) : la ligne `[WARN][mirror]` doit
+        # etre lisible par une machine, pas seulement par un oeil sur le
+        # rapport texte.
+        "mirror": ({
+            "available": mirror.available,
+            "reason": mirror.reason,
+            "fails": mirror.fails,
+            "threshold": mirror.threshold,
+            "counter_age_s": mirror.counter_age_s,
+            "ok_age_s": mirror.ok_age_s,
+            "warn_line": mirror.warn_line,
+            "log_path": mirror.log_path,
+            "fails_path": mirror.fails_path,
+        } if mirror is not None else None),
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

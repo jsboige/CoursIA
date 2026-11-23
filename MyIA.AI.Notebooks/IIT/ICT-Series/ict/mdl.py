@@ -172,6 +172,14 @@ def tpm_description_length(counts: np.ndarray) -> float:
     return line_bits + overhead
 
 
+def _validate_state_mapping(mapping: dict) -> None:
+    """Un index unique dans [0, k) par etat, pour indexer les TPM."""
+    values = list(mapping.values())
+    if (any(isinstance(i, (bool, np.bool_)) or not isinstance(i, (int, np.integer))
+            for i in values) or set(values) != set(range(len(values)))):
+        raise ValueError("indices des etats : permutation entiere de 0 a k-1 requise")
+
+
 # ---------------------------------------------------------- code deux parties
 def two_part_code(states: Sequence, split: float = 0.5,
                   states_to_index: dict | None = None) -> dict:
@@ -228,6 +236,7 @@ def two_part_code(states: Sequence, split: float = 0.5,
         mapping = {s: i for i, s in enumerate(labels)}
     else:
         mapping = dict(states_to_index)
+        _validate_state_mapping(mapping)
     k = len(mapping)
 
     # Comptes d'apprentissage.
@@ -348,7 +357,8 @@ def fit_markov_order(states, heldout=None, max_order: int = 4,
     Retourne ``{"rows": [...], "best_mdl_order": int, "best_nll_order": int,
     "k_states": int}`` ou chaque ligne porte ``order, n_contexts,
     n_nonempty, payload_bits, declare_bits, mdl_bits, nll_heldout,
-    n_escaped``.
+    n_escaped``. Une transition dont la cible ou le contexte contient un
+    symbole inconnu utilise la convention d'echappement de ``two_part_code``.
     """
     train_seq = list(states)
     if len(train_seq) < 2:
@@ -370,6 +380,7 @@ def fit_markov_order(states, heldout=None, max_order: int = 4,
         mapping = {s: i for i, s in enumerate(labels)}
     else:
         mapping = dict(states_to_index)
+        _validate_state_mapping(mapping)
 
     k = len(mapping)
     train = [mapping[s] for s in train_seq]
@@ -399,14 +410,15 @@ def fit_markov_order(states, heldout=None, max_order: int = 4,
         nll = 0.0
         escaped = 0
         for i in range(order, len(eval_seq)):
-            ctx = _context_index(eval_seq, i, order, k)
             sym = eval_seq[i]
-            if sym < 0:
-                # Symbole absent de l'alphabet d'apprentissage : meme
-                # convention d'echappement que ``two_part_code``.
+            context = eval_seq[i - order:i] if order else []
+            if sym < 0 or any(symbol < 0 for symbol in context):
+                # Cible ou contexte inconnu : ne jamais utiliser -1 comme
+                # index NumPy. Meme echappement que ``two_part_code``.
                 nll += 2.0 * math.log2(k + 1.0)
                 escaped += 1
             else:
+                ctx = _context_index(eval_seq, i, order, k)
                 nll += -math.log2(prob[ctx, sym])
 
         rows.append({

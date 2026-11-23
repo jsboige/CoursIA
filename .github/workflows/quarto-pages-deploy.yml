@@ -9,7 +9,7 @@ name: Quarto Pages Deploy
 #
 # Spécificités CoursIA :
 # - `freeze: auto` dans `_quarto.yml` : Quarto re-render seulement sur changement source
-# - Les .ipynb des familles de NOTEBOOK_SUBTREES (scripts/regen_quarto_render.py)
+# - Les .ipynb des familles de NOTEBOOK_SUBTREES (scripts/ci/regen_quarto_render.py)
 #   sont RENDUS en HTML statique (EPIC #10921, #10923) : echo:true au niveau
 #   racine (_quarto.yml), sans exécution de kernel (execute.enabled: false).
 # - Pas de kernel exec sur CI : les notebooks .NET C# / Lean 4 / Python sont déjà
@@ -32,25 +32,39 @@ on:
       - "favicon.ico"
       - "styles.css"
       - ".github/workflows/quarto-pages-deploy.yml"
-      - "scripts/quarto_yaml_safe.py"
+      - "scripts/ci/quarto_yaml_safe.py"
+      # La passe post-rendu des liens (#10921) transforme _site/ a CHAQUE
+      # deploy : un fix du transform doit re-servir le site pour s'appliquer,
+      # exactement comme yaml_safe ci-dessus.
+      - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
       # La page catalogue est un document rendu (_quarto.yml render list), mais
       # son refresh arrive par la PR long-lived catalog-cron -- dont le merge
       # ne touche AUCUN autre path de cette liste : sans ce filtre, la page
       # Quarto restait stale jusqu'au prochain commit non-catalogue (#15490).
       - "COURSE_CATALOG.generated.md"
   pull_request:
+    # P4 #25510 (fournée 1, sign-off mainteneur 2026-11-14) : la jambe PR ne
+    # valide plus le CONTENU du site. Mesure du 2026-11-14 sur 24 h :
+    # 237 runs `pull_request`, dont 3 des 4 échecs à l'étape « Set up Quarto »
+    # (infra) et un seul vrai rendu cassé — porté par une PR de harnais qui
+    # reste couverte ci-dessous. Chaque push de PR de carnet payait un run
+    # Quarto pour un rendu que le push de merge rejoue en COMPLET sur l'arbre
+    # réel (jambe `build` : même pipeline, rendu intégral, deploy sécurisé --
+    # un rendu cassé ne remplace jamais le site publié). Les paths retirés
+    # (`MyIA.AI.Notebooks/**/*.ipynb`, `**/_output.ipynb`, `**/README.md`,
+    # `docs/**`) sont la surface de CONTENU : elle est vérifiée par le rendu
+    # complet du push `main`, une fois par merge, au lieu d'une fois par push
+    # de PR. Ne restent que les surfaces qui PILOTENT le rendu :
     paths:
       - "_quarto.yml"
       - "**.qmd"
       - "MyIA.AI.Notebooks/**/index.qmd"
-      - "MyIA.AI.Notebooks/**/*.ipynb"
-      - "MyIA.AI.Notebooks/**/_output.ipynb"
-      - "MyIA.AI.Notebooks/**/README.md"
-      - "docs/**"
       # Auto-couverture : une PR qui ne touche QUE ce workflow doit quand meme
       # emettre l'evenement pull_request (asymetrie push/pull_request, #14391).
       - ".github/workflows/quarto-pages-deploy.yml"
-      - "scripts/quarto_yaml_safe.py"
+      - "scripts/ci/quarto_yaml_safe.py"
       # Catalog-drift re-regenere l'artefact sur les branches same-repo : la PR
       # doit valider le rendu AVANT le merge, pas seulement le deploy apres
       # (#15490, symetrique au filtre push ci-dessus).
@@ -60,7 +74,13 @@ on:
       # suffit pas -- voir le mode `smoke` du step de scope, sans lequel une PR
       # qui ne touche que ces deux fichiers sauterait le rendu et rendrait
       # l'auto-couverture de #14391 creuse.
-      - "scripts/quarto_render_scope.py"
+      - "scripts/ci/quarto_render_scope.py"
+      # Meme auto-couverture pour la passe post-rendu des liens (#10921) :
+      # une PR qui ne touche QUE le transform doit exercer le pipeline sur
+      # le smoke set, pas sauter le rendu.
+      - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
   workflow_dispatch:
 
 # Concurrence par evenement : une PR repoussee n'a pas besoin de l'ancien
@@ -154,7 +174,7 @@ jobs:
         env:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/quarto_render_timing.py --sample-occupation occupation.json
+        run: python3 scripts/ci/quarto_render_timing.py --sample-occupation occupation.json
 
       - name: Set up Quarto
         # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
@@ -179,8 +199,23 @@ jobs:
         # sous-répertoires). On régénère cette liste avant le render pour que les
         # nouveaux fichiers apparaissent sur le site sans commit manuel de
         # _quarto.yml (Axe C #4211). Idempotent ; archives et libs vendored
-        # exclues (cf. scripts/regen_quarto_render.py).
-        run: python3 scripts/regen_quarto_render.py
+        # exclues (cf. scripts/ci/regen_quarto_render.py).
+        run: python3 scripts/ci/regen_quarto_render.py
+
+      - name: Régénérer la carte des prérequis (#27556)
+        # docs/curriculum/prerequis.qmd est un ARTEFACT GÉNÉRÉ (même patron que
+        # COURSE_CATALOG.generated.md) : le script reconstruit la page depuis la
+        # taxonomie conceptuelle docs/curriculum/taxonomy/*.json. Le rejouer ici
+        # garantit que le site publié reflète la taxonomie de la tête, même quand
+        # un changement de taxonomie n'a pas régénéré la page dans sa PR.
+        # Idempotent (écrit seulement si le contenu change) ; `--check` mesure la
+        # fraîcheur de l'artefact commité sans rien écrire.
+        run: python3 scripts/curriculum/generate_prereq_map.py
+
+      - name: Préparer et vérifier les titres README
+        run: |
+          python3 scripts/ci/quarto_readme_titles.py apply --backup "$RUNNER_TEMP/readme-titles.json"
+          python3 scripts/ci/quarto_readme_titles.py check
 
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
@@ -193,7 +228,7 @@ jobs:
         # render et le restore APRES. kernelspec.language est informationnel :
         # l'execution Jupyter/papermill utilise kernelspec.name ".net-csharp"
         # (inchange) -> le patch n'affecte jamais l'execution.
-        run: python3 scripts/quarto_csharp_kernel_fix.py apply
+        run: python3 scripts/ci/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
         # Les cellules markdown commencant par `---` (separateur visuel avant
@@ -205,7 +240,7 @@ jobs:
         # standalone en `***` (autre syntaxe de regle horizontale markdown, NON
         # reconnue comme separateur YAML). Round-trip byte-level propre, restore
         # via le meme script en fin de job.
-        run: python3 scripts/quarto_yaml_safe.py apply
+        run: python3 scripts/ci/quarto_yaml_safe.py apply
 
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
@@ -231,19 +266,26 @@ jobs:
         # --occupation : busy/online echantillonne au demarrage (step amont) ;
         # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
         # greppable "#14597-covariates:" pour la moisson multi-runs.
-        run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+        run: python3 scripts/ci/quarto_render_timing.py render-timed.log --occupation occupation.json
+
+      - name: Restaurer les README
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python3 scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
-        run: python3 scripts/quarto_csharp_kernel_fix.py restore
+        run: python3 scripts/ci/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
         # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
         # le worktree dans un etat different de la branche. Le checkout CI est
         # ephemere (meme remarque que ci-dessus), mais le restore garde les
         # outputs `git diff` propres pour les etapes suivantes.
-        run: python3 scripts/quarto_yaml_safe.py restore
+        run: python3 scripts/ci/quarto_yaml_safe.py restore
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
@@ -252,6 +294,21 @@ jobs:
           test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
           test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+
+      - name: Rewrite unservable site links (#10921)
+        # Post-rendu, pre-upload : les liens que Pages ne peut pas servir
+        # (repertoires sans index -- le README rendu vit a X/README.html ;
+        # fichiers hors render-list comme .claude/ ou .env.example) sont
+        # reecrits dans _site/ vers une cible servable : le README.html
+        # rendu s'il existe, sinon une URL absolue github.com (tree/ pour
+        # un repertoire, blob/ pour un fichier). Les SOURCES restent
+        # byte-identiques : la navigation de reference est celle de
+        # github.com (arbitrage user 2026-10-08, c.6076029168 sur #18911)
+        # -- c'est au site d'adapter au rendu, pas aux READMEs de s'adapter
+        # au site. Mesure fondatrice 2026-11-10 : 54 liens casses sur 674
+        # dans les 16 README de series, tous corrects sur github.com.
+        # rc 2 = instrument casse -> pas de deploy sur un site non verifie.
+        run: python3 scripts/ci/quarto_site_link_targets.py --site-dir _site --repo-root .
 
       - name: Upload Quarto site artifact
         # L5 #11508 : le Pages artifact ne se compose plus ici. Le site final est
@@ -425,6 +482,58 @@ jobs:
           path: site-slides
           retention-days: 3
 
+  build-jupyterlite:
+    # Pli 2.2 de l'Epic #27543 : publier le lot de carnets Python eligible
+    # sous /jupyterlite/ du site, ou chaque carnet s'ouvre et s'execute dans
+    # le navigateur (noyau Pyodide).
+    #
+    # Job SEPARE, comme les decks Slidev : la construction installe son
+    # outillage (jupyterlite-core + noyau Pyodide) et ne doit pas tenir le
+    # rendu Quarto en otage.
+    #
+    # Le lot n'est PAS une liste tenue a la main : il est RECALCULE par
+    # scripts/notebook_tools/build_jupyterlite_site.py a partir du critere
+    # d'eligibilite du pli 2.1 (docs/reference/pyodide-lock.json). Si aucun
+    # carnet n'est eligible, le job echoue : un deploiement sans lot ne doit
+    # pas passer pour un deploiement reussi.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Build JupyterLite lot
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install JupyterLite
+        # Versions egales : le noyau Pyodide doit correspondre au core.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7"
+
+      - name: Build the JupyterLite lot
+        run: |
+          set -euo pipefail
+          # Le site Pages sert le depot sous /<nom-du-depot>/ : c'est ce
+          # prefixe que portent les URLs publiques du lot (manifeste).
+          BASE="/${GITHUB_REPOSITORY#*/}"
+          python scripts/notebook_tools/build_jupyterlite_site.py             --repo .             --taille 8             --source-dir "$RUNNER_TEMP/jlite/site"             --output-dir "$RUNNER_TEMP/jlite/site/_output"             --base-url "$BASE"
+
+      - name: Upload JupyterLite artifact
+        # Pas upload-pages-artifact : cet artifact est un INGREDIENT du site,
+        # pas le site -- c'est assemble-pages qui compose l'artifact Pages.
+        uses: actions/upload-artifact@v4
+        with:
+          name: jupyterlite-dist
+          path: ${{ runner.temp }}/jlite/site/_output
+          retention-days: 3
+
   assemble-pages:
     # L5 #11508 : composer le site final (Quarto + decks) en UN artifact Pages.
     # Un second workflow deploy-pages deploierait un artifact decks-seul qui
@@ -439,7 +548,7 @@ jobs:
     # par ce chemin.
     if: always() && (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.build.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     name: Assemble Pages artifact
-    needs: [build, build-slides]
+    needs: [build, build-slides, build-jupyterlite]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -460,6 +569,15 @@ jobs:
           path: _site/slides
         continue-on-error: true
 
+      - name: Download JupyterLite lot
+        # Fail-soft : l'artifact peut manquer (job jupyterlite en echec) --
+        # le site part alors sans /jupyterlite/, le warning du step Check le dit.
+        uses: actions/download-artifact@v4
+        with:
+          name: jupyterlite-dist
+          path: _site/jupyterlite
+        continue-on-error: true
+
       - name: Check output
         run: |
           test -f _site/index.html || (echo "::error::_site/index.html absent -- artifact Quarto incomplet" && exit 1)
@@ -467,6 +585,11 @@ jobs:
           echo "Site final : $(find _site -type f | wc -l) fichiers dont $N_SLIDES deck(s) Slidev sous /slides/."
           if [ "$N_SLIDES" -eq 0 ]; then
             echo "::warning::Aucun deck Slidev dans l'artifact (job build-slides en echec ou 0 deck construit) -- deploiement SANS /slides/."
+          fi
+          N_LOT=$(find _site/jupyterlite/files -maxdepth 1 -name "*.ipynb" 2>/dev/null | wc -l)
+          echo "Lot JupyterLite : $N_LOT carnet(s) sous /jupyterlite/files/."
+          if [ "$N_LOT" -eq 0 ]; then
+            echo "::warning::Aucun carnet JupyterLite dans l'artifact (job build-jupyterlite en echec ou lot vide) -- deploiement SANS /jupyterlite/."
           fi
 
       - name: Upload Pages artifact
@@ -557,7 +680,10 @@ jobs:
           python-version: '3.11'
 
       - name: Regenerate render list
-        run: python scripts/regen_quarto_render.py
+        run: python scripts/ci/regen_quarto_render.py
+
+      - name: Conserver la liste complète des README
+        run: cp _quarto.yml "$RUNNER_TEMP/readme-render-list.yml"
 
       - name: Scope render list to this PR's changed documents
         # #14429 : la jambe PR rendait le site ENTIER (1192 entrees, sans cache
@@ -587,7 +713,7 @@ jobs:
         # 60 min qu'elle existe pour eviter.
         id: scope
         run: |
-          python scripts/quarto_render_scope.py \
+          python scripts/ci/quarto_render_scope.py \
             --base "${{ github.event.pull_request.base.sha }}" \
             --head "${{ github.event.pull_request.head.sha }}" \
             --apply --github-output
@@ -600,15 +726,21 @@ jobs:
         env:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+        run: python scripts/ci/quarto_render_timing.py --sample-occupation occupation.json
+
+      - name: Préparer et vérifier les titres README
+        if: steps.scope.outputs.mode != 'empty'
+        run: |
+          python scripts/ci/quarto_readme_titles.py apply --config "$RUNNER_TEMP/readme-render-list.yml" --backup "$RUNNER_TEMP/readme-titles.json"
+          python scripts/ci/quarto_readme_titles.py check --config "$RUNNER_TEMP/readme-render-list.yml"
 
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_csharp_kernel_fix.py apply
+        run: python scripts/ci/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_yaml_safe.py apply
+        run: python scripts/ci/quarto_yaml_safe.py apply
 
       - name: Render Quarto site (PR check)
         # Commande inchangee : c'est la LISTE qui a ete restreinte au-dessus,
@@ -631,15 +763,22 @@ jobs:
         # des runs a 53 min (#14225). Sur un rendu scope (1-2 documents), la
         # phase post-rendu n'est pas representative et le rapport resterait muet.
         if: steps.scope.outputs.mode == 'full'
-        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+        run: python scripts/ci/quarto_render_timing.py render-timed.log --occupation occupation.json
+
+      - name: Restaurer les README
+        if: always() && steps.scope.outputs.mode != 'empty'
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_csharp_kernel_fix.py restore
+        run: python scripts/ci/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_yaml_safe.py restore
+        run: python scripts/ci/quarto_yaml_safe.py restore
 
       - name: Check output
         run: |
@@ -669,6 +808,18 @@ jobs:
             test "$RENDERED" -le "$CEIL" || (echo "::error::rendu scope=${{ steps.scope.outputs.count }} document(s) mais $RENDERED pages produites (plafond $CEIL) : la restriction n'a pas pris" && exit 1)
           fi
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers ($RENDERED .html, mode=$MODE)"
+
+      - name: Rewrite unservable site links (#10921)
+        # Meme passe que le job build, jambe PR : exercer le transform sur
+        # le rendu disponible (smoke ou complet). Sur un rendu SCOPE, l'arbre
+        # _site/ ne porte que les documents rendus : les cibles absentes de
+        # l'arbre partent en URL absolue github.com -- decisions differentes
+        # du rendu complet, mais le code chemin (extraction, resolution,
+        # ecriture) est l'objet de la verification ici ; la correction reelle
+        # vit sur la jambe deploy. Gated mode != 'empty' : sans rendu, il
+        # n'y a pas de _site/ a transformer.
+        if: steps.scope.outputs.mode != 'empty'
+        run: python3 scripts/ci/quarto_site_link_targets.py --site-dir _site --repo-root .
 
       - name: Comment PR with summary
         # Resumé court : nombre de fichiers + diff notebooks si pertinent.

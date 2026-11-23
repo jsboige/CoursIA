@@ -62,7 +62,7 @@ permissions:
 # Les editions de body se supplantent entre elles, et seulement entre elles :
 # ce groupe ne touche jamais celui du workflow de contenu.
 concurrency:
-  group: always-on-guards-body-${{ github.event.pull_request.number || github.ref }}
+  group: always-on-guards-body-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.event.changes.body == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -90,7 +90,7 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     # Les cinq organes de body coutent quelques secondes : le plafond n'est
     # qu'un garde-fou contre un blocage de `gh`.
     #
@@ -189,17 +189,16 @@ jobs:
         env:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
-          LIVE=""
-          if [ -n "${PR_NUMBER:-}" ]; then
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
-          fi
-          if [ -n "$LIVE" ]; then
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          # En cas d'echec, gh peut ecrire une erreur sur stdout ; le repli ci-dessous
+          # remplace LIVE par le payload avant son utilisation.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
-            BODY="$LIVE"
           else
-            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
-            BODY="${PAYLOAD_BODY:-}"
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
+            LIVE="${PAYLOAD_BODY:-}"
           fi
+          BODY="$LIVE"
           delim="BODY_LIVE_EOF_$$"
           printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 

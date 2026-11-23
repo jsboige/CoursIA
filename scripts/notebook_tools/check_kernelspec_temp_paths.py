@@ -17,12 +17,13 @@ creation puis meurt** au premier nettoyage -- et le symptome est eloigne de la
 cause : le nom du noyau suggere un canon durable, le chemin dit le contraire.
 Un carnet execute sur ce noyau echoue ensuite sur un chemin inexistant.
 
-Trois verdicts par kernelspec, jamais confondus :
+Quatre verdicts par kernelspec, jamais confondus :
 
     TEMP_ROOT            l'interpreteur est sous une racine temporaire connue
                          (`tempfile.gettempdir()`, `/tmp`, `/var/tmp`, `/dev/shm`)
-    SCRATCHPAD_COMPONENT l'interpreteur traverse un composant nomme `scratchpad`
-                         (scratchpad de session, nettoye par le harnais)
+    SCRATCHPAD_COMPONENT un `scratchpad` sous un repertoire `claude`
+    REPO_TMP             un `.tmp` directement sous une racine Git existante
+                         (fichier ou repertoire `.git`)
     MISSING_INTERPRETER  l'interpreteur est un chemin absolu qui n'existe plus
                          (mesure seulement sous `--check-exists`)
 
@@ -129,9 +130,22 @@ def temp_roots(extra: list[str] | None = None) -> list[str]:
 
 
 def _has_scratchpad_component(path: str) -> bool:
-    """Vrai si un composant du chemin s'appelle `scratchpad`."""
-    parts = Path(path).parts
-    return any(part.lower() == SCRATCHPAD_COMPONENT for part in parts)
+    """Un scratchpad de session est situe sous un repertoire `claude`."""
+    parts = [part.lower() for part in Path(path).parts]
+    return any(part == SCRATCHPAD_COMPONENT and "claude" in parts[:index]
+               for index, part in enumerate(parts))
+
+
+def _has_repo_tmp(path: str) -> bool:
+    """Un `.tmp` n'est du scratch de depot que si son parent porte `.git`.
+
+    Le marqueur peut etre un fichier (worktree) ou un repertoire (clone).
+    Un chemin absent reste detectable tant que la racine Git existe.
+    """
+    for parent in Path(path).parents:
+        if parent.name == ".tmp" and (parent.parent / ".git").exists():
+            return True
+    return False
 
 
 def classify_interpreter(
@@ -153,6 +167,8 @@ def classify_interpreter(
             return "TEMP_ROOT"
     if _has_scratchpad_component(resolved):
         return "SCRATCHPAD_COMPONENT"
+    if _has_repo_tmp(resolved):
+        return "REPO_TMP"
     if check_exists and not os.path.exists(interpreter):
         return "MISSING_INTERPRETER"
     return None

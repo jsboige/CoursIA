@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Inventaire et table de correspondance — modèles GenAI/OpenAI (issue #14755, tranche 1)
 
@@ -26,7 +26,7 @@ Le body initial de #14755 (rédigé 2026-09-05) annonçait 657 occurrences ; l'�
 | **TTS** | `/v1/audio/speech` | `gpt-4o-mini-tts` (12), `gpt-4o-mini-tts-2025-03-20`, `gpt-4o-mini-tts-2025-12-15` |
 | **Realtime** | `/v1/realtime` | `gpt-4o-realtime-preview` (10) |
 | **Codex / code** | `/v1/chat/completions` (mode code) | `gpt-5.3-codex` (3), `gpt-5.1-codex-mini` (1), `gpt-5.1-codex-max` (1), `gpt-5.1-codex` (1), `gpt-5.2-codex` (1) |
-| **OpenRouter (passerelle)** | `https://openrouter.ai/api/v1` | `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`, `openai/gpt-5.2-codex`, etc. (~26 modèles `gpt-5*` listés dans `01-2-GPT-5-Image-Generation.ipynb`) |
+| **OpenRouter (passerelle)** | `https://openrouter.ai/api/v1` | `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`, `openai/gpt-5.2-codex`, etc. (~26 modèles `gpt-5*` listés dans `01-2-Generation-Image-API.ipynb`) |
 
 > **Note sur la nomenclature OpenRouter** : OpenRouter préfixe chaque identifiant par `openai/` et expose parfois des **variantes non-officielles** (sous-numérotation `.5`, `.5.5`, suffixes `codex-max`, `image-2`). Le paysage officiel OpenAI n'expose pas toutes ces variantes ; une vérification contre `GET https://api.openai.com/v1/models` est indispensable avant toute substitution.
 

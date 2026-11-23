@@ -58,7 +58,7 @@ Two counts, depending on the filter:
   undercounted by 1).
 - **prose sorries** (any line containing `sorry`, FR files) = **25** (re-measured
   2026-09-16 at the branch head; the former 37 no longer reproduced under
-  this definition). The CI `lean-knot.yml`
+  this definition). The CI `knot_lean` matrix job
   switched to **`real` mode** (`sorry-baseline: "8"`) — the real mode
 
   strips `--` line comments and `/- -/` block comments, then counts the
@@ -67,8 +67,8 @@ Two counts, depending on the filter:
   includes occurrences in diagnostic comments (e.g. the comment on
   `KnotDiagram.wf` in `Basic.lean`).
 
-The CI `.github/workflows/lean-knot.yml` gate is on the **real-mode baseline
-8** (history: prose-header 25→28 in #3124 for
+The CI `knot_lean` job of `.github/workflows/lean-ci-matrix.yml` gate is on the
+**real-mode baseline 8** (history: prose-header 25→28 in #3124 for
 the backward transfer decomposition, lowered to 27 after the `num` proof
 #3163, re-bumped to 28 by the GF(3) follow-up #3003; then prose-header→real
 switch to baseline 17 on 2026-07-11 when the raw count diverged from the
@@ -414,7 +414,7 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 | `Knots/Mutation.lean` (Conway mutation: 4-point sphere, 180° rotation) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness of regluing isotopy, formal sphere structure |
 | `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness of bounded verifier, enumeration completeness |
 | `Knots/ReidemeisterInvariance.lean` (invariance of `alexanderPolynomialSigned` under R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Full soundness, Conway ↔ Reidemeister junction |
-| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Bridge to the 8 real `sorry` of the lake (2 Reidemeister, 4 Slice, 2 Lidman), CI baseline `lean-knot.yml` at `"8"` |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Bridge to the 8 real `sorry` of the lake (2 Reidemeister, 4 Slice, 2 Lidman), CI baseline `knot_lean` (matrix) at `"8"` |
 
 **Human-review act to be signed**: when the human review is carried out, it will take the form `Review by <name, affiliation> — date <YYYY-MM-DD> — scope <whole lake / module> — checks: structure / main proofs / i18n FR-EN — overall verdict` and will be inserted into this README. Grid **#13106 criterion 2** is satisfied by the first signed act; no partial act is recorded silently, and the present section remains honest until the act is written.
 

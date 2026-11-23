@@ -38,7 +38,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: notebook-kernel-drift-guard-${{ github.ref }}
+  group: notebook-kernel-drift-guard-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.event.changes.body == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     # 2026-11-02 (#22937) : 5 min annulait le job APRES un verdict vert --
     # mesure run 41378044015 (PR #24115) : le checkout seul prend 286 s sur
     # 300 (fetch-depth: 0, depot de 14 911 fichiers, ubuntu-latest), le

@@ -15,9 +15,9 @@ All notebooks in this directory are **(c) standalone research** — independent 
 | `research_l2_dual_momentum.ipynb` | L2 Cross-sectional + dual momentum (NO BEATS) | (c) |
 | `research_l3_trend.ipynb` | L3 Trend long-horizon — directional LSTM (NO BEATS) | (c) |
 | `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (NO BEATS under the causal protocol, #21187) | (c) |
-| `c1330_xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer: fold-wise §C validation (per-bucket verdicts) | (c) |
+| `xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer: fold-wise §C validation (per-bucket verdicts) | (c) |
 | `hmm_alpha_research.ipynb` | Gaussian HMM for alpha trading (Broad Ch6 Ex4) | (c) |
-| `c875_hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha: strict Ledoit-Wolf DM validation (50 bps stress, INCONCLUSIVE) | (c) |
+| `hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha: strict Ledoit-Wolf DM validation (50 bps stress, INCONCLUSIVE) | (c) |
 | `m4_dlinear_vol_research.ipynb` | DLinear-vol: linear DL vs HAR (pure forecasts) | (c) |
 | `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR: when structural sophistication hurts | (c) |
 | `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer): the failure of over-parameterization | (c) |

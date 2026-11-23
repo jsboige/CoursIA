@@ -24,6 +24,27 @@ projets plus ambitieux (`calibration_lean`, `GOL/conway_lean`, `sensitivity_lean
 | Fichier | `_en` | sorry | Description |
 |---------|-------|-------|-------------|
 | `MathLibExamples/Basic.lean` | `MathLibExamples/Basic_en.lean` | 0 | Patterns et exemples d'utilisation basique de Mathlib |
+| [`MathLibExamples/ProofBridge.lean`](MathLibExamples/ProofBridge.lean) | [`MathLibExamples/ProofBridge_en.lean`](MathLibExamples/ProofBridge_en.lean) | 0 | Produits, sommes et preuves paramétriques après le jeu |
+
+## Après le jeu : un premier module
+
+Après les notions de types, fonctions, produits et sommes de `Lean-01` à
+`Lean-06`, ouvrez [`ProofBridge.lean`](MathLibExamples/ProofBridge.lean).
+Trois exercices corrigés y construisent une distribution, établissent ses
+aller-retours et vérifient sa compatibilité avec des fonctions. Les deux
+calculs de branches servent de témoins ; les théorèmes couvrent tous les types
+et toutes les valeurs. Pour les modifier, copiez le module dans votre projet
+Lean, puis comparez vos définitions et preuves aux corrections.
+
+Dans ce répertoire, avec la toolchain du fichier `lean-toolchain` installée :
+
+```sh
+lake build MathLibExamples.ProofBridge MathLibExamples.ProofBridge_en
+```
+
+Ces cibles utilisent `Std` et ne demandent pas la compilation de tout Mathlib.
+Elles constituent une étape vers un projet personnel, sans installer de nouveau
+lake ni remplacer le parcours d'installation du jeu.
 
 ## Résultats clés
 
@@ -60,7 +81,7 @@ Lean, et ce module est le terrain d'entraînement minimal pour l'acquérir.
 
 ## Conclusion
 
-Un **module de référence** minimal de schémas d'utilisation basique de Mathlib
+Un **lake de référence** avec un smoke-test minimal de schémas d'utilisation basique de Mathlib
 (`MathLibExamples/Basic.lean`, 0 `sorry`, `lake build MathLibExamples` SUCCESS) :
 un **smoke-test** de l'installation Mathlib — et l'environnement d'exécution
 Mathlib du kernel `lean4-wsl` pour Lean-26 — pas un compagnon module-à-notebook.

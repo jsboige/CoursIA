@@ -157,7 +157,6 @@ Voir aussi
 """
 from __future__ import annotations
 
-import argparse
 import datetime as _dt
 import errno
 import hashlib
@@ -172,6 +171,21 @@ try:
     import yaml
 except ImportError:  # pragma: no cover
     yaml = None
+
+# L'organe des revendications d'ordinal portees par les PRs ouvertes vit a cote
+# de ce fichier (`twin_open_claims.py`) : on l'**importe**, on ne le
+# reimplemente pas (#22299, constat du coordinateur du 2026-11-09 22:50Z).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from twin_open_claims import GhError as OpenClaimsError  # noqa: E402
+from twin_open_claims import collect_open_claims, repo_slug  # noqa: E402
+
+# Tranche T7 (#26364) : la couche CLI et les corps de modes de `_main`
+# vivent dans des modules freres, charges par le meme sys.path que
+# twin_open_claims ci-dessus. Ils n'importent PAS cet organe (injection
+# en parametre) : aucun cycle d'import, aucune double identite.
+import twin_parity_attest  # noqa: E402
+import twin_parity_census  # noqa: E402
+import twin_parity_cli  # noqa: E402
 
 # --- pression de fork (#16111) ----------------------------------------------
 # Un `BlockingIOError` (EAGAIN, errno 11) au fork/clone n'est pas une erreur de
@@ -671,9 +685,22 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
         # les fichiers de paire des noms demandes (+ leurs audits), pas les 2374
         # fichiers du registre. Le slug d'un fichier de paire EST `_slug(name)`
         # (un fichier = une paire, #8542), donc le filtre sur slug == sur name.
+        had_pair_files = bool(pair_lines)
         if names is not None:
             wanted_slugs = {_slug(n) for n in names}
             pair_lines = [(s, l) for (s, l) in pair_lines if s in wanted_slugs]
+            if had_pair_files and not pair_lines:
+                # #28093 : le selecteur a vide la liste = les paires demandees
+                # sont ABSENTES du base-ref (cas normal d'une PR qui ajoute une
+                # paire). Base vide, pas de repli legacy : celui-ci finirait en
+                # « Le registre au base-ref n'est pas une liste » apres avoir
+                # `git show` le REPERTOIRE du registre (listing d'arbre, rc=0).
+                print(
+                    f"[twin-parity] paire(s) absente(s) du base-ref {git_ref} : "
+                    f"{', '.join(sorted(wanted_slugs))} -> base vide pour la comparaison",
+                    file=sys.stderr,
+                )
+                return []
         for slug, line in sorted(pair_lines):
             txt = _git_show_file(repo_root, git_ref, line)
             if txt is None:
@@ -724,8 +751,11 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
     # (2) Retombe sur l'ancien mono-fichier `twin_pairs.yaml` (a cote du script).
     legacy_rel = "scripts/notebook_tools/twin_pairs.yaml"
     reg_text_base = _git_show_file(repo_root, git_ref, legacy_rel)
-    if reg_text_base is None:
-        # tente aussi le chemin absolu fourni en --registry (si c'etait un fichier)
+    if reg_text_base is None and reg_rel.endswith(".yaml"):
+        # tente aussi le chemin fourni en --registry, mais SEULEMENT si c'est un
+        # chemin de FICHIER .yaml (#28093) : `git show <ref>:<repertoire>` rend
+        # rc=0 avec un listing d'arbre, que yaml.safe_load ne parse pas en
+        # liste -- d'ou le message trompeur « n'est pas une liste ».
         reg_text_base = _git_show_file(repo_root, git_ref, reg_rel)
     if reg_text_base is None:
         raise SystemExit(
@@ -1725,6 +1755,65 @@ def _audit_floor(repo_root: Path, registry_dir: Path, name: str,
     return max(_audit_indexes_at_ref(repo_root, ref, registry_dir, name), default=0)
 
 
+def _open_claim_floors(repo_root: Path) -> dict[str, int]:
+    """Ordinals revendiques par les PRs ouvertes, par paire (dossier).
+
+    Le plancher d'allocation lisait jusqu'ici la **seule** ref d'integration
+    (`origin/main`). Mesure du 2026-11-09 (constat du coordinateur) : une PR
+    ouverte peut ** deja tenir l'ordinal propose -- l'ordinal `0018` de
+    `tweety-11-causal` etait tenu par #25037, et `0013`/`0021` ont ete
+    proposes pour deux autres paires alors que la collision n'etait visible
+    qu'apres le push. Le plancher de la ref ne voit pas une PR encore
+    ouverte : il faut aussi lire les **revendications** des PRs ouvertes.
+
+    L'organe natif de cette lecture est `twin_open_claims.py` : on l'appelle,
+    on ne reimplemente ni le parsing du nom de fichier ni le controle de
+    troncature. Rend `{<dossier de paire>: <ordinal le plus haut revendique>}`.
+
+    **Lecture impossible -> plancher vide, jamais une ecriture refusee.** Le
+    plancher d'allocation est un garde, pas une mesure : un `gh` absent, un
+    reseau coupe ou une liste tronquee ne doivent pas bloquer une
+    attestation. L'ecart est dit sur stderr, et la porte d'index reste
+    l'organe unique du verdict au push.
+
+    **Depot sans remote GitHub -> plancher vide, SANS avertissement.** Le
+    plancher n'est pas *applicable* la (copie locale, bac a sable) : ce n'est
+    pas une lecture ratee, il n'y a rien a mesurer. Un avertissement dans ce
+    cas polluerait la sortie d'un outil qui fonctionne.
+    """
+    try:
+        slug = repo_slug(repo_root)
+    except (OpenClaimsError, OSError):
+        # Depot sans remote GitHub (copie locale, bac a sable, tests) ou
+        # `gh` absent : le plancher des PRs ouvertes n'est pas **applicable**
+        # ici -- ce n'est pas une lecture ratee, il n'y a rien a mesurer.
+        # Aucun avertissement : la ligne resterait dans la sortie d'un
+        # outil qui fonctionne.
+        return {}
+    try:
+        data = collect_open_claims(slug, cwd=repo_root)
+    except OpenClaimsError as exc:
+        print(f"AVERTISSEMENT : lecture des PRs ouvertes impossible ({exc}) -- "
+              "le plancher d'allocation ne couvre que la ref d'integration ; "
+              "une collision d'ordinal reste possible (la porte d'index la "
+              "verra au push).", file=sys.stderr)
+        return {}
+    except Exception as exc:  # pragma: no cover -- garde-fou d'import
+        print(f"AVERTISSEMENT : lecture des PRs ouvertes impossible ({exc!r}) -- "
+              "le plancher d'allocation ne couvre que la ref d'integration.",
+              file=sys.stderr)
+        return {}
+    floors: dict[str, int] = {}
+    for claims in (data.get("prs") or {}).values():
+        for claim in claims or []:
+            pair = str(claim.get("pair") or "")
+            index = str(claim.get("index") or "")
+            if not pair or not index.isdigit():
+                continue
+            floors[pair] = max(floors.get(pair, 0), int(index))
+    return floors
+
+
 def _refresh_allocate_ref(repo_root: Path, ref: str | None) -> None:
     """Rafraichit `<remote>/<branche>` avant la lecture du plancher (#22547).
 
@@ -2161,234 +2250,18 @@ def main(argv=None) -> int:
         return 3
 
 
-def _main(argv=None) -> int:
-    p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
-                   help=f"Chemin du registre YAML (defaut: {DEFAULT_REGISTRY.name})")
-    p.add_argument("--repo-root", default=None,
-                   help="Racine du depot git (defaut: detectee en remontant les parents "
-                        "jusqu'a un `.git`, sans fork -- cf #16111). Utile pour les tests "
-                        "(mini-depot tmp_path) et le cron CI qui pointe sur le checkout "
-                        "explicite.")
-    p.add_argument("--family", default=None,
-                   help="Restreindre a une famille (ex. SMT/Z3-API)")
-    p.add_argument("--check", action="store_true",
-                   help="Exit 1 si DRIFT/MISSING/NUMBERING-DRIFT detecte (CI-ready)")
-    p.add_argument("--update", action="store_true",
-                   help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
-                        "(a lancer APRES une audit firsthand d'une paire, ET EN DERNIER : "
-                        "toute normalisation outillee ulterieure -- strip_probe_banner.py, "
-                        "strip_machine_paths.py, scrub_papermill_paths.py -- deplace le "
-                        "blob SHA sans toucher le contenu calcule et invaliderait cette "
-                        "attestation, cf #8957). Depuis #9399 critere 2, --update "
-                        "REFUSE par defaut d'ecrire une nouvelle entree d'audit si "
-                        "les SHAs de comparaison sont identiques au `_latest_audit` "
-                        "(no-op = faux audit, --update devient facultatif). "
-                        "Utilisez --force pour outrepasser avec un avertissement.")
-    p.add_argument("--json", action="store_true", help="Sortie machine JSON")
-    p.add_argument("--summary-by-verdict", action="store_true",
-                   help="Compte les paires par `bridge_verdict` (#10439) : SOTA-OK / "
-                        "RECOVERABLE-* / INTRINSIC / (non-rompu = actionnable). "
-                        "Le point du champ structurel : soustraire les verdicts "
-                        "INTRINSIC/SOTA-OK du denominateur 'actionnable' SANS "
-                        "intervention manuelle. Incompatible avec --update/--per-pair.")
-    p.add_argument("--coverage", action="store_true",
-                   help="Recense les notebooks C# versionnes NON couverts par le "
-                        "registre (jumeau Python present mais paire non declaree). "
-                        "Avec --check, sort 1 s'il reste des paires non enregistrees.")
-    p.add_argument("--per-pair", action="store_true",
-                   help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
-                        "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
-    p.add_argument("--base", default=None,
-                   help="Ref git de base pour le mode --per-pair (ex. origin/main, "
-                        "HEAD~1, ou 'auto' : HEAD^1 quand HEAD est un merge ref "
-                        "GitHub, origin/main sinon -- cf #22292).")
-    p.add_argument("--ci-strict", action="store_true",
-                   help="Mode CI cron (#9399 volet b) : check fleet-wide SANS base ref, "
-                        "avec breakdown 4 categories (ok_legacy / ok_content / drift_blob / "
-                        "drift_content / drift_legacy_after_content / missing_python / "
-                        "missing_csharp / no_audit). Combine avec --check pour FAIL sur N'IMPORTE "
-                        "QUEL drift (vs la semantique 'DRIFT_or_MISSING only' historique). "
-                        "Distingue erreur d'outil vs constat de drift (cf L948/L949, c.1240).")
-    p.add_argument("--pair", default=None,
-                   help="Restreindre a une paire nommee (ex. 'Search-9-LP') : applique par "
-                        "--update, --migrate-audits, --check et --verify-recorded-sha "
-                        "(#20197), ainsi qu'en --per-pair --base <ref> (#21281) ; refuse par "
-                        "--coverage et --summary-by-verdict (modes de recensement integral). "
-                        "Nom inconnu = rc 2. Impossible a combiner avec --family.")
-    p.add_argument("--yes-all-pairs", action="store_true",
-                   help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
-                        "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
-    p.add_argument("--by", default=None,
-                   help="Auteur de l'audit inscrit dans last_audit.by (ex. "
-                        "'myia-po-2024:CoursIA-2'). Avec --update, la date est "
-                        "TOUJOURS mise a aujourd'hui : sans --by, l'entree garderait "
-                        "l'auteur de l'audit precedent alors que les SHAs sont neufs.")
-    p.add_argument("--force", action="store_true",
-                   help="Avec --update : outrepasser la detection no-op (cf #9399 "
-                        "critere 2). Par defaut, --update REFUSE d'ecrire une "
-                        "nouvelle entree d'audit si les SHAs de comparaison sont "
-                        "identiques au `_latest_audit` (--update devient "
-                        "facultatif : la CI derive elle-meme les SHAs depuis "
-                        "volet b, un rebaseline manuel identique n'apporte aucune "
-                        "information nouvelle et serait un faux audit). --force "
-                        "est l'opt-in explicite pour forcer la nouvelle entree "
-                        "malgre le no-op, avec un avertissement explicite sur "
-                        "stdout. Sans effet sur les modes non --update.")
-    p.add_argument("--allocate-against", default="origin/main", metavar="REF",
-                   help="Avec --update : plancher d'allocation du prefixe NNNN, lu "
-                        "sur cette ref (defaut 'origin/main', vide = desactive). "
-                        "L'index ne peut plus etre <= au max deja publie pour la "
-                        "paire sur cette ref (#22299) : sans ce plancher, deux "
-                        "branches issues du meme main calculent le meme max et "
-                        "emettent le meme prefixe, que le garde d'integrite refuse "
-                        "apres merge. Avant la lecture, un `git fetch` borne "
-                        "rafraichit la ref <remote>/<branche> (#22547) : sans lui, "
-                        "le plancher lirait la ref telle que le clone la connaissait "
-                        "a son dernier fetch et la collision resterait possible. Si "
-                        "le fetch echoue ou si la ref est illisible, repli sur la ref "
-                        "locale -- cela ne bloque jamais l'ecriture (le plancher est "
-                        "un garde, pas une mesure).")
-    p.add_argument("--no-allocate-against", action="store_true",
-                   help="Desactive le plancher d'allocation (comportement "
-                        "historique : max local + 1). Utile dans un depot sans "
-                        "remote, ou pour reproduire un registre ancien.")
-    p.add_argument("--verify-recorded-sha", action="store_true",
-                   help="Gate CI #9399 volet b : verifie que les SHA enregistres "
-                        "dans le YAML (last_audit legacy OU audits[-1] append-only) "
-                        "correspondent aux SHA recalcules a HEAD (git ls-tree + "
-                        "SHA-256 metadata-immune). Exit 1 si MISMATCH sur au moins "
-                        "une paire (avec --check). Mode read-only : n'ecrit rien.")
-    p.add_argument("--migrate-audits", action="store_true",
-                   help="Reecrit le registre en forme file-per-audit (#14911) : "
-                        "chaque audit migre vers `twin_pairs.d/<pair>/<date>-<lane>.yaml` "
-                        "et la liste `audits:`/`last_audit:` est retiree du fichier "
-                        "d'intention. Exige un selecteur (--pair / --family / "
-                        "--yes-all-pairs) pour eviter une invocation nue qui "
-                        "reecrirait les 157 paires (cf #8508).")
-    args = p.parse_args(argv)
+def _self():
+    """L'organe vu comme namespace, pour l'injection dans les modules
+    freres (T7) : fonctionne quelle que soit l'identite d'import de cet
+    organe -- script direct, module de package, ou importlib par chemin
+    sans registration dans sys.modules (cas des tests)."""
+    import types
+    return types.SimpleNamespace(**globals())
 
-    # Cross-validation : --per-pair <-> --base
-    if args.coverage and (args.update or args.per_pair or args.base or args.verify_recorded_sha):
-        p.error("--coverage est un mode de recensement seul : incompatible avec "
-                "--update / --per-pair / --base / --verify-recorded-sha.")
-    if args.summary_by_verdict and (args.update or args.per_pair or args.base
-                                    or args.verify_recorded_sha or args.coverage):
-        p.error("--summary-by-verdict est un mode de recensement seul : incompatible "
-                "avec --update / --per-pair / --base / --verify-recorded-sha / --coverage.")
-    if args.per_pair and not args.base:
-        p.error("--per-pair necessite --base <ref>")
-    if args.base and not args.per_pair:
-        p.error("--base necessite --per-pair")
-    if args.update and (args.per_pair or args.base or args.verify_recorded_sha):
-        p.error("--update est incompatible avec --per-pair/--base/--verify-recorded-sha")
-    if args.verify_recorded_sha and (args.per_pair or args.base or args.update):
-        p.error("--verify-recorded-sha est read-only : incompatible avec "
-                "--update/--per-pair/--base.")
-    # --update exige un selecteur (anti-corruption silencieuse du registre, cf #8508)
-    if args.update and not (args.family or args.pair or args.yes_all_pairs):
-        p.error("--update exige un selecteur explicite : --family <f>, --pair <name>, "
-                "OU --yes-all-pairs. Le defaut '--update' seul reecrirait le last_audit "
-                "de TOUTES les paires du registre, ce qui masque des DRIFTs legitimes "
-                "(cf issue #8508 + lecons L963/L974).")
-    # --migrate-audits est un mode de reecriture structurelle exclusive (#14911) :
-    # le selecteur est deja obligatoire (bloc d'execution), et il est incompatible
-    # avec les autres modes d'ecriture/conservation.
-    if args.migrate_audits and (args.update or args.per_pair or args.base
-                                or args.verify_recorded_sha or args.coverage
-                                or args.summary_by_verdict or args.ci_strict):
-        p.error("--migrate-audits est un mode exclusif : incompatible avec "
-                "--update / --per-pair / --base / --verify-recorded-sha / "
-                "--coverage / --summary-by-verdict / --ci-strict.")
-    # Selecteurs sans portee pour les modes de recensement seul (#21281,
-    # reliquat #20578) : un --pair/--family sur --coverage ou
-    # --summary-by-verdict etait silencieusement ignore -- un selecteur
-    # inconnu rendait rc 0 sur le recensement integral. On refuse a
-    # l'analyse (p.error) plutot que d'evaluer un selecteur qui n'a aucun
-    # sens pour ces deux modes.
-    if args.coverage and (args.pair or args.family):
-        p.error("--coverage est un mode de recensement integral : --pair/--family "
-                "n'y designent rien (recense justement les notebooks ABSENTS du "
-                "registre). Retirer le selecteur.")
-    if args.summary_by_verdict and (args.pair or args.family):
-        p.error("--summary-by-verdict est un mode de recensement integral : "
-                "--pair/--family n'y designent rien (compte les paires par "
-                "bridge_verdict). Retirer le selecteur.")
-    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
-    # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
-    # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
-    # final du notebook -- au commit du merge, les notebooks obtiennent de
-    # nouveaux blobs, et l'attestation fraichement ecrite est deja DRIFT avant
-    # meme que la CI ne la voie. Variante operationnelle de #8957 (« attester
-    # en DERNIER ») : le commit du merge lui-meme deplace le blob apres
-    # attestation. Refus : on commit d'abord, puis on re-atteste.
-    if args.update:
-        try:
-            if args.repo_root:
-                repo_root_for_state = Path(args.repo_root)
-            else:
-                repo_root_for_state = _repo_root()
-        except SystemExit:
-            repo_root_for_state = None
-        if repo_root_for_state is not None:
-            # Le check precede `_repo_root()` final pour economiser un subprocess
-            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
-            # peut etre override dans les tests --repo-root sur tmp_path).
-            #
-            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
-            # et seulement si un merge est non commite) -- detection inchangee.
-            r = _run_git(
-                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
-                cwd=str(repo_root_for_state),
-            )
-            if r.returncode == 0:
-                p.error("--update pendant un merge non committe : HEAD ne contient pas "
-                        "le resultat du merge. Commitez d'abord, puis re-attestez "
-                        "(cf #11732, variante operationnelle de #8957).")
-            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
-            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
-            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
-            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
-            # porte un sans rebase en cours voyait alors --update refuse a tort
-            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
-            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
-            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
-            # du depot (worktree compris) ; la sortie est relative au cwd dans
-            # le clone principal (`.git/rebase-merge`) et absolue dans un
-            # worktree -- d'ou la resolution explicite ci-dessous.
-            for state_dir in ("rebase-merge", "rebase-apply"):
-                r = _run_git(
-                    ["git", "rev-parse", "--git-path", state_dir],
-                    cwd=str(repo_root_for_state),
-                )
-                raw = r.stdout.strip() if r.returncode == 0 else ""
-                if not raw:
-                    continue
-                state_path = Path(raw)
-                if not state_path.is_absolute():
-                    state_path = repo_root_for_state / state_path
-                if state_path.exists():
-                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
-                            "le resultat du rebase. Terminez ou annulez le rebase "
-                            "(git rebase --continue / --abort), puis re-attestez "
-                            "(cf #11732, variante operationnelle de #8957).")
-    if args.pair and args.family:
-        p.error("--pair et --family sont mutuellement exclusifs avec --update.")
-    if args.ci_strict and args.per_pair:
-        p.error("--ci-strict est un mode fleet-wide SANS base ref : incompatible avec --per-pair.")
-    if args.ci_strict and args.update:
-        p.error("--ci-strict est un mode read-only : incompatible avec --update.")
-    # Cross-validation --ci-strict x --verify-recorded-sha (#9481, post-rebase c.984) :
-    # les deux sont des modes fleet-wide read-only avec des sorties JSON disjointes
-    # (breakdown 4 categories vs recorded-vs-HEAD mismatch). Les coupler en CLI
-    # melange deux verdicts dans la meme invocation, ce qui rend le choix du
-    # categoriel d'echec ambigu pour le mainteneur. Le cron les lance separement
-    # (twin-parity-cron.yml pour --ci-strict, twin-parity-sha-mismatch du
-    # twin-parity.yml #9481 pour --verify-recorded-sha). Mutuellement exclusifs.
-    if args.ci_strict and args.verify_recorded_sha:
-        p.error("--ci-strict et --verify-recorded-sha sont deux modes fleet-wide "
-                "read-only avec des sorties JSON disjointes : incompatibles. "
-                "Lancer l'un ou l'autre, pas les deux (le cron les dispatch separement).")
+
+def _main(argv=None) -> int:
+    p = twin_parity_cli.build_parser(DEFAULT_REGISTRY, __doc__.split("\n\n")[0])
+    args = twin_parity_cli.parse_and_validate(p, argv, organ=_self())
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
@@ -2407,291 +2280,15 @@ def _main(argv=None) -> int:
     # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
     # SANS verdict sont les 'actionnables' (ni INTRINSIC ni SOTA-OK declare). ---
     if args.summary_by_verdict:
-        pairs = load_registry(reg_path)
-        # Fail-loud sur un bridge_verdict invalide avant de resumer : un resume
-        # qui ignore silencieusement une valeur hors enum est le defaut meme
-        # que #10439 vient corriger.
-        schema_errs = [e for pp in pairs for e in validate_pair_fields(pp)]
-        if schema_errs:
-            for e in schema_errs:
-                print(f"SCHEMA ERROR: {e}", file=sys.stderr)
-            return 2
-        counts: dict = {}
-        names_by: dict = {}
-        for pp in pairs:
-            bv = pp.get("bridge_verdict", "(non-rompu)")
-            counts[bv] = counts.get(bv, 0) + 1
-            names_by.setdefault(bv, []).append(pp.get("name", "?"))
-        actionable = sum(c for k, c in counts.items()
-                         if k not in ("INTRINSIC", "SOTA-OK"))
-        if args.json:
-            print(json.dumps({
-                "mode": "summary_by_verdict",
-                "registry": str(reg_path),
-                "total": len(pairs),
-                "counts": counts,
-                "actionable": actionable,
-            }, ensure_ascii=False, indent=2))
-        else:
-            order = ["(non-rompu)", "SOTA-OK", "RECOVERABLE-LOCAL",
-                     "RECOVERABLE-MACHINE", "RECOVERABLE-USER-HAND", "INTRINSIC"]
-            shown = [k for k in order if k in counts] + sorted(set(counts) - set(order))
-            print(f"Summary by bridge_verdict ({len(pairs)} paires) :")
-            for k in shown:
-                tag = " ACTIONNABLE" if k not in ("INTRINSIC", "SOTA-OK") else ""
-                print(f"  {k:<22} {counts[k]:>3}{tag}")
-            print(f"  {'actionnables (a bridger)':<22} {actionable:>3}"
-                  f"  = total - INTRINSIC - SOTA-OK")
-        return 0
+        return twin_parity_census.run_summary_by_verdict(args, organ=_self(), reg_path=reg_path)
 
     # --- Mode --coverage : angle mort du registre (paires jamais declarees) ---
     if args.coverage:
-        cov = scan_coverage(repo_root, load_registry(reg_path))
-        n_unreg, n_only = len(cov["unregistered"]), len(cov["csharp_only"])
-        if args.json:
-            print(json.dumps(cov, ensure_ascii=False, indent=2))
-        else:
-            for e in cov["unregistered"]:
-                print(f"[UNREGISTERED] {e['csharp']}")
-                for c in e["python_candidates"]:
-                    print(f"        <-> {c}")
-            for e in cov["csharp_only"]:
-                print(f"[CSHARP-ONLY]  {e['csharp']}")
-            print(
-                f"\nNotebooks C# versionnes : {cov['csharp_tracked']} | "
-                f"enregistres={cov['registered']} "
-                f"NON-ENREGISTRES={n_unreg} C#-only={n_only}"
-            )
-            if n_unreg:
-                print(
-                    f"\n{n_unreg} paire(s) reelle(s) hors registre : invisibles au "
-                    f"gate de derive tant qu'elles n'y sont pas declarees.\n"
-                    f"Enregistrer par tranche APRES audit de parite firsthand "
-                    f"(cf #8057), jamais en masse."
-                )
-        return 1 if (args.check and n_unreg) else 0
+        return twin_parity_census.run_coverage(args, organ=_self(), reg_path=reg_path, repo_root=repo_root)
 
     # --- Mode --per-pair : comparaison HEAD vs base-ref ---
     if args.per_pair:
-        # Charge le registre a HEAD (working tree) et au base-ref (git show).
-        # Le base-ref peut porter l'ancien mono-fichier (frontiere de migration
-        # #8542) -> _load_registry_at_ref essaie le repertoire puis retombe sur
-        # le fichier legacy.
-        pairs_head = load_registry(reg_path)
-
-        # Application stricte des selecteurs (#21281, reliquat #20578) :
-        # un nom ou une famille inconnue -> rc 2 avec la liste des noms
-        # connus, comme --check --update le fait deja depuis #20578.
-        # On check AVANT le load du base-ref (qui fait un git ls-tree par
-        # paire et est dispendieux) : un selecteur inconnu ne doit jamais
-        # payer le cout d'un parcours integral.
-        if args.family:
-            known_families = sorted({pp.get("family", "?") for pp in pairs_head})
-            if args.family not in known_families:
-                print(
-                    f"--family {args.family!r} inconnue. Familles connues : "
-                    f"{known_families}",
-                    file=sys.stderr,
-                )
-                return 2
-            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
-        elif args.pair:
-            known_names = sorted({pp.get("name", "?") for pp in pairs_head})
-            if args.pair not in known_names:
-                print(
-                    f"--pair {args.pair!r} inconnue. Noms connus ({len(known_names)}) : "
-                    f"{known_names}",
-                    file=sys.stderr,
-                )
-                return 2
-            pairs_head = [pp for pp in pairs_head if pp.get("name") == args.pair]
-
-        # #21972 : ne charger au base-ref que les paires selectionnees. `pairs_head`
-        # est deja filtre par --pair/--family (juste dessus) ; sans selecteur il
-        # porte tout le registre -> `names` = tous les noms -> chargement integral,
-        # comportement strictement inchange.
-        pairs_base = _load_registry_at_ref(
-            repo_root, args.base, reg_path,
-            names={pp.get("name", "?") for pp in pairs_head},
-        )
-        # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
-        base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
-
-        # #22920 : verdict STALE_BRANCH, decide EN AMONT de _classify_per_pair
-        # (le cas est invisible dans ses entrees : deux statuts seulement). Le
-        # point de fork (merge-base) n'est resolu QUE si au moins une paire est
-        # declaree avec des chemins differents aux deux refs -- un test pur,
-        # sans appel git : un registre sans divergence ne paie rien.
-        merge_base = (
-            _merge_base_ref(repo_root, args.base)
-            if any(
-                (b := base_by_name.get(pp.get("name", "?"))) is not None
-                and _pair_paths_diverge(b, pp)
-                for pp in pairs_head
-            )
-            else None
-        )
-
-        results = []
-        for pp in pairs_head:
-            name = pp.get("name", "?")
-            head_state = check_pair(repo_root, pp, git_ref="HEAD")
-            base_pp = base_by_name.get(name)
-            if base_pp is None:
-                # Paire ajoutee par la PR -> si elle n'est PAS OK au HEAD, c'est du drift introduit
-                base_status = "MISSING"
-                base_drift: set[str] = set()
-                base_no_baseline = False
-                base_details = [f"Paire '{name}' absente du registre au base-ref '{args.base}' (ajoutee par la PR)"]
-            else:
-                base_check = check_pair(repo_root, base_pp, git_ref=args.base)
-                base_status = base_check["status"]
-                base_drift = set(base_check.get("drift_sides") or ())
-                base_no_baseline = bool(base_check.get("no_baseline"))
-                base_details = base_check["details"]
-
-            head_status = head_state["status"]
-            head_drift = set(head_state.get("drift_sides") or ())
-            head_no_baseline = bool(head_state.get("no_baseline"))
-            # #22920 : branche perimee ? Paire deplacee par la branche base apres
-            # le fork -- le registre de la tete declare encore l'ancien chemin.
-            # Sondes croisees + orientation, uniquement si les chemins divergent.
-            stale_paths = (
-                _stale_branch_probe(repo_root, base_pp, pp, args.base, merge_base)
-                if base_pp is not None and _pair_paths_diverge(base_pp, pp)
-                else None
-            )
-            if stale_paths is not None:
-                # Verdict dedie : PAS un DRIFT_INTRODUCED (compteur propre), et le
-                # remede est `gh pr update-branch`, jamais un rebaseline.
-                verdict = "STALE_BRANCH"
-            else:
-                # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
-                # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
-                verdict = _classify_per_pair(base_status, head_status,
-                                            base_drift, head_drift,
-                                            base_no_baseline, head_no_baseline)
-
-            entry = {
-                "name": name,
-                "family": pp.get("family", "?"),
-                "parity_level": pp.get("parity_level", "?"),
-                "base_ref": args.base,
-                "base_status": base_status,
-                "head_status": head_status,
-                "verdict": verdict,
-                # #23020 : les COTES en drift a chaque ref, et le nom du jumeau
-                # que la PR a mis en drift -- le verdict ne le disait pas.
-                "base_drift_sides": sorted(base_drift),
-                "head_drift_sides": sorted(head_drift),
-                "introduced_twins": sorted(head_drift - base_drift),
-                # La pair PERD sa reference (audit absent / sans sha) a cette
-                # ref : distinct du drift, et c'est ce qui permet au verdict
-                # de ne pas classer "pre-existant" une PR qui supprime une
-                # attestation.
-                "base_no_baseline": base_no_baseline,
-                "head_no_baseline": head_no_baseline,
-                "base_details": base_details,
-                "head_details": head_state["details"],
-            }
-            if stale_paths is not None:
-                entry["paths_base"] = stale_paths["paths_base"]
-                entry["paths_head"] = stale_paths["paths_head"]
-            results.append(entry)
-
-        n_ok = sum(1 for r in results if r["verdict"] == "OK")
-        n_introduced = sum(1 for r in results if r["verdict"] == "DRIFT_INTRODUCED")
-        n_resolved = sum(1 for r in results if r["verdict"] == "DRIFT_RESOLVED")
-        n_pre_existing = sum(1 for r in results if r["verdict"] == "DRIFT_PRE_EXISTING")
-        n_stale = sum(1 for r in results if r["verdict"] == "STALE_BRANCH")
-
-        if args.json:
-            out = {
-                "mode": "per_pair",
-                "registry": str(reg_path),
-                "base_ref": args.base,
-                "total": len(results),
-                "ok": n_ok,
-                "drift_introduced": n_introduced,
-                "drift_resolved": n_resolved,
-                "drift_pre_existing": n_pre_existing,
-                "stale_branch": n_stale,
-                "pairs": results,
-            }
-            print(json.dumps(out, ensure_ascii=False, indent=2))
-        else:
-            tag_map = {
-                "OK": "OK",
-                "DRIFT_INTRODUCED": "DRIFT-INTRO",
-                "DRIFT_RESOLVED": "DRIFT-FIXED",
-                "DRIFT_PRE_EXISTING": "DRIFT-PRE",
-                "STALE_BRANCH": "STALE-BRANCH",
-            }
-            for r in results:
-                tag = tag_map[r["verdict"]]
-                print(f"[{tag}] {r['name']} ({r['family']}, {r['parity_level']}) "
-                      f"base={r['base_status']} head={r['head_status']}")
-                if r["verdict"] != "OK":
-                    for d in r["head_details"]:
-                        print(f"       HEAD: {d}")
-                if r["verdict"] == "DRIFT_INTRODUCED" and r.get("introduced_twins"):
-                    # #23020 : le message nomme LE jumeau en cause.
-                    print(f"       Jumeau(x) mis en drift par la PR : "
-                          f"{', '.join(r['introduced_twins'])}")
-            print(f"\nTotal : {len(results)} paire(s) | "
-                  f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} "
-                  f"PRE={n_pre_existing} STALE={n_stale}")
-
-        # Le gate rougit sur DRIFT_INTRODUCED **et** sur STALE_BRANCH : une paire
-        # perimee exige une action lane (`gh pr update-branch`) -- le bloc de
-        # remediation du workflow, ou vit la ligne update-branch, n'est rendu que
-        # sur exit 1. Les paires STALE ne comptent PAS dans drift_introduced
-        # (#22920) : le message de derive de contenu ne doit pas les viser.
-        if args.check and (n_introduced > 0 or n_stale > 0):
-            if args.per_pair:
-                # Le DRIFT d'une normalisation outillee (strip_probe_banner.py --apply,
-                # strip_machine_paths.py, scrub_papermill_paths.py) deplace le blob SHA
-                # SANS toucher le contenu calcule : la parite est vraie, c'est son
-                # empreinte qui a bouge. Dans ce cas le rebaseline --update va EN DERNIER,
-                # apres ces strips, sinon l'attestation est invalidee par le strip qui suit
-                # (piege naturel, #8957).
-                #
-                # Ce rappel est un DIAGNOSTIC destine a l'humain : il va sur stderr, pas stdout.
-                # En mode --json, stdout est un contrat machine (un unique objet JSON consomme
-                # par le workflow CI via json.load) ; imprimer ce rappel sur stdout apres le
-                # JSON -> json.load levait "Extra data" et faisait tomber le gate en raw
-                # traceback (PRs #9097/#9098, exit 1 sur drift introduit). stderr reste visible
-                # dans les logs CI sans corrompre le rapport.
-                #
-                # Uniquement si un vrai DRIFT_INTRODUCED existe : sur une sortie
-                # rouge STALE_BRANCH seule, ce rappel (rebaseline apres strips)
-                # ne s'applique pas -- le remede est `gh pr update-branch`.
-                if n_introduced > 0:
-                    # #23020 : le message d'erreur nomme le jumeau en cause.
-                    intro = [
-                        f"{r['name']} ({', '.join(r['introduced_twins'])})"
-                        for r in results
-                        if r["verdict"] == "DRIFT_INTRODUCED"
-                    ]
-                    if intro:
-                        print(
-                            "\nJumeau(x) mis(s) en drift par la PR : "
-                            + " ; ".join(intro)
-                            + " -- rebaseline l'attestation de la paire "
-                            "(check_twin_parity.py --update) ou deplace le "
-                            "jumeau en lockstep.",
-                            file=sys.stderr,
-                        )
-                    print(
-                        "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
-                        "deplace le blob SHA (strip_probe_banner.py --apply, "
-                        "strip_machine_paths.py, scrub_papermill_paths.py), le rebaseline "
-                        "--update va EN DERNIER, apres ces strips -- attester PUIS "
-                        "stripper invalide l'attestation (#8957).",
-                        file=sys.stderr,
-                    )
-            return 1
-        return 0
+        return twin_parity_census.run_per_pair(args, organ=_self(), reg_path=reg_path, repo_root=repo_root)
 
     # --- Mode historique (fleet-wide) ---
     pairs = load_registry(reg_path)
@@ -2713,302 +2310,15 @@ def _main(argv=None) -> int:
             print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
 
     if args.update:
-        # Selecteur obligatoire depuis c.909 (#8508) : --family OU --pair OU
-        # --yes-all-pairs. Sans lui, --update rebaselinerait les 116 paires et
-        # masquerait des DRIFTs legitimes.
-        all_pairs = load_registry(reg_path)
-        if args.pair:
-            target = [pp for pp in all_pairs if pp.get("name") == args.pair]
-            if not target:
-                names = sorted({pp.get("name", "?") for pp in all_pairs})
-                print(
-                    f"Aucune paire nommee '{args.pair}'. "
-                    f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
-                    file=sys.stderr,
-                )
-                return 1
-        elif args.family:
-            target = [pp for pp in all_pairs if pp.get("family") == args.family]
-            if not target:
-                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
-        else:
-            # --yes-all-pairs (filet anti-corruption silencieuse, cf #8508)
-            target = all_pairs
-        updates: dict[str, dict] = {}
-        skipped: list[str] = []
-        # No-op detection (#9399 critere 2) : un rebaseline qui n'apporte
-        # aucune information nouvelle (SHAs de comparaison identiques au
-        # `_latest_audit`) est un "faux audit" -- dater une attestation
-        # identique. On les distingue pour les compter separement et (sans
-        # --force) refuser de les ecrire.
-        no_op: list[str] = []
-        forced_no_op: list[str] = []
-        for pp in target:
-            audit, cur_py, is_noop = update_pair(repo_root, pp, by=args.by)
-            if cur_py is None:
-                skipped.append(pp.get("name", "?"))
-                continue
-            if is_noop and not args.force:
-                # Refuse par defaut : message comprehensible + n'ecrit rien.
-                # Le worker peut relancer avec --force s'il a une raison
-                # explicite de re-attester (rare, mais legitime).
-                no_op.append(pp.get("name", "?"))
-                continue
-            if is_noop and args.force:
-                forced_no_op.append(pp.get("name", "?"))
-            updates[pp["name"]] = audit
-        # Rebaseline CHIRURGICAL (#8570) : seules les lignes d'audit des paires
-        # ciblees changent. En mode file-per-entry (#8542) + file-per-audit
-        # (#14911), on ecrit CHAQUE audit dans son propre fichier
-        # `<pair>/<idx>-<date>-<lane>.yaml` (un ajout, pas un remplacement
-        # d'historique) et on retire la liste `audits:` du fichier d'intention.
-        # Pour le mono-fichier legacy, on conserve `surgical_rebaseline`
-        # (append chirurgical au bloc d'audit inline).
-        if reg_path.is_dir():
-            written = 0
-            # Plancher d'allocation (#22299) : resolu une fois, lu par paire.
-            allocate_ref = None if args.no_allocate_against else args.allocate_against
-            # #22547 : la ref d'integration vaut ce que vaut son dernier
-            # fetch. Un seul fetch borne avant la boucle (pas un par paire),
-            # repli silencieux sur la ref locale si le remote ne repond pas.
-            if updates:
-                _refresh_allocate_ref(repo_root, allocate_ref)
-            for name, audit in updates.items():
-                pfile = _pair_file(reg_path, name)
-                if not pfile.exists():
-                    print(f"Aucun fichier pour la paire '{name}' "
-                          f"(attendu : {pfile.name}).", file=sys.stderr)
-                    continue
-                # Nouvelle forme file-per-audit (#14911) : on ecrit chaque audit
-                # dans un fichier separe `<pair>/<idx>-<date>-<lane>.yaml`, puis
-                # on retire la liste `audits:`/`last_audit:` du fichier
-                # d'intention `<pair>.yaml` (le lecteur reconstitue `audits:`
-                # depuis les fichiers separes -- voir `load_registry`).
-                #
-                # Anti-regression (paire non encore migree) : si le fichier
-                # d'intention porte ENCORE des audits inline, on les migre
-                # d'abord vers des fichiers (indices 1..N) AVANT d'appender le
-                # nouvel audit (sinon `_strip_audits_from_yaml` les perdrait :
-                # seuls les fichiers restants seraient relus). Sur une paire deja
-                # migree (intention sans audits), `_write_audit_file` appende au
-                # prochain slot (index=None -> count+1).
-                raw = pfile.read_text(encoding="utf-8")
-                inline = _inline_audits_of(raw)
-                if inline:
-                    used: set[str] = set()
-                    # Migre les audits inline existants (1..len(inline)).
-                    for idx, a in enumerate(inline, start=1):
-                        _write_audit_file(reg_path, name, a,
-                                          used_names=used, index=idx)
-                    _write_audit_file(reg_path, name, audit,
-                                      used_names=used, index=len(inline) + 1)
-                else:
-                    floor = _audit_floor(repo_root, reg_path, name, allocate_ref)
-                    if floor >= _next_audit_index(_audit_dir(reg_path, _slug(name))):
-                        # Observabilite : l'index retenu n'est pas le max local,
-                        # c'est le plancher publie. Sans cette ligne, le worker
-                        # lirait la numerotation comme un trou inexplique.
-                        print(f"  '{name}' : prefixe alloue au-dessus de "
-                              f"{allocate_ref} (max publie = {floor})")
-                    _write_audit_file(reg_path, name, audit, floor=floor)
-                new_raw = _strip_audits_from_yaml(raw)
-                if new_raw != raw:
-                    write_registry_text(pfile, new_raw)
-                written += 1
-            updated = written
-        else:
-            # mono-fichier legacy (--registry <file.yaml>)
-            raw = reg_path.read_text(encoding="utf-8")
-            new_raw, updated = surgical_rebaseline(raw, updates, force=args.force)
-            write_registry_text(reg_path, new_raw)
-            if updated < len(updates):
-                print(
-                    f"AVERTISSEMENT : {len(updates) - updated} paire(s) a "
-                    f"rebaseliner sans bloc d'audit reconnu dans {reg_path.name} "
-                    f"-- rebaseline IGNORE pour elles (header introuvable).",
-                    file=sys.stderr,
-                )
-        if skipped:
-            print(
-                f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
-                file=sys.stderr,
-            )
-        # Bilan no-op vs reelles (#9399 critere 2) -- informe le worker de
-        # la portee reelle de sa commande. Sans --force, les paires no-op ne
-        # sont PAS ecrites ; le worker voit la liste et peut relancer --force
-        # s'il a une raison explicite de re-attester.
-        if no_op:
-            print(
-                f"Refusees (no-op, --update facultatif post-volet-b : les SHAs "
-                f"enregistres sont deja ceux du carnet a HEAD) : "
-                f"{', '.join(no_op)}",
-                file=sys.stderr,
-            )
-        if forced_no_op:
-            print(
-                f"ATTENTION --force : {len(forced_no_op)} paire(s) no-op "
-                f"ecrite(s) avec une nouvelle entree d'audit identique au "
-                f"_latest_audit precedent : {', '.join(forced_no_op)}. "
-                f"Cela produit un faux audit au sens du design-gate #9399 "
-                f"critere 2 (dater une attestation sans information nouvelle). "
-                f"Verifiez que c'est bien votre intention.",
-                file=sys.stderr,
-            )
-        msg = f"Registre rebaseline : {updated} paire(s) mise(s) a jour -> {reg_path}"
-        print(msg)
-        # Rappel d'ordre (#8957) : ce rebaseline est l'attestation des SHAs courants.
-        # Il va EN DERNIER -- si un strip outille (strip_probe_banner.py --apply,
-        # strip_machine_paths.py, scrub_papermill_paths.py) edite le notebook APRES
-        # ce point, le blob SHA deplace et le gate --per-pair sortira DRIFT-INTRO
-        # sur la prochaine PR (la parite est vraie, c'est son empreinte qui a bouge).
-        print(
-            "Rappel : cette attestation est celle du notebook TEL QU'IL EST MAINTENANT. "
-            "Tout strip outille ulterieur deplace le blob SHA -- si vous devez "
-            "normaliser (strip_probe_banner / strip_machine_paths / scrub_papermill), "
-            "refaites --update en dernier, apres (cf #8957)."
-        )
-        # Exit code (#10430 acceptance) :
-        #   0 = ecrit OK (peut inclure des no_op informes sur stderr)
-        #   1 = au moins une paire DEMANDEE n'a pas pu etre ecrite parce que
-        #       son bloc d'audit etait introuvable / indentation non reconnue.
-        #       L'AVERTISSEMENT ci-dessus a deja liste les paires concernees ;
-        #       l'exit non-zero est le signal que le worker doit inspecter
-        #       l'indentation et relancer --update (ou investiguer le fichier).
-        #   2 = aucun nom de paire trouve (path `Aucune paire nommee` plus haut).
-        # Le commentaire historique qui disait « 0 meme si toutes les cibles
-        # etaient no-op » est REVOQUE ici : un worker qui voit exit=0 et 0
-        # ligne ecrite conclut legitimement « rien a faire ». Si le probleme
-        # reel est que le scanner est aveugle (entrees manquees), c'est
-        # INVISIBLE. L'exit 1 ferme la boucle.
-        # Garder la garde sur les paires skippees (`notebook absent de git`)
-        # en dehors de cette logique : ce n'est PAS un failed-rebaseline, juste
-        # une mise en garde environnementale.
-        # #10430 exit 1 : un rebaseline IGNORE (header d'audit introuvable /
-        # indentation non reconnue) ne doit pas laisser le worker conclure
-        # « rien a faire ». Ce mode d'echec est propre au mono-fichier legacy :
-        # en mode file-per-audit (#14911) il n'existe plus de header inline a
-        # manquer -- les audits sont des fichiers (glob, jamais aveugles).
-        if not reg_path.is_dir() and updated < len(updates):
-            return 1
-        return 0
+        return twin_parity_attest.run_update(args, organ=_self(), reg_path=reg_path, repo_root=repo_root)
 
     # --- Mode --migrate-audits : reecriture file-per-audit (#14911) ---
     if args.migrate_audits:
-        # Selecteur obligatoire (replique la politique --update, cf #8508) :
-        # une invocation nue reecrirait les 157 paires du registre. L'invocation
-        # --pair / --family / --yes-all-pairs borne la migration (migrer une
-        # tranche est utile pour tester la forme sur une seule famille avant
-        # de committer l'ensemble).
-        if not (args.family or args.pair or args.yes_all_pairs):
-            p.error("--migrate-audits exige un selecteur explicite : --family <f>, "
-                    "--pair <name>, OU --yes-all-pairs. Une invocation nue "
-                    "reecrirait les 157 paires (cf #8508).")
-        if reg_path is None or not reg_path.is_dir():
-            p.error("--migrate-audits ne s'applique qu'au registre en forme "
-                    "file-per-entry (--registry <dir> avec twin_pairs.d/) ; "
-                    "le mono-fichier legacy n'a pas de sous-repertoires.")
-        all_pairs = load_registry(reg_path)
-        if args.pair:
-            target = [pp for pp in all_pairs if pp.get("name") == args.pair]
-            if not target:
-                names = sorted({pp.get("name", "?") for pp in all_pairs})
-                print(
-                    f"Aucune paire nommee '{args.pair}'. "
-                    f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
-                    file=sys.stderr,
-                )
-                return 1
-            sel_names = {args.pair}
-        elif args.family:
-            target = [pp for pp in all_pairs if pp.get("family") == args.family]
-            if not target:
-                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
-                return 1
-            sel_names = {pp.get("name") for pp in target}
-        else:
-            target = all_pairs
-            sel_names = None
-        result = migrate_registry_files_per_audit(reg_path, names=sel_names)
-        print(
-            f"Registre migre vers file-per-audit (#14911) : "
-            f"{result['migrated']} paire(s) traitee(s), "
-            f"{result['audits_moved']} audit(s) deplace(s) vers "
-            f"{reg_path}/<pair>/<date>-<lane>.yaml."
-        )
-        return 0
+        return twin_parity_attest.run_migrate_audits(args, p, organ=_self(), reg_path=reg_path)
 
     # --- Mode --verify-recorded-sha : gate CI (#9399 volet b) ---
     if args.verify_recorded_sha:
-        # Accepte --family comme selecteur (replique la politique --update) :
-        # en CI on cible generalement tout le registre, mais un audit local peut
-        # vouloir borner a une famille.
-        target_pairs = pairs
-        if args.pair is not None:
-            # #20197 : --pair etait accepte puis ignore ici aussi. Nom inconnu = rc 2.
-            selection = [pp for pp in target_pairs if pp.get("name") == args.pair]
-            if not selection:
-                _paire_inconnue(args.pair, target_pairs)
-                return 2
-            target_pairs = selection
-        if args.family:
-            target_pairs = [pp for pp in target_pairs if pp.get("family") == args.family]
-            if not target_pairs:
-                print(
-                    f"Aucune paire pour la famille '{args.family}'.",
-                    file=sys.stderr,
-                )
-                # En --check ce serait un gate casse ; ici on retourne 2
-                # (distinct de 1=MISMATCH, 0=clean) pour discriminer le cas.
-                return 2
-
-        results = [verify_recorded_sha(repo_root, pp) for pp in target_pairs]
-        n_ok = sum(1 for r in results if r["status"] == "OK")
-        n_mismatch = sum(1 for r in results if r["status"] == "MISMATCH")
-        n_no_audit = sum(1 for r in results if r["status"] == "NO_AUDIT")
-
-        if args.json:
-            out = {
-                "mode": "verify_recorded_sha",
-                "registry": str(reg_path),
-                "total": len(results),
-                "ok": n_ok,
-                "mismatch": n_mismatch,
-                "no_audit": n_no_audit,
-                "pairs": results,
-            }
-            print(json.dumps(out, ensure_ascii=False, indent=2))
-        else:
-            tag_map = {"OK": "OK", "MISMATCH": "MISMATCH", "NO_AUDIT": "NO_AUDIT"}
-            for r in results:
-                if r["status"] == "OK":
-                    continue  # ne pas bruiter les OK en sortie humaine
-                tag = tag_map[r["status"]]
-                print(f"[{tag}] {r['name']} ({r.get('family','?')})")
-                for m in r.get("mismatches", []):
-                    print(f"       - {m}")
-            print(
-                f"\nTotal : {len(results)} paire(s) | "
-                f"OK={n_ok} MISMATCH={n_mismatch} NO_AUDIT={n_no_audit}"
-            )
-
-        if args.check and n_mismatch > 0:
-            # Gate CI : un seul mismatch = RED. Message d'erreur oriente
-            # l'auteur vers --update (le seul moyen legitime de resoudre :
-            # l'audit firsthand + rebaseline, cf #8508 selector policy).
-            print(
-                f"::error title=Twin parity SHA mismatch (#9399 volet b)::"
-                f"{n_mismatch} paire(s) ont un SHA enregistre dans le YAML qui ne "
-                f"correspond pas au SHA reel du carnet a HEAD. L'integrite du "
-                f"registre est corrompue (sha invente / stale / modifie a la "
-                f"main). Remediation : lancer "
-                f"`python scripts/notebook_tools/check_twin_parity.py --update "
-                f"--pair \"<nom>\" --by \"<machine:workspace>\"` APRES audit "
-                f"firsthand de la parite. Le selecteur --pair est obligatoire "
-                f"(cf #8508).",
-                file=sys.stderr,
-            )
-            return 1
-        return 0
+        return twin_parity_attest.run_verify_recorded_sha(args, organ=_self(), reg_path=reg_path, repo_root=repo_root, pairs=pairs)
 
     # --pair (#20197) : restreint --check a la paire nommee. Avant ce correctif il
     # etait accepte puis ignore : les 157 paires etaient parcourues (628 appels git
@@ -3041,161 +2351,7 @@ def _main(argv=None) -> int:
     # Le cron fleet-wide survole les DEUX : utile pour detecter un worker qui a oublie
     # --update apres un strip, ou un depot SHA declare a la main devenu faux.
     if args.ci_strict:
-        # Breakdown par categorie : legacy vs content vs missing vs ok
-        cat = {
-            "n_ok_legacy": 0,             # blob SHA match, pas de content_sha enregistre
-            "n_ok_content": 0,            # content_sha match (volet c)
-            "n_drift_blob": 0,            # legacy blob SHA mismatch
-            "n_drift_content": 0,         # content_sha mismatch
-            "n_drift_legacy_after_content": 0,  # legacy blob drift mais content_sha OK
-                                             # = strip outille detecte
-            "n_missing_python": 0,
-            "n_missing_csharp": 0,
-            "n_no_audit": 0,              # paire sans audits ni last_audit
-            "n_numbering_drift": 0,       # numeros de base distincts (#12933)
-        }
-        ci_results = []
-        for pp, r in zip(pairs, results):
-            audit = _latest_audit(pp)
-            rec_py = audit.get("python_sha")
-            rec_cs = audit.get("csharp_sha")
-            rec_cpy = audit.get("content_python_sha")
-            rec_ccs = audit.get("content_csharp_sha")
-            cur_py = r["current_python_sha"]
-            cur_cs = r["current_csharp_sha"]
-            cur_cpy = r["current_content_python_sha"]
-            cur_ccs = r["current_content_csharp_sha"]
-
-            entry_ci = {
-                "name": r["name"],
-                "family": r["family"],
-                "parity_level": r["parity_level"],
-                "status": r["status"],
-                "details": list(r["details"]),
-                "has_content_sha_audit": bool(rec_cpy and rec_ccs),
-            }
-
-            # NUMBERING-DRIFT (#12933) : compte dans SA categorie, sans
-            # re-classer la paire dans les buckets SHA (blob/content) -- une
-            # paire renumerotee unilateralement est rouge pour une raison qui
-            # n'a rien a voir avec l'attestation d'empreinte, et la double
-            # comptabilisation (ex. no_audit en plus) fausserait chaque
-            # categorie.
-            if r["status"] == "NUMBERING-DRIFT":
-                cat["n_numbering_drift"] += 1
-                ci_results.append(entry_ci)
-                continue
-
-            if not audit:
-                cat["n_no_audit"] += 1
-                ci_results.append(entry_ci)
-                continue
-
-            py_missing = (cur_py is None)
-            cs_missing = (cur_cs is None)
-            if py_missing:
-                cat["n_missing_python"] += 1
-            if cs_missing:
-                cat["n_missing_csharp"] += 1
-
-            blob_py_drift = (not py_missing and rec_py and cur_py != rec_py)
-            blob_cs_drift = (not cs_missing and rec_cs and cur_cs != rec_cs)
-            content_py_drift = (rec_cpy and cur_cpy and cur_cpy != rec_cpy)
-            content_cs_drift = (rec_ccs and cur_ccs and cur_ccs != rec_ccs)
-
-            if entry_ci["has_content_sha_audit"]:
-                if content_py_drift or content_cs_drift:
-                    cat["n_drift_content"] += 1
-                elif blob_py_drift or blob_cs_drift:
-                    # Churn metadata-only carnet : INFORMATIF, jamais bloquant.
-                    # `_content_sha` hache les cellules ET leurs outputs, en
-                    # n'excluant que `nb["metadata"]` (cost / papermill /
-                    # kernelspec / language_info). Donc « blob bouge, content
-                    # identique » ne peut signifier QUE du churn de metadata
-                    # carnet -- exactement le faux positif que le volet c a ete
-                    # construit pour tuer (cf docstring de `_content_sha`).
-                    # Rougir ici le re-fabriquerait au niveau du cron : incident
-                    # du 2026-08-07, cron rouge sur main pour Sudoku-08/14 BDD --
-                    # les 2 paires nommees dans cette meme docstring -- avec un
-                    # `::error ...::<none>` qui ne designait aucune paire (leur
-                    # `status` reste OK, donc `_cron_extract_drift` n'en listait
-                    # aucune). Et le remede prescrit (`--update`) est un NO-OP
-                    # par design puisque `_shas_match` compare les content_sha :
-                    # un gate que son propre remede ne peut pas eteindre.
-                    cat["n_drift_legacy_after_content"] += 1
-                    entry_ci["metadata_only_blob_drift"] = True
-                    entry_ci["details"].append(
-                        "blob SHA drift MAIS content_sha OK : churn metadata-only "
-                        "(metadata.cost / papermill / kernelspec) -- aucune divergence "
-                        "pedagogique. INFORMATIF : ne fait pas rougir le gate. "
-                        "`--update` est un no-op par design ici (il compare les "
-                        "content_sha) ; re-tamponner le blob SHA exigerait --force et "
-                        "n'apporterait aucune information nouvelle (cf #9399 critere 2)."
-                    )
-                else:
-                    cat["n_ok_content"] += 1
-            else:
-                if blob_py_drift or blob_cs_drift:
-                    cat["n_drift_blob"] += 1
-                else:
-                    cat["n_ok_legacy"] += 1
-
-            ci_results.append(entry_ci)
-
-        # Anomalies BLOQUANTES (celles qui font rougir le gate).
-        # `n_drift_legacy_after_content` en est volontairement EXCLU : blob
-        # bouge + content identique == churn metadata-only, informatif (cf la
-        # classification ci-dessus). `n_total_drift` reste le total de TOUTES
-        # les anomalies, pour le reporting.
-        n_blocking_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
-                            + cat["n_missing_python"] + cat["n_missing_csharp"]
-                            + cat["n_no_audit"] + cat["n_numbering_drift"])
-        n_total_drift = n_blocking_drift + cat["n_drift_legacy_after_content"]
-
-        if args.json:
-            out = {
-                "mode": "ci_strict",
-                "registry": str(reg_path),
-                "total": len(ci_results),
-                "ok_total": n_ok,
-                "drift_total": n_drift,
-                "missing_total": n_missing,
-                "ci_strict": cat,
-                "n_total_drift": n_total_drift,
-                "n_blocking_drift": n_blocking_drift,
-                "pairs": ci_results,
-            }
-            print(json.dumps(out, ensure_ascii=False, indent=2))
-        else:
-            print(f"[CI-STRICT] {len(ci_results)} paire(s) | "
-                  f"ok_legacy={cat['n_ok_legacy']} ok_content={cat['n_ok_content']} "
-                  f"drift_blob={cat['n_drift_blob']} drift_content={cat['n_drift_content']} "
-                  f"drift_legacy_after_content={cat['n_drift_legacy_after_content']} "
-                  f"missing_py={cat['n_missing_python']} missing_cs={cat['n_missing_csharp']} "
-                  f"no_audit={cat['n_no_audit']} numbering_drift={cat['n_numbering_drift']}")
-            for r in ci_results:
-                if r["status"] != "OK":
-                    print(f"  [{r['status']}] {r['name']} ({r['family']}, {r['parity_level']})")
-                    for d in r["details"]:
-                        print(f"       - {d}")
-            # Les paires en churn metadata-only gardent `status == OK` (aucune
-            # divergence pedagogique) : sans cette boucle elles ne seraient
-            # nommees NULLE PART, et un compteur non nul sans nom n'est pas
-            # actionnable (c'est le `::error ...::<none>` du 2026-08-07).
-            for r in ci_results:
-                if r.get("metadata_only_blob_drift"):
-                    print(f"  [INFO metadata-only] {r['name']} "
-                          f"({r['family']}, {r['parity_level']})")
-                    for d in r["details"]:
-                        print(f"       - {d}")
-
-        # CI gate : rouge sur les anomalies BLOQUANTES uniquement (le but du
-        # cron fleet-wide). Le churn metadata-only est compte et nomme, mais
-        # ne rougit pas -- sinon on re-fabrique le faux positif que le volet c
-        # a elimine, et sur un gate dont le remede prescrit est un no-op.
-        if args.check and n_blocking_drift > 0:
-            return 1
-        return 0
+        return twin_parity_census.run_ci_strict(args, organ=_self(), results=results, pairs=pairs, reg_path=reg_path, n_ok=n_ok, n_drift=n_drift, n_missing=n_missing)
 
     if args.json:
         out = {
@@ -3222,7 +2378,6 @@ def _main(argv=None) -> int:
     if args.check and (n_drift > 0 or n_missing > 0 or n_numbering > 0):
         return 1
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

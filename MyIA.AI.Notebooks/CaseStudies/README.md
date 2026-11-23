@@ -2,20 +2,14 @@
 pagetitle: "CaseStudies - Études de cas interdisciplinaires"
 ---
 
-# CaseStudies - Études de cas interdisciplinaires
-
 <!-- CATALOG-STATUS
 series: CaseStudies
 pedagogical_count: 6
-breakdown: Diagnostic-Medical=2, Oncology-Planning=2, SmartGrid-Energy=2
+breakdown: Diagnostic-Medical=2, Planification-Oncologie=2, Reseau-Electrique-Intelligent=2
 maturity: BETA=6
 -->
 
-> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (6 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
->
-> **6 Python = python/python3 = 6/6 mono-kernel Python 100% ✓** (fichiers `*.ipynb` canoniques sur disque — 3 cas × {student + solution} : Diagnostic-Medical×2, Planification-Oncologie×2, SmartGrid-Energy×2 — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
-
-CaseStudies est un cas de **mono-kernel Python 100%** : les trois projets combinent des instruments hétérogènes (Z3, A* `heapq`, génétique, OR-Tools CP-SAT, rdflib, Pyro probabiliste, scipy multi-objectif) implémentés tous en Python, soit via libraries SOTA authentiques (`z3-solver`, `ortools`, `rdflib`, `pyro-ppl`, `torch`, `numpy`, `pandas`), soit from-scratch en Python pur. C'est une **variante L392 #7 NEW** : deuxième cas de mono-kernel Python 100% après RL (#5927 c.403), tous deux owner-po-2025 strict. Contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5923 c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, CaseStudies a une uniformité mono-paradigme Python avec **6 paradigms combinatoires distincts** (symbolique CSP, A* recherche, génétique, OR-Tools CP-SAT, rdflib KG, Pyro bayésien). Registre EPIC #3801 entry #010 (#5930, stacked sur #5925, await merge).
+Le marqueur `CATALOG-STATUS` présente le décompte agrégé des carnets. Les études de cas combinent des outils hétérogènes en Python : résolution de contraintes avec Z3 et OR-Tools, recherche A*, algorithmes génétiques, graphes de connaissances avec rdflib et modélisation probabiliste avec Pyro. Les carnets utilisent le noyau Python et peuvent être exécutés avec Jupyter (`jupyter nbconvert --execute --inplace <carnet.ipynb>`) ou via le serveur MCP Jupyter.
 
 **Régénération du marqueur** : `catalog-cron.yml` (cron quotidien 03:37 UTC sur `main`, commit `[skip ci]` par `github-actions[bot]`) — le bloc ci-dessus est régénéré automatiquement, ne pas le modifier manuellement sur une branche feature (catalog-pr-hygiene R1).
 
@@ -70,7 +64,15 @@ flowchart TD
 
 ### Le pattern "twin numérique"
 
-Les trois projets reposent sur un **modèle simulé** : un objet logiciel qui représente l'état d'un système — état clinique du patient ou réseau électrique — et réagit à des interventions (diagnostic proposé, traitement appliqué, dispatch injecté). Ce pattern, appelé **jumeau numérique** (digital twin), est devenu central en santé numérique, en industrie 4.0 et en simulation environnementale. L'apprendre sur 10 patients diabétiques (Diagnostic-Medical), un cas oncologique (Planification-Oncologie) ou un réseau électrique sous incertitude (SmartGrid-Energy) prépare directement aux applications professionnelles.
+Les trois projets reposent sur un **modèle simulé** : un objet logiciel qui représente l'état d'un système — état clinique du patient ou réseau électrique — et réagit à des interventions (diagnostic proposé, traitement appliqué, dispatch injecté). Ce pattern, appelé **jumeau numérique** (digital twin), est devenu central en santé numérique, en industrie 4.0 et en simulation environnementale. L'apprendre sur 10 patients diabétiques (Diagnostic-Medical-Python), un cas oncologique (Planification-Oncologie-Python) ou un réseau électrique sous incertitude (Reseau-Electrique-Intelligent) prépare directement aux applications professionnelles.
+
+## Comment lire ce README — découverte
+
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours principal, approfondissements et prolongements de recherche.
+
+- **Vous découvrez** : partez du parcours principal et choisissez le projet dont vous avez déjà les prérequis — chaque étude de cas est autonome, aucun ordre n'est imposé entre elles. Le Diagnostic Médical est l'entrée la plus légère en prérequis (recherche informée et CSP/Z3).
+- **Vous approfondissez** : travaillez le template étudiant (`student/`) puis confrontez-le à la solution de référence (`solution/`) ; les exercices d'extension de chaque projet prolongent le pipeline au-delà du barème (voir [Approfondissements](#approfondissements--les-exercices-dextension)).
+- **Vous cherchez des prolongements** : consultez [Pour aller plus loin](#pour-aller-plus-loin) pour les directions de recherche (MDP, LLM en boucle, multi-agent) et la cartographie des paradigmes mobilisés par série.
 
 ## Structure
 
@@ -88,7 +90,7 @@ CaseStudies/
 │   ├── student/           # Template étudiant
 │   ├── solution/          # Solution de référence
 │   └── data/              # Données patients oncologie (patients_oncology.csv)
-├── SmartGrid-Energy/      # Dispatch énergétique sous incertitude (CP-SAT, bayésien, multi-objectif)
+├── Reseau-Electrique-Intelligent/      # Dispatch énergétique sous incertitude (CP-SAT, bayésien, multi-objectif)
 │   ├── README.md          # Fiche projet
 │   ├── subject.md         # Sujet du devoir (CC3)
 │   ├── student/           # Template étudiant
@@ -96,7 +98,15 @@ CaseStudies/
 └── requirements.txt       # Dépendances communes (9 packages)
 ```
 
-## Projets
+## Parcours principal — les trois études de cas
+
+Chaque étude de cas est autonome : aucune n'exige d'avoir fait les deux autres, et le choix se fait par les prérequis. Le fil commun dépasse les outils — aucun paradigme ne suffit seul, et la compétence visée est la **composition ordonnée** (filtrer l'impossible, modéliser l'incertitude, puis optimiser) plutôt que la maîtrise isolée d'un solveur. Chaque projet se déroule sur le template étudiant puis la solution de référence (~3-4 h).
+
+| # | Étude de cas | Ce qu'on y apprend | Public et prérequis | Pour approfondir |
+|---|---|---|---|---|
+| 01 | [Diagnostic Médical](Diagnostic-Medical/README.md) | Composer quatre briques qui répondent à quatre facettes distinctes du problème — classer (agent à base de règles), chercher (A*), calibrer (algorithme génétique), vérifier (Z3) — en un pipeline d'aide à la décision appliqué au diabète de type 2. | Search Part 1 (recherche informée) et Part 2 (CSP/Z3) ; Python. | Exercices d'extension : score de risque composite, heuristique A* alternative, contraintes d'interaction médicamenteuse (voir Approfondissements). |
+| 02 | [Oncology Planning](Planification-Oncologie/README.md) | Placer la frontière entre le déterministe — ontologie des chimiothérapies, planification CSP — et le probabiliste — inférence Pyro du profil de toxicité — pour construire un jumeau numérique patient et simuler des scénarios « et si ? » (dose, report). | Probas (inférence bayésienne) ; idéalement Planners (CP-SAT). | Exercices d'extension : ontologie RDFLib étendue, sensibilité au prior, journal d'audit du smart contract (voir Approfondissements). |
+| 03 | [SmartGrid Energy](Reseau-Electrique-Intelligent/README.md) | Composer dans le bon ordre — dispatch faisable (CP-SAT), puis risque de défaillance (bayésien), puis arbitrage (multi-objectif coût/CO2) — un unit commitment sous incertitude renouvelable, et lire un compromis de type Pareto. | Planners (CP-SAT/OR-Tools) et Probas (risque bayésien) ; Python. | Exercices d'extension : réserve tournante n-1, sensibilité au prior, équité territoriale (voir Approfondissements). |
 
 ### Diagnostic Médical
 
@@ -105,7 +115,7 @@ Système de diagnostic médical combinant recherche informée (A*), algorithmes 
 - **Technologies** : Python, z3-solver, heapq, pandas
 - **Concepts** : Recherche A*, algorithmes génétiques, CSP, validation par contraintes
 
-[README complet](Diagnostic-Medical/README.md) | 2 notebooks (student + solution) | ~3-4h
+[README complet](Diagnostic-Medical/README.md) | notebooks (student + solution) | ~3-4h
 
 ### Oncology Planning (OncoPlan)
 
@@ -123,7 +133,21 @@ Ordonnancement de la production électrique (unit commitment) sous incertitude r
 - **Technologies** : Python, ortools (CP-SAT), numpy
 - **Concepts** : Unit commitment NP-difficile, modèle bayésien de l'incertitude, optimisation multi-objectif, architecture en couches (filtrer > modéliser > optimiser)
 
-[Sujet](SmartGrid-Energy/subject.md) | 2 notebooks (student + solution) | ~3-4h
+[Sujet](Reseau-Electrique-Intelligent/subject.md) | notebooks (student + solution) | ~3-4h
+
+## Approfondissements — les exercices d'extension
+
+Chaque projet laisse en squelette dans son notebook étudiant des exercices d'extension, au-delà du barème principal : ils transforment le pipeline livré en objet d'expérimentation personnelle.
+
+| Étude de cas | Exercices d'extension |
+|---|---|
+| [Diagnostic Médical](Diagnostic-Medical/README.md) | Un **score de risque composite** agrégeant plusieurs facteurs cliniques au-delà de la règle de classification ; une **heuristique alternative pour A\*** comparée à celle du carnet, avec l'effet mesuré sur le nombre de nœuds explorés ; des **contraintes d'interaction médicamenteuse** ajoutées au solveur Z3 pour enrichir la validation formelle du protocole. |
+| [Oncology Planning](Planification-Oncologie/README.md) | L'**ontologie médicamenteuse étendue** (RDFLib) avec de nouveaux traitements et interactions, puis re-vérification de la prescription ; la **sensibilité au prior** du profil patient dans l'inférence Pyro (comment évolue la probabilité d'adaptation) ; le **journal d'audit du smart contract** bonus pour rendre le calendrier de cures auditable. |
+| [SmartGrid Energy](Reseau-Electrique-Intelligent/README.md) | La **réserve tournante n-1** — couvrir la perte de la plus grosse centrale en service ; la **sensibilité au prior** — le risque quand l'incertitude renouvelable est divisée ou multipliée par 2 ; l'**équité territoriale** comme troisième objectif, évitant de concentrer les centrales polluantes sur une région. |
+
+La méthode recommandée sur l'ensemble du parcours se joue en trois phases : (1) comprendre la solution de référence, (2) implémenter le template en s'appuyant sur les tests unitaires, (3) étendre avec les exercices ci-dessus puis des variantes personnelles. Le template reste exécutable de bout en bout grâce aux stubs conformes (règle C.1 : `pass`, `return None`, jamais d'erreur volontaire).
+
+Les prolongements de recherche — reformuler OncoPlan en MDP, boucler un LLM, faire délibérer plusieurs agents — relèvent de [Pour aller plus loin](#pour-aller-plus-loin) : ce sont des directions après la série, pas des activités du devoir.
 
 ## Installation
 
@@ -251,14 +275,15 @@ Le **Diagnostic Médical** résout un problème de classification : étant donn�
 
 Le template étudiant (`student/`) contient le squelette du projet : classes avec méthodes `pass` ou `return None` (`# TODO étudiant`), structures de données pré-remplies, et tests unitaires pour valider chaque composant. La solution (`solution/`) implémente chaque méthode complètement. La pédagogie recommande un parcours en 3 phases : (1) comprendre la solution de référence, (2) implémenter le template en s'appuyant sur les tests, (3) étendre avec des variantes personnelles. Le template est exécutable end-to-end grâce aux stubs conformes (pas de `raise NotImplementedError`).
 
-## Statistiques catalogue à jour
+## Études de cas et paradigmes
 
-| Sous-projet | Notebooks | Maturité (marqueur `CATALOG-STATUS`) | Paradigmes mobilisés |
-|-------------|-----------|--------------------------------------|----------------------|
-| [Diagnostic-Medical](Diagnostic-Medical/) | 2 (student + solution) | BETA + BETA | A* + génétique + Z3 (CSP) |
-| [Planification-Oncologie](Planification-Oncologie/) | 2 (student + solution) | BETA (solution) + DRAFT (student) | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) + bonus smart contract (`OncoContract`) |
-| [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA + BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
-| **Total** | **6 notebooks** | **BETA=5, DRAFT=1** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
+| Sous-projet | Parcours | Paradigmes mobilisés |
+|-------------|----------|----------------------|
+| [Diagnostic médical](Diagnostic-Medical/) | étudiant et solution | A* + génétique + Z3 (CSP) |
+| [Planification en oncologie](Planification-Oncologie/) | étudiant et solution | Ontologie + CSP/OR-Tools + Pyro probabiliste + bonus smart contract (`OncoContract`) |
+| [Réseau électrique intelligent](Reseau-Electrique-Intelligent/) | étudiant et solution | CP-SAT + modélisation bayésienne du risque de défaillance + optimisation multi-objectif (coût/CO2) |
+
+Ces projets associent symbolique (CSP et ontologie), statistique (probabilités et évolution), recherche et optimisation.
 
 Chaque notebook solution fait l'objet d'une **validation par assertions** (cellule terminale `tests_automatises()` ou prints discriminants) dans son sous-dossier `solution/` ; le template `student/` porte les stubs conformes (règle C.1 : `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et reste exécutable end-to-end. La cohérence est garantie par `requirements.txt` au racine (`numpy`, `pandas`, `matplotlib`, `seaborn`, `z3-solver`, `rdflib`, `pyro-ppl`, `torch`, `ortools` — 9 dépendances communes aux 3 cas).
 
@@ -268,9 +293,9 @@ Cette série est un **point de convergence** des autres séries du dépôt : cha
 
 | Étude de cas | [Search](../Search/README.md) | [Sudoku](../Sudoku/README.md) | [SymbolicAI](../SymbolicAI/README.md) | [Probas](../Probas/README.md) | [ML](../ML/README.md) |
 |---|---|---|---|---|---|
-| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-03-Genetic-Python`](../Sudoku/Sudoku-03-Genetic-Python.ipynb)) | — | — | — |
-| Planification-Oncologie | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
-| SmartGrid-Energy | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
+| Diagnostic-Medical-Python | A* (`Part1-Foundations`) | Génétique ([`Sudoku-03-Genetic-Python`](../Sudoku/Sudoku-03-Genetic-Python.ipynb)) | — | — | — |
+| Planification-Oncologie-Python | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
+| Reseau-Electrique-Intelligent | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
 
 Trois familles d'**outils d'infrastructure** MCP rendent les projets interopérables :
 
@@ -281,5 +306,7 @@ Trois familles d'**outils d'infrastructure** MCP rendent les projets interopéra
 **Parenté cross-lane** : CaseStudies ne maintient pas un dépôt isolé, mais sert de **hub d'intégration** pour ~8 séries atomiques. Toute évolution d'une série fondamentale (nouvelle méthode de recherche dans Search, nouveau solveur dans Probas, nouveau moteur dans SymbolicAI) enrichit potentiellement les projets CaseStudies — c'est l'**effet de composition** qui justifie le découpage en couches plutôt qu'en silos.
 
 ---
+
+*Version 1.4.0 — Novembre 2026 — mise à la forme cible des grands README (#3973) : section « Comment lire ce README », parcours principal numéroté avec la colonne « Ce qu'on y apprend », section « Approfondissements » portant les exercices d'extension des trois fiches projet (#25509).*
 
 *Version 1.3.0 — Juillet 2026 — audit §E whole-file gate (réconciliation disque↔catalogue 6 nb + correction 5 incohérences prose : 3 paradigmes / validation par assertions / requirements.txt 9 deps / Sudoku-03 référence génétique / `SVI+Trace_ELBO` au lieu de `poutine.scale` / tree structure avec README.md+subject.md par cas). EPIC #3975 tranche casestudies.*

@@ -16,8 +16,8 @@ Cas couverts :
    ce sont elles qui feraient rougir un parc sain si le filtre sautait ;
 4. un chemin **relatif** n'est pas mesure (il se resout par `PATH`) ;
 5. un interpreteur **durable et present** ne remonte pas ;
-6. un composant `scratchpad` hors racine temporaire remonte
-   `SCRATCHPAD_COMPONENT` -- la forme exacte du constat de #23941 ;
+6. un scratchpad sous `claude` remonte `SCRATCHPAD_COMPONENT`, mais un
+   scratchpad durable reste propre ; `.tmp` exige un marqueur Git au parent ;
 7. un interpreteur **absent** ne remonte que sous `--check-exists`, et
    `MISSING_INTERPRETER` n'est jamais confondu avec `TEMP_ROOT` ;
 8. `main()` rend **1** sur un repertoire rouge et **0** sur un repertoire vert ;
@@ -130,11 +130,35 @@ def test_durable_interpreter_is_clean():
 
 
 def test_scratchpad_component_is_flagged():
-    """La forme exacte du constat #23941, hors de toute racine temporaire."""
+    """Variante durable sous `claude`, hors de toute racine temporaire."""
     tool = load_tool()
     interpreter = os.path.join(
-        DURABLE_ROOT, "3b22fd82", "scratchpad", "cleanenv", "Scripts", "python.exe")
+        DURABLE_ROOT, "claude", "workspace", "3b22fd82", "scratchpad", "cleanenv", "Scripts", "python.exe")
     assert tool.classify_interpreter(interpreter, roots()) == "SCRATCHPAD_COMPONENT"
+
+
+def test_durable_scratchpad_is_clean():
+    tool = load_tool()
+    interpreter = os.path.join(DURABLE_ROOT, "scratchpad", "venvs", "python.exe")
+    assert tool.classify_interpreter(interpreter, roots()) is None
+
+
+def test_repo_tmp_requires_git_marker():
+    tool = load_tool()
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "repo"
+        repo.mkdir()
+        interpreter = repo / ".tmp" / "venv" / "python.exe"
+        assert tool.classify_interpreter(str(interpreter), roots()) is None
+        marker = repo / ".git"
+        marker.mkdir()
+        assert tool.classify_interpreter(str(interpreter), roots()) == "REPO_TMP"
+        assert tool.classify_interpreter(str(interpreter), roots(), check_exists=True) == "REPO_TMP"
+        worktree = Path(tmp) / "worktree"
+        worktree.mkdir()
+        (worktree / ".git").write_text("gitdir: elsewhere", encoding="utf-8")
+        assert tool.classify_interpreter(str(worktree / ".tmp" / "python"), roots()) == "REPO_TMP"
+        assert tool.classify_interpreter(str(repo / "nested" / ".tmp" / "python"), roots()) is None
 
 
 def test_missing_interpreter_only_under_check_exists():

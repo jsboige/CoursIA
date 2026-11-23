@@ -56,9 +56,9 @@ Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — a
 | `research_l2_dual_momentum.ipynb` | L2 Cross-Sectional + Dual Momentum (NO BEATS) | (c) |
 | `research_l3_trend.ipynb` | L3 Trend Long-Horizon — LSTM directionnel (NO BEATS) | (c) |
 | `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (NO BEATS sous protocole causal, #21187) | (c) |
-| `c1330_xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer : validation fold-wise §C (verdicts par bucket) | (c) |
+| `xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer : validation fold-wise §C (verdicts par bucket) | (c) |
 | `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
-| `c875_hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha : validation rigoureuse Ledoit-Wolf DM (stress 50 bps, INCONCLUSIVE) | (c) |
+| `hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha : validation rigoureuse Ledoit-Wolf DM (stress 50 bps, INCONCLUSIVE) | (c) |
 | `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
 | `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
 | `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer) : l'échec du surparamétrage | (c) |

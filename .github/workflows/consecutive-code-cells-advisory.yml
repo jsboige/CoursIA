@@ -64,6 +64,10 @@ jobs:
     # under student-pr-reviews.md -- benevolent review, no content gate.
     if: github.event.pull_request.head.repo.full_name == github.repository
 
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 8.68 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 20
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4

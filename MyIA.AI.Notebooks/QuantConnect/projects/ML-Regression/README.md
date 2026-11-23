@@ -5,7 +5,7 @@
 
 ## Description
 
-Stratégie de régression Ridge prédisant les rendements du jour suivant sur un univers de 20 actions. Utilise des features techniques — RSI, ratio EMA20/EMA50, volatilité glissante (5/20 j), rendements décalés (1/5 j), momentum (5/10 j) et distance aux moyennes mobiles — comme variables explicatives. Rebalancement quotidien avec ré-entraînement hebdomadaire (chaque lundi). Sélectionne les meilleures actions (`top-N`) selon le rendement prédit.
+Stratégie de régression Ridge prédisant les rendements du jour suivant sur un univers de 20 actions. Utilise des features techniques — RSI, ratio EMA20/EMA50, volatilité glissante (5/20 j), rendements décalés (1/5 j), momentum (5/10 j) et distance aux moyennes mobiles — comme variables explicatives. Le portefeuille est rééquilibré chaque jour de marché et le modèle est réentraîné chaque lundi. La stratégie sélectionne les meilleures actions (`top-N`) selon le rendement prédit.
 
 ## Comment exécuter
 
@@ -18,7 +18,8 @@ Stratégie de régression Ridge prédisant les rendements du jour suivant sur un
 |----------|--------|
 | Modèle | Régression Ridge |
 | Univers | 20 grandes capitalisations |
-| Rebalancement | Bi-hebdomadaire |
+| Rééquilibrage du portefeuille | Chaque jour de marché |
+| Réentraînement du modèle | Chaque lundi |
 
 ## Fichiers
 

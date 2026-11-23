@@ -168,7 +168,12 @@ def member_returns(root: Path, member: dict) -> dict[str, float]:
     if prefix != "e":
         series = chart.get("series") or {}
         chart = {"series": {f"e{k}": series.get(f"{prefix}{k}") for k in range(5)}}
-    return weekly_returns(*qc_daily_equity(chart))
+    # `window_start` (premiere seance de la fenetre, convention New York de
+    # `_session`) admet le decalage constant du cycle e0..e4 d'une strategie qui
+    # incremente son compteur de barres AVANT de tracer (`btc-voltarget` :
+    # `btc_bars += 1` puis `k = btc_bars % 5` -- cas documente dans
+    # `qc_daily_equity`). Sans ce champ, le cycle doit partir de e0 : fail-CLOSED.
+    return weekly_returns(*qc_daily_equity(chart, member.get("window_start")))
 
 
 def load_members(path: Path = MEMBERS) -> list[dict]:

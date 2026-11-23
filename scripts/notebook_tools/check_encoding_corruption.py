@@ -55,6 +55,8 @@ from pathlib import Path
 # consolidation-by-move must not be reported for a corruption it did not
 # introduce. Same family as #24039 (scripts/check_subprocess_encoding.py).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# T3-c (#25366) : probe git_index_renames reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "audit"))
 import git_index_renames  # noqa: E402
 from git_index_renames import skip_pure_renames  # noqa: E402
 

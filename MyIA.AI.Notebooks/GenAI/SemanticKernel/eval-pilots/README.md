@@ -82,16 +82,58 @@ router par handoff implicite et produirait des `Event from an unknown agent`) :
 <venv-adk>/Scripts/python adk_distillation_pilot.py   # P3 — boucle de désignation explicite, budget dur 16 appels
 ```
 
+### Re-pinning déclaré : endpoint, modèle et charge (tranche « charge réelle »)
+
+Les trois pilotes P1/P2/P3 acceptent un re-pinning **déclaré** par variables
+d'environnement. Ce n'est **pas** un repli automatique : la sonde échoue toujours
+**fort** (exit 2) si le modèle ne répond pas, et le pilote **imprime l'endpoint et
+le modèle effectifs** — la trace est auto-portante, donc rejouable.
+
+| Variable | Rôle | Défaut |
+| --- | --- | --- |
+| `PILOT_BASE_URL` | endpoint OpenAI-compatible | `https://api.openai.com/v1` |
+| `PILOT_MODEL` | modèle épinglé | `gpt-4o-mini` |
+| `PILOT_API_KEY` | clé d'accès (endpoint local) | `OPENAI_API_KEY` (env) puis `.secrets/master.env` |
+| `PILOT_CHARGE` | charge distillée | `distill_charge_fixture.md` |
+| `PILOT_MAX_TOKENS` | jetons max par appel | `400` |
+| `PILOT_PROBE_TOKENS` | jetons max des sondes | `16` |
+| `PILOT_SEED` | graine (fixée pour la mesure) | aucune |
+
+La **charge réelle** se fabrique avec `build_real_charge.py`, qui extrait une
+section du carnet **vivant** (markdown + code + sorties) et écrit sa provenance
+(chemin, plage de cellules, tête du dépôt) :
+
+```bash
+python build_real_charge.py --notebook <chemin .ipynb> --list        # inventaire
+python build_real_charge.py --notebook <chemin .ipynb> --from-cell 0 --to-cell 13
+```
+
+La fixture **reste le contrôle** (charge byte-stable entre moteurs et entre
+dates) ; la charge réelle est la **mesure**. Les deux ne sont pas
+interchangeables : le comparatif des trois moteurs se fait sur la *même* charge
+dans les trois.
+
+Les trois pilotes emettent en fin d'exécution un bloc **`MESURES:`** de mêmes
+clés et de mêmes unités (moteur, modèle, endpoint, charge, caractères, appels,
+jetons entrés/sortis, latence des appels, tours, décision, déterminisme). Une
+colonne `n/d` est une **mesure** — un moteur qui n'expose pas les jetons le dit
+ainsi, et cette différence entre moteurs fait partie du comparatif.
+
+Le budget de complétion est un **paramètre de mesure** : sur un modèle de
+raisonnement, un budget trop court ne dégrade pas la sortie, il la supprime (le
+budget absorbe le raisonnement). Les relevés comparatifs de la tranche « charge
+réelle » sont donc faits à `PILOT_MAX_TOKENS=3000`.
+
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
-py -3.11 ../../../ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py
+py -3.11 ../../../ML/DataScienceWithAgents/07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py
 ```
 
 ## Sonde C# (T6)
 
 **App mono-fichier .NET 10** : aucun `.csproj` n'est livré, donc aucun impact sur
-`MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par
+`dotnet/MyIA.CoursIA.sln`, `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par
 chemin). Les versions des paquets sont épinglées par les directives `#:package` en
 tête du fichier :
 

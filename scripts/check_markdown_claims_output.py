@@ -89,6 +89,27 @@ CLAIM_CHECK_RE = re.compile(
 )
 RELATIONAL_OPERATORS = {"<", "<=", ">", ">=", "==", "!="}
 
+# #24289 famille 2 -- identifiers: "anthropic/claude-haiku-4.5" extracts
+# "4.5", which is a model-version component, never a measurement. The tell
+# is a word character glued to the number by a slug separator (-, /, _).
+_IDENTIFIER_TELL_RE = re.compile(r"[\w][-/_]$")
+
+# #24289 famille 3 -- derivation written in plain sight: the prose carries
+# BOTH the operand and the formula that produce the claimed value
+# ("4 683² ≈ 21,9 millions de sommets", GT-20c c.16). When the operand is
+# printed by the notebook's outputs, the claim is auditable by the reader
+# and is not a fabrication finding.
+_DERIVATION_SQUARE_RE = re.compile(
+    r"(?P<base>\d{1,3}(?:[   ]\d{3})+|\d+(?:[.,]\d+)?)"
+    r"\s*(?:²|\^2|\*\*2)\s*(?:≈|=|→)\s*"
+    r"(?P<val>\d+(?:[.,]\d+)?)"
+)
+_DERIVATION_SQUARE_INV_RE = re.compile(
+    r"(?P<val>\d+(?:[.,]\d+)?)\s*(?:≈|=|→)\s*"
+    r"(?P<base>\d{1,3}(?:[   ]\d{3})+|\d+(?:[.,]\d+)?)"
+    r"\s*(?:²|\^2|\*\*2)"
+)
+
 
 def _normalize_num(token: str) -> str:
     """Strip SI suffix, normalize comma->dot, drop trailing dots/zeros.
@@ -337,6 +358,15 @@ def _is_version_token(prose: str, match_pos: int) -> bool:
     stripped = prefix.rstrip()
     if not stripped:
         return False
+    # Haiku model identifiers often omit "Claude" in prose ("LLM
+    # haiku-4.5"). Require that model context so the ordinary word "haiku"
+    # does not exempt an unrelated number.
+    haiku_suffix = re.search(r"(?i)\b(?:claude[-/])?haiku\s*-?\s*$", stripped)
+    if haiku_suffix and (
+        re.search(r"(?i)\b(?:LLM|mod[eè]le|model)\b", prefix)
+        or re.search(r"(?i)\bclaude[-/]haiku\s*-?\s*$", stripped)
+    ):
+        return True
     return bool(_VERSION_PREFIX_RE.search(stripped))
 
 
@@ -876,7 +906,17 @@ def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int,
         (_parse_decimal(difference_operands.group("a")), _parse_decimal(difference_operands.group("b")))
         if difference_operands else None
     )
-    for row in _output_line_numbers(out_text):
+    # An output from one source cell is a provenance unit. Values can be
+    # printed on separate lines (for example a total and its class counts),
+    # but combining operands across unrelated cells would be an unanchored
+    # coincidence. The caller passes one cell's text at a time.
+    rows = _output_line_numbers(out_text)
+    values = [
+        value
+        for match in _OUTPUT_NUMBER_RE.finditer(out_text)
+        if (value := _parse_decimal(match.group(0))) is not None
+    ]
+    for row in rows:
         for left, right in zip(row, row[1:]):
             candidates: list[Decimal] = []
             if rate_pair == (left, right) and right != 0:
@@ -885,7 +925,62 @@ def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int,
                 candidates.append(abs(left - right))
             if any(abs(value - claimed) <= tolerance for value in candidates):
                 return True
+    # Explicit ``n sur d = p %`` claims are also provable when both operands
+    # are printed by the same output cell, even if the output formats them on
+    # separate lines. Require the exact pair to occur in the claim itself.
+    if rate_pair and rate_pair[1] != 0 and all(value in values for value in rate_pair):
+        if abs(rate_pair[0] / rate_pair[1] * Decimal(100) - claimed) <= tolerance:
+            return True
     return False
+
+
+_CELL_ANCHOR_RE = re.compile(r"(?i)\bcell(?:ule)?\s*\[\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*\]")
+_SECTION_ANCHOR_RE = re.compile(r"(?i)(?:§|section\s+)(\d+(?:\.\d+)?)(?![\d.])")
+
+
+def _anchored_output_cells(
+    prose: str,
+    cells: list[dict],
+    markdown_cell: int,
+) -> list[tuple[int, str]]:
+    """Return distant code outputs explicitly anchored by this markdown cell.
+
+    Cell references bind directly. A section reference binds only when exactly
+    one earlier code cell declares the same section in its source. Uniqueness
+    is deliberate: if several code cells could own the section/value, the
+    distant output stays unproven.
+    """
+    anchors: set[int] = set()
+    for match in _CELL_ANCHOR_RE.finditer(prose):
+        first = int(match.group(1))
+        last = int(match.group(2) or first)
+        # Clamp before constructing the range: prose is untrusted input and a
+        # huge cell reference must not allocate an unbounded range/set.
+        bounded_first = max(0, first)
+        bounded_last = min(last, markdown_cell - 1, len(cells) - 1)
+        if bounded_first <= bounded_last:
+            anchors.update(range(bounded_first, bounded_last + 1))
+
+    sections = {match.group(1) for match in _SECTION_ANCHOR_RE.finditer(prose)}
+    for section in sections:
+        candidates = []
+        for idx, cell in enumerate(cells[:markdown_cell]):
+            if cell.get("cell_type") != "code":
+                continue
+            source = "".join(cell.get("source", []) if isinstance(cell.get("source"), list) else [str(cell.get("source", ""))])
+            if re.search(rf"(?i)\bsection\s+{re.escape(section)}(?![\d.])", source):
+                candidates.append(idx)
+        if len(candidates) == 1:
+            anchors.add(candidates[0])
+
+    result = []
+    for idx in sorted(anchors):
+        if idx >= markdown_cell or cells[idx].get("cell_type") != "code":
+            continue
+        output = _output_text(cells[idx].get("outputs") or [])
+        if output:
+            result.append((idx, output))
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -1227,6 +1322,63 @@ def _check_relational_claims(
     return results
 
 
+def _is_identifier_component(prose: str, match_pos: int, match_end: int) -> bool:
+    """#24289 famille 2: the match is a component of an adjacent identifier.
+
+    Measured on GT-18c (8 findings): `anthropic/claude-haiku-4.5` extracts
+    "4.5" -- a model slug, not a measurement. The tell is a word character
+    glued to the number by a slug separator BEFORE it. A genuine
+    measurement never carries one: French prose writes "4,5", keeps its
+    sign spaced ("- 4,5") and its relations symbolic ("P=0,40" keeps the
+    "=", which is not a slug separator).
+
+    The AFTER side deliberately carries NO symmetric check: "15
+    tokens/min" (#15435) is a compound-unit RATE, and "/min" would ride a
+    trailing-separator tell -- a measured regression, not a hypothetical.
+    """
+    before = prose[max(0, match_pos - 2):match_pos]
+    return bool(_IDENTIFIER_TELL_RE.search(before))
+
+
+def _ungroup_number(token: str) -> str:
+    """Collapse francophone digit grouping ("4 683" -> "4683") so a prose
+    operand can be compared to the flat tokens an output prints."""
+    t = token.replace(" ", "").replace(" ", "").replace("\xa0", "")
+    if t.count(",") == 1 and "." not in t:
+        t = t.replace(",", ".")
+    return t
+
+
+def _ratio_supported_percent(raw: str, norm: str, int_values: frozenset[int]) -> bool:
+    """#24289 famille 3, variante ratio : « 40 % » annoncé, les sorties
+    impriment les deux entiers du ratio (48 et 120 : 48/120 = 40 %).
+
+    Prescrit par l'issue (« résoudre les fractions a/b = x % contre les
+    entiers présents dans la fenêtre »), mesuré sur GT-18c c.34 : la
+    cellule de code 33 rend `humour_reussi : 48` et `total : 120
+    instances`, la prose annonce 40 % -- exact, jamais imprimé tel quel.
+    Restricted to PERCENT claims with integer operands only, so a plain
+    numeric coincidence on non-percent prose cannot ride the exemption.
+    """
+    if not raw.strip().endswith("%"):
+        return False
+    try:
+        pct = float(norm)
+    except ValueError:
+        return False
+    if not (0 < pct < 100) or not int_values:
+        return False
+    decimals = len(norm.split(".", 1)[1]) if "." in norm else 0
+    tol = 0.5 * 10 ** -decimals + 1e-9
+    for a in int_values:
+        for b in int_values:
+            if b <= a:
+                continue
+            if abs(100.0 * a / b - pct) <= tol:
+                return True
+    return False
+
+
 def check_notebook(path: Path) -> dict:
     """Scan a single notebook. Returns a structured dict compatible with
     JSON serialization (so the script can be consumed by CI gates)."""
@@ -1248,9 +1400,41 @@ def check_notebook(path: Path) -> dict:
     skipped_lit = 0
     skipped_no_prev = 0
     skipped_no_output = 0
+    # #24289 famille 1: outputs of EVERY code cell above the current one,
+    # not just the WINDOW's -- a synthesis cell legitimately recalls a
+    # value measured much earlier (GT-20c: 15,0 % printed by cell 13,
+    # cited by cell 31 whose window is [29, 27, 25]).
+    earlier_outputs: list[tuple[int, str]] = []
+    # Numeric tokens printed by ANY code cell of the notebook -- the
+    # operand gate of the famille-3 registry below ("4 683² ≈ 21,9" is
+    # auditable because 4683 is printed).
+    all_output_numbers: set[str] = set()
+    # #24289 famille 3: values whose DERIVATION is written in the prose of
+    # the current cell or a cell above, operand printed by the outputs.
+    derived_shown: set[str] = set()
+    # Integer values printed by any code cell -- the operand pool of the
+    # famille-3 ratio resolver below (48 and 120 resolve "40 %").
+    all_output_ints: set[int] = set()
 
     for idx, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
+            if cell.get("cell_type") == "code":
+                text = _output_text(cell.get("outputs") or [])
+                if text:
+                    earlier_outputs.append((idx, text))
+                    tokens = _NUM_TOKEN_RE.findall(text) + _NUM_TOKEN_RE.findall(
+                        _normalize_output_text(text)
+                    )
+                    all_output_numbers.update(tokens)
+                    for tok in tokens:
+                        try:
+                            v = float(tok)
+                        except ValueError:
+                            continue
+                        # float("7"*400) = inf ; is_integer() rend False sur
+                        # inf/nan, ce qui evite le int(inf) OverflowError.
+                        if v > 0 and v.is_integer():
+                            all_output_ints.add(int(v))
             continue
         src = "".join(cell.get("source", []) if isinstance(cell.get("source"), list) else [str(cell.get("source", ""))])
         if not src:
@@ -1297,6 +1481,16 @@ def check_notebook(path: Path) -> dict:
         # Drop heading lines + table-headers + code fences from the prose
         # we scan (structurals are not quantitative claims).
         prose = CLAIM_CHECK_RE.sub("", _strip_md_structure(scan_src))
+        # #24289 famille 3: register the values this cell DERIVES in plain
+        # sight (formula written next to the value, operand printed by the
+        # outputs). Values registered here and by the cells above stay
+        # auditable by the reader -- not fabrication findings.
+        for m in _DERIVATION_SQUARE_RE.finditer(scan_src):
+            if _ungroup_number(m.group("base")) in all_output_numbers:
+                derived_shown.add(_normalize_num(m.group("val")))
+        for m in _DERIVATION_SQUARE_INV_RE.finditer(scan_src):
+            if _ungroup_number(m.group("base")) in all_output_numbers:
+                derived_shown.add(_normalize_num(m.group("val")))
         if not prev_code_idxs:
             skipped_no_prev += 1
             continue
@@ -1332,6 +1526,10 @@ def check_notebook(path: Path) -> dict:
                 continue
             if _is_version_token(prose, match_pos):
                 continue
+            # #24289 famille 2: a number glued to a word by a slug
+            # separator is a component of an identifier, not a measurement.
+            if _is_identifier_component(prose, match_pos, match_end):
+                continue
             if _in_exception_code_span(prose, match_pos, match_end):
                 continue
             # c.415 (#11873): three additional pedagogical-prose FP families
@@ -1364,12 +1562,63 @@ def check_notebook(path: Path) -> dict:
             # form): currency around the number or a tariff unit after it.
             if _is_monetary_value(prose, match_pos, match_end):
                 continue
-            # Search the normalized form in the output text (plus adjacent
-            # variants: e.g. "0.24" present in "0.2385")
-            if norm in out_text or _fuzzy_present(norm, raw_out_text):
+            claim_line = _line_around(prose, match_pos, match_end)
+            anchored_outputs = [
+                item for item in _anchored_output_cells(claim_line, cells, idx)
+                if item[0] not in prev_code_idxs
+            ]
+            # Keep the historical local window. A more distant output is
+            # considered only when the claim's own line names a source cell or
+            # a uniquely declared section, and that anchor identifies one
+            # output containing the value. An ambiguous anchor is not proof.
+            local_match = norm in out_text or _fuzzy_present(norm, raw_out_text)
+            distant_matches = [
+                text for _, text in anchored_outputs
+                if norm in _normalize_output_text(text) or _fuzzy_present(norm, text)
+            ]
+            if local_match or len(distant_matches) == 1:
                 continue
-            if derived_context:
-                if _derived_value_proven(norm, prose, match_pos, match_end, raw_out_text):
+            # #24289 famille 1: the value may live in a code cell above
+            # the window -- a synthesis cell recalling an earlier
+            # measurement is supported prose, not fabrication. When the
+            # claim names a source cell or a section, that anchor governs
+            # instead: an ambiguous anchor is not proof.
+            anchor_named = bool(
+                _CELL_ANCHOR_RE.search(claim_line)
+                or _SECTION_ANCHOR_RE.search(claim_line)
+            )
+            if not anchor_named and any(
+                norm in _normalize_output_text(text)
+                or _fuzzy_present(norm, text)
+                for _, text in earlier_outputs
+            ):
+                continue
+            # #24289 famille 3: the value is DERIVED in plain sight
+            # (formula written in the prose, operand printed) -- a proof
+            # whatever the context, so it is tested before the
+            # derived-context category below.
+            if norm in derived_shown:
+                continue
+            # #24289 famille 3, variante ratio : « x % » dont les deux
+            # entiers du ratio sont imprimés par les sorties. La spec
+            # amont l'arbitre NON PREUVE (operands non nommés dans la
+            # prose) : la variante ne blanchit plus le claim, elle
+            # l'achemine vers le suivi derived_claims -- verdict
+            # CLAIM_UNPROVEN -- même quand la prose ne porte pas de mot
+            # de contexte de dérivation (sinon il tomberait en finding
+            # FABRICATION).
+            ratio_solvable = _ratio_supported_percent(
+                raw, norm, frozenset(all_output_ints)
+            )
+            if derived_context or ratio_solvable:
+                proof_outputs = [(cell_idx, text) for cell_idx, text in output_texts if text]
+                proof_outputs.extend(anchored_outputs)
+                proof_outputs = list({cell_idx: text for cell_idx, text in proof_outputs}.items())
+                proved = sum(
+                    _derived_value_proven(norm, prose, match_pos, match_end, text)
+                    for _, text in proof_outputs
+                )
+                if proved == 1:
                     continue
                 derived_claims.append({
                     "markdown_cell": idx,

@@ -1,0 +1,8 @@
+date: '2026-11-13'
+by: myia-po-2024:CoursIA
+python_sha: 7e160d60b167264916164f1c4056a5ddf16f1305
+csharp_sha: 562f18bc19d668e00df33f922865228184743e81
+content_python_sha: f562cfe350900248e620d9b7d66c4af67b1d8f4952eb302142ed6fdebd2c3c1a
+content_csharp_sha: 602129e823bec7ef79cebcfb428cab04bd3aba79da14d40ff81a796aea060c94
+reason: "Deprocessualisation #20844 (PR #26332) : les DEUX cotes avancent (markdown-only). Python cell[36] : narration de review 'La review de la PR #24275 compte' -> 'Un recomptage independant donne'. CSharp cell[10] : '(#3801)' x2 et '(PR #10544)' x2 retires, localisateur remplace par le jumeau (twin Tweety-8) ; cell[19] : '(#3801)' retire. Cellules code byte-identiques, aucune re-execution due (C.2 exception markdown). Drift parite-preserving : l'axe native-both (dotNetRDF vs rdflib) est intact."
+

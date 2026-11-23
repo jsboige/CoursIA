@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-08
+> REFERENCE — vivante — dernière révision 2026-11-15
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -254,19 +254,19 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb
   confidence: research
   reviewed_code_sha: 18ed9781b681e3f5ff1f800dbda1894770cb7984a99da3da21f598c8d027b845
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb
   confidence: research
   reviewed_code_sha: b28200ac2decbbccf0aa9dda0934f34ecd159bd7b838f60d2bcb53a54c13c3dc
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb
   confidence: research
   reviewed_code_sha: e0ee9503aec8cf28f65ba4425eac82e50f7bf541405b88ebf313620f4361a8d0
   review_date: "2026-09-21"
@@ -338,13 +338,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb
   confidence: research
   reviewed_code_sha: d2326c85498fac62beffe840f44f3f2c0778e969aa77e4ab819f88930adf9a3e
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb
   confidence: research
   reviewed_code_sha: 218e88ac3418e0b48f5a743d3e9fdaf94f4d5d735ae7ee2d817dbcb4a412b936
   review_date: "2026-09-21"
@@ -428,13 +428,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb
   confidence: research
   reviewed_code_sha: 9a0d29399fcf122f0955c8f2637f3e9771bbef13982d544f6ebeb5591023ba3b
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb
   confidence: research
   reviewed_code_sha: c801bbda3ebfa6ff09259ed216ff8ba429552cf556670433f565fb67a76281d0
   review_date: "2026-09-21"
@@ -452,13 +452,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb
   confidence: research
   reviewed_code_sha: 66d81b8d05d75489fa4faf5f1ccb7f4a880d1efb290e4c6f5c652e2560242ebe
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb
   confidence: research
   reviewed_code_sha: 1e7b15fc0d10978baea4106bfcad65eecb46aae89c14b23998759c9b16da86c2
   review_date: "2026-09-21"

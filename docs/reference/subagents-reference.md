@@ -1,5 +1,7 @@
 # Sous-agents spécialistes — référence + mandat d'usage side-tracks
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Les sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
 
 **3 spécialistes side-track créés 2026-05-23** (corollaire du mandat Epics) : `prover-forensic` (#1453, comble le GAP prover), `training-specialist` + skill `train-model` (#1454), `genai-iterator` + skill `genai-iterate` (#1385). Chacun encode les artefacts réels du dépôt (pipeline, CLI, configs) — voir leur fiche.

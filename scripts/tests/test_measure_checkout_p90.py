@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import sys
 import urllib.parse
+
+import pytest
 from pathlib import Path
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
@@ -136,3 +138,176 @@ def test_une_etape_inconnue_rend_none() -> None:
 def test_une_liste_d_etapes_vide_rend_none() -> None:
     assert mcp.step_minutes([], mcp.CHECKOUT_NAMES) is None
     assert mcp.step_minutes(None, mcp.HEAL_NAMES) is None
+
+# --- Pagination temporelle -------------------------------------------------
+
+
+def _fake_actions(runs):
+    """API triee de la plus recente a la plus ancienne, plafonnee a 1000."""
+    calls = []
+
+    def api(url):
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+        lo, hi = params["created"][0].split("..")
+        page = int(params["page"][0])
+        calls.append((lo, hi, page))
+        eligible = sorted(
+            (r for r in runs if lo <= r["created_at"] <= hi),
+            key=lambda r: (r["created_at"], r["id"]), reverse=True,
+        )
+        capped = eligible[:1000]
+        return {"total_count": len(eligible), "workflow_runs": capped[(page - 1) * 100:page * 100]}
+
+    return api, calls
+
+
+def _run(run_id, second, name="A"):
+    from datetime import datetime, timedelta, timezone
+
+    time = datetime(2026, 11, 1, tzinfo=timezone.utc) + timedelta(seconds=second)
+    return {"id": run_id, "name": name, "created_at": time.strftime(mcp.FMT)}
+
+
+def _bounds(last=1499):
+    return mcp.ts(_run(0, 0)["created_at"]), mcp.ts(_run(0, last)["created_at"])
+
+
+def test_1500_runs_sont_collectes_sans_trou_ni_doublon(monkeypatch):
+    runs = [_run(i, i) for i in range(1500)]
+    api, calls = _fake_actions(runs)
+    monkeypatch.setattr(mcp, "gh", api)
+    actual, complete = mcp.collect_runs(*_bounds(), 4000)
+    assert complete
+    assert [r["id"] for r in actual] == list(range(1499, -1, -1))
+    assert len(calls) > 10
+    assert calls[1][0] == _run(0, 750)["created_at"]
+    assert any(lo == _run(0, 0)["created_at"] and hi == _run(0, 749)["created_at"] for lo, hi, _ in calls)
+
+
+def test_plafond_exact_et_timestamps_identiques(monkeypatch):
+    runs = [_run(i, 0) for i in range(1000)]
+    api, calls = _fake_actions(runs)
+    monkeypatch.setattr(mcp, "gh", api)
+    actual, complete = mcp.collect_runs(*_bounds(0), 1000)
+    assert complete and len(actual) == 1000
+    assert len({r["id"] for r in actual}) == 1000
+    assert len(calls) == 10
+
+
+def test_plafond_indivisible_est_une_erreur(monkeypatch):
+    import pytest
+
+    api, _ = _fake_actions([_run(i, 0) for i in range(1001)])
+    monkeypatch.setattr(mcp, "gh", api)
+    with pytest.raises(RuntimeError, match="meme seconde"):
+        mcp.collect_runs(*_bounds(0), 4000)
+
+
+def test_limite_apres_filtre_workflow_et_temoin_de_troncature(monkeypatch):
+    runs = [_run(i, i, "A" if i % 2 else "B") for i in range(1500)]
+    api, _ = _fake_actions(runs)
+    monkeypatch.setattr(mcp, "gh", api)
+    actual, complete = mcp.collect_runs(*_bounds(), 10, "B")
+    assert not complete
+    assert [r["id"] for r in actual] == list(range(1498, 1478, -2))
+    actual, complete = mcp.collect_runs(*_bounds(), 750, "B")
+    assert complete and len(actual) == 750
+
+
+def test_reponse_incomplete_et_erreur_api_ne_sont_pas_masquees(monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 2, "workflow_runs": [_run(1, 0)]})
+    with pytest.raises(RuntimeError, match="nombre de runs incoherent"):
+        mcp.collect_runs(*_bounds(0), 5)
+
+    def fail(url):
+        raise RuntimeError("API indisponible")
+
+    monkeypatch.setattr(mcp, "gh", fail)
+    with pytest.raises(RuntimeError, match="API indisponible"):
+        mcp.collect_runs(*_bounds(0), 5)
+    with pytest.raises(RuntimeError, match="API indisponible"):
+        mcp.collect_jobs(1)
+
+
+def test_toutes_les_pages_de_jobs_sont_lues(monkeypatch):
+    jobs = [{"id": i} for i in range(1, 106)]
+
+    def api(url):
+        page = int(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["page"][0])
+        return {"total_count": len(jobs), "jobs": jobs[(page - 1) * 100:page * 100]}
+
+    monkeypatch.setattr(mcp, "gh", api)
+    assert mcp.collect_jobs(9) == jobs
+
+
+def test_rapport_cli_signale_la_limite_et_filtre_avant_le_compte(monkeypatch, capsys):
+    import json
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    runs = [
+        {"id": i, "name": "cible" if i % 2 else "autre",
+         "created_at": (now - timedelta(seconds=i)).strftime(mcp.FMT)}
+        for i in range(6)
+    ]
+    api, _ = _fake_actions(runs)
+    job_calls = []
+
+    def dispatch(url):
+        if "/jobs?" in url:
+            job_calls.append(url)
+            return {"total_count": 0, "jobs": []}
+        return api(url)
+
+    monkeypatch.setattr(mcp, "gh", dispatch)
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--runs", "2", "--workflow", "cible"])
+    assert mcp.main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["window_complete"] is False
+    assert report["runs_inspectes"] == 2
+    assert report["workflow_filter"] == "cible"
+    assert len(job_calls) == 2 and "/runs/1/" in job_calls[0] and "/runs/3/" in job_calls[1]
+
+
+def test_un_double_run_et_une_page_de_jobs_vide_sont_refuses(monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 2, "workflow_runs": [_run(1, 0)] * 2})
+    with pytest.raises(RuntimeError, match="duplique"):
+        mcp.collect_runs(*_bounds(0), 5)
+    monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 1, "jobs": []})
+    with pytest.raises(RuntimeError, match="incomplete"):
+        mcp.collect_jobs(1)
+
+
+def test_jobs_dupliques_entre_pages_interrompent_le_rapport(monkeypatch, tmp_path, capsys):
+    import pytest
+    from datetime import datetime, timezone
+
+    run = {"id": 42, "name": "A", "created_at": datetime.now(timezone.utc).strftime(mcp.FMT)}
+    output = tmp_path / "rapport.json"
+
+    def api(url):
+        if "/jobs?" not in url:
+            return {"total_count": 1, "workflow_runs": [run]}
+        page = int(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["page"][0])
+        ids = range(1, 101) if page == 1 else [100]
+        return {"total_count": 101, "jobs": [{"id": i} for i in ids]}
+
+    monkeypatch.setattr(mcp, "gh", api)
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--out", str(output)])
+    with pytest.raises(RuntimeError, match="job duplique"):
+        mcp.main()
+    assert not output.exists()
+    assert not capsys.readouterr().out
+
+
+@pytest.mark.parametrize("job", [{}, {"id": None}, {"id": "42"}, {"id": True}, {"id": 0}, {"id": -1}, None])
+def test_identifiant_de_job_invalide_est_refuse(monkeypatch, job):
+    import pytest
+
+    monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 1, "jobs": [job]})
+    with pytest.raises(RuntimeError, match="ID de job invalide"):
+        mcp.collect_jobs(42)

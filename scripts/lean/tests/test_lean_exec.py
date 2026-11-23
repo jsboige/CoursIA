@@ -769,11 +769,15 @@ def test_measure_resources_commit_binding_through_real_path():
     tests T2 existants injectaient le drapeau directement, le chemin de
     decision n'etait jamais exerce. Headroom commit NEGATIF sur les quatre
     modes : seul None et 2 serrent l'admission."""
+    # Four granted jobs plus the two reserved cores must fit independently
+    # of the host CPU count: this test exercises the commit limit.
+    saved_cpu_count = le.os.cpu_count
     saved_mode = le._overcommit_mode
     saved_mi = le._proc_meminfo_mb
     saved_state = os.environ.get("LEAN_EXEC_STATE_DIR")
     saved = {k: os.environ.get(k) for k in _T2_KNOBS}
     try:
+        le.os.cpu_count = lambda: 8
         with tempfile.TemporaryDirectory() as td:
             os.environ["LEAN_EXEC_STATE_DIR"] = str(Path(td) / "s")
             os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
@@ -805,6 +809,7 @@ def test_measure_resources_commit_binding_through_real_path():
                 assert granted == 4 and detail["binding"] is None, (
                     mode, granted, detail)
     finally:
+        le.os.cpu_count = saved_cpu_count
         le._overcommit_mode = saved_mode
         le._proc_meminfo_mb = saved_mi
         for k, v in saved.items():
@@ -2158,3 +2163,41 @@ if __name__ == "__main__":
             print(f"FAIL {fn.__name__}: {type(exc).__name__}: {exc}")
     print(f"\n{len(tests) - failed}/{len(tests)} tests passes")
     sys.exit(1 if failed else 0)
+
+
+def test_posix_population_excludes_only_zombies(monkeypatch):
+    """Les états vivants comptent, même arrêtés ; seuls les zombies sont exclus."""
+    lines = ["R+ lean", "S lake", "T lean", "D lake", "Z lean", "Z+ lake", "S python"]
+    assert le._count_live_posix_lines(lines) == 4
+    for invalid in (["lean"], [], ["Zombie lean"], ["Z? lean"], ["S lean", "Z? lake"]):
+        with pytest.raises(ValueError):
+            le._count_live_posix_lines(invalid)
+    monkeypatch.setattr(le.os, "name", "posix")
+    monkeypatch.setattr(le.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a[0], 1, "", "ps failed"))
+    assert le.scan_native_population()[0] == -1
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="états de processus Linux")
+def test_posix_population_real_live_and_zombie(tmp_path):
+    """Un vrai processus vivant compte et un enfant zombie ne compte pas."""
+    binary = tmp_path / "lean"
+    shutil.copy2(shutil.which("sleep"), binary)
+    live = subprocess.Popen([str(binary), "15"])
+    dead = subprocess.Popen([str(binary), "0"])
+    try:
+        deadline = time.monotonic() + 5
+        while True:
+            p = subprocess.run(["ps", "-o", "stat=,comm=", "-p", f"{live.pid},{dead.pid}"],
+                               capture_output=True, text=True, check=True)
+            rows = p.stdout.splitlines()
+            if len(rows) == 2 and any(row.strip().startswith("Z") for row in rows):
+                break
+            if time.monotonic() >= deadline:
+                pytest.fail(f"zombie non observé : {rows}")
+            time.sleep(0.02)
+        assert le._count_live_posix_lines(rows) == 1
+        assert le._count_live_posix_lines([r for r in rows if r.strip().startswith("Z")]) == 0
+    finally:
+        live.terminate()
+        live.wait(timeout=5)
+        dead.wait(timeout=5)

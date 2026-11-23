@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tests for scripts/quarto_render_scope.py.
+"""Tests for scripts/ci/quarto_render_scope.py.
 
 The script decides how much of the Quarto site a PR check must render. Getting
 that decision wrong is not symmetric:
@@ -100,11 +100,12 @@ def test_every_declared_full_trigger_forces_full(path):
 
 
 def test_preprocessing_script_forces_full():
-    for p in ("scripts/quarto_yaml_safe.py",
-              "scripts/quarto_csharp_kernel_fix.py",
+    for p in ("scripts/ci/quarto_yaml_safe.py",
+              "scripts/ci/quarto_csharp_kernel_fix.py",
               # NOT regen_quarto_render.py: it is CI machinery (#14431). Its
-              # sibling below keeps the prefix rule honest.
-              "scripts/regen_quarto_render_helper.py"):
+              # hypothetical sibling below keeps the prefix rule honest (famille
+              # relogée scripts/ci/, #13737 V3).
+              "scripts/ci/regen_quarto_render_helper.py"):
         assert qrs.decide([("M", p)], ENTRIES)[0] == "full", p
 
 
@@ -204,8 +205,9 @@ def test_restrict_yaml_drops_the_original_comments_with_the_entries():
 # ---------------------------------------------------------------------------
 # glob entries
 #
-# The real list carries `*.qmd`, covering index.qmd and parcours.qmd -- the two
-# root landing pages. An exact-string intersection matched neither: a PR
+# The real list carries `*.qmd`, covering index.qmd -- the remaining root
+# landing page since parcours.qmd moved under docs/ (#13751, covered by its
+# explicit entry). An exact-string intersection matched neither: a PR
 # editing index.qmd fell through to `empty`, skipped the render step, and
 # reported success having built nothing. These pin the fix.
 # ---------------------------------------------------------------------------
@@ -292,9 +294,19 @@ def test_ci_machinery_alone_renders_a_smoke_set_not_nothing_and_not_everything(p
 def test_this_prs_own_change_set_is_not_a_full_render():
     """The exact rows of the PR introducing this file."""
     rows = [("M", ".github/workflows/quarto-pages-deploy.yml"),
-            ("M", "scripts/quarto_render_scope.py"),
+            ("M", "scripts/ci/quarto_render_scope.py"),
             ("M", "scripts/tests/test_quarto_render_scope.py")]
     mode, files, _ = qrs.decide(rows, ENTRIES)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
+@pytest.mark.parametrize("path", [
+    "scripts/ci/quarto_readme_titles.py",
+    "scripts/ci/tests/test_quarto_readme_titles.py",
+])
+def test_readme_title_machinery_selects_readme_smoke(path):
+    mode, files, _ = qrs.decide([("M", path)], ENTRIES)
     assert mode == "scoped"
     assert files == ["index.qmd", "README.md"]
 
@@ -312,8 +324,8 @@ def test_notebook_rewriting_scripts_still_force_full():
 
     Both live under `scripts/quarto_`; only this one is exempt.
     """
-    assert qrs.decide([("M", "scripts/quarto_yaml_safe.py")], ENTRIES)[0] == "full"
-    assert qrs.decide([("M", "scripts/quarto_render_scope.py")], ENTRIES)[0] == "scoped"
+    assert qrs.decide([("M", "scripts/ci/quarto_yaml_safe.py")], ENTRIES)[0] == "full"
+    assert qrs.decide([("M", "scripts/ci/quarto_render_scope.py")], ENTRIES)[0] == "scoped"
 
 
 def test_smoke_documents_are_covered_by_the_real_render_list():
@@ -326,7 +338,7 @@ def test_smoke_documents_are_covered_by_the_real_render_list():
 # ---------------------------------------------------------------------------
 # The generated render list is not project config -- #14431
 #
-# `project.render` is produced by scripts/regen_quarto_render.py, which the job
+# `project.render` is produced by scripts/ci/regen_quarto_render.py, which the job
 # runs one step BEFORE this script, and which `--apply` rewrites one step
 # after. A delta confined to it says WHICH documents render, never HOW one
 # renders. Treating it as a project-wide change classified a 73-notebook move
@@ -389,7 +401,7 @@ def test_quarto_yml_render_list_only_alone_renders_the_smoke_set():
 
 
 def test_list_generator_is_machinery_not_a_full_trigger():
-    mode, files, _ = qrs.decide([("M", "scripts/regen_quarto_render.py")], ENTRIES)
+    mode, files, _ = qrs.decide([("M", "scripts/ci/regen_quarto_render.py")], ENTRIES)
     assert mode == "scoped"
     assert files == ["index.qmd", "README.md"]
 
@@ -406,7 +418,7 @@ def test_14431_shape_scopes_to_the_moved_documents():
     """End to end on the measured case: the regenerated list, its generator,
     and the moved documents themselves."""
     rows = [("M", "_quarto.yml"),
-            ("M", "scripts/regen_quarto_render.py"),
+            ("M", "scripts/ci/regen_quarto_render.py"),
             ("R", "MyIA.AI.Notebooks/Search/Search-02c.ipynb"),
             ("R", "MyIA.AI.Notebooks/Search/Search-3.ipynb")]
     mode, files, _ = qrs.decide(rows, ENTRIES, yml_render_list_only=True)

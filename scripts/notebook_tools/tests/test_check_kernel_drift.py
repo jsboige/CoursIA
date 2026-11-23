@@ -322,6 +322,128 @@ def test_diff_signatures_added_cell_printing_intervals_not_reported():
     ) == []
 
 
+def test_diff_signatures_common_cell_gaining_float_not_reported():
+    """#25413 etendu -- cas mesure PR #27915, cellule c371d193.
+
+    Une cellule COMMUNE (meme id base/tete) dont la sortie de base
+    EXISTAIT mais ne portait aucun texte float-array et qui en gagne une
+    a la tete est une addition de contenu : la PR ajoute un print de
+    marges mesurees a une cellule existante. Le partitionneur ne la
+    classait pas ``added`` (sa base avait des sorties non vides), elle
+    restait en derive bloquante alors que rien n'avait derive -- la
+    signature de base etait vide, il n'existait aucune valeur de
+    reference a faire deriver. Elle part desormais en advisory
+    ``output_added_cells``, comme la conversion exercice -> exemple de
+    #25413.
+    """
+    base = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    head = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"
+                                "marge : [-0.2021, 0.2404]\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    b_sig, h_sig = ckd.float_signatures(base), ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == []
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-work"]
+
+
+def test_diff_signatures_common_cell_real_drift_still_reported():
+    """Controle positif du jumeau id-aligne : le fix ne rend pas l'organe aveugle.
+
+    Une cellule commune dont la base PORTAIT une signature float et dont
+    la valeur change reellement (au-dela de la tolerance 1 ULP) reste
+    une derive signalee.
+    """
+    assert _id_aligned_diffs(
+        [("c-work", "[1.0, 1.0]\n")],
+        [("c-work", "[2.0, 3.0]\n")],
+    ) == ["c-work"]
+
+
+# --- #25413 : une sortie qui APPARAIT dans une cellule vide a la base ------
+# n'est PAS une derive de signature : c'est une addition de contenu (la
+# conversion exercice -> exemple guide). Le guard ne la rapporte ni en
+# signature_drift_cells (bloquant) ni avec le guess NumPy ; au plus un
+# advisory output_added_cells. Cas mesure PR #22969, cellule 5bd816be
+# (base "Exercice 2" sans sortie -> tete "Exemple guide 2" avec sorties).
+
+
+def test_output_added_is_not_signature_drift():
+    # base : cellule sans AUCUNE sortie ; tete : meme cellule (meme id) avec
+    # une sortie float. Meme kernel.
+    base = _nb_ids([("c1", None)])
+    head = _nb_ids([("c1", "[0.5, 0.25, 0.125]\n")])
+    b_sig = ckd.float_signatures(base)
+    h_sig = ckd.float_signatures(head)
+    assert b_sig == ((),)           # base vide
+    assert h_sig != ((),)           # tete avec sortie
+    # Pas de derive (le faux positif fondateur) :
+    assert ckd.diff_signatures(b_sig, h_sig,
+                               base_nb=base, head_nb=head) == []
+    # Mais bien une addition de contenu (advisory) :
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c1"]
+
+
+def test_output_added_ordinal_is_not_drift():
+    # Meme cas par l'alignement ORDINAL (carnets sans id) : une cellule
+    # presente a la base et y vide, avec une sortie a la tete, n'est pas une
+    # derive.
+    base = ((),)
+    head = (("[0.5, 0.25, 0.125]",),)
+    assert ckd._diff_signatures_ordinal(base, head) == []
+    assert ckd._output_added_ordinal(base, head) == [0]
+
+
+def test_output_added_ordinal_keeps_genuinely_new_cell():
+    # Controle negatif de l'ordinal : une cellule AU-DELA de la base
+    # (i >= len(base)) est NOUVELLE et reste rapportee -- le fix n'aveugle
+    # pas la detection d'une vraie cellule ajoutee.
+    base = (("[1.0, 1.0]",),)
+    head = (("[1.0, 1.0]",), ("[2.0, 2.0]",))
+    assert ckd._diff_signatures_ordinal(base, head) == [1]
+    # (pas une "addition" : la cellule 1 est au-dela de la base)
+    assert ckd._output_added_ordinal(base, head) == []
+
+
+def test_real_drift_still_reported_alongside_output_added():
+    # Controle positif : un drift reel (2 ULP) sur une cellule commune reste
+    # rapporte, meme si une AUTRE cellule commune ajoute une sortie.
+    base = _nb_ids([("c-drift", "[1.0, 1.0]\n"), ("c-add", None)])
+    head = _nb_ids([("c-drift", f"[{TWO_ULP_BELOW_1!r}, 1.0]\n"),
+                    ("c-add", "[3.0, 3.0]\n")])
+    b_sig = ckd.float_signatures(base)
+    h_sig = ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig,
+                               base_nb=base, head_nb=head) == ["c-drift"]
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-add"]
+
+
+def test_output_added_green_end_to_end(monkeypatch):
+    # Trajet COMPLET : base vide -> tete avec sortie, meme kernel. Le guard
+    # reste VERT (aucun finding) : le seul moyen de lever le rouge n'est
+    # plus d'ajouter une section C.4.
+    base_nb = _nb("python3", "3.13.3", [])
+    base_nb["cells"][0]["outputs"] = []
+    head_nb = _nb("python3", "3.13.3", ["[0.5, 0.25, 0.125]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert result["findings"] == []
+
+
+def test_output_added_does_not_emit_numpy_cause(monkeypatch):
+    # Une derive REELLE coexistante reste un finding ; l'advisory
+    # output_added_cells est raporte a cote (vide ici : la cellule avait
+    # une sortie a la base), sans rougir pour l'addition.
+    base_nb = _nb("python3", "3.13.3", ["[1.0, 1.0, 1.0]\n"])
+    head_nb = _nb("python3", "3.13.3",
+                  [f"[1.0, {TWO_ULP_BELOW_1!r}, 1.0]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert len(result["findings"]) == 1
+    f = result["findings"][0]
+    assert f["signature_drift_cells"]
+    assert f["output_added_cells"] == []
+
 
 # --- #17679 : table d'acceptation canon C# 13.0 ------------------------------
 # Decision coordinateur 2026-09-26 (option 1) : C# 13.0 devient le canon ;
@@ -560,7 +682,7 @@ def test_canonical_transition_scoped_series_02ml_310_accepted():
     # elargissement, il ne fuit pas.
     assert ckd.accepted_canonical_transition(
         a, b,
-        nb_path=("MyIA.AI.Notebooks/Complexity/"
+        nb_path=("MyIA.AI.Notebooks/InformationCalcul/Complexity/"
                  "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"),
     ) is False
 
@@ -580,7 +702,7 @@ def test_canonical_transition_scoped_series_does_not_leak_outside():
     # c'est le carnet jumeau ``GameTheory-annexe/`` qui garde la frontiere
     # du prefixe -- ``GameTheory-annexe/`` n'est pas ``GameTheory/``.
     for path in (
-        "MyIA.AI.Notebooks/Complexity/"
+        "MyIA.AI.Notebooks/InformationCalcul/Complexity/"
         "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb",
         "MyIA.AI.Notebooks/GameTheory-annexe/x.ipynb",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours-autre/x.ipynb",
@@ -1001,3 +1123,127 @@ class TestDiffSignatures:
         head2 = _nb_ulp("[1.0, 2.0]")
         head2["cells"][0].pop("id")
         assert _diff_signatures_ordinal(b_sig, float_signatures(head2)) == [0]
+
+@pytest.mark.parametrize("alignment", ["id", "ordinal", "reidentified"])
+def test_output_added_is_advisory_but_existing_output_still_drifts(monkeypatch, alignment):
+    import types
+
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    base["cells"][0]["outputs"] = []
+    if alignment != "ordinal":
+        base["cells"][0].update(id="old", source="print(values)")
+        head["cells"][0].update(id="new" if alignment == "reidentified" else "old",
+                                source="print(values)")
+        if alignment == "reidentified":
+            # A common ID activates ID alignment and source-based matching.
+            shared = {"cell_type": "code", "id": "shared", "outputs": []}
+            base["cells"].insert(0, shared.copy())
+            head["cells"].insert(0, shared.copy())
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda ref, _: base if ref == "base" else head)
+    args = types.SimpleNamespace(explain=True)
+    result = ckd._measure("base", args)
+    assert result["findings"] == []
+    expected = {"ordinal": 0, "id": "old", "reidentified": "new"}
+    assert result["output_added"][0]["cells"] == [expected[alignment]]
+
+    base["cells"][-1]["outputs"] = [{"text": "[1.0, 1.0]"}]
+    result = ckd._measure("base", args)
+    assert result["findings"][0]["signature_drift_cells"]
+    assert "NumPy" in result["findings"][0]["probable_causes"][0]
+
+
+def test_output_added_does_not_hide_kernel_drift(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    base["cells"][0]["outputs"] = []
+    head = _nb("other-kernel", "3.11", "[1.0, 2.0]")
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["kernel_diffs"]
+    assert result["findings"][0]["signature_drift_cells"] == []
+
+
+def test_output_added_cli_green_and_mixed_drift_red(monkeypatch, capsys):
+    base = _nb("python3", "3.11", "")
+    base["cells"][0]["outputs"] = []
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    monkeypatch.setattr(ckd, "resolve_base", lambda _: "base")
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda ref, _: base if ref == "base" else head)
+    assert ckd.main_with_args(["base", "--json", "--explain"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["output_added"] == [{"notebook": "test.ipynb", "cells": [0]}]
+    assert report["findings"] == []
+
+    base["cells"].append({"cell_type": "code", "outputs": [{"text": "[1.0, 1.0]"}]})
+    head["cells"].append({"cell_type": "code", "outputs": [{"text": "[2.0, 2.0]"}]})
+    assert ckd.main_with_args(["base", "--json", "--explain"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["findings"][0]["signature_drift_cells"] == [1]
+    assert report["output_added"][0]["cells"] == [0]
+
+
+def test_existing_non_float_output_is_not_treated_as_empty(monkeypatch):
+    base = _nb("python3", "3.11", "ready")
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == [0]
+    assert result["output_added"] == []
+
+
+def test_ambiguous_reidentified_source_remains_drift(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "")
+    def cell(cid, outputs):
+        return {"cell_type": "code", "id": cid, "source": "print(values)",
+                "outputs": outputs}
+    anchor = cell("anchor", [])
+    base["cells"] = [anchor, cell("a", []),
+                     cell("b", [{"text": "[1.0, 1.0]"}])]
+    head["cells"] = [anchor.copy(), cell("new", [{"text": "[2.0, 2.0]"}])]
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == ["new"]
+    assert result["output_added"] == []
+
+
+def test_multiple_reidentified_heads_do_not_prove_output_added(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "")
+    def cell(cid, outputs):
+        return {"cell_type": "code", "id": cid, "source": "print(values)",
+                "outputs": outputs}
+    anchor = cell("anchor", [])
+    base["cells"] = [anchor, cell("old", [])]
+    head["cells"] = [anchor.copy(), cell("new1", [{"text": "[1.0, 2.0]"}]),
+                     cell("new2", [{"text": "[2.0, 3.0]"}])]
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == ["new1", "new2"]
+    assert result["output_added"] == []
+
+
+def test_le_mode_texte_respecte_l_exemption_c4(monkeypatch, tmp_path, capsys):
+    """L'exemption C.4 (`## Diagnostic dérive`) vaut sur le mode TEXTE comme
+    sur le mode `--json` : un finding acknowledge rend rc 0 (#27917).
+
+    Le chemin texte annonçait « [ACKNOWLEDGED via ## Diagnostic dérive] » et
+    rendait quand meme rc 1 : la lane lisait un echec la ou le drift etait
+    documente et assume.
+    """
+    body = tmp_path / "pr_body.md"
+    body.write_text("## Diagnostic dérive\n\ncause (a) : environnement.\n",
+                    encoding="utf-8")
+    monkeypatch.setenv("PR_BODY_FILE", str(body))
+    base = _nb("python3", "3.11", "")
+    head = _nb("other-kernel", "3.11", "[1.0, 2.0]")
+    monkeypatch.setattr(ckd, "resolve_base", lambda ref: "base")
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob",
+                        lambda ref, _: base if ref == "base" else head)
+
+    assert ckd.main_with_args(["base", "--explain"]) == 0
+    assert "acknowledged" in capsys.readouterr().out
+
+    # Sans la section d'exemption, le meme drift reste rouge.
+    monkeypatch.delenv("PR_BODY_FILE")
+    assert ckd.main_with_args(["base", "--explain"]) == 1
+    assert "FAIL" in capsys.readouterr().err

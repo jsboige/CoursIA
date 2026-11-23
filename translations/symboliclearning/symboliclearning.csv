@@ -10418,7 +10418,7 @@ les positifs et **aucun** negatif :
 > **Pour aller plus loin.** Les systèmes ILP complets (FOIL original, Progol,
 > Popper --- section suivante) ajoutent l'elagage des litteraux redondants, la
 > tolerance au bruit, et des biais de langage plus riches.",,,,,,,,fa574b6d3fd57c28,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,da423029,markdown,fr,a6b7a1e9ee475262,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,da423029,markdown,fr,4221e6040d183a76,"***
 
 ## 6. ILP et Knowledge Graphs
 
@@ -10440,7 +10440,7 @@ AMIE3 est un système moderne qui mine des règles sur les KGs :
 ?a livesIn ?b, ?b locatedIn ?c => ?a livesIn ?c  (transitivite)
 ```
 
-> **Connexion inter-series** : Les notebooks SemanticWeb (SW-11 Knowledge Graphs, SW-4b SPARQL) couvrent les graphes RDF et SPARQL. L'ILP fournit le cadre théorique pour **apprendre** des règles sur ces graphes, tandis que SW-11/SW-4b montrent comment les **interroger**.",,,,,,,,a6b7a1e9ee475262,,,,,,,,,,,,,,,
+> **Connexion inter-series** : Les notebooks SemanticWeb (SW-11 Knowledge Graphs, SW-04-Python SPARQL) couvrent les graphes RDF et SPARQL. L'ILP fournit le cadre théorique pour **apprendre** des règles sur ces graphes, tandis que SW-11/SW-04-Python montrent comment les **interroger**.",,,,,,,,4221e6040d183a76,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d4641c82,code,fr,79296405dc270ed6,"# Illustration : ILP sur un mini Knowledge Graph
 
 # Un mini-KG en triples (sujet, predicat, objet)
@@ -10543,14 +10543,15 @@ WSL sous Windows ; kernel natif sous Linux/macOS). Le reste du notebook est en P
 standard et tourne sur n'importe quel kernel. Versions epinglees : **Popper v4.4.0**
 (la 5.0 exige Python >= 3.14), `janus_swi` (requiert SWI-Prolog >= 9.1.12, PPA
 `ppa:swi-prolog/stable`), `setuptools < 81` (Popper importe encore `pkg_resources`).",,,,,,,,b002b6ed0872fd87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,8022039d,code,fr,f3ac84f7f1be7ea2,"# Environnement Popper : kernel Python Linux requis (SIGALRM absent de Windows)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,8022039d,code,fr,ea3d377738c7b269,"# Environnement Popper : kernel Python Linux requis (SIGALRM absent de Windows)
 import importlib.util, platform, shutil, subprocess, sys, warnings
 
 HAS_POPPER = False
 swipl = shutil.which(""swipl"")
 print(f""Python : {sys.version.split()[0]} ({platform.system()})"")
 if swipl:
-    _out = subprocess.run([swipl, ""--version""], capture_output=True, text=True)
+    _out = subprocess.run([swipl, ""--version""], capture_output=True, text=True,
+                        encoding=""utf-8"", errors=""replace"")
     _lines = ((_out.stdout or """") + (_out.stderr or """")).strip().splitlines()
     print(f""swipl  : {_lines[0] if _lines else 'present (version non annoncee)'}"")
 else:
@@ -10586,8 +10587,8 @@ else:
         try:
             print(f""Popper : v{_imd.version('popper_ilp')} (version de distribution) -- pret"")
         except Exception:
-            print(""Popper : installé (provenance indisponible) -- pret"")",,,,,,,,f3ac84f7f1be7ea2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,878ee645,code,fr,d87a03e59ee3853e,"# Le probleme ancestor, cette fois resolu par Popper -- memes faits, memes exemples.
+            print(""Popper : installé (provenance indisponible) -- pret"")",,,,,,,,ea3d377738c7b269,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,878ee645,code,fr,958686f6fdda7323,"# Le probleme ancestor, cette fois resolu par Popper -- memes faits, memes exemples.
 # Popper tourne dans un sous-processus : son testeur Prolog (janus) garde un etat
 # global par processus, et deux apprentissages successifs dans le meme kernel
 # cumuleraient les faits consultes (comptes d'exemples fausses).
@@ -10614,7 +10615,8 @@ print(json.dumps({""prog"": format_prog(prog) if prog else None, ""score"": scor
 def run_popper(kbpath: Path) -> dict:
     """"""Lance Popper sur un repertoire de tache (bias.pl, bk.pl, exs.pl), isole.""""""
     out = subprocess.run([sys.executable, ""-c"", POPPER_RUNNER, str(kbpath)],
-                         capture_output=True, text=True, timeout=300)
+                         capture_output=True, text=True, timeout=300,
+                         encoding=""utf-8"", errors=""replace"")
     return json.loads(out.stdout.strip().splitlines()[-1])
 
 if HAS_POPPER:
@@ -10635,7 +10637,7 @@ if HAS_POPPER:
     print(f""\nScore : {tp} tp, {fn} fn, {tn} tn, {fp} fp -- taille {size} litteraux"")
 else:
     result = None
-    print(""Popper indisponible : cellule sautee (voir instructions ci-dessus)."")",,,,,,,,d87a03e59ee3853e,,,,,,,,,,,,,,,
+    print(""Popper indisponible : cellule sautee (voir instructions ci-dessus)."")",,,,,,,,958686f6fdda7323,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,bacc8d6a,code,fr,15b91ab025ac5e0b,"# 1) Ablation : que peut apprendre Popper SANS le droit a la recursion ?
 # 2) Verification independante : le programme appris est execute en Prolog (janus),
 #    hors de Popper -- meme esprit que la validation croisee clingo de SL-6.
@@ -11103,7 +11105,7 @@ print(""Etape 2 : ggp_derived = { (a,b) | exists c,d: parent(a,c),parent(c,d),pa
 print(""Etape 3 : GGP_POS == ggp_derived ? (verifiez la couverture exacte)"")
 result = None  # TODO etudiant : votre ggp_derived ici
 ",,,,,,,,961b0e034d682bcc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d7fb32ee,markdown,fr,0f9c433c9c22a153,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d7fb32ee,markdown,fr,6f89add9aeb57012,"***
 
 ## 8. Conclusion
 
@@ -11136,9 +11138,9 @@ Ce notebook a couvert la **Programmation Logique Inductive** (AIMA 19.5) :
 | Direction | Sujet | Lien |
 |-----------|-------|------|
 | Prerequis | Determinations et pertinence | [SL-3](SL-3-RelevanceLearning.ipynb) |
-| Web Sémantique | Knowledge Graphs, SPARQL | SW-11, SW-4b |
+| Web Sémantique | Knowledge Graphs, SPARQL | SW-11, SW-04-Python |
 | Web Sémantique | Reasoners OWL | SW-13 |
-| TweetyProject | Logique FOL, argumentation | Serie Tweety |",,,,,,,,0f9c433c9c22a153,,,,,,,,,,,,,,,
+| TweetyProject | Logique FOL, argumentation | Serie Tweety |",,,,,,,,6f89add9aeb57012,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,fc9bb0dd,markdown,fr,38d2a4df9a26054c,"***
 
 ## Defi presentation
@@ -15313,7 +15315,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb,782353e4,
 - Russell & Norvig, *AIMA*, 4e ed., Chapitre 19
 
 **Navigation** : [Index](./README.md) | [<< SL-6 Moteurs ILP modernes](SL-6-ModernILP.ipynb) | [Suivant >> SL-8 KG-ILP](SL-8-KnowledgeGraphs-ILP.ipynb)",,,,,,,,0700fc7e1b6455b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,cc001308,markdown,fr,9d26da4b62e66875,"# SL-8 - ILP Moderne et Knowledge Graphs
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,cc001308,markdown,fr,870b3b989ab5cccd,"# SL-8 - ILP Moderne et Knowledge Graphs
 
 **Navigation** : [Index](./README.md) | [<< NeuroSymbolic](SL-7-NeuroSymbolic.ipynb) | [LLM + Symbolic >>](SL-9-LLM-SymbolicLearning.ipynb)
 
@@ -15328,7 +15330,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prerequis
 - SL-4 (ILP : FOIL, resolution inverse) recommande
-- SW-2b (RDF en Python avec rdflib) recommande
+- SW-02-Python (RDF en Python avec rdflib) recommande
 - Python 3.10+, rdflib 7.x
 
 ### Duree estimee : 50 minutes
@@ -15337,7 +15339,7 @@ A la fin de ce notebook, vous saurez :
 - Galarraga et al., ""AMIE: Association Rule Mining under Incomplete Evidence in Ontological Knowledge Bases"", VLDB 2013
 - Bordes et al., ""Translating Embeddings for Modeling Multi-relational Data"", NeurIPS 2013
 - Russell & Norvig, *AI: A Modern Approach*, 3e/4e ed., Chapitre 19
-- [rdflib Documentation](https://rdflib.readthedocs.io/)",,,,,,,,9d26da4b62e66875,,,,,,,,,,,,,,,
+- [rdflib Documentation](https://rdflib.readthedocs.io/)",,,,,,,,870b3b989ab5cccd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,a521d3e8,markdown,fr,0e89d9ad6eb9f547,"***
 
 ## 1. Introduction : ILP sur données structurees

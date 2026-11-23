@@ -23,8 +23,9 @@ merge :
   * `DWELL_HOURS_DEFAULT = 24.0` (`scripts/pick_idle_grain.py`) refuse de
     *proposer* une issue creee il y a moins de 24 h -- c'est un picker, pas
     un gate ;
-  * l'attente bornee du `PR gate` (`--timeout-min 45`) attend que les
-    constituants concluent -- elle ne differe rien une fois qu'ils sont verts.
+  * l'attente bornee du `PR gate` (`--timeout-min 59` depuis le 2026-11-14,
+    55 avant, 45 avant cela) attend que les constituants concluent -- elle ne
+    differe rien une fois qu'ils sont verts.
 
 D'ou l'attachement retenu : le plancher est evalue par le gate lui-meme,
 **apres** que les constituants ont conclu verts, et **hors** de la boucle
@@ -936,6 +937,44 @@ def last_authoritative_sha(
     return current
 
 
+def _empty_commit_parent(repo, payload, base_sha, fetch):
+    """Parent d'un commit VIDE du cote PR, ou None.
+
+    Un commit vide (`git commit --allow-empty`, pousse pour relancer la CI)
+    ne modifie pas le cote PR : il ne doit ni rearmer le plancher, ni perimer
+    l'approbation du coordinateur. Mesure fondatrice : #26899, approuvee,
+    plancher rearme de 2 h le 2026-11-16 par un commit « reveil a arbre
+    identique ».
+
+    Trois preuves, toutes requises : la liste `files` du commit est presente
+    et vide (aucun appel de plus dans le cas courant) ; l'arbre du parent est
+    identique a celui du commit ; le parent est du cote PR (il n'est pas un
+    ancetre de la base). Une preuve absente ou illisible rend None : le
+    commit se mesure lui-meme, comme avant -- fail-closed."""
+    files = payload.get("files")
+    if not isinstance(files, list) or files:
+        return None
+    parent = ((payload.get("parents") or [{}])[0] or {}).get("sha") or ""
+    tree = _tree_sha(payload)
+    if not parent or not tree:
+        return None
+    try:
+        parent_tree = _tree_sha(_commit_payload(repo, parent, fetch))
+    except DwellError:
+        return None
+    if parent_tree != tree or parent == base_sha:
+        return None
+    try:
+        cmp = fetch("repos/{}/compare/{}...{}".format(repo, base_sha, parent))
+    except DwellError:
+        return None
+    # « ahead » / « diverged » : le parent porte des commits absents de la
+    # base, il est du cote PR. « behind » / « identical » / illisible : non.
+    if not isinstance(cmp, dict) or cmp.get("status") not in ("ahead", "diverged"):
+        return None
+    return parent
+
+
 def _walk_authoritative(repo, sha, base_sha, fetch, run_git):
     """Remontee first-parent commune au plancher DWELL et a `merge_ready`.
 
@@ -945,7 +984,8 @@ def _walk_authoritative(repo, sha, base_sha, fetch, run_git):
     ai-01 2026-09-16 : la forme des parents seule n'exempte pas une
     resolution manuelle de conflit). Le rebase, la fusion d'une sous-branche
     propre, une resolution d'auteur et toute fusion dont la preuve
-    d'equivalence est indisponible restent mesurees -- fail-closed."""
+    d'equivalence est indisponible restent mesurees -- fail-closed. Elle
+    franchit aussi les commits VIDES du cote PR (`_empty_commit_parent`)."""
     if run_git is None:
         run_git = _default_run_git
     current = sha
@@ -974,6 +1014,11 @@ def _walk_authoritative(repo, sha, base_sha, fetch, run_git):
                     current = first
                     continue
                 return current, payload
+        if len(parents) == 1:
+            parent = _empty_commit_parent(repo, payload, base_sha, fetch)
+            if parent:
+                current = parent
+                continue
         return current, payload
     raise DwellError(
         "chaine first-parent de plus de {} fusions de base depuis {} "
@@ -1037,7 +1082,7 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 #: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
 #: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
 #: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
-#: `prosody_lab/syllable_pitch.py`, `07-Agent-Orchestration/**`, ...). Une PR qui
+#: `prosody_lab/syllable_pitch.py`, `07-Orchestration-d-Agents/**`, ...). Une PR qui
 #: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
 #: corrige ici deux mentions erronees successives : « pas de trigger
 #: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui

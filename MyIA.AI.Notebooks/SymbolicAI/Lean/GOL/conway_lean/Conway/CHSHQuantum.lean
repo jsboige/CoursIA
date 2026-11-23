@@ -71,7 +71,7 @@ séparée du chemin de découverte, et les deux sont lisibles ici.
 - `Lean-13-Kochen-Specker.ipynb` : autre obstruction à l'accord classique, mais
   de nature combinatoire (colorabilité des vecteurs) et non analytique comme la
   borne de Tsirelson.
-- `Lean-16c-Conway-Free-Will-Theorem.ipynb` : le théorème du libre arbitre de
+- `Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb` : le théorème du libre arbitre de
   Conway et Kochen, qui exploite la même frontière entre corrélations
   classiques et quantiques.
 - `Lean-13b-CHSH-Tsirelson-Native.ipynb` : le notebook natif de cette tranche

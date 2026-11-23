@@ -142,10 +142,26 @@ def test_tag_cycle():
 
 
 def test_tag_1111_inatteignable():
-    """Le bloc 1111 n'apparait jamais : aucune suite de 00 et 1101 ne le produit."""
+    """Sur la graine de reference, 1111 n'apparait pas : aucun bloc ajoute ne le produit.
+
+    La portee est la trace observee, pas le systeme entier -- une graine
+    arbitraire peut en produire, cf. le test suivant.
+    """
     trace, verdict = cb.tag_evolve("1001010010000")
     assert verdict == "cycle"
     assert "1111" in cb.first_missing_blocks(trace, 4)
+
+
+def test_tag_1111_atteignable_par_une_graine_arbitraire():
+    """Une graine finissant par 11 voit 1111 des le premier pas.
+
+    ``10011`` : le pas supprime ``100`` et accole le bloc ``1101`` au ``11``
+    restant, d'ou ``111101``. L'invariant de Wolfram vaut pour les chaines
+    composees de blocs ajoutes, pas pour une graine quelconque.
+    """
+    trace, _ = cb.tag_evolve("10011")
+    assert any("1111" in "".join(state) for state in trace)
+    assert "1111" not in cb.first_missing_blocks(trace, 4)
 
 
 def test_tag_verdict_borne():

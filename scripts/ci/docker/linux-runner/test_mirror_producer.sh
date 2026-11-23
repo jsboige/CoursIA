@@ -82,7 +82,7 @@ echo "Test 1 : miroir absent + bootstrap desactive -- aucun geste (fail-open)"
   else
     ok "T1 aucun miroir cree (le parc reste dans son etat d'avant)"
   fi
-  if echo "$out" | grep -q "bootstrap desactive"; then
+  if grep -q "bootstrap desactive" <<<"$out"; then
     ok "T1 le no-op est journalise (pas un silence)"
   else
     ko "T1 no-op silencieux : $out"
@@ -158,7 +158,7 @@ echo "Test 3 : throttle -- un second refresh immediat ne fetch pas"
   else
     ko "T3 throttle a 0 : main a $n commits, le refresh n'a pas eu lieu"
   fi
-  if echo "$out" | grep -q "rafraichi"; then
+  if grep -q "rafraichi" <<<"$out"; then
     ok "T3 le refresh est journalise"
   else
     ko "T3 refresh silencieux : $out"
@@ -200,7 +200,7 @@ echo "Test 5 : garde d'espace -- bootstrap refuse proprement, rien n'est cree"
   else
     ok "T5 aucun repertoire cree par le refus"
   fi
-  if echo "$out" | grep -q "bootstrap REFUSE"; then
+  if grep -q "bootstrap REFUSE" <<<"$out"; then
     ok "T5 le refus est nomme avec sa cause"
   else
     ko "T5 refus silencieux : $out"
@@ -213,16 +213,45 @@ echo "Test 6 : status -- taille, refs et date de refresh lus sur le miroir"
 (
   out="$(run_mirror status)"
   echo "$out" >> "$LOG"
-  if echo "$out" | grep -q "refs: "; then ok "T6 refs comptees"; else ko "T6 pas de compte de refs : $out"; fi
-  if echo "$out" | grep -q "taille: [0-9]"; then ok "T6 taille mesuree"; else ko "T6 taille absente : $out"; fi
-  if echo "$out" | grep -q "dernier refresh: 2"; then
-    ok "T6 date du dernier refresh presente"
+  if grep -q "refs: " <<<"$out"; then ok "T6 refs comptees"; else ko "T6 pas de compte de refs : $out"; fi
+  if grep -q "taille: [0-9]" <<<"$out"; then ok "T6 taille mesuree"; else ko "T6 taille absente : $out"; fi
+  # Les DEUX horodatages (#26453) : le throttle (quand on a tente) et le
+  # succes (quand le miroir a reellement ete rafraichi).
+  if grep -q "dernier refresh (throttle): 2" <<<"$out"; then
+    ok "T6 horodatage de throttle presente"
   else
-    ko "T6 date du dernier refresh absente : $out"
+    ko "T6 horodatage de throttle absent : $out"
+  fi
+  if grep -q "dernier succes:" <<<"$out"; then
+    ok "T6 horodatage de succes presente"
+  else
+    ko "T6 horodatage de succes absent : $out"
+  fi
+  if grep -q "echecs consecutifs: [0-9]" <<<"$out"; then
+    ok "T6 compteur d'echecs consecutifs affiche"
+  else
+    ko "T6 compteur d'echecs consecutifs absent : $out"
+  fi
+  # L'ecart au remote est annonce : c'est la mesure qui dit si le miroir
+  # traine (la panne du 26/10 se voyait justement par un ecart de 19 jours).
+  if grep -q "origin/main: " <<<"$out"; then
+    ok "T6 origin/main interroge"
+  else
+    ko "T6 origin/main absent : $out"
+  fi
+  if grep -qE "origin/main: [0-9a-f]{40}|origin/main: injoignable" <<<"$out"; then
+    ok "T6 la source de la reference est nommee (sha ou etat degrade)"
+  else
+    ko "T6 source de la reference absente : $out"
+  fi
+  if grep -q "etat: " <<<"$out"; then
+    ok "T6 l'etat du miroir est annonce (mesure, pas supposition)"
+  else
+    ko "T6 etat absent : $out"
   fi
   # Controle negatif : aucun compte d'emprunteurs ne doit etre annonce depuis un
   # conteneur qui ne monte aucun volume _work -- ce serait un zero fabrique.
-  if echo "$out" | grep -q "emprunteurs"; then
+  if grep -q "emprunteurs" <<<"$out"; then
     ko "T6 un compte d'emprunteurs est annonce depuis un conteneur sans _work (zero fabrique)"
   else
     ok "T6 aucun compte d'emprunteurs fabrique"
@@ -242,7 +271,7 @@ echo "Test 7 : probe sur miroir absent -- echec distinct, rien de cree"
   out="$(COURSIA_RUNNER_MIRROR_PATH="$M2" run_mirror probe)"; rc=$?
   echo "$out" >> "$LOG"
   if [ "$rc" -eq 6 ]; then ok "T7 rc=6 sur miroir absent"; else ko "T7 rc=$rc (attendu 6)"; fi
-  if echo "$out" | grep -q 'probe ECHEC.*miroir absent'; then
+  if grep -q 'probe ECHEC.*miroir absent' <<<"$out"; then
     ok "T7 le verdict nomme l'absence du miroir"
   else
     ko "T7 verdict muet sur la cause : $out"
@@ -257,8 +286,8 @@ echo "Test 8 : probe sur miroir bootstrappe -- OK, emprunt prouve"
   out="$(run_mirror probe)"; rc=$?
   echo "$out" >> "$LOG"
   if [ "$rc" -eq 0 ]; then ok "T8 rc=0"; else ko "T8 rc=$rc : $out"; fi
-  if echo "$out" | grep -q 'probe OK'; then ok "T8 verdict OK rendu"; else ko "T8 pas de verdict OK : $out"; fi
-  if echo "$out" | grep -q 'budget 300s'; then
+  if grep -q 'probe OK' <<<"$out"; then ok "T8 verdict OK rendu"; else ko "T8 pas de verdict OK : $out"; fi
+  if grep -q 'budget 300s' <<<"$out"; then
     ok "T8 le budget par defaut (300 s) est nomme dans le verdict"
   else
     ko "T8 budget par defaut non nomme : $out"
@@ -267,12 +296,12 @@ echo "Test 8 : probe sur miroir bootstrappe -- OK, emprunt prouve"
   # rendrait « OK » sans avoir rien mesure. Le compte exact n'est pas epingle
   # (les blocs precedents ajoutent des fichiers a la fixture) -- c'est le fait
   # qu'il soit non nul qui porte la preuve.
-  if echo "$out" | grep -qE 'probe -- [1-9][0-9]* fichiers,'; then
+  if grep -qE 'probe -- [1-9][0-9]* fichiers,' <<<"$out"; then
     ok "T8 le probe a bien checkoute l'arbre (compte non nul)"
   else
     ko "T8 compte de fichiers inattendu : $out"
   fi
-  if echo "$out" | grep -qE '\(budget 300s\), 0 objet'; then
+  if grep -qE '\(budget 300s\), 0 objet' <<<"$out"; then
     ok "T8 zero objet LOCAL : le checkout vient de l'emprunt, pas d'une copie"
   else
     ko "T8 des objets locaux ont ete crees : $out"
@@ -285,7 +314,7 @@ echo "Test 9 : probe avec une tete inexistante -- echec au checkout (rc 4)"
   out="$(COURSIA_RUNNER_MIRROR_HEAD=pas-une-branche run_mirror probe)"; rc=$?
   echo "$out" >> "$LOG"
   if [ "$rc" -eq 4 ]; then ok "T9 rc=4 sur checkout impossible"; else ko "T9 rc=$rc (attendu 4) : $out"; fi
-  if echo "$out" | grep -q 'probe ECHEC.*checkout'; then
+  if grep -q 'probe ECHEC.*checkout' <<<"$out"; then
     ok "T9 le verdict nomme le checkout"
   else
     ko "T9 verdict muet : $out"
@@ -311,6 +340,251 @@ echo "Test 10 : temoin -- la preuve d'emprunt discrimine"
     ok "T10 clone --shared porte bien des alternates (controle positif)"
   else
     ko "T10 clone --shared sans alternates : le probe ne pourrait pas emprunter"
+  fi
+)
+echo ""
+
+# --- Tests 11-14 : ce qui rend la panne MUETTE (#26453) --------------------
+# Incident mesure le 2026-11-14 : le miroir d'ai-01 n'etait plus rafraichi
+# depuis le 26/10. Huit entrees root-owned (FETCH_HEAD, refs/heads/main, un
+# pack...) laissees par un fetch root ; le conteneur de refresh tourne sous
+# `runner` (uid 1001). Le fetch echouait donc sur `FETCH_HEAD` -- et
+# l'echec ressemblait a une panne reseau. Pire : l'horodatage de throttle
+# etait pose AVANT le fetch, donc `mirror status` disait « dernier refresh »
+# meme apres 19 jours d'echec : la panne etait muette.
+#
+# Ces quatre tests couvrent ce qui manquait :
+#   11 : une entree hors de portee de l'uid courant fait ECHOUER le refresh
+#        avec un code DISTINCT, et le dit comme une cause de droits, pas
+#        comme une panne reseau ;
+#   12 : un fetch en echec (reseau) ne met PAS a jour l'horodatage de
+#        succes -- les deux causes sont donc distinguables ;
+#   13 : trois echecs consecutifs produisent une ligne `[WARN][mirror]` ;
+#   14 : un refresh reussi pose l'horodatage de succes et remet le compteur
+#        d'echecs a zero.
+echo "Test 11 : garde de propriete -- une entree hors de portee, refus visible (rc 7)"
+(
+  out="$(run_mirror bootstrap)"; echo "$out" >> "$LOG"
+  OKFILE="$TEST_DIR/.objects-mirror.ok"
+  if [ -f "$OKFILE" ]; then
+    ok "T11 le bootstrap pose l'horodatage de succes"
+  else
+    ko "T11 le bootstrap n'a pas pose l'horodatage de succes"
+  fi
+  ok_before="$(stat -c %Y "$OKFILE" 2>/dev/null || echo 0)"
+  # Rendre UNE entree inaccessible a l'uid courant. La branche exercee depend
+  # du privilege du processus : root peut changer un proprietaire, un
+  # utilisateur ordinaire ne peut que restreindre les droits. Les DEUX cas
+  # doivent produire le meme refus visible -- c'est ce qui compte.
+  if [ "$(id -u)" = "0" ]; then
+    chown 1001 "$MIRROR/FETCH_HEAD" 2>/dev/null || true
+    branche="propriete heterogene"
+  else
+    chmod 000 "$MIRROR/FETCH_HEAD" 2>/dev/null || true
+    branche="droits"
+  fi
+  out="$(COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"; rc=$?
+  echo "$out" >> "$LOG"
+  if [ "$rc" -eq 7 ]; then
+    ok "T11 rc=7 -- code distinct de l'echec reseau"
+  else
+    ko "T11 rc=$rc (attendu 7) : $out"
+  fi
+  if grep -q "garde de propriete REFUSEE" <<<"$out"; then
+    ok "T11 le refus est nomme dans le journal"
+  else
+    ko "T11 refus muet : $out"
+  fi
+  if grep -qi "PAS le reseau" <<<"$out"; then
+    ok "T11 la cause est distinguee d'une panne reseau"
+  else
+    ko "T11 la cause n'est pas distinguee du reseau : $out"
+  fi
+  if grep -q "FETCH_HEAD" <<<"$out"; then
+    ok "T11 l'entree fautive est nommee ($branche)"
+  else
+    ko "T11 l'entree fautive n'est pas nommee : $out"
+  fi
+  # L'echec NE doit PAS mettre a jour l'horodatage de succes : c'est
+  # precisement ce que le stamp unique ne pouvait pas dire.
+  ok_after="$(stat -c %Y "$OKFILE" 2>/dev/null || echo 0)"
+  if [ "$ok_after" = "$ok_before" ]; then
+    ok "T11 l'horodatage de succes n'a pas bouge"
+  else
+    ko "T11 l'horodatage de succes a bouge malgre l'echec"
+  fi
+  # Et le compteur d'echecs consecutifs doit avoir avance.
+  fails="$(cat "$TEST_DIR/.objects-mirror.fails" 2>/dev/null || echo 0)"
+  if [ "$fails" -ge 1 ]; then
+    ok "T11 le compteur d'echecs consecutifs a avance ($fails)"
+  else
+    ko "T11 le compteur d'echecs n'a pas avance ($fails)"
+  fi
+  # RESTAURATION : les tests suivants doivent retrouver un miroir sain. Sans
+  # cela, ils mesureraient l'echec du test 11 au lieu de leur propre cas.
+  if [ "$(id -u)" = "0" ]; then
+    chown 0 "$MIRROR/FETCH_HEAD" 2>/dev/null || true
+  else
+    chmod 644 "$MIRROR/FETCH_HEAD" 2>/dev/null || true
+  fi
+)
+echo ""
+
+echo "Test 12 : fetch en echec -- l'horodatage de succes n'est PAS pose"
+(
+  rm -f "$TEST_DIR/.objects-mirror.ok" "$TEST_DIR/.objects-mirror.fails"
+  out="$(COURSIA_RUNNER_MIRROR_REMOTE="$TEST_DIR/remote-absent.git" \
+         COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"; rc=$?
+  echo "$out" >> "$LOG"
+  if [ "$rc" -eq 0 ]; then
+    ok "T12 rc=0 (un echec reseau reste fail-open pour le parc)"
+  else
+    ko "T12 rc=$rc (attendu 0)"
+  fi
+  if [ ! -f "$TEST_DIR/.objects-mirror.ok" ]; then
+    ok "T12 aucun horodatage de succes pose sur un fetch en echec"
+  else
+    ko "T12 un horodatage de succes a ete pose malgre l'echec"
+  fi
+  if grep -q "refresh echoue" <<<"$out"; then
+    ok "T12 l'echec reseau est journalise"
+  else
+    ko "T12 echec reseau muet : $out"
+  fi
+)
+echo ""
+
+echo "Test 13 : trois echecs consecutifs -- une ligne [WARN][mirror]"
+(
+  rm -f "$TEST_DIR/.objects-mirror.fails"
+  o1="$(COURSIA_RUNNER_MIRROR_REMOTE="$TEST_DIR/remote-absent.git" \
+        COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"
+  o2="$(COURSIA_RUNNER_MIRROR_REMOTE="$TEST_DIR/remote-absent.git" \
+        COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"
+  o3="$(COURSIA_RUNNER_MIRROR_REMOTE="$TEST_DIR/remote-absent.git" \
+        COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"
+  echo "$o1$o2$o3" >> "$LOG"
+  if grep -q "WARN" <<<"$o1"; then
+    ko "T13 une alerte est sortie au premier echec (un incident ponctuel n'alerte pas)"
+  else
+    ok "T13 pas d'alerte au premier echec"
+  fi
+  if grep -q "\[WARN\]\[mirror\]" <<<"$o3"; then
+    ok "T13 l'alerte [WARN][mirror] sort au troisieme echec consecutif"
+  else
+    ko "T13 aucune alerte au troisieme echec : $o3"
+  fi
+  if grep -q "3 fois de suite" <<<"$o3"; then
+    ok "T13 l'alerte nomme le nombre d'echecs"
+  else
+    ko "T13 l'alerte ne nomme pas le nombre d'echecs : $o3"
+  fi
+  # L'alerte doit aussi etre lisible dans le STATUT : c'est la surface qu'un
+  # heartbeat ou un operateur consulte. Une ligne de journal jamais relue ne
+  # vaut rien (l'incident du 26/10 a produit 2 700 lignes d'erreur sans
+  # qu'aucune ne soit vue).
+  sout="$(run_mirror status)"
+  echo "$sout" >> "$LOG"
+  if grep -q "\[WARN\]\[mirror\]" <<<"$sout"; then
+    ok "T13 l'alerte est reprise dans le statut"
+  else
+    ko "T13 l'alerte n'apparait pas dans le statut : $sout"
+  fi
+)
+echo ""
+
+echo "Test 14 : refresh reussi -- horodatage de succes pose, compteur a zero"
+(
+  rm -f "$TEST_DIR/.objects-mirror.fails" "$TEST_DIR/.objects-mirror.ok"
+  out="$(COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"; rc=$?
+  echo "$out" >> "$LOG"
+  if [ "$rc" -eq 0 ]; then ok "T14 rc=0"; else ko "T14 rc=$rc"; fi
+  if [ -f "$TEST_DIR/.objects-mirror.ok" ]; then
+    ok "T14 l'horodatage de succes est pose"
+  else
+    ko "T14 l'horodatage de succes est absent"
+  fi
+  fails="$(cat "$TEST_DIR/.objects-mirror.fails" 2>/dev/null || echo 0)"
+  if [ "$fails" = "0" ]; then
+    ok "T14 le compteur d'echecs est remis a zero"
+  else
+    ko "T14 le compteur d'echecs est a $fails"
+  fi
+  if grep -q "rafraichi" <<<"$out"; then
+    ok "T14 le refresh est journalise"
+  else
+    ko "T14 refresh silencieux : $out"
+  fi
+)
+echo ""
+
+# --- Test 15 : la mesure en direct du miroir est BORDEE EN TEMPS ---------
+# Un `git ls-remote` qui pend (reseau coupe, DNS qui ne repond pas) ne doit
+# pas pendre le tick : le tick qui ne rend pas ne rafraichit rien, et le
+# miroir finit par figer SANS que personne ne le voie -- exactement la panne
+# muette de #26453 (19 jours de miroir fige, 2 700 lignes de journal lues
+# par personne).
+#
+# Le test est HERMETIQUE : pas de reseau, pas d'attente. Un faux `git` --
+# place AVANT le vrai dans le PATH -- pend sur `ls-remote` et delegue tout
+# le reste. Le `timeout` doit couper la mesure en quelques secondes.
+echo "Test 15 : ls-remote borne -- un reseau qui pend ne pend pas le tick"
+(
+  REAL_GIT="$(command -v git)"
+  mkdir -p "$TEST_DIR/bin"
+  cat > "$TEST_DIR/bin/git" <<'FAKEGIT'
+#!/usr/bin/env bash
+if [ "$1" = "ls-remote" ]; then
+  sleep 60
+  exit 0
+fi
+exec "@REAL_GIT@" "$@"
+FAKEGIT
+  sed -i "s|@REAL_GIT@|$REAL_GIT|" "$TEST_DIR/bin/git"
+  chmod +x "$TEST_DIR/bin/git"
+
+  # CONTROLE NEGATIF : sans faux `git`, la mesure ne doit PAS annoncer un
+  # delai depasse. Sans ce controle, un test qui annonce toujours
+  # « delai depasse » passerait quand meme.
+  out_ok="$(run_mirror status)"
+  echo "$out_ok" >> "$LOG"
+  if grep -qi "delai depasse" <<<"$out_ok"; then
+    ko "T15 controle negatif : un delai depasse est annonce alors que le reseau repond"
+  else
+    ok "T15 controle negatif : aucune mention de delai depasse quand la mesure repond"
+  fi
+  if grep -q "mesure distante: ls-remote borne a" <<<"$out_ok"; then
+    ok "T15 la mesure en direct annonce sa borne"
+  else
+    ko "T15 la borne de la mesure en direct n'est pas annoncee : $out_ok"
+  fi
+
+  if ! command -v timeout >/dev/null 2>&1; then
+    ok "T15 environnement sans \`timeout\` : la mesure ne peut pas etre bornee ici (controle non applicable)"
+  else
+    t0="$(date +%s)"
+    out="$(PATH="$TEST_DIR/bin:$PATH" COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S=2 run_mirror status)"; rc=$?
+    t1="$(date +%s)"
+    echo "$out" >> "$LOG"
+    if [ "$rc" -eq 0 ]; then ok "T15 rc=0 -- le statut rend la main"; else ko "T15 rc=$rc"; fi
+    dur=$(( t1 - t0 ))
+    if [ "$dur" -le 30 ]; then
+      ok "T15 le tick n'a pas pendu (${dur}s pour une mesure bornee a 2s)"
+    else
+      ko "T15 le tick a pendu ${dur}s : la mesure en direct n'est pas bornee"
+    fi
+    if grep -qi "delai depasse" <<<"$out"; then
+      ok "T15 le delai depasse est annonce (cause et non pas un silence)"
+    else
+      ko "T15 le delai depasse n'est pas annonce : $out"
+    fi
+    # La note doit SURVIVRE a la reconduction vers la reference hors-ligne :
+    # sinon le tick suivant ne sait plus pourquoi la source a change.
+    if grep -q "mesure distante:" <<<"$out"; then
+      ok "T15 la note de la mesure distante est dans le statut"
+    else
+      ko "T15 la note de la mesure distante est absente : $out"
+    fi
   fi
 )
 echo ""

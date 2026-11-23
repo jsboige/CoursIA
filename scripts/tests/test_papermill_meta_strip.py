@@ -211,3 +211,102 @@ def test_dotnet_executor_subprocess_strips_stale_block(tmp_path):
 def test_exec_single_cell_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("exec_single_cell.py", ["--index", "0",
                                             "--timeout", "60"], tmp_path)
+
+
+# --- exec_single_cell : le strip doit etre BORNE a la cellule executee ---------
+
+STALE_CELL_PM = {"start_time": "2026-05-31T22:54:53Z", "end_time":
+                 "2026-05-31T22:54:54Z", "duration": 1.0, "exception": None}
+STALE_CELL_EXEC = {
+    "iopub.status.busy": "2026-05-31T22:54:53.100Z",
+    "iopub.status.idle": "2026-05-31T22:54:53.900Z",
+    "iopub.execute_input": "2026-05-31T22:54:53.200Z",
+    "shell.execute_reply": "2026-05-31T22:54:53.800Z",
+    "papermill": {"start_time": "2026-05-31T22:54:53Z", "duration": 0.8},
+}
+
+
+def _write_fake_nb_multicell(path: Path) -> "tuple[Path, dict]":
+    """Carnet a 5 cellules dont chaque cellule porte ses blocs papermill +
+    execution : la forme reelle des carnets executes par Papermill. Retourne
+    (chemin, carnet original) pour comparaison cellule par cellule."""
+    def code(i, executed):
+        meta = {"papermill": dict(STALE_CELL_PM),
+                "execution": {k: dict(v) if isinstance(v, dict) else v
+                              for k, v in STALE_CELL_EXEC.items()}}
+        return {"cell_type": "code", "id": f"c{i}", "metadata": meta,
+                "execution_count": i if executed else None,
+                "outputs": [{"output_type": "stream", "name": "stdout",
+                             "text": f"out{i}"}] if executed else [],
+                "source": f"print({i})"}
+
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "id": "m0",
+             "metadata": {"papermill": dict(STALE_CELL_PM)},
+             "source": "# Titre"},
+            code(1, executed=True),
+            {"cell_type": "code", "id": "c2", "metadata": {
+                 "papermill": dict(STALE_CELL_PM),
+                 "execution": dict(STALE_CELL_EXEC)},
+             "execution_count": None, "outputs": [], "source": "1 + 1"},
+            code(3, executed=True),
+            {"cell_type": "markdown", "id": "m4",
+             "metadata": {"papermill": dict(STALE_CELL_PM)},
+             "source": "## Fin"},
+        ],
+        "metadata": {
+            "kernelspec": {"display_name": "Python 3", "language": "python",
+                           "name": "python3"},
+            "language_info": {"name": "python"},
+            "papermill": dict(STALE_BLOCK),
+            "execution": {"iopub.execute_input": "2026-05-31T22:54:50Z"},
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n",
+                    encoding="utf-8")
+    return path, nb
+
+
+def test_exec_single_cell_scopes_strip_to_executed_cell(tmp_path):
+    """exec_single_cell reecrit UNE cellule : le strip des blocs perimes doit
+    etre borne a cette cellule + au niveau carnet.
+
+    Avant le fix du 14/11, le strip global retirait ``metadata.papermill`` et
+    ``metadata.execution`` de TOUTES les cellules : mesure sur un carnet de
+    70 cellules, +50/-716 au lieu de +50/-7, ~30 min de reparation manuelle
+    par PR. Les cellules non re-executees voient leurs sorties intactes :
+    leurs blocs decrivent encore le run qui les a produites, les retirer
+    detruit une provenance valide (meme classe que #24434 sur le writer
+    generique). Le bloc niveau carnet part bien : le ratchet #11155 autorise
+    son absence (BLOCK_REMOVED), pas sa survie sur des sorties changees
+    (STALE_BLOCK).
+    """
+    p, original = _write_fake_nb_multicell(tmp_path / "nb.ipynb")
+    r = subprocess.run(
+        [sys.executable, str(TOOLS / "exec_single_cell.py"), str(p),
+         "--index", "2", "--timeout", "60"],
+        capture_output=True, text=True, timeout=180, cwd=str(TOOLS),
+        encoding="utf-8", errors="replace")
+    assert r.returncode == 0, f"exec_single_cell stderr:\n{r.stderr[-800:]}"
+    after = json.loads(p.read_text(encoding="utf-8"))
+
+    # Niveau carnet : le bloc perime part (chemin #12722 conserve).
+    assert "papermill" not in after["metadata"]
+    assert "execution" not in after["metadata"]
+
+    # Cellule cible : blocs perimes retires, execution fraiche ecrite.
+    target = after["cells"][2]
+    assert "papermill" not in target["metadata"]
+    assert "execution" not in target["metadata"]
+    assert target["execution_count"] is not None
+    assert target["outputs"], "la cellule executee doit porter ses sorties"
+
+    # Cellules non cibles (code ET markdown) : integralement identiques,
+    # metadonnees comprises -- octet pour octet au sens du contrat du tool.
+    for i in (0, 1, 3, 4):
+        assert after["cells"][i] == original["cells"][i], (
+            f"cellule non cible {i} a ete modifiee : le strip doit etre "
+            f"borne a la cellule executee")

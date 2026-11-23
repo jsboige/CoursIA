@@ -391,7 +391,7 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 | DecInfer-06-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
 | DecInfer-07-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
 | **DecInfer-07b-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
-| DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
+| DecInfer-08-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
 | DecPyMC-01-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
 | DecPyMC-02-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
 | DecPyMC-03-Multi-Attribute | 50 | 25 | 25/25 | 0 | 0 | python3 | PyMC + ArviZ (multi-attribute utility theory posteriors) | **SOTA-OK** |
@@ -431,7 +431,7 @@ Chaque notebook pose un problème de **théorie de la décision** avancé qui ex
 - **DecInfer-05/DecPyMC-05** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
 - **DecInfer-06/DecPyMC-06** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
 - **DecInfer-07/DecPyMC-07** : Sequential decisions — dynamic programming, Bellman-style backward induction
-- **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
+- **DecInfer-08** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 
 **Capacité distinctive exercée** : aucun notebook ne dégrade à une baseline triviale. Chaque notebook pose un problème où **seule la mécanique bayésienne ou l'inférence probabiliste** apporte la bonne réponse (vs heuristique déterministe naïve).

@@ -71,7 +71,7 @@ permissions:
 # eux. Pas de trigger push:main ici, donc la conjonction refoulee par
 # #13488 (push + github.ref + cancel-in-progress literal) ne s'applique pas.
 concurrency:
-  group: always-on-metadata-guards-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: always-on-metadata-guards-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -104,7 +104,7 @@ jobs:
     # Limite : runs-on se resout a la creation du job, les runs deja en
     # file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     timeout-minutes: 10
 
     steps:

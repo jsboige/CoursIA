@@ -132,6 +132,25 @@ def test_outputs_file_format(tmp_path, manifest):
         assert k in entry, f"cle matrice manquante: {k}"
 
 
+def test_dispatch_preserves_optional_blocking_profile_only_for_conway(
+        dispatch_mod, manifest):
+    """Le dispatcher transmet l'entree complete du manifeste : les cles
+    dual-leg doivent survivre au rendu de matrice sans devenir un defaut
+    pour les autres lakes."""
+    changed = [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/KochenSpecker.lean"
+    ]
+    entries = dispatch_mod.changed_lakes(changed, manifest)
+    assert len(entries) == 1
+    assert entries[0]["lake"] == "conway"
+    assert entries[0]["axiom-blocking-target-modules"] == (
+        "Conway.KochenSpecker,Conway.FreeWillTheorem")
+    other = dispatch_mod.changed_lakes(
+        ["MyIA.AI.Notebooks/Sudoku/sudoku_lean/src/Sudoku.lean"], manifest)
+    assert len(other) == 1 and other[0]["lake"] == "sudoku"
+    assert not any(key.startswith("axiom-blocking-") for key in other[0])
+
+
 def test_outputs_file_empty_intersection_any_false(tmp_path):
     changed = tmp_path / "changed.txt"
     changed.write_text("README.md\n", encoding="utf-8")

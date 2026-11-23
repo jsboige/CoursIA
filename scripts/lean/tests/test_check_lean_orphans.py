@@ -51,18 +51,14 @@ def tmp_lake(tmp_path: Path) -> Path:
 
 
 def test_lakefile_parse_basic(tmp_lake: Path) -> None:
-    libs = check_lean_orphans._read_libs_and_globs(
-        (tmp_lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    assert libs == [("Foo", ["Foo", "Bar"])]
+    libs = check_lean_orphans.lake_selectors(tmp_lake)
+    assert libs == [("one", "Foo"), ("one", "Bar")]
 
 
 def test_covered_modules_umbrella(tmp_lake: Path) -> None:
-    libs = check_lean_orphans._read_libs_and_globs(
-        (tmp_lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    all_globs = [g for _, globs in libs for g in globs]
-    covered = check_lean_orphans._covered_modules(tmp_lake, all_globs)
+    libs = check_lean_orphans.lake_selectors(tmp_lake)
+    all_globs = libs
+    covered = {p for p in check_lean_orphans._discover_lean_files(tmp_lake) if check_lean_orphans.selected(".".join(p.relative_to(tmp_lake).with_suffix("").parts), all_globs)}
     assert (tmp_lake / "Foo.lean") in covered
     assert (tmp_lake / "Bar.lean") in covered
     assert (tmp_lake / "Baz.lean") not in covered  # orphan
@@ -86,12 +82,10 @@ def test_submodules_marker(tmp_path: Path) -> None:
     (lake / "Knots" / "Foo.lean").parent.mkdir()
     (lake / "Knots" / "Foo.lean").write_text("namespace Knots.Foo\nend\n", encoding="utf-8")
     (lake / "Knots_en.lean").write_text("namespace Knots_en\nend Knots_en\n", encoding="utf-8")
-    libs = check_lean_orphans._read_libs_and_globs(
-        (lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    all_globs = [g for _, globs in libs for g in globs]
-    assert "__submodules__`Knots" in all_globs
-    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    libs = check_lean_orphans.lake_selectors(lake)
+    all_globs = libs
+    assert ("sub", "Knots") in all_globs
+    covered = {p for p in check_lean_orphans._discover_lean_files(lake) if check_lean_orphans.selected(".".join(p.relative_to(lake).with_suffix("").parts), all_globs)}
     # ``.submodules `Knots`` is a STRICT-prefix glob: ``Knots.lean`` at the
     # lake root is NOT covered (would require ``Knots != Knots``).
     assert (lake / "Knots.lean") not in covered
@@ -116,12 +110,10 @@ def test_default_no_globs_covers_root(tmp_path: Path) -> None:
     )
     (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n", encoding="utf-8")
     (lake / "Bar.lean").write_text("namespace Bar\nend Bar\n", encoding="utf-8")
-    libs = check_lean_orphans._read_libs_and_globs(
-        (lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    assert libs == [("Foo", ["Foo"])]  # Lake default applied
-    all_globs = [g for _, globs in libs for g in globs]
-    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    libs = check_lean_orphans.lake_selectors(lake)
+    assert libs == [("one", "Foo")]  # Lake default applied
+    all_globs = libs
+    covered = {p for p in check_lean_orphans._discover_lean_files(lake) if check_lean_orphans.selected(".".join(p.relative_to(lake).with_suffix("").parts), all_globs)}
     assert (lake / "Foo.lean") in covered
     assert (lake / "Bar.lean") not in covered  # Bar is genuinely orphan
 
@@ -143,11 +135,9 @@ def test_no_implicit_en_sibling(tmp_path: Path) -> None:
     )
     (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n", encoding="utf-8")
     (lake / "Foo_en.lean").write_text("namespace Foo_en\nend Foo_en\n", encoding="utf-8")
-    libs = check_lean_orphans._read_libs_and_globs(
-        (lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    all_globs = [g for _, globs in libs for g in globs]
-    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    libs = check_lean_orphans.lake_selectors(lake)
+    all_globs = libs
+    covered = {p for p in check_lean_orphans._discover_lean_files(lake) if check_lean_orphans.selected(".".join(p.relative_to(lake).with_suffix("").parts), all_globs)}
     assert (lake / "Foo.lean") in covered
     # CRITICAL — this is the regression we're guarding.
     assert (lake / "Foo_en.lean") not in covered
@@ -179,13 +169,11 @@ def test_globs_clause_skips_line_comments(tmp_path: Path) -> None:
     )
     (lake / "Real.lean").write_text("namespace Real\nend Real\n", encoding="utf-8")
     (lake / "Foo.lean").write_text("namespace Foo\nend Foo\n", encoding="utf-8")
-    libs = check_lean_orphans._read_libs_and_globs(
-        (lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
+    libs = check_lean_orphans.lake_selectors(lake)
     # The comment example must NOT pollute the parse -- ``Foo`` would otherwise
     # be silently added to ``Real``'s globs and ``Foo.lean`` would never appear
     # as an orphan.
-    assert libs == [("Real", ["Real"])]
+    assert libs == [("one", "Real")]
     lake = tmp_path / "and_sub"
     lake.mkdir()
     (lake / "lakefile.lean").write_text(
@@ -199,11 +187,9 @@ def test_globs_clause_skips_line_comments(tmp_path: Path) -> None:
     (lake / "Foo_en" / "Bar.lean").parent.mkdir(parents=True)
     (lake / "Foo_en" / "Bar.lean").write_text("namespace Foo_en.Bar\nend\n", encoding="utf-8")
     (lake / "Foo_en.lean").write_text("namespace Foo_en\nend Foo_en\n", encoding="utf-8")
-    libs = check_lean_orphans._read_libs_and_globs(
-        (lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    all_globs = [g for _, globs in libs for g in globs]
-    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    libs = check_lean_orphans.lake_selectors(lake)
+    all_globs = libs
+    covered = {p for p in check_lean_orphans._discover_lean_files(lake) if check_lean_orphans.selected(".".join(p.relative_to(lake).with_suffix("").parts), all_globs)}
     assert (lake / "Foo.lean") in covered  # non-strict prefix includes leaf
     assert (lake / "Foo" / "Bar.lean") in covered
     # The implicit ``_en`` sibling is NOT covered — must be declared explicitly.
@@ -236,11 +222,9 @@ def test_import_reachability(tmp_path: Path) -> None:
     )
     (lake / "A.lean").write_text("import B\nnamespace A\nend A\n", encoding="utf-8")
     (lake / "B.lean").write_text("namespace B\ndef x : Nat := 1\nend B\n", encoding="utf-8")
-    libs = check_lean_orphans._read_libs_and_globs(
-        (lake / "lakefile.lean").read_text(encoding="utf-8")
-    )
-    all_globs = [g for _, globs in libs for g in globs]
-    covered = check_lean_orphans._covered_modules(lake, all_globs)
+    libs = check_lean_orphans.lake_selectors(lake)
+    all_globs = libs
+    covered = {p for p in check_lean_orphans._discover_lean_files(lake) if check_lean_orphans.selected(".".join(p.relative_to(lake).with_suffix("").parts), all_globs)}
     all_lean = check_lean_orphans._discover_lean_files(lake)
     reachable = check_lean_orphans._imports_reachable_from(lake, covered, all_lean)
     assert (lake / "A.lean") in reachable

@@ -64,6 +64,8 @@ PAGES: tuple[tuple[str, str], ...] = (
      "docs/reference/lean-theorem-duplicates.md"),
     ("scripts/lean/lean_material_map.py",
      "docs/reference/lean-material-map.md"),
+    ("scripts/lean/lean_series_maturity.py",
+     "MyIA.AI.Notebooks/SymbolicAI/Lean/README.md"),
 )
 
 # Les generateurs qui lisent l'HISTORIQUE (`git log`, `rev-list`, `blame`), par

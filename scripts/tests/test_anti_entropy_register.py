@@ -72,7 +72,38 @@ PADDING_REFERENCE = 776.0
 # troisieme -- le correctif `_kernelspecs_at` ne change pas la grandeur
 # (26 avant et apres, mesure sur l'arbre a284df8293f) : pas de point de
 # serie neuf, seule l'identite de l'instrument change.
-PADDING_REFERENCE_REBASE = 26.0
+# Sixieme rebasage (2026-11-13, #5081, sur main) : la grandeur CHANGE,
+# comme le quatrieme -- l'instrument reconnait le prefixe de kernel d'env
+# `coursia-py313` (publie dans kernels-runtime.md), deux carnets au nom
+# canonique sortent du bucket (27 -> 25 sur l'arbre 9f2ffff292b9).
+#
+# Septieme rebasage (2026-11-13, PR #26349) : le balayage de referents T8
+# touche l'instrument (cas de self-test + docstring), la logique de
+# classification ne change pas -- `ambigu` vaut 27 sur l'arbre de la PR
+# comme sur `origin/main` nu. L'ecart 26 -> 27 vient de l'arbre main
+# depuis le 2026-11-06, pas de l'instrument.
+#
+# Huitieme rebasage (2026-11-13, PR #26349, review ai-01 point 2) :
+# l'organe APPREND l'index d'accretion des series a prefixe -- le correctif
+# change ce que l'instrument compte, comme le quatrieme rebasage. Six
+# carnets paddes a kernel non lu quittent le bucket (27 -> 21) ; 2 dettes
+# non paddes (SC-7b, SL-1b) deviennent visibles rename_proposed, hors de
+# cette grandeur.
+#
+# Neuvieme point (2026-11-15, merge de main b73e66c94e4 dans la PR) : les
+# correctifs #5081 (prefixe kernel) et #26349 (index d'accretion) se
+# combinent dans l'instrument du merge et se recouvrent sur
+# Argumentation-08b / Complexity-02c : la re-mesure sur l'arbre fusionne
+# rend 21.
+#
+# Neuvieme rebasage (2026-11-22, #23175) : la grandeur CHANGE, comme le
+# quatrieme et le sixieme -- l'instrument reconnait le kernel `rust` porte
+# par la vague de portage -Rust (25 carnets `-Rust.ipynb` + le temoin
+# docker `witness-rust.ipynb`). Sur
+# l'arbre aligne origin/main = cd62365c02, l'instrument d'avant rend 46 et
+# le corrige 28 : le pouls RECULE du jour portait 18 unites d'artefact
+# d'instrument pour ~3 d'increment reel (21 -> 28).
+PADDING_REFERENCE_REBASE = 28.0
 # Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
 # identite attendue du registre (c'etait le faux vert de #24678 -- la
 # constante de test et la donnee etaient la meme chaine, donc le test ne
@@ -396,13 +427,15 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source.startswith("issue #23655")
-    assert e.reference.mesure_le == "2026-11-06"
+    assert e.reference.source.startswith("issue #23175")
+    assert e.reference.mesure_le == "2026-11-22"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
-    # Le 4e rebasage change la grandeur : les points d'avant le correctif
-    # restent dans la serie, ils ne servent plus de reference.
-    assert e.reference.valeur not in {39.0, 40.0}
-    assert {r.valeur for r in e.historique} >= {39.0, 40.0}
+    # Le 4e, le 6e, le 8e et le 9e rebasages changent la grandeur : les
+    # points d'avant chaque correctif restent dans la serie, ils ne servent
+    # plus de reference.
+    assert e.reference.valeur not in {39.0, 40.0, 26.0, 21.0, 46.0}
+    assert {r.valeur for r in e.historique} >= {
+        26.0, 39.0, 40.0, 27.0, 25.0, 21.0, 46.0}
     # Et la reference rebasee est comparable a l'instrument courant : par le
     # sha, par la SOURCE du script ou par la date -- quel que soit le chemin
     # que la fusion laissera (une fusion en squash reecrit le sha sans
@@ -964,6 +997,39 @@ def test_le_garde_accepte_un_arbre_local_aligne(monkeypatch):
         "MyIA.AI.Notebooks")
     assert aligne is True
     assert "meme contenu" in motif
+
+
+def test_le_garde_ignore_les_gitlinks_mais_refuse_un_fichier_divergent(monkeypatch):
+    """Les gitlinks sont hors du contenu lu par ls-tree -r/cat-file de la racine.
+
+    Le test injecte les reponses des commandes git : un gitlink mode 160000
+    est ignore, mais un fichier ordinaire divergent garde le refus.
+    """
+    gitlink = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+    notebook = "MyIA.AI.Notebooks/ML/Example.ipynb"
+    appels = []
+
+    def faux_run(cmd, timeout=600):
+        args = [str(m) for m in cmd]
+        appels.append(args)
+        if args[:2] == ["git", "diff"]:
+            return 0, gitlink + chr(10) + notebook + chr(10), ""
+        if args[:2] == ["git", "ls-tree"]:
+            chemin = args[-1]
+            if chemin == gitlink:
+                return 0, f"160000 commit abcdef1234567890\t{gitlink}" + chr(10), ""
+            if chemin == notebook:
+                return 0, f"100644 blob abcdef1234567890\t{notebook}" + chr(10), ""
+        return 1, "", "unexpected git command"
+
+    monkeypatch.setattr(aer, "_run", faux_run)
+    aligne, motif = aer.arbre_aligne(
+        ("python", "scripts/notebook_tools/inventory_notebook_names.py",
+         "--json", "--base", "origin/main"),
+        "MyIA.AI.Notebooks")
+    assert aligne is False
+    assert "Example.ipynb" in motif
+    assert gitlink in [args[-1] for args in appels if args[:2] == ["git", "ls-tree"]]
 
 
 def test_un_instrument_sans_rayon_declared_est_toujours_aligne(monkeypatch):

@@ -1,0 +1,9 @@
+- name: "GameTheory-04i Expected Utility Risk"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets invoquent nashpy.Game.support_enumeration sur les jeux transformés ; Python.NET transmet uniquement les matrices et les équilibres, les autres calculs C# sont natifs."
+  known_differences:
+    - "Python utilise NumPy et Matplotlib ; C# calcule les loteries et fractions exactes en .NET et affiche des SVG. Les graines aléatoires diffèrent entre les runtimes ; les 10000 triplets vérifient la même propriété."

@@ -1,0 +1,68 @@
+# Sonde legere de debordement CI (#26939) -- elle REVEILLE le controleur, elle ne decide pas.
+#
+# Probleme : le controleur (ci-overflow-controller.yml) ne passe qu'aux declencheurs
+# de son cron ('31 * * * *' + timer local ai-01, ~2 passages/h) ; l'episode du 16/11
+# a fait monter la file de ~0 a 386 runs en ~40 min sans intercaler aucun passage.
+#
+# Contrat de cette sonde :
+#   - 2 appels gh au repos (file + variable), un 3e seulement sur candidat
+#     dispatch (age du dernier passage controleur), un 4e si elle dispatche ;
+#   - seuils importes de l'organe (HOSTED_CONCURRENCY_CAP), jamais reinventes ;
+#   - ADVISORY par construction : schedule + workflow_dispatch uniquement, aucune
+#     PR ne peut rougir pour elle (doctrine #12817) ; un exit 1 (mesure impossible)
+#     s'affiche en ::warning, visible sans casser le passage.
+#
+# Cadence '4-59/12' : minutes 4, 16, 28, 40, 52 -- jamais :00/:30 (jitter flotte),
+# jamais :31 (collision avec le cron du controleur), ecart max entre passages 12 min
+# < 15 min (critere de latence de l'issue).
+#
+# Ce cron n'a JAMAIS emis d'evenement schedule (mesure du 17/11 : un seul run,
+# en workflow_dispatch manuel, 7 h apres le merge) : la cadence REELLE est
+# portee par la minuterie locale ai-01 (`scripts/ci/install_overflow_probe_task.py`,
+# toutes les 12 min, phase :04 -- meme chemin que le declencheur du controleur).
+# Le cron de depot reste le filet si la minuterie locale meurt.
+name: CI overflow probe
+
+on:
+  schedule:
+    - cron: '4-59/12 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: ci-overflow-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    # Garde same-repo : un fork ne sonde pas le depot amont (forme du controleur).
+    if: github.repository == 'jsboige/CoursIA'
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout sparse (scripts/ci + workflows)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci
+            .github/workflows
+          persist-credentials: false
+
+      - name: Deps (PyYAML, meme install que le controleur)
+        run: |
+          python -c "import yaml" 2>/dev/null || pip install pyyaml
+
+      - name: Sonde (advisory par construction)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          python -X utf8 scripts/ci/ci_overflow_probe.py
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            echo "::warning::Sonde debordement CI : mesure impossible (rc=$rc) -- passage journalise, aucune action prise"
+          fi
+          exit 0

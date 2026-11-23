@@ -380,17 +380,46 @@ class TestVoieLitteraleConsultee:
 
 
 def test_le_temoin_infer_02_ne_conserve_que_le_vrai_ecart():
-    """Temoignage de #24269 sur le carnet reel : seul le finding
-    `'[11.1, 19.5] min'` doit rester -- c'est un VRAI ecart de format
-    FR/EN (la sortie .NET rend `[11,1, 19,5] min`). Les deux autres
-    findings etaient des espaces retires a tort."""
+    """Temoignage de #24269 sur le carnet reel -- ferme par la correction.
+
+    Historique : le carnet citait `[11.1, 19.5] min` en clair alors que la
+    sortie .NET commitee rend `[11,1, 19,5] min` (culture francaise). C'etait
+    un VRAI ecart de format FR/EN : l'organe le relevait a raison, et les deux
+    autres findings etaient des espaces retires a tort.
+
+    Apres la correction du carnet -- les nombres cites en clair suivent la
+    sortie -- l'ecart FR/EN est **ferme** : l'organe ne releve plus rien sur
+    ce carnet. Le temoin garde sa valeur dans les DEUX sens :
+
+      - le carnet reel ne doit produire aucun finding ;
+      - un carnet synthetique reproduisant l'ancien ecart doit toujours
+        produire exactement le finding `[11.1, 19.5] min` -- controle
+        positif : un zero obtenu parce que l'organe serait devenu aveugle
+        ne prouverait rien.
+
+    L'ecart FR/EN reste donc **detecte** par l'organe ; c'est la prose du
+    carnet qui a ete alignee sur la sortie, pas l'organe qui a ete assoupli.
+    """
     path = (Path(__file__).resolve().parents[3]
             / "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb")
     if not path.exists():
         pytest.skip("carnet absent du checkout")
     result = _scan_notebook(path)
     fragments = [f["fragment"] for f in result["findings"]]
-    assert fragments == ["[11.1, 19.5] min"], fragments
+    assert fragments == [], fragments
+
+    # Controle positif : l'ancien ecart FR/EN reste detecte.
+    cells = [
+        md_cell("## Sortie code[0]\n\nIntervalle de confiance 95% : `[11.1, 19.5] min`\n"),
+        code_cell(
+            'Console.WriteLine("Intervalle de confiance 95% : [11,1, 19,5] min");',
+            outputs=[stream_output("Intervalle de confiance 95% : [11,1, 19,5] min")],
+            execution_count=1,
+        ),
+    ]
+    synth = _scan_notebook_from_nb(make_notebook(cells))
+    synth_fragments = [f["fragment"] for f in synth["findings"]]
+    assert synth_fragments == ["[11.1, 19.5] min"], synth_fragments
 
 
 # ---------------------------------------------------------------------------

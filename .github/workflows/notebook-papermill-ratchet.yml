@@ -8,12 +8,13 @@ name: Notebook Papermill Ratchet
 # No retroactive catch-up: the 576 stale candidates measured on main
 # (#11146) never enter the diff, so the gate is green on main from day one.
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/check_papermill_ratchet.py'
-      - '.github/workflows/notebook-papermill-ratchet.yml'
+  # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#25510, tranche T-A du
+  # 2026-11-12) : le verdict est porte par `always-on-guards.yml` (job
+  # `always-on-guards`, garde anti-fork conservee), dans UN checkout partage.
+  # Le nom du job ("Papermill ratchet (base vs PR)") est deja byte-identique
+  # au nom du garde du registre : le `check_absorbed_check_run_identity.py`
+  # VERIFIE donc ce garde au lieu de l'exempter. Les `paths:` d'origine
+  # vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE42).
   workflow_dispatch:
     inputs:
       base_ref:

@@ -79,7 +79,7 @@ Chaque deck pointe vers les notebooks Jupyter pertinents dans `MyIA.AI.Notebooks
 | S1 Argumentation | `SymbolicAI/ArgumentAnalysis/` | Demo directe |
 | S2 IA exploratoire | `Search/`, `Sudoku/`, `SymbolicAI/` | TP pratique |
 | S3 Acculturation | (transversal) | Vulgarisation |
-| S4 Trading algo | `QuantConnect/` | Demo directe (27 notebooks + 89 strategies) |
+| S4 Trading algo | `QuantConnect/` | Demo directe (notebooks et stratégies QuantConnect) |
 
 ## Structure par deck
 

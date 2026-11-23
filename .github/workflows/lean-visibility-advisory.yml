@@ -39,7 +39,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: lean-visibility-advisory-${{ github.ref }}
+  group: lean-visibility-advisory-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
     # runs verts : max 9.8 min (run 42533389364). Le defaut d'Actions
     # est 6 h, et un job fige tient son slot tout ce temps.
     timeout-minutes: 20
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
 
     steps:
       - name: Checkout PR

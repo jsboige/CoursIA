@@ -1,5 +1,7 @@
 # Protocole de variation — détail, justifications mesurées, incidents fondateurs
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) (harness-hygiene : la règle reste succincte et auto-chargée, le détail vit ici et se lit à la demande).
 
 ***
@@ -250,6 +252,26 @@ Ensemble : chaque lane, tenue de livrer un DEEP de contenu à chaque cycle, trou
 - L'urne `umbrella` ne crée plus qu'un sous-grain par visite du tapis ; un EPIC hors consolidation se visite au plus une fois par semaine ; les issues de consolidation reviennent en tête plusieurs fois par semaine. L'organe est [#22500](https://github.com/jsboige/CoursIA/issues/22500) (`pick_idle_grain.py`) ; en attendant, le coordinateur place les consolidations en tête de chaque file.
 
 Sign-off : mandat user direct du 2026-10-25 (CLAUDE.md §A, « un mandat user direct vaut sign-off »).
+
+## 15. Exemption de G-VAR-3 pour la lane désignée (#26988, décision user Q194 a du 16/11/2026)
+
+### 15.1 Verbatim et mandat
+
+Le user a tranché Q194 le 16/11/2026 : « Q194 OK pour a) ». L'option (a) est : la lane que le coordinateur désigne pour les organes de CI et de merge est **exempte de G-VAR-3**, et l'exemption est écrite dans la règle **et portée par l'organe**. Le mandat direct vaut signature pour la PR de règle (CLAUDE.md §A, gouvernance).
+
+### 15.2 Le motif, mesuré
+
+G-VAR-3 banit deux grains LIGHT de même genre d'affilée. La règle vise la **monotonie d'un worker de contenu** : un spécialiste qui ne produit que des `guard` n'a rien d'autre à montrer au dépôt. Or la lane `myia-ai-01:CoursIA-2` a été chargée des **organes de CI et de merge** : ses grains sont presque tous des gardes. Le 16/11, ses PRs **#26715** et **#26899** — deux réparations de l'organe de merge — étaient rouges pour cette seule raison. La dérogation à la main (`[G-VAR-3 OVERRIDE]`, coordonnée par le coordinateur) promettait un « prochain genre » que la lane ne tiendra pas : ses prochains grains sont, structurellement, des gardes.
+
+### 15.3 Le mécanisme
+
+- **Un seul endroit** : la constante `G_VAR3_EXEMPT_LANES` de `scripts/ci/variation_adjacency_guard.py`. Changer de lane désignée = une PR qui modifie cette constante. Un test (`test_26988_la_liste_est_declaree_en_un_seul_endroit`) echoue si une seconde copie de la liste apparaît (module ou workflow).
+- **Périmètre étroit** : **seul G-VAR-3 est levé**. G-VAR-1 (plancher DEEP de contenu) et G-VAR-2 (budget LIGHT quotidien) restent appliqués, dans leurs propres organes — un test vérifie que `scripts/variation_light_cap.py` ignore la liste. L'exemption ne rend pas un grain de garde « bon » : elle rend lawful l'enchaînement de deux gardes.
+- **Contrôles** : contrôle **positif** sur la séquence réelle de #26715 (Grain tags verbatim relevés sur GitHub le 16/11, `mergedAt` compris) et contrôle **négatif** sur la même séquence jouée par une lane non inscrite. Le verdict nomme l'exemption (`lane_exempt: true`) au lieu de rendre un vert muet.
+
+### 15.4 Ce que l'exemption ne fait pas
+
+Elle ne dispense pas de livrer, ni de nommer le genre suivant, ni de tenir le plancher : une lane dont tous les grains sont des gardes peut être un jour mergeable, mais son cycle reste **sans plancher DEEP de CONTENU** au sens de G-VAR-1. L'exemption porte sur l'adjacence, pas sur la production.
 
 ## Voir aussi
 

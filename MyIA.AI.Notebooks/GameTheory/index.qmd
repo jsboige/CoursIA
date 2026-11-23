@@ -4,7 +4,7 @@ subtitle: "Série pédagogique niveau 2 — Nash, Lemke-Howson, Folk, Shapley, A
 description: "Série GameTheory du dépôt CoursIA — équilibre de Nash, théorème minimax, dynamiques d'apprentissage, jeux coopératifs (Shapley, Core), mécanismes (VCG, Gale-Shapley), choix social (Arrow), formalisation Lean 4."
 listing:
   - id: phase1
-    contents: "GameTheory-01-Setup.ipynb"
+    contents: "GameTheory-01-Setup-Python.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -41,8 +41,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# GameTheory — Théorie des jeux et choix social
-
 **La théorie des jeux est le langage mathématique de la stratégie.** Cette série forme sur deux axes complémentaires : **simuler** des jeux avec Nashpy et OpenSpiel (équilibres de Nash, tournois itératifs, CFR/Deep CFR) et **prouver** des résultats en Lean 4 (existence de Nash via Brouwer/Kakutani, théorème d'Arrow, valeur de Shapley). À la fin, vous maîtriserez la théorie des jeux coopératifs (Shapley, Core) et non-coopératifs (Nash, SPE), et vous saurez formaliser ces résultats dans un assistant de preuve.
 :::
 
@@ -59,7 +57,7 @@ La série GameTheory comporte **96 notebooks racine + 8 SocialChoice** répartis
 
 **Kernels** : python3 · .net-csharp (notebooks 2-12) · lean4 (side tracks `*-Lean-*` via WSL) · **GPU** : non · **Prérequis** : algèbre linéaire, probabilités de base. Aucun prérequis en théorie des jeux : les concepts sont introduits depuis les matrices de gains.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 2
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) · niveau 2
 
 ## Phase 1 — Fondations statiques et équilibre de Nash (Notebooks 1-6)
 

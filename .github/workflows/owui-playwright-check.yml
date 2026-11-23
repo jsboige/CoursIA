@@ -34,7 +34,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: owui-playwright-check-${{ github.ref }}
+  group: owui-playwright-check-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -59,7 +59,7 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     timeout-minutes: 10
 
     steps:

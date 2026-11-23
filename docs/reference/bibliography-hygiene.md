@@ -1,5 +1,7 @@
 # Bibliographie IA partagée
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 ## Source canonique
 
 Le gisement documentaire partagé du cluster est :
@@ -25,11 +27,25 @@ Si la récupération échoue ou si l'accès est payant, l'agent le dit explicite
 
 Le chemin cité rend la source retrouvable par les autres machines, mais ne remplace pas une citation bibliographique dans le contenu pédagogique.
 
+## Rangement du gisement
+
+Le gisement est une collection ordonnée, pas un dossier de fichiers déposés. Quatre règles, normatives :
+
+1. **Tout dossier figure dans la table des rayons.** La table vit dans le `README.md` du gisement — seul ce fichier porte l'inventaire, cette page ne le recopie pas. Un dossier absent de la table est orphelin : il est soit inscrit avec le motif de son existence propre, soit rangé dans un rayon existant.
+
+2. **Un rayon dense porte un second niveau.** Dès qu'un rayon accumule quelques dizaines de publications, il se subdivise en sous-rayons. Un sous-rayon se nomme d'après son **contenu** (un sujet, une famille de travaux), jamais d'après un format ni d'une période : un nom de sujet reste vrai quand la collection vieillit. Les sous-rayons suivent la même nomenclature que les rayons.
+
+3. **La racine ne porte que des publications.** Un catalogue d'identifiants, un journal de migration ou un tableau de résolution est un **fichier de travail** : il vit dans le dossier des travaux, frère du gisement, jamais dedans. Un outil qui produit un catalogue l'écrit par défaut hors de la racine.
+
+4. **Un déplacement met à jour les citations dans le cycle même.** Un chemin cité qui devient faux casse la seule chose que le chemin apporte : la possibilité de rouvrir la copie. Le carnet qui cite, la page qui cite et le tableau de traduction qui réplique cette citation sont mis à jour **ensemble**, dans le cycle où le déplacement a lieu.
+
+Un déplacement ne renomme pas la publication : le nom de fichier porte l'année, les auteurs et le sujet, et reste stable. Le déplacement change le chemin, pas l'identité de la source.
+
 ## Chemin du gisement dans une source de carnet
 
 Un carnet donne deux choses pour une même publication : son **identifiant durable** (auteurs, année, titre, lien arXiv ou DOI) et, quand le cluster doit pouvoir rouvrir la copie sans la retélécharger, le **chemin** de cette copie dans le gisement partagé. Forme canonique, telle qu'elle s'écrit dans une cellule markdown :
 
-`G:\Mon Drive\MyIA\IA\Bibliographie IA\<Rayon>\<YYYY - Auteur(s) - Sujet.ext>`
+`G:\Mon Drive\MyIA\IA\Bibliographie IA\<Rayon>[\<sous-rayon>]\<YYYY - Auteur(s) - Sujet.ext>`
 
 **Le chemin est un localisateur, pas une source.** L'identifiant durable porte l'information bibliographique et survit à un renommage ou à un déplacement du fichier ; le chemin ne vaut que tant que le gisement n'a pas bougé. Les deux se citent ensemble, jamais le chemin seul.
 

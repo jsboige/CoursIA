@@ -125,9 +125,20 @@ jobs:
           # donc la mesure illisible, donc aucune liberation (fail-CLOSED).
           # Clone partiel, meme forme que le voisin (ce pool est sature par
           # ses checkouts).
+          # L'action composite de resolution du jeton est LOCALE
+          # (`uses: ./.github/actions/gh-app-token`) : sans ce repertoire
+          # dans le checkout, l'etape de resolution n'existe pas et le job
+          # echoue. Un appel distant ferait telecharger l'archive du depot
+          # ENTIERE a l'etape « Set up job » -- de quoi faire tomber ce
+          # workflow (mesure etablie sur `heal-worktree`).
+          # Ces lignes sont des commentaires YAML, PAS des entrees du bloc
+          # `sparse-checkout` : dans un bloc litteral (`|`), une ligne
+          # commencant par `#` fait partie de la valeur et actions/checkout
+          # la passe en mode cone comme un nom de repertoire (review 5912895910).
           sparse-checkout: |
             scripts/ci
             .github/workflows
+            .github/actions
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -142,6 +153,20 @@ jobs:
         # soupape reste fermee (revue ai-01 du 2026-10-29 sur #23148).
         run: python -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
 
+      # Jeton de MESURE : App GitHub quand le secret est pose (seau de quota
+      # DISTINCT de celui de `GITHUB_TOKEN`), sinon `github.token` -- donc
+      # exactement le comportement d'aujourd'hui tant que le secret n'est pas
+      # pose. Ce controleur est le premier consommateur du depot
+      # (~630 appels/h d'apres le recensement du volet B de #26739) : le
+      # deplacer hors du seau partage rend ce seau aux autres jobs.
+      # Le secret et l'installation de l'App sont un geste du coordinateur.
+      - name: Resolve the REST token
+        id: gh-token
+        uses: ./.github/actions/gh-app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       # UNE seule mesure : l'organe mesure, rend un VERDICT, et -- si le
       # verdict est une bascule ET le jeton d'ecriture est present -- ecrit
       # la variable. Deux mesures couteraient le double en lectures de jobs :
@@ -149,8 +174,10 @@ jobs:
       # API est precisement l'objet du volet 5 de #22937.
       - name: Verdict et bascule
         env:
-          # Jeton de MESURE : files de jobs et liste des runs.
-          GH_TOKEN: ${{ github.token }}
+          # Jeton de MESURE : files de jobs et liste des runs. Resolu par
+          # l'action composite ci-dessus (App si le secret existe, sinon le
+          # jeton du job).
+          GH_TOKEN: ${{ steps.gh-token.outputs.token }}
           # `github.token` ne porte PAS le droit de LIRE `actions/runners`
           # (aucune portee de `permissions:` ne le donne). L'inventaire du
           # parc se lit avec le secret read-only que six workflows freres

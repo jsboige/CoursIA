@@ -6,6 +6,9 @@ Distribué sous licence Apache 2.0 comme décrit dans le fichier LICENSE.
 
 ## Volet preuve de la distillation #19333-G.beta (issue #21308)
 
+Sibling anglais de `Grothendieck/Monodromie_en.lean` (convention i18n #4980) :
+docstrings et commentaires traduits, énoncés et preuves byte-identiques.
+
 La monodromie — la transformation subie par une fibre transportée le long
 d'un lacet autour d'un point singulier — est manipulée quatre fois dans la
 série Lean sans jamais y être définie (mesure du 18/10/2026 : Lean-22,

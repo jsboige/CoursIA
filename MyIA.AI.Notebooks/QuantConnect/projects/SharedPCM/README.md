@@ -10,7 +10,7 @@ deux sans (`Framework_Composite_FamaFrenchAllWeather`,
 `Framework_Composite_TrendWeather`). Les projets composites importent
 désormais ce module ; leurs copies sont retirées.
 
-## Sémantique (mode intent par défaut)
+## Sémantique
 
 - une poche de capital fixe par alpha (`alpha_allocations`) ;
 - dans chaque poche, le dernier insight actif par couple (symbole,
@@ -19,9 +19,19 @@ désormais ce module ; leurs copies sont retirées.
   tranche.
 
 Le mode `base` historique (un insight par symbole, dernier émetteur gagnant)
-reste disponible via `additive=False` pour les comparaisons A/B. Le
-reconstructeur du mode intent lit les insights actifs à travers l'algorithme :
-`additive=True` exige `algorithm=self` (le constructeur refuse le silence).
+est le **défaut** ; il reste disponible explicitement (`additive=False`) pour
+les comparaisons A/B. Le mode intent se demande (`additive=True`) et lit les
+insights actifs à travers l'algorithme : `additive=True` exige
+`algorithm=self` (le constructeur refuse le silence).
+
+**Le défaut est `additive=False` (#20188).** Le mode intent ne s'hérite pas :
+chaque consommateur écrit son mode explicitement, donc le défaut du canonique
+n'est atteint par aucun d'eux — le remettre ne change le comportement d'aucun
+projet. Un consommateur qui l'omet obtient le mode `base` historique. La garde
+`scripts/quantconnect/check_pcm_single_source.py` refuse un défaut
+`additive=True` sur le canonique, et refuse un consommateur qui instancie le
+canonique sans écrire `additive` (il hériterait du défaut, et son
+comportement changerait si le défaut change).
 
 ## Câblage sur QC Cloud — bibliothèque de projet
 

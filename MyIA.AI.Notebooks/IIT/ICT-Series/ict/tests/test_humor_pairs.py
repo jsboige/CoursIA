@@ -17,6 +17,7 @@ from ict.humor_pairs import (
     build_prompts_json,
     label_distribution,
     load_corpus_dur,
+    measure_global_max_null,
     measure_humor_differential,
     validate_corpus,
     validate_pairs,
@@ -193,3 +194,111 @@ def test_measure_inconclusive_on_pure_noise(tmp_path: Path) -> None:
     assert res["n_features_over3"] < 3
     assert res["verdict"] == "INCONCLUSIVE"
     assert res["ratio_vs_ctrl"] < 1.5
+
+
+# --------------------------------------------------------------------------- #
+# Null global sur le maximum : le seuil 3 sigma face au null lui-meme.
+#
+# Un compte de features au-dela de 3 sigma ne se lit pas sans la loi du
+# maximum que le null atteint sur le meme dictionnaire : sur la fixture
+# synthetique, le seuil n'est atteint par AUCUN tirage du null, et le max
+# observe d'un bruit pur se situe au milieu de la distribution du null.
+# --------------------------------------------------------------------------- #
+
+
+def test_with_null_max_does_not_change_the_measured_values(tmp_path: Path) -> None:
+    # Garde anti-regression : les statistiques du null sur le maximum sont
+    # lues DANS le tableau de null deja calcule -- l'option ne doit rien
+    # changer aux valeurs du verdict pre-registre (meme graine, meme suite).
+    tr = tmp_path / "syn_shift.npz"
+    _write_synthetic_traces(tr, shift=True)
+    ref = measure_humor_differential(tr, _syn_pairs(), n_draws=256, seed=42)
+    aug = measure_humor_differential(
+        tr, _syn_pairs(), n_draws=256, seed=42, with_null_max=True
+    )
+    for key in (
+        "delta_pair", "delta_ctrl", "null_p99", "ratio_vs_ctrl",
+        "n_features_over3", "n_over3_positive", "n_over3_negative", "verdict",
+    ):
+        assert aug[key] == ref[key], f"{key} a bouge avec with_null_max"
+    assert aug["top_features"] == ref["top_features"]
+    assert len(aug["null_max_absz"]) == 256
+    assert len(aug["null_over3"]) == 256
+
+
+def test_global_max_null_on_pure_noise_is_the_null_typical_outcome(
+    tmp_path: Path,
+) -> None:
+    tr = tmp_path / "syn_noise.npz"
+    _write_synthetic_traces(tr, shift=False)
+    res = measure_global_max_null(tr, _syn_pairs(), n_draws=256, seed=42)
+    # Le null n'atteint jamais le seuil sur ce dictionnaire : le zero observe
+    # est l'issue typique du null, il ne distingue rien.
+    assert res["null_features_over_seuil"]["frac_draws_with_one"] == 0.0
+    assert res["seuil_atteignable_sous_null"] is False
+    assert res["p_zero_under_null"] == 1.0
+    assert res["n_features_over_seuil_observe"] == 0
+    assert res["verdict"] == "ABSENCE_NON_INFORMATIVE"
+    # Le max observe est au milieu de la distribution du null (pas un extreme).
+    assert res["p_max_null_ge_observe"] > 0.05
+    assert res["z_max_observed"] < res["null_max_absz"]["q95"]
+
+
+def test_global_max_null_detects_the_shift_beyond_the_null_range(
+    tmp_path: Path,
+) -> None:
+    tr = tmp_path / "syn_shift.npz"
+    _write_synthetic_traces(tr, shift=True)
+    res = measure_global_max_null(tr, _syn_pairs(), n_draws=256, seed=42)
+    # Le shift sort de la plage du null : aucun tirage n'atteint le maximum
+    # observe (p = 0), et le verdict le dit explicitement.
+    assert res["n_features_over_seuil_observe"] >= 3
+    assert res["p_max_null_ge_observe"] == 0.0
+    assert res["verdict"] == "SIGNAL_HORS_NULL"
+    # Le meme shift reste invisible a la jambe delta_pair (verdict pre-registre
+    # INCONCLUSIVE) : c'est bien la lecture sur le maximum qui tranche.
+    assert res["verdict_measure"] == "INCONCLUSIVE"
+
+
+def test_le_taux_de_depassement_decrit_le_null_et_non_une_puissance(
+    tmp_path: Path,
+) -> None:
+    """``frac_draws_with_one`` vaut P_H0(max|z| > seuil), PAS une puissance.
+
+    Le cas shift fournit le contre-exemple qui le demontre : le null n'atteint
+    jamais le seuil (taux = 0) alors que les DONNEES produisent plusieurs
+    features au-dela. Un chiffre de puissance n'aurait pas pu decrire les deux
+    a la fois : il parle du null, jamais de la capacite a rejeter une
+    alternative qu'il n'explicite pas.
+    """
+    tr = tmp_path / "syn_shift_puissance.npz"
+    _write_synthetic_traces(tr, shift=True)
+    res = measure_global_max_null(tr, _syn_pairs(), n_draws=256, seed=42)
+    assert res["null_features_over_seuil"]["frac_draws_with_one"] == 0.0
+    assert res["n_features_over_seuil_observe"] >= 3
+    # Le complement est exact : le taux et son complement se lisent sur le null.
+    assert res["null_features_over_seuil"]["frac_draws_with_one"] + res[
+        "p_zero_under_null"
+    ] == 1.0
+    # Aucune grandeur de puissance n'est exposee par l'API : le module ne
+    # pretends pas estimer une sensibilite qu'il ne mesure pas.
+    assert not any(
+        "puissance" in cle or "power" in cle for cle in res
+    ), sorted(res)
+
+
+def test_sur_pure_bruit_le_taux_decrit_le_null_et_son_complement(
+    tmp_path: Path,
+) -> None:
+    tr = tmp_path / "syn_noise_taux.npz"
+    _write_synthetic_traces(tr, shift=False)
+    res = measure_global_max_null(tr, _syn_pairs(), n_draws=256, seed=42)
+    taux = res["null_features_over_seuil"]["frac_draws_with_one"]
+    # Sur ce dictionnaire le null atteint parfois le seuil : c'est cette
+    # reference qui rend un compte observe interpretable.
+    assert 0.0 <= taux <= 1.0
+    assert res["p_zero_under_null"] == pytest.approx(1.0 - taux)
+    assert res["n_features_over_seuil_observe"] == 0
+    # Le verdict qualifie l'observation ; il ne conclut rien sur une
+    # sensibilite de l'instrument.
+    assert res["verdict"] == "ABSENCE_NON_INFORMATIVE"

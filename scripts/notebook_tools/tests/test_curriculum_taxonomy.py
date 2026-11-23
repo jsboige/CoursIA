@@ -10,12 +10,42 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from curriculum_taxonomy import (  # noqa: E402
     DEFAULT_DATA,
+    SCHEMA_FILENAME,
     VOCAB,
+    _notebook_uri,
     build_graph,
+    discover_taxonomies,
     generate,
     load_taxonomy,
+    validate_all,
     validate_taxonomy,
 )
+
+
+def test_every_taxonomy_json_in_the_folder_is_valid_and_discovered():
+    """Couverture structurelle : un JSON de série ajouté au dossier entre automatiquement (suivi #25441)."""
+    directory = DEFAULT_DATA.parent
+    expected = sorted(path for path in directory.glob("*.json") if path.name != SCHEMA_FILENAME)
+    discovered = discover_taxonomies()
+    assert [path.name for path in discovered] == [path.name for path in expected]
+    assert len(discovered) >= 5
+    results = validate_all()
+    assert {entry["file"] for entry in results} == {path.name for path in expected}
+    assert all(entry["concepts"] > 0 for entry in results)
+
+
+def test_validate_all_names_the_failing_file(tmp_path):
+    taxonomy_dir = tmp_path / "docs" / "curriculum" / "taxonomy"
+    taxonomy_dir.mkdir(parents=True)
+    (taxonomy_dir / SCHEMA_FILENAME).write_text("{}", encoding="utf-8")
+    (taxonomy_dir / "serie-a.json").write_text(json.dumps({"schema_version": 2}), encoding="utf-8")
+    try:
+        validate_all(tmp_path)
+    except ValueError as error:
+        assert "serie-a.json" in str(error)
+        assert "schema_version" in str(error)
+    else:
+        raise AssertionError("une taxonomie invalide doit être nommée par validate_all")
 
 
 def test_compression_slice_cites_real_cells_and_covers_every_root_notebook():
@@ -119,3 +149,57 @@ def test_export_writes_parseable_skos_and_owl(tmp_path):
     assert owl_graph.isomorphic(Graph().parse(second_owl_path, format="xml"))
     assert (None, RDF.type, SKOS.Concept) in skos_graph
     assert (None, RDF.type, OWL.Ontology) in owl_graph
+
+
+def test_notebook_uris_are_those_of_the_catalogue_export():
+    """Parité d'URI avec l'export du catalogue (#25001) : la jointure en dépend.
+
+    Le catalogue cite les carnets relatifs à MyIA.AI.Notebooks/ ; la
+    taxonomie les cite complets depuis la racine. Le retrait de préfixe dans
+    _notebook_uri doit produire exactement l'URI de
+    generate_curriculum_rdf._resource("notebook", ...). Témoin réel : chaque
+    carnet de la taxonomie search retrouve son entrée de catalogue (26/26).
+    """
+    import json
+    from pathlib import Path as _Path
+
+    from generate_curriculum_rdf import _resource
+
+    # Témoin d'appartenance sur search : chaque carnet de la taxonomie
+    # retrouve son entrée de catalogue (26/26 mesuré). Compression, elle, est
+    # une série que le catalogue n'indexe pas encore -- l'égalité d'URI
+    # ci-dessous vaut pour toutes les séries, l'appartenance n'est attestée
+    # que là où le catalogue couvre la série.
+    data = load_taxonomy(DEFAULT_DATA.parent / "search.json")
+    catalog = json.loads(
+        (_Path(__file__).resolve().parents[3] / "COURSE_CATALOG.generated.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    catalog_paths = {entry["path"] for entry in catalog}
+    relatives = [notebook.removeprefix("MyIA.AI.Notebooks/") for notebook in data["notebooks"]]
+    assert all(relative in catalog_paths for relative in relatives)
+    for relative in relatives:
+        assert _notebook_uri("MyIA.AI.Notebooks/" + relative) == _resource("notebook", relative)
+
+
+def test_build_graph_emit_structure_false_keeps_concepts_and_join_links():
+    """emit_structure=False : concepts, prérequis et liens carnet -> concept, sans structure."""
+    data = load_taxonomy()
+    graph = build_graph(data, emit_structure=False)
+    assert not set(graph.subjects(RDF.type, VOCAB.Series))
+    assert not set(graph.subjects(RDF.type, VOCAB.Subseries))
+    assert not set(graph.subjects(RDF.type, VOCAB.Notebook))
+    concepts = set(graph.subjects(RDF.type, SKOS.Concept))
+    assert concepts == set(graph.subjects(RDF.type, VOCAB.CurriculumConcept))
+    assert len(concepts) == len(data["concepts"])
+    assert any(True for _ in graph.triples((None, VOCAB.requiresConcept, None)))
+    # Le lien de jointure s'accroche sur l'URI du carnet du catalogue, même si
+    # le nœud carnet n'est pas émis ici.
+    for notebook, concept in graph.subject_objects(VOCAB.concept):
+        assert str(notebook).startswith("https://github.com/jsboige/CoursIA/cursus/notebook/")
+    # Avec structure (défaut), les nœuds carnets sont émis et rejoignent les liens.
+    full = build_graph(data)
+    assert set(full.subjects(RDF.type, VOCAB.Notebook))
+    linked = {notebook for notebook, _ in full.subject_objects(VOCAB.concept)}
+    assert linked <= set(full.subjects(RDF.type, VOCAB.Notebook))

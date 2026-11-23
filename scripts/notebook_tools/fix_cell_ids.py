@@ -1,219 +1,188 @@
 #!/usr/bin/env python3
-"""Fixer deterministe des ids de cellules (issue #25136).
-
-Ne touche QUE les identifiants de cellules : aucune source, aucune sortie,
-aucun execution_count, aucune cle de serialisation autre que les lignes
-"id":. Auto-verification structurelle systematique : l'arbre JSON
- resultant doit etre identique a l'original en dehors des ids.
-
-Classes traitees (nbformat >= 4.5, schema : ^[a-zA-Z0-9-_]{1,64}$, unique) :
-  - id absent           -> nouvel id (nbformat.v4.new_cell_id, 8 hexa)
-  - id vide             -> nouvel id
-  - id hors motif       -> nouvel id (apres verification git grep, cf --list-renames)
-  - id duplique valide  -> la premiere occurrence est gardee, les suivantes reçoivent un nouvel id
-  - id deja valide      -> jamais modifie
-
-Sortie : par carnet, le decompte avant/apres ; --json pour la machine.
-Codes retour : 0 = plus aucun defaut apres passage (ou rien a faire),
-1 = il reste des defauts (mode --check) ou une erreur est survenue.
-"""
+"""Répare les identifiants nbformat sans réécrire le JSON du carnet."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+DECODER = json.JSONDecoder()
 
 
-def new_id() -> str:
-    """Nouvel identifiant, forme nbformat.v4.new_cell_id (8 hexa).
-
-    Import differe : nbformat reste facultatif en mode --check pur, mais la
-    forme canonique vient de lui quand il est present (flotte : toujours).
-    """
-    try:
-        from nbformat.v4 import new_cell_id
-
-        return new_cell_id()
-    except Exception:
-        import secrets
-
-        return secrets.token_hex(4)
+def _space(text: str, pos: int) -> int:
+    while pos < len(text) and text[pos] in " \t\r\n":
+        pos += 1
+    return pos
 
 
-def classify(cells: list[dict]) -> list[tuple[int, str, str]]:
-    """Retourne [(index_cellule, classe, id_courant)] pour chaque defaut.
-
-    Classes : absent | empty | pattern | duplicate. Un id vide compte aussi
-    comme doublon entre eux ; la premiere occurrence vide reste classee
-    empty, les suivantes duplicate (garde la premiere occurrence).
-    """
-    defects: list[tuple[int, str, str]] = []
-    seen: set[str] = set()
-    for i, cell in enumerate(cells):
-        cid = cell.get("id")
-        if cid is None:
-            defects.append((i, "absent", ""))
-        elif cid == "":
-            defects.append((i, "empty", ""))
-        elif not isinstance(cid, str) or not ID_PATTERN.match(cid):
-            defects.append((i, "pattern", str(cid)))
-        elif cid in seen:
-            defects.append((i, "duplicate", cid))
-        if isinstance(cid, str) and ID_PATTERN.match(cid) and cid:
-            seen.add(cid)
-    return defects
+def _members(text: str, start: int) -> dict[str, tuple[int, int]]:
+    """Offsets des valeurs des propriétés directes d'un objet JSON."""
+    pos = _space(text, start + 1)
+    result = {}
+    while pos < len(text) and text[pos] != "}":
+        key, end = DECODER.raw_decode(text, pos)
+        if not isinstance(key, str):
+            raise ValueError("clé JSON non textuelle")
+        pos = _space(text, end)
+        if text[pos] != ":":
+            raise ValueError("objet JSON mal formé")
+        value_start = _space(text, pos + 1)
+        _, value_end = DECODER.raw_decode(text, value_start)
+        result[key] = (value_start, value_end)
+        pos = _space(text, value_end)
+        if text[pos] == ",":
+            pos = _space(text, pos + 1)
+        elif text[pos] != "}":
+            raise ValueError("objet JSON mal formé")
+    return result
 
 
-def rebuild_cell(cell: dict, fixed_id: str) -> dict:
-    """Reconstruit la cellule avec l'id en position canonique (apres cell_type)."""
-    rest = {k: v for k, v in cell.items() if k != "id"}
-    out: dict = {}
-    for k, v in rest.items():
-        out[k] = v
-        if k == "cell_type":
-            out["id"] = fixed_id
-    if "id" not in out:  # cell_type absent (degenere) : id en tete
-        out = {"id": fixed_id, **out}
-    return out
+def _cell_ranges(text: str) -> list[tuple[int, int]]:
+    root = json.loads(text)
+    if not isinstance(root, dict) or not isinstance(root.get("cells"), list):
+        raise ValueError("carnet sans tableau cells")
+    # Les offsets viennent des propriétés directes de l'objet racine. Une
+    # métadonnée imbriquée peut elle aussi s'appeler "cells".
+    root_start = _space(text, 0)
+    members = _members(text, root_start)
+    cells_span = members.get("cells")
+    if not cells_span:
+        raise ValueError("propriété cells introuvable")
+    pos = cells_span[0]
+    if text[pos] != "[":
+        raise ValueError("cells n'est pas un tableau")
+    pos += 1
+    ranges = []
+    while True:
+        pos = _space(text, pos)
+        if text[pos] == "]":
+            break
+        start = pos
+        _, end = DECODER.raw_decode(text, start)
+        if text[start] != "{":
+            raise ValueError("une cellule n'est pas un objet")
+        ranges.append((start, end))
+        pos = _space(text, end)
+        if text[pos] == ",":
+            pos += 1
+    if len(ranges) != len(root["cells"]):
+        raise ValueError("nombre de cellules incohérent")
+    return ranges
 
 
-def strip_cell_ids(nb: dict) -> dict:
-    """Copie du carnet sans les cles 'id' des cellules (comparaison exacte)."""
-    out = dict(nb)
-    if "cells" in out:
-        out["cells"] = [
-            {k: v for k, v in cell.items() if k != "id"} for cell in out["cells"]
-        ]
-    return out
-
-
-def process_file(path: Path, apply: bool, id_map: dict | None = None) -> dict:
-    """Analyse (et optionnellement corrige) un carnet. Retourne le rapport."""
-    raw = path.read_bytes()
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        return {"file": str(path), "error": f"utf8: {exc}", "before": -1, "after": -1}
-    try:
-        nb = json.loads(text)
-    except json.JSONDecodeError as exc:
-        return {"file": str(path), "error": f"json: {exc}", "before": -1, "after": -1}
-    if (nb.get("nbformat", 0), nb.get("nbformat_minor", 0)) < (4, 5):
-        return {"file": str(path), "skipped": "nbformat < 4.5", "before": 0, "after": 0}
-
-    cells = nb.get("cells", [])
-    defects = classify(cells)
-    report = {
-        "file": str(path.relative_to(REPO_ROOT)) if str(path).startswith(str(REPO_ROOT)) else str(path),
-        "before": len(defects),
-        "detail": {c: sum(1 for _, k, _ in defects if k == c) for _, c, _ in defects},
-    }
-    if not defects:
-        report["after"] = 0
-        return report
-    if not apply:
-        report["after"] = None
-        return report
-
-    # Attribution : ids neufs pour toutes les classes ; premiere occurrence gardee.
-    # Ids existants (vide/hors-motif/duplique) : remplacement EN PLACE, la
-    # position de la cle ne bouge pas (diff purement ligne "id":). Ids
-    # absents : insertion canonique apres cell_type (rebuild_cell).
-    new_cells = []
-    fixed_records = []
-    for i, cell in enumerate(cells):
-        cls = next((k for j, k, _ in defects if j == i), None)
-        if cls is None:
-            new_cells.append(cell)
-            continue
-        old = cell.get("id")
-        fid = new_id()
-        if cls == "absent":
-            new_cells.append(rebuild_cell(cell, fid))
-        else:
-            cell["id"] = fid
-            new_cells.append(cell)
-        fixed_records.append({"index": i, "class": cls, "old": old, "new": fid})
-    nb["cells"] = new_cells
-
-    # Auto-verification structurelle : rien d'autre que les ids ne doit changer.
-    original = json.loads(text)
-    if strip_cell_ids(original) != strip_cell_ids(nb):
-        report["error"] = "structural check FAILED: diff hors ids refuse"
-        report["after"] = -1
-        return report
-
-    eol = "\r\n" if "\r\n" in text else "\n"
-    out_text = json.dumps(nb, indent=1, ensure_ascii=False)
-    if text.endswith("\n"):  # preserver la presence/absence de fin de fichier
-        out_text += eol
-    path.write_bytes(out_text.encode("utf-8"))
-
-    # Relecture + reclassification : le fichier ecrit doit etre propre.
-    reread = json.loads(path.read_bytes().decode("utf-8"))
-    report["after"] = len(classify(reread.get("cells", [])))
-    report["fixed"] = fixed_records
-    if id_map is not None:
-        for rec in fixed_records:
-            if isinstance(rec["old"], str) and rec["old"]:
-                # Seuls les ids existants non vides peuvent etre des cles externes.
-                id_map[f"{path.as_posix()}::{rec['old']}"] = rec["new"]
-    return report
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("paths", nargs="+", help="carnets ou repertoires")
-    parser.add_argument("--apply", action="store_true", help="corriger (defaut : lecture seule)")
-    parser.add_argument("--check", action="store_true", help="exit 1 si un defaut reste")
-    parser.add_argument("--json", action="store_true", help="sortie machine")
-    parser.add_argument(
-        "--map-file",
-        help="ecrit un JSON {fichier::ancien_id: nouvel_id} pour re-cler les index externes (CSV de traduction)",
+def _external_references(cell_id: str, notebook: Path) -> list[str]:
+    root_result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], capture_output=True,
+        text=True, encoding="utf-8",
     )
-    args = parser.parse_args()
+    if root_result.returncode:
+        raise RuntimeError(root_result.stderr.strip() or "racine git introuvable")
+    root = Path(root_result.stdout.strip()).resolve()
+    try:
+        notebook_relative = notebook.resolve().relative_to(root).as_posix()
+    except ValueError:
+        notebook_relative = None
+    result = subprocess.run(
+        ["git", "grep", "-n", "-F", "--", cell_id],
+        capture_output=True, text=True, encoding="utf-8", cwd=root,
+    )
+    if result.returncode not in (0, 1):
+        raise RuntimeError(result.stderr.strip() or "git grep a échoué")
+    return [line for line in result.stdout.splitlines()
+            if notebook_relative is None or line.split(":", 1)[0] != notebook_relative]
 
-    files: list[Path] = []
-    for p in map(Path, args.paths):
-        if p.is_dir():
-            files.extend(sorted(p.rglob("*.ipynb")))
+
+def repair_text(text: str, path: Path) -> str:
+    document = json.loads(text)
+    cells = document["cells"]
+    ranges = _cell_ranges(text)
+    ids = [cell.get("id") for cell in cells]
+    seen: set[str] = set()
+    reserved = {value for value in ids if isinstance(value, str) and ID_RE.fullmatch(value)}
+    edits: list[tuple[int, int, str]] = []
+
+    def fresh(index: int, old: object) -> str:
+        counter = 0
+        while True:
+            material = f"{path.as_posix()}\0{index}\0{old!r}\0{counter}".encode()
+            candidate = hashlib.sha256(material).hexdigest()[:8]
+            if candidate not in reserved and candidate not in seen:
+                seen.add(candidate)
+                return candidate
+            counter += 1
+
+    for index, (cell, (start, end)) in enumerate(zip(cells, ranges)):
+        value = cell.get("id")
+        valid = isinstance(value, str) and bool(ID_RE.fullmatch(value))
+        duplicate = valid and value in seen
+        if valid and not duplicate:
+            seen.add(value)
+            continue
+        if isinstance(value, str) and value:
+            refs = _external_references(value, path)
+            if refs:
+                raise ValueError(
+                    f"id existant {value!r} référencé hors du carnet; réparation refusée: "
+                    + "; ".join(refs[:5])
+                )
+        new_id = fresh(index, value)
+        members = _members(text, start)
+        encoded = json.dumps(new_id, ensure_ascii=False)
+        if "id" in members:
+            value_start, value_end = members["id"]
+            edits.append((value_start, value_end, encoded))
         else:
-            files.append(p)
-
-    id_map: dict = {}
-    reports = [process_file(f, apply=args.apply, id_map=id_map) for f in files]
-    if args.map_file and id_map:
-        map_path = Path(args.map_file)
-        map_path.parent.mkdir(parents=True, exist_ok=True)
-        map_path.write_text(json.dumps(id_map, indent=1, ensure_ascii=False), encoding="utf-8")
-    if args.json:
-        print(json.dumps(reports, ensure_ascii=False))
-    else:
-        for r in reports:
-            if "error" in r:
-                print(f"ERREUR {r['file']}: {r['error']}")
-            elif r.get("skipped"):
-                print(f"SKIP   {r['file']}: {r['skipped']}")
-            elif r["before"] == 0 and r.get("after") == 0:
-                pass
+            cell_type = members.get("cell_type")
+            if cell_type is None:
+                raise ValueError(f"cellule {index}: propriété cell_type absente")
+            key_start = text.rfind('"cell_type"', start, cell_type[0])
+            line_start = text.rfind("\n", start, key_start) + 1
+            newline = "\r\n" if "\r\n" in text else "\n"
+            if "\n" not in text[start:key_start] and "\r" not in text[start:key_start]:
+                # JSON compact : insérer inline juste après l'accolade de cellule.
+                edits.append((start + 1, start + 1, f'"id": {encoded},'))
             else:
-                after = "?" if r.get("after") is None else r["after"]
-                print(f"{r['before']:>3} -> {after:<3} {r['file']} {r.get('detail', '')}")
-    remaining = sum(r.get("after") or 0 for r in reports)
-    total_before = sum(r["before"] for r in reports if r["before"] > 0)
-    touched = sum(1 for r in reports if r["before"] > 0)
-    if not args.json:
-        print(f"-- {touched} carnet(s), {total_before} defaut(s), restant {remaining}")
-    if args.check and remaining:
+                indent = text[line_start:key_start]
+                edits.append((line_start, line_start, f'{indent}"id": {encoded},{newline}'))
+
+    for start, end, replacement in reversed(edits):
+        text = text[:start] + replacement + text[end:]
+    # Vérifier le résultat brut sans que nbformat ne répare rien en mémoire.
+    checked = json.loads(text)
+    check_ids = [cell.get("id") for cell in checked["cells"]]
+    if any(not isinstance(value, str) or not ID_RE.fullmatch(value) for value in check_ids):
+        raise AssertionError("la réparation a laissé un id invalide")
+    if len(check_ids) != len(set(check_ids)):
+        raise AssertionError("la réparation a laissé un doublon")
+    return text
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("notebooks", nargs="+", type=Path)
+    args = parser.parse_args(argv)
+    try:
+        for path in args.notebooks:
+            with path.open("r", encoding="utf-8", newline="") as handle:
+                original = handle.read()
+            fixed = repair_text(original, path)
+            if fixed != original:
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    handle.write(fixed)
+                print(f"{path}: ids réparés")
+            else:
+                print(f"{path}: aucun changement")
+    except (OSError, ValueError, RuntimeError) as exc:
+        print(f"Erreur: {exc}", file=sys.stderr)
         return 1
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

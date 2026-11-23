@@ -1,0 +1,11 @@
+- name: "GameTheory-22 Stochastic Games Shapley"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets construisent un petit jeu stochastique à somme nulle et résolvent les matrices 2×2 puis l'opérateur de Bellman from-scratch. Les calculs sont déterministes et CPU, sans moteur externe applicable : NumPy/Matplotlib côté Python, tableaux BCL et SVG inline côté C#. Le jumeau C# préserve les paramètres du modèle (deux états, gamma=0.9, tolérance 1e-9, plafond 20000), le témoin de selle pure, l'expérience de transition contestée et les trois exercices. Le verdict SOTA-OK désigne ce port fidèle d'un contenu analytique, pas l'usage d'un solveur externe. Les valeurs numériques sont des itérations flottantes, non une preuve exacte."
+  known_differences:
+    - "Python utilise NumPy et Matplotlib; C# utilise les tableaux et collections BCL avec un SVG inline statique à deux panneaux. Les résultats sont comparés sémantiquement sous les mêmes paramètres et seuils, pas par identité des sorties texte ou du rendu."
+    - "Les trois exercices C# sont répartis et réordonnés selon la progression : un état, trois états, courbe de gamma. Les stubs restent ouverts ; les gardes contrôlent les G/P/gamma réellement transmis aux callbacks, leurs valeurs retournées, les traces et leur critère d’arrêt. Ces fixtures bornées ne prouvent pas toute implémentation étudiante."
+    - "Les deux carnets nomment l'écart entre valeur statique et valeur dynamique et portent la même cellule témoin, qui évalue sur la même partie les deux départages du joueur myope (2 s'il reste, 3,8 s'il saute). Les trois définitions de stubs Python restent sans sortie ; le C# imprime une sortie informative dans chacune de ses onze cellules code et fixe la culture invariante pour des sorties reproductibles."

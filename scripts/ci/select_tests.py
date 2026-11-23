@@ -108,8 +108,45 @@ def is_conftest(path: Path) -> bool:
     return path.name == "conftest.py"
 
 
+def _git_tracked_files(root: Path) -> list[Path] | None:
+    """Fichiers ``*.py`` suivis par git, ou None si git n'est pas disponible.
+
+    #25510 annexe : le parcours ``os.walk`` enumere aussi les repertoires non
+    suivis -- dans un checkout de developpement qui contient
+    ``.claude/worktrees/``, la meme selection voit 250 fichiers de test la ou
+    la CI en voit 126, et la mesure locale ne correspond plus a celle de la
+    CI. ``git ls-files`` enumere exactement les fichiers suivis : c'est la
+    source de verite du depot, et le repli ``os.walk`` ne sert qu'aux arbres
+    sans git (fixtures de test).
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    # ``ls-files`` rend des chemins relatifs a la racine git : si ``root``
+    # n'est PAS cette racine (un sous-dossier du depot, un scratch interne),
+    # composer ``root / chemin`` fabriquerait des chemins faux. On ne garde
+    # l'enumeration git que si les deux racines coincident.
+    toplevel = Path(proc.stdout.strip().replace("\\", "/")).resolve()
+    if toplevel != root.resolve():
+        return None
+    proc = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--", "*.py"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return [root / line.strip() for line in proc.stdout.splitlines()
+            if line.strip().endswith(".py")]
+
+
 def iter_all_files(root: Path) -> list[Path]:
-    """Parcourt l'arborescence du depot en ignorant les dossiers bruyants."""
+    """Enumere les fichiers Python du depot : suivis git, sinon parcours."""
+    tracked = _git_tracked_files(root)
+    if tracked is not None:
+        return tracked
     found: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".tox")]
@@ -295,7 +332,9 @@ def select(root: Path, changed: list[str]) -> Selection:
             # R1 -- un test touche selectionne sa suite locale, lui-meme en tete.
             for p in local_tests:
                 add(p, "R1-identite", rel, "suite locale du fichier de test touche")
-            add(abs_path, "R1-identite", rel, "fichier de test touche")
+            # Un test supprime figure dans le diff mais ne peut etre execute.
+            if abs_path in local_tests:
+                add(abs_path, "R1-identite", rel, "fichier de test touche")
             covered_sources.add(rel)
             continue
 

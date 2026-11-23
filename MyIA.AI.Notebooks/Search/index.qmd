@@ -3,13 +3,75 @@ title: "Search — Algorithmes de recherche"
 subtitle: "Série pédagogique niveau 1 — BFS, DFS, A*, métaheuristiques, CSP"
 description: "Série Search du dépôt CoursIA — algorithmes de recherche uninformed/informed, métaheuristiques, CSP, planification. Point d'entrée idéal pour débutants en IA."
 listing:
+  # Tracks Python : chemins explicites. Le garde check_quarto_listings.py
+  # (#26172) est fail-closed sur toute forme d'exclusion (prefixe "!", extglob
+  # "!(*)") : seuls les globs positifs et les chemins sont resolus. Les duals
+  # C#/Python partagent le prefixe numerique, aucun glob positif ne les separe
+  # -> enumeration (meme forme que les listings setup de Probas). Un carnet
+  # ajoute hors liste n'apparait pas : comportement identique aux plages
+  # "Infer-0[2-9]*" de Probas.
   - id: foundations
-    contents: "Part1-Foundations/Search-*.ipynb"
+    contents:
+      - "Part1-Foundations/Search-01-StateSpace.ipynb"
+      - "Part1-Foundations/Search-02-Uninformed.ipynb"
+      - "Part1-Foundations/Search-02b-NetworkX.ipynb"
+      - "Part1-Foundations/Search-02c-QuikGraph.ipynb"
+      - "Part1-Foundations/Search-02d-RRT-Recherche-Continue.ipynb"
+      - "Part1-Foundations/Search-03-Informed.ipynb"
+      - "Part1-Foundations/Search-03b-PatternDatabases.ipynb"
+      - "Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb"
+      - "Part1-Foundations/Search-03d-WeightedAstar.ipynb"
+      - "Part1-Foundations/Search-03e-AStar-Optimality.ipynb"
+      - "Part1-Foundations/Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb"
+      - "Part1-Foundations/Search-04-LocalSearch.ipynb"
+      - "Part1-Foundations/Search-05-GeneticAlgorithms.ipynb"
+      - "Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb"
+      - "Part1-Foundations/Search-06-AdversarialSearch.ipynb"
+      - "Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb"
+      - "Part1-Foundations/Search-08-DancingLinks.ipynb"
+      - "Part1-Foundations/Search-09-LinearProgramming.ipynb"
+      - "Part1-Foundations/Search-09b-SpuriousMinima.ipynb"
+      - "Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb"
+      - "Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb"
+      - "Part1-Foundations/Search-09e-Komlos-Lean.ipynb"
+      - "Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb"
+      - "Part1-Foundations/Search-10-SymbolicAutomata.ipynb"
+      - "Part1-Foundations/Search-11-Metaheuristics.ipynb"
+      - "Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb"
+      - "Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb"
+      - "Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb"
+      - "Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb"
+      - "Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb"
+      - "Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb"
+      - "Part1-Foundations/Search-12-BranchAndBound-Borne-LP-Python.ipynb"
+      - "Part1-Foundations/Search-12a-Composer-Regards.ipynb"
+      - "Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 12
+  # Tracks C# : glob positif (resolu par le garde et par Quarto).
+  - id: foundations-csharp
+    contents: "Part1-Foundations/Search-*-CSharp.ipynb"
     type: grid
     sort: "filename"
     page-size: 12
   - id: csp
-    contents: "Part2-CSP/CSP-*.ipynb"
+    contents:
+      - "Part2-CSP/CSP-1-Fundamentals.ipynb"
+      - "Part2-CSP/CSP-2-Consistency.ipynb"
+      - "Part2-CSP/CSP-3-Advanced.ipynb"
+      - "Part2-CSP/CSP-4-Scheduling.ipynb"
+      - "Part2-CSP/CSP-5-Optimization.ipynb"
+      - "Part2-CSP/CSP-6-Hybridization.ipynb"
+      - "Part2-CSP/CSP-7-Soft.ipynb"
+      - "Part2-CSP/CSP-8-Temporal.ipynb"
+      - "Part2-CSP/CSP-9-Distributed.ipynb"
+      - "Part2-CSP/CSP-10-Optimisation-Z3.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 12
+  - id: csp-csharp
+    contents: "Part2-CSP/CSP-*-CSharp.ipynb"
     type: grid
     sort: "filename"
     page-size: 12
@@ -21,8 +83,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Search — Algorithmes de recherche
-
 **Point d'entrée idéal pour les débutants en intelligence artificielle.** La série couvre l'ensemble du spectre des algorithmes de recherche : exploration non informée (BFS, DFS, Dijkstra), exploration informée (A*, heuristiques), recherche adversariale (minimax, alpha-beta), Monte Carlo Tree Search, métaheuristiques (recuit simulé, algorithmes génétiques, essaims), et résolution de contraintes (CSP).
 :::
 
@@ -38,16 +98,30 @@ La série Search comporte **19+ notebooks** répartis en **3 parties** compléme
 
 **Kernels** : python3 · **GPU** : non · **Prérequis** : AUCUN — série adaptée à un premier contact avec l'IA.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 1
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) · niveau 1
 
 ## Foundations — Algorithmes fondamentaux
 
 ::: {#foundations}
 :::
 
+### Jumeaux C# / .NET — Foundations
+
+Les mêmes algorithmes, implémentés en C# .NET 9 (Infer.NET, QuikGraph) — dual-track de chaque carnet ci-dessus.
+
+::: {#foundations-csharp}
+:::
+
 ## CSP — Satisfaction de contraintes
 
 ::: {#csp}
+:::
+
+### Jumeaux C# / .NET — CSP
+
+Les mêmes problèmes de contraintes en C# .NET (Choco-solver, Z3) — dual-track de chaque carnet ci-dessus.
+
+::: {#csp-csharp}
 :::
 
 ## Advanced — Recherche avancée

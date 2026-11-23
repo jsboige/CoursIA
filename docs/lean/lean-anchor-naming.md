@@ -67,14 +67,16 @@ La liste du job `proof-integrity-audit` vit dans
 allow-axioms: "@scripts/lean/allow_axioms_conway.txt"
 ```
 
-`scripts/lean/allow_axioms_conway.txt` contient **79 entrées** (les 77
+`scripts/lean/allow_axioms_conway.txt` contient **83 entrées** (les 77
 mesurées au move `#21905`, plus les 2 ancres du témoin de machine de Turing
-ajoutées sur `main` par `#17465`) : le critère de
+ajoutées sur `main` par `#17465` et les 4 ancres des témoins négatifs OTCA/
+UnitCell de `#25188`, chacune avec son jumeau FR/_en) : le critère de
 compte est celui de `parse_allow`, à savoir les lignes non vides après
 suppression du texte de commentaire introduit par `#` et des espaces de bord.
 Ces entrées sont uniques, et celle portant U+271D ci-dessus est la seule qui
 contient un caractère non-ASCII. Le commentaire `allow-axioms` du job dans
-`.github/workflows/lean-conway.yml` indique le même total.
+`.github/workflows/lean-ci-matrix.yml` (ex-wrapper `lean-conway.yml`, supprimé
+par #25256) indique le même total.
 
 Le chemin `@<chemin>` se résout contre la racine du checkout
 (`GITHUB_WORKSPACE` en CI), avec repli sur le répertoire courant pour un run

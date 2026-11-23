@@ -62,6 +62,8 @@ if [[ $CHECK_ONLY -eq 1 ]]; then
     echo "[INFO] --check implies no --auto-fix: installers stay off."
   fi
   AUTO_FIX=0
+  # --force demande une réinstallation, sans objet pour une sonde à sec.
+  FORCE=0
 fi
 
 # ---------------------------------------------------------------------------
@@ -79,6 +81,7 @@ ADVANCED=(z3-solver ortools)
 TEST_PKGS=(numpy pandas matplotlib sklearn scipy z3 ortools)
 
 FAILED_REQUIRED=()
+FAILED_AUTO_FIX=()
 SUCCESS_COUNT=0
 OPTIONAL_SUCCESS=0
 
@@ -219,9 +222,14 @@ setup_jupyter_directory() {
   if ! command -v jupyter >/dev/null 2>&1; then
     action "Jupyter non disponible — répertoire kernels ignoré" "WARNING"; return 1
   fi
-  local kernels_path
-  kernels_path="$(jupyter --data-dir 2>/dev/null)/kernels"
-  mkdir -p "$kernels_path"
+  local data_path kernels_path
+  if ! data_path="$(jupyter --data-dir 2>/dev/null)" || [[ -z "$data_path" ]]; then
+    action "Impossible de déterminer le répertoire de données Jupyter" "ERROR"; return 1
+  fi
+  kernels_path="$data_path/kernels"
+  if ! mkdir -p "$kernels_path"; then
+    action "Impossible de créer le répertoire kernels : $kernels_path" "ERROR"; return 1
+  fi
   action "Répertoire kernels Jupyter: $kernels_path" "SUCCESS"
   save_checkpoint "jupyter_directory_setup"
 }
@@ -234,6 +242,7 @@ install_python_kernel() {
     save_checkpoint "python_kernel_install"
   else
     action "Échec de l'installation du kernel Python" "ERROR"
+    return 1
   fi
 }
 
@@ -248,6 +257,7 @@ install_dotnet_kernels() {
     save_checkpoint "dotnet_kernel_install"
   else
     action "Échec de l'installation des kernels .NET" "ERROR"
+    return 1
   fi
 }
 
@@ -257,7 +267,7 @@ install_dotnet_kernels() {
 section "INITIALISATION"
 if [[ $CHECK_ONLY -eq 1 ]]; then
   action "Mode --check : sonde sans installation, aucun fichier écrit." "INFO"
-elif [[ $RESUME -eq 1 ]]; then
+elif [[ $RESUME -eq 1 && $FORCE -eq 0 ]]; then
   if [[ -f "$CHECKPOINT_FILE" ]]; then
     action "Mode reprise activé — checkpoints chargés depuis $CHECKPOINT_FILE" "INFO"
   else
@@ -345,13 +355,21 @@ fi
 # CONFIGURATION .NET ET NUGET
 # =============================================================================
 section "CONFIGURATION .NET ET NUGET"
-[[ $AUTO_FIX -eq 1 ]] && setup_dotnet_nuget || action " (--auto-fix requis pour configurer NuGet)" "INFO"
+if [[ $AUTO_FIX -eq 1 ]]; then
+  setup_dotnet_nuget || FAILED_AUTO_FIX+=("Configuration NuGet")
+else
+  action " (--auto-fix requis pour configurer NuGet)" "INFO"
+fi
 
 # =============================================================================
 # CONFIGURATION .NET INTERACTIVE
 # =============================================================================
 section "CONFIGURATION .NET INTERACTIVE"
-[[ $AUTO_FIX -eq 1 ]] && install_dotnet_interactive || action " (--auto-fix requis pour installer .NET Interactive)" "INFO"
+if [[ $AUTO_FIX -eq 1 ]]; then
+  install_dotnet_interactive || FAILED_AUTO_FIX+=("Installation .NET Interactive")
+else
+  action " (--auto-fix requis pour installer .NET Interactive)" "INFO"
+fi
 
 # =============================================================================
 # CONFIGURATION JUPYTER ET KERNELS
@@ -360,14 +378,15 @@ section "CONFIGURATION JUPYTER ET KERNELS"
 if command -v jupyter >/dev/null 2>&1; then
   action "Jupyter détecté : $(jupyter --version 2>&1 | head -1)" "SUCCESS"
   if [[ $AUTO_FIX -eq 1 ]]; then
-    setup_jupyter_directory
-    install_python_kernel
-    install_dotnet_kernels
+    setup_jupyter_directory || FAILED_AUTO_FIX+=("Répertoire Jupyter")
+    install_python_kernel || FAILED_AUTO_FIX+=("Kernel Python")
+    install_dotnet_kernels || FAILED_AUTO_FIX+=("Kernels .NET")
     action "Kernels Jupyter disponibles :" "INFO"
     jupyter kernelspec list 2>/dev/null | sed 's/^/    /'
   fi
 else
   action "Jupyter non disponible (sera installé par la phase Packages ML)" "ERROR"
+  [[ $AUTO_FIX -eq 1 ]] && FAILED_AUTO_FIX+=("Jupyter non disponible")
 fi
 
 # =============================================================================
@@ -428,6 +447,11 @@ if [[ ${#FAILED_REQUIRED[@]} -gt 0 ]]; then
   printf '  %s -m pip install %s\n' "$PYTHON" "${FAILED_REQUIRED[*]}"
 fi
 
+if [[ ${#FAILED_AUTO_FIX[@]} -gt 0 ]]; then
+  printf '\n%sCONFIGURATIONS ÉCHOUÉES:%s\n' "$C_RED" "$C_RESET"
+  for step in "${FAILED_AUTO_FIX[@]}"; do printf '%s  - %s%s\n' "$C_RED" "$step" "$C_RESET"; done
+fi
+
 printf '\n%sRECOMMANDATIONS:%s\n' "$C_CYAN" "$C_RESET"
 [[ $RATE_LOW -eq 1 ]] && \
   printf '  1. Réexécuter: ./scripts/environment/setup_environment.sh --auto-fix --force\n'
@@ -443,13 +467,17 @@ else
     echo "================================"
     echo "Packages requis installés: $INSTALLED_REQUIRED/$TOTAL_REQUIRED ($SUCCESS_RATE%)"
     echo "Packages échoués: ${FAILED_REQUIRED[*]}"
+    echo "Configurations échouées: ${FAILED_AUTO_FIX[*]}"
     echo "Tests d'import réussis: $PASSED_TESTS/${#TEST_PKGS[@]}"
   } > "$LOG_FILE"
   printf '\nLog sauvegardé: %s\n' "$LOG_FILE"
 fi
 
 # Exit code (same semantics as the .ps1)
-if [[ ${#FAILED_REQUIRED[@]} -eq 0 && $PASSED_TESTS -eq ${#TEST_PKGS[@]} ]]; then
+if [[ ${#FAILED_AUTO_FIX[@]} -gt 0 ]]; then
+  printf '\n%s[FAIL] SETUP ÉCHOUÉ : configuration automatique incomplète%s\n' "$C_RED" "$C_RESET"
+  exit 2
+elif [[ ${#FAILED_REQUIRED[@]} -eq 0 && $PASSED_TESTS -eq ${#TEST_PKGS[@]} ]]; then
   printf '\n%s[OK] SETUP TERMINÉ AVEC SUCCÈS%s\n' "$C_GREEN" "$C_RESET"
   exit 0
 elif [[ ${#FAILED_REQUIRED[@]} -le 2 ]]; then

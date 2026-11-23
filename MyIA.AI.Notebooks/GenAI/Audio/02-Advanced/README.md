@@ -1,80 +1,73 @@
-# 02-Advanced - Voix, Musique & Séparation
+# Audio avancé : voix, musique, effets sonores et séparation
 
 [← Audio Foundation](../01-Foundation/) | [↑ Audio](../README.md) | [→ Audio Orchestration](../03-Orchestration/)
 
-Ce module explore les techniques avancées : clonage vocal, génération musicale, séparation de sources, et modèles TTS expressifs.
+Cette série intermédiaire explore quatre façons de travailler le son : synthétiser une voix, générer de la musique, créer des effets sonores et des bruitages décrits en texte, puis séparer les sources d'un enregistrement. Elle s'adresse aux personnes à l'aise avec Python et les bases du traitement audio ; la [série Foundation](../01-Foundation/) introduit notamment la synthèse vocale et l'écoute des résultats. Pour le fil rouge podcast, on peut produire une narration, créer un habillage musical, ajouter des ambiances sonores, puis séparer ou remixer des pistes.
 
-**Dans le cadre du fil rouge podcast** : un podcast de qualité a besoin d'une voix cohérente et d'une identité sonore. [02-2](02-2-XTTS-Voice-Cloning.ipynb) clone une voix à partir d'un échantillon pour créer un narrateur récurrent. [02-3](02-3-MusicGen-Generation.ipynb) génère le jingle et le fond musical. [02-4](02-4-Demucs-Source-Separation.ipynb) isole les pistes audio d'un mix existant (utile pour remastériser un interview). [02-8](02-8-Expressive-TTS.ipynb) ajoute des émotions et de la prosodie pour varier le ton selon les passages.
+## Comment lire ce README — Découverte
 
-## Vue d'ensemble
+Le dépôt propose plusieurs vitesses de lecture : [choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture). Parcourez la table pour choisir une technique ; utilisez les itinéraires et approfondissements pour relier les carnets ; passez à [Audio Orchestration](../03-Orchestration/) pour comparer et assembler les modèles.
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 9 |
-| Kernel | Python 3 |
-| Durée estimée | ~6-8h |
-| GPU requis | 2-24GB |
+## Parcours principal — Découverte
 
-## Notebooks
+Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent des outils complémentaires ; il n'est pas nécessaire d'installer tous les modèles pour suivre un itinéraire.
 
-| # | Notebook | Contenu | Service | VRAM |
-|---|----------|---------|---------|------|
-| 1 | [02-1-Chatterbox-TTS](02-1-Chatterbox-TTS.ipynb) | Chatterbox Turbo, émotions, prosodie | Local GPU | ~8 GB |
-| 2 | [02-2-XTTS-Voice-Cloning](02-2-XTTS-Voice-Cloning.ipynb) | XTTS v2, clonage vocal zero-shot | Local GPU | ~6 GB |
-| 3 | [02-3-MusicGen-Generation](02-3-MusicGen-Generation.ipynb) | Meta MusicGen, text-to-music | Local GPU | ~10 GB |
-| 4 | [02-4-Demucs-Source-Separation](02-4-Demucs-Source-Separation.ipynb) | Demucs v4, extraction stems | Local GPU | ~4 GB |
-| 5 | [02-5-Multi-Model-TTS-Gateway](02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
-| 6 | [02-6-MIDI-Generation](02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), génération symbolique | Local GPU | ~2-4 GB |
-| 7 | [02-7-YuE2-Song-Generation](02-7-YuE2-Song-Generation.ipynb) | YuE2-3B : zero-shot, cover, édition agentique (4 étapes canoniques) | Routée GPU 24 GB (Linux) | ~24 GB |
-| 8 | [02-8-Expressive-TTS](02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
-| 9 | [02-9-AceStep-Music-Generation](02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 1 | [Chatterbox TTS](02-1-Chatterbox-TTS.ipynb) | Synthétiser une voix et faire varier expressivité, guidance et conditionnement vocal. | Intermédiaire | [Voix](#voix) |
+| 2 | [XTTS : clonage vocal](02-2-XTTS-Voice-Cloning.ipynb) | Conditionner une voix par un extrait, changer de langue et examiner la similarité du locuteur. | Intermédiaire | [Voix](#voix) |
+| 3 | [MusicGen](02-3-MusicGen-Generation.ipynb) | Générer de la musique instrumentale à partir d'un texte ou d'une mélodie de référence et explorer le sampling. | Intermédiaire | [Musique](#musique) |
+| 4 | [Demucs](02-4-Demucs-Source-Separation.ipynb) | Séparer voix, batterie, basse et autres sources, visualiser et remixer les pistes ; examiner le SDR. | Intermédiaire | [Séparation](#séparation) |
+| 5 | [Gateway TTS multi-modèles](02-5-Multi-Model-TTS-Gateway.ipynb) | Interroger un service de synthèse, contrôler sa disponibilité et comparer les moteurs déployés. | Intermédiaire | [Voix](#voix) |
+| 6 | [Génération MIDI](02-6-MIDI-Generation.ipynb) | Produire et continuer des séquences symboliques, puis les synthétiser avec FluidSynth. | Intermédiaire | [Musique](#musique) |
+| 7 | [YuE2 : chansons complètes](02-7-YuE2-Song-Generation.ipynb) | Passer des paroles et d'un style à une chanson, puis explorer reprise et édition d'une partition. | Avancé | [Musique](#musique) |
+| 8 | [TTS expressif](02-8-Expressive-TTS.ipynb) | Expérimenter les tags de prosodie et comparer Fish S2 Pro et Dia TTS. | Avancé | [Voix](#voix) |
+| 9 | [ACE-Step](02-9-AceStep-Music-Generation.ipynb) | Générer une chanson à partir de paroles structurées et étudier les paramètres de génération. | Intermédiaire | [Musique](#musique) |
+| 10 | [Effets sonores AudioLDM2](02-10-Effets-Sonores-AudioLDM2.ipynb) | Générer des effets sonores à partir d'un texte, mesurer étapes, durée et guidance, puis discriminer un effet d'une musique. | Intermédiaire | [Effets sonores](#effets-sonores) |
+| 11 | [AudioGen](02-11-Text-to-Audio-Bruitages.ipynb) | Générer des scènes sonores décrites en texte et comparer le paradigme autoregressif à la diffusion d'[AudioLDM-S](../06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb). | Intermédiaire | [Bruitages](#bruitages) |
+| 12 | [RVC v2 : conversion de voix chantée](02-12-SVS-Singing-Voice-RVC.ipynb) | Remplacer le timbre d'un chant en préservant la mélodie : charger un checkpoint, mesurer trajectoire f0, transposition et paramètre protect sur CPU, puis convertir une voix de parole (couple avant/après dans `assets/`). | Avancé | [Voix](#voix) |
+| 14 | [Transcription audio Qwen3](02-14-Transcription-Audio-Qwen3-Python.ipynb) | Transcrire la parole avec un moteur de la génération Qwen3, le confronter à un témoin hors famille Qwen et à la génération précédente, et lire l'écart sur le même signal. | Avancé | [Voix](#voix) |
 
-## Prérequis
+## Approfondissements — Pratique
 
-### GPU Requirements
-- **Minimum** : 4 GB VRAM (Demucs, Kokoro)
-- **Recommandé** : 8-12 GB VRAM (XTTS, Chatterbox, MusicGen)
-- **Optimal** : 24 GB VRAM (SongGeneration, Expressive TTS)
+### Voix
 
-### Dépendances
-```bash
-pip install -r requirements.txt
-pip install -r requirements-audio.txt  # MusicGen (audiocraft), Demucs inclus
-```
+Commencez par [Chatterbox](02-1-Chatterbox-TTS.ipynb) : fixez le texte et faites varier `exaggeration` ou `cfg_weight` pour distinguer expressivité et fidélité au conditionnement. [XTTS](02-2-XTTS-Voice-Cloning.ipynb) prolonge cette expérience par le clonage sans entraînement supplémentaire et la comparaison entre langues. La similarité calculée et l'écoute répondent à des questions différentes ; la qualité et la durée de l'extrait de référence influencent le résultat.
 
-## Progression recommandée
+Le [gateway](02-5-Multi-Model-TTS-Gateway.ipynb) déplace la question vers une application : vérifier la disponibilité d'un service, comparer les moteurs effectivement déployés et choisir un routage. Le carnet [TTS expressif](02-8-Expressive-TTS.ipynb) explore ensuite les tags de prosodie, Fish S2 Pro et Dia ; il suppose déjà les notions de synthèse des premiers carnets. La [conversion RVC v2](02-12-SVS-Singing-Voice-RVC.ipynb) prend le chant enregistré pour point de départ : elle remplace le timbre en préservant la mélodie, mesurée note par note, sur CPU et avec un checkpoint de voix synthétique. Une seconde source — une voix de parole générée par le TTS [Kokoro](../01-Foundation/01-5-TTS-Local-ONNX.ipynb) — montre que le même moteur convertit chant et parole ; le couple avant/après est committé dans `assets/`. Utilisez une voix de référence uniquement avec le consentement du locuteur et vérifiez les droits d'utilisation des modèles et des enregistrements.
 
-### Parcours Voix
-1. **02-1-Chatterbox-TTS** - TTS avec émotions et prosodie
-2. **02-2-XTTS-Voice-Cloning** - Clonage vocal
-3. **02-8-Expressive-TTS** - TTS ultra-expressif
-4. **02-5-Multi-Model-TTS-Gateway** - Comparatif multi-modèle
+La [transcription Qwen3](02-14-Transcription-Audio-Qwen3-Python.ipynb) ferme la boucle côté perception : sur le même couple audio, un moteur de reconnaissance vocale de la génération Qwen3 est confronté à un témoin hors famille Qwen et à la génération précédente. Le dépôt ne documente pas le texte exact de ces extraits, donc le carnet ne note aucune transcription : il compare les moteurs sur le même signal, et mesure l'écart de génération plutôt que de le supposer.
 
-### Parcours Musique
-1. **02-3-MusicGen-Generation** - Génération de musique textuelle
-2. **02-9-AceStep-Music-Generation** - Text-to-song multilingue (<4 GB VRAM)
-3. **02-6-MIDI-Generation** - Génération MIDI symbolique
-4. **02-7-YuE2-Song-Generation** - Chansons complètes (YuE2-3B)
-5. **02-4-Demucs-Source-Separation** - Séparation de sources
+### Musique
 
-## Technologies clés
+[MusicGen](02-3-MusicGen-Generation.ipynb) part d'une description ou d'une mélodie pour produire un signal sonore instrumental. Le carnet [MIDI](02-6-MIDI-Generation.ipynb) produit au contraire des événements musicaux modifiables : le rendu audio demande ensuite un synthétiseur et une banque de sons. Cette distinction aide à choisir entre un son directement exploitable et une partition que l'on peut retravailler.
 
-| Technologie | Utilisation |
-|-------------|-------------|
-| **XTTS v2** | Clonage vocal zero-shot |
-| **MusicGen** | Génération text-to-music |
-| **ACE-Step v1.5** | Text-to-song multilingue (<4 GB VRAM) |
-| **Demucs v4** | Séparation de sources 4 stems |
-| **Chatterbox Turbo** | TTS émotionnel |
-| **Fish S2 Pro** | TTS ultra-naturel |
+Pour ajouter des paroles, [ACE-Step](02-9-AceStep-Music-Generation.ipynb) introduit les balises de structure et l'effet des paramètres de génération. [YuE2](02-7-YuE2-Song-Generation.ipynb) va plus loin : planification symbolique, génération sémantique, synthèse et décodage, ainsi que reprise et édition. Son carnet demande Linux et un GPU adapté ; les poids YuE2-3B sont sous licence **CC BY-NC 4.0**, qui interdit l'usage commercial. Consultez le carnet pour les conditions et les avis tiers avant toute réutilisation.
 
-## Cas d'usage
+### Effets sonores
 
-- **Voix IA** : Assistant vocal, doublage, narration personnalisée
-- **Musique** : Jingles, bandes sonores, musique algorithmique
-- **Production** : Post-traitement audio, remixing, mastering
+[AudioLDM2](02-10-Effets-Sonores-AudioLDM2.ipynb) génère des effets sonores décrits par le texte : aboiement, pluie sur une tôle, verre brisé. Le carnet mesure ce qui distingue un effet d'une musique — largeur de bande, hauteur du centroïde, densité d'attaques — et l'effet réel des paramètres de génération (étapes, durée, guidance, graine). Les poids `cvssp/audioldm2` sont sous licence **CC BY-NC-SA 4.0**, qui interdit l'usage commercial ; le carnet détaille en outre les deux correctifs de compatibilité requis sous transformers 5.x.
 
-## Ressources
+### Séparation
+
+[Demucs](02-4-Demucs-Source-Separation.ipynb) prend le chemin inverse de la génération : il extrait des pistes d'un mélange. L'exemple synthétique permet d'examiner les sources et la métrique SDR ; sur un enregistrement réel, l'absence de sources de référence complique cette évaluation. La séparation peut laisser des artefacts et ne donne pas automatiquement les pistes originales. Utilisez des enregistrements dont vous détenez les droits nécessaires.
+
+### Bruitages
+
+[AudioGen](02-11-Text-to-Audio-Bruitages.ipynb) génère des bruitages et des scènes sonores décrites en texte : un modèle autoregressif écrit l'audio comme une séquence de tokens de codec, conditionné par un encodeur de texte. Le carnet mesure le temps réel (RTF) et la mémoire occupée, chiffre l'effet de la température et du top-k sur la diversité, et compare le positionnement à la diffusion d'[AudioLDM-S](../06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb) — textures rapides contre compositions multi-concepts — ainsi qu'à [MusicGen](02-3-MusicGen-Generation.ipynb), même moteur dédié à la musique. Les poids `audiogen-medium` sont soumis à leur propre licence sur Hugging Face.
+
+## Installation et limites — Pratique
+
+Chaque carnet indique ses dépendances propres et la configuration de ses modèles. Les générations locales demandent généralement un GPU NVIDIA et le téléchargement de poids ; la mémoire et le temps dépendent du modèle, de sa variante et de la machine. Demucs et le carnet MIDI décrivent aussi une exécution CPU, plus lente. Le carnet MIDI nécessite en outre FluidSynth ; YuE2 précise sa configuration Linux/GPU et ACE-Step décrit le déchargement vers la RAM pour réduire l'occupation GPU. AudioLDM2 documente ses deux correctifs de compatibilité pour transformers 5.x et tourne en float16 sous 2,5 Go de VRAM. La conversion RVC v2 s'exécute entièrement sur CPU via le kernel WSL `rvc-wsl` (environnement conda `rvc`, Python 3.10), avec un temps de conversion de l'ordre de deux fois la durée du signal.
+
+Le gateway et certaines expériences TTS appellent des **services** : leur disponibilité, les modèles déployés et les éventuels identifiants doivent être vérifiés avant l'exécution. Un message de démonstration ou une section sautée faute de dépendance ne constitue pas une génération réelle. Les sorties enregistrées illustrent une configuration donnée ; elles ne garantissent ni la même performance ni la même qualité sur une autre machine.
+
+## Pour aller plus loin — Recherche
+
+La [comparaison multi-modèles](../03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) met les approches en regard ; la [série Audio](../README.md) présente les autres modules et leurs applications. Pour un inventaire à jour des carnets, consultez le [catalogue du dépôt](../../../../COURSE_CATALOG.generated.md).
+
+## Ressources — Référence
 
 - [Documentation Audio principale](../README.md)
-- [Prérequis techniques](../../00-GenAI-Environment/README.md)
+- [Environnement GenAI](../../00-GenAI-Environment/README.md)
+- Les carnets citent les projets et publications propres à chaque modèle, ainsi que les licences et conditions utiles à leur utilisation.

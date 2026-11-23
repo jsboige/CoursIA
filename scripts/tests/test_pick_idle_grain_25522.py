@@ -383,11 +383,13 @@ def _no_probe(n, lane=None):
 
 
 def test_la_fenetre_s_etend_par_tranches_et_trouve_le_grain_au_dela():
-    """Controle POSITIF du point 4 : 0 retenu + du temps -> fenetre etendue.
+    """Controle POSITIF du point 4 : quota non rempli + du temps -> fenetre
+    etendue.
 
     Le pool du 09/11 : 70 positions parcourues, 0 retenu, et rien ne disait
     si le grain servable etait plus loin. La fenetre s'etend par tranches
-    (70 -> 140 -> 210...) tant que rien n'est retenu ET qu'il reste du temps
+    (70 -> 140 -> 210...) tant que la lane a moins de grains que demandes
+    (11/11 : plus seulement quand elle n'en a aucun) ET qu'il reste du temps
     sous le mur ; le grain est alors servi.
     """
     args = _belt_args(grains=4)
@@ -404,10 +406,11 @@ def test_la_fenetre_s_etend_par_tranches_et_trouve_le_grain_au_dela():
             for n in numbers})
     assert [p["number"] for p in picks] == [pool[80]["number"]]
     assert state["service_window_extended"] is True
-    assert state["service_window"] == 140
-    # La boucle remplit son quota (4 grains) : elle parcourt donc toute la
-    # fenetre etendue, pas seulement la position du grain trouve.
-    assert state["service_positions"] == 140
+    # Un seul grain trouve sur 4 demandes : la fenetre continue de s'etendre
+    # jusqu'au bout du pool (140 -> 150), au lieu de s'arreter a la tranche
+    # ou le premier grain est apparu.
+    assert state["service_window"] == 150
+    assert state["service_positions"] == 150
 
 
 def test_le_mur_de_temps_arrete_l_extension_de_la_fenetre():

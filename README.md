@@ -2,7 +2,7 @@
 
 **Apprendre l'intelligence artificielle par la pratique, des fondements théoriques aux applications avancées.**
 
-CoursIA est un curriculum de notebooks Jupyter interactifs pour apprendre l'IA en la mettant en œuvre. On y part des algorithmes de recherche et des contraintes, puis on aborde le raisonnement formel, l'incertitude, la théorie des jeux, le machine learning, l'apprentissage par renforcement, l'IA générative et le trading algorithmique. Certaines séries vont jusqu'à la recherche : preuve mécanisée de théorèmes, évaluation rigoureuse de modèles et mesure de l'émergence causale dans leurs représentations internes.
+CoursIA est un curriculum de notebooks Jupyter interactifs pour apprendre l'IA en la mettant en œuvre. On y part des algorithmes de recherche et des contraintes, puis on aborde le raisonnement formel, l'incertitude, la théorie des jeux, le machine learning, l'apprentissage par renforcement, l'IA générative et le trading algorithmique. Des familles plus récentes complètent le tableau : théorie de la complexité, compression de l'information, traitement automatique des langues, calcul physique vérifiable et art génératif de symétrie. Certaines séries vont jusqu'à la recherche : preuve mécanisée de théorèmes, évaluation rigoureuse de modèles et mesure de l'émergence causale dans leurs représentations internes.
 
 Les notebooks utilisent Python, C# avec .NET Interactive et Lean 4. De nombreux concepts existent en **jumeaux C#/Python** : même problème et même progression, dans deux écosystèmes, afin de distinguer les idées de leur implémentation. Les parcours locaux sans clé ni GPU offrent une entrée immédiate ; les séries qui requièrent une API, le cloud, WSL ou une infrastructure GPU documentent leur environnement dès la mise en route.
 
@@ -13,6 +13,16 @@ Les notebooks utilisent Python, C# avec .NET Interactive et Lean 4. De nombreux 
 > **Catalogue vivant** -- Pour l'inventaire exhaustif (comptes par série, statut READY/DEMO, maturité PRODUCTION/BETA), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**. Généré par l'automatisation, ce catalogue porte les chiffres et les statuts ; ce README en donne la vue d'ensemble pédagogique.
 
 ## Commencer ici
+
+### Démarrer sans rien installer
+
+[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge/svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=jsboige%2FCoursIA&ref=main&machine=basicLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
+Le bouton ci-dessus ouvre un Codespace déjà porteur des **sept noyaux canoniques** du dépôt (`python3`, `global-3.13`, `.net-csharp`, `.net-fsharp`, `.net-powershell`, `lean4`, `rust`) : le [`devcontainer`](.devcontainer/devcontainer.json) utilise l'image d'apprentissage publiée sur GHCR — rien à construire, un carnet Python ou C# s'exécute dès l'ouverture. **Le quota Codespaces consommé est celui de votre compte** (les heures gratuites du plan GitHub personnel, puis facturation) — fermez le Codespace quand vous ne l'utilisez plus. Sans compte ou sans quota, le repli local est une seule commande ([sous-issue 1.3](docker-configurations/notebook-runner/README.md)) :
+
+```bash
+docker run -p 8888:8888 ghcr.io/jsboige/coursia-learning:latest
+```
 
 ### Choisir sa vitesse de lecture
 
@@ -34,7 +44,7 @@ Quatre façons d'entrer dans le dépôt, sans parcourir tout le catalogue :
 
 1. **Par série, à sa vitesse** : ouvrir le README d'une série (voir [Séries de notebooks](#séries-de-notebooks)) et suivre son parcours principal. C'est le mode de lecture par défaut.
 2. **Par itinéraire narratif** : [PARCOURS.md](PARCOURS.md) présente trois itinéraires certifiés qui traversent plusieurs séries (accéléré GenAI, IA symbolique, lecture AIMA), avec leur public, leur durée et leur sortie concrète. Les cinq pages du catalogue qui listent les notebooks par domaine y sont présentées comme des **vues du catalogue**, pas comme des parcours.
-3. **Par contrainte d'infrastructure** : [`parcours.qmd`](https://jsboige.github.io/CoursIA/parcours.html) propose trois niveaux d'équipement : local sobre (Python seul), .NET et Lean, puis GenAI complet (Docker et GPU).
+3. **Par contrainte d'infrastructure** : [`parcours.qmd`](https://jsboige.github.io/CoursIA/docs/parcours.html) propose trois niveaux d'équipement : local sobre (Python seul), .NET et Lean, puis GenAI complet (Docker et GPU).
 4. **Par inventaire** : le [catalogue](COURSE_CATALOG.generated.md) liste tout, avec les statuts et la maturité.
 
 Pour exécuter immédiatement, commencer par [Mise en route](#mise-en-route), puis ouvrir le notebook `Setup` ou `Environment` de la série choisie.
@@ -43,18 +53,23 @@ Le répertoire [docs/](docs/README.md) rassemble ensuite les références d'infr
 
 ## Cartographie rapide du dépôt
 
-```
+```text
 MyIA.AI.Notebooks/
   Search/          -> Algorithmes de recherche (BFS, A*, Métaheuristiques, CSPs) -- point d'entrée idéal pour débutants
   Sudoku/          -> Résolution multi-paradigme -- plusieurs approches pour un seul problème (C#, Python)
-  ML/              -> Machine Learning (ML.NET, agents ADK)
-  RL/              -> Reinforcement Learning (du bandit au post-training des LLMs : DQN, PPO, SAC, GRPO, DPO)
-  Probas/          -> Programmation probabiliste (Infer.NET, PyMC, Pyro) + théorie de la décision
-  GameTheory/      -> Théorie des jeux, équilibres de Nash, mechanism design, social choice
-  IIT/             -> Information intégrée (Tononi, PyPhi) + banc ICT : trajectoires causales, du tri au LLM
-  CaseStudies/     -> Études de cas interdisciplinaires
+  Complexity/      -> Théorie de la complexité -- vérifier, trouver, et ce que l'écart coûte (P/NP, #P, algorithmique online)
+  Compression/     -> Représenter l'information à moindre coût (Huffman, LZ77, ANS, MDL) -- optimalité prouvée en Lean
   SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, SMT, Argument Analysis, Symbolic Learning) -- la plus vaste série du dépôt
-  GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Aspire, Vibe Coding) -- l'une des plus vastes séries
+  Probas/          -> Programmation probabiliste (Infer.NET, PyMC, Pyro) + théorie de la décision
+  GameTheory/      -> Théorie des jeux, équilibres de Nash, mechanism design (sous-séries Dynamics, Coalitions, Metajeux, SocialChoice)
+  ML/              -> Machine Learning (ML.NET, agents ADK)
+  NLP/             -> Traitement automatique des langues -- du mot aux modèles du langage (spaCy, CRF, word2vec)
+  RL/              -> Reinforcement Learning (du bandit au post-training des LLMs : DQN, PPO, SAC, GRPO, DPO)
+  IIT/             -> Information intégrée (Tononi, PyPhi) + banc ICT : trajectoires causales, du tri au LLM
+  Physique/        -> Des modèles aux calculs vérifiables (Burgers, théories de jauge, intégrales de Feynman, information quantique)
+  CaseStudies/     -> Études de cas interdisciplinaires
+  Symmetry/        -> Art génératif sur les groupes de symétrie du plan (frieze, wallpaper, rosettes)
+  GenAI/           -> IA générative (Image, Audio, Video, 3D, Texte, Semantic Kernel, Aspire, Vibe Coding) -- l'une des plus vastes séries
   QuantConnect/    -> Trading algorithmique (notebooks pédagogiques + stratégies backtestées + pipeline ML)
   cross-series/    -> Applications transverses (matching-cv, socle métadonnées, i18n)
 ```
@@ -63,11 +78,12 @@ Le dépôt rassemble les notebooks pédagogiques, leurs projets Lean 4 compagnon
 
 ### Graphe des prérequis entre séries
 
-Le diagramme ci-dessous encode les liens de prérequis explicites énoncés dans [Parcours recommandés](#parcours-recommandés) — chaque arête y est justifiable par une phrase existante de cette section, aucune relation n'est inventée. IIT et `cross-series` ne figurent pas comme nœuds : la section *Explorer les frontières de recherche* les mentionne sans leur assigner de position de prérequis.
+Le diagramme ci-dessous encode les liens de prérequis explicites énoncés dans [Parcours recommandés](#parcours-recommandés) — chaque arête y est justifiable par une phrase existante de cette section, aucune relation n'est inventée. IIT et `cross-series` ne figurent pas comme nœuds : la section *Explorer les frontières de recherche* les mentionne sans leur assigner de position de prérequis. Compression, NLP, Physique et Symmetry non plus : chacune s'ouvre par ses propres portes d'entrée, décrites dans son README, sans position de prérequis dans les parcours.
 
 ```mermaid
 flowchart LR
     Search(["Search<br/>algorithmes de recherche"]) --> Sudoku(["Sudoku<br/>résolution multi-paradigme"])
+    Sudoku --> Complexity(["Complexity<br/>vérifier, trouver"])
     Sudoku --> ML(["ML<br/>pipeline supervisé"])
     ML --> RL(["RL<br/>apprentissage par expérience"])
     ML --> GenAI(["GenAI<br/>IA générative"])
@@ -78,10 +94,10 @@ flowchart LR
 
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px,color:#333;
-    class Search,Sudoku,ML,RL,Probas,GameTheory,SymbolicAI,CaseStudies,GenAI,QuantConnect track;
+    class Search,Sudoku,Complexity,ML,RL,Probas,GameTheory,SymbolicAI,CaseStudies,GenAI,QuantConnect track;
 ```
 
-Les deux grands itinéraires du dépôt — *« Démarrer sans service externe »* (Search → Sudoku → ML) et *« Raisonner sous incertitude et en interaction »* (Probas → GameTheory → RL) — se rejoignent sur RL, qui hérite des bases algorithmiques (Search) et stratégiques (GameTheory) pour apprendre par expérience. ML se prolonge naturellement vers GenAI et QuantConnect pour le déploiement, tandis que SymbolicAI alimente CaseStudies en briques vérifiables.
+Les deux grands itinéraires du dépôt — *« Démarrer sans service externe »* (Search → Sudoku → Complexity → ML) et *« Raisonner sous incertitude et en interaction »* (Probas → GameTheory → RL) — se rejoignent sur RL, qui hérite des bases algorithmiques (Search) et stratégiques (GameTheory) pour apprendre par expérience. ML se prolonge naturellement vers GenAI et QuantConnect pour le déploiement, tandis que SymbolicAI alimente CaseStudies en briques vérifiables.
 
 #### Une seconde lecture : la construction d'*AIMA*
 
@@ -124,7 +140,7 @@ L'apprentissage n'est pas une septième étape : c'est une **couche disponible �
 
 ## Parcours recommandés
 
-**Démarrer sans service externe** -- Search introduit l'exploration et les heuristiques ; Sudoku permet ensuite de comparer plusieurs paradigmes sur un problème constant ; ML.NET transforme ces bases en pipeline d'apprentissage supervisé. Ce parcours fonctionne localement, sans clé API.
+**Démarrer sans service externe** -- Search introduit l'exploration et les heuristiques ; Sudoku permet ensuite de comparer plusieurs paradigmes sur un problème constant ; Complexity sépare sur ce même problème les deux gestes dont l'écart fonde la théorie de la complexité -- vérifier une grille remplie et en produire une ; ML.NET transforme ces bases en pipeline d'apprentissage supervisé. Ce parcours fonctionne localement, sans clé API.
 
 **Raisonner sous incertitude et en interaction** -- Probas apprend à représenter l'incertitude et à décider ; GameTheory ajoute des agents dont les choix dépendent les uns des autres ; RL montre comment ces stratégies peuvent être apprises par l'expérience.
 
@@ -134,7 +150,7 @@ L'apprentissage n'est pas une septième étape : c'est une **couche disponible �
 
 **Explorer les frontières de recherche** -- Les preuves formelles, le pipeline ML multi-seed, le post-training des LLMs et IIT/ICT proposent des résultats falsifiables, y compris des résultats négatifs documentés.
 
-Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis, voir [PARCOURS.md](PARCOURS.md) (parcours narratifs) et [`parcours.qmd`](https://jsboige.github.io/CoursIA/parcours.html) (choix par contraintes d'infrastructure).
+Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis, voir [PARCOURS.md](PARCOURS.md) (parcours narratifs) et [`parcours.qmd`](https://jsboige.github.io/CoursIA/docs/parcours.html) (choix par contraintes d'infrastructure).
 
 ---
 
@@ -143,7 +159,7 @@ Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis,
 Le dépôt ne juxtapose pas seulement des technologies : il organise des comparaisons et des passages d'un paradigme à l'autre.
 
 - **Plusieurs langages pour séparer le concept de l'outil** : Python porte le machine learning et l'IA générative ; C# ouvre ML.NET, Infer.NET et Semantic Kernel ; Lean 4 vérifie formellement des résultats. Les notebooks jumeaux rendent leurs différences observables sur un même problème.
-- **Des garanties comparées, pas confondues** : une simulation illustre, un test cherche un contre-exemple, un solveur tranche dans son domaine et une preuve Lean est vérifiée par le noyau. Les séries Search, Sudoku, SymbolicAI et GameTheory montrent où chaque niveau de garantie devient pertinent.
+- **Des garanties comparées, pas confondues** : une simulation illustre, un test cherche un contre-exemple, un solveur tranche dans son domaine et une preuve Lean est vérifiée par le noyau. Les séries Search, Sudoku, Complexity, SymbolicAI et GameTheory montrent où chaque niveau de garantie devient pertinent.
 - **Une évaluation qui accepte les résultats négatifs** : QuantConnect et le pipeline ML imposent validation hors échantillon, walk-forward et répétition multi-seed ; GenAI distingue l'appel de démonstration du service réellement déployable ; IIT/ICT publie aussi les expériences qui ne confirment pas l'hypothèse.
 - **Des sujets de recherche reliés au cours** : théorèmes mécanisés, agents de preuve, neuro-symbolique, post-training et émergence causale prolongent directement les notions introduites dans les séries fondamentales.
 - **Des systèmes complets** : études de cas et projets transverses recomposent recherche, contraintes, probabilités, apprentissage et explication dans un même livrable.
@@ -199,6 +215,22 @@ Sudoku est ainsi une coupe verticale du dépôt : un seul problème traverse **S
 
 C# et Python (OR-Tools, Z3, PyTorch) | [README détaillé](MyIA.AI.Notebooks/Sudoku/README.md)
 
+### Complexity -- Théorie de la complexité
+
+Vérifier qu'une solution est correcte, et en trouver une : la théorie de la complexité montre que ces deux gestes peuvent coûter des mondes différents -- c'est même sa question ouverte la plus célèbre. La série prend le Sudoku comme témoin, exactement comme la série précédente : contrôler une grille remplie se lit en 324 lectures, la produire peut demander des centaines de milliers d'appels à un solveur. De cette observation partent les deux étages du parcours. La découverte apprend à compter des pas, pose la frontière P/NP et la réduit en pratique (subset-sum vers Partition, exécutée de bout en bout). La licence monte d'un cran : hiérarchie temporelle, algorithmique online et ses ratios optimaux (ski-rental, paging, secrétaire), la classe #P opposée via déterminant et permanente, et la simulation classique de circuits quantiques -- O(2^n) rattrapée par Gottesman-Knill en O(n²) sur la part stabilisatrice.
+
+Les lettres ouvrent la recherche, chacune sur un résultat lu à la source : transition de phase de SAT, word RAM et conjectures de prétraitement, réductions lopsided du triangle, conjectures online tombées en 2026, BosonSampling, bornes de Kolmogorov, la réfutation annoncée d'ETH examinée pour ce qu'elle établit et ne prouve pas, jusqu'à la règle 30 de Wolfram et aux machines de Gödel. Chaque notion est confrontée au state de Mathlib -- aucune classe de complexité temporelle n'y est définie, et le dépôt l'écrit plutôt que de le contourner. La série tient ses ponts : Ryser réutilisé par Sudoku-15, la discrepancy de Search, la sensibilité reliée au théorème de Huang. Aucune dépendance externe : chaque objet est construit dans le carnet, et les paliers principaux existent en jumeaux C#/Python.
+
+Python et C# | [README détaillé](MyIA.AI.Notebooks/InformationCalcul/Complexity/README.md)
+
+### Compression -- Représenter l'information à moindre coût
+
+Le pendant exact de la question précédente : là où Complexity mesure le coût de *calculer*, Compression mesure le coût de *représenter*. Le parcours principal reconstruit dans le carnet chaque codec fondateur -- Shannon-Fano et Huffman avec l'inégalité de Kraft, le Huffman canonique des formats réels, LZ77 à fenêtre glissante, puis les codes ANS modernes qui approchent l'entropie (environ 0,09 bit par symbole là où Huffman en consomme 1 sur une distribution 99 %/1 %). Le volet appris montre ensuite ce que la compression dit des modèles : quantification, élagage et distillation des poids, jusqu'à MDL -- et l'incompressibilité de Kolmogorov, non calculable, comme borne naturelle.
+
+La série va plus loin que les codecs. Le lake [`Compression_lean`](MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/) prouve l'optimalité de Huffman et l'inégalité de Kraft-McMillan en Lean 4 ; 04b trace les fronts de Pareto des codecs réels ; 05b construit un découvreur DSL neuro-symbolique de douze opcodes vérifié par SHA-256 ; 07 et 07b font trier des fichiers par un LLM local -- d'abord par appels d'outil opératoires, puis sous Semantic Kernel sur un corpus réel, avec un codec à dictionnaire partagé et son invariant de couverture prouvé, la comparaison publiée y compris quand elle est défavorable. Les paliers 01-04 existent en jumeaux C# en BCL pure.
+
+Python, C# et Lean 4 | [README détaillé](MyIA.AI.Notebooks/InformationCalcul/Compression/README.md)
+
 ### SymbolicAI -- Raisonnement formel
 
 Une machine peut-elle raisonner -- non pas approximer une réponse plausible, mais déduire, prouver, justifier ? C'est le pari de l'IA symbolique, l'autre grande tradition de l'intelligence artificielle : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis en dériver mécaniquement de nouvelles conclusions. La plus vaste série du dépôt l'explore — des systèmes experts des années 80 jusqu'aux assistants de preuve et aux agents LLM d'aujourd'hui. Le fil conducteur n'est pas une technologie mais une promesse : ce raisonnement est **explicite, vérifiable et explicable** -- exactement ce que l'apprentissage statistique seul ne garantit pas. Et là où les deux paradigmes se rencontrent se trouve le front actif de la recherche : le symbolique devient la couche de contrôle du neuronal -- détecter les incohérences d'un LLM, l'ancrer sur des faits, certifier la robustesse d'un réseau.
@@ -243,7 +275,7 @@ Comment raisonner -- et surtout décider -- quand rien n'est certain ? Un diagno
 
 **Deux écosystèmes, les mêmes modèles** -- La série repose sur une juxtaposition délibérée : chaque modèle est traité dans deux écosystèmes complémentaires qui couvrent, à eux deux, plusieurs familles d'algorithmes d'inférence. [Infer.NET](MyIA.AI.Notebooks/Probas/Infer/README.md) (Microsoft, C#) compile le modèle en graphe de facteurs et laisse choisir son moteur -- passage de messages (Expectation Propagation, Variational Message Passing) ou échantillonnage de Gibbs -- avec des résultats exacts sur les modèles conjugués et approchés ailleurs, le tout rapide et dont la structure se visualise. [PyMC](MyIA.AI.Notebooks/Probas/PyMC/README.md) (Python) reprend l'intégralité de ces modèles avec le MCMC moderne à base de gradient (le sampler NUTS), qui s'applique à presque tout modèle au prix d'un diagnostic de convergence outillé par ArviZ (R-hat, taille d'échantillon effective, divergences, trace plots). L'enjeu n'est donc pas de trancher entre exact et approché, ni même entre déterministe et aléatoire -- chaque famille a sa place -- mais d'apprendre, en voyant un même modèle résolu de plusieurs façons, quel moteur convient à quelle structure. Les modèles viennent d'applications réelles : réseaux bayésiens pour le diagnostic médical et l'explaining away, Item Response Theory (le moteur des tests adaptatifs comme le GMAT), TrueSkill (le classement bayésien des joueurs sur Xbox Live), LDA pour la découverte de thèmes, modèles de Markov cachés pour les régimes, agrégation de foules d'annotateurs bruités, recommandation assortie d'une barre d'incertitude.
 
-**[Théorie de la décision](MyIA.AI.Notebooks/Probas/DecisionTheory/README.md)** -- Une troisième sous-série porte l'arc décision en miroir dans [DecInfer](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/README.md) et [PyMC](MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/README.md), prolongé par le lake Lean 4 [`decision_theory_lean`](MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/) et par deux notebooks-ponts de causalité : [do-calculus](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) quand l'intervention est identifiable, méthodes quasi-expérimentales quand `do()` est impossible. Le versant actuariel traite crédibilité, prime pure et chargement, ruine de Lundberg, valeur de l'information en souscription et fréquence-sévérité hiérarchique. Un banc cross-engine soumet en outre le même contrat JSON à Infer.NET et PyMC, pour comparer des décisions plutôt que juxtaposer des syntaxes. Le lake prouve dans `Discount.lean` les identités d'escompte qui fondent l'indice de Gittins ; la frontière restante du théorème d'optimalité est documentée plutôt que masquée. Il mécanise aussi la cohérence tarifaire : un barème non additif expose un Dutch Book exploitable.
+**[Théorie de la décision](MyIA.AI.Notebooks/Probas/DecisionTheory/README.md)** -- Une troisième sous-série porte l'arc décision en miroir dans [DecInfer](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/README.md) et [PyMC](MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/README.md), prolongé par le lake Lean 4 [`decision_theory_lean`](MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/) et par deux notebooks-ponts de causalité : [do-calculus](MyIA.AI.Notebooks/Probas/Causalite/Causalite-01-Calcul-Do-Python.ipynb) quand l'intervention est identifiable, méthodes quasi-expérimentales quand `do()` est impossible. Le versant actuariel traite crédibilité, prime pure et chargement, ruine de Lundberg, valeur de l'information en souscription et fréquence-sévérité hiérarchique. Un banc cross-engine soumet en outre le même contrat JSON à Infer.NET et PyMC, pour comparer des décisions plutôt que juxtaposer des syntaxes. Le lake prouve dans `Discount.lean` les identités d'escompte qui fondent l'indice de Gittins ; la frontière restante du théorème d'optimalité est documentée plutôt que masquée. Il mécanise aussi la cohérence tarifaire : un barème non additif expose un Dutch Book exploitable.
 
 **De l'inférence à la décision -- la théorie de l'utilité** -- À quoi bon une distribution si elle ne dicte aucune action ? La seconde moitié de la série franchit ce pas, et c'est son cœur. On part des axiomes de Von Neumann-Morgenstern qui fondent l'utilité espérée comme critère rationnel, on modélise l'aversion au risque (utilités CARA et CRRA, paradoxe de Saint-Petersbourg), on décide sur plusieurs critères à la fois (utilité multi-attributs, MAUT), on branche la décision sur l'inférence par les diagrammes d'influence, on chiffre la valeur d'une information avant de payer pour l'acquérir (EVPI, EVSI -- quand un test complémentaire est-il rentable ?), on se protège contre l'incertitude radicale (Minimax Regret), et l'on débouche sur la décision *séquentielle* : processus de décision markoviens, bandits, POMDP. Ce dernier maillon est une double passerelle -- vers le reinforcement learning d'un côté, et de l'autre vers la théorie des jeux, qui suppose précisément des agents maximisant leur utilité espérée. C'est pourquoi cette série précède GameTheory : l'utilité en est le prérequis.
 
@@ -259,7 +291,7 @@ Comment des agents rationnels interagissent-ils quand le résultat de chacun dé
 
 **Des jeux statiques aux frontières -- une montée en stratégie** -- Le fil principal suit la maturation historique de la discipline. On part des jeux statiques, du minimax, de Nash et du tournoi d'Axelrod ; le processus de Moran ajoute ensuite la fixation stochastique dans une population finie. Le temps et l'incertitude introduisent formes extensives, jeux combinatoires, induction, réputation et jeux bayésiens. L'information asymétrique devient un arc propre -- citrons d'Akerlof, signal de Spence, screening de Rothschild-Stiglitz et équilibres Wilson-Miyazaki -- avant les frontières contemporaines : CFR au poker, Stackelberg, coopération, mécanismes VCG et apprentissage multi-agent.
 
-Une strate plus récente étend le vocabulaire stratégique lui-même : les **jeux ouverts et les lentilles** rendent les jeux composables ; la dette d'abstraction et les méta-actions tarifées font de la transformation des règles une décision ; les chemins de swaps, chambres et murs explorent la géométrie ordinale des jeux 2×2 ; Poincaré-Bendixson étudie leurs ensembles limites. Les applications rejoignent les marchés réels par l'échange de reins, les jeux de sécurité Stackelberg, l'affectation de Kuhn-Munkres et le design automatisé de mécanismes.
+Une strate plus récente étend le vocabulaire stratégique lui-même, dans la sous-série [Metajeux](MyIA.AI.Notebooks/GameTheory/Metajeux/README.md) : les **jeux ouverts et les lentilles** rendent les jeux composables ; la dette d'abstraction et les méta-actions tarifées font de la transformation des règles une décision ; les chemins de swaps, chambres et murs explorent la géométrie ordinale des jeux 2×2 ; Poincaré-Bendixson étudie leurs ensembles limites. Les applications rejoignent les marchés réels par l'échange de reins, les jeux de sécurité Stackelberg, l'affectation de Kuhn-Munkres et le design automatisé de mécanismes. Deux sous-séries dédiées portent les prolongements : [Dynamics](MyIA.AI.Notebooks/GameTheory/Dynamics/README.md) -- coopération, programmes et institutions, des jeux répétés et du théorème de Folk jusqu'aux agents bornés, aux institutions transparentes et au joueur LLM dans les jeux répétés -- et [Coalitions](MyIA.AI.Notebooks/GameTheory/Coalitions/README.md) -- pouvoir, assistance et affectation, des indices de pouvoir coalitionnel calculés par SMT à l'échange de reins, en passant par l'assistance humain-agent et un certificat primal-dual prouvé en Lean.
 
 **Simuler, puis prouver -- la dualité Python/Lean** -- Les grands résultats ne sont pas seulement illustrés : les lakes Lean 4 en rejouent les certificats. Points fixes pour Nash, PGame pour les jeux combinatoires, axiomes de Shapley, condition de Bondareva-Shapley par la route de Farkas et treillis des mariages stables de Knuth forment le socle. Les companions plus récents certifient le seuil du marché des citrons, l'optimalité de Kuhn-Munkres par dualité à gap nul, l'enchère de Vickrey et le grim-trigger. La direction difficile du théorème Folk escompté reste explicitement à la frontière : le dépôt distingue ce qui est vérifié par le noyau de ce qui demeure un programme de preuve.
 
@@ -283,6 +315,14 @@ Cette série irrigue le reste du dépôt par sa démarche d'évaluation : on la 
 
 C# et Python | [README détaillé](MyIA.AI.Notebooks/ML/README.md)
 
+### NLP -- Du mot aux modèles du langage
+
+Comment transformer un texte en objets que l'on peut analyser, comparer ou classer ? La série part des mots, des étiquettes grammaticales et des dépendances, puis construit les modèles probabilistes de séquences, les représentations vectorielles et les classifieurs -- le socle classique sur lequel les modèles de langage modernes se lisent encore. C'est une **série plate**, à numéros nus : un seul arc, du mot aux modèles du langage, avec spaCy et les dépendances, les n-grammes et la perplexité, les CRF et Viterbi, les grammaires PCFG et CYK, les HMM, la recherche d'information TF-IDF et BM25, les vecteurs de mots par cooccurrences-PPMI-SVD, word2vec, les sous-mots de FastText, puis la classification par Naive Bayes et régression logistique softmax. Presque tous les paliers existent en jumeau C#, et tout tourne sur CPU, sans clé d'API.
+
+Les petits corpus y sont un choix délibéré : ils permettent de suivre les calculs et d'examiner les erreurs au niveau d'une phrase ou d'une prédiction, puis de comparer l'implémentation pédagogique à son témoin de bibliothèque -- NLTK, hmmlearn, CRFsuite, scikit-learn -- en posant la question qui traverse la série : deux modèles d'accord mesurent-ils la même chose ? Le [support de cours TAL](slides/09-traitement-automatique-langues/slides.md) situe ces fondations dans le passage aux LLM, et la série se prolonge naturellement dans [GenAI/Texte](MyIA.AI.Notebooks/GenAI/Texte/README.md) : tokenisation, recherche sémantique et évaluation des textes générés.
+
+Python et C# | [README détaillé](MyIA.AI.Notebooks/NLP/README.md)
+
 ### GenAI -- IA générative
 
 Comment générer une image à partir d'une phrase, faire parler une machine, composer un fond musical, animer une vidéo, ou brancher un LLM sur ses propres outils ? L'une des plus vastes séries du dépôt explore l'IA générative dans toutes ses modalités. Son fil conducteur n'est pas l'accumulation d'APIs : c'est apprendre à **choisir** entre un modèle cloud (gpt-image-1, GPT-5, Whisper) et un modèle open-source auto-hébergé (FLUX, Stable Diffusion, Qwen, MusicGen) selon le coût, le contrôle, le débit et la sensibilité des données, puis à **combiner** ces briques dans des pipelines qui tiennent en production. Tout commence par [`00-GenAI-Environment`](MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/README.md), le passage obligé qui configure clés API, services Docker et validation.
@@ -294,6 +334,8 @@ Chaque modalité (Image, Audio, Video) suit la même montée en quatre niveaux -
 **[Audio](MyIA.AI.Notebooks/GenAI/Audio/README.md)** -- La chaîne vocale complète : transcription (Whisper), synthèse (OpenAI TTS, Kokoro, Chatterbox), clonage de voix (XTTS), génération musicale (MusicGen, YuE, ACE-Step), séparation de sources (Demucs) et TTS expressif à tags prosodiques. Fil rouge : un podcast entièrement généré, voix clonée et fond musical compris.
 
 **[Video](MyIA.AI.Notebooks/GenAI/Video/README.md)** -- La modalité la plus exigeante : compréhension de séquences (GPT-5, Qwen-VL), génération de mouvement (HunyuanVideo, LTX-Video puis LTX-2 pour l'audiovisuel joint, Wan, Stable Video Diffusion), super-résolution et interpolation (Real-ESRGAN, RIFE). Fil rouge : transformer un script texte en vidéo pédagogique animée.
+
+**[3D](MyIA.AI.Notebooks/GenAI/3D/README.md) -- du rendu neuronal à la génération de voxels** -- La série reconstruit **NeRF depuis zéro** -- chaque équation du papier devient du code auditable -- puis mesure les cinq limitations structurelles qui ont motivé le champ suivant, avant de construire le remplaçant : les gaussiennes splatting entraînées sur le moteur CUDA réel `gsplat` (les seuls carnets de la série à requérir un GPU) et leurs leviers d'entraînement. Les derniers plis retournent la question : après avoir appris à *rendre* une scène, comment en *générer* une -- par flow matching de voxels -- et que gagne ou perd le paradigme opposé du rendu **analytique** par spineurs et twisteurs de Penrose, mesuré contre le champ appris à matériel constant.
 
 **[Texte](MyIA.AI.Notebooks/GenAI/Texte/README.md)** -- Le socle de tout le reste : prompt engineering, sorties structurées, function calling, RAG, code interpreter, modèles de raisonnement et déploiement local. L'arc agentique ajoute orchestration, mémoire persistante, Tree-of-Thoughts et scaling du calcul à l'inférence. Autour de ce socle, les garde-fous sont devenus un parcours à part entière : red-team de prompts, mécanique d'inférence, stratégies de long contexte, évaluation systématique des textes et des agents, plus une veine d'inférence .NET avec LLamaSharp et TensorSharp.
 
@@ -309,7 +351,7 @@ Chaque modalité (Image, Audio, Video) suit la même montée en quatre niveaux -
 
 Côté **mémoire des agents**, la sous-série [RAG et Mémoire Sémantique](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/README.md) est devenue un cursus complet : retrieval avancé, embeddings et tokenisation reconstruits depuis zéro, stockage vectoriel, puis Kernel Memory en processus, en Python, en recherche hybride et multimodale. Qdrant en est le backend opérationnel pour ancrer les agents de codage dans l'historique des conversations et le code des dépôts.
 
-**[Aspire](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/README.md) -- la pile IA inattendue : C#/.NET** -- Une sous-série à contre-courant : décrire modèles, bases vectorielles, services, secrets, santé et télémétrie dans un **AppHost** compilé et typé plutôt que dans un assemblage de Compose et de scripts. Partie de l'orchestration GPU et multi-machines, elle couvre désormais observabilité OpenTelemetry, streaming d'agents par Channels, tests d'intégration avec conteneurs éphémères, garde-fous Roslyn exécutés dans le build et flotte sémantique multi-connecteurs. Deux axes vivent en hub dédié [Integrations-DotNet](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/) : [EF Core](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/01-EFCore-Requetes-Compilees.ipynb) fait du compilateur un garde-fou jusque dans les requêtes et le [SDK GitHub Copilot](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/) pilote depuis C# un agent en streaming avec des endpoints typés.
+**[Aspire](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/README.md) -- la pile IA inattendue : C#/.NET** -- Une sous-série à contre-courant : décrire modèles, bases vectorielles, services, secrets, santé et télémétrie dans un **AppHost** compilé et typé plutôt que dans un assemblage de Compose et de scripts. Partie de l'orchestration GPU et multi-machines, elle couvre désormais observabilité OpenTelemetry, streaming d'agents par Channels, tests d'intégration avec conteneurs éphémères, garde-fous Roslyn exécutés dans le build et flotte sémantique multi-connecteurs. Quatre autres axes .NET vivent dans le hub dédié [Integrations-DotNet](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/) : [EF Core](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/01-EFCore-Requetes-Compilees.ipynb) fait du compilateur un garde-fou jusque dans les requêtes, le [SDK GitHub Copilot](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/) pilote depuis C# un agent en streaming avec des endpoints typés, [Orleans](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Orleans/README.md) apporte des grains acteurs stateful pour les workloads IA et [Scrutor](MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Scrutor/README.md) découvre des endpoints de minimal API par convention.
 
 **[Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md)** -- Le développement assisté par agents IA : ateliers progressifs sur Claude Code et Roo Code, compétences, sous-agents, MCP et hooks, complétés par les agents conteneurisés Claw-Systems et le proxy multi-provider Claudish. La question directrice est celle qui suit naturellement l'écriture assistée : *si un agent produit le code, qui le relit et quelles garanties restent indépendantes de lui ?* L'analyseur Roslyn **MyIA.AgentSafetyAnalyzer** compile ces garde-fous dans le build : règles de sécurité, correction automatique des secrets codés en dur, registre de suppressions et tests. Il est distinct d'**AgentGuard.Analyzers**, le volet Roslyn de la sous-série Aspire. Un second chantier branche un REPL C# sur un processus .NET vivant pour l'observer et le corriger sans l'arrêter.
 
@@ -319,7 +361,9 @@ Tout converge dans un fil rouge transverse : le **Texte** structure un script, l
 
 Python | [README détaillé](MyIA.AI.Notebooks/GenAI/README.md)
 
-**[FallacyDetection](MyIA.AI.Notebooks/GenAI/FallacyDetection/README.md) -- reconnaître un sophisme, et savoir pourquoi le modèle l'a reconnu** -- Une série jeune, et volontairement exposée : elle prend un problème que le reste du dépôt aborde par le formalisme -- la détection de sophismes -- et l'attaque cette fois par le modèle de langage, en s'imposant de rendre compte de sa décision. La question directrice n'est pas « le modèle classe-t-il bien ? » mais **« qu'a-t-il appris au juste ? »** : distinguer ce qu'un *fine-tuning* mémorise (le motif de raisonnement « du général au particulier ») de ce qu'un *post-training* sait réemployer sur des cas inédits. Le verdict est arbitré par des autoencodeurs parcimonieux entraînés sur le modèle lui-même -- ce qui fait de cette série le prolongement appliqué de la strate 6 du banc **ICT**, et son critère de succès déclaré : sans SAE disponibles sur au moins trois tailles de modèle, le pivot interprétabilité n'est pas tenu, et l'EPIC l'écrit noir sur blanc plutôt que de reformuler le succès après coup. La vraie difficulté est celle des **données**, et la série la traite en premier plutôt qu'en note de bas de page : un petit corpus d'amorçage, puis deux sources d'une autre échelle -- les corpus académiques annotés et surtout un corpus **synthétique** engendré par le produit cartésien des cartes **Argumentum** (167 scénarios de discours croisés avec 1 408 sophismes). Les deux notebooks en ligne publient un résultat négatif : le [paysage des jeux de données](MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb) confronte les corpus académiques disponibles en accès réel, l'[écart de couverture taxonomique](MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb) mesure ce qu'ils couvrent effectivement de la taxonomie Argumentum -- et la réponse est : une petite part, très inégalement répartie. Sous-série de GenAI depuis la tranche 1 de #13581 (2026-08-30) -- voir `docs/notebook-metadata/production-scope.md` pour le périmètre in-scope.
+**[FallacyDetection](MyIA.AI.Notebooks/GenAI/FallacyDetection/README.md) -- reconnaître un sophisme, et savoir pourquoi le modèle l'a reconnu** -- Une série jeune, et volontairement exposée : elle prend un problème que le reste du dépôt aborde par le formalisme -- la détection de sophismes -- et l'attaque cette fois par le modèle de langage, en s'imposant de rendre compte de sa décision. La question directrice n'est pas « le modèle classe-t-il bien ? » mais **« qu'a-t-il appris au juste ? »** : distinguer ce qu'un *fine-tuning* mémorise (le motif de raisonnement « du général au particulier ») de ce qu'un *post-training* sait réemployer sur des cas inédits. Le verdict est arbitré par des autoencodeurs parcimonieux entraînés sur le modèle lui-même -- ce qui fait de cette série le prolongement appliqué de la strate 6 du banc **ICT**, et son critère de succès déclaré : sans SAE disponibles sur au moins trois tailles de modèle, le pivot interprétabilité n'est pas tenu, et l'EPIC l'écrit noir sur blanc plutôt que de reformuler le succès après coup. La vraie difficulté est celle des **données**, et la série la traite en premier plutôt qu'en note de bas de page : un petit corpus d'amorçage, puis deux sources d'une autre échelle -- les corpus académiques annotés et surtout un corpus **synthétique** engendré par le produit cartésien des cartes **Argumentum** (167 scénarios de discours croisés avec 1 408 sophismes). Les deux notebooks en ligne publient un résultat négatif : le [paysage des jeux de données](MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb) confronte les corpus académiques disponibles en accès réel, l'[écart de couverture taxonomique](MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb) mesure ce qu'ils couvrent effectivement de la taxonomie Argumentum -- et la réponse est : une petite part, très inégalement répartie. Sous-série de GenAI ; le périmètre in-scope est documenté dans `docs/notebook-metadata/production-scope.md`.
+
+**Trois sections plus jeunes complètent la série** -- [HumorDetection](MyIA.AI.Notebooks/GenAI/HumorDetection/README.md), série sœur de FallacyDetection, construit un corpus d'humour annoté par plusieurs annotateurs, avec une typologie par forme et un accord inter-annotateurs mesuré et committé ; [Security](MyIA.AI.Notebooks/GenAI/Security/README.md) distille l'oversight scalable, le contrôle par interprétabilité, la surface d'attaque des outils d'agents (injection par description, rug pull, collision de noms) et la red team au-delà de l'injection ; [activites](MyIA.AI.Notebooks/GenAI/activites/README.md) rassemble les activités de cours -- activités d'IA générale et TP GenAI d'équipe, chacune renvoyant à la série du dépôt qui enseigne la notion.
 
 ### QuantConnect -- Trading algorithmique
 
@@ -377,11 +421,19 @@ Cette série dialogue avec **Probas** et **GameTheory**, dont elle partage les c
 
 Python | [README détaillé](MyIA.AI.Notebooks/IIT/README.md)
 
+### Physique -- Des modèles aux calculs vérifiables
+
+Comment savoir si un calcul physique représente bien le phénomène annoncé ? Cette famille part de lois de conservation, de symétries et d'intégrales de Feynman pour construire des calculs dont on peut examiner les hypothèses, les références et les limites. Six branches ouvrent chacune une question : **Numérique** produit un choc de Burgers dont la vitesse théorique (0,5 pour les états uL=1, uR=0) sert de référence aux flux Godunov et Rusanov ; **Jauge** relie symétrie et conservation jusqu'aux boucles de Wilson sur réseau U(1) compact, contrôlées contre une référence exacte ; **Intégrales** compare les voies de calcul d'amplitudes -- triangle scalaire et valeur spéciale, sunrise et sa courbe elliptique, bulle et sa divergence ultraviolette ; **Constructeur** reformule des lois en tâches possibles ou impossibles (conservation, non-clonage, témoin de non-classicité) ; **Chaînes** lit une prépublication informationnelle avec la distinction Mesuré/Cité/Ouvert ; **InformationQuantique** calcule PPT, distillation et canaux à rupture d'intrication sur des matrices explicites.
+
+Une solution analytique, une identité symbolique, une simulation et la reproduction d'un résultat publié apportent des contrôles différents -- apprendre à les distinguer fait partie du cours. Il n'y a pas de séquence unique imposée entre les branches : le public va de la Licence (Numérique, Jauge) à la Recherche (Chaînes), et le pont vers [Probas/Applications](MyIA.AI.Notebooks/Probas/Applications/README.md) -- marches de Pólya et intégrales de Watson -- relie fonctions de Green physiques et probabilistes.
+
+Python | [README détaillé](MyIA.AI.Notebooks/Physique/README.md)
+
 ### CaseStudies -- Études de cas interdisciplinaires
 
 Que se passe-t-il quand on cesse d'étudier les techniques en silos ? L'IA réelle ne fonctionne presque jamais avec un seul paradigme : un assistant de diagnostic combine des règles symboliques, des modèles probabilistes, de la recherche heuristique et des contraintes formelles. Cette série, conçue comme un devoir intégrateur de fin de cycle, prend trois problèmes métier -- un diagnostic médical, une planification oncologique et un dispatch énergétique -- et y compose plusieurs solveurs en un seul système décisionnel cohérent. Son fil conducteur est l'architecture hybride en couches, et l'idée que l'**ordre de composition** importe autant que les briques elles-mêmes.
 
-**Composer les paradigmes en cascade -- l'architecture hybride** -- Chaque projet empile cinq couches : des connaissances métier (ontologies OWL, règles), un filtre de contraintes dures (CSP, SMT, OR-Tools), une modélisation de l'incertitude (bayésien, Pyro, Infer.NET), une optimisation (recherche A-star, algorithme génétique, et au-delà le renforcement) et une décision finale expliquée. On filtre avant d'optimiser, on modélise l'aléatoire avant de valider sous contraintes : le [Diagnostic Medical](MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/README.md) articule recherche informée, algorithme génétique et validation par solveur Z3 ; l'[Planification Oncologie](MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/README.md) marie ontologie, planification CP-SAT et inférence probabiliste ; le [SmartGrid Energy](MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/README.md) traite l'*unit commitment / dispatch* (CC3 EPF) en combinant optimisation CP-SAT (centrales pilotables, mix renouvelable incertain), raisonnement bayésien (risque de défaillance) et arbitrage multi-objectif (coût vs émissions). Aucune couche ne suffit seule, et c'est tout l'enseignement.
+**Composer les paradigmes en cascade -- l'architecture hybride** -- Chaque projet empile cinq couches : des connaissances métier (ontologies OWL, règles), un filtre de contraintes dures (CSP, SMT, OR-Tools), une modélisation de l'incertitude (bayésien, Pyro, Infer.NET), une optimisation (recherche A-star, algorithme génétique, et au-delà le renforcement) et une décision finale expliquée. On filtre avant d'optimiser, on modélise l'aléatoire avant de valider sous contraintes : le [Diagnostic Medical](MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/README.md) articule recherche informée, algorithme génétique et validation par solveur Z3 ; l'[Planification Oncologie](MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/README.md) marie ontologie, planification CP-SAT et inférence probabiliste ; le [SmartGrid Energy](MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/README.md) traite l'*unit commitment / dispatch* (CC3 EPF) en combinant optimisation CP-SAT (centrales pilotables, mix renouvelable incertain), raisonnement bayésien (risque de défaillance) et arbitrage multi-objectif (coût vs émissions). Aucune couche ne suffit seule, et c'est tout l'enseignement.
 
 **Le jumeau numérique -- un patient simulé pour décider sans risque** -- Les deux projets reposent sur un modèle de patient simulé : un objet logiciel qui représente un état clinique et réagit aux interventions proposées. Ce pattern de jumeau numérique, devenu central en santé numérique comme en industrie, permet de tester des scénarios de traitement sans toucher au patient réel. La pédagogie privilégie l'autonomie : chaque projet fournit un template étudiant exécutable de bout en bout -- y compris lorsque les exercices ne sont pas complétés -- et une solution de référence pour s'autoévaluer.
 
@@ -389,15 +441,21 @@ Le choix du médical est pédagogique, pas exclusif : la même architecture en c
 
 Python | [README détaillé](MyIA.AI.Notebooks/CaseStudies/README.md)
 
+### Symmetry -- Art génératif de symétrie
+
+Classer les groupes de symétrie du plan en les dessinant : chaque carnet de cette série tire un **motif de base au hasard** et l'applique par les opérations d'un groupe pour rendre visible ce que la cristallographie compte -- les 7 groupes de frieze (1D), puis les 17 groupes de wallpaper (2D) et les groupes de rosettes. Le premier carnet couvre les friezes ; le parcours prévu continue vers les wallpapers. L'art génératif n'y est pas une décoration : le motif aléatoire garantit que chaque exécution dessine une classification différente des mêmes symétries, et les illustrations ne se répètent jamais. La série est une ré-implémentation indépendante en Python natif de l'idée d'un coloring book de théorie des groupes -- la classification des groupes est un fait mathématique, le projet d'origine est cité comme inspiration -- et ne dépend que de numpy et matplotlib.
+
+Python | [README détaillé](MyIA.AI.Notebooks/Symmetry/README.md)
+
 ### cross-series -- Applications transverses
 
 Et après le notebook ? Le répertoire `cross-series/` rassemble ce qui ne tient dans aucune série parce que cela les traverse toutes -- applications complètes, socle partagé, outillage de la collection elle-même.
 
 **[`matching-cv`](MyIA.AI.Notebooks/cross-series/matching-cv/README.md) -- un problème, trois lectures** -- Une application web Flask qui confronte trois façons d'apparier un CV à une offre d'emploi : le comptage de mots-clés comme référence transparente, la similarité sémantique par plongements avec cache vectoriel (issue de **GenAI**), et l'appariement stable de Gale-Shapley (rencontré en **GameTheory** et prouvé en Lean dans `game_theory_lean`). La leçon n'est pas qu'un algorithme gagne : c'est que **le « meilleur » appariement dépend du critère**, le meilleur score individuel n'étant pas l'affectation globalement stable -- la différence, rendue visible sur les mêmes données, entre optimum local et stabilité collective. La même démarche que le banc d'essai du **Sudoku**, transposée à une application déployable avec ses tests et son interface.
 
-**[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
+**[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-CSharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](dotnet/MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
 
-**`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` (33 CSV, 24 470 cellules de notebooks) ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
+**`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
 
 [README détaillé](MyIA.AI.Notebooks/cross-series/README.md)
 
@@ -410,18 +468,22 @@ CoursIA/
   MyIA.AI.Notebooks/          Notebooks interactifs, organisés par série
     Search/                    Algorithmes de recherche (Python, C#)
     Sudoku/                    Résolution multi-paradigme (Python, C#)
+    Complexity/                Théorie de la complexité (Python, C#)
+    Compression/               Compression de l'information (Python, C#, Lean 4)
     SymbolicAI/                IA symbolique (Python, Lean 4, C#)
       Tweety/ SemanticWeb/ Lean/ SMT/ Planners/ SmartContracts/ ArgumentAnalysis/ SymbolicLearning/
     Probas/                    Programmation probabiliste (C#, Python)
     GameTheory/                Théorie des jeux (Python, Lean 4)
+      Dynamics/ Coalitions/ Metajeux/ SocialChoice/
     ML/                        Machine Learning (C#, Python)
+    NLP/                       Traitement automatique des langues (Python, C#)
     RL/                        Reinforcement Learning (Python)
     GenAI/                     IA générative (Python, C#)
-      00-GenAI-Environment/ Image/ Audio/ Video/ Texte/ SemanticKernel/ FineTuning/ PostTraining/
+      00-GenAI-Environment/ Image/ Audio/ Video/ 3D/ Texte/ SemanticKernel/ FineTuning/ PostTraining/
       Plateformes-Conversationnelles/ Vibe-Coding/ RAG-et-Memoire-Semantique/ CaseStudies/ tutorials/
-      Aspire/                  Pile GenAI orchestrée en C#/.NET (AppHost Aspire)
-      CopilotSDK/              Agents programmables avec le SDK GitHub Copilot
-      EFCore/                  Accès aux données .NET vérifié à la compilation
+      FallacyDetection/ HumorDetection/ Security/ activites/
+      Integrations-DotNet/     Hub des bindings .NET GenAI
+        Aspire/ Orleans/ CopilotSDK/ Scrutor/ 01-EFCore-Requetes-Compilees.ipynb
     QuantConnect/              Trading algorithmique (Python)
       Python/                  Notebooks pédagogiques
       research/                Recherche standalone locale (yfinance/pandas)
@@ -432,18 +494,24 @@ CoursIA/
     cross-series/              Applications transverses multi-domaines (Python)
       matching-cv/ socle-metadata-driven/ i18n/
     IIT/                       Information intégrée + série ICT (Python)
+    Physique/                  Calculs physiques vérifiables (Python)
+    Symmetry/                  Art génératif de symétrie (Python)
     Config/                    Configuration API
 
   scripts/                     Validation, exécution, analyse
+    notebook_tools/            CLI multi-série : validate, execute, analyze, skeleton, check-env
+    genai-stack/               Pile GenAI Docker (CLI genai.py) et sa validation
+  .claude/                     Harnais des agents : agents/, skills/, rules/
   docs/                        Documentation pérenne (procédures, inventaires, leçons consolidées)
   translations/                Corpus de traduction des notebooks (inventaire et statut dans son README)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
-  GradeBookApp/                Notation étudiants
-  GradeBookApp.Tests/          Tests du moteur de notation
-  MyIA.AI.Shared/              Bibliothèque C# partagée
-  MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
-  MyIA.Trading.Converter/      Conversion de formats de données de trading
+  dotnet/                      Projets .NET (moteur de notation, bibliothèque partagée, trading)
+    GradeBookApp/              Notation étudiants (pipelines et données privés sur GDrive)
+    GradeBookApp.Tests/        Tests du moteur de notation
+    MyIA.AI.Shared/            Bibliothèque C# partagée
+    MyIA.AI.Shared.Tests/      Tests de la bibliothèque partagée
+    MyIA.Trading.Converter/    Conversion de formats de données de trading
   THIRD_PARTY_NOTICES.md       Attributions des sources et composants tiers
 ```
 
@@ -454,7 +522,7 @@ CoursIA/
 ### Prérequis
 
 - Python 3.10+ avec pip
-- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
+- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore dotnet/MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
 - VS Code avec extensions Python, Jupyter, .NET Interactive
 - WSL sous Windows uniquement (pour Lean et certains outils SymbolicAI) ; sous Linux ou macOS, voir [setup-linux-macos.md](docs/reference/setup-linux-macos.md)
 - Docker + GPU (optionnel, pour GenAI avancé)
@@ -479,7 +547,7 @@ python -m ipykernel install --user --name=coursia --display-name "Python (CoursI
 # (cf docs/reference/kernels-runtime.md) ; ce build tourne sur .NET 10.
 dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 
 # 5. Dépendances de la série visée (chaque série porte son requirements.txt)
 pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
@@ -511,7 +579,7 @@ s'installent directement via leur `requirements.txt`.
 
 | Série | Notebook de mise en route | Préparation dédiée |
 |-------|---------------------------|--------------------|
-| GenAI | `GenAI/00-GenAI-Environment/` (6 notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
+| GenAI | `GenAI/00-GenAI-Environment/` (notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
 | GameTheory | `GameTheory/GameTheory-01-Setup-Python.ipynb` | `GameTheory/scripts/setup_wsl_openspiel.sh`, `GameTheory/scripts/setup_wsl_lean4.sh`, `GameTheory/scripts/setup_lean4_kernel.ps1` |
 | Sudoku | `Sudoku/Sudoku-00-Environment-CSharp.ipynb` | kernel .NET Interactive |
 | Probas | `Probas/Infer/Infer-01-Setup.ipynb`, `Probas/PyMC/PyMC-01-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
@@ -525,6 +593,11 @@ s'installent directement via leur `requirements.txt`.
 | IIT | `requirements.txt` | `IIT/scripts/setup_pyphi_env.ps1` |
 | GenAI / Aspire | `GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb` | SDK .NET 10 + CLI Aspire (`dotnet tool install -g Aspire.Cli`) ; Docker démarré |
 | GenAI / FallacyDetection | -- (kernel Python de base) | `scripts/fallacy_detection/extract_jessynoo_fallacy.py` (stdlib seule) |
+| Complexity | -- (kernel Python de base) | socle `numpy`/`matplotlib` ; `scipy`/HiGHS pour 06d, `stim` optionnel |
+| Compression | -- (kernel Python de base) | socle `numpy`/`matplotlib` ; `torch`/`pandas` pour 05 ; LLM local (vLLM) pour 07/07b |
+| NLP | -- (kernel Python de base) | `spacy` + modèle `fr_core_news_sm`, `nltk`, `hmmlearn`, `sklearn-crfsuite`, `scikit-learn` (table du README de la série) |
+| Physique | -- (kernel Python de base) | `numpy scipy sympy matplotlib mpmath` (recette venv dans le README de la série) |
+| Symmetry | -- (kernel Python de base) | `numpy`, `matplotlib` |
 | Search / RL / CaseStudies | `requirements.txt` | -- |
 | cross-series | `requirements.txt` | `cross-series/matching-cv/scripts/install_deps.sh` |
 
@@ -581,6 +654,8 @@ Limitations connues : les notebooks C# avec `#!import` nécessitent une exécuti
 ## Infrastructure Docker
 
 Pour les notebooks GenAI avancés utilisant des modèles locaux (Qwen Image Edit, ComfyUI Video, etc.), une infrastructure Docker avec support GPU est fournie.
+
+La pile applicative des carnets : APIs OpenAI et Anthropic, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ et .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023). Modèles, quantification et ventilation GPU par service : [docs/genai/genai-services.md](docs/genai/genai-services.md).
 
 Services disponibles (sous `docker-configurations/services/`, 19 dossiers) : Qwen Image Edit (~29 Go VRAM), ComfyUI Video (~12 Go), Stable Diffusion Forge (~10 Go), Whisper (STT, 2 services), MusicGen, TTS (multi-engine : Kokoro, FishAudio, autres, via `tts-api`), Demucs.
 
@@ -677,6 +752,8 @@ Vous pouvez contribuer de deux façons :
 
 Le [guide de contribution](CONTRIBUTING.md) détaille le processus, les validations et l'accompagnement proposé par les mainteneurs et leurs agents.
 
+La documentation (README, `docs/`) est écrite en français ; les commentaires de code peuvent être en français ou en anglais.
+
 ## Licence
 
 Ce projet est sous licence MIT - voir [LICENSE](LICENSE).
@@ -688,11 +765,11 @@ ni données personnelles issues des processus privés d'enseignement ou de notat
 (listes de classe, adresses e-mail, identifiants scolaires).
 
 Les pipelines et données de notation vivent sur un stockage privé hors dépôt ; seul le
-[moteur de notation générique](GradeBookApp/) est public, vide de données. Détails et
+[moteur de notation générique](dotnet/GradeBookApp/) est public, vide de données. Détails et
 posture PII : [PRIVACY.md](PRIVACY.md).
 
 ---
 
 Repository : [github.com/jsboige/CoursIA](https://github.com/jsboige/CoursIA)
 
-<!-- README-DATE: 2026-08-31 -->
+<!-- README-DATE: 2026-11-17 -->

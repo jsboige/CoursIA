@@ -1,7 +1,7 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,8837473a,markdown,fr,6b6bde40013a5118,"# ML-01 (Python) : Introduction au Machine Learning avec scikit-learn
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,8837473a,markdown,fr,8fcf073d9746f726,"# ML-01 (Python) : Introduction au Machine Learning avec scikit-learn
 
-Ce notebook est le **jumeau Python** de [ML-01-Introduction.ipynb](ML-01-Introduction.ipynb)
+Ce notebook est le **jumeau Python** de [ML-01-Introduction-CSharp.ipynb](ML-01-Introduction-CSharp.ipynb)
 (.NET / ML.NET). Il reprend exactement les trois exemples guidés et les trois exercices
 du notebook C#, en utilisant la bibliothèque canonique **scikit-learn**.
 
@@ -15,7 +15,7 @@ l'autre côté Python. Comparer les deux sur les mêmes exemples pédagogiques p
 3. disposer d'une version exécutable sans installation .NET.
 
 > Épic #4956 — Parité .NET ⇄ Python des séries de notebooks. Convention : kernel `python3`,
-> prose FR-first, 3 exercices stub, exécution réelle scikit-learn.",,,,,,,,6b6bde40013a5118,,,,,,,,,,,,,,,
+> prose FR-first, 3 exercices stub, exécution réelle scikit-learn.",,,,,,,,8fcf073d9746f726,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,3e76a2f7,markdown,fr,4cb9f14c32b934dd,"## Quelles sont les étapes à suivre ?
 
 Un workflow de Machine Learning comporte toujours les mêmes étapes, quel que soit le
@@ -41,9 +41,14 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import r2_score, mean_absolute_error, accuracy_score, roc_auc_score
 
 print(""Bibliothèques chargées : numpy,"", np.__version__, ""| sklearn,"", __import__('sklearn').__version__)",,,,,,,,c5c8b3808bf9346b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,84b02fd5,markdown,fr,be5a9867458d339f,"On fixe la **graine** (`42`) pour rendre l'expérience déterministe : les tirages
-aléatoires (s'ils surviennent) reproduiront les mêmes résultats à chaque exécution.",,,,,,,,be5a9867458d339f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,3a07d08a,code,fr,80f20623ee25868d,rng = np.random.default_rng(42),,,,,,,,80f20623ee25868d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,84b02fd5,markdown,fr,198b0c498143b3f4,"On pose la **graine** (`42`) par **convention** de reproductibilité : c'est l'équivalent,
+en Python, du `MLContext(seed: 0)` de ML.NET. Les exemples de ce carnet sont
+**déterministes** (aucun tirage aléatoire) — la graine ne commande donc rien ici ; elle est
+simplement posée pour que TOUTE étape stochastique ultérieure soit reproductible à chaque
+exécution.",,,,,,,,198b0c498143b3f4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,3a07d08a,code,fr,9dd1072c2f66d396,"# Convention de reproductibilité : équivalent ML.NET MLContext(seed: 0).
+# Les exemples de ce carnet sont déterministes — aucun tirage aléatoire à semer.
+print(""Graine posée par convention (42) : équivalent ML.NET MLContext(seed:)."")",,,,,,,,9dd1072c2f66d396,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,233d552c,markdown,fr,93acfeeacdf8d238,"- **Étape 2 :** Définir les structures de données
 
 En ML.NET on définit des classes POCO (`HouseData`, `Prediction`). En Python on travaille
@@ -132,12 +137,13 @@ La prédiction pour 2 500 pieds carrés tombe **entre** les données d'entraîne
 (interpolation) — la zone où le modèle linéaire est le plus fiable. La visualisation
 montre clairement pourquoi les grands points de test (Size ≥ 4) dévient de la droite :
 le vrai prix monte plus vite que la ligne.",,,,,,,,441a3e8843271aab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,a61f1867,markdown,fr,f11a32a2b109c95d,"## Exemple guide 2 : Prédiction du temps de trajet (régression)
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,a61f1867,markdown,fr,6723b02585ad9bab,"## Exemple guide 2 : Prédiction du temps de trajet (régression)
 
 Deuxième exemple de régression : on prédit le **temps de trajet** (en minutes) à partir
 de la **distance** (en km). Cette fois la relation est presque exactement linéaire
-(≈ 3 min/km), ce qui donnera un R² proche de 1.",,,,,,,,f11a32a2b109c95d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,af6c128a,code,fr,ff6a4720dd6ff80f,"trip = np.array([
+(≈ 3 min/km). On mesure le **R²** sur les exemples d'entraînement pour le confirmer :
+1.0 = ajustement parfait, 0.0 = pas mieux que la moyenne.",,,,,,,,6723b02585ad9bab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,af6c128a,code,fr,655bc8b55946cd56,"trip = np.array([
     [5, 15], [10, 30], [14, 41], [20, 60], [26, 79], [32, 95], [40, 121],
 ], dtype=float)
 X_trip = trip[:, 0].reshape(-1, 1)
@@ -146,10 +152,14 @@ y_trip = trip[:, 1]
 model_trip = LinearRegression()
 model_trip.fit(X_trip, y_trip)
 
+# R² sur les 7 exemples d'entraînement : la droite ajuste-t-elle la donnée ?
+r2_trip = r2_score(y_trip, model_trip.predict(X_trip))
+
 distance_new = np.array([[25.0]])
 temps_prevu = model_trip.predict(distance_new)
 print(f""Temps prévu pour 25 km : {temps_prevu[0]:.1f} minutes"")
-print(f""Pente apprise : {model_trip.coef_[0]:.3f} min/km"")",,,,,,,,ff6a4720dd6ff80f,,,,,,,,,,,,,,,
+print(f""Pente apprise : {model_trip.coef_[0]:.3f} min/km"")
+print(f""R² sur l'entraînement : {r2_trip:.4f}"")",,,,,,,,655bc8b55946cd56,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,32b4b30b,markdown,fr,372d8688ce6d1aab,"Le modèle trouve une pente d'environ **3 minutes par kilomètre**, ce qui correspond à
 une vitesse moyenne de 20 km/h — cohérent pour un trajet urbain avec feux et stops. La
 prédiction pour 25 km (≈ 75 min) est fiable car 25 km est **dans la plage** observée
@@ -251,7 +261,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,13326d67,code,fr,1a9
 # model = LinearRegression().fit(X, y)          # TODO étudiant
 # pred = model.predict([[5, 2, 2]])             # TODO étudiant
 print(""Exercice à compléter : régression multi-features (salaire)"")",,,,,,,,1a9be0a92ccb57c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,fb031956,markdown,fr,ef1993009de9c0f0,"## Résumé
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,fb031956,markdown,fr,b32fe90bf749b4b7,"## Résumé
 
 Vous avez parcouru le **workflow complet** d'un projet de Machine Learning avec
 scikit-learn :
@@ -270,18 +280,18 @@ scikit-learn :
 binaire (transactions). Les concepts sont **identiques** entre .NET et Python — seules
 les API et les solveurs par défaut diffèrent.
 
-**Jumeau .NET** : [ML-01-Introduction.ipynb](ML-01-Introduction.ipynb). Autres jumeaux
+**Jumeau .NET** : [ML-01-Introduction-CSharp.ipynb](ML-01-Introduction-CSharp.ipynb). Autres jumeaux
 Python de la série : [ML-05-TimeSeries-Python](ML-05-TimeSeries-Python.ipynb),
 [ML-07-Recommendation-Python](ML-07-Recommendation-Python.ipynb),
-[ML-09-Anomaly-Detection-Python](ML-09-Anomaly-Detection-Python.ipynb).",,,,,,,,ef1993009de9c0f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,62b801ba,markdown,fr,f5cab56567b21b3d,"## Références
+[ML-09-Anomaly-Detection-Python](ML-09-Anomaly-Detection-Python.ipynb).",,,,,,,,b32fe90bf749b4b7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,62b801ba,markdown,fr,9063123c7579a138,"## Références
 
 - scikit-learn — documentation officielle : https://scikit-learn.org/stable/
 - `LinearRegression` (OLS) : https://scikit-learn.org/stable/modules/linear_model.html
 - `LogisticRegression` : https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression
 - `permutation_importance` : https://scikit-learn.org/stable/modules/permutation_importance.html
-- Notebook .NET d'origine : [ML-01-Introduction.ipynb](ML-01-Introduction.ipynb) (ML.NET)
-- Épic de parité : issue #4956",,,,,,,,f5cab56567b21b3d,,,,,,,,,,,,,,,
+- Notebook .NET d'origine : [ML-01-Introduction-CSharp.ipynb](ML-01-Introduction-CSharp.ipynb) (ML.NET)
+- Épic de parité : issue #4956",,,,,,,,9063123c7579a138,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-CSharp.ipynb,267c6e0b,markdown,fr,544fcbdf21060b7d,"# ML-01 : Introduction au Machine Learning avec ML.NET
 
 **Navigation** : [Index](README.md) | [Suivant >>](ML-02-Data-Features-CSharp.ipynb)
@@ -1891,15 +1901,16 @@ for xi, t, te in zip(x_pos, train_vals, test_vals):
 plt.tight_layout()
 plt.show()
 ",,,,,,,,aeea1bfdd3be874c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb,68896778,markdown,fr,abf246ee2e2040c2,"### Interprétation — données linéaires : le plancher du bruit
+MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb,68896778,markdown,fr,35cf5ccc312d914f,"### Interprétation — données linéaires : le plancher du bruit
 
 Sur des données **linéaires** (`y = 100x + bruit`), la `LinearRegression`
 atteint le RMSE théorique minimal — le plancher du bruit uniforme,
 `10/sqrt(12) ≈ 2.89` : on ne peut pas faire mieux, seulement aussi bien.
-Le `GradientBoosting` fait à peine mieux ou pareil — sa flexibilité est
-inutile ici : sur un problème linéaire, l'estimateur linéaire est le bon
-choix (plus simple, plus rapide, interprétable). La section suivante
-explique pourquoi le GBM fait parfois *pire*.",,,,,,,,abf246ee2e2040c2,,,,,,,,,,,,,,,
+Le `GradientBoosting`, lui, fait ici nettement **pire** — RMSE test 40.16
+contre 2.90, environ quatorze fois le plancher : sa flexibilité est
+contre-productive sur un problème linéaire, où l'estimateur linéaire est
+le bon choix (plus simple, plus rapide, interprétable). La section
+suivante explique d'où vient cet écart.",,,,,,,,35cf5ccc312d914f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb,709ba1ea,markdown,fr,959ffcf7e763a87b,"## Exemple 2 : Régression non-linéaire — compromis biais-variance
 
 On bascule sur des données **sinusoïdales** : $y = 10 \sin(x) + \text{bruit}$. On compare trois `DecisionTreeRegressor` de profondeur croissante : peu profond (sous-ajustement / underfitting), compromis, très profond (risque de sur-ajustement / overfitting). Cela illustre le **compromis biais-variance** et l'équivalent du paramètre `numberOfLeaves` / `max_depth` de LightGbm.
@@ -2050,9 +2061,11 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb,d0573b24,mark
 **Jumeau .NET** : [ML-03-Entrainement-AutoML-CSharp.ipynb](ML-03-Entrainement-AutoML-CSharp.ipynb) (ML.NET, API équivalente).
 
 ",,,,,,,,9a627783c40b042a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,5bde7d0b,markdown,fr,24c332e25e7db400,"# ML-04 : Évaluation des modèles (Python / sklearn)
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,5bde7d0b,markdown,fr,bc22bc238aa6f401,"# ML-04 : Évaluation des modèles (Python / sklearn)
 
-**Navigation** : [Index](README.md) | [<< ML-03](ML-03-Entrainement&AutoML-Python.ipynb) | [Suivant >>](ML-05-TimeSeries-Python.ipynb)
+**Navigation** : [Index](README.md) | [<< ML-03](ML-03-Entrainement-AutoML-Python.ipynb) | [Suivant >>](ML-05-TimeSeries-Python.ipynb)
+
+**Approfondissement** : [ML-04b — Validité des comparaisons de modèles](ML-04b-ModelComparison-Validity-Python.ipynb).
 
 ## Objectifs d'apprentissage
 
@@ -2061,31 +2074,31 @@ A la fin de ce notebook, vous saurez :
 2. **Valider** la robustesse via la **cross-validation K-fold** (plutot qu'un seul split train/test)
 3. **Expliquer** un modèle avec la **Permutation Feature Importance** (PFI)
 4. **Attribuer** chaque prédiction feature par feature avec **SHAP** (Tree SHAP, additivité exacte)
-4. **Comparer** systematiquement plusieurs algorithmes via `GridSearchCV` (equivalent AutoML)
+4. **Comparer** systematiquement plusieurs algorithmes via `GridSearchCV` (équivalent AutoML)
 
 ### Parite ML.NET <-> Python
 
-Ce notebook est le **jumeau Python** de [ML-04-Evaluation.ipynb](ML-04-Evaluation.ipynb) (ML.NET / C#). Il couvre les mêmes concepts (metriques, cross-validation, importance des variables) avec **scikit-learn** au lieu de `Microsoft.ML`.
+Ce notebook est le **jumeau Python** de [ML-04-Evaluation-CSharp.ipynb](ML-04-Evaluation-CSharp.ipynb) (ML.NET / C#). Il couvre les mêmes concepts (metriques, cross-validation, importance des variables) avec **scikit-learn** au lieu de `Microsoft.ML`.
 
-| Concept ML.NET (C#) | Equivalent Python (sklearn) |
+| Concept ML.NET (C#) | Équivalent Python (sklearn) |
 |---------------------|------------------------------|
 | `mlContext.Regression.Evaluate` | `sklearn.metrics` (r2_score, mae, rmse) |
 | `Regression.CrossValidate` | `sklearn.model_selection.cross_validate` |
 | `PermutationFeatureImportance` | `sklearn.inspection.permutation_importance` |
 | `mlContext.AutoML` (sweep) | `sklearn.model_selection.GridSearchCV` |
-| Feature Contribution Calculation | (pas d'equivalent sklearn direct ; SHAP = extension) |
+| Feature Contribution Calculation | (pas d'équivalent sklearn direct ; SHAP = extension) |
 
 ### Prerequis
-- ML-02-Data&Features-Python et ML-03-Entrainement&AutoML-Python completes
+- ML-02-Data-Features-Python et ML-03-Entrainement-AutoML-Python completes
 - Python 3.10+ avec `scikit-learn`, `pandas`, `numpy`
 
 ### Duree estimee : 45-60 minutes
 
 ***
 
-## Preparation : charger les données et entrainer un modèle de référence
+## Preparation : charger les données et entraîner un modèle de référence
 
-Nous reutilisons le dataset **taxi-fare** (cf ML-02-Python). Objectif : prédire `fare_amount`. Nous entrainons d'abord un modèle de référence (regression lineaire), puis nous l'evaluons rigoureusement.",,,,,,,,24c332e25e7db400,,,,,,,,,,,,,,,
+Nous reutilisons le dataset **taxi-fare** (cf ML-02-Python). Objectif : prédire `fare_amount`. Nous entrainons d'abord un modèle de référence (regression lineaire), puis nous l'evaluons rigoureusement.",,,,,,,,bc22bc238aa6f401,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,b0939107,code,fr,c91f8f290eadba67,"# Imports
 import pandas as pd
 import numpy as np
@@ -2173,11 +2186,11 @@ print()
 print(f""Lecture : le modele explique {r2*100:.1f}% de la variance des tarifs."")
 print(f""En moyenne, il se trompe de {mae:.2f} $ sur la prediction d'un tarif."")
 ",,,,,,,,f120ce508d4690fa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,f7545579,markdown,fr,5f4d5c821678e5f0,"## Cross-Validation K-fold : une évaluation plus robuste
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,f7545579,markdown,fr,d75aafad41af59fd,"## Cross-Validation K-fold : une évaluation plus robuste
 
-Un seul split train/test est **bruite** : la metrique depend du tirage aléatoire. La **cross-validation K-fold** entraene et evalue le modèle K fois sur des splits différents, puis on moyenne. C'est l'etalon-or pour estimer la performance **generalisable**.
+Un seul split train/test est **bruite** : la métrique depend du tirage aléatoire. La **cross-validation K-fold** entraene et evalue le modèle K fois sur des splits différents, puis on moyenne. C'est l'etalon-or pour estimer la performance **generalisable**.
 
-En ML.NET : `Regression.CrossValidate`. En sklearn : `cross_validate`.",,,,,,,,5f4d5c821678e5f0,,,,,,,,,,,,,,,
+En ML.NET : `Regression.CrossValidate`. En sklearn : `cross_validate`.",,,,,,,,d75aafad41af59fd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,1d60b8de,code,fr,3215d8ad0f217f4f,"# Cross-validation 5-fold sur le TRAIN set
 cv_results = cross_validate(baseline, X_train, y_train, cv=5,
                             scoring=[""r2"", ""neg_mean_absolute_error"", ""neg_root_mean_squared_error""])
@@ -2214,7 +2227,7 @@ print()
 print(""Lecture : la feature en tete est la plus importante."")
 print(""Permuter cette colonne fait le plus chuter le R2 du modele."")
 ",,,,,,,,8ef1538171744350,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,d6abaa23,markdown,fr,183a76637bcc0231,"### Interpretation - lire les résultats de la PFI
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,d6abaa23,markdown,fr,f843909e9de66ec9,"### Interpretation - lire les résultats de la PFI
 
 La PFI donne un **classement** des features par impact sur la performance :
 
@@ -2226,11 +2239,11 @@ La PFI donne un **classement** des features par impact sur la performance :
 
 ### Feature Contribution Calculation (FCC) - note de parite
 
-Le notebook ML.NET couvre aussi la **Feature Contribution Calculation** (FCC), qui decompose la prédiction **d'une instance** en contributions par feature (explicabilite locale). sklearn n'a pas d'equivalent natif direct ; l'ecosysteme Python utilise **SHAP** (`shap` library) ou **`partial_dependence`** pour cet angle. SHAP est hors scope de ce twin (dépendance externe), mais le concept se transpose directement via SHAP en production.
+Le notebook ML.NET couvre aussi la **Feature Contribution Calculation** (FCC), qui decompose la prédiction **d'une instance** en contributions par feature (explicabilite locale). sklearn n'a pas d'équivalent natif direct ; l'ecosysteme Python utilise **SHAP** (`shap` library) ou **`partial_dependence`** pour cet angle. SHAP est hors scope de ce twin (dépendance externe), mais le concept se transpose directement via SHAP en production.
 
-## Comparer plusieurs algorithmes : GridSearchCV (equivalent AutoML)
+## Comparer plusieurs algorithmes : GridSearchCV (équivalent AutoML)
 
-En ML.NET, `mlContext.AutoML` balaie automatiquement l'espace des algorithmes et hyperparametres. En sklearn, `GridSearchCV` fait de même de facon declarative : on fournit une grille d'hyperparametres, il teste toutes les combinaisons via cross-validation.",,,,,,,,183a76637bcc0231,,,,,,,,,,,,,,,
+En ML.NET, `mlContext.AutoML` balaie automatiquement l'espace des algorithmes et hyperparamètres. En sklearn, `GridSearchCV` fait de même de facon declarative : on fournit une grille d'hyperparamètres, il teste toutes les combinaisons via cross-validation.",,,,,,,,f843909e9de66ec9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,410c9dc1,code,fr,cfb866c26a062791,"# GridSearchCV : comparer RandomForest hyperparametres via CV
 param_grid = {
     ""regressor__n_estimators"": [50, 100],
@@ -2319,23 +2332,23 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,7d27730f,code,fr,65e28
 print(""Exercice a completer : analyse complete duree de trajet"")
 result_duration_analysis = None  # TODO etudiant : remplacer par le R2 final
 ",,,,,,,,65e28f9e85f90ecc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,382f827e,markdown,fr,de26fd90647c187e,"## Resume
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,382f827e,markdown,fr,7cb72f021f6b4497,"## Resume
 
 Dans ce notebook vous avez maitrise l'**évaluation rigoureuse** des modèles de regression avec scikit-learn, en miroir du notebook ML-04 .NET :
 
-1. **Metriques** : R2 (variance expliquee), MAE (erreur moyenne interpretable), RMSE (sensible aux outliers). Trois angles complementaires, jamais un seul.
+1. **Metriques** : R2 (variance expliquee), MAE (erreur moyenne interpretable), RMSE (sensible aux outliers). Trois angles complémentaires, jamais un seul.
 2. **Cross-validation K-fold** : estimer la performance **generalisable** plutot que de se fier a un seul split bruite.
 3. **Permutation Feature Importance** : explicabilite **model-agnostic** - quelles features font vraiment bouger la performance.
 4. **Tree SHAP** : decomposer chaque prediction en contributions par feature, avec additivite exacte -- une attribution par instance la ou la PFI ne donne qu'un classement global.
-5. **GridSearchCV** : comparer systematiquement algorithmes + hyperparametres via CV (equivalent AutoML ML.NET).
+5. **GridSearchCV** : comparer systematiquement algorithmes + hyperparamètres via CV (équivalent AutoML ML.NET).
 
 ### Parite conceptuelle cle
 
-L'évaluation rigoureuse suit le **même cheminement** en ML.NET et sklearn : (1) split train/test, (2) entrainer un baseline, (3) metriques sur test, (4) cross-validation pour robustesse, (5) explicabilite (PFI, puis attribution par instance avec Tree SHAP), (6) sweep hyperparametres (AutoML / GridSearchCV). Les API différent mais la **discipline methodologique** est identique.
+L'évaluation rigoureuse suit le **même cheminement** en ML.NET et sklearn : (1) split train/test, (2) entraîner un baseline, (3) metriques sur test, (4) cross-validation pour robustesse, (5) explicabilite (PFI, puis attribution par instance avec Tree SHAP), (6) sweep hyperparamètres (AutoML / GridSearchCV). Les API différent mais la **discipline methodologique** est identique.
 
 ### Prochaine étape
 
-[ML-05-TimeSeries-Python.ipynb](ML-05-TimeSeries-Python.ipynb) aborde les **series temporelles** (equivalent SSA ML.NET).
+[ML-05-TimeSeries-Python.ipynb](ML-05-TimeSeries-Python.ipynb) aborde les **series temporelles** (équivalent SSA ML.NET).
 
 ## Références
 
@@ -2343,11 +2356,11 @@ L'évaluation rigoureuse suit le **même cheminement** en ML.NET et sklearn : (1
 - [scikit-learn cross_validate](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html)
 - [scikit-learn permutation_importance](https://scikit-learn.org/stable/modules/generated/sklearn.inspection.permutation_importance.html)
 - [scikit-learn GridSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html)
-- Notebook ML.NET source : [ML-04-Evaluation.ipynb](ML-04-Evaluation.ipynb)
+- Notebook ML.NET source : [ML-04-Evaluation-CSharp.ipynb](ML-04-Evaluation-CSharp.ipynb)
 - Epic parite .NET <-> Python : #4956
 
 
-",,,,,,,,de26fd90647c187e,,,,,,,,,,,,,,,
+",,,,,,,,7cb72f021f6b4497,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-CSharp.ipynb,5b0e76a5,markdown,fr,784cef2d0fc121b0,"# ML-04 : Evaluation des modèles
 
 **Navigation** : [Index](README.md) | [<< ML-03 Entrainement-AutoML](ML-03-Entrainement-AutoML-CSharp.ipynb) | [Suivant >> ML-05 TimeSeries](ML-05-TimeSeries-CSharp.ipynb)
@@ -2910,11 +2923,13 @@ Console.WriteLine($""Moyennes - R2: {avgRSquared:F4}, RMSE: {avgRMSE:F2}, MAE: {
 Console.WriteLine(""Top 2 Features (PFI, Mean ± StdErr) - a implementer"");
 
 // TODO: Interpretez les résultats - quelles features sont les plus pertinentes pour predire la duree ?",,,,,,,,0e31cf7900965395,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,41d14f6b,markdown,fr,119c7459e0e9d74c,"# ML-05 (Python) : Prévision de séries temporelles (STL + SARIMA)
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,41d14f6b,markdown,fr,61708d2f2d4fcbea,"# ML-05 (Python) : Prévision de séries temporelles (STL + SARIMA)
 
-**Navigation** : [Index](README.md) | [<< ML-04-Evaluation](ML-04-Evaluation-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-05-TimeSeries.ipynb) | [Suivant >> ML-06-ONNX](ML-06-ONNX-Python.ipynb)
+**Navigation** : [Index](README.md) | [<< ML-04-Evaluation](ML-04-Evaluation-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-05-TimeSeries-CSharp.ipynb) | [Suivant >> ML-06-ONNX](ML-06-ONNX-Python.ipynb)
 
-> Ce notebook est le **jumeau Python (statsmodels)** de [ML-05-TimeSeries.ipynb](ML-05-TimeSeries.ipynb) (ML.NET `ForecastBySsa`). Il couvre la même pédagogie (décomposition tendance / saisonnalité / bruit, prévision, intervalles de confiance, comparaison de configurations) avec les outils canoniques Python. Contrairement au jumeau .NET (dont les cellules ML.NET nécessitent un environnement SDK complet), **ce notebook s'exécute de bout en bout**.
+**Fondements statistiques** : [ML-05b — Séries temporelles classiques](ML-05b-Series-Temporelles-Classiques-Python.ipynb).
+
+> Ce notebook est le **jumeau Python (statsmodels)** de [ML-05-TimeSeries-CSharp.ipynb](ML-05-TimeSeries-CSharp.ipynb) (ML.NET `ForecastBySsa`). Il couvre la même pédagogie (décomposition tendance / saisonnalité / bruit, prévision, intervalles de confiance, comparaison de configurations) avec les outils canoniques Python. Contrairement au jumeau .NET (dont les cellules ML.NET nécessitent un environnement SDK complet), **ce notebook s'exécute de bout en bout**.
 
 ## Objectifs d'apprentissage
 
@@ -2926,7 +2941,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,41d14f6b,markdown,fr,1
 4. Prévoir l'avenir avec un modèle **SARIMA** (saisonnier)
 5. Évaluer une prévision (RMSE, MAE, **MAPE**) et la comparer à une **baseline**
 6. Interpréter les **intervalles de confiance** des prévisions
-7. Comparer plusieurs configurations et choisir la meilleure",,,,,,,,119c7459e0e9d74c,,,,,,,,,,,,,,,
+7. Comparer plusieurs configurations et choisir la meilleure",,,,,,,,61708d2f2d4fcbea,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,248cce5e,markdown,fr,1926c198832a31bd,"## Introduction au Time Series Forecasting
 
 Le **forecasting** (prévision) de séries temporelles consiste à prédire les valeurs futures d'une variable à partir de ses valeurs passées. Une série temporelle se décompose typiquement en trois composantes :
@@ -2945,7 +2960,7 @@ L'horizon de prévision est le nombre de pas de temps à prédire (ici : 366 jou
 - **statsmodels** (ce notebook) propose la **décomposition STL** (Seasonal-Trend decomposition using Loess, Cleveland 1990) pour *analyser* la série, puis un modèle **SARIMA** (Seasonal ARIMA) pour *prévoir*. SARIMA est l'approche classique et interprétable (Box & Jenkins) ; c'est l'équivalent Python idiomatique d'un forecast saisonnier.
 
 Les deux familles atteignent le même objectif pédagogique : modéliser tendance + saisonnalité pour projeter le futur. SARIMA a l'avantage de fournir naturellement des **intervalles de confiance** et des **métriques d'ajustement** (AIC).",,,,,,,,1926c198832a31bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,919decba,code,fr,6b280f09137ac214,"# Imports : pandas (données), statsmodels (STL + SARIMA), matplotlib (visualisation)
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,919decba,code,fr,6d8041861b3c6db3,"# Imports : pandas (données), statsmodels (STL + SARIMA), matplotlib (visualisation)
 import warnings
 import numpy as np
 import pandas as pd
@@ -2956,8 +2971,13 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 warnings.filterwarnings(""ignore"", category=FutureWarning, module=""statsmodels"")
 warnings.filterwarnings(""ignore"", message=""No frequency"", category=UserWarning, module=""statsmodels"")
 warnings.filterwarnings(""ignore"", message=""No supported index"", category=UserWarning, module=""statsmodels"")
+# ConvergenceWarning de la config C : le texte de l'avertissement embarque le
+# chemin d'installation de la machine d'execution (fuite MACHINE_PATH dans les
+# sorties commitees, garde Output-failure ratchet). Le constat -- la config C
+# n'atteint pas la convergence du solveur par defaut -- est rappele en Partie 7.
+warnings.filterwarnings(""ignore"", message=""Maximum Likelihood optimization failed to converge.*"")
 plt.rcParams[""figure.dpi""] = 110
-print(""pandas, numpy, statsmodels (STL + SARIMAX), matplotlib charges"")",,,,,,,,6b280f09137ac214,,,,,,,,,,,,,,,
+print(""pandas, numpy, statsmodels (STL + SARIMAX), matplotlib charges"")",,,,,,,,6d8041861b3c6db3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,e068e1a0,markdown,fr,4ac0c5792a35cb3e,"## Partie 1 : Chargement et exploration des données
 
 Le jeu de données `daily-sales.csv` contient les ventes quotidiennes d'un commerce sur **2 ans** (2023-2024), avec les colonnes `Date`, `Year`, `Month`, `Day`, `DayOfWeek`, `Sales`. On charge la série et on l'indexe par date. On fixe explicitement la fréquence quotidienne (`asfreq(""D"")`) : la série est continue (731 jours consécutifs), donc cela ne crée aucun NaN et évite l'avertissement de statsmodels sur l'absence de fréquence.",,,,,,,,4ac0c5792a35cb3e,,,,,,,,,,,,,,,
@@ -3171,10 +3191,13 @@ for name, (order, seas) in configs.items():
 
 best = min(results, key=lambda k: results[k][0])
 print(f""\nMeilleure config (AIC min) : {best} -> AIC={results[best][0]:.0f}, RMSE={results[best][1]:.2f}"")",,,,,,,,9abb963bdb9524b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,1fe6b743,markdown,fr,b414b93bef843b29,"### Interprétation des résultats
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,1fe6b743,markdown,fr,9ccb10b41885e647,"### Interprétation des résultats
 
-La configuration au plus faible AIC offre le meilleur compromis ajustement / complexité. Le RMSE sur le test confirme (ou non) ce choix : un modèle peut avoir un faible AIC (bon sur l'entraînement) sans généraliser — d'où l'importance de la **validation sur des données tenues hors** (ici 2024). Dans la pratique on utilise aussi la **walk-forward validation** pour évaluer la stabilité de la prévision.",,,,,,,,b414b93bef843b29,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,6b65de27,markdown,fr,11c28aca70d35bca,"## Conclusion et points clés
+La configuration au plus faible AIC offre le meilleur compromis ajustement / complexité. Le RMSE sur le test confirme (ou non) ce choix : un modèle peut avoir un faible AIC (bon sur l'entraînement) sans généraliser — d'où l'importance de la **validation sur des données tenues hors** (ici 2024). Dans la pratique on utilise aussi la **walk-forward validation** pour évaluer la stabilité de la prévision.
+
+**Remarque (convergence du solveur).** Sous la version courante de statsmodels, la configuration C `(2,1,1)(1,1,1,7)` n'atteint pas la convergence de l'optimiseur de vraisemblance en un nombre d'itérations par défaut : ses métriques (AIC, RMSE) sont celles d'un ajustement non convergé. Le classement n'en est pas affecte -- C reste derrière A et B -- mais un AIC calculé sur un ajustement non convergé n'est pas strictement comparable : c'est un critère de plus pour l'écarter du choix final. L'avertissement émis par statsmodels portant le chemin d'installation de la machine qui l'exécute, il est neutralisé dans la cellule d'imports.
+",,,,,,,,9ccb10b41885e647,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,6b65de27,markdown,fr,22f7db39b0b0fc9a,"## Conclusion et points clés
 
 | Concept | Description |
 |---------|-------------|
@@ -3192,7 +3215,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,6b65de27,markdown,fr,1
 - L'**horizon** dégrade la précision : l'intervalle de confiance s'élargit avec le nombre de pas prévus.
 - Le choix des ordres SARIMA se guide par l'**AIC** (sur l'entraînement), confirmé par le **RMSE sur le test** (généralisation).
 
-**Équivalence ML.NET** : ce notebook est le jumeau Python de [ML-05-TimeSeries.ipynb](ML-05-TimeSeries.ipynb). La décomposition STL + SARIMA remplit le même rôle pédagogique que `ForecastBySsa` (tendance + saisonnalité hebdomadaire + intervalles de confiance). L'avantage du jumeau Python : **il s'exécute réellement de bout en bout** (le jumeau .NET documente que ses cellules ML.NET nécessitent un environnement SDK complet pour résoudre les assemblies).",,,,,,,,11c28aca70d35bca,,,,,,,,,,,,,,,
+**Équivalence ML.NET** : ce notebook est le jumeau Python de [ML-05-TimeSeries-CSharp.ipynb](ML-05-TimeSeries-CSharp.ipynb). La décomposition STL + SARIMA remplit le même rôle pédagogique que `ForecastBySsa` (tendance + saisonnalité hebdomadaire + intervalles de confiance). L'avantage du jumeau Python : **il s'exécute réellement de bout en bout** (le jumeau .NET documente que ses cellules ML.NET nécessitent un environnement SDK complet pour résoudre les assemblies).",,,,,,,,22f7db39b0b0fc9a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb,fedfbc9c,markdown,fr,3d3028e28f5828a3,"## Références
 
 - Broomhead, D. S., & King, G. P. (1986). *Extracting qualitative dynamics from experimental data*. Physica D. — la SSA (méthode du jumeau .NET).
@@ -3434,7 +3457,19 @@ var forecastingPipeline = mlContext.Forecasting.ForecastBySsa(
 Console.WriteLine(""\n=== Entraînement du modèle ForecastBySsa ==="");
 var forecaster = forecastingPipeline.Fit(trainData);
 Console.WriteLine(""Modèle entraîné avec succès"");",,,,,,,,2f5693ab72742eeb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,e4581767,markdown,fr,c6cf3a8e6902d2e5,"### Interprétation des paramètres
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,e4581767,markdown,fr,52408afcf13ac3d5,"### Interprétation des paramètres
+
+`ForecastBySsa` repose sur l'**Analyse en Spectres Singuliers** (Singular Spectrum Analysis, SSA). L'idée, en une phrase : **décomposer la fenêtre récente de la série en composantes interprétables — tendance, cycles saisonniers, bruit — puis prolonger ces composantes pour prévoir.**
+
+Concrètement, l'algorithme :
+
+1. **Empile** les fenêtres glissantes de la série en une matrice (c'est le rôle de `windowSize` et `seriesLength`).
+2. **Diagonalise** cette matrice (décomposition en valeurs singulières) pour en extraire des composantes lisses et stables.
+3. **Prolonge** chaque composante de `horizon` pas, puis **les réassemble** pour obtenir la prévision et ses intervalles.
+
+Pourquoi ça colle au forecasting court terme : **aucun feature à fabriquer à la main** — la saisonnalité hebdomadaire (`windowSize: 7`) et la tendance sont capturées directement par la décomposition. C'est aussi sa limite : SSA suppose que **la structure récente persiste**. Un choc qui rompt le motif (promotion, rupture de stock, grève, pandémie) n'est pas dans les composantes apprises, et la prévision s'écarte. C'est ce que les exercices d'anomalie (partie 1) et la comparaison de configurations (partie 7) permettent de sentir.
+
+Les paramètres choisis dans le pipeline :
 
 | Paramètre | Impact |
 |-----------|--------|
@@ -3443,7 +3478,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,e4581767,markdown,fr,c
 | `trainSize: 365` | Apprentissage sur 1 année complète |
 | `horizon: 7` | Prévisions à 7 jours (court terme) |
 
-> **Note** : Ces paramètres peuvent être ajustés selon vos données et vos besoins de prévision.",,,,,,,,c6cf3a8e6902d2e5,,,,,,,,,,,,,,,
+> **Note** : Ces paramètres peuvent être ajustés selon vos données et vos besoins de prévision.",,,,,,,,52408afcf13ac3d5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,ea01317c,markdown,fr,a57743bed4d7285c,"## Partie 4 : Évaluation des prévisions
 
 Évaluons la qualité des prévisions en comparant les valeurs prédites aux valeurs réelles sur l'année 2024.",,,,,,,,a57743bed4d7285c,,,,,,,,,,,,,,,
@@ -3597,7 +3632,15 @@ Console.WriteLine($""\n=== Couverture des intervalles mesurée (niveau nominal 9
 Console.WriteLine($""Horizon 1 : {insideH1}/{h1Cov.Length} dans l'intervalle -> {(double)insideH1 / h1Cov.Length * 100:F1}%"");
 Console.WriteLine($""Tous horizons : {insideAll}/{aligned.Length} dans l'intervalle -> {(double)insideAll / aligned.Length * 100:F1}%"");
 ",,,,,,,,85f9f593de732bb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,0ae03b59,markdown,fr,8848e10ff523a6be,"### Interprétation des intervalles de confiance
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,0ae03b59,markdown,fr,31f06e788c86dfe1,"### Interprétation des intervalles de confiance
+
+La table ci-dessus montre que la **largeur** de l'intervalle de confiance **croît d'un horizon à l'autre** — de 33,7 en horizon 1 à 43,2 en horizon 7. Ce n'est pas un artefact, c'est la signature d'une prévision honnête.
+
+Chaque pas en avant **accumule de l'incertitude**. La prévision du jour J+7 n'est pas indépendante : elle est en partie construite à partir de celle de J+6, qui dépend de J+5, et ainsi de suite. L'erreur de chaque pas se **répercute** sur les suivants, si bien que l'ensemble des valeurs plausibles s'écarte au fur et à mesure qu'on regarde plus loin. Le modèle « sait » donc **mieux le proche que le lointain** — et l'exprime en élargissant l'intervalle.
+
+C'est pour ça qu'on lit un forecast multi-horizon **colonne par colonne** : un point de prévision à horizon 7 n'est pas aussi fiable qu'à horizon 1, même s'il sort du même modèle.
+
+La même table mesure une seconde dimension de cette incertitude : **la couverture** — les bornes tiennent-elles leurs 95 % promis ?
 
 | Concept | Description |
 |---------|-------------|
@@ -3608,7 +3651,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,0ae03b59,markdown,fr,8
 
 > **Règle empirique** : si ~95% des valeurs réelles sont dans l'intervalle, le modèle est bien calibré.
 
-**Mesure réelle** : sur les dates évaluées en horizon 1, la couverture mesurée est **78.1%** (285/365) ; tous horizons confondus **85.4%** (2164/2534). La couverture est **inférieure** au niveau nominal de 95% : l'intervalle de confiance SSA est **optimiste** — il contient la valeur réelle moins souvent que le niveau déclaré ne le promet. C'est un résultat standard de la v1 de ForecastBySsa (les intervalles ne tiennent pas compte de l'incertitude d'estimation du modèle) ; à retenir avant d'utiliser ces bornes comme promesse de couverture.",,,,,,,,8848e10ff523a6be,,,,,,,,,,,,,,,
+**Mesure réelle** : sur les dates évaluées en horizon 1, la couverture mesurée est **78.1%** (285/365) ; tous horizons confondus **85.4%** (2164/2534). La couverture est **inférieure** au niveau nominal de 95% : l'intervalle de confiance SSA est **optimiste** — il contient la valeur réelle moins souvent que le niveau déclaré ne le promet. C'est un résultat standard de la v1 de ForecastBySsa (les intervalles ne tiennent pas compte de l'incertitude d'estimation du modèle) ; à retenir avant d'utiliser ces bornes comme promesse de couverture.",,,,,,,,31f06e788c86dfe1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,4b0e0340,markdown,fr,e04088c1d1b40940,"### Exercice 3 : Impact du niveau de confiance sur les intervalles
 
 Reentrainez le modèle SSA en modifiant le paramètre `confidenceLevel` (0.80, 0.90, 0.95, 0.99) et comparez la largeur des intervalles et le pourcentage de valeurs reelles contenues dans chaque intervalle.
@@ -3792,11 +3835,11 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,refs-bibliography-ml5,
 
 **Framework (ML.NET)**
 - Ahmed, Z., Amizadeh, S., Bilenko, M., et al. (2019). DOI: 10.1145/3292500.3330667 — *Machine Learning at Microsoft with ML.NET*. ACM SIGKDD (KDD).",,,,,,,,23c44315b36afbbf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,7de88620,markdown,fr,f17d53aff3487298,"# ML-06 (Python) : Intégration de modèles ONNX (skl2onnx + onnxruntime)
+MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,7de88620,markdown,fr,41d90ce860e2904d,"# ML-06 (Python) : Intégration de modèles ONNX (skl2onnx + onnxruntime)
 
-**Navigation** : [Index](README.md) | [<< ML-05-TimeSeries](ML-05-TimeSeries-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-06-ONNX.ipynb) | [Suivant >> ML-07-Recommendation](ML-07-Recommendation-Python.ipynb)
+**Navigation** : [Index](README.md) | [<< ML-05-TimeSeries](ML-05-TimeSeries-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-06-ONNX-CSharp.ipynb) | [Suivant >> ML-07-Recommendation](ML-07-Recommendation-Python.ipynb)
 
-> Ce notebook est le **jumeau Python** de [ML-06-ONNX.ipynb](ML-06-ONNX.ipynb) (ML.NET `OnnxTransformer`). Il couvre l'autre bout du pont d'interopérabilité : **produire** un modèle ONNX en Python (entraînement scikit-learn → export `skl2onnx`) puis le **consommer** en Python via `onnxruntime`. Le jumeau .NET, lui, charge un modèle ONNX dérivé du même RandomForest Iris, mais sérialisé à part dans `iris_model.onnx` (produit par `scripts/ml/generate_iris_onnx.py`) ; ce notebook exporte le sien sous `iris_model_python.onnx` pour ne pas l'écraser.
+> Ce notebook est le **jumeau Python** de [ML-06-ONNX-CSharp.ipynb](ML-06-ONNX-CSharp.ipynb) (ML.NET `OnnxTransformer`). Il couvre l'autre bout du pont d'interopérabilité : **produire** un modèle ONNX en Python (entraînement scikit-learn → export `skl2onnx`) puis le **consommer** en Python via `onnxruntime`. Le jumeau .NET, lui, charge un modèle ONNX dérivé du même RandomForest Iris, mais sérialisé à part dans `iris_model.onnx` (produit par `scripts/ml/generate_iris_onnx.py`) ; ce notebook exporte le sien sous `iris_model_python.onnx` pour ne pas l'écraser.
 
 ## Objectifs d'apprentissage
 
@@ -3812,8 +3855,8 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,7de88620,markdown,fr,f17d53a
 - Notions de scikit-learn (fit / predict / Pipeline)
 
 
-",,,,,,,,f17d53aff3487298,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,3d815d1e,markdown,fr,ebb959689169d229,"## Introduction — qu'est-ce qu'ONNX ?
+",,,,,,,,41d90ce860e2904d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,3d815d1e,markdown,fr,df86def6dee2beab,"## Introduction — qu'est-ce qu'ONNX ?
 
 **ONNX** (Open Neural Network Exchange) est un **format de sérialisation de modèles de machine learning**, indépendant du framework qui les a entraînés. Un modèle entraîné en scikit-learn, PyTorch ou TensorFlow peut être **exporté** vers un fichier `.onnx`, puis **consommé** par n'importe quel runtime ONNX — en Python (`onnxruntime`), en .NET (ML.NET `OnnxTransformer`), en C++, en Java, etc.
 
@@ -3826,9 +3869,9 @@ Le format décrit le modèle comme un **graphe orienté** : les nœuds sont des 
 4. Exécuter l'inférence avec `onnxruntime`
 5. Vérifier que sklearn et onnxruntime donnent **exactement** les mêmes prédictions
 
-Le jumeau .NET (ML-06-ONNX.ipynb) recharge, lui, un modèle ONNX équivalent (même RandomForest Iris) produit séparément par `scripts/ml/generate_iris_onnx.py` dans le fichier `iris_model.onnx` — distinct de l'export `iris_model_python.onnx` réalisé à l'étape 2.
+Le jumeau .NET (ML-06-ONNX-CSharp.ipynb) recharge, lui, un modèle ONNX équivalent (même RandomForest Iris) produit séparément par `scripts/ml/generate_iris_onnx.py` dans le fichier `iris_model.onnx` — distinct de l'export `iris_model_python.onnx` réalisé à l'étape 2.
 
-",,,,,,,,ebb959689169d229,,,,,,,,,,,,,,,
+",,,,,,,,df86def6dee2beab,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,b418876f,code,fr,37ee12d328874111,"# Imports : scikit-learn (modèle), skl2onnx (export), onnxruntime (inférence), onnx (inspection)
 import warnings
 warnings.filterwarnings('ignore')
@@ -4081,7 +4124,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,452152f9,code,fr,cd87c62c5ab
 ops_ex3 = None  # TODO etudiant : ensemble des op_types du graph
 print(""Exercice 3 a completer"")
 ",,,,,,,,cd87c62c5abb98ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,777e9bb8,markdown,fr,7bc3fb3a4468da0e,"## Conclusion et points clés
+MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,777e9bb8,markdown,fr,1732cc348e732b82,"## Conclusion et points clés
 
 | Concept | Description |
 |---------|-------------|
@@ -4095,16 +4138,16 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,777e9bb8,markdown,fr,7bc3fb3
 | Équivalence sklearn ⇄ ONNX | Prédictions identiques, écarts de proba `< 1e-6` (float32 vs float64) |
 | `GraphOptimizationLevel` | Optimisations de graph (fusion d'opérateurs) → speedup en production |
 
-**Ce qu'il faut retenir** : ONNX est le **pont** entre l'entraînement (Python/scikit-learn) et la production (.NET/ML.NET, C++, edge). On entraîne où c'est expressif (Python), on déploie où c'est rapide et portable (ONNX Runtime). Le jumeau .NET [ML-06-ONNX.ipynb](ML-06-ONNX.ipynb) consomme un modèle ONNX équivalent (même RandomForest Iris), mais dans un fichier distinct — `iris_model.onnx` produit par `scripts/ml/generate_iris_onnx.py`, indépendamment de l'export `iris_model_python.onnx` réalisé dans la Partie 2.",,,,,,,,7bc3fb3a4468da0e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,533633e0,markdown,fr,43447e9930220d3d,"## Références
+**Ce qu'il faut retenir** : ONNX est le **pont** entre l'entraînement (Python/scikit-learn) et la production (.NET/ML.NET, C++, edge). On entraîne où c'est expressif (Python), on déploie où c'est rapide et portable (ONNX Runtime). Le jumeau .NET [ML-06-ONNX-CSharp.ipynb](ML-06-ONNX-CSharp.ipynb) consomme un modèle ONNX équivalent (même RandomForest Iris), mais dans un fichier distinct — `iris_model.onnx` produit par `scripts/ml/generate_iris_onnx.py`, indépendamment de l'export `iris_model_python.onnx` réalisé dans la Partie 2.",,,,,,,,1732cc348e732b82,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb,533633e0,markdown,fr,f49224a4cc2dc2ed,"## Références
 
 - **ONNX** — specification et opérateurs : https://onnx.ai/
 - **skl2onnx** — export scikit-learn vers ONNX : https://onnx.ai/sklearn-onnx/
 - **ONNX Runtime** — runtime d'inférence optimisé : https://onnxruntime.ai/
-- **ML-06-ONNX.ipynb** (jumeau .NET) — consommation d'un modèle ONNX équivalent (`iris_model.onnx`) côté ML.NET
+- **ML-06-ONNX-CSharp.ipynb** (jumeau .NET) — consommation d'un modèle ONNX équivalent (`iris_model.onnx`) côté ML.NET
 - Série *Hands-On AI Trading*, Jared Broad — chapitre interopérabilité modèles ML
 
-",,,,,,,,43447e9930220d3d,,,,,,,,,,,,,,,
+",,,,,,,,f49224a4cc2dc2ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb,c47b76f1,markdown,fr,912aac2849f77a4f,"# ML-06 : ONNX Model Integration avec ML.NET
 
 **Navigation** : [Index](README.md) | [<< ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | [Suivant >>](ML-07-Recommendation-CSharp.ipynb)
@@ -4649,11 +4692,11 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb,ea764857,markdown,fr,824f2a7
 3. Microsoft, *ONNX Runtime*, `onnxruntime.ai` (dépôt `microsoft/onnxruntime`). Moteur d'inférence haute performance couvrant graph optimization, quantification INT8 et accélération CUDA/TensorRT/OpenVINO.
 4. G. Ke et al., *LightGBM: A Highly Efficient Gradient Boosting Decision Tree*, NeurIPS, 2017. Référence pour les modèles Gradient Boosting exportés vers ONNX dans l'Exemple 4 (workflow Python → ONNX → ML.NET).
 5. A. R. Ahmed et al., *Hands-On Machine Learning with ML.NET*, Packt, 2019. Référence appliquée pour l'écosystème ML.NET (API `OnnxScoringEstimator`, `SaveOnnxFormat`).",,,,,,,,824f2a72330b1ec9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,17abe4f6,markdown,fr,48fca3be91aee116,"# ML-07 (Python) : Systèmes de recommandation par factorisation de matrice (NMF)
+MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,17abe4f6,markdown,fr,f83bfec9a29882fa,"# ML-07 (Python) : Systèmes de recommandation par factorisation de matrice (NMF)
 
-**Navigation** : [Index](README.md) | [<< ML-06-ONNX](ML-06-ONNX-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-07-Recommendation.ipynb) | [Suivant >> ML-08-Clustering](ML-08-Clustering-Python.ipynb)
+**Navigation** : [Index](README.md) | [<< ML-06-ONNX](ML-06-ONNX-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-07-Recommendation-CSharp.ipynb) | [ML-07b SEMANTICIDS >>](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | [Suivant >> ML-08-Clustering](ML-08-Clustering-Python.ipynb)
 
-> Ce notebook est le **jumeau Python (scikit-learn)** de [ML-07-Recommendation.ipynb](ML-07-Recommendation.ipynb) (ML.NET). Il couvre la même pédagogie (filtrage collaboratif par factorisation de matrice) avec `sklearn.decomposition.NMF`.
+> Ce notebook est le **jumeau Python (scikit-learn)** de [ML-07-Recommendation-CSharp.ipynb](ML-07-Recommendation-CSharp.ipynb) (ML.NET). Il couvre la même pédagogie (filtrage collaboratif par factorisation de matrice) avec `sklearn.decomposition.NMF`.
 
 ## Objectifs d'apprentissage
 
@@ -4664,7 +4707,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,17abe4f6,markdown,
 3. Appliquer la **factorisation de matrice** (NMF) pour découvrir des **facteurs latents**
 4. Prédire les notes manquantes et générer des **Top-N recommandations**
 5. Évaluer un système par le **RMSE** sur les notes connues
-6. Diagnostiquer le **cold start problem** (nouvel utilisateur / nouvel item)",,,,,,,,48fca3be91aee116,,,,,,,,,,,,,,,
+6. Diagnostiquer le **cold start problem** (nouvel utilisateur / nouvel item)",,,,,,,,f83bfec9a29882fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,a56a6c64,markdown,fr,581f948f13856ddc,"## Qu'est-ce qu'un système de recommandation ?
 
 Un système de recommandation suggère des items (films, produits, articles) pertinents à un utilisateur. Trois grandes familles :
@@ -4713,7 +4756,7 @@ ratings_df = pd.DataFrame(R, index=users, columns=movies)
 print(""=== Matrice Utilisateur-Film (0 = non vu) ==="")
 print(ratings_df)
 print(f""\nNotes observées : {int(np.count_nonzero(R))} / {R.size} ({100*np.count_nonzero(R)/R.size:.0f}% rempli)"")",,,,,,,,f0192729ae2d1636,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,c6358120,markdown,fr,cfac55f993b3b605,"## Factorisation de matrice (NMF)
+MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,c6358120,markdown,fr,6e40762339443702,"## Factorisation de matrice (NMF)
 
 La **factorisation de matrice** (Koren, Bell & Volinsky, 2009) décompose la matrice utilisateur-item $R$ ($U \times I$) en deux matrices de plus faible rang :
 
@@ -4723,9 +4766,9 @@ où $W$ est $U \times K$ (profils latents des **utilisateurs**) et $H$ est $K \t
 
 **Interprétation** : avec $K=2$, l'algorithme peut découvrir automatiquement deux axes latents — par exemple « affinité Sci-Fi/Action » et « affinité Romance » — sans qu'on lui ait jamais dit quels films sont quel genre. C'est la puissance du filtrage collaboratif : les goûts émergent des **notes**, pas des métadonnées.
 
-On utilise **NMF** (Non-negative Matrix Factorization) de scikit-learn : elle contraint $W$ et $H$ à être **non-négatifs**, ce qui convient bien aux notes (1-5) et rend les facteurs latents **interprétables** (chaque facteur est une « composante de goût » additive). C'est l'équivalent Python idiomatique du trainer `MatrixFactorization` de ML.NET, qui apprend lui aussi des facteurs latents utilisateur/item par descente de gradient.
+On utilise **NMF** (Non-negative Matrix Factorization) de scikit-learn : elle contraint $W$ et $H$ à être **non-négatifs**, ce qui convient bien aux notes (1-5) et rend les facteurs latents **interprétables** (chaque facteur est une « composante de goût » additive). C'est l'**analogue le plus proche** du trainer `MatrixFactorization` de ML.NET — même famille mathématique (une factorisation de la matrice utilisateur-item), mais **pas le même algorithme** : NMF est un **décomposeur générique** appliqué à la matrice *remplie* — les zéros y sont des valeurs reconstruites, comme on le voit plus bas — alors que `MatrixFactorization` est un **trainer spécialisé** de recommandation qui apprend ses facteurs latents sur les **seules notes observées** (options lues dans le jumeau .NET : `LabelColumnName = ""Rating""`, `NumberOfIterations = 20`, `ApproximationRank = 10`). Les deux désignent des facteurs latents, mais ni leurs données d'apprentissage ni leurs prédictions ne coïncident : c'est une parité d'**objectif**, pas une équivalence de résultats.
 
-> **Note sur les zéros.** NMF traite les `0` (notes manquantes) comme des valeurs à reconstruire. C'est une approximation (le `0` « non vu » est confondu avec le `0` « noté 0 ») ; sur une petite matrice clairement structurée, elle reste très pédagogique. Les vrais systèmes gèrent le caractère creux différemment (SGD sur les notes observées seulement).",,,,,,,,cfac55f993b3b605,,,,,,,,,,,,,,,
+> **Note sur les zéros.** NMF traite les `0` (notes manquantes) comme des valeurs à reconstruire. C'est une approximation (le `0` « non vu » est confondu avec le `0` « noté 0 ») ; sur une petite matrice clairement structurée, elle reste très pédagogique. Les vrais systèmes gèrent le caractère creux différemment (SGD sur les notes observées seulement).",,,,,,,,6e40762339443702,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,cfe904a4,code,fr,4ab8d1042810a214,"# Factorisation : K=2 facteurs latents (la matrice a 2 axes de goût dominants : Sci-Fi vs Romance)
 K = 2
 nmf = NMF(n_components=K, init=""nndsvda"", solver=""mu"", max_iter=500, random_state=42)
@@ -4845,7 +4888,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,e3213237,code,fr,9
 # Étape 3 : identifie le K optimal (compromis sous-ajustement / sur-ajustement)
 result_ex3 = None  # TODO étudiant
 print(""Exercice 3 à compléter"")",,,,,,,,945be8158b2ecf00,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,35a77175,markdown,fr,060b946723eef626,"## Résumé
+MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,35a77175,markdown,fr,a1654482f8bfb4a2,"## Résumé
 
 Ce notebook a introduit les **systèmes de recommandation par factorisation de matrice** en Python :
 
@@ -4865,9 +4908,9 @@ Ce notebook a introduit les **systèmes de recommandation par factorisation de m
 - NMF contraint les facteurs à être **non-négatifs** → interprétables comme des composantes de goût additives.
 - Le **cold start** est la limite structurelle : il faut des notes initiales (ou un hybride content-based) pour un nouvel utilisateur/item.
 
-**Équivalence ML.NET** : ce notebook est le jumeau Python de [ML-07-Recommendation.ipynb](ML-07-Recommendation.ipynb). NMF reproduit fidèlement l'esprit du trainer `MatrixFactorization` de ML.NET (tous deux apprennent des facteurs latents utilisateur/item) ; NMF est l'implémentation scikit-learn idiomatique pour des notes positives.
+**Équivalence ML.NET** : ce notebook est le jumeau Python de [ML-07-Recommendation-CSharp.ipynb](ML-07-Recommendation-CSharp.ipynb). Les deux côtés partagent l'**objectif** (apprendre des facteurs latents utilisateur/item par filtrage collaboratif) et la **famille mathématique** (une factorisation de la matrice utilisateur-item) ; ils n'emploient **ni le même algorithme, ni les mêmes données d'apprentissage**. `.NET` : `MatrixFactorization`, **trainer spécialisé** de recommandation, optimisé sur les **notes observées** (`LabelColumnName = ""Rating""`, 20 itérations, rang 10). Python : `sklearn.decomposition.NMF` (**décomposeur générique**), ajusté sur la matrice **remplie** — les zéros y sont reconstruits, pas ignorés (`init='nndsvda'`, `solver='mu'`, 500 itérations, graine 42). Les métriques des deux carnets ne sont donc **pas** comparables terme à terme : c'est une parité d'**objectif** (`native-both`), pas une équivalence numérique.
 
-> *Renvoi — vers la recommandation générative unifiée (Sona, 2026).* La cascade multi-étages (génération de candidats → pré-ranking → ranking) que ces exercices implémentent est précisément l'état de l'art **pré-Sona** (Yandex Music 2026) — voir arXiv 2608.11015 pour l'unification en un seul modèle (encodeur partagé + deux têtes).",,,,,,,,060b946723eef626,,,,,,,,,,,,,,,
+> *Renvoi — vers la recommandation générative unifiée (Sona, 2026).* La cascade multi-étages (génération de candidats → pré-ranking → ranking) que ces exercices implémentent est précisément l'état de l'art **pré-Sona** (Yandex Music 2026) — voir arXiv 2608.11015 pour l'unification en un seul modèle (encodeur partagé + deux têtes).",,,,,,,,a1654482f8bfb4a2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb,9bc0e111,markdown,fr,80e00e71f6462eca,"## Références
 
 - Koren, Y., Bell, R., & Volinsky, C. (2009). *Matrix Factorization Techniques for Recommender Systems*. IEEE Computer, 42(8). — la référence canonique (prix Netflix).
@@ -5528,16 +5571,16 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-CSharp.ipynb,refs-bibliography-
 
 **Contexte historique**
 - Bennett, J., & Lanning, S. (2007). *The Netflix Prize*. KDD Cup and Workshop.",,,,,,,,bf72bb60f9d75052,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,a1ff5f84,markdown,fr,412c550ba7e94b9f,"# ML-08 (Python) : Clustering non-supervisé avec K-Means
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,a1ff5f84,markdown,fr,0500962d60e99109,"# ML-08 (Python) : Clustering non-supervisé avec K-Means
 
-**Navigation** : [Index](README.md) | [<< ML-07-Recommendation](ML-07-Recommendation-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-08-Clustering.ipynb) | [Suivant >> ML-09-Anomaly-Detection](ML-09-Anomaly-Detection-Python.ipynb)
+**Navigation** : [Index](README.md) | [<< ML-07-Recommendation](ML-07-Recommendation-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-08-Clustering-CSharp.ipynb) | [Suivant >> ML-09-Anomaly-Detection](ML-09-Anomaly-Detection-Python.ipynb)
 
-> Ce notebook est le **jumeau Python (scikit-learn)** de [ML-08-Clustering.ipynb](ML-08-Clustering.ipynb). Il couvre exactement le même parcours pédagogique — segmentation RFM, K-Means, normalisation, méthode du coude, silhouette — avec l'API idiomatique de scikit-learn au lieu de ML.NET. Le clustering est un problème **non-supervisé** : on ne dispose d'aucune étiquette, l'algorithme doit découvrir seul la structure des données.
+> Ce notebook est le **jumeau Python (scikit-learn)** de [ML-08-Clustering-CSharp.ipynb](ML-08-Clustering-CSharp.ipynb). Il couvre exactement le même parcours pédagogique — segmentation RFM, K-Means, normalisation, méthode du coude, silhouette — avec l'API idiomatique de scikit-learn au lieu de ML.NET. Le clustering est un problème **non-supervisé** : on ne dispose d'aucune étiquette, l'algorithme doit découvrir seul la structure des données.
 
 **Prérequis** : `scikit-learn`, `numpy`, `matplotlib` (CPU-viable, aucun GPU requis).
 
 
-",,,,,,,,412c550ba7e94b9f,,,,,,,,,,,,,,,
+",,,,,,,,0500962d60e99109,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,6b1fc86f,markdown,fr,967b441a6e509b7b,"## Du supervisé au non-supervisé
 
 Les notebooks précédents (ML-01 à ML-07) traitaient du **supervisé** : on dispose d'étiquettes cibles et l'objectif est d'apprendre une fonction f: X -> y. Le **clustering** bascule dans le régime **non-supervisé** :
@@ -5738,13 +5781,14 @@ fig.legend(loc=""upper center"", bbox_to_anchor=(0.5, 1.02), ncol=3, fontsize=9)
 plt.tight_layout()
 plt.show()
 ",,,,,,,,cf774379eb42cd5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,709f07ea,markdown,fr,8cc3ed21bca050d1,"### Interprétation : où est le coude ?
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,709f07ea,markdown,fr,686f5df76580e41f,"### Interprétation : où est le coude ?
 
 - L'**AverageDistance** chute fortement de K=2 à K=3 puis se stabilise : le coude est à **K=3**.
 - Le **Davies-Bouldin Index** est minimal à K=3 : confirmation que 3 segments sont les mieux séparés.
 
 Les deux indicateurs convergent vers K=3, ce qui correspond bien aux 3 segments cachés générés.
-",,,,,,,,8cc3ed21bca050d1,,,,,,,,,,,,,,,
+
+La table chiffre le coude : l'AverageDistance chute de **0.2595 (K=2) à 0.1352 (K=3)** — une baisse de 48 % — puis décroît lentement (0.1215, 0.1099, 0.1008), sans nouveau saut. Le DaviesBouldin raconte la même histoire en miroir : minimum à **0.426 pour K=3**, il remonte dès K=4 (0.739) parce que les segments supplémentaires coupent des gaussiennes déjà compactes et se touchent. Un K trop grand divise le vrai signal : l'inertie continue de baisser mécaniquement (plus de centres, moins de distance chacun) alors que la séparation inter-segments se dégrade — c'est pourquoi le coude se lit sur les DEUX courbes, jamais sur l'inertie seule.",,,,,,,,686f5df76580e41f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,07648a14,markdown,fr,9ee03b62a93fc28c,"## Exercice 1 : Déterminer le K optimal sur un dataset à 4 segments
 
 Générez un nouveau jeu de données avec **4 segments cachés** (4 × 25 points), puis cherchez le K optimal (K=2..7) avec la même boucle de sweep.
@@ -5815,7 +5859,7 @@ Ce notebook a introduit le **clustering K-Means non-supervisé** en Python :
 | `Evaluate().DaviesBouldinIndex` | `davies_bouldin_score` |
 | `CreatePredictionEngine().Predict` | `pipeline.predict` |
 ",,,,,,,,01c9e553f629004a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,75ccdd3e,markdown,fr,be9075bd1d45bdcb,"## Références
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,75ccdd3e,markdown,fr,6f15ed99278a90ea,"## Références
 
 **Algorithme (K-Means et métriques de clustering)**
 
@@ -5829,9 +5873,9 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,75ccdd3e,markdown,fr,b
 - [`sklearn.metrics.silhouette_score`](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.silhouette_score.html)
 - [`sklearn.metrics.davies_bouldin_score`](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.davies_bouldin_score.html)
 
-**Jumeau .NET** : [ML-08-Clustering.ipynb](ML-08-Clustering.ipynb) (ML.NET, API équivalente).
+**Jumeau .NET** : [ML-08-Clustering-CSharp.ipynb](ML-08-Clustering-CSharp.ipynb) (ML.NET, API équivalente).
 
-",,,,,,,,be9075bd1d45bdcb,,,,,,,,,,,,,,,
+",,,,,,,,6f15ed99278a90ea,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb,ml8-md-1,markdown,fr,db63d2206f7aa11a,"# ML-08 : Clustering non-supervise avec K-Means
 
 **Navigation** : [Index](README.md) | [<< précédent](ML-07-Recommendation-CSharp.ipynb)
@@ -6167,11 +6211,11 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb,ml8-md-34,markdown,fr,
 
 - Hughes, A. M. (1996). *The Complete Database Marketer: Second-Generation stratégies and Techniques for Tapping the Power of Your Customer Database*. McGraw-Hill. --- formalisation de la segmentation RFM (Recency, Frequency, Monetary).
 ",,,,,,,,99bb72b598533c78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,0c339250,markdown,fr,f5fd2d36c91ea32d,"# ML-09 (Python) : Détection d'anomalies par PCA (erreur de reconstruction)
+MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,0c339250,markdown,fr,3a3717d2e55b8359,"# ML-09 (Python) : Détection d'anomalies par PCA (erreur de reconstruction)
 
-**Navigation** : [Index](README.md) | [<< ML-08-Clustering](ML-08-Clustering-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-09-Anomaly-Detection.ipynb)
+**Navigation** : [Index](README.md) | [<< ML-08-Clustering](ML-08-Clustering-Python.ipynb) | [Jumeau .NET (ML.NET)](ML-09-Anomaly-Detection-CSharp.ipynb)
 
-> Ce notebook est le **jumeau Python (scikit-learn)** de [ML-09-Anomaly-Detection.ipynb](ML-09-Anomaly-Detection.ipynb) (ML.NET). Il couvre la même pédagogie avec les outils du écosystème Python. La logique de détection est identique : on apprend le régime normal, puis on mesure l'écart d'un point à ce régime.
+> Ce notebook est le **jumeau Python (scikit-learn)** de [ML-09-Anomaly-Detection-CSharp.ipynb](ML-09-Anomaly-Detection-CSharp.ipynb) (ML.NET). Il couvre la même pédagogie avec les outils du écosystème Python. La logique de détection est identique : on apprend le régime normal, puis on mesure l'écart d'un point à ce régime.
 
 ## Objectifs d'apprentissage
 
@@ -6182,16 +6226,16 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,0c339250,markdo
 3. Comprendre le **score d'anomalie** comme un résidu dans le sous-espace PCA
 4. Évaluer un détecteur avec l'**AUC** (aire sous la courbe ROC) et le **Detection Rate @ K faux positifs**
 5. Choisir un **seuil de décision** qui arbitre entre détection (TPR) et fausses alarmes (FPR)
-6. Diagnostiquer la **limite** de l'approche PCA sur des anomalies subtiles",,,,,,,,f5fd2d36c91ea32d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,4e0bd631,markdown,fr,429b206668200c57,"## Du clustering à la détection d'anomalies
+6. Diagnostiquer la **limite** de l'approche PCA sur des anomalies subtiles",,,,,,,,3a3717d2e55b8359,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,4e0bd631,markdown,fr,6d37fc390986c35a,"## Du clustering à la détection d'anomalies
 
 Le clustering regroupe des points sans étiquettes. La **détection d'anomalies** répond à une question différente : étant donné un régime de fonctionnement **normal** (apprentissage), quels points s'en écartent suffisamment pour être soupçonnés anormaux ? C'est encore de l'apprentissage **non-supervisé** au sens où le modèle n'apprend qu'à partir de données normales — mais la tâche est un **test** (chaque point est-il dans la distribution normale ?), pas une partition.
 
 Le cas d'usage industriel canonique est la **maintenance prédictive** : une machine saine (capteurs : température, pression, vibration) opère dans une étroite ellipse de régime ; une usure, une fuite ou un déséquilibre la fait dériver hors de cette zone. On veut déclencher une alerte avant la casse.
 
-L'intuition (Lakhina et al., 2004 ; Pfiefer et al., 2011) : la PCA projette les données normales sur un **sous-espace de faible dimension** (les *k* premières composantes). Un point normal se reconstruit bien dans ce sous-espace (faible résidu) ; un point anormal, lui, s'étale hors du sous-espace et laisse un **fort résidu de reconstruction**. Ce résidu est le **score d'anomalie** : plus il est élevé, plus le point s'écarte du régime appris. C'est exactement la sémantique du trainer `RandomizedPca` de ML.NET, reproduit ici avec `sklearn.decomposition.PCA`.
+L'intuition (Lakhina et al., 2004 ; Pfiefer et al., 2011) : la PCA projette les données normales sur un **sous-espace de faible dimension** (les *k* premières composantes). Un point normal se reconstruit bien dans ce sous-espace (faible résidu) ; un point anormal, lui, s'étale hors du sous-espace et laisse un **fort résidu de reconstruction**. Ce résidu est le **score d'anomalie** : plus il est élevé, plus le point s'écarte du régime appris. C'est la même **idée** que celle du trainer `RandomizedPca` de ML.NET — un score d'anomalie fondé sur le résidu de reconstruction dans un sous-espace de faible dimension — mais **pas la même implémentation** : ici la décomposition est une SVD **exacte** (`sklearn.decomposition.PCA`, `svd_solver=""full""`), là-bas une SVD **randomisée** (`RandomizedPca`). La comparaison chiffrée des deux côtés est faite au résumé.
 
-> **Subtilité importante.** Le modèle est non-supervisé **au `fit`** (il ignore toute étiquette), mais l'**évaluation** a besoin d'étiquettes (`1` = anomalie, `0` = normal) sur le jeu de test pour calculer l'AUC. On s'entraîne donc sur des données normales et l'on évalue sur un jeu de test **labellisé** mélangeant normaux et anomalies.",,,,,,,,429b206668200c57,,,,,,,,,,,,,,,
+> **Subtilité importante.** Le modèle est non-supervisé **au `fit`** (il ignore toute étiquette), mais l'**évaluation** a besoin d'étiquettes (`1` = anomalie, `0` = normal) sur le jeu de test pour calculer l'AUC. On s'entraîne donc sur des données normales et l'on évalue sur un jeu de test **labellisé** mélangeant normaux et anomalies.",,,,,,,,6d37fc390986c35a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,aff25769,code,fr,6b78854ebd85a674,"# Imports : numpy pour les données, scikit-learn pour la PCA et les métriques, matplotlib pour visualiser
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6416,7 +6460,7 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,ef64f961,code,f
 # Étape 3 : compare l'AUC à la valeur du notebook et conclus sur la limite de la détection PCA
 result_ex3 = None  # TODO étudiant
 print(""Exercice 3 à compléter"")",,,,,,,,acdd5d50b7af6323,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,bb677469,markdown,fr,e5c4b36fca7d5fa5,"## Résumé
+MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,bb677469,markdown,fr,1b00dd96ef97eab9,"## Résumé
 
 Ce notebook a introduit la **détection d'anomalies non-supervisée** par PCA en Python :
 
@@ -6436,7 +6480,12 @@ Ce notebook a introduit la **détection d'anomalies non-supervisée** par PCA en
 - Le **rang** est un piège : `n_components` ne peut pas dépasser le nombre de features, et `n_components = n_features` annule toute détection (résidu nul).
 - La PCA détecte les anomalies **orthogonales** au sous-espace normal ; les anomalies « inline » subtiles lui échappent (Exercice 3) — c'est sa limite structurelle.
 
-**Équivalence ML.NET** : ce notebook est le jumeau Python de [ML-09-Anomaly-Detection.ipynb](ML-09-Anomaly-Detection.ipynb). La PCA + erreur de reconstruction reproduit fidèlement le trainer `RandomizedPca` de ML.NET (le « randomized » est une optimisation de calcul pour les grandes dimensions ; avec 3 features, la PCA exacte de scikit-learn est équivalente et déterministe).",,,,,,,,e5c4b36fca7d5fa5,,,,,,,,,,,,,,,
+**Équivalence ML.NET** : ce notebook est le jumeau Python de [ML-09-Anomaly-Detection-CSharp.ipynb](ML-09-Anomaly-Detection-CSharp.ipynb). Les deux côtés reposent sur le **même fondement mathématique** — projeter sur le sous-espace des composantes principales, puis mesurer le résidu de reconstruction comme score d'anomalie — mais **ni la même implémentation ni les mêmes données** :
+
+- **.NET** : `RandomizedPca` (SVD **randomisée**, `MLContext(seed: 42)`), anomalies de pression à `~ +0,8` (soit ~8 σ), tirages `new Random(42)` + Box-Muller ;
+- **Python** : `PCA(svd_solver=""full"")` (SVD **exacte**), anomalies de pression à `~ +0,2` (soit ~2 σ), tirages `numpy.random.default_rng(42)`.
+
+Les métriques des deux carnets ne sont donc **pas** comparables terme à terme : l'AUC vaut **0,868** côté Python (Detection Rate @ 10 faux positifs : **0,60**) contre **0,848** côté .NET (Detection Rate @ 10 faux positifs : **0,225**). L'écart tient à des causes multiples — jeu de données différent (flux aléatoire **et** régime d'anomalie) **et** algorithme différent (SVD randomisée contre exacte) — et il ne permet **pas** de conclure à une équivalence des résultats. C'est ce que le registre de parité qualifie de parité d'**objectif** (`native-both` : un moteur SOTA natif de chaque côté), et non d'une équivalence numérique.",,,,,,,,1b00dd96ef97eab9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb,6c104624,markdown,fr,c546e445c2c9fb88,"## Références
 
 **Algorithme (PCA pour la détection d'anomalies)**
@@ -7716,7 +7765,7 @@ if lo > 0 or hi < 0:
     print(""-> L'IC exclut 0 : l'ecart est statistiquement significatif a 5%."")
 else:
     print(""-> L'IC contient 0 : on NE PEUT PAS conclure a une difference significative a 5%."")",,,,,,,,e28b4da1792e100d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb,84059932,markdown,fr,d190d675d71fc958,"## Section 4 -- Le corrected resampled t-test (Nadeau & Bengio, 2003)
+MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb,84059932,markdown,fr,9ed8d072892e352e,"## Section 4 -- Le corrected resampled t-test (Nadeau & Bengio, 2003)
 
 Le test corrigé de Nadeau-Bengio est le **test statistiquement correct** pour
 comparer deux modèles en validation croisée k-fold. Il corrige la variance
@@ -7746,11 +7795,11 @@ implémentée exactement comme ci-dessus, retournant le t-statistic, la moyenne
 des différences, et la variance corrigée.
 
 **Comparaison avec le t-test naïf** : sur le dataset diabetes, le t-test naïf
-donne p ≈ 0.034 (significatif à 5%). Le t-test corrigé donne p ≈ 0.094
+donne p ≈ 0.038 (significatif à 5%). Le t-test corrigé donne p ≈ 0.099
 (non significatif à 5%). La correction *gonfle* la variance d'un facteur
 ≈ 2,1, ce qui change la conclusion.
 
-**Coût** : < 0.1 seconde (calcul vectoriel sur k=10 paires).",,,,,,,,d190d675d71fc958,,,,,,,,,,,,,,,
+**Coût** : < 0.1 seconde (calcul vectoriel sur k=10 paires).",,,,,,,,9ed8d072892e352e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb,5aa03849,code,fr,0add765beb1029b7,"def corrected_resampled_ttest(scores_a, scores_b, n_test, n_train):
     """"""Corrected resampled t-test (Nadeau & Bengio, 2003).
 
@@ -8261,13 +8310,14 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-CSharp.ipynb,2bb3deac-de9f-4
 **Chaque capteur isole est a peu pres au hasard** (~0,46 a ~0,51), parce que les anomalies ont ete construites avec les *mêmes distributions marginales* que le regime sain. Pourtant la PCA atteint ~0,95 : elle a appris le **plan de couplage** sain, et les points qui le violent sortent du plan (residu eleve le long de la 3e composante). C'est la capacite que **aucune méthode univariee ne peut reproduire** : la detection d'anomalies par PCA est un detecteur de **structure multivariee**, pas de seuils par capteur.
 
 **Contraste avec la demo principale** : sur le pic de pression a 8 sigma, la PCA etait superflue (un seuil sur `Pressure` suffisait, et battait même la PCA). Ici, la PCA est le **seul** outil qui marche. Les deux cas ensemble montrent *quand* la PCA est justifiee : non pas sur des pics unidimensionnels qu'un seuil capte, mais sur des anomalies relationnelles que seule la geometrie du sous-espace revelle. C'est le cœur de la [Lakhina et al. (2004)](#references) — detecter les anomalies qui resident dans le sous-espace residual, invisibles feature par feature.",,,,,,,,6b01a30288425b5c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,b7d2e4a1,markdown,fr,de653c12f4baef0c,"### Pourquoi fixer la graine ?
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,b7d2e4a1,markdown,fr,8352f6123cdfec13,"### Pourquoi poser la graine par convention ?
 
-Au-delà du déterminisme : sans graine, chaque exécution donnerait des
-chiffres légèrement différents — impossible de comparer une correction à un
+La graine n'a aucun effet sur ce carnet (déterministe), mais c'est le geste qu'on
+**poserait** dès qu'une étape stochastique apparaît : sans graine, chaque exécution
+donnerait des chiffres légèrement différents — impossible de comparer une correction à un
 résultat attendu, ou de déboguer un échec intermittent. C'est l'équivalent du
 `MLContext(seed: 0)` de ML.NET : la reproductibilité est un prérequis de
-l'expérimentation, pas un luxe.",,,,,,,,de653c12f4baef0c,,,,,,,,,,,,,,,
+l'expérimentation, pas un luxe.",,,,,,,,8352f6123cdfec13,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,afb41221,markdown,fr,741344917e1ddc9a,"### Lecture des données d'entraînement
 
 Quatre exemples suffisent pour une régression linéaire à une feature : le modèle n'a que **deux paramètres** (pente et ordonnée à l'origine) à estimer. Lisez le tableau : le prix suit presque proportionnellement la taille (1,1 → 1,2 ; 1,9 → 2,3 ; 2,8 → 3,0 ; 3,4 → 3,7) — le rapport prix/taille est proche de 1,05 partout. La relation paraît linéaire **dans cette plage** (1,1 à 3,4) ; nous verrons si elle tient au-delà.",,,,,,,,741344917e1ddc9a,,,,,,,,,,,,,,,
@@ -8282,9 +8332,17 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,ecdde259,markdown,fr
 Le nuage de points et la droite de régression rendent visible ce que le R² = 0,852 quantifiait : la droite passe au milieu des points d'entraînement (bleu) mais **sous-estime systématiquement les grandes tailles** (orange, points test). Regardez l'écart croissant à droite du graphe : à 8 000 pieds carrés, le prix réel (10,3) dépasse largement la prédiction linéaire (~8,5). C'est la signature d'une relation **non linéaire** (effet « premium » des grandes surfaces) qu'un modèle de degré 1 ne peut pas capturer.
 
 La prédiction pour 2,5 (l'étoile rouge) est raisonnable car elle tombe dans la plage des données d'entraînement — l'erreur locale y est faible. En extrapolation (au-delà de 3,4), l'erreur croît de façon non mesurée : c'est la limite d'un modèle linéaire appris sur 4 points.",,,,,,,,7ed4f5016d9b26b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,d0d06aa3,markdown,fr,7dc3ffb597725d4d,"### Interpolation vs extrapolation : le contraste des deux exemples
+MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,d0d06aa3,markdown,fr,714a72978c2daba4,"### Interpolation vs extrapolation : le contraste des deux exemples
 
-Comparez les deux prédictions : ici, 25 km est **dans la plage** observée (5 à 40 km) — le modèle interpole, et l'erreur attendue est de l'ordre du bruit résiduel. Dans l'exemple 1, la prédiction pour 2,5 interpolait aussi (plage 1,1-3,4), mais l'évaluation test poussait jusqu'à 8,0 — en extrapolation, où l'erreur explose. La distinction est fondamentale en pratique : **un modèle n'est fiable que dans la plage de ses données d'entraînement**. Tout rapport de déploiement devrait répondre à la question : mes données de production sont-elles dans la plage d'entraînement ?",,,,,,,,7dc3ffb597725d4d,,,,,,,,,,,,,,,
+Le R² ≈ 0,9996 (cellule précédente) montre que la droite ajuste quasi parfaitement la
+donnée d'entraînement. Comparez les deux prédictions : ici, 25 km est **dans la plage**
+observée (5 à 40 km) — le modèle interpole, et l'erreur attendue reste de l'ordre du bruit
+résiduel (ici, quasi nulle : les points sont presque alignés, à ±1 min près). Dans
+l'exemple 1, la prédiction pour 2,5 interpolait aussi (plage 1,1-3,4), mais l'évaluation
+test poussait jusqu'à 8,0 — en extrapolation, où l'erreur explose. La distinction est
+fondamentale en pratique : **un modèle n'est fiable que dans la plage de ses données
+d'entraînement**. Tout rapport de déploiement devrait répondre à la question : mes données
+de production sont-elles dans la plage d'entraînement ?",,,,,,,,714a72978c2daba4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb,d293e1df,markdown,fr,7a56c21cd3c32355,"### Interprétation : perfection apparente et sur-apprentissage
 
 L'accuracy de 100 % et l'AUC de 1,000 sont **parfaits** — et c'est précisément le problème. Avec 12 exemples et 2 features (montant, heure), les classes sont **linéairement séparables par construction** : les transactions suspectes ont toutes un montant > 2000 \$ et une heure < 6 h, les normales < 500 \$ et > 8 h. La régression logistique n'a aucune difficulté à trouver une frontière qui les sépare sans erreur.
@@ -8401,18 +8459,18 @@ d'AutoML** : on ne parie pas sur un algorithme, on laisse la validation
 croisée désigner le meilleur pour ce dataset — les chiffres du classement
 sont lus dans la section précédente.
 ",,,,,,,,45c7e8a253bd91e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,516cf81a,markdown,fr,dee221b1691e4592,"## SHAP : l'attribution par instance que la PFI ne donne pas
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,516cf81a,markdown,fr,55747250060ca029,"## SHAP : l'attribution par instance que la PFI ne donne pas
 
 La PFI a deux limites, visibles sur ce petit dataset :
 
 1. Elle est **globale** : un classement pour tout le test set, rien sur *une* prediction donnee (pourquoi CE trajet est-il estime a 28 dollars ?).
-2. Elle est **inconsistante quand les features sont correlees** : permuter une colonne isolee casse la structure jointe des donnees, et le modele evalue alors des exemples hors distribution -- l'importance mesuree depend alors de l'ordre des permutations et du modele, pas d'une propriete stable.
+2. Elle est **inconsistante quand les features sont correlees** : permuter une colonne isolee casse la structure jointe des données, et le modèle evalue alors des exemples hors distribution -- l'importance mesuree depend alors de l'ordre des permutations et du modèle, pas d'une propriete stable.
 
 **SHAP** (SHapley Additive exPlanations, Lundberg & Lee 2017) repond aux deux : chaque prediction est decomposee en contributions par feature, avec une **additivite exacte** :
 
 `prediction = valeur_de_base + somme des contributions phi_j`
 
-Les phi sont les valeurs de Shapley de la theorie des jeux (cout marginal moyen sur tous les sous-ensembles), calculees **exactement et en temps polynomial** pour les arbres (Tree SHAP, Lundberg et al. 2019). Ici le modele de reference devient **XGBoost** -- le meme pipeline, seul le regressor change -- pour utiliser TreeExplainer.",,,,,,,,dee221b1691e4592,,,,,,,,,,,,,,,
+Les phi sont les valeurs de Shapley de la théorie des jeux (cout marginal moyen sur tous les sous-ensembles), calculees **exactement et en temps polynomial** pour les arbres (Tree SHAP, Lundberg et al. 2019). Ici le modèle de reference devient **XGBoost** -- le même pipeline, seul le regressor change -- pour utiliser TreeExplainer.",,,,,,,,55747250060ca029,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,d69ab5b0,code,fr,b1e54ca1177f6778,"# Tree SHAP : XGBoost dans le meme pipeline, decomposition exacte par instance
 from sklearn.metrics import r2_score
 from xgboost import XGBRegressor
@@ -8462,15 +8520,15 @@ shap.dependence_plot(""num__trip_distance"", phi, X_test_enc_df,
 plt.title(""phi(trip_distance) vs trip_distance, coloree par trip_time_in_secs"")
 plt.tight_layout()
 plt.show()",,,,,,,,9d68995f17ef72b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,10e4c1ed,markdown,fr,6e843a9c89e0e3cb,"### Lecture : ce que SHAP ajoute a la PFI sur ce meme dataset
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,10e4c1ed,markdown,fr,533bc53d3c583f46,"### Lecture : ce que SHAP ajoute a la PFI sur ce même dataset
 
-- **Le classement global coincide avec la PFI** (`trip_distance` domine, `trip_time_in_secs` secondaire) -- sur un jeu sans correlation forte, les deux methodes convergent, ce qui est rassurant.
+- **Le classement global coincide avec la PFI** (`trip_distance` domine, `trip_time_in_secs` secondaire) -- sur un jeu sans correlation forte, les deux méthodes convergent, ce qui est rassurant.
 - **Le beeswarm montre la distribution par instance** : chaque ligne est une feature, chaque point un trajet. Rouge = valeur elevee. On lit par exemple que des distances elevees (rouge, a droite) poussent la prediction vers le haut (phi positif) -- la PFI ne pouvait pas montrer cela, elle n'a qu'un nombre par feature.
-- **Le dependence plot montre la forme** : la contribution de `trip_distance` croit avec la distance (le tarif est ~ lineaire en distance dans le generateur), et la couleur revele l'interaction residuelle avec la duree.
-- **L'additivite est exacte** (ecart ~ 1e-15 en regression) : la somme des phi restitue chaque prediction au centieme de centime pres -- c'est la propriete qui rend la decomposition utilisable en pratique (elle s'additionne, elle se piste par instance).",,,,,,,,6e843a9c89e0e3cb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,9139ec2b,markdown,fr,4f8ff3edc86787a0,"> **SHAP n'est pas la causalite.** Les phi mesurent comment le modele *distribue le credit* de sa prediction entre les features -- une propriete du modele, pas du monde. Si le generateur avait un confondeur (disons : les trajets de nuit sont a la fois plus longs et plus chers pour une raison non modelisee), SHAP attribuerait le surplus aux features visibles sans jamais reveler le mecanisme. Passer de l'attribution a l'effet causal exige les outils de la section suivante de la serie -- voir le notebook 2.14 - Explicabilite XAI (a paraitre dans l'Epic #16620 ; chemin : ../../DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) pour le parcours complet (LIME, contrefactuels DiCE, limites) et l'Epic #16620 pour la jonction formelle attribution <-> identification causale (do-calculus, effets specifiques a un chemin).
+- **Le dependence plot montre la forme** : la contribution de `trip_distance` croit avec la distance (le tarif est ~ lineaire en distance dans le générateur), et la couleur revele l'interaction residuelle avec la duree.
+- **L'additivite est exacte** (ecart ~ 1e-15 en regression) : la somme des phi restitue chaque prediction au centieme de centime pres -- c'est la propriete qui rend la decomposition utilisable en pratique (elle s'additionne, elle se piste par instance).",,,,,,,,533bc53d3c583f46,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb,9139ec2b,markdown,fr,0532df8791eab90f,"> **SHAP n'est pas la causalite.** Les phi mesurent comment le modèle *distribue le credit* de sa prediction entre les features -- une propriete du modèle, pas du monde. Si le générateur avait un confondeur (disons : les trajets de nuit sont a la fois plus longs et plus chers pour une raison non modelisee), SHAP attribuerait le surplus aux features visibles sans jamais reveler le mécanisme. Passer de l'attribution a l'effet causal exige les outils de la section suivante de la serie -- voir le notebook 2.14 - Explicabilite XAI (a paraitre dans l'Epic #16620 ; chemin : ../../DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) pour le parcours complet (LIME, contrefactuels DiCE, limites) et l'Epic #16620 pour la jonction formelle attribution <-> identification causale (do-calculus, effets spécifiques a un chemin).
 >
-> **Reference.** Lundberg & Lee, *A Unified Approach to Interpreting Model Predictions*, NeurIPS 2017 (arXiv 1706.06060) ; Lundberg et al., *Consistent Individualized Feature Attribution for Tree Ensembles*, arXiv 1905.04610.",,,,,,,,4f8ff3edc86787a0,,,,,,,,,,,,,,,
+> **Reference.** Lundberg & Lee, *A Unified Approach to Interpreting Model Predictions*, NeurIPS 2017 (arXiv 1706.06060) ; Lundberg et al., *Consistent Individualized Feature Attribution for Tree Ensembles*, arXiv 1905.04610.",,,,,,,,0532df8791eab90f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,proto-eval-protocol,markdown,fr,a2a90127192311f1,"### Protocole d'évaluation aligné : origine x horizon
 
 `ForecastBySsa` (horizon=7) produit, **pour chaque date d'origine**, un vecteur de prévision de longueur 7 — la première valeur étant la prévision du lendemain, la seconde celle du surlendemain, etc. Aplatir ce vecteur (`SelectMany`) puis le zipper aux valeurs réelles **fausse l'alignement** : on apparierait la prévision du jour J+k avec la vente du jour J.
@@ -8509,3 +8567,121 @@ public static class ForecastEval
         return (err.Average(e => Math.Abs(e)), Math.Sqrt(err.Average(e => e * e)));
     }
 }",,,,,,,,eb084240b5e81ad8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,39a4994b,markdown,fr,81c408d1991fba5a,"## Pourquoi une série temporelle n'est pas un tableau
+
+En apprentissage classique, on mélange les lignes puis on coupe aléatoirement (80 % entraînement / 20 % test) : chaque ligne est supposée **indépendante** des autres. Cette hypothèse est ici **fausse**. Dans une série temporelle, l'**ordre des observations EST le signal** : la vente d'un jour dépend des jours qui l'ont précédé (tendance, saisonnalité, chocs). Mélanger les lignes détruirait exactement l'information que le modèle doit apprendre.
+
+D'où deux règles qui traversent tout ce notebook :
+
+1. **On ne mélange jamais.** La série reste dans son ordre chronologique.
+2. **On coupe dans le temps, pas au hasard.** Entraînement sur le passé, test sur l'avenir — la scission se fait par année civile, jamais par tirage aléatoire.
+
+Ce n'est pas une contrainte esthétique : c'est **le scénario réel**. En production, vous préviendrez des jours que vous n'avez jamais vus. Une coupe aléatoire laisserait fuiter de l'avenir vers l'entraînement et produirait un score **faussement optimiste** — le modèle « connaîtrait » des points de test qu'il ne connaîtra pas le jour J. Évaluer sur le futur, dans l'ordre, est donc la seule mesure honnête de la capacité de prévision.",,,,,,,,81c408d1991fba5a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb,dfbe0ba0,markdown,fr,fa3b0e18827bc31b,"## Ce que ce carnet ne montre pas
+
+Ce notebook tourne sur une série de ventes **synthétique et propre** — sans promotion, sans rupture de stock, sans jour férié, sans saisonnalité annuelle. C'est ce qui rend le SSA si net ici. En production, les limites reviennent au premier plan :
+
+- **Les chocs ne sont pas dans le modèle.** SSA prolonge la structure récente ; une promo, une grève ou un Black Friday la rompent. On y répond avec des **variables exogènes** (drapeaux promo, prix) que `ForecastBySsa` seul n'ingère pas.
+- **L'horizon reste court.** La décomposition excelle sur quelques jours ; au-delà, l'incertitude accumulée (cellule ci-dessus) et l'absence de structure annuelle rendent la prévision peu fiable.
+- **Les intervalles sont optimistes.** La couverture mesurée dans la cellule « Interprétation des intervalles de confiance » est **sous** le 95 % nominal : ces bornes sont un guide, **pas une garantie** de couverture.
+- **Ce n'est pas un modèle causal.** SSA décrit le motif, il n'explique pas **pourquoi** les ventes bougent.
+
+La série reste un excellent terrain d'entraînement sur la mécanique (décomposition, protocole aligné, baseline naïve, incertitude) ; la robustesse réelle se construit en aval, avec des features contextuelles et une surveillance de la dérive.",,,,,,,,fa3b0e18827bc31b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,c564-l03,markdown,fr,c15cdb6b7671e798,"### Lecture du résultat
+
+La graine 42 fixée à l'import garantit que les 90 clients synthétiques sont identiques à chaque exécution — la condition pour que les métriques affichées plus bas restent comparables d'une session à l'autre. Les trois segments sont générés par des normales aux centres très écartés (Recency 82 j / 5 j / 1 j), ce qui fait du K=3 la bonne réponse : le notebook le vérifie à la lettre à la méthode du coude, où la chute d'inertie se produit bien entre K=2 et K=3. Le tableau de la section introduit la sémantique métier de chaque axe : Recency élevé = client qui s'éloigne, Frequency/Monetary élevés = client qui vaut. Le clustering ne connaît pas ces étiquettes — il ne voit que des triplets numériques — mais l'interprétation des segments trouvés (dormants, réguliers, VIP) restera possible précisément parce que les axes portent du sens métier. Les noms de segments (Dormants, Réguliers, VIP) sont choisis à la génération et ne seront jamais passés au modèle : comparer à la fin les segments trouvés à ces trois groupes attendus est la validation qualitative du notebook, le pendant narratif du DaviesBouldin.",,,,,,,,c15cdb6b7671e798,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,c564-l06,markdown,fr,88d78bdd4c250d50,"### Lecture du résultat
+
+La sortie nomme les deux étages dans l'ordre d'exécution : `MinMaxScaler` d'abord (chaque feature ramenée à [0, 1]), `KMeans(K=3)` ensuite. La normalisation n'est pas décorative : Recency s'étale sur ~90 unités quand Monetary s'arrête à quelques centaines d'euros — sans mise à l'échelle, la distance euclidienne serait dominée par la feature au plus grand range et le clustering segmenterait les clients par leur dépense seule. MinMax plutôt que StandardScaler ici : les distributions simulées n'ont pas de queue lourde, et le range borné garde les distances interprétables.",,,,,,,,88d78bdd4c250d50,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,c564-l09,markdown,fr,8673dcb5d6fa1a8e,"### Lecture du résultat
+
+Les trois clusters de 30 points chacun reflètent exactement la génération : 30 clients par segment simulé, zéro erreur d'assignation. C'est le cas idéal — des gaussiennes bien séparées par construction. À retenir pour la pratique : sur des données réelles, les tailles déséquilibrées (un gros segment « réguliers », une longue traîne de dormants) sont le signal le plus courant, et un K-Means qui rend 3 tailles quasi égales sur données déséquilibrées indique souvent un K mal choisi.",,,,,,,,8673dcb5d6fa1a8e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,c564-l11,markdown,fr,8b046ce4886a15f2,"### Lecture du résultat
+
+L'inertie intra-cluster moyenne (0.1352) mesure la compacité : distance moyenne entre un point et son centroïde dans l'espace normalisé. Le Davies-Bouldin (0.426) rapporte cette compacité à la séparation inter-centres : plus il est bas, mieux les segments se distinguent. Les deux chiffres ensemble disent « segments compacts et bien séparés » — sur données réelles, l'un sans l'autre est trompeur : une inertie basse avec un DB élevé signale des clusters qui se touchent, une séparation propre avec une inertie haute signale des clusters lâches. Le nom « AverageDistance » du dépôt ML.NET et celui d'inertie de scikit-learn désignent la même grandeur : la somme des distances au carré au centroïde, normalisée ici par point. C'est le même compromis que les notebooks supervisés entre métrique de perte et métrique d'évaluation — la perte d'entraînement (inertie) ne dit jamais seule si le partitionnement est utile, le DB ajoute le regard extérieur (séparation). Les deux chiffres restent lisibles à la sortie du coude plus bas, où la même paire de métriques est recalculée pour chaque K.",,,,,,,,8b046ce4886a15f2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb,c564-l15,markdown,fr,fced60610357e524,"### Lecture du résultat
+
+La cellule montre la mécanique de prédiction à froid : trois nouveaux clients projetés dans l'espace normalisé, assignés au centroïde le plus proche. La ligne `distances normalisées` rend le décision explicable — Recency=90/Freq=1/Monetary=40 EUR tombe sur le cluster 2 (distance 0.08, contre 0.64 et 1.19 pour les deux autres) : un profil dormant type. C'est la propriété utile du K-Means entraîné : chaque nouvelle observation est segmentée par un calcul trivial (distance au centroïde), sans réentraîner le modèle. L'affichage des trois distances plutôt que le seul numéro de cluster est le geste à retenir pour tout scoring client : un rapprochement de segment est une décision, et la distance au centroïde en est la confiance — un client projeté à 0.08 de son segment appartient clairement, un client à égalité entre deux distances (0.5/0.5) mérite un regard manuel avant toute action marketing. Sur ce jeu synthétique les distances sont tranchées ; sur données réelles, elles se resserrent.",,,,,,,,fced60610357e524,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb,99ef06ab,markdown,fr,bd74b1da9c9f2111,"**Lecture du wiring sklearn + diabetes** (cellule ci-dessus) :
+
+La cellule ci-dessus importe les modules sklearn nécessaires et charge le
+dataset `diabetes` :
+- `sklearn.datasets.load_diabetes()` : 442 patients, 10 variables prédictives
+  (age, sex, bmi, bp, et 6 mesures sériques), cible quantitative (progression
+  de la maladie sur 1 an). C'est un *dataset régression* standard, plus
+  exigeant que `iris` ou `digits`.
+- `train_test_split(...)` : split 80/20, avec une graine fixée.
+- 3 modèles : `LinearRegression`, `RandomForestRegressor`, `GradientBoostingRegressor`.
+
+**Pourquoi le dataset `diabetes`** : c'est un *benchmark régression* du bundle
+sklearn. Il a l'avantage d'être (a) petit (442 observations), (b) multi-variable
+(10 features), (c) avec une cible quantitative -- donc adapté à toutes les
+métriques (R², RMSE, MAE). C'est l'équivalent régression de MNIST pour la
+classification.
+
+**Sortie attendue** : un message console indiquant les dimensions du dataset
+(442, 10) et la liste des modèles entraînés.
+
+**Coût** : ~1 seconde (chargement sklearn + entraînement des 3 modèles sur
+80% du dataset).",,,,,,,,bd74b1da9c9f2111,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb,2e7f097d,markdown,fr,ab8fc41b37de3344,"**Lecture de la validation croisée k-fold** (cellule ci-dessus) :
+
+La cellule ci-dessus implémente une validation croisée k-fold standard :
+- `KFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE)` : 10 plis,
+  avec shuffle (sinon l'ordre des données biaiserait les plis), graine fixée.
+- Pour chaque pli : split train/validation, entraînement des 3 modèles,
+  calcul du R² sur le pli de validation.
+- À la fin : `mean(scores) ± std(scores)` pour chaque modèle.
+
+**Pourquoi k=10** : c'est le compromis usuel entre biais et variance. Un k
+plus petit (e.g. 5) donne des sets de validation plus grands mais plus de
+variance entre plis. Un k plus grand (e.g. 20) donne des sets plus petits
+mais plus de stabilité. La convention sklearn par défaut est k=5 ; ici on
+utilise k=10 pour avoir une meilleure estimation de la variance.
+
+**Pourquoi `shuffle=True`** : par défaut, KFold *ne mélange pas* les données.
+Si les données sont ordonnées (e.g. par date), les plis successifs seraient
+*non-aléatoires*. Le shuffle garantit que les plis sont i.i.d. -- hypothèse
+du t-test corrigé.
+
+**Sortie** (cellule ci-dessus) : un tableau avec, pour chaque modèle, la moyenne
+et l'écart-type des R² sur les 10 plis. Sur la sortie committée :
+- LinearRegression : 0.465 ± 0.114 (plis de 0.30 à 0.60)
+- RandomForest : 0.401 ± 0.135 (plis de 0.10 à 0.57)
+- GradientBoosting : 0.363 ± 0.172 (plis de 0.04 à 0.56)
+
+Les écarts-types se chevauchent -- d'où le piège classique d'en conclure
+« pas de différence ».
+
+**Coût** : ~3 secondes (10 plis × 3 modèles × ~100 ms chacun).",,,,,,,,ab8fc41b37de3344,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb,4de7f1ec,markdown,fr,982f96f4daf52d0b,"**Lecture du bootstrap** (cellule ci-dessus) :
+
+La cellule ci-dessus définit `bootstrap_metric_diff(model_a, model_b, X_te,
+y_te, metric, n_boot=1000, seed=42)` -- une fonction qui calcule un IC
+bootstrap sur la différence d'une métrique entre deux modèles.
+
+**Algorithme** :
+1. Pour b = 1 à n_boot :
+   - Tirer un bootstrap de l'ensemble de test : `idx = np.random.choice(n_test, size=n_test, replace=True)`.
+   - Calculer `metric_a_b = metric(y_te[idx], y_pred_a[idx])`.
+   - Calculer `metric_b_b = metric(y_te[idx], y_pred_b[idx])`.
+   - Stocker `diff_b = metric_a_b - metric_b_b`.
+2. IC = `[percentile(diff, 2.5), percentile(diff, 97.5)]`.
+
+**Pourquoi bootstrapper sur le test set** : le test set est ce qui *mesure* la
+capacité de généralisation. La variance du R² sur le test set reflète
+directement l'incertitude de la mesure. Bootstrapper l'ensemble
+d'entraînement ne capture pas cette variance.
+
+**Pourquoi `replace=True`** : c'est la définition du bootstrap -- on tire avec
+remise pour simuler la variabilité d'échantillonnage. Sans remise, on aurait
+juste un *sous-ensemble* (jackknife), pas un bootstrap.
+
+**Sortie** (cellule ci-dessus) : un tuple `(ic_low, ic_high, mean_diff)` -- les
+bornes de l'IC et la différence moyenne. Sur la sortie committée (paire
+RandomForest − GradientBoosting, jeu de test) :
+- `mean_diff = 0.032` en faveur de RandomForest
+- IC 95 % = `[-0.049, 0.117]` : la borne basse est **négative** -- l'IC contient 0,
+  on ne peut pas conclure à une différence significative à 5 %
+
+**Coût** : ~5 secondes (1000 bootstraps × 2 prédictions).",,,,,,,,982f96f4daf52d0b,,,,,,,,,,,,,,,

@@ -1073,14 +1073,24 @@ def test_persona_alias_only_when_reserve_author_is_in_alias_set():
 
 
 def test_persona_alias_lift_override_logins_unchanged():
-    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste borne au siege.
     L'alias de persona NE confere PAS un droit d'override coordinateur : un
     `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
     `_lift_eligible`). La composition des deux decisions #11145 (borne
     d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
-    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot.
+
+    #17437/Q187 : la voix du siege est l'humain ``myia-ai-01`` PLUS l'App
+    PROPRE a la lane coordinatrice ``coursia-coord-ai01[bot]`` (App 5763709,
+    cle dediee, 2026-11-14). L'App ``coursia-lane-ai-01`` reste nommee par
+    MACHINE, et ai-01 porte deux lanes : sa cle privee, dans le clone
+    (``.secrets/github-apps/coursia-lane-ai-01.pem``), est lisible par la
+    lane worker soeur ``myia-ai-01:CoursIA-2``, qui forge donc le meme
+    jeton. Une App de machine ne peut pas porter la voix du coordinateur.
+    Aucun autre login ne s'ajoute : l'App d'une lane worker ne leve jamais."""
     assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
-    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01", "coursia-coord-ai01[bot]"}
+    assert "coursia-lane-ai-01[bot]" not in mod.LIFT_OVERRIDE_LOGINS
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
@@ -6725,8 +6735,10 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     monkeypatch.setattr(mod, "_resolve_absent_sha_state",
                         lambda data, cap=5: {"abc123": {"message": "corps du message",
                                                          "tree": None}})
-    monkeypatch.setattr(mod, "review_threads", lambda pr: [])
-    monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
+    # strict kwarg : le bundle releve via review_threads(pr, strict=True)
+    monkeypatch.setattr(mod, "review_threads", lambda pr, strict=False: [])
+    # #22757 : analyse_pr joint le join dismissals via le parametre bundle.
+    monkeypatch.setattr(mod, "improper_dismissals", lambda pr, author_of=None: [])
 
     def fake_issue_info(n):
         return None

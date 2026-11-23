@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — 5e fil de lecture : la dissolution des scalaires (Φ / F / K → faisceau de proxys, ICT-1 → ICT-22)
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Consolide un **cinquième fil de lecture** de la série ICT, à côté des quatre déjà documentés : invariants / dissociations / obstructions ([synthese-invariants-dissociations-obstructions.md](synthese-invariants-dissociations-obstructions.md)) + problème de la représentation interne ([genealogy-representation-interne.md](genealogy-representation-interne.md)). Le **cinquième fil** est celui de la **dissolution successive des scalaires** : ce qui arrive à Φ, F, K quand on les pousse hors de leur substrat d'origine.
@@ -31,7 +33,7 @@ Chaque palier marque une **rupture** dans la carrière d'un scalaire fondateur �
 
 ### Palier 2 — ICT-14 : F comme scalaire-complémentaire (jambe 2)
 
-[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
+[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
 
 **Ce que ce palier ne dit pas.** F **s'ajoute** à Φ sans le dissoudre : la strate 4 introduit **trois jambes** (Φ / F / K) qui sont présentées comme **compatibles** (ICT-15 va le vérifier).
 
@@ -59,13 +61,13 @@ Trois notebooks frères appliquent à la triade Φ/F/K des **proxys alternatifs*
 
 [`ICT-16-MDLTwoPartCode-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) (strate 5, cellule [8] Bosse complexité-entropie) montre que K (compression) **n'est pas un scalaire** : la bosse Crutchfield-Feldman (complexité statistique vs taux d'entropie) impose un **plan à deux dimensions** pour décrire K sur des données réelles. K est dissous en `(H_rate, model_bits)` ou, opérationnellement, `(entropy_rate_estimate, tpm_description_length)`.
 
-[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, cellule [23] Bilan) ajoute une **troisième jambe** : `C_μ` (entropie statistique de l'ε-machine de Crutchfield), **plafond** pour n'importe quel estimateur `p̂` (Gate 9, cellule [15]). K n'est plus seulement compressé (bits) ni même descriptif (bits + résiduel) : il est **structurellement contraint** par la causalité de la séquence.
+[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, cellule [23] Bilan) ajoute une **troisième jambe** : `C_μ` (entropie statistique de l'ε-machine de Crutchfield), **plafond** pour n'importe quel estimateur `p̂` (Gate 9, cellule [15]). K n'est plus seulement compressé (bits) ni même descriptif (bits + résiduel) : il est **structurellement contraint** par la causalité de la séquence.
 
 **Statut (palier 5).** K est passé de **scalaire** (ICT-15) à **bipolaire** (ICT-16 : `model_bits + résiduel`) à **tri-polaire** (ICT-17 : `C_μ + model_bits + résiduel`). Chaque polarité capture un **invariant différent** : la complexité statistique (C_μ), la compressibilité algorithmique (model_bits), l'adéquation aux données (résiduel). La dissolution est **technique** : c'est la **bosse Crutchfield-Feldman** qui force deux dimensions.
 
 ### Palier 6 — ICT-17b : K dissous en positif vs négatif sur le grokking
 
-[`ICT-17b-Grokking-CompressionProgress-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (strate 5, cellule [13] Interprétation honnête) pousse K sur le substrat training (multiplication modulaire `a*b mod p`, transformer 1-couche) :
+[`ICT-17b-Grokking-CompressionProgress-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (strate 5, cellule [13] Interprétation honnête) pousse K sur le substrat training (multiplication modulaire `a*b mod p`, transformer 1-couche) :
 
 - **Proxy positif** : `K_compression_progress` (Schmidhuber) — la **compression progressive des poids** accompagne le grokking, **résultat positif et robuste** (cellule [8] §2).
 - **Proxy négatif** : `K_rang_effectif` (cellule [17] exercice 2) — le **rang effectif** ne capture pas la transition, **résultat négatif**.
