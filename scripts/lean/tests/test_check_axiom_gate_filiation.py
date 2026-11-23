@@ -21,9 +21,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from check_axiom_gate_coverage import classify_deleted  # noqa: E402
+from check_axiom_gate_coverage import classify_deleted, rename_proven  # noqa: E402
 
 
 class TestRenamedParentFiliation:
@@ -218,3 +220,172 @@ class TestRenameProof:
         monkeypatch.chdir(tmp_path)
         assert rename_proven("HEAD", "Lean/NOPE/galois4_lean",
                               "Lean/GaloisRenamed4/galois4_lean") is False
+
+    # -- deux lacs renommes dans LE MEME commit (#26381) ------------------
+
+    def _deux_lacs(self, tmp_path):
+        """Deux lacs qui tiennent des fichiers IDENTIQUES sous le meme nom relatif.
+
+        Mesure du 2026-11-23 (git 2.51) : renommer les deux repertoires en UN
+        commit laisse git apparier chaque fichier identique (`lean-toolchain`,
+        `lake-manifest.json`) avec celui de l'AUTRE lac -- meme nom relatif,
+        meme contenu, rien ne les distingue.
+        """
+        lacs = {
+            "GOL/conway_lean": ("Conway.lean", "Gol/Cells.lean", "Gol/Rule.lean"),
+            "GROTH/grothendieck_lean": ("Groth.lean", "Topology/Sites.lean"),
+        }
+        for lac, modules in lacs.items():
+            base = tmp_path / "Lean" / lac
+            base.mkdir(parents=True)
+            nom = lac.split("/")[-1]
+            (base / "lean-toolchain").write_text(
+                "leanprover/lean4:v4.9.0\n", encoding="utf-8")
+            (base / "lake-manifest.json").write_text(
+                'version = 1\n[[packages]]\nname = "mathlib"\n', encoding="utf-8")
+            (base / "lakefile.lean").write_text(
+                f'import Lake\nopen Lake DSL\n\npackage "{nom}"\n', encoding="utf-8")
+            (base / "README.md").write_text(f"# {nom}\n", encoding="utf-8")
+            for module in modules:
+                cible = base / module
+                cible.parent.mkdir(parents=True, exist_ok=True)
+                aplati = module.replace("/", "_").replace(".", "_")
+                cible.write_text(
+                    f"theorem t_{nom}_{aplati} : True := trivial\n", encoding="utf-8")
+
+    def test_two_lakes_renamed_in_one_commit_are_both_proven(self, tmp_path,
+                                                             monkeypatch):
+        """Un fichier identique appareille au mauvais lac ne fait pas perdre l'autre.
+
+        Mesure du 2026-11-23 sur le depot reel (#26381) : `conway_lean` et
+        `grothendieck_lean` renommes dans le meme commit, et git a appareille
+        le `lean-toolchain` de conway avec celui de grothendieck. Une preuve
+        qui s'arrete au premier `R` sous l'ancien chemin suit CE fichier et
+        declare le deplacement de conway inprouvable : 1 PERDU sur `main`, et
+        la jambe « Always-on guards » rouge sur toute PR qui absorbe #26381.
+
+        Ce test ne suppose PAS que git appareille mal : il demande que les
+        deux deplacements soient prouves, que l'appariement soit correct ou
+        croise. La lecture d'un appariement croise est mesuree a part, sur une
+        sortie de git fournie (`TestRenameProofVotes`).
+        """
+        run = self._init(tmp_path)
+        self._deux_lacs(tmp_path)
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        for parent in ("JeuDeLaVie", "Grothendieck"):
+            (tmp_path / "Lean" / parent).mkdir()
+        run("mv", "Lean/GOL/conway_lean", "Lean/JeuDeLaVie/conway_lean")
+        run("mv", "Lean/GROTH/grothendieck_lean",
+            "Lean/Grothendieck/grothendieck_lean")
+        run("commit", "-q", "-m", "rename both")
+        monkeypatch.chdir(tmp_path)
+        for ancien, nouveau in (("Lean/GOL/conway_lean", "Lean/JeuDeLaVie/conway_lean"),
+                                ("Lean/GROTH/grothendieck_lean",
+                                 "Lean/Grothendieck/grothendieck_lean")):
+            assert rename_proven("HEAD", ancien, nouveau) is True, f"{ancien} -> {nouveau}"
+
+
+class TestRenameProofVotes:
+    """Un saut se lit sur un VOTE de tous les fichiers renommes, pas sur le premier.
+
+    La sortie de git est fournie a l'organe telle qu'il la lit (`log`, puis
+    `diff --name-status -M`) : le verdict ne depend ni de la version de git ni
+    de la facon dont elle appareille deux fichiers identiques. Ce qui est
+    mesure ici est la LECTURE de l'organe.
+    """
+
+    A_OLD = "Lean/GOL/conway_lean"
+    A_NEW = "Lean/JeuDeLaVie/conway_lean"
+    B_OLD = "Lean/GROTH/grothendieck_lean"
+    B_NEW = "Lean/Grothendieck/grothendieck_lean"
+
+    # Sortie mesuree le 2026-11-23 (git 2.51) pour le commit qui renomme les
+    # deux lacs : deux fichiers de conway partent vers le nouveau dossier de
+    # grothendieck, et deux fichiers de grothendieck vers celui de conway.
+    DIFF = "\n".join((
+        f"R100\t{A_OLD}/lake-manifest.json\t{B_NEW}/lake-manifest.json",
+        f"R100\t{A_OLD}/lean-toolchain\t{B_NEW}/lean-toolchain",
+        f"R100\t{B_OLD}/Groth.lean\t{B_NEW}/Groth.lean",
+        f"R100\t{A_OLD}/Conway.lean\t{A_NEW}/Conway.lean",
+        f"R100\t{A_OLD}/Gol/Cells.lean\t{A_NEW}/Gol/Cells.lean",
+        f"R100\t{A_OLD}/Gol/Rule.lean\t{A_NEW}/Gol/Rule.lean",
+        f"R100\t{A_OLD}/lakefile.lean\t{A_NEW}/lakefile.lean",
+        f"R100\t{A_OLD}/README.md\t{A_NEW}/README.md",
+        f"R100\t{B_OLD}/lean-toolchain\t{A_NEW}/lean-toolchain",
+        f"R100\t{B_OLD}/Topology/Sites.lean\t{B_NEW}/Topology/Sites.lean",
+        f"R100\t{B_OLD}/lake-manifest.json\t{A_NEW}/lake-manifest.json",
+        f"R100\t{B_OLD}/README.md\t{B_NEW}/README.md",
+    )) + "\n"
+
+    DIFF_EX_AEQUO = "\n".join((
+        f"R100\t{A_OLD}/lean-toolchain\t{B_NEW}/lean-toolchain",
+        f"R100\t{A_OLD}/Conway.lean\t{A_NEW}/Conway.lean",
+    )) + "\n"
+
+    A_MID = "Lean/GameOfLife/conway_lean"
+    DIFF_SAUT_1 = "\n".join((
+        f"R100\t{A_OLD}/lean-toolchain\t{B_NEW}/lean-toolchain",
+        f"R100\t{A_OLD}/Conway.lean\t{A_MID}/Conway.lean",
+        f"R100\t{A_OLD}/Gol/Cells.lean\t{A_MID}/Gol/Cells.lean",
+        f"R100\t{A_OLD}/README.md\t{A_MID}/README.md",
+    )) + "\n"
+    DIFF_SAUT_2 = "\n".join((
+        f"R100\t{A_MID}/Conway.lean\t{A_NEW}/Conway.lean",
+        f"R100\t{A_MID}/Gol/Cells.lean\t{A_NEW}/Gol/Cells.lean",
+        f"R100\t{A_MID}/README.md\t{A_NEW}/README.md",
+    )) + "\n"
+
+    @pytest.fixture(autouse=True)
+    def _repertoire_neuf(self, tmp_path, monkeypatch):
+        """Un repertoire courant neuf a chaque test : la memoisation de l'organe
+        porte sur lui, sinon un test herite la reponse d'un autre."""
+        monkeypatch.chdir(tmp_path)
+
+    def _fournir(self, monkeypatch, diffs, commits):
+        """Brancher l'organe sur des sorties de git ecrites ici.
+
+        ``commits`` : ancien chemin -> commit qui le supprime (rien = le chemin
+        existe encore). ``diffs`` : commit -> sa sortie ``--name-status -M``.
+        """
+        import check_axiom_gate_coverage as mod
+
+        def faux_git(*args):
+            if args[0] == "log":
+                return commits.get(args[-1], "") + "\n"
+            if args[0] == "diff":
+                return diffs[args[-1]]
+            raise AssertionError(f"appel git inattendu : {args}")
+
+        monkeypatch.setattr(mod, "_git", faux_git)
+
+    def test_the_majority_of_the_files_beats_the_mispaired_ones(self, monkeypatch):
+        """5 fichiers de conway suivent conway, 2 suivent grothendieck : conway gagne."""
+        self._fournir(monkeypatch, {"c0": self.DIFF}, {self.A_OLD: "c0"})
+        assert rename_proven("origin/main", self.A_OLD, self.A_NEW) is True
+
+    def test_the_mispaired_files_prove_no_move_to_the_other_lake(self, monkeypatch):
+        """Controle negatif : les 2 fichiers egares ne prouvent pas que conway
+        est devenu grothendieck -- sinon la couverture de l'un blanchirait la
+        perte de l'autre."""
+        self._fournir(monkeypatch, {"c0": self.DIFF}, {self.A_OLD: "c0"})
+        assert rename_proven("origin/main", self.A_OLD, self.B_NEW) is False
+
+    def test_an_ex_aequo_proves_nothing(self, monkeypatch):
+        """Deux destinations a egalite : aucun saut ne se deduit (fail-closed)."""
+        self._fournir(monkeypatch, {"c0": self.DIFF_EX_AEQUO}, {self.A_OLD: "c0"})
+        assert rename_proven("origin/main", self.A_OLD, self.A_NEW) is False
+        assert rename_proven("origin/main", self.A_OLD, self.B_NEW) is False
+
+    def test_no_renamed_file_proves_nothing(self, monkeypatch):
+        """Un chemin supprime sans aucun `R` en dessous n'a nulle part ou aller."""
+        supprimes = f"D\t{self.A_OLD}/Conway.lean\nD\t{self.A_OLD}/README.md\n"
+        self._fournir(monkeypatch, {"c0": supprimes}, {self.A_OLD: "c0"})
+        assert rename_proven("origin/main", self.A_OLD, self.A_NEW) is False
+
+    def test_each_hop_of_a_chain_votes(self, monkeypatch):
+        """Une chaine de deux renommages : chaque saut se lit sur son propre vote."""
+        diffs = {"saut1": self.DIFF_SAUT_1, "saut2": self.DIFF_SAUT_2}
+        commits = {self.A_OLD: "saut1", self.A_MID: "saut2"}
+        self._fournir(monkeypatch, diffs, commits)
+        assert rename_proven("origin/main", self.A_OLD, self.A_NEW) is True

@@ -370,6 +370,18 @@ def rename_proven(ref: str, old_path: str, new_path: str) -> bool:
     to the last hop to say anything (without it, the guard declares PERDU a
     lake whose coverage never moved -- the same false loss, one hop deeper).
 
+    The rename entries are read as a **vote**, not as a first match. Two lakes
+    are often renamed in one commit, and ``-M`` pairs a deleted file with an
+    added one of identical content : when both lakes hold the same bytes under
+    the same relative name (``lean-toolchain``), the pairing is arbitrary and
+    crosses -- the ``lean-toolchain`` of ``conway_lean`` was paired with the
+    new directory of ``grothendieck_lean`` (#26381, 2026-11-23). Stopped at
+    the first ``R`` under the old path, the proof followed that one file and
+    declared ``conway_lean`` PERDU on ``main`` while its coverage never
+    moved. Each renamed file is one vote on where the lake's directory went ;
+    the destination of the STRICT majority is the hop (``_majority_move``),
+    and a tie proves nothing.
+
     A lake that was copied (same content, new path, old path still there) or
     recreated differently is NOT a rename: the old path is still present at
     ``ref``, or no ``R`` entry links the two paths, and the answer is False.
@@ -381,6 +393,37 @@ def rename_proven(ref: str, old_path: str, new_path: str) -> bool:
     answer computed for another one).
     """
     return _rename_proven_at(os.getcwd(), ref, old_path, new_path)
+
+
+def _majority_move(out: str, current: str) -> str | None:
+    """Where the STRICT majority of the files renamed out of ``current`` went.
+
+    ``out`` is the ``git diff --name-status -M`` of the commit that removed
+    ``current``. A ``R`` line is one file : its source under ``current`` and
+    its destination give one vote on the directory the lake moved to. The
+    pairing of identical files is arbitrary (see ``rename_proven``), so ONE
+    line proves nothing -- neither the first one nor any other.
+
+    No vote at all, or an ex aequo, answers ``None`` : the caller keeps the
+    move unproven rather than pick a side (fail-closed).
+    """
+    votes: dict[str, int] = {}
+    for line in out.splitlines():
+        cols = line.split("\t")
+        if len(cols) < 3 or not cols[0].startswith("R"):
+            continue
+        src = cols[1].replace("\\", "/")
+        dst = cols[2].replace("\\", "/")
+        if src != current and not src.startswith(current + "/"):
+            continue
+        suffix = src[len(current):]
+        target = dst[: len(dst) - len(suffix)] if dst.endswith(suffix) else dst
+        votes[target] = votes.get(target, 0) + 1
+    if not votes:
+        return None
+    best = max(votes.values())
+    winners = [target for target, count in votes.items() if count == best]
+    return winners[0] if len(winners) == 1 else None
 
 
 @functools.lru_cache(maxsize=None)
@@ -413,16 +456,7 @@ def _rename_proven_at(cwd: str, ref: str, old_path: str, new_path: str) -> bool:
         if not commit:
             return False
         out = _git("diff", "--name-status", "-M", f"{commit}^", commit)
-        moved_to = None
-        for line in out.splitlines():
-            cols = line.split("\t")
-            if len(cols) >= 3 and cols[0].startswith("R"):
-                src = cols[1].replace("\\", "/")
-                dst = cols[2].replace("\\", "/")
-                if src == current or src.startswith(current + "/"):
-                    suffix = src[len(current):]
-                    moved_to = dst[: len(dst) - len(suffix)] if dst.endswith(suffix) else dst
-                    break
+        moved_to = _majority_move(out, current)
         if moved_to is None:
             return False
         if moved_to == new or new.startswith(moved_to + "/"):
