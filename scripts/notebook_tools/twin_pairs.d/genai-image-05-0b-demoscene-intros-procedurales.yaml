@@ -1,0 +1,10 @@
+- name: Image 05-0b Démoscène procédurale
+  family: GenAI/Image/05-History
+  python: MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets génèrent cinq flux indexés, mesurent le code source de leurs noyaux et passent réellement code et trames dans liblzma preset 9 extrême. Le C# emploie XZ Utils, l’AST Roslyn et ImageMagick pour ses PNG."
+  known_differences:
+  - "Les générateurs aléatoires et les arrondis numériques produisent des pixels différents. Les mêmes dimensions, étapes, graines nominales et budgets demeurent."
+  - "Les octets du programme dépendent du langage et de la mise en forme. Les graphiques C# sont servis par un montage PNG ou un SVG statique."
