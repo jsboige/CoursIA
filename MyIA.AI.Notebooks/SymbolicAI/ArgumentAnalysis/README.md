@@ -105,8 +105,8 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 ### Autour de 07 — Orchestration
 
-- [07b — Canaux de communication](Argumentation-07b-Communication-Channels-Python.ipynb) : construire un bus multi-agents avec priorité explicite, routage sans route morte et corrélation requête-réponse.
-- [07c — Modes d'orchestration](Argumentation-07c-Orchestration-Modes-Python.ipynb) : comparer plusieurs architectures par leur budget et distinguer l'arrêt déclaré par le mode de la réalité des phases exécutées.
+- [07b — Canaux de communication](Argumentation-07b-Communication-Channels-Python.ipynb) ([C#](Argumentation-07b-Communication-Channels-CSharp.ipynb)) : construire un bus multi-agents avec priorité explicite, routage sans route morte et corrélation requête-réponse.
+- [07c — Modes d'orchestration](Argumentation-07c-Orchestration-Modes-Python.ipynb) ([C#](Argumentation-07c-Orchestration-Modes-CSharp.ipynb)) : comparer plusieurs architectures par leur budget et distinguer l'arrêt déclaré par le mode de la réalité des phases exécutées.
 
 ### Autour de 08 — Intégration et restitution
 
