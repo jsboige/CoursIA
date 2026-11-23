@@ -209,10 +209,10 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 03b | [Chambres, murs et chemins](GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) · [C#](GameTheory-03b-Chambres-Murs-Chemins-Lean-CSharp.ipynb) · [Rust](GameTheory-03b-Chambres-Murs-Chemins-Lean-Rust.ipynb) | Les jeux stricts comme chambres d'un arrangement, les égalités comme murs, et la distance de swap qui sépare deux chambres : incidence mur/chambre, graphe des chambres, longueurs de Coxeter, puis parcours en largeur, théorème de décomposition et certificat Lean indépendant du plus court chemin | Python · C# | Recherche |
-| 03d | [Deux espèces de flèches](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
+| 03d | [Deux espèces de flèches](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [Rust](GameTheory-03d-Deux-Especes-de-Fleches-Rust.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 | 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [Rust](GameTheory-03e-Meta-Actions-Tarifees-Rust.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python · Rust | Recherche |
 
-Le carnet 03d existe aussi en [C#](GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb) : les deux versions énumèrent les jeux et comparent les swaps adjacents et la préservation des équilibres purs.
+Le carnet 03d existe aussi en [C#](GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb) et en [Rust](GameTheory-03d-Deux-Especes-de-Fleches-Rust.ipynb) : les trois versions énumèrent les jeux et comparent les swaps adjacents et la préservation des équilibres purs.
 
 ### Autour de 04 — existence et nature de l'équilibre
 
@@ -446,7 +446,7 @@ Les extensions autonomes de la série vivent dans des **escaliers** : des sous-d
 
 Le dossier [Metajeux/](Metajeux/README.md) descend des extensions 18-20c de la racine (tranche T6 de la restructuration #20316) : open games et lentilles (ex-18), casser la composition (ex-18b), abstraction à dette (ex-19), chemin minimal Robinson-Goforth (ex-20), témoins d'impossibilité (ex-20b) et chemin minimal 3×2 (ex-20c) y forment les marches `Metajeux-01` à `Metajeux-06` ; la marche 03 consomme le lake `Abstraction`. Le co-design bilevel (ex-`19b`) les rejoint comme [`Metajeux-03b`](Metajeux/Metajeux-03b-Bilevel-PPO-Python.ipynb), extension de la marche 03 : sa cellule 0 le place entre l'abstraction à dette et le chemin minimal, et son numéro nu mentait sur ce rang (décision du coordinateur c.6901721968).
 
-**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-09](../Probas/DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/GOL/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
+**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-09](../Probas/DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/JeuDeLaVie/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
 
 ### Extensions restées en racine
 

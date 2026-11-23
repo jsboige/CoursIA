@@ -10,16 +10,15 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 | Lac | Modules | Miroirs | CI | Gate axiomes | Site = consommateur | Doublons declares | Naissance |
 |---|---|---|---|---|---|---|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-05-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 58 | 42 | declare | couverte | 1 hors site (9 carnets) | 2 / 2 | 2026-05-28 |
-| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 35 | 19 | declare | couverte | ok (4) | 2 / 2 | 2026-07-10 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-05-31 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` | 58 | 42 | declare | couverte | 1 hors site (9 carnets) | 2 / 2 | 2026-05-28 |
+| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 46 | 27 | declare | couverte | ok (4) | 3 / 3 | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
-| `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean` | 12 | 8 | declare | couverte | non consomme | 1 / 1 | 2026-11-08 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | ok (4) | - | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | couverte | ok (1) | - | 2026-09-21 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean` | 9 | 8 | declare | couverte | ok (1) | - | 2026-11-02 |
@@ -36,14 +35,14 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | non consomme | 1 / 1 | 2026-06-10 |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | ok (14) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-09-06 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | ok (4) | 2 / 2 | 2026-05-29 |
 | `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | ok (1) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean` | 5 | 2 | declare | couverte | ok (1) | - | 2026-10-31 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean` | 5 | 2 | declare | couverte | ok (1) | - | 2026-10-31 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-10-18 |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | 3 | 1 | declare | couverte | ok (4) | - | 2026-10-24 |
@@ -51,6 +50,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 1 | declare | couverte | non consomme | - | 2026-06-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` | 3 | 0 | hors CI | hors matrice | ok (1) | - | 2026-10-22 |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 1 | declare | sans gate | ok (1) | - | 2026-06-05 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean` | 2 | 0 | declare | couverte | non consomme | - | 2026-11-20 |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | 0 | 0 | declare | vendu | non consomme | - | 2026-10-05 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` | 0 | 0 | hors CI | vendu | non consomme | - | 2026-05-16 |
 | `docs/lean/darksnail/build-evidence-2026-10-31` | 0 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-31 |
@@ -61,13 +61,13 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ### Reconciliation
 
-526 modules + 387 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 950 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+527 modules + 387 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 951 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 
 Ces lacs existent dans l'arbre et aucun workflow ne les nomme : ni `scripts/lean/ci_lakes.json`, ni un fichier de `.github/workflows/`. Aucun build de matrice ne les couvre.
 
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` — 4 modules, ne le 2026-10-08
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/kls_lean` — 4 modules, ne le 2026-10-08
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean` — 3 modules, ne le 2026-10-07
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` — 3 modules, ne le 2026-10-22
 - `docs/lean/darksnail/build-evidence-2026-10-31` — 0 modules, ne le 2026-10-31
@@ -100,12 +100,12 @@ La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les c
 
 30 lacs sur 42 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
 
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/ML/learning_theory_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning`
-- `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE`
+- `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Tweety`
-- `MyIA.AI.Notebooks/GameTheory/assignment_lean` — 3 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE`
+- `MyIA.AI.Notebooks/GameTheory/assignment_lean` — 3 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF`
 
@@ -121,9 +121,9 @@ La colonne « nature » compare la **formulation**, pas le resultat, et cet éca
 | `fairBot_unexploitable` | `game_theory_lean`, `formal_logic_lean` | 3 | 3 | game_theory_lean 2/2, formal_logic_lean 1/1 | formulation differente | declare |
 | `fairBot_vs_defectBot` | `game_theory_lean`, `formal_logic_lean` | 3 | 3 | game_theory_lean 2/2, formal_logic_lean 1/1 | formulation differente | declare |
 | `nimSum_single` | `conway_lean`, `calibration_lean` | 4 | 4 | conway_lean 2/2, calibration_lean 2/2 | formulation identique | declare |
-| `sen_impossibility` | `social_choice_core_lean`, `lean_game_defs` | 4 | 4 | social_choice_core_lean 2/2, lean_game_defs 2/2 | formulation differente | declare |
+| `sen_impossibility` | `game_theory_lean`, `lean_game_defs` | 4 | 4 | game_theory_lean 2/2, lean_game_defs 2/2 | formulation differente | declare |
 
-**Cet inventaire sous-compte, et c'est mesure.** La detection est par nom : un meme resultat prouve sous deux noms differents lui echappe. Le controle negatif est `Arrow`, declare des deux cotes (`social_choice_core_lean/SocialChoice/Arrow.lean` : `arrow` — descendu du hub par #24183 T3 ; `lean_game_defs/SocialChoice.lean` : `arrow_impossibility`), et absent de la table ci-dessus. Un verdict « 0 doublon » ne se lit donc jamais comme « aucun resultat n'est prouve deux fois ». La table ne tranche pas davantage l'identite mathematique : elle compare des formulations, et une « formulation differente » peut etre le meme theoreme encode deux fois — le cas se rencontre dans ce depot, ou une maison abstraite et une maison specialisee prouvent le meme resultat a des generalites differentes. L'organe qui tranche est celui de #24183 (tranche T0) ; cette page en est l'inventaire, pas le juge.
+**Cet inventaire sous-compte, et c'est mesure.** La detection est par nom : un meme resultat prouve sous deux noms differents lui echappe. Le controle negatif est `Arrow`, declare des deux cotes (`game_theory_lean/SocialChoice/Arrow.lean` : `arrow` ; `lean_game_defs/SocialChoice.lean` : `arrow_impossibility`), et absent de la table ci-dessus. Un verdict « 0 doublon » ne se lit donc jamais comme « aucun resultat n'est prouve deux fois ». La table ne tranche pas davantage l'identite mathematique : elle compare des formulations, et une « formulation differente » peut etre le meme theoreme encode deux fois — le cas se rencontre dans ce depot, ou une maison abstraite et une maison specialisee prouvent le meme resultat a des generalites differentes. L'organe qui tranche est celui de #24183 (tranche T0) ; cette page en est l'inventaire, pas le juge.
 
 ## Regle d'accretion d'un lac
 
@@ -134,6 +134,6 @@ Verdicts tranches par la mesure (T2 #23097) :
 | Lac | Cas | Verdict | Mesure fondatrice |
 |---|---|---|---|
 | `assignment_lean` | (3) compagnon d'arc | legitime-documente | Arc 16f : `GameTheory-16f-Lean-Assignment-Lean.ipynb` importe `Assignment.KuhnMunkres`. Toolchain et pin Mathlib identiques a `game_theory_lean` (v4.33.0, db584cd6), zero import croise, theorie (affectation hongroise, Kuhn-Munkres) absente des 8 branches du lac de la serie. |
-| `asymmetric_information_lean` | (3) compagnon d'arc | legitime-documente | Arc 17b-17e : `GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb` importe `AsymmetricInformation.Lemons`, `GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb` en importe 4 modules. Path dep non negociable vers `lean_game_defs_ext` (#12848) : la fusion imposerait ce pont aux 31 modules de `game_theory_lean` (42 avant la descente SocialChoice #24183 T3). Zero import croise. |
+| `asymmetric_information_lean` | (3) compagnon d'arc | legitime-documente | Arc 17b-17e : `GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb` importe `AsymmetricInformation.Lemons`, `GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb` en importe 4 modules. Path dep non negociable vers `lean_game_defs_ext` (#12848) : la fusion imposerait ce pont aux 38 modules de `game_theory_lean`. Zero import croise. |
 
 Les cas (1) toolchain divergente et (2) theorie distincte sont deja tranches : `social_choice_lean_peters` pour (1) (INTRINSIC #7081), `minimax_lean` et `conway_cgt_lean` pour (2).
