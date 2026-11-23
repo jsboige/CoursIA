@@ -48,6 +48,7 @@ flowchart BT
 | SW-02 (Py) | [SW-02-RDFBasics-Python](SW-02-RDFBasics-Python.ipynb) | Le même socle RDF avec rdflib | 45 min | MIROIR |
 | SW-03 | [SW-03-GraphOperations-CSharp](SW-03-GraphOperations-CSharp.ipynb) | Lire/écrire des graphes, fusionner, sélectionner par pattern, requêter les triplets avec LINQ, manipuler les listes RDF | 50 min | FONDATION |
 | SW-03 (Py) | [SW-03-GraphOperations-Python](SW-03-GraphOperations-Python.ipynb) | Les mêmes opérations de graphes avec rdflib | 50 min | MIROIR |
+| SW-03 (Rust) | [SW-03-GraphOperations-Rust](SW-03-GraphOperations-Rust.ipynb) | Les mêmes opérations de graphes avec les crates oxigraph (oxrdf, oxttl, oxrdfxml) — streaming natif et listes RDF à la main | 50 min | MIROIR |
 | SW-04 | [SW-04-SPARQL-CSharp](SW-04-SPARQL-CSharp.ipynb) | SPARQL : SELECT, FILTER, jointures implicites, OPTIONAL, UNION, ORDER BY / LIMIT | 45 min | FONDATION |
 | SW-04 (Py) | [SW-04-SPARQL-Python](SW-04-SPARQL-Python.ipynb) | SPARQL avec rdflib | 45 min | MIROIR |
 | SW-05 | [SW-05-LinkedData-CSharp](SW-05-LinkedData-CSharp.ipynb) | Les endpoints publics DBpedia et Wikidata, le client SPARQL distant, les requêtes fédérées avec SERVICE | 50 min | FONDATION |
@@ -70,6 +71,7 @@ flowchart BT
 | SW-14 | [SW-14-Coup-Ontologique-Python](SW-14-Coup-Ontologique-Python.ipynb) | Étendre un vocabulaire comme diff de graphe : le juge SHACL, le delta owlrl, la provenance par réification | 40 min | EXTENSION |
 | SW-14 (C#) | [SW-14-Coup-Ontologique-CSharp](SW-14-Coup-Ontologique-CSharp.ipynb) | Le même geste en dotNetRDF, avec OWL-RL via Python.NET (recette Linux de préparation du pont incluse) | 90 min | EXTENSION |
 | SW-15 | [SW-15-Coup-Argumentatif-Python](SW-15-Coup-Argumentatif-Python.ipynb) | Greffer un graphe d'argumentation AIF : le coup bascule l'extension grounded de Dung | 45 min | EXTENSION |
+| SW-15 (C#) | [SW-15-Coup-Argumentatif-CSharp](SW-15-Coup-Argumentatif-CSharp.ipynb) | Le coup argumentatif en dotNetRDF : SHACL natif, fermeture OWL-RL via le pont Python.NET, bascule de Dung calculee en C# | 90 min | EXTENSION |
 | SW-16 | [SW-16-ProofCarryingOntologies-Python](SW-16-ProofCarryingOntologies-Python.ipynb) | Le certificat d'inférence : une conclusion vérifiable par un checker indépendant | 50 min | EXTENSION |
 | Legacy | [RDF.Net-Legacy/RDF.Net](RDF.Net-Legacy/RDF.Net.ipynb) | Démonstration RDF.NET historique, antérieure à la double pile — archive de référence, non maintenue | — | ARCHIVE |
 
