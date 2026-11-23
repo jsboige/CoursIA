@@ -225,3 +225,6 @@ Si le modèle merge (FT-05) perd en qualité par rapport aux adaptateurs individ
 
 
 Les compagnons C# [FT-00a](FT-00a-LoRA-from-scratch-CSharp.ipynb) et [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-CSharp.ipynb) utilisent .NET Interactive et TorchSharp-cpu 0.107.0. Placer les quatre archives Fashion-MNIST originales dans un dossier et définir `COURSIA_FASHION_MNIST` vers ce dossier avant exécution. FT-00b lit les indices PCG64 figés dans [FT-00b-fashion-indices.json](FT-00b-fashion-indices.json) et vérifie leur empreinte SHA-256.
+
+
+Les archives officielles sont disponibles dans le [dépôt Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist/tree/master/data/fashion) : `train-images-idx3-ubyte.gz`, `train-labels-idx1-ubyte.gz`, `t10k-images-idx3-ubyte.gz` et `t10k-labels-idx1-ubyte.gz`. Conserver le JSON d’indices de FT-00b à côté du carnet et l’exécuter depuis ce dossier.
