@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Le propos du carnet est l'implementation classique de l'operation quantique : des deux cotes, l'etat cible est prepare par une permutation explicite des etats de base (numpy d'un cote, BCL de l'autre) et l'on mesure qu'une seule permutation suffit. Le moteur quantique n'est ni appele ni simule par un tiers -- le carnet le remplace volontairement par son equivalent classique, qui est l'objet de la demonstration. Aucun outil externe n'est omis ni presente a la place d'un autre."
   known_differences:
+    - "Navigation Python : les liens vers l'accrétion 06d ajoutent une entrée de série ; la paire Python/C# conserve son contenu démonstratif et ses sorties."
     - "Exercices : les trois memes exercices des deux cotes (`prepare_par_permutation`, `permutation_insuffisante`, `est_quasi_isometrie`), stub des deux cotes -- mais le noyau C# affiche une ligne explicite par exercice (« Exercice 1 : PrepareParPermutation(3, cible) = null (stub a completer) ») la ou le stub Python `return None` reste silencieux."
     - "Formatage des nombres : meme valeur mesuree, deux rendus -- le noyau .NET ecrit `[0, 0, 0, 0.5, 0, 0, 0, 0.8660254037844386]`, le noyau Python `[0. 0. 0. 0.5 0. 0. 0. 0.8660254]` (representation numpy, separateurs differents). Le noyau C# verrouille `CultureInfo.InvariantCulture`."
     - "Le titre de tete porte le suffixe « (C#) » cote C# ; les six sections et leur intitule sont identiques des deux cotes."
