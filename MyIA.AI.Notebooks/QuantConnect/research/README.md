@@ -28,6 +28,7 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_m12_hf_dm_test.ipynb` | M12-HF : test de significativité Diebold-Mariano | (c) Standalone | BTC tick Bitstamp |
 | `research_month_of_year.ipynb` | Saisonnalité mensuelle (effet de mois / « January effect », calendrier) — verdict NO BEATS net de coûts | (c) Standalone | yfinance (SPY/QQQ/EFA) |
 | `research_quality_lowvol.ipynb` | Facteur Quality + Low Vol | (c) Standalone | yfinance |
+| `research_regime_pairs.ipynb` | Pairs trading a changement de regime (Vasicek 2-regime + filtre de Hamilton, article QC #21678) : confrontation OOS au z-score classique, verdict INCONCLUSIVE net de 10 bps | (c) Standalone | yfinance (49 grandes caps S&P 500) |
 | `research_risk_parity.ipynb` | Allocation risk parity | (c) Standalone | yfinance |
 | `research_turn_of_month.ipynb` | Effet de calendrier turn of the month (brut, net de coûts, walk-forward + DM, verdict NO BEATS) | (c) Standalone | yfinance (SPY/QQQ/EFA) |
 | `research_rl_grpo.ipynb` | Agent de trading RL GRPO | (c) Standalone | yfinance |

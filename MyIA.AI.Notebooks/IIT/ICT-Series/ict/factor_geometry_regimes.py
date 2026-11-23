@@ -269,9 +269,22 @@ def verdict_critere_2(
     Les marginales appariees sont une **condition** du critere : si elles ne
     sont pas verifiees, le critere est rendu ``marginales_non_appariees``
     et ne peut etre Satisfait, quelle que soit la geometrie.
+
+    Le verdict porte aussi le **controle positif de l'instrument**
+    (:func:`ict.factor_geometry_trained.positive_control_additivity_gap`) :
+    un temoin oracle dont on sait par construction que les sous-espaces de
+    lecture se recouvrent, sur lequel le gap est negatif. Sans lui, un
+    ``additivity_gap`` nul mesure sur le modele entraine serait interpretable
+    comme « la metrique est muette » ; avec lui, ce zero est une vraie lecture
+    additive. C'est le residu que la 3e passe de #20071 a laisse ouvert.
     """
     apparie = bool(appariement.get("marginales_exactes", appariement.get("matrices_exact", False)))
     out: Dict[str, object] = {"marginales_appariees": apparie, "bras": {}}
+    # Controle positif de l'instrument : sans lui, un gap nul est MUET (un 0 ne
+    # se distingue pas d'une metrique a dynamique nulle sur ce banc). Le verdict
+    # n'est interpretable que parce que l'instrument est prouve capable d'etre
+    # negatif (temoin entrelace) et nul (temoin disjoint). Calcul CPU, deterministe.
+    out["controle_positif"] = fgt.positive_control_additivity_gap()
     for nom, ent in resultats.items():
         par_seed = ent["par_seed"] if isinstance(ent, dict) and "par_seed" in ent else {}
         temoin = ent["temoin"] if isinstance(ent, dict) else {}
@@ -813,6 +826,20 @@ def _print_sweep(lignes: List[Dict[str, object]]) -> None:
                 print(f"       {m}: {pos}")
 
 
+def _print_positive_control(pc: Dict[str, object]) -> None:
+    print("controle positif de l'instrument additivity_gap :")
+    for ov, c in pc["cas"].items():
+        print(
+            f"  overlap={ov}: gap={c['additivity_gap']:+.3f} (attendu {c['gap_attendu']:+d})  "
+            f"energie={c['overlap_energy']:.3f}  coherent={c['coherent']}"
+        )
+    print(
+        f"  -> gap negatif si entrelace : {pc['gap_negatif']}  "
+        f"gap nul si disjoint : {pc['gap_nul_disjoint']}  "
+        f"INSTRUMENT VIVANT : {pc['instrument_vivant']}"
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description="Campagnes des regimes generatifs #20071 (critere 1 : bruit du canal ; critere 2 : conditionnel)."
@@ -832,10 +859,36 @@ def main(argv: Sequence[str] | None = None) -> int:
         choices=["1", "2", "2b"],
         help="regimes a executer (1 : bruit du canal ; 2 : conditionnel emission ; 2b : conditionnel etat couple)",
     )
+    p.add_argument(
+        "--positive-control",
+        action="store_true",
+        help="ecrit seul l'artefact du controle positif de l'instrument (CPU, sans torch) et s'arrete",
+    )
     args = p.parse_args(argv)
 
     out = Path(args.out_dir) if args.out_dir else Path(__file__).resolve().parent / "results"
     out.mkdir(parents=True, exist_ok=True)
+
+    if args.positive_control:
+        # la piece manquante de la 3e passe : le controle qui prouve que le gap
+        # PUISSE etre negatif, pour que le zero des regimes 2/2b soit interpretable.
+        pc = fgt.positive_control_additivity_gap()
+        _print_positive_control(pc)
+        payload = {
+            "protocole": {
+                "objet": "controle positif de l'instrument additivity_gap (#20071, residu 3e passe)",
+                "n_tokens": pc["n_tokens"],
+                "private": pc["private"],
+                "n_noise": pc["n_noise"],
+                "seed": pc["seed"],
+            },
+            **pc,
+        }
+        art_pc = out / "ict36_positive_control.json"
+        art_pc.write_text(json.dumps(_jsonable(payload), indent=1, ensure_ascii=False), encoding="utf-8")
+        print(f"[controle positif] artefact -> {art_pc}")
+        return 0
+
     commun = {"steps": args.steps, "length": 100, "n_train": 300, "n_val": 40, "n_init": 6}
     gammas: Sequence[float] = (0.0, 0.25, 0.5, 0.65, 0.75, 0.9, 1.0)
     if args.quick:

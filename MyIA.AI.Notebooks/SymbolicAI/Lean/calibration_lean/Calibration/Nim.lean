@@ -39,7 +39,14 @@ theorem nim_winning_345 : isWinningNim [3, 4, 5] = true := by
 /-- Cible D (P1) : le nimSum d'un tas unique égale la taille du tas.
     Requiert Nat.xor_zero — le prouveur doit découvrir ce lemme spécifique.
     Un simp naïf sans le bon lemme va stagner.
-    Itérations attendues : 3-5 (unfold → simp naïf → échec → découvrir Nat.xor_zero → fermer). -/
+    Itérations attendues : 3-5 (unfold → simp naïf → échec → découvrir Nat.xor_zero → fermer).
+    Preuve alternative déclarée : `conway_lean` (`Conway/Nim.lean`, maison
+    canonique de l'énoncé — la théorie de Nim y vit) déclare le même théorème
+    et le ferme par le lemme pivot `Nat.zero_xor` en une tactique. Comparaison :
+    ici le dépliage structurel du `foldl` expose la mécanique du pliage — la
+    cible de calibration EST ce chemin, que le lemme pivot court-circuite côté
+    conway. Même énoncé, même généralité (`n : Nat` universel). Axiomes
+    atteints : propext, Quot.sound. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
   unfold nimSum
   simp [List.foldl_cons, List.foldl_nil]

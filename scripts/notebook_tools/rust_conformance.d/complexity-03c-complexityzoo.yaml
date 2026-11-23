@@ -1,0 +1,211 @@
+# Conformite differentielle du triplet Complexity-03c ComplexityZoo (issue #27846).
+#
+# Le portage Rust (kernel evcxr, std seul) rejoue le flux MT19937 de CPython
+# (init_by_array, graine 20260925, ordre des tirages calque sur la source) :
+# TOUTES les valeurs dependantes du generateur sont egales a la version Python
+# (pile DFS 16/35/103/190, pas 4/9/5/9, noeuds DPLL 10.3/17.6/23.9/42.5/63.9,
+# facteur noeuds ~1.10x), tolerance 0. Le jumeau C#, lui, tourne sous
+# System.Random et imprime ses decimaux a virgule francaise : ses valeurs
+# pseudo-aleatoires divergent (pile 8/40/109/262, pas 602 avec n=600 non
+# atteint, noeuds 9,3/14,4/20,0/31,4/64,2) -- ces grandeurs sont declarees
+# ABSENT cote C#, comme csp-4-scheduling.yaml pour ses ecarts propres.
+#
+# Les mesures structurelles (sans consommation d'aleatoire) -- mondes
+# d'oracles, certificats verifies, carte de la serie -- sont identiques sur
+# les trois cotes et comparees en trois volets, tolerance 0.
+- name: "Complexity-03c ComplexityZoo Navigation"
+  family: InformationCalcul/Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03c-ComplexityZoo-Navigation-Rust.ipynb
+  measures:
+    - id: dfs_pile_max_600
+      description: "Pile max du DFS sur le graphe aleatoire n=600 (deterministe sous le flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "n= 600  atteint=\\w+  pile max \\(espace explore\\)=\\s*(\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "n= 600  atteint=\\w+  pile max \\(espace explore\\)=\\s*(\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# tire ses graphes sous System.Random : sa pile max
+            (262) n'est pas la meme grandeur pseudo-aleatoire que la reference
+            MT19937 (190). Cote declare ABSENT, pas mesure.
+    - id: nl_pas_600
+      description: "Pas du verificateur NL sur le chemin temoin du graphe n=600 (flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\s*600\\s+True\\s+True\\s+(\\d+)\\s+2\\s+accord=True"
+          transform: int
+        rust:
+          cell: 7
+          pattern: "\\s*600\\s+True\\s+True\\s+(\\d+)\\s+2\\s+accord=True"
+          transform: int
+        csharp:
+          absent: >-
+            System.Random cote C# : le chemin temoin du n=600 n'est meme pas
+            atteint (pas 602, atteint=False). Grandeurs pseudo-aleatoires non
+            comparables, cote declare ABSENT.
+    - id: nl_accord_total
+      description: "Accord verificateur/DFS sur toute la famille (booleen structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Accord verificateur/DFS sur toute la famille : (\\w+)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "Accord verificateur/DFS sur toute la famille : (\\w+)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Accord verificateur/DFS sur toute la famille : (\\w+)"
+          transform: text
+    - id: faux_temoin_refuse
+      description: "Le faux temoin (arrivee amputee) est refuse par le verificateur (booleen structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Faux temoin \\(arrivee amputee\\) refuse par le verificateur : (\\w+)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "Faux temoin \\(arrivee amputee\\) refuse par le verificateur : (\\w+)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Faux temoin \\(arrivee amputee\\) refuse par le verificateur : (\\w+)"
+          transform: text
+    - id: dpll_noeuds_30
+      description: "Noeuds DPLL moyens a n=30 sur 20 instances (deterministe sous le flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "n= 30   noeuds DPLL :\\s+([0-9.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "n= 30   noeuds DPLL :\\s+([0-9.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            System.Random + decimaux a virgule francaise cote C# (64,2) :
+            moyenne non comparable a la reference MT19937 (63.9) et non
+            parsable en float point. Cote declare ABSENT.
+    - id: facteur_noeuds
+      description: "Facteur de croissance par variable des noeuds DPLL (deterministe)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "noeuds explores, deterministe\\) : ~([0-9.]+)x"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "noeuds explores, deterministe\\) : ~([0-9.]+)x"
+          transform: float
+        csharp:
+          absent: >-
+            Le C# imprime ~1,10x (virgule decimale) : meme valeur, format non
+            parsable en float point. Cote declare ABSENT.
+    - id: certificats_3sat
+      description: "Certificats 3-SAT verifies en temps polynomial (sur 20)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "verifies en temps polynomial par verifier_3sat : (\\d+) / 20"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "verifies en temps polynomial par verifier_3sat : (\\d+) / 20"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "verifies en temps polynomial par \\w+ : (\\d+) / 20"
+          transform: int
+    - id: monde_a_m1_reponse
+      description: "Reponse de la machine M_1 au premier stade de la diagonalisation (structurel, sans aleatoire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "M_1 : n= 8  M_i\\^O\\(x_i\\)=(\\d)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "M_1 : n= 8  M_i\\^O\\(x_i\\)=(\\d)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "M_1 : n= 8  M_i\\^O\\(x_i\\)=(\\d)"
+          transform: int
+    - id: monde_a_vaincues
+      description: "Toutes les machines P vaincues par l'oracle diagonal (booleen structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "Toutes les machines P vaincues : (\\w+)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "Toutes les machines P vaincues : (\\w+)"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "Toutes les machines P vaincues : (\\w+)"
+          transform: text
+    - id: monde_b_accord_final
+      description: "Monde B : la machine P a une requete egale la machine NP exhaustive (booleen structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "la machine P a une requete egale la machine NP exhaustive : (\\w+)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "la machine P a une requete egale la machine NP exhaustive : (\\w+)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "la machine P a une requete egale la machine NP exhaustive : (\\w+)"
+          transform: text
+    - id: carte_completes
+      description: "Aretes de la carte a temoin executable dans le carnet (sur 8)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "dans ce carnet : (\\d+) / 8"
+          transform: int
+        rust:
+          cell: 17
+          pattern: "dans ce carnet : (\\d+) / 8"
+          transform: int
+        csharp:
+          cell: 16
+          pattern: "dans ce carnet : (\\d+) / 8"
+          transform: int

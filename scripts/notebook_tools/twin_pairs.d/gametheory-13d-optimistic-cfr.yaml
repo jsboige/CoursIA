@@ -1,0 +1,16 @@
+- name: GameTheory-13d Optimistic CFR
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: C# calcule les récurrences et MCCFR nativement ; Python.NET
+    3.1.0 transmet uniquement la stratégie moyenne à OpenSpiel, qui calcule réellement
+    la meilleure réponse.
+  known_differences:
+  - 'OFTRL et DCFR sont les variantes pédagogiques versionnées : propagation scalaire,
+    pondération de l’incrément et gamma inactif ; les garanties des publications ne
+    sont pas attribuées à ces récurrences.'
+  - Le mini-jeu utilise la même graine numérique 0, mais des générateurs NumPy et
+    .NET distincts ; son application historique/carte est explicite et commune. MCCFR
+    utilise aussi des générateurs distincts ; les résultats ne sont pas forcés identiques.

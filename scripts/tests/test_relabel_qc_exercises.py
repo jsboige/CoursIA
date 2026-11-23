@@ -1,4 +1,4 @@
-"""Unit tests for scripts/relabel_qc_exercises.py.
+"""Unit tests for scripts/quantconnect/relabel_qc_exercises.py.
 
 This module relabels exercise/example-guide headers in QuantConnect notebooks
 to ascending order. It is durable tooling (re-run whenever a QC notebook's

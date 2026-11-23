@@ -69,7 +69,10 @@ def count_oleans(real: Path) -> int:
 
 
 def declares_mathlib(lake: Path) -> bool:
-    for name in ("lakefile.lean", "lakefile.toml"):
+    # lake-manifest.json liste les paquets resolus (y compris transitifs) :
+    # un lac dont le lakefile ne nomme pas mathlib mais dont le manifest le
+    # declare en dependance transitive a tout autant besoin d'un cache mathlib.
+    for name in ("lakefile.lean", "lakefile.toml", "lake-manifest.json"):
         path = lake / name
         if path.is_file():
             try:

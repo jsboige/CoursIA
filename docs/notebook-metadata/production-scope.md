@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-14
+> REFERENCE — vivante — dernière révision 2026-11-19
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -73,7 +73,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/01-Foundation -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb`
@@ -225,11 +225,11 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb`

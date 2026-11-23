@@ -525,8 +525,24 @@ def _pivot_candidates(base_manifest: dict, head_manifest: dict | None) -> list[P
     return out
 
 
-def _declared_packages(lake_dir: Path) -> list[str]:
-    """Noms des paquets declares par le `lake-manifest.json` d'un lake.
+#: Type de paquet lake qui vit a SON `dir` : il ne se materialise jamais
+#: sous `.lake/packages/<nom>`, donc l'exiger la rendra toujours absent.
+#:
+#: Mesure du 22/11 sur ai-01, lac `busybeaver_lean` : le manifeste declare
+#: `Foundation` en `type: path`, `dir: .lake/packages/pa196/PA196/vendor/Foundation`
+#: (paquet herite du `git` `pa196`). Le repertoire EXISTE dans le pivot
+#: prechauffe, mais `_packages_absent` le cherchait sous
+#: `.lake/packages/Foundation` -- absent -- et le lac entier etait ecarte avec
+#: le motif `packages incomplets : Foundation absent`. Instance : issue
+#: #27923 (bloque #27658 puis #27587).
+PATH_PACKAGE_TYPE = "path"
+
+
+def _declared_packages(lake_dir: Path) -> list[dict]:
+    """Paquets declares par le `lake-manifest.json` d'un lake.
+
+    Chaque entree porte `name`, `type` et `dir` (`dir` vaut `None` pour un
+    paquet de type `git`).
 
     Manifeste absent, illisible ou sans tableau `packages` : la liste est
     VIDE. L'exigence porte alors sur le critere general (`.lake/packages`
@@ -542,14 +558,52 @@ def _declared_packages(lake_dir: Path) -> list[str]:
     packages = payload.get("packages")
     if not isinstance(packages, list):
         return []
-    names: list[str] = []
+    entries: list[dict] = []
     for entry in packages:
         if not isinstance(entry, dict):
             continue
         name = entry.get("name")
-        if isinstance(name, str) and name:
-            names.append(name)
-    return names
+        if not isinstance(name, str) or not name:
+            continue
+        ptype = entry.get("type")
+        pdir = entry.get("dir")
+        entries.append({
+            "name": name,
+            "type": ptype if isinstance(ptype, str) and ptype else "git",
+            "dir": pdir if isinstance(pdir, str) and pdir else None,
+        })
+    return entries
+
+
+#: Lake ecrit un nom de paquet entre guillemets quand le nom nu n'est pas
+#: ecritable dans le DSL (un tiret, par exemple) : `«axiom-audit»`. Le
+#: REPERTOIRE, sous `.lake/packages/`, porte le nom NU.
+#:
+#: Comparer les deux chaines sans normaliser rend le verdict de completude
+#: structurellement faux : un cache chaud COMPLET est declare absent, puis
+#: le lac entier est refuse avec le motif `no-warm-cache-for-toolchain`.
+#: Mesure du 20/11 sur ai-01, lac `formal_logic` (toolchain `v4.33.1`) :
+#: `axiom-audit` et `doc-gen4` etaient presents ET resolus dans le pivot
+#: (`.git`, sources, `.lake` pour le second), et le pivot a quand meme ete
+#: ecarte -- motif : « packages incomplets : «axiom-audit» absent,
+#: «doc-gen4» absent ». Instance : PR #25236.
+QUOTE_GUILLEMETS = ("«", "»")
+
+
+def _package_dir_name(name: str) -> str:
+    """Nom du REPERTOIRE du paquet, sans la citation de lake.
+
+    `«axiom-audit»` -> `axiom-audit`. Un nom sans guillemets est rendu tel
+    quel : la normalisation n'introduit aucune hypothese.
+    """
+    raw = name.strip()
+    if (
+        len(raw) >= 2
+        and raw.startswith(QUOTE_GUILLEMETS[0])
+        and raw.endswith(QUOTE_GUILLEMETS[1])
+    ):
+        raw = raw[1:-1].strip()
+    return raw
 
 
 def _package_is_resolved(package_dir: Path, name: str) -> bool:
@@ -576,6 +630,27 @@ def _package_is_resolved(package_dir: Path, name: str) -> bool:
     return any(package_dir.glob("lakefile.*"))
 
 
+def _path_package_served(owner: Path, packages_dir: Path, dir_rel: str) -> Path:
+    """Repertoire EFFECTIVEMENT servi pour un paquet de type `path`.
+
+    Un paquet `path` vit a son `dir`, relatif au lake qui le declare -- il
+    ne se materialise JAMAIS sous `.lake/packages/<nom>`. Deux cas :
+
+    - `dir` SOUS `.lake/packages` : le contenu servi est celui du cache
+      chaud, parce que la jonction `<lake>/.lake/packages` ->
+      `<pivot>/.lake/packages` sert exactement ce repertoire -> on regarde
+      dans `packages_dir` ;
+    - `dir` AILLEURS (paquet frere dans l'arbre du depot) : le contenu
+      servi est celui du proprietaire lui-meme -> on regarde dans `owner`.
+    """
+    rel = Path(dir_rel.replace("\\", "/"))
+    try:
+        under = rel.relative_to(WARM_PACKAGES)
+    except ValueError:
+        return owner / rel
+    return packages_dir / under
+
+
 def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     """Paquets declares par `manifest_owner` et NON materialises dans
     `packages_dir`.
@@ -583,13 +658,25 @@ def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     Le manifeste peut venir d'un lake et le dossier de paquets d'un autre :
     c'est la question qui compte -- « le pivot sait-il servir les paquets
     que le lake demande ? ». Liste VIDE = rien ne manque.
+
+    Un paquet de type `path` se verifie a SON `dir` (relatif au lake qui le
+    declare), pas sous `.lake/packages/<nom>` : exiger la materialisation
+    d'un paquet `path` la declare TOUJOURS absent, quel que soit son
+    prechauffage (#27923).
     """
     missing: list[str] = []
-    for name in _declared_packages(manifest_owner):
-        package_dir = packages_dir / name
+    for entry in _declared_packages(manifest_owner):
+        name = entry["name"]
+        if entry["type"] == PATH_PACKAGE_TYPE and entry["dir"]:
+            served = _path_package_served(manifest_owner, packages_dir, entry["dir"])
+            if not served.is_dir():
+                missing.append("{} absent (dir {})".format(name, entry["dir"]))
+            continue
+        dir_name = _package_dir_name(name)
+        package_dir = packages_dir / dir_name
         if not package_dir.is_dir():
             missing.append("{} absent".format(name))
-        elif not _package_is_resolved(package_dir, name):
+        elif not _package_is_resolved(package_dir, dir_name):
             missing.append("{} incomplet".format(name))
     return missing
 
@@ -745,20 +832,10 @@ def manifest_at_head(repo: str, head: str) -> dict | None:
         repo,
         "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
     )
-    if not isinstance(payload, dict):
-        return None
-    content = payload.get("content")
-    if not isinstance(content, str):
-        return None
-    try:
-        raw = base64.b64decode(content).decode("utf-8")
-    except (ValueError, UnicodeDecodeError):
-        return None
-    try:
-        manifest = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    return manifest if isinstance(manifest, dict) else None
+    # Le decodage de la payload REST est PORTÉ par le module partage
+    # (`lean_build_attestation`) : la garde lit le meme manifeste par le meme
+    # decodeur -- une seule definition du "contenu illisible".
+    return attestation.manifest_from_api_payload(payload)
 
 
 def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
@@ -1215,6 +1292,33 @@ def restore_project_build(cache_dir: Path, lake_dir: Path) -> dict:
     return {"restored": True, "reason": "cache de build du projet restaure"}
 
 
+def seed_project_build_from_pivot(pivot_dir: Path, lake_dir: Path) -> dict:
+    """Reseme le `.lake/build` du lac depuis le pivot prechauffe (#27516).
+
+    Le pivot est deja valide par `prepare_lake` (meme toolchain, meme graphe
+    de dependances) : ses oleans des modules du projet sont le point d'appui
+    que la CI tire de son cache Actions. Sans ce semis, la premiere
+    attestation d'une PR repart de zero sur les modules herites de `main` --
+    dont `Knots.AlexanderTrivial_en` (olean de 95,7 Mo, elaboration au-dela
+    du budget local, mesure #27516) -- et se fait tuer au minuteur.
+
+    COPIE, jamais deplacement ni jonction : le pivot garde son build pour
+    les PRs suivantes, et `preserve_project_build` (qui DEPLACE le
+    `.lake/build` du worktree vers le cache par-PR) n'arrache jamais rien au
+    pivot. Les traces Lake font le reste : seuls les modules dont la source
+    differe a la tete de la PR sont re-elabores.
+    """
+    source = pivot_dir / ".lake" / "build"
+    if not source.is_dir():
+        return {"seeded": False, "reason": "aucun build de projet dans le pivot"}
+    target = lake_dir / ".lake" / "build"
+    if target.exists():
+        return {"seeded": False, "reason": "build deja present dans le worktree"}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target)
+    return {"seeded": True, "reason": "build du projet reseme depuis le pivot"}
+
+
 def preserve_project_build(cache_dir: Path, lake_dir: Path) -> dict:
     """Conserve le `.lake/build` du worktree dans le cache du projet.
 
@@ -1250,7 +1354,10 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     `project_cache_dir` est le repertoire du cache de build du PROJET pour ce
     lake : le `.lake/build` est **remis** dans le worktree avant le build et
     **reconserve** apres -- un timeout ne jette plus la compilation deja
-    faite.
+    faite. Quand ce cache par-PR n'a rien restaure (premier essai de la
+    PR), le `.lake/build` du pivot `cache_root` -- deja valide par
+    `prepare_lake` -- est **reseme par copie** : meme point d'appui que le
+    cache Lake d'Actions en CI (#27516).
     """
     lake_dir = worktree / lake["project-path"]
     if not lake_dir.is_dir():
@@ -1262,6 +1369,13 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     cache_state: dict = {"restored": False, "preserved": False}
     if project_cache_dir is not None:
         cache_state.update(restore_project_build(project_cache_dir, lake_dir))
+    if not cache_state.get("restored"):
+        # #27516 : premier essai de la PR (cache par-PR vide ou ecrase). Le
+        # pivot -- cache_root, deja valide par prepare_lake (meme toolchain,
+        # meme graphe de dependances) -- fournit le point d'appui que la CI
+        # tire de son cache Actions. Sans lui, chaque premiere attestation
+        # re-elabore les modules herites de main et se fait tuer au minuteur.
+        cache_state.update(seed_project_build_from_pivot(cache_root, lake_dir))
     try:
         payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget, targets=targets)
     finally:
@@ -1396,7 +1510,7 @@ def _attestation_extra(builds: list[dict], modules_mode: str) -> str:
         skipped = scope.get("skipped_aggregators") or []
         if skipped:
             lines.append(
-                "Agregateurs ecartes (imports seuls, sans declaration) : {}.".format(
+                "Agregateurs ecartes (imports seuls, sans commande) : {}.".format(
                     ", ".join("`{}`".format(s) for s in skipped)
                 )
             )
@@ -1491,9 +1605,26 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         },
     }
     if not lakes:
+        # #27875 : le cas frequent est un lake INTRODUIT par la PR et non
+        # declare au manifeste (l'entree arrive dans une PR empilee). Le
+        # message nomme le lake et le geste : sans cela, le blocage rendu
+        # par la garde est muet.
+        undeclared = attestation.undeclared_lakes(files, head_manifest)
+        if undeclared:
+            raise OrganError(
+                "le diff de #{} INTRODUIT le lake {} mais le manifeste "
+                "`scripts/lean/ci_lakes.json` ne le declare pas a la tete : "
+                "declarez-le (dans cette PR, ou dans une PR empilee mergee "
+                "d'abord), puis relancez l'attestation -- aucune attestation "
+                "ne peut couvrir un lake non declare.".format(
+                    pr, ", ".join(undeclared)
+                )
+            )
         raise OrganError(
             "aucun lake connu n'est touche par le diff de #{} -- rien a "
-            "construire (la garde ne bloquera pas cette PR)".format(pr)
+            "construire ; la garde Lean attend une attestation, qui ne peut "
+            "pas etre produite tant qu'aucun lake declare ne porte le "
+            "diff".format(pr)
         )
     if dry_run:
         result["dry_run"] = True

@@ -71,7 +71,7 @@ Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-12b-ConnectFour-Python](App-12b-ConnectFour-Python.ipynb) — jumeau [C#](App-12b-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
+| 1 | [App-12-ConnectFour-Python](App-12-ConnectFour-Python.ipynb) — jumeau [C#](App-12-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
 | 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeau [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956) | Licence | — |
 
 ---
@@ -148,7 +148,7 @@ Le terrain d'application le plus direct de la [Partie 1](../Part1-Foundations/RE
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Découverte | — |
+| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) · [jumeau Rust](App-33-RushHour-Admissible-Astar-Rust.ipynb) | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Découverte | — |
 | 2 | [App-34-15Puzzle-Admissible-Astar-Python](App-34-15Puzzle-Admissible-Astar-Python.ipynb) — jumeau [C#](App-34-15Puzzle-Admissible-Astar-CSharp.ipynb) | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan contre linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal. Le jumeau C# refait l'espace d'états en .NET avec l'état encodé dans un `ulong` (4 bits par case, parité #4956) | Licence | — |
 
 ## Approfondissements
@@ -175,10 +175,10 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 
 | Notebook | Fondations requises |
 |----------|--------------------|
-| App-12b ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
+| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
 | App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
 | App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-12b-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
+| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
 
 ### Cas pratiques CSP
 
@@ -281,7 +281,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 | App-5 (Timetabling), App-8 (MiniZinc) | Nethercote, N., Stuckey, P. J., Becket, R., Brand, S., Duck, G. J., & Tack, G. (2007) — « MiniZinc: Towards a Standard CP Modelling Language », *CP 2007*, LNCS 4741. |
 | App-6 (Minesweeper), App-7 (Wordle) | AIMA, ch. « Probabilistic Reasoning » (CSP doublé de probabilités pour le démineur) ; Cover, T. M., & Thomas, J. A. — *Elements of Information Theory* (2e éd., 2006), Wiley. Entropie et théorie de l'information mobilisées pour le filtrage optimal des hypothèses dans Wordle. |
 | App-11 (Picross) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). Couverture exacte, formulation à l'origine du backtracking naïf sur les nonogrammes avant le saut vers CP-SAT. |
-| App-12b, App-14 (ConnectFour) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1) ; et AIMA, ch. « Adversarial Search » (Minimax, élagage Alpha-Beta). |
+| App-12, App-14 (ConnectFour) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1) ; et AIMA, ch. « Adversarial Search » (Minimax, élagage Alpha-Beta). |
 | App-9 (EdgeDetection), App-10 (Portfolio) | Holland, J. H. (1975) — *Adaptation in Natural and Artificial Systems*, University of Michigan Press. Algorithmes génétiques à la base de la recherche de filtres de convolution (App-9) et de l'optimisation de portefeuille (App-10). |
 | App-10 (Portfolio, multi-objectif) | Markowitz, H. (1952) — « Portfolio Selection », *The Journal of Finance* 7(1) — frontière efficiente ; et Deb, K. (2001) — *Multi-Objective Optimization using Evolutionary Algorithms*, Wiley — optimisation évolutionnaire multi-objectif (frontière de Pareto). |
 | App-13 (TSP), App-17 (VRP) | Applegate, D. L., Bixby, R. E., Chvátal, V., & Cook, W. J. (2006) — *The Traveling Salesman Problem: A Computational Study*, Princeton University Press ; Toth, P., & Vigo, D. (2014) — *Vehicle Routing: Problems, Methods, and Applications*, SIAM (2e éd.) ; et Dorigo, M., & Gambardella, L. M. (1997) — « Ant colonies for the traveling salesman problem », *IEEE Trans. on Evolutionary Computation* 1(2) — colonies de fourmis. |
@@ -297,7 +297,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 
 Cette sous-série est le lieu de la **confrontation**. Les algorithmes des Parties 1 et 2, compris sur des exemples jouets, y sont mis à l'épreuve de problèmes qui ne se laissent pas réduire — et l'enseignement principal n'est pas « tel algorithme résout tel problème », mais trois leçons transversales que seule la pratique donne :
 
-- **La confrontation des méthodes** — un même problème, résolu plusieurs fois, pour que la comparaison chiffrée parle d'elle-même. Les N-Queens (App-1) le sont en backtracking, en Min-Conflicts puis en OR-Tools ; le TSP (App-13) en recuit simulé, en génétique, en colonies de fourmis et en solveur de routage ; le Puissance 4 (App-12b, App-14) en Minimax, Alpha-Beta et MCTS. Le verdict change avec le problème : là où l'exact domine sur les petites instances, l'approché prend le relais dès que l'espace explose — c'est ce basculement, observé et non raconté, qui est l'enseignement.
+- **La confrontation des méthodes** — un même problème, résolu plusieurs fois, pour que la comparaison chiffrée parle d'elle-même. Les N-Queens (App-1) le sont en backtracking, en Min-Conflicts puis en OR-Tools ; le TSP (App-13) en recuit simulé, en génétique, en colonies de fourmis et en solveur de routage ; le Puissance 4 (App-12, App-14) en Minimax, Alpha-Beta et MCTS. Le verdict change avec le problème : là où l'exact domine sur les petites instances, l'approché prend le relais dès que l'espace explose — c'est ce basculement, observé et non raconté, qui est l'enseignement.
 - **L'ordre de grandeur** — voir un solveur de Picross (App-11) gagner un facteur de plusieurs millions en passant au CP-SAT imprime durablement ce que « propagation » veut dire. Ce n'est pas un détail d'implémentation : c'est le saut de paradigme de la Partie 2 qui devient tangible, mesuré sur un cas où le backtracking naïf s'effondre.
 - **La modélisation comme vrai travail** — le démineur (App-6) devient un CSP doublé de probabilités, Wordle (App-7) un problème de théorie de l'information, la génération procédurale (App-19) un Wave Function Collapse encodé en contraintes. Trouver la bonne formulation y est souvent toute la difficulté — et toute la clé.
 
@@ -313,3 +313,7 @@ Le pont entre les deux cultures de la recherche s'exprime dans les notebooks Hyb
 ## Navigation
 
 [← Partie 2 : CSP](../Part2-CSP/README.md) | [↑ Série Search](../README.md) | [Partie 4 : Métaheuristiques →](../Part4-Metaheuristics/README.md)
+
+## Comparaison statistique de colorations
+
+Le compagnon [Python](App-02-GraphColoring-Statistical-Validity-Python.ipynb) et son [jumeau C#](App-02-GraphColoring-Statistical-Validity-CSharp.ipynb) comparent des colorations sur plusieurs graphes, avec bootstrap, tests appariés et balayage de densité. Le C# appelle CP-SAT natif et les références NetworkX et SciPy par Python.NET ; les générateurs de graines diffèrent et les résultats numériques peuvent varier. Les résolutions CP-SAT sans solution sont exclues des mesures du solveur.

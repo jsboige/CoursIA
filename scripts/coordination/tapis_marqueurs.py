@@ -14,7 +14,13 @@ from datetime import UTC, datetime
 
 OUVRE = frozenset({"CLAIMED", "CLAIMED-AMEND"})
 FERME = frozenset({"RELEASED", "DELIVERED", "CANCELLED", "ABANDONED", "DONE"})
-VISITE = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+#: Une **prise en charge** nominative : la lane a travaille sur l'issue.
+#: Une visite par lecture (`VISITE-INFO`) n'en est pas une -- une qualification
+#: est une lecture, pas une prise en charge (doctrine de `tapis_dernier_grain`).
+MARQUEUR_GRAIN = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+#: Une **visite** : une prise en charge, ou une lecture d'une lane (`VISITE-INFO`).
+#: Les deux ensembles sont distincts : une visite n'est pas un grain.
+VISITE = MARQUEUR_GRAIN | {"VISITE-INFO"}
 ROUVRE = frozenset({"NOT-DELIVERED", "RELEASED", "CLAIMED", "CLAIMED-AMEND"})
 
 # Un marqueur est en tete de N'IMPORTE QUELLE ligne (souvent apres `Grain:`),
