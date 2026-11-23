@@ -71,6 +71,7 @@ flowchart BT
 | SW-14 | [SW-14-Coup-Ontologique-Python](SW-14-Coup-Ontologique-Python.ipynb) | Étendre un vocabulaire comme diff de graphe : le juge SHACL, le delta owlrl, la provenance par réification | 40 min | EXTENSION |
 | SW-14 (C#) | [SW-14-Coup-Ontologique-CSharp](SW-14-Coup-Ontologique-CSharp.ipynb) | Le même geste en dotNetRDF, avec OWL-RL via Python.NET (recette Linux de préparation du pont incluse) | 90 min | EXTENSION |
 | SW-15 | [SW-15-Coup-Argumentatif-Python](SW-15-Coup-Argumentatif-Python.ipynb) | Greffer un graphe d'argumentation AIF : le coup bascule l'extension grounded de Dung | 45 min | EXTENSION |
+| SW-15 (C#) | [SW-15-Coup-Argumentatif-CSharp](SW-15-Coup-Argumentatif-CSharp.ipynb) | Le coup argumentatif en dotNetRDF : SHACL natif, fermeture OWL-RL via le pont Python.NET, bascule de Dung calculee en C# | 90 min | EXTENSION |
 | SW-16 | [SW-16-ProofCarryingOntologies-Python](SW-16-ProofCarryingOntologies-Python.ipynb) | Le certificat d'inférence : une conclusion vérifiable par un checker indépendant | 50 min | EXTENSION |
 | Legacy | [RDF.Net-Legacy/RDF.Net](RDF.Net-Legacy/RDF.Net.ipynb) | Démonstration RDF.NET historique, antérieure à la double pile — archive de référence, non maintenue | — | ARCHIVE |
 
