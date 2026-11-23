@@ -300,14 +300,17 @@ class: fig
 
 # Inférence par énumération
 
-<TeachingStep placement="end" size="md">
+<TeachingStep placement="end" size="sm">
 
 - **Probabilité d’une proposition** $\varphi$ : sommer les événements atomiques où elle est vraie, $P(\varphi) = \sum_{\omega \models \varphi} P(\omega)$.
 - $P(\text{MalDeDents}) = 0{,}108 + 0{,}012 + 0{,}016 + 0{,}064 = 0{,}2$ (en haut).
 - **Conditionnelle** (en bas) : diviser par la probabilité de l’observation.
 
 $$
-P(\lnot\text{Carie} \mid \text{MalDeDents}) = \frac{P(\lnot\text{Carie} \land \text{MalDeDents})}{P(\text{MalDeDents})} = \frac{0{,}016 + 0{,}064}{0{,}2} = 0{,}4
+\begin{aligned}
+P(\lnot\text{Carie} \mid \text{MalDeDents}) &= \frac{P(\lnot\text{Carie} \land \text{MalDeDents})}{P(\text{MalDeDents})} \\
+&= \frac{0{,}016 + 0{,}064}{0{,}2} = 0{,}4
+\end{aligned}
 $$
 
 - Et donc $P(\text{Carie} \mid \text{MalDeDents}) = 0{,}6$.
@@ -427,7 +430,10 @@ class: fig
 **Exemple** — MalDeDent et Croche sont indépendants sachant Carie :
 
 $$
-\mathbf P(\text{Carie} \mid \text{md} \land \text{croche}) = \alpha\,\mathbf P(\text{md} \land \text{croche} \mid \text{Carie})\,\mathbf P(\text{Carie}) = \alpha\,\mathbf P(\text{md} \mid \text{Carie})\,\mathbf P(\text{croche} \mid \text{Carie})\,\mathbf P(\text{Carie})
+\begin{aligned}
+\mathbf P(\text{Carie} \mid \text{md} \land \text{croche}) &= \alpha\,\mathbf P(\text{md} \land \text{croche} \mid \text{Carie})\,\mathbf P(\text{Carie}) \\
+&= \alpha\,\mathbf P(\text{md} \mid \text{Carie})\,\mathbf P(\text{croche} \mid \text{Carie})\,\mathbf P(\text{Carie})
+\end{aligned}
 $$
 
 **Modèle bayésien naïf** (figure) : $\mathbf P(\text{Cause}, \text{Effet}_1, \dots, \text{Effet}_n) = \mathbf P(\text{Cause}) \prod_i \mathbf P(\text{Effet}_i \mid \text{Cause})$ — le nombre de paramètres devient linéaire en $n$.
@@ -541,7 +547,7 @@ class: fig
 
 # Le réseau de l’alarme et ses tables
 
-<TeachingStep placement="end" size="lg" class="fig-xl">
+<TeachingStep placement="end" size="lg">
 
 Chaque nœud porte sa table de probabilités conditionnelles (CPT) :
 
@@ -598,8 +604,9 @@ $$
 
 $$
 \begin{aligned}
-P(j \land m \land a \land \lnot b \land \lnot e) &= P(j \mid a)\,P(m \mid a)\,P(a \mid \lnot b, \lnot e)\,P(\lnot b)\,P(\lnot e) \\
-&= 0{,}90 \times 0{,}70 \times 0{,}001 \times 0{,}999 \times 0{,}998 \approx 0{,}000628
+& P(j \land m \land a \land \lnot b \land \lnot e) \\
+&\quad = P(j \mid a)\,P(m \mid a)\,P(a \mid \lnot b, \lnot e)\,P(\lnot b)\,P(\lnot e) \\
+&\quad = 0{,}90 \times 0{,}70 \times 0{,}001 \times 0{,}999 \times 0{,}998 \approx 0{,}000628
 \end{aligned}
 $$
 
@@ -855,7 +862,7 @@ class: fig
 
 # Distribution a priori conjuguée
 
-<TeachingStep placement="end" size="lg">
+<TeachingStep placement="end" size="md">
 
 - **Quelle loi a priori choisir ?** Une loi **conjuguée** : la loi a posteriori reste dans la même famille, seuls les paramètres changent.
 - Règle de Bayes pour un paramètre $\theta$ :
@@ -1007,7 +1014,7 @@ class: nb-map nb-k96
 <p class="nb-foot"><strong>À observer.</strong> Dans Infer-04, observer la pluie fait baisser la probabilité de l’arroseur : comment une cause peut-elle en « expliquer » une autre ?</p>
 
 ---
-class: nb-concept nb-center nb-k92
+class: nb-concept nb-center nb-k84
 ---
 
 # L’effet « explaining away » : une cause en chasse une autre
@@ -1603,7 +1610,10 @@ class: fig
 - On définit la **probabilité partielle** :
 
 $$
-\alpha_t(j) = P(\text{observation à } t \mid X_t = j) \times P(\text{tous les chemins vers } j \text{ à l’instant } t)
+\begin{aligned}
+\alpha_t(j) = {} & P(\text{observation à } t \mid X_t = j) \\
+& \times P(\text{tous les chemins vers } j \text{ à l’instant } t)
+\end{aligned}
 $$
 
 - Autrement dit, $\alpha_t(j) = P(e_{1:t}, X_t = j)$ : la probabilité jointe des observations jusqu’à $t$ et d’être en $j$ à l’instant $t$.
@@ -1819,7 +1829,7 @@ class: nb-map nb-k96
 <p class="nb-foot"><strong>À observer.</strong> Dans Infer-14, à quels endroits la classification point par point découpe-t-elle trop de segments, et pourquoi Viterbi ne le fait-il pas ?</p>
 
 ---
-class: nb-concept nb-center nb-k92
+class: nb-concept nb-center nb-k84
 ---
 
 # Kalman : une moyenne pondérée par la confiance
@@ -2075,7 +2085,7 @@ class: fig
 <p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb" target="_blank" rel="noopener">DecInfer-05-Value-Information</a> (EVPI, EVSI) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb" target="_blank" rel="noopener">DecPyMC-05-Value-Information</a>.</p>
 
 ---
-layout: dense
+layout: default
 ---
 
 # Système expert
@@ -2093,7 +2103,7 @@ layout: dense
 <p class="nb-ref">Notebooks : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb" target="_blank" rel="noopener">DecInfer-06-Expert-Systems</a> (minimax, regret de Savage, sensibilité) · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb" target="_blank" rel="noopener">DecPyMC-06-Expert-Systems</a>.</p>
 
 ---
-class: nb-map nb-k96
+class: nb-map nb-k92
 ---
 
 # Décision : les notebooks
