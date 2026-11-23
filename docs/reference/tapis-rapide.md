@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-22
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -15,6 +15,16 @@ commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/c
 comme une visite, #27338), `scripts/coordination/belt_equite.py` (l'équité du dispatch : un grain déjà
 servi ne passe pas devant les premières visites, #27338)
 et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
+
+Le lot public livré par #27368 est porté par des modules dédiés, extraits pour que les tests visent le
+chemin public lui-même : `scripts/coordination/tapis_public.py` (la suite exacte du chemin public),
+`scripts/coordination/tapis_tete.py` (le numéro que la rotation sert en premier),
+`scripts/coordination/tapis_avance.py` (l'avance du curseur, bornée au lot),
+`scripts/coordination/tapis_entrelace.py` (l'alternance primaire/reprise),
+`scripts/coordination/tapis_non_tente.py` (le grain proposé mais jamais qualifié),
+`scripts/coordination/tapis_etat_schema.py` (le schéma de l'état d'ancre : classes, état neuf,
+accesseurs) et `scripts/coordination/tapis_etat_commit.py` (le commit qui a écrit l'état : deux états
+d'ancre ne sont comparables que s'ils viennent du même code).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
 ## La commande
