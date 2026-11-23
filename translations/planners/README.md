@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`planners.csv`](planners.csv) | `SymbolicAI/Planners/` | 24 (Planners-0-Setup → Planners-12-LOOP-Python ; jumeaux C# `-Csharp.ipynb` co-localisés + Planners-05b-Lean-Relaxation-Lean) | inventaire régénéré par le pipeline (dimensions au catalogue) |
+| [`planners.csv`](planners.csv) | `SymbolicAI/Planners/` | 24 au seed 2026-07-09 (Planners-0-Setup → Planners-12-LOOP-Python ; jumeaux C# `-CSharp.ipynb` co-localisés + Planners-05b-Lean-Relaxation-Lean — le compte courant vit dans le CSV) | inventaire régénéré par le pipeline (dimensions au catalogue) |
 
 **Note cross-owner** : la série Planners est owner-floue **po-2024** (PRs twin C# #5591, #5709 sweep figures doctrine). L'extraction i18n est **safe cross-owner** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks), conforme au pattern Phase 2 validé sur 3 séries owner po-2025 (ArgumentAnalysis + Probas/Infer + ML/ML.Net).
 
@@ -31,7 +31,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 1005 cellules / 24 notebooks (Planning PDDL/STRIPS/CP/Temporal/HTN/LLM/Unified/LOOP)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 1005, notebooks couverts 24 (Planning PDDL/STRIPS/CP/Temporal/HTN/LLM/Unified/LOOP — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché

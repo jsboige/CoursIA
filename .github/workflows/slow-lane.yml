@@ -284,11 +284,14 @@ jobs:
           set +e
           # DEUX invocations, DEUX rootdirs -- exactement ce que fait
           # `ict-tests.yml` (voie rapide). Une session unique
-          # (`pytest tests ict/tests`) melange deux arbres qui partagent
+          # (`pytest tests ict/tests`) melange deux arbres qui partageaient
           # 16 basenames de modules (`test_time_arrow.py`, `test_workspace.py`,
           # `test_catastrophe.py`, ...) SANS `__init__.py` : pytest les importe
           # par nom de fichier et refuse (`import file mismatch`) -> 16 erreurs
-          # de COLLECTE, pas un defaut ICT. La suite ne collectait donc qu'UN
+          # de COLLECTE, pas un defaut ICT. (Partage LEVE par #25366 T2 ICT :
+          # les copies du hub `tests/` portent maintenant le prefixe
+          # `test_ict_*` ; les deux invocations restent necessaires pour les
+          # deux rootdirs et modes d'import.) La suite ne collectait donc qu'UN
           # item et n'executait rien -- et le job, lui, restait `success`
           # (cf. le bloc "code de sortie" plus bas, et docs/ci/slow-lane.md,
           # section "faux vert du pilote").

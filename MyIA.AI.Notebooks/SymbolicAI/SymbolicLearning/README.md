@@ -548,7 +548,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | **Pipeline neuro-symbolique** | LLM aux extrémités, validation et inférence symboliques au centre | SL-11 |
 | **Caractère de Walsh** | χ_S(x) = ∏_{k∈S} x_k — base orthonormée des fonctions {−1,+1}^n | SL-12b |
 | **PTF ternaire** | sign(Σ w_S χ_S) avec w ∈ {−1,0,+1} — objet distinct des coefficients de Fourier exacts | SL-12b |
-| **Routage Sinkhorn** | Projection itérative vers le polytope de Birkhoff ; sous ex-aequo, la limite n'est pas une permutation | SL-12b |
+| **Routage Sinkhorn** | Projection itérative vers le polytope de Birkhoff ; dans l'exemple à blocs ex-aequo, la limite n'est pas une permutation | SL-12b |
 
 ## Prérequis
 
@@ -766,3 +766,7 @@ L'apprentissage symbolique est l'art de **réussir là où les données seules �
 ## Historique des versions
 
 **Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Décomptes : catalogue généré (réconcilié par le catalog-cron).
+
+### Parité de la synthèse spectrale
+
+La [version C#](SL-12b-SpectralLogicSynthesis-CSharp.ipynb) reprend le [carnet Python](SL-12b-SpectralLogicSynthesis.ipynb) : Walsh, PTF, Sinkhorn et recherches discrètes aux mêmes budgets. Math.NET calcule les moindres carrés ; les générateurs aléatoires diffèrent et les figures C# sont des SVG statiques.
