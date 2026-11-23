@@ -700,6 +700,10 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipyn
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb	2026-11-18	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb	2026-11-18	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb	2026-11-18	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-Comprehension-Video-API.ipynb	2026-11-18	unknown
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb	2026-11-18	unknown
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb	2026-11-18	unknown
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb	2026-11-18	unknown
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb	2026-11-20	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb	2026-11-20	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb	2026-11-17	myia-po-2023:CoursIA
@@ -746,6 +750,8 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR-output.ipynb	My
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE-Python.ipynb	2026-11-20	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb	2026-11-20	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver-Python.ipynb	2026-11-20	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-Csharp.ipynb	MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-CSharp.ipynb	2026-11-21	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb	MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-CSharp.ipynb	2026-11-21	myia-po-2028:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24b-Confiance-Preuves-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-01-Confiance-Preuves-Native.ipynb	2026-11-21	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb	2026-11-21	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-03-Lean-ERC20-Native-Companion.ipynb	2026-11-21	myia-po-2023:CoursIA-2

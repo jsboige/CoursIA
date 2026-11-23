@@ -74,13 +74,7 @@
       "ecosystem": "nuget",
       "canonical": "5.0.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "4.0.2",
-          "decision": "to_converge",
-          "reason": "Aucune contrainte ecrite : le carnet epingle une version anterieure de la canonique (Microsoft.ML 4.0.2, avec Microsoft.ML.FastTree 4.0.2). Convergence = montee + re-execution. Suivi : #27787."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "SkiaSharp",
