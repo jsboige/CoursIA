@@ -320,13 +320,23 @@ REGISTRE: tuple[Entree, ...] = (
         # le demande le critere 2 de l'issue. Le suffixe `-rust` reste
         # hors LANG_SUFFIXES (langue potentiellement single-rendering) :
         # c'est le kernel connu qui empeche l'ambiguite, pas le suffixe.
+        #
+        # Instrument re-declare le 2026-11-23 sur le squash de #28037 dans
+        # main (19644801). Le sha de branche 60e0bd6f portait un blob que le
+        # squash n'a pas garde : un commentaire du script a ete retouche
+        # APRES la declaration (diff de commentaire seul, 2+/1-, aucune
+        # ligne de code), donc ni la voie « meme source » ni la voie
+        # « identite a la fin du 22/11 » (instrument d'avant la fusion du
+        # 23/11) ne tenaient, et `test_la_reference_du_padding_est_celle_de_l_issue`
+        # rougissait `Scripts Tests (CPU)` sur toutes les PRs. La mesure 28
+        # reste celle du 22/11 : le code de l'instrument est identique.
         reference=Reference(28.0, "2026-11-22",
                             "issue #23175, visite du 2026-11-22 -- re-mesure "
                             "sur l'arbre aligne origin/main = cd62365c02, "
                             "instrument corrige (kernel rust)",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@60e0bd6f6405b4cd66c432d05ff344c5642a0044")),
+                                        "@19644801035d0fcd2085f399898033d5ca6ec362")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
