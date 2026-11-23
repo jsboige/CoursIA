@@ -620,6 +620,8 @@ Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : pl
 
 > **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (BEATS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec les données du fournisseur, les frais effectifs et le slippage est l'étape de validation obligatoire avant tout déploiement.
 
+La méthode complète — design d'ablation, courbes, leçons — vit dans [`Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) ; le plan d'apprentissage qui l'ordonne est dans [`CURRICULUM.md`](CURRICULUM.md).
+
 ---
 
 *Version anglaise (snapshot pré-bascule) : [`README.en.md`](README.en.md).*
