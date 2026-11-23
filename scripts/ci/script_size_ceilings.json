@@ -66,8 +66,8 @@
       "note": "Generation du catalogue : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 171 lignes depuis la mesure du 13/11 (2918 -> 3089)"
     },
     "scripts/pick_idle_grain.py": {
-      "lines": 16392,
-      "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER. Releve au 16/11 sur origin/main : le script a grossi de 44 lignes depuis la mesure du 13/11 (16327 -> 16371), puis de 20 lignes de plus (16371 -> 16391) ; la refonte T1/T2/T6 reste due et fera BAISSER ce plafond, ce releve n'est qu'un constat, puis de 1 ligne(s) au 20/11 (16391 -> 16392) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
+      "lines": 16440,
+      "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER. Releve au 16/11 sur origin/main : le script a grossi de 44 lignes depuis la mesure du 13/11 (16327 -> 16371), puis de 20 lignes de plus (16371 -> 16391) ; la refonte T1/T2/T6 reste due et fera BAISSER ce plafond, ce releve n'est qu'un constat, puis de 1 ligne(s) au 20/11 (16391 -> 16392) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee, puis de 48 ligne(s) au 22/11 sur la PR #27694 (16392 -> 16440) : tranche 2 de #24823, precharge des evenements de reouverture du tapis (helper _precharge_reopen_events + son unique appel en phase reseau) ; extraction ecartee dans cette tranche car le helper lit les internes _snapshot_comments/_closure_stamp/_reopen_events du picker -- la refonte T1/T2/T6 (#26364) reste la voie qui fera BAISSER ce plafond"
     },
     "scripts/coordination/claim_grammar.py": {
       "lines": 2269,
