@@ -242,6 +242,11 @@ import check_run_state  # noqa: E402
 # #17437 : normalisation de l'auteur d'une review (orthographe REST des
 # identites App) -- source unique de la forme canonique, jamais recopiee.
 import gh_identity  # noqa: E402
+# #28131 (voie L1) : verdict LOCAL du garde de perimetre quand son run
+# heberge est encore en file. La grammaire du perimetre reste dans
+# l'organe (`scripts/check_pr_perimeter.py`) : ce module ne fait que
+# l'appeler, jamais la recopier.
+import merge_ready_perimeter as perimeter  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -271,6 +276,7 @@ COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
+TWIN_ATTEST_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_attestation_squash.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # Issue #20774 : au merge, le slot-reservation-guard doit lire la source
 # `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
@@ -393,6 +399,68 @@ PENDING_MERGEABLE_REASONS = ("mergeable-state:unknown", "mergeable-state:absent"
 #: Nombre de LECTURES de rechauffage en parallele. Le rechauffage ne touche
 #: qu'a des lectures : les merges restent strictement sequentiels.
 WARMUP_MAX_WORKERS = 8
+
+#: Motif d'arret d'une passe qui a epuise son budget de DUREE. Il se
+#: distingue de `max-merges-reached` (nombre de merges) : la passe s'est
+#: arretee parce qu'elle a dure trop longtemps, pas parce qu'elle a assez
+#: merge.
+PASS_BUDGET_REASON = "pass-budget-exceeded"
+
+#: Budget de DUREE d'une passe, en secondes (issue #28009).
+#:
+#: La cadence nominale de la tache planifiee est de 20 min ; une passe qui
+#: deborde se chevauche avec la suivante, et la machine sert deux passes
+#: pour un seul tour. Mesures publiees le 22/11 (issue #26799) :
+#:
+#: | passage | PRs evaluees | etendue | fusions |
+#: |---|---|---|---|
+#: | 3523 (21/11 21:56Z) | 220 | 33 min | 0 |
+#: | 3524 (21/11 22:30Z) | 220 | 1 h 54 | 6 |
+#: | 3525 (22/11 00:25Z) | 173 | 3 h 48 | 1 |
+#:
+#: 45 min (2700 s) : deux fois la cadence nominale. La borne laisse une passe
+#: normale se terminer (la plus longue mesuree avant le depassement est
+#: 1 h 54, qui **debordera** -- c'est voulu : une passe a l'arret propre
+#: vaut mieux qu'une passe qui chevauche la suivante) et arrete la derive
+#: (3 h 48).
+#:
+#: La borne se lit ENTRE deux PRs : elle n'interrompt jamais un merge en
+#: cours, et une PR non evaluee est journalisee avec ce motif (jamais une PR
+#: disparue du bilan). La passe suivante **continue** apres la derniere PR
+#: evaluee (curseur de reprise, `PASS_CURSOR_FILENAME`) : la file est relue
+#: a chaque tour, mais son POINT DE DEPART avance.
+PASS_BUDGET_S = 2700.0
+
+#: Verdict d'une PR que la passe n'a pas EVALUEE (arret sur le budget de
+#: duree, #28009).
+#:
+#: Distinct de `skipped` : une PR `skipped` a ete EVALUEE puis refusee ; une
+#: PR `unevaluated` n'a pas ete regardee. La ligne existe pour que la PR ne
+#: disparaisse pas du bilan ; elle ne porte AUCUN cout d'evaluation, et
+#: `merge_ready_pass_timing.py` l'ignore (il filtre sur `verdict` -- jamais
+#: sur `review`, qui porte le litteral voisin `not-evaluated` pour une autre
+#: raison : la porte de review n'a pas ete atteinte).
+VERDICT_NOT_EVALUATED = "unevaluated"
+
+#: Curseur de reprise d'une passe (revue du 22/11, #28009).
+#:
+#: `list_open_prs` rend les PRs **triees par numero croissant** ; sans
+#: curseur, une passe arretee par le budget de duree repart de la file
+#: entiere et s'arrete **au meme endroit** -- les PRs au-dessus de ce point
+#: ne sont jamais evaluees (mesure du coordinateur sur le journal du 22/11 :
+#: la borne aurait arrete la passe a #27652, et toutes les PRs au-dessus
+#: seraient restees invisibles).
+#:
+#: Le curseur est le numero de la derniere PR **EVALUEE** : la passe
+#: suivante commence apres elle, puis **boucle** (les PRs du dessous passent
+#: en second temps). Chaque PR ouverte est donc evaluee en un nombre borne
+#: de passes.
+#:
+#: Il vit dans un fichier a cote du journal -- meme dossier, meme duree de
+#: vie, aucun mot de plus dans le journal (qui reste le contrat entre
+#: l'organe qui produit et celui qui mesure). Un curseur illisible vaut
+#: « depuis le debut » : la passe n'est jamais bloquee par son curseur.
+PASS_CURSOR_FILENAME = "pass_cursor.json"
 
 
 class CannotRunError(Exception):
@@ -560,7 +628,7 @@ class PRVerdict:
 
     pr: int
     head: str | None
-    verdict: str  # skipped | would-merge | merged | merge-failed | run-error
+    verdict: str  # skipped | would-merge | merged | merge-failed | run-error | unevaluated
     reason: str | None
     merged: bool
     #: Disposition de review classee a ``head`` (point 1 de #17672) ; une ligne
@@ -572,6 +640,10 @@ class PRVerdict:
     stack: str | None = None
     #: Incidents de mesure de la porte STACK, quand la porte en a publie.
     stack_incidents: tuple[str, ...] | None = None
+    #: La RAISON du rouge quand elle est mesurable (section FAILURES de
+    #: pytest, 22/11) : sans elle, le journal dit QUOI a rouge et force le
+    #: lecteur a DEVINER pourquoi.
+    detail: str | None = None
 
     def journal_dict(self) -> dict:
         row = {
@@ -586,6 +658,8 @@ class PRVerdict:
         }
         if self.stack_incidents:
             row["stack_incidents"] = list(self.stack_incidents)
+        if self.detail:
+            row["detail"] = self.detail
         return row
 
 
@@ -594,9 +668,68 @@ def utc_now_iso() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _clock() -> float:
+    """Horloge monotone du run.
+
+    Point d'injection pour les tests : la borne de duree d'une passe (#28009)
+    se lit sur cette horloge, et un test doit pouvoir la faire avancer sans
+    attendre 45 minutes.
+    """
+    return time.monotonic()
+
+
 def default_journal_path() -> Path:
     base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
     return base / "CoursIA" / "merge_ready" / "journal.jsonl"
+
+
+def pass_cursor_path(journal_path: Path) -> Path:
+    """Le fichier de curseur de reprise : a cote du journal, jamais dedans."""
+    return journal_path.parent / PASS_CURSOR_FILENAME
+
+
+def read_pass_cursor(journal_path: Path) -> int | None:
+    """Le numero apres lequel la prochaine passe commence.
+
+    `None` = depuis le debut de la file. Un curseur absent, illisible ou
+    aberrant vaut `None` : le curseur ameliore la fairness, il ne bloque
+    jamais une passe (fail-OPEN, comme le reste du harnais).
+    """
+    try:
+        brut = json.loads(pass_cursor_path(journal_path).read_text(encoding="utf-8"))
+        valeur = int(brut["after"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return valeur if valeur > 0 else None
+
+
+def write_pass_cursor(journal_path: Path, after: int | None) -> None:
+    """Ecrit le curseur de reprise ; `None` le retire.
+
+    Un echec d'ecriture n'interrompt PAS la passe : le curseur est un
+    raccourci, pas une condition de service.
+    """
+    chemin = pass_cursor_path(journal_path)
+    try:
+        chemin.parent.mkdir(parents=True, exist_ok=True)
+        if after is None:
+            chemin.unlink(missing_ok=True)
+            return
+        chemin.write_text(json.dumps({"after": int(after)}), encoding="utf-8")
+    except (OSError, TypeError, ValueError):
+        pass
+
+
+def _ordonner_apres_curseur(prs: list[int], curseur: int | None) -> list[int]:
+    """Les PRs **au-dessus** du curseur d'abord, puis celles du dessous.
+
+    La passe **boucle** : elle ne s'arrete plus toujours au meme endroit.
+    L'ordre reste croissant par numero dans chaque groupe (c'est l'ordre de
+    `list_open_prs`).
+    """
+    if curseur is None:
+        return list(prs)
+    return sorted(prs, key=lambda n: (0 if n > curseur else 1, n))
 
 
 # Une retenue decidee par le coordinateur (collision, ordre de stack,
@@ -2358,6 +2491,76 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def twin_attestation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.ter : l'attestation jumelle doit decrire l'ARBRE DE FUSION.
+
+    Le squash-merge re-hashe l'arbre : un blob atteste sur la branche peut ne
+    jamais atterrir sur `main`. Le test
+    ``test_audit_shas_exist_in_file_history`` verifie que le sha atteste par la
+    derniere attestation d'une paire est un blob que le carnet a reellement eu
+    dans son historique, sous le path declare -- un sha qui n'atterrit jamais
+    sur `main` le fait rougir.
+
+    La CI de PR ne voit pas cette classe : elle travaille sur
+    ``refs/pull/N/merge``, ou les commits intermediaires restent joignables ;
+    seul l'arbre de fusion revele l'orphelin. D'ou la place de cette porte :
+    elle est la DERNIERE ligne de defense, celle qui evite que `main` ne
+    rougisse (mesure du 2026-11-23 : `test_audit_shas_exist_in_file_history` a
+    gele `main` environ 3 h ; les squashes de #28094 et #27869 ont orpheline
+    des ``csharp_sha``).
+
+    Cout nul pour les PRs qui ne touchent pas le registre twin (filtre
+    prefixe). Pour les autres : un fetch, puis l'organe partage
+    (``check_twin_attestation_squash.py``), qui simule le squash et compare la
+    derniere attestation de chaque paire touchee aux blobs de l'arbre de
+    fusion.
+
+    Fail-closed, sans exception : un timeout, une sortie vide, une lecture
+    impossible ou un conflit de fusion font sauter le merge. « Je n'ai pas pu
+    lire » n'est jamais « c'est propre » -- c'est la regle que 5bis applique
+    deja pour les collisions d'index.
+
+    Codes de l'organe : 0 = conforme, 1 = defaut trouve (MISMATCH, NODESC,
+    CONFLICT), 2 = mesure impossible.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-attestation-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, _repo_relative(TWIN_ATTEST_PATH),
+         "--base", "origin/main", "--head", head, "--json"]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 2:
+        # Mesure impossible : timeout, erreur git, sortie vide.
+        return "twin-attestation-unreadable:rc=2"
+    # rc = 1 : l'organe a lu et a trouve un defaut. Le motif nomme la paire
+    # et les cotes en cause -- il est journalise tel quel.
+    try:
+        data = json.loads(res.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return "twin-attestation-unreadable:sortie-illisible"
+    if not isinstance(data, dict):
+        return "twin-attestation-unreadable:sortie-illisible"
+    verdict = str(data.get("verdict") or "?").lower()
+    reason = str(data.get("reason") or "").strip()
+    if not reason:
+        return f"twin-attestation-{verdict}:defaut-non-nomme"
+    return f"twin-attestation-{verdict}:{reason[:180]}"
+
+
 def slot_reservation_reason(
     runner: Runner, pr: int, head: str, files: list[dict]
 ) -> str | None:
@@ -2495,24 +2698,121 @@ def find_stacked_parents(body: str | None) -> list[int]:
     return list(seen)
 
 
-def combined_tree_reason(
+@dataclass
+class CombinedPassContext:
+    """Contexte de passe pour l'etape 5quinquies (22/11).
+
+    Une passe evalue jusqu'a une centaine de candidats, et l'etape jouait un
+    worktree NEUF a chaque fois -- ``worktree add`` puis ``worktree remove``,
+    38 s + 9 s par candidat (mesure du coordinateur sur l'arbre de main).
+    Ce contexte donne a la passe UN worktree, reutilise par
+    ``checkout --detach`` : l'organe n'y fait plus qu'un changement de tete
+    entre deux candidats.
+
+    Le worktree est nomme par le PID de la passe : deux passes concurrentes
+    ne se partagent donc jamais le meme dossier. Un partage ferait jouer les
+    tests d'un candidat sur l'arbre d'un AUTRE -- un verdict faux.
+
+    La BASE, elle, reste resolue par l'organe a chaque candidat : elle doit
+    etre COURANTE, sinon l'organe rate le conflit entre deux PRs fusionnees
+    contre le meme ``main@T`` (fenetre residuelle de #24828). Mesure du
+    22/11 : le ``main`` n'ajoute que ~0,4 s au fetch (18,9 s avec, 18,5 s
+    pour la seule tete) -- le cout du fetch est l'aller-retour reseau, pas
+    la ref. Un ``main`` par passe n'economiserait que 2 % du fetch et
+    acheterait une base perimee.
+    """
+    worktree: Path
+    #: Vrai des que l'organe a ete invoque au moins une fois dans la passe.
+    #: Le worktree n'existe alors que si l'organe l'a pose : une passe qui
+    #: n'a evalue AUCUN candidat (porte STACK refuse, rollback operateur)
+    #: n'a rien a retirer, et ne lance donc rien du tout.
+    used: bool = False
+
+    def cleanup(self, runner: Runner, gh_env: dict[str, str]) -> None:
+        """Retire le worktree de la passe.
+
+        Le retrait est fait par l'ORGANE (``--cleanup``), pas par un ``git``
+        lance ici : l'organe sait deja poser et retirer ce worktree, et la
+        passe ne doit pas payer un aller-retour reseau pour le faire.
+
+        Rien n'est lance si l'organe n'a jamais ete invoque : une passe sans
+        evaluation ne laisse pas de worktree, et une passe qui n'a rien
+        demande au disque ne demande rien au disque en sortant.
+        """
+        if not self.used:
+            return
+        rm = runner.run(
+            [sys.executable, _repo_relative(COMBINED_PATH), "--cleanup",
+             "--worktree", _repo_relative(self.worktree)],
+            env=gh_env,
+        )
+        if rm.returncode != 0:
+            # Un worktree que git refuse de retirer est RAPPORTE, pas detruit.
+            print(f"worktree de passe non retire : {self.worktree}",
+                  file=sys.stderr)
+
+
+#: Contexte de passe courant (module-level : la chaine d'appels de l'etape
+#: 5quinquies est profonde, on ne la remplit pas de parametres).
+COMBINED_CTX: CombinedPassContext | None = None
+
+
+def combined_pass_context() -> CombinedPassContext | None:
+    """Prepare le contexte de passe ; ``None`` si l'etape est indisponible.
+
+    ``None`` n'est pas un echec : l'organe retombe alors sur son comportement
+    d'avant (un worktree par candidat).
+    """
+    if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
+        return None
+    worktree = REPO_ROOT / ".tmp" / f"premerge-passe-{os.getpid()}"
+    return CombinedPassContext(worktree=worktree)
+
+
+def _one_line(text: str, limit: int = 600) -> str:
+    """Aplatit une queue de sortie en UNE ligne bornee (#28147).
+
+    Le motif journalise doit rester lisible en une ligne : les retours a la
+    ligne sont remplaces par un espace, les blancs sont reduits, et la queue
+    est tronquee par la fin au-dela de ``limit``.
+    """
+    flat = " ".join((text or "").split())
+    if not flat:
+        return ""
+    if len(flat) <= limit:
+        return flat
+    return flat[: limit - 3] + "..."
+
+
+def _combined_tree(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
-) -> str | None:
+) -> tuple[str | None, str | None]:
     """Etape 5quinquies : les tests d'integrite passent-ils sur ``main`` + tete ?
 
-    ``None`` si l'organe rend GREEN (exit 0). Sinon un motif de skip :
+    ``(None, None)`` si l'organe rend GREEN (exit 0). Sinon un motif de skip
+    et la RAISON du rouge :
     ``combined-tree-red:<premier test rouge>``, ``combined-tree-conflict``, ou
     ``combined-tree-unreadable:<etape>`` -- « je n'ai pas pu jouer les
     tests » n'est pas « ils passent ». ``MERGE_READY_COMBINED_CHECK=0``
     retire l'etape (rollback operateur, jamais un reglage de lane).
+
+    Le motif porte la QUEUE de sortie pytest aplatie en une ligne (#28147) ;
+    la RAISON est rendue A PART : la section FAILURES de pytest. Le journal
+    portait `FAILED <id>`, ce qui dit QUOI a rougi mais pas POURQUOI -- et
+    force le lecteur a DEVINER pourquoi une PR approuvee a ete sautee
+    (22/11 : deux PRs approuvees sautees sur `test_guard_gauntlet`, aucune
+    ne touchant le gauntlet).
     """
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
-        return None
-    res = runner.run(
-        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
-         "--json"],
-        env=gh_env,
-    )
+        return None, None
+    argv = [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr),
+            "--head", head, "--json"]
+    ctx = COMBINED_CTX
+    if ctx is not None:
+        argv += ["--worktree", _repo_relative(ctx.worktree),
+                 "--reuse-worktree"]
+        ctx.used = True
+    res = runner.run(argv, env=gh_env)
     payload: dict = {}
     lines = (res.stdout or "").strip().splitlines()
     if lines:
@@ -2522,15 +2822,38 @@ def combined_tree_reason(
                 payload = parsed
         except ValueError:
             payload = {}
+    detail = payload.get("failure_detail") or None
     verdict = payload.get("verdict")
     if res.returncode == 0 and verdict == "GREEN":
-        return None
+        return None, None
     if res.returncode == 1 and verdict == "CONFLICT":
-        return "combined-tree-conflict"
+        return "combined-tree-conflict", detail
     if res.returncode == 1 and verdict == "RED":
         failed = payload.get("failed") or []
-        return f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
-    return f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+        reason = f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
+        tail = _one_line(payload.get("output_tail") or "")
+        if tail:
+            reason = f"{reason} | pytest-tail: {tail}"
+        return reason, detail
+    unreadable = (f"combined-tree-unreadable:"
+                  f"{payload.get('reason') or 'rc-' + str(res.returncode)}")
+    tail = _one_line(payload.get("output_tail") or "")
+    if tail:
+        unreadable = f"{unreadable} | pytest-tail: {tail}"
+    return unreadable, detail
+
+
+def combined_tree_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> str | None:
+    """Le MOTIF de l'etape 5quinquies, seul : ``None`` si l'organe rend GREEN.
+
+    L'API publique reste celle d'avant : UN motif, en une ligne. La raison
+    du rouge (section FAILURES de pytest) est rendue par `_combined_tree`,
+    qui la rend A PART -- elle ne pollue pas le motif journalise.
+    """
+    reason, _detail = _combined_tree(runner, pr, head, gh_env)
+    return reason
 
 
 def stacked_parent_state(
@@ -2807,6 +3130,9 @@ def unstable_state_reason(
 
     jobs = advisory_jobs()
     advisory_count = 0
+    # #28131 (voie L1) : le garde de perimetre heberge est en file, le merge
+    # n'attend pas la file -- on mesure LOCALEMENT, avec le meme organe.
+    local_perimeter = 0
     for name in sorted(latest):
         if name == gate_leg["name"]:
             continue
@@ -2815,6 +3141,17 @@ def unstable_state_reason(
             continue
         done = latest_done.get(name)
         if done is None:
+            if name == perimeter.PERIMETER_CHECK_NAME:
+                verdict = perimeter.local_perimeter_verdict(
+                    runner, pr, head, gh_env, REPO
+                )
+                if verdict.blocking is False:
+                    local_perimeter += 1
+                    continue
+                return (
+                    f"mergeable-state:unstable:{name}:{verdict.detail}",
+                    verdict.detail,
+                )
             return (f"mergeable-state:unstable:{name}:no-completed-leg", "")
         if done.get("conclusion") not in CHECK_GREEN:
             return (
@@ -2836,7 +3173,8 @@ def unstable_state_reason(
         )
     return (
         None,
-        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded",
+        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded"
+        + (f"+{local_perimeter} perimeter-local" if local_perimeter else ""),
     )
 
 
@@ -2923,9 +3261,10 @@ def evaluate_pr(
     disposition = review_disposition(view, view_head)
 
     def skip(reason: str, stack: str | None = None,
-             stack_incidents: tuple[str, ...] | None = None) -> PRVerdict:
+             stack_incidents: tuple[str, ...] | None = None,
+             detail: str | None = None) -> PRVerdict:
         return PRVerdict(pr, view_head, "skipped", reason, False, disposition,
-                         stack, stack_incidents)
+                         stack, stack_incidents, detail)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -3021,6 +3360,13 @@ def evaluate_pr(
     reason = twin_collision_reason(runner, pr, view_head, view.get("files") or [])
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
+    # 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) :
+    # le squash-merge re-hashe l'arbre, un blob atteste sur la branche peut
+    # ne jamais atterrir sur `main` -- et la CI de PR ne le voit pas (elle
+    # travaille sur `refs/pull/N/merge`). Fail-closed comme 5bis.
+    reason = twin_attestation_reason(runner, pr, view_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason, stack_state, stack_inc)
     # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).
     # Independant de 5bis : 5bis = twin-pair registry, 5bis.bis = slot de carnet.
     reason = slot_reservation_reason(runner, pr, view_head, view.get("files") or [])
@@ -3084,9 +3430,9 @@ def evaluate_pr(
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.
-    reason = combined_tree_reason(runner, pr, view_head, gh_env)
+    reason, detail = _combined_tree(runner, pr, view_head, gh_env)
     if reason is not None:
-        return skip(reason, stack_state, stack_inc)
+        return skip(reason, stack_state, stack_inc, detail)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(
         runner, pr, gh_env, retries=retries
@@ -3120,7 +3466,13 @@ def evaluate_pr(
 
 
 def append_journal(path: Path, verdict: PRVerdict) -> None:
-    """Une ligne JSON par PR evaluee ; repertoire cree si absent."""
+    """Une ligne JSON par PR evaluee ; repertoire cree si absent.
+
+    Une PR que la passe n'a pas EVALUEEe (arret sur le budget de duree,
+    #28009) ecrit elle aussi une ligne -- verdict ``unevaluated`` -- pour que
+    la file reste lisible ; elle ne porte aucun cout d'evaluation et
+    ``merge_ready_pass_timing.py`` l'ignore.
+    """
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
@@ -3171,6 +3523,7 @@ def emit_output(
     stopped_reason: str | None,
     exit_code: int,
     warmup: dict | None = None,
+    not_evaluated: list[PRVerdict] | None = None,
 ) -> None:
     """Resume humain sur stdout, ou payload machine unique en --json."""
     if args.json:
@@ -3180,6 +3533,12 @@ def emit_output(
             "stopped_reason": stopped_reason,
             "exit_code": exit_code,
             "results": [v.journal_dict() for v in results],
+            # Les PRs que la passe n'a pas EVALUEEes (arret sur le budget de
+            # duree, #28009) : elles ne sont pas dans `results`, et le bilan
+            # doit les nommer -- une PR de la file ne disparait pas.
+            "not_evaluated": [
+                {"pr": v.pr, "reason": v.reason} for v in (not_evaluated or [])
+            ],
         }
         if warmup:
             payload["warmup"] = warmup
@@ -3189,6 +3548,11 @@ def emit_output(
     print(f"== merge_ready ({mode}, max {args.max}) ==")
     for verdict in results:
         print(_describe(verdict))
+        # La raison du rouge, quand elle est mesurable : sans elle, le
+        # lecteur doit DEVINER pourquoi une PR approuvee a ete sautee (22/11).
+        if verdict.detail:
+            for ligne in verdict.detail.splitlines():
+                print(f"  | {ligne}")
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
@@ -3214,6 +3578,18 @@ def emit_output(
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
+    if not_evaluated:
+        # Les PRs non evaluees sont nommees une par une : le compte seul
+        # dirait « combien », pas « lesquelles » -- et une PR de la file qui
+        # n'apparait nulle part est une PR que l'on croit perdue.
+        print(
+            "non evaluees : %d PRs (motif : %s) -- %s"
+            % (
+                len(not_evaluated),
+                PASS_BUDGET_REASON,
+                ", ".join(f"#{v.pr}" for v in not_evaluated),
+            )
+        )
     if warmup:
         # Le cout du rechauffage est nomme : c'est lui qui pesait sur le
         # jeton partage du coordinateur (revue du 16/11).
@@ -3327,6 +3703,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     results: list[PRVerdict] = []
     stopped_reason: str | None = None
     exit_code = 0
+    # Borne de DUREE de la passe (#28009). L'horloge demarre AVANT la lecture
+    # de la file : la borne couvre la passe entiere (liste + rechauffage +
+    # boucle), pas seulement la boucle. Elle se lit ENTRE deux PRs, donc elle
+    # n'interrompt jamais un merge en cours.
+    pass_started = _clock()
     try:
         prs, warm_candidates = list_open_prs(active_runner, gh_env)
     except UnexpectedError as exc:
@@ -3335,7 +3716,20 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         emit_output(args, results, f"unexpected-error:{exc}", 1)
         return 1
 
+    # Curseur de reprise (revue du 22/11) : la passe continue apres la
+    # derniere PR EVALUEEe de la passe precedente, puis boucle. Sans lui, une
+    # passe arretee par le budget repart de la file entiere et s'arrete au
+    # MEME endroit -- les PRs du haut ne sont jamais vues (file affamee).
+    curseur = read_pass_cursor(journal_path)
+    prs = _ordonner_apres_curseur(prs, curseur)
+
     merged_count = 0
+    #: Derniere PR **EVALUEE** de cette passe : c'est le curseur que la
+    #: passe suivante reprend (revue du 22/11).
+    dernier_evalue: int | None = None
+    #: La file entiere a-t-elle ete parcourue ? Si oui, le curseur se remet a
+    #: zero : la passe suivante repart du debut.
+    file_parcourue = False
     #: PRs dont l'etat de mergeabilite etait « en cours de calcul » a leur
     #: tour : elles sont PARQUEES, pas refusees, et rejouees en fin de
     #: passe (#26799).
@@ -3352,6 +3746,21 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     # (revue du 16/11).
     warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
 
+    # --- contexte de l'etape 5quinquies (22/11) --------------------------------
+    #
+    # UN worktree pour toute la passe : l'etape jouait un `worktree add` +
+    # un `worktree remove` par candidat (38 s + 9 s, mesure du coordinateur).
+    # L'organe y fait un `checkout --detach` d'un candidat a l'autre. Le
+    # contexte echoue sans rien casse : `combined_pass_context` rend `None`
+    # et l'etape retombe sur son comportement d'avant.
+    global COMBINED_CTX
+    COMBINED_CTX = combined_pass_context()
+
+    def _budget_depasse() -> bool:
+        if args.pass_budget_s <= 0:
+            return False
+        return (_clock() - pass_started) >= args.pass_budget_s
+
     for pr in prs:
         # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
         # reels en --apply, would-merge en dry-run : le dry-run doit refléter
@@ -3359,6 +3768,9 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         # restantes ne sont pas evaluees (le journal ne couvre que l'evalue).
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
+            break
+        if _budget_depasse():
+            stopped_reason = PASS_BUDGET_REASON
             break
         if MAIN_RED_HOLD_NUMBER in holds or pr in holds:
             reason = holds.get(MAIN_RED_HOLD_NUMBER, holds.get(pr, "hold.txt"))
@@ -3370,8 +3782,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                 stopped_reason = f"unexpected-error:{exc}"
                 exit_code = 1
                 break
+            dernier_evalue = pr
             continue
         try:
+            # Cette PR est EVALUEEe : le curseur de reprise doit le dire.
+            dernier_evalue = pr
             view = fetch_pr_view(active_runner, pr, gh_env)
             decision = evaluate_pr(view, pr, active_runner, gh_env)
             if decision.verdict == "would-merge":
@@ -3427,6 +3842,40 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
             # constat faux (le bilan, lui, compte les erreurs isolees).
             continue
+    else:
+        # La boucle s'est achevee SANS arret : toute la file a ete parcourue.
+        file_parcourue = True
+
+    # Curseur de reprise (revue du 22/11) : la passe suivante continue apres
+    # la derniere PR EVALUEEe de celle-ci, puis boucle. Une passe qui a
+    # parcouru toute la file remet le curseur a zero : la suivante repart du
+    # debut. Le curseur ne remplace pas la file relue a chaque tour -- il
+    # en change le POINT DE DEPART.
+    write_pass_cursor(journal_path, None if file_parcourue else dernier_evalue)
+
+    # PRs NON EVALUEES : la passe s'est arretee sur son budget de duree avant
+    # de les atteindre. Elles sont journalisees avec un motif nomme -- jamais
+    # une PR disparue du bilan (#28009). Elles ne sont PAS dans `results` :
+    # `results` ne compte que les PRs EVALUEES, et le bilan distingue les
+    # deux comptes (le compte « evaluee(s) » reste exact). La passe suivante
+    # les atteint : la file est relue a chaque tour et le curseur de reprise
+    # fait avancer son point de depart (revue du 22/11).
+    not_evaluated: list[PRVerdict] = []
+    if stopped_reason == PASS_BUDGET_REASON:
+        deja = {v.pr for v in results} | {parked for parked, _ in replay_queue}
+        for pr in prs:
+            if pr in deja:
+                continue
+            left = PRVerdict(
+                pr, None, VERDICT_NOT_EVALUATED, PASS_BUDGET_REASON, False
+            )
+            not_evaluated.append(left)
+            try:
+                append_journal(journal_path, left)
+            except UnexpectedError as exc:
+                stopped_reason = f"unexpected-error:{exc}"
+                exit_code = 1
+                break
 
     # --- rejeu des PRs parkees ------------------------------------------------
     #
@@ -3489,6 +3938,10 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         break
                     continue
 
+    if COMBINED_CTX is not None:
+        COMBINED_CTX.cleanup(active_runner, gh_env)
+        COMBINED_CTX = None
+
     emit_output(
         args, results, stopped_reason, exit_code,
         warmup={
@@ -3496,6 +3949,7 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             "candidates": len(warm_candidates),
             "pool": len(prs),
         },
+        not_evaluated=not_evaluated,
     )
     return exit_code
 
@@ -3542,6 +3996,19 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--pass-budget-s",
+        type=float,
+        default=PASS_BUDGET_S,
+        metavar="S",
+        help=(
+            "budget de duree d'une passe, en secondes (defaut "
+            f"{int(PASS_BUDGET_S)} s). Depasse, la passe s'arrete PROPREMENT "
+            "et les PRs restantes sont journalisees avec le motif "
+            f"'{PASS_BUDGET_REASON}' ; la passe suivante continue apres la "
+            "derniere PR evaluee (curseur de reprise)."
+        ),
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="sortie machine (un seul objet JSON) sur stdout",
@@ -3549,6 +4016,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.max < 0:
         parser.error("--max doit etre >= 0")
+    if args.pass_budget_s < 0:
+        parser.error("--pass-budget-s doit etre >= 0")
     return args
 
 
