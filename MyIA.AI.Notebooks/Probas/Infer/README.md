@@ -186,6 +186,24 @@ et inférence bayésienne.
 - Diagnostics de convergence EP sur matchs couplés — trajectoire, point fixe, et écart mesuré au postérieur exact (quadrature 1D) : l'approximation factorisée est surconfiante, le schéma online O(1) reste plus fidèle
 - Ordonnancement des messages — séquentiel (Gauss-Seidel) vs parallèle (Jacobi) : même point fixe, vitesse de convergence mesurée (~2× moins de balayages en séquentiel)
 
+#### [Infer-08b Python : du calcul au service web](Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb)
+
+**Durée** : 35 min | **Prérequis** : [Infer-08-TrueSkill](Infer-08-TrueSkill.ipynb)
+
+Jumeau Python du carnet C# précédent : les mêmes formes fermées de Herbrich,
+Minka et Graepel sont déroulées en Python pur, puis appliquées en ligne aux
+matchs 1v1, aux équipes, au free-for-all et au match nul. Trois exercices
+prolongent le cours sans empêcher son exécution de bout en bout.
+
+La dernière section transforme ce même carnet en service `POST
+/probas/trueskill` avec Jupyter Kernel Gateway : une requête JSON décrit une
+séquence de parties et reçoit les postérieurs `(mu, sigma)` de chaque joueur.
+Le [guide du gateway](gateway/README.md) donne le contrat, le lanceur avec
+preflight et des appels `curl` réellement exécutés. Le service suit le patron
+du carnet Z3 Sudoku (Epic [#19571](https://github.com/jsboige/CoursIA/issues/19571),
+pli 0 v2) ; la bibliothèque `trueskill` sert d'oracle indépendant dans les
+tests, tandis que le moteur reste la forme fermée enseignée dans le carnet.
+
 ---
 
 > **Théorie de la décision** : les notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus les companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../DecisionTheory/decision_theory_lean/).

@@ -1,0 +1,9 @@
+- name: "Z3-18 Sudoku Modes"
+  family: SymbolicAI/SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Meme moteur Z3 des deux cotes (bindings natives) : Python via z3-solver 4.16.0, C# via Microsoft.Z3 4.12.2 (NuGet). Les resultats witness (solution unique de la grille 4x4, comparaison Constants vs Array) coincident malgre l'ecart de version ; aucune difference de comportement observee sur cette instance."
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27672) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (Sudoku 4x4 encode deux fois, mode Constants par IntExpr nommes et mode Array(Int,Int), grille a quatre givens (0,0,1), (1,3,3), (2,2,2), (3,1,4), memes contraintes canoniques, comparaison des solutions sur les 16 indices). Correctifs de revue portes aux deux jumeaux : la prose annonce desormais QUATRE givens (le code en posait quatre), l'interpretation de la cellule 13 distingue la coincidence des deux solutions calculees de l'egalite des ensembles de solutions (correspondance bijective (r,c) <-> r*N+c ; en mode Array les entrees hors des 16 indices restent non contraintes), et le verdict Prong-B renvoie la mesure a l'exercice 3 (100 runs) au lieu d'affirmer une difference discriminante non mesuree."
