@@ -94,6 +94,17 @@ groupée, sans sonde par issue.
 | `RECLAMEE` | claim ouvert d'une autre lane de moins de 48 h ; sur un conteneur, un claim récent d'une autre lane écarte déjà via `PLAFOND` (une remise de main `[OVERRIDE]` bornée `paths:` reste une note) |
 | `ORIGAMI` | EPIC Origami dont **tous les plis matérialisés sont terminés** et dont le pli suivant n'est pas annoncé : le dépliage est réservé au coordinateur, aucune lane worker ne peut le lever. Le motif dit quel pli attend. Comme sur le tapis lourd, l'écart est appliqué **après** les autres : un EPIC déjà livré reste `LIVREE` |
 
+**Le recul : trois codes servis après le tour, jamais refusés (#27059).** `COUVERTE`, `RELACHEE` et
+`MERGEE` ne retirent plus l'issue du pool. `coordination/tapis_recul.py` (ensemble `RECULS`, prédicat
+`servable`) les range dans un **palier de recul** (`_palier_recul`), servi **après** le tour : un grain
+libre passe toujours devant, les issues en recul de votre claim d'abord, puis l'ordre d'équilibrage ; un
+conteneur n'y entre que dans son quota, et une issue déjà visitée n'y passe jamais devant un reporté
+(#27590). Un écart dur (`GEL`, `PAUSE`, `PLAFOND`, `LIVREE`, `LABEL`, ...) l'emporte toujours sur un recul,
+et un claim vivant d'une autre lane verrouille aussi une issue en recul (`RECLAMEE`). Le rapport JSON porte
+ces issues sous la clé `en_recul` (par code) et leur nombre dans `lecture.en_recul` ; `lecture.servables`
+les compte désormais. La sortie texte ajoute la ligne « Servies en recul, après les autres : … ». Le code
+reste affiché : un recul n'est pas une exclusion, c'est un rang.
+
 Les marqueurs se lisent en tête de **n'importe quelle ligne** d'un commentaire (souvent après `Grain: …`),
 décor de citation ou de gras toléré, blocs de code ignorés. Par lane, `[CLAIMED]`/`[CLAIMED-AMEND]` ouvre ;
 `[RELEASED]`, `[DELIVERED]`, `[CANCELLED]`, `[ABANDONED]` et `[DONE]` ferment ; `[OVERRIDE]` remet
@@ -382,7 +393,10 @@ soit 1,1 % des feuilles. Les feuilles retenues par code d'écart : `COUVERTE` 97
 `LABEL` 47, `RECLAMEE` 25, `RELACHEE` 14, `HORSFLOTTE` 9, `GEL` 4 ; sur cette lecture `PLAFOND` n'écarte
 que des conteneurs (62) et aucune feuille. Cette lecture est double : `COUVERTE` et `MERGEE` ne sont pas
 des défunts — ce sont les issues dont la PR citée attend la revue ou la clôture, rôles déjà attribués par
-`visit_coverage.py` ; le tapis n'a pas à les reprendre.
+`visit_coverage.py`. Depuis #27059, le tapis les sert quand même **en recul**, après le tour (voir [le
+recul](#ce-qui-écarte-un-candidat)) : la revue et l'urne gardent leur rôle, mais une lane sans grain libre n'est plus
+renvoyée les mains vides. Cette mesure est antérieure au recul : elle compte comme écartées des issues que
+le tapis sert aujourd'hui en second temps.
 
 L'organe ne fixe **aucun seuil** : la mesure est un fait, la politique d'assiette appartient au
 coordinateur. Ce qu'il donne, c'est le levier — déplier un conteneur (tranche avec `paths:`, PR, résidus en
@@ -504,6 +518,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_recul.py` | le **recul** : `COUVERTE`, `RELACHEE` et `MERGEE` servies après le tour, jamais refusées (`RECULS`, `servable`, `_palier_recul`, #27059) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
