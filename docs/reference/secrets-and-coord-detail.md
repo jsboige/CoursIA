@@ -168,6 +168,13 @@ lui-meme et fait echouer en cas de drift). Consequence mesuree le 2026-08-10 sur
 jours plus tot — dont, a l'epoque, ~7 credentials reellement fuites. Un scan sous un binaire different n'est
 pas une mesure de ce que la CI applique : c'est une mesure d'autre chose, et elle **paraissait rassurante**.
 
+Commandes de lecture des deux pins, deportees de la rule (tranche #11554, 2026-11-23) :
+
+```bash
+grep -A2 'gitleaks/gitleaks' .pre-commit-config.yaml | grep rev:   # pin pre-commit
+grep 'GITLEAKS_VERSION:' .github/workflows/secret-scan.yml          # pin CI (doit etre identique)
+```
+
 
 
 ## 2. Coordinator discipline (ai-01)

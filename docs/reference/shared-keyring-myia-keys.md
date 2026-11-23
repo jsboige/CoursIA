@@ -136,6 +136,10 @@ donné son feu vert à la suppression le 2026-09-22 — il détient la passphras
 KeePass, le risque de perte est donc levé — **conditionné à ce que toutes les machines soient
 enregistrées**.
 
+**Ne jamais recopier la passphrase sur un chemin partagé** (GDrive, dashboard, repo, message) :
+le PDF d'urgence est une voie de rattrapage, pas un lieu de stockage — prescription portée par la
+rule `secrets-hygiene.md` et reposée ici lors du déport (tranche #11554, 2026-11-23).
+
 Critère de retrait, mesurable : **7/7 empreintes concordantes**.
 
 | Machine | Compte GitHub |
