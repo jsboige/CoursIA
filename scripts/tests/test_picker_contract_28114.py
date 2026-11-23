@@ -30,7 +30,7 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | **viole** | aucune regle ne lit un label `pause` |
-| I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
+| I6 borne de temps | tenu (23/11, ce PR) | une echeance monotone unique (`gh_bulk.MUR_TIRAGE_S`) partagee par les etages ; budgets declares cumules : 30 + 15 + 15 = 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
 
 I2 est devenu **executable** dans ce PR : hors reseau, la voie legere lit le
@@ -43,6 +43,14 @@ I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
 impossible) refuse encore. Le marqueur `xfail` du test I4 a donc ete
 retire : le test passe, et le CI le prouve.
+
+I6 est devenu **executable** dans ce PR : le tirage porte UNE echeance
+monotone unique (`gh_bulk.MUR_TIRAGE_S`), posee une fois et partagee par ses
+etages -- le temps restant borne chaque appel, donc un etage qui a consomme
+sa part voit l'etage suivant etre coupe plutot qu'attendu. Les budgets
+DECLARES tiennent desormais dans la borne du contrat (30 + 15 + 15 = 60 s
+pour 60 s), au lieu de 60 + 90 + 90 = 240 s. Le marqueur `xfail` du test I6
+est donc retire : le test passe, et le CI le prouve.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -285,24 +293,24 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
 
 # --- I6 -- la borne de temps ---------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I6 viole au 22/11 : budgets cumules 60 + 90 + 90 = 240 s pour un contrat "
-    "de 60 s (la borne n'est pas une propriete du code). "
-    "A lever quand le noyau porte UNE echeance monotone unique."))
 def test_I6_le_budget_global_du_tirage_est_borne_a_60_s():
     """I6 -- un tirage de lane rend en moins de 60 s.
 
     Les budgets **declares** des etages du chemin de lane doivent tenir dans
-    la borne du contrat. Aujourd'hui ils ne la tiennent pas :
+    la borne du contrat :
 
-    - selection : `gh_selection.MUR_GLOBAL_S` = 60 s ;
-    - citations : `gh_bulk.TIMEOUT_S` = 90 s ;
-    - PRs ouvertes : `gh_bulk.TIMEOUT_S` = 90 s.
+    - selection : `gh_selection.MUR_GLOBAL_S` = 30 s ;
+    - citations : `gh_bulk.TIMEOUT_S` = 15 s ;
+    - PRs ouvertes : `gh_bulk.TIMEOUT_S` = 15 s.
 
-    Soit 240 s de budgets pour un contrat de 60 s : la borne n'est pas une
-    propriete du code, elle est un voeu. Le noyau consolide doit porter UNE
-    echeance monotone unique, partagee par les etages (le mecanisme existe
-    deja pour la selection : `gh_selection._page`).
+    Soit 60 s de budgets pour un contrat de 60 s. Et la borne n'est pas un
+    voeu : le tirage pose UNE echeance monotone (`gh_bulk.MUR_TIRAGE_S`),
+    partagee par ses etages -- le temps restant est recalcule avant chaque
+    appel, donc un etage qui a consomme sa part voit l'etage suivant etre
+    coupe plutot qu'attendu.
+
+    Etat au 22/11 : les budgets cumulaient 240 s (60 + 90 + 90) et chaque
+    etage avait sa propre echeance. D'ou le marqueur.
     """
     budgets = {"selection": gh_selection.MUR_GLOBAL_S,
                "citations": gh_bulk.TIMEOUT_S,
