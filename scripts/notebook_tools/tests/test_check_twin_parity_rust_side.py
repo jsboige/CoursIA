@@ -29,6 +29,8 @@ REEL vit dans le body de la PR -- ces tests unitaires couvrent la mecanique) :
   (design-gate #9399 critere 2). Chaque versant est eprouve SEUL -- la
   mesure par mutation est dans le message du commit qui les a posés ;
 - verify_recorded_sha : empreinte rust enregistree divergente = MISMATCH ;
+- documentation : `_schema.yaml` decrit la cle `rust:`, ses empreintes d'audit
+  et la discipline d'attestation ;
 - _pair_paths_diverge / _classify_per_pair : le cote rust participe aux
   verdicts per-pair (deplacement, drift introduit).
 """
@@ -41,6 +43,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -527,3 +530,22 @@ def test_pair_paths_diverge_sur_le_cote_rust():
                "rust": "nb/ru-12.ipynb"}
     assert _pair_paths_diverge(base_pp, head_pp)
     assert not _pair_paths_diverge(base_pp, base_pp)
+
+
+# --- documentation du registre : le troisieme cote y est decrit ----------------
+
+
+def test_schema_documente_le_cote_rust():
+    """`_schema.yaml` (commentaires seuls) est l'endroit canonique ou un humain
+    apprend l'existence d'une cle optionnelle et la discipline qu'elle impose.
+    Le body d'une PR ne survit pas au merge : la cle `rust:` doit y figurer,
+    avec ses deux empreintes d'audit et la regle « declarer sans attester =
+    DRIFT »."""
+    schema = (Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+              / "twin_pairs.d" / "_schema.yaml")
+    texte = schema.read_text(encoding="utf-8")
+    for jeton in ("`rust:`", "`rust_sha`", "`content_rust_sha`", "drift_sides",
+                  "numbering_exception", "--update"):
+        assert jeton in texte, f"_schema.yaml ne documente pas {jeton}"
+    # La documentation reste hors du loader : rien qui parse en paire.
+    assert not yaml.safe_load(texte), "_schema.yaml doit rester des commentaires"
