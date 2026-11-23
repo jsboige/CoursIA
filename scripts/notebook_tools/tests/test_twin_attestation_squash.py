@@ -139,3 +139,48 @@ def test_lecture_impossible_leve_unreadable(tmp_path):
     repo = _make_repo(tmp_path)
     with pytest.raises(Unreadable):
         check(repo, "main", "ref-inexistant-1234")
+
+
+def test_descripteur_touche_nomme_la_paire_sans_son_extension(tmp_path):
+    """Le descripteur d'une paire est un FICHIER `twin_pairs.d/<slug>.yaml` ;
+    son nom porte l'extension, il n'est pas le nom de la paire.
+
+    Regression mesuree le 23/11 sur le balayage de flotte : le descripteur
+    touche etait lu comme une paire nommee `<slug>.yaml`, dont le
+    descripteur (`<slug>.yaml.yaml`) n'existait pas -- la garde rendait
+    NODESC sur des PRs parfaitement conformes.
+    """
+    repo = _make_repo(tmp_path)
+    _git(repo, "checkout", "-b", "feature")
+    _write(repo, f"{REGISTRY}/{PAIR}.yaml",
+           _descriptor() + "  known_differences:\n"
+           "    - \"edition de prose\"\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "descripteur edite")
+    report = check(repo, "main", "feature")
+    assert report["verdict"] == "OK", report
+    assert [p["pair"] for p in report["pairs"]] == [PAIR]
+
+
+def test_attestation_perimee_vie_le_descripteur_touche(tmp_path):
+    """Le defaut doit etre vu meme quand la PR ne touche que le descripteur."""
+    repo = _make_repo(tmp_path)
+    stale_python = _git(repo, "rev-parse", f"HEAD:{PY_PATH}")
+    stale_csharp = _git(repo, "rev-parse", f"HEAD:{CS_PATH}")
+    _git(repo, "checkout", "-b", "feature")
+    _write(repo, PY_PATH, "contenu python modifie\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "carnet modifie")
+    _write(repo, f"{REGISTRY}/{PAIR}.yaml",
+           _descriptor() + "  known_differences:\n"
+           "    - \"edition de prose\"\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "descripteur edite")
+    _write(repo, f"{REGISTRY}/{PAIR}/0002-2026-11-23-test.yaml",
+           _attestation(stale_python, stale_csharp))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "attestation perimee")
+    report = check(repo, "main", "feature")
+    assert report["verdict"] == "MISMATCH", report
+    assert report["pairs"][0]["pair"] == PAIR
+    assert any("python" in detail for detail in report["pairs"][0]["details"])

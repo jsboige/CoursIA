@@ -126,9 +126,15 @@ def _touched_pairs(repo: Path, base: str, head: str) -> list[str]:
     prefix = REGISTRY.split("/")
     for path in out.split():
         parts = path.split("/")
-        # <REGISTRY>/<pair>/<fichier>.yaml  ->  <pair>
-        if len(parts) >= 4 and parts[:3] == prefix:
+        if parts[:3] != prefix:
+            continue
+        if len(parts) >= 5:
+            # <REGISTRY>/<slug>/<fichier>.yaml  ->  <slug>
             pairs.add(parts[3])
+        elif len(parts) == 4 and parts[3].endswith(".yaml"):
+            # <REGISTRY>/<slug>.yaml  ->  <slug>  (le descripteur de la paire ;
+            # son nom porte l'extension, il n'est PAS le nom de la paire).
+            pairs.add(parts[3][: -len(".yaml")])
     return sorted(pairs)
 
 
