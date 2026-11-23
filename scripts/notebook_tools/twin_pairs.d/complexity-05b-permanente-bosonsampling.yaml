@@ -1,0 +1,11 @@
+- name: "Complexity-05b Permanente BosonSampling"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Le port utilise les complexes natifs C# et MathNet pour les déterminants et la décomposition QR des unitaires de Haar, avec des permanentes instrumentées et mémorisées.
+  known_differences:
+    - "Les générateurs aléatoires et les performances diffèrent entre Python et C#. La loi énumérée est conditionnée à l'absence de collision ; les comptes distinguent le recalcul des sommes et leur mise à jour incrémentale."
+    - "2026-11-22 (myia-po-2023:CoursIA-2, #26901) : après la descente de la série sous InformationCalcul/, un lien croisé de fin de carnet (cellule 28) est réancré de ](../SymbolicAI/...) à ](../../SymbolicAI/...) — édition markdown seule, aucune cellule de code ni sortie touchée ; le jumeau Python n'est pas modifié. Attestation (le blob C# se déplace), pas reparation : la parité sémantique déclarée est inchangée. --update en DERNIÈRE opération (cf #8957)."
