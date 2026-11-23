@@ -170,7 +170,7 @@ def test_dump_exits_zero_even_with_violations(monkeypatch: pytest.MonkeyPatch,
     import scripts.notebook_tools.dump_readme_link_violations as mod
 
     fake = subprocess.CompletedProcess(
-        args=["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        args=["python", "scripts/ci/regen_quarto_render.py", "--check-readme-links"],
         returncode=1,
         stdout="README-link audit: 402 rendered-subtree READMEs, 2 violation(s), 0 unrendered\n",
         stderr=(
@@ -467,10 +467,10 @@ def test_dump_exits_nonzero_on_rc2_script_absent(monkeypatch: pytest.MonkeyPatch
     import scripts.notebook_tools.dump_readme_link_violations as mod
 
     fake = subprocess.CompletedProcess(
-        args=["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        args=["python", "scripts/ci/regen_quarto_render.py", "--check-readme-links"],
         returncode=2,
         stdout="",
-        stderr="python: can't open file 'scripts/regen_quarto_render.py': [Errno 2] No such file or directory\n",
+        stderr="python: can't open file 'scripts/ci/regen_quarto_render.py': [Errno 2] No such file or directory\n",
     )
     monkeypatch.setattr(mod.subprocess, "run", lambda *a, **kw: fake)
     rc = mod.main()
@@ -489,7 +489,7 @@ def test_dump_exits_nonzero_on_rc1_traceback_no_summary(monkeypatch: pytest.Monk
     import scripts.notebook_tools.dump_readme_link_violations as mod
 
     fake = subprocess.CompletedProcess(
-        args=["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        args=["python", "scripts/ci/regen_quarto_render.py", "--check-readme-links"],
         returncode=1,
         stdout="Traceback (most recent call last):\n  File \"regen_quarto_render.py\", line 100, in <module>\n    raise ValueError()\nValueError\n",
         stderr="",

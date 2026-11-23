@@ -63,7 +63,7 @@ Cette table ne porte que des **numéros nus** : qui la lit de haut en bas suit l
 | 4 | [MGS-04-Islands](MGS-04-Islands.ipynb) | Modèle insulaire | populations structurées, migration entre îles | ~50 min | — |
 | 5 | [MGS-05-CompoundMetaheuristics](MGS-05-CompoundMetaheuristics.ipynb) | Reconstruire les composés publiés (WOA/EO/FBI) | `MetaHeuristicsService`, `WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, factory `CreateMetaHeuristicByName` | ~50 min | — |
 | 6 | [MGS-06-Benchmarks](MGS-06-Benchmarks.ipynb) | Comparaison honnête | `KnownFunctions`, composé WOA vs Uniform vs Islands | ~50 min | — |
-| 7 | [MGS-07-TSP](MGS-07-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min | [7b](MGS-07b-LandscapeMultidim.ipynb) · [7c](MGS-07c-RosenbrockGriewank.ipynb) · [7d](MGS-07d-MichalewiczDixonPrice.ipynb) |
+| 7 | [MGS-07-TSP](MGS-07-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min | [7b](MGS-07b-LandscapeMultidim.ipynb) · [7c](MGS-07c-RosenbrockGriewank.ipynb) · [7d](MGS-07d-MichalewiczDixonPrice.ipynb) · [7e](MGS-07e-CovarianceMatrixAdaptation.ipynb) |
 | 8 | [MGS-08-LandscapeExplorer](MGS-08-LandscapeExplorer.ipynb) | Visualiser la surface de fitness | heatmaps PNG graphiques, 3 modes (fonction / carte d'altitude / image), trajectoire de convergence | ~50 min | — |
 | 9 | [MGS-09-EverestRelief](MGS-09-EverestRelief.ipynb) | Relief terrestre réel comme paysage | `DemGrid` (wrapper `ImageHeightMapFunction`), cartes `KnownHeightMap` de jsboige, GA/WOA/EO vs PSO, flipbook de convergence | ~55 min | — |
 | 10 | [MGS-10-CenterBias](MGS-10-CenterBias.ipynb) | Biais central vs robustesse au déplacement | banc `CenterBiasBenchmark` (Kudela 2022), composés WOA/EO/FBI/DE/BBPSO/SA vs GA/Random, signature $\Delta$ | ~45 min | — |
@@ -85,13 +85,14 @@ Un palier est un numéro qui a reçu des lettres : on lit le numéro, on ouvre u
 
 ### Autour de 7 — la projection N-D des paysages
 
-MGS-07 a établi l'agnosticisme de la grammaire à la représentation ; ses trois lettres montrent ce que la **dimension** fait à un paysage qu'on croyait connaître.
+MGS-07 a établi l'agnosticisme de la grammaire à la représentation ; ses quatre lettres montrent ce que la **dimension** fait à un paysage qu'on croyait connaître.
 
 | # | Notebook | Ce qu'elle ajoute au palier | Primitives introduites | Prérequis en plus | Durée |
 |---|----------|-----------------------------|------------------------|-------------------|-------|
 | 7b | [MGS-07b-LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) | Projection N-D des paysages (voir en dimension ≥ 5) | surcharge `RenderHeatmap` N-D de `KnownFunctionLandscape`, projection MAX sur les coordonnées cachées (opérateur Gtk# verbatim) ; Sphere 2-D vs 5-D, Rastrigin n=2/5/10/30, Schwefel n=5/30 | MGS-06 (les dix fonctions), MGS-07 (représentation agnostique) | ~30 min |
 | 7c | [MGS-07c-RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) | Projection N-D : Rosenbrock (vallée banane) + Griewank (produit-cosinus) | `RosenbrockFitness`, `GriewankFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; la vallée étroite de Rosenbrock (largeur $\sim 10^{-2}$) disparaît en MAX-projection 30-D, Griewank produit-cosinus $\prod \cos(x_i/\sqrt{i})$ vs Ackley somme-cosinus | MGS-07b (la surcharge N-D de `RenderHeatmap`) | ~30 min |
 | 7d | [MGS-07d-MichalewiczDixonPrice](MGS-07d-MichalewiczDixonPrice.ipynb) | Projection N-D : Michalewicz (crêtes raides) + Dixon-Price (vallée non-scalable) | `MichalewiczFitness` (paramètre $m=10$), `DixonPriceFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; crêtes quasi-binaires de Michalewicz ($m=10$ sature l'amplitude), vallée parabolique-croisée non-rectiligne de Dixon-Price | MGS-07b (la même surcharge N-D) | ~30 min |
+| 7e | [MGS-07e-CovarianceMatrixAdaptation](MGS-07e-CovarianceMatrixAdaptation.ipynb) | CMA-ES natif : ce que le rang-un ajoute au rang-μ | compose `CovarianceMatrixAdaptationEvolutionStrategy` (rang un + CSA + restart-on-stall) sur le même canevas GA que xNES/SNES/DE ; ellipsoïde tourné d=5 (graines 4242/1717/2718), covariance 2-D qui apprend l'orientation de la vallée, trajectoire CSA et redémarrages sur Rastrigin ; plafond IPOP déclaré, exercice côté appelant | Search-05b (xNES et la référence pycma), MGS-07d (anisotropie V/H) | ~40 min |
 
 Les 8 figures MGS-7b (heatmaps de la projection N-D des paysages Sphere/Rastrigin/Schwefel) sont cataloguées dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) avec leurs **descriptions visuelles** verbatim (audit vision MiniMax M3 c.755, doctrine #5780) — voir notamment la note disclosed sur la convergence visuelle des heatmaps Rastrigin-d2/d10/d30 en projection MAX (moyennes RGB identiques à 2 décimales près).
 
@@ -213,6 +214,22 @@ La confrontation honnête. Dix fonctions standard (`KnownFunctions.cs` : Sphere,
 La grammaire de composition est-elle agnostique à la représentation ? MGS-1 à 6 opèrent sur des surfaces *continues* (gènes en `double`), mais les primitives structurantes (`Match`, `Container`, `Scoped`, `Islands`) vivent *sous* la couche géométrique. Ce notebook applique la **même** `IslandMetaHeuristic` à un problème de **permutation** — le Voyageur de Commerce sur 20 villes, gènes = index entiers — **sans aucune adaptation** : le modèle insulaire opère sur `IChromosome` et ne lit jamais `Gene.Value`. La comparaison reste honnête (G.9) : la baseline panmictique bat les Islands sur cette instance TSP-20, illustration de No-Free-Lunch — le point n'est pas la victoire mais le **transfert sans réécriture** de la grammaire d'une géométrie continue à un espace combinatoire. Setup : `TspFitness`, `OrderedCrossover` (OX1), `ReverseSequenceMutation`. Au-delà des îles, ce notebook éprouve aussi la **théorie des croisements géométriques de Moraglio** (2007) — un crossover est *géométrique* si sa progéniture reste sur le segment géodésique entre les parents, pour une métrique donnée. Or une permutation admet **plusieurs métriques naturelles**, et le fork en câble deux : la distance de **swap** (Cayley : combien de transpositions séparent deux ordres), réalisée par `OrderedEmbedding` (Config 3), et la distance d'**insertion** (Ulam : combien d'éléments déplacer en décalant les autres), réalisée par `InsertionEmbedding` (Config 4). La Config 4 démontre le point central du *deep learning géométrique* : depuis le parent `[0,1,2,3,4]` vers une même cible-permutation `[2,0,1,3,4]`, un pas de swap atteint `[2,1,0,3,4]` là où un pas d'insertion atteint `[2,0,1,3,4]` — deux **géodésiques distinctes**, donc deux descendants distincts atteignables en un seul croisement. **C'est l'embedding (le choix de la métrique) qui porte la géométrie, pas le moteur** (`GeometricCrossover`) ni l'opérateur (le centroïde) : changer uniquement d'embedding change le paysage exploré. 
 
 Cadrage honnête (G.9) : ni swap ni insertion n'a de privilège géographique sur ce TSP (ce sont des distances sur les étiquettes d'indice, pas sur les coordonnées des villes) — les deux sont des baselines, et le centroïde naïf à deux parents borne symétriquement les deux métriques (limite déjà documentée en Config 3) ; un embedding appris équivariant par permutation ferait mieux que les deux.
+
+#### Service web TSP (pli 0 v2, #27218)
+
+Le carnet MGS-07 expose aussi son optimisation comme un **service web** `POST /search/tsp`. Le cœur d'exécution est un port Python ([`mgs_tsp_core.py`](mgs_tsp_core.py)) du **même** algorithme (GA panmictique + modèle insulaire sur permutations, fitness = distance euclidienne du tour cyclique, opérateurs OX1/RSM/élite), de parité **seedée interne** : deux exécutions avec les mêmes entrées produisent le même tour et la même distance.
+
+**Serveur retenu : FastAPI** [`mgs_tsp_service.py`](mgs_tsp_service.py) — codes HTTP 200/422/502 :
+
+  ```bash
+  pip install -r requirements-mgs-tsp.txt
+  uvicorn mgs_tsp_service:app --host 127.0.0.1 --port 8000
+  # POST http://127.0.0.1:8000/search/tsp
+  ```
+
+L'acceptance #27218 (point 3) autorise Kernel Gateway notebook-http **ou FastAPI**. Le choix FastAPI s'impose ici : ce carnet tourne sous kernel **C#**, et Kernel Gateway notebook-http ne peut pas le servir (`# POST` est une directive préprocesseur invalide en C#, et la requête est injectée en syntaxe Python `REQUEST = ...`). Le détail mesuré est dans la note d'implémentation du carnet. La **cellule d'endpoint du carnet** (`// POST /search/tsp`) invoque le même cœur Python via [`mgs_tsp_gateway_driver.py`](mgs_tsp_gateway_driver.py) (sous-processus stdin/stdout) et court-circuite en exécution de cours (C.1) : un seul carnet porte cours + TP + service (veto Q168 respecté, pas de jumeau Python).
+
+Le contrat : entrée `{"cities": [{"name","x","y"}, ...], "algorithm": "ga"|"islands", "params": {"population","generations","seed", ...}}`, sortie `{"status":"ok","data":{"best_tour":[...],"distance":...,"history":[...]}}` (`best_tour` = noms de villes dans l'ordre de visite, `history` = longueur du meilleur tour par génération). `{"status":"invalid",...}` (< 4 villes, paramètres hors bornes, algorithme inconnu, noms dupliqués) ou `{"status":"error",...}` (échec inattendu) ; aucune exception ne fuit. Tests : `test_mgs_tsp_core.py` (22 tests — validation, cas dégénérés, parité seedée, optimum connu du carré unité = 4.0, transport loopback), câblés dans `.github/workflows/search-mgs-tsp-tests.yml`.
 
 ### 7b — Projection N-D des paysages
 

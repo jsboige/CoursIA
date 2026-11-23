@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — Cartographie de la tresse (Thom / Grothendieck / Schmidhuber / Friston) + hiérarchie de sobriété + deux ponts Conway
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (cartographie, pas de nouveau dispatch ni de nouvelle dépendance expérimentale). Ce n'est **pas** un sixième fil de lecture vertical (cf. les cinq déjà documentés : [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) — invariants/dissociations/obstructions ; [`dissociations-matrix.md`](dissociations-matrix.md) — matrice 4-objets `(s, q, π, W)` ; [`cadrage-trajectoires-representations.md`](cadrage-trajectoires-representations.md) — pivot états → représentations ; [`genealogy-representation-interne.md`](genealogy-representation-interne.md) — généalogie de `p̂` ICT-10 → 17 ; [`dissolution-scalaires.md`](dissolution-scalaires.md) — dissolution des scalaires Φ/F/K). C'est une **lecture horizontale** : *où ces fils se rejoignent, s'éloignent, se mélangent ou s'affrontent* — et *ce qui empêche de monter trop vite de dissociation à obstruction cohomologique*.

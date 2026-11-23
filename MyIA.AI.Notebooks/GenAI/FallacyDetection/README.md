@@ -23,8 +23,9 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 1 — Survey SOTA | [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) | livré |
 | 1 — Extraction Jessynoo | [data/jessynoo_rfallacy_anonymized.csv](data/jessynoo_rfallacy_anonymized.csv) + [scripts/fallacy_detection/extract_jessynoo_fallacy.py](../../../scripts/fallacy_detection/extract_jessynoo_fallacy.py) | livré |
 | 1 — Paysage datasets | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) — 7 datasets testés en accès réel | livré |
-| 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) | à livrer |
+| 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) : [_research/qwen_sae_inventory.md](../_research/qwen_sae_inventory.md) — verdict **OK, 3 bases Qwen3.5** couvertes (9B en usage dans le harnais ICT) | livré |
 | 2 — Dataset builder | tranche A : [05_dataset_builder.ipynb](05_dataset_builder.ipynb) + [scripts/fallacy_detection/cartesian_dataset_builder.py](../../../scripts/fallacy_detection/cartesian_dataset_builder.py) — couples (scénario, nœud) sur **167 × (1407 + 222)**, splits dans [data/phase2/](data/phase2/) ; tranches B (génération des textes par LLM auto-hébergé) et C (test humain externe) à venir ([#17578](https://github.com/jsboige/CoursIA/issues/17578)) | tranche A livrée |
+| 2 — Lot apparié avec/sans sophisme | section 2(b) de la revue EPITA : [paired_scenario_corpus.py](../../../scripts/fallacy_detection/paired_scenario_corpus.py) + lot mesuré 110 bras (55 paires, rôle constant, polarité variable — le raccourci rôle→polarité tombe à 0,500) dans [data/teacher/](data/teacher/) (`paired_scenario_*.{jsonl,json,md}`, empreintes SHA-256 au rapport, rejeu sans clé via `--report-only`) | pilote livré |
 | 3 — Fine-tuning (série FT) | mémorisation du motif général→particulier | Phase 3 |
 | 4 — Post-training (série PT) | utilisation du workflow | Phase 4 |
 | 5 — Analyse SAE (strate 6 ICT) | features « motif » FT vs PT | gate de succès, Phase 5 |
@@ -60,13 +61,42 @@ Deux voies complémentaires, pas exclusives :
 
 1. **Corpus académiques annotés réellement obtenables** — déjà mesurés en Phase 1 dans [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) (Logic 13 + MAFALDA L2 23 = 27 classes après déduplication de 9 doublons). Le paysage montre un écart de **plus d'un ordre de grandeur** avec la taxonomie Argumentum : couverture ~3 % des feuilles et ~2 % des nœuds (mesuré dans [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb)). C'est utile mais structurellement limité : aucune académie n'a produit 1407 fine-grained fallacies étiquetées.
 
-2. **Corpus synthétique par produit cartésien Scénarii × taxonomies** — Argumentum fournit aussi `Cards/Scenarii/Argumentum Scenarii - Cards.csv` (167 scénarii en 7 catégories, copie verbatim dans [data/argumentum_scenarii_cards.csv](data/argumentum_scenarii_cards.csv), licence dans [data/NOTICE-SCENARII](data/NOTICE-SCENARII)). Le produit cartésien avec les deux taxonomies hors racine, `167 × (1407 sophismes + 222 vertus) = 272 043` couples (scénario, nœud), fournit, par construction, **un exemple annoté pour chaque nœud**, et les vertus donnent au classifieur la classe « argument sain » sans laquelle il ne verrait que des sophismes. La génération du label est triviale (c'est le second facteur du couple) ; la production du `body` est le travail de la Phase 2 — typiquement via un LLM conditionné à l'étiquette (template par sophisme, paraphrase, validation humaine sur un échantillon). Cette voie est **la seule** qui porte la couverture uniforme de la taxonomie qu'aucun corpus naturel ne donne, et c'est ce qui justifie l'échelle des phases 3-5.
+2. **Corpus synthétique par produit cartésien Scénarii × taxonomies** — Argumentum fournit aussi `Cards/Scenarii/Argumentum Scenarii - Cards.csv` (167 scénarii en 7 catégories, copie verbatim dans [data/argumentum_scenarii_cards.csv](data/argumentum_scenarii_cards.csv), licence dans [data/NOTICE-SCENARII](data/NOTICE-SCENARII)). Le produit cartésien avec les deux taxonomies hors racine, `167 × (1407 sophismes + 222 vertus) = 272 043` couples (scénario, nœud), fournit, par construction, **un couple étiqueté par construction pour chaque nœud** — une consigne, pas une annotation validée (état des trois briques ci-dessous) — et les vertus donnent au classifieur la classe « argument sain » sans laquelle il ne verrait que des sophismes. La génération du label est triviale (c'est le second facteur du couple) ; la production du `body` est le travail de la Phase 2 — typiquement via un LLM conditionné à l'étiquette (template par sophisme, paraphrase, validation humaine sur un échantillon). Cette voie est **la seule** qui porte la couverture uniforme de la taxonomie qu'aucun corpus naturel ne donne, et c'est ce qui justifie l'échelle des phases 3-5.
 
-Les deux voies sont complémentaires : le corpus académique **valide** que les features apprises par fine-tuning discrimininent vraiment (évaluation OOS sur données humaines), et le corpus synthétique **porte l'échelle** (Phase 3 fine-tuning sur la couverture complète de la taxonomie).
+Les deux voies sont complémentaires : le corpus académique **porte le protocole d'évaluation** (OOS sur données humaines) et le corpus synthétique **porte l'échelle** (Phase 3 fine-tuning sur la couverture complète de la taxonomie). Le résultat mesuré à ce jour sur ce protocole est négatif (fine-tuning pilote, [#25419](https://github.com/jsboige/CoursIA/issues/25419)) — il est spécifique au protocole évalué et ne préjuge ni des variantes à venir ni des phases 3-5.
+
+État vérifié des trois briques (les liens suivent le travail déjà fait, sans le rouvrir) :
+
+| Brique | État vérifié | Suivi |
+|---|---|---|
+| Couples (scénario, nœud) des splits [`data/phase2/`](data/phase2/) | reproductibles à graine fixée (paramètres par défaut) — rejeu hors ligne byte-identique, empreintes SHA-256 épinglées au [manifeste](data/phase2/manifest.json) | tranche A livrée |
+| Textes des couples — génération par LLM auto-hébergé, puis annotation | aucun texte généré ni annotation validée dans le dépôt à ce jour | [#17578](https://github.com/jsboige/CoursIA/issues/17578) (génération, tranche B) · [#20222](https://github.com/jsboige/CoursIA/issues/20222) (validation humaine) |
+| Résultats d'évaluation (fine-tuning, OOS sur corpus académique) | protocole défini ; résultat du pilote négatif, propre au protocole évalué | [#25419](https://github.com/jsboige/CoursIA/issues/25419) |
 
 ### Format des splits de la Phase 2 (`data/phase2/`)
 
-Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python scripts/fallacy_detection/cartesian_dataset_builder.py`) avec les paramètres par défaut ($\alpha = 0{,}5$, budgets 12 000 sophismes + 2 000 vertus, graine 0). Une ligne par couple, en UTF-8 et fins de ligne LF :
+Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) ou par la CLI ci-dessous, avec les paramètres par défaut ($\alpha = 0{,}5$, budgets 12 000 sophismes + 2 000 vertus, graine 0). Le rejeu lit uniquement les **copies versionnées** des sources (taxonomies et scénarii sous `data/`, pas le sous-module vivant) et tourne **hors ligne** ; l'option `--out` est obligatoire et désigne un dossier jetable :
+
+```bash
+python scripts/fallacy_detection/cartesian_dataset_builder.py --out /tmp/fd_replay
+```
+
+Vérification des empreintes contre le manifeste committé — les trois SHA-256 doivent correspondre (rejeu mesuré byte-identique ; `train.csv`, non committé, n'est épinglé que par son empreinte au manifeste) :
+
+```bash
+python - /tmp/fd_replay <<'PY'
+import json, hashlib, pathlib, sys
+replay = pathlib.Path(sys.argv[1])
+man = json.load(open("MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/manifest.json", encoding="utf-8"))
+for name, meta in man["files"].items():
+    digest = hashlib.sha256((replay / name).read_bytes()).hexdigest()
+    print(f"{name}: {'OK' if digest == meta['sha256'] else 'DIFF'}")
+PY
+```
+
+(Le chemin du dossier de rejeu se passe en argument — même forme que `--out` — pour rester juste sur les deux familles de shells.)
+
+Une ligne par couple, en UTF-8 et fins de ligne LF :
 
 | Colonne | Contenu |
 |---|---|
@@ -80,3 +110,17 @@ Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python sc
 | `scenario_path` | chemin décimal du scénario (`catégorie.sous-catégorie.rang`) |
 
 Les textes ne sont pas dans les splits : ils se relisent dans les trois sources au moment du rendu du prompt, ce qui garde les CSV petits et fait porter toute la traçabilité par les SHA1 de blob épinglés dans `manifest.json`. `val.csv` (un couple par nœud) et `test.csv` (deux par nœud) sont committés ; `train.csv` se régénère à l'identique et n'est épinglé que par son SHA-256 dans le manifeste. Les trois splits utilisent des scénarii disjoints (117 / 25 / 25).
+
+### Lot apparié avec/sans sophisme (`data/teacher/`)
+
+Pilote de la **section 2(b) de la revue EPITA** : à scénario et locuteur constants, seul le statut de sophisme varie entre les deux bras d'une paire. C'est le lot qui interdit le raccourci de surface « rôle → polarité » : les deux bras d'une paire partagent le rôle du locuteur, donc un modèle qui n'apprendrait que le rôle ne peut pas deviner la polarité. Produit par [paired_scenario_corpus.py](../../../scripts/fallacy_detection/paired_scenario_corpus.py) — génération par teacher LLM avec contrôle croisé, le reste en stdlib.
+
+| Fichier | Contenu |
+|---|---|
+| [paired_scenario_corpus.jsonl](data/teacher/paired_scenario_corpus.jsonl) | le lot : 110 bras = 55 paires acceptées, une ligne par bras |
+| [paired_scenario_report.json](data/teacher/paired_scenario_report.json) | rapport du run : empreintes SHA-256, paramètres, verdicts, mesure du raccourci |
+| [paired_scenario_report.md](data/teacher/paired_scenario_report.md) | rendu lisible du rapport |
+
+Paramètres du run publiés (graine 42, 60 paires tentées, 5 distracteurs par bras, 2 essais max par paire, températures génération 0,8 / contrôle 0,0, teacher `qwen3.6-35b-a3b`) : **55 paires acceptées** (taux 0,917), 5 rejets au dernier essai — 4 reclassements du bras négatif vers une autre famille, 1 vertu non reclassée — dont 3 acceptations via le contrôle croisé du bras counterpart. La propriété visée est **mesurée dans le rapport**, pas seulement affirmée : `role_is_constant_within_pair: true` et `best_role_only_accuracy` = 0,5000 exactement (rôle `smoothTalker`, 55 bras avec / 55 sans sophisme).
+
+Empreintes épinglées dans le rapport : source `val_fr.jsonl` = `d7621fffa05dc857…`, corpus produit = `112f68e26b42217b…`. **Rejeu sans clé ni réseau** : `python scripts/fallacy_detection/paired_scenario_corpus.py --report-only` reconstruit le corpus depuis le rapport publié — vérifié **byte-identique** le 2026-11-19 (l'empreinte `112f68e26b42217b` se reproduit exact). Note de vérification : ces empreintes se mesurent sur le **blob Git** (fins de ligne LF) ; un checkout de travail sous `autocrlf` CRLF fait dériver le sha256 du fichier sur disque alors que le contenu committé, lui, n'a pas changé.

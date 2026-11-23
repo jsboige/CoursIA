@@ -1,0 +1,679 @@
+{
+ "carnets": [
+  {
+   "capture": "10-SIG-3D-Tiles-Python.png",
+   "carnet": "10-SIG-3D-Tiles-Python.ipynb",
+   "cellules": [
+    {
+     "erreur": false,
+     "index": 0,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 1,
+     "prompt": "[1]:",
+     "sortie": "NumPy 2.4.6 — graine fixée : 2026"
+    },
+    {
+     "erreur": false,
+     "index": 2,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 3,
+     "prompt": "[2]:",
+     "sortie": "Raster : (120, 120), pas nominal 1.0 m ; bâtiments : 3"
+    },
+    {
+     "erreur": false,
+     "index": 4,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 5,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 6,
+     "prompt": "[3]:",
+     "sortie": "Contrôle hors emprise : Point hors emprise du raster"
+    },
+    {
+     "erreur": false,
+     "index": 7,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 8,
+     "prompt": "[4]:",
+     "sortie": "Pas | dimensions | sommets | fraction de la grille complète\n  1 | 120 × 120 |  14400 | 100.0%\n  2 | 60 × 60 |   3600 | 25.0%\n  4 | 30 × 30 |    900 | 6.2%\n  8 | 15 × 15 |    225 | 1.6%\n 16 | 8 × 8 |     64 | 0.4%"
+    },
+    {
+     "erreur": false,
+     "index": 9,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 10,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 11,
+     "prompt": "[5]:",
+     "sortie": "Image synthétique : 120 × 120 pixels ; aperçu simulé : 24 × 24 pixels.\nAucune mesure de latence, requête HTTP ou qualité 3D n'est effectuée ici."
+    },
+    {
+     "erreur": false,
+     "index": 12,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 13,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 14,
+     "prompt": "[6]:",
+     "sortie": "Exercice à compléter"
+    },
+    {
+     "erreur": false,
+     "index": 15,
+     "prompt": "",
+     "sortie": ""
+    }
+   ],
+   "cellules_avec_sortie": 6,
+   "cellules_code": 6,
+   "cellules_executees": 6,
+   "cellules_rendues": 16,
+   "console": [
+    "warning: Disabling terminals plugin because they are not available on the server",
+    "warning: No exact match found for python, using kernel python that matches language=python"
+   ],
+   "declenchement": "menu Run > Run All Cells",
+   "duree_s": 26.9,
+   "erreurs": [],
+   "succes": true,
+   "temps_premier_resultat_s": 7.2,
+   "url": "/lab/index.html?path=10-SIG-3D-Tiles-Python.ipynb"
+  },
+  {
+   "capture": "AgentSystems-02-Perception-Active-Valeur-Information-Python.png",
+   "carnet": "AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb",
+   "cellules": [
+    {
+     "erreur": false,
+     "index": 0,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 1,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 2,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 3,
+     "prompt": "[1]:",
+     "sortie": "Seuil bayesien q* = L_OPP/(L_ACT+L_OPP) = 0.231\nA priori q0 = 0.40  ->  action optimale : ne pas lancer\nRisque bayesien a priori : 18.00"
+    },
+    {
+     "erreur": false,
+     "index": 4,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 5,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 6,
+     "prompt": "[2]:",
+     "sortie": "capteur                     EVOI   cout  valeur nette\ntest de marche             10.40   10.0          0.40\nanalyse concurrentielle     0.00   10.0        -10.00"
+    },
+    {
+     "erreur": false,
+     "index": 7,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 8,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 9,
+     "prompt": "[3]:",
+     "sortie": "POLITIQUE ACTIVE\n  achete test de marche  (lecture: bonne)\n  ->  decision: lancer   |   cout total: 10.0\n\nPOLITIQUE NAIVE\n  achete test de marche  (lecture: bonne)\n  achete analyse concurrentielle  (lecture: bonne)\n  ->  decision: lancer   |   cout total: 20.0"
+    },
+    {
+     "erreur": false,
+     "index": 10,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 11,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 12,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 13,
+     "prompt": "[4]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 14,
+     "prompt": "[5]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 15,
+     "prompt": "[6]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 16,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 17,
+     "prompt": "",
+     "sortie": ""
+    }
+   ],
+   "cellules_avec_sortie": 3,
+   "cellules_code": 6,
+   "cellules_executees": 6,
+   "cellules_rendues": 18,
+   "console": [
+    "warning: Disabling terminals plugin because they are not available on the server",
+    "warning: No exact match found for python, using kernel python that matches language=python"
+   ],
+   "declenchement": "menu Run > Run All Cells",
+   "duree_s": 16.0,
+   "erreurs": [],
+   "succes": true,
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb"
+  },
+  {
+   "capture": "Quotients-Fibres-Recollement-Python.png",
+   "carnet": "Quotients-Fibres-Recollement-Python.ipynb",
+   "cellules": [
+    {
+     "erreur": false,
+     "index": 0,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 1,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 2,
+     "prompt": "[1]:",
+     "sortie": "numpy 2.4.6 · scipy 1.18.0\nGraine fixée : RNG.bit_generator.state['state']['state'] = 165599870888322723834153514999483032662"
+    },
+    {
+     "erreur": false,
+     "index": 3,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 4,
+     "prompt": "[2]:",
+     "sortie": "N = 5000 observations, rho = 0.6\nX1 : mean = 0.0130, std = 1.0063\nX2 : mean = -0.0097, std = 1.0146\nEmpirical corr(X1, X2) = 0.6081  (cible: 0.6)"
+    },
+    {
+     "erreur": false,
+     "index": 5,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 6,
+     "prompt": "[3]:",
+     "sortie": "Discretisation : bins = 24 x 24\nH(X1)          = 2.5980 nats\nH(X2)          = 2.6966 nats\nH(X1,X2)       = 5.0301 nats\nI(X1;X2)       = 0.2645 nats   (commun)\nH(X1)-I        = 2.3335 nats  (perdu par projection sur X2)\nH(X1,X2)-H1-H2 = -0.2645 nats  (toujours <= 0 en discret)\nI theorique (gauss. bivariee, rho=0.6) = 0.2231 nats\nBiais plug-in = +0.0414 nats (sur-estimation mesuree sur ce tirage)\nTerme de Miller-Madow pour I (m1=24, m2=24, m12=294, N=5000) = +0.0247 nats"
+    },
+    {
+     "erreur": false,
+     "index": 7,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 8,
+     "prompt": "[4]:",
+     "sortie": "graine  20260822 : I = 0.2645 nats, ecart a la theorie = +0.0414 nats, Miller-Madow(I) = +0.0247 nats\ngraine         1 : I = 0.2542 nats, ecart a la theorie = +0.0311 nats, Miller-Madow(I) = +0.0219 nats\ngraine         7 : I = 0.2613 nats, ecart a la theorie = +0.0381 nats, Miller-Madow(I) = +0.0249 nats\ngraine        42 : I = 0.2383 nats, ecart a la theorie = +0.0151 nats, Miller-Madow(I) = +0.0280 nats\ngraine        99 : I = 0.2489 nats, ecart a la theorie = +0.0257 nats, Miller-Madow(I) = +0.0228 nats\ngraine       123 : I = 0.2459 nats, ecart a la theorie = +0.0227 nats, Miller-Madow(I) = +0.0221 nats\ngraine      2024 : I = 0.2387 nats, ecart a la theorie = +0.0156 nats, Miller-Madow(I) = +0.0213 nats\ngraine     31337 : I = 0.2712 nats, ecart a la theorie = +0.0481 nats, Miller-Madow(I) = +0.0240 nats\nEcart plug-in sur 8 tirages : min = +0.0151, moyenne = +0.0297, max = +0.0481 nats\nTous les ecarts de meme signe que le terme de Miller-Madow : True"
+    },
+    {
+     "erreur": false,
+     "index": 9,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 10,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 11,
+     "prompt": "[5]:",
+     "sortie": "Exercice 1 a completer : voir la cellule precedente pour les etapes"
+    },
+    {
+     "erreur": false,
+     "index": 12,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 13,
+     "prompt": "[6]:",
+     "sortie": "Q : 4 bins equipopulants de S = X1 + X2\n  Q = 0 : 1250 obs  (25.0%)\n  Q = 1 : 1250 obs  (25.0%)\n  Q = 2 : 1250 obs  (25.0%)\n  Q = 3 : 1250 obs  (25.0%)\n\nI(X1;X2 | Q) = 0.4453 nats\nI(X1;X2)     = 0.2645 nats\nRatio I(X1;X2|Q) / I(X1;X2) = 1.684\n\n=> Q N'EST PAS operationnel : la dependance ne se factorise pas par une variable 1D simple.\n   Le temps 4 ne sera pas tente (cf critere d'acceptation)."
+    },
+    {
+     "erreur": false,
+     "index": 14,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 15,
+     "prompt": "[7]:",
+     "sortie": "Exercice 2 a completer : voir la cellule precedente pour les etapes"
+    },
+    {
+     "erreur": false,
+     "index": 16,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 17,
+     "prompt": "[8]:",
+     "sortie": "Temps 4 NON TENTE : Q non operationnel au temps 3.\nConclusion : la dependance entre X1 et X2 ne se factorise pas par une variable 1D.\nLe critere de Finetti n'est PAS atteint a ce niveau de finesse.\nPour aller plus loin : quotient multidimensionnel (PCA / ICA) ou raffinement."
+    },
+    {
+     "erreur": false,
+     "index": 18,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 19,
+     "prompt": "[9]:",
+     "sortie": "Exercice 3 a completer : voir la cellule precedente pour les etapes"
+    },
+    {
+     "erreur": false,
+     "index": 20,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 21,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 22,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 23,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 24,
+     "prompt": "",
+     "sortie": ""
+    }
+   ],
+   "cellules_avec_sortie": 9,
+   "cellules_code": 9,
+   "cellules_executees": 9,
+   "cellules_rendues": 25,
+   "console": [
+    "warning: Disabling terminals plugin because they are not available on the server",
+    "warning: No exact match found for python, using kernel python that matches language=python"
+   ],
+   "declenchement": "menu Run > Run All Cells",
+   "duree_s": 23.7,
+   "erreurs": [],
+   "succes": true,
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=Quotients-Fibres-Recollement-Python.ipynb"
+  },
+  {
+   "capture": "Argumentation-01-Toulmin-Model-Python.png",
+   "carnet": "Argumentation-01-Toulmin-Model-Python.ipynb",
+   "cellules": [
+    {
+     "erreur": false,
+     "index": 0,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 1,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 2,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 3,
+     "prompt": "[1]:",
+     "sortie": "[X] Argument Toulmin (complet: True)\n  Claim    : Le projet X doit etre finance\n  Data     : X a un ROI projete de 15%\n  Warrant  : Les projets a ROI eleve meritent financement\n  Backing  : Principe d'allocation rationnelle du capital\n  Qualifier: probablement\n  Rebuttals cibles: ['(aucun)']\n\nComplet ? True ; pieces manquantes : []"
+    },
+    {
+     "erreur": false,
+     "index": 4,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 5,
+     "prompt": "[2]:",
+     "sortie": "[leak] Argument Toulmin (complet: False)\n  Claim    : X doit etre finance\n  Data     : X a un ROI de 15%\n  Warrant  : (manquant)\n  Backing  : (non precise)\n  Qualifier: (non precise)\n  Rebuttals cibles: ['(aucun)']\n\n>>> Argument INCOMPLET : piece(s) essentielle(s) manquante(s) = ['warrant']\n>>> Le warrant (D -> C) doit etre explicite : sur quelle regle d'inference passe-t-on du ROI a l'obligation de financer ?"
+    },
+    {
+     "erreur": false,
+     "index": 6,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 7,
+     "prompt": "[3]:",
+     "sortie": "=== Debat a 2 arguments (rebuttal mutuel) ===\n[A] Argument Toulmin (complet: True)\n  Claim    : Le projet X doit etre finance\n  Data     : X a un ROI projete de 15%\n  Warrant  : Les projets a ROI eleve meritent financement\n  Backing  : Principe d'allocation rationnelle du capital\n  Qualifier: probablement\n  Rebuttals cibles: ['B']\n\n[B] Argument Toulmin (complet: True)\n  Claim    : Le projet X ne doit pas etre finance\n  Data     : X presente un risque de defaut de 40%\n  Warrant  : Les projets trop risques doivent etre evites\n  Backing  : Principe de prudence\n  Qualifier: possiblement\n  Rebuttals cibles: ['A']\n\nCadre de Dung : args=['A', 'B'], attacks=[('A', 'B'), ('B', 'A')]\nExtension grounded : {} (vide)\n>>> Verdict : A<->B forment un cycle. Ni l'un ni l'autre ne defend l'autre\n    -> grounded VIDE = standoff, aucune conclusion ne survit seule."
+    },
+    {
+     "erreur": false,
+     "index": 8,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 9,
+     "prompt": "[4]:",
+     "sortie": "=== Debat a 3 arguments (C arbitre en refutant B) ===\n[C] Argument Toulmin (complet: True)\n  Claim    : Le risque de defaut de X est surestime\n  Data     : L'historique montre 10% de defaut reel sur projets similaires\n  Warrant  : Les projections de risque doivent etre calibrees sur donnees passees\n  Backing  : Principe de calibration empirique\n  Qualifier: fortement\n  Rebuttals cibles: ['B']\n\nCadre de Dung : args=['A', 'B', 'C']\n                attacks=[('A', 'B'), ('B', 'A'), ('C', 'B')]\nExtension grounded : ['A', 'C']\n\n>>> Lecture : C defait B -> B ne peut plus attaquer A -> A est defendu.\n    Les claims A et C survivent ; B (le contre-argument) est exclu.\n    Le warrant sous-jacent : un seul arbitre peut faire basculer un debat\n    indécis vers une conclusion, SANS toucher aux arguments principaux."
+    },
+    {
+     "erreur": false,
+     "index": 10,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 11,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 12,
+     "prompt": "[5]:",
+     "sortie": "Exercice 1 a completer."
+    },
+    {
+     "erreur": false,
+     "index": 13,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 14,
+     "prompt": "[6]:",
+     "sortie": "Exercice 2 a completer."
+    },
+    {
+     "erreur": false,
+     "index": 15,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 16,
+     "prompt": "[7]:",
+     "sortie": "Exercice 3 a completer."
+    },
+    {
+     "erreur": false,
+     "index": 17,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 18,
+     "prompt": "",
+     "sortie": ""
+    }
+   ],
+   "cellules_avec_sortie": 7,
+   "cellules_code": 7,
+   "cellules_executees": 7,
+   "cellules_rendues": 19,
+   "console": [
+    "warning: Disabling terminals plugin because they are not available on the server",
+    "warning: No exact match found for python, using kernel python that matches language=python"
+   ],
+   "declenchement": "menu Run > Run All Cells",
+   "duree_s": 22.1,
+   "erreurs": [],
+   "succes": true,
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=Argumentation-01-Toulmin-Model-Python.ipynb"
+  },
+  {
+   "capture": "06-3-AudioDiffusion-Comparison-A-vs-B.png",
+   "carnet": "06-3-AudioDiffusion-Comparison-A-vs-B.ipynb",
+   "cellules": [
+    {
+     "erreur": false,
+     "index": 0,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 1,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 2,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 3,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 4,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 5,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 6,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 7,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 8,
+     "prompt": "[1]:",
+     "sortie": "==============================================================================\nCritere                                Bloc A (scratch)       Bloc B (SOTA)         \n==============================================================================\n\n-- Chaine AudioLDM (texte -> audio) --\nlignes de code coeur                   472 (A.1)              8 (B.4)               \nparametres (M)                         ~0.06 (A.1)            421.0 (B.4)           \nMCD qualite (dB)                       A.1: latent sigma 0.69 20.7 (distrib.)       \ndependance                             torch + torchaudio     diffusers + transforme\n\n-- Chaine vocodeur (mel -> waveform) --\nlignes de code coeur                   173 (A.2)              3 (B.5)               \nparametres (M)                         30.76 (A.2)            13.94 (B.5)           \nMCD qualite (dB)                       71.58 -> entrain.      8.93 (B.5)            \nlatence inference                      selon subset (entrain. 25 ms chaud (B.5)     \nVRAM (GiB)                             CPU ou GPU modeste     0.11 (B.5)            \ndependance                             torch + torchaudio     transformers + torch  \n\n==============================================================================\nNotes :\n - Bloc A mesure la *comprehension* (chaque couche est lisible et modifiable).\n - Bloc B mesure la *production* (qualite native, latence, determinisme industriel).\n - Le facteur ~59x d abstraction de B.4 vs A.1 documente la barriere du SOTA.\n=============================================================================="
+    },
+    {
+     "erreur": false,
+     "index": 9,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 10,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 11,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 12,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 13,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 14,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 15,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 16,
+     "prompt": "",
+     "sortie": ""
+    }
+   ],
+   "cellules_avec_sortie": 1,
+   "cellules_code": 1,
+   "cellules_executees": 1,
+   "cellules_rendues": 17,
+   "console": [
+    "warning: Disabling terminals plugin because they are not available on the server",
+    "warning: No exact match found for python, using kernel python that matches language=python"
+   ],
+   "declenchement": "menu Run > Run All Cells",
+   "duree_s": 17.6,
+   "erreurs": [],
+   "succes": true,
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=06-3-AudioDiffusion-Comparison-A-vs-B.ipynb"
+  }
+ ],
+ "navigateur": "chromium (playwright, headless)",
+ "noyau": "pyodide (jupyterlite)",
+ "site": ".tmp/lite-site/_output",
+ "succes": 5,
+ "total": 5
+}

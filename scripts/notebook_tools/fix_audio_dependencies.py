@@ -15,7 +15,7 @@ from typing import List, Dict
 
 # Notebook-specific dependency configurations
 GPU_DEPENDENCIES = {
-    'Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb': {
+    'Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb': {
         'packages': ['kokoro-onnx', 'kokoro'],
         'primary': 'kokoro-onnx',
         'fallback': 'kokoro',

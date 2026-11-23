@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — 6e fil de lecture : la boussole de la strate 7 (mythe fondateur, auto-référence performative fractale)
 
 > **Statut.** Document de cadrage narratif, grade **C-documentaire** (cadrage, pas de dispatch expérimental). Consolide un **sixième fil de lecture** de la série ICT, à côté des cinq déjà documentés : invariants / dissociations / obstructions ([synthese-invariants-dissociations-obstructions.md](synthese-invariants-dissociations-obstructions.md)) + problème de la représentation interne ([genealogy-representation-interne.md](genealogy-representation-interne.md)) + dissolution des scalaires ([dissolution-scalaires.md](dissolution-scalaires.md)). Le **sixième fil** est celui de la **boussole** — un mythe fondateur qui fixe la direction de la strate 7, sans la transformer en hypothèse scientifique déguisée. La strate 7 a besoin d'une boussole, pas d'un cahier des charges.

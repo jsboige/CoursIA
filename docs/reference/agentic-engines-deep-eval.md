@@ -1,6 +1,6 @@
 # Évaluation approfondie des moteurs agentiques — ADK vs Semantic Kernel vs MS Agent Framework
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 > Livrable de l'issue [#14499](https://github.com/jsboige/CoursIA/issues/14499) (mandat user 2026-09-23 : « Il faut analyser les 3 en profondeur »).
 > Protocole commun : 6 points (état de l'art, modes d'orchestration **exécutés**, déterminisme, couverture C#/Python, coût pour le dépôt, verdict par critère).
@@ -10,9 +10,9 @@
 
 | Tranche | Point du protocole | État |
 |---|---|---|
-| T1 (cette PR) | pt 2 — SK, mode événementiel (Process Framework) exécuté | livré |
-| T2 (cette PR) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
-| T3 (cette PR) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
+| T1 (PR #26420, recousure #27619) | pt 2 — SK, mode événementiel (Process Framework) exécuté | livré |
+| T2 (PR #26420, recousure #27619) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
+| T3 (PR #26420, recousure #27619) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
 | T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
 | T5 | pt 3 — MAF, graphe typé (`WorkflowBuilder`) exécuté (service LLM réel, temp 0), borne de boucle falsifiée | livré |
 | T6 | pt 4 — couverture C# mesurée par les assemblages (SK 1.81.0, MAF 1.24.0, ADK absent), contrôles positif et négatif | livré |
@@ -21,6 +21,7 @@
 | P1 | pt 3 — pilote identique, réplique **SK** : charge de distillation figée + `GroupChatOrchestration` à manager custom, exécuté (service LLM réel, temp 0, 2 runs) | livré |
 | P2 | pt 3 — réplique **MAF** sur la même fixture, même politique de tour (`GroupChatBuilder` + selection function + termination condition) | livré |
 | P3 | pt 3 — réplique **ADK** sur la même fixture, même politique de tour (boucle Python de désignation explicite + `InMemorySessionService` partagée) | livré |
+| P4 | pt 3 — les trois moteurs sur une **charge réelle** (18 916 caractères, extraite d'un carnet vivant), endpoint unique et déclaré, budget 3000 jetons, 2 runs par moteur | livré (§3.5) |
 | — | coût pour le dépôt (pt 5) | livré (§4) |
 | — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) — **périmée au 2026-11-06 et remplacée par le §5** de ce document ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
 | Q17 | pt 1 **rafraîchi** + axes API courantes / trajectoire / besoins réels | livré (§5) — versions et cadence remesurées au 2026-11-04, sondes d'API rejouées aux versions courantes |
@@ -100,7 +101,7 @@ Faits d'API mesurés sur 1.41.3 (couche agents) :
 
 ### 2.4 Pilote Google ADK — handoff natif C5 + désignation C4 (organe Track2 invoqué)
 
-`VERIFIÉ` — pilote [`07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
+`VERIFIÉ` — pilote [`07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
 
 Deux observables, alignés sur les deux mécaniques distinctes du contrat du track :
 
@@ -444,6 +445,38 @@ Le pilote reporte ses LOC self-mesurées dans la trace (ligne `LOC PILOT`).
 - **Variabilité inter-processus observée, honnêtement reportée.** Sur une exécution antérieure du même pilote, les deux runs ont divergé (`(1, RESIDUEL, 1)` vs `(2, ACCEPTE, 1)`) — un outlier LLM : la première critique a parfois demandé une RÉVISION au lieu d'accepter, changeant la structure du tour. Température 0 ne garantit donc pas l'identité structurelle inter-processus chez ADK, contrairement à ce que P1/P2 ont montré sur leur setup. La trace committée est la mesure **reproductible sur deux runs consécutifs du même process** ; l'outlier est documenté ici plutôt que masqué par une relance sélective. C'est un constat de moteur utile pour le point 3 (et cohérent avec §3.1 : la prose des spécialistes n'est pas byte-identique entre processus).
 - **Comparabilité avec P1/P2** : même fixture figée (4859 caractères), même politique, même modèle épinglé à température 0, même budget dur de 16 appels. Les trois répliques convergent sur la décision arbitrale (`RESIDUEL` lié à la troncature de la cellule 8) quand elles la mesurent sur la fixture réparée ; elles diffèrent sur l'**idiome d'orchestration** — manager custom (SK), selection function + termination condition (MAF), boucle de désignation de l'appelant (ADK). C'est précisément la mesure du point 3 : la même charge, trois organes, trois natures de contrôle du tour.
 
+### 3.5 Charge réelle et mesures comparables — les trois moteurs sur le même endpoint
+
+**La fixture est un contrôle, pas une mesure.** La charge figée de §3.1 (4 859 caractères, troncature déclarée de la cellule 8) est byte-stable : elle prouve que les trois moteurs reçoivent exactement la même entrée. Elle force aussi la branche RÉVISION, ce qui en fait un banc de test de politique, pas une charge de travail. La charge **réelle** est extraite d'un carnet **vivant** par [`build_real_charge.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/build_real_charge.py) : cellules 0..13 de [`ICT-14-FreeEnergySurprise-Python.ipynb`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb), 18 916 caractères, extraction à la tête `ade9c21efb604`. Elle **complète** la fixture, elle ne s'y substitue pas : le comparatif des trois moteurs se fait sur la **même** charge dans les trois, jamais sur une charge différente.
+
+**Le re-pinning est déclaré, jamais subi.** Les trois pilotes acceptent un endpoint, un modèle, un budget de jetons, une graine et une charge par variables d'environnement (`PILOT_BASE_URL`, `PILOT_MODEL`, `PILOT_MAX_TOKENS`, `PILOT_SEED`, `PILOT_CHARGE`), et **impriment l'endpoint et le modèle effectifs** dans leur trace : la trace est auto-portante et rejouable. Ce siège ne porte pas de `.secrets/master.env` ; l'endpoint de septembre est donc remplacé, **pour les trois moteurs à la fois**, par le vLLM local (`http://localhost:5002/v1`, modèle `qwen3.6-35b-a3b`, température 0, graine 1234). Aucun moteur n'est mesuré sur un endpoint que les deux autres ne partagent.
+
+**Le budget de jetons est un paramètre de mesure.** Le vLLM local sert un **modèle de raisonnement** (`--reasoning-parser qwen3`) : le budget de complétion couvre le raisonnement **et** la réponse. À `PILOT_MAX_TOKENS=1200`, le producteur n'a renvoyé aucune distillation (« aucune distillation n'a été produite dans la chaîne ») — le budget était absorbé par le raisonnement. Les relevés officiels sont donc faits à **3000**. Enseignement de comparabilité : un budget trop court ne dégrade pas la sortie, il la **supprime**, et un comparatif fait à ce budget-là mesure une absence de sortie, pas des moteurs.
+
+**Les trois mesures** (`VERIFIÉ` — traces committées, deux runs par moteur dans la même trace) :
+
+| Moteur | Organe d'orchestration | Appels LLM (run 1 + run 2) | Latence cumulée des appels | Jetons (in/out) | Tours | Décision | Déterminisme structurel | LOC pilote |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| SK 1.41.3 | `GroupChatOrchestration` + manager custom | 3 + 3 (8/16 rapportés, sondes comprises) | 474,8 s | `n/d` (streaming) | 1 | `DECISION: ACCEPTE tour 1` | OK | 416 |
+| MAF (core 1.21.0, orchestrations 1.3.1) | `GroupChatBuilder` + selection function | 5 + 3 (10/16 rapportés) | 545,5 s | `n/d` (`None`) | 1 | `DECISION: ACCEPTE tour 1` | OK | 405 |
+| ADK 2.13.0 | boucle de désignation explicite, session partagée | 3 + 3 (7/16 rapportés) | 224,5 s | 38 766 / 6 387 | 1 | `DECISION: ACCEPTE tour 1` | OK | 457 |
+
+Traces : [`out-P1-sk-distillation-vllm.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P1-sk-distillation-vllm.txt) · [`out-P2-maf-distillation-vllm.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P2-maf-distillation-vllm.txt) · [`out-P3-adk-distillation-vllm.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P3-adk-distillation-vllm.txt).
+
+**Ce que la comparaison établit**
+
+- **Convergence structurelle sur une charge non dégénérée** : les trois moteurs produisent la **même** séquence d'auteurs (producteur → critique → arbitre), le **même** nombre de tours (1), le **même** type de décision (`ACCEPTE`) et le **même** tour d'arbitrage (1) — sur une charge 3,9× plus grosse que la fixture et, surtout, **non tronquée** : la branche RÉVISION n'y est pas forcée. Le déterminisme structurel (tours, type de décision, tour d'arbitrage) est `OK` dans les trois sur deux runs consécutifs.
+- **Divergence d'observabilité** : seul ADK expose l'usage de jetons (38 766 entrants / 6 387 sortants). SK en streaming ne l'expose pas (`n/d`, cf §3.2) et MAF renvoie `None`. C'est une différence **d'observabilité**, pas de coût : le volume de jetons n'est comparable qu'entre moteurs qui l'exposent.
+- **Divergence de coût mesuré** : 8 appels LLM (SK), 10 (MAF), 7 (ADK) pour la même séquence de trois auteurs ; 474,8 s, 545,5 s et 224,5 s de latence cumulée des appels.
+
+**Ce que la comparaison n'établit pas** — limites nommées
+
+- un seul endpoint, un seul modèle, une seule charge : le comparatif est **intra-banc**, pas une généralisation ;
+- la latence dépend de la **charge partagée du vLLM** (le même serveur sert la flotte) : ces durées sont des ordres de grandeur, pas une mesure de performance des moteurs ;
+- MAF a consommé **5 appels** au premier run pour la même séquence de trois auteurs qu'au second (**3 appels**) : l'écart est **mesuré**, son origine n'est pas établie ici ;
+- la prose n'est pas comparée — seule la structure l'est (la formulation des motifs varie d'un run à l'autre, y compris à température 0).
+
+
 ## 4. Coût pour le dépôt (point 5)
 
 Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, et la valeur pédagogique. Mesures firsthand sur l'arbre à la tête de cette PR.
@@ -453,7 +486,7 @@ Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, e
 | Moteur | Présence dans le dépôt | Mesure |
 |---|---|---|
 | **Semantic Kernel** | série pédagogique **bi-langage**, C# concentrée | `GenAI/SemanticKernel/` — 23 carnets (18 Python, 5 `.net-csharp`) selon `COURSE_CATALOG.generated.json` au head (mesuré, §5.4). La partie C# (5 carnets) inclut les 2 du préfixe `Semantic-fleet-*` ; la couche agents (`01` à `11`) est **Python seule** |
-| **Google ADK** | série pédagogique dédiée (Python) + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/07-Agent-Orchestration/` (14 carnets), plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
+| **Google ADK** | série pédagogique dédiée (Python) + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/07-Orchestration-d-Agents/` (14 carnets), plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
 | **Microsoft Agent Framework** | **aucune série pédagogique** — présent uniquement dans les pilotes d'évaluation de ce chantier | `grep` sur `agent-framework`/`Microsoft.Agents.AI` dans les `.ipynb` ne retourne que les pilotes ; MAF n'apparaît que dans `eval-pilots/` |
 | **semantic-fleet** | sous-module épinglé | `MyIntelligenceAgency/semantic-fleet`, branche `stable-from-v0343` (`.gitmodules`) — infrastructure de flotte SK, hors série pédagogique |
 | **pilotes d'évaluation** | pilotes autonomes + traces committées | `eval-pilots/` : SK (T1/T2/T4/P1), MAF (T5/T7/T8/P2), ADK (P3) — chacun exécutable firsthand, traces dans `traces/` |
@@ -491,7 +524,7 @@ Ce qui subsiste, et qui fait la valeur d'un enseignement multi-moteurs :
 **Réserve d'honnêteté — une seule « couverture C# », pas deux.** Le §2.7 mesure la **couverture d'API C#** (quels types un moteur expose-t-il réellement en C# ?). Cette section parle de **série pédagogique C#** (qu'y a-t-il à enseigner ?). Les deux mots se ressemblent, ne mesurent pas la même chose, et les confondre avait produit une affirmation fausse. La réserve se formule donc ainsi :
 
 - **couverture d'API C#** : SK expose le modèle historique seul ; MAF expose les cinq topologies, le checkpoint et l'OTel ; ADK n'a **aucune distribution C#** (mesuré : aucun paquet NuGet — §2.7 et §5.5) ;
-- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 23 de `GenAI/SemanticKernel/` (mesuré, §5.4). 07-Agent-Orchestration est intégralement Python, et MAF n'a rien.
+- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 23 de `GenAI/SemanticKernel/` (mesuré, §5.4). 07-Orchestration-d-Agents est intégralement Python, et MAF n'a rien.
 
 Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.
 
@@ -516,7 +549,7 @@ Sources des dates : API PyPI (`https://pypi.org/pypi/<paquet>/json`, date de pub
 | MAF (.NET) | `Microsoft.Agents.AI` / `.Workflows` | **1.27.0** | 2026-10-30 | 1.24.0 (2026-10-07) | 28 j |
 | ADK (Python) | `google-adk` | **2.13.0** | 2026-10-23 | 2.8.0 (2026-08-26) | 70 j |
 
-`VÉRIFIÉ` — également mesuré : le pin `google-adk==2.8.0` n'est pas propre aux pilotes, il est aussi celui du track pédagogique [`07-Agent-Orchestration/requirements.txt`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt). **L'écart du pin pilote n'est donc pas un artefact d'évaluation : c'est l'état du cours lui-même**, et il porte sur 14 carnets.
+`VÉRIFIÉ` — également mesuré : le pin `google-adk==2.8.0` n'est pas propre aux pilotes, il est aussi celui du track pédagogique [`07-Orchestration-d-Agents/requirements.txt`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/requirements.txt). **L'écart du pin pilote n'est donc pas un artefact d'évaluation : c'est l'état du cours lui-même**, et il porte sur 14 carnets.
 
 **La lecture qu'il faut faire de ce tableau, et celle qu'il ne faut pas faire.** Un seul pin est franchement vieux : **SK Python, 190 jours**. MAF est à **27 jours** de sa version courante — les pilotes MAF tournent sur une ligne récente, et l'écart avec la version courante est de **trois versions mineures**, pas d'une génération. ADK est à 70 jours (cinq versions mineures derrière). Une formulation du type « les pilotes tournent sur des versions de six mois, trois mois et deux mois et demi » serait donc **fausse pour MAF**, qui est le cas le plus favorable de la série.
 
@@ -573,9 +606,9 @@ Sources des dates : API PyPI (`https://pypi.org/pypi/<paquet>/json`, date de pub
 | **Distillation** producteur → critique → arbitre | les trois pilotes `P1`/`P2`/`P3` + leurs traces committées | le tour doit être **contrôlable** par l'appelant, pas délégué au moteur |
 | **Long run avec reprise** | le prover Lean (`…/SymbolicAI/Lean/agent_tests/prover/`) tourne sur `agent_framework` | le moteur doit savoir **reprendre** un run interrompu |
 | **Traces** | `…/agent_tests/prover/baselines/traces/*.spans.jsonl` — des milliers de spans déjà produites | il faut un **format de trace** stable et lisible par un tiers |
-| **Comptage de tokens** | `07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb` ; note du carnet : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events » | il faut un compte **fiable et détaillé**, pas approximatif |
+| **Comptage de tokens** | `07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb` ; note du carnet : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events » | il faut un compte **fiable et détaillé**, pas approximatif |
 | **Série pédagogique bilingue C#/Python** | SK : 23 carnets (18 Python, 5 `.net-csharp`) ; ADK : 14 carnets Python ; MAF : **0** | il faut une **offre existante** ou l'accepter comme un coût de création |
-| **Endpoint local** (vLLM, claudish) | `07-Agent-Orchestration/utils/adk_runtime.py` (`LiteLlm`, `api_base`) ; pilotes SK/MAF (`AsyncOpenAI(base_url=…)`, `base_url=…`) | le branchement doit passer par une **API compatible OpenAI** |
+| **Endpoint local** (vLLM, claudish) | `07-Orchestration-d-Agents/utils/adk_runtime.py` (`LiteLlm`, `api_base`) ; pilotes SK/MAF (`AsyncOpenAI(base_url=…)`, `base_url=…`) | le branchement doit passer par une **API compatible OpenAI** |
 
 Deux découverts en mesurant cet inventaire, et qu'aucun tableau précédent ne portait :
 

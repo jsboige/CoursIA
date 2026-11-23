@@ -235,7 +235,8 @@ from typing import Any, Callable
 try:
     import gh_identity
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
 # #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee avec le
@@ -638,6 +639,39 @@ def _delivery_voided_by_reopen(issue_number: int, comments) -> bool:
         return False
     last_event = _last_event_stamp(comments)
     return last_event is None or _iso_after(reopen, last_event)
+
+
+def _precharge_reopen_events(numbers: list[int]) -> list[int]:
+    """#24823 tranche 2 -- rechauffe `_REOPEN_CACHE` en PHASE RESEAU.
+
+    Dans la boucle de tirage, `_delivery_voided_by_reopen` n'atteint la
+    lecture REST du TIMELINE que pour les candidats dont le fil porte une
+    decision de cloture (dossier `[CLOSURE PREFLIGHT]` verdict CLOSE ou
+    annonce en prose) -- la classe rare documentee sur `_REOPEN_CACHE`.
+    Ce helper deplace ces lectures de la boucle vers la phase reseau : la
+    MEME fonction `_reopen_events` peuple le cache avant le calcul, la
+    boucle lit un cache chaud et rend le meme verdict (fail-OPEN inclus :
+    une lecture ratee en precharge memorise une liste vide, exactement
+    comme une lecture ratee en boucle).
+
+    Les commentaires sont lus dans l'INSTANTANE de la passe (prime par
+    `_belt_snapshot_prime`) : ce helper n'emmet AUCUN appel pour un numero
+    sans instantane frais -- la boucle garde alors son comportement
+    historique pour ce numero.
+
+    Rend la liste des numeros chauffes (decideurs de cloture seulement) :
+    le bandeau de la phase reseau la publie.
+    """
+    warmed: list[int] = []
+    for number in numbers:
+        comments = _snapshot_comments(number)
+        if comments is None:
+            continue
+        if _closure_stamp(comments) is None:
+            continue
+        _reopen_events(number)
+        warmed.append(number)
+    return warmed
 
 
 # #20351 : le predicat « [RELEASED] + acceptance deja couverte » vit desormais
@@ -15043,6 +15077,21 @@ def main(argv: list[str] | None = None) -> int:
             # de la boucle (`wanted` ⊆ `_BELT_PRIMED_WINDOW`) repose sur la
             # fenetre de service, donc la declaration doit etre exacte.
             _BELT_PRIMED_WINDOW = set(primed_window)
+            # #24823 tranche 2 -- les TIMELINE des decideurs de cloture de
+            # la fenetre primee sont lus ICI, en phase reseau : la boucle
+            # (`_delivery_voided_by_reopen` -> `_reopen_events`) y lit un
+            # cache chaud au lieu d'emettre une requete REST par candidat
+            # porteux de dossier CLOSE. Commutateur pytest identique aux
+            # precharges ci-dessus ; l'instantane vient d'etre prime, les
+            # commentaires lus ici ne coutent aucun appel.
+            if not ("PYTEST_CURRENT_TEST" in os.environ
+                    and args.cache_dir is None):
+                _reopened_warmed = _precharge_reopen_events(primed_window)
+                print(f"(precharge des evenements de reouverture : "
+                      f"{len(_reopened_warmed)} decideur(s) de cloture dans "
+                      f"la fenetre -- la sonde de reouverture ne sort plus "
+                      f"sur le reseau en boucle, #24823)",
+                      file=sys.stderr)
             # #22983 -- les stamps viennent de l'instantane quand il sert
             # la cible : c'est la meme reduction que la voie reseau
             # (`_claim_stamp_from_comments`), sans appel GitHub. Seuls les

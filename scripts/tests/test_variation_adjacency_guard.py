@@ -961,3 +961,136 @@ def test_15739_argv_sans_body_ni_pr_nombre():
         assert e.code == 2
     else:
         raise AssertionError("main([]) doit sortir en argparse error")
+
+
+# ---------------------------------------------------------------------------
+# #26988 : exemption de G-VAR-3 pour la lane designee (decision user Q194 a)
+# ---------------------------------------------------------------------------
+#
+# Le 16/11/2026, les PRs #26715 et #26899 de la lane `myia-ai-01:CoursIA-2`
+# (les reparations de l'organe de merge) etaient rouges pour la seule raison
+# que G-VAR-3 banit deux grains LIGHT de meme genre d'affilee : ce sont deux
+# `MED/guard`. Les Grain tags ci-dessous sont **verbatim**, releves sur
+# GitHub le 16/11/2026 -- la fixture est la sequence reelle, pas un cas
+# invente.
+
+GRAIN_26715 = ("Grain: MED/guard — lane myia-ai-01:CoursIA-2 — "
+               "prev: MED/tooling #26704")
+GRAIN_26899 = ("Grain: MED/guard — lane myia-ai-01:CoursIA-2 — "
+               "prev: MED/guard #26891")
+
+MERGED_26715 = {
+    "number": 26715,
+    "body": GRAIN_26715,
+    "mergedAt": "2026-11-16T17:03:43Z",
+    "baseRefName": "main",
+}
+
+
+def test_26988_controle_positif_la_lane_designee_passe():
+    """Controle POSITIF : la sequence reelle de #26715, sur la lane inscrite.
+
+    Le predecesseur mesure (sequence mergee) est `guard`, le grain est
+    `guard` : sans exemption, l'organe rend HOLD. Avec l'exemption, il
+    passe -- et le verdict dit pourquoi.
+    """
+    v = vag.check(GRAIN_26899, merged_prev=("guard", 26715))
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v.get("lane_exempt") is True
+    assert v["genre"] == "guard"
+    assert v["prev_genre"] == "guard"
+    assert v["prev_source"] == "merged-sequence"
+    assert "26988" in v["reason"]
+
+
+def test_26988_controle_negatif_une_lane_non_inscrite_reste_bloquee():
+    """Controle NEGATIF : la MEME sequence, sur une lane non inscrite.
+
+    L'exemption est une liste de lanes, pas une fin de regle : une lane non
+    inscrite sur la meme sequence de genres est toujours HOLD.
+    """
+    corps = GRAIN_26899.replace("myia-ai-01:CoursIA-2", "myia-po-2024:CoursIA-2")
+    v = vag.check(corps, merged_prev=("guard", 26715))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert "lane_exempt" not in v
+
+
+def test_26988_la_lane_du_coordinateur_n_est_pas_inscrite():
+    """`myia-ai-01:CoursIA` (le coordinateur) n'est pas dans la liste.
+
+    L'exemption vaut pour la lane DESIGNEE pour les organes de CI et de
+    merge, pas pour le coordinateur : la liste ne s'elargit pas par
+    proximite de nom.
+    """
+    corps = GRAIN_26899.replace("myia-ai-01:CoursIA-2", "myia-ai-01:CoursIA")
+    v = vag.check(corps, merged_prev=("guard", 26715))
+    assert v["blocking"] is True
+    assert "myia-ai-01:CoursIA" not in vag.G_VAR3_EXEMPT_LANES
+    assert "myia-ai-01:CoursIA-2" in vag.G_VAR3_EXEMPT_LANES
+
+
+def test_26988_la_liste_est_declaree_en_un_seul_endroit():
+    """La liste des lanes designees vit dans UN module.
+
+    Une liste dupliquee (une constante par module, ou une copie dans un
+    workflow) derive des la deuxieme ecriture : l'organe et la regle
+    diraient alors des choses differentes.
+    """
+    racine = Path(__file__).resolve().parents[2]
+    occurrences = []
+    for chemin in list(racine.glob("scripts/**/*.py")) + list(
+            racine.glob(".github/workflows/*.yml")):
+        rel = chemin.relative_to(racine).as_posix()
+        if rel.startswith("scripts/tests/"):
+            continue  # ce fichier de tests cite la liste par nature
+        try:
+            texte = chemin.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if "G_VAR3_EXEMPT_LANES" in texte:
+            occurrences.append(rel)
+    assert occurrences == ["scripts/ci/variation_adjacency_guard.py"], occurrences
+
+
+def test_26988_l_exemption_ne_touche_pas_gvar2():
+    """G-VAR-2 (budget LIGHT) reste applique : son organe ignore la liste.
+
+    L'exemption leve le ban d'adjacence, pas le budget ni le plancher.
+    """
+    racine = Path(__file__).resolve().parents[2]
+    source = (racine / "scripts" / "variation_light_cap.py").read_text(
+        encoding="utf-8", errors="replace")
+    assert "G_VAR3_EXEMPT_LANES" not in source
+    assert "myia-ai-01:CoursIA-2" not in source
+
+
+def test_26988_la_regle_nomme_la_liste_et_issue():
+    """La regle dit l'exemption en une phrase, avec le nom de la liste et
+    le renvoi a l'issue (#26988)."""
+    racine = Path(__file__).resolve().parents[2]
+    regle = (racine / ".claude" / "rules" / "variation-protocol.md").read_text(
+        encoding="utf-8", errors="replace")
+    assert "G_VAR3_EXEMPT_LANES" in regle
+    assert "26988" in regle
+
+
+def test_26988_cli_avec_la_fenetre_mergee_reelle(tmp_path, capsys):
+    """Au niveau du CLI : la fixture de la fenetre mergee (#26715 reelle).
+
+    La fenetre est ecrite dans un fichier comme le fait le workflow, avec
+    le vrai `mergedAt` de #26715 ; le verdict doit etre vert et nommer
+    l'exemption.
+    """
+    corps = tmp_path / "body.txt"
+    corps.write_text(GRAIN_26899, encoding="utf-8")
+    fenetre = tmp_path / "merged.json"
+    fenetre.write_text(json.dumps([MERGED_26715]), encoding="utf-8")
+    rc = vag.main(["--body-file", str(corps), "--merged-prs-file", str(fenetre)])
+    verdict = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert verdict["guard_pass"] is True
+    assert verdict.get("lane_exempt") is True
+    assert verdict["prev_pr"] == 26715
+    assert verdict["prev_source"] == "merged-sequence"

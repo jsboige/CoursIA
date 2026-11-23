@@ -6,7 +6,8 @@ Elle regroupe les carnets qui étaient numérotés `Lean-16b` à `Lean-16j` avan
 réorganisation #20204, puis les deux carnets Life de la série GameTheory (`20d`, `20e` —
 Loi II et perplexité structurelle), en une marche d'escalier autonome entre `Lean-16` (l'homme
 et l'œuvre) et les ponts vers le libre arbitre et la théorie des nœuds ; FRACTRAN,
-l'autre invention computationnelle de Conway, clôt la marche en GOL-10.
+l'autre invention computationnelle de Conway, amène la marche à GOL-10, et la
+face **mesurée** de l'émergence (« vie dans la vie ») la prolonge en GOL-11.
 
 **Le geste de la sous-série** : faire gravir au Jeu de la Vie « l'échelle des
 témoins » — de la règle elle-même jusqu'à la correction d'un algorithme Hashlife
@@ -27,6 +28,7 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 | GOL-08 | [GOL-08-Loi-II-Translateur-Life](GOL-08-Loi-II-Translateur-Life.ipynb) | La Loi II sur substrat Life : synthèse d'un translateur, certificat d'impossibilité scopé — [approfondissement GOL-08b](#approfondissements) | `python3` |
 | GOL-09 | [GOL-09-Perplexite-Structurelle-Hashlife](GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | Capstone perplexité T12 : la taille comprimée des trajectoires et le coût en temps (exposant α HashLife) comme mesures | `python3` |
 | GOL-10 | [GOL-10-Fractran](GOL-10-Fractran.ipynb) | FRACTRAN en Python : registres premiers, Fibonacci, Collatz, compilation de machines de Minsky — compagnon exécutable de Lean-16b | `python3` |
+| GOL-11 | [GOL-11-Vie-dans-la-vie](GOL-11-Vie-dans-la-vie.ipynb) | Vie dans la vie : l'émergence **mesurée** du Jeu de la Vie — chute du bruit d'un champ aléatoire, régime vivant persistant, reproductibilité (la face mesurée de l'EPIC) | `python3` |
 
 ## Approfondissements
 

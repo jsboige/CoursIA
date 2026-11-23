@@ -75,9 +75,9 @@
       "id": "structure-et-transitions",
       "description": "Ou la complexite devient un objet d'etude : transition de phase de SAT (le seuil ou les instances deviennent insolvables), XOR-SAT et seuil de 2-SAT vs 3-SAT, algorithmes online et competitivite. Les transitions de phase sont les lois emergentes les plus nettes de l'informatique : on les mesure, on les trace, on les prouve.",
       "notebooks": [
-        "Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb",
-        "Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb",
-        "Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb"
+        "InformationCalcul/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb",
+        "InformationCalcul/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb",
+        "InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb"
       ]
     }
   ],

@@ -53,8 +53,8 @@ enumerer la pleine suite, un repli silencieux serait une liste INVENTEE.
 Un vert restreint ne vaut que si la clee couvre tout ce qui influe sur le
 verdict (#22468) : le workflow lui-meme, ``pytest.ini``, tout ``conftest.py``,
 le script d'install, le chien de garde xdist et cet organe. Le registre
-``arxiv_attributions_registry.yaml`` est relu par la suite generique
-``scripts/tests`` (#17850) : il la selectionne.
+``docs/reference/arxiv_attributions_registry.yaml`` est relu par la suite
+generique ``scripts/tests`` (#17850) : il la selectionne.
 
 ## Organ-first : lecteurs herites de #22548
 
@@ -153,7 +153,7 @@ EXTRA_SELECTORS: dict[str, tuple[str, ...]] = {
     # registre #17850 + modules prosody_lab relus via ancres __file__ par la
     # generique (garde #22468 : test_bakeoff_small_import, test_syllable_pitch_verdict)
     "scripts/tests": (
-        "arxiv_attributions_registry.yaml",
+        "docs/reference/arxiv_attributions_registry.yaml",
         f"{V4}/prosody_lab/",
         # arete #25360 : test_setup_native_lean4_import.py relit le script
         # d'install WSL de GameTheory via une ancre __file__
@@ -163,6 +163,11 @@ EXTRA_SELECTORS: dict[str, tuple[str, ...]] = {
         "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb",
     ),
     "tests": ("scripts/ci/", "scripts/notebook_tools/"),
+    # arete #13737 V3 : test_quarto_csharp_kernel_fix.py relit scripts/ci/ via
+    # une ancre __file__ (SCRIPT_DIR = parents[2] / "ci") -- le relogement V3
+    # de quarto_csharp_kernel_fix.py en scripts/ci/ a cree cette arete, que la
+    # derivation parent-dir ne voit pas (garde #22468).
+    "scripts/notebook_tools/tests": ("scripts/ci/",),
     "scripts/lean/tests": ("scripts/ci/",),
     "scripts/translation/tests": ("scripts/ci/",),
 }

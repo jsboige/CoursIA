@@ -305,6 +305,10 @@ python scripts/quantconnect/check_pcm_single_source.py --json   # verdict struct
 
 **Contrôle positif** : le corps de tests (`scripts/quantconnect/tests/test_check_pcm_single_source.py`) crée un arbre temporaire où une copie déclarée est volontairement modifiée et exige un verdict rouge (`DECLARATION_STALE`) ; le cas nominal, l'arbre du dépôt, doit rester vert. Une garde qui ne rougit pas sur une copie modifiée n'est pas une garde.
 
+### Noyau de risque déterministe — module commun
+
+Le noyau de risque déterministe (plafond d'exposition à 90 %, stop à 2 ATR(14), coupe-circuit à −3 %, #24698) vit dans `projects/RiskKernel/risk_kernel.py`. `HAR-RV-Kelly` et `Cloud-VolTargeting` en portent chacun une copie identique à l'octet, à côté de leur `main.py` : une copie se téléverse avec le projet, là où une bibliothèque QC manquante ne se voit qu'au lancement du backtest. La garde `scripts/quantconnect/check_risk_kernel_copies.py` (voie rapide, `risk-kernel-copies-guard`, bloquante) rougit sur une copie qui diverge ou un import sans copie. API, procédure de modification et choix copie contre bibliothèque : [RiskKernel/README.md](../../MyIA.AI.Notebooks/QuantConnect/projects/RiskKernel/README.md).
+
 ### AlphaModel — règles
 
 - DOIT avoir `self.name = "StrategyName"` dans `__init__`
