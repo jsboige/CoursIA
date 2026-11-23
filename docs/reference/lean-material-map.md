@@ -17,7 +17,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
-| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | hors matrice | ok (1) | - | 2026-10-12 |
+| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | ok (4) | - | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | couverte | ok (1) | - | 2026-09-21 |
@@ -39,7 +39,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | ok (4) | 2 / 2 | 2026-05-29 |
 | `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean` | 5 | 2 | declare | couverte | ok (1) | - | 2026-10-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | hors matrice | non consomme | - | 2026-11-16 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
