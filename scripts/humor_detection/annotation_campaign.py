@@ -41,7 +41,15 @@ from ict.humor_agreement import (  # noqa: E402
 FORMES = ("pun", "sociale", "topical")
 INTENSITES = ("0", "1", "2", "3")
 SOURCE_URL = "https://raw.githubusercontent.com/Moradnejad/ColBERT-Using-BERT-Sentence-Embedding-for-Humor-Detection/master/Data/dataset.csv"
-DATASET_LICENSE = "CC BY 4.0 (depot auteur IEEE Dataport, DOI 10.21227/fw8e-z983)"
+# Canal de telechargement effectif = le depot GitHub (SOURCE_URL), dont le README
+# declare code et dataset sous MIT (verifie 2026-11-23). Le depot auteur IEEE
+# Dataport (DOI 10.21227/fw8e-z983) declare CC BY 4.0. Les deux exigent
+# l'attribution, portee par PUBLICATION_ARCHIVE et les citations du body.
+DATASET_LICENSE = (
+    "MIT (depot GitHub Moradnejad, canal de telechargement effectif de SOURCE_URL) ; "
+    "depot auteur IEEE Dataport (DOI 10.21227/fw8e-z983) declare CC BY 4.0 -- "
+    "attribution requise dans les deux cas"
+)
 PUBLICATION_ARCHIVE = (
     "G:/Mon Drive/MyIA/IA/Bibliographie IA/MachineLearning/Computational Humor/"
     "2022 - Annamoradnejad and Zoghi - ColBERT Using BERT Sentence Embedding "
