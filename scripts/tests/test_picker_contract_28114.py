@@ -321,10 +321,6 @@ def test_I6_un_etage_qui_depasse_son_budget_est_coupe_et_non_attendu():
 
 # --- I7 -- consolidation puis anciennete ---------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I7 viole au 22/11 : les bonus age et consolidation sont additionnes "
-    "(tapis_avantages.bonus_dixiemes), donc l'anciennete pleine l'emporte. "
-    "A lever quand l'ordre consolidation-puis-anciennete est applique."))
 def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     """I7 -- l'ordre des etages fins est « consolidation, puis anciennete ».
 
@@ -332,10 +328,12 @@ def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     issue ordinaire **ancienne** (200 j, bonus d'age plein). Le contrat dit
     que la consolidation passe devant.
 
-    Etat au 22/11 : les deux bonus sont **additionnes**
-    (`tapis_avantages.bonus_dixiemes`) -- l'age vaut jusqu'a 0,5 visite, la
-    consolidation 0,4 -- donc l'anciennete l'emporte quand elle est pleine.
-    Le mandat dit l'inverse : la consolidation d'abord.
+    Le tirage du 22/11 sert ce contrat : la selection par age ramene les
+    issues anciennes, sans reprendre le pas sur la priorite de consolidation
+    que la classification et la rotation tiennent en amont. Le marqueur
+    `xfail(strict)` pose le 22/11 est donc leve -- il decrivait l'ancien
+    empilement de `tapis_avantages.bonus_dixiemes`, que le tirage n'ordonne
+    plus.
     """
     pool = [
         _meta(6001, "Ancienne ordinaire",
