@@ -730,7 +730,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
 # sur la voie de tirage reelle, #21067, 22/11) ; tapis_labels.py la
 # trentieme (les EXCLUSIONS EN DONNEES : la table des labels qui ecartent un
-# grain -- l'urne de cloture et la pause, #28114, 23/11).
+# grain -- l'urne de cloture et la pause, #28114, 23/11) ;
+# tapis_occupation.py la trente-et-unieme (l'OCCUPATION d'un grain : l'urne de
+# cloture et la PR qui le tient, #28090, 22/11) ; tapis_leger_rapport.py la
+# trente-deuxieme (le RAPPORT du tirage leger -- extrait pour que le cumul des deux
+# organes du tapis tienne le plafond, #28090 + #27223, 22/11) ;
+# tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
+# de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
+# 22/11).
+
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -772,7 +780,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_attente.py", 60),
                                               ("tapis_leger_texte.py", 80),
                                               ("tapis_cap_livraisons.py", 160),
-                                              ("tapis_labels.py", 60)])
+                                              ("tapis_labels.py", 60),
+                                              ("tapis_occupation.py", 298),
+                                              ("tapis_leger_rapport.py", 50),
+                                              ("tapis_leger_texte_occupation.py", 33)])
+
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
