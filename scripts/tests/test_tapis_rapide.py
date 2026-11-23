@@ -61,6 +61,27 @@ def test_label_candidate_delivered():
     assert etat(lec, 1).ecart == "LABEL" and etat(lec, 2).ecart is None
 
 
+def test_label_pause_exclut_le_grain_quelle_que_soit_la_casse():
+    """I5 (#28114) : la pause est une DONNEE (un label), pas une memoire.
+
+    Le nom GitHub est libre : `Pause` et `pause` sont le meme label. Un grain
+    qui ne porte pas le label reste servable -- la regle ne vise que lui.
+    """
+    lec = lecture([issue(1, labels=["pause"]), issue(2, labels=["Pause"]),
+                   issue(3, labels=["bug"])])
+    assert etat(lec, 1).ecart == "LABEL" and etat(lec, 2).ecart == "LABEL"
+    assert "pause" in etat(lec, 1).motif
+    assert etat(lec, 3).ecart is None
+
+
+def test_le_role_d_un_grain_en_pause_est_attente():
+    """La pause est une ATTENTE ; l'urne de cloture reste l'urne."""
+    from coordination import visit_coverage
+    lec = lecture([issue(1, labels=["pause"]), issue(2, labels=["candidate-delivered"])])
+    assert visit_coverage.role(etat(lec, 1)) == "attente"
+    assert visit_coverage.role(etat(lec, 2)) == "urne"
+
+
 def test_gel_par_le_body_et_non_par_une_mention():
     lec = lecture([issue(1, body="[FROZEN] attente du user\n\nContexte"),
                    issue(2, body="Contexte : on parle ici du marqueur [FROZEN] en passant.")])
@@ -707,7 +728,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # SORTIE TEXTE de la voie leger -- extraite de tapis_leger.py pour que la greffe
 # du cap de livraisons tienne le plafond, #21067, 22/11) ;
 # tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
-# sur la voie de tirage reelle, #21067, 22/11).
+# sur la voie de tirage reelle, #21067, 22/11) ; tapis_labels.py la
+# trentieme (les EXCLUSIONS EN DONNEES : la table des labels qui ecartent un
+# grain -- l'urne de cloture et la pause, #28114, 23/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -748,7 +771,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_assiette.py", 200),
                                               ("tapis_attente.py", 60),
                                               ("tapis_leger_texte.py", 80),
-                                              ("tapis_cap_livraisons.py", 160)])
+                                              ("tapis_cap_livraisons.py", 160),
+                                              ("tapis_labels.py", 60)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

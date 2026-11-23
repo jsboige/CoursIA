@@ -61,26 +61,14 @@
       "ecosystem": "nuget",
       "canonical": "3.5.2",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "3.4.1",
-          "decision": "to_converge",
-          "reason": "La serie SemanticWeb avait converge vers 3.4.1 du temps ou c'etait la canonique ; l'ecart est un retard depuis que la canonique a ete portee a 3.5.2, pas un choix documente. Convergence = montee + re-execution de la serie. Suivi : #27787."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "Microsoft.ML",
       "ecosystem": "nuget",
       "canonical": "5.0.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "4.0.2",
-          "decision": "to_converge",
-          "reason": "Aucune contrainte ecrite : le carnet epingle une version anterieure de la canonique (Microsoft.ML 4.0.2, avec Microsoft.ML.FastTree 4.0.2). Convergence = montee + re-execution. Suivi : #27787."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "SkiaSharp",
@@ -150,6 +138,20 @@
         }
       ],
       "note": "Version **chargeee**, relevee dans les sorties commitees (ecosysteme `observed`). Le depot n'ecrit aucun pin dur de numpy -- seulement des planchers (`numpy>=1.24`) et deux plafonds (`IIT/requirements.txt` : `numpy<2.0`, `SymbolicLearning/requirements.txt` : `numpy<2.5`) : la dispersion se lit donc dans le recensement, la convergence se decide serie par serie."
+    },
+    {
+      "id": "SharpZipLib",
+      "ecosystem": "nuget",
+      "canonical": "1.4.2",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "LZMA-SDK",
+      "ecosystem": "nuget",
+      "canonical": "22.1.1",
+      "canonical_source": "manifest",
+      "divergences": []
     }
   ],
   "allowlist": [
