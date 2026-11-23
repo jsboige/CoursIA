@@ -1,4 +1,4 @@
-- name: "Planners-13 Mesure Qualité Plans"
+- name: "Planners-13 Mesure Qualite Plans"
   family: SymbolicAI/Planners/03-Advanced
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-CSharp.ipynb
