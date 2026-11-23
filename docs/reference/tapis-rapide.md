@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-21
+> REFERENCE — vivante — dernière révision 2026-11-22
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -548,6 +548,103 @@ fois) et couvrent le pool entier. Sur le pool réel, les blocs sont *presque* di
 fenêtre de 3 jours ; le balayage la ramène dans la file en 17 tranches (68 h), soit **après** l'expiration de
 la fenêtre : une issue reportée redevient servable *et* revient dans la file au tour suivant de son tour de
 pool. Le motif du `[RELEASED]` est lu par la qualification, qui l'affiche.
+
+## L'ordre par AGE : les anciennes d'abord (mandat du 22/11)
+
+Mandat du mainteneur (22/11) : « le tapis devrait pouvoir piocher les issues anciennes prioritairement sur les
+plus récentes, même si celles qui n'ont jamais été visitées peuvent être traitées parmi la tête du tapis. Si ça
+ne fonctionne pas, alors on mettra les nouvelles issues en fin de tapis. »
+
+**L'inversion était structurelle, pas un effet de tri.** Le bloc servi se choisissait dans l'**espace des
+numéros** : la tranche ne retenait que les numéros **au-dessus** de l'ancre persistante, si bien que le service
+portait toujours les numéros **récents** — les issues anciennes attendaient un tour complet du pool. Le bonus
+d'âge (`tapis_avantages.BANDS_AGE_J`) n'ordonnait que l'**intérieur** du bloc : il n'ouvrait jamais la porte
+d'une issue ancienne.
+
+**Mesure du 22/11 sur le pool réel** (459 grains, lecture de 09:02Z, 21,5 s), dans l'état d'une lane qui a
+déjà tourné (ancre simulée à mi-pool — le cas réel d'une lane active) :
+
+| 60 premiers grains servis | avant (rotation par numéro) | après (ordre d'âge) |
+| --- | --- | --- |
+| antérieurs au 01/11 | **0** | **60** |
+| du 01/11 au 14/11 | 0 | 0 |
+| du 15/11 au 18/11 | 32 | 0 |
+| postérieurs au 19/11 | 28 | 0 |
+| **de moins de 72 h** | **27** | **0** |
+| jamais visitées | 60 | 60 |
+
+Les parts de référence **du pool** : 24,2 % d'issues antérieures au 01/11 (111 sur 459 grains), 73,6 % de
+grains jamais visités (338), 179 issues de moins de 72 h. Les deux critères du mandat sont tenus : **100 %**
+d'issues antérieures au 01/11 dans les 60 premiers (contre 24,2 % dans le pool), et **aucune** issue de moins
+de 72 h. Dans l'état réel de la lane (`myia-ai-01:CoursIA-2`, ancre à 10) les deux ordres coïncident : le
+numéro et l'âge y désignent les mêmes issues — l'écart n'apparaît que lorsque l'ancre a avancé, ce qui est le
+cas de toute lane qui tourne.
+
+**La clé porte la DATE DE CRÉATION, pas la dernière visite.** La dernière visite change à chaque tour : une
+visite en ouvre une autre, et un ordre construit sur une clé qui bouge ne se ferme pas — c'est l'échec mesuré
+le 19/11 (380 issues sur 440 atteintes en un tour, sans jamais fermer le tour). La date de création est
+**immuable** : elle dit depuis quand l'issue attend. La clé, dans l'ordre :
+
+| Composante | Rôle |
+| --- | --- |
+| bande de fraîcheur | une issue de moins de `SEUIL_FRAICHES_H` = **72 h** va en **queue** (« on mettra les nouvelles issues en fin de tapis ») — **sauf** si elle est une consolidation |
+| consolidation | la consolidation passe devant la non-consolidation de même bande (revue ai-01 du 22/11) |
+| jamais visitée | l'équité du 16/11 : une issue jamais visitée passe devant une issue déjà servie |
+| date de création | les anciennes d'abord |
+| numéro | le désempilement, stable et reproductible |
+
+**La consolidation est dans la clé, pas à côté** (revue ai-01 du 22/11). Le mandat du cycle veut « un picker
+rapide couvrant toutes les issues avec priorité consolidation et ancienneté » : l'ancienne voie donnait aux
+consolidations 0,4 visite à tout âge, et cet avantage a disparu avec la sélection par âge — les
+consolidations n'avaient plus aucun avantage dans la clé. Deux règles, celle de `tapis_avantages.est_consolidation`
+(le **label** `consolidation`, ou la **famille** dont la racine l'est) :
+
+- la consolidation passe **devant** la non-consolidation de même bande ;
+- elle **échappe à la bande des moins de 72 h** : une consolidation ouverte aujourd'hui doit pouvoir passer en
+  tête, sans attendre que la bande Fresh se vide.
+
+Mesure sur le **pool réel** (531 issues lues, 452 grains, 27 racines labellisées `consolidation`, 15
+consolidations dans le pool — 14 par label, 1 par famille), 60 premiers servis, ancre simulée à mi-pool :
+
+| 60 premiers grains servis | avant (clé d'âge seule) | après (clé avec consolidation) |
+| --- | --- | --- |
+| **consolidations servies** | **3** | **15** |
+| dont par label | 3 | 14 |
+| dont par famille héritée | 0 | 1 |
+| part des consolidations du pool | 3,3 % (15 sur 452) | 3,3 % (15 sur 452) |
+| de moins de 72 h | 0 | 1 (la consolidation #27733) |
+| jamais visitées | 60 | 50 |
+
+Les 60 premiers servis passent de **3** à **15** consolidations : **tout le pool de consolidation** (15 sur 15)
+est servi dans la première vague, contre 20 % avant. L'unique issue de moins de 72 h servie est la
+consolidation #27733 — l'échappement voulu, qui ne s'applique qu'à une consolidation.
+
+**Le tri est une ADMISSION, pas un rang.** La sélection ne porte plus sur une fenêtre de numéros mais sur
+l'ensemble du pool classé par âge : les grains servis sont les premiers de l'ordre d'âge, les plus anciens
+d'abord. La rotation par numéro ne subsiste que pour les **conteneurs**, peu nombreux, dont le quota (25 %)
+est appliqué dans l'ordre du nombre — un conteneur ne passe jamais devant un grain (#26926).
+
+**Ce qui est servi attend son verdict.** Les grains servis dont le verdict n'est pas encore connu sont
+**exclus** de la sélection suivante (`tapis_age.tour` lit la file `attente` de l'ancre) : sans cela, le même
+grain serait resservi à chaque tour. La file survit au passage du curseur — `tapis_ancre.avancer` ne retire
+plus une entrée en attente de verdict ; c'est elle qui fait l'exclusion. Un numéro **décidé** sort de la file
+et redevient servable plus tard.
+
+**Le rebouclage par numéro est désactivé pour les grains** (`proposer(..., reboucle=False)`) : la rotation par
+numéro se sert des numéros au-dessus de l'ancre, un rebouclage réinitialiserait donc la file d'attente à chaque
+tirage — et les grains servis par âge (dont les numéros sont *sous* l'ancre) cesseraient d'être exclus. Quand
+plus rien n'est servable (toutes les issues attendent leur verdict), la file est **rendue** et le tour
+recommence : les issues anciennes reviennent, elles ne disparaissent pas.
+
+**Les tests.** `scripts/tests/test_tapis_age.py` (15 tests) rejoue sur un pool **synthétique** : la bande
+fraîche part en dernier, la jamais visitée passe devant, les plus anciennes d'abord, la clé ne dépend que de
+la date de création, la sélection sert les anciennes (pas les numéros au-dessus de l'ancre), les déjà servis
+sont laissés de côté, la vague suivante prend le bloc suivant, les numéros sans verdict quittent la file — et
+la consolidation passe devant, échappe à la bande fraîche, et s'hérite de sa famille.
+`scripts/tests/test_tapis_vagues.py` (3 tests) suit la même sélection pour les vagues.
+
+Le module : `scripts/coordination/tapis_age.py` — clé, tri, bandes, sélection, tour. Il lit `cree_le`,
+`visites_total`, `consolidation` et `famille` des états, n'écrit rien et ne lit pas le réseau.
 
 ## La qualification, côté consommateur (#27225, suite du 18/11)
 
