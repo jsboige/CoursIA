@@ -1,7 +1,7 @@
 - name: "Complexity-02 P-NP Reduction"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |

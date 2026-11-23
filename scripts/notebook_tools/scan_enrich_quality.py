@@ -130,6 +130,9 @@ _LOGIC_RE = re.compile(r"\b(foreach|for|while|if|exact|return|theorem|proof|matc
 
 _ARITH_RE = re.compile(
     r"(\d+(?:[.,]\d+)?)\s*[×x\*]\s*(\d+(?:[.,]\d+)?)\s*=\s*(\d[\d\s ]*(?:[.,]\d+)?)")
+# A stated product continued by an exponent: "^", "**", "e9", "x 10^9".
+_POWER_TAIL_RE = re.compile(
+    r"\s*(?:\^|\*\*|[eE][+-]?\d|[×x·]\s*10\s*(?:\^|\*\*|<sup>))")
 
 # --- hrefs (class e) --------------------------------------------------------
 
@@ -547,7 +550,12 @@ def scan_arithmetic(cells: list[dict]) -> list[dict]:
             # "40x2 = 375" unless the char before the first operand is
             # guarded.
             before = text[:m.start()].rstrip()
-            if before and before[-1] in "0123456789.,×x*+-":
+            if before and before[-1] in "0123456789.,×x*+-^":
+                continue
+            # A result written as a power ("65536 x 65536 = 2^32", "= 2**32",
+            # "= 4,3 x 10^9", "= 1e9"): the regex stops at the base and would
+            # compare the product against it (false positive, #27254).
+            if _POWER_TAIL_RE.match(text, m.end()):
                 continue
             a = float(m.group(1).replace(",", "."))
             b = float(m.group(2).replace(",", "."))

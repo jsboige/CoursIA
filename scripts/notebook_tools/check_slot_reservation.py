@@ -214,6 +214,26 @@ DEUX FAUX REFUS MESURES (dispatch ai-01, 2026-11-16)
    est `--exclude-pr` (la PR examinee) : sans elle, tout claimant reserve,
    comme avant.
 
+TROISIEME FAUX REFUS MESURE (#27576, 2026-11-20)
+-------------------------------------------------
+3. **La collision preexistante du slot** (c). Une PR qui ajoute le jumeau C#
+   d'un carnet deja sur `main` se voyait imputer les AUTRES occupants du slot
+   sur la base : App-02 porte `App-02-GraphColoring-CSharp` ET
+   `App-02-GraphColoring-Python` en plus du jumeau Python, SL-12b porte
+   `SL-12b-PavlovDLS-Reproduction` -- des doubles occupations LIVREES sur
+   `main`, AVANT la PR (mesure : #26603 et #26617 approuvees, ecartees en
+   `slot-collision-on-merge:taken_on_base`). Quand le jumeau de la cible
+   siege deja dans ce slot sur la base (relation `_twin_in_base`, §7), les
+   autres occupants de la base forment une collision PREEXISTANTE : etat
+   distinct `preexisting_on_base`, NON bloquant, imprime avec ses chemins.
+   La PR ajoute un rendu d'un item deja assis, sans introduire ni slot ni
+   lettre -- la collision ne lui est pas imputee. Les conflits des autres
+   sources (revision, PR ouverte, table declaree) restent bloquants, et un
+   item NEUF pose sur un slot occupe reste `taken_on_base`. Resoudre la
+   collision heritee (renumeroter `App-02-GraphColoring-*` et
+   `SL-12b-PavlovDLS-Reproduction`) est un grain de contenu separe, qui
+   demande un argument pedagogique ecrit.
+
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
 detecteur est casse -- distinct d'une collision reelle, qui sort 1).
@@ -292,6 +312,15 @@ VERDICT_PRECEDENCE = (
     "taken_on_base",
     "declared_reserved",
 )
+
+# #27576 -- collision PREEXISTANTE de la base : NON bloquante. Quand le
+# jumeau de la cible siege deja dans le slot sur la base, les autres
+# occupants de la base y etaient AVANT la PR ; les imputer a la PR refusait
+# des jumeaux legitimes (mesure : #26603 sur App-02, #26617 sur SL-12b,
+# approuvees toutes deux). Hors de VERDICT_PRECEDENCE : cet etat ne participe
+# jamais au choix de l'etat bloquant -- il est rappele APRES lui dans la
+# liste des conflits, jamais confondu avec lui.
+STATE_PREEXISTING_ON_BASE = "preexisting_on_base"
 
 
 def _git(args):
@@ -587,14 +616,21 @@ def verdict_for(target, occupants, releases):
     La cle est `_scan_slot` comme partout ailleurs dans le module (#21959) :
     une cible a prefixe de serie alphabetique a desormais une position, et
     peut donc etre en conflit avec un occupant qui la revendique.
+
+    #27576 -- collision PREEXISTANTE de la base. Quand le jumeau de la cible
+    siege deja dans ce slot sur la base (relation `_twin_in_base`, §7), les
+    autres occupants de la base y etaient AVANT la PR : leur collision se
+    rapporte sous l'etat `preexisting_on_base`, NON bloquant, et n'est pas
+    imputee a la PR -- celle-ci ajoute un rendu d'un item deja assis, sans
+    introduire ni slot ni lettre. Les conflits des autres sources (revision,
+    PR ouverte, table declaree) restent bloquants, et un item NEUF pose sur
+    un slot occupe reste `taken_on_base`.
     """
     slot = _scan_slot(target)
     if slot is None:
         return {"target": target, "slot": None, "state": "no_slot",
                 "verdict": "ok", "conflicts": []}
 
-    conflicts = []
-    exempt = False
     t_base = split_dir(target)[1].lower()
     # Deux lectures : la forme EXACTE d'abord (c'est elle qui porte les
     # occupants de la base et de la revision, dont la cle est la position
@@ -605,7 +641,8 @@ def verdict_for(target, occupants, releases):
     folded = (slot[0].casefold(), slot[1].casefold())
     if folded != slot:
         occ_list.extend(occupants.get(folded, []))
-    for occ in occ_list:
+
+    def _self_or_released(occ):
         # La cible se reconnait elle-meme UNIQUEMENT parmi les cibles de la
         # revision : en mode revision les deux ensembles sont le meme, et se
         # compter comme occupant de soi-meme ferait rougir chaque ligne. Un
@@ -613,9 +650,10 @@ def verdict_for(target, occupants, releases):
         # chemin est au contraire la reservation la plus forte qui soit -- il ne
         # doit jamais etre ecarte comme un « soi-meme ».
         if occ.source == SOURCE_REVISION and occ.path == target:
-            continue
-        if occ.path in releases:
-            continue                      # libere par la revision examinee
+            return True
+        return occ.path in releases   # libere par la revision examinee
+
+    def _sibling(occ):
         # Rendu alternatif du meme item (`-Csharp`, `_en`) : legitime, mais
         # SEULEMENT si le nom de fichier differe. Un chemin identique n'est pas
         # un sibling, c'est le meme fichier -- etre passe sous silence ici etait
@@ -625,7 +663,25 @@ def verdict_for(target, occupants, releases):
         # langue retires + noyau en milieu de nom), pas `same_item` : depuis
         # que les series alphabetiques ont une position (#21959), un jumeau
         # compose (`-Python_en`) deviendrait sinon un faux conflit.
-        if _same_item_scan(occ.path, target) and split_dir(occ.path)[1].lower() != t_base:
+        return (_same_item_scan(occ.path, target)
+                and split_dir(occ.path)[1].lower() != t_base)
+
+    # Le jumeau de la cible siege-t-il deja dans CE slot, sur la base ?
+    # C'est la condition du #27576 : les autres occupants de la base forment
+    # alors une collision heritee d'un etat deja livre, pas une prise de la
+    # PR (mesure : #26603 sur App-02, #26617 sur SL-12b). Passage PREALABLE a
+    # la boucle de classification : le jumeau peut arriver apres les autres
+    # occupants dans la liste, et l'etat de ceux-ci en depend.
+    twin_on_base = any(occ.source == SOURCE_BASE
+                       and not _self_or_released(occ) and _sibling(occ)
+                       for occ in occ_list)
+
+    conflicts = []
+    exempt = False
+    for occ in occ_list:
+        if _self_or_released(occ):
+            continue
+        if _sibling(occ):
             exempt = True
             continue
         state = {
@@ -634,21 +690,35 @@ def verdict_for(target, occupants, releases):
             SOURCE_BASE: "taken_on_base",
             SOURCE_DECLARED: "declared_reserved",
         }[occ.source]
+        if state == "taken_on_base" and twin_on_base:
+            state = STATE_PREEXISTING_ON_BASE
         conflicts.append({"state": state, "source": occ.source,
                           "path": occ.path, "detail": occ.detail})
 
-    if not conflicts:
+    blocking = [c for c in conflicts if c["state"] != STATE_PREEXISTING_ON_BASE]
+    slot_str = "%s%s" % (slot[0] + "/" if slot[0] else "", slot[1])
+    if not blocking:
         # Un slot tenu par un sibling n'est pas « libre » : la distinction est
         # imprimee, jamais confondue -- c'est la meme discipline que les etats
-        # distincts du garde de suffixes.
-        return {"target": target, "slot": "%s%s" % (slot[0] + "/" if slot[0] else "", slot[1]),
-                "state": "exempt_sibling" if exempt else "free",
-                "verdict": "ok", "conflicts": []}
+        # distincts du garde de suffixes. La collision preexistante suit la
+        # meme discipline : rapportee avec ses chemins, jamais imputee a la PR
+        # qui n'a fait que rejoindre son jumeau.
+        if not conflicts:
+            return {"target": target, "slot": slot_str,
+                    "state": "exempt_sibling" if exempt else "free",
+                    "verdict": "ok", "conflicts": []}
+        return {"target": target, "slot": slot_str,
+                "state": STATE_PREEXISTING_ON_BASE, "verdict": "ok",
+                "conflicts": conflicts}
 
-    conflicts.sort(key=lambda c: VERDICT_PRECEDENCE.index(c["state"]))
-    return {"target": target, "slot": "%s%s" % (slot[0] + "/" if slot[0] else "", slot[1]),
-            "state": conflicts[0]["state"], "verdict": "conflict",
-            "conflicts": conflicts}
+    blocking.sort(key=lambda c: VERDICT_PRECEDENCE.index(c["state"]))
+    # Les preexistants restent rappeles APRES les bloquants : le premier de
+    # la liste designe la cause du refus (cf merge_ready, motif
+    # `slot-collision-on-merge:<etat>`), les suivants informent.
+    return {"target": target, "slot": slot_str,
+            "state": blocking[0]["state"], "verdict": "conflict",
+            "conflicts": blocking + [c for c in conflicts
+                                     if c["state"] == STATE_PREEXISTING_ON_BASE]}
 
 
 def examine(targets, occupants, releases):
@@ -1292,6 +1362,36 @@ def self_test():
              {"path": C, "additions": 8, "deletions": 2}]}], {5: set()},
                         examined_pr=5),
          set(), ["free"]),
+        # --- collision preexistante de la base (#27576) : jumeau + herite ---
+        # Les deux cas REELS mesures : la PR ajoute le jumeau C# d'un item
+        # deja assis, et le slot porte sur la base des occupants d'AUTRES
+        # sujets (App-02 : deux GraphColoring ; SL-12b : PavlovDLS).
+        ("VRAI POSITIF  App-02 : jumeau C# d'un item assis, autres occupants herites",
+         ["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+                              "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb",
+                              "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb"],
+                             SOURCE_BASE)),
+         set(), [STATE_PREEXISTING_ON_BASE]),
+        ("VRAI POSITIF  SL-12b : jumeau C# d'un item assis, autre sujet herite",
+         ["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
+                              "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb"],
+                             SOURCE_BASE)),
+         set(), [STATE_PREEXISTING_ON_BASE]),
+        ("VRAI POSITIF  item NEUF sur slot occupe : toujours taken_on_base (#27576)",
+         ["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-NouveauSujet-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb"],
+                             SOURCE_BASE)),
+         set(), ["taken_on_base"]),
+        ("VRAI POSITIF  jumeau de la base + PR OUVERTE sur le slot : bloquant (#27576)",
+         ["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb"],
+                             SOURCE_BASE),
+               {("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques", "App-02"): [
+                   _occ("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb",
+                        SOURCE_OPEN_PRS, "#27000")]}),
+         set(), ["reserved_by_open_pr"]),
     ]
 
     print("")
@@ -1596,7 +1696,10 @@ def main(argv=None):
     for v in verdicts:
         mark = {"free": "libre (free)",
                 "exempt_sibling": "exempt (exempt_sibling -- rendu alternatif du meme item)",
-                "no_slot": "sans slot (no_slot -- aucun index)"}.get(
+                "no_slot": "sans slot (no_slot -- aucun index)",
+                STATE_PREEXISTING_ON_BASE: "preexistante (preexisting_on_base -- "
+                                           "collision heritee de la base, non "
+                                           "imputee a la PR)"}.get(
                     v["state"], v["state"].upper())
         print("  %-58s slot=%-10s %s" % (v["target"], v["slot"] or "-", mark))
         for c in v["conflicts"]:

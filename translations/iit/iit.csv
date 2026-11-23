@@ -48008,7 +48008,7 @@ print(f""§4  : sondes @6000 fc2 -> MM {probe_table['fc2']['MM']:.2f}, LR {probe
       f""MMIID {probe_table['fc2']['MMIID']:.2f} (vs @100 MM {probe_table_early['fc2']['MM']:.2f})"")
 print(""Securite : aucun appel tl.load() dans ce carnet (tl.trace uniquement, modele en memoire)."")
 ",,,,,,,,e69898c616cbc5ec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-000,markdown,fr,6956274bd344a4a7,"# ICT-49 — Machines de Gödel : l'auto-amélioration prouvée, en jouet honnête
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-000,markdown,fr,6956274bd344a4a7,"# ICT-49 — Machines de Gödel : l'auto-amélioration prouvée, en jouet honnête
 
 *Strand Schmidhuber de la série ICT — See [#16775](https://github.com/jsboige/CoursIA/issues/16775) (volet D2), [#4588](https://github.com/jsboige/CoursIA/issues/4588).*
 
@@ -48018,8 +48018,8 @@ MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-i
 
 **Résultat (honnête, falsifiable).** Tout ce qui suit est **mesuré**, pas raconté : le chercheur prouve le switch du levier et la marge prouvée (14) égale exactement le gain réalisé (14) ; le réécrivain d'utilité ne passe **jamais** — 0 feu sur les 9 331 techniques de l'espace borné, énumération exhaustive — et ce zéro a **deux causes distinctes**, mesurées séparément : la garde par fermeture (`SETSW`/`CHECK` n'acceptent que des `u` prouvés) *et* la borne de longueur (`L_MAX = 5`), qui exclut de l'espace toute technique contenant `BOGUS` — le squelette qui feutre occupe déjà les cinq places (section 8, item 3) ; l'écart de phases de découverte suit exactement le coût de codage (Th. 5.1 : Δc = 8 bits → 8 phases d'écart) ; le switch glouton est l'argmax de tous les candidats futurs et aucun second switch n'est prouvable ensuite (Th. 4.1) ; la technique gelée transfère sur une variante du monde à plusieurs ordres de grandeur de travail en moins (OOPS). Le carnet documente aussi **où le jouet triche** (section 8) : complétude du système formel sur son espace fini, auto-référence simplifiée, saturation straight-line du budget, et l'instruction du papier remplacée par une instruction inventée.
 ",,,,,,,,6956274bd344a4a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-001,markdown,fr,67cc4b4734a43f5d,"> **Statut épistémique.** Reproduction structurelle mesurée d'un article théorique (Schmidhuber, *Gödel Machines: Fully Self-Referential Optimal Universal Self-improvers*, 2006, arXiv:cs/0309048 — lecture intégrale, gisement Bibliographie IA). Le papier ne donne pas d'implémentation de référence : ce qui se confronte ici est la **structure** de chaque théorème (le théorème cible, le Th. 4.1, le Th. 5.1, la FAQ 7, l'OOPS du §5.2), pas des chiffres du papier. Chaque claim confronté est signalé ÉTABLI / NUANCÉ avec sa mesure. Le jouet est volontairement petit (T = 20 cycles, 9 331 techniques) : c'est un instrument pédagogique, pas une tentative d'implémentation à l'échelle.",,,,,,,,67cc4b4734a43f5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-002,markdown,fr,056f74f52da17d09,"## 0. Contexte — le strand Schmidhuber referme sa boucle
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-001,markdown,fr,67cc4b4734a43f5d,"> **Statut épistémique.** Reproduction structurelle mesurée d'un article théorique (Schmidhuber, *Gödel Machines: Fully Self-Referential Optimal Universal Self-improvers*, 2006, arXiv:cs/0309048 — lecture intégrale, gisement Bibliographie IA). Le papier ne donne pas d'implémentation de référence : ce qui se confronte ici est la **structure** de chaque théorème (le théorème cible, le Th. 4.1, le Th. 5.1, la FAQ 7, l'OOPS du §5.2), pas des chiffres du papier. Chaque claim confronté est signalé ÉTABLI / NUANCÉ avec sa mesure. Le jouet est volontairement petit (T = 20 cycles, 9 331 techniques) : c'est un instrument pédagogique, pas une tentative d'implémentation à l'échelle.",,,,,,,,67cc4b4734a43f5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-002,markdown,fr,056f74f52da17d09,"## 0. Contexte — le strand Schmidhuber referme sa boucle
 
 [ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) a éprouvé **expérimentalement** la thèse compression-progress de Schmidhuber (la jambe K de la série) : le grokking comme continuation de la compression. La machine de Gödel est le **second pilier** du même auteur : si la compression-progress dit *pourquoi* un apprenant s'améliore, la machine de Gödel dit *comment un programme peut s'améliorer lui-même de façon prouvée* — c'est à ce jour la seule construction où « auto-modification sûre » n'est pas une heuristique mais un théorème.
 
@@ -48030,7 +48030,7 @@ Deux ponts internes au dépôt :
 
 Ce que le carnet **ne fait pas** : implémenter une machine de Gödel réaliste (les constantes du papier sont astronomiques, §6.4) ni comparer à AIXI/HSEARCH (le papier le fait en prose, §6.4 du papier — item 3, « Gödel Machine vs HSEARCH and AIXI(t,l) » ; la section 9 **du carnet** est celle des exercices). Il rend chaque théorème **falsifiable sur un exemple fini**,
 ",,,,,,,,056f74f52da17d09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-003,markdown,fr,7f3470eb60d61fad,"## 1. Le formalisme en jouet — storage, axiomes, instructions
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-003,markdown,fr,7f3470eb60d61fad,"## 1. Le formalisme en jouet — storage, axiomes, instructions
 
 La vraie machine maintient un *storage* `s(t)` : état matériel, programme `p` (qui contient le chercheur de preuves), et le théorème courant. Six instructions (§3.2 du papier) : `get-axiom(n)`, `apply-rule(k,m,n)`, `delete-theorem(m)`, `set-switchprog(m,n)`, `check()`, `state2theorem(m,n)`. Le jouet [`ict.goedel_machine`](ict/goedel_machine.py) en implémente six instances (`GETAX`, `RULE`, `CHECK`, `BOGUS`, `STATE2THM`, `SETSW`), mais la correspondance n'est **pas** bijective : le jouet n'implémente pas `delete-theorem` — son dispatcher conserve pour elle une branche morte — et la remplace par `BOGUS`, l'attaquant de la FAQ 7 (section 5). C'est une instruction **inventée**, sans contrepartie dans le papier (section 8, item 7) :
 
@@ -48050,7 +48050,7 @@ flowchart LR
 ```
 
 **Le codage auto-délimitant (choix de méthode n° 1).** Chaque symbole d'instruction a un code virgule `1^r 0` de longueur `r + 1` (rang `r` dans la table, plus le terminateur HALT de coût 7). La somme de Kraft vaut exactement `1 - 2^-7 ≤ 1` : `P(w) = 2^-c(w)` définit une sous-probabilité sur les techniques — la même construction que les programmes auto-délimitants du papier. C'est ce `P(w)` qui dirige tout : phase d'éligibilité, budget d'exécution, vitesse de découverte.",,,,,,,,7f3470eb60d61fad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-004,code,fr,36fc5c75bc4e3a26,"import os
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-004,code,fr,36fc5c75bc4e3a26,"import os
 import sys
 
 sys.path.insert(0, os.getcwd())
@@ -48070,7 +48070,7 @@ print(f""HALT implicite : cout {HALT_COST}"")
 # Verification de la somme de Kraft : l'encodage est une sous-probabilite.
 kraft = sum(2.0 ** -instr.cost for instr in DEFAULT_TABLE) + 2.0 ** -HALT_COST
 print(f""\nSomme de Kraft = {kraft:.6f}  (<= 1 : {kraft <= 1.0})"")",,,,,,,,36fc5c75bc4e3a26,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-005,code,fr,6176ba26dc0f6578,"# L'espace borne du jouet : sequences d'au plus L_MAX = 5 instructions parmi 6.
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-005,code,fr,6176ba26dc0f6578,"# L'espace borne du jouet : sequences d'au plus L_MAX = 5 instructions parmi 6.
 space = enumerate_techniques()
 n_attendu = sum(len(DEFAULT_TABLE) ** L for L in range(L_MAX + 1))
 print(f""Espace borne : {len(space)} techniques (attendu {n_attendu})"")
@@ -48081,12 +48081,12 @@ w = W_LEVER
 c = technique_cost(w, DEFAULT_TABLE)
 print(f""\nTechnique du levier W_LEVER = {[DEFAULT_TABLE[i].name for i in w]}"")
 print(f""Longueur de code c(w) = {c} bits, P(w) = 2^-{c} = {2.0 ** -c:.2e}"")",,,,,,,,6176ba26dc0f6578,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-006,markdown,fr,ffef7bbb65873ddc,"## 2. L'environnement du levier (§4.4 du papier)
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-006,markdown,fr,ffef7bbb65873ddc,"## 2. L'environnement du levier (§4.4 du papier)
 
 Le monde est l'exemple canonique du §4.4 : une **phase de setup non récompensée** que la politique initiale `e(1)` ne quitte jamais. `T = 20` cycles ; actions `setup` (récompense 0, +1 setup consécutif) et `press` (récompense 1 si le mode est `ready`, 0 sinon ; casse la série). Après `k = 2` setups consécutifs, le levier est actif pour toujours. `e(1)` = `keep` presse toujours → utilité totale **0**, éternellement. Le chercheur tourne à `t1 = 4`.
 
 L'utilité (eq. 1 du papier) est ici le *value-to-go* déterministe `u = Σ r(τ)` sur les cycles restants — l'espérance `E_µ` du papier se réduit à une somme car l'environnement est fini, déterministe et **entièrement axiomatisé dans A** : c'est ce qui rend le théorème cible prouvable par simple simulation (et c'est la triche n° 1 du jouet, section 8).",,,,,,,,ffef7bbb65873ddc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-007,code,fr,05d61dcd57adba14,"monde = LeverWorld(label=""A"")  # T=20, k=2, t1=4, e(1)='keep'
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-007,code,fr,05d61dcd57adba14,"monde = LeverWorld(label=""A"")  # T=20, k=2, t1=4, e(1)='keep'
 mode, setups = monde.initial_state()
 print(f""Etat du monde au cycle t1={monde.t1} : mode={mode}, setups consecutifs={setups}"")
 print(f""Cout d'une application de SIM : 3 politiques x (T - t1) = {monde.sim_cost()} etapes\n"")
@@ -48102,12 +48102,12 @@ for pol in POLICIES:
     print(f""{pol:<15}{comportements[pol]:<42}{u}"")
 print(""\nu(switch vers lever) - u(keep) = 14 - 0 = 14 : c'est la marge que le""
       "" chercheur doit PROUVER."")",,,,,,,,05d61dcd57adba14,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-008,markdown,fr,274959b5636ba624,"## 3. Le chercheur de preuves — BIOPS (Method 5.1) et le premier switch
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-008,markdown,fr,274959b5636ba624,"## 3. Le chercheur de preuves — BIOPS (Method 5.1) et le premier switch
 
 **Method 5.1** : en phase `i`, toute technique `w` avec `P(w) ≥ 2^-i` (c'est-à-dire `c(w) ≤ i`) est exécutée pendant au plus `2^i · P(w) = 2^(i-c(w))` étapes. Le **Théorème 5.1** promet que `w` est trouvée en `O(f(k)/P(w))` étapes. La technique du levier coûte `c = 21` bits et son exécution ~54 étapes (SIM = 48 applications de règles) : elle devient exécutable à budget suffisant à la phase `i` où `2^(i-21) ≥ 54`, soit `i = 27` (budget 64).
 
 Une subtilité honnête d'implémentation (choix de méthode n° 5 de l'organe) : chaque technique est exécutée **une fois sans borne** pour mesurer son coût naturel et son coût de feu ; la dynamique de phase est alors reconstruite **exactement** par arithmétique, car le budget de phase ne dépend que de `(i, c(w))`. Rien n'est échantillonné.",,,,,,,,274959b5636ba624,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-009,code,fr,78823ad5a5e6040a,"m1 = g1_lever()
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-009,code,fr,78823ad5a5e6040a,"m1 = g1_lever()
 res = m1[""biops""]
 print(""=== Gate G1 : le levier du paragraphe 4.4 ==="")
 print(f""Feu            : {res.fired}"")
@@ -48122,21 +48122,21 @@ print(f""Marge == gain  : {m1['margin_equals_gain']} ""
       f""(monde deterministe axiomatise : la preuve ne peut pas mentir)"")
 print(f""\nTravail total facture jusqu'au feu : {res.total_steps:,} etapes sur ""
       f""{res.techniques_run:,} techniques de l'espace ({res.firing_techniques} feutrent a budget infini)"")",,,,,,,,78823ad5a5e6040a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-010,markdown,fr,4ea7e0ead77b289e,"**Technique courte, preuve longue — l'argument central du langage L.** La technique gagnante fait **5 symboles / 21 bits** ; la preuve qu'elle produit compte **50 applications de règles** (48 cycles simulés pour trois politiques, plus la comparaison et le théorème cible). Une recherche de preuve naïve par énumération de chaînes de règles devrait balayer un espace d'au moins `2^50` chaînes ; le chercheur n'a balayé que `2^21` techniques. **L'explosion combinatoire est dans les preuves, pas dans les techniques** — c'est exactement la raison d'être du programme-paradigm du papier (§5 : « the proof searcher may produce a proof … much longer than the searcher itself »).",,,,,,,,4ea7e0ead77b289e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-011,code,fr,9db0f6fa5f1b8dc3,"m_st = short_technique_long_proof()
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-010,markdown,fr,4ea7e0ead77b289e,"**Technique courte, preuve longue — l'argument central du langage L.** La technique gagnante fait **5 symboles / 21 bits** ; la preuve qu'elle produit compte **50 applications de règles** (48 cycles simulés pour trois politiques, plus la comparaison et le théorème cible). Une recherche de preuve naïve par énumération de chaînes de règles devrait balayer un espace d'au moins `2^50` chaînes ; le chercheur n'a balayé que `2^21` techniques. **L'explosion combinatoire est dans les preuves, pas dans les techniques** — c'est exactement la raison d'être du programme-paradigm du papier (§5 : « the proof searcher may produce a proof … much longer than the searcher itself »).",,,,,,,,4ea7e0ead77b289e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-011,code,fr,9db0f6fa5f1b8dc3,"m_st = short_technique_long_proof()
 print(f""Technique gagnante : {m_st['technique_symbols']} symboles, ""
       f""{m_st['technique_bits']} bits de code"")
 print(f""Preuve produite    : {m_st['proof_rule_applications']} applications de regles"")
 print(f""Espace de techniques balyse : <= 2^{m_st['technique_bits']}"")
 print(f""Espace de preuves naves     : >= 2^{m_st['naive_proof_space_log2']}"")
 print(f""Ecart : 2^{m_st['ratio_log2']} chaines de regles evitees par symbole de recherche"")",,,,,,,,9db0f6fa5f1b8dc3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-012,markdown,fr,fa346447816c3d65,"## 4. Théorème 4.1 — le switch « glouton » est globalement optimal
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-012,markdown,fr,fa346447816c3d65,"## 4. Théorème 4.1 — le switch « glouton » est globalement optimal
 
 L'objection classique : un switch dès la première preuve, c'est du *greedy* — et le greedy n'est pas optimal. Le Théorème 4.1 répond que non : la décision binaire du switchbit couvre **tous** les switchprogs futurs (alternative (2) de la décision), donc switcher sur la première preuve valide n'exclut aucune amélioration ultérieure. Deux mesures le confrontent dans le jouet :
 
 1. **argmax** : le switch feuté (`lever` à `t1`) est-il l'argmax de l'utilité sur *tous* les candidats `(politique)` futurs ?
 2. **stationnarité** : après le switch, le monde avance jusqu'à la fin du setup ; le chercheur repart — peut-il prouver *un second* switch ? (Si le Th. 4.1 tient : non — la politique courante est déjà optimale, aucune inégalité stricte n'est prouvable.)",,,,,,,,fa346447816c3d65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-013,code,fr,13feb29c539e83ae,"m4 = g4_greedy_global()
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-013,code,fr,13feb29c539e83ae,"m4 = g4_greedy_global()
 print(""=== Gate G4 : Theoreme 4.1 ==="")
 print(""Candidats futurs (u a t1) :"")
 for pol, u in m4[""candidates""]:
@@ -48151,12 +48151,12 @@ print(f""\nMonde de continuation : t1 = {after.t1} (fin du setup du levier), ""
 res_after = biops(after, i_max=40)
 print(f""Second switch prouve : {res_after.fired} ""
       f""(aucune inegalite stricte n'est derivable : lever et keep sont both 14)"")",,,,,,,,13feb29c539e83ae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-014,markdown,fr,257674f8cd6ef98b,"### Lecture du résultat
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-014,markdown,fr,257674f8cd6ef98b,"### Lecture du résultat
 
 Le point subtil : les cycles 1-3 « perdus » sous `e(1)` **ne sont pas un défaut de la décision de switch** — ils sont le coût de la recherche elle-même (le temps de calcul avant la première preuve). L'optimalité vérifiée est conditionnelle à l'instant de preuve `t1`, ce qui est exactement la forme du Théorème 4.1 : *étant donné* l'état au moment où la preuve complète, le switch prouvé est le meilleur des candidats futurs, et aucune suite ne fait mieux. La figure suivante le montre d'un coup d'œil : `u(lever, τ)` décroît de 1 par cycle de retard, donc l'argmax est le τ le plus tôt *prouvable* — et le switch immédiat l'atteint.
 
 Ce que le gate compare exactement : l'**utilité** du switch feutre, rebasitée depuis la marge prouvée (`u(switch) − u(keep)`), contre l'utilité du meilleur candidat — deux grandeurs de même nature. La distinction n'est pas cosmétique : comparer la marge à l'utilité comparerait un écart à une valeur, et les deux ne coïncident que si `u(keep) = 0`. C'est le cas dans ce monde (`keep` vaut 0), mais c'est une propriété du monde, pas du prédicat : dans le monde de continuation (mesuré plus bas, où `u(keep) = u(lever) = 14`), la marge d'un éventuel switch serait nulle — l'utilité, elle, resterait 14.",,,,,,,,257674f8cd6ef98b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-015,code,fr,1282649a144e5e08,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-015,code,fr,1282649a144e5e08,"import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(7.5, 4.2))
 taus = list(range(monde.t1, monde.T + 1))
@@ -48175,7 +48175,7 @@ fig.tight_layout()
 plt.show()
 print(""Chaque cycle de retard coute exactement 1 : decroissance lineaire de lever,"")
 print(""fonction plate a 0 de keep et setup_forever — le switch immediat est optimal."")",,,,,,,,1282649a144e5e08,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-016,markdown,fr,4d9683843a9ad6c9,"## 5. FAQ 7 — le réécrivain d'utilité ne peut pas passer
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-016,markdown,fr,4d9683843a9ad6c9,"## 5. FAQ 7 — le réécrivain d'utilité ne peut pas passer
 
 L'attaque évidente contre la machine de Gödel : *si le programme peut se réécrire, il peut réécrire sa fonction d'utilité et se décerner la note maximale*. La FAQ 7 du papier répond que c'est impossible : toute preuve de « ceci améliore l'utilité » doit être conduite sous l'utilité **courante** — réécrire l'utilité ne peut être prouvé bénéfique que selon l'**ancienne** utilité, ce qui est exactement ce que le théorème cible interdit.
 
@@ -48184,7 +48184,7 @@ Dans le jouet, l'instruction `BOGUS` joue le réécrivain : elle injecte dans le
 Mais le « 0 feu sur 9 331 » affiché par le gate ne se réduit pas à cette garde : la seule technique qui feutre est `(GETAX, RULE, SETSW, RULE, CHECK)`, de longueur 5 = `L_MAX` — une technique contenant `BOGUS` en exige 6, elle est donc **exclue de l'espace** avant même d'être exécutée. Les deux causes sont mesurées séparément (section 8, item 3) : en élargissant l'espace à `l_max = 6` (55 987 techniques), 32 techniques feuent, dont 6 contiennent `BOGUS` — toutes avec la marge **14** : le faux `u` n'est jamais cité.
 
 Nuance honnête (triche n° 3, section 8) : dans la vraie machine cette garde est portée par la théorie de la preuve ; dans le jouet elle est portée par l'ensemble d'instructions — l'exercice 2 montre ce qu'il faut ouvrir pour que le réécrivain passe, et pourquoi lever `CHECK` seul ne change rien.",,,,,,,,4d9683843a9ad6c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-017,code,fr,3e144898ad745ed2,"m2 = g2_bogus_exhaustive()
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-017,code,fr,3e144898ad745ed2,"m2 = g2_bogus_exhaustive()
 print(""=== Gate G2 : FAQ 7 ==="")
 print(f""Feux boge sur la passe BIOPS      : {m2['bogus_fires_in_biops']}"")
 print(f""Techniques contenant BOGUS qui feutrent : ""
@@ -48193,12 +48193,12 @@ print(f""\nLa technique concue pour tricher [BOGUS, GETAX, RULE, SETSW, CHECK] :
 print(f""  feu     : {m2['w_bogus_fires']}"")
 print(f""  issue   : {m2['w_bogus_outcome']} (terminee sans feu : le faux u est""
       "" invisible pour SETSW et CHECK)"")",,,,,,,,3e144898ad745ed2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-018,markdown,fr,0b8b625c5afd0990,"## 6. Théorème 5.1 — le temps de trouvaille échelle en 1/P(w)
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-018,markdown,fr,0b8b625c5afd0990,"## 6. Théorème 5.1 — le temps de trouvaille échelle en 1/P(w)
 
 Le Théorème 5.1 promet `O(f(k)/P(w))` : une technique fonctionnelle est trouvée en un temps inversement proportionnel à sa probabilité a priori. Le jouet l'isole proprement : **la même technique fonctionnelle**, encodée deux fois — table pas chère (`c = 21` bits) puis table chère (rangs décalés, `c = 29` bits) — dans un monde identique. Seul `P(w)` change : facteur `2^8 = 256` entre les deux encodages.
 
 **Prédiction** : l'écart de phases de découverte vaut exactement `Δc = 8` (le budget double par phase) ; le rapport des travaux totaux croît vers `2^8`. Mesure, avec une nuance honnête : les techniques du jouet sont *straight-line* (sans boucle) — elles terminent avant d'épuiser leur budget, donc le travail par phase sature à la somme des coûts naturels et le rapport de travaux mesuré croît ~linéairement avec le nombre de phases, pas exponentiellement. La loi `1/P(w)` se lit sans biais sur **l'écart de phases** (exact), et sur le rapport de travaux **sous sa borne** `2^Δc`. Dans la vraie machine, les techniques sont des programmes qui peuvent boucler et brûler tout leur budget : là, le travail par phase est `~2^i` et le rapport de travaux atteint la borne.",,,,,,,,0b8b625c5afd0990,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-019,code,fr,b4eaa60d3f2f776b,"m3 = g3_th51_cost_scaling()
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-019,code,fr,b4eaa60d3f2f776b,"m3 = g3_th51_cost_scaling()
 cheap, expensive = m3[""cheap""], m3[""expensive""]
 print(""=== Gate G3 : Theoreme 5.1 ==="")
 print(f""Encodage pas cher : c = {cheap.code_cost} bits, feu en phase {cheap.phase}, ""
@@ -48209,12 +48209,12 @@ print(f""\nDelta c = {m3['delta_cost']} bits  ->  ecart de phases mesure = {m3['
       f""  (prediction exacte : {m3['phase_gap'] == m3['delta_cost']})"")
 print(f""Rapport des travaux : x{m3['work_ratio']:.2f}  ""
       f""(borne 2^Delta_c = x{m3['predicted_ratio_bound']:.0f}, saturation straight-line)"")",,,,,,,,b4eaa60d3f2f776b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-020,markdown,fr,de5ccfb2a7e5009d,"## 7. OOPS (§5.2) — geler la technique gagnante et la réessayer en premier
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-020,markdown,fr,de5ccfb2a7e5009d,"## 7. OOPS (§5.2) — geler la technique gagnante et la réessayer en premier
 
 Le §5.2 répond à l'objection « tout reprendre de zéro à chaque nouveau problème » : OOPS **gèle** la technique qui a réussi et, sur le problème suivant, la teste **en tête de chaque phase avec la moitié du budget de phase** (`2^(i-1)`) — sans attendre que sa probabilité a priori la rende éligible. La passe fraîche suit avec ses budgets par coût. Si la technique gelée s'applique, elle feutre dès que son demi-budget couvre son coût de feu (~54 étapes → phase 7) ; si elle ne s'applique pas, son prix est `min(coût naturel, 2^(i-1))` par phase — négligeable au jouet (une seule technique *straight-line*), réel à l'échelle du papier où la classe gelée est une masse de variants (exercice 3).
 
 Le monde B est une **variante exacte de A** : `k = 3` (trois setups requis au lieu de deux). La technique gelée de A s'y applique telle quelle — `GETAX` récupère l'axiome du monde B, `SIM` simule `k = 3` correctement — marge attendue 13 (presses des cycles 8 à 20).",,,,,,,,de5ccfb2a7e5009d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-021,code,fr,c4eeb23d3b4295f4,"m_o = oops_reuse()
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-021,code,fr,c4eeb23d3b4295f4,"m_o = oops_reuse()
 fresh, frozen = m_o[""fresh""], m_o[""with_frozen""]
 print(""=== OOPS : transfert du gele sur le monde B (k=3) ==="")
 print(f""Recherche fraiche   : feu en phase {fresh.phase}, travail total {fresh.total_steps:,}, ""
@@ -48223,10 +48223,10 @@ print(f""Avec gele en tete   : feu en phase {frozen.phase}, travail total {froze
       f""marge {frozen.margin} (demi-budget 2^(i-1) des la phase 7)"")
 print(f""\nTransfert valide : {m_o['transfers']} (marge attendue {m_o['expected_margin_b']})"")
 print(f""Acceleration     : x{m_o['speedup']:.0f} de travail en moins"")",,,,,,,,c4eeb23d3b4295f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-022,markdown,fr,31badb683655723b,"### Lecture du résultat
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-022,markdown,fr,31badb683655723b,"### Lecture du résultat
 
 L'accélération mesurée n'est pas de la magie : en mode frais, la technique du levier (coût 21 bits) n'est exécutée à budget suffisant qu'à la phase 27, **après** le travail accumulé sur toutes les techniques moins chères, phase après phase. En mode OOPS, la technique gelée est testée dès la phase 1 avec un budget qui double à chaque phase : à la phase 7, `2^6 = 64 ≥ 54` — elle feutre aussitôt, la passe fraîche n'a presque jamais servi. C'est la propriété centrale du §5.2 : *le gel transforme un coût de découverte `2^c` en coût d'exécution `s_feu`*. Limitation documentée : le jouet gèle la **technique** seule, pas les théorèmes intermédiaires qu'OOPS gèle aussi, et la classe gelée est un singleton — le coût 50/50 du papier (une vraie demi-masse de temps) se réduit ici à quelques dizaines d'étapes par phase, mesuré en exercice 3.",,,,,,,,31badb683655723b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-023,markdown,fr,d7d941c627fca97d,"## 8. Où le jouet triche — limites honnêtes
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-023,markdown,fr,d7d941c627fca97d,"## 8. Où le jouet triche — limites honnêtes
 
 1. **`A` est complet sur son espace fini.** Le système formel du jouet axiomatise un monde fini déterministe : toute question d'utilité y est *décidable* par simulation. Aucune incomplétude de Gödel ne mord — alors que la vraie machine vit avec (§2.4 du papier : les améliorations non prouvables sont simplement ignorées, jamais de tiers). Le théorème cible est prouvable *par construction* dans le jouet ; dans la vraie machine, il ne l'est que si le proof searcher le trouve.
 2. **L'auto-référence est supposée, pas construite.** La vraie machine axiomatise *son propre* état — y compris le chercheur — via `state2theorem` et le lemme diagonal. Le jouet snapshotte l'état du **monde**, pas celui du chercheur. Le pont vers la construction réelle : [`ict.godel_demonstration`](ict/godel_demonstration.py) (numérotation, v5 auto-référentielle).
@@ -48235,15 +48235,15 @@ MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-i
 5. **Pas d'espérance `E_µ`, pas d'environnement non axiomatisé.** L'eq. (1) du papier prend une espérance sous `µ` ; le jouet a un monde déterministe connu. La vraie machine gère l'incertitude par les axiomes (d) et le semi-calcul de `u`.
 6. **Échelle.** T = 20 cycles, 9 331 techniques, constantes minuscules. Le papier (§6.4) estime les constantes de la vraie machine au-delà de `10^1000` — le jouet existe précisément parce que la vraie est inconstruite à ce jour.
 7. **Une instruction du papier est remplacée par une instruction inventée.** Le §3.2 du papier donne six instructions, dont `delete-theorem` (item 3) ; le jouet ne l'implémente pas — son dispatcher conserve pour elle une branche morte — et la remplace par `BOGUS`, l'attaquant de la FAQ 7. La correspondance six-pour-six avec le papier n'est donc pas bijective : le jouet illustre la mécanique de la fermeture, pas le jeu exact d'instructions du papier.",,,,,,,,d7d941c627fca97d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-024,markdown,fr,a9e00b695ad69183,"## 9. Exercices
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-024,markdown,fr,a9e00b695ad69183,"## 9. Exercices
 
 Trois exercices, du plus direct au plus conceptuel. Les stubs s'exécutent sans erreur (règle C.1 de la série) : à compléter.",,,,,,,,a9e00b695ad69183,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-025,markdown,fr,e1ebe8a85661ca1b,"### Exercice 1 — Le meilleur instant de switch
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-025,markdown,fr,e1ebe8a85661ca1b,"### Exercice 1 — Le meilleur instant de switch
 
 La figure de la section 4 suggère que `u(lever, τ)` décroît de 1 par cycle de retard. Vérifiez-le en calculant `u(lever, τ)` pour **tous** les `τ` de `t1` à `T`, trouvez l'argmax, et expliquez en une phrase pourquoi le Théorème 4.1 rend le switch immédiat optimal sans avoir besoin d'énumérer les τ futurs.
 
 *Indice : `monde.simulate('lever', tau, 'setup', 0)` donne u(τ) ; l'argmax devrait être `t1` lui-même.*",,,,,,,,e1ebe8a85661ca1b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-026,code,fr,5c9a61db5d71b14d,"# Exercice 1 -- le meilleur instant de switch
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-026,code,fr,5c9a61db5d71b14d,"# Exercice 1 -- le meilleur instant de switch
 # Etape 1 : construire la liste des (tau, u) pour la politique 'lever'.
 # Etape 2 : identifier l'argmax et verifier que c'est t1.
 # Etape 3 : mesurer la decroissance par cycle de retard.
@@ -48251,7 +48251,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-i
 # us = [...]
 # argmax_tau = ...
 print(""Exercice a completer : u(lever, tau) pour tau = t1..T, argmax et decroissance."")",,,,,,,,5c9a61db5d71b14d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-027,markdown,fr,80f9abc367231667,"### Exercice 2 — FAQ 7 par l'autre bout : ce qu'il faut ouvrir pour que le réécrivain passe
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-027,markdown,fr,80f9abc367231667,"### Exercice 2 — FAQ 7 par l'autre bout : ce qu'il faut ouvrir pour que le réécrivain passe
 
 Le jouet tue le réécrivain d'utilité par **fermeture** (`SETSW`/`CHECK` n'acceptent que des théorèmes prouvés, aucune instruction ne crée d'axiome). L'exercice consiste à **mesurer** ce qui tient — parce que deux choses se superposent, et qu'une seule est la fermeture.
 
@@ -48262,18 +48262,18 @@ Le jouet tue le réécrivain d'utilité par **fermeture** (`SETSW`/`CHECK` n'acc
 Puis répondez : pourquoi la vraie machine résiste-t-elle quand même — quelle est la différence entre « l'instruction n'existe pas » et « la preuve est impossible » ?
 
 *Indice : dans la vraie machine, même un théorème d'utilité réécrite existe, mais le théorème cible doit être prouvé sous l'utilité COURANTE (eq. 2) — la preuve de la réécriture doit citer l'ancienne table d'axiomes, qui n'est plus celle du théorème cible. Dans le jouet, `BOGUS` n'injecte qu'un `u` sur `lever` — la politique que `SETSW` nomme déjà honnêtement (14) : c'est pourquoi la marge reste 14 tant que la fermeture tient, et c'est pourquoi il faut que la comparaison relire le faux `u` pour que le réécrivain passe. La position compte aussi : `BOGUS` doit passer **avant** le `SETSW`, car c'est le `SETSW` qui choisit le `u` nommé ; injecté après lui, `SETSW` a déjà nommé le `u` prouvé de `lever` (14), et une comparaison qui relit le *premier* `u` trouvé pour cette politique retombe sur 14 — la marge dépendrait alors de l'ordre des instructions, pas de la réécriture.*",,,,,,,,80f9abc367231667,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-028,code,fr,f15e4002fc82647a,"# Exercice 2 -- ouvrir la fermeture FAQ 7
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-028,code,fr,f15e4002fc82647a,"# Exercice 2 -- ouvrir la fermeture FAQ 7
 # Etape 1 : relire run_technique dans ict/goedel_machine.py (branch CHECK).
 # Etape 2 : ecrire une variante locale qui accepte les theoremes proven=False.
 # Etape 3 : executer la technique [BOGUS, GETAX, RULE, SETSW, CHECK] dessus.
 # TODO etudiant
 print(""Exercice a completer : variante de CHECK sans filtre proven, et observation du feu boge."")",,,,,,,,f15e4002fc82647a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-029,markdown,fr,a0dad0be07f12e22,"### Exercice 3 — Le prix du gel quand il ne rapporte rien
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-029,markdown,fr,a0dad0be07f12e22,"### Exercice 3 — Le prix du gel quand il ne rapporte rien
 
 OOPS teste la classe gelée en tête de chaque phase au prix de `min(coût naturel, 2^(i-1))` étapes. Sur une variante où elle s'applique (section 7), c'est un gain massif. Mais que coûte le gel quand il **ne rapporte rien** ? Construisez un monde C sans amélioration prouvable — par exemple `LeverWorld(T=14, current_policy='lever')` : vérifiez d'abord **par simulation** pourquoi aucune inégalité stricte n'y est dérivable (attention : simulez avant d'affirmer, c'est le point de l'exercice) — puis comparez le travail total de `biops()` frais et `biops(frozen=W_LEVER)` sur `i_max = 20`. Mesurez la différence, et expliquez pourquoi le papier annonce pourtant un coût réel : qu'est-ce qui, à l'échelle du papier, rend la classe gelée coûteuse alors qu'ici elle est quasi gratuite ?
 
 *Indice : l'état initial du monde C n'est **pas** re-simulé sous `lever` — `initial_state()` rejoue `e(1) = 'keep'` (l'action `presser`), qui ne configure jamais : l'état rendu est `('setup', 0)`, levier non prêt. La bonne raison pour laquelle rien n'y est prouvable est plus simple : la politique courante **est** `lever`, donc `u(courante) = u(lever)` — aucune inégalité stricte n'est dérivable, quelle que soit la configuration ; comparez les trois `u` du monde C pour le vérifier. Mesurez aussi le **signe** de l'écart de travail : le gel peut coûter au lieu de faire gagner. Et la classe gelée du papier n'est pas un singleton : c'est une masse de variants qui occupe réellement la moitié du temps de recherche.*",,,,,,,,a0dad0be07f12e22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-030,code,fr,84c12fa2322b1980,"# Exercice 3 -- le prix du gel quand il ne rapporte rien
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-030,code,fr,84c12fa2322b1980,"# Exercice 3 -- le prix du gel quand il ne rapporte rien
 # Etape 1 : construire le monde C et verifier par simulation pourquoi rien
 #           n'y est prouvable (aucune inegalite stricte entre politiques).
 # Etape 2 : lancer biops() frais et biops(frozen=W_LEVER) sur C, i_max=20.
@@ -48281,7 +48281,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-i
 #           minuscule ici, mais reel a l'echelle du papier.
 # TODO etudiant
 print(""Exercice a completer : monde C sans amelioration prouvable, prix du gel d'OOPS."")",,,,,,,,84c12fa2322b1980,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-031,markdown,fr,23c987b1481c3cbf,"## 10. Conclusion et ponts
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-031,markdown,fr,23c987b1481c3cbf,"## 10. Conclusion et ponts
 
 **Ce que le jouet établit (mesuré)** : chaque théorème structurel du papier tient sur un exemple fini et falsifiable — le switch prouvé (marge = gain, G1), la garde anti-réécriture (0 feu BOGUS sur 9 331 — par la fermeture *et* par la borne de longueur, G2), la loi `1/P(w)` (écart de phases exact, G3), l'optimalité globale du greedy (argmax + stationnarité, G4), le transfert OOPS. La construction est déterministe de bout en bout : chaque ré-exécution du carnet redonne exactement ces chiffres.
 
@@ -48296,7 +48296,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-i
 - La numérotation de Gödel et le lemme diagonal, instrumentés : organe [`ict.godel_demonstration`](ict/godel_demonstration.py).
 **Suivant dans la série** : [ICT-50 — Origami Wolfram pli 2 : la règle 30 comme générateur d'aléa, la règle 110 et son universalité](Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) mesure la thèse empirique de Wolfram 1986 et expose le théorème de Cook 2004 — le partage entre ce qui se mesure et ce qui se prouve, poursuivi.
 ",,,,,,,,23c987b1481c3cbf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-032,markdown,fr,5c8b9188c8e010f7,"## 11. Références
+MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb,cell-ict49-032,markdown,fr,5c8b9188c8e010f7,"## 11. Références
 
 - **Schmidhuber, J. (2006).** *Gödel Machines: Fully Self-Referential Optimal Universal Self-improvers.* arXiv:cs/0309048v5 (TR IDSIA-19-03, version 2006). Lecture intégrale archivée — `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Deep Learning Foundations\2006 - Schmidhuber - Goedel Machines.pdf`. C'est la source primaire de toutes les citations du carnet (eq. 1-2, Th. 4.1, Method 5.1, Th. 5.1, §3.2, §4.4, §5.2, §6.4, FAQ 7).
 - Schmidhuber, J. (2003). *A General Method for Incremental Self-Improvement and Multi-Agent Learning.* — la version courte d'origine du concept.

@@ -4,7 +4,7 @@ Sous-série de la série [Lean](../README.md) — **îlot à une entrée** de la
 
 L'ancien identifiant de série (`Lean-22` → `GALOIS-01`) est consigné dans `docs/reference/rename-ledger.tsv`.
 
-**Escalier depuis la série principale** : l'entrée se fait depuis [MIMO-04 — Capstone](../MIMO/MIMO-04-Capstone-Digestion-Python.ipynb), sortie de la sous-série MIMO ; l'îlot se referme sur GALOIS-01 et le parcours principal reprend à [Lean-23 (ERC-20)](../Lean-23-ERC20-Invariant-Companion.ipynb).
+**Escalier depuis la série principale** : l'entrée se fait depuis [MIMO-04 — Capstone](../MIMO/MIMO-04-Capstone-Digestion-Python.ipynb), sortie de la sous-série MIMO ; l'îlot se referme sur GALOIS-01 et le parcours principal reprend à [Lean-23 (ERC-20)](../VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb).
 
 | Carnet | Contenu | Durée |
 |---|---|---|
