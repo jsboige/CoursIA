@@ -67,9 +67,31 @@ from pathlib import Path
 ORGANES = (
     "scripts/coordination/tapis_rapide.py",
     "scripts/coordination/tapis_marqueurs.py",
+    "scripts/coordination/tapis_sature.py",
     "scripts/coordination/gh_bulk.py",
+    # La LECTURE elle-meme : le conteneur, l'echec qui interdit de servir a
+    # moitie, et la mise a plat d'une issue -- dont le `comments_total`
+    # INCONNU, qui decide si la fenetre est prouvee complete.
+    "scripts/coordination/gh_lecture.py",
+    "scripts/coordination/gh_recherche.py",
     "scripts/coordination/frozen_campaigns.py",
     "scripts/coordination/main_freshness.py",
+    # Le CHEMIN DU TIRAGE (bascule #27225) : le classement, ses deux
+    # priorites, la rotation, la qualification sur fil complet et la relecture
+    # de service -- tous modifient le grain servi, donc tous doivent
+    # correspondre a origin/main pour que le tirage soit recevable.
+    "scripts/coordination/gh_selection.py",
+    "scripts/coordination/gh_issues.py",
+    "scripts/coordination/gh_snapshot.py",
+    "scripts/coordination/tapis_universel.py",
+    "scripts/coordination/tapis_avantages.py",
+    "scripts/coordination/tapis_leger.py",
+    "scripts/coordination/tapis_qualification.py",
+    "scripts/coordination/tapis_fil_complet.py",
+    "scripts/coordination/tapis_prise_en_charge.py",
+    "scripts/coordination/tapis_reverif.py",
+    "scripts/coordination/tapis_fenetre.py",
+    "scripts/coordination/tapis_origami.py",
 )
 
 FETCH_TIMEOUT_S = 120

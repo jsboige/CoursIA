@@ -23,7 +23,7 @@ Un **agent composable** n'est ni un LLM ni un classifieur : c'est un **squelette
 qu'on assemble avec des *pièces* interchangeables derrière des interfaces. La même
 boucle tourne avec un cerveau déterministe ou un LLM ; la vérification et la
 safety bound ne changent pas, seul le **coût d'inférence** change. Et comme tout
-actif amorti (cf. [`Compression-07b`](../../Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb)),
+actif amorti (cf. [`Compression-07b`](../../InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb)),
 la politique découverte une fois se **rejoue à coût nul**.
 
 > **Position du projet.** C'est une **méthode transversale**, pas une application

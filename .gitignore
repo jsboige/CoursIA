@@ -1177,3 +1177,6 @@ out/
 # initial de la PR affirmait a tort une entree preexistante (reserve Hermes
 # fondee, c.6542745309) : cette entree est la dette correspondante.
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/got_data/
+
+# Base de travail JupyterLite (construction du lot, pli 2.2 -- #27550)
+.jupyterlite.doit.db

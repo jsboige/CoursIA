@@ -16,13 +16,10 @@ Dans un niveau, l'issue jamais visitee passe d'abord, puis la plus ancienne.
 
 Les priorites LEGERES du mandat du 2026-11-18 (age, consolidation) sont dans
 `coordination/tapis_avantages.py` ; leur somme reste sous une visite, donc
-l'equite du 16/11 tient : une issue a 0 visite passe devant une issue a
-1 visite. La division par 3 des consolidations anciennes, plus forte qu'une
-priorite legere, disparait.
-
-Une exception reste : les marathons de parite C# (#26070, titres « Marathon »)
-et Rust (#26510) sortent de l'equilibrage : c'est le harnais sk-agent qui les
-servira.
+l'equite du 16/11 tient : 0 visite avant 1 visite. La division par 3 des
+consolidations anciennes, plus forte qu'une priorite legere, disparait.
+Une exception reste : les marathons de parite C# (#26070) et Rust (#26510)
+sortent de l'equilibrage : c'est le harnais sk-agent qui les servira.
 
 Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
 DELIVERED) d'une meme lane a moins de `SEANCE_H` heures n'en font qu'une --
@@ -142,9 +139,13 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
-def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
+def ordre(etats_, servables, graine: str, maintenant: datetime,
+          rotation: bool = True) -> list:
     """Niveau croissant ; dans un niveau, la jamais visitee puis la plus
-    ancienne d'abord, les familles servies a tour de role."""
+    ancienne d'abord, les familles servies a tour de role.
+
+    `rotation=False` : l'ordre **fair**, sans rotation de tete par lane
+    (la fenetre qui avance decide de la rotation, pas le pool)."""
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
     for e in sorted(servables, key=cle_tri):
@@ -155,5 +156,5 @@ def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
         while any(rang < len(lst) for lst in listes):
             rr.extend(lst[rang] for lst in listes if rang < len(lst))
             rang += 1
-        tour += _decaler(rr, graine, n)
+        tour += _decaler(rr, graine, n) if rotation else rr
     return tour

@@ -6,6 +6,10 @@ description: "Parcours d'apprentissage CoursIA : local sobre (Python uniquement)
 
 Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel. Tous convergent vers le catalogue unifié — vous pouvez passer de l'un à l'autre au fil de votre progression.
 
+[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge/svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=jsboige%2FCoursIA&ref=main&machine=basicLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json){.parcours-cta}
+
+Aucun des trois parcours n'exige d'installer quoi que ce soit pour commencer : le bouton ci-dessus ouvre un Codespace porteur des sept noyaux canoniques (image d'apprentissage GHCR). Le quota consommé est celui de votre compte ; le repli local est la commande `docker run` unique du [README du notebook-runner](../docker-configurations/notebook-runner/README.md).
+
 ::: {.grid}
 
 ::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--local}

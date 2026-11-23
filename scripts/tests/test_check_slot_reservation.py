@@ -1023,10 +1023,10 @@ class ScanMainCollisionTests(unittest.TestCase):
                         "la paire renommee doit etre reconnue comme jumeau")
 
     def test_same_item_scan_matches_renamed_app12_pair(self):
-        # #12933 : App-12c -> App-12b-ConnectFour-CSharp, meme slot 12b
+        # #12933 : App-12c -> App-12-ConnectFour-CSharp, meme slot 12b
         # que le jumeau Python : paire reconnue, pas collision.
-        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour.ipynb"
-        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb"
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb"
         self.assertTrue(csr._same_item_scan(a, b),
                         "la paire renommee doit etre reconnue comme jumeau")
 

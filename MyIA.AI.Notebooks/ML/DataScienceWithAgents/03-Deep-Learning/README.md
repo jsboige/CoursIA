@@ -57,7 +57,7 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 ## Voir aussi : la compression des modèles
 
 La famille `3.9-*` est recomposée en **vue d'ensemble** dans la série Compression :
-[Compression-05 — Compression des modèles : quantifier, élaguer, distiller](../../../Compression/Compression-05-MLCompression-Python.ipynb)
+[Compression-05 — Compression des modèles : quantifier, élaguer, distiller](../../../InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb)
 reprend ses cellules essentielles (quantification FP16/INT8, élagage par
 magnitude, distillation) sur un terrain synthétique léger, mesure chaque
 technique avant/après sur une même référence CPU, et relie la boucle au
