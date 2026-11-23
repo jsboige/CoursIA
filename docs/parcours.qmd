@@ -6,6 +6,10 @@ description: "Parcours d'apprentissage CoursIA : local sobre (Python uniquement)
 
 Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel. Tous convergent vers le catalogue unifié — vous pouvez passer de l'un à l'autre au fil de votre progression.
 
+[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge/svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=jsboige%2FCoursIA&ref=main&machine=basicLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json){.parcours-cta}
+
+Aucun des trois parcours n'exige d'installer quoi que ce soit pour commencer : le bouton ci-dessus ouvre un Codespace porteur des sept noyaux canoniques (image d'apprentissage GHCR). Le quota consommé est celui de votre compte ; le repli local est la commande `docker run` unique du [README du notebook-runner](../docker-configurations/notebook-runner/README.md).
+
 ::: {.grid}
 
 ::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--local}
@@ -67,6 +71,23 @@ Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel
 
 [Commencer le parcours 3 →](../MyIA.AI.Notebooks/GenAI/Image/README.md){.btn .btn-primary .parcours-cta}
 :::
+
+:::
+
+::: {#entrer-par-objectif}
+
+## Entrer selon son objectif
+
+Les trois parcours ci-dessus restent la référence **par matériel**. Si vous savez déjà ce que vous venez chercher, entrez par l'objectif : chaque entrée renvoie à ses premiers carnets, et le niveau affiché vient des strates cumulatives du référentiel [`curriculum/niveaux.json`](curriculum/niveaux.json) (découverte → licence → ingénieur/master → avancée → recherche) — jamais d'un jugement recopié à la main.
+
+| Objectif | Premiers carnets (niveau du référentiel) | Rejoint |
+|---|---|---|
+| **Je découvre l'IA** | [Search-01 — espace d'états](../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb) (découverte) · [Sudoku-01 — backtracking](../MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb) (découverte) · [2.1 — le cycle de vie d'un modèle](../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) (découverte) · [Texte-01 — première expérience LLM](../MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb) (découverte) | [Parcours 1 — local sobre](../MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) |
+| **Je veux construire une application** | [Texte-02 — prompt engineering](../MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb) (ingénieur/master) · [Texte-04 — function calling](../MyIA.AI.Notebooks/GenAI/Texte/04_Function_Calling.ipynb) (ingénieur/master) · [RAG-03 — embeddings from scratch](../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) (ingénieur/master) · [RAG-05 — stockage vectoriel](../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb) (ingénieur/master) · [SK-01 — Semantic Kernel](../MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) (ingénieur/master) | [Parcours 3 — GenAI complet](../MyIA.AI.Notebooks/GenAI/Image/README.md) |
+| **Je veux les fondements formels** | [Lean-01 — setup](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) (avancée) · [Lean-03 — propositions et preuves](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb) (avancée) · [Lean-06 — Mathlib essentials](../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb) (recherche) · [GT-15b — jeux coopératifs en Lean](../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (recherche) | [Parcours 2 — ML.NET + Symbolic](../MyIA.AI.Notebooks/ML/README.md) |
+| **Je viens de la finance** | [QC-Py-02 — fondamentaux de la plateforme](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb) (ingénieur/master) · [RL-04 — bandits manchots](../MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb) (avancée) · [RL-05 — MDP et Q-learning](../MyIA.AI.Notebooks/RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) (avancée) · [RL-12 — distributional C51](../MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb) (recherche) | [Parcours 3 — GenAI complet](../MyIA.AI.Notebooks/QuantConnect/README.md) |
+
+Chaque objectif traverse les strates : on y entre par la strate la plus basse disponible et l'on continue dans la branche du référentiel — les parcours par matériel ci-dessus restent la porte d'entrée par prérequis et machine.
 
 :::
 

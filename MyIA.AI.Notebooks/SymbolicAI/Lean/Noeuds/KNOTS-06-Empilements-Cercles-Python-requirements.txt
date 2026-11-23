@@ -1,0 +1,9 @@
+# KNOTS-06 — empilements de cercles : dépendances Python
+# Install: pip install -r KNOTS-06-Empilements-Cercles-Python-requirements.txt
+#
+# Le carnet ne demande qu'une bibliothèque : la relaxation des rayons, le
+# layout et la carte de Schwarz-Christoffel (integrale de Simpson) sont
+# ecrits en stdlib (math, cmath) -- seul le trace des empilements passe par
+# matplotlib.
+
+matplotlib>=3.8

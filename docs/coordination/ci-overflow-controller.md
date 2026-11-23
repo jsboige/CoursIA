@@ -1,6 +1,6 @@
 # Controleur de debordement CI (phase B) — `CI_OVERFLOW_LOCAL`
 
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 Volet 1 de [#22937](https://github.com/jsboige/CoursIA/issues/22937) : la **phase B** de la repartition hebergee / local.
 
@@ -67,7 +67,8 @@ aussi dans la prose, et ranger son propre workflow dans la cohorte compterait un
 **statique** du parc comme charge rendue. Les lignes entierement commentaires sont
 retirees avant la recherche, pour la meme raison : un en-tete qui cite la forme exacte
 (`vars.CI_OVERFLOW_LOCAL`) ne fait pas du workflow un membre de la cohorte. Le job de
-ce workflow, dont le `runs-on` est statique sur le pool local, n'est donc jamais dans
+ce workflow, dont le `runs-on` est statique sur le pool des waiters
+(`[self-hosted, coursia-waiter]` depuis le 2026-11-23), n'est donc jamais dans
 la cohorte qu'il mesure -- verifie sur le depot : les workflows derives excluent le
 controleur lui-meme, qui cite la variable sans la lire.
 
@@ -520,8 +521,8 @@ nomme, jamais masque.
 ## Voir aussi
 
 - [#22921](https://github.com/jsboige/CoursIA/pull/22921) — phase A, la forme hybride des 25 workflows ;
-- `scripts/ci/check_self_hosted_runner_policy.py` — l'instrument qui enumere les formes de `runs-on` auditees, et l'allowlist fail-closed ou ce workflow doit figurer pour tourner sur le parc local ;
+- `scripts/ci/check_self_hosted_runner_policy.py` — l'instrument qui enumere les formes de `runs-on` auditees, et l'allowlist fail-closed ou ce workflow doit figurer pour tourner en self-hosted (pool des waiters) ;
 - `scripts/ci/check_scheduler_liveness.py` — le registre de cadence, ou le controleur est desormais inscrit : son extinction se mesure ;
 - `scripts/coordination/install_merge_ready_task.py` — la tache `CoursIA\merge_ready`, siege ou la bascule locale a vocation a tourner ;
 - `scripts/ci/check_runner_starvation.py` — l'organe de sante du parc, dont le controleur reutilise la mesure de file et l'inventaire des slots ;
-- [volet 5 — debit DNS vers api.github.com](https://github.com/jsboige/CoursIA/pull/22948) — l'autre moitie du cout de la CI. Renvoi vers la PR et non vers le fichier : le document `docs/coordination/dns-rate-measurement.md` est livre par cette PR encore ouverte, et un lien fichier casserait `check-links` sur toute branche ne la contenant pas.
+- [volet 5 — debit DNS vers api.github.com](https://github.com/jsboige/CoursIA/pull/22948) — l'autre moitie du cout de la CI. Renvoi vers la PR et non vers le fichier : le document `docs/transients/2026-10-31-dns-rate-measurement.md` est livre par cette PR encore ouverte, et un lien fichier casserait `check-links` sur toute branche ne la contenant pas.

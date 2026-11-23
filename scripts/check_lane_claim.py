@@ -5655,6 +5655,14 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     return verdict
 
 
+def _qualification_grain(payload: dict, my_lane: str,
+                         now: datetime | None = None) -> tuple[str, str] | None:
+    """Shim : la qualification du grain est portee par
+    `coordination.tapis_qualification_fil` (module dedie)."""
+    from coordination import tapis_qualification_fil  # import tardif : pas de cycle
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
+
+
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
@@ -5721,6 +5729,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             `my_lane` (#25443) pour exclure du plafond le propre marqueur de
             la lane qui interroge.
     """
+    # La QUALIFICATION, cote CONSOMMATEUR : un grain ecarte par la
+    # qualification n'est ni reclame ni edite. La decision vient du meme
+    # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
+    # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
+    code_motif = _qualification_grain(payload, my_lane, now)
+    if code_motif:
+        code, motif = code_motif
+        print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
+              f"ni reclame, ni edite (la qualification est prealable a "
+              f"l'action).", file=sys.stderr)
+        return 1
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
     # repo, in which case the empty-scope witness degrades to its pre-#10958

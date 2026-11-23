@@ -1,0 +1,129 @@
+# Conformite differentielle de Argumentation-01-Toulmin-Model (portage Rust, issue #27927, spec Rust std lot).
+# Les deux carnets ont exactement la meme structure 19 cellules (meme indices) :
+# les cotes se correspondent par index. Cote Rust = evcxr + std seul (aucun :dep).
+# Le cote C# n'existe pas pour cette serie (ArgumentAnalysis est Python + Rust seulement,
+# motif : pas de jumeau C# dans le depot).
+# Egalite stricte du texte partout (spec : aucune sortie flottante, aucun chronometre) ;
+# les 7 sorties commitees sont identiques octet par octet aux temoins de la spec.
+- name: "Argumentation-01 Toulmin Model"
+  family: "SymbolicAI/ArgumentAnalysis (Argumentation)"
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Rust.ipynb
+  measures:
+    - id: c3_complet
+      description: "Booleen de completude de l'argument X (py_bool True des deux cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Complet \\? (\\w+) ; pieces manquantes"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Complet \\? (\\w+) ; pieces manquantes"
+          transform: text
+    - id: c5_manquantes
+      description: "Pieces essentielles manquantes de l'argument leak (['warrant'])"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "manquante\\(s\\) = (\\['\\w+'\\])"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "manquante\\(s\\) = (\\['\\w+'\\])"
+          transform: text
+    - id: c7_attacks
+      description: "Relation d'attaque du debat A/B (cycle mutuel, tri lexicographique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "attacks=(\\[\\('A', 'B'\\), \\('B', 'A'\\)\\])"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "attacks=(\\[\\('A', 'B'\\), \\('B', 'A'\\)\\])"
+          transform: text
+    - id: c7_grounded_vide
+      description: "Extension grounded du debat a 2 : standoff vide, litteral {} (vide)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Extension grounded : (\\{\\} \\(vide\\))"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "Extension grounded : (\\{\\} \\(vide\\))"
+          transform: text
+    - id: c9_attacks
+      description: "Relation d'attaque du debat a 3 (C arbitre, BTreeSet itere trie = sorted Python)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "attacks=(\\[\\('A', 'B'\\), \\('B', 'A'\\), \\('C', 'B'\\)\\])"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "attacks=(\\[\\('A', 'B'\\), \\('B', 'A'\\), \\('C', 'B'\\)\\])"
+          transform: text
+    - id: c9_grounded
+      description: "Extension grounded du debat a 3 : ['A', 'C'] (le verdict a bascule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "Extension grounded : (\\['A', 'C'\\])"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "Extension grounded : (\\['A', 'C'\\])"
+          transform: text
+    - id: exo1_stub
+      description: "Ligne du stub C.1 exercice 1 (litteral, avec point final)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "Exercice 1 a completer\\."
+          transform: text
+        rust:
+          cell: 12
+          pattern: "Exercice 1 a completer\\."
+          transform: text
+    - id: exo2_stub
+      description: "Ligne du stub C.1 exercice 2 (litteral, avec point final)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Exercice 2 a completer\\."
+          transform: text
+        rust:
+          cell: 14
+          pattern: "Exercice 2 a completer\\."
+          transform: text
+    - id: exo3_stub
+      description: "Ligne du stub C.1 exercice 3 (litteral, avec point final)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Exercice 3 a completer\\."
+          transform: text
+        rust:
+          cell: 16
+          pattern: "Exercice 3 a completer\\."
+          transform: text

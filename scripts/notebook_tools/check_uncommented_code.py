@@ -52,7 +52,12 @@ du noyau, lue dans ``metadata.kernelspec.language`` :
     masquage, l'URL ``"https://..."`` d'une cellule C# compterait comme un
     commentaire et blanchirait la cellule (le piège miroir du ``#`` dans une
     chaine) ;
-  * **Lean** : ``--`` et ``/- -/``, chaines masquees.
+  * **Lean** : ``--`` et ``/- -/``, chaines masquees ;
+  * **Rust** (noyau evcxr, ``language: rust``) : ``//`` et ``/* */``, chaines
+    brutes, echappees et caracteres masques. Sans cette famille, le noyau
+    Rust tombait sur le tokenizer Python, qui lit ``//`` comme un operateur :
+    une cellule commentee ressortait a 0 commentaire (mesure du 2026-11-21,
+    ``Sudoku-10-CP-SAT-Rust``, cellule 11 : 4 ``//``, 0 compte).
 
 Bornage
 -------
@@ -152,6 +157,16 @@ _CS_STRING = re.compile(r'@"(?:[^"]|"")*"|\$?"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])
 #: Chaines Lean a masquer avant de chercher ``--``.
 _LEAN_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
 
+#: Chaines Rust a masquer avant de chercher ``//`` : brutes ``r#"..."#`` (le
+#: nombre de ``#`` ferme la chaine), echappees ``"..."`` et ``b"..."``, et
+#: caracteres ``'x'`` / ``'\n'``. Une duree de vie (``'a``) n'a pas de quote
+#: fermante apres un seul caractere : elle n'est pas masquee.
+_RUST_STRING = re.compile(
+    r'(?<![A-Za-z0-9_])b?r(#*)"[\s\S]*?"\1'
+    r'|b?"(?:\\.|[^"\\])*"'
+    r"|b?'(?:\\[^'\n]{1,10}|[^'\\\n])'"
+)
+
 
 def _line_kind(line: str) -> str:
     """'blank' | 'comment' | 'magic' | 'code' pour une ligne brute."""
@@ -195,7 +210,7 @@ def _token_facts(source: str) -> tuple[int, bool] | None:
 
 
 def _family(language: str) -> str:
-    """'python' | 'csharp' | 'lean' depuis le ``language`` du kernelspec.
+    """'python' | 'csharp' | 'lean' | 'rust' depuis le ``language`` du kernelspec.
 
     Un noyau inconnu (``?``, ``ict-py313``, ``py310-gpu``) tombe sur Python :
     c'est le defaut du depot, et se tromper dans ce sens signale une cellule
@@ -206,6 +221,8 @@ def _family(language: str) -> str:
         return "csharp"
     if key.startswith("lean"):
         return "lean"
+    if key == "rust":
+        return "rust"
     return "python"
 
 
@@ -218,6 +235,9 @@ def _marker_facts(source: str, family: str) -> tuple[int, bool]:
     """
     if family == "csharp":
         masked = _CS_STRING.sub('""', source)
+        line_marker, block = "//", "/*"
+    elif family == "rust":
+        masked = _RUST_STRING.sub('""', source)
         line_marker, block = "//", "/*"
     else:  # lean
         masked = _LEAN_STRING.sub('""', source)
