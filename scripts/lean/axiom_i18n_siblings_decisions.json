@@ -1,6 +1,6 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-21T11:06:22Z",
+  "generated-at": "2026-11-23T02:40:14Z",
   "generated-by": "myia-po-2024:CoursIA",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
@@ -138,8 +138,8 @@
       "decision": "false",
       "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
       "mode": "EXPLICIT",
-      "i18n-modules": 25,
-      "i18n-declarations": 451
+      "i18n-modules": 17,
+      "i18n-declarations": 426
     },
     {
       "lake": "mathlibexamples",
@@ -291,7 +291,7 @@
       "reason": "opt-in sur : la surface `_en` ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
       "mode": "WILDCARD",
       "i18n-modules": 24,
-      "i18n-declarations": 810
+      "i18n-declarations": 813
     },
     {
       "lake": "linear",
