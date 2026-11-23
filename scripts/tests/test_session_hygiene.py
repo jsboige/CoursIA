@@ -458,3 +458,68 @@ def test_main_hostage_principal_detenteur_vu_du_principal_est_vert(tmp_path):
     checks = session_hygiene.check_main_hostage(repo)
     c = next(chk for chk in checks if chk.name == "main-otage")
     assert c.level == session_hygiene.GREEN, f"{c.level}: {c.detail}"
+
+
+# ---------------------------------------------------------------------------
+# #28005 / PR #28006 : le battement de coeur d'une passe ne doit pas rendre
+# une passe BLOQUEE invisible. La ligne `=== passe en cours (elapsed N s) ===`
+# repare l'AGE du journal ; c'est son AGE qu'il faut lire.
+# ---------------------------------------------------------------------------
+
+
+def _battement(elapsed_s: int) -> str:
+    """Ligne de battement de coeur, telle que l'ecrit le lanceur (#28005)."""
+    return f"=== passe en cours (elapsed {elapsed_s} s) ==="
+
+
+def test_battement_de_coeur_a_25000_s_est_rouge():
+    """Une passe qui bat depuis 25000 s (~6 h 56) est FIGEE : ROUGE.
+
+    C'est le point leve par la reserve : avant, la ligne de battement ne
+    portait aucun vocabulaire d'echec et sortait GREEN -- une passe figee
+    devenait invisible.
+    """
+    level, line, _ = session_hygiene._journal_verdict(
+        ["=== run end rc=0 ===", _battement(25000)]
+    )
+    assert level == session_hygiene.RED, f"{level}: {line}"
+
+
+def test_battement_de_coeur_repete_ne_passe_pas_par_la_repetition():
+    """Meme repete, le verdict vient de l'AGE de la passe, pas du compte de lignes.
+
+    Le seuil de repetition (`_CONSECUTIVE_FAILURES`) ne doit pas transformer
+    un battement en AMBER « meme echec repete » : la ligne est identique par
+    construction, elle ne prouve aucun echec.
+    """
+    lines = [_battement(25000)] * 5
+    level, line, same = session_hygiene._journal_verdict(lines)
+    assert level == session_hygiene.RED, f"{level}: {line}"
+    assert same == 5
+
+
+def test_battement_de_coeur_au_dela_de_2_h_est_amber():
+    """Au-dela de 2 h, la passe est LONGUE : AMBER (pas encore figee)."""
+    level, line, _ = session_hygiene._journal_verdict([_battement(7200)])
+    assert level == session_hygiene.AMBER, f"{level}: {line}"
+
+
+def test_battement_de_coeur_frais_est_vert():
+    """Un battement recent ne fait pas alerter : la passe est vivante."""
+    level, line, _ = session_hygiene._journal_verdict([_battement(60)])
+    assert level == session_hygiene.GREEN, f"{level}: {line}"
+
+
+def test_ligne_sans_battement_inaltere():
+    """Une ligne d'echec ordinaire garde son verdict d'avant le correctif."""
+    level, line, _ = session_hygiene._journal_verdict(["impossible de demarrer -- X"])
+    assert level == session_hygiene.RED, f"{level}: {line}"
+    level, line, _ = session_hygiene._journal_verdict(["=== run end rc=0 ==="])
+    assert level == session_hygiene.GREEN, f"{level}: {line}"
+
+
+def test_verdict_de_passe_figee_remonte_dans_le_message():
+    """Le message dit « passe figee » et donne l'age -- pas « le dernier tir a echoue »."""
+    level, line, _ = session_hygiene._journal_verdict([_battement(25000)])
+    assert level == session_hygiene.RED
+    assert session_hygiene._pass_elapsed_s(line) == 25000

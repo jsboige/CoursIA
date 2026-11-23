@@ -1,0 +1,184 @@
+- name: "Sudoku-05 PSO"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Rust.ipynb
+  measures:
+    - id: solution_grid
+      description: >-
+        Grille resolue du puzzle de reference (81 chiffres, ordre de lecture).
+        Le Sudoku bien pose a une solution unique : la grille est donc comparable
+        a la troisieme personne, quel que soit le generateur aleatoire de chaque
+        cote (MT19937 cote Python et Rust, System.Random cote C#).
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "Solution trouvee en [^\\n]*:\\n(.*?)Solution valide"
+          transform: digits
+        csharp:
+          cell: 14
+          pattern: "Solution trouvee en [^\\n]*:\\n(.*?)Solution valide"
+          transform: digits
+        rust:
+          cell: 21
+          pattern: "Solution trouvee en [^\\n]*:\\n(.*?)Solution valide"
+          transform: digits
+    - id: resolution_ok
+      description: >-
+        Le puzzle de reference est declare resolu par le solveur, sur les trois
+        cotes (Python `True`, C# `True`, Rust `true` : comparaison insensible a
+        la casse).
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 23
+          pattern: "Solution valide: (\\w+)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "Solution valide: (\\w+)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "Solution valide: (\\w+)"
+          transform: text
+    - id: initial_best_error_seed0
+      description: >-
+        Meilleure erreur de l'essaim initial (200 organismes) au premier
+        redemarrage du test rapide — valeur 23 cote Python et Rust. C'est la
+        signature du generateur : meme graine MT19937, meme suite de grilles
+        aleatoires, donc meme erreur initiale.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "Epoch 0, Best error: (\\d+)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "Epoch 0, Best error: (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# tire ses grilles avec System.Random : sa cellule 14
+            publie 22 pour la meme cellule experimentale. La valeur publiee est
+            nommee ici pour qu'aucune mesure ne soit dissimulee, mais elle
+            mesure une AUTRE trajectoire (pas MT19937 graine 0) : la grandeur
+            declaree n'existe pas de ce cote. Declare ABSENT, pas mesure. La
+            grille resolue, elle, reste comparee sur les trois cotes.
+    - id: parameters_conservative_initial_error
+      description: >-
+        Erreur initiale de la configuration `Conservateur` (100 organismes,
+        premier redemarrage) du balayage de parametres — 23 cote Python et Rust.
+        Verifie que l'initialisation consomme les nombres du generateur dans
+        l'ordre du jumeau : 100 organismes forment un prefixe de 200, d'ou la
+        meme meilleure erreur.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "Tentative 1/5\\s*Epoch 0, Best error: (\\d+)"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "Tentative 1/5\\s*Epoch 0, Best error: (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            La cellule 22 du jumeau C# publie `Conservatif` avec une erreur
+            initiale de 0 : son solveur et son jeu d'instances different, la
+            valeur n'est pas comparable a la trajectoire MT19937 des cotes
+            Python et Rust. Declare ABSENT, pas mesure.
+    - id: parameters_aggressive_initial_error
+      description: >-
+        Erreur initiale de la configuration `Agressif` (300 organismes) du
+        balayage — 21 cote Python et Rust, contre 23 pour 100 et 200
+        organismes : le tirage va plus loin et trouve une grille meilleure des
+        l'initialisation.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "Tentative 1/20\\s*Epoch 0, Best error: (\\d+)"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "Tentative 1/20\\s*Epoch 0, Best error: (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `parameters_conservative_initial_error` : la
+            configuration `Agressif` du jumeau C# publie une erreur initiale de
+            0, sur un autre solveur et un autre jeu d'instances. Declare ABSENT,
+            pas mesure.
+    - id: benchmark_puzzle1_empty_cells
+      description: >-
+        Nombre de cases vides du premier puzzle du benchmark (36) — entree du
+        probleme, independante du langage et du generateur.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "Puzzle 1: OK, (\\d+) vides"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "Puzzle 1: OK, (\\d+) vides"
+          transform: int
+        csharp:
+          absent: >-
+            Le benchmark du jumeau C# (cellule 19) porte sur cinq puzzles avec
+            System.Random et ne publie pas le compte de cases vides : la
+            grandeur n'y est pas extraite.
+    - id: benchmark_puzzle2_empty_cells
+      description: >-
+        Nombre de cases vides du deuxieme puzzle du benchmark (49) — entree du
+        probleme, independante du generateur.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "Puzzle 2: OK, (\\d+) vides"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "Puzzle 2: OK, (\\d+) vides"
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `benchmark_puzzle1_empty_cells` : autre jeu de
+            puzzles, autre format de sortie (millisecondes, pas de compte de
+            cases vides).
+    - id: benchmark_puzzle2_epoch1000_error
+      description: >-
+        Meilleure erreur atteinte au millieme epoque sur le deuxieme puzzle du
+        benchmark (4 cote Python et Rust). Mesure la trajectoire de recherche :
+        meme graine MT19937, meme valeur a la meme epoque, avant resolution dans
+        les deux cas.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "Epoch 1000, Best error: (\\d+)"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "Epoch 1000, Best error: (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le benchmark C# (cellule 19) publie `Epoch 1000, Best error: 2`
+            pour son puzzle 2, mais sur cinq puzzles ordonnes autrement et avec
+            System.Random : la valeur mesure une autre instance sous une autre
+            trajectoire. Declare ABSENT, pas mesure (la valeur publiee est
+            nommee pour qu'aucune mesure ne soit dissimulee).

@@ -31,6 +31,9 @@ Usage : visit_coverage.py [--json] [--dashboard-line] [--lecture <dossier>]
     (sorties : 0 tout est couvert ; 1 invariant viole ou issue d'urne / de
      revue sans visite au-dela du tour ; 2 lecture incomplete sans secours,
      jamais un faux 0)
+
+Les listes de numeros sont COMPLETES en `--json` ; la borne `LIMITE_LISTE`
+(20) ne vaut que pour l'affichage texte, ou la troncature se dit (#27725).
 """
 from __future__ import annotations
 
@@ -64,7 +67,8 @@ ROLE_PAR_ECART = {
     "PLAFOND": "attente",
     "ORIGAMI": "attente", "HORSFLOTTE": "hors-flotte",
 }
-LIMITE_LISTE = 20  # numeros cites par role ; les comptes, eux, restent entiers
+LIMITE_LISTE = 20  # numeros cites par role dans le TEXTE ; le JSON en rend la
+# liste complete (borne d'AFFICHAGE, pas de donnee -- #27725)
 _PR_RE = re.compile(r"#(\d+)")
 _URGENCE = frozenset({"urne", "revue"})  # roles que le cycle doit servir lui-meme
 
@@ -148,8 +152,26 @@ def _cle_creation(e: Etat) -> tuple[datetime, int]:
 
 
 def _bornes(etats_: list[Etat]) -> list[int]:
-    """Les numeros bornes a LIMITE_LISTE, tries par anciennete de creation."""
-    return [e.numero for e in sorted(etats_, key=_cle_creation)[:LIMITE_LISTE]]
+    """Les numeros du groupe, tries par anciennete de creation -- la liste
+    COMPLETE (#27725) : la borne ne vaut que pour l'affichage texte."""
+    return [e.numero for e in sorted(etats_, key=_cle_creation)]
+
+
+def _tronque(numeros: list[int], limite: int = LIMITE_LISTE) -> tuple[list[int], int]:
+    """La part affichee et le nombre de numeros caches par la borne."""
+    return numeros[:limite], max(0, len(numeros) - limite)
+
+
+def _liste_texte(numeros: list[int], limite: int = LIMITE_LISTE) -> str:
+    """`#1, #2, ... ... et 5 autres` : la troncature se voit au lieu de
+    disparaitre (#27725)."""
+    if not numeros:
+        return "aucune"
+    visibles, reste = _tronque(numeros, limite)
+    txt = ", ".join(f"#{n}" for n in visibles)
+    if reste:
+        txt += f" ... et {reste} autre" + ("s" if reste > 1 else "")
+    return txt
 
 
 def invariant(etats_: list[Etat], maintenant: datetime) -> dict:
@@ -219,7 +241,9 @@ def bilan(etats_: list[Etat], lecture: gh_bulk.Lecture, maintenant: datetime) ->
     """Le bilan par role, l'invariant et les urgences.
 
     Par role : nombre d'issues, sans visite du tour, visitees non avancees, et
-    les numeros bornes (anciennete de creation). `hors_marathon`,
+    les numeros (anciennete de creation). Les listes du JSON sont
+    COMPLETES (#27725) : la borne `LIMITE_LISTE` ne vaut que pour l'affichage
+    texte, ou la troncature se dit (« ... et N autres »). `hors_marathon`,
     `sans_visite` et `visitees_non_avancees` suivent la mesure du 20/11 (443
     issues et 87 a zero visite hors marathons, dont 59 d'urne et 12 de revue) :
     tous les marathons sont hors agregats. `urgences` : issues d'urne ou de
@@ -269,7 +293,7 @@ def bilan(etats_: list[Etat], lecture: gh_bulk.Lecture, maintenant: datetime) ->
         par_role[r]["numeros_sans_visite"] = _bornes(groupes[r]["zero"])
         par_role[r]["numeros_non_avancees"] = _bornes(groupes[r]["non_avancees"])
     revue_prs = []
-    for e in sorted(revues, key=_cle_creation)[:LIMITE_LISTE]:
+    for e in sorted(revues, key=_cle_creation):
         pr = pr_de_revue(e)
         if pr is not None:
             revue_prs.append({"numero": e.numero, "pr": pr})
@@ -287,7 +311,7 @@ def bilan(etats_: list[Etat], lecture: gh_bulk.Lecture, maintenant: datetime) ->
         "redecider_au_service": {"nombre": len(redecider), "numeros": _bornes(redecider)},
         "revue_prs": revue_prs,
         "autres": [{"numero": e.numero, "motif": e.motif}
-                   for e in sorted(autres, key=_cle_creation)[:LIMITE_LISTE]],
+                   for e in sorted(autres, key=_cle_creation)],
     }
 
 
@@ -331,37 +355,38 @@ def _texte(r: dict, source: str) -> str:
         d = r["roles"][nom]
         if not d["issues"]:
             continue
-        zero = ", ".join(f"#{n}" for n in d["numeros_sans_visite"]) or "aucune"
-        non = ", ".join(f"#{n}" for n in d["numeros_non_avancees"]) or "aucune"
+        zero = _liste_texte(d["numeros_sans_visite"])
+        non = _liste_texte(d["numeros_non_avancees"])
         lignes.append(f"  {nom:10s} {d['issues']:4d} issues, {d['sans_visite']:3d} "
                       f"a 0 visite, {d['visitees_non_avancees']:3d} non avancees "
                       f"-- a 0 : {zero} ; non avancees : {non}")
     lignes.append("Invariant du 16/11 (pool servable, hors claim propre et "
                   f"marathon) : {'VIOLE' if inv['viole'] else 'respecte'}")
     if inv["viole"]:
-        lignes.append("  a 0 visite : "
-                      + (", ".join(f"#{n}" for n in inv["a_zero"][:LIMITE_LISTE]) or "aucune"))
-        lignes.append("  a 2 visites ou plus : "
-                      + (", ".join(f"#{n}" for n in inv["a_deux"][:LIMITE_LISTE]) or "aucune"))
+        lignes.append("  a 0 visite : " + _liste_texte(inv["a_zero"]))
+        lignes.append("  a 2 visites ou plus : " + _liste_texte(inv["a_deux"]))
     u = r["urgences"]
-    suite = f" -- {', '.join(f'#{n}' for n in u['numeros'])}" if u["nombre"] else ""
+    suite = f" -- {_liste_texte(u['numeros'])}" if u["nombre"] else ""
     lignes.append(f"Urgences (urne / revue sans visite, creee il y a plus de "
                   f"{FENETRE_J} j) : {u['nombre']}{suite}")
     red = r.get("redecider_au_service") or {"nombre": 0, "numeros": []}
     if red["nombre"]:
         lignes.append(f"A re-decider au service (fil tronque, l'ecart peut changer "
                       f"sur le fil complet) : {red['nombre']} -- "
-                      + ", ".join(f"#{n}" for n in red["numeros"]))
+                      + _liste_texte(red["numeros"]))
     att = r.get("atteignable")
     if att:
-        eq = ", ".join(f"#{n}" for n in att["equite"]) or "aucune"
+        eq = _liste_texte(att["equite"])
         lignes.append(f"Atteignabilite du tapis : {att['tours']} tour(s) pour servir "
                       f"les {att['jamais_visitees']} issues jamais visitees "
                       f"({att['servies']} servies, {len(att['restantes'])} restantes) ; "
                       f"equite (une issue deja visitee servie pendant qu'une autre "
                       f"attend) : {eq}")
-    for a in r["autres"]:
+    for a in r["autres"][:LIMITE_LISTE]:
         lignes.append(f"Autre role (motif non mappe) : #{a['numero']} -- {a['motif']}")
+    if len(r["autres"]) > LIMITE_LISTE:
+        lignes.append(f"Autre role (motif non mappe) : ... et "
+                      f"{len(r['autres']) - LIMITE_LISTE} autre(s)")
     return "\n".join(lignes)
 
 
