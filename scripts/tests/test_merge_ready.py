@@ -1273,6 +1273,193 @@ def test_max_arrete_le_run(tmp_path):
     assert [row["pr"] for row in lines] == [101]
 
 
+# --- borne de duree de la passe (#28009) ------------------------------------------
+
+
+def _fake_clock(step_s: float):
+    """Horloge factice : chaque lecture avance de ``step_s`` secondes.
+
+    La borne de duree se lit sur ``mr._clock`` ; un test doit pouvoir la
+    faire avancer sans attendre 45 minutes.
+    """
+    state = {"t": 0.0}
+
+    def clock() -> float:
+        state["t"] += step_s
+        return state["t"]
+
+    return clock
+
+
+def _payload(capsys) -> dict:
+    """Payload JSON du run (dernière ligne non vide de stdout)."""
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+    return json.loads(lines[-1])
+
+
+def test_le_budget_de_passe_arrete_la_passe_et_journalise_le_reste(
+    tmp_path, monkeypatch, capsys
+):
+    """Budget de duree epuise : arret PROPRE, et les PRs non evaluees sont
+    journalisees avec un motif nomme -- jamais une PR disparue du bilan.
+
+    L'horloge factice avance de 100 s par lecture : le budget de 250 s est
+    epuise a la TROISIEME lecture de la boucle, donc apres deux PRs
+    evaluees. La troisieme PR n'est jamais atteinte.
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "250", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    # Le motif d'arret distingue la DUREE du nombre de merges.
+    assert payload["stopped_reason"] == mr.PASS_BUDGET_REASON
+    # Les deux PRs atteintes sont evaluees normalement ; la troisieme est
+    # journalisee avec le meme motif, et un verdict qui dit qu'elle n'a pas
+    # ete evaluee (elle ne porte aucun cout d'evaluation).
+    assert [row["pr"] for row in lines] == [101, 102, 103]
+    assert lines[-1]["verdict"] == mr.VERDICT_NOT_EVALUATED
+    assert lines[-1]["reason"] == mr.PASS_BUDGET_REASON
+    # Le bilan separe les deux comptes : « evaluee(s) » reste exact, et les
+    # PRs non evaluees sont nommees une par une.
+    assert len(payload["results"]) == 2
+    assert payload["not_evaluated"] == [
+        {"pr": 103, "reason": mr.PASS_BUDGET_REASON}
+    ]
+    assert not _evaluated(runner, 103)
+
+
+def test_une_passe_sous_budget_se_comporte_comme_avant(
+    tmp_path, monkeypatch, capsys
+):
+    """Controle negatif : sous budget, rien ne change (aucune PR non
+    evaluee, aucun arret)."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(1.0))
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "600", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    assert payload["stopped_reason"] is None
+    assert payload["not_evaluated"] == []
+    assert [row["pr"] for row in lines] == [101, 102, 103]
+    assert all(row["verdict"] != mr.VERDICT_NOT_EVALUATED for row in lines)
+    assert len(payload["results"]) == 3
+
+
+def test_un_budget_nul_desactive_la_borne(tmp_path, monkeypatch, capsys):
+    """``--pass-budget-s 0`` = pas de borne (le comportement d'avant)."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(1000.0))
+    runner = ScriptedRunner(prs=(101, 102))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "0", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    assert payload["stopped_reason"] is None
+    assert payload["not_evaluated"] == []
+    assert [row["pr"] for row in lines] == [101, 102]
+
+
+def test_un_budget_negatif_est_refuse():
+    with pytest.raises(SystemExit):
+        mr.run(["--pass-budget-s", "-1"], runner=ScriptedRunner())
+
+
+# --- curseur de reprise (revue du 22/11) ----------------------------------------
+
+
+def _passe_evaluatee(tmp_path, prs, extra=("--pass-budget-s", "250", "--json")):
+    """Une passe, et la liste des PRs **evaluees** par cette passe.
+
+    Les lignes `unevaluated` sont les PRs que la passe n'a PAS regardees :
+    elles ne comptent pas comme evaluees. Le journal **cumule** les passes :
+    on ne lit que les lignes de la passe courante.
+    """
+    journal = tmp_path / "journal.jsonl"
+    avant = (len(journal.read_text(encoding="utf-8").splitlines())
+             if journal.is_file() else 0)
+    runner = ScriptedRunner(prs=tuple(prs))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=extra)
+    assert rc == 0
+    return [row["pr"] for row in lines[avant:]
+            if row["verdict"] != mr.VERDICT_NOT_EVALUATED]
+
+
+def test_le_curseur_de_reprise_continue_apres_la_derniere_pr_evaluee(
+    tmp_path, monkeypatch
+):
+    """Une passee arretee sur le budget ne se rejoue pas au meme endroit.
+
+    La premiere passe s'arrete a #102 (budget de 250 s, horloge de 100 s par
+    lecture) ; la seconde doit **continuer** a #103 et non revenir a #101.
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    prs = (101, 102, 103, 104)
+    premiere = _passe_evaluatee(tmp_path, prs)
+    assert premiere == [101, 102], "la premiere passe s'arrete apres deux PRs"
+    assert mr.read_pass_cursor(tmp_path / "journal.jsonl") == 102
+    seconde = _passe_evaluatee(tmp_path, prs)
+    assert seconde == [103, 104], "la seconde passe continue apres le curseur"
+
+
+def test_n_passes_coupees_evaluent_toutes_les_prs_sans_sauter_deux_fois(
+    tmp_path, monkeypatch
+):
+    """Contrat de la revue du 22/11 : la borne doit garanter que chaque PR
+    ouverte est evaluee en un nombre **borne** de passes.
+
+    Une horloge qui coupe chaque passe apres deux PRs : six passes successives
+    evaluent les douze PRs, et aucune n'est sautee deux fois de suite.
+
+    Sans le curseur de reprise, chaque passe repart de la file entiere et
+    s'arrete au meme endroit : les PRs du haut ne sont jamais vues (c'est la
+    famine de queue mesuree par le coordinateur sur le journal du 22/11).
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    prs = tuple(range(101, 113))
+    passes = []
+    for _ in range(6):
+        passes.append(_passe_evaluatee(tmp_path, prs))
+    vues = [pr for p in passes for pr in p]
+    assert sorted(vues) == list(prs), "les douze PRs doivent etre evaluees"
+    assert len(vues) == len(set(vues)), "aucune PR ne doit etre evaluee deux fois"
+    for avant, apres in zip(passes, passes[1:]):
+        assert not (set(avant) & set(apres)), \
+            "aucune PR ne doit etre sautee deux fois de suite"
+
+
+def test_une_passe_qui_parcourt_la_file_remet_le_curseur_a_zero(
+    tmp_path, monkeypatch
+):
+    """Une passe qui a vu TOUTE la file n'a plus de curseur a rendre : la
+    suivante repart du debut de la file."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    journal = tmp_path / "journal.jsonl"
+    _passe_evaluatee(tmp_path, (101, 102, 103))
+    assert mr.read_pass_cursor(journal) == 102
+    # Une passe sous budget (pas d'arret) parcourt toute la file.
+    _passe_evaluatee(tmp_path, (101, 102, 103), extra=("--pass-budget-s", "600",
+                                                        "--json"))
+    assert mr.read_pass_cursor(journal) is None
+
+
+def test_un_curseur_illisible_vaut_absent_il_ne_bloque_pas_la_passe(
+    tmp_path, monkeypatch
+):
+    """Fail-OPEN : un curseur corrompu ne fait pas echouer la passe, il vaut
+    « depuis le debut »."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    journal = tmp_path / "journal.jsonl"
+    mr.write_pass_cursor(journal, 102)
+    (tmp_path / mr.PASS_CURSOR_FILENAME).write_text("{pas du json", encoding="utf-8")
+    assert mr.read_pass_cursor(journal) is None
+    assert _passe_evaluatee(tmp_path, (101, 102, 103)) == [101, 102]
+
+
 def test_argv_organes_relatif_au_depot(tmp_path):
     """#26102 : l'argv journalise ne depend pas du chemin du worktree.
 
