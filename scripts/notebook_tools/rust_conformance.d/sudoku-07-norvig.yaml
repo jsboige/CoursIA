@@ -181,7 +181,7 @@
         csharp:
           absent: "Le carnet C# n'a pas de cellule de code à l'index 24 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
     - id: c27_text
-      description: "Sortie de la cellule 27, texte identique au jumeau Python"
+      description: "Sortie de la cellule 27 (suite de bancs Easy51/hardest/top95) — banc non porté par le jumeau Rust"
       tolerance: 0
       reference: python
       sides:
@@ -190,18 +190,31 @@
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         rust:
+          absent: "Le portage Rust ne porte pas le banc Easy51/hardest/top95 (bloc python 25-27) : son carnet passe de la cellule 24 directement au singletons caches (rust 27 = python 30). Écart de périmètre du portage, mesuré au désalignement de la spec (#27912) ; les cellules réalignées sont comparées par c30_text/c32_text/c34_text."
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 27 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python."
+    - id: c30_text
+      description: "Sortie de la cellule 30 du jumeau Python (cellule 27 côté Rust, grilles réalignées après le banc non porté), texte identique"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
           cell: 27
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         csharp:
-          absent: "Le carnet C# n'a pas de cellule de code à l'index 27 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
-    - id: c29_text
-      description: "Sortie de la cellule 29, texte identique au jumeau Python"
+          absent: "Le carnet C# n'a pas de cellule de code alignée sur la cellule Python 30 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c32_text
+      description: "Sortie de la cellule 32 du jumeau Python (cellule 29 côté Rust), texte identique"
       tolerance: 0
       reference: python
       sides:
         python:
-          cell: 29
+          cell: 32
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         rust:
@@ -209,14 +222,14 @@
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         csharp:
-          absent: "Le carnet C# n'a pas de cellule de code à l'index 29 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
-    - id: c31_text
-      description: "Sortie de la cellule 31, texte identique au jumeau Python"
+          absent: "Le carnet C# n'a pas de cellule de code alignée sur la cellule Python 32 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c34_text
+      description: "Sortie de la cellule 34 du jumeau Python (cellule 31 côté Rust), texte identique"
       tolerance: 0
       reference: python
       sides:
         python:
-          cell: 31
+          cell: 34
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         rust:
@@ -224,4 +237,4 @@
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         csharp:
-          absent: "Le carnet C# n'a pas de cellule de code à l'index 31 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+          absent: "Le carnet C# n'a pas de cellule de code alignée sur la cellule Python 34 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."

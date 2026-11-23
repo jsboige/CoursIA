@@ -460,6 +460,28 @@ CONTEXTUAL_PAIRS = {
     "parallelisme": "parallélisme",
     "reduit": "réduit",
     "booleennes": "booléennes",
+    # #16638, tranche Search/Part1-Foundations (quatrieme fournee, 22/11) :
+    # anglicismes -tion/-ence et cognats du residu mesure (145 occurrences
+    # markdown). Ils ne sont PAS des mots anglais valides au sens strict pour
+    # certains (equilibre, serie), mais ils traversent la prose EN et les
+    # noms propres assez souvent pour exiger la preuve de contexte FR
+    # (cellule : >= 2 marqueurs FR distincts, #21277). Cure contextuelle
+    # seulement -- jamais globale.
+    "interpretation": "interprétation",
+    "interpretations": "interprétations",
+    "verification": "vérification",
+    "verifications": "vérifications",
+    "resolution": "résolution",
+    "generations": "générations",
+    "temperature": "température",
+    "temperatures": "températures",
+    "equilibre": "équilibre",
+    "equilibres": "équilibres",
+    "unite": "unité",
+    "unites": "unités",
+    "serie": "série",
+    "region": "région",
+    "regions": "régions",
 }
 
 
