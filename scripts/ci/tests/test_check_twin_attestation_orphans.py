@@ -8,6 +8,9 @@ La garde doit :
   base (etat anterieur legitime) ;
 - **rougir** une attestation qui cite un blob qui n'existe ni sur la base ni a
   la tete : c'est l'orphelin qui rougeira `main` apres le squash ;
+- **rougir** une attestation prise a la TETE de la branche quand `main` bouge
+  ensuite sur le meme carnet : le squash ecrira un troisieme blob (variante
+  mesuree sur #28094, rejoue le 23/11) ;
 - **ne jamais examiner** une attestation deja presente sur la base (heritage
   herite, pas un motif de refus) ;
 - **rendre un incident** (rc 2), jamais un verdict, quand l'instrument ne peut
@@ -184,3 +187,43 @@ def test_une_attestation_de_la_base_n_est_jamais_examinee(tmp_path):
 def test_base_introuvable_rend_un_incident(tmp_path):
     repo = _repo(tmp_path)
     assert _run(repo, base="ref-inexistante") == 2
+
+
+def test_attestation_prise_a_la_tete_que_main_bouge_avant_le_squash_rougit(tmp_path):
+    """La variante du 23/11 : attestation a la TETE de la branche, `main` bouge
+    ensuite sur le meme carnet -- le squash ecrira un TROISIEME blob.
+
+    Instance mesuree (#28094) : rejeu de la garde sur la tete de la PR
+    (`5f6191fd8492`), avec la base = `main` juste avant son squash
+    (`7f8ba531f481`) -> **3 refus bloquants** (`csharp_sha` ORPHAN) sur
+    `csp-2-consistency`, `csp-6-hybridization` et `csp-8-temporal` : exactement
+    les paires qui ont rouge sur `main` le 23/11, re-scellees par #28188.
+
+    Le cas ne se voyait pas sur la branche : le test de branche est vert (le
+    blob atteste EST celui de la tete) et la porte n'existait pas encore
+    (#27969 ouvert). Le carnet porte ici six lignes pour que les deux cotes
+    modifient une ligne LOINTAINTE l'une de l'autre : la fusion est propre et
+    ecrit bien un troisieme blob, ni celui de la tete ni celui de la base.
+    """
+    base = ('{"cells": []}\n{"a": 1}\n{"b": 1}\n'
+            '{"c": 1}\n{"d": 1}\n{"e": 1}\n')
+    repo = _repo(tmp_path)
+    _write(repo / PY_NOTEBOOK, base)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "carnet a six lignes")
+    repo = _branche(repo)
+    # la branche modifie le carnet, puis atteste SON propre etat (la tete)
+    _write(repo / PY_NOTEBOOK, base.replace('{"a": 1}', '{"a": 2}'))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "modification du carnet sur la branche")
+    _attestation(repo, 1, _blob(repo, PY_NOTEBOOK), _blob(repo, CS_NOTEBOOK))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "attestation a la tete")
+    # `main` bouge ensuite sur le meme carnet (front-matter, navigation) :
+    # la fusion ecrira un troisieme blob, different de l'etat atteste.
+    _git(repo, "checkout", "-q", "main")
+    _write(repo / PY_NOTEBOOK, base.replace('{"e": 1}', '{"e": 2}'))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "main bouge sur le carnet")
+    _git(repo, "checkout", "-q", "branche")
+    assert _run(repo) == 1
