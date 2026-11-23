@@ -483,7 +483,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   `permissions:` (une cle hors liste invalide le fichier entier).
     #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
     #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
-    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   etaient heberges). 2026-11-23 : runs-on passe sur le pool des waiters
+    #   ([self-hosted, coursia-waiter], jeu dedie WAITER_LABELS). Sur
+    #   coursia-linux, le job attendait derriere la file qu'il y avait
+    #   lui-meme routee (1 000 jobs locaux en file, 6 heberges sur 20).
+    #   Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
     "ci-overflow-controller.yml",
     # #26939 (owner myia-po-2027:CoursIA) : sonde legere de debordement CI,
