@@ -315,12 +315,12 @@ L'ordre des servables :
 **Les deux priorités légères du 18/11.** `coordination/tapis_avantages.py` porte deux contributions petites
 et distinctes, comptées en dixièmes de visite : le niveau reste ainsi un multiple de 0,1, et les issues se
 regroupent par niveau — c'est ce qui fait tourner la tête d'une lane à l'autre. La division par 3 des
-consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère.
+consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère. Les
 **La consolidation passe devant l'ancienneté** (invariant I7 du contrat du picker, #28114) : les deux bonus
 ne s'additionnent plus, ils se composent **par priorité** — la consolidation prend 0,6 visite, l'âge ne garde
-que 0,3 visite sur une consolidation (le rapport nomme ce motif « plafonnée »). Avant, l'âge plein l'emportait
-et l'invariant était violé dans l'étage rapide.
-Les marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
+que 0,3 visite sur une consolidation (le rapport nomme ce motif « plafonnée »). Avant, l'age plein l'emportait
+et l'invariant était violé dans l'étage rapide. Les
+marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
 c'est le harnais sk-agent qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour
 et au total, et nomme les contributions qui s'appliquent (champ `priorite`).
 
