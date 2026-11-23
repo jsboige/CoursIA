@@ -2031,7 +2031,7 @@ class: nb-map nb-k104
 
 </v-clicks>
 
-<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4-Z-Image-Lumina2.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb">01-3-Qwen-VL-Video-Analysis.ipynb</a> · <a href="https://developers.openai.com/api/docs/guides/image-generation">Guide GPT Image</a>.</p>
+<p v-click="4" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4-Z-Image-Lumina2.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb">01-3-Comprehension-Video-Locale.ipynb</a> · <a href="https://developers.openai.com/api/docs/guides/image-generation">Guide GPT Image</a>.</p>
 
 ---
 class: nb-concept nb-center nb-k114

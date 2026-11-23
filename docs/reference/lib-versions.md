@@ -1,6 +1,6 @@
 # Versions de bibliotheques chargees par les carnets
 
-> REFERENCE — vivante — dernière révision 2026-11-21
+> REFERENCE — vivante — dernière révision 2026-11-22
 
 Organe : `scripts/notebook_tools/check_lib_versions.py` — manifeste :
 `scripts/notebook_tools/lib_versions_manifest.json` — issue : #23073.
@@ -193,18 +193,17 @@ pourquoi un ecart est justifie, pourquoi un autre doit converger. Un motif
 qui contient un decompil (« presente sur N carnets ») est un decompil
 copic qui perime au premier ajout de carnet ; il n'a pas sa place la.
 
-Stock mesure le 2026-11-21 (`--census --json`) :
+Stock mesure le 2026-11-22 (`--census --json`) :
 
 | bibliotheque | version portee | canonique | carnets |
 |---|---|---|---|
-| pythonnet | 3.0.5 | 3.1.0 | 26 |
+| pythonnet | 3.0.5 | 3.1.0 | 23 |
 | pythonnet | 3.2.1 | 3.1.0 | 1 (`GenAI/_research/RAG04-BPE-Parite-Natif-vs-Qwen-CSharp.ipynb`) |
 | dotNetRDF | 3.4.1 | 3.5.2 | 13 (SW-01 a SW-11, SW-13, SL-8) |
-| Microsoft.ML | 4.0.2 | 5.0.0 | 1 (`ML/ML.Net/ML-04b-ModelComparison-Validity-CSharp.ipynb`) |
 | CsvHelper | 27.1.1 | 33.0.1 | 1 (`GradeBook.ipynb`) |
 
-Soit 42 epinglages divergents a converger et 1 justifie (IKVM 8.14.0),
-pour 127 epinglages canoniques. Le meme recensement releve 16 carnets a
+Soit 38 epinglages divergents a converger et 1 justifie (IKVM 8.14.0),
+pour 131 epinglages canoniques. Le meme recensement releve 16 carnets a
 epinglage flottant (Google.OrTools 14, mealpy 2) et 4 carnets sous le
 plancher de leur serie (torch 2.13.0 contre 2.14.0 en `04-Vision`) : ce sont
 des classes distinctes, rapportees par le recensement, non jugees par la
@@ -216,9 +215,10 @@ suivie par #27787 (un PR par serie, montee + re-execution).
 
 Les ecarts **justifies** portent sur IKVM 8.14.0 : l'artefact ombre des
 carnets Tweety est compile dans cette version, et la levee passe par
-l'allowlist nommee, avec son motif. Deux series ont **converge** et ne
-declarent plus aucun ecart : la SemanticWeb sur dotNetRDF 3.4.1 (#23083) et
-AutoML sur 0.23.0 (#23088) — leurs entrees ont ete retirees du manifeste le
+l'allowlist nommee, avec son motif. Trois series ont **converge** et ne
+declarent plus aucun ecart : la SemanticWeb sur dotNetRDF 3.4.1 (#23083),
+AutoML sur 0.23.0 (#23088) et ML.Net sur Microsoft.ML 5.0.0 (#28011) —
+leurs entrees ont ete retirees du manifeste le
 jour ou la convergence a atterri, pas avant (une divergence declaree pour une
 version absente du corpus est un **fantome**, que l'organe signale). Depuis,
 la canonique dotNetRDF a ete portee a 3.5.2 : le retard de la serie est

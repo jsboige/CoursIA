@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Construit un export Turtle du cursus depuis le catalogue généré.
 
-Le catalogue reste la source de vérité. Les champs absents (taxonomie,
-prérequis, qualifications dédiées) ne sont pas déduits ni inventés.
+Le catalogue reste la source de vérité. Les champs absents (prérequis,
+qualifications dédiées) ne sont pas déduits ni inventés. La hiérarchie de
+concepts, elle, vit dans les taxonomies SKOS de séries
+(`docs/curriculum/taxonomy/`) : leur couche concepts est fusionnée dans le
+graphe servi (#27635) par l'organe existant `curriculum_taxonomy.build_graph`.
 """
 
 import argparse
@@ -15,16 +18,27 @@ from rdflib import Graph, Literal, Namespace, RDF, RDFS, URIRef
 from rdflib.namespace import DCTERMS, SKOS
 from pyshacl import validate
 
+import curriculum_taxonomy
+
 
 VOCAB = Namespace("https://github.com/jsboige/CoursIA/vocab/cursus#")
 DEFAULT_CATALOG = Path(__file__).resolve().parents[2] / "COURSE_CATALOG.generated.json"
 DEFAULT_SHAPES = Path(__file__).with_name("curriculum-shapes.ttl")
 DEFAULT_INTERFACES = Path(__file__).with_name("agent_interfaces.json")
+DEFAULT_TAXONOMY_DIR = curriculum_taxonomy.REPO_ROOT / curriculum_taxonomy.TAXONOMY_DIR
 
 # Facette « classe d'interface » (#27071) : les trois classes mesurées par le
 # recensement agentique. Enumeration fermee -- une classe inconnue est refusee,
 # jamais inventee.
 INTERFACE_CLASSES = ("bridge", "cli", "mcp")
+
+# Nœuds d'arbre du cursus (série, sous-série, carnet) : la couche est déjà
+# émise depuis le catalogue par build_graph ci-dessous. La fusion SKOS (#27635)
+# retire ces nœuds du graphe de taxonomie — la taxonomie n'apporte au TTL
+# servi que sa couche concepts (schémas, concepts, citations, ontologie) ;
+# un doublon d'étiquette casserait les formes SHACL (NotebookShape exige un
+# rdfs:label unique).
+TREE_NODE_TYPES = (VOCAB.Notebook, VOCAB.Series, VOCAB.Subseries)
 
 
 def _resource(kind: str, key: str) -> URIRef:
