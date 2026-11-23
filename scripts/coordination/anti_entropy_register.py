@@ -320,13 +320,33 @@ REGISTRE: tuple[Entree, ...] = (
         # le demande le critere 2 de l'issue. Le suffixe `-rust` reste
         # hors LANG_SUFFIXES (langue potentiellement single-rendering) :
         # c'est le kernel connu qui empeche l'ambiguite, pas le suffixe.
+        #
+        # POST-FUSION (2026-11-23) : la branche `fix/23175-rust-kernel`
+        # (60e0bd6f) a ete squash-massee en 1964480103, atterrie sur main le
+        # 2026-11-23T04:48Z -- APRES la borne fin-de-jour de la reference
+        # (2026-11-22T23:59:59). Sur un clone frais de main (le runner du
+        # run push-main), les trois voies de `reference_comparable`
+        # mouraient donc sequentiellement : voie 1, l'identite courante
+        # (@1964480103) n'egale pas le sha de branche declare ; voie 2,
+        # `git rev-parse 60e0bd6f:<script>` echoue (le sha de branche
+        # n'est PAS ancetre de main apres squash, donc absent du clone)
+        # et rend un blob vide ; voie 3, la derivee a la borne fin-22/11
+        # rend l'instrument PRE-rust (27e3e88afb) au lieu du corrige.
+        # Comme les points 21, 25 et 46 ci-dessus, le point declare
+        # desormais l'identite RESOLVABLE de main : le squash 1964480103,
+        # ancetre de toute derivee ulterieure. Le diff branche->squash
+        # sur le fichier se limite au COMMENTAIRE de compte (25 carnets
+        # `-Rust` -> 26 kernelspec `rust`, temoin docker compris) :
+        # aucune ligne executable ne change, l'instrument du squash rend
+        # exactement la mesure 28 de la branche.
         reference=Reference(28.0, "2026-11-22",
                             "issue #23175, visite du 2026-11-22 -- re-mesure "
                             "sur l'arbre aligne origin/main = cd62365c02, "
-                            "instrument corrige (kernel rust)",
+                            "instrument corrige (kernel rust) ; identite "
+                            "resoluble = squash 1964480103",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@60e0bd6f6405b4cd66c432d05ff344c5642a0044")),
+                                        "@19644801035d0fcd2085f399898033d5ca6ec362")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le

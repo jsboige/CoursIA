@@ -31,12 +31,19 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | **viole** | aucune regle ne lit un label `pause` |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
-| I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
+| I7 consolidation puis anciennete | tenu (23/11, ce PR) | le label `consolidation` fait passer devant l'anciennete |
 
 I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
 impossible) refuse encore. Le marqueur `xfail` du test I4 a donc ete
 retire : le test passe, et le CI le prouve.
+
+I7 est devenu **tenu** au 23/11 (re-verification contre-factuelle) : le
+label `consolidation` inverse bien l'ordre des etages fins face a
+l'anciennete pleine. Le test pose en #28137 etait ne rouge -- sa jambe CI
+etait SKIPPED, le xfail strict n'avait jamais tourne avant le merge. Le
+marqueur est retire ici ; le detail de la mesure vit dans la docstring du
+test.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -321,10 +328,6 @@ def test_I6_un_etage_qui_depasse_son_budget_est_coupe_et_non_attendu():
 
 # --- I7 -- consolidation puis anciennete ---------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I7 viole au 22/11 : les bonus age et consolidation sont additionnes "
-    "(tapis_avantages.bonus_dixiemes), donc l'anciennete pleine l'emporte. "
-    "A lever quand l'ordre consolidation-puis-anciennete est applique."))
 def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     """I7 -- l'ordre des etages fins est « consolidation, puis anciennete ».
 
@@ -332,10 +335,14 @@ def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     issue ordinaire **ancienne** (200 j, bonus d'age plein). Le contrat dit
     que la consolidation passe devant.
 
-    Etat au 22/11 : les deux bonus sont **additionnes**
-    (`tapis_avantages.bonus_dixiemes`) -- l'age vaut jusqu'a 0,5 visite, la
-    consolidation 0,4 -- donc l'anciennete l'emporte quand elle est pleine.
-    Le mandat dit l'inverse : la consolidation d'abord.
+    Tenu depuis le 23/11 : le tri par etage place la consolidation devant
+    l'anciennete. Mesure de bascule (contre-factuel, meme tirage que ce
+    test) : AVEC le label `consolidation`, l'ordre rendu est [6002, 6001]
+    (I7 tenu) ; SANS le label, l'ordre retombe sur [6001, 6002] (l'age
+    plein l'emporte) -- c'est bien le label qui inverse l'ordre, pas un
+    artefact du mock. Ne en rouge : la jambe `Scripts Tests (CPU)` de la
+    PR #28137 qui posait ce test etait SKIPPED, le xfail strict n'a donc
+    jamais tourne en CI avant le merge.
     """
     pool = [
         _meta(6001, "Ancienne ordinaire",
