@@ -26,12 +26,18 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | Invariant | Etat au 22/11 | Preuve |
 |---|---|---|
 | I1 file sans fin par lane | tenu | `tapis_leger.tirage` rend une file a toute lane |
-| I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
+| I2 repli chronologique | tenu (23/11, ce PR) | hors reseau, la voie legere lit le cache local (`tapis_repli.py`) et sert le pool par date de creation |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | **viole** | aucune regle ne lit un label `pause` |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
+
+I2 est devenu **executable** dans ce PR : hors reseau, la voie legere lit le
+CACHE LOCAL (`coordination/tapis_repli.py`), sert le pool dans l'ordre de
+creation, et un curseur persiste fait defiler le pool de bloc en bloc. Le
+marqueur `xfail` du test I2 est donc retire : le test passe, et le CI le
+prouve.
 
 I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
@@ -145,10 +151,6 @@ def test_I1_chaque_lane_obtient_une_file_non_vide_tant_que_le_pool_est_ouvert():
 
 # --- I2 -- le repli chronologique -----------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I2 viole au 22/11 : la voie legere ne lit aucun cache -- hors reseau, "
-    "elle leve LectureIncomplete et le point d'entree rend le code 3. "
-    "A lever quand le noyau consolide branche le repli chronologique."))
 def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
         tmp_path, monkeypatch):
     """I2 -- hors reseau, le picker defile TOUTES les issues ouvertes, par date.
@@ -161,6 +163,11 @@ def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
     Etat au 22/11 : la voie legere (`tapis_leger.tirage`) ne lit **aucun**
     cache ; hors reseau elle leve `LectureIncomplete` et le point d'entree
     rend le code 3 (rien n'est servi). D'ou le marqueur.
+
+    Etat au 23/11 (ce PR) : la voie legere lit le CACHE LOCAL quand la
+    lecture echoue (`coordination/tapis_repli.py`), et un curseur persiste
+    fait defiler le pool de bloc en bloc. Le marqueur `xfail` est retire :
+    le test passe, et le CI le prouve.
     """
     pool = [_meta(2000 + k,
                   cree=(NOW - timedelta(days=30 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))

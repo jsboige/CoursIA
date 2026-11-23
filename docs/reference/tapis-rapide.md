@@ -504,6 +504,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_repli.py` | le **repli chronologique** : hors réseau, le cache local fait foi et le pool est servi par date de création (#28114) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |

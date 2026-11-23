@@ -720,6 +720,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_reverif.py", 120),
                                               ("gh_issues.py", 80),
                                               ("tapis_leger.py", 220),
+                                              ("tapis_repli.py", 160),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),

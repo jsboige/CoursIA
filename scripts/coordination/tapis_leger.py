@@ -117,9 +117,17 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     Sortie 3 : la lecture de selection est incomplete (rien n'est servi) --
     jamais une liste a moitie. Une lecture incomplete du POOL n'est pas
     equivalente : la selection paginee est complete ou elle echoue.
+
+    I2 (#28114) : hors reseau, le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la
+    main -- le cache local fait foi, et le pool est servi dans l'ordre de
+    creation.
     """
     debut = time.monotonic()
-    classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    try:
+        classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    except gh_bulk.LectureIncomplete:
+        from coordination import tapis_repli
+        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot, run)
     ancres = tapis_ancre.lire(lane)
     # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
     # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue
