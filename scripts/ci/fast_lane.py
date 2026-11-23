@@ -69,6 +69,11 @@ import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
 # tranches voisines sont modifiees par d'autres PRs en vol, et une ligne
 # isolee fusionne sans conflit.
 from fast_lane_registry import TRANCHE53  # noqa: E402
+# #27544 : tranche 55 (fraicheur du manifeste des dependances), isolee comme
+# la 53 -- meme raison : les tranches voisines sont modifiees par d'autres PRs
+# en vol, et une ligne isolee fusionne sans conflit. Renumerotee le 22/11 :
+# TRANCHE54 est pris par #27611 sur origin/main.
+from fast_lane_registry import TRANCHE55  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -911,9 +916,12 @@ def main(argv: list[str] | None = None) -> int:
               # isolee de la chaine ci-dessous, qui est modifiee par d'autres
               # PRs en vol).
               + TRANCHE53
+              # #27544 : tranche 55 (fraicheur du manifeste des dependances) --
+              # renumerotee le 22/11, TRANCHE54 etant pris par #27611 sur main.
               # #27611 : tranche 54 ajoutee sur la meme ligne que la 51 (ligne
               # isolee de la chaine ci-dessous, qui est modifiee par d'autres
               # PRs en vol).
+              + TRANCHE55
               + TRANCHE54
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
