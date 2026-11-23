@@ -17,7 +17,7 @@ choix de borne, pas une caracteristique de la charge reelle.
 
 # SK-1-Fundamentals : Introduction a Semantic Kernel
 
-**Navigation** : [Index](README.md) | [02-Functions >>](02-SemanticKernel-Advanced.ipynb)
+**Navigation** : [Index](README.md) | [02-Functions >>](../02-SemanticKernel-Advanced.ipynb)
 
 ***
 
