@@ -1,0 +1,11 @@
+- name: "Actuariat-01 Prime pure et chargement"
+  family: Probas/DecisionTheory/Actuariat
+  python: MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-01-Prime-Pure-Chargement.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-01-Prime-Pure-Chargement-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le C# utilise Infer.NET pour le graphe conjugué Gamma–Poisson, MathNet pour les simulations et Python.NET vers le vrai PyMC NUTS pour la sévérité non conjuguée. La prime et le chargement sont calculés sur les tirages réellement retournés."
+  known_differences:
+    - "La fréquence conjuguée est inférée avec EP et vérifiée exactement par forme/taux, puis échantillonnée directement de sa Gamma. La source Python utilise également NUTS sur cette loi conjuguée."
+    - "NumPy et System.Random/MathNet diffèrent avec une même graine. Les tailles, lois, budgets NUTS du graphe de sévérité, critères de décision et exercices sont conservés. Les figures sont en SVG en C#."
+    - "Le noyau .net-csharp disponible exécute le carnet avec .NET 10.0.14. Le code conserve les API .NET 9 et le langage C# 13."

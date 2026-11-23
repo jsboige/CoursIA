@@ -1,0 +1,10 @@
+- name: "ML 2.13 Analyse erreurs"
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le C# exécute les mêmes trois RandomForestClassifier sklearn via Python.NET aux mêmes profondeurs, nombres d'arbres et feuilles. Il conduit le générateur et ses interventions, agrège les sorties et calcule figures et mesures."
+  known_differences:
+    - "Un seul worker sklearn entraîne chaque forêt dans le noyau embarqué. Les tirages primitifs NumPy et le split Python sont conservés ; le C# applique le logit, le masquage et le ré-audit."
+    - "Analyse par classes et tranches en C#, figures SVG autonomes et trois exercices typés ; écarts éventuels de mesure sont liés aux versions et reportés sur le test inchangé."
