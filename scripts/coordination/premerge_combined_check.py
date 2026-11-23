@@ -138,6 +138,11 @@ class Verdict:
     failed: list[str] = field(default_factory=list)
     duration_s: float = 0.0
     worktree_left: str | None = None
+    #: Queue de la sortie pytest (stdout + stderr) sur un verdict NON vert
+    #: (#28147). Sans elle, le skip de `merge_ready` ne porte que
+    #: l'identifiant du test rouge -- et l'on suppose la cause au lieu de la
+    #: mesurer. Bornee : les derniers caracteres suffisent.
+    output_tail: str = ""
 
     @property
     def exit_code(self) -> int:
@@ -168,6 +173,27 @@ def parse_failed(output: str) -> list[str]:
         if m and m.group(1) not in seen:
             seen.append(m.group(1))
     return seen
+
+
+#: Taille de la queue de sortie conservee sur un verdict non vert (#28147).
+#: Bornee : le motif de journal doit rester lisible en une ligne, et la cause
+#: d'un rouge (traceback, assertion, timeout) est presque toujours en fin de
+#: sortie, pas au debut.
+TAIL_MAX_CHARS = 1200
+
+
+def _tail(output: str, limit: int = TAIL_MAX_CHARS) -> str:
+    """Queue bornee de la sortie pytest (stdout + stderr).
+
+    Vide si la sortie est vide. Tronquee par la FIN, prefixee de ``...`` --
+    le debut de la sortie est de la collecte, la fin porte la cause.
+    """
+    text = (output or "").strip()
+    if not text:
+        return ""
+    if len(text) <= limit:
+        return text
+    return "..." + text[-limit:]
 
 
 def pytest_command(tests: list[str], workers: int) -> list[str]:
@@ -234,15 +260,18 @@ def check(runner: Runner, repo: Path, *, base: str, head: str,
             output = res.stdout + "\n" + res.stderr
             if res.timed_out:
                 verdict.reason = "timeout"
+                verdict.output_tail = _tail(output)
             elif res.returncode == 0:
                 verdict.verdict = "GREEN"
             elif res.returncode == 1:
                 verdict.verdict = "RED"
                 verdict.failed = parse_failed(output)
                 verdict.reason = "tests-failed"
+                verdict.output_tail = _tail(output)
             else:
                 verdict.reason = f"pytest-rc-{res.returncode}"
                 verdict.failed = parse_failed(output)
+                verdict.output_tail = _tail(output)
     finally:
         rm = _git(runner, repo, "worktree", "remove", str(worktree))
         if rm.returncode != 0:
