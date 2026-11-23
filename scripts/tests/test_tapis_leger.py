@@ -117,7 +117,7 @@ def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
     assert len(rapport["grains"]) > 2
 
 
-def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
+def test_un_conteneur_ne_deplace_aucun_grain(monkeypatch):
     """Un EPIC est un conteneur : il ne prend que sa place de creneau.
 
     La detection se fait sur les metadonnees (titre `[EPIC ...]`, labels), donc
