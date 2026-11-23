@@ -9,7 +9,7 @@
   Slice 1 of the "Conway and Kinoshita-Terasaka construction via mutation"
   item of EPIC #2874. The full programme — proving
   `AreMutants conwayKnot kinoshitaTerasakaKnot` — requires an intermediate
-  diagram (see the NOTE in `Knots.Mutation`, §Controls); this module
+  diagram (see the NOTE in `Knots.Mutation`, §Checks); this module
   consolidates the measurable foundation of that programme:
 
   1. The three combinatorial mutants of the Conway knot on the window 5-11
@@ -174,7 +174,7 @@ theorem areMutants_conway_conwayMutantR14 :
 
 /-! ## 3. One-shot impossibility: the designated codes are not mutants
 
-The NOTE in `Knots.Mutation` (§Controls) observes that no one-shot map
+The NOTE in `Knots.Mutation` (§Checks) observes that no one-shot map
 superposes the designated PD codes of 11n34 and 11n42. The theorem below
 proves it: for EVERY window and EVERY Klein rotation,
 `mutateWindow conwayKnotDiagram.crossings i j ρ ≠ kinoshitaTerasakaDiagram.crossings`.
