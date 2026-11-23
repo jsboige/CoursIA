@@ -29,7 +29,7 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
-| I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause` |
+| I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause`, sur le tirage complet **et** sur la voie legere |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
 
@@ -43,6 +43,12 @@ I5 est devenu **executable** dans ce PR : la regle LABEL de
 (`coordination/tapis_labels.py`) -- l'urne de cloture et la pause. Le
 marqueur `xfail` du test I5 est donc retire : le test passe, et le CI le
 prouve.
+
+La **voie legere** (le tirage par defaut) lit la MEME table :
+`tapis_universel.etats_leger` marque l'ecart et son motif sur l'etat, et le
+bloc servi (`tapis_rotation.bloc`) laisse de cote tout etat ecarte -- donc
+aussi le repli chronologique, qui ne passe pas par la rotation. Le test I5
+conduit les DEUX voies.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -266,6 +272,10 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
     Etat au 23/11 (ce PR) : la regle LABEL lit la **table** des labels
     d'exclusion (`coordination/tapis_labels.py`) -- l'urne et la pause. Le
     marqueur `xfail` est leve : le test passe, et le CI le prouve.
+
+    La voie **legere** (le tirage par defaut) est conduite ici aussi : c'est
+    elle que la revue nomme. Un grain en pause ou livre ne doit pas y etre
+    servi, et l'exclusion doit etre **publiee** (jamais silencieuse).
     """
     issues = [
         _issue(5001, "Grain libre"),
@@ -280,6 +290,23 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
         "une pause posee en donnees (label) doit ecarter le grain"
     assert etats_[5003].ecart is not None, \
         "un grain livre (label) doit ecarter le grain"
+
+    # --- la voie LEGERE : le tirage par defaut -------------------------------
+    pool = [_meta(5101, "Grain libre"),
+            _meta(5102, "Grain en pause", labels=("pause",)),
+            _meta(5103, "Grain livre", labels=("candidate-delivered",))]
+    rapport, code = tapis_leger.tirage(LANE, 8, NOW, 45, "graine", Path("."),
+                                       _run(pool))
+    assert code == 0
+    numeros = [g["numero"] for g in rapport["grains"]]
+    assert 5101 in numeros, "le grain libre doit etre servi par la voie legere"
+    assert 5102 not in numeros, \
+        "une pause posee en donnees ne doit pas etre servie par la voie legere"
+    assert 5103 not in numeros, \
+        "un grain livre (label) ne doit pas etre servi par la voie legere"
+    ecartees = rapport.get("ecartees", {}).get("LABEL", [])
+    assert {e["numero"] for e in ecartees} == {5102, 5103}, \
+        "l'exclusion doit etre publiee, jamais silencieuse"
 
 
 # --- I6 -- la borne de temps ---------------------------------------------------

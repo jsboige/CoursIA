@@ -42,3 +42,17 @@ def ecart_label(labels: list[str]) -> str | None:
         if label in poses:
             return motif
     return None
+
+
+def ecartees(metas: list[dict]) -> list[dict]:
+    """Les issues ecartees par un label d'exclusion, avec leur motif.
+
+    Le rapport **publie** l'exclusion : elle n'est jamais silencieuse. Les
+    metadonnees suffisent -- le label voyage avec l'issue.
+    """
+    out: list[dict] = []
+    for it in metas:
+        motif = ecart_label([str(lab) for lab in (it.get("labels") or [])])
+        if motif:
+            out.append({"numero": int(it["number"]), "motif": motif})
+    return out
