@@ -41,8 +41,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# GameTheory — Théorie des jeux et choix social
-
 **La théorie des jeux est le langage mathématique de la stratégie.** Cette série forme sur deux axes complémentaires : **simuler** des jeux avec Nashpy et OpenSpiel (équilibres de Nash, tournois itératifs, CFR/Deep CFR) et **prouver** des résultats en Lean 4 (existence de Nash via Brouwer/Kakutani, théorème d'Arrow, valeur de Shapley). À la fin, vous maîtriserez la théorie des jeux coopératifs (Shapley, Core) et non-coopératifs (Nash, SPE), et vous saurez formaliser ces résultats dans un assistant de preuve.
 :::
 

@@ -10,15 +10,16 @@ SCRIPT = Path(__file__).resolve().parents[1] / "environment/setup_environment.sh
 
 
 @pytest.fixture
-def setup(tmp_path: Path):
+def setup(tmp_path: Path, bash: str, stub_as_function):
     commands = tmp_path / "bin"
     commands.mkdir()
     run_dir = tmp_path / "run"
     run_dir.mkdir()
 
     def stub(name: str, body: str) -> None:
+        # newline="\n" : un shebang CRLF casse l'interpreteur sous msys.
         path = commands / name
-        path.write_text("#!/bin/bash\n" + body + "\n")
+        path.write_text("#!/bin/bash\n" + body + "\n", newline="\n")
         path.chmod(0o755)
 
     stub("python3", '''if [[ "$1" == --version ]]; then echo 'Python 3.12'; fi
@@ -41,11 +42,16 @@ exit 0''')
     stub("mkdir", '''[[ "${FAIL_STEP:-}" == mkdir ]] && exit 1
 exec /bin/mkdir "$@"''')
     env = os.environ.copy()
-    env.update(PATH=f'{commands}:{env["PATH"]}', DATA_DIR=str(tmp_path / "data"))
+    # Separateur et chemins natifs : MSYS convertit le PATH Windows lui-meme,
+    # et les chemins passes a bash sont en forme POSIX (issue #27685).
+    env.update(PATH=os.pathsep.join((str(commands), env["PATH"])),
+               DATA_DIR=(tmp_path / "data").as_posix())
+    stub_as_function(commands, ("python3", "dotnet", "jupyter", "mkdir"), env)
 
     def run(*args: str, fail: str = "") -> subprocess.CompletedProcess:
-        return subprocess.run(["bash", str(SCRIPT), *args], cwd=run_dir,
-                              env=env | {"FAIL_STEP": fail}, text=True,
+        return subprocess.run([bash, SCRIPT.as_posix(), *args], cwd=run_dir,
+                              env=env | {"FAIL_STEP": fail},
+                              encoding="utf-8", errors="replace",
                               capture_output=True, check=False)
 
     return run_dir, run

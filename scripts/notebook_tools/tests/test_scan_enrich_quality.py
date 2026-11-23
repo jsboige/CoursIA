@@ -274,6 +274,20 @@ class TestArithmetic:
         assert scan_arithmetic([_md("(2 × 7 × 3 = 42)")]) == []
         assert scan_arithmetic([_md("20×5 + 25×3 + 40×2 = 375cm")]) == []
 
+    def test_power_result_is_silent(self):
+        # "65536 x 65536 = 2^32": the regex stops at the base "2" (#27254).
+        assert scan_arithmetic([_md("65536 × 65536 = 2^32 combinaisons.")]) == []
+        assert scan_arithmetic([_md("65536 * 65536 = 2**32")]) == []
+        assert scan_arithmetic([_md("1000 × 1000000 = 1e9 opérations")]) == []
+        assert scan_arithmetic([_md("1000 × 4300000 = 4,3 × 10^9")]) == []
+        # an operand written as a power is the tail of a longer expression
+        assert scan_arithmetic([_md("2^16 × 2^16 = 2^32")]) == []
+
+    def test_false_product_before_prose_still_fires(self):
+        # the exponent guard must not swallow a plain wrong product
+        f = scan_arithmetic([_md("On a 12 × 12 = 124 cases, et 2^8 au total.")])
+        assert _cats(f) == {"ARITH_WRONG"}
+
 
 # ---------------------------------------------------------------------------
 # Class (g): phantoms
