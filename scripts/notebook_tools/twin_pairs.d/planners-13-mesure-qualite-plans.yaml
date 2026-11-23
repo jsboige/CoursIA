@@ -1,0 +1,10 @@
+- name: "Planners-13 Mesure Qualité Plans"
+  family: SymbolicAI/Planners/03-Advanced
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux notebooks résolvent la même tour au moyen du vrai binaire Fast Downward avec les cinq mêmes configurations. Le C# réutilise FastDownwardBackend.cs et reconstruit en BCL un BFS et un validateur de trajectoire."
+  known_differences:
+    - "Ce run C# utilise Fast Downward 26.6 au travers du pilote local up-fast-downward 1.0.0. Le run de référence Python utilise Fast Downward 24.06.1 via le service Docker. Les cinq longueurs et compteurs évalués coïncident dans les runs vérifiés."
+    - "Le C# expose aussi les états développés et rejoue les cinq plans par des transitions indépendantes. Les mesures de temps restent propres aux environnements."

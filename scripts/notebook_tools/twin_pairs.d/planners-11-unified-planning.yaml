@@ -1,0 +1,10 @@
+- name: "Planners-11 Unified Planning"
+  family: SymbolicAI/Planners/04-NeuroSymbolic
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les fluents, types, actions, instances et parcours d'exploitation sont construits en C#. Python.NET charge Unified Planning 1.3 et entraîne les mêmes véritables moteurs pyperplan, fast-downward et fast-downward-opt. Le lecteur et l'écrivain PDDL sont également ceux d'Unified Planning."
+  known_differences:
+    - "La fabrication de OneshotPlanner passe par un appel Python ciblé car le bloc de crédits UP 1.3 inspecte la pile Python, même avec le flux de crédits désactivé. Les modèles, statistiques, tests et exercices restent pilotés en C#."
+    - "Le C# transmet le timeout annoncé de 30 s à l'API. Fast Downward le prend en charge et Pyperplan n'applique pas ce paramètre. Les temps mesurés dépendent du moteur et de l'environnement. La tentative Fast Downward sur les fluents numériques conserve son statut et le témoin manuel reste distingué."
