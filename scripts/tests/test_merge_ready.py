@@ -10,6 +10,7 @@ de git reel.
 """
 
 import importlib.util
+import base64
 import json
 import re
 import subprocess
@@ -180,6 +181,12 @@ class ScriptedRunner:
         # 0 = clear, 1 = collision, 2 = unreadable. Cf. SLOT_DOCUMENTED_RC.
         slot_rc: int = 0,
         slot_stdout: str = "",
+        # #27875 : reponse scriptee de la lecture du manifeste des lakes
+        # (`gh api repos/.../contents/scripts/lean/ci_lakes.json?ref=<tete>`).
+        # `None` (defaut) = 404 : manifeste non lu, la garde retombe sur son
+        # motif generique (fail-closed conserve). Une chaine = stdout BRUT
+        # (reponse malformee) ; un dict = payload JSON.
+        ci_lakes_payload: dict | str | None = None,
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
         base_search: dict[str, list[dict]] | None = None,
@@ -254,6 +261,13 @@ class ScriptedRunner:
         # `main_red_view_rc` non nul simule une lecture ILLISIBLE.
         main_red_views: dict[int, dict | str] | None = None,
         main_red_view_rc: int = 0,
+        # #27684 : liste COMPLETE des fichiers d'une PR, lue en REST pagine
+        # (``/pulls/{n}/files``) quand la vue ``gh pr view --json files`` est
+        # tronquee (plafond de 100). Cle = numero de PR, valeur = la liste
+        # des chemins, dans l'ordre ; ``pr_files_rc`` non nul simule une
+        # lecture ILLISIBLE (quota, 5xx).
+        pr_files: dict[int, list[str]] | None = None,
+        pr_files_rc: int = 0,
     ):
         self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
@@ -305,6 +319,7 @@ class ScriptedRunner:
         # convention que twin_rc/twin_stdout.
         self.slot_rc = slot_rc
         self.slot_stdout = slot_stdout
+        self.ci_lakes_payload = ci_lakes_payload
         # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
@@ -316,6 +331,9 @@ class ScriptedRunner:
         # la commande pour tester le chemin ``unreadable``.
         self.base_search = base_search or {}
         self.base_search_rc = base_search_rc
+        # #27684 : fichiers d'une PR en REST pagine.
+        self.pr_files = pr_files or {}
+        self.pr_files_rc = pr_files_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -369,6 +387,19 @@ class ScriptedRunner:
             pr = int(c[3])
             view = self.views.get(pr, default_view(pr=pr))
             return mr.RunResult(0, json.dumps(view), "")
+        if c[:2] == ["gh", "api"] and "/pulls/" in c[2] and "/files" in c[2]:
+            # #27684 : lecture paginee de la liste des fichiers d'une PR.
+            # Le REST nomme le champ `filename` (la vue gh nomme `path`).
+            if self.pr_files_rc != 0:
+                return mr.RunResult(self.pr_files_rc, "", "gh failed")
+            pr = int(c[2].split("/pulls/")[1].split("/")[0])
+            per_page = int(c[2].split("per_page=")[1].split("&")[0])
+            page = int(c[2].rsplit("page=", 1)[1].split("&")[0])
+            chemins = self.pr_files.get(pr, [])
+            tranche = chemins[(page - 1) * per_page: page * per_page]
+            return mr.RunResult(
+                0, json.dumps([{"filename": ch} for ch in tranche]), ""
+            )
         if c[:3] == ["gh", "pr", "merge"]:
             if self.merge_script:
                 rc, err = self.merge_script.pop(0)
@@ -376,6 +407,16 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/contents/" in c[2]:
+            # #27875 : lecture du manifeste des lakes a la TETE de la PR
+            # (garde Lean). Defaut = 404 : un manifeste non lu laisse la
+            # garde sur son motif generique -- le fail-closed est conserve.
+            payload = self.ci_lakes_payload
+            if payload is None:
+                return mr.RunResult(1, "", "HTTP 404")
+            if isinstance(payload, str):
+                return mr.RunResult(0, payload, "")
+            return mr.RunResult(0, json.dumps(payload), "")
         if c[:2] == ["gh", "api"] and c[2].startswith("users/"):
             # #17437 : sonde d'identite App (``users/<login>[bot] --jq .type``).
             # Defaut = 404 (rc 1) : une sonde non scriptee est un login
@@ -590,6 +631,9 @@ def _mergeable_reads(runner: ScriptedRunner) -> list[list[str]]:
         if cmd[:2] == ["gh", "api"] and "/pulls/" in cmd[2]
         and "--jq" not in cmd
         and not cmd[2].split("?", 1)[0].endswith("/reviews")
+        # #27684 : la lecture paginee des FICHIERS (`/pulls/{n}/files`) n'est
+        # pas une lecture de mergeabilite.
+        and not cmd[2].split("?", 1)[0].endswith("/files")
     ]
 
 
@@ -1229,6 +1273,193 @@ def test_max_arrete_le_run(tmp_path):
     assert [row["pr"] for row in lines] == [101]
 
 
+# --- borne de duree de la passe (#28009) ------------------------------------------
+
+
+def _fake_clock(step_s: float):
+    """Horloge factice : chaque lecture avance de ``step_s`` secondes.
+
+    La borne de duree se lit sur ``mr._clock`` ; un test doit pouvoir la
+    faire avancer sans attendre 45 minutes.
+    """
+    state = {"t": 0.0}
+
+    def clock() -> float:
+        state["t"] += step_s
+        return state["t"]
+
+    return clock
+
+
+def _payload(capsys) -> dict:
+    """Payload JSON du run (dernière ligne non vide de stdout)."""
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+    return json.loads(lines[-1])
+
+
+def test_le_budget_de_passe_arrete_la_passe_et_journalise_le_reste(
+    tmp_path, monkeypatch, capsys
+):
+    """Budget de duree epuise : arret PROPRE, et les PRs non evaluees sont
+    journalisees avec un motif nomme -- jamais une PR disparue du bilan.
+
+    L'horloge factice avance de 100 s par lecture : le budget de 250 s est
+    epuise a la TROISIEME lecture de la boucle, donc apres deux PRs
+    evaluees. La troisieme PR n'est jamais atteinte.
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "250", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    # Le motif d'arret distingue la DUREE du nombre de merges.
+    assert payload["stopped_reason"] == mr.PASS_BUDGET_REASON
+    # Les deux PRs atteintes sont evaluees normalement ; la troisieme est
+    # journalisee avec le meme motif, et un verdict qui dit qu'elle n'a pas
+    # ete evaluee (elle ne porte aucun cout d'evaluation).
+    assert [row["pr"] for row in lines] == [101, 102, 103]
+    assert lines[-1]["verdict"] == mr.VERDICT_NOT_EVALUATED
+    assert lines[-1]["reason"] == mr.PASS_BUDGET_REASON
+    # Le bilan separe les deux comptes : « evaluee(s) » reste exact, et les
+    # PRs non evaluees sont nommees une par une.
+    assert len(payload["results"]) == 2
+    assert payload["not_evaluated"] == [
+        {"pr": 103, "reason": mr.PASS_BUDGET_REASON}
+    ]
+    assert not _evaluated(runner, 103)
+
+
+def test_une_passe_sous_budget_se_comporte_comme_avant(
+    tmp_path, monkeypatch, capsys
+):
+    """Controle negatif : sous budget, rien ne change (aucune PR non
+    evaluee, aucun arret)."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(1.0))
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "600", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    assert payload["stopped_reason"] is None
+    assert payload["not_evaluated"] == []
+    assert [row["pr"] for row in lines] == [101, 102, 103]
+    assert all(row["verdict"] != mr.VERDICT_NOT_EVALUATED for row in lines)
+    assert len(payload["results"]) == 3
+
+
+def test_un_budget_nul_desactive_la_borne(tmp_path, monkeypatch, capsys):
+    """``--pass-budget-s 0`` = pas de borne (le comportement d'avant)."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(1000.0))
+    runner = ScriptedRunner(prs=(101, 102))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "0", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    assert payload["stopped_reason"] is None
+    assert payload["not_evaluated"] == []
+    assert [row["pr"] for row in lines] == [101, 102]
+
+
+def test_un_budget_negatif_est_refuse():
+    with pytest.raises(SystemExit):
+        mr.run(["--pass-budget-s", "-1"], runner=ScriptedRunner())
+
+
+# --- curseur de reprise (revue du 22/11) ----------------------------------------
+
+
+def _passe_evaluatee(tmp_path, prs, extra=("--pass-budget-s", "250", "--json")):
+    """Une passe, et la liste des PRs **evaluees** par cette passe.
+
+    Les lignes `unevaluated` sont les PRs que la passe n'a PAS regardees :
+    elles ne comptent pas comme evaluees. Le journal **cumule** les passes :
+    on ne lit que les lignes de la passe courante.
+    """
+    journal = tmp_path / "journal.jsonl"
+    avant = (len(journal.read_text(encoding="utf-8").splitlines())
+             if journal.is_file() else 0)
+    runner = ScriptedRunner(prs=tuple(prs))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=extra)
+    assert rc == 0
+    return [row["pr"] for row in lines[avant:]
+            if row["verdict"] != mr.VERDICT_NOT_EVALUATED]
+
+
+def test_le_curseur_de_reprise_continue_apres_la_derniere_pr_evaluee(
+    tmp_path, monkeypatch
+):
+    """Une passee arretee sur le budget ne se rejoue pas au meme endroit.
+
+    La premiere passe s'arrete a #102 (budget de 250 s, horloge de 100 s par
+    lecture) ; la seconde doit **continuer** a #103 et non revenir a #101.
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    prs = (101, 102, 103, 104)
+    premiere = _passe_evaluatee(tmp_path, prs)
+    assert premiere == [101, 102], "la premiere passe s'arrete apres deux PRs"
+    assert mr.read_pass_cursor(tmp_path / "journal.jsonl") == 102
+    seconde = _passe_evaluatee(tmp_path, prs)
+    assert seconde == [103, 104], "la seconde passe continue apres le curseur"
+
+
+def test_n_passes_coupees_evaluent_toutes_les_prs_sans_sauter_deux_fois(
+    tmp_path, monkeypatch
+):
+    """Contrat de la revue du 22/11 : la borne doit garanter que chaque PR
+    ouverte est evaluee en un nombre **borne** de passes.
+
+    Une horloge qui coupe chaque passe apres deux PRs : six passes successives
+    evaluent les douze PRs, et aucune n'est sautee deux fois de suite.
+
+    Sans le curseur de reprise, chaque passe repart de la file entiere et
+    s'arrete au meme endroit : les PRs du haut ne sont jamais vues (c'est la
+    famine de queue mesuree par le coordinateur sur le journal du 22/11).
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    prs = tuple(range(101, 113))
+    passes = []
+    for _ in range(6):
+        passes.append(_passe_evaluatee(tmp_path, prs))
+    vues = [pr for p in passes for pr in p]
+    assert sorted(vues) == list(prs), "les douze PRs doivent etre evaluees"
+    assert len(vues) == len(set(vues)), "aucune PR ne doit etre evaluee deux fois"
+    for avant, apres in zip(passes, passes[1:]):
+        assert not (set(avant) & set(apres)), \
+            "aucune PR ne doit etre sautee deux fois de suite"
+
+
+def test_une_passe_qui_parcourt_la_file_remet_le_curseur_a_zero(
+    tmp_path, monkeypatch
+):
+    """Une passe qui a vu TOUTE la file n'a plus de curseur a rendre : la
+    suivante repart du debut de la file."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    journal = tmp_path / "journal.jsonl"
+    _passe_evaluatee(tmp_path, (101, 102, 103))
+    assert mr.read_pass_cursor(journal) == 102
+    # Une passe sous budget (pas d'arret) parcourt toute la file.
+    _passe_evaluatee(tmp_path, (101, 102, 103), extra=("--pass-budget-s", "600",
+                                                        "--json"))
+    assert mr.read_pass_cursor(journal) is None
+
+
+def test_un_curseur_illisible_vaut_absent_il_ne_bloque_pas_la_passe(
+    tmp_path, monkeypatch
+):
+    """Fail-OPEN : un curseur corrompu ne fait pas echouer la passe, il vaut
+    « depuis le debut »."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    journal = tmp_path / "journal.jsonl"
+    mr.write_pass_cursor(journal, 102)
+    (tmp_path / mr.PASS_CURSOR_FILENAME).write_text("{pas du json", encoding="utf-8")
+    assert mr.read_pass_cursor(journal) is None
+    assert _passe_evaluatee(tmp_path, (101, 102, 103)) == [101, 102]
+
+
 def test_argv_organes_relatif_au_depot(tmp_path):
     """#26102 : l'argv journalise ne depend pas du chemin du worktree.
 
@@ -1544,15 +1775,34 @@ def test_jeton_irresolu_exit_2(tmp_path):
 # --- garde de troncature de la liste de fichiers (revue ai-01) ----------------
 
 
-def test_skip_files_truncated_fail_closed(tmp_path):
-    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
-    # que la vue montre pourrait cacher un fichier hors perimetre.
+def test_files_truncated_par_la_vue_puis_completes_par_le_rest(tmp_path):
+    # #27684 : `gh pr view --json files` plafonne a 100 fichiers. La troncature
+    # rendait la PR non mergeable (skip `files-truncated:1/150`) alors que le
+    # REST pagine la liste complete : la PR n'est plus bloquee, et le controle
+    # de perimetre porte sur la liste COMPLETE.
     view = default_view(files=("src/a.py",))
     view["changedFiles"] = 150
-    runner = ScriptedRunner(views={123: view})
+    runner = ScriptedRunner(
+        views={123: view},
+        pr_files={123: [f"src/f{i}.py" for i in range(150)]},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert not any(
+        str(line.get("reason") or "").startswith("files-truncated")
+        for line in lines
+    )
+    assert any("pulls/123/files" in flat for flat in runner.flat())
+
+
+def test_liste_des_fichiers_illisible_reste_fail_closed(tmp_path):
+    # Le controle de perimetre reste fail-closed : une liste ILLISIBLE
+    # (quota, 5xx) bloque la PR, mais le motif dit qu'il s'agit d'une lecture.
+    view = default_view(files=("src/a.py",))
+    view["changedFiles"] = 150
+    runner = ScriptedRunner(views={123: view}, pr_files_rc=1)
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "files-truncated:1/150"
+    assert lines[-1]["reason"] == "files-unreadable"
     assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
@@ -1561,7 +1811,7 @@ def test_skip_changed_files_absent_fail_closed(tmp_path):
     del view["changedFiles"]
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert lines[-1]["reason"].startswith("files-truncated:")
+    assert lines[-1]["reason"] == "files-unknown-count"
 
 
 def test_wt_vibe_prefix_lifted_with_13410_reopening():
@@ -3698,6 +3948,105 @@ def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tm
     _, lines, _ = run_organ(tmp_path, runner)
     assert lines[-1]["reason"] == "lean:no-local-build-attestation"
     assert lines[-1]["merged"] is False
+
+
+# --- #27875 : un lake INTRODUIT par la PR et non declare au manifeste -------
+#
+# Cas fondateur : PR #27587 (lake `busybeaver_lean`). L'entree de manifeste
+# `scripts/lean/ci_lakes.json` arrive dans une PR EMPILÉE (#27658) : tant
+# qu'elle n'est pas mergee, aucune attestation ne peut couvrir le lake, et le
+# motif generique « pas d'attestation » ne nomme ni le lake ni le geste. La
+# garde rend donc un motif NOMME.
+
+BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
+BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
+CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean"
+
+#: Manifeste des lakes declares en CI : `conway` y est, `busybeaver` non.
+CI_LAKES_MANIFEST = {
+    "version": 1,
+    "lakes": [
+        {
+            "lake": "conway",
+            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+            "paths": [
+                "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+            ],
+        }
+    ],
+}
+
+
+def _manifest_payload(manifest: dict) -> dict:
+    """Payload REST `contents` du manifeste (base64)."""
+    raw = json.dumps(manifest).encode("utf-8")
+    return {"content": base64.b64encode(raw).decode("ascii")}
+
+
+def test_lake_introduit_non_declare_donne_un_motif_nomme(tmp_path):
+    """#27875 -- la PR INTRODUIT un lake que le manifeste ne declare pas : le
+    motif nomme le lake (il nomme aussi le geste), au lieu du generique."""
+    view = default_view(
+        files=(BUSYBEAVER_LAKEFILE, BUSYBEAVER + "/BusyBeaver.lean")
+    )
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "lean:lake-not-declared:" + BUSYBEAVER
+    assert lines[-1]["merged"] is False
+
+
+def test_lake_declare_donne_le_motif_generique(tmp_path):
+    """Controle negatif : un lake DECLARE (son `lakefile` est touche) garde le
+    motif generique -- pas de faux positif sur les PRs Lean ordinaires."""
+    view = default_view(files=(CONWAY_LAKEFILE,))
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_sans_lakefile_aucune_lecture_de_manifeste(tmp_path):
+    """Controle negatif : une PR Lean sans `lakefile.*` ne paie AUCUNE lecture
+    de manifeste (le cout de la garde ne bouge pas)."""
+    view = default_view(files=(LEAN_FILE,))
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert not [cmd for cmd in runner.cmds() if "/contents/" in " ".join(cmd)]
+
+
+def test_manifeste_illisible_laisse_le_motif_generique(tmp_path):
+    """Controle negatif : un manifeste illisible (404) laisse la garde sur son
+    motif generique -- le fail-closed est conserve, aucun motif nomme n'est
+    forge sur une absence d'information."""
+    view = default_view(files=(BUSYBEAVER_LAKEFILE,))
+    runner = ScriptedRunner(views={123: view})  # pas de payload : 404
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_valide_passe_meme_avec_un_lakefile(tmp_path):
+    """Non-regression : une attestation valide a la tete passe, meme sur une
+    PR qui touche un `lakefile.*` -- la detection ne bloque rien de plus que
+    la garde d'avant."""
+    view = default_view(
+        files=(BUSYBEAVER_LAKEFILE,),
+        comments=[_attestation_comment(HEAD)],
+    )
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
 
 
 def test_attestation_suivie_d_un_rafraichissement_seul_laisse_passer(tmp_path):

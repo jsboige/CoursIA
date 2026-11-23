@@ -1,0 +1,103 @@
+# Pile d'apprentissage CoursIA (pli 1.5 de l'Epic #27543, issue #27548)
+#
+# La pile de base demarre l'image d'apprentissage du pli 1.2 (#27545) :
+#   docker compose up -d
+#   -> JupyterLab sur http://localhost:8888 (jeton dans `docker compose logs learning`)
+#
+# Les services optionnels s'ajoutent par profil, a la demande :
+#   docker compose --profile planners up -d
+#   -> ajoute le service Fast Downward (CPU), visible du conteneur
+#      d'apprentissage sous http://fast-downward:8200 et de l'hote sous
+#      http://127.0.0.1:8200
+#
+# Les services GPU du depot (comfyui, whisper, tts, sd-forge, vllm...) ne
+# sont PAS cable ici : leur compose reserve un device nvidia. La table
+# mesuree CPU/GPU vit dans README.md ; ils se lancent depuis leur propre
+# dossier `services/<nom>/`, sur une machine GPU.
+
+services:
+  # Image d'apprentissage (pli 1.2) : JupyterLab + les 7 noyaux canoniques.
+  # Meme Dockerfile que notebook-runner, cible `learning` -- aucun etage
+  # duplique. Le contexte additionnel fournit le wrapper du noyau Lean.
+  learning:
+    build:
+      context: ../notebook-runner
+      dockerfile: Dockerfile
+      target: learning
+      additional_contexts:
+        lean_scripts: ../../MyIA.AI.Notebooks/SymbolicAI/Lean/scripts
+    image: coursia/learning:latest
+    # Distinct du service `learning` du compose notebook-runner (conteneur
+    # `coursia-learning`, meme image) : cette definition est celle de la
+    # pile -- boucle locale, healthcheck, FAST_DOWNWARD_URL, profils. Les
+    # noms distincts evitent la collision de conteneurs ; les deux services
+    # bindent 8888, d'ou LEARNING_PORT si les deux tournent.
+    container_name: coursia-learning-pile
+    ports:
+      - "127.0.0.1:${LEARNING_PORT:-8888}:8888"
+    volumes:
+      - type: bind
+        source: ../../MyIA.AI.Notebooks
+        target: /notebooks
+        read_only: false
+      - type: bind
+        source: ../../scripts
+        target: /scripts-repo
+        read_only: true
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - LANG=C.UTF-8
+      # Adresse du planificateur VUE DEPUIS le conteneur d'apprentissage :
+      # activee par le profil `planners` (reseau commun). Sans ce profil,
+      # la sonde echoue vite et les carnets retombent sur leur message
+      # d'installation, comme sans pile.
+      - FAST_DOWNWARD_URL=${FAST_DOWNWARD_URL:-http://fast-downward:8200}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8888/', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Planificateur classique (patron services/planners-fast-downward, CPU).
+  # Demarre uniquement avec --profile planners.
+  fast-downward:
+    build:
+      context: ../services/planners-fast-downward
+      dockerfile: Dockerfile
+    image: jsboige/coursia-fast-downward:latest
+    container_name: coursia-planners-fast-downward
+    hostname: fast-downward
+    profiles: ["planners"]
+    ports:
+      - "127.0.0.1:${PLANNER_PORT:-8200}:8200"
+    volumes:
+      # Meme cible que le patron services/planners-fast-downward :
+      # docker-configurations/shared/pddl (cree par compose s'il manque).
+      - ../shared/pddl:/data/pddl
+    environment:
+      - PLANNER_PORT=8200
+      - TZ=${TZ:-Europe/Paris}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8200/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+networks:
+  default:
+    name: coursia-notebook-network
