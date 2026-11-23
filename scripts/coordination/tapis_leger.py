@@ -87,7 +87,8 @@ def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
 
 def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
             run=gh_bulk.run_defaut,
-            budget_s: float = gh_selection.MUR_GLOBAL_S) -> dict:
+            budget_s: float = gh_selection.MUR_GLOBAL_S,
+            echeance: float | None = None) -> dict:
     """Le POOL classe : l'ordre fair des grains, et les conteneurs.
 
     C'est la lecture de metadonnees du tirage leger, SANS la fenetre : la
@@ -95,11 +96,16 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     quand la fenetre ne donne aucun grain servable).
     """
     debut = time.monotonic()
-    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s)
+    # UNE echeance monotone pour les trois etages (#28114, I6) : le temps
+    # restant borne chaque appel, donc un etage qui a consomme sa part voit
+    # l'etage suivant etre COUPE plutot qu'attendu.
+    echeance = echeance if echeance is not None else debut + gh_bulk.MUR_TIRAGE_S
+    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s,
+                                                         echeance=echeance)
     t1 = time.monotonic()
-    citations = gh_bulk.lire_citations_mergees(depot, jours, run)
+    citations = gh_bulk.lire_citations_mergees(depot, jours, run, echeance=echeance)
     t2 = time.monotonic()
-    prs = gh_bulk.lire_prs_ouvertes(run)
+    prs = gh_bulk.lire_prs_ouvertes(run, echeance=echeance)
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
@@ -118,9 +124,17 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     Sortie 3 : la lecture de selection est incomplete (rien n'est servi) --
     jamais une liste a moitie. Une lecture incomplete du POOL n'est pas
     equivalente : la selection paginee est complete ou elle echoue.
+
+    I2 (#28114) : hors reseau, le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la
+    main -- le cache local fait foi, et le pool est servi dans l'ordre de
+    creation.
     """
     debut = time.monotonic()
-    classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    try:
+        classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    except gh_bulk.LectureIncomplete:
+        from coordination import tapis_repli
+        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot, run)
     ancres = tapis_ancre.lire(lane)
     # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
     # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue

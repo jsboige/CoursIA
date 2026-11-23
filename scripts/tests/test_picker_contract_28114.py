@@ -26,12 +26,18 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | Invariant | Etat au 22/11 | Preuve |
 |---|---|---|
 | I1 file sans fin par lane | tenu | `tapis_leger.tirage` rend une file a toute lane |
-| I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
+| I2 repli chronologique | tenu (23/11, ce PR) | hors reseau, la voie legere lit le cache local (`tapis_repli.py`) et sert le pool par date de creation |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause`, sur le tirage complet **et** sur la voie legere |
-| I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
+| I6 borne de temps | tenu (23/11, ce PR) | une echeance monotone unique (`gh_bulk.MUR_TIRAGE_S`) partagee par les etages ; budgets declares cumules : 30 + 15 + 15 = 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
+
+I2 est devenu **executable** dans ce PR : hors reseau, la voie legere lit le
+CACHE LOCAL (`coordination/tapis_repli.py`), sert le pool dans l'ordre de
+creation, et un curseur persiste fait defiler le pool de bloc en bloc. Le
+marqueur `xfail` du test I2 est donc retire : le test passe, et le CI le
+prouve.
 
 I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
@@ -49,6 +55,14 @@ La **voie legere** (le tirage par defaut) lit la MEME table :
 bloc servi (`tapis_rotation.bloc`) laisse de cote tout etat ecarte -- donc
 aussi le repli chronologique, qui ne passe pas par la rotation. Le test I5
 conduit les DEUX voies.
+
+I6 est devenu **executable** dans ce PR : le tirage porte UNE echeance
+monotone unique (`gh_bulk.MUR_TIRAGE_S`), posee une fois et partagee par ses
+etages -- le temps restant borne chaque appel, donc un etage qui a consomme
+sa part voit l'etage suivant etre coupe plutot qu'attendu. Les budgets
+DECLARES tiennent desormais dans la borne du contrat (30 + 15 + 15 = 60 s
+pour 60 s), au lieu de 60 + 90 + 90 = 240 s. Le marqueur `xfail` du test I6
+est donc retire : le test passe, et le CI le prouve.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -157,10 +171,6 @@ def test_I1_chaque_lane_obtient_une_file_non_vide_tant_que_le_pool_est_ouvert():
 
 # --- I2 -- le repli chronologique -----------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I2 viole au 22/11 : la voie legere ne lit aucun cache -- hors reseau, "
-    "elle leve LectureIncomplete et le point d'entree rend le code 3. "
-    "A lever quand le noyau consolide branche le repli chronologique."))
 def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
         tmp_path, monkeypatch):
     """I2 -- hors reseau, le picker defile TOUTES les issues ouvertes, par date.
@@ -173,6 +183,11 @@ def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
     Etat au 22/11 : la voie legere (`tapis_leger.tirage`) ne lit **aucun**
     cache ; hors reseau elle leve `LectureIncomplete` et le point d'entree
     rend le code 3 (rien n'est servi). D'ou le marqueur.
+
+    Etat au 23/11 (ce PR) : la voie legere lit le CACHE LOCAL quand la
+    lecture echoue (`coordination/tapis_repli.py`), et un curseur persiste
+    fait defiler le pool de bloc en bloc. Le marqueur `xfail` est retire :
+    le test passe, et le CI le prouve.
     """
     pool = [_meta(2000 + k,
                   cree=(NOW - timedelta(days=30 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -311,24 +326,24 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
 
 # --- I6 -- la borne de temps ---------------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I6 viole au 22/11 : budgets cumules 60 + 90 + 90 = 240 s pour un contrat "
-    "de 60 s (la borne n'est pas une propriete du code). "
-    "A lever quand le noyau porte UNE echeance monotone unique."))
 def test_I6_le_budget_global_du_tirage_est_borne_a_60_s():
     """I6 -- un tirage de lane rend en moins de 60 s.
 
     Les budgets **declares** des etages du chemin de lane doivent tenir dans
-    la borne du contrat. Aujourd'hui ils ne la tiennent pas :
+    la borne du contrat :
 
-    - selection : `gh_selection.MUR_GLOBAL_S` = 60 s ;
-    - citations : `gh_bulk.TIMEOUT_S` = 90 s ;
-    - PRs ouvertes : `gh_bulk.TIMEOUT_S` = 90 s.
+    - selection : `gh_selection.MUR_GLOBAL_S` = 30 s ;
+    - citations : `gh_bulk.TIMEOUT_S` = 15 s ;
+    - PRs ouvertes : `gh_bulk.TIMEOUT_S` = 15 s.
 
-    Soit 240 s de budgets pour un contrat de 60 s : la borne n'est pas une
-    propriete du code, elle est un voeu. Le noyau consolide doit porter UNE
-    echeance monotone unique, partagee par les etages (le mecanisme existe
-    deja pour la selection : `gh_selection._page`).
+    Soit 60 s de budgets pour un contrat de 60 s. Et la borne n'est pas un
+    voeu : le tirage pose UNE echeance monotone (`gh_bulk.MUR_TIRAGE_S`),
+    partagee par ses etages -- le temps restant est recalcule avant chaque
+    appel, donc un etage qui a consomme sa part voit l'etage suivant etre
+    coupe plutot qu'attendu.
+
+    Etat au 22/11 : les budgets cumulaient 240 s (60 + 90 + 90) et chaque
+    etage avait sa propre echeance. D'ou le marqueur.
     """
     budgets = {"selection": gh_selection.MUR_GLOBAL_S,
                "citations": gh_bulk.TIMEOUT_S,
