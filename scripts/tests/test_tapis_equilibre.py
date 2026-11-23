@@ -165,11 +165,12 @@ def test_la_consolidation_recoit_une_priorite_legere_a_tout_age():
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     assert te.raisons(etat(lec, 1), conso, NOW) == [
-        "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.4 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "2 visite(s) en 7 j (2 au total)",
+        "priorite d age : -0.3 visite (plafonnee : la consolidation passe devant)",
+        "priorite de consolidation : -0.6 visite"]
     assert te.raisons(etat(lec, 2), conso, NOW) == [
         "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.1 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "priorite de consolidation : -0.6 visite"]
 
 
 def test_la_fille_d_une_racine_de_consolidation_herite_la_priorite():
@@ -181,10 +182,32 @@ def test_la_fille_d_une_racine_de_consolidation_herite_la_priorite():
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     # la fille herite la priorite de consolidation de sa racine
-    assert "priorite de consolidation : -0.4 visite" in te.raisons(
+    assert "priorite de consolidation : -0.6 visite" in te.raisons(
         etat(lec, 11), conso, NOW)
-    assert "priorite de consolidation : -0.4 visite" not in te.raisons(
+    assert "priorite de consolidation : -0.6 visite" not in te.raisons(
         etat(lec, 12), conso, NOW)
+
+
+def test_la_consolidation_passe_devant_l_anciennete_dans_l_etage_rapide():
+    """Invariant I7 du contrat du picker (#28114, 22/11) : l'ordre des etages
+    fins est « consolidation, puis anciennete ».
+
+    AVANT, les deux bonus s'additionnaient : l'age plein (0,5) l'emportait sur
+    la consolidation (0,4), et l'invariant etait viole dans l'etage rapide.
+    Mesure sur `main` au 23/11 : une issue ordinaire de 170 j et une
+    consolidation recente tombaient au meme niveau (-0,4), et l'anciennete
+    l'emportait -- l'ordre rendu etait [6001, 6002].
+
+    AUJOURD'HUI, la consolidation est posee EN PREMIER : son bonus depasse le
+    bonus d'age plein, donc elle passe devant a visites egales ; l'age
+    n'arbitre plus qu'entre issues de meme statut."""
+    issues = [issue(6001, cree="2026-05-27T00:00:00Z"),          # 170 j, ordinaire
+              issue(6002, labels=["consolidation"], cree="2026-11-01T00:00:00Z")]
+    lec = lecture(issues)
+    conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
+    assert te.niveau(etat(lec, 6002), conso, NOW) < te.niveau(etat(lec, 6001), conso, NOW), \
+        "la consolidation a un niveau plus bas que l'ordinary la plus agee"
+    assert _servis(issues) == [6002, 6001], "la consolidation passe devant l'anciennete"
 
 
 def test_les_marathons_passent_apres_le_pool_equilibre():
@@ -233,16 +256,21 @@ def test_le_bonus_total_reste_sous_une_visite():
 
 
 def test_les_deux_avantages_sont_distincts_et_cumulables():
-    """Une vieille consolidation cumule l'age ET la consolidation : le bonus
-    de consolidation n'est jamais efface par celui de l'age (le plafonnement
-    porte sur la somme, pas sur la contribution)."""
+    """Une vieille consolidation cumule l'age ET la consolidation : les deux
+    motifs restent nommes, et ils somment au bonus effectif.
+
+    La part de l'age est PLANNONNEE (0,3 visite) quand la consolidation est
+    presente : la consolidation passe devant l'anciennete (I7), donc l'age ne
+    peut pas manger le budget de la premiere. Le rapport le dit -- un motif
+    plafonne ne se presente pas comme le bonus plein."""
     issues = [issue(1, labels=["consolidation"], cree="2026-01-01T00:00:00Z")]
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     e = etat(lec, 1)
     assert te.raisons(e, conso, NOW) == [
-        "0 visite(s) en 7 j (0 au total)", "priorite d age : -0.5 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "0 visite(s) en 7 j (0 au total)",
+        "priorite d age : -0.3 visite (plafonnee : la consolidation passe devant)",
+        "priorite de consolidation : -0.6 visite"]
     assert te.niveau(e, conso, NOW) == -0.9
 
 
