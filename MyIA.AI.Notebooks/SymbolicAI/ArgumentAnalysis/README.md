@@ -84,7 +84,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 ### Autour de 03 — Argumentation abstraite
 
-- [03b — Argumentation fondée sur les valeurs](Argumentation-03b-Value-Based-AF-Python.ipynb) · [jumeau Rust](Argumentation-03b-Value-Based-AF-Rust.ipynb) : enrichir Dung avec les valeurs de Bench-Capon et des audiences qui les ordonnent ; un même graphe peut conduire à des conclusions différentes selon l'audience.
+- [03b — Argumentation fondée sur les valeurs](Argumentation-03b-Value-Based-AF-Python.ipynb) · [jumeau Rust](Argumentation-03b-Value-Based-AF-Rust.ipynb) · [jumeau C#](Argumentation-03b-Value-Based-AF-CSharp.ipynb) : enrichir Dung avec les valeurs de Bench-Capon et des audiences qui les ordonnent ; un même graphe peut conduire à des conclusions différentes selon l'audience.
 - [03c — Sémantiques de classement](Argumentation-03c-Ranking-Semantics-Python.ipynb) · [Rust](Argumentation-03c-Ranking-Semantics-Rust.ipynb) : calculer une force numérique par h-Categoriser ou par fardeau pour départager des arguments que Dung laisse au même statut.
 - [03d — ADF](Argumentation-03d-ADF-Semantiques-Python.ipynb) : remplacer l'attaque binaire par une condition d'acceptation booléenne et obtenir des interprétations à trois valeurs, en interrogeant le solveur SAT de Tweety via `argumentation_lib._adf_handler`.
 
