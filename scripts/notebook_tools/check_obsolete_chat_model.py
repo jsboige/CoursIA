@@ -60,7 +60,7 @@ Resolution bornee inter-cellules, dans l'ordre d'execution du carnet :
                                     les instanciations de la classe
 
 Cas fondateur (mesure, triage c.6428439365) :
-``GenAI/Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb`` -- cell 1
+``GenAI/Audio/04-Applications/Audio-04-5-LiveCoding-LLM-Music-Python.ipynb`` -- cell 1
 definit ``llm_model = "gpt-4o-mini"``, les cellules 20 et 33 appellent
 ``client.chat.completions.create(model=llm_model, ...)`` et la cellule 36
 passe par ``MusicSession(llm_model, ...)`` puis

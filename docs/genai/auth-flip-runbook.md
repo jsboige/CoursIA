@@ -264,7 +264,7 @@ exposé publiquement** (`tts-multi.myia.io` via IIS).
    # Logs container doivent confirmer : "Bearer token authentication ENABLED".
    docker logs tts-gateway 2>&1 | grep -i "authentication ENABLED"
    ```
-5. **Vérifier le notebook consommateur** : re-exécuter `02-5-Multi-Model-TTS-Gateway.ipynb`
+5. **Vérifier le notebook consommateur** : re-exécuter `Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb`
    (kernel `mcp-jupyter-py310`, `--cwd` le dossier du notebook) → doit toujours
    produire l'embed kokoro (la clé est lue via `GenAI/.env`).
 

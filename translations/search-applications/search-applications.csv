@@ -25167,7 +25167,7 @@ de la dominante vers la sous-dominante).
 ## 6. Pont GenAI : post-traitement voice leading d'une progression générée
 
 Ce module est une **brique de post-traitement** pour la veine de génération musicale du dépôt (série [`GenAI/Audio`](../../GenAI/Audio/README.md)) :
-[`02-6-MIDI-Generation.ipynb`](../../GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb) génère des progressions
+[`Audio-02-6-MIDI-Generation-Python.ipynb`](../../GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb) génère des progressions
 d'accords (mode diatonique) et [`04-3-Music-Composition-Workflow.ipynb`](../../GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb)
 les assemble en workflows. Ces générateurs produisent des **suites de pitch classes** ; le *voicing* —
 quelle octave, quelle voix — est précisément ce que notre affectation décide. Brancher ce notebook en

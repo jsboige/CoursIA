@@ -894,7 +894,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/"
-            "02-9-AceStep-Music-Generation.ipynb"
+            "Audio-02-9-AceStep-Music-Generation-Python.ipynb"
         ),
         motif=re.compile(r"Chaque section devrait contenir 2-6 lignes de texte"),
         raison=(
@@ -907,7 +907,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-            "04-14-VoiceLeading-Rendu-GenAI.ipynb"
+            "Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb"
         ),
         motif=re.compile(r"donne 12 lignes \(classes\)"),
         raison=(
