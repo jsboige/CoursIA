@@ -1,6 +1,6 @@
 # Secrets hygiene & coordinator discipline — detail
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 
 
@@ -167,6 +167,13 @@ lui-meme et fait echouer en cas de drift). Consequence mesuree le 2026-08-10 sur
 8.21.2 en le croyant « la version epinglee » a renvoye **0 finding** la ou 8.24.3 en trouvait **37** deux
 jours plus tot — dont, a l'epoque, ~7 credentials reellement fuites. Un scan sous un binaire different n'est
 pas une mesure de ce que la CI applique : c'est une mesure d'autre chose, et elle **paraissait rassurante**.
+
+Commandes de lecture des deux pins, deportees de la rule (tranche #11554, 2026-11-23) :
+
+```bash
+grep -A2 'gitleaks/gitleaks' .pre-commit-config.yaml | grep rev:   # pin pre-commit
+grep 'GITLEAKS_VERSION:' .github/workflows/secret-scan.yml          # pin CI (doit etre identique)
+```
 
 
 

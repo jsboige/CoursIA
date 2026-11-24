@@ -85,6 +85,10 @@ for _dir in (SCRIPTS, SCRIPTS / "coordination"):
 # Organe de decision : importe, jamais recopie (organ-first).
 import merge_ready  # noqa: E402
 
+# Conserver la semantique de checks de l'organe canonique : le rouge se lit
+# depuis check_run_state, jamais recopie en un miroir local.
+from check_run_state import RED  # noqa: E402
+
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_APPROVER = merge_ready.COORDINATOR_USER
 PAGE_SIZE = 40
@@ -98,12 +102,14 @@ EXIT_ERROR = 2
 # a travers des rafraichissements de base sans conflit.
 ACCEPTED_APPROVALS = ("at_head", "covering")
 
-# Conclusions de check-run classees ROUGES, miroir des trois organes canoniques
-# (check_run_state.py, check_adjoint_prevalidation.py, check_stale_guard_reds.py).
+# Conclusions de check-run classees ROUGES : importees de l'organe canonique
+# check_run_state (miroir des trois organes : check_run_state.py,
+# check_adjoint_prevalidation.py, check_stale_guard_reds.py), sous le nom
+# local qu'utilisent les sites de ce fichier.
 # `skipped` et `neutral` sont des VERTES : le predicate precedent (`!= "success"`)
 # les comptait comme rouges et fabriquait des rouges fantomes sur des jambes
 # desactivees (ex. Build Quarto / Deploy Pages sur une PR de docs).
-RED_CONCLUSIONS = {"failure", "timed_out"}
+RED_CONCLUSIONS = RED
 
 _PR_QUERY = """
 query($owner: String!, $name: String!, $cursor: String) {

@@ -1,0 +1,276 @@
+# Conformite differentielle du triplet GameTheory-03d (Deux especes de fleches).
+#
+# Le carnet Rust (kernel `evcxr`, `std` seul — aucun `:dep`) rejoue exactement
+# les 576 jeux 2x2 stricts et les 3456 paires (jeu, generateur) que le jumeau
+# Python (set + math, from-scratch) et que le jumeau C#. Les trois cotes n'ont
+# pas la meme structure de cellules : le Python et le Rust partagent le plan de
+# la spec, le C# a son propre decoupage. La correspondance est donc ecrite par
+# cote, comme l'impose le schema.
+#
+# Ecarts de forme declares (le contenu est le meme, la mise en forme change) :
+#   - le Python et le Rust n'accentuent pas ("generes", "desaccords", "preserves"),
+#     le C# accentue ("générés", "désaccords", "préservés") ;
+#   - le Python/Rust ecrivent "TOTAL : 2592 paires preservantes sur 3456 (75.0 %)",
+#     le C# ecrit "TOTAL : 2592 sur 3456 ; points fixes : 100" ;
+#   - le Python/Rust ecrivent "Points fixes (6/6 preserves) : 100 jeux", le C#
+#     ecrit "points fixes : 100".
+#
+# Ecarts de FOND declares (le cote C# est ABSENT, avec motif, et non une mesure
+# manquante) : le contre-exemple de la cellule 27 et le temoin R13 de la cellule
+# 34 sont des artefacts de l'ORDRE DU SET des 576 jeux. Le jumeau C# parcourt
+# les jeux dans l'ordre LEXICOGRAPHIQUE et imprime un AUTRE exemple
+# (R=[1,2,3,4], C=[1,2,3,4] + C12) ; il ne reproduit pas le temoin R13. Cotes
+# declares ABSENTS.
+#
+# Les valeurs comparees sont les grandeurs pivots du carnet : nombre de jeux
+# stricts, preserves par generateur, total de paires, points fixes, distribution
+# par nombre de generateurs transformateurs, desaccords/accords de la condition,
+# la derivation 384 + 48 = 432, et les deux exemples dependants de l'ordre du
+# set. Tolerance 0 partout : toutes ces grandeurs sont des entiers exacts.
+- name: "GameTheory-03d Deux especes de fleches"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Rust.ipynb
+  measures:
+    - id: total_strict_games
+      description: "Nombre de jeux 2x2 stricts generes (24 x 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Jeux stricts generes : ([0-9]+)"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "Jeux stricts generes : ([0-9]+)"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "Jeux stricts générés : ([0-9]+)"
+          transform: int
+    - id: preserved_per_generator
+      description: "Jeux preserves par le generateur R12 (le nombre pivot 432)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "R12 : ([0-9]+) preserves"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "R12 : ([0-9]+) preserves"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "R12 : ([0-9]+) préservés"
+          transform: int
+    - id: total_preserving_pairs
+      description: "Total de paires (jeu, generateur) preservantes sur 3456 (2592)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "TOTAL : ([0-9]+)"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "TOTAL : ([0-9]+)"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "TOTAL : ([0-9]+)"
+          transform: int
+    - id: fixed_points
+      description: "Points fixes : jeux preserves par les 6 generateurs (100)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Points fixes \\(6/6 preserves\\) : ([0-9]+) jeux"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "Points fixes \\(6/6 preserves\\) : ([0-9]+) jeux"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "points fixes : ([0-9]+)"
+          transform: int
+    - id: dist_0_transformers
+      description: "Jeux avec 0 generateur transformateur (100)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "0 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "0 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "0 générateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+    - id: dist_1_transformers
+      description: "Jeux avec 1 generateur transformateur (200)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "1 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "1 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "1 générateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+    - id: dist_2_transformers
+      description: "Jeux avec 2 generateurs transformateurs (180)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "2 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "2 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "2 générateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+    - id: dist_3_transformers
+      description: "Jeux avec 3 generateurs transformateurs (80)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "3 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "3 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "3 générateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+    - id: dist_4_transformers
+      description: "Jeux avec 4 generateurs transformateurs (16)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "4 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "4 generateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "4 générateur\\(s\\) transformateur\\(s\\) : +([0-9]+) jeux"
+          transform: int
+    - id: desaccords
+      description: "Desaccords de la conjecture naive sur 3456 paires (288)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "([0-9]+) desaccords"
+          transform: int
+        rust:
+          cell: 30
+          pattern: "([0-9]+) desaccords"
+          transform: int
+        csharp:
+          cell: 27
+          pattern: "([0-9]+) désaccords"
+          transform: int
+    - id: accords
+      description: "Accords de la condition verifiee sur 3456 paires (3456)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "accords = ([0-9]+)"
+          transform: int
+        rust:
+          cell: 30
+          pattern: "accords = ([0-9]+)"
+          transform: int
+        csharp:
+          cell: 27
+          pattern: "([0-9]+) accords"
+          transform: int
+    - id: derived_preserved
+      description: "Jeux preserves derives par la derivation R12 = 384 + 48 (432)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "= 384 \\+ 48 = ([0-9]+)"
+          transform: int
+        rust:
+          cell: 30
+          pattern: "= 384 \\+ 48 = ([0-9]+)"
+          transform: int
+        csharp:
+          cell: 27
+          pattern: "8 x 6 = ([0-9]+)"
+          transform: int
+    - id: contre_exemple
+      description: "Contre-exemple de la conjecture (artefact de l'ordre du set : R=(1,3,2,4) C=(2,4,1,3) + R12)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "contre-exemple : (R=\\([^)]*\\) C=\\([^)]*\\) \\+ [A-Z][0-9]+)"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "contre-exemple : (R=\\([^)]*\\) C=\\([^)]*\\) \\+ [A-Z][0-9]+)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# parcourt les jeux dans l'ordre lexicographique et
+            imprime un AUTRE exemple (R=[1,2,3,4], C=[1,2,3,4] + C12) : le
+            contre-exemple est un artefact de l'ordre du set, qui n'est pas le
+            sien. Cote declare ABSENT.
+    - id: r13_witness
+      description: "Temoin R13 de la generalisation (meilleure reponse 1 -> 0, artefact de l'ordre du set)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 34
+          pattern: "meilleure r.ponse : ([0-9]+) -> ([0-9]+)"
+          transform: int
+        rust:
+          cell: 37
+          pattern: "meilleure r.ponse : ([0-9]+) -> ([0-9]+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le temoin R13 est un artefact de l'ordre du set (cellules 27/34) :
+            le jumeau C# (ordre lexicographique) ne le reproduit pas. Cote
+            declare ABSENT.
