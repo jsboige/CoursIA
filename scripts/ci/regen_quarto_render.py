@@ -137,6 +137,7 @@ NOTEBOOK_SUBTREES = (
     # couverts par leurs entrees individuelles ci-dessus restent dedup
     # (precedent Integrations-DotNet/ <- Aspire/, tranche 18 #13581).
     "MyIA.AI.Notebooks/SymbolicAI/",                  # tranche finale #18423 (prefix famille, +1 racine)
+    "MyIA.AI.Notebooks/InformationCalcul/Cryptography/",  # sous-serie Cryptography du hub Information et calcul #27092 (Carnet 04 post-quantique, #27369)
     "MyIA.AI.Notebooks/InformationCalcul/InformationTheory/",  # serie InformationTheory #27077 (codage de canal, sous la famille InformationCalcul)
     "MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/",  # serie SignalProcessing #27086 (carnet 02 convolution/filtrage, hub InformationCalcul)
     "MyIA.AI.Notebooks/InformationCalcul/Automata/",  # serie Automata #27158 (automates et langages formels, jumeaux Python/C#)
