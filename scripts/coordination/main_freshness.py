@@ -39,20 +39,34 @@ tout. Un `main` qui bouge en permanence (30 fusions par jour) ne peut pas
 etre un motif de blocage : c'est l'ETAT du depot qui est degrade, pas la
 capacite du tirage.
 
-Pourquoi la degradation est sure : le code execute est verifie identique a
-`origin/main` par la mesure de divergence des organes ; l'ancre du tirage
-(le curseur de rotation) vit HORS du depot, dans l'etat local de la machine ;
-et les donnees lues par le tirage sont live (GitHub), pas lues dans un
-fichier du depot. Ce qui avait produit « sature, tout est livre » le
-14/11 n'est plus possible par ce chemin.
+Pourquoi la degradation est sure -- **sauf sous `ORGANE_DIVERGENT`**. Deux
+causes, deux garanties, et l'une des deux ne garantit rien :
+
+* **MAIN_PERIME** : le `main` local est en retard, mais le tirage ne lit que
+  `origin/main`. L'ancre du tirage (le curseur de rotation) vit HORS du
+  depot, dans l'etat local de la machine, et les donnees lues par le tirage
+  sont live (GitHub), pas lues dans un fichier du depot. Le code execute est
+  verifie identique a `origin/main` par la mesure de divergence des organes
+  -- laquelle ne signale rien tant qu'aucun module du tirage ne diverge. Ce
+  qui avait produit « sature, tout est livre » le 14/11 n'est plus possible
+  par ce chemin.
+* **ORGANE_DIVERGENT** : **la degradation n'est PAS sure** -- un module du
+  tirage differe d'`origin/main`, donc **le code execute n'est PAS identique
+  a `origin/main`** : c'est la version LOCALE qui sert, pas la version
+  publiee. La file est malgre tout servie (invariant I4 : degrade, jamais
+  bloque) et l'avertissement stderr le dit ; le remede est de remettre ces
+  modules a leur version d'`origin/main`, puis de rejouer le tirage.
+  (Formulation revue le 23/11 04:20Z sur #28114 : le paragraphe affirmait
+  l'identite du code execute sous cette cause, ce qui etait faux.)
 
 Le clone qui n'est pas sur `main` se mesure quand meme : les references
 candidates sont `refs/heads/main` quand elle existe (un worktree partage les
 refs du depot) puis `HEAD`, l'ecart retenu est le plus petit des deux, et le
 verdict nomme la reference qui l'a donne. Un worktree cree depuis un
 `origin/main` frais passe donc, meme si le `main` partage du clone principal
-est en retard : le tirage ne lit qu'`origin/main`, et ce qu'il execute est
-deja verifie par la divergence des organes.
+est en retard : le tirage ne lit qu'`origin/main`, et ce qu'il execute passe
+par la mesure de divergence des organes -- qui peut la signaler
+(`ORGANE_DIVERGENT`), sans bloquer le tirage.
 
 `--allow-stale` passe outre, explicitement : le depassement est dit dans la
 sortie JSON (`outre_passe: true`). C'est la voie de la lane qui developpe
@@ -287,6 +301,15 @@ def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
         for r in v["raisons_degradees"]:
             print(f"TIRAGE DEGRADE [{r['code']}] : {r['motif']} -- remede : {r['remede']}",
                   file=sys.stderr)
+        if any(r["code"] == "ORGANE_DIVERGENT" for r in v["raisons_degradees"]):
+            # La degradation n'est PAS sure sous cette cause : le code execute
+            # n'est pas identique a origin/main. Il faut le dire sur stderr,
+            # la ou la lane lit l'avertissement (revue de #28137, 23/11).
+            print("ATTENTION [ORGANE_DIVERGENT] : le code execute n'est PAS "
+                  "identique a origin/main -- la file servie est produite par "
+                  "une version locale du chemin du tirage, differente de la "
+                  "version publiee ; remettre ces modules a leur version "
+                  "d'origin/main puis rejouer le tirage.", file=sys.stderr)
         print("TIRAGE DEGRADE : la file est servie sur un etat perime "
               "(invariant I4 de #28114) ; le verdict complet est dans le "
               "rapport (fraicheur).", file=sys.stderr)

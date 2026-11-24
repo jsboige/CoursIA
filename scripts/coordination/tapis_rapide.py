@@ -493,9 +493,9 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
          maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
-    # repli picker) sur un main local en retard ou un organe du tirage divergent
-    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 (sans
+    # repli picker) est le REFUS -- mesure impossible ; retard ou module
+    # divergent DEGRADENT (sortie 0). Un rejeu --lecture est hors ligne.
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
