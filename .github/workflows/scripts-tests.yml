@@ -50,10 +50,10 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain'
       # #1028 melody verdict (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
       # #19695 banc de reference TTS (mirror of the push path above).
@@ -270,6 +270,22 @@ jobs:
     timeout-minutes: 44
 
     steps:
+      # #26468 (tranche 2, aide au diagnostic) : le mecanisme du p90 du
+      # checkout (1,60 -> 17,23 min au passage de T-K) n'est pas etabli --
+      # fetch promisor paresseux, lecture des alternates du miroir, ou
+      # SATURATION DISQUE du slot. Mesure du 20/11 : le meme workflow qui
+      # reussissait sur deux machines rendait 5 639 ENOSPC sur
+      # myia-ai-01-linux-main-1 (job 136243985925). Une mesure par job,
+      # horodatee dans le log, tranche « machine vs code » en une lecture
+      # et rend le prochain incident diagnosticable sans mobiliser un slot
+      # pour un A/B. Sans statut d'echec propre : cette etape ne peut pas
+      # rougir le job (df et du lisent, ils n'ecrivent rien).
+      - name: "Etat disque du slot au demarrage (df/du) (#26468)"
+        shell: bash
+        run: |
+          df -h / /tmp
+          du -sh ~/.local/state/CoursIA 2>/dev/null || true
+
       # ------------------------------------------------------------------
       # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
       # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
@@ -665,6 +681,7 @@ jobs:
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
+            MyIA.AI.Notebooks/Probas/Causalite/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \

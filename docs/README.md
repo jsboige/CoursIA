@@ -82,6 +82,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Câblage CI : matrice `ci_lakes.json` pour les lakes migrés (dont `knot_lean` depuis #13751 et `conway_lean` depuis #25256). Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`). See #8738 (step 3), #8752 (livraison) |
 | [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
+| [reference/axler-companions-distillation.md](reference/axler-companions-distillation.md) | Comparaison des deux compagnons Axler (linear-algebra-done-right-lean Apache-2.0 vs Axler-Solutions sans licence) et règle de distillation par verbe d'énoncé — Fille 3.2 de l'Epic Origami #24838 ; typologie mesurée sur 7 sections, gap ch. 10, application aux marches 3+ de la Fille 3.1 |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/gh-posting-hygiene-detail.md](reference/gh-posting-hygiene-detail.md) | Posting gh — détail : incidents de référence (sièges, OS, remédiation, le trompe-l'œil du rouge `tag_required` sur #17270/#17326) |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
@@ -210,6 +211,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
 | [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
 | [lean/junctions-apply-po-2028-c4362.md](lean/junctions-apply-po-2028-c4362.md) | Apply Mathlib WSL po-2028 (2026-10-31) — trois checkouts `db584cd6` remplacés par des symlinks vers le magasin `perc19494`, rollback en poubelle, et la mesure qui corrige le surcompte « 8 physiques » du bloc précédent. See #4362 |
+| [lean/junctions-apply-po-2024-c4362.md](lean/junctions-apply-po-2024-c4362.md) | Apply mutualisation Mathlib po-2024 (2026-11-21) — 24 symlinks WSL + 2 junctions NTFS vers les 3 magasins donateurs, rollback intégral en poubelle, purge différée. See #4362 |
 | [lean/junctions-verify-po-2027-c4362.md](lean/junctions-verify-po-2027-c4362.md) | Vérification build du groupe de jonctions `db584cd6` (po-2027, runs 1-7) — diagnostic ressources (palier LAKE_JOBS 20→1), KNOTS OOM même à un worker, suite #21319. See #4362 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
@@ -283,6 +285,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/solms-affect-pre-enregistrement.md](ict/solms-affect-pre-enregistrement.md) | Réalisation de pertinence — Solms & Friston 2018 (*Front Psychol* 9:2714) : l'affect comme forme élémentaire de la conscience, mécanisme homéostatique formalisé en énergie libre, localisation subcorticale ; dissociation level (affectif, subcortical) vs contents (corticaux) — protocole scellé avant écriture du banc, 5 prédictions (H1 subcortical vs null H0 readout cortical) |
 | [ict/ict23-anticipation-pre-enregistrement.md](ict/ict23-anticipation-pre-enregistrement.md) | Tranche T2 #26945 — le banc ICT-23 anticipe-t-il la transition ? rampe vers le pli de la fronce (Wissel 1984, Scheffer et al. 2009), deux nuls préservant le spectre, hystérésis au retour ; scellage avant toute ligne de code (ordre git vérifiable), bornage « ne teste pas un LLM » |
 | [ict/penrose-orch-or-pre-enregistrement.md](ict/penrose-orch-or-pre-enregistrement.md) | Case 24 — Penrose & Hameroff (Orch-OR, DP) : lois de régimes de la réduction objective (Fermi linéaire 2× vs blob quadratique √2) et effet dual τ/masquage lié par 1/(1+η) — protocole scellé v1 avant le banc, amendement v2 pré-exécution (géométrie blob), verdict SUPPORTED 8/8 |
+| [ict/perceptronium-pre-enregistrement.md](ict/perceptronium-pre-enregistrement.md) | Case 27 — Tegmark 2015 *Consciousness as a State of Matter* : banc de dissociation quantitative du perceptronium scellé avant mesure (H1-H7, amendements A1-A3 pré-mesure dont le finding S''(0) = 0 exact) ; loi d'échelle 2^-4b réfutée (~2^-b mesuré, robuste sur 6 potentiels), identités exactes et plafond Φ = log(27/16)/log 8 confirmés |
 
 ## Curriculum (docs/curriculum/)
 
@@ -308,6 +311,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
+| [curriculum/manifeste-dependances.md](curriculum/manifeste-dependances.md) | Manifeste des dépendances du cursus par famille de noyau — verdict d'inclusion dans l'image CPU, motifs mesurés ou déclarés, conflits de versions, manifeste consolidé (généré par `scripts/notebook_tools/dependency_manifest.py`, #27544) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 

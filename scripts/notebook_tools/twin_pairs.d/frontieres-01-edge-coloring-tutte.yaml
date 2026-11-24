@@ -1,0 +1,11 @@
+- name: "Frontieres-01 Edge Coloring Tutte"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets resolvent reellement la 3-coloration d'aretes d'un graphe cubique comme CSP de couplages parfaits : Google OR-Tools CP-SAT natif en Python, Microsoft.Z3 (SMT) natif en C#. Les familles temoins (Petersen, cubique a pont, echelles de Mobius, K_n, K3,3) et la dichotomie de Vizing sont communes aux deux versions."
+  known_differences:
+    - "Le solveur natif differe : Google OR-Tools CP-SAT en Python, Microsoft.Z3 (SMT) en C# ; les statuts canoniques (FEASIBLE/INFEASIBLE/UNKNOWN) et les chronometrages sont propres a chaque version."
+    - "Les figures Matplotlib (Python) sont remplacees par des sorties textuelles et des SVG autonomes en C#."
+    - "L'echantillonnage aleatoire de graphes cubiques (graine 42) peut produire des instances distinctes entre les deux versions ; les taux agreges (apex / planaire / snark) sont du meme ordre."
