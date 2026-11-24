@@ -1,0 +1,10 @@
+- name: "Argumentation-06 JTMS"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le JTMS et ses instruments sont une implémentation pédagogique BCL en C#. Les étiquettes et justifications sont versées dans le véritable UnifiedAnalysisState du dépôt via Python.NET."
+  known_differences:
+    - "Le C# énumère et affiche les noms dans un ordre déterministe. La cascade, Tarjan, l'application argumentative et les trois exercices suivent les cas du Python."
+    - "Le calcul d'étiquetage est présenté dans son domaine de validité positif, avec un avertissement sur les cycles à conditions OUT. Le code ne démarre ni service ni JVM."

@@ -37,8 +37,8 @@ Les variantes du palier 11 sont présentées sous [Approfondissements](#autour-d
 | 06 | [Comparaison des méthodes](PT_06_eval_comparative.ipynb) | Organiser un choix de méthode et un protocole comparatif à partir de scénarios de coût. | Après 02–05 ; CPU. | Les valeurs GSM8K de cette synthèse sont estimatives. |
 | 07 | [Détecter le détournement de récompense](PT_07_rewardspy_reward_hacking.ipynb) | Instrumenter une récompense, lire un journal et repérer des comportements de Goodhart. | Notion de récompense ; `rewardspy`. | Trajectoire synthétique et analyse hors ligne. |
 | 08 | [GRPO écrit à la main](PT_08_grpo_from_scratch_toy_env.ipynb) | Comparer REINFORCE, PPO et GRPO sur une tâche vérifiée par Z3. | PyTorch et probabilités ; CPU. | Taille du groupe et définition de la récompense. |
-| 09 | [Baseline leave-one-out](PT_09_rloo_from_scratch_toy_env.ipynb) | Comparer RLOO, REINFORCE et GRPO, puis discuter biais et variance. | Après 08 ; CPU. | Sensibilité au groupe et aux graines. |
-| 10 | [Modèle de valeur et GAE](PT_10_gae_from_scratch_toy_env.ipynb) | Construire un modèle de valeur (*critic*) qui estime le retour attendu, puis un avantage ; comprendre le rôle de lambda. | Après 08–09 ; CPU. | Le palier 12 traite le crédit réellement différé. |
+| 09 | [Baseline leave-one-out](PT_09_rloo_from_scratch_toy_env.ipynb) · [C#](PT_09_rloo_from_scratch_toy_env-CSharp.ipynb) | Comparer RLOO, REINFORCE et GRPO, puis discuter biais et variance. | Après 08 ; CPU. | Sensibilité au groupe et aux graines. |
+| 10 | [Modèle de valeur et GAE](PT_10_gae_from_scratch_toy_env.ipynb) · [C#](PT_10_gae_from_scratch_toy_env-CSharp.ipynb) | Construire un modèle de valeur (*critic*) qui estime le retour attendu, puis un avantage ; comprendre le rôle de lambda. | Après 08–09 ; CPU. | Le palier 12 traite le crédit réellement différé. |
 | 12 | [Crédit différé multi-étapes](PT_12_multistep_delayed_credit.ipynb) | Construire une récompense terminale causale et mesurer l'effet de GAE sur un horizon étendu. | Après 10 ; CPU. | Ablation du façonnage de récompense et variation de l'horizon. |
 | 13 | [Corrections DAPO et Dr.GRPO](PT_13_dapo_drgrpo_corrections.ipynb) | Isoler biais de longueur, normalisation par l'écart-type et clipping asymétrique. | Après 08 ; gradients PyTorch, CPU. | Distinguer effet sur le gradient et gain comportemental. |
 | 14 | [Thermodynamique de l'entraînement](PT_14_neural_thermodynamic_laws.ipynb) | Examiner des relations entre taux d'apprentissage, fluctuations et relaxation sur des modèles contrôlés. | Optimisation et statistiques ; CPU. | Résolution de la mesure et limites du mini-GPT. |
@@ -195,6 +195,8 @@ La série modern-llm de JohnEnev offre un retour d’expérience externe : [pré
 [Retour à GenAI](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md) · [Licence](../../../LICENSE)
 
 ### Compagnon C# de PT-08
+
+[PT-09 C#](PT_09_rloo_from_scratch_toy_env-CSharp.ipynb) et [PT-10 C#](PT_10_gae_from_scratch_toy_env-CSharp.ipynb) partagent la configuration .NET, TorchSharp CPU et Z3 ci-dessous. Le premier entraîne trois politiques sur 400 épisodes. Le second compare les estimateurs sur cinq graines et appelle directement Z3 aux réponses terminales de son diagnostic multi-étape.
 
 [PT-08 C#](PT_08_grpo_from_scratch_toy_env-CSharp.ipynb) reprend [PT-08 Python](PT_08_grpo_from_scratch_toy_env.ipynb) avec TorchSharp-cpu 0.107.0/libtorch CPU 2.10.0 pour les réseaux et Microsoft.Z3 4.12.2 pour les vérifications. La fast-path tensorielle d'entraînement est contrôlée contre 2400 vrais checks SMT ; elle ne lance pas Z3 à chaque action. Les générateurs et trajectoires diffèrent entre langages. Le jouet a 96 prompts sans jeu séparé et n'inclut ni séquence ni pénalité KL.
 
