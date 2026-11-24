@@ -10,3 +10,4 @@
     - "SVD collaborative float32 dans les deux versions, puis produit U/V accumulé en double C# contre matmul float32 Python."
     - "Bootstrap apparié de 4000 réplications avec RNG propres ; aucun accord bit à bit des IC ni supériorité universelle revendiqué."
     - "15 bits par item est un coût idéal des indices, hors livres et mémoire des structures. Les trois exercices sont non résolus et contrôlés."
+    - "2026-11-23 (#28053) : navigation — le jumeau Python cite ML-07c (carnet Python seul) dans sa chaîne ; le jumeau C# ne le cite pas ; contenu pédagogique inchangé."

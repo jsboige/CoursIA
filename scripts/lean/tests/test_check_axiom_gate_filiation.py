@@ -191,6 +191,51 @@ class TestRenameProof:
         assert rename_proven("HEAD", "Lean/GOL5/conway5_lean",
                               "Lean/JeuDeLaVie5/conway5_lean") is True
 
+    def _rename_with_stray_twin(self, tmp_path, n_lake_files):
+        """Renomme un lake dont UN fichier part, a l'identique, chez un voisin.
+
+        Forme mesuree le 2026-11-23 (#26381) : un ``lean-toolchain`` de meme
+        contenu que celui d'un autre lake est apparie par git avec le fichier
+        neuf de CET autre lake. Le voisin ``Lean/Aaa7`` trie avant la vraie
+        destination : git le liste en premier.
+        """
+        run = self._init(tmp_path)
+        lake = tmp_path / "Lean/GOL7/conway7_lean"
+        lake.mkdir(parents=True)
+        (lake / "lean-toolchain").write_text("leanprover/lean4:v4.0.0\n", encoding="utf-8")
+        for i in range(n_lake_files):
+            (lake / f"Conway{i}.lean").write_text(f"-- module {i}\n", encoding="utf-8")
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        new = tmp_path / "Lean/Jeu7/conway7_lean"
+        new.mkdir(parents=True)
+        for i in range(n_lake_files):
+            (lake / f"Conway{i}.lean").rename(new / f"Conway{i}.lean")
+        twin = tmp_path / "Lean/Aaa7/other7_lean"
+        twin.mkdir(parents=True)
+        (lake / "lean-toolchain").rename(twin / "lean-toolchain")
+        lake.rmdir()
+        run("add", "-A")
+        run("commit", "-q", "-m", "rename with a stray twin")
+
+    def test_a_stray_identical_file_does_not_hijack_the_proof(self, tmp_path, monkeypatch):
+        """La destination de la MAJORITE des fichiers fait foi, pas la premiere."""
+        from check_axiom_gate_coverage import rename_proven
+        self._rename_with_stray_twin(tmp_path, n_lake_files=3)
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/GOL7/conway7_lean",
+                              "Lean/Jeu7/conway7_lean") is True
+        assert rename_proven("HEAD", "Lean/GOL7/conway7_lean",
+                              "Lean/Aaa7/other7_lean") is False
+
+    def test_a_tied_vote_proves_nothing(self, tmp_path, monkeypatch):
+        """Une voix contre une : aucune majorite stricte, la filiation reste inprouvee."""
+        from check_axiom_gate_coverage import rename_proven
+        self._rename_with_stray_twin(tmp_path, n_lake_files=1)
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/GOL7/conway7_lean",
+                              "Lean/Jeu7/conway7_lean") is False
+
     def test_a_copied_lake_is_not_a_rename(self, tmp_path, monkeypatch):
         """Une copie n'est pas un deplacement : l'ancien chemin existe encore."""
         import shutil
