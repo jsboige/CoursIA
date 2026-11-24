@@ -19,15 +19,15 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_sature, tapis_service,
+                         tapis_attente, tapis_cle, tapis_sature, tapis_service,
                          tapis_voie_leger)
+from coordination.tapis_etat_issue import Etat  # noqa: F401  (re-export : une seule adresse)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -62,31 +62,6 @@ _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
 _TITRE_EPIC_RE = re.compile(r"^\s*\[\s*epic\b[^\]]{0,40}?#(\d+)", re.IGNORECASE)
 _TITRE_CROCHET_RE = re.compile(r"^\s*\[#(\d+)\b")
 _TITRE_KIND_RE = re.compile(r"^\s*[\w.\- ]+?\s*\([^)]*?,\s*#(\d+)[^)]*\)\s*:")
-
-
-@dataclass
-class Etat:
-    """L'etat d'une issue ouverte pour une lane : servable si `ecart` est None."""
-
-    numero: int
-    titre: str
-    labels: list[str]
-    cree_le: str
-    parent: int | None
-    famille: int
-    conteneur: bool
-    consolidation: bool
-    derniere_visite: str | None = None
-    visites: int = 0  # seances du tour (FENETRE_J jours), l'unite de l'equilibrage
-    visites_total: int = 0  # seances sur toute la lecture
-    ecart: str | None = None
-    motif: str = ""
-    notes: list[str] = field(default_factory=list)
-    mon_claim: bool = False
-    occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
-    #: L'etat de grain (c3274) : `grain`, `passage_seul`, `jamais_servie` ou
-    #: `non_measurable`. `None` = inconnu (la voie legere ne lit pas le fil).
-    etat_grain: str | None = None
 
 
 def parent_de(it: dict) -> int | None:
@@ -311,6 +286,9 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
+    # La CLE DE SERVICE (19/11) : la date de la derniere PR qui couvre le
+    # grain -- le departage a niveau egal, pas le premier critere.
+    tapis_cle.appliquer(resultat, lecture)
     return resultat
 
 

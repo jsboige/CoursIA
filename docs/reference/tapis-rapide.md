@@ -572,6 +572,10 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_universel.py` | la rotation universelle sur les métadonnées |
 | `scripts/coordination/gh_snapshot.py` | le **fil complet** (REST paginé) — l'organe de la qualification |
 | `scripts/coordination/tapis_labels.py` | les **exclusions en données** : la table des labels qui écartent un grain (`candidate-delivered`, `pause`) — #28114 |
+| `scripts/coordination/tapis_canon.py` | la **forme canonique** d'un lien vers une issue (`See #N`, `Closes #N`, `Fix(portée,#N)`) — la clé de service ne court que sur elle (19/11) |
+| `scripts/coordination/tapis_cle.py` | la **clé de service** : la date de la dernière PR qui couvre le grain, et sa propagation au hub (19/11) |
+| `scripts/coordination/tapis_compte.py` | le **compte historique** des visites — extrait de `tapis_equilibre.py` pour tenir son plafond (19/11) |
+| `scripts/coordination/tapis_etat_issue.py` | le dataclass `Etat` de l'issue servie — extrait de `tapis_rapide.py` (19/11) |
 
 ### Ce qui déclenche le repli, et ce que le cap y devient
 
@@ -653,17 +657,20 @@ de 72 h. Dans l'état réel de la lane (`myia-ai-01:CoursIA-2`, ancre à 10) les
 numéro et l'âge y désignent les mêmes issues — l'écart n'apparaît que lorsque l'ancre a avancé, ce qui est le
 cas de toute lane qui tourne.
 
-**La clé porte la DATE DE CRÉATION, pas la dernière visite.** La dernière visite change à chaque tour : une
+**La clé porte une DATE IMMUABLE : la création, ou le service.** La dernière visite change à chaque tour : une
 visite en ouvre une autre, et un ordre construit sur une clé qui bouge ne se ferme pas — c'est l'échec mesuré
 le 19/11 (380 issues sur 440 atteintes en un tour, sans jamais fermer le tour). La date de création est
-**immuable** : elle dit depuis quand l'issue attend. La clé, dans l'ordre :
+**immuable** : elle dit depuis quand l'issue attend. Depuis le 19/11, la clé porte la **date de service** —
+la date de la dernière PR qui **couvre** le grain — quand il y en a une ; la création n'en est plus que le
+repli. La date d'une PR est elle aussi immuable (sa **création** : une correction poussée dans une PR
+existante ne la recrée pas). La clé, dans l'ordre :
 
 | Composante | Rôle |
 | --- | --- |
 | bande de fraîcheur | une issue de moins de `SEUIL_FRAICHES_H` = **72 h** va en **queue** (« on mettra les nouvelles issues en fin de tapis ») — **sauf** si elle est une consolidation |
 | consolidation | la consolidation passe devant la non-consolidation de même bande (revue ai-01 du 22/11) |
 | jamais visitée | l'équité du 16/11 : une issue jamais visitée passe devant une issue déjà servie |
-| date de création | les anciennes d'abord |
+| **date de service** | la dernière PR qui **couvre** le grain ; la **création** n'en est que le repli (aucune PR ne le couvre) |
 | numéro | le désempilement, stable et reproductible |
 
 **La consolidation est dans la clé, pas à côté** (revue ai-01 du 22/11). Le mandat du cycle veut « un picker
@@ -716,8 +723,57 @@ sont laissés de côté, la vague suivante prend le bloc suivant, les numéros s
 la consolidation passe devant, échappe à la bande fraîche, et s'hérite de sa famille.
 `scripts/tests/test_tapis_vagues.py` (3 tests) suit la même sélection pour les vagues.
 
-Le module : `scripts/coordination/tapis_age.py` — clé, tri, bandes, sélection, tour. Il lit `cree_le`,
-`visites_total`, `consolidation` et `famille` des états, n'écrit rien et ne lit pas le réseau.
+Le module : `scripts/coordination/tapis_age.py` — clé, tri, bandes, sélection, tour. Il lit `cle_service` (la
+CLÉ DE SERVICE, 19/11), `cree_le`, `visites_total`, `consolidation` et `famille` des états, n'écrit rien et ne lit
+pas le réseau.
+
+## La clé de SERVICE : la dernière PR qui couvre le grain (19/11)
+
+Mandat du coordinateur (19/11) : « Remplacer poids/bonus/seances par une voix par issue, ordre de la dernière
+PR dont le diff couvre le grain, départage uniforme à égalité ; sans PR, vieillissement depuis la création (pas
+d'ancienneté héritée). Une PR enfant remet aussi le hub en queue, pas les frères ; pas de nouveau service sur
+correction de PR existante. »
+
+**Ce que la clé est.** Une date par grain : celle de la dernière PR qui le **couvre**. Le lien se lit dans le
+**corps** de la PR, et seulement sous une forme **canonique** — `See #N`, `Part of #N`, `Closes #N`,
+`Fix(portée,#N)` (`tapis_canon`) ; une mention en prose (`cf. #N`, le numéro de la PR du squash, la portée
+`(zone)`) ne prouve rien. Deux sources : les **commits mergés** qui citent l'issue (le corps du squash porte le
+body de la PR) et les **PRs ouvertes** qui la couvrent. La date d'une PR est sa **création** : une correction
+poussée dans une PR existante ne la recrée pas — elle ne remet donc pas le grain en tête.
+
+**Le hub suit son enfant.** Une PR qui couvre un enfant couvre aussi le **hub**, et **seulement** lui : les
+frères gardent leur propre clé. Un pli **neuf** n'hérite pas de l'âge du hub : sans PR, la clé est vide et
+l'ancienneté retombe sur la création.
+
+**Ce que la clé n'est pas.** Elle ne **primarise** pas l'ordre. La **classe** reste le premier critère — le
+niveau de visite (`tapis_equilibre.niveau`) dans la voie universelle, la bande / la consolidation / la jamais
+visitée dans la voie légère — parce que l'**invariant de couverture** du 16/11 (#27590) est mergé et exécuté :
+une issue jamais servie ne cède jamais sa place à une issue déjà servie. La variante « clé primaire » rend ce
+modèle impossible : les deux tests de propriété de `scripts/tests/test_visit_coverage.py` échouent (une issue
+servie passe devant une issue jamais servie). La clé est donc le **départage à classe égale**, et c'est là
+qu'elle agit :
+
+| Voie | Classe (premier critère) | Départage à classe égale |
+| --- | --- | --- |
+| universelle (`tapis_equilibre.ordre`) | le niveau de visite | la **clé de service** remplace la création dans le tri |
+| légère (`tapis_age.cle`) | bande, consolidation, jamais visitée | la **clé de service** remplace la date de création |
+
+**La bande change de mesure.** La fraîcheur se mesure depuis le **service** : un grain dont la dernière PR est
+d'il y a deux jours n'est pas un grain ancien, même si l'issue est vieille de six mois. Sans PR, la fraîcheur
+retombe sur la création, comme avant.
+
+**Ce qui est annoncé.** Le rapport (`tapis_equilibre.raisons`) nomme la clé et sa source : « clé de service :
+2026-11-20T10:00:00Z (PR #28451) » — ou « clé de service : aucune PR — création 2026-06-01T00:00:00Z ».
+
+**Ce qui n'est pas livré ici.** Le lien canonique est un **candidat** : la **confirmation par le diff** (une
+livraison dont le diff couvre le périmètre) et le **relevé persistant** font l'objet d'une PR distincte ; la clé
+d'ici s'en tient au candidat.
+
+Les modules : `scripts/coordination/tapis_canon.py` (la forme canonique),
+`scripts/coordination/tapis_cle.py` (la clé et sa propagation),
+`scripts/coordination/tapis_compte.py` (le compte historique des visites, extrait pour tenir le plafond du
+classement). L'état porte la clé : `scripts/coordination/tapis_etat_issue.py` (le dataclass `Etat`, extrait de
+`tapis_rapide.py`). Les tests : `scripts/tests/test_tapis_cle.py`.
 
 ## La qualification, côté consommateur (#27225, suite du 18/11)
 

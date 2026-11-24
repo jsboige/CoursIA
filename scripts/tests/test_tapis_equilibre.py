@@ -14,7 +14,8 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from coordination import tapis_equilibre as te
+from coordination import tapis_canon, tapis_cle, tapis_compte, tapis_equilibre as te
+from coordination import tapis_etat_issue
 from coordination import tapis_rapide as tr
 from coordination import tapis_seance
 from coordination.tapis_marqueurs import Evt
@@ -166,10 +167,13 @@ def test_la_consolidation_recoit_une_priorite_legere_a_tout_age():
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     assert te.raisons(etat(lec, 1), conso, NOW) == [
         "2 visite(s) en 7 j (2 au total)",
+        "cle de service : aucune PR -- creation 2026-06-01T00:00:00Z",
         "priorite d age : -0.3 visite (plafonnee : la consolidation passe devant)",
         "priorite de consolidation : -0.6 visite"]
     assert te.raisons(etat(lec, 2), conso, NOW) == [
-        "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.1 visite",
+        "2 visite(s) en 7 j (2 au total)",
+        "cle de service : aucune PR -- creation 2026-11-01T00:00:00Z",
+        "priorite d age : -0.1 visite",
         "priorite de consolidation : -0.6 visite"]
 
 
@@ -234,8 +238,12 @@ def test_le_rapport_porte_les_raisons_du_rang():
     etats_ = tr.etats(lec, LANE, NOW)
     r = tr.rapport(lec, etats_, tr.ordonner(etats_, LANE, NOW, 8), LANE, NOW, "g")
     assert [(g["numero"], g["priorite"]) for g in r["grains"]] == [
-        (2, ["0 visite(s) en 7 j (0 au total)", "priorite d age : -0.2 visite"]),
-        (1, ["1 visite(s) en 7 j (1 au total)", "priorite d age : -0.2 visite"])]
+        (2, ["0 visite(s) en 7 j (0 au total)",
+             "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z",
+             "priorite d age : -0.2 visite"]),
+        (1, ["1 visite(s) en 7 j (1 au total)",
+             "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z",
+             "priorite d age : -0.2 visite"])]
     assert r["lecture"]["familles"] == 2
 
 
@@ -269,6 +277,7 @@ def test_les_deux_avantages_sont_distincts_et_cumulables():
     e = etat(lec, 1)
     assert te.raisons(e, conso, NOW) == [
         "0 visite(s) en 7 j (0 au total)",
+        "cle de service : aucune PR -- creation 2026-01-01T00:00:00Z",
         "priorite d age : -0.3 visite (plafonnee : la consolidation passe devant)",
         "priorite de consolidation : -0.6 visite"]
     assert te.niveau(e, conso, NOW) == -0.9
@@ -293,7 +302,8 @@ def test_l_age_est_compte_en_jours_pleins():
 def test_module_pur_et_borne():
     """Fonctions pures : aucun import de processus ni de reseau. Plafond releve
     a la livraison ; un depassement se paie en extrayant, pas en relevant."""
-    for module, plafond in ((te, 160), (tapis_seance, 60)):
+    for module, plafond in ((te, 160), (tapis_seance, 60), (tapis_compte, 60),
+                            (tapis_cle, 140), (tapis_canon, 80), (tapis_etat_issue, 60)):
         texte = (Path(module.__file__)).read_text(encoding="utf-8")
         assert len(texte.splitlines()) <= plafond
     # La purete et la taille des fonctions se verifient sur le module du

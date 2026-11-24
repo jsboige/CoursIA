@@ -17,6 +17,7 @@ from pathlib import Path
 
 from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
     Lecture, LectureIncomplete, issue)
+from coordination.tapis_canon import est_canonique  # lien canonique : la CLE DE SERVICE
 
 Run = Callable[[list[str], int], str]
 
@@ -171,8 +172,12 @@ def lire_citations_mergees(depot: str | Path, jours: int = 45,
         fermes = {int(n) for n in _FERME_RE.findall(message)}
         fermes |= {int(n) for n in _CITATION_RE.findall(portee.group(1))} if portee else set()
         for num in sorted({int(n) for n in _CITATION_RE.findall(message)}):
-            citations.setdefault(num, []).append({"sha": parts[0], "date": date,
-                                                  "sujet": parts[2], "ferme": num in fermes})
+            citations.setdefault(num, []).append(
+                {"sha": parts[0], "date": date, "sujet": parts[2],
+                 "ferme": num in fermes,
+                 # La mention n'est pas un lien : seule la forme CANONIQUE
+                 # candidate le grain a une cle de service (19/11).
+                 "canonique": est_canonique(message, num)})
     return citations
 
 
