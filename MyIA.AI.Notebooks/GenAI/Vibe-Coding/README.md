@@ -200,7 +200,7 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 
 ### Voir le dépôt vivre — animation Gource de l'historique
 
-Avec 22 587 commits sur quatre ans, l'historique git de CoursIA se prête à une **animation [Gource](https://gource.io/)** : le dépôt comme arbre qui pousse, chaque commit est une étincelle sur un fichier. C'est le même harnais que vous venez de lire — vu de l'extérieur, dans le temps.
+Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prête à une **animation [Gource](https://gource.io/)** : le dépôt comme arbre qui pousse, chaque commit est une étincelle sur un fichier. C'est le même harnais que vous venez de lire — vu de l'extérieur, dans le temps.
 
 **Accès** : la vidéo (`gource-coursia-history.mp4`) est stockée **hors dépôt** — une vidéo de plus de 512 Ko n'entre pas dans le dépôt. Elle vit dans le Google Drive du mainteneur, dossier `MyIA/IA/CoursIA-artefacts/` (demander l'accès au mainteneur pour la consulter).
 
@@ -223,11 +223,11 @@ Avec 22 587 commits sur quatre ans, l'historique git de CoursIA se prête à une
 | 2026-01-23 | Première preuve Lean |
 | 2026-01-27 | Première série GameTheory |
 | 2026-02-02 | Premier projet QuantConnect |
-| 2026-11-11 | Premier fichier C# / .NET |
+| 2024-05-14 | Premier fichier C# / .NET |
 
 **Comment la reproduire** (procédure reproductible) :
 
-1. **Prérequis** : [Gource 0.53](https://github.com/acaudite/Gource/releases/tag/gource-0.53) (archive `win64` : le binaire + ses DLLs, à dézipper dans un dossier) et **ffmpeg** dans le PATH ; un clone **complet** du dépôt (pas shallow — Gource lit tout l'historique).
+1. **Prérequis** : [Gource 0.53](https://github.com/acaudwell/Gource/releases/tag/gource-0.53) (archive `win64` : le binaire + ses DLLs, à dézipper dans un dossier) et **ffmpeg** dans le PATH ; un clone **complet** du dépôt (pas shallow — Gource lit tout l'historique).
 2. **Rendu** (depuis la racine du clone ; `-s 0.25` = 0,25 s de vidéo par jour d'historique, l'auto-skip de Gource compresse les périodes sans commit) :
 
    ```bash
@@ -235,7 +235,7 @@ Avec 22 587 commits sur quatre ans, l'historique git de CoursIA se prête à une
      | ffmpeg -y -r 30 -f image2pipe -vcodec ppm -i - -b:v 4000k gource-coursia-history.mp4
    ```
 
-3. **Mesure de référence** : la vidéo fait **3 min 29** (119 Mo) ; le rendu complet (22 587 commits) a tourné en arrière-plan en ~20 min sur une machine du cluster (mesuré le 24/11/2026).
+3. **Mesure de référence** : la vidéo fait **3 min 29** (119 Mo) ; le rendu complet (plus de 22 000 commits) a tourné en arrière-plan en ~20 min sur une machine du cluster (mesuré le 24/11/2026).
 4. **Note Gource** : le flag `-a` n'est **pas** un booléen dans la 0.53 — c'est `--auto-skip-seconds SECONDS` (actif par défaut) ; il n'y a pas de `--auto-skip-times` dans ce binaire.
 
 ### Références croisées
