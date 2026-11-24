@@ -8,11 +8,11 @@
 |---------|-------|-----------|----------|
 | [`search-applications.csv`](search-applications.csv) | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/` | 51 au 2026-11-11 (dossier plat, déplacement #19253 — le compte courant vit dans le CSV) | 2117 au 2026-11-11 (markdown + code, 29 colonnes à cette date — compte courant mesurable dans le CSV) |
 
-La série couvre les trois familles de cas pratiques du cours de recherche (thématiques, le dossier étant plat ; comptes de famille au seed 2026-07-16) :
+La série couvre les trois familles de cas pratiques du cours de recherche (thématiques, le dossier étant plat) :
 
-- **CSP** (26 notebooks) — modélisation et résolution de problèmes de satisfaction de contraintes : N-Queens, graph coloring, nurse/job-shop/sports/timetabling, Picross, Wordle, Minesweeper, Crossword, WFC, MiniZinc, Sudoku benchmark.
-- **Hybrid** (10 notebooks) — métaheuristiques et approches mixtes : edge detection, portfolio, TSP, VRP logistics, hyperparameter tuning.
-- **Search** (4 notebooks) — applications adversariales et de jeu : Connect Four (minimax + adversarial).
+- **CSP** — modélisation et résolution de problèmes de satisfaction de contraintes : N-Queens, graph coloring, nurse/job-shop/sports/timetabling, Picross, Wordle, Minesweeper, Crossword, WFC, MiniZinc, Sudoku benchmark.
+- **Hybrid** — métaheuristiques et approches mixtes : edge detection, portfolio, TSP, VRP logistics, hyperparameter tuning.
+- **Search** — applications adversariales et de jeu : Connect Four (minimax + adversarial).
 
 **Schéma** : 29 colonnes au 2026-11-11 (#4957 §1 — le schéma courant se lit dans l'en-tête du CSV). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/fa/zh/ru/pt`) vides pour le moteur T3 Argumentum (#1650 Phase 1).
 
