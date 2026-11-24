@@ -154,11 +154,25 @@ jobs:
     # par construction. L'entree d'allowlist du workflow reste NECESSAIRE pour
     # lui -- ne pas la retirer en croyant suivre la note d'origine.
     runs-on: ubuntu-latest
-    # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
-    # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
-    # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
-    # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
-    timeout-minutes: 60
+    # 75 et non 60 depuis le 24/11 (pages-deploy-rouge, option 1 de #26337) :
+    # le plafond de 60 avait ete calibre sur un rendu de 19-24 min (#14283),
+    # mais la liste de rendu est passee de ~1276 a **2846** entrees et le
+    # diagnostic du 13/11 (#26337, livre par po-2028) mesure 41-52 min de job
+    # sur ~2655 documents, avec un debit constant de 0,96 s/doc -- c'est le
+    # CORPUS qui a double, pas un cache perdu.
+    #
+    # Re-mesure du 24/11 sur les runs `push` :
+    #   run 45340506900 (tete deb5039f7) -- rendu REUSSI en **47 min**
+    #     (06:46:03Z -> 07:33:05Z) ;
+    #   run 45371168543 (tete 0e3519999) -- rendu TUE par le plafond
+    #     (10:36:18Z -> 11:36:18Z, soit 60 min 16 s), job `cancelled`,
+    #     `assemble-pages` et `deploy` SAUTES => **le site n'est plus publie**.
+    # 75 min couvre le pire cas mesure (rendu >= 57 min) avec ~18 min de
+    # marge, et la croissance du corpus (+19 s/jour a 0,96 s/doc) pendant des
+    # annees ; le diagnostic de #26337 y evaluait ~3 mois de pousse.
+    # Le rendu reste sur `ubuntu-latest` (hosted, minutes gratuites) : le pool
+    # auto-heberge ne tient pas 2846 documents.
+    timeout-minutes: 75
     permissions:
       contents: read
     steps:
@@ -340,7 +354,18 @@ jobs:
     # (un organe qui enumere zero cible ne mesure rien, #8807 trap 1).
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     name: Build Slidev decks
-    runs-on: ubuntu-latest
+    # ubuntu-24.04 et NON ubuntu-latest (pages-deploy-rouge, 24/11) :
+    # `ubuntu-latest` est passe a **ubuntu 26.04**, et le `playwright-core`
+    # epingle dans `slides/package-lock.json` (1.58.2) refuse cette plateforme :
+    #   Error: ERROR: Playwright does not support chromium on ubuntu26.04-x64
+    #   at Registry._downloadExecutable (.../playwright-core/.../registry/index.js:1152)
+    # -> `npm ci` echoue sur le script d'installation de `playwright-chromium`,
+    # et le job rouge sur les deux jobs a chaque push. Controle positif :
+    # `slides-build-advisory.yml` construit les memes decks sur **ubuntu-24.04**
+    # et il est vert (run 45395701137, 12:39Z, meme jour) -- la voie est donc
+    # prouvee, et l'image est **epinglee** (comme le pin de Quarto et de
+    # gitleaks) pour ne pas dependre du glissement de `ubuntu-latest`.
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     permissions:
       contents: read
@@ -513,9 +538,20 @@ jobs:
 
       - name: Install JupyterLite
         # Versions egales : le noyau Pyodide doit correspondre au core.
+        #
+        # `jupyter-server` est requis PAR LA CONSTRUCTION (pages-deploy-rouge,
+        # 24/11) : l'etape `post_build:contents:contents:.` de `jupyter lite
+        # build` leve sans lui
+        #   RuntimeError: jupyter-server is not installed.
+        #                You cannot add custom content to jupyterlite.
+        # et le job echoue. Mesure locale (venv `jupyterlite-core==0.8.7` +
+        # `jupyterlite-pyodide-kernel==0.8.7`, lot de 8 carnets) : rc != 0 sans
+        # le paquet, **rc=0** avec lui (les 8 carnets sont bien copies dans
+        # `files/`). `jupyterlab-server` est ajoute pour la meme raison cote
+        # traductions (l'avertissement `No module named 'jupyterlab_server'`).
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7"
+          python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7" "jupyter-server" "jupyterlab-server"
 
       - name: Build the JupyterLite lot
         run: |

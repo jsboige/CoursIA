@@ -124,6 +124,7 @@ class Reply:
     text: str
     completion_tokens: int
     finish_reason: str
+    prompt_tokens: int = 0
 
 
 class Teacher(Protocol):
@@ -188,6 +189,7 @@ class HubTeacher:
             text=(message.get("content") or "").strip(),
             completion_tokens=int(usage.get("completion_tokens") or 0),
             finish_reason=str(choice.get("finish_reason") or ""),
+            prompt_tokens=int(usage.get("prompt_tokens") or 0),
         )
 
 

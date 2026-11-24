@@ -1,0 +1,7 @@
+- name: "Complexity-08c-MachinesDeGoedel C#"
+  family: InformationCalcul/Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Complexity-08c-MachinesDeGoedel-Python.ipynb. Execution reelle sur kernel .net-csharp : 13 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
