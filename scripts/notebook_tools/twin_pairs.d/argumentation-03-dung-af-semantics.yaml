@@ -1,0 +1,9 @@
+- name: "Argumentation-03 Dung AF Semantics"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-23 (myia-po-2028:claudish, #28083) : jumeau C# cree depuis le jumeau Python -- meme plan de 37 cellules (15 code, execution_count 1-15 sequentiel, 0 erreur, 0 stderr) ; valeurs porteuses coïncidant verbatim : grounded {d}, preferred ['{b,d}','{a,d}'], af3 {a,c}, temoins af_id1/af_id2, trajectoires d->c->a->b et a->b->c->d, tous verdicts CONFORME dans les sorties committes (ancrage prose/outputs relu cellule par cellule en review Hermes sig f9267d88)."
+    - "L'Exercice 5 C# (EtiquetagesFinauxDistincts, stub sans solution) va au-dela du Python et satisfait le 'au moins 5 exercices' de l'issue #28083 ; difference editoriale volontaire."
+    - "C# sur kernel .net-csharp (.NET natif) : dictionaries/HashSet au lieu de dict/set Python, memes enumerations deterministes dans le meme ordre."
