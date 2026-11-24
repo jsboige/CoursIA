@@ -9,6 +9,8 @@ re-exporte ``texte`` : les appelants (``tapis_voie_leger``, tests) ne
 changent pas.
 """
 
+from coordination import tapis_leger_texte_occupation
+
 
 def texte(r: dict) -> str:
     """La sortie courte de la voie leger : l'etat de chaque grain et l'action.
@@ -24,6 +26,13 @@ def texte(r: dict) -> str:
                   f"PRs {lu['phases'].get('prs_s')} s, budget {lu['budget_s']} s) ; "
                   f"file de {len(r['grains'])} grain(s)")
     fen = r.get("fenetre") or {}
+    if fen.get("ordre") == "age":
+        seuil = (fen.get("age") or {}).get("seuil_h", 72)
+        lignes.append(f"Selection par AGE (mandat du 22/11) : les issues "
+                      f"anciennes d'abord ; une issue de moins de {seuil} h "
+                      f"va en fin de file ; "
+                      f"{(fen.get('age') or {}).get('exclus', 0)} issue(s) "
+                      f"deja servie(s) en attente de verdict, laisses de cote.")
     if fen.get("blocs", 1) > 1:
         lignes.append(f"Fenetre : bloc {fen['bloc']}/{fen['blocs']} du pool classe "
                       f"(taille {fen['taille']}) -- la fenetre avance d'un bloc par "
@@ -46,6 +55,8 @@ def texte(r: dict) -> str:
     for g in r["grains"]:
         lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
         lignes.append(f"      {g['action']}")
+    occ = r.get("occupations") or {}
+    lignes += tapis_leger_texte_occupation.occupation(occ)
     q = r["qualification"]
     lignes.append(f"\nQualification : {q['organe']} -- {q['quand']} ; {q['ecarts']}.")
     cap = r.get("cap_livraisons") or {}
