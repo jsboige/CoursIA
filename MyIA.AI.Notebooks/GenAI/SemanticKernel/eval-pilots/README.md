@@ -127,7 +127,7 @@ réelle » sont donc faits à `PILOT_MAX_TOKENS=3000`.
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
-py -3.11 ../../../ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py
+py -3.11 ../../../ML/DataScienceWithAgents/07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py
 ```
 
 ## Sonde C# (T6)

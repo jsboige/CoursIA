@@ -4,9 +4,9 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 173
-breakdown: Part1-Foundations=55, Part3-Cas-pratiques=52, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
-maturity: BETA=170, ALPHA=3
+pedagogical_count: 192
+breakdown: Part1-Foundations=61, Part3-Cas-pratiques=56, Part4-Metaheuristics=37, Part2-CSP=22, Part5-Frontieres=16
+maturity: BETA=189, ALPHA=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -126,8 +126,8 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12b-ConnectFour-Python](Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12b-ConnectFour-CSharp](Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-12-ConnectFour-Python](Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-12-ConnectFour-CSharp](Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial-Python](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
@@ -188,7 +188,7 @@ Un problème formalisé `(S, s0, A, T, G)`, un état initial, des opérateurs �
 Part1-Foundations/              Part2-CSP/                  Part3-Cas-pratiques/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12b ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12 ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
@@ -367,6 +367,7 @@ Search/
 │   ├── Search-03c-LimitedDiscrepancySearch.ipynb
 │   ├── Search-03d-WeightedAstar.ipynb
 │   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
+│   ├── Search-13-AutomaticGroups-WordProblem.ipynb   # Groupes automatiques : le problème du mot décidé par automate (op 13, See #25674)
 │   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (Python + jumeaux C#, marathon #4956 achevé)
@@ -392,7 +393,7 @@ Search/
 │   ├── App-09-EdgeDetection-Python.ipynb
 │   ├── App-10-Portfolio-Python.ipynb
 │   ├── App-11-Picross-Python.ipynb
-│   ├── App-12b-ConnectFour-Python.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
+│   ├── App-12-ConnectFour-Python.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
 │   ├── App-13-TSP-Metaheuristics-Python.ipynb
 │   ├── App-15-SportsScheduling-Python.ipynb
 │   ├── App-16-Crossword-CSP-Python.ipynb
@@ -599,6 +600,7 @@ flowchart LR
         S3["Search-3<br/>A* + heuristique<br/>admissible"]
         S14["Search-14<br/>Weighted A*<br/>Pohl 1970"]
         S12["Search-12<br/>Pattern DB<br/>additives"]
+        S13["Search-13<br/>groupes automatiques<br/>problème du mot"]
         S6["Search-6<br/>Minimax / Alpha-Beta"]
         S7["Search-7<br/>MCTS + UCB1"]
     end
@@ -613,6 +615,7 @@ flowchart LR
     S3 -.->|"admissibilité ⟹<br/>optimalité"| LA
     S14 -.->|"pondération W<br/>bornée par"| LA
     S12 -.->|"PDB additives<br/>(Korf 2002)"| LA
+    S13 -.->|"automates ⟹<br/>problème du mot"| LA
     S6 -.->|"valeur de position<br/>+ élagage"| LG
     S7 -.->|"UCB1 + borne<br/>regret cumulé"| LP
     SIM -.->|"simulation<br/>ML.NET / Python"| LEAN

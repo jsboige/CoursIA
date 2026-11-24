@@ -46,14 +46,17 @@ HUB_NEW = "MyIA.AI.Notebooks/ML/ML.Python"
 # ENSEIGNE, jamais l'outil qui y est utilise (LangChain, Google ADK). Les
 # exemples 06/07 viennent de l'arbitrage ; 01/03/05 suivent la meme regle ;
 # 02-ML-Cours et 04-Vision restent tels quels (deja lisibles en francais).
+# T2-06/07 : renommes sur main le 2026-11-13 en avance de phase (Q171 tranche
+# ML, acceptance 3 de #25327) -- les cles suivent le nom reel du hub, entrees
+# identites au meme titre que 02-ML-Cours (cf. T2-01 ci-dessus).
 DIR_MAP = {
     "01-Python-For-Data-Science": "01-Python-pour-la-Data-Science",
     "02-ML-Cours": "02-ML-Cours",
     "03-Deep-Learning": "03-Apprentissage-Profond",
     "04-Vision": "04-Vision",
     "05-Wavelet-Scattering": "05-Scattering-par-Ondelettes",
-    "06-Data-Agents": "06-Agents-de-Donnees",
-    "07-Agent-Orchestration": "07-Orchestration-d-Agents",
+    "06-Agents-de-Donnees": "06-Agents-de-Donnees",
+    "07-Orchestration-d-Agents": "07-Orchestration-d-Agents",
 }
 
 # Niveau a aplatir : ces prefixes voient leur segment "notebooks/" retire.
@@ -270,7 +273,7 @@ def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str
                 # fichier a la racine du hub (README.md etc.) : suit la racine
                 pass
             if (rel.endswith(".ipynb")
-                    and not rel.startswith(("06-Data-Agents/", "07-Agent-Orchestration/"))
+                    and not rel.startswith(("06-Agents-de-Donnees/", "07-Orchestration-d-Agents/"))
                     and not est_archive(rel)):
                 # Les Labs des Tracks suivent T4 (option retenue : deplacement de
                 # repertoire seulement, notebooks intacts -- table c.5786704244) :

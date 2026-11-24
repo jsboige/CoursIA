@@ -250,5 +250,78 @@ def test_per_pair_no_selector_still_reads_all(tmp_path, monkeypatch):
     )
 
 
+# --- 3. #28093 : paire absente du base-ref (PR qui ajoute une paire) ----------
+
+
+def test_selector_pair_absent_from_base_returns_empty_base(tmp_path):
+    """`_load_registry_at_ref` avec un selecteur dont AUCUNE paire n'existe au
+    base-ref rend `[]` (base vide), PAS un SystemExit « Le registre au base-ref
+    n'est pas une liste » apres avoir `git show` le repertoire du registre
+    (listing d'arbre, rc=0, non parsable en liste). Rougit si le repli legacy
+    trompeur reapparait (#28093)."""
+    repo, pairs_dir = _build_repo(tmp_path, 3)
+    got = ctp._load_registry_at_ref(repo, "HEAD", pairs_dir,
+                                    names={"Pair-absente-du-base"})
+    assert got == [], (
+        f"une paire absente du base-ref doit rendre une base vide [], "
+        f"pas lever l'exit trompeur : {got!r}"
+    )
+
+
+def test_new_pair_on_branch_no_misleading_legacy_exit(tmp_path, capsys):
+    """Cas REEL de l'incident #28093 (branche feature/sw15-coup-argumentatif-
+    csharp) : `--check --per-pair --base HEAD --pair <paire nouvelle>` doit
+    rendre un code de verdict (0/1), pas mourir en SystemExit. Le message
+    stderr explicite « paire(s) absente(s) du base-ref » est exige."""
+    repo, pairs_dir = _build_repo(tmp_path, 2)
+    # La paire nouvelle n'existe qu'au HEAD de la branche (working tree) :
+    py_rel, cs_rel = "py/new.ipynb", "cs/new.ipynb"
+    _commit(repo, py_rel, _nb(source=["# New py\n"]), "new py")
+    _commit(repo, cs_rel, _nb(source=["// New cs\n"]), "new cs")
+    _make_pair_yaml(pairs_dir, "Pair-new", py_rel, cs_rel,
+                    ctp._git_blob_sha(repo, py_rel), ctp._git_blob_sha(repo, cs_rel))
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", "new pair"], cwd=repo,
+                   check=True, capture_output=True)
+
+    rc = ctp.main([
+        "--check", "--per-pair", "--base", "HEAD~1",
+        "--pair", "Pair-new",
+        "--registry", str(pairs_dir),
+        "--repo-root", str(repo),
+    ])
+    assert rc in (0, 1), (
+        f"une PR qui ajoute une paire doit rendre un verdict (0/1), "
+        f"pas un SystemExit trompeur : rc={rc}"
+    )
+    err = capsys.readouterr().err
+    assert "absente(s) du base-ref" in err, (
+        f"le message explicite #28093 manque dans stderr : {err!r}"
+    )
+
+
+def test_registry_dir_without_pairs_gives_honest_exit(tmp_path):
+    """Repli legacy : un registre-repertoire suivi mais sans AUCUN fichier de
+    paire (seulement `_notes.yaml`, ignore par le parseur) et sans mono-fichier
+    legacy doit rendre l'exit HONNETE « Impossible de lire le registre au
+    base-ref », pas « n'est pas une liste » apres `git show` du repertoire
+    (#28093, deuxieme membre du remede)."""
+    repo = _git_repo(tmp_path)
+    pairs_dir = repo / "twin_pairs.d"
+    pairs_dir.mkdir()
+    (pairs_dir / "_notes.yaml").write_text("# notes internes, pas une paire\n",
+                                           encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", "registry vide de paires"], cwd=repo,
+                   check=True, capture_output=True)
+
+    with pytest.raises(SystemExit) as exc:
+        ctp._load_registry_at_ref(repo, "HEAD", pairs_dir, names=None)
+    assert "Impossible de lire le registre au base-ref" in str(exc.value), (
+        f"l'exit doit nommer l'impossibilite de lecture (honnête), "
+        f"pas « n'est pas une liste » : {exc.value}"
+    )
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

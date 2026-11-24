@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 66
 breakdown: Python=66
-maturity: BETA=36, DRAFT=27, ALPHA=3
+maturity: BETA=35, DRAFT=27, ALPHA=4
 -->
 
 # QuantConnect Python Notebooks
@@ -163,7 +163,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
 | [QC-Py-05b-FScore-Piotroski](QC-Py-05b-FScore-Piotroski.ipynb) | F-Score de Piotroski : les 9 sous-scores sur données réelles, convention de datation article vs papier 2000, critique de liquidité, variance small-univers mesurée (#17770) |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
-| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
+| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239). Jumeau C# : [QC-06b-Valorisation-Derives-CSharp](../CSharp/QC-06b-Valorisation-Derives-CSharp.ipynb) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |

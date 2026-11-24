@@ -6,5 +6,8 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Le Python invoque le noyau pedagogique Norvig de solvers.py et corpus.py ; le C# en porte la propagation et l'instrumentation en BCL, sans moteur externe a omettre ni wrapper Python. Les corpus et experiences restent communs."
   known_differences:
+    - "2026-11-22 (myia-po-2023:CoursIA) : ATTESTATION cote Python -- PR #27226 (892f9830587) a ajoute le lien de navigation vers le carnet 21 dans la cellule 0 APRES l'attestation precedente : 1 cellule markdown modifiee (Navigation, +70 chars), 0 cellule code touchee (12/12 sources inchangees). Jumeau C# inchange, csharp_sha inchange (le carnet 21 est Python-only, difference documentee ci-dessous). Attestation, pas reparation : la parite declaree est inchangee. --update en DERNIERE operation (cf #8957)."
+    - "Edition markdown-only cote Python (948f65f21f) : la Lecture des mesures decrit exactement `dig_adversarial` (echantillon de ADVERSARIAL_CANDIDATES = 8 retraits, arret quand aucun retrait echantillonne ne preserve l'unicite) et la part de Norvig (propagation et recherche seulement). Aucune cellule de code touchee, le C# n'a pas bouge : la parite semantique est inchangee, seule l'attestation de blob est reprise."
     - "Le C# porte explicitement le noyau ; les compteurs de recherche dependent de l'ordre des cases, chiffres et propagation."
     - "La figure C# est un SVG statique a deux panneaux, le Python utilise Matplotlib."
+    - "Le Python porte le lien de navigation vers le carnet 21 (Python-only, sans jumeau C#) ; le C# ne le porte pas (pas de carnet 21 C#)."

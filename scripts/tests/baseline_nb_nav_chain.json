@@ -482,23 +482,23 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12e-Session-Persistence.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
@@ -1012,36 +1012,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
@@ -1217,15 +1187,15 @@
       "notebooks": 39
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations",
       "notebooks": 2
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star",
       "notebooks": 3
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day7-Production",
       "notebooks": 2
     },
     {
@@ -1257,7 +1227,7 @@
       "notebooks": 57
     },
     {
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds",
       "notebooks": 5
     },
     {

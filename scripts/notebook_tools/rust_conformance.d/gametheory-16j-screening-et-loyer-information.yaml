@@ -1,0 +1,451 @@
+# Triplet GameTheory-16j : jumeau Python + jumeau C# + portage Rust (issue #27964,
+# spec Rust portage lot GameTheory II). Les trois carnets ont exactement la meme
+# structure 24 cellules (memes indices de cellules code : 2, 5, 8, 10, 13, 15, 18,
+# 21) : les cotes se correspondent par index. Cote Rust = evcxr, std seul (aucune
+# crate externe ; le `import numpy as np` du carnet Python disparait — la spec
+# verifie par module sentinelle que numpy n'est JAMAIS appele a l'execution, ses
+# seules mentions vivent dans les branches else des correcteurs : np.isfinite /
+# np.bool_ -> f64::is_finite et bool en Rust).
+# Le jumeau C# imprime des lignes condensees aux formats propres (F2/F3, une
+# ligne par resultat la ou Python/Rust en impriment plusieurs) : les grandeurs
+# sont comparees en float (transform) quand le texte differe, en text quand il
+# est identique. Tolerance unique 0 : aucune divergence de valeur mesuree.
+# Anomalie du correcteur de l'exercice 2 (cellule 13), mesuree par la spec et
+# PRESERVEE telle quelle (non corrigée) : au cas 0 (auto-selection du type haut),
+# u_propre < u_autre d'un arrondi flottant alors que l'indifference est exacte —
+# la solution naive `u_p >= u_a` est REJETEE (AssertionError), acceptee avec la
+# tolerance 1e-9 que l'enonce demande d'appliquer. Le carnet Rust porte le meme
+# assert, jamais atteint avec le stub a None.
+# Timeout d'execution (spec #27964) : min(15 x duree du bloc commite, 300 s) --
+# duree mesuree 13.52999 s -> timeout 203 s.
+- name: "GameTheory-16j Screening Loyer Information"
+  family: "GameTheory (mécanismes, screening)"
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Rust.ipynb
+  measures:
+    - id: modele_theta_h
+      description: "Type haut du modele (theta_H = 2, calcule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "theta_H = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 2
+          pattern: "thetaH=(\\d+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "theta_H = ([\\d.]+)"
+          transform: float
+    - id: modele_p_h
+      description: "Probabilite du type haut (p_H = 0.5)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "p_H = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 2
+          pattern: "pH=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "p_H = ([\\d.]+)"
+          transform: float
+    - id: cout_haut_a2
+      description: "Cout d'effort du type haut a a=2 (C(2,2) = 1, croisement simple)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "C\\(2, a=2\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 2
+          pattern: "coût haut à a=2 : ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "C\\(2, a=2\\) = ([\\d.]+)"
+          transform: float
+    - id: cout_bas_a2
+      description: "Cout d'effort du type bas a a=2 (C(1,2) = 2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "C\\(1, a=2\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 2
+          pattern: "coût bas : ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "C\\(1, a=2\\) = ([\\d.]+)"
+          transform: float
+    - id: premier_optimum_surplus_bas
+      description: "Surplus du type bas au premier optimum (a* = 1, information complete)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "type bas : a\\* = [\\d.]+,  t = [\\d.]+,  surplus = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "bas a=[\\d.]+, t=[\\d.]+, surplus=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "type bas : a\\* = [\\d.]+,  t = [\\d.]+,  surplus = ([\\d.]+)"
+          transform: float
+    - id: premier_optimum_surplus_haut
+      description: "Surplus du type haut au premier optimum (a* = 4, plafond de reference)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "type haut: a\\* = [\\d.]+,  t = [\\d.]+,  surplus = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "haut a=[\\d.]+, t=[\\d.]+, surplus=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "type haut: a\\* = [\\d.]+,  t = [\\d.]+,  surplus = ([\\d.]+)"
+          transform: float
+    - id: exo1_stub
+      description: "Ligne du stub exercice 1 (trois types, C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "(Exercice 1 à compléter)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "(Exercice 1 à compléter)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "(Exercice 1 à compléter)"
+          transform: text
+    - id: second_optimum_a_haut
+      description: "Effort du type haut au second optimum (non-distorsion au sommet, a_H = 4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "type haut : a = ([\\d.]+)  \\(NON déformé"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "haut a=([\\d.]+), surplus"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "type haut : a = ([\\d.]+)  \\(NON déformé"
+          transform: float
+    - id: second_optimum_a_bas
+      description: "Effort deforme du type bas au second optimum (a_L = 0.667, abaissé par le screening)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "type bas  : a = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "bas a=([\\d.]+), surplus"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "type bas  : a = ([\\d.]+)"
+          transform: float
+    - id: second_optimum_surplus_haut
+      description: "Surplus du type haut au second optimum (3.889 < 4 : le loyer est payé)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "1er optimum\\),  surplus = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "haut a=[\\d.]+, surplus=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "1er optimum\\),  surplus = ([\\d.]+)"
+          transform: float
+    - id: second_optimum_surplus_bas
+      description: "Surplus du type bas au second optimum (0.444)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "abaissé vs [\\d.]+\\),   surplus = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "bas a=[\\d.]+, surplus=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "abaissé vs [\\d.]+\\),   surplus = ([\\d.]+)"
+          transform: float
+    - id: loyer_information
+      description: "Loyer d'information du type haut (U_H = 0.111, fonction du contrat du type bas)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "U_H = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "loyer reçu par le haut=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "U_H = ([\\d.]+)"
+          transform: float
+    - id: remuneration_haut
+      description: "Remuneration du type haut (t_H = cout + loyer = 4.111)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "t_H = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "rémunération=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "t_H = ([\\d.]+)"
+          transform: float
+    - id: exo2_stub
+      description: "Ligne du stub exercice 2 (auto-selection ; anomalie du correcteur documentee en tete de registre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(Exercice 2 à compléter)"
+          transform: text
+        csharp:
+          cell: 13
+          pattern: "(Exercice 2 à compléter)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "(Exercice 2 à compléter)"
+          transform: text
+    - id: cout_asymetrie_haut
+      description: "Cout de l'asymetrie pour le type haut (tout en loyer, 0.111)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "type haut : coût = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 15
+          pattern: "Type haut : coût=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 15
+          pattern: "type haut : coût = ([\\d.]+)"
+          transform: float
+    - id: cout_asymetrie_bas
+      description: "Cout de l'asymetrie pour le type bas (tout en distorsion, 0.056)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "type bas  : coût = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 15
+          pattern: "type bas : coût=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 15
+          pattern: "type bas  : coût = ([\\d.]+)"
+          transform: float
+    - id: cout_attendu
+      description: "Cout espere de l'asymetrie (1/12 = 0.083, moyenne p_H-ponderee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "coût ESPÉRÉ \\(p_H = [\\d.]+\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 15
+          pattern: "Coût espéré=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 15
+          pattern: "coût ESPÉRÉ \\(p_H = [\\d.]+\\) = ([\\d.]+)"
+          transform: float
+    - id: part_loyer
+      description: "Part du loyer d'info dans le cout espere (67 %)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "loyer d'info espéré   = [\\d.]+   \\((\\d+) %\\)"
+          transform: int
+        csharp:
+          cell: 15
+          pattern: "loyer=[\\d.]+ \\((\\d+) %\\)"
+          transform: int
+        rust:
+          cell: 15
+          pattern: "loyer d'info espéré   = [\\d.]+   \\((\\d+) %\\)"
+          transform: int
+    - id: part_distorsion
+      description: "Part de la distorsion dans le cout espere (33 %)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "distorsion espérée    = [\\d.]+   \\((\\d+) %\\)"
+          transform: int
+        csharp:
+          cell: 15
+          pattern: "distorsion=[\\d.]+ \\((\\d+) %\\)"
+          transform: int
+        rust:
+          cell: 15
+          pattern: "distorsion espérée    = [\\d.]+   \\((\\d+) %\\)"
+          transform: int
+    - id: sensibilite_th125
+      description: "Cout espere pour theta_H = 1.25 (ligne complete du tableau, colonnes amont ancrees par le pattern)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "1\\.25 \\|   1\\.56 \\|    0\\.833 \\|     0\\.069 \\|     0\\.014 \\|      ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 18
+          pattern: "thetaH=1\\.25, aH=1\\.56, aL=0\\.833, loyer H=0\\.069, distorsion L=0\\.014, coût espéré=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "1\\.25 \\|   1\\.56 \\|    0\\.833 \\|     0\\.069 \\|     0\\.014 \\|      ([\\d.]+)"
+          transform: float
+    - id: sensibilite_th15
+      description: "Cout espere pour theta_H = 1.5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "1\\.50 \\|   2\\.25 \\|    0\\.750 \\|     0\\.094 \\|     0\\.031 \\|      ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 18
+          pattern: "thetaH=1\\.50, aH=2\\.25, aL=0\\.750, loyer H=0\\.094, distorsion L=0\\.031, coût espéré=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "1\\.50 \\|   2\\.25 \\|    0\\.750 \\|     0\\.094 \\|     0\\.031 \\|      ([\\d.]+)"
+          transform: float
+    - id: sensibilite_th2
+      description: "Cout espere pour theta_H = 2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "2\\.00 \\|   4\\.00 \\|    0\\.667 \\|     0\\.111 \\|     0\\.056 \\|      ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 18
+          pattern: "thetaH=2\\.00, aH=4\\.00, aL=0\\.667, loyer H=0\\.111, distorsion L=0\\.056, coût espéré=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "2\\.00 \\|   4\\.00 \\|    0\\.667 \\|     0\\.111 \\|     0\\.056 \\|      ([\\d.]+)"
+          transform: float
+    - id: sensibilite_th25
+      description: "Cout espere pour theta_H = 2.5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "2\\.50 \\|   6\\.25 \\|    0\\.625 \\|     0\\.117 \\|     0\\.070 \\|      ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 18
+          pattern: "thetaH=2\\.50, aH=6\\.25, aL=0\\.625, loyer H=0\\.117, distorsion L=0\\.070, coût espéré=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "2\\.50 \\|   6\\.25 \\|    0\\.625 \\|     0\\.117 \\|     0\\.070 \\|      ([\\d.]+)"
+          transform: float
+    - id: sensibilite_th3
+      description: "Cout espere pour theta_H = 3 (croissance concave du cout)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "3\\.00 \\|   9\\.00 \\|    0\\.600 \\|     0\\.120 \\|     0\\.080 \\|      ([\\d.]+)"
+          transform: float
+        csharp:
+          cell: 18
+          pattern: "thetaH=3\\.00, aH=9\\.00, aL=0\\.600, loyer H=0\\.120, distorsion L=0\\.080, coût espéré=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "3\\.00 \\|   9\\.00 \\|    0\\.600 \\|     0\\.120 \\|     0\\.080 \\|      ([\\d.]+)"
+          transform: float
+    - id: exo3_stub
+      description: "Ligne du stub exercice 3 (egalite loyer/distorsion)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(Exercice 3 à compléter)"
+          transform: text
+        csharp:
+          cell: 21
+          pattern: "(Exercice 3 à compléter)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(Exercice 3 à compléter)"
+          transform: text
