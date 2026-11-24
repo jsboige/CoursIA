@@ -110,15 +110,6 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
-# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
-# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
-# porte les invariants ; `gh_json` ne fait que router les argv applicables.
-try:
-    import gh_etag
-except ImportError:  # meme shim que gh_identity (tests hors scripts/)
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
-    import gh_etag
-
 # #27881 — la grammaire des marqueurs (familles FORMELLE / PROSE, vocabulaire
 # des verdicts) et le predicate de signalement sont extraits dans
 # `scripts/ci/nit_markers.py` : l'organe ne doit pas grossir (cliquet de
@@ -137,6 +128,15 @@ try:
 except ImportError:  # meme shim que nit_markers (tests hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import nit_rapport
+
+# #27012 point 3 — le funnel d'appel gh (routing ETag puis subprocess, avec
+# bascule UNIQUE vers le jeton App de la lane sur rate-limit 403/429) est
+# extrait dans `scripts/ci/gh_app_failover.py`.
+try:
+    import gh_app_failover
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import gh_app_failover
 
 REPO = "jsboige/CoursIA"
 
@@ -3754,25 +3754,17 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
-    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
-    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
-    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
-    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
-    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
-    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
-    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
-    etag_path = gh_etag.etag_applicable(args)
-    if etag_path is not None:
-        body, served_by_304 = gh_etag.conditional_get(
-            etag_path, timeout=GH_CALL_TIMEOUT_S)
-        if served_by_304:
-            API_USAGE["rest_304"] += 1
-        return _project_gh_payload(args, body)
-    out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
-        timeout=GH_CALL_TIMEOUT_S,
-    ).stdout
-    return _project_gh_payload(args, json.loads(out))
+    # Le routing d'appel vit dans gh_app_failover (#27012 point 3) : lectures
+    # REST conditionnelles par l'ETag persiste partage par machine (#26260 --
+    # un 304 est une PREUVE SERVEUR que le chemin est inchange, aucun corps
+    # n'est jamais servi sans reponse du serveur), sinon `gh` en subprocess ;
+    # sur rate-limit 403/429, bascule UNIQUE vers le jeton App de la lane.
+    return _project_gh_payload(args, gh_app_failover.call(
+        args, timeout=GH_CALL_TIMEOUT_S, on_304=_count_rest_304))
+
+
+def _count_rest_304() -> None:
+    API_USAGE["rest_304"] += 1
 
 
 def _project_added_symbol_patch(patch: str) -> str:
