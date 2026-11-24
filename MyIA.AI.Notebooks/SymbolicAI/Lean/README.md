@@ -334,7 +334,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 28 | [Lean-28-Complex-Structure-S6](Lean-28-Complex-Structure-S6.ipynb) | 12 | 3 | **NOUVEAU** (kernel python3, reproduction du dépôt piné) |
 | 29 | [06-operateurs-de-hecke-natif](Langlands/06-operateurs-de-hecke-natif.ipynb) | 19 | 6 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
 | GROTH-06 | [Grothendieck/GROTH-06-FormalGroups-Lean](Grothendieck/GROTH-06-FormalGroups-Lean.ipynb) | 11 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 31 | [ANALYSE-14-Euler-Navier-Stokes-Python](Analyse/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | 17 | 3 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
+| 31 | [ANALYSE-14-Euler-Navier-Stokes-Python](Analyse/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | 19 | 3 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 | 33 | [Lean-33-Distribution-Spaces](Lean-33-Distribution-Spaces.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 34 | [VERIF-06-Calculabilite-et-Limites](VERIF/VERIF-06-Calculabilite-et-Limites.ipynb) | 12 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean` ; Tranche E — Epic #15066) |
 | 34b | [VERIF-07-FairBot-Loeb](VERIF/VERIF-07-FairBot-Loeb.ipynb) | 14 | 3 | **NOUVEAU** (kernel `python3`) |
