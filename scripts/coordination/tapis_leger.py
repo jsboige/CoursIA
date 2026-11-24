@@ -6,8 +6,8 @@ tirage separe deux temps qui etaient confondus :
 
 - la **rotation universelle** (`coordination.tapis_universel`) classe TOUTES
   les issues ouvertes sur leurs **metadonnees seules** et tourne la tete de
-  niveau. Elle n'ecarte rien : un conteneur ne passe jamais devant un grain
-  (#26926), et chaque grain servi porte son **etat** et l'**action** ;
+  niveau. Elle n'ecarte rien : chaque classe a son creneau de lecture
+  (19/11), et chaque grain servi porte son **etat** et l'**action** ;
 - la **qualification** (`coordination.tapis_qualification`) ne porte que sur
   le grain pris en charge : son corps, son **fil complet**, et la re-decision
   des neuf regles d'ecart, AVANT l'action.
@@ -29,9 +29,24 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_age, tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import (tapis_age, tapis_ancre, tapis_labels, tapis_origami,
+                          tapis_public, tapis_rapide, tapis_repli,
+                          tapis_rotation)
 from coordination import tapis_service, tapis_universel
-from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
+# L'import de l'occupation est sur **sa propre ligne** : la PR d'age (#28022)
+# modifie la ligne d'import voisine, et deux ancres distinctes fusionnent sans
+# conflit (les deux PRs restent donc mergeables dans n'importe quel ordre).
+from coordination import tapis_occupation
+from coordination import tapis_leger_rapport
+from coordination.tapis_marqueurs import _iso, lane_de_pr
+
+#: Re-export du RAPPORT : l'appelant de `main` (`scripts/coordination/
+#: tapis_repli.py`) appelle `tapis_leger._rapport(...)`, et l'extraction du
+#: 22/11 l'avait retire du module -- l'appelant echouait alors sur l'arbre
+#: fusionne (`AttributeError: module 'coordination.tapis_leger' has no
+#: attribute '_rapport'`, run 45326540394). Le symbole reste donc resolvable
+#: par le module, et l'appel interne passe par le meme point de resolution.
+_rapport = tapis_leger_rapport.rapport
 
 #: Le classement propose ce multiple de grains : la qualification ecarte
 #: quelques-uns au moment de l'action, et la file doit rester pleine.
@@ -55,38 +70,12 @@ def _ordre(etats_: list, lane: str, maintenant: datetime,
                 conteneurs, lane, maintenant, len(conteneurs), graine,
                 rotation=False))
 
-def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
-             duree: float, secondes: float, budget_s: float, etats_: list,
-             file: list, prs: list[dict], origami: dict,
-             phases: dict | None = None, fenetre: dict | None = None) -> dict:
-    """Le rapport du tirage leger : l'etat de chaque grain et l'action a faire."""
-    vos = sorted((pr for pr in prs if lane_de_pr(pr) == lane),
-                 key=lambda pr: pr.get("created_at") or "")
-    rapport = tapis_universel.rapport(etats_=etats_, file=file,
-                                      lane=lane, maintenant=maintenant,
-                                      lecture={})
-    rapport.update({
-        "graine": graine, "voie": "leger", "pool": len(metas),
-        "fenetre": fenetre or {},
-        "lecture": {"issues": len(metas), "secondes": round(secondes, 1),
-                    "selection_s": duree, "budget_s": budget_s,
-                    "phases": phases or {}, "budget_epuise": False},
-        "vos_prs": [{"numero": pr["number"], "titre": pr.get("title") or "",
-                     "age_j": _age(maintenant, pr.get("created_at"), 86400)} for pr in vos],
-        "qualification": {
-            "organe": "scripts/coordination/tapis_prise_en_charge.py",
-            "vagues": "scripts/coordination/tapis_vagues.py : la file se remplit",
-            "quand": "avant l'action, sur le grain pris en charge",
-            "ecarts": "les neuf regles se decident sur le fil complet",
-        },
-        "origami_parking": origami,
-    })
-    return rapport
 
 
 def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
             run=gh_bulk.run_defaut,
-            budget_s: float = gh_selection.MUR_GLOBAL_S) -> dict:
+            budget_s: float = gh_selection.MUR_GLOBAL_S,
+            echeance: float | None = None) -> dict:
     """Le POOL classe : l'ordre fair des grains, et les conteneurs.
 
     C'est la lecture de metadonnees du tirage leger, SANS la fenetre : la
@@ -94,16 +83,36 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     quand la fenetre ne donne aucun grain servable).
     """
     debut = time.monotonic()
-    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s)
+    # UNE echeance monotone pour les trois etages (#28114, I6) : le temps
+    # restant borne chaque appel, donc un etage qui a consomme sa part voit
+    # l'etage suivant etre COUPE plutot qu'attendu.
+    echeance = echeance if echeance is not None else debut + gh_bulk.MUR_TIRAGE_S
+    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s,
+                                                         echeance=echeance)
     t1 = time.monotonic()
-    citations = gh_bulk.lire_citations_mergees(depot, jours, run)
+    citations = gh_bulk.lire_citations_mergees(depot, jours, run, echeance=echeance)
     t2 = time.monotonic()
-    prs = gh_bulk.lire_prs_ouvertes(run)
+    prs = gh_bulk.lire_prs_ouvertes(run, echeance=echeance)
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
+    # L'OCCUPATION se decide sur les metadonnees seules (labels + PRs
+    # ouvertes) : l'urne de cloture et la PR qui tient l'issue sortent de la
+    # tete -- avant la rotation, sans un appel reseau de plus. Les exclus
+    # sont affiches (jamais de grain perdu en silence).
+    occupation = tapis_occupation.marques(metas, prs, lane)
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
+    grains_, conteneurs, exclus = tapis_occupation.retirer(
+        grains_, conteneurs, occupation, lane)
+    # Les lanes qui **gerent** l'urne ne perdent aucun grain : elles n'ont
+    # donc aucune exclusion a afficher. Elles recoivent une section
+    # **courte** : ce qui est a l'urne, ce qui est occupe -- l'information
+    # qui leur manque pour arbitrer.
+    resume = (tapis_occupation.resume(occupation)
+              if tapis_occupation.privilege(lane) else [])
     return {"metas": metas, "citations": citations, "prs": prs, "etats": etats_,
             "grains": grains_, "conteneurs": conteneurs,
+            "occupation": {"marques": occupation, "exclus": exclus,
+                           "resume": resume},
             "phases": {"selection_s": duree, "citations_s": round(t2 - t1, 1),
                        "prs_s": round(t3 - t2, 1)},
             "secondes": round(time.monotonic() - debut, 1)}
@@ -117,27 +126,29 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     Sortie 3 : la lecture de selection est incomplete (rien n'est servi) --
     jamais une liste a moitie. Une lecture incomplete du POOL n'est pas
     equivalente : la selection paginee est complete ou elle echoue.
+
+    I2 (#28114) : le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la main -- hors
+    reseau, ou quand les filtres vident la file alors que le pool porte des
+    candidats. Le cache local fait foi, et le pool est servi dans l'ordre de
+    creation.
     """
     debut = time.monotonic()
-    classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    try:
+        classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    except gh_bulk.LectureIncomplete:
+        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
     ancres = tapis_ancre.lire(lane)
-    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
-    # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue
-    # anterieure au 01/11 dans les 60 premiers grains d'un pool de 455).
-    # Les CONTENEURS passent avec : leurs racines labellisees `consolidation`
-    # font de leurs membres des consolidations (revue ai-01 du 22/11).
+    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord ; les
+    # CONTENEURS passent avec : leurs racines labellisees `consolidation`.
     ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant,
                                           classe["conteneurs"])
-    file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
-                                         grains, max(grains * CANDIDATS_MULT, grains),
-                                         lane, maintenant, ancres=ancres,
-                                         ages_g=ages, exclus_g=exclus)
-    tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
-                          fenetre["reprises"]["grains"],
-                          reboucle=False, reinit=reinit)
-    tapis_ancre.proposer(lane, "conteneurs",
-                          fenetre["primaires"]["conteneurs"],
-                          fenetre["reprises"]["conteneurs"])
+    # Le LOT PUBLIC est le chemin public isole (`tapis_public.lot_public`) :
+    # les TESTS le portent tel quel, et l'entrelacement des classes (un
+    # creneau de lecture chacune, 19/11) y vit avec la selection par age.
+    file, fenetre = tapis_public.lot_public(
+        lane, classe["grains"], classe["conteneurs"], grains,
+        max(grains * CANDIDATS_MULT, grains), maintenant, ancres=ancres,
+        ages_g=ages, exclus_g=exclus, reboucle=False, reinit=reinit)
     secondes = time.monotonic() - debut
     phases = classe["phases"]
     # `tapis_origami.mesurer` est TOTAL : il rend un etat d'echec, jamais une
@@ -147,16 +158,19 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
                         citations=classe["citations"],
                         lu_a=_iso(maintenant), secondes=round(secondes, 1),
                         appels=0), reseau=True)
-    # Cap de livraisons EPIC (#21067) : le garde arbitre (charge en vol,
-    # item K=2 / famille K=4) vivait dans le seul pick_idle_grain, retire du
-    # tirage depuis #26926 -- rebranche sur la voie reelle, fail-OPEN.
+    # Cap de livraisons EPIC (#21067) : fail-OPEN ; s'il VIDE la file, le
+    # repli chronologique rend la main (I2).
     from coordination import tapis_cap_livraisons
-    file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
+    file, temoins_cap, cap_mesure, rendu = tapis_cap_livraisons.passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
-        classe["prs"], run=run)
-    rapport = _rapport(lane, graine, maintenant, classe["metas"],
-                       phases["selection_s"], secondes, budget_s, classe["etats"],
-                       file, classe["prs"], origami, phases, fenetre)
+        classe["prs"], run=run, pool_ouvert=bool(classe["grains"]),
+        repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine, depot))
+    if rendu is not None:
+        return rendu
+    rapport = _rapport(
+        lane, graine, maintenant, classe["metas"], phases["selection_s"],
+        secondes, budget_s, classe["etats"], file, classe["prs"], origami,
+        phases, fenetre, classe.get("occupation"))
     rapport["cap_livraisons"] = {"mesure": cap_mesure, "ecartes": temoins_cap,
                                  "fenetre_j": tapis_cap_livraisons.FENETRE_J}
     return rapport, 0
