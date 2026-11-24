@@ -12,7 +12,7 @@
 | 04 | Décider sans connaître la suite | Licence | Algorithmes en ligne, analyse compétitive (skis, pagination, secrétaire 1/e) |
 | 05 | Compter est plus dur que vérifier | Licence | Classe #P, déterminant vs permanente, frontière quantique |
 | 06 | Simuler un circuit quantique classiquement | Licence | Coût de la simulation classique : barrière $O(2^n)$ sur $n$ qubits, simulation **Clifford** en $O(n^2)$ (Gottesman–Knill), échantillonner $\neq$ calculer la distribution exacte, inclusion BQP ⊆ PP ⊆ P#P au niveau **Cité** |
-| 07 | Complexité de Kolmogorov bornée : séquences à mémoire limitée | Recherche | $K(x)$ opérationnalisée à **mémoire bornée** (Strannegård, Nizamani, Sjöberg & Engström, AGI 2013) — arrivée de `Search/Applications` (ex-App-34), renumérotée 07 |
+| 07 | Complexité de Kolmogorov bornée : séquences à mémoire limitée | Recherche | $K(x)$ opérationnalisée à **mémoire bornée** (Strannegård, Nizamani, Sjöberg & Engström, AGI 2013) — arrivée de `Search/Applications` (ex-App-26), renumérotée 07 |
 
 > **État mesuré au 2026-10-10.** Les deux positions du chemin principal qui portaient « (à venir) » sont renseignées : la **06** est livrée (PR #19771, `Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb`) et la **07** est occupée par *Complexité de Kolmogorov bornée*, déjà livrée et documentée comme « renumérotée 07 » par le README de série.
 >
@@ -61,3 +61,4 @@ Ancien nom à éviter dans les nouveaux liens : `Complexity-06-Aaronson-Dequanti
 - EPIC [#17063](https://github.com/jsboige/CoursIA/issues/17063) — décision ai-01 et proposition fondatrice
 - `.claude/rules/notebook-accretion-numbering.md` — règle formelle d'accrétion
 - README de la série — la table de navigation à jour
+

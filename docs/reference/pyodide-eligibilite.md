@@ -641,8 +641,8 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb` | Part3-Cas-pratiques | python3 | - | - |
-| `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-25-RushHour-Admissible-Astar-Python.ipynb` | Part3-Cas-pratiques | python3 | - | - |
+| `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-26-15Puzzle-Admissible-Astar-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17b-Empirical-Algorithm-Selection.ipynb` | Part4-Metaheuristics | python3 | numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb` | Part4-Metaheuristics | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb` | Part5-Frontieres | python3 | numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
@@ -807,4 +807,5 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 
 Les motifs **se cumulent** : un carnet refuse pour une cle d'API et pour un import
 absent compte dans les deux colonnes de la table par serie.
+
 

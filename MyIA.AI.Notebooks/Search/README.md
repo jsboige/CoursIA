@@ -178,7 +178,7 @@ Un problème formalisé `(S, s0, A, T, G)`, un état initial, des opérateurs �
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-34-15Puzzle-Admissible-Astar-Python](Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
+| 1 | [App-26-15Puzzle-Admissible-Astar-Python](Part3-Cas-pratiques/App-26-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
 
 ---
 
@@ -200,7 +200,7 @@ Search-4  LocalSearch           CSP-5  Optimization  ───>  App-10 Portfoli
     └──> Search-5 (Genetic)    CSP-6  Hybridization ───>  LLM+CSP
             │                       │
             └──> Search-11 (Meta)   └──> Part3-Cas-pratiques/ App-9 EdgeDetection
-                                        Part3-Cas-pratiques/ App-34 15-puzzle
+                                        Part3-Cas-pratiques/ App-26 15-puzzle
 
 Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-05 DLX
 Search-9  Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
@@ -221,7 +221,7 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ## Parité .NET ⇄ Python
 
-Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier des applications — la galerie pédagogique (App-21 à App-27) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
+Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-25 ont enrichi le dossier des applications — la galerie pédagogique (App-21 à App-24) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
 
 ### Couverture actuelle
 
@@ -230,7 +230,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part1-Foundations](Part1-Foundations/) | 23 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09c, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
-| [Part3-Cas-pratiques](Part3-Cas-pratiques/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-33 |
+| [Part3-Cas-pratiques](Part3-Cas-pratiques/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-25 |
 | [Part5-Frontieres](Part5-Frontieres/) | Audits de garanties et distillations de preprints (volumes au catalogue) | Python | prolonge Part1/Part2/Part4 et les projets étudiants PrCon |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
@@ -402,7 +402,7 @@ Search/
 │   ├── App-19-ProceduralGeneration-WFC-Python.ipynb
 │   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
-│   ├── App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb
+│   ├── App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb
 │   └── (+ jumeaux C# App-1-CSharp/2-CSharp/3-CSharp/4-CSharp/6-CSharp/7-CSharp/8-CSharp/11-CSharp/12c/15-CSharp/16-CSharp/19-CSharp/20-CSharp et jumeaux C#/Python App-9-CSharp/10-CSharp/13-CSharp/17-CSharp/18-CSharp, marathon #4956)
 │
 │
@@ -641,3 +641,4 @@ Voir la licence du repository principal.
 ---
 
 *Version 1.3.0 — Juillet 2026 — parité `.NET ⇄ Python` complète : Part 1/2/3 + 20 applications en binômes (EPIC #4956 marathon achevé, 2026-07-07).*
+

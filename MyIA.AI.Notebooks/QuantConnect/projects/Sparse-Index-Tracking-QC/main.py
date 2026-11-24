@@ -9,15 +9,15 @@ from scipy.optimize import nnls
 # ===========================================================================
 # Sparse Index Tracking under a cardinality constraint -- QC Cloud edition
 # ===========================================================================
-# Real-data companion of App-27 (Search/Part3-Cas-pratiques/
-# App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb, PR #14046).
-# App-27 carries the METHOD on synthetic data with known truth (CP-SAT model,
+# Real-data companion of App-24 (Search/Part3-Cas-pratiques/
+# App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb, PR #14046).
+# App-24 carries the METHOD on synthetic data with known truth (CP-SAT model,
 # independent validator, walk-forward protocol, leak counter-example);
 # this project carries the TEST AGAINST REAL DATA via a real QC Cloud
 # backtest with explicit transaction costs.
 #
 # Engine distinction (documented honestly, issue #14062):
-#   - App-27 solves the cardinality problem with OR-Tools CP-SAT over integer
+#   - App-24 solves the cardinality problem with OR-Tools CP-SAT over integer
 #     lots: exact optimizer with status/bound/gap (sector caps + turnover
 #     constraint native).
 #   - This QC implementation deliberately uses an EXACT ENUMERATION over a
@@ -29,7 +29,7 @@ from scipy.optimize import nnls
 #     benchmark on the calibration window). No sector cap, no turnover
 #     constraint (a no-trade band controls turnover instead).
 #
-# Protocol (walk-forward, mirrors App-27 section 5):
+# Protocol (walk-forward, mirrors App-24 section 5):
 #   - Quarterly rebalance (63 trading days).
 #   - At each rebalance date t: calibration window = the 252 daily returns
 #     ending 63 trading days before t; validation window = the 63 returns
@@ -42,7 +42,7 @@ from scipy.optimize import nnls
 #     window; final weights re-solved on calibration+validation.
 #   - Full mode (baseline): NNLS over all 40 assets on calibration+validation,
 #     no cardinality constraint.
-#   - Independent validator (App-27 section 4): budget, cardinality <= K and
+#   - Independent validator (App-24 section 4): budget, cardinality <= K and
 #     minimum weight are re-checked from the final weight vector alone.
 #
 # Costs: explicit 5 bps per trade on notional via PercentFeeModel (canonical
@@ -192,7 +192,7 @@ def select_sparse_portfolio(X_cal, y_cal, X_val, y_val, X_full, y_full,
 
 
 def validate_weights(weights, k_expected=None, min_weight=MIN_WEIGHT):
-    """Independent feasibility validator (App-27 section 4 spirit).
+    """Independent feasibility validator (App-24 section 4 spirit).
 
     Re-checks the constraints from the final weight vector alone, without
     consulting the solver. Called after every weight construction.
@@ -390,3 +390,4 @@ class SparseIndexTrackingAlgorithm(QCAlgorithm):
             f"avg_turnover={avg_turnover:.1%} total_turnover={self._total_turnover:.0%} "
             f"fee={self.fee_bps:.0f}bps/order"
         )
+

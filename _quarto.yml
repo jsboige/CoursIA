@@ -2344,11 +2344,11 @@ project:
     - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb"
     - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb"
     - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-CSharp.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-CSharp.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-25-RushHour-Admissible-Astar-CSharp.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-25-RushHour-Admissible-Astar-Python.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-26-15Puzzle-Admissible-Astar-CSharp.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-26-15Puzzle-Admissible-Astar-Python.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-01-Introduction.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-02-Composition.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-03-Eukaryote.ipynb"
@@ -2921,3 +2921,4 @@ execute:
   warning: false
 
 notebook-preview: false
+

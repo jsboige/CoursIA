@@ -402,7 +402,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Pyt
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools,ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=pysat.card,pysat.formula,pysat.solvers
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb	Part5-Frontieres	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb	Part5-Frontieres	import_absent	import_absent=ortools.linear_solver,ortools.sat.python
 MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb	Part5-Frontieres	import_absent	import_absent=ortools.sat.python

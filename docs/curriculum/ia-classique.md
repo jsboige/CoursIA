@@ -162,11 +162,11 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 45 | [Voice Leading Minimal par Affectation — l'algorithme de…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb) | BETA | Oui |
 | 46 | [App-22 — Sélection empirique d'algorithmes : trois…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | BETA | Oui |
 | 47 | [App-23 — Cryptanalyse différentielle de PRESENT par SAT](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) | BETA | Oui |
-| 48 | [App-27 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | BETA | Oui |
-| 49 | [Search App-33 — Rush Hour : l'A* admissible sur un…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-CSharp.ipynb) | BETA | Oui |
-| 50 | [Search App-33 — Rush Hour : l'A* admissible sur un…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb) | BETA | Oui |
-| 51 | [App-34-CSharp : le 15-puzzle, A* et heuristiques…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-CSharp.ipynb) | BETA | Oui |
-| 52 | [App-34 — Le 15-puzzle : l'A* et ses heuristiques…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | BETA | Oui |
+| 48 | [App-24 — Sparse index tracking](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-24-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | BETA | Oui |
+| 49 | [Search App-25 — Rush Hour : l'A* admissible sur un…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-25-RushHour-Admissible-Astar-CSharp.ipynb) | BETA | Oui |
+| 50 | [Search App-25 — Rush Hour : l'A* admissible sur un…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-25-RushHour-Admissible-Astar-Python.ipynb) | BETA | Oui |
+| 51 | [App-26-CSharp : le 15-puzzle, A* et heuristiques…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-26-15Puzzle-Admissible-Astar-CSharp.ipynb) | BETA | Oui |
+| 52 | [App-26 — Le 15-puzzle : l'A* et ses heuristiques…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-26-15Puzzle-Admissible-Astar-Python.ipynb) | BETA | Oui |
 
 ## Search/Part4-Metaheuristics (34 notebooks)
 
@@ -272,3 +272,4 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 40 | [Sudoku-19 — Soundness de la propagation de contraintes…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | BETA | Oui |
 | 41 | [Sudoku-20 : La hiérarchie de difficulté des corpus,…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-CSharp.ipynb) | BETA | Oui |
 | 42 | [Sudoku-20 : La hiérarchie de difficulté des corpus,…](../../MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-Python.ipynb) | BETA | Oui |
+
