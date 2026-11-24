@@ -7,3 +7,4 @@
   bridge_verdict_reason: "Capstone de planification de repas patient branche NATIVEMENT des deux cotes : pyz3 (Solver()/check()/Model) et Microsoft.Z3 .NET (ctx.MkSolver/Model) sont les deux bindings officiels du meme coeur C++ Z3 -- pas de pont intermediaire. Meme cache Ciqual mealplan_cache.json (89 Ko), memes contraintes patient mesurees (energie in [3347, 10878] kJ, proteines >= 30 g, lipides <= 600 g par menu)."
   known_differences:
     - "2026-11-21 (myia-po-2023:CoursIA) creation de la paire avec le jumeau C# (#27289) : sorties mesurees identiques cote a cote sur les 12 cellules code executees (cache 89 Ko, apercu creneaux candidats->energie, contraintes patient). --update en DERNIERE operation (cf #8957)."
+    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

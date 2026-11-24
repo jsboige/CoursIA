@@ -8,3 +8,4 @@
   known_differences:
     - "C# réalise la conversion, CYK, inside et Viterbi en BCL et utilise Python.NET pour les témoins NLTK ; Python utilise directement NLTK."
     - "Les figures Python utilisent Matplotlib ; le twin C# utilise des SVG statiques."
+    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

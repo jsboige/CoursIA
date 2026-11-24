@@ -9,3 +9,4 @@
     - "C# ajoute des lignes de synthese CONFORME et des controles executables qui levent sur ecart (VerifC10/VerifC11) ; le Python imprime les memes verdicts sans lever (20 lignes porteuses C# contre 15 Python)."
     - "Micro-variations d'impression : '#maps' (C#) contre '#{maps}' (Python), 'Tally imprime (CITE)' (C#) contre 'Tally imprime' (Python) — memes chiffres 14+5+2=21."
     - "Les valeurs porteuses (48 cartes = 24 propres + 24 impropres, 1728 paires preservees, identites M^2/M^4, classes 4 et 0 atteintes, 8 = 2 x 2^2, 21 entrees 6+12+3, 5 deplacees) coincident verbatim cellule par cellule."
+    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."
