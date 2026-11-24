@@ -21,10 +21,20 @@
 .slidev-layout .ts.fig-xxl[data-size] { --ts-visual-w: 640px; }
 .slidev-layout .ts.fig-full[data-size] { --ts-visual-w: 900px; }
 
-/* Plusieurs images dans une même boîte : pile verticale ou rangée. */
+/* Plusieurs images dans une meme boite : pile verticale ou rangee.
+   Pile : chaque image part de sa taille naturelle (base auto, largeur
+   intrinseque bornee a la boite) et le debordement eventuel se repartit au
+   prorata de cette base -- soit une echelle commune a toutes les images.
+   L'ancienne regle (flex: 1 1 0 + height: 100%) imposait une hauteur egale a
+   toutes : une image portrait etait ecrasee a la hauteur moyenne de la pile
+   (mesure diapo 92 : img_036 612x792 rendue a 112 px de large ; une regle en
+   largeurs egales ecrase en retour le paysage de la diapo 21 : 288 -> 155 px).
+   Selecteur a trois classes : il doit passer devant le scoped du composant
+   (".ts-visual[data-v-...] img", porteur de width: 100%). */
 .fig-stack, .fig-row { display: flex; gap: 10px; width: 100%; height: 100%; align-items: center; justify-content: center; min-height: 0; }
 .fig-stack { flex-direction: column; }
-.fig-stack > img, .fig-row > img { flex: 1 1 0; min-width: 0; min-height: 0; width: 100%; height: 100%; object-fit: contain; }
+.slidev-layout .ts-visual .fig-stack > img { flex: 0 1 auto; width: auto; height: auto; max-width: 100%; max-height: 100%; min-width: 0; min-height: 0; object-fit: contain; }
+.fig-row > img { flex: 1 1 0; min-width: 0; min-height: 0; width: 100%; height: 100%; object-fit: contain; }
 
 /* Figure centrée seule sous le titre (diapos dont la figure est le contenu). */
 .slidev-layout.fig .fig-center { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; }
