@@ -1,6 +1,6 @@
 # Module 03 - Tests de Chat & Streaming LLM
 
-> **Format** : Fichier TypeScript `.spec.ts` avec tests commentés. Ouvrez `03-chat-streaming.spec.ts` dans VS Code. C'est le module le plus riche — il couvre les defis uniques du test d'applications d'IA générative.
+> **Format** : deux artefacts. Le fichier TypeScript `03-chat-streaming.spec.ts` (tests commentés) est le **moteur de test** ; le notebook `03-Chat-Streaming-QA-OWUI.ipynb` (section ci-dessous) en est la **couche pédagogique**. Ouvrez le `.spec.ts` dans VS Code. C'est le module le plus riche — il couvre les defis uniques du test d'applications d'IA générative.
 
 ## Objectifs pédagogiques
 
@@ -58,6 +58,10 @@ await page.keyboard.press('Enter');
 | Markdown | Vérifier le rendu des blocs de code | Sélecteurs CSS imbriques |
 | Régénérer | Tester le bouton "Régénérer la réponse" | Boutons localises, regex |
 | Éditer | Modifier un message envoyé | Workflow multi-étapes |
+
+## Couche pédagogique (notebook)
+
+Le notebook [`03-Chat-Streaming-QA-OWUI.ipynb`](03-Chat-Streaming-QA-OWUI.ipynb) est la troisième étape de la mission (voir le notebook chapeau [`00-Parcours-QA-OWUI.ipynb`](../00-Parcours-QA-OWUI.ipynb)). C'est le cœur métier de la série : le chat avec un modèle d'IA générative. Il traite les difficultés propres au test d'un chat IA : le non-déterminisme des réponses (assertions souples), l'éditeur TipTap (saisie au clavier avec `keyboard.type()`, et non `fill()`) et le streaming (attendre une réponse stable par polling). Il lit `03-chat-streaming.spec.ts`, en dresse l'inventaire (`npx playwright test --list`, sans exécution) et propose des exercices en Python : assertion souple, relation test/concept, regex du bouton « Régénérer » multilingue. Ses cellules tournent sans navigateur, sans instance Open WebUI et sans appel à un modèle : leurs sorties committées viennent d'une exécution complète sur le noyau Python 3.13 (les appels de sous-processus y précisent l'encodage des sorties, pour rester lisibles d'une machine à l'autre). Sa note de reproductibilité rappelle que la suite a été revalidée sur la flotte v0.11.0 (campagne #9854), dont les pièges mesurés sont consignés dans [`WHATS-NEW-v0.11.md`](../WHATS-NEW-v0.11.md).
 
 ## Commandes
 

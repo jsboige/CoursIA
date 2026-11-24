@@ -1,7 +1,7 @@
 name: readme-ipynb-links-guard
 
 # Durable guard for the #18911 defect class: README files in rendered subtrees
-# (those that participate in the Quarto build per `scripts/regen_quarto_render.py`)
+# (those that participate in the Quarto build per `scripts/ci/regen_quarto_render.py`)
 # linking a `.html` page whose render is NOT committed. Renders live only on the
 # GitHub Pages deployment, so on github.com -- the reference navigation -- such a
 # link 404s. The reference form is the `.ipynb` link, which opens the notebook
@@ -14,7 +14,7 @@ name: readme-ipynb-links-guard
 # the policy: `.ipynb` links are correct, `.html` links to uncommitted renders
 # are the defect. The guard now protects the inverse.
 #
-# Detection reuses `scripts/regen_quarto_render.py --check-readme-links`: the
+# Detection reuses `scripts/ci/regen_quarto_render.py --check-readme-links`: the
 # file enumerates the violations (HTML_404, BROKEN). This workflow fails the PR
 # if any new HTML_404 is introduced -- new violations are never allowed, and the
 # merge-gate does not see the legacy backlog (616 HTML_404 measured 2026-10-09;
@@ -30,7 +30,7 @@ on:
       - 'MyIA.AI.Notebooks/**/README.md'
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - '_quarto.yml'
-      - 'scripts/regen_quarto_render.py'
+      - 'scripts/ci/regen_quarto_render.py'
       - 'scripts/notebook_tools/fix_ipynb_links.py'
       - 'scripts/notebook_tools/dump_readme_link_violations.py'
       - 'scripts/notebook_tools/diff_readme_link_violations.py'
@@ -87,6 +87,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       # La PR ne doit PAS introduire de nouvelle violation HTML_404
       # (#18911 geste 2, 2026-10-09). On compare la PR (head) a la base (main)
@@ -169,7 +170,7 @@ jobs:
           # dans le pipe pour que grep les voie (sinon faux vert structurel).
           # F8 (#19631, retained) : la liste PR-added ne change plus la classe
           # bloquante (cf. ci-dessus) ; elle reste passée aux deux passes.
-          python scripts/regen_quarto_render.py --check-readme-links \
+          python3 scripts/ci/regen_quarto_render.py --check-readme-links \
                --pr-added-files /tmp/pr_added_files.txt 2>&1 \
             | tee /tmp/python_stdout.txt \
             | grep -E '^::error::HTML_404 ' \
@@ -237,7 +238,7 @@ jobs:
           # touchant un README rougirait. Mesurer le MEME predicat sur les
           # deux contenus est la condition du delta. `--pr-added-files`
           # n'est pas passe ici : la base n'ajoute aucun fichier.
-          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+          python3 scripts/ci/regen_quarto_render.py --check-readme-links 2>&1 \
             | tee /tmp/python_stdout_base.txt \
             | grep -E '^::error::HTML_404 ' \
             | sort -u > /tmp/base_violations.txt
@@ -320,8 +321,8 @@ jobs:
         # Le runner Ubuntu n'a pas pytest par defaut (#18970 -- "No module
         # named pytest") : on l'installe avant d'executer les tests.
         run: |
-          python -m pip install --quiet pytest
-          python -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py \
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/notebook_tools/tests/test_fix_ipynb_links.py \
             scripts/notebook_tools/tests/test_readme_links_guard_workflow.py -v
 
       - name: Audit total (advisory -- backlog connu de 618 HTML_404)
@@ -330,5 +331,5 @@ jobs:
         # historique reste un travail de sweep en aval (voir #18911 acceptation #2).
         continue-on-error: true
         run: |
-          python scripts/regen_quarto_render.py --check-readme-links 2>&1 \
+          python3 scripts/ci/regen_quarto_render.py --check-readme-links 2>&1 \
             | tail -3 || true

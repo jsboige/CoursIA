@@ -127,15 +127,15 @@ def build_sandbox(tmp_path, pr_mode, base_mode, empty_base=False):
         readme_dir = sandbox / "MyIA.AI.Notebooks" / "Search"
         readme_dir.mkdir(parents=True)
         (readme_dir / "README.md").write_text("# readme\n", encoding="utf-8")
-        (sandbox / "scripts").mkdir()
-        (sandbox / "scripts" / "regen_quarto_render.py").write_text(
+        (sandbox / "scripts" / "ci").mkdir(parents=True)
+        (sandbox / "scripts" / "ci" / "regen_quarto_render.py").write_text(
             scanner_stub(base_mode), encoding="utf-8"
         )
         (sandbox / "_quarto.yml").write_text("website: {}\n", encoding="utf-8")
         run_git(sandbox, "add", "-A")
         run_git(sandbox, "commit", "-q", "-m", "base")
     run_git(sandbox, "update-ref", "refs/remotes/origin/main", "HEAD")
-    scripts = sandbox / "scripts"
+    scripts = sandbox / "scripts" / "ci"
     scripts.mkdir(parents=True, exist_ok=True)
     (scripts / "regen_quarto_render.py").write_text(
         scanner_stub(pr_mode), encoding="utf-8"

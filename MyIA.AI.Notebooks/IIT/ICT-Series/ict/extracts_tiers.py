@@ -53,9 +53,12 @@ par git ») : le constructeur de blob refuse de consommer une source en clair
 qui serait suivie par git (``assert_not_git_tracked``), pour que le texte
 historique ne puisse pas entrer accidentellement dans le depot en clair.
 
-La passphrase ne vit JAMAIS dans le depot : elle vient de l'argument direct
-ou de la variable d'environnement ``ICT_S6B_PASSPHRASE`` (sans valeur par
-defaut -- cf. regle secrets-hygiene, pattern ``os.getenv`` nu).
+La passphrase n'est JAMAIS codée en dur dans le code : elle vient de
+l'argument direct ou de la variable d'environnement ``ICT_S6B_PASSPHRASE``
+(sans valeur par défaut -- cf. regle secrets-hygiene, pattern ``os.getenv``
+nu). Sa valeur d'exemple est publiée dans le ``.env.example`` de la série,
+par décision user (#7742) : le chiffrement du corpus achète la
+**non-indexabilité**, pas la confidentialité -- cf. ``corpus/README.md``.
 """
 
 from __future__ import annotations
@@ -248,10 +251,16 @@ def strip_text_fields(definitions: Iterable[Mapping[str, Any]]) -> List[Dict[str
 
 
 def opaque_summary(definitions: Iterable[Mapping[str, Any]]) -> Dict[str, Any]:
-    """Resume opaque-id-only : jamais de texte, jamais de traces d'URL.
+    """Resume sans texte d'extract ni trace d'URL ; emet les ``source_names``.
 
-    C'est la SEULE forme de summary que ce module emet ; le stdout du
-    validateur et tout log doivent passer par ici.
+    Ce resume ne porte jamais de texte d'extract ni d'URL (les champs texte
+    sont retires par :func:`strip_text_fields`), mais il emet les
+    ``source_names`` tels quels : nommer une source est une decision de
+    **tier**, pas du resume. Le tier public la garde interdite via
+    :func:`_assert_opaque_ids` (prefixes opaques seulement) ; les tiers
+    chiffre et reference nomment leurs sources par decision user explicite
+    (#7742, exception nominative du 2026-08-31). Le stdout du validateur et
+    tout log doivent passer par ici.
     """
     defs = list(definitions)
     stripped = strip_text_fields(defs)

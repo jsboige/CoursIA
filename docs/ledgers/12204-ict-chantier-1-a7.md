@@ -19,9 +19,9 @@ Les deux attestations in-repo, indépendantes par le domaine :
 **Re-mesures firsthand de ce cycle** (une statuation ne s'appuie pas sur la mesure d'un autre sans relire — G.1) :
 
 - Search-03f : **cellules code toutes exécutées avec sorties, 0 erreur** (lecture JSON du carnet) ; témoins présents (`8/8` concordances ×2, `12 expansions` ×7, `garantie` ×25) ;
-- **Indépendance par construction confirmée : 0 occurrence de `Sandholm`/`Kroer` dans Search-03f** (grep insensible à la casse) — le carnet ne cite pas le cadre théorique dont l'attestation jumelle est issue ; l'indépendance n'est pas une allégation de la réconciliation, elle est mesurée dans le texte de l'artefact.
+- **Indépendance par construction confirmée : 0 occurrence de `Sandholm`/`Kroer` dans Search-03f** (grep insensible à la casse) — le carnet ne cite pas le cadre théorique dont l'attestation jumelle est issue ; l'indépendance n'est pas une allégation de la réconciliation, elle est mesurée dans le texte de l'artefact. *(Requalifié le 2026-10-21 : ce grep est un **indice documentaire**, pas une preuve — un carnet peut implémenter une abstraction issue de la même littérature sans la nommer ; voir §Correctif du 2026-10-21, la preuve d'origine y est refondée sur éléments positifs.)*
 
-**Verdict : l'op 6 rejoint la TABLE.** Deux endroits du dépôt (`GameTheory/`, `Search/`), témoins mesurés, indépendance par construction. La réserve de la réconciliation (même source Sandholm) est levée par l'attestation qui ne la mentionne pas.
+**Verdict : l'op 6 rejoint la TABLE.** Deux endroits du dépôt (`GameTheory/`, `Search/`), témoins mesurés, indépendance par construction. La réserve de la réconciliation (même source Sandholm) est levée par l'attestation qui ne la mentionne pas. *(Requalifiée le 2026-10-21 : la réserve est levée par la preuve positive d'origine — littérature et algorithme distincts —, non par l'omission ; voir §Correctif. Le verdict TABLE est maintenu sur ces nouveaux motifs.)*
 
 ## Statuation 2 — Opération 2 « Abstraire à dette bornée » : reste en FILE D'ATTENTE
 
@@ -29,7 +29,7 @@ Les deux candidates recensées par la réconciliation : Kroer-Sandholm (théorie
 
 **Motif de non-promotion — le critère §1, pas la qualité de GT-19.** Le critère d'admission demande « deux attestations dans des endroits indépendants **du dépôt** ». Kroer-Sandholm n'est pas un endroit du dépôt : c'est une source théorique externe, exactement le statut qui avait fait descendre l'op 2 à l'audit froid (« externe tant que sa distillation n'a pas atterri »). La distillation #12208 (CLOSE) a livré GT-19 — qui devient la **première** attestation in-repo, pas la seconde. Compter (théorie externe, instantiation locale qui la cite) pour deux attestations indépendantes rééditerait le double comptage déjà refusé sur l'op 12 (A6) et la non-indépendance par le stimulus refusée sur l'op 3 (c.1308 : Infer-20, même chantier/jour/lane — ici, la dépendance est même plus forte : GT-19 cite explicitement sa source).
 
-**Voie de promotion** (inchangée depuis A5) : une seconde instantiation in-repo sur autre série (Search, par exemple) qui abstrait à perte bornée **mesurée** sans citer Kroer-Sandholm — le patron exact de l'op 6 vient d'en faire la démonstration.
+**Voie de promotion** (inchangée depuis A5) : une seconde instantiation in-repo sur autre série (Search, par exemple) qui abstrait à perte bornée **mesurée** sans citer Kroer-Sandholm — le patron exact de l'op 6 vient d'en faire la démonstration. *(Correctif 2026-10-21 : la voie est refondée sur l'**origine**, pas l'omission — voir §Correctif : « sans citer Kroer-Sandholm » n'est ni nécessaire ni suffisant ; ce qui porte la promotion est une origine documentairement établie, littérature propre citée et algorithme distinct du cadre.)*
 
 ## Verdict 1 — La table est-elle un catalogue ?
 
@@ -75,7 +75,7 @@ A2 reformulait la dette de l'op 1 : « nos trois attestations sont trois post-mo
 ## État final de la table (après statuations)
 
 **TABLE (12 entrées)** : 1, 4, **6** *(promue ce cycle)*, 7, 8, 9, 10, 11, 12, 13, 14, `point fixe`.
-**FILE D'ATTENTE (6 entrées)** : 2 *(première attestation in-repo posée : GT-19 ; seconde = instantiation sans citation de la source)*, 3, 5, `institutionnaliser`, `inhiber`, `réviser une croyance`.
+**FILE D'ATTENTE (6 entrées)** : 2 *(première attestation in-repo posée : GT-19 ; seconde = instantiation d'origine documentairement établie — correctif 2026-10-21)*, 3, 5, `institutionnaliser`, `inhiber`, `réviser une croyance`.
 **Lois** : I, II, III (composition) + IV (adoption, type admission).
 
 Les grains restants du chantier sont tous de type A5-final : des **secondes attestations de contenu** (ops 2, 3, 5) — créables dans d'autres séries sur le patron op 6/op 12, multi-heures chacun.
@@ -91,3 +91,23 @@ Les grains restants du chantier sont tous de type A5-final : des **secondes atte
 - EPIC : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · claim : [issuecomment-6120275820](https://github.com/jsboige/CoursIA/issues/12204#issuecomment-6120275820)
 - Précédent de non-indépendance par le stimulus : tranche c.1308 du [ledger audit-froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (op 3, Infer-20)
 - Refus de double comptage : [A6 §Op 12](12204-ict-chantier-1-a6.md)
+
+## Correctif du 2026-10-21 — la preuve d'indépendance requalifiée (revue externe, dispatch ai-01)
+
+**Provenance.** Une revue externe, confirmée par le coordinateur ([commentaire 6321883534](https://github.com/jsboige/CoursIA/issues/12204#issuecomment-6321883534), DM c2205-astra-12204), relève que la Statuation 1 traitait l'**absence de citation comme une preuve d'indépendance** : « 0 occurrence de Sandholm/Kroer [...] l'indépendance est mesurée dans le texte de l'artefact », « la réserve [...] est levée par l'attestation qui ne la mentionne pas », et la voie de promotion de l'op 2 en faisait un critère (« sans citer Kroer-Sandholm »). Le reproche est fondé : **un grep négatif mesure ce que le carnet écrit, pas d'où vient son algorithme** — et posé en critère, il récompense l'attestation qui tait sa source. Ce correctif requalifie, refonde et re-statue ; les formulations d'origine restent visibles ci-dessus, annotées.
+
+**Le test documentaire exécuté ce cycle** (ce qui testerait *vraiment* l'indépendance, exécuté sur Search-03f) :
+
+| Axe | Mesure firsthand | Résultat |
+|---|---|---|
+| **Références du carnet** | cellule 0 + cellule 7 : « LPA\* (Koenig & Likhachev, 2002) » ; cellule Référence (46) : « Sven Koenig & Maxim Likhachev, *D\* Lite*, AAAI 2002 » | ancrage **positif** dans la littérature *recherche incrémentale*, distincte de la littérature jeux |
+| **Algorithme implémenté** | cellule 8 : signature LPA\* complète ($g$, $rhs$, file d'incohérences $U$, clés $k=(k_1,k_2)$) ; exercice 3 : clause d'arrêt $k_{top} \geq key(goal)$ | la machinerie **Koenig-Likhachev authentique**, pas une transposition du *safe subgame solving* (attestation jumelle : contrainte d'adversaire, GT-13b/13c) |
+| **Historique de création** | issue #19013, créée 2026-10-03, lane `myia-po-2027:CoursIA`, body : « Seconde attestation de l'opération 6 [...] suivant le patron des précédentes promotions » | **stimulus partagé** (commissionné par le chantier) ; lane, série et littérature distinctes de la première attestation |
+
+**Nouvelle statuation de l'op 6 — TABLE maintenue, motifs refondés.** L'indépendance ne repose plus sur l'omission mais sur **trois éléments positifs** : littérature propre citée dans le carnet (Koenig & Likhachev), algorithme identifiable et distinct du cadre Sandholm, substrat et série distincts. Le grep « 0 Sandholm/Kroer » devient ce qu'il est : un **indice documentaire** cohérent avec ces éléments, jamais une preuve à lui seul. **Résiduel écrit** : le stimulus est partagé (les deux attestations existent pour témoigner de l'op 6) — le précédent op 3 (c.1308, Infer-20) avait refusé l'indépendance pour *même chantier/jour/lane* ; ici chantier partagé mais lane, série, littérature et machinerie algorithmique distinctes. L'indépendance est établie **au niveau documentaire que le dépôt permet** : la source de l'abstraction « réparer sous garantie » est la littérature LPA\*, pas une dérivation du cadre Sandholm silencieusement copiée.
+
+**Voie de promotion de l'op 2 — refondée sur l'origine.** La seconde attestation exigée n'est plus « une instantiation qui ne cite pas Kroer-Sandholm » mais : *une instantiation in-repo sur autre série dont l'**origine** est documentairement établie* — (i) littérature propre citée dans la cellule références, (ii) algorithme implémenté identifiable et distinct du cadre Kroer-Sandholm, (iii) perte bornée **mesurée**. L'absence de citation n'est ni nécessaire ni suffisante : un carnet qui tait sa source ne gagne pas l'indépendance ; un carnet qui cite une *autre* littérature la documente.
+
+**Propagation traitée.** La formulation défectueuse avait essaimé : (a) [A8](12204-ict-chantier-1-a8.md) §op 6 avait posé comme condition de falsifiabilité « l'apparition d'une citation Sandholm/Kroer dans Search-03f » — requalifiée par annotation (une future citation bibliographique ne changerait pas l'origine de l'algorithme ; la falsification pertinente reste la violation de la garantie, condition (a)) ; (b) [A9](12204-ict-chantier-1-a9.md) a exécuté l'ancienne voie (« construite sans citation de Kroer-Sandholm ») pour proposer la promotion de l'op 2 — annoté : le dossier A9 **contient déjà** la preuve positive d'origine (sources d'hommage Culberson & Schaeffer 1998, Holte et al. 2005 — lignée *pattern databases*, distincte de la littérature jeux) ; la statuation qui jugera ce dossier doit peser l'origine sur ces éléments, non sur le contraste de grep.
+
+**Re-mesuré firsthand ce correctif** : citations Koenig/Likhachev de Search-03f (cellules 0, 7, 46), signature algorithmique de la cellule 8, historique #19013 (createdAt/lane/body), propagation A8 §op 6 et A9 (lectures entières des deux ledgers).

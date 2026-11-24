@@ -1,11 +1,12 @@
 - name: "SW-13 Reasoners"
   family: SemanticWeb/dotNetRDF-rdflib
-  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (#10382, comme PyMC/Infer.NET) : C# = dotNetRDF 3.2.1 (NuGet officiel `#r \"nuget: dotNetRDF, 3.2.1\"` + espaces VDS.RDF.*, native .NET) et Python = rdflib (from rdflib import *, native Python). Chaque cote atteint le moteur SOTA de son ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# VDS.RDF refs + execution_count, Python rdflib imports."
   known_differences:
+    - "2026-11-21 (myia-po-2023:CoursIA, PR #27857) : edition markdown-only de la cellule 0 du jumeau Python (nouveau lien 14-Coup ontologique >>) -- aucune cellule code touchee, execution_count/outputs intacts. Attestation 0017 posee sur les blobs committes (--update en dernier, regle #8957)."
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8343 (doc-honesty prose (benchmark speedup claim aligned to committed output)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."

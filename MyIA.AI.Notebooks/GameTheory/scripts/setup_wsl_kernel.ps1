@@ -49,7 +49,7 @@ $kernelJson = @"
 }
 "@
 
-$kernelJson | Out-File -Encoding utf8 "$kernelPath\kernel.json"
+[System.IO.File]::WriteAllText("$kernelPath\kernel.json", $kernelJson, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "  Created: $kernelPath\kernel.json"
 
 # Verify installation

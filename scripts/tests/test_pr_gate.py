@@ -19,6 +19,7 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -438,6 +439,101 @@ def test_distinct_names_are_never_merged():
     assert code == 1 and "B" in msg and "A" not in msg.split("failing checks: ")[1]
 
 
+# --- #25510 (T-C) : le repli sur le skip ------------------------------------
+#
+# Un job SAUTE (garde job-level, filtre `paths:`) mesure RIEN du code, et
+# `skipped` compte comme VERT (`CONCLUSION_OK`). Sous un repli latest-wins
+# simple, une edition de titre emettrait un `skipped` plus RECENT que le
+# verdict reel -- et la PR ROUGE se debloquerait d'elle-meme. Le defaut etait
+# deja documente de l'autre cote dans
+# `scripts/tests/test_pr_gate_edited_trigger.py` (#16624) : un garde job-level
+# sur `edited` emet un check-run en forme de verdict, et sous latest-wins c'est
+# le verdict le plus recent du nom.
+
+
+def test_un_skipped_plus_recent_ne_remplace_pas_un_verdict_reel():
+    """Le repli : `failure`@t1 puis `skipped`@t2 doit rendre `failure`."""
+    checks = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    folded = pr_gate.dedupe_latest(checks)
+    assert len(folded) == 1
+    assert folded[0]["conclusion"] == "failure"
+    code, msg = decide(checks)
+    assert code == 1
+    assert "Lean CI" in msg
+
+
+def test_un_verdict_reel_remplace_un_skipped_anterieur():
+    """Le repli joue dans un seul sens : un VERDIT reel remplace toujours un
+    skip anterieur (le skip n'a rien mesure, il ne peut pas masquer un
+    verdict), et l'ordre de la liste ne decide de rien."""
+    checks = [
+        run("Lean CI", "skipped", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "failure", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    assert pr_gate.dedupe_latest(checks)[0]["conclusion"] == "failure"
+    assert decide(checks)[0] == 1
+    assert decide(list(reversed(checks)))[0] == 1
+
+
+def test_un_skipped_seul_reste_vert():
+    """Le cas ordinaire n'est pas casse : un job saute SANS verdict anterieur
+    (filtre `paths:` qui ne matche pas) reste VERT. Le geste inverse serait
+    pire que le defaut : #9819 -- un check requis qui ne demarre jamais reste
+    PENDING pour toujours, il ne peut pas etre `skipped`."""
+    code, msg = decide([run("Lean CI", "skipped", rid=1)])
+    assert code == 0, msg
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : `commits/<sha>/check-runs` rend du PLUS RECENT au PLUS
+    ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants), et
+    aucun appelant ne retrie. Le repli doit donc tenir dans cet ordre-la :
+    `skipped`@t2 d'abord, `failure`@t1 ensuite -- c'est exactement le couple
+    que le premier jet du repli laissait passer (il gardait la premiere entree
+    vue, donc le `skipped`)."""
+    checks = [
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+    ]
+    folded = pr_gate.dedupe_latest(checks)
+    assert len(folded) == 1
+    assert folded[0]["conclusion"] == "failure"
+    code, msg = decide(checks)
+    assert code == 1
+    assert "Lean CI" in msg
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : le repli ne doit dependre d'aucun ordre d'arrivee. Toutes
+    les permutations d'un meme lot rendent le meme verdict."""
+    lot = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    for permutation in itertools.permutations(lot):
+        folded = pr_gate.dedupe_latest(list(permutation))
+        assert len(folded) == 1, permutation
+        assert folded[0]["conclusion"] == "failure", permutation
+        assert decide(list(permutation))[0] == 1, permutation
+
+
+def test_le_repli_est_independant_de_l_ordre_avec_trois_entrees():
+    """Meme propriete sur un lot de trois : le skip ne gagne jamais, et le
+    verdict reel le plus recent reste le verdict rendu."""
+    lot = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+        run("Lean CI", "success", started_at="2026-11-12T10:10:00Z", rid=3),
+    ]
+    for permutation in itertools.permutations(lot):
+        folded = pr_gate.dedupe_latest(list(permutation))
+        assert len(folded) == 1, permutation
+        assert folded[0]["conclusion"] == "success", permutation
+
+
 # --- 3. self-exclusion -------------------------------------------------------
 
 
@@ -804,6 +900,102 @@ def test_main_starved_refused_cancel_still_exits_one(monkeypatch):
     assert code == 1
     assert cancels == [("o/r", "424242")]
     assert sleeps == [], "no grace wait when the cancel never landed"
+
+
+# --- #27768 -- the INCONCLUSIVE quota verdict renders CANCELLED ------------
+#
+# The quota verdict (exit 3) means "unknown, replay me", not "false". It used
+# to exit 3 with nothing else, so the job leg concluded FAILURE -- a failure
+# that never happened, in the very class the stale sweep does NOT re-drive
+# (it re-drives cancelled legs). `neutral` cannot be the answer on the required
+# leg: the job check-run takes its conclusion from the step's exit status (any
+# non-zero exit is FAILURE; `continue-on-error` renders SUCCESS, a false
+# green), and `check_run_state.GREEN` counts `neutral` as green -- a neutral
+# gate leg would merge PRs whose checks were never read. The rendering is
+# therefore the #13510 self-cancel: CANCELLED, replayable by the sweep.
+
+def _drive_inconclusive(monkeypatch, extra_args, cancel_result=True):
+    """Run main() over an INCONCLUSIVE quota verdict; return (exit, cancels,
+    sleeps)."""
+    cancels = []
+    sleeps = []
+
+    def fake_wait(*_a, **_k):
+        raise pr_gate.QuotaInconclusive("installation quota exhausted")
+
+    def fake_cancel(repo, run_id):
+        cancels.append((repo, run_id))
+        return cancel_result
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", fake_wait)
+    monkeypatch.setattr(pr_gate, "cancel_own_run", fake_cancel)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    monkeypatch.setattr(pr_gate.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", *extra_args])
+    return code, cancels, sleeps
+
+
+def test_main_inconclusive_cancels_own_run_then_exits_three(monkeypatch):
+    """Acceptance #27768: workflow-run mode renders the quota verdict as a
+    self-cancel with the grace wait; exit stays 3 (the chainer's replayable
+    contract, unchanged)."""
+    code, cancels, sleeps = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151"])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert cancels == [("o/r", "515151")]
+    assert sleeps and sleeps[0] == pr_gate.CANCEL_GRACE_SEC
+
+
+def test_main_inconclusive_without_run_id_stays_plain(monkeypatch):
+    """Local run (no run id resolvable): no cancel, no grace, exit 3."""
+    code, cancels, sleeps = _drive_inconclusive(monkeypatch, [])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert cancels == [] and sleeps == []
+
+
+def test_main_inconclusive_no_self_cancel_flag_disables(monkeypatch):
+    code, cancels, _ = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151", "--no-self-cancel"])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE and cancels == []
+
+
+def test_main_inconclusive_post_mode_does_not_self_cancel(monkeypatch):
+    """--post-check-run runs on the default branch; its own run is not the
+    PR's gate leg, so it never cancels itself."""
+    code, cancels, _ = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151", "--post-check-run"])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE and cancels == []
+
+
+def test_main_inconclusive_refused_cancel_still_exits_three(monkeypatch):
+    """A refused cancel degrades to the status-quo FAILURE leg, never to a
+    pass: exit 3 and no grace wait."""
+    code, cancels, sleeps = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151"], cancel_result=False)
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert cancels == [("o/r", "515151")]
+    assert sleeps == []
+
+
+def test_main_genuine_fail_never_self_cancels(monkeypatch):
+    """Negative control: a real red is a FAIL and keeps the FAILURE leg --
+    only verdicts with no answer (STARVED, INCONCLUSIVE) render CANCELLED."""
+    cancels = []
+
+    def fake_wait(*_a, **_k):
+        return 1, "FAIL -- failing checks: Slow CI (failure)"
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", fake_wait)
+    monkeypatch.setattr(pr_gate, "cancel_own_run",
+                        lambda repo, run_id: cancels.append((repo, run_id)))
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef",
+                         "--run-id", "515151"])
+    assert code == 1 and cancels == []
 
 
 # --- #11751 -- phantom FAIL when the deadline fires between polls ------------
@@ -1227,6 +1419,43 @@ def test_catalog_drift_job_name_carries_the_advisory_marker():
     assert not pr_gate.is_advisory("Notebook catalog drift (read-only)", wf_name)
 
 
+def test_translation_drift_job_name_carries_the_advisory_marker():
+    """Meme defaut que #15998, sur le job translation-drift.
+
+    Le workflow `translation-drift.yml` annonce « non-blocking, read-only »
+    depuis son en-tete (#4957), et son job se nommait « Translation drift
+    (read-only) » -- sans le marqueur. `pr_gate.py` classant par NOM
+    (`ADVISORY_MARKER`, regle 6), un echec d'infrastructure de ce job comptait
+    comme un check REQUIS : le gate rougissait alors que le job lui-meme
+    n'avait rien signale. Mesure sur #22216 le 2026-10-26 : « PR gate: FAIL
+    -- failing checks: Translation drift (read-only) (failure) », sur un job
+    mort au checkout (fetch promisor), tous les autres checks verts.
+
+    Le correctif est le marqueur dans le NOM du job -- comme pour catalog-drift
+    (#15998) -- et non une entree de registre : pr_gate.py lit le nom du
+    check-run emis, pas l'en-tete du workflow.
+    """
+    if pr_gate.yaml is None:  # pragma: no cover - PyYAML is a CI dependency
+        pytest.skip("PyYAML unavailable: cannot read the workflow")
+    wf_path = Path(pr_gate.DEFAULT_WORKFLOWS_DIR) / "translation-drift.yml"
+    data = pr_gate.yaml.safe_load(wf_path.read_text(encoding="utf-8"))
+    job_names = pr_gate._workflow_job_names(data)
+    assert job_names, "translation-drift.yml must declare at least one job"
+    for name in job_names:
+        assert pr_gate.is_advisory(name), (
+            "the translation-drift job name must carry the `advisory` marker "
+            "(#15998): pr_gate.py reads the check-run name, not the header "
+            "comment, so dropping the marker silently re-arms a hard gate "
+            "against every PR whose merge ref triggers the read-only check"
+        )
+    # The defect the marker fixes must stay measurable: with the workflow name
+    # as it stands, the historical spelling is still classified BLOCKING. If
+    # this ever flips, the workflow name has absorbed the marker and the
+    # job-name invariant above stopped being the load-bearing surface.
+    wf_name = data.get("name") or ""
+    assert not pr_gate.is_advisory("Translation drift (read-only)", wf_name)
+
+
 def test_non_advisory_failure_still_blocks():
     """Guard against the fix becoming a blanket amnesty."""
     checks = [
@@ -1391,6 +1620,23 @@ def test_derive_always_on_reads_real_workflows_and_excludes_self():
     assert "Gitleaks secret scanner" in jobs
 
 
+def test_pr_gate_waits_on_the_named_perimeter_owner():
+    """The dedicated perimeter check remains a blocking PR-gate constituent."""
+    owner = "perimeter review guard (#11268)"
+    jobs = pr_gate.derive_always_on_jobs()
+    assert owner in jobs, "PR gate canary no longer sees the perimeter owner"
+
+    pending, bad, _ok, advisory = pr_gate.classify(
+        [run(owner, None, status="in_progress")], "PR gate"
+    )
+    assert pending == [f"{owner} [in_progress/none]"]
+    assert bad == [] and advisory == []
+
+    _pending, bad, _ok, advisory = pr_gate.classify([run(owner, "failure")], "PR gate")
+    assert bad == [f"{owner} (failure)"]
+    assert advisory == []
+
+
 def test_fork_short_circuit_skips_the_canary(monkeypatch):
     """Acceptance criterion 4: a fork PR never reaches the canary.
 
@@ -1489,6 +1735,42 @@ def test_post_check_run_payload_on_fail():
 
     pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL -- Lean CI", poster=fake_poster)
     assert captured["fields"]["conclusion"] == "failure"
+
+
+def test_post_check_run_warns_on_foreign_suite(capsys):
+    """#21505 : une `details_url` qui ne pointe PAS vers `/actions/runs/`
+    signifie une suite ETRANGERE (run non relancable, classe #18985) :
+    `post_check_run` emet un avertissement qui NOMME la suite (`check_suite.id`)."""
+    def foreign_poster(_path, _fields):
+        return {
+            "id": 111294508181,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/runs/37144908600",
+            "check_suite": {"id": 100614928346},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL",
+                           poster=foreign_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" in out
+    assert "100614928346" in out
+
+
+def test_post_check_run_no_warning_in_actions_suite(capsys):
+    """#21505 controle : une `details_url` NORMALE (porte `/actions/runs/`)
+    ne declenche AUCUN avertissement -- la suite d'origine est relancable."""
+    def actions_poster(_path, _fields):
+        return {
+            "id": 42,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/actions/runs/999/job/1",
+            "check_suite": {"id": 555},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 0, "PASS",
+                           poster=actions_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" not in out
 
 
 def test_main_posts_on_pass_when_flag_set(monkeypatch):
@@ -1604,6 +1886,116 @@ def test_fetch_checks_stops_on_empty_page(monkeypatch):
     checks = pr_gate.fetch_checks("o/r", "deadbeef")
     assert len(checks) == 1
     assert checks[0]["name"] == "a"
+
+
+# --- _gh_api conditional reads (#25510 T-I) ----------------------------------
+#
+# These exercise the REAL `_gh_api` (mocking only `subprocess.run`, the one
+# lower seam) so the two invariants the mission pins are covered: a 304
+# re-uses the last readable body, and an unreadable read is a failure -- never
+# a silent reuse of a stale body.
+
+
+def _gh_process(returncode: int, stdout: str, stderr: str = ""):
+    """A `subprocess.run` stand-in: a canned `gh api -i` payload."""
+    return types.SimpleNamespace(
+        returncode=returncode, stdout=stdout, stderr=stderr
+    )
+
+
+def test_gh_api_304_reuses_last_readable_body(monkeypatch):
+    """A 304 returns the last body we read for that path (0-quota re-read)."""
+    import json as _json
+    path = "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
+    body = {"total_count": 1, "check_runs": [{"id": 1}]}
+    etag = '"w/1"'
+    ok = f'HTTP/2.0 200 OK\nEtag: {etag}\n\n{_json.dumps(body)}\n'
+    # A 304 comes back from `gh api` as exit 1 (measured) with `gh: HTTP 304`
+    # on stderr -- the mock mirrors the real rc, it does not assume 0.
+    not_modified = f'HTTP/2.0 304 Not Modified\nEtag: {etag}\n'
+
+    def fake_run(cmd, **_kw):
+        # First call has no If-None-Match (200); the second sends the stored
+        # etag back and is answered 304 (rc 1, as `gh api` really does).
+        if f"If-None-Match: {etag}" in cmd:
+            return _gh_process(1, not_modified, "gh: HTTP 304")
+        return _gh_process(0, ok)
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", fake_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    pr_gate._GH_API_304 = 0
+
+    first = pr_gate._gh_api(path)
+    second = pr_gate._gh_api(path)
+    assert first == body
+    assert second == body  # 304 -> re-uses the last readable body
+    assert pr_gate._GH_API_304 == 1
+
+
+def test_gh_api_unreadable_read_is_a_failure_not_a_reuse(monkeypatch):
+    """A non-zero exit raises, even when a readable body is cached."""
+    import json as _json
+    path = "repos/o/r/commits/deadbeef/status"
+    ok = f'HTTP/2.0 200 OK\nEtag: "e1"\n\n{_json.dumps({"statuses": []})}\n'
+
+    def ok_run(cmd, **_kw):
+        return _gh_process(0, ok)
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", ok_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    pr_gate._gh_api(path)
+    assert path in pr_gate._GITHUB_READ_CACHE  # a readable body is cached
+
+    def fail_run(cmd, **_kw):
+        return _gh_process(1, "", "API rate limit exceeded for installation")
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", fail_run)
+    with pytest.raises(pr_gate.GateError):
+        pr_gate._gh_api(path)
+
+
+def test_gh_api_200_non_json_is_a_failure(monkeypatch):
+    """A 200 whose body is not JSON is an unreadable read -> GateError."""
+
+    def bad_run(cmd, **_kw):
+        return _gh_process(
+            0, 'HTTP/2.0 200 OK\nEtag: "e1"\n\n<html>not json</html>'
+        )
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", bad_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    with pytest.raises(pr_gate.GateError):
+        pr_gate._gh_api(
+            "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
+        )
+
+
+def test_gh_api_502_with_cached_body_is_a_failure(monkeypatch):
+    """A non-304 non-zero exit stays a GateError even with a body cached.
+
+    The 304 must be resolved from the header status BEFORE the returncode is
+    judged: a 502 (or rate-limit) carrying a cached body is a failure, not a
+    silent reuse. Negative control for the 304-is-success path.
+    """
+    import json as _json
+    path = "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
+    ok = f'HTTP/2.0 200 OK\nEtag: "e1"\n\n{_json.dumps({"total_count": 1})}\n'
+
+    def ok_run(cmd, **_kw):
+        return _gh_process(0, ok)
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", ok_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    pr_gate._gh_api(path)
+    assert path in pr_gate._GITHUB_READ_CACHE  # a readable body is cached
+
+    def bad_gateway_run(cmd, **_kw):
+        # rc 1 with a 502 status (not a 304) -- must NOT be treated as a reuse.
+        return _gh_process(1, "HTTP/2.0 502 Bad Gateway\n", "gh: HTTP 502")
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", bad_gateway_run)
+    with pytest.raises(pr_gate.GateError):
+        pr_gate._gh_api(path)
 
 
 # --- plancher de merge (--dwell-min, mandat user 2026-09-07) ------------------
@@ -2273,6 +2665,39 @@ def test_post_check_run_mode_keeps_its_own_contract(monkeypatch):
     assert code == 1
 
 
+def test_post_check_run_skipped_on_dwell_verdict(monkeypatch):
+    """#21543 -- a DWELL verdict is a merge-floor timer, not a content failure.
+
+    POSTing it as ``conclusion=failure`` lands an unliftable red on the PR
+    head (foreign suite, no run behind it, GitHub ANDs same-named checks).
+    The harness must skip the POST entirely when the verdict starts with
+    ``DWELL``."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "DWELL -- plancher 120 min, reste 18 min")
+    assert posted == [], "DWELL verdict must never be POSTed as a check-run"
+
+
+def test_post_check_run_still_posts_on_real_failure(monkeypatch):
+    """#21543 regression guard, other side: a real FAIL verdict still POSTs."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "FAIL -- failing checks: Lean CI")
+    assert len(posted) == 1, "a real FAIL verdict must still be POSTed"
+
+
 def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):
     """One builder, two surfaces: acceptance 1 asks the summary to name the
     cause "the same as the log", and the only durable way to keep that true
@@ -2344,7 +2769,19 @@ def _decide_with_walls(checks, walls):
 def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
-    assert walls.get("Scripts Tests (CPU)") == 30
+    # #25968 : le mur de `Scripts Tests (CPU)` est passe de 30 a 40 min dans la
+    # meme PR que l'epingle -- les runs de `main` etaient coupes au mur, et un
+    # plafond releve sans son epingle rougit exactement ce test.
+    # #22937 (2026-11-14) : 40 -> 44. La mesure qui le justifie est dans le
+    # bloc de commentaire de `scripts-tests.yml` : la population de la
+    # premiere mesure etait CENSOREE par les rejeux (26 des 40 coupes au mur
+    # du segment 40 min etaient absentes du cache collecte sans `filter=all`,
+    # un job coupe puis rejoue disparaissant de la population) ; sur la
+    # population entiere, 38 coupes sur 582 jobs executes (6,5 %) tombent au
+    # mur de 40, contre 60 sur 249 (24,1 %) sous le mur de 30. 44 est le
+    # maximum coherent : l'agregateur doit rester SOUS le plafond propre de
+    # Quarto (60), donc l'enfant sous 45.
+    assert walls.get("Scripts Tests (CPU)") == 44
     # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
     # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
     # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
@@ -2842,3 +3279,342 @@ def test_wait_loop_still_fails_fast_on_a_cancel_with_no_successor():
     )
     assert code == 1 and "Scripts Tests (CPU)" in msg
     assert len(polls) == 1
+
+
+# --- quota d'installation : verdict INCONCLUSIVE, rejouable (2026-11-14) ----
+#
+# Un 403 de quota n'est pas un defaut de la PR : l'etat des checks est
+# INCONNU. La porte doit le dire -- code distinct, annotation warning, geste de
+# rejeu nomme -- au lieu de rendre un FAIL qui se lit comme un verdict de
+# contenu et fait chasser une defaut qui n'existe pas.
+#
+# Trois controles : le positif (la famille quota a sa borne donne
+# INCONCLUSIVE), et deux negatifs (une panne inconnue reste un FAIL, un vrai
+# check rouge reste un FAIL).
+
+
+def _quota_error(reset_epoch=None):
+    """The measured production signature of the installation-quota 403."""
+    exc = pr_gate.GateError(
+        "gh api repos/o/r/commits/sha/check-runs failed (exit 1, HTTP 403): "
+        "gh: API rate limit exceeded for installation."
+    )
+    if reset_epoch is not None:
+        exc.reset_epoch = reset_epoch
+    return exc
+
+
+# #26869 -- the epoch scale of the `x-ratelimit-reset` header (seconds since
+# 1970). It is ~1,79e9 while the gate's monotonic clock reads ~1000 s since
+# the origin of the machine: subtracting one from the other measured a
+# duration of ~1,79e9 s for EVERY reset (job 133062303546,
+# 2026-11-16T02:57:47Z : `announced reset 1794790081s away`), which made the
+# "wait for a near reset" branch unreachable.
+EPOCH_NOW = 1_790_000_000.0
+
+
+def test_quota_family_at_its_bound_raises_the_replayable_verdict():
+    """CONTROLE POSITIF : la famille quota, a sa borne, donne INCONCLUSIVE."""
+    def fetch(_repo, _sha):
+        raise _quota_error()
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=0, poll_sec=0,
+            settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+        )
+
+
+def test_quota_verdict_is_a_distinct_code_not_a_fail(monkeypatch, capsys):
+    """Le code de sortie EST le contrat : 1 est un FAIL de contenu, 3 est
+    INCONCLUSIVE -- la chaine relit le code pour rejouer au lieu de chasser."""
+    def boom(*_args, **_kwargs):
+        raise pr_gate.QuotaInconclusive(
+            "rate limit exceeded for installation (3 read failures in a row)"
+        )
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    captured = capsys.readouterr()
+
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert code != 1
+    assert "INCONCLUSIVE" in captured.out
+    assert "REJOUABLE" in captured.out
+    assert "FAIL -- cannot establish check state" not in captured.out
+    # L'annotation est un WARNING : l'UI ne doit pas lire une panne
+    # d'infrastructure comme un defaut de la PR.
+    assert "::warning::[pr-gate] INCONCLUSIVE" in captured.err
+    assert "::error::" not in captured.err
+
+
+def test_unreadable_state_other_than_quota_stays_a_fail(monkeypatch, capsys):
+    """CONTROLE NEGATIF : une panne inconnue reste un FAIL (regle 1)."""
+    def boom(*_args, **_kwargs):
+        raise pr_gate.GateError("gh api exploded")
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    captured = capsys.readouterr()
+
+    assert code == 1
+    assert "FAIL -- cannot establish check state" in captured.out
+    assert "::error::[pr-gate] FAIL" in captured.err
+
+
+def test_a_real_failing_check_stays_a_fail(monkeypatch):
+    """CONTROLE NEGATIF : un vrai check rouge reste un FAIL, code 1."""
+    def boom(*_args, **_kwargs):
+        return 1, "FAIL -- Lean CI"
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+
+
+def test_inconclusive_does_not_post_a_red_check_run(monkeypatch):
+    """Un INCONCLUSIVE n'est pas un rouge : le POST d'un check-run rouge
+    atterrirait sur la tete de la PR et y resterait (rouge inleverable,
+    #21543). Le message suffit : la jambe du job le publie deja."""
+    posted = []
+    monkeypatch.setattr(pr_gate, "post_check_run", lambda *a, **k: posted.append(a))
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="s", self_name="PR gate"
+    )
+    pr_gate._maybe_post_check_run(
+        args, pr_gate.QUOTA_INCONCLUSIVE_CODE, "INCONCLUSIVE -- quota epuise"
+    )
+    assert posted == []
+
+
+def test_the_published_body_names_the_replay_gesture():
+    """Le corps publie (resume d'etape + check-run) doit nommer le geste de
+    rejeu : c'est la que le lecteur de la PR le trouve."""
+    body = pr_gate.verdict_body("INCONCLUSIVE -- quota d'installation epuise")
+    assert "gh run rerun" in body
+    assert "pr-gate-stale-sweep" in body
+
+
+def test_parse_inconclusive_message_recognizes_the_emitted_verdict():
+    """L'inverse de l'emetteur : le format appartient a l'emetteur.
+
+    Le message porte le prefixe de l'annotation (`[pr-gate] `) et le motif
+    apres le separateur -- c'est ce que le lecteur (le picker) doit
+    retrouver sans re-ecrire le format.
+    """
+    message = (
+        "[pr-gate] INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+        "l'etat des checks est INCONNU, pas faux. Source : HTTP 403"
+    )
+    parsed = pr_gate.parse_inconclusive_message(message)
+    assert parsed is not None
+    assert parsed["kind"] == "quota-installation"
+    assert parsed["detail"].startswith("quota d'installation")
+
+
+def test_parse_inconclusive_message_rejects_the_other_verdicts():
+    """Controle NEGATIF : un FAIL, un DWELL ou une annotation d'organe ne
+    sont pas des etats inconclusifs.
+
+    Un detecteur trop large acquitterait la lane d'un rouge qu'elle doit
+    reparer.
+    """
+    assert pr_gate.parse_inconclusive_message(
+        "[pr-gate] FAIL -- failing checks: Scripts Tests (CPU)") is None
+    assert pr_gate.parse_inconclusive_message(
+        "[pr-gate] DWELL -- plancher de merge 120 min") is None
+    assert pr_gate.parse_inconclusive_message("Organes bloquants : perimeter") is None
+    assert pr_gate.parse_inconclusive_message("") is None
+    assert pr_gate.parse_inconclusive_message(None) is None
+    # Un marqueur sans motif ne porte aucun verdict : il ne doit pas
+    # fabriquer une entree.
+    assert pr_gate.parse_inconclusive_message("INCONCLUSIVE -- ") is None
+
+
+def test_ratelimit_reset_header_is_parsed():
+    block = (
+        "HTTP/2.0 403 Forbidden\n"
+        "x-ratelimit-limit: 15000\n"
+        "x-ratelimit-reset: 1763150000\n"
+        "x-ratelimit-remaining: 0\n"
+    )
+    assert pr_gate._gh_ratelimit_reset(block) == 1763150000.0
+
+
+def test_ratelimit_reset_header_absent_is_none():
+    assert pr_gate._gh_ratelimit_reset("HTTP/2.0 403 Forbidden\n") is None
+
+
+def test_ratelimit_reset_header_unparsable_is_none():
+    assert pr_gate._gh_ratelimit_reset("x-ratelimit-reset: demain\n") is None
+
+
+def test_the_wait_sleeps_until_the_reset_it_was_told_about():
+    """CONTROLE POSITIF du calage : un quota horaire ne se franchit pas en
+    30 s de tentatives -- quand l'API dit quand il se reinitialise, on
+    attend cet instant (borne par l'echeance absolue du job). #26739 : ce
+    calage ne survit que SOUS le seuil (290 s < 300 s ici). #26869 : le
+    reset est un instant EPOCH, l'echeance du gate est MONOTONE -- les
+    deux horloges sont injectees separement."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+    # L'horloge epoch est celle de GitHub : ~1,79e9 s depuis 1970. Elle est
+    # TRES differente de la monotone (1000 s) -- c'est exactement la
+    # confusion que #26869 corrige.
+    epoch = EPOCH_NOW
+
+    def fetch(_repo, _sha):
+        raise _quota_error(reset_epoch=epoch + 290.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: epoch,
+        )
+    # Le compteur d'horloge monotone avance de 10 s par lecture : l'echeance
+    # consomme la premiere lecture (1000), l'erreur observe 1010 -- la
+    # duree d'attente vient de l'ecart EPOCH (290 s), le budget restant de
+    # l'horloge monotone (3700 - 1010 = 2690 s), jamais du melange des deux.
+    assert slept and slept[0] == pytest.approx(290.0, abs=1.0)
+
+
+def test_a_far_reset_renders_inconclusive_without_waiting(capsys):
+    """#26739 -- un reset annonce a ~59 min ne merite pas 59 min de runner
+    (mesure du 15/11 : jobs 132806296573/132806304780, 3 appels API puis
+    INCONCLUSIVE). Le verdict INCONCLUSIVE -- rejouable par le balayeur --
+    est rendu sur-le-champ : AUCUN sommeil, un seul appel, et le MEME
+    message que l'INCONCLUSIVE de borne (cap de retries ou echeance)."""
+    slept = []
+    calls = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        # #26869 -- le reset annonce est un instant EPOCH ; sa distance se
+        # mesure a l'horloge epoch (3529 s), jamais a l'horloge monotone du
+        # gate. La distance mesuree du 15/11 (3539 s) est reprise ici.
+        raise _quota_error(reset_epoch=EPOCH_NOW + 3529.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive) as excinfo:
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    # AUCUN sommeil, meme court : le runner est rendu immediatement, et le
+    # budget de 60 min n'est pas entame.
+    assert slept == [], (
+        "un reset lointain ne doit rien couter en runner : aucun sommeil"
+    )
+    assert len(calls) == 1
+    # Meme format que la borne : la famille est nommee et l'etat reste
+    # illisible (regle 1) -- le rejeu reste le geste nomme.
+    assert "installation-quota read failure" in str(excinfo.value)
+    assert "stayed unreadable (rule 1)" in str(excinfo.value)
+    # La sortie impute le geste : nommer la distance du reset et le rejeu
+    # par le balayeur, comme la ligne de backoff nomme sa famille.
+    out = capsys.readouterr().out
+    assert "installation-quota 403" in out
+    assert "3529s away" in out
+    assert "stale-sweep" in out
+
+
+def test_a_reset_at_exactly_the_threshold_still_waits():
+    """La borne est STRICTE : a exactement 300 s du reset, l'attente bornee
+    tient -- l'INCONCLUSIVE immediate ne vise que les resets PLUS LOINS que
+    le seuil, pas le seuil lui-meme."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        # #26869 -- distance exactement 300.0 s, mesuree sur l'horloge epoch.
+        raise _quota_error(reset_epoch=EPOCH_NOW + 300.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    assert slept and slept[0] == pytest.approx(300.0, abs=1.0)
+
+
+# --- #26869 : deux horloges, une par usage ---------------------------------
+#
+# Le reset annonce par l'API est un instant EPOCH ; l'echeance du gate est
+# MONOTONE. Les soustraire l'une a l'autre mesurait ~1,79e9 s pour tout
+# reset (job 133062303546, 2026-11-16T02:57:47Z : `announced reset
+# 1794790081s away`) : la branche « attendre un reset proche » etait du code
+# MORT, et chaque 403 de quota rendait INCONCLUSIVE immediatement -- meme
+# quand le reset tombait dans la minute.
+
+
+def test_a_near_reset_is_awaited_for_the_real_duration(capsys):
+    """CONTROLE POSITIF : un reset a 60 s est ATTENDU (60 s), pas traite
+    comme un reset lointain. Sur le code d'avant #26869, la distance
+    mesurait ~1,79e9 s -> INCONCLUSIVE immediat, aucun sommeil."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        raise _quota_error(reset_epoch=EPOCH_NOW + 60.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    assert slept, "un reset proche doit etre attendu, pas rendu INCONCLUSIVE"
+    assert slept[0] == pytest.approx(60.0, abs=1.0)
+    # La ligne de journal nomme la DUREE REELLE -- pas un nombre gigantic
+    # venu de la soustraction de deux horloges etrangères l'une a l'autre.
+    out = capsys.readouterr().out
+    assert "in 60s" in out, out
+
+
+def test_a_reset_one_hour_away_renders_inconclusive_immediately(capsys):
+    """CONTROLE POSITIF : un reset a 1 h ne vaut pas 1 h de runner -- le
+    verdict INCONCLUSIVE est rendu sur-le-champ, avec la distance REELLE
+    (3600 s) dans le journal."""
+    slept = []
+    calls = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        raise _quota_error(reset_epoch=EPOCH_NOW + 3600.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    assert slept == [], "un reset lointain ne doit rien couter en runner"
+    assert len(calls) == 1
+    out = capsys.readouterr().out
+    assert "3600s away" in out, out
+    # Le controle qui distingue ce correctif d'un simple reformatage : le
+    # nombre affiche est la distance REELLE, pas ~1,79e9.
+    assert "1799" not in out, (
+        "la distance affichee doit venir de l'horloge epoch, pas de la "
+        "soustraction epoch - monotone"
+    )
+
+
+def test_the_quota_wait_falls_back_on_the_backoff_without_a_reset():
+    """Sans instant de reset connu, l'ordonnance de repli (#17681) tient."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        raise _quota_error()
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=600, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock),
+        )
+    assert slept and slept[0] == pytest.approx(30.0, abs=0.01)

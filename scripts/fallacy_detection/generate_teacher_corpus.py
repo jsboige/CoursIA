@@ -29,11 +29,23 @@ mecanique sans reseau, et la mesure de tete n'appelle jamais le hub depuis la CI
 Usage::
 
     python -m fallacy_detection.generate_teacher_corpus --out <dossier> --split val --limit 24
+
+En mode ``--hard-distractors`` (opt-in, defaut inchange), chaque tour de vote
+pose **deux** questions : l'une a distracteurs tires d'abord parmi les noeuds
+difficiles (freres, parent, homonymes), l'autre a distracteurs aleatoires
+**exclusivement** — le rapport publie alors deux taux separes.
+
+Le **rapport** d'un run se reconstruit depuis son checkpoint, sans rappeler le
+maitre et sans reseau : ``--report-only`` rejoue ``summarise`` sur les
+enregistrements deja produits (voir ``rebuild_report``). C'est ce qui remet un
+rapport committe en accord avec le code quand un correctif de fidelite change ce
+que le rapport publie.
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import random
@@ -43,6 +55,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional, Protocol, Sequence
 
@@ -79,6 +92,25 @@ _MARKER = re.compile(r"(?:r[eé]ponse|option|choix|letter|answer)\s*:?\s*([A-H])
 # correspond a aucune option » comme un vote pour le candidat A — un tour rate
 # en silence.
 _WORD_TOKENS = {"a"}
+
+# Cadre de la question de reclassement, par langue de consigne : (ouverture,
+# question, consigne de reponse, separateur titre/definition). Le francais est
+# celui qui a produit le corpus committe (``data/teacher/val_fr.jsonl``) : il
+# reste octet pour octet identique, pour que les mesures FR restent comparables.
+# Toute autre langue recoit le cadre anglais, la convention de ``render_prompt``
+# (consigne en anglais, seul le contenu dans ``lang``). Avant ce cadre, une
+# generation ``--lang en`` etait reclassee par une question francaise portant des
+# candidats anglais.
+_CHOICE_FRAMES = {
+    "fr": ("Voici un texte :",
+           "Quel sophisme/caractere argumentatif illustre-t-il le mieux ?",
+           "Reponds uniquement par la lettre.",
+           " : "),
+    "en": ("Here is a text:",
+           "Which fallacy or argumentative virtue does it illustrate best?",
+           "Answer with the letter only.",
+           ": "),
+}
 
 
 # --------------------------------------------------------------------------
@@ -167,17 +199,92 @@ def node_key(pair: B.Pair) -> str:
     return ("F" if pair.polarity == "fallacy" else "V") + str(pair.node_pk)
 
 
+def build_hard_peers(texts: dict,
+                     fallacies: Optional[Sequence[B.Node]] = None,
+                     virtues: Optional[Sequence[B.Node]] = None) -> dict[str, list[str]]:
+    """Noeuds difficiles par cle : freres, parent, homonymes de titre FR.
+
+    Tout se derive de la taxonomie elle-meme — le ``path`` de chaque noeud
+    (freres = meme parent, le noeud parent lui-meme, et les enfants en
+    reciproque) et le titre FR partage (homonymes) — sans aucune colonne
+    editoriale. La revue amont du 2026-10-21 l'a mesure : a 5 distracteurs
+    tires au hasard parmi ~1 400
+    sophismes, la probabilite d'attraper un noeud difficile est de ~2,8 % par
+    paire, donc le taux d'aller-retour mesure « plus proche que 5 tires au
+    hasard », pas la discrimination fine dans la taxonomie.
+
+    La polarite est respectee (un sophisme difficile pour un sophisme) et la
+    cle elle-meme jamais listee parmi ses pairs.
+    """
+    nodes = [*(fallacies if fallacies is not None else B.load_fallacies()),
+             *(virtues if virtues is not None else B.load_virtues())]
+    paths = {n.key: n.path for n in nodes}
+    by_path = {(key[0], path): key for key, path in paths.items()}
+    by_parent: dict[tuple[str, str], list[str]] = {}
+    for key, path in paths.items():
+        parent = path.rsplit(".", 1)[0] if "." in path else ""
+        if parent:
+            by_parent.setdefault((key[0], parent), []).append(key)
+    titles: dict[str, list[str]] = {}
+    for key in paths:
+        title = texts["nodes"].get(key, {}).get("fr", ("",))[0]
+        if title:
+            titles.setdefault(title.strip().casefold(), []).append(key)
+    hard: dict[str, list[str]] = {}
+    for key, path in paths.items():
+        parent = path.rsplit(".", 1)[0] if "." in path else ""
+        peers: list[str] = []
+        if parent:
+            # Freres (meme parent) puis le noeud parent lui-meme, s'il existe.
+            peers.extend(k for k in by_parent.get((key[0], parent), []) if k != key)
+            parent_key = by_path.get((key[0], parent))
+            if parent_key is not None:
+                peers.append(parent_key)
+        # Enfants : la reciproque du parent — un noeud interne se reconnait
+        # aussi parmi ceux qu'il subsume, sinon le parent serait difficile pour
+        # l'enfant sans que l'enfant le soit pour lui.
+        peers.extend(k for k in by_parent.get((key[0], path), []) if k != key)
+        title = texts["nodes"].get(key, {}).get("fr", ("",))[0]
+        if title:
+            peers.extend(k for k in titles.get(title.strip().casefold(), []) if k != key)
+        dedup: list[str] = []
+        for peer in peers:
+            if peer != key and peer not in dedup:
+                dedup.append(peer)
+        hard[key] = dedup
+    return hard
+
+
 def pick_distractors(key: str, node_keys: Sequence[str], k: int,
-                     rng: random.Random) -> list[str]:
+                     rng: random.Random, hard_peers: Optional[dict] = None,
+                     exclude: Iterable[str] = ()) -> list[str]:
     """``k`` noeuds de meme polarite que ``key``, hors ``key`` lui-meme.
 
     La polarite est respectee : opposer un sophisme a une vertu rendrait le
     controle trivial et ne mesurerait plus la discrimination reelle.
+
+    Sans ``hard_peers``, le tirage est purement aleatoire (comportement
+    historique, consommation de ``rng`` identique). Avec ``hard_peers`` (index
+    rendu par :func:`build_hard_peers`), les noeuds difficiles sont tires
+    **d'abord**, puis completes au hasard. ``exclude`` retire des candidats les
+    cles listees — c'est ce qui rend le controle aleatoire *propre* en mode
+    difficile : ses distracteurs ne doivent contenir aucun noeud difficile,
+    sinon les deux taux mesures ne seraient pas attribuables.
     """
-    same = [other for other in node_keys if other[0] == key[0] and other != key]
+    excluded = set(exclude)
+    same = [other for other in node_keys
+            if other[0] == key[0] and other != key and other not in excluded]
     if len(same) < k:
         raise ValueError(f"pas assez de noeuds de polarite {key[0]!r} pour {k} distracteurs")
-    return rng.sample(same, k)
+    if hard_peers is None:
+        return rng.sample(same, k)
+    hard = [p for p in hard_peers.get(key, []) if p in same]
+    n_hard = min(k, len(hard))
+    chosen = rng.sample(hard, n_hard) if n_hard else []
+    if n_hard < k:
+        rest = [other for other in same if other not in chosen]
+        chosen += rng.sample(rest, k - n_hard)
+    return chosen
 
 
 def build_choice_question(text: str, candidates: Sequence[str], texts: dict,
@@ -186,16 +293,19 @@ def build_choice_question(text: str, candidates: Sequence[str], texts: dict,
 
     Le libelle et la definition sont tronques : le controle porte sur le
     **choix**, pas sur une lecture exhaustive de la taxonomie.
+
+    Les candidats sont dans ``lang`` ; le cadre de la question est en francais
+    pour ``fr``, en anglais pour toute autre langue (voir ``_CHOICE_FRAMES``).
     """
+    intro, question, instruction, sep = _CHOICE_FRAMES.get(lang, _CHOICE_FRAMES["en"])
     lines = []
     for index, key in enumerate(candidates):
         title, definition, _ = texts["nodes"][key][lang]
-        lines.append(f"{_ALPHABET[index]}. {title} : {definition[:140]}")
+        lines.append(f"{_ALPHABET[index]}. {title}{sep}{definition[:140]}")
     return (
-        f"Voici un texte :\n\n{text}\n\n"
-        "Quel sophisme/caractere argumentatif illustre-t-il le mieux ?\n"
+        f"{intro}\n\n{text}\n\n{question}\n"
         + "\n".join(lines)
-        + "\n\nReponds uniquement par la lettre."
+        + f"\n\n{instruction}"
     )
 
 
@@ -273,6 +383,9 @@ class Record:
     finish_reason: str
     attempts: int
     examples: list[str] = field(default_factory=list)
+    # Verdict du controle a distracteurs difficiles (mode opt-in). ``None``
+    # quand le mode est inactif ou qu'aucun tour difficile n'a rendu de lettre.
+    roundtrip_hard: Optional[bool] = None
 
     def example_overlap(self, min_len: int = B.EXAMPLE_MIN_LEN) -> bool:
         """Vrai si le texte rendu contient un champ exemple du noeud.
@@ -288,7 +401,8 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
                  distractors: int = DEFAULT_DISTRACTORS,
                  max_tokens: int = DEFAULT_MAX_TOKENS,
                  min_tokens: int = MIN_COMPLETION_TOKENS,
-                 retries: int = DEFAULT_RETRIES) -> tuple[Record, Optional[bool], list[Optional[str]]]:
+                 retries: int = DEFAULT_RETRIES,
+                 hard_peers: Optional[dict] = None) -> tuple[Record, Optional[bool], list[Optional[str]]]:
     """Genere le texte d'une paire, puis le fait reclasser par le meme maitre.
 
     Rend ``(record, verdict_aller_retour, votes_bruts)``. Le verdict est ``None``
@@ -299,6 +413,15 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
     **accepte** et entre dans le corpus. Ces cas sont rendus visibles par
     ``n_below_floor`` dans le rapport -- ``n_empty`` ne les compte pas, un
     texte court n'etant pas un texte vide.
+
+    Avec ``hard_peers`` (mode mesure, opt-in), chaque tour pose **deux**
+    questions : la question difficile (distracteurs tires d'abord parmi les
+    pairs difficiles) puis la question aleatoire (distracteurs **exclus** de
+    ces pairs). Le verdict rendu reste celui de la question aleatoire — la
+    semantique du corpus ne change pas ; le verdict difficile est porte par
+    ``record.roundtrip_hard``. La consommation de ``rng`` differe du mode par
+    defaut : deux run a ``seed`` egale, un par mode, ne tirent pas les memes
+    distracteurs.
     """
     prompt = B.render_prompt(pair, texts, lang=lang)
     reply = teacher.complete(prompt, max_tokens=max_tokens, temperature=0.8)
@@ -320,14 +443,29 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
     if not reply.text:
         return record, None, []
 
-    picks: list[Optional[str]] = []
-    for _ in range(votes):
-        candidates = [key] + pick_distractors(key, list(texts["nodes"]), distractors, rng)
+    keys = list(texts["nodes"])
+    hard_set = frozenset(hard_peers.get(key, [])) if hard_peers is not None else None
+
+    def ask(distractor_set: Sequence[str]) -> Optional[str]:
+        candidates = [key] + list(distractor_set)
         rng.shuffle(candidates)
         answer = teacher.complete(
             build_choice_question(reply.text, candidates, texts, lang),
             max_tokens=400, temperature=0.0).text
-        picks.append(parse_choice(answer, candidates))
+        return parse_choice(answer, candidates)
+
+    picks: list[Optional[str]] = []
+    hard_picks: list[Optional[str]] = []
+    for _ in range(votes):
+        if hard_peers is None:
+            picks.append(ask(pick_distractors(key, keys, distractors, rng)))
+        else:
+            hard_picks.append(
+                ask(pick_distractors(key, keys, distractors, rng, hard_peers=hard_peers)))
+            picks.append(
+                ask(pick_distractors(key, keys, distractors, rng, exclude=hard_set)))
+    if hard_peers is not None:
+        record.roundtrip_hard = majority(hard_picks, key)
     return record, majority(picks, key), picks
 
 
@@ -399,6 +537,7 @@ def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]], *,
     generated = [r for r in records if r.text]
     below_floor = [r for r in generated if r.completion_tokens < min_tokens]
     voted = [v for v in verdicts if v is not None]
+    hard_voted = [r.roundtrip_hard for r in records if r.roundtrip_hard is not None]
     by_family: dict[str, dict[str, int]] = {}
     for record, verdict in zip(records, verdicts):
         cell = by_family.setdefault(record.family, {"n": 0, "hit": 0, "measured": 0})
@@ -420,6 +559,14 @@ def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]], *,
         "roundtrip_measured": len(voted),
         "roundtrip_hits": sum(1 for v in voted if v),
         "roundtrip_rate": (round(sum(1 for v in voted if v) / len(voted), 4) if voted else None),
+        # Deuxieme taux, uniquement mesure en mode --hard-distractors : les
+        # MEMES textes, reclasses parmi des distracteurs difficiles. L'ecart
+        # entre les deux taux est la discrimination fine que le tir aleatoire
+        # ne mesure pas (~2,8 % de chances d'attraper un noeud difficile).
+        "roundtrip_hard_measured": len(hard_voted),
+        "roundtrip_hard_hits": sum(1 for v in hard_voted if v),
+        "roundtrip_hard_rate": (round(sum(1 for v in hard_voted if v) / len(hard_voted), 4)
+                                if hard_voted else None),
         "by_family": by_family,
     }
 
@@ -430,6 +577,7 @@ def run(pairs: Sequence[B.Pair], texts: dict, teacher: Teacher, *, lang: str,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         min_tokens: int = MIN_COMPLETION_TOKENS,
         retries: int = DEFAULT_RETRIES,
+        hard_peers: Optional[dict] = None,
         checkpoint: Optional[Path] = None,
         progress: Optional[Callable[[int, int], None]] = None,
         stats: Optional[dict] = None) -> tuple[list[Record], list[Optional[bool]]]:
@@ -473,7 +621,7 @@ def run(pairs: Sequence[B.Pair], texts: dict, teacher: Teacher, *, lang: str,
             record, verdict, _picks = generate_one(
                 pair, texts, teacher, lang=lang, rng=rng, votes=votes,
                 distractors=distractors, max_tokens=max_tokens,
-                min_tokens=min_tokens, retries=retries)
+                min_tokens=min_tokens, retries=retries, hard_peers=hard_peers)
             records.append(record)
             verdicts.append(verdict)
             if handle:
@@ -498,6 +646,86 @@ def _record_from_row(row: dict) -> Record:
 # CLI
 # --------------------------------------------------------------------------
 
+def _write_report(report: dict, *, report_path: Path, checkpoint: Path) -> None:
+    """Ecrit le rapport et le resume console -- un seul chemin d'ecriture."""
+    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+                           encoding="utf-8")
+    print(json.dumps({k: v for k, v in report.items()
+                      if k not in ("by_family", "below_floor_pairs")},
+                     indent=2, ensure_ascii=False))
+    if report["n_below_floor"]:
+        print(f"  {report['n_below_floor']} paire(s) generee(s) sous le plancher "
+              f"de {report['min_tokens']} tokens -- liste dans {report_path.name}")
+    print(f"corpus  : {checkpoint}")
+    print(f"rapport : {report_path}")
+
+
+def rebuild_report(*, out: Path, split: str, lang: str) -> tuple[dict, Path, Path]:
+    """Reconstruit un rapport depuis son checkpoint, sans appeler le maitre.
+
+    Le rapport committe de la tranche B (``val``/``fr``) datait d'avant le
+    correctif de fidelite #20137 : il ne publiait ni ``n_generated`` ni
+    ``n_below_floor``, et laissait donc croire que tout texte genere respectait
+    le plancher de ``min_tokens``. Le checkpoint, lui, enregistre **par paire**
+    tout ce que ``summarise`` agrege -- la correction se rejoue donc sans
+    modele, sans reseau, et sans refaire le run.
+
+    Ce que le checkpoint ne porte pas est conserve **tel quel** depuis le
+    rapport existant : les parametres du run (``model``, ``hub_url``, ``seed``,
+    ``votes``, ``distractors``, ``max_tokens``, ``min_tokens``, ``retries``),
+    le nom du checkpoint et sa duree ``seconds``. L'historique de reprise
+    (``resumed``, ``n_resumed``, ``n_todo``) n'est ecrit nulle part : ces cles
+    restent **absentes** et ``report_provenance`` le dit -- une valeur inventee
+    vaudrait moins qu'une absence nommee.
+
+    Rend ``(report, report_path, checkpoint)`` et n'ecrit rien.
+    """
+    checkpoint = out / f"{split}_{lang}.jsonl"
+    report_path = out / f"report_{split}_{lang}.json"
+    missing = [p.name for p in (checkpoint, report_path) if not p.is_file()]
+    if missing:
+        raise SystemExit(
+            f"--report-only : {', '.join(missing)} introuvable(s) dans {out} -- "
+            "il faut le checkpoint du run et le rapport qu'il a produit")
+    rows = [json.loads(line) for line in
+            checkpoint.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not rows:
+        raise SystemExit(f"--report-only : checkpoint vide ({checkpoint.name})")
+    previous = json.loads(report_path.read_text(encoding="utf-8"))
+    summary = summarise([_record_from_row(r) for r in rows],
+                        [r.get("roundtrip") for r in rows],
+                        min_tokens=int(previous["min_tokens"]))
+    header = {k: v for k, v in previous.items()
+              if k not in summary and k != "report_provenance"}
+    hard = previous.get("hard_distractors")
+    if hard is None:
+        # Deduit, pas mesure : un run --hard-distractors laisse des verdicts
+        # difficiles dans le checkpoint ; aucun verdict = le mode etait inactif.
+        hard = bool(summary["roundtrip_hard_measured"])
+    report = {
+        **header,
+        "hard_distractors": hard,
+        **summary,
+        "report_provenance": {
+            "mode": "checkpoint-only",
+            "rebuilt_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source_checkpoint": checkpoint.name,
+            "source_checkpoint_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+            "source_checkpoint_rows": len(rows),
+            "summary_from": "summarise() tel que corrige par #20137",
+            "reason": ("le rapport d'origine precedait ce correctif (#20081/#20137) : "
+                       "il ne publiait ni n_generated ni n_below_floor"),
+            "preserved_from_existing_report": sorted(header),
+            "absent_not_derivable": ["resumed", "n_resumed", "n_todo"],
+            "absent_not_derivable_why": (
+                "l'historique de reprise n'est pas ecrit dans le checkpoint ; "
+                "une reprise repart d'un tirage neuf et ne rejoue que les paires "
+                "manquantes"),
+        },
+    }
+    return report, report_path, checkpoint
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -509,13 +737,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
     parser.add_argument("--min-tokens", type=int, default=MIN_COMPLETION_TOKENS)
     parser.add_argument("--retries", type=int, default=DEFAULT_RETRIES)
+    parser.add_argument("--hard-distractors", action="store_true",
+                        help="mesure en plus un controle a distracteurs difficiles "
+                             "(freres, parent, homonymes) et publie deux taux separes")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hub-url", default=DEFAULT_HUB_URL)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--phase2-dir", type=Path, default=PHASE2_DIR)
+    parser.add_argument("--report-only", action="store_true",
+                        help="ne pas appeler le maitre : reconstruire le rapport "
+                             "depuis le checkpoint existant et le rapport qu'il a "
+                             "produit (seuls --out/--split/--lang comptent)")
     args = parser.parse_args(argv)
 
+    if args.report_only:
+        report, report_path, checkpoint = rebuild_report(
+            out=args.out, split=args.split, lang=args.lang)
+        _write_report(report, report_path=report_path, checkpoint=checkpoint)
+        return 0
+
     texts = B.load_texts()
+    hard_peers = build_hard_peers(texts) if args.hard_distractors else None
     pairs = load_pairs(args.split, args.phase2_dir)
     if args.limit:
         pairs = stratified_sample(pairs, args.limit, random.Random(args.seed))
@@ -533,13 +775,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     records, verdicts = run(
         pairs, texts, teacher, lang=args.lang, seed=args.seed, votes=args.votes,
         distractors=args.distractors, max_tokens=args.max_tokens,
-        min_tokens=args.min_tokens, retries=args.retries,
+        min_tokens=args.min_tokens, retries=args.retries, hard_peers=hard_peers,
         checkpoint=checkpoint, progress=progress, stats=resume)
 
     report = {
         "model": args.model, "hub_url": args.hub_url, "split": args.split,
         "lang": args.lang, "seed": args.seed, "votes": args.votes,
-        "distractors": args.distractors, "max_tokens": args.max_tokens,
+        "distractors": args.distractors, "hard_distractors": args.hard_distractors,
+        "max_tokens": args.max_tokens,
         "min_tokens": args.min_tokens, "retries": args.retries,
         "checkpoint": checkpoint.name,
         "seconds": round(time.time() - started, 1),
@@ -547,16 +790,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         **summarise(records, verdicts, min_tokens=args.min_tokens),
     }
     report_path = args.out / f"report_{args.split}_{args.lang}.json"
-    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
-                           encoding="utf-8")
-    print(json.dumps({k: v for k, v in report.items()
-                      if k not in ("by_family", "below_floor_pairs")},
-                     indent=2, ensure_ascii=False))
-    if report["n_below_floor"]:
-        print(f"  {report['n_below_floor']} paire(s) generee(s) sous le plancher "
-              f"de {args.min_tokens} tokens -- liste dans {report_path.name}")
-    print(f"corpus  : {checkpoint}")
-    print(f"rapport : {report_path}")
+    _write_report(report, report_path=report_path, checkpoint=checkpoint)
     return 0
 
 

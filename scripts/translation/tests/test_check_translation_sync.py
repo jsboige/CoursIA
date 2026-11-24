@@ -96,6 +96,44 @@ def test_cell_hash_contract_identical_to_t1_extract_module():
         assert t.cell_hash(s) == t1.cell_hash(s), f"hash mismatch on {s!r}"
 
 
+def test_scrub_machine_paths_contract_identical_to_t1_extract_module():
+    """Le scrub ``/home/<user>`` -> ``<USER_HOME>`` porte le contrat T1/T2.
+
+    T1 dépose le pivot scrubbé ; T2 recalcule le hash courant sur le même
+    scrub. Si les deux regex divergent d'un caractère, toute cellule prose
+    portant un chemin machine rend un faux SRC_DRIFT — c'est exactement ce
+    que la fournée T1 #21490 a dû corriger. On verrouille les deux côtés.
+    """
+    import extract_cells_to_csv as t1  # noqa: E402 (même dir)
+    samples = [
+        "/home/jesse/depot/notebook.ipynb",
+        "wrapper `/home/jesse/.elan/bin/lake` codé en dur",
+        "pas de chemin ici",
+        "placeholder deja pose : /home/<user>/x et /home/{var}/y",
+        "/root/autre/chemin",
+    ]
+    for s in samples:
+        assert t._scrub_machine_paths(s) == t1._scrub_machine_paths(s), (
+            f"scrub mismatch on {s!r}"
+        )
+    assert t._scrub_machine_paths("/home/jesse/x") == "<USER_HOME>/x"
+    assert t._scrub_machine_paths("/root/x") == "/root/x"  # scope /home borne
+
+
+def test_scrub_machine_paths_jamais_applique_aux_cellules_code(tmp_path):
+    """Le scrub ne vaut que pour la prose : une cellule CODE qui construit un
+    chemin (``f"/home/{user}"``) reste intacte. Temoin positif ET negatif."""
+    nb = _nb([
+        {"id": "md", "type": "markdown", "source": ["chemin `/home/jesse/x`"]},
+        {"id": "cd", "type": "code", "source": ["p = f\"/home/{user}/x\"\n"]},
+    ])
+    path = tmp_path / "n.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    cells = t.load_notebook_cell_texts(path)
+    assert cells["md"] == "chemin `<USER_HOME>/x`"
+    assert cells["cd"] == "p = f\"/home/{user}/x\"\n"
+
+
 # --------------------------------------------------------------------------
 # _has_expected_script — détection Unicode déterministe (WRONG_SCRIPT)
 # --------------------------------------------------------------------------
@@ -553,3 +591,84 @@ def test_main_emits_json_stdout_with_anomalies(tmp_path, monkeypatch, capsys):
     assert report["anomaly_count"] == 1
     assert report["anomalies"][0]["verdict"] == "SRC_DRIFT"
     assert "fill_rate" in report  # signal de remplissage présent (#6949)
+
+
+# --------------------------------------------------------------------------
+# --no-json / --json-out — siege a resume tronque (voie rapide)
+# --------------------------------------------------------------------------
+#
+# Le resume d'un check-run est `stdout + "\n" + stderr`, tronque a 60 Ko
+# (`OUTPUT_LIMIT` de `scripts/ci/fast_lane.py`). Le rapport JSON du
+# detecteur pese environ 857 Ko pour 2537 anomalies : il occupe la place
+# entiere du resume, et les lignes de signal (REMPLISSAGE, DRIFT DETECTE)
+# n'y apparaissent jamais. Un garde qui affiche « OK » sans nommer le
+# drift est un vert muet.
+
+
+def _drift_fixture(tmp_path):
+    """Un CSV et un notebook en desynchronisation (verdict SRC_DRIFT)."""
+    _write_nb(tmp_path, "nb.ipynb", [{"id": "c1", "type": "markdown", "source": ["nouveau"]}])
+    return _write_csv(tmp_path / "sync.csv", [_row("c1", "stale_hash_00000")])
+
+
+def test_main_no_json_laisse_stdout_vide(tmp_path, monkeypatch, capsys):
+    csv_path = _drift_fixture(tmp_path)
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(csv_path), "--repo-root", str(tmp_path), "--no-json",
+    ])
+    t.main()
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "DRIFT DETECTE" in captured.err
+
+
+def test_le_resume_du_check_run_porte_le_signal_en_tete(tmp_path, monkeypatch, capsys):
+    # Le resume est stdout puis stderr, coupe a 60 Ko. Avec --no-json, stdout
+    # est vide : le signal passe en tete de resume et n'est plus ecrase.
+    csv_path = _drift_fixture(tmp_path)
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(csv_path), "--repo-root", str(tmp_path), "--no-json",
+    ])
+    t.main()
+    captured = capsys.readouterr()
+    body = captured.out + ("\n" + captured.err if captured.err else "")
+    lignes = [ln for ln in body.splitlines() if ln.strip()]
+    assert lignes[0].startswith("REMPLISSAGE")
+    assert any(ln.startswith("DRIFT DETECTE") for ln in lignes[:5])
+    assert len(body) < 60000
+
+
+def test_main_json_out_ecrit_le_rapport_dans_le_fichier(tmp_path, monkeypatch, capsys):
+    csv_path = _drift_fixture(tmp_path)
+    out_path = tmp_path / "rapport" / "sync.json"
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(csv_path), "--repo-root", str(tmp_path),
+        "--json-out", str(out_path),
+    ])
+    t.main()
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    report = json.loads(out_path.read_text(encoding="utf-8"))
+    assert report["anomaly_count"] == 1
+    assert report["anomalies"][0]["verdict"] == "SRC_DRIFT"
+
+
+def test_no_json_et_json_out_sont_exclusifs(tmp_path, monkeypatch):
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(tmp_path), "--repo-root", str(tmp_path),
+        "--no-json", "--json-out", str(tmp_path / "rapport.json"),
+    ])
+    assert t.main() == 2
+
+
+def test_sans_json_le_resume_porte_le_signal(tmp_path, monkeypatch, capsys):
+    # Temoin : sans --no-json, stdout porte le JSON, et le resume commence
+    # par lui. C'est ce que --no-json supprime.
+    csv_path = _drift_fixture(tmp_path)
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(csv_path), "--repo-root", str(tmp_path),
+    ])
+    t.main()
+    captured = capsys.readouterr()
+    body = captured.out + ("\n" + captured.err if captured.err else "")
+    assert body.startswith("{")

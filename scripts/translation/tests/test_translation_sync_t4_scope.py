@@ -136,22 +136,24 @@ def test_t4_scope_csv_not_in_perimeter(tmp_path):
 
 
 def test_t4_scope_real_repo_inventory():
-    """Sanity check : on the real PERIMETER.md, only 4 CSVs have any in-scope
-    langs, and the count of (csv, lang) cells is 6 (4 en + 2 ru). Guards
-    against accidental widening of the perimeter by future edits.
+    """Sanity check : on the real PERIMETER.md, only 5 CSVs have any in-scope
+    langs, and the count of (csv, lang) cells is 7 (5 en + 2 ru). Guards
+    against accidental widening of the perimeter by future edits. The fifth
+    CSV is `translations/complexity/complexity.csv` (en), declared in-scope
+    by the Complexity-03 translation tranche (#1650, PR #21509).
     """
     repo_perimeter = Path("translations/PERIMETER.md")
     if not repo_perimeter.exists():
         pytest.skip("repo-level PERIMETER.md not present (test expects repo cwd)")
     perimeter = p.parse_perimeter(repo_perimeter)
     declared_with_scope = {k: v for k, v in perimeter.items() if v}
-    assert len(declared_with_scope) == 4, (
-        f"expected 4 CSVs with in-scope langs, got {len(declared_with_scope)}: "
+    assert len(declared_with_scope) == 5, (
+        f"expected 5 CSVs with in-scope langs, got {len(declared_with_scope)}: "
         f"{list(declared_with_scope.keys())}"
     )
     total_cells = sum(len(v) for v in declared_with_scope.values())
-    assert total_cells == 6, (
-        f"expected 6 (csv, lang) in-scope cells (4 en + 2 ru), got {total_cells}"
+    assert total_cells == 7, (
+        f"expected 7 (csv, lang) in-scope cells (5 en + 2 ru), got {total_cells}"
     )
 
 

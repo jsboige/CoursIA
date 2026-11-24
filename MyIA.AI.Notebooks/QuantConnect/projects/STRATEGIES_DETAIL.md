@@ -2,11 +2,13 @@
 
 Descriptions par catégorie des projets de trading algorithmique. Pour le tableau de performance résumé, voir [README.md](README.md).
 
+> **Dossiers sans fiche ici.** Les dossiers présents sur disque mais sans verdict de backtest classant (évaluations en cours de stratégies publiques ou d'articles, benchmarks et corrélations d'appui, documentation interne) sont listés dans la section [« Livrables en attente de classement »](README.md#livrables-en-attente-de-classement-pr%C3%A9sents-sur-disque-non-encore-d%C3%A9partis-par-robustesse) du README — ils n'ont pas de fiche détaillée tant que leur classement par robustesse n'est pas établi (#17526).
+
 > **Lecture vérifiée sous frais réels (#1630, 2018-2025).** Les Sharpes ci-dessous sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ stratégies sous frais IBKR réels sur une fenêtre alignée 2018-2025 — plusieurs s'effondrent, d'autres tiennent :
 
 | Stratégie | Sharpe catalogue | Sharpe aligné | Verdict |
 |-----------|------------------|---------------|---------|
-| HighBookToMarketFScore | 2.09 | **0.41** | effondrement -80% (MaxDD -60%) |
+| HighBookToMarketFScore | 2.09 | **0.41** | autre fenêtre : 2.09 = Sharpe OOS 1 an de la fiche (#25264) ; MaxDD -60% sur 2018-2025 |
 | PuppiesOfTheDow | 1.99 | **0.30** | effondrement -85% |
 | ML-Trend-Scanning | 0.66 | **0.33** | effondrement -50% |
 | AllWeather | 0.67 | **0.47** | dégradation -30% |
@@ -61,7 +63,7 @@ Leaders vérifiés alignés (backbone no-ML) : **EMATrend 0.611** / **composite-
 ## Mean Reversion & Pairs (Intermédiaire)
 
 - **MeanReversion** : Signaux RSI multi-asset, achat en survente, vente en surachat.
-- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionné par régime bull (SMA200). Time stop 5 jours. Signal réel (73% win) mais trop rare (~9 trades/an).
+- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionné par régime bull (SMA200). Time stop 5 jours. Signal valide (70 % de trades gagnants) mais trop rare (8,4 trades/an sur 2015-2024).
 - **PairsTrading** : Arbitrage statistique sur paires d'actions cointégrées. Paires non cointégrées 2010-2026.
 - **ETF-Pairs** : Cointegration-based pairs trading sur ETFs. Cointégration instable.
 

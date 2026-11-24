@@ -1,0 +1,11 @@
+- name: "ICT-Argumentation QBF Acceptance"
+  family: IIT/ICT-Series
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le moteur QBF resout par enumeration exhaustive (table de verite recursive, espace 2^n affiche) et le moteur de Dung rejoue grounded/admissible/preferred sur des cadres jouet. Python importe les moteurs depuis ict/ ; C# les reecrit sur la seule BCL (AST de formules + point fixe de la fonction caracteristique). Aucun solveur externe canonique : les deux cotes recomptent les memes verdicts."
+  known_differences:
+    - "C# ajoute des lignes de controle CONFORME qui comparent chaque valeur lue a sa valeur attendue et levent sur ecart ; le Python imprime les memes verdicts sans comparaison formelle (24 lignes porteuses C# contre 19 Python)."
+    - "Le moteur C# est autonome (AST Var/Not/And/Or/Implies/ForAll/Exists + DungEngine dans la cellule 2) ; le Python consomme les organes de ict/. Les sorties s'impriment au format Python (PyBool -> True/False) pour la parite litterale."
+    - "Les verdicts porteurs (QBF VALID x | !x, INVALID x & !x, forall y. exists x -> True, preferes [['a','c'],['b','c']], sceptique a=False c=True, tweety [['a','c']]) coincident verbatim."

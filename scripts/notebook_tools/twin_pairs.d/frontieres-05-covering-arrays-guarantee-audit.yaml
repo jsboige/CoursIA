@@ -1,0 +1,12 @@
+- name: "Frontieres-05 Covering Arrays Guarantee Audit"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets construisent et résolvent réellement leur set cover avec Google OR-Tools CP-SAT natif. Les constructions IPOG-like/AETG-like sont explicitement des gloutons pédagogiques, comme dans le source, et les couvertures sont auditées hors du solveur."
+  known_differences:
+    - "2026-11-24 (myia-po-2028:claudish, PR CoursIA #27677) : le jumeau Python ajoute seulement le mot « Navigation » au libellé du lien existant vers Frontieres-03 ; aucune cellule C# modifiée, aucun changement scientifique. L'attestation 0008 scelle ce lien de navigation."
+    - "Le tie-break AETG-like utilise System.Random en C# et random.Random en Python ; les suites et leurs tailles peuvent différer. Les mêmes graines 42 et budgets CP-SAT 10/15 secondes, un worker, sont conservés."
+    - "Les statuts, bornes et chronométrages sont propres aux versions et machines : un optimum peut être prouvé dans une exécution et rester FEASIBLE dans l'autre. Aucun classement de performance interlangages n'est revendiqué."
+    - "Les tableaux pandas et figures Matplotlib sont remplacés par des tableaux textuels et SVG opaques autonomes. Les trois exercices restent ouverts et répartis ; le C# observe les vingt constructions de l'exercice de sensibilité et refuse les valeurs déclarées sans appel."

@@ -1,0 +1,1078 @@
+{
+  "schema": 1,
+  "script": "ict25_arms.py",
+  "arm": "N",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "max_completion_length": 1024,
+  "seeds": [
+    1
+  ],
+  "steps": 120,
+  "gpu": 0,
+  "git_commit": "f3efa5830a5e",
+  "generated_at": "2026-10-28T01:36:52Z",
+  "resumed_seeds": [],
+  "per_seed": [
+    {
+      "metrics": {
+        "arm": "N",
+        "seed": 1,
+        "steps": 120,
+        "elapsed_s": 19441.8,
+        "n_completions": 960,
+        "mean_reward": 18.981,
+        "mean_math_correct": 0.2885,
+        "hack_rate": 0.0,
+        "learning_rate": 1e-06,
+        "num_generations": 2,
+        "max_completion_length": 1024,
+        "system_prompt_kind": "NEUTRAL",
+        "signal_kind": "FEWSHOT_NEUTRAL"
+      },
+      "records_sample": [
+        {
+          "step": 0,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 22.495,
+          "reward": 22.495
+        },
+        {
+          "step": 0,
+          "gt": "7",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 19.775,
+          "reward": 19.775
+        },
+        {
+          "step": 0,
+          "gt": "7",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 18.42,
+          "reward": 18.42
+        },
+        {
+          "step": 0,
+          "gt": "7",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 19.15,
+          "reward": 19.15
+        },
+        {
+          "step": 0,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 22.52,
+          "reward": 23.52
+        },
+        {
+          "step": 0,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 16.16,
+          "reward": 17.16
+        },
+        {
+          "step": 0,
+          "gt": "7",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 17.14,
+          "reward": 17.14
+        },
+        {
+          "step": 0,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 17.7,
+          "reward": 17.7
+        },
+        {
+          "step": 1,
+          "gt": "10",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 21.305,
+          "reward": 21.305
+        },
+        {
+          "step": 1,
+          "gt": "10",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 12.515,
+          "reward": 12.515
+        },
+        {
+          "step": 1,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 21.765,
+          "reward": 22.765
+        },
+        {
+          "step": 1,
+          "gt": "9",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 15.83,
+          "reward": 15.83
+        },
+        {
+          "step": 1,
+          "gt": "8",
+          "pred": "0",
+          "mc": 0.0,
+          "lb": 17.92,
+          "reward": 17.92
+        },
+        {
+          "step": 1,
+          "gt": "8",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.61,
+          "reward": 20.61
+        },
+        {
+          "step": 1,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 17.14,
+          "reward": 17.14
+        },
+        {
+          "step": 1,
+          "gt": "7",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 25.0,
+          "reward": 25.0
+        },
+        {
+          "step": 2,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 20.77,
+          "reward": 21.77
+        },
+        {
+          "step": 2,
+          "gt": "8",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 18.085,
+          "reward": 18.085
+        },
+        {
+          "step": 2,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 18.32,
+          "reward": 19.32
+        },
+        {
+          "step": 2,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 30.04,
+          "reward": 31.04
+        },
+        {
+          "step": 2,
+          "gt": "7",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 19.45,
+          "reward": 19.45
+        },
+        {
+          "step": 2,
+          "gt": "7",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 16.225,
+          "reward": 16.225
+        },
+        {
+          "step": 2,
+          "gt": "8",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 24.035,
+          "reward": 24.035
+        },
+        {
+          "step": 2,
+          "gt": "8",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 18.445,
+          "reward": 18.445
+        },
+        {
+          "step": 3,
+          "gt": "8",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 17.33,
+          "reward": 17.33
+        },
+        {
+          "step": 3,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 16.605,
+          "reward": 17.605
+        },
+        {
+          "step": 3,
+          "gt": "9",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 15.725,
+          "reward": 15.725
+        },
+        {
+          "step": 3,
+          "gt": "9",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 19.475,
+          "reward": 19.475
+        },
+        {
+          "step": 3,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 25.385,
+          "reward": 26.385
+        },
+        {
+          "step": 3,
+          "gt": "9",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 14.55,
+          "reward": 14.55
+        },
+        {
+          "step": 3,
+          "gt": "8",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 17.055,
+          "reward": 17.055
+        },
+        {
+          "step": 3,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 19.815,
+          "reward": 20.815
+        },
+        {
+          "step": 4,
+          "gt": "10",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 23.585,
+          "reward": 23.585
+        },
+        {
+          "step": 4,
+          "gt": "10",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 20.565,
+          "reward": 20.565
+        },
+        {
+          "step": 4,
+          "gt": "9",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 17.545,
+          "reward": 17.545
+        },
+        {
+          "step": 4,
+          "gt": "9",
+          "pred": "None",
+          "mc": 0.0,
+          "lb": 23.555,
+          "reward": 23.555
+        },
+        {
+          "step": 4,
+          "gt": "9",
+          "pred": "12",
+          "mc": 0.0,
+          "lb": 21.41,
+          "reward": 21.41
+        },
+        {
+          "step": 4,
+          "gt": "9",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 10.905,
+          "reward": 10.905
+        },
+        {
+          "step": 4,
+          "gt": "10",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 21.305,
+          "reward": 21.305
+        },
+        {
+          "step": 4,
+          "gt": "10",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 13.93,
+          "reward": 13.93
+        },
+        {
+          "step": 5,
+          "gt": "7",
+          "pred": "10",
+          "mc": 0.0,
+          "lb": 16.26,
+          "reward": 16.26
+        },
+        {
+          "step": 5,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 15.885,
+          "reward": 16.884999999999998
+        },
+        {
+          "step": 5,
+          "gt": "10",
+          "pred": "35",
+          "mc": 0.0,
+          "lb": 18.035,
+          "reward": 18.035
+        },
+        {
+          "step": 5,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 19.585,
+          "reward": 19.585
+        },
+        {
+          "step": 5,
+          "gt": "9",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 23.29,
+          "reward": 23.29
+        },
+        {
+          "step": 5,
+          "gt": "9",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 12.295,
+          "reward": 12.295
+        },
+        {
+          "step": 5,
+          "gt": "8",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 16.85,
+          "reward": 16.85
+        },
+        {
+          "step": 5,
+          "gt": "8",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 18.7,
+          "reward": 18.7
+        },
+        {
+          "step": 6,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 18.985,
+          "reward": 19.985
+        },
+        {
+          "step": 6,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 5.835,
+          "reward": 6.835
+        },
+        {
+          "step": 6,
+          "gt": "9",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 19.36,
+          "reward": 19.36
+        },
+        {
+          "step": 6,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 21.235,
+          "reward": 22.235
+        },
+        {
+          "step": 6,
+          "gt": "7",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 14.86,
+          "reward": 14.86
+        },
+        {
+          "step": 6,
+          "gt": "7",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 16.945,
+          "reward": 16.945
+        },
+        {
+          "step": 6,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 23.005,
+          "reward": 24.005
+        },
+        {
+          "step": 6,
+          "gt": "10",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 19.67,
+          "reward": 19.67
+        },
+        {
+          "step": 7,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 17.355,
+          "reward": 17.355
+        },
+        {
+          "step": 7,
+          "gt": "10",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 13.005,
+          "reward": 13.005
+        },
+        {
+          "step": 7,
+          "gt": "7",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 16.8,
+          "reward": 16.8
+        },
+        {
+          "step": 7,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 17.94,
+          "reward": 18.94
+        },
+        {
+          "step": 7,
+          "gt": "7",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 26.66,
+          "reward": 26.66
+        },
+        {
+          "step": 7,
+          "gt": "7",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 13.455,
+          "reward": 13.455
+        },
+        {
+          "step": 7,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.365,
+          "reward": 20.365
+        },
+        {
+          "step": 7,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 20.005,
+          "reward": 21.005
+        }
+      ],
+      "records_sample_tail": [
+        {
+          "step": 112,
+          "gt": "8",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.465,
+          "reward": 20.465
+        },
+        {
+          "step": 112,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 17.125,
+          "reward": 18.125
+        },
+        {
+          "step": 112,
+          "gt": "7",
+          "pred": "9",
+          "mc": 0.0,
+          "lb": 21.645,
+          "reward": 21.645
+        },
+        {
+          "step": 112,
+          "gt": "7",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 19.435,
+          "reward": 19.435
+        },
+        {
+          "step": 112,
+          "gt": "10",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 17.45,
+          "reward": 17.45
+        },
+        {
+          "step": 112,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 16.445,
+          "reward": 17.445
+        },
+        {
+          "step": 112,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 17.53,
+          "reward": 17.53
+        },
+        {
+          "step": 112,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 19.23,
+          "reward": 20.23
+        },
+        {
+          "step": 113,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 23.69,
+          "reward": 23.69
+        },
+        {
+          "step": 113,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 22.695,
+          "reward": 22.695
+        },
+        {
+          "step": 113,
+          "gt": "7",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 16.445,
+          "reward": 16.445
+        },
+        {
+          "step": 113,
+          "gt": "7",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 18.155,
+          "reward": 18.155
+        },
+        {
+          "step": 113,
+          "gt": "9",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 18.385,
+          "reward": 18.385
+        },
+        {
+          "step": 113,
+          "gt": "9",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 18.585,
+          "reward": 18.585
+        },
+        {
+          "step": 113,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 17.375,
+          "reward": 17.375
+        },
+        {
+          "step": 113,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 13.505,
+          "reward": 13.505
+        },
+        {
+          "step": 114,
+          "gt": "9",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 15.955,
+          "reward": 15.955
+        },
+        {
+          "step": 114,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 17.65,
+          "reward": 18.65
+        },
+        {
+          "step": 114,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 18.97,
+          "reward": 19.97
+        },
+        {
+          "step": 114,
+          "gt": "10",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 19.445,
+          "reward": 19.445
+        },
+        {
+          "step": 114,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 21.695,
+          "reward": 21.695
+        },
+        {
+          "step": 114,
+          "gt": "7",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.45,
+          "reward": 20.45
+        },
+        {
+          "step": 114,
+          "gt": "9",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 18.355,
+          "reward": 18.355
+        },
+        {
+          "step": 114,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 23.91,
+          "reward": 24.91
+        },
+        {
+          "step": 115,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 20.665,
+          "reward": 21.665
+        },
+        {
+          "step": 115,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 21.445,
+          "reward": 22.445
+        },
+        {
+          "step": 115,
+          "gt": "8",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 23.36,
+          "reward": 23.36
+        },
+        {
+          "step": 115,
+          "gt": "8",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 17.925,
+          "reward": 17.925
+        },
+        {
+          "step": 115,
+          "gt": "9",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 21.35,
+          "reward": 21.35
+        },
+        {
+          "step": 115,
+          "gt": "9",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 21.485,
+          "reward": 21.485
+        },
+        {
+          "step": 115,
+          "gt": "9",
+          "pred": "9",
+          "mc": 1.0,
+          "lb": 23.5,
+          "reward": 24.5
+        },
+        {
+          "step": 115,
+          "gt": "9",
+          "pred": "44",
+          "mc": 0.0,
+          "lb": 20.87,
+          "reward": 20.87
+        },
+        {
+          "step": 116,
+          "gt": "8",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 22.785,
+          "reward": 22.785
+        },
+        {
+          "step": 116,
+          "gt": "8",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 17.99,
+          "reward": 17.99
+        },
+        {
+          "step": 116,
+          "gt": "9",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 15.545,
+          "reward": 15.545
+        },
+        {
+          "step": 116,
+          "gt": "9",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 19.895,
+          "reward": 19.895
+        },
+        {
+          "step": 116,
+          "gt": "8",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 18.695,
+          "reward": 18.695
+        },
+        {
+          "step": 116,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 17.32,
+          "reward": 18.32
+        },
+        {
+          "step": 116,
+          "gt": "10",
+          "pred": "10",
+          "mc": 1.0,
+          "lb": 19.35,
+          "reward": 20.35
+        },
+        {
+          "step": 116,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.385,
+          "reward": 20.385
+        },
+        {
+          "step": 117,
+          "gt": "9",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 22.445,
+          "reward": 22.445
+        },
+        {
+          "step": 117,
+          "gt": "9",
+          "pred": "4",
+          "mc": 0.0,
+          "lb": 20.44,
+          "reward": 20.44
+        },
+        {
+          "step": 117,
+          "gt": "8",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 8.285,
+          "reward": 8.285
+        },
+        {
+          "step": 117,
+          "gt": "8",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 17.065,
+          "reward": 17.065
+        },
+        {
+          "step": 117,
+          "gt": "10",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 22.96,
+          "reward": 22.96
+        },
+        {
+          "step": 117,
+          "gt": "10",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 20.135,
+          "reward": 20.135
+        },
+        {
+          "step": 117,
+          "gt": "7",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.38,
+          "reward": 20.38
+        },
+        {
+          "step": 117,
+          "gt": "7",
+          "pred": "6",
+          "mc": 0.0,
+          "lb": 22.355,
+          "reward": 22.355
+        },
+        {
+          "step": 118,
+          "gt": "7",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 19.065,
+          "reward": 19.065
+        },
+        {
+          "step": 118,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 15.465,
+          "reward": 16.465
+        },
+        {
+          "step": 118,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 19.78,
+          "reward": 19.78
+        },
+        {
+          "step": 118,
+          "gt": "10",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 9.64,
+          "reward": 9.64
+        },
+        {
+          "step": 118,
+          "gt": "9",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 12.11,
+          "reward": 12.11
+        },
+        {
+          "step": 118,
+          "gt": "9",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 18.72,
+          "reward": 18.72
+        },
+        {
+          "step": 118,
+          "gt": "8",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 8.395,
+          "reward": 8.395
+        },
+        {
+          "step": 118,
+          "gt": "8",
+          "pred": "8",
+          "mc": 1.0,
+          "lb": 18.62,
+          "reward": 19.62
+        },
+        {
+          "step": 119,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 19.185,
+          "reward": 20.185
+        },
+        {
+          "step": 119,
+          "gt": "7",
+          "pred": "3",
+          "mc": 0.0,
+          "lb": 23.41,
+          "reward": 23.41
+        },
+        {
+          "step": 119,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 20.62,
+          "reward": 20.62
+        },
+        {
+          "step": 119,
+          "gt": "10",
+          "pred": "1",
+          "mc": 0.0,
+          "lb": 18.035,
+          "reward": 18.035
+        },
+        {
+          "step": 119,
+          "gt": "7",
+          "pred": "7",
+          "mc": 1.0,
+          "lb": 22.13,
+          "reward": 23.13
+        },
+        {
+          "step": 119,
+          "gt": "7",
+          "pred": "2",
+          "mc": 0.0,
+          "lb": 11.565,
+          "reward": 11.565
+        },
+        {
+          "step": 119,
+          "gt": "10",
+          "pred": "5",
+          "mc": 0.0,
+          "lb": 19.85,
+          "reward": 19.85
+        },
+        {
+          "step": 119,
+          "gt": "10",
+          "pred": "8",
+          "mc": 0.0,
+          "lb": 18.295,
+          "reward": 18.295
+        }
+      ],
+      "records_total": 960,
+      "records_sample_window": "head"
+    }
+  ],
+  "provenance": {
+    "git_commit_at_run": "f3efa5830a5e6e95e6d2b826d5a5ab8b1485c8ac",
+    "git_commit_at_run_reachable_on_remote": false,
+    "git_commit_pushed": "d1c885850ab8",
+    "git_branch": "feature/ict25-artefacts-par-graine",
+    "script_path": "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25_arms.py",
+    "script_sha256": "f1c8782978586b46a307381d801febd6d2e4a49af332369cc63bb602b51a70ee",
+    "script_identical_at": [
+      "f3efa5830a5e",
+      "d1c885850ab8",
+      "d24fdd4792e8"
+    ],
+    "note": "Le run a tourne sur un commit local f3efa58 (jamais pousse), jumeau pre-rebase du commit pousse d1c88585 : le contenu de ict25_arms.py est byte-identique aux trois refs citatrices (sha256 ci-dessus), donc le code producteur est reconstituable depuis la branche. Le champ git_commit d'origine est conserve intact."
+  }
+}

@@ -1,0 +1,2 @@
+open_spiel>=2.0
+jupyter_kernel_gateway>=3.0

@@ -219,12 +219,16 @@ def _nb_ids(cells):
             {
                 "cell_type": "code",
                 "id": cid,
+                "source": src,
                 "execution_count": 1,
                 "outputs": ([] if text is None else
                             [{"output_type": "stream", "name": "stdout",
                               "text": text}]),
             }
-            for cid, text in cells
+            # (cid, text) ou (cid, text, source) : la source est l'identite
+            # stable d'une cellule a travers une re-serialisation (#23364).
+            for cid, text, src in (c if len(c) == 3 else (c[0], c[1], "")
+                                   for c in cells)
         ],
         "metadata": {
             "kernelspec": {"name": "python3", "display_name": "Python 3"},
@@ -260,12 +264,19 @@ def test_diff_signatures_added_empty_cell_not_reported():
 def test_diff_signatures_added_cell_with_float_still_reported():
     """Positive control: the fix must not blind the gate.
 
-    An added cell that really produces a float array is still a drift.
+    A cell RE-IDENTIFIED by a re-serialisation (same source, fresh id) whose
+    float output really changed is still a drift: the base signature exists,
+    so the comparison is meaningful. What #23364 removes is the added cell
+    with NO base counterpart, not this one.
+
+    `c-keep` keeps the id-aligned branch reachable: with no common id at all
+    the organ falls back to ordinal alignment by design, which is a
+    different contract than the one under test here.
     """
     assert _id_aligned_diffs(
-        [("c1", "[1.0, 1.0]\n")],
-        [("c1", "[1.0, 1.0]\n"), ("c2", "[2.0, 2.0]\n")],
-    ) == ["c2"]
+        [("c-keep", "ok\n", "keep()"), ("c1", "[1.0, 1.0]\n", "df.head()")],
+        [("c-keep", "ok\n", "keep()"), ("c1-b", "[2.0, 2.0]\n", "df.head()")],
+    ) == ["c1-b"]
 
 
 def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
@@ -277,13 +288,161 @@ def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
     ) == ["c1"]
 
 
-def test_diff_signatures_added_mixed_only_float_ones_reported():
-    """Among several added cells, only those carrying a signature report."""
-    assert _id_aligned_diffs(
-        [("c1", "ok\n")],
-        [("c1", "ok\n"), ("injected", None), ("c3", "[3.0, 3.0]\n")],
-    ) == ["c3"]
+def test_diff_signatures_added_mixed_only_reidentified_ones_reported():
+    """Among several added cells, only a re-identified one can drift.
 
+    `injected` carries no signature (papermill's parameters cell), `c3` is
+    genuinely new content, `old-new` is the base cell `old` under a fresh id:
+    only the last one has a base signature to differ from.
+    """
+    assert _id_aligned_diffs(
+        [("c1", "ok\n", "a"), ("old", "[9.0, 9.0]\n", "df.tail()")],
+        [("c1", "ok\n", "a"), ("injected", None, "# Parameters"),
+         ("c3", "[3.0, 3.0]\n", "new_analysis()"),
+         ("old-new", "[8.0, 8.0]\n", "df.tail()")],
+    ) == ["old-new"]
+
+
+def test_diff_signatures_added_cell_printing_intervals_not_reported():
+    """#23364 founding instance, measured on PR #23273.
+
+    The PR ADDED two cells that print Wilson confidence intervals. Their
+    output text `[0.57,1.00]` matches FLOAT_ARRAY_RE exactly as a 2-element
+    ndarray would, so the added-cell branch reported them as
+    `signature_drift_cells` -- while `origin/main` had no cell with the same
+    source, i.e. there was no base value to drift from.
+
+    The guard must stay silent here: 8 -> 10 code cells, 0 id lost, both
+    flagged cells genuine additions.
+    """
+    assert _id_aligned_diffs(
+        [("c1", "[0.10, 0.20]\n", "report()")],
+        [("c1", "[0.10, 0.20]\n", "report()"),
+         ("wilson", "[0.57,1.00]\n[0.00,0.20]\n", "wilson_ci(wins, n)")],
+    ) == []
+
+
+def test_diff_signatures_common_cell_gaining_float_not_reported():
+    """#25413 etendu -- cas mesure PR #27915, cellule c371d193.
+
+    Une cellule COMMUNE (meme id base/tete) dont la sortie de base
+    EXISTAIT mais ne portait aucun texte float-array et qui en gagne une
+    a la tete est une addition de contenu : la PR ajoute un print de
+    marges mesurees a une cellule existante. Le partitionneur ne la
+    classait pas ``added`` (sa base avait des sorties non vides), elle
+    restait en derive bloquante alors que rien n'avait derive -- la
+    signature de base etait vide, il n'existait aucune valeur de
+    reference a faire deriver. Elle part desormais en advisory
+    ``output_added_cells``, comme la conversion exercice -> exemple de
+    #25413.
+    """
+    base = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    head = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"
+                                "marge : [-0.2021, 0.2404]\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    b_sig, h_sig = ckd.float_signatures(base), ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == []
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-work"]
+
+
+def test_diff_signatures_common_cell_real_drift_still_reported():
+    """Controle positif du jumeau id-aligne : le fix ne rend pas l'organe aveugle.
+
+    Une cellule commune dont la base PORTAIT une signature float et dont
+    la valeur change reellement (au-dela de la tolerance 1 ULP) reste
+    une derive signalee.
+    """
+    assert _id_aligned_diffs(
+        [("c-work", "[1.0, 1.0]\n")],
+        [("c-work", "[2.0, 3.0]\n")],
+    ) == ["c-work"]
+
+
+# --- #25413 : une sortie qui APPARAIT dans une cellule vide a la base ------
+# n'est PAS une derive de signature : c'est une addition de contenu (la
+# conversion exercice -> exemple guide). Le guard ne la rapporte ni en
+# signature_drift_cells (bloquant) ni avec le guess NumPy ; au plus un
+# advisory output_added_cells. Cas mesure PR #22969, cellule 5bd816be
+# (base "Exercice 2" sans sortie -> tete "Exemple guide 2" avec sorties).
+
+
+def test_output_added_is_not_signature_drift():
+    # base : cellule sans AUCUNE sortie ; tete : meme cellule (meme id) avec
+    # une sortie float. Meme kernel.
+    base = _nb_ids([("c1", None)])
+    head = _nb_ids([("c1", "[0.5, 0.25, 0.125]\n")])
+    b_sig = ckd.float_signatures(base)
+    h_sig = ckd.float_signatures(head)
+    assert b_sig == ((),)           # base vide
+    assert h_sig != ((),)           # tete avec sortie
+    # Pas de derive (le faux positif fondateur) :
+    assert ckd.diff_signatures(b_sig, h_sig,
+                               base_nb=base, head_nb=head) == []
+    # Mais bien une addition de contenu (advisory) :
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c1"]
+
+
+def test_output_added_ordinal_is_not_drift():
+    # Meme cas par l'alignement ORDINAL (carnets sans id) : une cellule
+    # presente a la base et y vide, avec une sortie a la tete, n'est pas une
+    # derive.
+    base = ((),)
+    head = (("[0.5, 0.25, 0.125]",),)
+    assert ckd._diff_signatures_ordinal(base, head) == []
+    assert ckd._output_added_ordinal(base, head) == [0]
+
+
+def test_output_added_ordinal_keeps_genuinely_new_cell():
+    # Controle negatif de l'ordinal : une cellule AU-DELA de la base
+    # (i >= len(base)) est NOUVELLE et reste rapportee -- le fix n'aveugle
+    # pas la detection d'une vraie cellule ajoutee.
+    base = (("[1.0, 1.0]",),)
+    head = (("[1.0, 1.0]",), ("[2.0, 2.0]",))
+    assert ckd._diff_signatures_ordinal(base, head) == [1]
+    # (pas une "addition" : la cellule 1 est au-dela de la base)
+    assert ckd._output_added_ordinal(base, head) == []
+
+
+def test_real_drift_still_reported_alongside_output_added():
+    # Controle positif : un drift reel (2 ULP) sur une cellule commune reste
+    # rapporte, meme si une AUTRE cellule commune ajoute une sortie.
+    base = _nb_ids([("c-drift", "[1.0, 1.0]\n"), ("c-add", None)])
+    head = _nb_ids([("c-drift", f"[{TWO_ULP_BELOW_1!r}, 1.0]\n"),
+                    ("c-add", "[3.0, 3.0]\n")])
+    b_sig = ckd.float_signatures(base)
+    h_sig = ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig,
+                               base_nb=base, head_nb=head) == ["c-drift"]
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-add"]
+
+
+def test_output_added_green_end_to_end(monkeypatch):
+    # Trajet COMPLET : base vide -> tete avec sortie, meme kernel. Le guard
+    # reste VERT (aucun finding) : le seul moyen de lever le rouge n'est
+    # plus d'ajouter une section C.4.
+    base_nb = _nb("python3", "3.13.3", [])
+    base_nb["cells"][0]["outputs"] = []
+    head_nb = _nb("python3", "3.13.3", ["[0.5, 0.25, 0.125]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert result["findings"] == []
+
+
+def test_output_added_does_not_emit_numpy_cause(monkeypatch):
+    # Une derive REELLE coexistante reste un finding ; l'advisory
+    # output_added_cells est raporte a cote (vide ici : la cellule avait
+    # une sortie a la base), sans rougir pour l'addition.
+    base_nb = _nb("python3", "3.13.3", ["[1.0, 1.0, 1.0]\n"])
+    head_nb = _nb("python3", "3.13.3",
+                  [f"[1.0, {TWO_ULP_BELOW_1!r}, 1.0]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert len(result["findings"]) == 1
+    f = result["findings"][0]
+    assert f["signature_drift_cells"]
+    assert f["output_added_cells"] == []
 
 
 # --- #17679 : table d'acceptation canon C# 13.0 ------------------------------
@@ -371,7 +530,9 @@ def test_canonical_transition_python_38_to_313_refused():
     # mesure #19160 ; sans scope par chemin/série, ajouter la transition
     # ferait passer vert un carnet ICT rejoue par erreur -- reserve Hermes
     # PRR_kwDOH2Odns8AAAABQnPfEQ, 2026-10-05). Les 2 rescapes 3.8.10/3.9.0
-    # sont traites au cas par cas.
+    # sont traites au cas par cas : QC-Py-16 via la table scoped
+    # (tests ci-dessous), QC-Py-03 verdict INTRINSIC (metadonnee fossile,
+    # aucune cellule executable localement).
     a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is False
@@ -382,6 +543,359 @@ def test_canonical_transition_python_39_to_313_refused():
     a = {"language_version": "3.9.0", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_qcpy16_38_to_313_accepted():
+    # Cas par cas #19181 (decision coordinateur du 11/10) : le seul carnet
+    # nominatif porte sa transition -- QC-Py-16, re-execution selective du
+    # sous-ensemble local (cellules REF QC Cloud non executables
+    # localement) sous le canon d'execution 3.13.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_sl14_39_to_313_accepted():
+    # #23443 : le 3.9 de SL-14 etait un artefact de PACKAGING
+    # (`numpy.distutils` retire de NumPy 2 rend `pip install aifeynman`
+    # impossible sous 3.13, et NumPy 1.26 n'a pas de roue cp313). La
+    # reconstruction des sept extensions Fortran par le f2py de NumPy 2
+    # leve la contrainte : l'entree est nominative, comme 2.8c et ML-06.
+    a = {"language_version": "3.9.25", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.18", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+            "SL-14-AIFeynman-Discover-Equations.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_sl14_does_not_leak_to_ict():
+    # Controle NEGATIF : la direction 3.9 -> 3.13 reste rouge partout
+    # ailleurs -- c'est la raison d'etre de la table scoped (la serie ICT
+    # est epinglee par `requires-python >=3.9,<3.10`, pyphi==1.2.0).
+    a = {"language_version": "3.9.25", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.18", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/ICT/"
+                 "ICT-24-PyPhi-Application.ipynb")) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+                 "SL-2-KnowledgeBasedLearning.ipynb")) is False
+
+
+def test_canonical_transition_scoped_sl14_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope de SL-14.
+    a = {"language_version": "3.13.18", "kernelspec_name": "python3"}
+    b = {"language_version": "3.9.25", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+            "SL-14-AIFeynman-Discover-Equations.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_does_not_leak_to_other_paths():
+    # La meme transition 3.8 -> 3.13 reste rouge ailleurs : le scope protege
+    # la serie ICT (<3.10) -- c'est la raison d'etre de la table scoped.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/IIT/ICT-47.ipynb") is False
+
+
+def test_canonical_transition_scoped_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope (le cliquet ne
+    # descend pas).
+    a = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    b = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+# --- #23187 : portee SERIE (prefixe de repertoire) --------------------------
+# Le canon 3.13 est celui de la serie 02-ML-Cours entiere, declare par son
+# requirements.txt -- pas celui du seul 2.8c. Quatre carnets de la serie
+# tournent sous ``coursia-ml-training`` (releves le 2026-10-29 sur main) :
+# 2.8c et 2.14b a 3.11.15, 2.9d et 2.9g a 3.10.19 -- deux directions, donc
+# deux entrees. La portee est un PREFIXE de repertoire, jamais le kernelspec
+# nu : 50 carnets hors serie partagent ce kernelspec sans declarer 3.13
+# (54 au total, 4 dans la serie). Le chiffre se relit par lecture des
+# METADONNEES de chaque carnet -- la commande et son instantane sont
+# consignes dans #23187 :
+#   python -c "import json, pathlib; print(sum(1 for p in
+#   pathlib.Path('MyIA.AI.Notebooks').rglob('*.ipynb') if
+#   (json.loads(p.read_text(encoding='utf-8')).get('metadata') or {})
+#   .get('kernelspec', {}).get('name') == 'coursia-ml-training'))"
+# (un comptage par sous-chaine dans le fichier rend 67 : il additionne les
+# carnets dont le kernelspec est un autre mais dont une cellule cite le
+# nom -- la population qui compte pour ce garde est celle des METADONNEES).
+# La reserve de revue de #22979 a refuse l'entree globale precisement
+# pour eux.
+
+
+def test_canonical_transition_scoped_series_02ml_accepted():
+    # Positif : un autre carnet de la serie converge vers le canon 3.13.
+    # Le representant est 2.14b, dont la version mesuree est bien 3.11.15 --
+    # nommer ici un carnet a 3.10.19 aurait fait passer le test sur une base
+    # que ce carnet n'a jamais portee (reserve NanoClaw du 2026-10-29).
+    a = {"language_version": "3.11.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    # Sans chemin, la meme derive reste rouge : aucune entree GLOBALE n'a
+    # ete ajoutee pour ce kernelspec.
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Et un changement de kernelspec reste rouge meme sous la portee serie
+    # (le prefixe ne dispense pas de l'egalite de kernelspec).
+    c = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, c, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_series_02ml_310_accepted():
+    # Positif, deuxieme direction (#23187). A l'epoque de l'entree de serie,
+    # 2.9d et 2.9g etaient tous deux a 3.10.19. La direction est devenue
+    # NOMINATIVE (#23667) : chaque carnet porte sa propre entree. 2.9d est
+    # admis depuis sa re-execution ; 2.9g l'est par cette tranche (#23292),
+    # qui livre ses sorties re-executees dans le meme diff -- une entree
+    # n'est jamais accordee avant la mesure, c'est ce que gardait le test
+    # ``test_canonical_transition_scoped_29g_still_refused``, retire ici avec
+    # la tranche qu'il protegeait.
+    a = {"language_version": "3.10.19",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    for name in ("2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+                 "2.9g-Geometrie-de-la-Verite.ipynb"):
+        path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+                + name)
+        assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    # Sans chemin, la direction reste rouge (pas d'entree globale).
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Hors de la serie, 3.10 -> 3.13 reste rouge : le prefixe est le seul
+    # elargissement, il ne fuit pas.
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/InformationCalcul/Complexity/"
+                 "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"),
+    ) is False
+
+
+def test_canonical_transition_scoped_series_does_not_leak_outside():
+    # Controle negatif de la portee serie (reserve #22979) : les carnets qui
+    # partagent le kernelspec hors 02-ML-Cours gardent la direction rouge,
+    # sinon l'entree globale refusee en revue rentrerait par la porte de
+    # derriere. Le troisieme chemin verifie la frontiere du prefixe
+    # (``02-ML-Cours-autre/`` n'est pas ``02-ML-Cours/``).
+    a = {"language_version": "3.11.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    # Le chemin GameTheory-19b figurait ici jusqu'a la portee SERIE
+    # GameTheory (#23384) : la serie a desormais ses deux directions, et
+    # c'est le carnet jumeau ``GameTheory-annexe/`` qui garde la frontiere
+    # du prefixe -- ``GameTheory-annexe/`` n'est pas ``GameTheory/``.
+    for path in (
+        "MyIA.AI.Notebooks/InformationCalcul/Complexity/"
+        "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb",
+        "MyIA.AI.Notebooks/GameTheory-annexe/x.ipynb",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours-autre/x.ipynb",
+    ):
+        assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+# --- #23384 : portee SERIE GameTheory --------------------------------------
+# Le canon de la serie GameTheory est 3.13 : 92 des 142 carnets y tournent
+# deja sous kernel ``python3`` (releve du 2026-11-05 par lecture des
+# METADONNEES). Sous le kernelspec PARTAGE ``coursia-ml-training``, la serie
+# n'a que quatre carnets, dont trois deja en 3.13.x (13e 3.13.14, 19b
+# converge par #24836, 13b et 15c rejoues par cette PR). DEUX directions,
+# parce que les deux sont mesurees : 13b part de 3.12.15, 15c de 3.11.16.
+
+
+def test_canonical_transition_scoped_series_gametheory_311_accepted():
+    # Positif : GameTheory-15c, base 3.11.16 -> tete 3.13.15.
+    a = {"language_version": "3.11.16",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/GameTheory/"
+            "GameTheory-15c-CooperativeGames-Python.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    # Sans chemin, la derive reste rouge : aucune entree GLOBALE pour ce
+    # kernelspec (reserve #22979, ~30 carnets hors serie).
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_series_gametheory_312_accepted():
+    # Positif, seconde direction : GameTheory-13b, base 3.12.15.
+    a = {"language_version": "3.12.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/GameTheory/"
+            "GameTheory-13b-Safe-Subgame-Solving-Python.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_series_gametheory_other_kernels_red():
+    # La portee est (prefixe, kernelspec, direction) : les AUTRES kernels de
+    # la serie ne sont pas couverts -- ``gametheory-wsl`` (1 carnet en
+    # 3.11.9) et ``python3-wsl`` (1 en 3.12.3) gardent leur direction rouge.
+    # ``python3`` n'est pas dans cette liste : sa direction 3.11 -> 3.13 est
+    # couverte GLOBALEMENT (canon d'execution de la flotte), pas par cette
+    # portee de serie.
+    for ks in ("gametheory-wsl", "python3-wsl"):
+        a = {"language_version": "3.11.9", "kernelspec_name": ks}
+        b = {"language_version": "3.13.15", "kernelspec_name": ks}
+        assert ckd.accepted_canonical_transition(
+            a, b,
+            nb_path=("MyIA.AI.Notebooks/GameTheory/"
+                     "GameTheory-01-NormalFormGames-Python.ipynb"),
+        ) is False
+    # Et la direction inverse reste rouge sous la portee GameTheory.
+    a = {"language_version": "3.13.15",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.11.16",
+         "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/GameTheory/"
+                 "GameTheory-15c-CooperativeGames-Python.ipynb"),
+    ) is False
+
+
+def test_canonical_transition_scoped_series_reverse_still_refused():
+    # Le cliquet ne descend pas, meme sous la portee serie.
+    a = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.11.15",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb")
+    # L'assertion manquait depuis #23187 : la fonction calculait `path` et
+    # ne controlait rien, donc ce controle negatif passait sans controler.
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_series_310_is_nominative():
+    # #23667 : la direction 3.10 -> 3.13 n'est plus une PORTEE de serie,
+    # elle est nominative. Un carnet de la serie qui n'a pas sa propre
+    # entree, et dont les sorties n'ont pas ete re-executees, reste donc
+    # rouge -- quelle que soit sa place dans le repertoire.
+    # 2.9g figurait ici jusqu'a #23292, dont la tranche livre ses sorties
+    # re-executees et l'entree nominative qui va avec. Le chemin conserve
+    # est donc un carnet FICTIF de la serie : il controle que la PORTE est
+    # restee fermee, et pas seulement que le cas nomme 2.9g s'est ouvert.
+    a = {"language_version": "3.10.19",
+         "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.14",
+         "kernelspec_name": "coursia-ml-training"}
+    path = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+            "2.9h-Carnet-Inexistant-Sur-La-Serie.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+def test_canonical_transition_scoped_ml06_312_to_313_accepted():
+    # #23426 : ML-06 est le seul carnet ML.Net sous kernel NOMME
+    # (hors census #23379, kernel python3) -- sa convergence vers le canon
+    # 3.13 exige une entree nominative, meme forme que 2.8c/2.9d.
+    a = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_ml06_does_not_leak():
+    # La meme direction 3.12 -> 3.13 sous le meme kernelspec reste rouge
+    # ailleurs : ni un autre carnet ML.Net, ni 2.8c (scope 3.11 -> 3.13).
+    a = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b,
+        nb_path=("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+                 "2.8c-Borne-Temoin-Concentration.ipynb")) is False
+
+
+def test_canonical_transition_scoped_ml06_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope de ML-06.
+    a = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.12.13", "kernelspec_name": "coursia-ml-training"}
+    path = "MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb"
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
+
+
+# --- #23292 : le carnet 02-ML-Cours reste a 3.10.19 et re-execute --------
+#
+# La direction 3.10 -> 3.13 n'existait dans aucune des deux tables pour le
+# kernelspec `coursia-ml-training` : mesure avant l'entree, sur le module
+# d'avant-fix, `accepted_canonical_transition` rendait False avec ET sans
+# chemin. Les tests ci-dessous portent la positive (2.9d, dont les sorties
+# sont re-executees dans la meme PR) et les controles negatifs que
+# l'acceptance de #23292 exige nominativement : un carnet hors serie
+# partageant le kernelspec reste rouge, la direction inverse le reste aussi.
+# 2.9g etait la porte fermee -- refusee tant que sa mesure n'existait pas ;
+# sa tranche est livree ici, l'entree et le carnet re-execute dans le meme
+# diff, et le test passe du refus a l'acceptation dans ce meme geste.
+
+_02ML = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+_29D = _02ML + "2.9d-Features-Circulaires-Helice-Nombres.ipynb"
+_29G = _02ML + "2.9g-Geometrie-de-la-Verite.ipynb"
+
+
+def test_canonical_transition_scoped_02ml_310_to_313_accepted():
+    # Voie 1 de #23292 : la re-execution sous le venv canon
+    # `coursia-ml-training` (mesure a 3.13.15) est la convergence attendue
+    # du carnet de la serie encore estampille 3.10.19.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is True
+
+
+def test_canonical_transition_scoped_29g_accepted():
+    # Dernier carnet de la serie reste a 3.10.19, et la porte qui gardait son
+    # entree : une entree accorde la permission de bouger la version d'un
+    # carnet, donc elle s'ajoute AVEC la mesure, jamais avant. Les sorties de
+    # 2.9g sont re-executees dans le diff qui porte cette entree (#23292,
+    # voie 1), ce qui est exactement la condition que ce test exigeait.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29G) is True
+    # La portee reste nominative : le meme couple SANS chemin reste rouge.
+    assert ckd.accepted_canonical_transition(a, b) is False
+    # Et l'entree ne dispense ni de la direction exacte ni de l'egalite de
+    # kernelspec -- les deux refus survivent a l'acceptation.
+    assert ckd.accepted_canonical_transition(b, a, nb_path=_29G) is False
+    c = {"language_version": "3.13.15", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, c, nb_path=_29G) is False
+
+
+def test_canonical_transition_scoped_02ml_does_not_leak_outside_series():
+    # Controle negatif de l'acceptance : un carnet HORS 02-ML-Cours qui
+    # partage le kernelspec garde sa direction rouge (#22979 : 67 carnets
+    # concernes), et la meme transition sans chemin reste rouge aussi.
+    a = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/GenAI/Texte/01-Prompt-Eng.ipynb"
+    ) is False
+    assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_02ml_reverse_still_refused():
+    # Le cliquet ne descend pas : 3.13 -> 3.10 reste rouge meme sur le
+    # chemin scope.
+    a = {"language_version": "3.13.15", "kernelspec_name": "coursia-ml-training"}
+    b = {"language_version": "3.10.19", "kernelspec_name": "coursia-ml-training"}
+    assert ckd.accepted_canonical_transition(a, b, nb_path=_29D) is False
 
 
 def test_canonical_transition_python_313_to_311_refused():
@@ -609,3 +1123,127 @@ class TestDiffSignatures:
         head2 = _nb_ulp("[1.0, 2.0]")
         head2["cells"][0].pop("id")
         assert _diff_signatures_ordinal(b_sig, float_signatures(head2)) == [0]
+
+@pytest.mark.parametrize("alignment", ["id", "ordinal", "reidentified"])
+def test_output_added_is_advisory_but_existing_output_still_drifts(monkeypatch, alignment):
+    import types
+
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    base["cells"][0]["outputs"] = []
+    if alignment != "ordinal":
+        base["cells"][0].update(id="old", source="print(values)")
+        head["cells"][0].update(id="new" if alignment == "reidentified" else "old",
+                                source="print(values)")
+        if alignment == "reidentified":
+            # A common ID activates ID alignment and source-based matching.
+            shared = {"cell_type": "code", "id": "shared", "outputs": []}
+            base["cells"].insert(0, shared.copy())
+            head["cells"].insert(0, shared.copy())
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda ref, _: base if ref == "base" else head)
+    args = types.SimpleNamespace(explain=True)
+    result = ckd._measure("base", args)
+    assert result["findings"] == []
+    expected = {"ordinal": 0, "id": "old", "reidentified": "new"}
+    assert result["output_added"][0]["cells"] == [expected[alignment]]
+
+    base["cells"][-1]["outputs"] = [{"text": "[1.0, 1.0]"}]
+    result = ckd._measure("base", args)
+    assert result["findings"][0]["signature_drift_cells"]
+    assert "NumPy" in result["findings"][0]["probable_causes"][0]
+
+
+def test_output_added_does_not_hide_kernel_drift(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    base["cells"][0]["outputs"] = []
+    head = _nb("other-kernel", "3.11", "[1.0, 2.0]")
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["kernel_diffs"]
+    assert result["findings"][0]["signature_drift_cells"] == []
+
+
+def test_output_added_cli_green_and_mixed_drift_red(monkeypatch, capsys):
+    base = _nb("python3", "3.11", "")
+    base["cells"][0]["outputs"] = []
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    monkeypatch.setattr(ckd, "resolve_base", lambda _: "base")
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob", lambda ref, _: base if ref == "base" else head)
+    assert ckd.main_with_args(["base", "--json", "--explain"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["output_added"] == [{"notebook": "test.ipynb", "cells": [0]}]
+    assert report["findings"] == []
+
+    base["cells"].append({"cell_type": "code", "outputs": [{"text": "[1.0, 1.0]"}]})
+    head["cells"].append({"cell_type": "code", "outputs": [{"text": "[2.0, 2.0]"}]})
+    assert ckd.main_with_args(["base", "--json", "--explain"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["findings"][0]["signature_drift_cells"] == [1]
+    assert report["output_added"][0]["cells"] == [0]
+
+
+def test_existing_non_float_output_is_not_treated_as_empty(monkeypatch):
+    base = _nb("python3", "3.11", "ready")
+    head = _nb("python3", "3.11", "[1.0, 2.0]")
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == [0]
+    assert result["output_added"] == []
+
+
+def test_ambiguous_reidentified_source_remains_drift(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "")
+    def cell(cid, outputs):
+        return {"cell_type": "code", "id": cid, "source": "print(values)",
+                "outputs": outputs}
+    anchor = cell("anchor", [])
+    base["cells"] = [anchor, cell("a", []),
+                     cell("b", [{"text": "[1.0, 1.0]"}])]
+    head["cells"] = [anchor.copy(), cell("new", [{"text": "[2.0, 2.0]"}])]
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == ["new"]
+    assert result["output_added"] == []
+
+
+def test_multiple_reidentified_heads_do_not_prove_output_added(monkeypatch):
+    base = _nb("python3", "3.11", "")
+    head = _nb("python3", "3.11", "")
+    def cell(cid, outputs):
+        return {"cell_type": "code", "id": cid, "source": "print(values)",
+                "outputs": outputs}
+    anchor = cell("anchor", [])
+    base["cells"] = [anchor, cell("old", [])]
+    head["cells"] = [anchor.copy(), cell("new1", [{"text": "[1.0, 2.0]"}]),
+                     cell("new2", [{"text": "[2.0, 3.0]"}])]
+    result = _patched_run(monkeypatch, base, head)
+    assert result["findings"][0]["signature_drift_cells"] == ["new1", "new2"]
+    assert result["output_added"] == []
+
+
+def test_le_mode_texte_respecte_l_exemption_c4(monkeypatch, tmp_path, capsys):
+    """L'exemption C.4 (`## Diagnostic dérive`) vaut sur le mode TEXTE comme
+    sur le mode `--json` : un finding acknowledge rend rc 0 (#27917).
+
+    Le chemin texte annonçait « [ACKNOWLEDGED via ## Diagnostic dérive] » et
+    rendait quand meme rc 1 : la lane lisait un echec la ou le drift etait
+    documente et assume.
+    """
+    body = tmp_path / "pr_body.md"
+    body.write_text("## Diagnostic dérive\n\ncause (a) : environnement.\n",
+                    encoding="utf-8")
+    monkeypatch.setenv("PR_BODY_FILE", str(body))
+    base = _nb("python3", "3.11", "")
+    head = _nb("other-kernel", "3.11", "[1.0, 2.0]")
+    monkeypatch.setattr(ckd, "resolve_base", lambda ref: "base")
+    monkeypatch.setattr(ckd, "changed_notebooks", lambda _: ["test.ipynb"])
+    monkeypatch.setattr(ckd, "read_blob",
+                        lambda ref, _: base if ref == "base" else head)
+
+    assert ckd.main_with_args(["base", "--explain"]) == 0
+    assert "acknowledged" in capsys.readouterr().out
+
+    # Sans la section d'exemption, le meme drift reste rouge.
+    monkeypatch.delenv("PR_BODY_FILE")
+    assert ckd.main_with_args(["base", "--explain"]) == 1
+    assert "FAIL" in capsys.readouterr().err

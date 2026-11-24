@@ -37,12 +37,13 @@ commit pinné.
 | MetaGeneticSharp | <https://github.com/jsboige/MetaGeneticSharp> | `0433fad0c` | **MIT** | © 2020-2026 Jean-Sylvain Boige & contributors |
 | Z3.Linq | <https://github.com/MyIntelligenceAgency/Z3.Linq> | `b68438c89` | **MIT** | © Bart De Smet, Ricardo Niepel, Jean-Sylvain Boige, Karel Frajtak, endjin |
 | Automata | <https://github.com/MyIntelligenceAgency/Automata> | `cfbf436af` | **MIT** † | © Microsoft Corporation |
-| Argumentum ⚠️ | <https://github.com/ArgumentumGames/Argumentum> | `7e72f3e5d` | **LGPL-3.0-only** | GNU LGPL v3.0 |
+| Argumentum ⚠️ | <https://github.com/ArgumentumGames/Argumentum> | `c5fb8237c4` | **LGPL-3.0-only** (code) + **CC-BY-SA-4.0** (corpus éditorial ‡) | GNU LGPL v3.0 (code) · CC BY-SA 4.0 (corpus) |
 | semantic-fleet | <https://github.com/MyIntelligenceAgency/semantic-fleet> | `0468481f5` (branche `stable-from-v0343`) | **MIT** | © 2023 MyIA |
 
 > **⚠️ Copyleft (à vérifier avant publication open-courseware, epic #4208).**
-> `account-abstraction` est sous **GPL-3.0-only** et `Argumentum` sous
-> **LGPL-3.0-only**. Ces licences copyleft imposent des obligations de
+> `account-abstraction` est sous **GPL-3.0-only** et le **code** d'`Argumentum`
+> sous **LGPL-3.0-only** (son corpus éditorial est sous CC BY-SA 4.0, cf. ‡).
+> Ces licences copyleft imposent des obligations de
 > redistribution (notamment la GPL-3.0, virale sur la distribution). Si le
 > projet publie ou distribue le code de ces sous-modules, une revue
 > licence-compatibilité est requise. En usage interne / build-time / sous-module
@@ -52,6 +53,15 @@ commit pinné.
 > ligne-titre `Automata.NET` qui fait que l'API GitHub classifie la licence comme
 > `NOASSERTION`, mais le corps est **verbatim** le texte standard de la licence
 > MIT (© Microsoft Corporation). Ne pas se fier au seul badge de l'API GitHub ici.
+>
+> **‡ Argumentum — double licence depuis le 2026-09-21.** `LICENSE-CONTENT.md`
+> (commit amont `956384ac`) place le **corpus éditorial** — les textes des cartes
+> et les ontologies OWL qu'il énumère — sous **CC BY-SA 4.0**, attribution
+> « Argumentum » ; le code reste sous LGPL-3.0. Le commit pinné ci-dessus est
+> postérieur à `956384ac`. Les dérivés du texte (datasets Phase 2 de
+> FallacyDetection, cf. `data/NOTICE-SCENARII` et le champ `licence` du
+> manifeste) sont donc sous CC BY-SA 4.0 — sans restriction supplémentaire
+> possible (§ 3(b) de BY-SA 4.0).
 
 ## 3. Bibliothèques vendored (copiées dans l'arbre)
 
@@ -123,7 +133,7 @@ du code de ce dépôt. Les poids **ne sont pas** commités dans l'arbre (téléc
 
 | Modèle | Fournisseur | Source | Licence (SPDX / label amont) | Conditions clés |
 |--------|-------------|--------|------------------------------|-----------------|
-| **Kokoro TTS** (Kokoro-82M) | hexgrad (+ Silero) | HF `hexgrad/Kokoro-82M` | **Apache-2.0** | Permissif ; ⚠️ _le notebook `01-5-Kokoro-TTS-Local.ipynb` indique « MIT » — c'est une **hallucination à corriger** (vérifié firsthand via model card HF : Apache-2.0)_ |
+| **Kokoro TTS** (Kokoro-82M) | hexgrad (+ Silero) | HF `hexgrad/Kokoro-82M` | **Apache-2.0** | Permissif ; ⚠️ _le notebook `01-5-TTS-Local-ONNX.ipynb` indique « MIT » — c'est une **hallucination à corriger** (vérifié firsthand via model card HF : Apache-2.0)_ |
 | **Chatterbox Turbo / Chatterbox TTS** | Resemble AI | HF `resemble-ai/chatterbox` | _à confirmer_ | Page HF gated (401) au moment de l'inventaire ; pas de SPDX firsthand |
 | **Qwen3-TTS** (0.6B / 1.7B Base & CustomVoice) | Alibaba (Qwen) | HF `Qwen/Qwen3-TTS-12Hz-1.7B-Base` | **Apache-2.0** | Permissif |
 | **Coqui XTTS v2** | Coqui AI (archivé 2024) | HF `coqui/XTTS-v2` | **CPML — Coqui Public Model License** (custom) | ⚠️ Coqui AI shut down 2024 ; **CPML reste applicable** sur les poids redistribués. Custom non-standard SPDX. Gated |
@@ -169,7 +179,7 @@ modèles suivants dont la licence **interdit ou restreint l'usage commercial** :
   (24/28 = 86%), 4 gated ou introuvables au moment de l'inventaire
   (Z-Image, Chatterbox Turbo, SongGeneration 2 / LeVo, SkyTNT MIDI, TADA 3B ML).
 - **Anti-hallucination** : une erreur factuelle a été détectée et corrigée
-  dans le notebook `01-5-Kokoro-TTS-Local.ipynb` qui prétendait "MIT" pour
+  dans le notebook `01-5-TTS-Local-ONNX.ipynb` qui prétendait "MIT" pour
   Kokoro TTS — la model card HF officielle indique **Apache-2.0**.
   Cette erreur sera corrigée dans une PR séparée (sub-grain notebook).
 

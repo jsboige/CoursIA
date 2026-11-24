@@ -30,6 +30,15 @@ Verdicts par ligne CSV (cf. #4957 §2) :
                  boucle TARGET_LANGS saute le pivot : hash_fr n'était lu par
                  personne (#17677, mesuré sur #17649 — un resync manuel aux
                  colonnes décalées passait tous les checks au vert).
+    STALE_TRAD   (#20836) la traduction <lang> est cohérente avec son notebook
+                 (hash_<lang> = hash de la cellule _<lang>) mais date d'un
+                 source antérieur : ``src_hash_<lang>`` (posé par T3 au moment
+                 de la traduction) diffère du ``src_hash`` pivot courant. La
+                 retraduction est sémantiquement requise, mais le verdict
+                 SRC_DRIFT ne le voit pas (il compare au notebook source, pas
+                 à la trace par langue). Légendaire : la traduction est
+                 techniquement IN_SYNC avec son _<lang>.ipynb mais
+                 sémantiquement obsolète par rapport au FR source actuel.
 
     Note taxonomie Argumentum (#6949) : la 5e classe COGNATE (noms propres /
     faux-amis legitiment repetes, kind == "name", informationnelle — hors
@@ -58,6 +67,7 @@ import json
 import math
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 # Doit rester coherent avec extract_cells_to_csv.py (T1) ET check_perimeter.py
@@ -92,6 +102,18 @@ def normalize(text: str) -> str:
 
 def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
+
+
+def _scrub_machine_paths(text: str) -> str:
+    """Meme scrub que ``extract_cells_to_csv.py`` (T1) — doivent rester
+    byte-identiques (``/home/<user>`` -> ``<USER_HOME>``, markdown seulement).
+
+    Sans cette symétrie, le hash pivot (scrubbé par T1 au dépôt) ne coïnciderait
+    plus avec le hash courant (T2) sur une cellule prose porteuse d'un chemin
+    machine, et chaque telle cellule rendrait un faux SRC_DRIFT /
+    PIVOT_HASH_MISMATCH.
+    """
+    return re.sub(r"/home/[\w.-]+", "<USER_HOME>", text)
 
 
 def _has_expected_script(lang: str, text: str) -> bool:
@@ -146,7 +168,10 @@ def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
         cid = cell.get("id")
         if not cid or cell.get("cell_type") not in ("markdown", "code"):
             continue
-        cells[cid] = cell_hash("".join(cell.get("source", [])))
+        src = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "markdown":
+            src = _scrub_machine_paths(src)
+        cells[cid] = cell_hash(src)
     return cells
 
 
@@ -168,7 +193,10 @@ def load_notebook_cell_texts(nb_path: Path) -> dict[str, str] | None:
         cid = cell.get("id")
         if not cid or cell.get("cell_type") not in ("markdown", "code"):
             continue
-        texts[cid] = "".join(cell.get("source", []))
+        src = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "markdown":
+            src = _scrub_machine_paths(src)
+        texts[cid] = src
     return texts
 
 
@@ -183,10 +211,31 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     anomalies: list[dict] = []
     with csv_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        rows = list(reader)
         source_cache: dict[str, dict[str, str] | None] = {}
         source_text_cache: dict[str, dict[str, str] | None] = {}
         trad_text_cache: dict[str, dict[str, str] | None] = {}
-        for row in reader:
+
+        # DUPLICATE_KEY (#21489) : la resync T1 ne rafraichit que la PREMIERE
+        # occurrence d'une cle (notebook, cell_id) -- les suivantes conservent
+        # un pivot d'une autre version de la cellule, et chaque ligne reste
+        # "valide" isolee : le doublon ne se revele que par cette passe par
+        # fichier, avant les verifications par ligne.
+        key_counts: Counter[tuple[str, str]] = Counter(
+            (row.get("notebook", ""), row.get("cell_id", ""))
+            for row in rows
+            if row.get("notebook") and row.get("cell_id")
+        )
+        for (nb_dup, cid_dup), n_dup in sorted(key_counts.items()):
+            if n_dup > 1:
+                anomalies.append(
+                    {"csv": str(csv_path), "notebook": nb_dup, "cell_id": cid_dup,
+                     "verdict": "DUPLICATE_KEY",
+                     "detail": f"{n_dup} occurrences de la cle -- la resync T1 ne rafraichit "
+                               f"que la premiere, les autres gardent un pivot perime (#21489)"}
+                )
+
+        for row in rows:
             nb_rel = row.get("notebook", "")
             cell_id = row.get("cell_id", "")
             if not nb_rel or not cell_id:
@@ -284,6 +333,28 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                         {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
                          "verdict": "TRAD_DRIFT",
                          "detail": f"traduction {lang} éditée (csv={csv_hash} <> actuel={trad_cells[cell_id]})"}
+                    )
+
+                # STALE_TRAD (#20836) : la traduction est cohérente avec son
+                # _<lang>.ipynb (hash_<lang> = hash cellule) mais date d'un
+                # ancien source. ``src_hash_<lang>`` est posé par T3 (translate_csv)
+                # au moment de la traduction ; s'il diffère du ``src_hash``
+                # pivot courant, la retraduction est sémantiquement requise.
+                # On ne signale que les lignes où ``text_<lang>`` est non vide
+                # (sinon c'est l'état pré-T3, attendu). Une ligne legacy sans
+                # ``src_hash_<lang>`` (colonne absente des anciens CSV) reste
+                # IN_SYNC — rétro-compatibilité, le fix ne réveille pas des
+                # années de stock en un cycle.
+                csv_src_hash_for_lang = row.get(f"src_hash_{lang}", "") or ""
+                if (csv_src_hash_for_lang
+                        and csv_src_hash
+                        and csv_src_hash_for_lang != csv_src_hash):
+                    anomalies.append(
+                        {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                         "verdict": "STALE_TRAD",
+                         "detail": f"traduction {lang} date d'un source anterieur "
+                                   f"(src_hash_{lang}={csv_src_hash_for_lang} <> src_hash={csv_src_hash}) "
+                                   f"-> retraduction requise pour coherence avec le FR actuel"}
                     )
 
                 # FR_CONTAM (Argumentum 5-classes, 4e, #6949) : la traduction
@@ -457,7 +528,24 @@ def main() -> int:
         "--notebooks-root", type=Path, default=None,
         help="Racine de scan des notebooks (défaut : <repo_root>/MyIA.AI.Notebooks).",
     )
+    parser.add_argument(
+        "--no-json", action="store_true",
+        help=(
+            "Ne pas ecrire le rapport JSON sur stdout. Pour un siege dont le "
+            "resume de check-run est tronque (voie rapide) : le JSON y occupe "
+            "la place entiere et ecrase les lignes de signal (REMPLISSAGE, "
+            "DRIFT DETECTE). Le signal stderr reste integral."
+        ),
+    )
+    parser.add_argument(
+        "--json-out", type=Path, default=None,
+        help="Ecrire le rapport JSON dans ce fichier au lieu de stdout.",
+    )
     args = parser.parse_args()
+
+    if args.no_json and args.json_out is not None:
+        print("ERROR : --no-json et --json-out sont exclusifs.", file=sys.stderr)
+        return 2
 
     if not args.input.exists():
         print(f"ERROR : {args.input} introuvable.", file=sys.stderr)
@@ -468,7 +556,8 @@ def main() -> int:
     if not csvs:
         # Pas de CSV = phase pre-T1, rien a verifier. CI verte.
         print(f"INFO : aucun CSV sous {args.input} (phase pre-T1). Rien à vérifier.", file=sys.stderr)
-        print(json.dumps({"csvs_checked": 0, "anomalies": [], "anomaly_count": 0}))
+        if not args.no_json:
+            print(json.dumps({"csvs_checked": 0, "anomalies": [], "anomaly_count": 0}))
         return 0
 
     all_anomalies: list[dict] = []
@@ -528,10 +617,9 @@ def main() -> int:
     # hors trigger push, ou série non couverte par un CSV).
     if args.report_out_of_scope:
         notebooks_root = args.notebooks_root or (repo_root / "MyIA.AI.Notebooks")
-        oos = find_out_of_scope_notebooks(notebooks_root, known_notebooks)
-        # Normalisation : les chemins retournés sont relatifs à
-        # ``notebooks_root``, mais les consommateurs (dashboard, audit)
-        # s'attendent à des chemins relatifs au repo root. On préfixe.
+        # Normalisation : les chemins scannés sont relatifs à ``notebooks_root``,
+        # mais les consommateurs (dashboard, audit) s'attendent à des chemins
+        # relatifs au repo root. On préfixe.
         if notebooks_root.is_absolute():
             try:
                 rel_root = notebooks_root.relative_to(repo_root).as_posix()
@@ -539,13 +627,33 @@ def main() -> int:
                 rel_root = None
         else:
             rel_root = notebooks_root.as_posix()
-        if rel_root and rel_root not in (".", ""):
+        # Bug #4208 (mesuré 2026-10-22) : ``find_out_of_scope_notebooks``
+        # compare ses chemins (relatifs à ``notebooks_root``) contre
+        # ``known_notebooks`` (relatifs au repo root). Sans alignement, la
+        # comparaison ne matche jamais et TOUT pivot FR était rapporté
+        # MISSING_FROM_CSV — 1591/1591 sur main@5d177839f90b, chiffre
+        # structurellement inutilisable. On retire le préfixe de ``known``
+        # AVANT l'appel (le docstring de la fonction délègue déjà cette mise
+        # en correspondance au caller).
+        prefix = f"{rel_root}/" if rel_root and rel_root not in (".", "") else ""
+        known_rel = {
+            p[len(prefix):] if prefix and p.startswith(prefix) else p
+            for p in known_notebooks
+        }
+        oos = find_out_of_scope_notebooks(notebooks_root, known_rel)
+        if prefix:
             for entry in oos:
                 entry["notebook"] = f"{rel_root}/{entry['notebook']}"
         report["out_of_scope"] = oos
         report["out_of_scope_count"] = len(oos)
 
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    payload = json.dumps(report, ensure_ascii=False, indent=2)
+    if args.json_out is not None:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(payload, encoding="utf-8")
+        print(f"JSON : rapport ecrit dans {args.json_out}", file=sys.stderr)
+    elif not args.no_json:
+        print(payload)
 
     # Signal honnête stderr : le taux de remplissage à côté du compte de drift,
     # pour qu'un SRC_DRIFT=0 sur une table 0% traduite ne se lise plus comme
@@ -577,7 +685,15 @@ def main() -> int:
             file=sys.stderr,
         )
     if len(all_anomalies) > 20:
-        print(f"  ... et {len(all_anomalies) - 20} autres (voir JSON stdout).", file=sys.stderr)
+        if args.no_json or args.json_out is not None:
+            print(
+                f"  ... et {len(all_anomalies) - 20} autres "
+                f"(resume limite aux 20 premieres lignes ; rapport JSON "
+                f"{'non demande (--no-json)' if args.no_json else 'ecrit dans ' + str(args.json_out)}).",
+                file=sys.stderr,
+            )
+        else:
+            print(f"  ... et {len(all_anomalies) - 20} autres (voir JSON stdout).", file=sys.stderr)
 
     return 0 if args.check else 1
 

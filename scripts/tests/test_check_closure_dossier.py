@@ -60,7 +60,7 @@ def _dossier_body(lane="myia-po-2025:CoursIA-2", issue=17900, verdict="CLOSE",
 
 
 def _snapshot(issue=17900, comments=(), merged_prs=None, open_prs=(),
-              state="OPEN"):
+              state="OPEN", crible_verdict="", crible_reason=""):
     return {
         "repo": "o/r",
         "number": issue,
@@ -75,6 +75,8 @@ def _snapshot(issue=17900, comments=(), merged_prs=None, open_prs=(),
                      "-- See #17900."},
         ],
         "open_prs": list(open_prs),
+        "crible_verdict": crible_verdict,
+        "crible_reason": crible_reason,
     }
 
 
@@ -181,6 +183,30 @@ def test_commentaire_neutre_posterieur_ne_perime_pas():
     verdict, errors, _ = evaluate(snap)
     assert verdict == "CLOSE"
     assert errors == []
+
+
+def test_commentaire_renvoi_du_collant_ne_perime_pas():
+    # #15511 : le renvoi d'un doublon fusionne (marqueur principal retire,
+    # contenu porte par le collant canonique) n'est jamais supprime : il vit
+    # dans le fil et ne doit pas perimer un dossier de fermeture.
+    # Le marqueur est neutre quel que soit son auteur -- meme contrat que le
+    # marqueur principal, et meme exigence que les autres formes marker-gardees
+    # de la liste. Le cas `jsboige` est le discriminant : un login non-bot
+    # passe par la liste de marqueurs, la ou le predicat d'auteur l'aurait
+    # laisse perimer le dossier.
+    forward = (
+        "<!-- coursia:advisory-sticky:forwarded -->\n\n"
+        "*Ce commentaire a ete fusionne dans le commentaire collant "
+        "canonique (id 4242) : ses sections y sont integrees.*\n"
+    )
+    for login in ("github-actions[bot]", "jsboige"):
+        snap = _snapshot(comments=[
+            _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+            _comment(forward, login=login, created="2026-09-21T09:00:00Z"),
+        ])
+        verdict, errors, _ = evaluate(snap)
+        assert verdict == "CLOSE", f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
 
 
 # --- latest-wins : seul le dernier dossier compte (#18095) -------------------
@@ -717,3 +743,205 @@ def test_delivering_lanes_refuse_le_point_final_de_phrase():
     assert "myia-po-2023:CoursIA-2" in lanes
     assert "myia-po-2024:CoursIA" in lanes
     assert not any(ln.endswith(".") for ln in lanes), sorted(lanes)
+
+
+# --- #21818 : l'auteur d'un dossier lu en GraphQL, compare en orthographe REST
+
+
+def test_normalisation_rend_une_app_graphql_en_orthographe_rest():
+    """GraphQL rend le login d'un acteur de type `Bot` SANS le suffixe
+    `[bot]` ; REST le rend AVEC. La normalisation unique remet les deux
+    surfaces d'accord sur la forme canonique."""
+    gh = ccd.gh_identity
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026", "__typename": "Bot"}
+    ) == "coursia-lane-po-2026[bot]"
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026[bot]", "type": "Bot"}
+    ) == "coursia-lane-po-2026[bot]"
+    assert gh.normalize_author_login(
+        {"login": "jsboige", "__typename": "User"}
+    ) == "jsboige"
+    # Un auteur dont le type est inconnu n'est pas un bot : le doute profite
+    # au refus, pas a l'acceptation.
+    assert gh.normalize_author_login({"login": "coursia-lane-po-2026"}) == (
+        "coursia-lane-po-2026")
+    assert gh.author_is_bot({"login": "x"}) is False
+    assert gh.author_is_bot({"login": "x", "__typename": "Bot"}) is True
+    assert gh.author_is_bot({"login": "x", "type": "Bot"}) is True
+    assert gh.author_is_bot({"login": "x", "__typename": "User"}) is False
+
+
+def test_un_compte_utilisateur_homonyme_est_refuse():
+    """Le suffixe n'est reconstruit que si le TYPE de l'acteur est `Bot`.
+    Un compte UTILISATEUR nomme comme le slug de l'App
+    ("coursia-lane-po-2026", sans suffixe) doit donc rester refuse : c'est
+    le controle negatif du correctif."""
+    gh = ccd.gh_identity
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026", "__typename": "User"}
+    ) == "coursia-lane-po-2026"
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026", "__typename": "User"}) is False
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026", "__typename": "Bot"}) is True
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026[bot]", "type": "Bot"}) is True
+
+
+def test_comptes_humains_non_regresses():
+    """Non-regression : le login partage reste accepte, un compte humain
+    quelconque reste refuse."""
+    gh = ccd.gh_identity
+    assert gh.is_accepted_dossier_author(
+        {"login": "jsboige", "type": "User"}) is True
+    assert gh.is_accepted_dossier_author(
+        {"login": "quelquun-dautre", "type": "User"}) is False
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2099[bot]", "type": "Bot"}) is False
+
+
+def test_le_gate_accepte_un_dossier_signe_par_une_app_lue_en_rest(monkeypatch):
+    """Chemin de lecture reel : `_issue_comments` (REST) normalise l'auteur,
+    et le gate accepte ensuite le dossier signe sous une App de lane."""
+    rows = [{
+        "user": {"login": "coursia-lane-po-2026[bot]", "type": "Bot"},
+        "created_at": "2026-09-20T10:00:00Z",
+        "body": _dossier_body(),
+    }]
+    monkeypatch.setattr(ccd, "gh_json", lambda args: rows)
+    comments = ccd._issue_comments("o/r", 17900)
+    assert comments[0]["author"]["login"] == "coursia-lane-po-2026[bot]"
+    snap = _snapshot(comments=comments)
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE", errors
+    assert errors == [], errors
+
+
+def test_le_gate_refuse_un_compte_utilisateur_homonyme(monkeypatch):
+    """Meme chemin de lecture, mais l'acteur est un `User` : le suffixe n'est
+    PAS reconstruit, donc le dossier est refuse."""
+    rows = [{
+        "user": {"login": "coursia-lane-po-2026", "type": "User"},
+        "created_at": "2026-09-20T10:00:00Z",
+        "body": _dossier_body(),
+    }]
+    monkeypatch.setattr(ccd, "gh_json", lambda args: rows)
+    comments = ccd._issue_comments("o/r", 17900)
+    assert comments[0]["author"]["login"] == "coursia-lane-po-2026"
+    snap = _snapshot(comments=comments)
+    _, errors, _ = evaluate(snap)
+    assert any(
+        "is not an accepted dossier author" in e for e in errors
+    ), errors
+
+
+def test_les_deux_gates_partagent_le_meme_point_de_normalisation():
+    """Les deux gates comparent l'auteur au meme ensemble : une seule
+    definition de la forme canonique, sinon l'un accepterait un dossier que
+    l'autre refuse (la demi-migration dont #17437 dit le risque)."""
+    import check_adjoint_prevalidation as cap
+    assert cap.gh_identity is ccd.gh_identity
+    assert cap.gh_identity.ACCEPTED_DOSSIER_AUTHORS is (
+        ccd.gh_identity.ACCEPTED_DOSSIER_AUTHORS)
+
+
+# --- #23815 point 2 : le gate aval consomme le predicat fermant ------------
+
+def test_close_refuse_sur_partial_tranche():
+    """Controle 7 : un CLOSE sur une issue que le crible amont classe
+    PARTIAL_TRANCHE est refuse -- le marqueur livre une tranche, pas la
+    livraison complete."""
+    snap = _snapshot(
+        comments=[_comment(_dossier_body())],
+        crible_verdict="PARTIAL_TRANCHE",
+        crible_reason="single merged PR #17901 carries no closing marker "
+                      "for #17900 (See/Part of = tranche)",
+    )
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "REFUSED"
+    assert any("PARTIAL_TRANCHE" in e for e in errors), errors
+
+
+def test_close_passe_sur_partial_tranche_avec_waiver():
+    """Le waiver explicite leve la garde : l'arbitrage passe dans le dossier,
+    lu par ai-01."""
+    snap = _snapshot(
+        comments=[_comment(_dossier_body(
+            residue="waiver: tranche residuelle abandonnee le 2026-11-11, "
+                    "arbitrage trace sur le fil"))],
+        crible_verdict="PARTIAL_TRANCHE",
+        crible_reason="single merged PR #17901 carries no closing marker",
+    )
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE", errors
+    assert errors == []
+
+
+def test_keep_reste_recevable_sur_partial_tranche():
+    """Un KEEP sur une issue partiellement livree est correct -- le controle
+    ne vise que les CLOSE."""
+    snap = _snapshot(
+        comments=[_comment(_dossier_body(verdict="KEEP"))],
+        crible_verdict="PARTIAL_TRANCHE",
+    )
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "KEEP", errors
+
+
+def test_close_integre_inerte_sans_crible():
+    """Sans cle crible (snapshot minimal), le controle reste inerte : les
+    snapshots produits par load_snapshot portent toujours la cle, les
+    snapshots de tests la portent quand ils testent le controle."""
+    snap = _snapshot(comments=[_comment(_dossier_body())])
+    snap.pop("crible_verdict")
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE", errors
+
+
+# --- #25894 : la panne gh du crible se propage, ne se falsifie pas ----------
+
+def test_load_snapshot_propage_la_panne_gh_du_crible(monkeypatch):
+    """Review Hermes du 11/11 (#25894) : le fail-closed annonce etait
+    falsifie -- une panne gh de la lecture du body de PR se lisait comme
+    un verdict PARTIAL_TRANCHE, donc un dossier CLOSE legitime REFUSED.
+    strict_gh=True : load_snapshot leve GhUnavailableError, que le sweep
+    traduit en UNKNOWN rc 2 (catch RuntimeError preexistant), comme le
+    corps de la PR l'annoncait."""
+    import verifier_cleanup as vc
+
+    issue_view = {"number": 4242, "title": "Sujet unitaire", "state": "OPEN",
+                  "labels": [], "createdAt": "2026-01-01T00:00:00Z",
+                  "closedAt": None}
+    monkeypatch.setattr(ccd, "gh_json", lambda args: issue_view)
+    monkeypatch.setattr(ccd, "_issue_comments", lambda repo, n: [])
+    monkeypatch.setattr(ccd, "_merged_referring_prs", lambda repo, n: [])
+    monkeypatch.setattr(ccd, "_open_pr_refs", lambda repo, n: [])
+
+    def fake_gh_json(args, strict=False):
+        # Seule la lecture du body de PR est cassee (rc 1) : les autres
+        # lectures reussissent avec des charges plausibles.
+        if args[:2] == ["pr", "view"]:
+            if strict:
+                raise vc.GhUnavailableError("gh rc=1: pr view")
+            return []
+        if args[0] == "issue":
+            if "comments" in args:
+                return {"comments": []}
+            return {"body": "Sujet unitaire"}
+        if args[0] == "api":
+            return [{"event": "cross-referenced", "source": {"issue": {
+                "number": 999, "state": "closed",
+                "pull_request": {"merged_at": "2026-11-01T00:00:00Z"},
+                "repository": {"full_name": "o/r"}}}}]
+        if args[0] == "search":
+            return []
+        raise AssertionError(f"lecture gh inattendue: {args}")
+
+    monkeypatch.setattr(vc, "_gh_json", fake_gh_json)
+
+    with pytest.raises(vc.GhUnavailableError):
+        ccd.load_snapshot("o/r", 4242)
+    # Le sweep traduit toute RuntimeError en UNKNOWN rc 2 : la propagation
+    # depend de cette filiation, elle fait partie du contrat.
+    assert issubclass(vc.GhUnavailableError, RuntimeError)

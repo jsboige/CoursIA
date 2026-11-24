@@ -29,7 +29,7 @@ QC Cloud offre 8 assistants IA qui executent des recherches, backtests, et valid
 
 | Tâche | Méthode primaire | Fallback | Rationale |
 |-------|------------------|----------|-----------|
-| Notebooks QuantBook | **QC Research Assistant** | MCP `read_file` + local papermill | Assistant auto-débogue (NaN, colonnes, paramètres) |
+| Notebooks QuantBook | **QC Research Assistant** | Exécution directe dans l'IDE QC Cloud, ou LEAN Research local ([routes](../../../docs/qc/quantbook-execution-routes.md)) | Assistant auto-débogue (NaN, colonnes, paramètres) ; ses sorties n'ont pas été persistées le 2026-05-16 (#1177) |
 | Backtests | **MCP Docker** (`create_compile` -> `create_backtest`) | Backtest Assistant | MCP = gratuit, scriptable, repeatable |
 | Paper trading | MCP `create_live_algorithm` | Paper Testing Assistant | MCP pour automatisation |
 | Ideation strategies | LLM local (Qwen3.6) | Ideas Assistant | Gratuit, pas de coût QCC |
@@ -106,8 +106,8 @@ L'assistant rapporte des Sharpes **inflationnes** car :
 3. Pointer vers le projet cible (ex: QC-Py-15)
 4. Donner des instructions claires (re-executer notebook, corriger erreurs, ajouter features)
 5. L'assistant débogue automatiquement (NaN, colonnes manquantes, paramètres)
-6. **Download le notebook result** depuis le deployment
-7. **Re-valider cluster-side** : Papermill local + verification multi-seed si ML
+6. **Récupérer le carnet** depuis le projet et vérifier qu'il porte ses sorties : `merge_executed_outputs.py` refuse un carnet dont une cellule de code n'a pas d'`execution_count`. Le 2026-05-16, l'assistant ne les avait pas persistées (#1177) : relire alors la source corrigée (MCP `read_file`) et l'exécuter par la route B de [quantbook-execution-routes.md](../../../docs/qc/quantbook-execution-routes.md)
+7. **Re-valider cluster-side** : vérification multi-seed si ML
 
 ## References
 

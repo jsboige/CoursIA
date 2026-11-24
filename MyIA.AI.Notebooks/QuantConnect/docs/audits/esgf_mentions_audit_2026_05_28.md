@@ -89,7 +89,7 @@ Research notebooks with ESGF mentions in cell outputs or metadata.
 | docs/HANDSON_AI_TRADING_MAPPING.md | 8 | Book mapping |
 | docs/HANDSON_DATA_REQUIREMENTS.md | 2 | Data requirements |
 | GETTING-STARTED.md | 1 | Getting started guide |
-| projects/_docs/QUANTCONNECT_PROJECTS_AUDIT.md | 1 | Project audit |
+| docs/audits/QUANTCONNECT_PROJECTS_AUDIT.md | 1 | Project audit |
 | projects/_docs/SESSION5_PATTERNS.md | 1 | Session patterns |
 | scripts/audit_readme.py | 9 | Audit script |
 | shared/data_cache.py | 3 | Data cache module |

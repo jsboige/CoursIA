@@ -111,6 +111,15 @@ namespace QuantConnect.Algorithm.CSharp
         [Parameter("universe")]
         private string _universeName = "OEF";
 
+        // === Backtest window (#22541) ===
+        // Frozen bounds (ISO yyyy-MM-dd). The end date used to be the run date, so
+        // every rerun measured a different period and the README figures drifted.
+        // Exposed as QC parameters so sub-periods run from the same compile.
+        [Parameter("start-date")]
+        private string _startDate = "2015-01-01";
+        [Parameter("end-date")]
+        private string _endDate = "2025-12-31";
+
         ///Broker fee to take into account to check if Cash is avalaible
         private const decimal BrokerFee = 0.005m;
 
@@ -129,10 +138,13 @@ namespace QuantConnect.Algorithm.CSharp
         public override void Initialize()
         {
             _isLogging = false;
-            // Extended: covers 2015 bear, 2016-2017 bull, 2018 vol, 2019 rally,
-            // COVID crash 2020, 2021 bull, 2022 bear, 2023-2025 recovery
-            SetStartDate(2015, 1, 1);
-            SetEndDate(DateTime.Now);
+            // Default window 2015-01-01 -> 2025-12-31 covers the 2015-2016 drawdown,
+            // 2016-2017 bull, 2018 vol, 2019 rally, COVID crash 2020, 2021 bull,
+            // 2022 bear and the 2023-2025 recovery (#22541: frozen bounds).
+            DateTime startDate = DateTime.ParseExact(_startDate.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(_endDate.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            SetStartDate(startDate);
+            SetEndDate(endDate);
 
             //Set cash and brokermodel
             SetCash(1000000);
@@ -169,7 +181,9 @@ namespace QuantConnect.Algorithm.CSharp
             }
             // Echo the active configuration so each backtest log proves which arm ran.
             Debug("CTG-Momentum config: universe=" + _universeName + " (QC500=" + useQc500
-                + "), filter-dividend-payers=" + _filterDividendPayers);
+                + "), filter-dividend-payers=" + _filterDividendPayers
+                + ", window=" + startDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                + " -> " + endDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
             //Trade only on Wednesday at opening after 1 minutes
             Schedule.On(DateRules.Every(DayOfWeek.Thursday),

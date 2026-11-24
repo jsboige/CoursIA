@@ -403,3 +403,123 @@ def test_origin_main_absent_rend_amber_mesure_impossible(tmp_path):
     )
     assert "diff" in c.detail
     assert c.data.get("mesure_impossible") is True
+
+
+# ---------------------------------------------------------------------------
+# check_main_hostage — l'arbre principal n'est pas un ravisseur (#27696)
+# ---------------------------------------------------------------------------
+
+
+def _worktree_add(repo: Path, *args: str) -> None:
+    """Ajoute un worktree lie au depot ``repo`` et echoue le test si git refuse."""
+    proc = _run("worktree", "add", *args, cwd=repo)
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_main_hostage_principal_detenteur_vu_d_un_worktree_secondaire_est_vert(tmp_path):
+    """Depuis un worktree secondaire : le principal detient ``main`` -> GREEN.
+
+    Etat normal d'une session qui travaille dans un worktree pendant que l'arbre
+    partage reste sur ``main``. Avant #27696, l'organe prenait le worktree courant
+    pour l'arbre principal, rendait RED sur cet etat sain, et proposait un remede
+    destructeur (``git worktree remove`` sur l'arbre partage).
+    """
+    repo = _make_mini_repo(tmp_path)
+    secondaire = tmp_path / "secondaire"
+    _worktree_add(repo, "-b", "feature/x", str(secondaire))
+
+    checks = session_hygiene.check_main_hostage(secondaire)
+    c = next(chk for chk in checks if chk.name == "main-otage")
+    assert c.level == session_hygiene.GREEN, (
+        f"le principal detient main legitimement, organe a rendu {c.level}: {c.detail}"
+    )
+
+
+def test_main_hostage_worktree_secondaire_detenteur_est_rouge(tmp_path):
+    """Depuis l'arbre principal : un worktree secondaire detient ``main`` -> RED nomme."""
+    repo = _make_mini_repo(tmp_path)
+    _run("checkout", "-b", "feature/principale", "--quiet", cwd=repo)
+    secondaire = tmp_path / "secondaire"
+    _worktree_add(repo, str(secondaire), "main")
+
+    checks = session_hygiene.check_main_hostage(repo)
+    c = next(chk for chk in checks if chk.name == "main-otage")
+    assert c.level == session_hygiene.RED, (
+        f"un secondaire detenteur doit rester RED, organe a rendu {c.level}: {c.detail}"
+    )
+    assert Path(c.data["holder"]).resolve() == secondaire.resolve()
+    assert c.data.get("principal") == str(repo.resolve())
+
+
+def test_main_hostage_principal_detenteur_vu_du_principal_est_vert(tmp_path):
+    """Depuis l'arbre principal qui detient ``main`` -> GREEN (comportement inchange)."""
+    repo = _make_mini_repo(tmp_path)
+
+    checks = session_hygiene.check_main_hostage(repo)
+    c = next(chk for chk in checks if chk.name == "main-otage")
+    assert c.level == session_hygiene.GREEN, f"{c.level}: {c.detail}"
+
+
+# ---------------------------------------------------------------------------
+# #28005 / PR #28006 : le battement de coeur d'une passe ne doit pas rendre
+# une passe BLOQUEE invisible. La ligne `=== passe en cours (elapsed N s) ===`
+# repare l'AGE du journal ; c'est son AGE qu'il faut lire.
+# ---------------------------------------------------------------------------
+
+
+def _battement(elapsed_s: int) -> str:
+    """Ligne de battement de coeur, telle que l'ecrit le lanceur (#28005)."""
+    return f"=== passe en cours (elapsed {elapsed_s} s) ==="
+
+
+def test_battement_de_coeur_a_25000_s_est_rouge():
+    """Une passe qui bat depuis 25000 s (~6 h 56) est FIGEE : ROUGE.
+
+    C'est le point leve par la reserve : avant, la ligne de battement ne
+    portait aucun vocabulaire d'echec et sortait GREEN -- une passe figee
+    devenait invisible.
+    """
+    level, line, _ = session_hygiene._journal_verdict(
+        ["=== run end rc=0 ===", _battement(25000)]
+    )
+    assert level == session_hygiene.RED, f"{level}: {line}"
+
+
+def test_battement_de_coeur_repete_ne_passe_pas_par_la_repetition():
+    """Meme repete, le verdict vient de l'AGE de la passe, pas du compte de lignes.
+
+    Le seuil de repetition (`_CONSECUTIVE_FAILURES`) ne doit pas transformer
+    un battement en AMBER « meme echec repete » : la ligne est identique par
+    construction, elle ne prouve aucun echec.
+    """
+    lines = [_battement(25000)] * 5
+    level, line, same = session_hygiene._journal_verdict(lines)
+    assert level == session_hygiene.RED, f"{level}: {line}"
+    assert same == 5
+
+
+def test_battement_de_coeur_au_dela_de_2_h_est_amber():
+    """Au-dela de 2 h, la passe est LONGUE : AMBER (pas encore figee)."""
+    level, line, _ = session_hygiene._journal_verdict([_battement(7200)])
+    assert level == session_hygiene.AMBER, f"{level}: {line}"
+
+
+def test_battement_de_coeur_frais_est_vert():
+    """Un battement recent ne fait pas alerter : la passe est vivante."""
+    level, line, _ = session_hygiene._journal_verdict([_battement(60)])
+    assert level == session_hygiene.GREEN, f"{level}: {line}"
+
+
+def test_ligne_sans_battement_inaltere():
+    """Une ligne d'echec ordinaire garde son verdict d'avant le correctif."""
+    level, line, _ = session_hygiene._journal_verdict(["impossible de demarrer -- X"])
+    assert level == session_hygiene.RED, f"{level}: {line}"
+    level, line, _ = session_hygiene._journal_verdict(["=== run end rc=0 ==="])
+    assert level == session_hygiene.GREEN, f"{level}: {line}"
+
+
+def test_verdict_de_passe_figee_remonte_dans_le_message():
+    """Le message dit « passe figee » et donne l'age -- pas « le dernier tir a echoue »."""
+    level, line, _ = session_hygiene._journal_verdict([_battement(25000)])
+    assert level == session_hygiene.RED
+    assert session_hygiene._pass_elapsed_s(line) == 25000

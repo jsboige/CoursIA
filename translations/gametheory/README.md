@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/GameTheory/` (théorie des jeux — OpenSpiel Python + .NET C# + Lean 4 social choice, **multi-langues**) |
-| Notebooks source | **55** (GameTheory-1 setup → GameTheory-19, twins C#/Python, variantes Lean `11b/15b/15c`, sous-séries CFR/différentiel/coopératif) |
-| Cellules extraites | **1886** (markdown + code tous kernels confondus, nbformat canonique, id stable) |
-| Taille CSV | ~2,0 MB (1886 enregistrements × 21 colonnes) |
+| Notebooks source | **55 au seed 2026-07-10** (GameTheory-1 setup → GameTheory-19, twins C#/Python, variantes Lean `11b/15b/15c`, sous-séries CFR/différentiel/coopératif — le compte courant vit dans le CSV) |
+| Cellules extraites | **1886 au seed 2026-07-10** (markdown + code tous kernels confondus, nbformat canonique, id stable — compte courant mesurable dans `gametheory.csv`) |
+| Taille CSV | ~2,0 MB au seed (1886 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`gametheory.csv`](gametheory.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-10 |
@@ -17,7 +17,7 @@
 
 T0 (catalogue CSV) **LIVRÉ** : le CSV seed `gametheory.csv` capture la substance canonique de la série au commit `a8eec3fa9`. Chaque enregistrement = `notebook, cell_id, cell_type, src_lang, src_hash, text_fr, text_<7 langues>, hash_fr, hash_<7 hash>`. Les hashes `sha256-16` sur le texte normalisé (rstrip lines + strip newlines) détectent les dérives cellule-par-cellule.
 
-T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/GameTheory/ -o translations/gametheory/gametheory.csv --src-lang fr --repo-root .`. Script déterministe **byte-identique** (re-run vérifié, hash-for-hash identique). Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés) via `endswith`. 1886 cellules extraites des 55 notebooks. L'extracteur est agnostique au kernel (traite `markdown` + `code` quel que soit le kernel : `.net-csharp`, `python3`, `lean4-wsl`, `gametheory-wsl`, `python3-wsl`) — pour les cellules code, seuls les commentaires sont à traduire (convention #4957 §1).
+T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/GameTheory/ -o translations/gametheory/gametheory.csv --src-lang fr --repo-root .`. Script déterministe **byte-identique** (re-run vérifié, hash-for-hash identique). Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés) via `endswith`. toutes les cellules de la série extraites (le compte vit dans le CSV, pas dans cette prose). L'extracteur est agnostique au kernel (traite `markdown` + `code` quel que soit le kernel : `.net-csharp`, `python3`, `lean4-wsl`, `gametheory-wsl`, `python3-wsl`) — pour les cellules code, seuls les commentaires sont à traduire (convention #4957 §1).
 
 T2 (drift detector) **LIVRÉ** : `python scripts/translation/check_translation_sync.py translations/gametheory/gametheory.csv` → `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYNC round-trip). Workflow CI `.github/workflows/translation-drift.yml` non-bloquant read-only déclenche ce check sur PR paths `translations/**` + `MyIA.AI.Notebooks/**/*.ipynb` + `scripts/translation/**`.
 

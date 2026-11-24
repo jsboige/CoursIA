@@ -1,7 +1,7 @@
 # region imports
 from AlgorithmImports import *
 from alpha_models import EMACrossAlpha
-from portfolio_construction import MultiStrategyPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 
@@ -22,9 +22,10 @@ class EMACrossAlphaAlgorithm(QCAlgorithm):
 
         self.set_alpha(EMACrossAlpha(tickers, fast_period=20, slow_period=50))
 
-        self.set_portfolio_construction(MultiStrategyPCM(
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
             alpha_allocations={"EMACross": 1.0},
-            rebalance=timedelta(days=1)
+            rebalance=timedelta(days=1),
+            additive=False  # poche unique : _weights_by_source, identique a la copie locale
         ))
 
         self.set_risk_management(NullRiskManagementModel())

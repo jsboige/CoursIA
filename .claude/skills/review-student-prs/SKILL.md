@@ -27,6 +27,15 @@ Review, validate, and intelligently merge student exercise PRs submitted during 
    - Cross-reference GitHub username with submission account
    - If available, match against inscription spreadsheet (`G:\Mon Drive\MyIA\Formation\ECE\2026\`)
 4. **Flag anomalies**: PRs outside timeslot, duplicate claims on same notebook, unknown accounts
+5. **Check each delivery against the group's reservation** (MANDATORY before any conversion in Phase 4, teacher sign-off 2026-11-10). The reservation lists stop two groups from *reserving* the same exercise; they cannot stop a group from *delivering* an exercise it did not reserve. For each PR, once the group is identified (step 3) and the delivered notebook and exercise numbers are known, run the private read-only script of the cohort's reservation tools:
+   ```
+   conda run -n mcp-jupyter python "G:\Mon Drive\MyIA\Formation\EPF\2027\outils-reservation-tp\verifier_rendu.py" \
+       --classeur <IA2-Min1|IA2-Min2|MIS|APP3|MIN52> --groupe <Gnn> --carnet <repo path of the notebook> --exercices <1,2,3>
+   ```
+   - `rc=0`: every delivered exercise is reserved by this group. Proceed.
+   - `rc=1`: at least one exercise is `COLLISION` (reserved by another group) or `HORS-RESERVATION` (reserved by nobody in this notebook). Do not convert that exercise. Record the gap in the report and put the decision to the teacher (user question registry). The script also lists the group's reservations in other notebooks, which shows a renamed notebook or a delivery moved from another notebook.
+   - `rc=2`: the classeur could not be read. This is never an OK: repair the access first.
+   - Also check on `main` that the delivered exercise is not already a guided example credited to someone else: `git show origin/main:<notebook> | grep -o 'Exemple guidé[^"]*'`.
 
 ### Phase 2 - Code Review
 
@@ -93,7 +102,7 @@ Report format:
 
 ### Phase 4 - Intelligent Merge
 
-For each VALID exercise (skip if `--dry-run`):
+For each VALID exercise whose reservation check (Phase 1, step 5) returned OK, or which the teacher has explicitly cleared (skip if `--dry-run`):
 
 1. **Transform exercise result into example**:
    - The student's completed exercise cell becomes a new example cell
@@ -114,7 +123,9 @@ For each VALID exercise (skip if `--dry-run`):
    - If multiple students solved the same exercise across PRs:
      - Keep the most pedagogically valuable solution as example
      - Remove redundant examples that don't add new insight
+     - Credit every correct, independent solution on the kept example, the later one included (co-credit in the example heading, each with its PR number). A redundant solution loses its cell, never its credit.
      - Ensure the notebook flow remains coherent
+   - If the exercise was already converted on `main` from another group's delivery (late submission on an older notebook version), apply the same co-credit, in a PR of its own. Then close the student's PR with a comment that names the PR carrying the credit.
    - If a notebook accumulates too many examples (>3 consecutive examples on same concept):
      - Keep the 2 most distinct/illustrative ones
      - Remove the others
@@ -167,3 +178,10 @@ For each VALID exercise (skip if `--dry-run`):
 Student inscriptions and evaluations:
 - `G:\Mon Drive\MyIA\Formation\ECE\2026\` - CSV/XLSX files
 - Match GitHub usernames to student names for bonus attribution
+
+EPF 2026-2027 (private, outside the repository): one Google Sheets classeur per cohort (`IA2-Min1`, `IA2-Min2`, `MIS`, `APP3`, `MIN52`).
+- **Where**: the keys are those of the `SHEETS` dict in `G:\Mon Drive\MyIA\Formation\EPF\2027\outils-reservation-tp\premier-arrive\gsx.py`, which reads the local OAuth profile and never copies it.
+- **Tabs**: groups (`Groupes P1` / `Groupes P2`, or `Groupes`), `Réservations TP` (one row per reserved exercise), and an exercise catalogue.
+- **Tools**: they are documented in `outils-reservation-tp\LISEZMOI.md` (catalogue refresh, first-come-first-served lists, `verifier_rendu.py`).
+- **Read-only during class**: any write to a student classeur (delivery credit in the teacher table, catalogue refresh) is dry-run on a Drive copy first, never during a session.
+- **No personal data**: never copy student names or e-mails from these classeurs into the repository, a PR or a public comment. GitHub logins the students used themselves are the only credit.

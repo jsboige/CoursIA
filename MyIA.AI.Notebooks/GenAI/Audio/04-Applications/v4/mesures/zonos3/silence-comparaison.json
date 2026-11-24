@@ -1,0 +1,31 @@
+{
+  "instrument": "zonos3_silence.py -- densite de silence (seuil -45 dBFS, runs >= 0,3 s)",
+  "sample_rate": 44100,
+  "threshold_dbfs": -45.0,
+  "min_run_s": 0.3,
+  "chars": 1642,
+  "runs": [
+    {
+      "path": "/mnt/d/hf-models/zonos3-run/out/A0C-zonos3-mini-chunked.wav",
+      "duration_s": 146.75,
+      "silent_s": 36.29,
+      "silent_pct": 24.73,
+      "n_silent_runs": 60,
+      "voiced_s": 110.46,
+      "chars_per_voiced_s": 14.87,
+      "chars_per_total_s": 11.19,
+      "label": "ZONOS3-Mini (cette mesure)"
+    },
+    {
+      "path": "/mnt/d/hf-models/zonos3-run/ref-A0C-zonos-chunked.wav",
+      "duration_s": 88.384,
+      "silent_s": 13.12,
+      "silent_pct": 14.84,
+      "n_silent_runs": 23,
+      "voiced_s": 75.26,
+      "chars_per_voiced_s": 21.82,
+      "chars_per_total_s": 18.58,
+      "label": "Zonos v0.1 (reference)"
+    }
+  ]
+}

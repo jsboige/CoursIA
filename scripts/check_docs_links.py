@@ -2,8 +2,8 @@
 """Check for broken relative markdown links and orphan docs across the repository.
 
 Scans CLAUDE.md, index.md, PARCOURS.md, docs/, .claude/rules/, .claude/agents/,
-.claude/skills/, every ``slides/<deck>/slides.md`` deck, and all README.md files
-for relative links and verifies targets exist.
+.claude/skills/, every ``slides/<deck>/slides.md`` deck, all README.md files and
+Quarto ``.qmd`` pages for relative links and verifies targets exist.
 
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
@@ -15,6 +15,40 @@ Usage:
     python scripts/check_docs_links.py --quiet                # Minimal output (for CI)
     python scripts/check_docs_links.py --orphans              # Also report orphan docs
     python scripts/check_docs_links.py --expect-broken 1      # Positive control (see below)
+    python scripts/check_docs_links.py --scope repo          # Every tracked .md/.qmd (#26793)
+    python scripts/check_docs_links.py --scope repo --baseline   # Freeze the repo scope
+    python scripts/check_docs_links.py --scope repo --check --base origin/main
+
+Repo-wide scope (#26793)
+------------------------
+``--scope repo`` widens the markdown pass to EVERY tracked ``.md``/``.qmd`` page
+of the repository. The default scope watched 1 010 of the 1 955 tracked pages:
+the other 466 were invisible, so a series rename left dead citations behind
+and no organ said so.
+
+The scope change is the ONLY difference: the resolution (``check_link``), the
+frozen baseline, the ``--check --base`` differential and the ``--expect-broken``
+positive control are the same ones. The exclusions are named, one by one, in
+the code (``REPO_SCOPE_SKIP_COMPONENTS``, ``REPO_SCOPE_SKIP_FILES``,
+``REPO_SCOPE_EXTRACTED_DIRS``, ``DECK_DIR``, ``SKIP_DIRS``,
+``TEST_TREE_PARTS``): build artifacts, third-party checkouts, agent scratch,
+the non-deck pages under ``slides/``, the extraction artifacts, the test
+fixtures, the embedded-tool documentation trees and the generated catalogue.
+
+The repo scope has its OWN baseline (``baseline_docs_links_repo.json``): the
+three passes answer three different questions, and one shared file would let
+``--baseline`` in one mode silently rewrite another's frozen state.
+
+Code-comment citations (#24410)
+-------------------------------
+``--code`` runs a second pass over the comments of `.py`, `.lean` and `.cs`
+files: a doc path cited there (`docs/...md`) is invisible to the markdown scan
+whether it is alive or dead. It is a SEPARATE mode, not an addition: `main`
+already carries broken markdown links the baseline does not excuse, and merging
+the two counts would make a code finding indistinguishable from that red. All
+the differential machinery applies unchanged -- ``--check --base REF`` excuses a
+citation already dead at REF, and ``--expect-broken N`` arms the positive
+control on THIS pass.
 
 Positive control
 ----------------
@@ -39,13 +73,19 @@ Exit codes:
 """
 
 import argparse
+import ast
+import io
 import json
+import os
 import posixpath
 import re
 import subprocess
 import sys
+import tokenize
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -58,6 +98,12 @@ SCAN_SCOPES = [
     # now link-checked like everything else.
     "index.md",
     "PARCOURS.md",
+    # Quarto root entry points (#26457): the portal and parcours pages also exist
+    # as .qmd sources the site is built from. They sit at the repo root, where the
+    # scope list names the file individually -- exactly as for the .md pair above
+    # -- so a move that breaks a relative link in one is read, not silently clean.
+    "index.qmd",
+    "parcours.qmd",
     "docs/",
     ".claude/rules/",
     ".claude/agents/",
@@ -66,6 +112,17 @@ SCAN_SCOPES = [
     # main. The two former inventories drifted apart because no organ watched
     # their links -- this one is now the single inventory, so it is checked.
     "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
+    # Series landing pages (#26457): the notebook-tree index.qmd (the notebooks
+    # portal) and the five series that ship one (GameTheory, Physique, Probas,
+    # Search, Sudoku) sit outside docs/, so the docs/ glob above never opened
+    # them -- the same blind spot as the root pair. Named individually, as the
+    # entry points above, so a move that breaks a link in one becomes a finding.
+    "MyIA.AI.Notebooks/index.qmd",
+    "MyIA.AI.Notebooks/GameTheory/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
+    "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Search/index.qmd",
+    "MyIA.AI.Notebooks/Sudoku/index.qmd",
 ]
 
 # Deck scope (#15867). `slides/<deck>/slides.md` was watched by NO organ: the
@@ -97,15 +154,75 @@ DECK_FILENAME = "slides.md"
 #
 # `archive/` (docs historical archives, ~319 files) stays skipped: those are
 # frozen historical reports out of scope for link validation.
+#
+# `_site/` is the Quarto BUILD ARTIFACT (generated from our own sources, and
+# gitignored). It is skipped for the same reason `node_modules` is: it is not
+# source, so a broken link inside it is not a defect of the repository -- it is
+# a re-render of a link that the SOURCE already declares. Without this entry,
+# the organ's result depends on whether the machine happens to have run a
+# Quarto build: on a developer machine that has, it reports "dead links" for
+# pages that are not in the repository at all. In CI the situation does not
+# arise (the artifact is gitignored, hence never checked out), which is exactly
+# why the divergence went unnoticed: the organ's verdict was machine-dependent.
 SKIP_DIRS = {
     ".lake", "node_modules", ".git", "venv", "__pycache__",
     "archive", "_output", ".ipynb_checkpoints", "worktrees",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
+    "_site",  # Quarto build artifact -- gitignored, not source
+    # Agent scratch (fleet rule: throwaway artefacts live in the workspace's
+    # gitignored `.tmp/`). Same defect class as `_site`: not source, gitignored,
+    # hence never checked out in CI. Measured on 2026-11-03 -- the README sweep
+    # below is repo-wide, so three scratch worktrees under `.tmp/` supplied 29
+    # of the 31 "broken links" the organ reported locally, against 2 real ones
+    # (#24410). A verdict that depends on what a lane happens to have scratched
+    # is not a verdict, and it buries the real defects in noise.
+    ".tmp",
 }
 
 # Baseline file location
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_links.json"
+
+# The repo-wide scope keeps its OWN baseline (#26793): the three passes answer
+# three different questions, and sharing one file would make `--baseline` in
+# one mode silently rewrite another's frozen state.
+REPO_BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_links_repo.json"
+
+# ---------------------------------------------------------------------------
+# Repo-wide scope (#26793)
+# ---------------------------------------------------------------------------
+#
+# The default scope watches 1 010 of the 1 955 tracked `.md`/`.qmd` files; the
+# other 466 were invisible to it -- a series rename left dead citations behind
+# and nothing said so. `--scope repo` opens them, reusing THIS organ's
+# resolution, its baseline and its positive control: no second oracle, no
+# second definition of "broken".
+#
+# The exclusions are NAMED, one by one (acceptance of #26793: "les exclusions
+# ... sont nommees dans le code et dans la documentation de l'organe, pas
+# cachees dans une regexp large"):
+#
+#   * `SKIP_DIRS` and the submodule paths (shared with the default scope):
+#     build artifacts, third-party checkouts, agent scratch.
+#   * `slides/**` except the decks: the DECK_DIR note above measured 119
+#     non-deck markdown files under `slides/` holding 734 broken links --
+#     working artifacts, not the delivered deck.
+#   * the `extracted/` directories: extraction artifacts.
+#   * the test trees (`TEST_TREE_PARTS`): a fixture is a value, not a claim.
+#   * the embedded-tool documentation trees (`Roo-Code`, `Claude-Code`,
+#     `Claw-Systems`): the documentation of a THIRD-PARTY tool that ships
+#     inside the repo -- its links are that tool's, not ours.
+#   * the generated catalogue (`COURSE_CATALOG.generated.md`): regenerated by
+#     the catalogue cron after the merge (#22651) and forbidden to hand-edit
+#     on a feature branch (catalog-pr-hygiene).
+REPO_SCOPE_SKIP_COMPONENTS = ("Roo-Code", "Claude-Code", "Claw-Systems")
+REPO_SCOPE_SKIP_FILES = ("COURSE_CATALOG.generated.md",)
+REPO_SCOPE_EXTRACTED_DIRS = ("extracted",)
+
+# The code-citation pass (#24410) keeps its own baseline: the two instruments
+# answer different questions, and sharing one file would make `--baseline` in
+# one mode silently rewrite the other's frozen state.
+CODE_BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_code_citations.json"
 
 
 def _load_submodule_paths() -> set[str]:
@@ -227,7 +344,16 @@ def find_scan_files() -> list[Path]:
         if p.is_file():
             files.append(p)
         elif p.is_dir():
-            for f in sorted(p.rglob("*.md")):
+            # Quarto ``.qmd`` pages in addition to ``.md`` (#26457): the site is
+            # built from .qmd sources, and globbing ``*.md`` alone never opened
+            # them -- a move that left 19 dead links in a .qmd read as a clean
+            # scan (#26281). This directory glob opens the .qmd under the scope
+            # directory (docs/index.qmd). The root pair (index.qmd, parcours.qmd)
+            # and the notebook-tree series index.qmd sit outside docs/, so they
+            # are named individually in SCAN_SCOPES, not reached by this glob.
+            # The union is de-duplicated, so a file matching neither pattern is
+            # simply absent, as before.
+            for f in sorted(set(p.rglob("*.md")) | set(p.rglob("*.qmd"))):
                 if not _should_skip(f):
                     files.append(f)
 
@@ -243,6 +369,90 @@ def find_scan_files() -> list[Path]:
             files.append(deck)
 
     return files
+
+
+def _git_tracked_doc_files() -> list[str] | None:
+    """Repo-relative `.md`/`.qmd` paths git tracks, or None when git is silent.
+
+    The scope of this organ is what the REPOSITORY ships, not what a machine
+    happens to have under its working tree: an unpruned walk of a developer
+    checkout enumerates thousands of markdown files against 1 955 tracked ones
+    (measured 2026-11-16), i.e. it spends its time on scratch and build
+    leftovers. ``None`` keeps a tmp-tree test working: it rebuilds the scope
+    over the pruned walk instead of reporting an empty scope.
+    """
+    proc = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return [
+        path for path in proc.stdout.split("\0")
+        if path.endswith((".md", ".qmd")) and path
+    ]
+
+
+def _repo_scope_excluded(rel: str) -> bool:
+    """Whether ``rel`` (repo-relative posix) is out of the repo-wide scope.
+
+    Every exclusion is one of the NAMED rules above -- the point of the
+    acceptance is that a reader can enumerate them, not that a regexp hides
+    them.
+    """
+    parts = rel.split("/")
+    if rel in REPO_SCOPE_SKIP_FILES:
+        return True
+    if any(component in REPO_SCOPE_SKIP_COMPONENTS for component in parts):
+        return True
+    if any(directory in REPO_SCOPE_EXTRACTED_DIRS for directory in parts):
+        return True
+    if any(part.lower() in TEST_TREE_PARTS for part in parts[:-1]):
+        return True
+    if parts[0] == DECK_DIR:
+        # Only the decks (`slides/<deck>/slides.md`) are in scope; the other
+        # markdown under `slides/` is working material (see DECK_DIR).
+        return not (len(parts) == 3 and parts[2] == DECK_FILENAME)
+    return False
+
+
+def find_repo_scan_files() -> list[Path]:
+    """Every markdown/Quarto page of the repository, in path order.
+
+    The superset of the default scope: the tracked pages (plus the decks), the
+    named exclusions applied.
+    """
+    tracked = _git_tracked_doc_files()
+    if tracked is None:
+        files: list[Path] = []
+        for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
+            dirnames[:] = [
+                name for name in dirnames
+                if name not in SKIP_DIRS and name.lower() not in TEST_TREE_PARTS
+            ]
+            for name in filenames:
+                if not name.endswith((".md", ".qmd")):
+                    continue
+                path = Path(dirpath) / name
+                try:
+                    rel = path.relative_to(REPO_ROOT).as_posix()
+                except ValueError:
+                    continue
+                if _repo_scope_excluded(rel) or _should_skip(path):
+                    continue
+                files.append(path)
+        files.sort()
+        return files
+
+    pages: list[Path] = []
+    for rel in sorted(set(tracked)):
+        if _repo_scope_excluded(rel):
+            continue
+        path = REPO_ROOT / rel
+        if path.is_file() and not _should_skip(path):
+            pages.append(path)
+    return pages
 
 
 def scan_content(content: str, rel_source: str) -> list[LinkRef]:
@@ -293,6 +503,326 @@ def scan_file(filepath: Path) -> list[LinkRef]:
     except ValueError:
         rel_source = str(filepath)
     return scan_content(content, rel_source)
+
+
+# ---------------------------------------------------------------------------
+# Code-comment citation pass (#24410)
+# ---------------------------------------------------------------------------
+#
+# The markdown scan above never opens a `.py`, `.lean` or `.cs` file, so a doc
+# path cited in a code comment is invisible to this organ whether it is alive or
+# dead. Measured on `origin/main` 2026-11-03: four citations point at a path that
+# no longer exists (the target moved), across three languages -- the same hole,
+# one fix.
+#
+# A naive extension is worthless: scanning every `docs/...md`-shaped string in
+# code yields 118 absent paths, and only a minority are citations. The three
+# noise families are excluded BY CONSTRUCTION below, not by an allow/deny list
+# that rots on the next rename:
+#
+#   1. test fixtures (a path in a test tree is a value, not a claim about the
+#      repo) -- `_is_test_tree`;
+#   2. generated-output positions (`--out`, `open(..., "w")`, `write_text`) --
+#      `_is_output_position`: write the path down is not cite it;
+#   3. third-party repo paths (`lean/docs/132.md` belongs to openai/math) --
+#      `_is_scoped_doc_citation`: a citation must be anchored at a top-level
+#      entry of OUR tree, otherwise it does not resolve against it at all.
+
+CODE_SCAN_SUFFIXES = (".py", ".lean", ".cs")
+
+# Directories whose contents are test data. Matched on whole path segments, so
+# `scripts/tests/...` and `.../tests/...` are both excluded while a source file
+# that merely has "test" in its name is not.
+TEST_TREE_PARTS = {"tests", "test", "__tests__", "testdata", "fixtures"}
+
+# A citation must carry at least one `/` and end in `.md`. A bare `README.md` in
+# a comment names no resolvable file (which directory?), so it is not a
+# citation; the `\b` keeps `.mdx` from matching as `.md`. Every segment must
+# START with a letter, digit or underscore (one leading dot allowed for
+# `.claude/`), so a shape such as `docs/...md` -- how prose describes the pattern
+# rather than citing a page -- does not match.
+_SEGMENT = r"\.?[A-Za-z0-9_][A-Za-z0-9_.\-]*"
+DOC_CITATION_PATTERN = re.compile(
+    rf"(?<![\w./~-])((?:\.\.?/)*(?:{_SEGMENT}/)+{_SEGMENT}\.md)\b"
+)
+
+# Position markers that make the following text an OUTPUT of a command or a
+# write call rather than a reference to a document that should exist.
+_OUTPUT_MARKER_RE = re.compile(
+    r"(?:--out(?:put|-dir)?|(?<![\w-])-o\s|(?<![-=])>(?!>)|>>|"
+    r"open\(|write_text\(|write_bytes\(|savefig\(|to_csv\(|to_json\(|\.write\()",
+    re.IGNORECASE,
+)
+
+# Line-comment / block-comment syntax per language. Lean nests its block
+# comments (`/- /- -/ -/`), C# does not; getting this wrong on Lean would end a
+# comment at the first inner `-/` and scan the rest of the block as code.
+COMMENT_SYNTAX: dict[str, tuple[str, str, str, bool]] = {
+    ".lean": ("--", "/-", "-/", True),
+    ".cs": ("//", "/*", "*/", False),
+}
+
+
+def _is_test_tree(path: Path) -> bool:
+    """Whether ``path`` lives in a test tree (fixtures are values, not claims)."""
+    try:
+        rel = path.relative_to(REPO_ROOT)
+    except ValueError:
+        return True
+    if any(part.lower() in TEST_TREE_PARTS for part in rel.parts[:-1]):
+        return True
+    name = rel.name.lower()
+    return name.startswith("test_") or name.endswith("_test.py")
+
+
+def _repo_top_level() -> set[str]:
+    """Names present at the repository root, recomputed per call.
+
+    Recomputed rather than cached so a tmp-tree test that rebinds ``REPO_ROOT``
+    gets its own answer instead of this machine's.
+    """
+    try:
+        return {p.name for p in REPO_ROOT.iterdir()}
+    except OSError:
+        return set()
+
+
+def _is_scoped_doc_citation(path: str, top_level: set[str]) -> bool:
+    """Whether ``path`` is a citation of OUR tree, not of a third-party one.
+
+    ``lean/docs/132.md`` is anchored at `lean`, which is not a top-level entry
+    here -- it belongs to the upstream project the comment talks about, so it is
+    out of scope. A `./`/`../` path is in scope: it resolves against the citing
+    file, which is exactly what ``check_link`` will do.
+    """
+    first = path.split("/", 1)[0]
+    if first in (".", ".."):
+        return True
+    return first in top_level
+
+
+def _is_output_position(prefix: str) -> bool:
+    """Whether the text before a path marks it as an output/write position."""
+    return _OUTPUT_MARKER_RE.search(prefix) is not None
+
+
+def _generic_comment_spans(
+    content: str, line_marker: str, block_open: str, block_close: str,
+    nestable: bool,
+) -> list[tuple[int, str]]:
+    """Comment text of a C-family/Lean source, as ``(line, text)`` pairs.
+
+    A line marker preceded by an ODD number of `"` sits inside a string literal
+    (`let s := "--"`), so it is not a comment. That guard is a heuristic, not a
+    lexer; it covers the case that actually occurs and is documented as such.
+    """
+    spans: list[tuple[int, str]] = []
+    depth = 0
+    for lineno, line in enumerate(content.splitlines(), 1):
+        buf: list[str] = []
+        i = 0
+        while i < len(line):
+            if depth == 0:
+                if line.startswith(block_open, i):
+                    depth = 1
+                    i += len(block_open)
+                    continue
+                if line.startswith(line_marker, i) and line[:i].count('"') % 2 == 0:
+                    spans.append((lineno, line[i + len(line_marker):]))
+                    break
+                i += 1
+                continue
+            if nestable and line.startswith(block_open, i):
+                depth += 1
+                i += len(block_open)
+                continue
+            if line.startswith(block_close, i):
+                depth -= 1
+                i += len(block_close)
+                continue
+            buf.append(line[i])
+            i += 1
+        if buf:
+            spans.append((lineno, "".join(buf)))
+    return spans
+
+
+def _python_comment_spans(content: str) -> list[tuple[int, str]]:
+    """`#` comments (via ``tokenize``) plus module/class/function docstrings.
+
+    ``tokenize`` is the only way to tell a `#` comment from a `#` inside a
+    string literal; ``ast`` is the only way to tell a docstring from an
+    arbitrary string expression. Both are stdlib and exact, which is why Python
+    does not go through ``_generic_comment_spans``.
+    """
+    spans: list[tuple[int, str]] = []
+    # A source that the interpreter would warn about (invalid escape sequences
+    # in a legacy regex string, say) is still a source we must read. Parsing it
+    # here must not spray SyntaxWarning on the organ's own output: the verdict
+    # is a link report, not a lint of unrelated files.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", SyntaxWarning)
+        try:
+            for tok in tokenize.generate_tokens(io.StringIO(content).readline):
+                if tok.type == tokenize.COMMENT:
+                    spans.append((tok.start[0], tok.string))
+        except (tokenize.TokenError, IndentationError, SyntaxError):
+            pass
+
+        try:
+            tree = ast.parse(content)
+        except (SyntaxError, ValueError):
+            return spans
+    owners = (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if not isinstance(node, owners) or not body:
+            continue
+        first = body[0]
+        if not (isinstance(first, ast.Expr)
+                and isinstance(first.value, ast.Constant)
+                and isinstance(first.value.value, str)):
+            continue
+        for offset, doc_line in enumerate(first.value.value.splitlines()):
+            spans.append((first.lineno + offset, doc_line))
+    return spans
+
+
+def _comment_spans(suffix: str, content: str) -> list[tuple[int, str]]:
+    """Comment text of ``content`` according to the language of ``suffix``."""
+    if suffix == ".py":
+        return _python_comment_spans(content)
+    syntax = COMMENT_SYNTAX.get(suffix)
+    if syntax is None:
+        return []
+    return _generic_comment_spans(content, *syntax)
+
+
+def _git_tracked_code_files() -> list[str] | None:
+    """Repo-relative code files git tracks, or None when git cannot be asked.
+
+    The scope of this organ is what the REPOSITORY ships, not what a machine
+    happens to have under its working tree: an unpruned walk of a developer
+    checkout enumerated 93 876 `*.py|*.lean|*.cs` files against 4 339 tracked
+    ones (measured 2026-11-04), i.e. it spent its time on installed packages.
+    ``None`` keeps a tmp-tree test working: it rebuilds the engine over the
+    pruned walk instead of reporting an empty scope.
+    """
+    proc = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return [p for p in proc.stdout.split("\0") if p.endswith(CODE_SCAN_SUFFIXES)]
+
+
+def find_code_files() -> list[Path]:
+    """Every scannable code file: tracked, non-test, outside skipped trees.
+
+    Pruned at DIRECTORY level when git is unavailable rather than filtered
+    afterwards: `.lake/` holds a full Mathlib checkout, so an unpruned
+    ``rglob`` would enumerate thousands of files only to discard them.
+    """
+    tracked = _git_tracked_code_files()
+    if tracked is not None:
+        return [
+            REPO_ROOT / rel for rel in sorted(tracked)
+            if (REPO_ROOT / rel).is_file()
+            and not _should_skip(REPO_ROOT / rel)
+            and not _is_test_tree(REPO_ROOT / rel)
+        ]
+
+    files: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
+        rel_dir = Path(dirpath).relative_to(REPO_ROOT).as_posix()
+        kept: list[str] = []
+        for name in dirnames:
+            if name in SKIP_DIRS or name.lower() in TEST_TREE_PARTS:
+                continue
+            child = name if rel_dir == "." else f"{rel_dir}/{name}"
+            if any(child == sm or child.startswith(sm + "/") for sm in SUBMODULE_PATHS):
+                continue
+            kept.append(name)
+        dirnames[:] = kept
+        for name in filenames:
+            if not name.endswith(CODE_SCAN_SUFFIXES):
+                continue
+            path = Path(dirpath) / name
+            if _should_skip(path) or _is_test_tree(path):
+                continue
+            files.append(path)
+    files.sort()
+    return files
+
+
+def _citation_exists(target: str, source_rel: str) -> bool:
+    """Whether a code-comment citation resolves, under EITHER anchoring.
+
+    A comment in `MyIA.AI.Notebooks/IIT/ICT-Series/ict/foo.py` writes
+    `docs/ict/<page>.md` meaning the REPOSITORY ROOT; `check_link` resolves against
+    the citing file's directory and calls every such citation dead (measured
+    2026-11-04: 224 "broken" against 6 alive, while the issue's line-by-line
+    reading found 30 dead of ~275). Both conventions are in use in this repo, so
+    a citation is dead only when NEITHER anchor finds it. An explicit
+    `./`/`../` path names one anchor only, and is not re-anchored at the root.
+    """
+    if check_link(target, REPO_ROOT / source_rel, root=REPO_ROOT):
+        return True
+    if target.startswith(("./", "../")):
+        return False
+    # A dummy source directly under REPO_ROOT makes check_link's `parent` the
+    # root itself, reusing its decoding, submodule and Quarto rules verbatim
+    # instead of growing a second existence oracle that could diverge. `root` is
+    # passed explicitly: the default argument is bound at import time and would
+    # not follow a rebound REPO_ROOT in tests.
+    return check_link(target, REPO_ROOT / "__root_anchor__", root=REPO_ROOT)
+
+
+def scan_code_content(content: str, rel_source: str) -> list[LinkRef]:
+    """Doc paths cited in the comments of ``content`` (repo-relative source).
+
+    Returns one ``LinkRef`` per distinct ``(line, target)``: the same path cited
+    twice on one line is one citation, and a path repeated across the file keeps
+    one occurrence per line so the report points at every place to fix.
+    """
+    # Cheap pre-filter before the lexers: a file without a single `.md` cannot
+    # hold a doc citation, and tokenize+ast over 3 000 files costs ~70 s.
+    if ".md" not in content:
+        return []
+    top_level = _repo_top_level()
+    suffix = Path(rel_source).suffix.lower()
+    seen: set[tuple[int, str]] = set()
+    refs: list[LinkRef] = []
+    for lineno, text in _comment_spans(suffix, content):
+        for match in DOC_CITATION_PATTERN.finditer(text):
+            target = match.group(1)
+            if not _is_scoped_doc_citation(target, top_level):
+                continue
+            if _is_output_position(text[:match.start()]):
+                continue
+            key = (lineno, target)
+            if key in seen:
+                continue
+            seen.add(key)
+            refs.append(LinkRef(
+                source=rel_source, target=target, line=lineno, text="doc citation",
+            ))
+    return refs
+
+
+def scan_code_file(filepath: Path) -> list[LinkRef]:
+    """Doc paths cited in the comments of a code file on disk."""
+    try:
+        content = filepath.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, PermissionError, OSError):
+        return []
+    try:
+        rel_source = filepath.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        rel_source = str(filepath)
+    return scan_code_content(content, rel_source)
 
 
 def _is_quarto_render_target(html_path: Path, root: Path) -> bool:
@@ -411,7 +941,22 @@ def _link_exists_in_tree(target: str, source_rel: str, files: set[str],
     return False
 
 
-def preexisting_broken(broken_refs: list[LinkRef], rev: str) -> set[tuple[str, str]] | None:
+def _citation_exists_in_tree(target: str, source_rel: str, files: set[str],
+                             dirs: set[str], quarto_yml: str | None) -> bool:
+    """``_link_exists_in_tree`` under both anchors, as ``_citation_exists``."""
+    if _link_exists_in_tree(target, source_rel, files, dirs, quarto_yml):
+        return True
+    if target.startswith(("./", "../")):
+        return False
+    # An empty dirname makes ``posixpath.join`` yield the target unchanged, i.e.
+    # resolved against the repository root -- the second anchor.
+    return _link_exists_in_tree(target, "__root_anchor__", files, dirs, quarto_yml)
+
+
+def preexisting_broken(broken_refs: list[LinkRef], rev: str,
+                       scanner: Callable[[str, str], list[LinkRef]] = scan_content,
+                       exists_in_tree: Callable[..., bool] = _link_exists_in_tree,
+                       ) -> set[tuple[str, str]] | None:
     """Among ``broken_refs``, those already broken at ``rev``.
 
     Only the sources carrying a broken link at HEAD are read at ``rev``: the
@@ -444,9 +989,9 @@ def preexisting_broken(broken_refs: list[LinkRef], rev: str) -> set[tuple[str, s
         content = _git_show(rev, source)
         if content is None:
             continue
-        base_targets = {r.target for r in scan_content(content, source)}
+        base_targets = {r.target for r in scanner(content, source)}
         for target in targets:
-            if target in base_targets and not _link_exists_in_tree(
+            if target in base_targets and not exists_in_tree(
                 target, source, tree, dirs, quarto_yml
             ):
                 preexisting.add((source, target))
@@ -482,28 +1027,50 @@ def find_orphan_docs(scanned_files: list[Path], all_refs: list[LinkRef]) -> list
     return orphans
 
 
-def run_scan(report_orphans: bool = False) -> ScanResult:
-    """Run a full link scan across the repository."""
+def run_scan(report_orphans: bool = False, code: bool = False,
+             scope: str = "default") -> ScanResult:
+    """Run a full scan across the repository.
+
+    ``code=True`` runs the code-comment citation pass (#24410) INSTEAD of the
+    markdown pass -- not in addition to it. The two verdicts are kept apart on
+    purpose: `main` already carries broken markdown links that the frozen
+    baseline does not excuse (measured 2026-11-03), so folding a new signal into
+    the same count would make a code finding indistinguishable from that
+    pre-existing red, which is exactly what #24410 warns against.
+
+    ``scope="repo"`` widens the markdown pass to the whole repository (#26793):
+    the same resolution, the same baseline machinery, the same positive
+    control -- only the set of pages changes.
+    """
     result = ScanResult()
-    files = find_scan_files()
+    if code:
+        files = find_code_files()
+    elif scope == "repo":
+        files = find_repo_scan_files()
+    else:
+        files = find_scan_files()
     result.scanned_files = len(files)
 
     all_refs = []
     for filepath in files:
-        refs = scan_file(filepath)
+        refs = scan_code_file(filepath) if code else scan_file(filepath)
         all_refs.extend(refs)
 
     result.total_links = len(all_refs)
 
     for ref in all_refs:
-        source_path = REPO_ROOT / ref.source
-        if check_link(ref.target, source_path):
-            result.valid.append(ref)
+        if code:
+            ok = _citation_exists(ref.target, ref.source)
         else:
-            result.broken.append(ref)
+            ok = check_link(ref.target, REPO_ROOT / ref.source)
+        (result.valid if ok else result.broken).append(ref)
 
-    if report_orphans:
+    if report_orphans and not code:
         result.orphans = find_orphan_docs(files, all_refs)
+    # In code mode `--orphans` is meaningless (orphan detection asks which PAGE
+    # links to a doc; a comment is not a page) and leaves `orphans` empty --
+    # main() refuses the combination rather than printing "0 orphans", which
+    # would read as a clean result from an unscanned question.
 
     return result
 
@@ -534,35 +1101,72 @@ def load_baseline(path: Path = BASELINE_PATH) -> dict | None:
         return None
 
 
+def _is_generated_source(source: Path) -> bool:
+    """Detect a generated page by its header, not by a hardcoded path.
+
+    A content branch must leave generated artifacts unchanged: the catalogue
+    cron repairs their links after the merge (#22651). Only the explicit
+    production header grants this excuse; prose mentioning generation later in
+    a hand-written page does not.
+    """
+    try:
+        with source.open(encoding="utf-8") as handle:
+            prefix = handle.read(4096)
+    except (OSError, UnicodeDecodeError):
+        return False
+    header = re.match(r"\s*<!--(.*?)-->", prefix, re.DOTALL)
+    if header is None:
+        return False
+    return re.search(r"\bFICHIER GENERE\b", header.group(1), re.IGNORECASE) is not None
+
+
+def generated_source_excuses(result: ScanResult) -> list[LinkRef]:
+    """Broken links carried by explicitly generated source pages."""
+    return [
+        ref for ref in result.broken
+        if _is_generated_source(REPO_ROOT / ref.source)
+    ]
+
+
 def check_regression(result: ScanResult, baseline: dict,
                      preexisting: set[tuple[str, str]] | None = None) -> list[LinkRef]:
     """Find broken links that are NOT already excused (new regressions).
 
-    Two independent excuses apply. The frozen ``baseline`` covers the
-    non-PR paths (dispatch, plain full scan) where no comparison revision is
-    available. ``preexisting`` — computed against the branch's base revision —
-    covers the PR path: a link already broken before the branch is not this
-    branch's regression, and would otherwise redden every open PR at once
-    (#15766).
+    The frozen baseline and comparison revision excuse pre-existing defects.
+    A generated source carries a third, visible excuse: repairing it on the
+    branch is forbidden by catalogue hygiene, and its cron regenerates it after
+    the merge (#22651).
     """
     baseline_targets = {
         (b["source"], b["target"]) for b in baseline.get("broken_links", [])
     }
     excused = baseline_targets | (preexisting or set())
+    excused.update((ref.source, ref.target)
+                   for ref in generated_source_excuses(result))
     return [ref for ref in result.broken if (ref.source, ref.target) not in excused]
 
 
-def format_report(result: ScanResult, show_orphans: bool = False) -> str:
+def format_generated_excuses(refs: list[LinkRef]) -> str:
+    """Report generated-source excuses separately, never silently."""
+    lines = [f"Excused: {len(refs)} generated source"]
+    lines.extend(f"  {ref.source}:{ref.line} -> {ref.target}"
+                 for ref in sorted(refs, key=lambda r: (r.source, r.line)))
+    return "\n".join(lines)
+
+
+def format_report(result: ScanResult, show_orphans: bool = False,
+                  code: bool = False) -> str:
     """Format scan results as a human-readable report."""
     lines = []
-    lines.append(f"Scanned {result.scanned_files} files, {result.total_links} links")
+    noun = "doc citations in code comments" if code else "links"
+    lines.append(f"Scanned {result.scanned_files} files, {result.total_links} {noun}")
 
     if result.broken:
-        lines.append(f"\nBroken links ({len(result.broken)}):")
+        lines.append(f"\nBroken {noun} ({len(result.broken)}):")
         for ref in sorted(result.broken, key=lambda r: (r.source, r.line)):
             lines.append(f"  {ref.source}:{ref.line} -> {ref.target}")
     else:
-        lines.append("\nNo broken links found.")
+        lines.append(f"\nNo broken {noun} found.")
 
     if show_orphans and result.orphans:
         lines.append(f"\nOrphan docs ({len(result.orphans)}) [WARN, non-blocking]:")
@@ -586,16 +1190,50 @@ def main():
                              "(e.g. origin/main) is not a regression")
     parser.add_argument("--orphans", action="store_true",
                         help="Also report orphan docs")
+    parser.add_argument("--code", action="store_true",
+                        help="Scan doc paths cited in CODE COMMENTS (.py/.lean/"
+                             ".cs) instead of markdown links. Kept separate so a "
+                             "code finding is never confused with a markdown "
+                             "one; --check/--base/--baseline/--expect-broken all "
+                             "apply to the selected pass (#24410).")
     parser.add_argument("--quiet", action="store_true",
                         help="Minimal output")
+    parser.add_argument("--scope", choices=("default", "repo"), default="default",
+                        help="Which pages are watched. 'default' keeps the "
+                             "historical scope (root entry points, docs/, "
+                             ".claude/, the series landings, the decks, every "
+                             "README). 'repo' widens it to EVERY tracked "
+                             ".md/.qmd page of the repository, the named "
+                             "exclusions applied (#26793). Resolution, baseline "
+                             "and positive control are the same ones.")
     parser.add_argument("--expect-broken", metavar="N", type=int, default=None,
                         help="Positive control: require at least N broken links, "
                              "else exit 2. Without it, 'no broken link' is "
                              "indistinguishable from a dead detection path.")
     args = parser.parse_args()
 
+    if args.code and args.orphans:
+        print("Error: --orphans is meaningless with --code -- orphan detection "
+              "asks which PAGE links to a doc, and a code comment is not a page.",
+              file=sys.stderr)
+        sys.exit(2)
+
+    if args.code and args.scope == "repo":
+        print("Error: --scope repo is meaningless with --code -- the code pass "
+              "walks .py/.lean/.cs files, not markdown pages. Choose one pass.",
+              file=sys.stderr)
+        sys.exit(2)
+
+    if args.scope == "repo":
+        baseline_path = REPO_BASELINE_PATH
+    elif args.code:
+        baseline_path = CODE_BASELINE_PATH
+    else:
+        baseline_path = BASELINE_PATH
+
     try:
-        result = run_scan(report_orphans=args.orphans)
+        result = run_scan(report_orphans=args.orphans, code=args.code,
+                          scope=args.scope)
 
         # The positive control is evaluated BEFORE any mode branch, so it is
         # never silently ignored by --check/--baseline.
@@ -617,32 +1255,44 @@ def main():
             sys.exit(2)
 
         if args.baseline:
-            write_baseline(result)
+            write_baseline(result, path=baseline_path)
             if not args.quiet:
-                print(f"Baseline written to {BASELINE_PATH}")
-                print(format_report(result, show_orphans=True))
+                print(f"Baseline written to {baseline_path}")
+                print(format_report(result, show_orphans=not args.code,
+                                    code=args.code))
             return
 
         if args.check:
             preexisting = None
             if args.base:
-                preexisting = preexisting_broken(result.broken, args.base)
+                if args.code:
+                    preexisting = preexisting_broken(
+                        result.broken, args.base,
+                        scanner=scan_code_content,
+                        exists_in_tree=_citation_exists_in_tree,
+                    )
+                else:
+                    preexisting = preexisting_broken(result.broken, args.base)
                 if preexisting is None and not args.quiet:
                     print(f"WARNING: {args.base!r} is not readable, comparing against the "
                           f"frozen baseline only.", file=sys.stderr)
 
-            baseline = load_baseline()
+            baseline = load_baseline(path=baseline_path)
             if baseline is None and preexisting is None:
                 if not args.quiet:
-                    print("No baseline found. Run with --baseline first.")
+                    print(f"No baseline found at {baseline_path}. Run with "
+                          f"--baseline first.")
                 # Nothing can excuse a broken link: every one is a regression
                 if result.broken:
                     if not args.quiet:
-                        print(format_report(result))
+                        print(format_report(result, code=args.code))
                     sys.exit(1)
                 sys.exit(0)
 
             new_broken = check_regression(result, baseline or {}, preexisting)
+            generated = generated_source_excuses(result)
+            if generated:
+                print(format_generated_excuses(generated))
             if new_broken:
                 if not args.quiet:
                     print(f"REGRESSION: {len(new_broken)} new broken link(s):")
@@ -659,7 +1309,7 @@ def main():
 
         # Default: full scan
         if not args.quiet:
-            print(format_report(result, show_orphans=args.orphans))
+            print(format_report(result, show_orphans=args.orphans, code=args.code))
 
         if result.broken:
             sys.exit(1)

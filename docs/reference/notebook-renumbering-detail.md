@@ -1,5 +1,7 @@
 # Renumerotation de notebooks — corpus des precedents
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 Detail de [`.claude/rules/notebook-accretion-numbering.md`](../../.claude/rules/notebook-accretion-numbering.md). La regle porte le geste ; ce fichier porte les precedents qui l'ont produite, mesures le 2026-09-04.
 
 ## 1. Pourquoi une regle : le geste a ete re-derive dix-neuf fois
@@ -107,3 +109,26 @@ Les trois deviations de convention et les trois depassements de norme **ne sont 
 3. de verifier que les numeros nus, lus dans l'ordre, forment bien un arc — c'est le travail que #5081 a fait par famille et que le compilateur de parcours de #14620 consomme.
 
 Le compte de **notebooks** reste superieur au compte de **slots** (twins C#/Python, siblings FR/EN partagent un slot) : les deux ne se comparent pas directement.
+
+## 7. La descente en sous-serie et la doctrine du cheminement (2026-11-15)
+
+Le §4ter de la regle porte trois conventions. Le mainteneur les a acceptees le 2026-11-15 (« OK pour les 3 », question Q191 du registre), sur la serie ICT (#20298, arbitrage c.6902930137). Elles completent une decision plus ancienne, du 2026-09-25 (Q57) : une sous-serie qui descend en dossier laisse dans la serie mere un escalier, idealement un capstone a la racine qui la presente.
+
+**Pourquoi la decision de septembre ne suffisait pas.** La descente ANALYSE de la serie Lean (#18015) a ete mergee sans capstone. Lean-20 a disparu de la racine, et le trou n'a ete vu qu'en preparant une presentation ; il a fallu le reparer apres coup (#18409). Aucune garde ne voit un carnet qui aurait du etre dans le diff. En novembre, ICT a montre le meme defaut a plus grande echelle :
+- des sous-series sont descendues sans capstone ;
+- des trous se sont ouverts a la racine ;
+- des numeros eleves, ajoutes a la fin, ne sont jamais redescendus.
+
+**La doctrine, en citation** (2026-11-15) :
+
+> Le principe reste celui de numéros complétés par des accrétions, et éventuellement remplacés par un capstone une fois que trop d'accrétions rendent la lecture difficile, la série historique descendant le cas échéant en sous-série. La plupart des numéros élevés doivent redescendre dans les accrétions des numéros qui introduisent leur substrat/strate/mesure ou objet d'intérêt, car ils ont été rajoutés à la fin par défaut.
+> Les carnets sans numéros devraient également en recevoir un ou rentrer dans une sous-série et être référencés ou consolidés dans les capstones numérotés. La numérotation est celle de la lecture d'un cheminement intellectuel.
+
+**Ce que la doctrine change dans la lecture du §3.** Le §3 garde son verdict par defaut, et des trous seuls ne justifient toujours rien. Mais dans une serie dont les premiers numeros suivent une montee (ICT : les trente premiers suivent la montee en strates), un numero eleve qui ne fait qu'ajouter un concept est presque toujours un numero d'opportunite : sa place se lit dans le contenu, au numero qui introduit son objet.
+
+**Instance ICT (contenu, pas regle).** Le mainteneur fait de GOL le substrat temoin de la strate 0 : il est Turing-complet, et ses formes utiles se detruisent a la moindre variation. Trois blocs sont a regrouper en accretions et en sous-series :
+- les representations internes des LLM ;
+- Argumentation (strate 6) ;
+- Freebits, mecanismes sociaux et metamecanismes (strate 7).
+
+La carte cible, carnet par carnet, vit dans le body de #20298.

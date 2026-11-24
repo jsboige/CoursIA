@@ -51,6 +51,12 @@ never a crash). The verdict reports which source it used in `prev_source`
     and the accounting organ never disagree. Fail-closed: it needs a
     POSITIVE tier and POSITIVE disjoint read, and never fires on a `declared`
     (unmeasured) predecessor. A LIGHT tier or overlapping files still blocks.
+  * **PASS (lane exempt)** when the lane is listed in
+    `G_VAR3_EXEMPT_LANES` (#26988, user decision Q194 a of 16/11/2026):
+    the lane designated for the CI and merge organs is exempt from G-VAR-3
+    -- its grains are almost all guards, and the ban targets the monoculture
+    of a CONTENT worker. Only G-VAR-3 is lifted; G-VAR-1 (floor) and G-VAR-2
+    (LIGHT budget) stay in force, in their own organs.
   * **PASS** otherwise -- different genres, `prev: none (premier grain)`
     (the first-grain exemption, already parsed by `parse_prev`), or a
     `prev:` absent / unreadable (already covered by the `variation-tag-prev-
@@ -99,6 +105,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # T3-c: sibling scripts/ci
 from variation_base_main import filter_base_main as _filter_base_main  # noqa: E402
 from variation_light_cap import (  # noqa: E402
     canonicalize_genre,
@@ -177,6 +184,26 @@ def _gh_pr_body_comments(pr_number: int) -> dict | None:
 # LIFT_OVERRIDE_LOGINS) was hardened by #13316 for the same reason; the
 # adjacency guard was missed. Coordinator identity = `myia-ai-01` only.
 COORDINATOR_LOGINS = frozenset({"myia-ai-01"})
+
+# --- #26988 : exemption de G-VAR-3 pour les lanes designees ----------------
+#
+# Decision user Q194 a) du 16/11/2026 : « Q194 OK pour a) ». La lane que le
+# coordinateur designe pour les organes de CI et de merge est **exemptee de
+# G-VAR-3** : ses grains sont presque tous des gardes, et la regle vise la
+# monotonie d'un worker de CONTENU. Le 16/11, ses PRs #26715 et #26899
+# etaient rouges pour cette seule raison, et la derogation a la main
+# promettait un « prochain genre » que la lane ne tiendra pas.
+#
+# **Seul G-VAR-3 est leve** : G-VAR-1 (plancher DEEP de contenu) et G-VAR-2
+# (budget LIGHT quotidien) restent appliques, dans leurs autres organes --
+# cette exemption ne touche pas le plancher, elle leve le ban
+# d'adjacence.
+#
+# La liste est declaree **en un seul endroit** (ici). Changer de lane
+# designee = une PR qui modifie cette constante.
+G_VAR3_EXEMPT_LANES = frozenset({
+    "myia-ai-01:CoursIA-2",
+})
 
 _OVERRIDE_RE = re.compile(
     r"\[\s*G-?VAR-?3\s+OVERRIDE\s*\]"          # the marker
@@ -341,7 +368,7 @@ def resolve_merged_prev_genre(merged_prs: list[dict] | None, lane: str | None) -
     `merged_prs` is the list `gh pr list --state merged --json
     number,body,mergedAt,baseRefName` returns -- the same data source as
     variation_light_cap.py --replay. The `baseRefName` field is filtered
-    upstream (see `scripts/variation_base_main.py`, #18940) so that PRs
+    upstream (see `scripts/ci/variation_base_main.py`, #18940) so that PRs
     stacked on a feature branch are not counted as a lane's previous
     merge in the adjacency check. Each PR is attributed to a lane through
     the SAME extractor as the gate (`grain_tag.parse_grain_tag`), so this
@@ -524,6 +551,26 @@ def check(body: str | None, override: dict | None = None,
                     f"mecanique (fichiers sans recouvrement).{src_note}"
                 ),
             }
+        # #26988 : la lane designee pour les organes de CI et de merge est
+        # exemptee de G-VAR-3 (decision user Q194 a du 16/11/2026). Le ban
+        # absolu de la section 2 ne s'applique pas a elle ; G-VAR-1 et
+        # G-VAR-2 restent appliques (plancher et budget : d'autres organes).
+        if lane in G_VAR3_EXEMPT_LANES:
+            return {
+                "guard_pass": True, "blocking": False, "adjacent": True,
+                "genre": genre, "prev_genre": prev_genre, "lane": lane,
+                "lane_exempt": True,
+                "prev_source": prev_source,
+                "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
+                "reason": (
+                    f"G-VAR-3: {genre} succede a {prev_genre} pour la lane "
+                    f"{lane}, mais cette lane est inscrite dans "
+                    f"G_VAR3_EXEMPT_LANES (#26988, decision user Q194 a du "
+                    f"16/11/2026) : le ban absolu de la section 2 est leve "
+                    f"pour elle. G-VAR-1 (plancher) et G-VAR-2 (budget) "
+                    f"restent appliques.{src_note}"
+                ),
+            }
         # The adjacency is real. Before failing, ask whether the coordinator
         # has exercised the 24h decision section 3 already grants (#11708).
         if override and override.get("next_genre") \
@@ -666,7 +713,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         # Filtre --base main (#18940) : elimine les PRs empilees sur une
         # branche de feature du comptage d'adjacence. Voir
-        # scripts/variation_base_main.py pour le contrat.
+        # scripts/ci/variation_base_main.py pour le contrat.
         merged_prs = _filter_base_main(
             merged_prs, warn=lambda m: print(m, file=sys.stderr)
         )
@@ -700,7 +747,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 with open(args.merged_prs_file, encoding="utf-8") as f:
                     merged_prs = json.load(f)
-                # Filtre --base main (#18940) : voir scripts/variation_base_main.py
+                # Filtre --base main (#18940) : voir scripts/ci/variation_base_main.py
                 # pour le contrat. Sans ce filtre, un fichier de merges datant
                 # d'avant le fix declencherait de faux adjacents (PRs empilees
                 # sur une branche de feature).

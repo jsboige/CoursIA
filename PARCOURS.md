@@ -1,7 +1,8 @@
 # Parcours d'apprentissage CoursIA
 
-Trois parcours narratifs — objectif, public, durée et sortie concrète — sont
-livrés par l'équipe `docs/curriculum/`. Cinq autres pages listent les notebooks
+Cinq parcours narratifs — objectif, public, durée et sortie concrète — sont
+livrés par l'équipe `docs/curriculum/`, rejoints par quatre **parcours verticaux**
+organisés par métier (section suivante). Cinq autres pages listent les notebooks
 par domaine thématique ; ce sont des **vues du catalogue**, pas des parcours
 d'apprentissage, et elles sont régénérées chaque jour par `catalog-cron.yml`.
 
@@ -12,27 +13,65 @@ d'apprentissage, et elles sont régénérées chaque jour par `catalog-cron.yml`
 | 1 | [Accéléré vers GenAI](docs/curriculum/genai-rush.md) | Développeur Python qui veut être opérationnel sur les APIs d'IA générative sans GPU | ~8-10 h | Boucle agentique texte, chaîne image, voix bidirectionnelle, agents `AgentGroupChat`, RAG Qdrant embarqué |
 | 2 | [IA Symbolique et Formalisation](docs/curriculum/symbolic-formalization.md) | Étudiant ou ingénieur qui veut passer du symbolique « qui marche » à la formalisation vérifiée par machine | ~20 h | Quatre familles logiques Tweety, SMT Z3 avec capstone d'optimisation, planification Fast-Downward, trois preuves Lean 4 rejouées |
 | 3 | [Recherche et Corpus (AIMA-inspired)](docs/curriculum/aima-walk.md) | Lecteur qui veut retraverser l'IA classique avec un manuel de référence (Russel & Norvig) et vérifier chaque concept sur du code | ~25-30 h | A*, CSP, logiques Tweety, Bayes PyMC, Nash, CFR, RL, pipeline LLM — plus la carte de ce que le corpus ajoute à AIMA |
+| 4 | [IA hybride : LLM + solveurs + vérificateurs](docs/curriculum/ia-hybride.md) | Développeur qui sait prompter un LLM et veut apprendre à le fiabiliser avec des moteurs formels | ~5-7 h | Pipeline argumentatif LLM→Tweety orchestré SK, théorème d'impossibilité prouvé par SAT-Z3, verdict trois bras LLM vs évolution |
+| 5 | [IA, société et responsabilité](docs/curriculum/ia-societe-responsabilite.md) | Étudiant ou praticien qui veut interroger ce qu'un système fait **aux personnes**, pas seulement ce qu'il prédit | 16 étapes, durée publiée à l'étape | Équité mesurée par sous-groupes, donnée-responsabilité (attaque d'appartenance, confidentialité différentielle), théorèmes d'impossibilité du choix social, argumentation de Dung, oversight chiffré |
 
-Les trois pilotes suivent le modèle « Parcours alternatifs » du
+Les cinq parcours suivent le modèle « Parcours alternatifs » du
 [README GameTheory](MyIA.AI.Notebooks/GameTheory/README.md) : durée annoncée,
 liste numérotée, clause de prérequis qui dit ce qui est supposé **et ce qui ne
 l'est pas**. La matière première est l'inventaire des embryons de parcours
 ([`docs/transients/2026-09-02-curriculum-inventory.md`](docs/transients/2026-09-02-curriculum-inventory.md), EPIC
 [#13844](https://github.com/jsboige/CoursIA/issues/13844)).
 
+### Parcours verticaux (par métier)
+
+Quatre parcours **verticaux** complètent les cinq parcours narratifs : là où ceux-ci
+traversent le dépôt en suivant un fil, les verticaux le traversent en suivant un
+**métier**. Ils sont déclarés en JSON — chaque branche énumère des carnets **existants**,
+exécutés avec leurs sorties, et ne crée aucun carnet nouveau :
+
+| Parcours | Manifeste | Branches | Carnets | Question à laquelle il répond |
+|----------|-----------|----------|---------|-------------------------------|
+| AI Engineer | [`ai-engineer.json`](docs/curriculum/ai-engineer.json) | 8 | 46 | construire un produit qui **appelle** des modèles sans les ré-entraîner |
+| LLM Engineer | [`llm-engineer.json`](docs/curriculum/llm-engineer.json) | 8 | 39 | l'arc profond du texte-modèle : tokenisation, RAG, inférence, agents, adaptation |
+| ML Engineer | [`ml-engineer.json`](docs/curriculum/ml-engineer.json) | 7 | 25 | apprentissage classique, de la donnée à la mise en service |
+| Recherche | [`recherche-vertical.json`](docs/curriculum/recherche-vertical.json) | 7 | 33 | reproduire un mécanisme publié, découvrir une loi, prouver un théorème |
+
+Chaque manifeste a son jumeau compilé (`*.compiled.json`), qui fige les transitions de
+noyau déclarées et sert aux tests de cohérence du parcours.
+
+**Articulation avec le reste du dépôt.** Deux volets prolongent ces parcours sans en
+faire partie, et il faut savoir où ils se traitent :
+
+- **Entraîner plutôt qu'utiliser.** Les verticaux partent de modèles existants ; le
+  ré-entraînement, le fine-tuning et le post-entraînement (PPO, distillations,
+  comparaisons multi-graines) relèvent de l'EPIC
+  [#1454 — Training & Post-Training](https://github.com/jsboige/CoursIA/issues/1454).
+  Le parcours **Recherche** est son principal débouché : reproduire un mécanisme, puis
+  conduire des ablations et des entraînements mesurés, c'est exactement l'aller-retour
+  que cet EPIC organise.
+- **Lire ces parcours sur le site.** Les pages de `docs/curriculum/` rendues sur
+  `jsboige.github.io/CoursIA` sont listées dans [`_quarto.yml`](_quarto.yml). Les quatre
+  manifestes verticaux n'y figurent **pas encore** : ils sont lisibles dans le dépôt, pas
+  sur le site. Leur rendu — navigation, mise en page des parcours, affichage des carnets —
+  relève de l'EPIC [#10921 — Site GitHub Pages](https://github.com/jsboige/CoursIA/issues/10921),
+  et non de cette page.
+
 ### Parcours par contraintes d'infrastructure
 
-`[parcours.qmd](parcours.qmd)` répond à une question différente : *« avec quel
+`[parcours.qmd](docs/parcours.qmd)` répond à une question différente : *« avec quel
 matériel puis-je avancer ? »*. Trois profils y sont documentés :
 
 1. **Local sobre** — Python + Jupyter, sans GPU, sans Docker.
 2. **ML.NET + symbolique** — ajout de .NET Interactive pour C# et Lean 4.
 3. **GenAI complet** — Docker (ComfyUI, Qwen), GPU RTX 3090, services cloud.
 
-C'est un axe orthogonal : les trois parcours narratifs ci-dessus sont chacun
+C'est un axe orthogonal : les cinq parcours narratifs ci-dessus sont chacun
 réalisables dans le profil *Local sobre*, à l'exception de `genai-rush.md` qui
 exige une clé OpenAI directe pour les étapes image et voix (deux endpoints non
-relayés par les tiers).
+relayés par les tiers) et de `ia-hybride.md` dont deux étapes (la section 5 de
+l'étape 2 et le bras LLM de l'étape 8) appellent un LLM — toutes les autres
+tournent sans clé.
 
 Avant d'ouvrir le premier notebook d'un parcours, exécuter le préflight :
 
@@ -110,5 +149,5 @@ n'appartiennent **pas** au catalogue et ne sont jamais écrasées par
 
 - [`README.md`](README.md) — racine du dépôt, section *Parcours recommandés*.
 - [`index.md`](index.md) — index des thématiques, *« quelles thématiques ? »*.
-- [`parcours.qmd`](parcours.qmd) — choix par contraintes d'infrastructure, *« avec quel matériel ? »*.
+- [`parcours.qmd`](docs/parcours.qmd) — choix par contraintes d'infrastructure, *« avec quel matériel ? »*.
 - [`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md) — catalogue vivant, *« quel notebook précis dans quelle série ? »*.

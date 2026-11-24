@@ -13,6 +13,19 @@ Deux bornes sont rendues, parce qu'un nom court et generique (`map`,
   cite_large  : tout nom trouve                     (borne haute)
   cite_strict : noms distinctifs (>=10 car. ou '_') (borne basse)
 
+Trois classes de modules sont rendues, pour ne pas confondre une metrique
+de citation et un verdict de visibilite (EPIC #11703, faux-noir de nom
+court) :
+
+  dark_modules       : borne STRICTE -- noir si aucune declaration
+                       distinctive (>=10 car. ou '_') n'est citee.
+  dark_modules_large : borne LARGE -- noir si AUCUNE declaration (tout nom)
+                       n'est citee ; le seul "noir" sans ambiguite.
+  dark_gray          : zone grise = strict - large. Modules "noirs" a la
+                       borne stricte mais cites par des noms courts seulement
+                       (pas de preuve qu'un carnet les enseigne) : le faux-noir
+                       de nom court, rendu nomme avec les noms courts trouves.
+
 CONTROLE POSITIF : le script verifie dans la meme invocation que des noms
 connus-presents sont bien extraits ET bien trouves, et sort en erreur
 sinon. Un zero rendu par un instrument casse est indiscernable d'un zero
@@ -57,6 +70,7 @@ DECL_RE = re.compile(
     r"([A-Za-z_][A-Za-z0-9_']*)"
 )
 TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_']*")
+HUNK_RE = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 # (nom, lake) connus presents dans les .lean ET cites par un notebook.
 POSITIVE_CONTROL = [("mimoObj", "mimo_lean"), ("flipAt", "mimo_lean")]
@@ -72,6 +86,74 @@ def is_distinctive(name: str) -> bool:
     return len(name) >= 10 or "_" in name
 
 
+def strip_lean_comments(text: str) -> str:
+    """Neutralise les commentaires Lean en conservant la structure des lignes.
+
+    Le contenu d'un commentaire est remplace par des espaces : une ligne de
+    PROSE qui commence par un mot-cle Lean (`structure existe, ...` dans une
+    docstring francaise) cesse d'etre lue comme une declaration, tandis
+    qu'une vraie declaration survit -- son nom precede toujours le commentaire.
+
+    Blocs `/- ... -/` (imbriques), commentaires `--` de fin de ligne, et
+    chaines `"..."` (un `--` dans une chaine n'est pas un commentaire).
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    depth = 0          # profondeur du bloc `/- ... -/`
+    in_string = False
+    while i < n:
+        ch = text[i]
+        if ch == "\n":
+            out.append(ch)
+            i += 1
+            in_string = False   # une chaine Lean ne traverse pas la ligne
+            continue
+        if depth > 0:
+            if text.startswith("/-", i):
+                depth += 1
+                out.append("  ")
+                i += 2
+                continue
+            if text.startswith("-/", i):
+                depth -= 1
+                out.append("  ")
+                i += 2
+                continue
+            out.append(" ")
+            i += 1
+            continue
+        if in_string:
+            out.append(ch)
+            if ch == "\\" and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if text.startswith("/-", i):
+            depth = 1
+            out.append("  ")
+            i += 2
+            continue
+        if text.startswith("--", i):
+            j = text.find("\n", i)
+            if j < 0:
+                j = n
+            out.append(" " * (j - i))
+            i = j
+            continue
+        if ch == '"':
+            in_string = True
+            out.append(ch)
+            i += 1
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def collect_declarations() -> dict[str, dict[str, set[str]]]:
     """lake -> module -> {noms de declarations}. Les siblings `_en.lean`
     (convention i18n #4980) sont ignores : meme substance, compte double."""
@@ -85,7 +167,9 @@ def collect_declarations() -> dict[str, dict[str, set[str]]]:
         lake = next((p for p in parts if p.endswith("_lean")), None)
         if lake is None:
             continue
-        for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+        for line in strip_lean_comments(
+            f.read_text(encoding="utf-8", errors="replace")
+        ).splitlines():
             m = DECL_RE.match(line)
             if m:
                 lakes[lake][f.name].add(m.group(2))
@@ -110,30 +194,46 @@ def collect_notebook_tokens(names: set[str]):
     return seen, per_nb, count
 
 
-def names_from_unified_diff(diff_text: str) -> dict[str, set[str]]:
+def names_from_unified_diff(diff_text: str, head_reader=None) -> dict[str, set[str]]:
     """Declarations AJOUTEES par un diff unifie, par fichier lake.
 
     Meme filtre que collect_declarations (exclusions canoniques, suffixe
     `_lean`, siblings `_en.lean` ignores) et meme DECL_RE : le signal PR et
     la metrique de tete ne peuvent pas diverger d'extracteur.
+
+    `head_reader(path) -> list[str] | None` rend les lignes du fichier a la
+    tete, commentaires neutralises. Il permet de ne pas lire une ligne de
+    PROSE ajoutee dans une docstring comme une declaration (le diff etant
+    produit avec `--unified=0`, il ne porte aucun contexte : la position
+    seule ne suffit pas). Sans lecteur, le comportement d'avant est conserve.
     """
     added: dict[str, set[str]] = collections.defaultdict(set)
     path: str | None = None
+    new_line = 0
+    cache: dict[str, list[str] | None] = {}
     for line in diff_text.splitlines():
         if line.startswith("+++ b/"):
             path = line[6:]
+            new_line = 0
             continue
         if line.startswith("+++") or line.startswith("---"):
+            continue
+        if line.startswith("@@"):
+            m = HUNK_RE.match(line)
+            new_line = int(m.group(1)) if m else 0
             continue
         if path is None:
             continue
         if not line.startswith("+"):
             if line.startswith("diff --git"):
                 path = None
+            elif line.startswith(" "):
+                new_line += 1
             continue
         m = DECL_RE.match(line[1:])
-        if m:
+        if m and _outside_comment(path, new_line, head_reader, cache):
             added[path].add(m.group(2))
+        new_line += 1
     out: dict[str, set[str]] = {}
     for p, names in added.items():
         if p.endswith("_en.lean") or _excluded(p):
@@ -143,6 +243,36 @@ def names_from_unified_diff(diff_text: str) -> dict[str, set[str]]:
             continue
         out[p] = names
     return out
+
+
+def _outside_comment(path: str, lineno: int, head_reader, cache) -> bool:
+    """La ligne `lineno` du fichier a la tete porte-t-elle sa declaration
+    HORS commentaire ? Sans lecteur, ou fichier illisible : `True` (on ne
+    masque rien -- une declaration reelle ne doit jamais disparaitre)."""
+    if head_reader is None:
+        return True
+    if path not in cache:
+        cache[path] = head_reader(path)
+    lines = cache[path]
+    if lines is None:
+        return True
+    idx = lineno - 1
+    if not (0 <= idx < len(lines)):
+        return True
+    return bool(DECL_RE.match(lines[idx]))
+
+
+def _git_head_reader(head: str):
+    """Lecteur des lignes d'un fichier a la tete, commentaires neutralises."""
+    def read(path: str) -> list[str] | None:
+        proc = subprocess.run(
+            ["git", "show", f"{head}:{path}"], cwd=ROOT,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if proc.returncode != 0:
+            return None
+        return strip_lean_comments(proc.stdout).splitlines()
+    return read
 
 
 def run_pr_diff(base: str, head: str) -> str:
@@ -158,7 +288,7 @@ def run_pr_diff(base: str, head: str) -> str:
 
 def main_pr_mode(base: str, head: str, out_path: str | None) -> int:
     diff_text = run_pr_diff(base, head)
-    added = names_from_unified_diff(diff_text)
+    added = names_from_unified_diff(diff_text, head_reader=_git_head_reader(head))
     all_names = set().union(*added.values()) if added else set()
     seen, _, n_notebooks = collect_notebook_tokens(all_names)
     if n_notebooks == 0:
@@ -169,8 +299,13 @@ def main_pr_mode(base: str, head: str, out_path: str | None) -> int:
     for p in sorted(added):
         lake = next(seg for seg in p.split("/") if seg.endswith("_lean"))
         for n in sorted(added[p]):
-            rows.append({"lake": lake, "file": p, "name": n, "cited": n in seen})
+            rows.append({
+                "lake": lake, "file": p, "name": n,
+                "cited": n in seen,                             # borne large
+                "cited_strict": n in seen and is_distinctive(n),  # borne stricte
+            })
     uncited = [r for r in rows if not r["cited"]]
+    gray = [r for r in rows if r["cited"] and not r["cited_strict"]]
 
     print(f"{n_notebooks} notebooks lus ; {len(rows)} declaration(s) ajoutee(s) "
           f"sur les lakes dans base...{head[:10]}")
@@ -178,8 +313,12 @@ def main_pr_mode(base: str, head: str, out_path: str | None) -> int:
         print("Aucune declaration ajoutee sur un lake -- rien a signaler.")
     for r in uncited:
         print(f"  AJOUTEE NON CITEE: {r['name']}  ({r['lake']}/{Path(r['file']).name})")
+    for r in gray:
+        print(f"  CITEE NOM COURT SEUL (zone grise): {r['name']}  "
+              f"({r['lake']}/{Path(r['file']).name})")
     if rows:
-        print(f"TOTAL ajoutees: {len(rows)}  non citees (borne large): {len(uncited)}")
+        print(f"TOTAL ajoutees: {len(rows)}  non citees (borne large): {len(uncited)}  "
+              f"zone grise (nom court seul): {len(gray)}")
 
     if out_path:
         Path(out_path).write_text(
@@ -235,8 +374,21 @@ def main() -> int:
         distinct = {n for n in names if is_distinctive(n)}
         cite_large = sum(1 for n in names if n in seen)
         cite_strict = sum(1 for n in distinct if n in seen)
+        # dark_modules : borne STRICTE (semantique d'origine) -- un module est
+        # noir si aucune de ses declarations DISTINCTIVES n'est citee. Les modules
+        # cites par des noms courts seulement tombent ici : d'ou la zone grise.
         dark = [m for m, v in sorted(lakes[lake].items())
                 if v and not any(n in seen and is_distinctive(n) for n in v)]
+        # dark_modules_large : borne LARGE -- noir seulement si AUCUNE declaration
+        # (tout nom) n'est citee ; le seul "noir" sans ambiguite.
+        dark_large = [m for m, v in sorted(lakes[lake].items())
+                      if v and not any(n in seen for n in v)]
+        # dark_gray : zone grise = strict - large. Modules "noirs" a la borne
+        # stricte mais cites par des noms courts (pas de preuve qu'un carnet les
+        # enseigne) : le faux-noir de nom court, rendu nomme + noms courts trouves.
+        large_set = set(dark_large)
+        dark_gray = {m: sorted(n for n in lakes[lake][m] if n in seen)
+                     for m in dark if m not in large_set}
         top = collections.Counter()
         for n in distinct & seen:
             top.update(per_nb.get(n, {}))
@@ -245,26 +397,37 @@ def main() -> int:
         out[lake] = {
             "declarations": len(names), "distinctive": len(distinct),
             "cite_large": cite_large, "cite_strict": cite_strict,
-            "modules": len(lakes[lake]), "dark_modules": dark,
+            "modules": len(lakes[lake]),
+            "dark_modules": dark,
+            "dark_modules_large": dark_large,
+            "dark_gray": dark_gray,
             "companion_notebook": companion[0][0] if companion else None,
         }
 
     print(f"{n_notebooks} notebooks lus, {len(lakes)} lakes, {len(owner)} declarations\n")
-    print(f"{'lake':24} {'decl':>5} {'large':>6} {'strict':>7} {'noirs':>6}  compagnon principal")
+    print(f"{'lake':24} {'decl':>5} {'large':>6} {'strict':>7} "
+          f"{'noirsS':>6} {'noirsL':>6} {'gris':>5}  compagnon principal")
     for lake, tot, cl, cs, dark, comp in sorted(rows, key=lambda r: r[3] / r[1] if r[1] else 1):
         if args.lake and lake != args.lake:
             continue
         c = comp[0][0] if comp else "-- AUCUN --"
-        print(f"{lake:24} {tot:5} {cl:6} {cs:7} {len(dark):3}/{out[lake]['modules']:<3} {c}")
+        print(f"{lake:24} {tot:5} {cl:6} {cs:7} {len(dark):6} "
+              f"{len(out[lake]['dark_modules_large']):6} {len(out[lake]['dark_gray']):5} {c}")
         if args.lake:
             for m in dark:
-                print(f"    module invisible: {m} ({len(lakes[lake][m])} declarations)")
+                gray = out[lake]["dark_gray"].get(m)
+                if gray:
+                    print(f"    zone grise (nom court): {m} -> {', '.join(gray)}")
+                else:
+                    print(f"    module invisible (strict): {m} "
+                          f"({len(lakes[lake][m])} declarations)")
 
     T = sum(r[1] for r in rows)
+    n_gray = sum(len(out[l]["dark_gray"]) for l in out)
     print(f"\nTOTAL {sum(r[2] for r in rows)}/{T} (borne haute)  "
           f"{sum(r[3] for r in rows)}/{T} (borne basse)  "
-          f"modules invisibles: {sum(len(r[4]) for r in rows)}/"
-          f"{sum(len(lakes[l]) for l in lakes)}")
+          f"modules invisibles (strict): {sum(len(r[4]) for r in rows)}/"
+          f"{sum(len(lakes[l]) for l in lakes)}  zone grise: {n_gray}")
 
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")

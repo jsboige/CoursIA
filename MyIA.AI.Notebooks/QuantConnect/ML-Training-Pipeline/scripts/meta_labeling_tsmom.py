@@ -44,7 +44,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from L1_tsmom import compute_tsmom_signal, compute_vol_scale  # noqa: E402
-from diebold_mariano import diebold_mariano_test  # noqa: E402
+from dm_test import diebold_mariano_test  # noqa: E402
 from panier_loader import PANIER_GROUPS, ensure_symbol  # noqa: E402
 from strategy_metrics import sharpe  # noqa: E402
 from voltarget_strategy_verdict import circular_block_diff, holm  # noqa: E402
@@ -340,22 +340,22 @@ def forecast_verdict(y: np.ndarray, probs: dict, base_rate: float) -> dict:
     for seed, p in probs.items():
         brier = float(np.mean((y - p) ** 2))
         edge = brier_base - brier
-        dm_less = diebold_mariano_test(y - p, y - base, loss_function="squared",
-                                       alternative="less", h=DM_H)
-        dm_greater = diebold_mariano_test(y - p, y - base, loss_function="squared",
-                                          alternative="greater", h=DM_H)
+        dm_less = diebold_mariano_test(y - p, y - base, loss_fn="mse",
+                                       alternative="less", horizon=DM_H)
+        dm_greater = diebold_mariano_test(y - p, y - base, loss_fn="mse",
+                                          alternative="greater", horizon=DM_H)
         hits = p > 0.5
         per_seed[str(seed)] = {
             "brier": round(brier, 6), "edge": round(edge, 6),
-            "dm_stat": round(float(dm_less["dm_stat"]), 4),
-            "dm_p_less": round(float(dm_less["p_value"]), 4),
+            "dm_stat": round(float(dm_less.dm_statistic), 4),
+            "dm_p_less": round(float(dm_less.p_value), 4),
             "auc": round(float(roc_auc_score(y, p)), 4),
             "precision_p_gt_half": (round(float(y[hits].mean()), 4) if hits.any() else None),
             "share_p_gt_half": round(float(hits.mean()), 4),
             "bias_mean_p_minus_y": round(float(np.mean(p - y)), 4)}
         edges.append(edge)
-        p_less.append(dm_less["p_value"])
-        p_greater.append(dm_greater["p_value"])
+        p_less.append(dm_less.p_value)
+        p_greater.append(dm_greater.p_value)
     mean, sd = float(np.mean(edges)), float(np.std(edges, ddof=1))
     med_less, med_greater = float(np.median(p_less)), float(np.median(p_greater))
     if mean > 0 and mean >= 2 * sd and med_less < 0.05:

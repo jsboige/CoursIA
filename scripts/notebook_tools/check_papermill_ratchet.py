@@ -17,6 +17,8 @@ Everything else is clean, by design of the issue body:
 - block changed or newly added (the executor rewrote it alongside outputs)
 - notebook added by the PR (no base blob; execution evidence itself is
   enforced by notebook-execution-required.yml, H.3)
+- outputs whose delta is exactly one cp1252 -> utf-8 reversion of the base
+  outputs (an encoding repair, no run happened; #23021, #23035)
 
 Usage:
     python check_papermill_ratchet.py <base-ref> [--json]
@@ -113,6 +115,60 @@ def papermill_block(nb):
     return json.dumps(block, sort_keys=True, ensure_ascii=False)
 
 
+def cell_papermill_signature(nb):
+    """Canonical hash of the per-cell ``metadata.papermill`` blocks.
+
+    papermill rewrites the top-level ``metadata.papermill`` AND the per-cell
+    block of every cell it executed. A branch that hand-rewrites the
+    top-level block alone -- the FORGED_BLOCK pattern of #21229/#21230/#21232
+    -- leaves the per-cell blocks identical to the base. Comparing the
+    signature is therefore a positive test: same signature + different
+    top-level block = hand-rewrite, regression. Same signature + same
+    top-level block = STALE_BLOCK (the original regression class). Different
+    signature + different top-level block = a real re-execution, the
+    legitimate BLOCK_MOVED path.
+
+    The signature hashes only the ``metadata.papermill`` field of each cell
+    (when present), in cell order. Cells without a ``metadata.papermill``
+    field contribute nothing -- both legs of a comparison share the same
+    empty-list contribution, so the signature stays stable across a
+    block-removal operation that targets only the top-level field.
+    """
+    parts = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cell_pm = (cell.get("metadata") or {}).get("papermill")
+        if cell_pm is None:
+            continue
+        parts.append(json.dumps(cell_pm, sort_keys=True, ensure_ascii=False))
+    return "\n".join(parts)
+
+
+def cell_papermill_blocks(nb):
+    """Per-cell papermill block serializations, in code-cell order.
+
+    Returns a list of ``json.dumps(...)`` strings, one per code cell that
+    carries a ``metadata.papermill`` block. Cells without a per-cell block
+    are skipped (the indices do NOT align with code-cell positions; a
+    parallel walk with ``exec_evidence`` is required to align them). A
+    re-execution rewrites every entry together with the top-level block;
+    a hand-rewrite of the top-level block alone leaves the list identical
+    to the base. The FORGED_BLOCK partial case (c2187-ask, refine #21299)
+    is one entry differing on outputs but identical to base. The function
+    is paired with ``_per_cell_forged`` in ``classify``.
+    """
+    parts = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cell_pm = (cell.get("metadata") or {}).get("papermill")
+        if cell_pm is None:
+            continue
+        parts.append(json.dumps(cell_pm, sort_keys=True, ensure_ascii=False))
+    return parts
+
+
 # --- sanctioned output strips -------------------------------------------
 # Three pre-commit hooks in .pre-commit-config.yaml rewrite committed cell
 # outputs without any re-execution. Two of them touch the code-cell outputs
@@ -137,15 +193,31 @@ def papermill_block(nb):
 # tools, and the result must equal the head evidence BYTE FOR BYTE. A
 # hand-edited output does not survive it, because no strip tool produces a
 # hand-edit.
+#
+# The replay uses strip_probe_banner's "both" variant set, not its "probe"
+# default: the hook may run a dedicated variant (discovery, #23530), and a
+# strip the hook sanctions must be a strip this gate recognises.
 STRIP_TOOLS = ("strip_machine_paths", "strip_probe_banner")
 
 
-def stripped_evidence(content):
+def stripped_evidence(content, variant="both"):
     """exec_evidence of `content` after the output-touching strip hooks.
 
     Returns None when the tools cannot run, so a failure here can only leave
     the caller on its previous (stricter) verdict - never turn a FAIL into a
     PASS by accident.
+
+    ``variant`` is forwarded to ``strip_probe_banner.strip_banner_in_place``
+    and defaults to ``"both"``, NOT to that function's own ``"probe"``
+    default. The banner hook runs the variant the commit chose for the file
+    (``strip-probeaddresses-banner --variant discovery`` on the Sudoku sweep,
+    #23530), so replaying the base through the ``probe`` set alone left a
+    discovery strip unrecognised and turned a sanctioned normalization into
+    six ``STALE_BLOCK`` regressions plus one ``BLOCK_REMOVED`` (#23677,
+    measured by the review of 2026-10-31T08:14Z). ``"both"`` replays every
+    sanctioned variant, which is the hook's own surface: a strip the hook can
+    apply is a strip this gate must recognise. A hand-edited output still does
+    not survive the equality test, since no strip tool produces one.
     """
     handle, tmp = tempfile.mkstemp(suffix=".ipynb")
     os.close(handle)
@@ -154,7 +226,7 @@ def stripped_evidence(content):
         import strip_machine_paths
         import strip_probe_banner
         strip_machine_paths.strip_in_place(tmp)
-        strip_probe_banner.strip_banner_in_place(tmp)
+        strip_probe_banner.strip_banner_in_place(tmp, variant)
         return exec_evidence(json.loads(Path(tmp).read_text(encoding="utf-8")))
     except Exception:
         return None
@@ -165,39 +237,99 @@ def stripped_evidence(content):
             pass
 
 
-def state_at_base(base, path, cwd=None):
-    """(evidence, block) of the notebook blob at base ref.
+# A cp1252 host that decoded UTF-8 output bytes produced mojibake; #23021
+# repaired it by reverting the round trip. The repair touches output strings
+# only: no execution_count moves, no number changes. Replaying the base
+# through the SAME reversion is therefore an exact test, not a heuristic --
+# the encoding-repair analogue of the strip-tool replay above.
+#
+# Both errors are swallowed so a string that is not pure mojibake comes back
+# UNCHANGED rather than approximated. A real accented word ("cree" with an
+# accent) fails to encode to cp1252-as-utf8 and is returned as-is; an em dash
+# likewise. Only a genuine "a-hat, euro, em dash" sequence round-trips back
+# to the em dash it came from.
+def revert_cp1252(text):
+    """Undo one cp1252 -> utf-8 mojibake round trip, or return `text` as-is."""
+    try:
+        return text.encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
 
-    Returns ("ABSENT", None, None) when the file does not exist at base and
-    ("PARSE_ERROR", None, None) on invalid JSON.
+
+def _revert_output_strings(node):
+    """Deep-copy of `node` with every string passed through `revert_cp1252`."""
+    if isinstance(node, str):
+        return revert_cp1252(node)
+    if isinstance(node, list):
+        return [_revert_output_strings(item) for item in node]
+    if isinstance(node, dict):
+        return {key: _revert_output_strings(value)
+                for key, value in node.items()}
+    return node
+
+
+def encoding_reverted_evidence(content):
+    """exec_evidence of `content` after the cp1252 reversion of its outputs.
+
+    Returns None when the blob does not parse, so a failure here can only
+    leave the caller on its previous (stricter) verdict - never turn a FAIL
+    into a PASS by accident.
+
+    Only the ``outputs`` of the code cells are reverted. ``execution_count``
+    is left untouched on purpose: the repair of #23021 does not move it, so
+    a branch that DID move it must not match this replay.
     """
-    content = git("show", f"{base}:{path}", cwd=cwd)
-    if content is None:
-        return "ABSENT", None, None, None
     try:
         nb = json.loads(content)
     except Exception:
-        return "PARSE_ERROR", None, None, None
+        return None
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        if "outputs" in cell:
+            cell["outputs"] = _revert_output_strings(cell["outputs"])
+    return exec_evidence(nb)
+
+
+def state_at_base(base, path, cwd=None):
+    """(status, evidence, block, ev_stripped, ev_reverted, cell_sig, cell_pms).
+
+    Returns ("ABSENT", None, None, None, None, None, None) when the file does
+    not exist at base and ("PARSE_ERROR", ...) on invalid JSON.
+    """
+    content = git("show", f"{base}:{path}", cwd=cwd)
+    if content is None:
+        return "ABSENT", None, None, None, None, None, None
+    try:
+        nb = json.loads(content)
+    except Exception:
+        return "PARSE_ERROR", None, None, None, None, None, None
     # Lazy: the strip tools cost ~150 ms per notebook and are only ever
     # consulted on the STALE_BLOCK branch, which is the rare one. A thunk
     # keeps a 200-notebook PR at the cost it had before this exemption.
+    # The encoding replay is cheap (a JSON round trip, no subprocess) but
+    # sits on the same rare branch, so it follows the same shape.
     return ("OK", exec_evidence(nb), papermill_block(nb),
-            lambda: stripped_evidence(content))
+            lambda: stripped_evidence(content),
+            lambda: encoding_reverted_evidence(content),
+            cell_papermill_signature(nb), cell_papermill_blocks(nb))
 
 
 def state_at_head(path, cwd=None):
-    """(status, evidence, block) of the working-tree notebook."""
+    """(status, evidence, block, ev_stripped, ev_reverted, cell_sig, cell_pms)."""
     try:
         nb = json.loads((Path(cwd or ".") / path).read_text(encoding="utf-8"))
     except Exception:
-        return "PARSE_ERROR", None, None, None
-    return "OK", exec_evidence(nb), papermill_block(nb), None
+        return "PARSE_ERROR", None, None, None, None, None, None
+    return "OK", exec_evidence(nb), papermill_block(nb), None, None, \
+        cell_papermill_signature(nb), cell_papermill_blocks(nb)
 
 
 def classify(base_state, head_state):
-    """Verdict of one changed notebook. Regression iff stale block ridden."""
-    b_status, b_ev, b_block, b_ev_stripped = base_state  # 4th is a thunk
-    h_status, h_ev, h_block, _ = head_state
+    """Verdict of one changed notebook. Regression iff stale or forged block ridden."""
+    (b_status, b_ev, b_block, b_ev_stripped, b_ev_reverted,
+     b_cell_sig, b_cell_pms) = base_state
+    h_status, h_ev, h_block, _, _, h_cell_sig, h_cell_pms = head_state
     if b_status == "ABSENT":
         return "ADDED", False
     if b_status == "PARSE_ERROR" or h_status == "PARSE_ERROR":
@@ -214,12 +346,91 @@ def classify(base_state, head_state):
         # execution that produced these outputs, minus a machine-path leak
         # that no re-execution could have removed.
         return "OUTPUTS_STRIPPED", False
+    if b_ev_reverted is not None and h_ev == b_ev_reverted():
+        # The whole delta is what one cp1252 -> utf-8 reversion of the base
+        # outputs produces. An encoding repair runs no notebook, so the block
+        # is not stale - it still describes the execution that produced these
+        # outputs, a few mojibake strings later.
+        #
+        # A hand-edited output does not survive this test, for the same reason
+        # it does not survive the strip replay: reverting the base cannot
+        # invent a number, a float or a sentence. Strings that are not pure
+        # mojibake come back unchanged, so the equality can hold only on the
+        # reverted ones. #23035 positive control covers exactly that.
+        return "OUTPUTS_ENCODING_REPAIRED", False
     if h_block == b_block:
         # Outputs changed but the block is byte-identical: it describes the
         # previous run, not the one that produced the committed outputs.
         return "STALE_BLOCK", True
-    # Block changed or newly written alongside the new outputs.
+    # h_block != b_block at this point (top-level block changed). A real
+    # papermill re-execution also rewrites every per-cell papermill block;
+    # a hand-rewrite of the top-level block alone leaves the per-cell
+    # signature identical to the base. #21229/#21230/#21232 measured on
+    # 18/10 all rode that path. #21232: 16.0 s exactly, microsecond-identical
+    # end_time, no cell-level block touched - the FORGED_BLOCK class.
+    # The guard requires b_cell_pms to be non-empty: a notebook with a
+    # top-level metadata.papermill but NO per-cell blocks (legacy papermill
+    # versions, or papermill run that pre-dates the per-cell block write)
+    # cannot be a hand-rewrite of the top-level -- the per-cell layer is
+    # simply absent. Falling through to BLOCK_MOVED preserves the legacy
+    # green path for such notebooks (issue #11155 contract). #11155
+    # regression reproduced on test_block_moved_passes without this guard
+    # (Hermes review c2190, run 39179203301).
+    if (h_cell_sig == b_cell_sig and b_block is not None
+            and b_cell_pms):
+        return "FORGED_BLOCK", True
+    # Per-cell check (c2187-ask, refine #21299): the global signature above
+    # is the all-identical case. Mixed cases -- a hand-rewriter that touched
+    # the top-level AND some per-cell blocks but left at least one changed-
+    # output cell's per-cell block byte-identical to the base -- are
+    # FORGED_BLOCK too. A real re-execution rewrites every per-cell block
+    # together with the top-level one. #21345.
+    if (b_block is not None and b_cell_pms is not None
+            and h_cell_pms is not None
+            and _per_cell_forged(b_ev, h_ev, b_cell_pms, h_cell_pms)):
+        return "FORGED_BLOCK", True
     return "BLOCK_MOVED" if b_block is not None else "BLOCK_ADDED", False
+
+
+def _per_cell_forged(b_ev, h_ev, b_cell_pms, h_cell_pms):
+    """True iff a cell with changed output carries an identical per-cell block.
+
+    ``b_ev`` and ``h_ev`` are the exec_evidence strings (one line per code
+    cell). ``b_cell_pms`` and ``h_cell_pms`` are parallel lists of
+    serialized per-cell ``metadata.papermill`` blocks, where the i-th entry
+    is the block of the i-th code cell that carries one (cells without a
+    per-cell block are skipped). A real papermill re-execution rewrites
+    every such block together with the top-level one; a hand-rewrite of
+    the top-level block alone leaves them identical. The global signature
+    check is the special case where every entry is identical; this helper
+    catches the partial case.
+    """
+    b_lines = (b_ev or "").split("\n")
+    h_lines = (h_ev or "").split("\n")
+    b_idx = 0
+    h_idx = 0
+    # Walk code cells in order. b_lines[i] / h_lines[i] are the per-cell
+    # signatures; b_cell_pms[b_idx] / h_cell_pms[h_idx] are the per-cell
+    # papermill blocks of those code cells that carry one (advancing
+    # independently on each side).
+    for i in range(max(len(b_lines), len(h_lines))):
+        b_line = b_lines[i] if i < len(b_lines) else None
+        h_line = h_lines[i] if i < len(h_lines) else None
+        b_pm = b_cell_pms[b_idx] if b_idx < len(b_cell_pms) else None
+        h_pm = h_cell_pms[h_idx] if h_idx < len(h_cell_pms) else None
+        # If the cell has a per-cell papermill block in BOTH sides AND
+        # those blocks are byte-identical AND the cell's outputs changed,
+        # it's the FORGED_BLOCK signal. We require a per-cell block on
+        # both sides because a cell newly given a per-cell block by a
+        # legitimate re-execution is the BLOCK_MOVED path.
+        if (b_pm is not None and h_pm is not None
+                and b_line != h_line and b_pm == h_pm):
+            return True
+        if b_pm is not None:
+            b_idx += 1
+        if h_pm is not None:
+            h_idx += 1
+    return False
 
 
 def ratchet(base, cwd=None):
@@ -269,11 +480,21 @@ def main():
 
     if regressions:
         for r in regressions:
-            print(f"::error file={r['notebook']}::outputs/execution_count "
-                  f"changed but the metadata.papermill block is identical to "
-                  f"{args.base} - the block describes the previous run. "
-                  f"Re-execute the notebook via an executor that rewrites the "
-                  f"block, or remove the block", file=sys.stderr)
+            verdict = r["verdict"]
+            if verdict == "FORGED_BLOCK":
+                print(f"::error file={r['notebook']}::top-level "
+                      f"metadata.papermill block changed but the per-cell "
+                      f"papermill blocks are identical to {args.base} - a "
+                      f"real papermill run rewrites both layers. The "
+                      f"top-level block was hand-rewritten. Re-execute the "
+                      f"notebook via an executor that rewrites both, or "
+                      f"revert the hand-rewrite", file=sys.stderr)
+            else:
+                print(f"::error file={r['notebook']}::outputs/execution_count "
+                      f"changed but the metadata.papermill block is identical to "
+                      f"{args.base} - the block describes the previous run. "
+                      f"Re-execute the notebook via an executor that rewrites the "
+                      f"block, or remove the block", file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 

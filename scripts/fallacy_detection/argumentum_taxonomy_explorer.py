@@ -8,7 +8,7 @@ This module replicates, in native CoursIA code, the **method** of the 6
 Why a native replica (and not "make the plugin importable")
 -----------------------------------------------------------
 The plugin lives under
-``MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/`` as a
+``MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/`` as a
 **verbatim vendored copy** of the EPITA ``2025-Epita-Intelligence-Symbolique``
 project (see ``NOTICE-EPITA``).  Every file carries the covenant::
 
@@ -44,7 +44,7 @@ operations on the real 1408-node tree.
 
 ``reduction_measure`` (#13573) bridges this module to the Planners series'
 search-space-reduction thesis (``Planners/04-NeuroSymbolic/
-Planners-10b-LLM-Space-Reducer.ipynb``): the same structural question -- how
+Planners-10b-LLM-Space-Reducer-Python.ipynb``): the same structural question -- how
 much reading does a guide that decides WHERE to descend save over a
 systematic scan -- answered deterministically on the taxonomy (naive vs
 oracle vs first-child bounds; no LLM call, see the method's docstring).
@@ -76,7 +76,7 @@ from typing import Optional
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_TAXO = _REPO_ROOT / (
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/"
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/"
     "data/argumentum_fallacies_taxonomy.csv"
 )
 

@@ -75,6 +75,46 @@ def test_aggregate_sales_growth_excludes_nonpositive_caps():
     assert asg_helpers.aggregate_sales_growth(growth, pd.Series(0.0, index=growth.index)) is None
 
 
+def test_effective_market_cap_direct_positive_wins():
+    # Capitalisation directe strictement positive -> renvoyee telle quelle,
+    # le repli ne la remplace jamais.
+    assert asg_helpers.effective_market_cap(123.4, 10.0, 2.0, 6.17) == 123.4
+    assert asg_helpers.effective_market_cap(1e-9, 10.0, 2.0, 6.17) == 1e-9
+
+
+def test_effective_market_cap_fallback_reconstructs():
+    # market_cap vide ou non positive (#21333, avant mi-2009) -> repli
+    # price * split_factor * shares_outstanding (sonde QC 38066227).
+    expected = 10.0 * 2.0 * 6.17
+    for empty in (None, 0.0, -5.0, float("nan")):
+        value = asg_helpers.effective_market_cap(empty, 10.0, 2.0, 6.17)
+        assert value is not None
+        assert abs(value - expected) < 1e-9
+
+
+def test_effective_market_cap_unusable_returns_none():
+    # Un facteur du repli manquant ou NaN -> aucune capitalisation.
+    assert asg_helpers.effective_market_cap(None, None, 2.0, 6.17) is None
+    assert asg_helpers.effective_market_cap(None, 10.0, float("nan"), 6.17) is None
+    assert asg_helpers.effective_market_cap(None, 10.0, 2.0, None) is None
+    # Produit non positif -> None : jamais de cap negative ou nulle.
+    assert asg_helpers.effective_market_cap(None, 10.0, 2.0, 0.0) is None
+    assert asg_helpers.effective_market_cap(None, -10.0, 2.0, 6.17) is None
+
+
+def test_aggregate_sales_growth_pondere_les_caps_reconstruites():
+    # Integration #21336 : une coupe sans market_cap directe (toutes NaN)
+    # etait inexploitable ; les caps reconstruites par le repli ponderent
+    # l'ASG comme des caps directes.
+    growth = _cross_section()
+    empty_caps = pd.Series(np.nan, index=growth.index)
+    assert asg_helpers.aggregate_sales_growth(growth, empty_caps) is None
+    fallback_caps = pd.Series(1.0, index=growth.index)
+    value = asg_helpers.aggregate_sales_growth(growth, fallback_caps)
+    assert value is not None
+    assert abs(value - 0.15) < 1e-12
+
+
 def test_fit_expanding_ols_recovers_relationship_with_one_month_lag():
     # Serie ASG aleatoire (autocorrelation nulle) : seul l'appariement
     # retarde d'un mois peut retrouver exactement (alpha, beta).

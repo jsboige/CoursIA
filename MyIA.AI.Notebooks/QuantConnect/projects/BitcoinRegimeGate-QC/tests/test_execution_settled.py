@@ -598,5 +598,35 @@ def test_references_sixty40_isolated_from_settled_arm():
     assert alg.acquire_count == 0
 
 
+@pytest.mark.parametrize("mode", ["spy", "sixty40"])
+def test_reference_empty_slice_does_not_consume_month(mode):
+    alg = _make(mode=mode)
+    alg.ref_symbols = {"SPY": SPY} if mode == "spy" else {"SPY": SPY, "IEF": IEF}
+    alg.shadow_symbol = SPY
+    alg.time = datetime(2020, 2, 3, 0, 0)
+    alg.on_data(_Slice([]))
+    assert alg._ref_month == -1
+    assert alg.submitted == []
+    alg.on_data(_Slice([BTC]))  # Une barre hors univers ne suffit pas.
+    assert alg._ref_month == -1
+    assert alg.submitted == []
+    alg.time = datetime(2020, 2, 3, 16, 0)
+    alg.on_data(_Slice([SPY]))
+    expected = [(SPY, 1.0)] if mode == "spy" else [(SPY, 0.6), (IEF, 0.4)]
+    assert alg.submitted == expected
+    assert alg._ref_month == 2
+    alg.on_data(_Slice([SPY]))
+    assert alg.submitted == expected  # Une seule decision dans le mois.
+
+
+def test_reference_ief_bar_allows_rebalance():
+    alg = _make(mode="sixty40")
+    alg.ref_symbols = {"SPY": SPY, "IEF": IEF}
+    alg.shadow_symbol = SPY
+    alg.on_data(_Slice([IEF]))
+    assert alg.submitted == [(SPY, 0.6), (IEF, 0.4)]
+    assert alg._ref_month == 1
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

@@ -18,6 +18,8 @@ Une Pull Request associée est facultative, mais toujours bienvenue. Une issue b
 
 Vous pouvez aussi résoudre un exercice proposé dans un notebook et soumettre votre correction par Pull Request. Indiquez précisément le notebook et l'exercice concernés, puis fournissez une solution exécutable accompagnée d'une courte explication du raisonnement.
 
+Première fois sur GitHub ? Suivez le [tutoriel pas à pas](docs/TUTORIEL-GITHUB-TP.md) : parcours de base 100 % navigateur (compte, fork, branche, notebook, dépôt, Pull Request), sans ligne de commande — avec une variante locale dans VS Code (extensions Jupyter ou Polyglot Notebooks).
+
 Après validation :
 
 1. la correction devient un **exemple guidé** dans le notebook ;
@@ -25,6 +27,18 @@ Après validation :
 3. un nouvel exercice non résolu, portant sur le même objectif et d'une difficulté comparable, est ajouté afin de préserver la progression pédagogique.
 
 Les mainteneurs et leurs agents peuvent effectuer cette transformation lors de l'intégration. Vous n'avez donc pas à fabriquer vous-même l'exercice de remplacement ni à maîtriser toutes les conventions internes du dépôt.
+
+### 3. Choisir un défi court
+
+Les exercices ouverts à la contribution sont étiquetés [`good first issue`](https://github.com/jsboige/CoursIA/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Chacun tient en une seule Pull Request et se lit en trois parties, les mêmes que le [gabarit de défi court](.github/ISSUE_TEMPLATE/defi-court.yml) :
+
+| Partie | Ce qu'elle contient |
+|---|---|
+| **Énoncé** | le résultat attendu, en un paragraphe — pas la méthode |
+| **Carnet de départ** | le chemin du carnet et la cellule où commencer |
+| **Critère de réussite vérifiable** | la commande ou la valeur qui tranche, sans jugement de goût |
+
+Un défi qui ne porte pas ces trois parties n'est pas encore prêt : signalez-le en commentaire plutôt que de deviner ce qui est attendu. Si vous voulez proposer un défi vous-même, utilisez le gabarit : il garantit qu'un autre contributeur pourra le reprendre sans vous.
 
 ## Comment vos contributions sont traitées
 

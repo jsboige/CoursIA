@@ -111,13 +111,13 @@ The surreals carry full field operations:
 Every dyadic rational embeds into the surreals via `Dyadic.toIGame`.
 The dyadic surreals are precisely those with finite birthday.
 -/
-#check @Dyadic.toIGame
+#check @Dyadic.toIGame      -- Embedding of dyadic rationals into IGame
 
 /-! ### Ordinal Embedding
 
 Every ordinal embeds into the surreals via `NatOrdinal.toSurreal`.
 -/
-#check @NatOrdinal.toSurreal
+#check @NatOrdinal.toSurreal  -- NatOrdinal ↪o Surreal
 
 /-! ## 3. Nimbers
 
@@ -138,8 +138,8 @@ theorem add_def (a b : Nimber) :
     a + b = sInf {x | (∃ a' < a, a' + b = x) ∨ ∃ b' < b, a + b' = x}ᶜ
 ```
 -/
-#check @Nimber.add_def
-#check @Nimber.exists_of_lt_add
+#check @Nimber.add_def          -- Definition of nim addition via mex
+#check @Nimber.exists_of_lt_add -- Converse: every smaller value is reached
 
 /-! ### Nimber Field
 

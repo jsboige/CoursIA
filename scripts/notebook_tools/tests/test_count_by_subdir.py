@@ -96,9 +96,11 @@ class TestCmdCountBySubdir:
         assert rc == 0
         out = buf.getvalue()
         assert "Search" in out
-        # Search hub has 4 documented sub-folders per audit c.1331+6.
-        assert "Applications" in out
+        # Search hub sub-folders after the App-32 → Langlands migration (#19253).
+        # The human-readable line lists the three largest sub-folders only.
         assert "Part1-Foundations" in out
+        assert "Part3-Cas-pratiques" in out
+        assert "Applications" not in out
 
     def test_real_repo_check_readme_search_ok(self):
         """Search hub check-readme: wrapper status is logically consistent with
@@ -131,16 +133,41 @@ class TestCmdCountBySubdir:
             assert "MISMATCH" in out
 
     def test_real_repo_check_readme_all(self):
-        """--check-readme across all 10 series produces a table with at least
-        one OK and may include MISMATCH entries (audit signal)."""
+        """--check-readme across all series: every row's status is logically
+        consistent with the README count the primitives read (See #9826).
+
+        The former ``assert "OK" in out`` held only because ONE series (IIT)
+        happened to have a fresh ``CATALOG-STATUS`` marker while every other
+        series drifted. Any PR adding, removing or moving an IIT notebook then
+        turned the whole table into MISMATCH and this test red, although the
+        marker is regenerated only on ``main`` by ``catalog-cron.yml`` and must
+        stay byte-identical to ``main`` on a feature branch: a deadlock for
+        every cross-series move (measured on #26742 and #26779). The assertion
+        is now per row, on the comparison mechanism, never on marker freshness.
+        """
         buf = io.StringIO()
         with redirect_stdout(buf):
             rc = cmd_count_by_subdir(_args(check_readme=True))
         assert rc == 0
         out = buf.getvalue()
-        assert "OK" in out
-        # Series header is present
         assert "Series" in out
+        rows = {}
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) < 4 or not parts[1].isdigit():
+                continue
+            if not (NOTEBOOKS_DIR / parts[0]).is_dir():
+                continue  # header, rule or the "Total:" line
+            rows[parts[0]] = (int(parts[1]), parts[2], " ".join(parts[3:]))
+        assert len(rows) >= 5, f"expected a row per series, got {sorted(rows)}"
+        for name, (actual, declared_str, status) in rows.items():
+            declared = extract_readme_count(NOTEBOOKS_DIR / name / "README.md")
+            if declared is None:
+                assert (declared_str, status) == ("?", "no count"), name
+            else:
+                assert declared_str == str(declared), name
+                expected = "OK" if actual == declared else "MISMATCH"
+                assert status == expected, (name, actual, declared, status)
 
     def test_real_repo_json_single_series(self):
         buf = io.StringIO()
@@ -151,8 +178,14 @@ class TestCmdCountBySubdir:
         assert "Search" in payload
         assert payload["Search"]["total"] >= 100  # Search = 115 currently
         assert "by_subfolder" in payload["Search"]
-        # Subfolder keys are documented folder names.
-        for sub in ["Applications", "Part1-Foundations", "Part4-Metaheuristics"]:
+        # Subfolder keys are documented folder names (#19253 layout).
+        for sub in [
+            "Part1-Foundations",
+            "Part2-CSP",
+            "Part3-Cas-pratiques",
+            "Part4-Metaheuristics",
+            "Part5-Frontieres",
+        ]:
             assert sub in payload["Search"]["by_subfolder"]
 
     def test_real_repo_json_check_readme_enriched(self):
@@ -271,5 +304,17 @@ class TestDelegationContract:
         import inspect
         src = inspect.getsource(fn)
         assert "SERIES_ORDER" in src
-        # SERIES_ORDER in count_notebooks_by_series: 11 entries (incl. EPF)
-        assert len(SERIES_ORDER) == 11
+        # The list is duplicated across three sibling modules (count / coverage /
+        # catalog). The invariant worth guarding is that the copies never
+        # diverge -- not a fixed length: hard-coding the count made every series
+        # addition (e.g. Physique, EPIC #23161) a red test for no reason.
+        assert SERIES_ORDER, "SERIES_ORDER must not be empty"
+        assert len(SERIES_ORDER) == len(set(SERIES_ORDER)), "no duplicate serie"
+        import catalog_coverage
+        import generate_catalog
+        assert catalog_coverage.SERIES_ORDER == SERIES_ORDER, (
+            "catalog_coverage.SERIES_ORDER drifted from count_notebooks_by_series"
+        )
+        assert generate_catalog.SERIES_ORDER == SERIES_ORDER, (
+            "generate_catalog.SERIES_ORDER drifted from count_notebooks_by_series"
+        )

@@ -15,7 +15,7 @@ Mini-projet complet : **0 sorry, 0 axiome** au-delà des axiomes du cœur de Lea
 - **Sorry** : **0** — chaque preuve est close
 - **Build** : `lake build Sensitivity` — SUCCESS (v4.33.0, #14773 ; 1975 jobs v4.32.0, #10997) ; `#print axioms Sensitivity.huang_degree_theorem` (+ `_en`) = `[propext, Classical.choice, Quot.sound]` — zéro `sorryAx`
 - **Dépendances** : Mathlib4
-- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 5 fichiers `.lean` FR canoniques (racine agrégatrice + 4 modules) + 5 siblings `*_en.lean` miroirs sur `main` (`Sensitivity_en.lean`, `Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — la racine agrégatrice et ses modules `.lean` FR canoniques, chacun avec son sibling `*_en.lean` miroir sur `main` (`Sensitivity_en.lean`, `Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
 
 ## Ce qui est formalisé
 
@@ -99,6 +99,32 @@ flowchart TD
   le théorème du degré.
 - Infrastructure complète hypercube + espace vectoriel + opérateurs (0 sorry).
 
+## Croisement — Aaronson–Ambainis, le chaînon inverse
+
+La conjecture d'**Aaronson–Ambainis** (2014), prouvée formellement et publiée le
+06/11/2026 dans le dépôt
+[`physical-superintelligence/aaronson-ambainis`](https://github.com/physical-superintelligence/aaronson-ambainis)
+(Apache-2.0, commit `2a6ceae`), traite le **même objet** — une fonction bornée
+sur le cube `{0,1}^N` — et referme la boucle dans l'autre sens : là où Huang
+borne le degré par la sensibilité (`deg(f) ≤ s(f)²`), Aaronson–Ambainis impose
+qu'un polynôme borné `0 ≤ p ≤ 1` de degré `d` et de variance `≥ ε` possède une
+**variable influente** :
+
+> `Inf_i[p] ≥ (8√15 / (125 π⁴)) · ε^{5/2} / d⁶ ≥ (ε/d)⁷`
+
+Influences contre sensibilité, même cube, même vocabulaire Fourier.
+
+Statut : **cité, non vendu** — la formalisation amont (`Conjecture.lean`, qui
+n'importe que Mathlib, 0 sorry, vérifiée par deux noyaux indépendants et un
+comparateur) n'est pas portée dans notre lac ; notre grain est la pédagogie et
+la comparaison. Les pins coïncident (`v4.33.0`, Mathlib v4.33.0), ce qui rend
+la lecture croisée des déclarations possible sans builder le dépôt amont.
+
+Le carnet compagnon qui enseigne l'énoncé et la chaîne en 4 maillons à l'échelle
+exécutable, avec le contrepoint Huang relu depuis ce lac :
+`Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`, dans la série
+[Complexity](../../../InformationCalcul/Complexity/README.md) (#25004).
+
 ## Notes
 
 - La conjecture de sensibilité a été posée par Nisan et Szegedy (1992) et résolue
@@ -116,6 +142,10 @@ lake build Sensitivity
 ## Voir aussi
 
 - **[`SymbolicAI/Lean`](../README.md)** — index de la série parente
+- **Carnet compagnon AA** :
+  `Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`, dans la série
+  [Complexity](../../../InformationCalcul/Complexity/README.md) —
+  la conjecture d'Aaronson–Ambainis enseignée à l'échelle exécutable (#25004)
 - Huang (2019), *Induced subgraphs of hypercubes and a proof of the Sensitivity
   Conjecture*, Ann. Math. 190(3).
 - Nisan & Szegedy (1992), *On the degree of Boolean functions as real

@@ -98,7 +98,7 @@ lemma finsum_gridF_sq {N : ℕ} (hN : 0 < N) : ∑ᶠ j, gridF N j ^ 2 = 1 := by
   · rw [Function.support_pow _ two_ne_zero]
     exact support_gridF_subset N
 
-/-- `gridF N ^ 2` has total mass `1`, computed on any `Finset` containing the
+/-- The square of `gridF N` has total mass `1`, computed on any `Finset` containing the
 support of the translate `gridF N (· - m)`. -/
 lemma sum_gridF_sub_sq {N : ℕ} (hN : 0 < N) (m : ℤ) {K : Finset ℤ}
     (hK : Function.support (fun j ↦ gridF N (j - m)) ⊆ K) :
@@ -108,7 +108,7 @@ lemma sum_gridF_sub_sq {N : ℕ} (hN : 0 < N) (m : ℤ) {K : Finset ℤ}
       (finsum_gridF_sq hN)
   · rwa [Function.support_pow _ two_ne_zero]
 
-/-- `gridF N ^ 2` has total mass `1`, computed on any `Finset` containing its
+/-- The square of `gridF N` has total mass `1`, computed on any `Finset` containing its
 support. -/
 lemma sum_gridF_sq {N : ℕ} (hN : 0 < N) {K : Finset ℤ} (hK : Function.support (gridF N) ⊆ K) :
     ∑ j ∈ K, gridF N j ^ 2 = 1 := by

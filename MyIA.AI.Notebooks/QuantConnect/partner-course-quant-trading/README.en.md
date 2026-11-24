@@ -173,37 +173,48 @@ These notebooks illustrate the QuantBook -> QCAlgorithm workflow : idea -> resea
 
 ---
 
-## ML Research 2026 - Validated Models (Pipeline V2)
+## ML Research 2026 - Pipeline V2 models and their revalidation
 
 The ML research pipeline (`ML-Training-Pipeline/`) follows a 7-stage curriculum
-based on *Hands-On AI Trading* (Broad/QuantConnect, 2025). Models below passed
-the **S1 (vol-forecasting)** gate with significant Diebold-Mariano test
-(p < 0.05, >= 4 seeds, walk-forward 5-fold).
+based on *Hands-On AI Trading* (Broad/QuantConnect, 2025). The models below had passed
+the 2026-05-16 gate (walk-forward 5-fold, 4 seeds). None held up under revalidation: the
+gate p-values came from a sign-test over 84 combinations, not from the Diebold-Mariano test
+this section announced, and the "strict OOS 2027" label matched no measurement (#21055).
+Details and removal dates are in the [pipeline README](../ML-Training-Pipeline/README.en.md).
 
-### S1 KEEPERS - Multi-coin crypto volatility forecasting (BEATS)
+### S1 - Multi-coin crypto volatility forecasting (keepers removed)
 
-| Model | Task | Verdict | DM p-value | Architecture |
+| Model | Task | Verdict | Gate p-value (sign-test) | Architecture |
 |-------|------|---------|-----------|--------------|
-| **M12 HAR-RV-J** | 5-day vol forecast | BEATS RW + GARCH | **0.0015** | Heterogeneous Autoregressive + Jump component (Corsi 2009) |
-| **M15 LSTM h=32** | Short-scale vol forecast | BEATS RW | **0.0107** | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
+| **M12 HAR-RV-J** | 5-day vol forecast | Gate: BEATS RW + GARCH. Revalidation: **NO BEATS** (0/7, #16004) | 0.0015 | Heterogeneous Autoregressive + Jump component (Corsi 2009) |
+| **M15 LSTM h=32** | Short-scale vol forecast | Gate: BEATS RW. §C re-run: **NO BEATS** (44/84, p=0.372, #11395) | 0.0107 | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
 
-Complementarity observed : M12 captures ETH/SOL better, M15 captures DOT better.
+The complementarity reported at the gate (M12 on ETH/SOL, M15 on DOT) rested on these withdrawn
+measurements.
 
-### S3 - HMM Regime daily (delivered, feeds S5 sizing)
+### S3 - HMM Regime daily (removed on 2026-10-20)
 
 Hidden Markov Model 2-regime (calm vs stress) on daily returns SPY+VIX+BTC.
 Discrete output used as switch in vol-target strategies (reduce exposure in stress regime).
+Re-measured causally (fit on the strict past, one-day lag), S3 is **NO BEATS** (#21633):
+its edge came from a smoothed HMM that read the future of its own block.
 
-### S4 v2 - Inverse-Vol Ridge + HMM Regime (BEATS EqW)
+### S4 v2 - Inverse-Vol Ridge + HMM Regime (removed on 2026-10-20)
 
 Inverse-vol weighted allocation with Ridge regression on features
-(momentum + M12 vol forecast) and HMM switch. Delta Sharpe **+0.325 vs EqW**
-(Equal Weight baseline) on QC Cloud backtest.
+(momentum + M12 vol forecast) and HMM switch. The Delta Sharpe **+0.325 vs EqW**
+(Equal Weight baseline) was an in-sample measurement from the `s4_inverse_vol_ridge_v2.py` script
+(HMM fitted on the block it labels), not a QC Cloud backtest; re-measured causally, it
+becomes **INCONCLUSIVE** (Δ+0.24, Holm p=0.38, #21633).
 
-### L4 Decision Transformer - Action-based trading (BEATS)
+### L4 Decision Transformer - Action-based trading (NO BEATS)
 
-First model to beat buy-and-hold across 24/26 symbols (panel @10bps; real out-of-sample temporal: NO-BEATS). Action-based (buy/hold/sell classification)
-massively outperforms forecast-based approaches (PatchTST). Median AUC 0.5582, 104 combos validated.
+The Decision Transformer classifies a daily action (buy/hold/sell) instead of forecasting a return. Its former
+BEATS (24/26 symbols, median AUC 0.5582) came from a test return-to-go drawn from realized future returns (#21187).
+Re-measured under a causal protocol, it beats buy-and-hold on no symbol: 0/26 with signal,
+median AUC 0.4962, 104 combinations (`../ML-Training-Pipeline/scripts/results/l4_decision_transformer/results.json`).
+It imitates its momentum teacher without surpassing it: action-based trading does not beat the market any better
+than forecasting (PatchTST). Details: [L4 notebook](../ML-Training-Pipeline/research_l4_decision_transformer.ipynb).
 
 ### QC Cloud strategies powered by these models
 
@@ -213,7 +224,9 @@ massively outperforms forecast-based approaches (PatchTST). Median AUC 0.5582, 1
 | **Vol-GARCH-Target** | 31456084 | GARCH(1,1) baseline | Vol-targeting 15% annualized (reference for M12) |
 | **Vol-Ensemble-Conservative** | 31456204 | Ensemble M12+M15 | Inverse-vol weighting + leverage cap |
 
-These projects are available in `../projects/`.
+These projects are available in `../projects/`. They reuse models removed since
+(M12, M15): they are examples of wiring a volatility forecast into a
+`QCAlgorithm`, not validated strategies.
 
 ---
 
@@ -302,7 +315,7 @@ Ce cours partenaire est une **plateforme de démarrage structurée** vers le tra
 - **Les templates progressifs** : trois points de départ (`starter` → `intermediate` → `advanced`) calibrés par difficulté croissante. Le `starter` (EMA crossover sur BTCUSDT) enseigne le `QCAlgorithm` lifecycle ; l'`intermediate` introduit l'Algorithm Framework modulaire ; l'`advanced` ajoute le machine learning. On apprend qu'**un bon template est un échafaudage** : il code les bonnes pratiques (Initialize, Risk Management, execution) pour que l'étudiant itère sur l'alpha, pas sur la plomberie.
 - **Les exemples de projets** (`Sector-Momentum`, `Trend-Following`, `BTC-MachineLearning`, `Sector-ML-Classification`) montrent des stratégies *achevées* à étudier puis adapter. On apprend que **lire du code qui marche** est aussi formateur que d'en écrire.
 
-Le fil rouge : la **progression pédagogique** — les 28 notebooks compagnons (`../Python/`, QC-Py-01 à 28) fournissent la théorie, et ce cours fournit la *pratique guidée* via templates et exemples. Les deux sont conçus pour avancer ensemble.
+Le fil rouge : la **progression pédagogique** — les notebooks compagnons (`../Python/`, QC-Py-01 à 28) fournissent la théorie, et ce cours fournit la *pratique guidée* via templates et exemples. Les deux sont conçus pour avancer ensemble.
 
 ### Prochaines étapes
 

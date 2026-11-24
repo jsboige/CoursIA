@@ -1,0 +1,9 @@
+# Deps du service web de MGS-07-TSP (pli 0 v2, #27218).
+# Le coeur (mgs_tsp_core.py) est pur Python (stdlib : math, random) — aucune
+# dependance tierce. Le transport (mgs_tsp_service.py + test_mgs_tsp_core.py)
+# ajoute la pile FastAPI : serveur loopback uvicorn + client httpx pour le test
+# de transport, pydantic via fastapi pour la validation du corps.
+fastapi
+httpx
+uvicorn
+pytest

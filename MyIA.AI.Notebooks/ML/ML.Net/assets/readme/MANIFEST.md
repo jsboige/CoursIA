@@ -15,7 +15,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Alt-text (FR)** : Droite de régression linéaire apprise sur split entraînement/test (4 + 15 points), avec une prédiction unique matérialisée par une étoile rouge.
 - **Contenu réel vérifié** : scatter plot unique, titre « Régression linéaire : prix d'une maison selon sa taille ». Axes : X = Size (milliers de pieds carrés, 0 à 8), Y = Price (centaines de milliers de $, 0 à 10). Trois éléments superposés : points bleus cercles « Entraînement » (4 points), carrés orange « Test » (15 points), droite verte « Droite de régression » (passant par l'origine), étoile rouge « Prédiction (2.5 → 2.76) ». La légende interne est dans le coin haut-gauche.
 - **Poids** : 36 Ko (PNG lossless)
-- **Ce qui n'est PAS dans la figure** : la sortie ML.NET `IDataView → EstimatorChain` correspondante (le code C# est dans `ML-01-Introduction.ipynb` cellules 9-22 ; voir limitation illustrative assumée dans la légende).
+- **Ce qui n'est PAS dans la figure** : la sortie ML.NET `IDataView → EstimatorChain` correspondante (le code C# est dans `ML-01-Introduction-CSharp.ipynb` cellules 9-22 ; voir limitation illustrative assumée dans la légende).
 
 ## ml-ts-series.png
 
@@ -33,7 +33,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Alt-text (FR)** : Décomposition STL d'une série temporelle de ventes — 4 panneaux (Observé, Tendance, Saisonnalité, Résidu) avec période saisonnière 7 jours explicite.
 - **Contenu réel vérifié** : 4 panneaux verticaux empilés, titre global « Décomposition STL (période = 7 jours) ». De haut en bas : (1) Observé (bleu, 60-180), (2) Tendance (orange, 105-155, croissant sur 2023), (3) Saisonnalité (vert, ±35 cycles courts réguliers, période 7 jours), (4) Bruit/Résidu (rouge, ±20 stationnaire). Axe X partagé 2023-01 → 2024-01 (1 an, subset d'entraînement).
 - **Poids** : 179 Ko
-- **Ce qui n'est PAS dans la figure** : la sortie `ForecastBySsa` côté ML.NET (le code est dans `ML-05-TimeSeries.ipynb` cellules 9-18 ; les deux méthodes traitent la saisonnalité 7 jours mais l'API diffère).
+- **Ce qui n'est PAS dans la figure** : la sortie `ForecastBySsa` côté ML.NET (le code est dans `ML-05-TimeSeries-CSharp.ipynb` cellules 9-18 ; les deux méthodes traitent la saisonnalité 7 jours mais l'API diffère).
 
 ## ml-ts-forecast.png
 

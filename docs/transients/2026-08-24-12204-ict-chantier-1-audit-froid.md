@@ -1,4 +1,4 @@
-> RAPPORT — 2026-08-24 — chantier 1 ICT, tranche audit-froid (ledger #12204) — figé
+> RAPPORT - 2026-08-24 - Chantier 1 ICT audit-froid (#12204) - figé
 
 # Ledger #12204 — Chantier 1 ICT, tranche audit-froid : trois labels par opération, quatre entrées tombées
 
@@ -57,7 +57,7 @@ A3 a établi firsthand que `teorth/pfr` est **externe au dépôt** (find + grep 
 ## Trois gains de mesure (le froid fait tomber ET remonter)
 
 **Gain 1 — Op 9 « Élargir l'espace » passe à 2 attestations.**
-A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Python-Coup-Ontologique** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
+A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Coup-Ontologique-Python** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
 
 **Gain 2 — Loi III « les deux espèces de flèches » gagne sa seconde attestation.**
 Le body dit : « attestée une fois » (transformation vs morphisme, swap ordinal). **GT-21-Deux-Espèces-de-Flèches** (#12245 MERGED, notebook vérifié sur le disque ce cycle) pose le théorème fini transformation-vs-morphisme. La Loi III passe à 2 attestations ; le verdict de grade §3 du body (« deux lois attestées deux fois, une une fois ») devient **trois lois attestées deux fois** — sans changer la conclusion (toujours pas un grade A).
@@ -66,7 +66,7 @@ Le body dit : « attestée une fois » (transformation vs morphisme, swap ordina
 Elle citait de Finetti **et** Brown-Sandholm comme deux attestations. La Tombée 3 requalifie Brown-Sandholm en lecture structurelle → la Loi I n'a plus que de Finetti (1). Le grade §3 doit être révisé en conséquence : **Loi I : 1 · Loi II : 2 · Loi III : 2**.
 
 **Gain 3 — Op 14 « Agréger un collectif » passe à 2 attestations.**
-La 1ʳᵉ (A6) : `Shapley.lean:614-634` — `Mobius.mobiusCoeff` / `Mobius.mobiusReconstruction`, l'inversion de Möbius sur le treillis des coalitions, sorry-free (0 `sorry` réel mesuré : l'unique occurrence du mot dans le fichier est de la prose, ligne 1260). Cette livraison : **SC-06 — Möbius, agrégation, pouvoir, manipulation** (`MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb`, PR ce cycle) exécute le miroir Python exact de ces deux définitions — reconstruction vérifiée par exécution sur les 16 coalitions de `[6;4,3,2,1]` (le re-test `[8;5,4,3,2,1]` est posé en exercice, non exécuté) — puis dérive la valeur de Shapley par les dividendes **et** par énumération des 24 ordres d'entree (deux voies indépendantes, écart 5.55e-17), mesure l'écart poids/pouvoir (Banzhaf ; dummy du Luxembourg, Conseil 1958) et instancie le témoin de Gibbard-Satterthwaite sur un Borda à électeurs pondérés. Deux substrats indépendants (Lean/preuve vs Python/exécution), même loi de décomposition en dividendes de Harsanyi. L'op 14 quitte « en constitution » et rejoint l'op 9 dans les promotions par la mesure.
+La 1ʳᵉ (A6) : `Shapley.lean:614-634` — `Mobius.mobiusCoeff` / `Mobius.mobiusReconstruction`, l'inversion de Möbius sur le treillis des coalitions, sorry-free (0 `sorry` réel mesuré : l'unique occurrence du mot dans le fichier est de la prose, ligne 1260). Cette livraison : **SC-06 — Möbius, agrégation, pouvoir, manipulation** (`MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb`, PR ce cycle) exécute le miroir Python exact de ces deux définitions — reconstruction vérifiée par exécution sur les 16 coalitions de `[6;4,3,2,1]` (le re-test `[8;5,4,3,2,1]` est posé en exercice, non exécuté) — puis dérive la valeur de Shapley par les dividendes **et** par énumération des 24 ordres d'entree (deux voies indépendantes, écart 5.55e-17), mesure l'écart poids/pouvoir (Banzhaf ; dummy du Luxembourg, Conseil 1958) et instancie le témoin de Gibbard-Satterthwaite sur un Borda à électeurs pondérés. Deux substrats indépendants (Lean/preuve vs Python/exécution), même loi de décomposition en dividendes de Harsanyi. L'op 14 quitte « en constitution » et rejoint l'op 9 dans les promotions par la mesure.
 
 ## Preuves de ce cycle (firsthand, reproductibles)
 
@@ -86,7 +86,7 @@ lakes porteurs de sorry reel: 4/22
 
 **P4 — GT-21 sur le disque** : `GameTheory-21-Deux-Especes-de-Fleches.ipynb` présent (livré #12245, merged — commit `c7bc85f2d` tête de main à la base du worktree).
 
-**P5 — SW-14 sur le disque, exécuté** : 5/5 cellules code `execution_count 1..5`, outputs présents (vérifié ce cycle lors de la fermeture #12234).
+**P5 — SW-14 sur le disque, exécuté** : exécution bout-en-bout avec `execution_count` croissants, outputs présents (vérifié ce cycle lors de la fermeture #12234).
 
 **P6 — GT-16b AMD lu ce cycle** : générateur / vérificateur séparé / témoin d'impossibilité — op 10 attestée, avec la réserve de cohérence DSIC consignée sur #12211 (issuecomment-5383043049).
 
@@ -128,7 +128,7 @@ Mandat §4bis : « A6 est donc une décision, plus une enquête. » Vérificatio
 
 1. **Infer-20 sur disque** (`Probas/Applications/Infer-20-Quotients-et-Fibres-Python.ipynb`, PR #12277 MERGED 2026-08-22) : la cellule 10 (code) construit `Q = np.digitize(S, quantiles)` avec `Q_BINS = 4` et `S = X₁ + X₂`. La cellule 14 teste `Q_OPERATIONAL = (I(X₁;X₂|Q) < 0.5 · I(X₁;X₂))` — verdict imprimé **NON TENTE** (`ratio = 1.684`, > critère 0.5). **Infer-20 illustre la règle de chaîne conditionnelle** : c'est exactement l'opération 3 sous sa forme `I(X₁;X₂) = I(X₁;X₂|Q) + I(X₁;X₂;Q)`. Mais elle **échoue à produire un quotient opérationnel** sur des gaussiennes linéaires corrélées `ρ = 0.6` — la quantification 1D de la somme ne suffit pas.
 
-2. **ANALYSE-04 sur disque** (`SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb`) : cellule 7 — *« Lecture du résultat. La règle de chaîne `H(X) = H(X|Y) + I(X;Y)` est **vérifiée numériquement**. Information mutuelle `I(X;Y)` capture combien le cours (Y) explique la note (X) ; la résiduelle `H(X|Y)` capture la variation inexpliquée par le cours. Sémantique opérationnelle : `H(π(X))` ≈ ce que la projection capte ; `H(X|π(X))` ≈ ce qui reste dans les fibres. »* — Verdict de la cellule 9 : « Transportable large. Universelle en théorie de l'information. » C'est la **seule attestation locale** décomptée jusqu'ici (cf A3 l.97-106 : « teorth/pfr est une référence externe non incluse au dépôt, et la digestion EPIC l'a cité comme si elle était locale »).
+2. **ANALYSE-04 sur disque** (`SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Python.ipynb`) : cellule 7 — *« Lecture du résultat. La règle de chaîne `H(X) = H(X|Y) + I(X;Y)` est **vérifiée numériquement**. Information mutuelle `I(X;Y)` capture combien le cours (Y) explique la note (X) ; la résiduelle `H(X|Y)` capture la variation inexpliquée par le cours. Sémantique opérationnelle : `H(π(X))` ≈ ce que la projection capte ; `H(X|π(X))` ≈ ce qui reste dans les fibres. »* — Verdict de la cellule 9 : « Transportable large. Universelle en théorie de l'information. » C'est la **seule attestation locale** décomptée jusqu'ici (cf A3 l.97-106 : « teorth/pfr est une référence externe non incluse au dépôt, et la digestion EPIC l'a cité comme si elle était locale »).
 
 3. **Critère d'indépendance** (règle op 7 étendue à l'op 3, protocole EPIC §1) : ANALYSE-04 ([#12252](https://github.com/jsboige/CoursIA/pull/12252), MERGED 2026-08-22T12:57:43Z) et Infer-20 ([#12277](https://github.com/jsboige/CoursIA/pull/12277), MERGED 2026-08-22T12:58:17Z) sont **nés le même jour (2026-08-22, à 34 secondes d'écart), du même EPIC [#12204](https://github.com/jsboige/CoursIA/issues/12204) — issues sœurs [#12214](https://github.com/jsboige/CoursIA/issues/12214) (Lean-21b PFR) et [#12226](https://github.com/jsboige/CoursIA/issues/12226) (Probas quotient/fibres/recollement). Le témoin formel de l'opération 3 (`H(X) = H(π(X)) + H(X|π(X))`) est universel info-théorique, mais la non-indépendance tient sur des constats vérifiables : **même chantier EPIC, même jour, même lane de dispatch**. ANALYSE-04 seul revendique le stimulus PFR-Tao ; Infer-20, fille de [#12226](https://github.com/jsboige/CoursIA/issues/12226), ne le cite pas. L'indépendance au sens strict du critère « deux endroits non reliés par le stimulus initial » n'est **pas** vérifiée.
 
@@ -143,6 +143,37 @@ Mandat §4bis : « A6 est donc une décision, plus une enquête. » Vérificatio
 **Distance de Ruzsa** (point 3 de #18405) : objet ICT à groupe additif identifié = **`MyIA.AI.Notebooks/IIT/ICT-Series/ict/factor_geometry.py`** (espace des activations `(ℝ^D, +)`, primitives `weighted_pca` / `max_principal_angle` / `basis_overlap` extraites de ICT-36-FLens-FactoredGeometry, PR #15514 MERGED). La convolution `X′ − Y′` y est définie composante par composante. Application directe : `d_ruzsa(X;Y) = H(X′ − Y′) − ½ H(X′) − ½ H(Y′)` sur deux activations factorisées. **Non livré dans cette tranche** (hors périmètre dispatch —> à pousser en grain suivant si ai-01 l'autorise, après qu'A7 ou un grain subséquent ait statué sur l'op 3).
 
 **Acceptance sortie ce cycle :** verdict d'attestation de l'opération 3 écrit dans le ledger (cette tranche), avec sa preuve (3 vérifications nommées) et le statut du témoin négatif.
+
+## Tranche c.1114 (2026-10-06, po-2023:CoursIA-2) — Ruzsa : contrat de l'organ corrigé + application ICT + témoin de limite
+
+Issue dispatchée par le coordinateur ai-01 (commentaire #18405, 2026-09-29) ; claim posé par cette lane le 2026-10-06. Précédent c.1308 (po-2024) laissait la **livraison** de la distance de Ruzsa sur objet ICT en suspens (« Non livré dans cette tranche —> à pousser en grain suivant si ai-01 l'autorise »). La présente tranche tranche ce volet : l'organ est qualifié firsthand, l'application à `factor_geometry.py` est livrée sous forme de carnet exécuté, et le **témoin de limite** demandé par le point 3 de #18405 est documenté.
+
+**Quatre vérifications firsthand ce cycle** (toutes dans `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36b-RuzsaOnFactorGeometry-Python.ipynb` — carnet compact, code exécuté papermill, 0 erreur) :
+
+1. **Organ cellule 1 (invariants) sur-revendique `d[X;X] = 0`.** Reproduction : `d_ruzsa({0:0.5, 1:0.5}, {0:0.5, 1:0.5}, 4) = 0.500000` bit (cellule 5 du carnet, cas 2). Le 0.5 vient de `H(X'-X) = 1.5` bits (distribution `{0: 0.5, 1: 0.25, 3: 0.25}`) moins `H(X) = H(Y) = 1` bit. Le contrat correct est : `d[X;Y] = 0` si et seulement si Y est une translatee de X (`Y = X + a` pour un `a` du groupe), pas un cas général pour `X = Y`. L'invariant tient pour X uniforme sur G (cas 1 du carnet : Z/8Z uniforme → `d[X;X] = 0.000000`).
+
+2. **L'invariant de translation COMMUNE tient :** `d[X+a; Y+a] = d[X;Y]` pour tout `a` (cellule 5 du carnet, cas 3). Test sur `X = {0:0.5, 1:0.5}` (non uniforme), translations 0, 1, 2 : les trois valeurs de `d_ruzsa(X;X+a)` sont **identiques à 1e-15** (mêmes 0.5). L'invariant cellule 1 est donc **vrai** sous sa forme littérale (`d[X+a; Y+a] = d[X;Y]`) ; c'est sa **conséquence** `d[X;X] = 0` qui est sur-revendiquée.
+
+3. **Application à `factor_geometry.py` :** `synthesize_activations(bases, n_tokens=4000, signal_var=1.0, noise_var=0.1, rng)` produit `X ∈ ℝ^{4000 × 24}`. Quantification par signe (signe ±1 → groupe `Z/2Z` additif). Distribution marginale de la coordonnée 0 : `{0: 0.5045, 1: 0.4955}`, `H(X) = 0.9999` bits, `d_ruzsa(X;X) = 0.000058` bits — la structure orthogonale des facteurs + le bruit gaussien rendent la marginale **quasi-uniforme** sur Z/2Z, donc `d_ruzsa` est essentiellement 0. C'est le cas **favorable** d'application de l'organ sur un objet ICT.
+
+4. **Témoin de limite :** sur le **même** objet d'activations, 3 schémas de quantification différents donnent des valeurs différentes de `d_ruzsa` (cellule 8 du carnet, witness). Signe (Z/2Z) → 0.000058 bit ; 3-quantiles (Z/3Z) → 0.000000 bit (par construction, marginales uniformes) ; 5-quantiles (Z/5Z) → 0.000000 bit (idem) ; hash LSB (Z/2Z, exercice 1) → 0.072061 bit (LSB biaisé de la mantisse IEEE 754 → marginale `{0: 0.665, 1: 0.335}`). **C'est précisément le "mapping affine" que l'organ cellule 5 dénonce** : la valeur de `d_ruzsa` dépend du schéma de quantification, pas seulement de l'objet sous-jacent. L'organ fonctionne sur son terrain (groupes abéliens, X uniforme), mais ne transporte pas tel quel sur les objets ICT — il faudrait soit garantir l'uniformité marginale par construction, soit contrôler la quantification comme une variable explicite de la mesure.
+
+**Verdict c.1114** :
+
+- **Op 3 reste en file d'attente** (statut inchangé depuis c.1308). Le présent carnet **ne promeut pas** l'op 3 : il documente un **test de limite** (aboutissant 2 du point 3 de #18405 : « Distance de Ruzsa : application sur un objet ICT à structure de groupe, **ou** test de limite documenté »), pas une seconde attestation indépendante. La règle d'admission reste : 2ᵉ attestation sur substrat indépendant.
+- **Contrat de l'organ documenté** : `d[X+a; Y+a] = d[X;Y]` (vrai), `d[X;X] = 0` (vrai ssi X uniforme sur G, **sur-revendiqué** par la cellule 1). Le carnet ICT-36b documente l'overclaim et le mécanisme sous-jacent (entropie de la différence plus petite que l'entropie marginale pour X non uniforme). **Suivi proposé** (hors périmètre de cette tranche) : PR sur la série source `SymbolicAI/Lean/Analyse/` pour corriger l'invariant cellule 1 (ajouter la condition « X uniforme sur G »). La qualification de l'organ est **indépendante** de cette correction (po-2025 l'a identifiée 36 h avant, cf commentaire #18405 du 2026-10-05T20:25:53Z).
+- **Le témoin de limite est mesuré** : sur le même objet ICT, 4 schémas de quantification donnent 4 valeurs de `d_ruzsa` (0, 0, 0.000058, 0.072). La dépendance au schéma est le **résultat** de cette tranche, pas un échec — c'est l'illustration ICT du « mapping affine » que l'organ cellule 5 met en garde.
+
+**Effet sur la table #12204** : néant sur la promotion de l'op 3. La tranche **remplit** le point 3 de #18405 (test de limite documenté) et **étend** la qualification de l'organ source (overclaim cellule 1 identifié et reproduit). Pour une promotion en TABLE, il faudrait une 2ᵉ attestation sur substrat hors-PFR (cf précédent c.1308).
+
+**Acceptance sortie ce cycle :**
+
+- [x] Contrat organ qualifié firsthand (4 cas, 0 réécriture, organ cellule 2 vendorisé verbatim avec SPDX).
+- [x] Overclaim cellule 1 reproduit et documenté (`d[X;X] = 0.5` pour X non uniforme sur Z/4Z).
+- [x] Application à `ict.factor_geometry.synthesize_activations` livrée (carnet ICT-36b, 7 code cells exécutées).
+- [x] Témoin de limite livré (3 schémas, 4 valeurs de `d_ruzsa` sur le même objet).
+- [x] 5 questions organ-first documentées en cellule 9 du carnet.
+- [x] Statut op 3 inchangé : file d'attente.
 
 ## Tranche réconciliation (2026-10-04, po-2027:CoursIA) — ops 2 et 6 : deux 2ᵉ attestations enregistrées (artefacts antérieurs au dernier toucher du ledger, non comptés)
 

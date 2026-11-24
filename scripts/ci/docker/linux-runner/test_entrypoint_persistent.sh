@@ -54,7 +54,7 @@ make_dist "$DIST_DIR"
   echo "$out" >> "$LOG"
   if [ "$rc" -ne 0 ]; then ko "T1 restore exit 0 (rc=$rc)"; else ok "T1 restore exit 0"; fi
   if [ -x "$HOME_DIR/run.sh" ]; then ok "T1 binaires restaures"; else ko "T1 run.sh absent apres restore"; fi
-  if echo "$out" | grep -q "restauration"; then ok "T1 restauration journalisee"; else ko "T1 aucune trace de restauration"; fi
+  if grep -q "restauration" <<<"$out"; then ok "T1 restauration journalisee"; else ko "T1 aucune trace de restauration"; fi
 )
 
 # --- Test 2 : binaires presents -> restore silencieux (idempotent) -----------
@@ -100,14 +100,18 @@ make_dist "$DIST_DIR"
     . "'"$TEST_DIR"'/block.sh"
     require_registration_env
   ' 2>&1)"; rc=$?
-  if [ "$rc" -ne 0 ] && echo "$out" | grep -q "token manquant"; then
+  if [ "$rc" -ne 0 ] && grep -q "token manquant" <<<"$out"; then
     ok "T5 token exigee au premier enregistrement"
   else ko "T5 require_registration_env devait echouer sur token manquant (rc=$rc, sort: $out)"; fi
 )
 
 # --- Test 6 : mode par defaut = ephemeral (retro-compatible) -----------------
 (
-  out="$(bash -c '
+  # Le DEFAUT se mesure sur un environnement ou RUNNER_MODE est ABSENT :
+  # un runner persistant l'exporte (myia-po-2024-linux-persist-*), et
+  # l'heritage faisait echouer cette assertion sur un runner legitime.
+  # Controle : le meme test echoue a l'identique sur origin/main.
+  out="$(env -u RUNNER_MODE bash -c '
     . "'"$TEST_DIR"'/block.sh"
     runner_mode
   ' 2>&1)"

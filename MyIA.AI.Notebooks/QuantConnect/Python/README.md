@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 62
-breakdown: Python=62
-maturity: DRAFT=34, BETA=21, ALPHA=7
+pedagogical_count: 66
+breakdown: Python=66
+maturity: BETA=35, DRAFT=27, ALPHA=4
 -->
 
 # QuantConnect Python Notebooks
@@ -47,7 +47,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
 | QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
-| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
+| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), cellules code exécutées |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
 | QC-Py-08-Multi-Asset-Strategies | NON EXÉCUTÉ | |
 | QC-Py-09-Order-Types | NON EXÉCUTÉ | |
@@ -82,7 +82,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
 | QC-Py-40-PaperTrading-Binance | EXÉCUTÉ | |
 | QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | |
-| QC-Py-42-Alpha-Mining-Evolution | EXÉCUTÉ | cellules exécutées sur le panier crypto local (10 actifs ; fenêtre effective 2020-09 → 2025-03) — verdict hors-échantillon `INCONCLUSIVE` |
+| QC-Py-42-Alpha-Mining-Evolution | EXÉCUTÉ | cellules exécutées sur le panier crypto local (10 actifs ; fenêtre effective 2020-09 → 2025-03) — verdict nets de frais (10 bps) trois bras : évolution `BEATS`, bras LLM `INCONCLUSIVE` |
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
 | QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -103,6 +103,9 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | |
 | QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
+| QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | campagne journalisée de 288 appels LLM (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot, rejeu strict et mixte depuis le journal, noyau de risque de QC-Py-45 greffé sur les décisions — verdicts §C `INCONCLUSIVE` |
+| QC-Py-45-Noyau-Risque-Deterministe | EXÉCUTÉ | ablation du noyau de risque déterministe de Steward sur des ETF (yfinance, 2015-2026), sans LLM — verdict `BEATS` sur le drawdown |
+| QC-Py-46-External-Etalon-FinanceBench | EXÉCUTÉ | étalon externe FinanceBench (50 items numériques, strate intégrale sans échantillonnage) pour l'organ LLM de la série — 3 bras × 50 items (150 appels) : `luna-plein` 92,1 % / `luna-naif` 25,0 % / `sonnet-plein` 47,7 %, tolérance 1 % déclarée |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -138,7 +141,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 
 **[19 — La validation walk-forward, ou l'honnêteté temporelle.](QC-Py-19-ML-Supervised-Classification.ipynb)** Un modèle entraîné une fois puis testé sur tout l'échantillon triche avec le temps. La validation walk-forward décale une fenêtre d'entraînement puis re-teste, fold après fold, en mimant le retrain périodique qu'exige un trading réel. L'accuracy par fold révèle la robustesse — ou l'effondrement — hors échantillon.
 
-<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward d'un classifieur supervisé : deux sous-graphiques empilés sur 14 mois (2023-03 → 2024-05). Haut — accuracy par fold (bar chart bleu, axe Y = 0.0 → 1.0, axe X = 1 → 14) avec 2 lignes horizontales : Mean Accuracy = 0.874 (rouge pointillés, performance moyenne élevée) et Random Baseline = 0.5 (gris pointillés, baseline 50/50). Distribution hétérogène : folds 5/6/10/11 ≈ 1.0 (excellents), folds 7 ≈ 0.50 (le plus mauvais, à peine au-dessus du random), folds 3/9 ≈ 0.65 (sous-performances ponctuelles). Bas — accuracy cumulée au fil du temps (courbe bleue pleine, aire bleu clair sous la courbe), démarrant à 1.0 puis convergeant vers ~0.87 sur 14 mois malgré les folds médiocres. Démontre la stabilité OOS du modèle (accuracy cumulée reste > 0.85)."></a></p>
+<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward d'un classifieur supervisé : deux sous-graphiques empilés sur 14 mois (2023-03 → 2024-05). Haut — accuracy par fold (bar chart bleu, axe Y = 0.0 → 1.0, axe X = 1 → 14) avec des lignes horizontales de référence : Mean Accuracy = 0.874 (rouge pointillés, performance moyenne élevée) et Random Baseline = 0.5 (gris pointillés, baseline 50/50). Distribution hétérogène : folds 5/6/10/11 ≈ 1.0 (excellents), folds 7 ≈ 0.50 (le plus mauvais, à peine au-dessus du random), folds 3/9 ≈ 0.65 (sous-performances ponctuelles). Bas — accuracy cumulée au fil du temps (courbe bleue pleine, aire bleu clair sous la courbe), démarrant à 1.0 puis convergeant vers ~0.87 sur 14 mois malgré les folds médiocres. Démontre la stabilité OOS du modèle (accuracy cumulée reste > 0.85)."></a></p>
 
 **[32 — L'agent qui apprend à trader.](QC-Py-32-RL-DQN-Trading.ipynb)** Le deep reinforcement learning entraîne un agent par essais et erreurs : chaque épisode ajuste sa politique pour maximiser la récompense cumulée. La courbe des récompenses par épisode montre la transition de l'exploration vers l'exploitation — le moment où l'agent cesse de tâtonner et commence à exploiter ce qu'il a appris.
 
@@ -160,7 +163,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
 | [QC-Py-05b-FScore-Piotroski](QC-Py-05b-FScore-Piotroski.ipynb) | F-Score de Piotroski : les 9 sous-scores sur données réelles, convention de datation article vs papier 2000, critique de liquidité, variance small-univers mesurée (#17770) |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
-| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
+| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239). Jumeau C# : [QC-06b-Valorisation-Derives-CSharp](../CSharp/QC-06b-Valorisation-Derives-CSharp.ipynb) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |
@@ -186,7 +189,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 |----------|---------|
 | [QC-Py-18-ML-Features-Engineering](QC-Py-18-ML-Features-Engineering.ipynb) | Feature engineering pour trading |
 | [QC-Py-19-ML-Supervised-Classification](QC-Py-19-ML-Supervised-Classification.ipynb) | Classification, signaux d'achat/vente |
-| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix |
+| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix ; ancrage canonique ML-factor (linéaire vs arbres vs réseau sous multi-graines + Diebold-Mariano) |
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
 | [QC-Py-23-State-Space-Models](QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4/Mamba) pour séries temporelles |
@@ -198,7 +201,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
 | [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 | [QC-Py-28b-Macro-Cycle-Regimes](QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Macro et régimes : diagnostic composite borné, indicateurs → budget de risque |
-| [QC-Py-28c-Factor-Preprocessing-Regime](QC-Py-28c-Factor-Preprocessing-Regime.html) | Prétraitement de facteurs (FFD, standardisation, ACP) pour la détection de régime — port du livre 06/02, comparaison à la classe majoritaire |
+| [QC-Py-28c-Factor-Preprocessing-Regime](QC-Py-28c-Factor-Preprocessing-Regime.ipynb) | Prétraitement de facteurs (FFD, standardisation, ACP) pour la détection de régime — port du livre 06/02, comparaison à la classe majoritaire |
 | [QC-Py-29-Derivatives-Valuation](QC-Py-29-Derivatives-Valuation.ipynb) | Valorisation d'un dérivé : Black-Scholes, arbre binomial et Monte-Carlo sur le même contrat — précision, convergence, flexibilité, coût, liquidité |
 
 ## Entraînement ML (QC-Py-30 à 32)
@@ -228,21 +231,25 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, application p
 | [QC-Py-40-PaperTrading-Binance](QC-Py-40-PaperTrading-Binance.ipynb) | Binance |
 | [QC-Py-41-PaperTrading-IBKR](QC-Py-41-PaperTrading-IBKR.ipynb) | Interactive Brokers |
 
-## Recherche — alpha mining par évolution (QC-Py-42)
+## Recherche — alpha mining par évolution et LLM (QC-Py-42)
 
 Recherche *from scratch* : plutôt que de coder un facteur à la main, on **fait évoluer des
 expressions alpha** (arbres d'opérateurs sur des features de base) avec `deap`, puis on les
-confronte à une baseline de facteurs fixes. C'est le pont entre la série `Search/`
-(algorithmes évolutionnaires) et la série `QuantConnect` (validation financière).
+confronte à une baseline de facteurs fixes. Un **bras LLM** ajoute la comparaison : un modèle
+de langage propose des expressions dans la même grammaire, au même budget d'évaluations, avec
+la même fitness. C'est le pont entre la série `Search/` (algorithmes évolutionnaires), les
+carnets LLM (proposer / exécuter / apprendre) et la série `QuantConnect` (validation financière).
 
 | Notebook | Méthode | Ce qu'il démontre |
 |----------|---------|-------------------|
-| [QC-Py-42-Alpha-Mining-Evolution](QC-Py-42-Alpha-Mining-Evolution.ipynb) | Évolution génétique d'expressions (`deap`), walk-forward 5 blocs, 4 seeds, Diebold-Mariano à critère directionnel | Un moteur de recherche peut **produire** des alphas plausibles — et le verdict hors-échantillon dit s'il bat la baseline. Ici : non (`INCONCLUSIVE`), ce qui est le résultat, pas l'échec |
+| [QC-Py-42-Alpha-Mining-Evolution](QC-Py-42-Alpha-Mining-Evolution.ipynb) | Évolution génétique d'expressions (`deap`) et bras LLM au même budget, walk-forward 5 blocs, 4 seeds, coûts de transaction 10 bps, Diebold-Mariano à critère directionnel | Un moteur de recherche peut **produire** des alphas plausibles — et le verdict hors-échantillon **nets de frais** dit s'il bat la baseline. Ici : l'évolution passe la conjonction (`BEATS`) — le passage aux Sharpe nets renverse le verdict brut d'avant-coûts — et le bras LLM, plus précis au quotidien mais quatre fois plus dispersé entre seeds, reste `INCONCLUSIVE` |
 
-Le carnet tourne sur les données **locales** du dépôt (panier crypto, 10 actifs) : aucune
-dépendance réseau, exécution reproductible. Sa fonction de fitness applique la doctrine de
-validation du dépôt (walk-forward, multi-seed, Diebold-Mariano sur une perte de précision) —
-l'objectif pédagogique est autant la **méthode de validation** que le résultat.
+Le carnet tourne sur les données **locales** du dépôt (panier crypto, 10 actifs). Le bras
+évolution est entièrement reproductible hors ligne ; le bras LLM, lui, fait de **vrais appels
+API** (clé OpenAI requise, seed passé au modèle). La fitness applique la doctrine de
+validation du dépôt (walk-forward, multi-seed, Diebold-Mariano sur une perte de précision,
+Sharpe nets des coûts de transaction) — l'objectif pédagogique est autant la **méthode de
+validation** que le résultat.
 
 ## Stratégies Cloud (QC-Py-Cloud-*)
 
@@ -280,6 +287,64 @@ stylisés** de la série réelle, et l'utilité mesurée des données engendrée
 Le carnet prend ses données sur **yfinance** (SPY, 2 515 rendements log quotidiens) : il
 requiert un accès réseau à l'exécution. Sa conclusion transférable est méthodologique — une
 perte de débruitage qui décroît ne dit rien de la qualité du générateur.
+
+## Recherche — agent de trading multi-LLM (QC-Py-44)
+
+Réduction pédagogique du cadre **TradingAgents** (Xiao et al., arXiv:2412.20138) : au lieu
+d'un seul appel LLM single-shot, deux **analystes** (momentum, risque) nourrissent un
+**débat bull/bear** borné à 2 tours via `AgentGroupChat` (semantic_kernel — organe natif de
+la série SemanticKernel), un **PM** tranche LONG/FLAT/SHORT avec prévision chiffrée, et une
+**mémoire de décisions soldées** journalise chaque décision, la solde au terme de l'horizon
+contre le rendement réalisé, et réinjecte une réflexion d'une phrase au point suivant.
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-44-Agent-Trading-Multi-LLM](QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | 2 bras sur les mêmes contextes (BTC-USD, 8 points espacés de 120 j ≈ 2,3 ans) : cadre complet vs single-shot, 4 graines (0, 1, 7, 42), pertes appariées, Diebold-Mariano Newey-West lag 1, frais 10 bps/côté, 288 appels LLM inscrits dans un journal JSONL ; rejeu strict (aucun appel) et mixte (une consigne modifiée) depuis ce journal ; noyau de risque déterministe de QC-Py-45 greffé sur les décisions du PM (5 bras, contrôle positif) | La délibération **ne se décrète pas significative** : edge −0,085 pt de %, ratio −0,45σ, DM p = 0,45 → verdict `INCONCLUSIVE`. Quatre exécutions du même code ont rendu des ratios de −0,45 à +2,41 : le rejeu strict refait la campagne sans appel, à l'identique, et rend l'exécution publiée vérifiable ; une phrase de consigne du Bear déplace 10 décisions sur 32 pour 154 appels, dans les deux sens. Greffé, le noyau améliore la pnl surtout en retirant la vente à découvert, sans preuve (ratio +0,11, DM p = 0,87, `INCONCLUSIVE`). Témoins : mémoire vide au premier point (0 → 7 entrées par graine), accord entre analystes 34,4 %, les deux bras surestiment (+0,92 / +0,76 pt) |
+
+La conclusion transférable est méthodologique : dans une expérience qui appelle un LLM, la
+variance entre exécutions s'ajoute à la variance entre graines, et quatre graines ne la
+mesurent pas. La barre §C (≥ 2σ ET p < 0,05) empêche de déclarer victoire sur une exécution
+favorable ; le journal des appels rend chaque exécution rejouable à coût nul, et permet de
+tester après coup une règle de taille de position sans rappeler le modèle. Le carnet requiert
+`OPENAI_API_KEY` à l'exécution (lue depuis `.secrets/master.env`, hors dépôt) ; le journal est
+écrit hors dépôt.
+
+## Recherche — noyau de risque déterministe (QC-Py-45)
+
+Le système **Steward** (Feng et al., arXiv:2610.30557) confie le choix des lignes à des
+agents LLM, mais fait passer chaque ordre par un **noyau invariant** de règles fixes : stop à
+2 ATR sous l'entrée, plafond de 40 % par groupe, exposition nette d'au plus 90 %, aucune
+vente à découvert, coupe-circuit après une séance à −3 %. Le papier mesure aussi ce noyau
+seul, sans LLM, avec 5 points de base de frais par côté. Le carnet reproduit cette ablation sur un univers
+d'ETF en quatre groupes : actions US, actions hors US, obligations, matières et immobilier.
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-45-Noyau-Risque-Deterministe](QC-Py-45-Noyau-Risque-Deterministe.ipynb) | Moteur journalier vectorisé (yfinance, 2015-2026), validé par trois contrôles. Mêmes entrées avec et sans noyau : un chemin momentum, puis des tirages aléatoires sur 50 graines. Six variantes d'ablation. Verdict pré-enregistré à trois jambes (écart de drawdown ≥ 2σ, Diebold-Mariano, écart de Sharpe) contre deux témoins, dont une exposition de 90 % sans aucune autre règle | Le noyau réduit le drawdown maximal sur chacune des 50 graines, sans coûter de rendement médian : verdict `BEATS` contre les deux témoins. La répartition entre règles s'inverse par rapport au papier : sur ces ETF, ce sont les stops qui font le travail, le coupe-circuit presque rien. Le noyau peut aussi finir plus loin de son plus haut que les variantes sans noyau (fin de fenêtre 2026) |
+
+La conclusion transférable : une règle de risque se juge par une ablation sur des entrées
+**sans mérite**, à tirages identiques, et contre un témoin qui sépare son effet de la simple
+réduction d'exposition. Le carnet requiert un accès réseau (yfinance) à l'exécution.
+
+## Recherche — étalon externe de compétence numérique (QC-Py-46)
+
+L'organ LLM des carnets de la série (`gpt-5.6-luna`) est jugé ici contre un
+**étalon indépendant** : la strate numérique intégrale de **FinanceBench**
+(50 items, sans échantillonnation), chargée hors dépôt (licence CC BY-NC 4.0 —
+ni le dataset ni les réponses brutes n'entrent dans le dépôt). Trois bras,
+150 appels, même endpoint que QC-Py-26/44 : `luna-plein` (rôle + contexte 10-K
++ consigne), `luna-naif` (le même modèle, question nue — témoin négatif),
+`sonnet-plein` (comparaison cross-LLM).
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-46-External-Etalon-FinanceBench](QC-Py-46-External-Etalon-FinanceBench.ipynb) | Extraction du nombre avec tolérance relative de 1 % (déclarée, pas implicite), scoring sur la strate numérique intégrale. Trois bras : `luna-plein` / `luna-naif` / `sonnet-plein` | Le témoin négatif porte le sens de la mesure : le même modèle, question nue, s'effondre de 92,1 % à 25,0 % (67,1 pts, 46 réponses sur 50 sans nombre) — l'étalon mesure la compétence du pipeline (rôle, contexte, format), pas la question seule. Cross-LLM, à protocole identique, luna (92,1 %) est deux fois plus efficace que sonnet (47,7 %) sur l'extraction numérique de 10-K |
+
+La conclusion transférable : la compétence de raisonnement financier numérique
+d'un organ LLM se jauge par un étalon externe indépendant, avec un témoin
+négatif qui sépare l'effet du pipeline de l'effet de la question. Le carnet
+requiert `OPENAI_API_KEY` à l'exécution (lue depuis `.secrets/master.env`,
+hors dépôt).
 
 ## Utilitaires
 

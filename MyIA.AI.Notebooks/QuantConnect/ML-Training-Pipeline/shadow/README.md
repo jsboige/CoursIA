@@ -40,8 +40,8 @@ Colonnes de `passes.csv` :
 |---|---|
 | `candidate`, `sha`, `frozen_on` | l'identité gelée, recopiée du registre |
 | `pass_date` | date du passage |
-| `period_end` | dernière séance de la période rejouée |
-| `n_days` | nombre de séances, de D à `period_end` |
+| `period_end` | dernière séance clôturée rendue par la candidate pour `end = pass_date` ; bornée par le harnais à `frozen_on ≤ period_end ≤ pass_date`, sans décalage fixe — c'est la donnée disponible qui décide : un passage un lundi s'arrête au vendredi précédent, un passage en semaine peut atteindre la veille |
+| `n_days` | nombre de séances de D à `period_end` ; D est fixe au gel et la fenêtre ne se tronque jamais, donc `n_days` ne fait que croître — par blocs d'environ 21 séances par mois, au rythme des jours de semaine des passages (aucune fenêtre n'est sélectionnable) |
 | `sharpe_net` | moyenne / écart-type (ddof = 1) × √252 des rendements journaliers nets, taux sans risque nul ; vide si l'écart-type est nul |
 | `cagr` | produit des (1 + r) à la puissance 1 / années, moins 1 ; années = jours calendaires entre la première et la dernière séance, divisés par 365,25 |
 | `max_drawdown` | minimum de équité / maximum courant − 1 |
@@ -71,14 +71,17 @@ Le point d'entrée s'écrit `chemin/du/projet:identifiant`, où le chemin est le
 L'algorithme respecte trois règles ; `qc_example/main.py` les montre sur un 60/40 rebalancé chaque mois :
 
 1. **Dates en paramètres.** `start` et `end` (ISO) viennent de `get_parameter`, sans valeur par défaut : un backtest lancé sans eux échoue au lieu de tourner sur une période implicite. Les deux noms sont réservés : un paramètre de registre qui les porte est refusé.
-2. **Une clôture par séance, à sa date.** À chaque clôture, la valeur du portefeuille va dans le graphique `shadow`, séries `e0` à `e4` à tour de rôle. Une série unique serait rééchantillonnée par QC sur sa propre grille ; cinq séries entrelacées gardent chaque point à sa séance (#18939).
-3. **Les coûts, tracés par la candidate.** Au même moment, `fees` (frais cumulés / valeur de départ) et `turnover` (somme des montants exécutés / valeur du portefeuille au moment de l'exécution). La sortie de `read_backtest` ne porte ni l'un ni l'autre.
+2. **Une clôture par séance, à sa date.** À chaque clôture, la valeur du portefeuille va dans le graphique `shadow`, séries `e0` à `e4` à tour de rôle. Une série unique serait rééchantillonnée par QC sur sa propre grille ; cinq séries entrelacées gardent chaque point à sa séance (#18939). Une candidate crypto souscrit sans remplissage vers l'avant (`fill_forward=False`) : un passage lancé avant minuit UTC recevrait sinon, à la date du passage, une barre qui répète la clôture de la veille (#24153). Pour les actions, même garde côté candidate : la barre journalière des toutes dernières séances d'un passage n'est pas toujours encore publiée, et Lean la recopie vers l'avant — une candidate qui trace dans `on_data` saute une barre recopiée (`data.bars[spy].is_fill_forward`), sans quoi le passage mesure des séances plates (backtest `273d04de` du 2026-11-20, retiré de #27480 ; garde posée dans `ShortUnprofitableIntl-QC`, #27482).
+3. **Les coûts, tracés par la candidate.** Au même moment, `fees` (frais cumulés / valeur de départ) et `turnover` (somme des montants exécutés / valeur du portefeuille au moment de l'exécution). `read_backtest` ne rend que les totaux de fin de backtest, pas une valeur par séance.
+
+QC ne garde que dix séries tracées par backtest, tous graphiques confondus, et perd les dernières créées sans erreur. Le contrat en prend sept (`e0..e4`, `fees`, `turnover`) et laisse trois séries libres pour des contrôles ; au-delà, des séries du contrat peuvent disparaître (mesure du 2026-11-10, #24153 : douze séries, `e0` perdue).
 
 `ingest-qc` refuse le passage quand :
 
 - le backtest n'est pas terminé (`completed` différent de `true`), a échoué, ou ne porte pas le nom prévu par le plan ;
 - les points d'équité, rangés par date, ne se succèdent pas `e0`, `e1`, … `e4`, `e0` : un point perdu ou en trop casse ce cycle. C'est aussi ce qui arrive si QC tronque ou rééchantillonne une série trop longue ; le passage est alors refusé, jamais calculé sur une courbe incomplète ;
 - deux points tombent sur la même séance, ou l'équité sort de [D, date du passage] ;
+- le graphique porte plus de points d'équité que le backtest n'a de dates de données (`tradeableDates`) : une barre recopiée par remplissage vers l'avant en est une cause mesurée (#24153) ;
 - le dernier point de `fees` ou de `turnover` n'est pas sur la dernière séance.
 
 Les rendements journaliers sont ceux de la courbe d'équité, frais déjà déduits par QC ; la rotation journalière est la rotation cumulée divisée par le nombre de séances. Les définitions de Sharpe, CAGR et pire baisse sont celles du rejeu local. Le Sharpe de QC, lui, retranche un taux sans risque : les deux ne se comparent pas directement.
@@ -163,5 +166,7 @@ Un passage par mois, à la première séance du mois. Chaque passage est une PR 
 
 ## Ce qui n'est pas encore là
 
-- **Les premières inscriptions** (étape 2 de #18923) : les conventions `U` et `F` de `inverse_vol` se gèlent une fois ce point d'entrée sur `main`, au commit qui le porte ; leur premier passage a lieu à la première séance du mois suivant.
-- **Le rythme automatique** est l'étape 3 de #18923.
+- **Les candidates dues** : `btc-voltarget-v2` a eu son premier passage accepté le 2026-11-15 (`passes.csv`). Le premier passage de `short-intl-v2` reste dû : celui du 2026-11-20 a été retiré de #27480 — les barres journalières des dernières séances n'étaient pas encore publiées et le backtest mesurait des séances plates ; la garde est posée côté candidate (règle 2, #27482) et le passage se refait une fois les séances publiées. `drk-kernel` et `halloween`, gelées le 2026-11-08, sont hors contrat (dates lues par défaut, ni `fees` ni `turnover`, projet de la mesure publiée au point d'entrée) : la correction est livrée sur `main` (#27482), leur gel en `drk-kernel-v2` et `halloween-v2` sur un projet dédié est fait (2026-11-22, SHA `fc56eec4cc09`) ; leur premier passage est dû au prochain passage mensuel (fenêtre nulle le jour du gel). Un passage QC demande le MCP QuantConnect, absent de plusieurs sièges : sur un siège sans MCP, les candidates QC restent dues.
+- **Le rythme automatique** (étape 3 de #18923) : le décideur existe (`scripts/shadow_schedule.py`), aucun déclencheur planifié ne l'appelle — la cadence est encore tenue à la main.
+
+Un passage pris en cours de mois plutôt qu'à la première séance ne fausse pas la lecture : la fenêtre hors échantillon ne fait que s'allonger de D à la date du passage, et `due` ne l'ouvre qu'une fois par mois et par candidate.

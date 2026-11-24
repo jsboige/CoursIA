@@ -149,6 +149,28 @@ def _extract_credit(cell: dict) -> str | None:
     return None
 
 
+def is_credited_example_header(cell: dict) -> bool:
+    """Vrai si la cellule est l'en-tete d'un EXEMPLE GUIDE CREDITE.
+
+    Forme canonique : un titre markdown d'exemple (``### Exemple ...``) qui
+    porte une attribution -- ``metadata.credited_from = "#NNNN"`` ou la
+    mention inline ``(crédité #NNNN)``. Les deux marqueurs sont ceux que
+    ``count_credited_examples`` compte : un en-tete d'exemple SANS attribution
+    n'est pas un exemple guide credite.
+
+    API publique : la convention d'attribution a UN proprietaire, ce module.
+    Un autre organe qui doit distinguer un exemple guide d'un exercice
+    (le role d'une cellule de code) consomme cette fonction plutot que de
+    rededuire la convention -- c'est le carve-out #23378.
+    """
+    if cell.get("cell_type") != "markdown":
+        return False
+    src = "".join(cell.get("source", []))
+    if not _is_example_header(src):
+        return False
+    return _extract_credit(cell) is not None
+
+
 def _cell_title(cell: dict) -> str:
     """Titre normalise d'une cellule markdown (1re ligne non-vide, sans #)."""
     if cell.get("cell_type") != "markdown":

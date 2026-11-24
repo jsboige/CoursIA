@@ -10,7 +10,7 @@ organigrammes) traces a la main avec des caracteres `+`, `-`, `|`, `v`, `<--`,
 `--->`. Le moteur canonique pour les remplacer est **Mermaid** (rendu natif
 GitHub / Jupyter via `jupyterlab-mermaid` / Quarto / Slidev).
 
-Cas fondateur verbatim (user 2026-08-20, source : SW-12-Python-GraphRAG.ipynb
+Cas fondateur verbatim (user 2026-08-20, source : SW-12-GraphRAG-Python.ipynb
 cell ## 2. Architecture d'un pipeline GraphRAG, l.208, preserve par PR #11906
 byte-identique) :
 

@@ -147,6 +147,13 @@ GIT_OBJECT_MISSING_NEEDLES: tuple[str, ...] = (
 # des messages de contenu (fichier illisible par un test), seul le couple
 # verbe + hexa designe l'operation git sur un objet du depot.
 GIT_OBJECT_READ_RE = re.compile(r"Could not read [0-9a-fA-F]{7,40}")
+GIT_PROMISOR_FETCH_RE = re.compile(
+    r"could not fetch [0-9a-fA-F]{40} from promisor remote", re.IGNORECASE
+)
+GIT_PROMISOR_TRANSFER_FAILURE_NEEDLES: tuple[str, ...] = (
+    "fatal: early eof",
+    "fetch-pack: invalid index-pack output",
+)
 
 
 def git_object_missing(job: dict, annotations: list[dict]) -> bool:
@@ -174,6 +181,24 @@ def git_object_missing(job: dict, annotations: list[dict]) -> bool:
         ):
             return True
     return False
+
+
+def git_object_missing_from_log(log_text: str) -> bool:
+    """Reconnaît le fetch promisor interrompu dans le journal brut du job.
+
+    Les annotations d'un check-run peuvent ne contenir que l'étape et son
+    code de sortie. Pour éviter de reclasser un simple timeout ou une erreur
+    de contenu, le journal doit nommer un SHA complet demandé au promisor et
+    une fin de transfert Git tronquée.
+    """
+    if not log_text or not GIT_PROMISOR_FETCH_RE.search(log_text):
+        return False
+    lowered = log_text.lower()
+    if TEST_SUMMARY_MARKER in lowered:
+        return False  # un test nomme en echec garde priorite sur le teardown
+    return any(
+        needle in lowered for needle in GIT_PROMISOR_TRANSFER_FAILURE_NEEDLES
+    )
 
 # Marqueur du bloc que pytest imprime quand il a NOMME des tests en echec. Sa
 # presence est ce qui rend une reclassification impossible : si pytest a
@@ -441,15 +466,20 @@ def analyse_runs(runs: list[dict]) -> dict:
                 # contenu. Teste AVANT worker_death : les annotations sont
                 # deja chargees, ce test ne coute aucun fetch de log.
                 klass = "GIT_OBJECT_MISSING"
-            if klass == "REAL_STEP_FAILURE" and worker_death_from_log(
-                fetch_job_log(job["id"])
-            ):
-                # Le fetch du log est borne a cette SEULE classe ambigue : une
-                # etape a conclu `failure`, mais le log ne nomme aucun test et
-                # porte une signature de mort de session -- c'est le parc, pas
-                # le contenu. Les autres classes sont tranchees par
-                # l'annotation, sans cout reseau supplementaire.
-                klass = "WORKER_DEATH"
+            if klass == "REAL_STEP_FAILURE":
+                # Le log est déjà la source canonique de WORKER_DEATH. Il
+                # porte aussi les détails Git absents de certaines
+                # annotations (récurrence #18312 : early EOF / invalid
+                # index-pack puis fetch promisor). Une seule lecture sert aux
+                # deux diagnostics ; la réclassification promisor reste
+                # conditionnée à un SHA complet et une fin de transfert.
+                log_text = fetch_job_log(job["id"])
+                if git_object_missing_from_log(log_text):
+                    klass = "GIT_OBJECT_MISSING"
+                elif worker_death_from_log(log_text):
+                    # Le log ne nomme aucun test et porte une signature de
+                    # mort de session -- c'est le parc, pas le contenu.
+                    klass = "WORKER_DEATH"
             if klass in ("SUCCESS", "SKIPPED"):
                 continue
             steps = job.get("steps") or []

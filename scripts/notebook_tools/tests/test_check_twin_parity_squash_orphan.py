@@ -304,3 +304,84 @@ def test_real_content_change_is_not_noop(tmp_path):
     )
     # Sanity : l'audit produit est bien le contenu courant.
     assert audit["content_python_sha"] != py_content_v1
+
+
+# --- 4. Drift metadata-only : verify ne rougit plus (#20228) ----------------
+
+def test_metadata_only_drift_is_not_a_mismatch(tmp_path):
+    """La moitie complementaire de #11919 (#20228).
+
+    Un tampon `nb["metadata"]` pose ou retire deplace le git blob SHA sans
+    toucher le contenu (cellules + outputs) : le blob recorded est alors
+    ANCETRE de HEAD (pas un orphelin par squash). `--update` le refuse comme
+    no-op -- par design, #9399 critere 2 -- donc le rapporter cote verify
+    rendait l'avertissement inextinguible : aucun geste n'existait pour
+    l'eteindre, et les deux modes du meme outil se contredisaient.
+
+    Le fix (#20228) : `verify_recorded_sha` ne rapporte plus un blob mismatch
+    qui est un drift metadata-only ancre sur HEAD ; le side concerne est liste
+    dans `metadata_only_sha`. L'orphelin par squash (section 1) reste rapporte.
+    """
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+
+    _commit(repo, py_rel, _nb(source=["# Title\n"]), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+
+    py_blob_v1 = ctp._git_blob_sha(repo, py_rel)
+    cs_blob_v1 = ctp._git_blob_sha(repo, cs_rel)
+    py_content_v1 = ctp._content_sha(repo, py_rel)
+    cs_content_v1 = ctp._content_sha(repo, cs_rel)
+
+    # Apres : seul le metadata de niveau carnet bouge (kernelspec/cost).
+    nb_v2 = _nb(source=["# Title\n"])
+    nb_v2["metadata"] = {"kernelspec": {"name": "python3"}, "cost": {"usd": 0.01}}
+    _commit(repo, py_rel, nb_v2, "metadata-only py")
+
+    py_blob_v2 = ctp._git_blob_sha(repo, py_rel)
+    assert py_blob_v2 != py_blob_v1, "le blob SHA doit bouger"
+    # Le contenu (cellules + outputs) est intact : `_content_sha` exclut le
+    # metadata de niveau carnet.
+    assert ctp._content_sha(repo, py_rel) == py_content_v1, (
+        "le content_sha est cense ignorer le metadata de niveau carnet"
+    )
+    # v1 est ANCETRE de HEAD (pas un orphelin) : c'est la discrimination qui
+    # separe ce cas du squash de la section 1.
+    assert ctp._blob_ancestor_in(repo, py_blob_v1), (
+        "le blob v1 doit rester accessible depuis HEAD (drift metadata-only)"
+    )
+
+    pairs_dir = repo / "twin_pairs.d"
+    pairs_dir.mkdir()
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Search-MetaOnly", py_rel, cs_rel,
+        py_blob_v1, cs_blob_v1, py_content_v1, cs_content_v1,
+    )
+
+    # 1. verify ne rougit plus : pas de MISMATCH, side liste en metadata-only.
+    verify_rc = ctp.main([
+        "--verify-recorded-sha", "--check", "--json",
+        "--registry", str(pairs_dir),
+        "--repo-root", str(repo),
+    ])
+    assert verify_rc == 0, (
+        f"un drift metadata-only ancre sur HEAD ne doit PAS rougir le gate "
+        f"(#20228), rc={verify_rc}"
+    )
+    pair = ctp.load_registry(pairs_dir)[0]
+    result = ctp.verify_recorded_sha(repo, pair)
+    assert result["status"] == "OK", result
+    assert result["mismatches"] == [], result
+    assert "python_sha" in result["metadata_only_sha"], (
+        "le side tolerate doit rester tracable dans metadata_only_sha"
+    )
+
+    # 2. Coherence : --update refuse toujours ce cas (no-op, design #9399 c.2).
+    #    C'est ce couple qui etait contradictoire avant le fix.
+    audit, cur_py, is_noop = ctp.update_pair(repo, pair)
+    assert is_noop is True, (
+        "un drift metadata-only doit rester un no-op cote --update "
+        "(design-gate #9399 critere 2)"
+    )
+    assert audit["content_python_sha"] == py_content_v1

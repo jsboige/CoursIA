@@ -19,6 +19,17 @@ metadonnees ``__meta__`` que chaque trace embarque deja :
   (``ClampHook`` sort avant de modifier quoi que ce soit) -> la trace doit
   etre IDENTIQUE, au bruit flottant pres.
 
+Un ``clamp_scale`` present et ``null`` n'est PAS « clamp plein » : l'intensite
+n'a pas de valeur scalaire. Deux cas, traites differemment :
+
+* ``clamp_ramp`` present -- le clamp est une RAMPE (intensite alpha(t), par
+  token ; hysteresis, #20253). L'information est COMPLETE : le bras se juge
+  sur la divergence mesuree avec sa reference, pas sur une intensite
+  scalaire ;
+* ``clamp_ramp`` absent -- l'intensite n'est declaree nulle part : le bras
+  est declare ``META-INCOMPLETE``, non verifiable, et jamais valide conforme
+  sur la seule foi d'un defaut de parsing (#21907).
+
 ## La reference d'un bras
 
 La trace non clampee de MEME identite : ``model``, ``sae_repo``, ``layer``,
@@ -89,12 +100,52 @@ class Trace:
         return bool(self.meta and self.meta.get("clamp_ids"))
 
     @property
-    def scale(self) -> float:
-        """Intensite annoncee. Absente -> 1.0 (clamp plein, comportement du
-        script d'extraction)."""
+    def scale(self) -> float | None:
+        """Intensite annoncee, ou None quand elle n'a pas de valeur scalaire.
+
+        Absente -> 1.0 (clamp plein, comportement du script d'extraction).
+        Presente et ``null`` -> None : soit le clamp est une RAMPE (l'intensite
+        est alpha(t), par token -- cf. ``ramp``), soit l'information manque
+        vraiment. Une valeur non numerique est traitee comme manquante elle
+        aussi -- un defaut de parsing ne doit jamais tuer l'audit des autres
+        bras.
+        """
         if not self.meta:
             return 1.0
-        return float(self.meta.get("clamp_scale", 1.0))
+        value = self.meta.get("clamp_scale", 1.0)
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    @property
+    def ramp(self) -> dict | None:
+        """Le profil d'intensite alpha(t), quand le clamp est une rampe.
+
+        L'extracteur ecrit alors ``clamp_scale: null`` -- l'intensite est PAR
+        TOKEN, elle n'a pas de valeur scalaire -- et ``clamp_ramp``
+        (cycles, peak) a cote (hysteresis, #20253). C'est une information
+        COMPLETE, pas un defaut de parsing : le bras se juge sur la
+        divergence mesuree, pas sur une intensite scalaire (#21907).
+        """
+        if not self.meta:
+            return None
+        value = self.meta.get("clamp_ramp")
+        return value if isinstance(value, dict) else None
+
+    @property
+    def scale_label(self) -> str:
+        """L'intensite telle qu'elle se lit dans le rapport."""
+        if self.scale is not None:
+            return f"{self.scale:g}"
+        if self.ramp is not None:
+            peak = self.ramp.get("peak")
+            cycles = self.ramp.get("cycles")
+            peak_s = f"{peak:g}" if isinstance(peak, (int, float)) else "?"
+            return f"rampe {cycles}x{peak_s}"
+        return "-"
 
     def identity(self) -> tuple:
         if not self.meta:
@@ -129,12 +180,13 @@ class Verdict:
     @property
     def failed(self) -> bool:
         return self.status in {"MUET", "NO-OP-ACTIF", "SANS-REFERENCE",
-                               "AMBIGU", "ILLISIBLE"}
+                               "AMBIGU", "ILLISIBLE", "META-INCOMPLETE"}
 
     def line(self) -> str:
         ref = self.reference.name if self.reference else "-"
         pct = f"{100.0 * self.frac:.1f} %" if self.total else "-"
-        return (f"| `{self.trace.name}` | {self.trace.scale:g} | `{ref}` | "
+        scale = self.trace.scale_label
+        return (f"| `{self.trace.name}` | {scale} | `{ref}` | "
                 f"{self.differing}/{self.total} | {pct} | {self.status} |")
 
 
@@ -152,6 +204,7 @@ class Report:
             "verdicts": [{
                 "trace": v.trace.name,
                 "scale": v.trace.scale,
+                "ramp": v.trace.ramp,
                 "reference": v.reference.name if v.reference else None,
                 "differing": v.differing,
                 "total": v.total,
@@ -175,11 +228,36 @@ class Report:
         n_muet = sum(1 for v in self.verdicts if v.status == "MUET")
         n_noop = sum(1 for v in self.verdicts if v.status == "NO-OP-ACTIF")
         n_bad = sum(1 for v in self.verdicts
-                    if v.status in {"SANS-REFERENCE", "AMBIGU", "ILLISIBLE"})
+                    if v.status in {"SANS-REFERENCE", "AMBIGU", "ILLISIBLE",
+                                    "META-INCOMPLETE"})
         return (f"{len(self.verdicts)} bras juges : "
                 f"{len(self.verdicts) - len(self.failures)} conformes, "
                 f"{n_muet} muets (clamp invisible), {n_noop} actifs a alpha=0, "
                 f"{n_bad} non jugeables, {len(self.skipped)} sans metadonnee.")
+
+
+def _as_text(raw) -> str:
+    """Le contenu textuel d'un membre ``__meta__``.
+
+    L'extraction ecrit la meta comme chaine JSON dans un tableau numpy : 0-d
+    unicode sur les traces de la serie, en bytes sur d'autres ecritures.
+    ``str(...)`` sur un tableau 0-d donne bien le texte, mais sur un tableau
+    de plus d'un element il donne la REPR du tableau, et sur des bytes il
+    donne ``b'...'`` -- deux echecs silencieux. On normalise donc
+    explicitement (#21907).
+    """
+    if isinstance(raw, np.ndarray):
+        if raw.shape == ():
+            raw = raw.item()
+        elif raw.size == 1:
+            raw = raw.reshape(-1)[0]
+        else:
+            raise ValueError(f"__meta__ porte {raw.size} elements")
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", "replace")
+    if isinstance(raw, str):
+        return raw
+    raise ValueError(f"__meta__ de type {type(raw).__name__}")
 
 
 def read_meta(path: Path) -> dict | None:
@@ -188,7 +266,7 @@ def read_meta(path: Path) -> dict | None:
         with np.load(path, allow_pickle=False) as z:
             if "__meta__" not in z.files:
                 return None
-            return json.loads(str(z["__meta__"]))
+            return json.loads(_as_text(z["__meta__"]))
     # Un .npz corrompu ou tronque leve zipfile.BadZipFile ou EOFError, qui ne
     # derivent d'aucune des quatre premieres : sans elles, un seul fichier
     # abime ferait avorter l'audit entier au lieu d'etre declare sans
@@ -260,6 +338,15 @@ def references_for(trace: Trace, corpus: list[Trace]) -> list[Trace]:
 def judge(trace: Trace, corpus: list[Trace],
           noise_floor: float = NOISE_FLOOR_FRAC) -> Verdict:
     """Le verdict d'un bras clampe : muet, conforme, ou non jugeable."""
+    if trace.scale is None and trace.ramp is None:
+        # Ni intensite scalaire, ni profil de rampe : l'information sur
+        # l'intensite du clamp est absente. Le bras ne peut etre juge ni dans
+        # un sens ni dans l'autre -- il sort du verdict avec un statut
+        # explicite, et ECHEC, parce qu'un organe qui ne peut pas dire
+        # « non verifiable » ne verrait pas un clamp muet (#21907).
+        return Verdict(trace, None, status="META-INCOMPLETE",
+                       detail="clamp_scale declare null sans clamp_ramp : "
+                              "intensite non declaree, bras non verifiable")
     candidates = references_for(trace, corpus)
     if len(candidates) > 1:
         return Verdict(trace, None, status="AMBIGU",
@@ -290,7 +377,7 @@ def judge(trace: Trace, corpus: list[Trace],
         return Verdict(trace, ref, diff, total, "ok-noop")
     if frac <= noise_floor:
         return Verdict(trace, ref, diff, total, "MUET",
-                       f"clamp annonce (alpha={trace.scale:g}) mais la trace "
+                       f"clamp annonce ({trace.scale_label}) mais la trace "
                        f"est identique a sa reference au bruit pres "
                        f"({100.0 * frac:.4f} % <= {100.0 * noise_floor:.2f} %)")
     return Verdict(trace, ref, diff, total, "ok")

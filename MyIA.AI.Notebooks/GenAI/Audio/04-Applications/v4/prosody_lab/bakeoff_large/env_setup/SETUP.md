@@ -1,6 +1,6 @@
 # Setup env Phase A0 #17586 bakeoff_large
 
-Tell c.c.c.d.F strict fondateur (règle globale) : **RÉPARER, ne JAMAIS contourner**. L'env Python 3.13 système de la machine po-2023 a `transformers==5.12.1` (largement utilisé par le dépôt) qui est **incompatible** avec `qwen-tts==0.1.1` (qui exige `transformers<5`). Downgrader transformers casserait une grande partie des notebooks existants.
+Règle globale ([CLAUDE.md](../../../../../../../../CLAUDE.md) §F) : **RÉPARER, ne JAMAIS contourner**. L'env Python 3.13 système de la machine po-2023 a `transformers==5.12.1` (largement utilisé par le dépôt) qui est **incompatible** avec `qwen-tts==0.1.1` (qui exige `transformers<5`). Downgrader transformers casserait une grande partie des notebooks existants.
 
 **Solution** : venv Python 3.12 dédié `qwen3tts`, isolé du système.
 
@@ -95,7 +95,7 @@ _runtime/venv-qwen3tts/Scripts/python.exe -c "import qwen_tts; print('OK', qwen_
 - **RTX 3090** (24 GB VRAM) — cible primaire, ~15 GB libre mesuré
 - RTX 3080 Ti Laptop GPU (16 GB) — fallback si RTX 3090 occupée
 
-Tell c.c.c.d.767-L1 strict fondateur : **zero-dep-manifeste ≠ zero-dep-réel**. Le test ci-dessus (import + GPU dispo) est OBLIGATOIRE avant tout client.py.
+**zero-dep-manifeste ≠ zero-dep-réel**. Le test ci-dessus (import + GPU dispo) est OBLIGATOIRE avant tout client.py.
 
 ## CosyVoice3 (client `cosyvoice3.py`, venv `venv-cosyvoice3`)
 

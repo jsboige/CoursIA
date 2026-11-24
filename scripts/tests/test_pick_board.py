@@ -349,22 +349,23 @@ def test_consumer_checks_exactly_one_claim(monkeypatch):
 
 
 def test_consumer_preserves_the_belt_order(monkeypatch):
-    """La tete du consommateur est celle du tapis, au meme tri pres.
-
-    Une issue jamais servie est classee par sa CREATION (`belt_sort_key`), pas
-    mise d'office en tete : c'est la regle du tapis. Le consommateur doit la
-    rendre identique -- deux lanes qui liraient deux tetes differentes se
-    departageraient sur un ordre, pas sur le claim.
-    """
-    _counting_claims(monkeypatch, (pig.CLAIM_CODE_FREE, "libre"))
+    """Le consommateur rejoue le tri du tapis sur les classes de visite."""
+    calls = _counting_claims(monkeypatch, (pig.CLAIM_CODE_FREE, "libre"))
+    now = datetime(2026, 11, 8, 12, tzinfo=timezone.utc)
+    monkeypatch.setattr(pig, "NOW", now)
     recent = _item(21, last="2026-10-01T00:00:00Z")
     ancient = _item(22, last="2026-08-01T00:00:00Z")
-    never = _item(23, last=None, created_at="2026-06-01T00:00:00Z")
+    never_old = _item(23, last=None, created_at="2026-06-01T00:00:00Z")
+    never_recent = _item(24, last=None, created_at="2026-11-06T00:00:00Z")
+    items = [recent, ancient, never_old, never_recent]
     expected = [it["number"] for it in
-                sorted([recent, ancient, never], key=pig.belt_sort_key)]
-    snap = _snapshot([recent, ancient, never])
-    picks, _meta = pig.consume_board(snap, _args(), urns={"grain"})
-    assert [it["number"] for it in picks] == expected == [23, 22, 21]
+                sorted(items, key=lambda it: pig.belt_sort_key(it, now=now))]
+    picks, _meta = pig.consume_board(_snapshot(items), _args(), urns={"grain"})
+    # Relecture du 11/11 (#24373) : la classe 3 a disparu. L'issue jamais
+    # servie et ancienne (23, creee le 2026-06-01) rejoint la classe 2, ou
+    # elle est rangee par sa creation -- donc devant les deux items visites.
+    assert [it["number"] for it in picks] == expected == [24, 23, 22, 21]
+    assert calls[0][0] == [24]
 
 
 def test_consumer_falls_back_when_the_retained_candidate_is_held(monkeypatch):

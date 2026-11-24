@@ -34,6 +34,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 
 SERIES_ROOT = "MyIA.AI.Notebooks"
@@ -199,10 +200,62 @@ def check_readme(series: str) -> dict:
     return {"path": str(readme), "exists": True, "objectifs": objectifs, "capstone_phrase": capstone_phrase}
 
 
+def normalize_series_path(series: str) -> str | None:
+    """Normalise un nom de serie (ou de **sous-serie**) confine sous SERIES_ROOT.
+
+    Rend la forme normalisee (separateurs `/`, segments joints par `/`), ou
+    `None` si le nom sort de `SERIES_ROOT` ou n'est pas un nom de chemin.
+
+    Une sous-serie `A/B` est un dossier REEL du depot -- le depot en compte
+    (`MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical`, ...). L'organe les
+    refusait tous, faute de pouvoir les nommer : la verification de finition
+    etait donc structurellement impossible sur une sous-serie.
+
+    Le confinement est la condition : un nom accepte ne peut designer qu'un
+    dossier SOUS `SERIES_ROOT`. Sont donc refuses :
+
+    - un chemin absolu (`/etc`, `C:/x`) ou portant une lettre de lecteur ;
+    - un segment vide (`A//B`) ;
+    - un segment `.` ou `..` (remontee d'arborescence) ;
+    - un segment cache (`.git`, `.ipynb_checkpoints`).
+
+    Le controle est refait sur le chemin **resolu** (voir `run_check`) : la
+    normalisation retire les formes textuelles, pas les liens symboliques.
+    """
+    if not series or not isinstance(series, str):
+        return None
+    candidat = series.strip().replace("\\", "/")
+    if candidat.startswith("/") or ":" in candidat:
+        return None
+    segments = candidat.split("/")
+    if any(seg in ("", ".", "..") for seg in segments):
+        return None
+    if any(seg.startswith(".") for seg in segments):
+        return None
+    return "/".join(segments)
+
+
+def _confine_sous_series_root(series: str) -> bool:
+    """Verifie que le chemin resolu de la serie reste SOUS `SERIES_ROOT`.
+
+    Defense en profondeur : la normalisation refuse deja `..` et les chemins
+    absolus, mais un lien symbolique dans l'arbre pourrait faire pointer la
+    cible hors de `SERIES_ROOT`. On le mesure sur le chemin resolu.
+    """
+    try:
+        racine = Path(SERIES_ROOT).resolve()
+        cible = (racine / series).resolve()
+    except OSError:
+        return False
+    return racine == cible or racine in cible.parents
+
+
 def run_check(series: str) -> dict:
     """Orchestre la verification d'une serie et retourne un dict verdict."""
-    if not series or "/" in series or "\\" in series or series.startswith("."):
+    normalise = normalize_series_path(series)
+    if normalise is None or not _confine_sous_series_root(normalise):
         return {"series": series, "error": "invalid_series_name", "finished": False, "rc": 2}
+    series = normalise
     if not os.path.isdir(os.path.join(SERIES_ROOT, series)):
         return {"series": series, "error": "series_not_found", "finished": False, "rc": 2}
     notebooks = list_series_notebooks(series)

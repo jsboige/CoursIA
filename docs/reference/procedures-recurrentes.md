@@ -1,6 +1,51 @@
 # Procédures récurrentes — CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 Détail des workflows référencés dans [CLAUDE.md](../../CLAUDE.md) section "PROCEDURES RECURRENTES".
+
+## Geste d'avant-push — rejouer les gardes en local
+
+**Pourquoi.** Plusieurs gardes du depot n'existent que dans la CI : leur
+logique est écrite dans le YAML du workflow, donc inaccessible avant de
+pousser. Mesure #25692 : trois liens relatifs cassés par une profondeur de
+chemin de plus — un `../` de trop — n'ont été vus que par la CI — `check-navlinks`
+et le job « No enrich-quality regression in changed notebooks » — soit un
+aller-retour pour une faute d'un cran.
+
+**Le geste.**
+
+```bash
+# 1. la voie rapide, en local : aucun check-run publie, les verdicts affiches
+python scripts/ci/fast_lane.py --dry-run --base-ref origin/main
+
+# 2. la jambe enrich-quality (base-vs-PR sur les carnets de la PR)
+python scripts/notebook_tools/enrich_quality_delta.py --base-ref origin/main
+```
+
+`--dry-run` publie **rien** (aucun check-run, aucun commentaire) : c'est un
+verdict local, pas une publication. La voie rapide compare la branche de
+travail a `origin/main` ; sur une branche empilée, penser a pointer
+`--base-ref` sur la base réelle de la PR.
+
+**Ce que la jambe enrich-quality fait.** Elle rejoue la logique du gate
+`enrich-quality-gate.yml`, désormais **extraite** dans un organe
+(`scripts/notebook_tools/enrich_quality_delta.py`) qui *consomme* les deux
+organes existants au lieu de les réécrire :
+`enrich_quality_ci.py` (la comparaison base-vs-tête d'un carnet) et
+`filter_pr_introduced_notebooks.py` (le filtre « ce carnet a été touché par un
+commit propre à la PR »). Elle rend **1** si un carnet régresse (finding
+`HIGH` nouveau : lien cassé, ancre pendante, perte de diacritiques…), **0**
+sinon. Un finding déjà présent en base ne bloque pas : le contrat du gate est
+la *régression*, pas le stock.
+
+**Le canal du body.** Les marqueurs `enrich-quality: reecriture assumee --
+<carnet> : <raison>` (#17744) ne sont honorés que si le body de la PR est
+connu de l'organe : en local, `--pr-body-file <fichier>` ; en CI, la variable
+d'environnement `ENRICH_QUALITY_PR_BODY`. Sans ce canal, une réécriture
+*annoncée* est comptée comme une régression — d'où le caractère **advisory**
+de la jambe dans la voie rapide (le workflow d'origine reste l'autorité
+bloquante ; voir `scripts/ci/fast_lane_registry.py`, TRANCHE50).
 
 ## Workflow PR
 
@@ -100,7 +145,7 @@ Une PR « doc-honesty » / « alignement output » / « reconcile stale » (titr
 - **Citer `#8364` en label sans `## Diagnostic dérive`** dans le body = violation §D.5, reviewer DOIT poster `CHANGES_REQUESTED` (incident fondateur #8479, MusicGen 02-3 RTF `0.5-2x`→`0.21-0.24x` aligné sur run non-optimisé alors qu'une re-exec Stop-&-Repair était déjà due — verdict COSMETIC + CHANGES_REQUESTED obligatoire).
 - **Aligner un nombre de perf/timing/accuracy/coût sans re-exec** alors que le notebook est re-exécutable localement (kernel Python/.NET dispo, règle F) = enshrine une valeur qui changera au prochain passage kernel. C'est la dérive même que C.4 interdit.
 - **Fold l'alignement dans une PR markdown séparée** alors qu'une re-exec Stop-&-Repair est **déjà due** sur ce notebook (leak cellule cassée, cause classifiée **(a)** env) = malhonnête. Fold dans la re-exec, **pas** de PR markdown isolée.
-- **`CAUSE_DOCUMENTED_ONLY` sans issue fille** = COSMETIC caché, CHANGES_REQUESTED (cf §D.5).
+- **`CAUSE_DOCUMENTED_ONLY` sur une cause réparable par la flotte** (environnement, dépendance, clé, machine), même avec issue fille = COSMETIC caché, CHANGES_REQUESTED (cf §D.5).
 - **Hand-editer la sortie de cellule** au lieu de re-exécuter (Stop & Repair, L948 ★★, règle secrets-hygiene #6) = **BANNISSEMENT** (`CHANGES_REQUESTED` §D + §H sota-not-workaround). Seules exceptions tolérées : quantbooks QC (non-exécutables via MCP) + `metadata.papermill.input/output_path` au `basename` + `probeAddresses` banner strip post-re-exec .NET.
 
 ### Vérification post-fix (avant `[DONE]`)
@@ -133,6 +178,8 @@ Pour un notebook research utilisant `QuantBook()` (kernel QC Cloud uniquement) :
 1. **MCP qc-mcp d'abord** : vérifier si un outil exécute le research notebook
 2. **Fallback Playwright** : automatiser la session QC Cloud Web (login, navigation projet, Run All, téléchargement notebook exécuté)
 3. **Pas de fallback markdown explicatif** : un Quantbook commit doit avoir des outputs réels QC Cloud
+
+Routes mesurées (LEAN Research local, exécution directe dans l'IDE QC Cloud, exécuteur côté noyau, Research Assistant), récupération du fichier exécuté et fusion de ses sorties dans la branche : [docs/qc/quantbook-execution-routes.md](../qc/quantbook-execution-routes.md).
 
 ## Productivité pendant les opérations longues (règle HARD 2026-05-11)
 

@@ -554,6 +554,120 @@ class TestAnalyzeNotebookSerieClassification:
         assert entry["sous_serie"] == ""
 
 
+# --- sous-série profonde : le bucket suit le chemin complet (#24994) ---------
+
+class TestSubSerieDepth:
+    """Le générateur suit la profondeur réelle de l'arbre (#24994, acceptance
+    « arbre synthétique de profondeur 3 »).
+
+    `sous_serie` seul ne portait que le premier segment : DataScienceWithAgents
+    (113 carnets répartis sur 3 niveaux) et Lean (159 sur 2 niveaux, 26
+    sous-répertoires) rendaient en sections plates. Les nouveaux champs
+    `sous_serie_path` / `sous_serie_levels` portent le chemin complet -- c'est
+    ce niveau que l'export RDF de l'Epic #24993 réutilisera. `sous_serie` garde
+    le premier segment (compat #4910 : les filtres par égalité de
+    expand_catalog_markers et les tests ci-dessus ne changent pas).
+    """
+
+    def _write_notebook(self, base: Path, rel_path: str) -> Path:
+        nb_path = base / rel_path
+        nb_path.parent.mkdir(parents=True, exist_ok=True)
+        nb = _nb(
+            [_code("x = 1", [_stream_output("ok")])],
+            metadata={"kernelspec": {"display_name": "Python 3",
+                                     "name": "python3"}},
+        )
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        return nb_path
+
+    def test_depth3_entry_carries_full_path_and_levels(self, tmp_path, monkeypatch):
+        """Arbre synthétique profondeur 3 : Serie/A/B/C/nb.ipynb porte
+        sous_serie='A' (compat), sous_serie_path='A/B/C', levels=['A','B','C']."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb = self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-deep.ipynb")
+        entry = analyze_notebook(nb, pedagogical=True, git_meta={})
+        assert entry["serie"] == "TestSerie"
+        assert entry["sous_serie"] == "A"
+        assert entry["sous_serie_path"] == "A/B/C"
+        assert entry["sous_serie_levels"] == ["A", "B", "C"]
+
+    def test_root_and_level1_entries(self, tmp_path, monkeypatch):
+        """Carnet racine : chemin vide, levels vides -- le bucket Racine."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_root = self._write_notebook(tmp_path, "TestSerie/nb-root.ipynb")
+        nb_l1 = self._write_notebook(tmp_path, "TestSerie/A/nb-l1.ipynb")
+        e_root = analyze_notebook(nb_root, pedagogical=True, git_meta={})
+        e_l1 = analyze_notebook(nb_l1, pedagogical=True, git_meta={})
+        assert e_root["sous_serie_path"] == ""
+        assert e_root["sous_serie_levels"] == []
+        assert e_l1["sous_serie_path"] == "A"
+        assert e_l1["sous_serie_levels"] == ["A"]
+
+    def test_report_buckets_by_full_path_not_first_segment(self, tmp_path, monkeypatch):
+        """Le rendu sectionne par chemin complet : les niveaux A/B/C et A/B2
+        sont des buckets distincts, jamais aplaties sous 'A'. Les totaux
+        réconcilient le grand total (buckets disjoints)."""
+        import re as _re
+
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        entries = [
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-1.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-2.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B2/nb-3.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/nb-4.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### TestSerie (4 notebooks)" in report
+        assert "#### A/B/C (2)" in report
+        assert "#### A/B2 (1)" in report
+        assert "#### Racine (1)" in report
+        # Jamais le bucket plat du premier segment : 'A' seul n'est plus un
+        # bucket quand tous ses carnets vivent plus bas.
+        assert "#### A (" not in report
+        # Racine d'abord, puis chemins alphabétiquement (ordre déterministe).
+        assert report.index("#### Racine (1)") < report.index("#### A/B/C (2)")
+        assert report.index("#### A/B/C (2)") < report.index("#### A/B2 (1)")
+        # Table agrégée : lignes de buckets disjoints, somme == grand total,
+        # et le chemin complet figure dans la colonne Sub-series.
+        rows = _re.findall(r"^\| (\S.+) \| (\S.+) \| (\d+) \|$", report, _re.M)
+        assert sum(int(n) for _, _, n in rows) == len(entries) == 4
+        assert "| TestSerie | A/B/C | 2 |" in report
+        assert "| TestSerie | A/B2 | 1 |" in report
+
+    def test_depth5_survives_heading_ceiling(self, tmp_path, monkeypatch):
+        """Markdown plafonne les headings à h6 ; l'arbre réel descend à 5
+        niveaux de sous-série (mesuré #24994). Le bucket-chemin-complet tient
+        à toute profondeur : la section profonde existe, le carnet y est."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb = self._write_notebook(
+            tmp_path, "TestSerie/L1/L2/L3/L4/L5/nb-max.ipynb"
+        )
+        entry = analyze_notebook(nb, pedagogical=True, git_meta={})
+        assert entry["sous_serie_path"] == "L1/L2/L3/L4/L5"
+        report = generate_markdown_report([entry], repo_root=tmp_path)
+        assert "#### L1/L2/L3/L4/L5 (1)" in report
+        assert "nb-max.ipynb" in report
+
+    def test_serie_order_drops_epf(self):
+        """EPF est retiré de SERIES_ORDER : la série n'a pas de répertoire
+        (mesuré #24994), l'entrée était inerte."""
+        from generate_catalog import OWNER_MAP, SERIES_ORDER
+        assert "EPF" not in SERIES_ORDER
+        assert "EPF" not in OWNER_MAP
+
+
 # --- classify_maturity ---
 
 class TestClassifyMaturity:
@@ -827,21 +941,52 @@ class TestPedagogicalRolesRegistry:
 
     def test_le_registre_reel_porte_les_cinq_cites(self):
         """Controle positif sur le fichier reel : le critere 4 de #15080 exige
-        le champ rempli pour AU MOINS les cinq notebooks lus firsthand."""
-        from generate_catalog import _load_pedagogical_roles_registry
-        reg = _load_pedagogical_roles_registry()
+        le champ rempli pour AU MOINS les cinq notebooks lus firsthand.
+
+        Ce que le test verifie est ce que son nom annonce : le registre REEL
+        **porte** les cinq cites, avec un champ rempli et un role dans le
+        vocabulaire ferme. Les **valeurs** ne sont pas figees ici, et c'est
+        delibere : le registre est une reference VIVANTE (son en-tete porte
+        « REFERENCE -- vivante ») et le role est un jugement editorial cure,
+        relu quand le carnet change. La fusion #23588 a ainsi fait passer
+        `05b-Stockage-Vectoriel-Serveur` de `method_demo` a `open_subject` --
+        le carnet fusionne porte six exercices enonces et stubbes (cellules 18,
+        20, 26, 48, 50, 52, verifie firsthand), donc l'etudiant a un travail a
+        produire : c'est la definition meme du sujet ouvert. Epingler les
+        valeurs transformait chaque re-curation legitime en echec de CI (vu
+        sur #23593) ; le controle doit figer une **coherence**, pas un
+        instantane de contenu vivant.
+        """
+        import generate_catalog as gc
+        reg = gc._load_pedagogical_roles_registry()
         if not reg:
             import pytest
             pytest.skip("registre absent de cet arbre")
-        attendu = {
-            "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb": "worked_solution",
-            "GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb": "open_subject",
-            "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb": "method_demo",
-            "GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb": "open_subject",
-            "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb": "method_demo",
-        }
-        for path, role in attendu.items():
-            assert reg.get(path) == role, f"{path}: {reg.get(path)!r} != {role!r}"
+        cites = [
+            "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+            "GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb",
+            "GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb",
+            "GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb",
+            "GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb",
+        ]
+        for path in cites:
+            role = reg.get(path)
+            assert role, f"{path} : absent du registre, ou champ vide"
+            assert role in gc.PEDAGOGICAL_ROLE_VOCAB, (
+                f"{path} : role {role!r} hors vocabulaire ferme "
+                f"{sorted(gc.PEDAGOGICAL_ROLE_VOCAB)}"
+            )
+        # Coherence avec la source : le fichier du registre declare lui-meme les
+        # cinq cites. Le loader n'invente aucune entree -- si une disparait du
+        # fichier, elle disparait du mapping, et la ligne ci-dessus le voit
+        # deja ; on verifie donc aussi la source elle-meme, pour que le controle
+        # ne depende pas du seul loader.
+        source = gc.PEDAGOGICAL_ROLES_REGISTRY_PATH.read_text(encoding="utf-8")
+        for path in cites:
+            assert f"notebook_path: {path}" in source, (
+                f"{path} : absent du fichier du registre "
+                f"{gc.PEDAGOGICAL_ROLES_REGISTRY_PATH.name}"
+            )
 
     def test_hors_vocabulaire_ecarte_avec_avertissement(self, tmp_path, capsys):
         """Une valeur hors vocabulaire ferme n'entre JAMAIS au catalogue -- elle
@@ -1986,9 +2131,71 @@ class TestClassifyReproducibility:
             head_sha="abc1234",
         ) == "REPRODUCED"
 
+    def test_reproduced_despite_width_mismatch_same_commit(self):
+        # #24860 : largeur historique 9 vs abrege epingle 7, meme commit ->
+        # prefixe commun suffisant, l'attestation REPRODUCED survit au
+        # changement de largeur (cas mesure SW-14, meme commit 1a4df1971).
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df19",
+        ) == "REPRODUCED"
+
+    def test_width_mismatch_different_commit_not_reproduced(self):
+        # Un caractere de difference SOUS le prefixe commun : commits distincts,
+        # la normalisation ne fabrique pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df1971",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df1a",
+        ) == "EXECUTED"
+
+    def test_too_short_prefix_not_reproduced(self):
+        # Moins de 7 caracteres de prefixe commun : pas d'attestation.
+        assert classify_reproducibility(
+            "A_ALL_EXEC_OK",
+            last_success_sha="1a4df",
+            executed_at="2026-09-01T00:00:00Z",
+            head_sha="1a4df",
+        ) == "EXECUTED"
+
     def test_partial_exec_is_static_ok(self):
         assert classify_reproducibility("B_PARTIAL_EXEC") == "STATIC_OK"
         assert classify_reproducibility("NO_CODE") == "STATIC_OK"
+
+
+class TestShaAbbrevWidthPinned:
+    """#24860 : abrege epingle a 7 des deux cotes + comparaison normalisee.
+
+    Les largeurs 9/10 mesurees dans l'historique du catalogue venaient d'abreges
+    non epingles (`%h` seul, `--short` seul) : le champ dependait de la taille du
+    depot et de la config du runner.
+    """
+
+    def test_get_head_sha_returns_seven_chars(self):
+        from generate_catalog import get_head_sha
+        sha = get_head_sha()
+        assert sha != ""
+        assert len(sha) == 7
+        int(sha, 16)  # hexadecimal valide
+
+    def test_get_last_commit_sha_returns_seven_chars(self):
+        from forensic_scan import get_last_commit_sha
+        repo_root = Path(__file__).resolve().parents[3]
+        target = repo_root / "scripts" / "notebook_tools" / "forensic_scan.py"
+        sha = get_last_commit_sha(target, repo_root)
+        assert sha is not None
+        assert len(sha) == 7
+        int(sha, 16)
+
+    def test_sha_prefix_equal_semantics(self):
+        from generate_catalog import _sha_prefix_equal
+        assert _sha_prefix_equal("1a4df19", "1a4df1971")
+        assert _sha_prefix_equal("1a4df1971", "1a4df19")
+        assert not _sha_prefix_equal("1a4df1", "1a4df1")  # prefixe commun < 7
+        assert not _sha_prefix_equal("1a4df19", "1a4df1a")
 
 
 # --- generate_markdown_report (#15490) ---
@@ -2144,14 +2351,14 @@ class TestGenerateMarkdownReport:
             "{}", encoding="utf-8"
         )
         report = generate_markdown_report(entries, repo_root=tmp_path)
-        # No UNESCAPED pipe inside cells: the row still has exactly 8 columns
-        # (9 structural pipes incl. edges). Escaped `\|` pipes are excluded by
+        # No UNESCAPED pipe inside cells: the row still has exactly 10 columns
+        # (11 structural pipes incl. edges). Escaped `\|` pipes are excluded by
         # the lookbehind, so 1 escaped pipe in the title + 1 in the kernel
         # must not widen the row.
         title_row = next(
             ln for ln in report.splitlines() if "Title with" in ln
         )
-        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 9
+        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 11
         assert "\\|" in title_row
         assert "\\`" in title_row and "\\[bracket\\]" in title_row
 
@@ -2184,7 +2391,7 @@ class TestGenerateMarkdownReport:
         )
         # 8 columns => 9 structural `|` chars (no escaped). Any new unescaped pipe
         # in status/maturity/duration/owner would widen the row.
-        assert len(_re.findall(r"(?<!\\)\|", row)) == 9, (
+        assert len(_re.findall(r"(?<!\\)\|", row)) == 11, (
             f"unescaped pipe in status/maturity/duration/owner widened the row:\n{row}"
         )
         # The dangerous payloads survive the escape and stay visible in the cell.
@@ -2227,6 +2434,20 @@ class TestGenerateMarkdownReport:
             "#quarto-document-content table { display: block; overflow-x: auto; }"
             in report
         )
+
+    def test_pagetitle_frontmatter_first(self, tmp_path):
+        """Browser-tab title: Quarto titles the page from frontmatter pagetitle.
+
+        Without it the rendered catalog page is titled by its file slug
+        ("course_catalog.generated", measured 03/11 on #10921 criterion 5).
+        The frontmatter must open the file so Quarto parses it, and carry a
+        human title, not the slug.
+        """
+        report = generate_markdown_report(
+            [_catalog_entry("ML/nb-a.ipynb")], repo_root=tmp_path
+        )
+        assert report.startswith('---\npagetitle: "CoursIA Notebook Catalog"\n---\n')
+        assert "course_catalog.generated" not in report.splitlines()[1]
 
 
 # --- scan_all_notebooks : compte des exclusions par motif (#15606 point 2) ---
@@ -2429,12 +2650,12 @@ class TestBuildGitMetadataLoud:
         stdout = "\n".join([
             "COMMIT:aaa111|2026-09-13 10:00:00 +0200|dev@example.org|feat: nb (#123) et (#124)",
             "",
-            "MyIA.AI.Notebooks/Serie/n.ipynb",
-            "scripts/hors_perimetre.py",
+            "M\tMyIA.AI.Notebooks/Serie/n.ipynb",
+            "M\tscripts/hors_perimetre.py",
             "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|ancien (#99)",
             "",
-            "MyIA.AI.Notebooks/Serie/n.ipynb",
-            "MyIA.AI.Notebooks/Serie/m.ipynb",
+            "M\tMyIA.AI.Notebooks/Serie/n.ipynb",
+            "M\tMyIA.AI.Notebooks/Serie/m.ipynb",
         ])
 
         with patch("generate_catalog.subprocess.run") as mock_run:
@@ -2459,5 +2680,670 @@ class TestBuildGitMetadataLoud:
         assert meta["Serie/m.ipynb"]["authors"] == 1
 
 
+# --- build_git_metadata : l'historique doit suivre les renommages (#25865) ---
+
+
+class TestBuildGitMetadataRenameReconnection:
+    """Un carnet renomme doit porter l'historique de ses noms anciens.
+
+    Mesure du 2026-11-11 (#25865) : 438 carnets du catalogue etaient la cible
+    d'un renommage du registre, et pour les 438 `first_commit` etait posterieur
+    ou egal a la date du renommage -- l'historique anterieur etait jetee, et
+    `history` valait pourtant `COMPLETE`. La date de creation mesuree etait
+    donc la date du renommage.
+
+    Ces tests vérifient le raccord dans les deux sens : un renommage exact vu
+    par git (`R100`), un renommage avec modification que seul le registre
+    connait, une chaine de deux renommages -- et le cas qui doit rester
+    VISIBLE : un renommage que rien ne raccorde.
+    """
+
+    ANCIEN = "MyIA.AI.Notebooks/Serie/ancien.ipynb"
+    NOUVEAU = "MyIA.AI.Notebooks/Serie/ancien-Python.ipynb"
+    MILIEU = "MyIA.AI.Notebooks/Serie/ancien-Python-Milieu.ipynb"
+    FINAL = "MyIA.AI.Notebooks/Serie/final.ipynb"
+
+    @staticmethod
+    def _stdout(*blocs):
+        return "\n".join(blocs)
+
+    @staticmethod
+    def _ledger(tmp_path, lignes):
+        path = tmp_path / "docs" / "reference" / "rename-ledger.tsv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+
+    def _run(self, gc, monkeypatch, tmp_path, stdout, ledger=None):
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        # Les frontieres de greffe ne sont pas l'objet de ces tests : sans
+        # depot git, la question est sans reponse, et le fail-closed
+        # transformerait chaque entree en historique coupe.
+        monkeypatch.setattr(gc, "shallow_boundaries", lambda: set())
+        if ledger is not None:
+            self._ledger(tmp_path, ledger)
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=0, stdout=stdout, stderr="",
+            )
+            return gc.build_git_metadata()
+
+    def _run_audit(self, gc, monkeypatch, tmp_path, stdout, ledger=None):
+        """La commande d'audit, sur la meme fixture que la passe."""
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(gc, "shallow_boundaries", lambda: set())
+        if ledger is not None:
+            self._ledger(tmp_path, ledger)
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=0, stdout=stdout, stderr="",
+            )
+            return gc.audit_rename_reconnection()
+
+
+    def test_un_renommage_exact_raccorde_l_historique(self, tmp_path, monkeypatch):
+        """`R100` : git a vu le renommage, l'ancien nom disparait du
+        catalogue et l'historiqueantecedent revient au nom courant."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"R100\t{self.ANCIEN}\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        meta = self._run(gc, monkeypatch, tmp_path, stdout)
+
+        assert set(meta) == {"Serie/ancien-Python.ipynb"}, (
+            "l'ancien nom ne doit plus porter d'entree : son historique "
+            "appartient au carnet renomme"
+        )
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry["revisions"] == 2, "le commit d'origine compte pour le carnet"
+        assert entry["first_commit"] == "2026-09-01", (
+            "la date de creation est celle du carnet D'AVANT le renommage"
+        )
+        assert entry["last_validation"] == "2026-11-09"
+        assert not entry.get("history_unresolved_rename")
+
+    def test_un_renommage_avec_modification_au_registre_raccorde_egalement(
+        self, tmp_path, monkeypatch,
+    ):
+        """Le renommage n'est pas exact : git ne le voit pas (`-M100%` exige
+        un contenu identique). C'est le REGISTRE qui le fait savoir."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme et complete (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.NOUVEAU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry["revisions"] == 2
+        assert entry["first_commit"] == "2026-09-01"
+        assert not entry.get("history_unresolved_rename")
+
+    def test_un_renommage_absent_du_registre_ne_se_declare_pas_complete(
+        self, tmp_path, monkeypatch,
+    ):
+        """Rien n'etablit le lien : l'etat doit etre visible, jamais un
+        `COMPLETE` silencieux qui publierait une date de creation fausse."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme et complete (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        meta = self._run(gc, monkeypatch, tmp_path, stdout)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry.get("history_unresolved_rename") is True
+        creation = gc.classify_creation_cost(entry)
+        assert creation["history"] == "UNRESOLVED_RENAME"
+        assert creation["class"] == "UNKNOWN", (
+            "une chaine non fermee ne donne pas de classe de cout"
+        )
+        assert creation["first_commit"] == "", (
+            "la date sous le nom nouveau est la date du renommage, "
+            "pas une date de creation"
+        )
+
+    def test_l_audit_recalcule_le_compte_avant_apres(self, tmp_path, monkeypatch):
+        """La commande citee dans le corps de la PR doit recalculer le compte.
+
+        AVANT : le carnet n'a qu'une revision, celle du renommage -- son
+        historique anterieur est hors de portee. APRES : le raccord rend
+        l'historique, et le carnet n'est plus compte comme coupe.
+        """
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D	{self.ANCIEN}",
+            f"A	{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A	{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien	nouveau	date	lane",
+            f"{self.ANCIEN}	{self.NOUVEAU}	2026-11-09	myia-ai-01:CoursIA-2",
+        ]
+        rapport = self._run_audit(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert rapport["cibles"] == 1
+        assert rapport["avant"] == 1, (
+            "sans raccord, la premiere revision du carnet est celle du "
+            "renommage : l'historique anterieur est hors de portee"
+        )
+        assert rapport["apres"] == 0, (
+            "apres raccord, l'historique precedent le renommage est "
+            "retrouve : le carnet n'est plus coupe"
+        )
+
+
+    def test_une_chaine_de_deux_renommages_se_resout(self, tmp_path, monkeypatch):
+        """`a -> b -> c` : l'historique de `a` doit atteindre `c`."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|feat: renomme encore (#600)",
+            f"D\t{self.MILIEU}",
+            f"A\t{self.FINAL}",
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.MILIEU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.MILIEU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+            f"{self.MILIEU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert "Serie/final.ipynb" in meta
+        entry = meta["Serie/final.ipynb"]
+        assert entry["revisions"] == 3, "les trois commits touchent le carnet"
+        assert entry["first_commit"] == "2026-09-01"
+
+    def test_un_registre_a_en_tete_repete_est_toujours_lu(self, tmp_path, monkeypatch):
+        """Le registre est appendu par plusieurs branches : son en-tete peut
+        apparaitre plus d'une fois. Il est reconnu par sa FORME (#16231)."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.NOUVEAU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.NOUVEAU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry["revisions"] == 2
+        assert entry["first_commit"] == "2026-09-01"
+        # L'en-tete repete ne doit pas creer d'alias fantaisiste : ni
+        # `ancien` -> `nouveau` comme chemin, ni une entree nommee d'apres
+        # les colonnes de l'en-tete.
+        assert set(meta) == {"Serie/ancien-Python.ipynb"}
+
+    def test_un_nom_repris_n_est_pas_raccorde(self, tmp_path, monkeypatch):
+        """Un nom supprime puis recree garde son propre historique : le
+        raccord ne doit pas lui voler celui d'avant."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|feat: recree (#600)",
+            f"A\t{self.ANCIEN}",
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"R100\t{self.ANCIEN}\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        meta = self._run(gc, monkeypatch, tmp_path, stdout)
+
+        assert "Serie/ancien.ipynb" in meta, "le nom repris garde son historique"
+        assert meta["Serie/ancien.ipynb"]["revisions"] == 1, (
+            "la recreation est une incarnation nouvelle : elle ne compte "
+            "pas les commits de l'ancienne"
+        )
+        assert meta["Serie/ancien.ipynb"]["first_commit"] == "2026-11-10"
+        # En revanche, l'ancien nom garde l'historique de l'incarnation
+        # renommee : c'est le carnet d'aujourd'hui qui l'herite.
+        assert meta["Serie/ancien-Python.ipynb"]["revisions"] == 2
+        assert meta["Serie/ancien-Python.ipynb"]["first_commit"] == "2026-09-01"
+
+    def test_un_echange_de_noms_ne_transfere_pas_l_historique_du_mauvais_cote(
+        self, tmp_path, monkeypatch,
+    ):
+        """Deux carnets echangent leurs noms dans le MEME commit.
+
+        `App-17-VRP-Logistics` devient `...-Python` pendant que `...-Python`
+        devient `...-Metaheuristiques-Python`. Les deux aretes du registre
+        portent la MEME date : seule leur position dans le registre les
+        ordonne. Appliquees sans ordre, la chaine partait du primaire,
+        traversait `...-Python` et aboutissait au compagnon -- le primaire
+        perdait deux mois d'historique et le compagnon heritait d'un carnet
+        qu'il n'a jamais porte (#26198, point 5).
+        """
+        import generate_catalog as gc
+
+        primaire = "MyIA.AI.Notebooks/Search/Part3/App-17-VRP-Logistics.ipynb"
+        compagnon = "MyIA.AI.Notebooks/Search/Part3/App-17-VRP-Logistics-Python.ipynb"
+        compagnon_neuf = (
+            "MyIA.AI.Notebooks/Search/Part3/"
+            "App-17-VRP-Logistics-Metaheuristiques-Python.ipynb"
+        )
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|Rename(search,#25341): seconde passe (#25612)",
+            f"D\t{compagnon}",
+            f"A\t{compagnon_neuf}",
+            f"D\t{primaire}",
+            f"A\t{compagnon}",
+            "COMMIT:ccc333|2026-11-08 09:00:00 +0100|dev@example.org|Add(search,#25353): compagnon",
+            f"A\t{compagnon}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{primaire}",
+        )
+        # L'arete du compagnon est ecrite AVANT celle du primaire : c'est cet
+        # ordre qui dit que `...-Python` a ete vide avant d'accueillir le
+        # primaire, et non l'inverse.
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{compagnon}\t{compagnon_neuf}\t2026-11-10\tmyia-po-2023:CoursIA",
+            f"{primaire}\t{compagnon}\t2026-11-10\tmyia-po-2023:CoursIA",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        primaire_entry = meta["Search/Part3/App-17-VRP-Logistics-Python.ipynb"]
+        assert primaire_entry["revisions"] == 2
+        assert primaire_entry["first_commit"] == "2026-09-01", (
+            "le primaire garde l'historique de son nom d'origine"
+        )
+
+        compagnon_entry = meta[
+            "Search/Part3/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb"
+        ]
+        assert compagnon_entry["revisions"] == 2
+        assert compagnon_entry["first_commit"] == "2026-11-08", (
+            "le compagnon ne remonte pas avant sa propre creation"
+        )
+
+    def test_une_sortie_du_registre_ferme_l_incarnation_meme_sans_R(
+        self, tmp_path, monkeypatch,
+    ):
+        """Un nom reste en place et change de titulaire sans que git voie le
+        renommage : seuls `M <nom>` et `A <successeur>` paraissent.
+
+        Le registre, lui, declare que le nom a ete vide a cette date. Sans
+        cette ligne, l'historique du carnet parti restait sur le nom repris,
+        et l'incarnation nouvelle heritait d'un carnet qu'elle n'a jamais
+        porte (#26198, point 4).
+        """
+        import generate_catalog as gc
+
+        repris = "MyIA.AI.Notebooks/Serie/nom-repris.ipynb"
+        successeur = "MyIA.AI.Notebooks/Serie/nom-repris-Deplace.ipynb"
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-11 09:00:00 +0100|dev@example.org|feat: retouche du nouveau titulaire (#700)",
+            f"M\t{repris}",
+            "COMMIT:ccc333|2026-11-10 09:00:00 +0100|dev@example.org|feat: le contenu part ailleurs (#600)",
+            f"M\t{repris}",
+            f"A\t{successeur}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{repris}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{repris}\t{successeur}\t2026-11-10\tmyia-po-2023:CoursIA",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert meta["Serie/nom-repris-Deplace.ipynb"]["revisions"] == 2
+        assert meta["Serie/nom-repris-Deplace.ipynb"]["first_commit"] == "2026-09-01", (
+            "le carnet parti emporte l'historique de son ancien nom"
+        )
+        assert meta["Serie/nom-repris.ipynb"]["revisions"] == 2
+        assert meta["Serie/nom-repris.ipynb"]["first_commit"] == "2026-11-10", (
+            "le nom repris ne compte que sa nouvelle incarnation"
+        )
+
+    def test_une_chaine_qui_continue_apres_le_nom_explique_le_renommage(
+        self, tmp_path, monkeypatch,
+    ):
+        """Le renommage est explique quand la chaine d'un nom supprime PASSE
+        par le nom nouveau -- meme si la chaine continue apres (deplacement
+        ulterieur dans un sous-dossier).
+
+        Mesure du 2026-11-11 (#25865) : le test « la chaine se termine par le
+        nom » eliminait 42 renommages a tort -- dont les 19 carnets
+        `GameTheory-*-CSharp`, dont le registre porte bien l'arete
+        `-Csharp` -> `-CSharp` mais ou la chaine continue ensuite.
+        """
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.NOUVEAU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+            f"{self.NOUVEAU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert not entry.get("history_unresolved_rename"), (
+            "le renommage est connu : le registre relie l'ancien nom au "
+            "nouveau, meme si la chaine continue apres"
+        )
+        assert entry["first_commit"] == "2026-09-01"
+
+    def test_un_renommage_de_casse_est_explique_par_l_arete_du_registre(
+        self, tmp_path, monkeypatch,
+    ):
+        """`-Csharp` et `-CSharp` sont deux noms distincts, et le registre les
+        relie. La comparaison des noms est insensible a la casse, mais
+        l'egalite reste exacte : une difference de capitalisation seule est un
+        renommage a ne pas perdre.
+
+        Mesure du 2026-11-11 (#25865) : 21 renommages etaient signales a tort
+        parce que l'egalite etait comparee sans la casse.
+        """
+        import generate_catalog as gc
+
+        ancien = "MyIA.AI.Notebooks/Serie/ancien-csharp.ipynb"
+        nouveau = "MyIA.AI.Notebooks/Serie/ancien-CSharp.ipynb"
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{ancien}",
+            f"A\t{nouveau}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{ancien}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{ancien}\t{nouveau}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-CSharp.ipynb"]
+        assert not entry.get("history_unresolved_rename"), (
+            "l'arete du registre explique le renommage : rien a signaler"
+        )
+        assert entry["first_commit"] == "2026-09-01", (
+            "l'historique precedent le renommage est raccorde"
+        )
+
+    def test_un_renommage_non_rattache_est_compte_comme_orphelin(
+        self, tmp_path, monkeypatch, capsys,
+    ):
+        """Quand le registre ne dit pas par quel nom le carnet a ete renomme,
+        aucun carnet ACTUEL n'est identifiable : le renommage est compte,
+        mais il n'est rattache a aucune entree du catalogue.
+
+        Mesure du 2026-11-11 (#25865) : 9 des 21 renommages non expliques
+        sont dans ce cas (les carnets `Sudoku-1-…` -> `Sudoku-01-…`, dont le
+        renommage par remplissage n'est pas au registre).
+        """
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|feat: deplace (#600)",
+            f"D\t{self.NOUVEAU}",
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.NOUVEAU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert not meta["Serie/ancien-Python.ipynb"].get("history_unresolved_rename"), (
+            "le drapeau n'atteint qu'une entree historique : le catalogue ne "
+            "la lit pas, le renommage n'est donc pas rattache"
+        )
+        sortie = capsys.readouterr().out
+        assert "NON RACCORDE" in sortie
+        assert "ORPHELINS" in sortie, (
+            "un renommage non rattache doit etre compte comme orphelin, "
+            "jamais silencieusement perdu"
+        )
+
+
+# --- build_git_metadata : la passe ne doit dependre d'aucun blob (#24230) ---
+
+
+class TestBuildGitMetadataOfflinePartialClone:
+    """La passe de metadonnees ne doit pas exiger le CONTENU des blobs.
+
+    Le checkout de `catalog-cron.yml` est un clone partiel (`filter: blob:none`)
+    : le contenu des blobs est absent du runner. La detection de renommages par
+    defaut compare le contenu des blobs (similarite), donc la passe
+    `git log --name-only` allait chercher chaque blob candidat sur le RESEAU --
+    d'ou le cout variable d'un runner a l'autre et le depassement de la borne
+    de 180 s du 2026-11-02 (#24230). `-M100%` restreint la detection aux
+    renommages EXACTS (OID identique), que les objets d'arbre repondent sans
+    contenu : la passe redevient hors-ligne et deterministe.
+
+    Ces tests verifient la propriete, pas la constante : le controle est un
+    clone PARTIEL reel, clone sans reseau (`GIT_NO_LAZY_FETCH=1`), ou la forme
+    par defaut echoue (rc != 0) tandis que la forme de production reussit.
+    """
+
+    @staticmethod
+    def _git(args, cwd=None, env=None):
+        return subprocess.run(
+            ["git"] + args, cwd=cwd, env=env,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+
+    def test_passe_reussit_sur_un_clone_partiel_ou_la_forme_par_defaut_echoue(self, tmp_path, monkeypatch):
+        import generate_catalog as gc
+
+        src = tmp_path / "src"
+        (src / "MyIA.AI.Notebooks" / "Serie").mkdir(parents=True)
+        self._git(["init", "-q"], cwd=src)
+        self._git(["config", "user.email", "test@example.org"], cwd=src)
+        self._git(["config", "user.name", "Test"], cwd=src)
+        # Sans cela, le serveur local refuse le filtre et rend un clone COMPLET :
+        # le test ne reproduirait plus rien.
+        self._git(["config", "uploadpack.allowfilter", "true"], cwd=src)
+        self._git(["config", "uploadpack.allowanysha1inwant", "true"], cwd=src)
+
+        # Un carnet renomme ET modifie de facon SIMILAIRE (meme taille, deux
+        # caracteres changes) : c'est la condition pour que git compare
+        # effectivement le contenu des deux blobs. Un renommage dont le contenu
+        # change beaucoup est ecarte par l'heuristique de taille, sans jamais
+        # lire un blob -- le controle serait alors muet.
+        ancien = src / "MyIA.AI.Notebooks" / "Serie" / "ancien.ipynb"
+        corps = (
+            '{"cells": [{"cell_type": "code", "source": ["import math\\n'
+            'x = math.pi\\ny = math.e\\nz = math.tau\\nw = math.inf"], '
+            '"metadata": {}, "outputs": [], "execution_count": 1}], '
+            '"metadata": {}, "nbformat": 4, "nbformat_minor": 5}\n'
+        )
+        ancien.write_text(corps, encoding="utf-8")
+        self._git(["add", "-A"], cwd=src)
+        self._git(["commit", "-q", "-m", "feat: carnet initial"], cwd=src)
+        self._git(["mv", "MyIA.AI.Notebooks/Serie/ancien.ipynb",
+                   "MyIA.AI.Notebooks/Serie/neuf.ipynb"], cwd=src)
+        (src / "MyIA.AI.Notebooks" / "Serie" / "neuf.ipynb").write_text(
+            corps.replace("math.pi", "math.tau").replace("math.inf", "math.gamma"),
+            encoding="utf-8")
+        self._git(["add", "-A"], cwd=src)
+        self._git(["commit", "-q", "-m", "feat: renomme et complete"], cwd=src)
+
+        # Clone PARTIEL : le contenu des blobs n'est pas present.
+        dst = tmp_path / "partial"
+        clone = self._git(["clone", "-q", "--filter=blob:none", "--no-checkout",
+                           f"file://{src.as_posix()}", str(dst)])
+        assert clone.returncode == 0, clone.stderr
+        filtre = self._git(["config", "remote.origin.partialclonefilter"], cwd=dst)
+        assert filtre.stdout.strip() == "blob:none", (
+            "le clone n'est pas partiel : le test ne reproduirait plus rien"
+        )
+
+        # Le remote promisor devient INJOIGNABLE : c'est l'etat du runner du
+        # 2026-11-02, ou la recuperation du blob manquant est un echec DUR.
+        # (`GIT_NO_LAZY_FETCH=1` ne conviendrait pas : git saute alors le
+        # fetch en silence, degrade la sortie et ne reproduit pas l'echec.)
+        injoignable = self._git(["remote", "set-url", "origin",
+                                 "file:///nonexistent-repo-24230/repo.git"], cwd=dst)
+        assert injoignable.returncode == 0, injoignable.stderr
+
+        # CONTROLE : la forme par defaut echoue -- exactement l'echec du
+        # runner. Un detecteur se valide par son faux negatif : si cette forme
+        # reussissait, le test ne prouverait rien.
+        defaut = self._git(["log", "--name-only", "--format=COMMIT:%H",
+                            "--", "MyIA.AI.Notebooks"], cwd=dst)
+        assert defaut.returncode != 0, (
+            "la forme par defaut devrait echouer sans contenu de blob ; "
+            "le controle ne prouve plus rien"
+        )
+
+        # La forme de production, elle, passe : meme clone, meme remote
+        # injoignable, memes objets manquants.
+        reussi = self._git(["log", gc.GIT_LOG_RENAME_FLAG, "--name-status",
+                            "--format=COMMIT:%H", "--", "MyIA.AI.Notebooks"],
+                           cwd=dst)
+        assert reussi.returncode == 0, reussi.stderr
+
+        monkeypatch.setattr(gc, "REPO_ROOT", dst)
+        meta = gc.build_git_metadata()
+
+        assert meta, "la passe doit dater les carnets du clone partiel"
+        assert set(meta) == {"Serie/ancien.ipynb", "Serie/neuf.ipynb"}
+        # Le renommage n'est pas exact (le contenu a change) : `-M100%` le
+        # rend donc explicite -- une suppression ET un ajout, chacun compte.
+        assert meta["Serie/neuf.ipynb"]["revisions"] == 1
+        assert meta["Serie/ancien.ipynb"]["revisions"] == 2
+
+    def test_le_plafond_bruyant_de_14831_est_conserve(self):
+        """La correction du reseau ne doit pas debrayer la garde de #14831.
+
+        #14831 a rendu l'echec BRUYANT (lever) la ou le script rendait `{}` en
+        silence et publiait un catalogue vert et faux. Une passe devenue
+        silencieuse -- ou un plafond devenu muet -- rouvrirait exactement ce
+        defaut : le garde-fou reste, au meme niveau.
+        """
+        import generate_catalog as gc
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(returncode=0, stdout="", stderr="")
+            gc.build_git_metadata()
+
+        # `build_git_metadata` lance aussi `git rev-parse` (frontieres de
+        # greffe) : on cible l'appel `git log`, pas le dernier appel.
+        logs = [c for c in mock_run.call_args_list
+                if c.args and c.args[0][:2] == ["git", "log"]]
+        assert len(logs) == 1, f"un seul 'git log' attendu, trouve {len(logs)}"
+        argv = logs[0].args[0]
+        assert gc.GIT_LOG_RENAME_FLAG in argv
+        assert "--name-status" in argv
+        assert logs[0].kwargs["timeout"] == gc.GIT_LOG_TIMEOUT_SECONDS
+
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.side_effect = subprocess.TimeoutExpired(
+                cmd="git log", timeout=gc.GIT_LOG_TIMEOUT_SECONDS,
+            )
+            with pytest.raises(gc.GitMetadataUnavailable) as exc:
+                gc.build_git_metadata()
+        assert str(gc.GIT_LOG_TIMEOUT_SECONDS) in str(exc.value)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_qualification_axes_follow_manifest_not_path(tmp_path, monkeypatch):
+    import generate_catalog as catalog
+
+    notebooks = tmp_path / "MyIA.AI.Notebooks"
+    monkeypatch.setattr(catalog, "NOTEBOOKS_DIR", notebooks)
+    notebook = notebooks / "NLP" / "cours.ipynb"
+    notebook.parent.mkdir(parents=True)
+    notebook.write_text(json.dumps(_nb([_code("print(1)", outputs=[{"output_type": "stream", "text": "1"}])])), encoding="utf-8")
+    manifest = {"series": [{"notebooks": [{
+        "path": "MyIA.AI.Notebooks/NLP/cours.ipynb", "difficulte": "D2",
+        "recherche": "R2", "criteres": {}, "justification": "Question mesurée",
+    }]}]}
+    entry = catalog.analyze_notebook(notebook, True, qualification_manifest=manifest)
+    assert (entry["difficulte"], entry["recherche"]) == ("D2", "R2")
+    assert entry["qualification_justification"] == "Question mesurée"
+    assert entry["status"] != "RESEARCH"
+    unknown = catalog.analyze_notebook(notebook, True, qualification_manifest={})
+    assert unknown["difficulte"] is None and unknown["recherche"] is None
+
+
+def test_qualification_appears_in_markdown(tmp_path):
+    entry = {"path": "NLP/example.ipynb", "title": "Exemple", "serie": "NLP",
+             "kernel": "Python", "status": "READY", "maturity": "BETA",
+             "difficulte": "D2", "recherche": "R2", "requires_api": False,
+             "requires_gpu": False, "requires_cloud": False, "requires_wsl": False,
+             "executable_locally": True}
+    report = generate_markdown_report([entry], repo_root=tmp_path)
+    assert "| Difficulté | Recherche |" in report
+    assert "| D2 | R2 |" in report
+
+
+def test_scan_loads_manifest_once_and_keeps_unknown_unqualified(tmp_path, monkeypatch):
+    import generate_catalog as catalog
+
+    root = tmp_path
+    notebooks = root / "MyIA.AI.Notebooks"
+    monkeypatch.setattr(catalog, "REPO_ROOT", root)
+    monkeypatch.setattr(catalog, "NOTEBOOKS_DIR", notebooks)
+    folder = notebooks / "NLP"
+    folder.mkdir(parents=True)
+    for name in ("a", "b"):
+        (folder / f"{name}.ipynb").write_text(json.dumps(_nb([_code("pass")])), encoding="utf-8")
+    manifest_file = root / "docs/curriculum/qualification/manifest.json"
+    manifest_file.parent.mkdir(parents=True)
+    manifest_file.write_text(json.dumps({"series": [{"notebooks": [{
+        "path": "MyIA.AI.Notebooks/NLP/a.ipynb", "difficulte": "D3",
+        "recherche": "R0", "justification": "Justification", "criteres": {},
+    }]}]}), encoding="utf-8")
+    entries = catalog.scan_all_notebooks(series_filter="NLP")
+    assert [(e["difficulte"], e["recherche"]) for e in entries] == [("D3", "R0"), (None, None)]
+    manifest_file.unlink()
+    assert all(e["recherche"] is None for e in catalog.scan_all_notebooks(series_filter="NLP"))
+    manifest_file.write_text("{", encoding="utf-8")
+    with pytest.raises(json.JSONDecodeError):
+        catalog.scan_all_notebooks(series_filter="NLP")
+
+
+def test_catalog_importable_as_package_from_repo_root():
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        [sys.executable, "-c", "from scripts.notebook_tools import generate_catalog"],
+        cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr

@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/IIT/` (PyPhi + ICT-Series : information intégrée, émergence, workspace — Python) |
-| Notebooks source | **29** (3 IIT PyPhi + 26 ICT-Series) |
-| Cellules extraites | **731** (428 markdown + 303 code, nbformat canonique, 99 % avec id stable) |
-| Taille CSV | ~743 KB (731 enregistrements × 21 colonnes) |
+| Notebooks source | **29 au seed 2026-07-10** (3 IIT PyPhi + 26 ICT-Series — le compte courant vit dans le CSV) |
+| Cellules extraites | **731 au seed 2026-07-10** (428 markdown + 303 code, nbformat canonique, 99 % avec id stable — compte courant mesurable dans `iit.csv`) |
+| Taille CSV | ~743 KB au seed (731 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`iit.csv`](iit.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-10 |
@@ -17,7 +17,7 @@
 
 T0 (catalogue CSV) **LIVRÉ** : le CSV seed `iit.csv` capture la substance canonique de la série au commit `a93a08e21`. Chaque enregistrement = `notebook, cell_id, cell_type, src_lang, src_hash, text_fr, text_<7 langues>, hash_fr, hash_<7 hash>`. Les hashes `sha256-16` sur le texte normalisé (rstrip lines + strip newlines) détectent les dérives cellule-par-cellule.
 
-T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/IIT/ -o translations/iit/iit.csv --src-lang fr --repo-root .`. Script déterministe byte-identique (cf `extract_cells_to_csv.py`). Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés) via `endswith`. 731/738 cellules markdown/code extraites (7 sans id nbformat stable sautées — non traduisibles de façon fiable).
+T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/IIT/ -o translations/iit/iit.csv --src-lang fr --repo-root .`. Script déterministe byte-identique (cf `extract_cells_to_csv.py`). Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés) via `endswith`. cellules markdown/code extraites, sauf celles sans id nbformat stable (non traduisibles de façon fiable).
 
 T2 (drift detector) **LIVRÉ** : `python scripts/translation/check_translation_sync.py translations/iit/iit.csv` → `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYNC round-trip). Workflow CI `.github/workflows/translation-drift.yml` non-bloquant read-only déclenche ce check sur PR paths `translations/**` + `MyIA.AI.Notebooks/**/*.ipynb` + `scripts/translation/**`.
 

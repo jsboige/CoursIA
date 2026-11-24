@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Vibe-Coding
-pedagogical_count: 8
-breakdown: Vibe-Coding=8
-maturity: BETA=7, ALPHA=1
+pedagogical_count: 7
+breakdown: Vibe-Coding=7
+maturity: BETA=7
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
@@ -15,8 +15,8 @@ Cette série couvre les ateliers de **vibe-coding** : décrire ce que vous voule
 
 ```text
 Vibe-Coding/
-├── Claude-Code/          # Ateliers Claude Code (5 modules)
-├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
+├── Claude-Code/          # Ateliers Claude Code
+├── Roo-Code/             # Ateliers Roo Code et modules avancés
 ├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
 ├── Claudish/             # Proxy multi-provider (route assistants vers Anthropic/GLM/Qwen)
 ├── analyzers/            # Sous-série Roslyn : MyIA.AgentSafetyAnalyzer + carnet de démonstration
@@ -49,11 +49,11 @@ Assistant de codage agentique développé par Anthropic. Interface CLI + Extensi
 # Installation CLI - chemin canonique : installation native (Node.js non requis)
 #   Windows : installateur depuis https://claude.com/code
 #   macOS   : brew install --cask claude-code
-#   Linux   : curl -fsSL https://install.claude.com | sh
+#   Linux   : curl -fsSL https://claude.ai/install.sh | bash
 claude --version
 ```
 
-Configuration OpenRouter : passe par le proxy local `openrouter-proxy` (`ANTHROPIC_BASE_URL = http://127.0.0.1:8899/api`), guide pas-a-pas dans [OPENROUTER_SETUP.md](Claude-Code/docs/OPENROUTER_SETUP.md). Alternative npm : `npm install -g @anthropic-ai/claude-code` (voir le [guide d'installation](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)).
+Configuration OpenRouter : `ANTHROPIC_BASE_URL` pointe **directement** vers `https://openrouter.ai/api` — OpenRouter sert nativement le protocole Anthropic, **aucun proxy local n'est a installer**. Le montage par `openrouter-proxy` que cette ligne decrivait auparavant est obsolete. Guide pas-a-pas dans [OPENROUTER_SETUP.md](Claude-Code/docs/OPENROUTER_SETUP.md). Alternative npm : `npm install -g @anthropic-ai/claude-code` (voir le [guide d'installation](Claude-Code/docs/INSTALLATION-CLAUDE-CODE.md)).
 
 ## Roo Code - Ateliers
 
@@ -295,7 +295,7 @@ Les ateliers Claude Code et Roo Code utilisent OpenRouter comme fournisseur LLM.
 
 ```powershell
 # Verifier les variables d'environnement
-$env:ANTHROPIC_BASE_URL    # doit etre "http://127.0.0.1:8899/api" (proxy local, cf OPENROUTER_SETUP.md)
+$env:ANTHROPIC_BASE_URL    # doit etre "https://openrouter.ai/api" (direct, sans proxy local, cf OPENROUTER_SETUP.md)
 $env:ANTHROPIC_AUTH_TOKEN   # doit commencer par "sk-or-v1-..."
 ```
 

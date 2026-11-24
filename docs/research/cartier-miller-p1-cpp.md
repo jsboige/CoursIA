@@ -21,6 +21,8 @@
 
 **Build** (`build.sh` l. 6-8) : `g++ -O3 -std=c++17 -pthread harvey_adapter.cpp upstream/recurrences_ntl.cpp upstream/hypellfrob.cpp -lntl -lgmp -o bin/harvey_adapter`. C++17, NTL+GMP systeme. Le script emet `bin/build_metadata.json` (version compilateur + commande exacte + horodatage UTC, l. 9-16) — garde de reproductibilite.
 
+**Pin des sources, controle au runtime** : `scripts/cartier_miller/harvey_sources_pin.json` porte le commit amont complet et l'empreinte canonique (octets du blob Git, fins de ligne normalisees en LF) des trois sources compilees. `scripts/cartier_miller/run_harvey_p1_plus.py` recalcule ces empreintes au demarrage et **sort en erreur (rc=3) au premier ecart, avant tout appel au binaire** ; le rapport de validation porte `sources_pin_verified` et les trois empreintes mesurees. Les valeurs `sha256` du manifeste sont celles publiees par l'amont lui-meme (`Cartier_Miller_Benchmark/SHA256SUMS.txt` au meme pin) ; le champ `sha256_crlf` donne le fichier de travail d'un clone Windows (`core.autocrlf=true`), la garde normalisant les fins de ligne avant hachage. Le mode debug `--no-verify-sources` court-circuite la garde mais ne dispense jamais du statut (`sources_pin_verified` reste faux, `status` ne peut pas etre `passed`).
+
 ---
 
 ## 2. Table d'ancres : algorithme amont → reconstruction CoursIA
@@ -100,7 +102,7 @@ Sur les 22 composants discutes dans le corps original, la table d'ancres en gard
 - **Statut** : unrefereed draft, AI-assisted (auto-declare). **Jamais canoniser** sans revue specialiste.
 - **16/22 composants ancres**, 3 partiels (inertes), 3 reportes (P2 candidates).
 - **Validation numerique ≠ preuve** : 10 809 + 328 + 26 = 11 163 cross-checks corroborent, ne demontrent pas.
-- **P1 pseudocode C++ = lecture seule** : aucune modification du C++ (fichiers upstream SHA256-pinnees interdits a modifier, adaptateur `harvey_adapter.cpp` non touche).
+- **P1 pseudocode C++ = lecture seule** : aucune modification du C++ (fichiers upstream SHA256-pinnees interdits a modifier, adaptateur `harvey_adapter.cpp` non touche) — controle automatique au demarrage du driver (cf. « Pin des sources, controle au runtime » §1).
 - **NTL version non epinglee** : resultats arithmetiques exacts mod p, donc deterministes ; seuls les timings varient. Version enregistree via `--version` + `build_metadata.json`.
 - **Allocations brutes ProductTree** : fuite possible sur exception, sans effet sur resultats, a noter pour relecture qualite du vendored (interdit a modifier ici).
 - **`matrix()` 437 l. compilee mais inerte** dans le binaire benchmark (consommee par `hypellfrob.pyx` Sage upstream, hors perimetre du depot).
@@ -111,7 +113,7 @@ Sur les 22 composants discutes dans le corps original, la table d'ancres en gard
 - **P1 elliptic_prefix/point_count integration** : cross-check `quarter()` Python ↔ Harvey C++ au quarter-point — cycle suivant, ~1-2h.
 - **P2 Lean Mathlib** : P2.a (semantique adaptateur), P2.b (DyadicShifter), P2.c (pont Miller↔BGS) — lane Lean (po-2025 ou po-2026).
 - **P4 reproduction execution** : build NTL epingle (MSYS2 UCRT64), re-run `test_validation` + pilot 7 premiers, comparaison byte des JSON contre `example_results/paper_seven`. Regle F : NTL/Sage 10.8 absent localement, installer ou router.
-- **Modification de `harvey_adapter.cpp` ou sources upstream** : vendored SHA256-pinnees, **interdit a modifier** (cf. regle Anti-regression).
+- **Modification de `harvey_adapter.cpp` ou sources upstream** : vendored SHA256-pinnees, **interdit a modifier** (cf. regle Anti-regression) — le driver verifie le pin au demarrage et refuse de lancer le binaire si une empreinte diverge.
 
 ### Refs
 

@@ -4,7 +4,7 @@ notebook cell -- the source-side counterpart of check_output_collapse.py.
 Issue #15901 (opened by ai-01 2026-09-13, before any merge of #15862).
 
 Founding case, measured firsthand on
-``MyIA.AI.Notebooks/GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb``
+``MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb``
 (merge-base ``244c7c54f032`` -> head ``7a355873de32``): 7 -> 7 code cells, and
 the cell ``c989_independent_v2`` loses 8425 -> 5309 characters of SOURCE
 (-37.0 %, an absolute loss of 3116). What disappears: the declarative table
@@ -193,6 +193,7 @@ from check_output_failure_text import (
     _cell_source,
     changed_notebooks,
     read_notebook_at,
+    renamed_notebooks,
     resolve_base,
 )
 from check_output_flood import _cell_key
@@ -562,14 +563,19 @@ def analyze(base_nb, head_nb):
     }
 
 
-def compare(base_ref, head_ref, paths, cwd=None):
+def compare(base_ref, head_ref, paths, cwd=None, renames=None):
     """Per-notebook source collapse between two refs.
 
     ``head_ref`` is None for the working tree (same contract as the siblings).
+    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks``) lit la
+    base a l'ancien chemin d'un carnet renomme -- sans lui, un pur renommage
+    passe au seau ``added`` et une source videe pendant le renommage echappe
+    au cliquet (#26381).
     """
     rows = []
     for path in paths:
-        base_nb = read_notebook_at(base_ref, path, cwd=cwd)
+        base_nb = read_notebook_at(base_ref, (renames or {}).get(path, path),
+                                   cwd=cwd)
         head_nb = read_notebook_at(head_ref, path, cwd=cwd)
         if head_nb is None:
             continue
@@ -901,7 +907,7 @@ def main(argv=None):
 
     base = resolve_base(args.base)
     paths = changed_notebooks(base)
-    rows = compare(base, None, paths)
+    rows = compare(base, None, paths, renames=renamed_notebooks(base))
     bad = [r for r in rows if r["regressed"]]
 
     if args.as_json:

@@ -21,8 +21,28 @@ class DualMomentumNoTLT(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        # Measurement against held references (#21669, protocol of #21329):
+        # `strategy` (default) keeps the code's decision; `spy` (SPY held) and
+        # `6040` (SPY 60 %, BND 40 %) are the two references of the verdict;
+        # `ew5` (the 5 ETFs of the universe at equal weight) is a diagnostic.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew5"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew5)"
+            )
+
+        # The start_date and end_date parameters (%Y%m%d) open the measurement
+        # after the coded window; without them, the window stays as coded below.
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2015, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
         self.tickers = ["SPY", "QQQ", "IEF", "GLD", "XLP"]
@@ -32,15 +52,71 @@ class DualMomentumNoTLT(QCAlgorithm):
             self.symbols[ticker] = equity.symbol
 
         self.set_benchmark("SPY")
+        spy = self.symbols["SPY"]
+        # BND is subscribed in the `6040` mode only, so that the `strategy`
+        # mode keeps the subscriptions of the original code.
+        self._bnd = (
+            self.add_equity("BND", Resolution.DAILY).symbol
+            if self._mode == "6040"
+            else None
+        )
         self.lookback = 252  # 12 months
         self.num_holdings = 2
         self.rebalance_month = -1
 
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.set_warm_up(self.lookback + 10, Resolution.DAILY)
+        if self._mode != "strategy":
+            self.settings.seed_initial_prices = True
+
+        # References: no strategy decision (on_data exits at once),
+        # rebalanced at the start of each month.
+        if self._mode != "strategy":
+            self.schedule.on(
+                self.date_rules.month_start(spy),
+                self.time_rules.after_market_open(spy, 1),
+                self._rebalance_reference,
+            )
+
+        # Daily `shadow` trace (contract #18923): portfolio value at the open of
+        # each SPY session, spread over e0..e4. All modes take it at the same
+        # instant, on the previous close.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(spy),
+            self.time_rules.after_market_open(spy, 0),
+            self._trace,
+        )
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 1.0)])
+        elif self._mode == "6040":
+            self.set_holdings([
+                PortfolioTarget(self.symbols["SPY"], 0.6),
+                PortfolioTarget(self._bnd, 0.4),
+            ])
+        else:
+            weight = 1.0 / len(self.tickers)
+            self.set_holdings([PortfolioTarget(self.symbols[ticker], weight)
+                               for ticker in self.tickers])
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def on_data(self, data):
-        if self.is_warming_up:
+        if self.is_warming_up or self._mode != "strategy":
             return
 
         # Monthly rebalance
