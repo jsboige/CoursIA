@@ -28,7 +28,10 @@ import time
 from coordination import gh_bulk
 from coordination.gh_bulk import TAILLES_PAGE, TIMEOUT_S, LectureIncomplete, Run
 
-MUR_GLOBAL_S = 60  # budget global d'une lecture de selection, en duree
+#: La part du tirage que la SELECTION peut consommer. L'echeance du tirage
+#: (partagee par les etages) la borne de toute facon : celle-ci dit ce que
+#: la selection pourrait prendre a elle seule (#28114, I6).
+MUR_GLOBAL_S = 30
 
 QUERY_METADONNEES = """query($owner:String!,$name:String!,$n:Int!,$after:String){
  repository(owner:$owner,name:$name){
@@ -84,18 +87,23 @@ def _page(run: Run, depot: str, after: str | None, page: int, echeance: float,
 
 
 def lire_metadonnees_issues(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
-                            budget_s: float = MUR_GLOBAL_S, horloge=time.monotonic
+                            budget_s: float = MUR_GLOBAL_S, horloge=time.monotonic,
+                            echeance: float | None = None
                             ) -> tuple[list[dict], float]:
     """Toutes les issues ouvertes, metadonnees seules, pagination complete.
 
     L'echeance est posee une fois pour toute la lecture (monotone) : pages et
-    rejeu la partagent. Rend la liste et la duree de la lecture (secondes)."""
+    rejeu la partagent. Quand l'appelant fournit une echeance -- le tirage,
+    qui la partage avec ses autres etages (#28114, I6) -- c'est ELLE qui
+    borne la lecture, jamais une echeance neuve.
+
+    Rend la liste et la duree de la lecture (secondes)."""
     issues: list[dict] = []
     apres, page = None, 1
     debut = horloge()
-    echeance = debut + budget_s
+    fin = echeance if echeance is not None else debut + budget_s
     while True:
-        data = _page(run, depot, apres, page, echeance, horloge)
+        data = _page(run, depot, apres, page, fin, horloge)
         issues.extend(metadonnee(node) for node in data["nodes"])
         if not data["pageInfo"]["hasNextPage"]:
             return issues, round(horloge() - debut, 1)
