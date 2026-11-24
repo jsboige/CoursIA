@@ -1,0 +1,283 @@
+# Conformité différentielle de Coalitions-01-Pouvoir-Coalitionnel (portage Rust).
+#
+# Écrite à la livraison à partir des sorties COMMITÉES des deux carnets :
+# le carnet Rust rejoue la même institution mathématique que son jumeau Python
+# (Shapley-Shubik, Banzhaf absolu et normalisé, Deegan-Packel) par deux voies
+# internes — énumération combinatoire et énumération de modèles SMT — et l'on
+# compare, grandeur par grandeur, ce que les deux côtés ont affiché.
+#
+# Pourquoi la comparaison est numérique et non textuelle : les deux carnets
+# n'affichent pas leurs tableaux dans le même format (pandas côté Python,
+# lignes `cle valeur` côté Rust). Ce qui est comparé, ce sont les GRANDEURS
+# affichées, à la précision d'affichage près (4 décimales des deux côtés) —
+# et non la mise en forme. Les listes de coalitions, en revanche, sont
+# comparées en texte strict : l'ordre d'énumération est volontairement le même
+# des deux côtés (par taille croissante, puis lexicographique), ce qui rend
+# les listes comparables terme à terme.
+#
+# Cellules non mesurées (motif relevé à la relecture de la livraison) :
+#   - cellule 1 (Rust) : bannière d'environnement (version de la bibliothèque
+#     Z3 liée dynamiquement sur le poste) ; le jumeau Python affiche de son
+#     côté la version du paquet `z3-solver` — deux bibliothèques distinctes,
+#     donc aucune grandeur commune à comparer ;
+#   - cellule 1 (Python) : idem, bannière d'environnement ;
+#   - cellules de rôles structurels (Rust 3, Python 3) : les deux côtés
+#     affichent les mêmes prédicats mais pas dans le même format (dictionnaire
+#     Python, une ligne par joueur en Rust) ; la grandeur porteuse (la liste
+#     des coalitions minimales) est, elle, comparée en texte strict ;
+#   - cellules d'exercices (Rust 13, 15, 17) : ce sont des gabarits non
+#     résolus, sans valeur propre à comparer.
+#
+# Aucun jumeau C# n'existe pour cette série : le côté C# n'est pas déclaré.
+- name: "Coalitions-01-Pouvoir-Coalitionnel"
+  family: "GameTheory/Coalitions"
+  python: MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Rust.ipynb
+  measures:
+    - id: mwc_jeu1
+      description: "Coalitions minimales gagnantes du jeu [4; 3, 2, 1] — liste identique (texte strict)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'Coalitions gagnantes minimales : (\[.*\])'
+          transform: text
+        rust:
+          cell: 3
+          pattern: 'Coalitions gagnantes minimales : (\[.*\])'
+          transform: text
+    - id: shapley_A
+      description: "Shapley-Shubik de A dans le jeu [4; 3, 2, 1] — 0.6667 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: '(?m)^A\s+poids 3\s+part_poids 0\.5000\s+shapley_shubik\s+([0-9.]+)'
+          transform: float
+    - id: banzhaf_absolu_A
+      description: "Banzhaf absolu de A dans le jeu [4; 3, 2, 1] — 0.75 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: '(?m)^A\s+poids 3\s+part_poids 0\.5000\s+shapley_shubik\s+[0-9.]+\s+banzhaf_absolu\s+([0-9.]+)'
+          transform: float
+    - id: banzhaf_normalise_A
+      description: "Banzhaf normalisé de A dans le jeu [4; 3, 2, 1] — 0.6 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: '(?m)^A\s+poids 3\s+part_poids 0\.5000\s+shapley_shubik\s+[0-9.]+\s+banzhaf_absolu\s+[0-9.]+\s+banzhaf_normalise\s+([0-9.]+)'
+          transform: float
+    - id: deegan_A
+      description: "Deegan-Packel de A dans le jeu [4; 3, 2, 1] — 0.5 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: '(?m)^A\s+poids 3\s+part_poids 0\.5000\s+shapley_shubik\s+[0-9.]+\s+banzhaf_absolu\s+[0-9.]+\s+banzhaf_normalise\s+[0-9.]+\s+deegan_packel\s+([0-9.]+)'
+          transform: float
+    - id: somme_banzhaf_absolu
+      description: "Somme des Banzhaf absolus du jeu [4; 3, 2, 1] — 1.25 des deux côtés (la somme n'est pas imposée à 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Sommes : \{''shapley_shubik'': [0-9.]+, ''banzhaf_absolu'': ([0-9.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: 'Sommes : shapley_shubik [0-9.]+, banzhaf_absolu ([0-9.]+)'
+          transform: float
+    - id: smt_minimaux_jeu1
+      description: "Coalitions minimales trouvées par le solveur sur le jeu [4; 3, 2, 1] — liste identique (texte strict)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: 'Modèles minimaux Z3 : (\[.*\])'
+          transform: text
+        rust:
+          cell: 7
+          pattern: 'Modèles minimaux Z3 : (\[.*\])'
+          transform: text
+    - id: smt_shapley_A
+      description: "Shapley-Shubik de A par la voie SMT sur le jeu [4; 3, 2, 1] — 0.6667 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '(?m)^A\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+shapley_shubik\s+([0-9.]+)'
+          transform: float
+    - id: smt_banzhaf_normalise_A
+      description: "Banzhaf normalisé de A par la voie SMT sur le jeu [4; 3, 2, 1] — 0.6 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '(?m)^A\s+[0-9.]+\s+([0-9.]+)\s+[0-9.]+'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+shapley_shubik\s+[0-9.]+\s+banzhaf_normalise\s+([0-9.]+)'
+          transform: float
+    - id: smt_deegan_A
+      description: "Deegan-Packel de A par la voie SMT sur le jeu [4; 3, 2, 1] — 0.5 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '(?m)^A\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+shapley_shubik\s+[0-9.]+\s+banzhaf_normalise\s+[0-9.]+\s+deegan_packel\s+([0-9.]+)'
+          transform: float
+    - id: cross_validation
+      description: "Ligne de conclusion de la cross-validation — texte identique"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: '(Cross-validation réussie[^\n]*)'
+          transform: text
+        rust:
+          cell: 9
+          pattern: '(Cross-validation réussie[^\n]*)'
+          transform: text
+    - id: ecart_max_jeu3_shapley
+      description: "Écart maximal mesuré par la cross-validation sur le Shapley-Shubik du jeu à quatre acteurs — texte identique (l'exposant est comparé : la grandeur est lue en texte, pas en flottant)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: '(?m)^\s*3\s+shapley_shubik\s+([0-9eE.+-]+)'
+          transform: text
+        rust:
+          cell: 9
+          pattern: '(?m)^\s*3\s+shapley_shubik\s+([0-9eE.+-]+)'
+          transform: text
+    - id: mwc_joueur_nul
+      description: "Coalitions minimales du jeu à joueur nul [10; 5, 3, 2, 1] — liste identique (texte strict)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: 'Coalitions minimales gagnantes \(SMT\) : (\[.*\])'
+          transform: text
+        rust:
+          cell: 11
+          pattern: 'Coalitions minimales gagnantes \(SMT\) : (\[.*\])'
+          transform: text
+    - id: joueur_nul_D_shapley
+      description: "Shapley-Shubik de D, joueur nul du jeu [10; 5, 3, 2, 1] — 0 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: '(?m)^D\s+1\s+0\.090909\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 11
+          pattern: '(?m)^D\s+shapley_shubik\s+([0-9.]+)'
+          transform: float
+    - id: assembly_RN_shapley
+      description: "Shapley-Shubik du RN sur l'Assemblée à douze groupes — 0.2459 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(?m)^RN\s+126\s+0\.2184\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 19
+          pattern: '(?m)^RN\s+poids 126\s+part_poids 0\.2184\s+shapley_shubik\s+([0-9.]+)'
+          transform: float
+    - id: assembly_RN_banzhaf_absolu
+      description: "Banzhaf absolu du RN sur l'Assemblée à douze groupes — 0.5361 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(?m)^RN\s+126\s+0\.2184\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 19
+          pattern: '(?m)^RN\s+poids 126\s+part_poids 0\.2184\s+shapley_shubik\s+[0-9.]+\s+banzhaf_absolu\s+([0-9.]+)'
+          transform: float
+    - id: assembly_NI_deegan
+      description: "Deegan-Packel de NI sur l'Assemblée à douze groupes — 0.0358 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(?m)^NI\s+6\s+0\.0104\s+[0-9.]+\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 19
+          pattern: '(?m)^NI\s+poids 6\s+part_poids 0\.0104\s+shapley_shubik\s+[0-9.]+\s+banzhaf_absolu\s+[0-9.]+\s+banzhaf_normalise\s+[0-9.]+\s+deegan_packel\s+([0-9.]+)'
+          transform: float
+    - id: assembly_sieges
+      description: "Total des sièges contrôlé sur l'Assemblée — 577 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'Contrôle des sièges : (\d+)'
+          transform: int
+        rust:
+          cell: 19
+          pattern: 'Contrôle des sièges : (\d+)'
+          transform: int
+    - id: assembly_minimales
+      description: "Nombre de coalitions minimales gagnantes sur l'Assemblée à douze groupes — 184 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'coalitions minimales : (\d+)'
+          transform: int
+        rust:
+          cell: 19
+          pattern: 'coalitions minimales : (\d+)'
+          transform: int
