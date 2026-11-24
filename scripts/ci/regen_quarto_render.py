@@ -136,6 +136,8 @@ NOTEBOOK_SUBTREES = (
     # (precedent Integrations-DotNet/ <- Aspire/, tranche 18 #13581).
     "MyIA.AI.Notebooks/SymbolicAI/",                  # tranche finale #18423 (prefix famille, +1 racine)
     "MyIA.AI.Notebooks/InformationCalcul/InformationTheory/",  # serie InformationTheory #27077 (codage de canal, sous la famille InformationCalcul)
+    "MyIA.AI.Notebooks/InformationCalcul/Automata/",  # serie Automata #27158 (automates et langages formels, jumeaux Python/C#)
+    "MyIA.AI.Notebooks/InformationCalcul/Cryptography/",  # serie Cryptography #27081 (chiffrement homomorphe, preuves ZK ; carnet .NET BCL)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored

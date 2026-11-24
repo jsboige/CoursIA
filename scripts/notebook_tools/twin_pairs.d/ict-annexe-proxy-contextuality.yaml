@@ -1,0 +1,7 @@
+- name: "ICT-Annexe Proxy Contextuality"
+  family: ICT-Series
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27871) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (zoo de proxys, grains de description, codage CSP, resultat negatif) ; le code C# n'utilise que la BCL, aucune dependance externe. L'attestation interne de la cellule 20 du carnet C# documente la parite chiffre a chiffre (5/9, 0.0110, 1.6667) ; la presente entree + attestation twin_pairs sont l'objet registre exige par #27579."
