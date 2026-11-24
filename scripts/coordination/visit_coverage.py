@@ -55,7 +55,8 @@ from coordination import (
 )
 from coordination.tapis_equilibre import FENETRE_J
 from coordination.tapis_marqueurs import _dt, _iso, evenements
-from coordination.tapis_rapide import LABEL_LIVRE, Etat
+from coordination.tapis_labels import LABEL_LIVRE, LABEL_PAUSE
+from coordination.tapis_rapide import Etat
 
 # Tous les roles, dans l'ordre du rapport ; `harnais` est exclu des agregats
 # « hors marathon » (l'issue est servie par le harnais sk-agent, pas par le pool).
@@ -80,15 +81,19 @@ def role(etat: Etat) -> str:
     20/11 (443 issues hors marathons, 87 a zero visite dont 59 d'urne et 12 de
     revue) sort les 16 marathons des roles du pool, y compris ceux qui portent
     un ecart de livraison. Sinon, le role est deduit du code d'ecart ; un LABEL
-    qui ne nomme pas `candidate-delivered` n'est pas l'urne : `autre`, avec son
-    motif.
+    qui ne nomme pas `candidate-delivered` n'est pas l'urne : la pause est une
+    ATTENTE (#28114), tout autre label est `autre`, avec son motif.
     """
     if tapis_equilibre.est_marathon(etat):
         return "harnais"
     if etat.ecart in (None, "RECLAMEE"):
         return "worker"
     if etat.ecart == "LABEL":
-        return "urne" if LABEL_LIVRE in (etat.motif or "").lower() else "autre"
+        motif = (etat.motif or "").lower()
+        # Une pause posee en donnees est une ATTENTE (#28114), pas l'urne.
+        if LABEL_PAUSE in motif:
+            return "attente"
+        return "urne" if LABEL_LIVRE in motif else "autre"
     return ROLE_PAR_ECART.get(etat.ecart, "autre")
 
 
