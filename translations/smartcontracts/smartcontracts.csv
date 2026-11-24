@@ -23991,7 +23991,7 @@ result = None  # TODO etudiant : {""hypothese_cle"": ""..."", ""lemme_intermedia
 # Etape 4 : reperer omega et expliquer pourquoi il suffit (somme deja decomposee).
 
 print(""Exercice a completer : pinpoint de la preuve de transfer_preserves_supply"")",,,,,,,,f241aa3f1988f54d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,0a17eb56,markdown,fr,a7f3e613ef24482f,"## Références
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb,0a17eb56,markdown,fr,f8c57161e2efa607,"## Références
 
 - **Issue #4047** — Epic source du lac `erc20_lean` (phase 1 livrée : scaffolding, modèle, transitions gardées, préservation de l'invariant, absence de `sorry`).
 - **EIP-20** (F. Vogelsteller, V. Buterin, 2015) — *ERC-20 Token Standard*, Ethereum.
@@ -24000,8 +24000,8 @@ MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lea
 - **Le lac `erc20_lean`** (`MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/`) — la version Lean 4 + Mathlib, le « moteur formel » du présent notebook.
 - **Le notebook compagnon [`Lean-23`](../../Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb)** — qui interroge directement le lac Lean pour ses `#check` réels.
 - **EPIC #4980** — convention i18n Lean (sibling pair FR/EN dans `ERC20.lean` / `ERC20_en.lean`).
-- Notebooks associés : `[SC-08-DeFi-Primitives-Python](./SC-08-DeFi-Primitives-Python.ipynb)`, `[SC-11 (LLM-Assisted)](./SC-11-LLM-Assisted-Python.ipynb)`, `[Lean-22 (Galois) >](../../Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`.
-",,,,,,,,a7f3e613ef24482f,,,,,,,,,,,,,,,
+- Notebooks associés : `[SC-08-DeFi-Primitives-Python](./SC-08-DeFi-Primitives-Python.ipynb)`, `[SC-11 (LLM-Assisted)](./SC-11-LLM-Assisted-Python.ipynb)`, `[Lean-22 (Galois) >](../../Lean/Galois/GALOIS-01-Probleme-Inverse-M23-Python.ipynb)`.
+",,,,,,,,f8c57161e2efa607,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb,f1a2b3c4,markdown,fr,ae8478eb1e3629c9,"### Exercice 1 : Implementer la transformation de Fiat-Shamir
 
 La classe `SchnorrZKP` ci-dessus implemente la transformation de Fiat-Shamir pour
