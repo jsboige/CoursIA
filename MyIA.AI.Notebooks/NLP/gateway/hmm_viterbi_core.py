@@ -26,6 +26,15 @@ Corps (JSON) ::
 - ``A`` : matrice de transition n_etats x n_etats (entrees >= 0).
 - ``B`` : emissions par etat, ``B[etat][symbole] = probabilite`` (>= 0).
 
+Normalisation : seul ``pi`` est contraint a sommer ~ 1 (valide, sinon
+``status: invalid``). Les lignes de ``A`` et les emissions de ``B`` sont
+acceptees comme **poids non normalises** -- seule la non-negativite est imposee ;
+les log-probabilites retournees sont calculees sous cette hypothese (une
+emission de 1,2 reste une emission de 1,2, pas une distribution). L'asymetrie
+pi-normalise / A,B-non-normalises est deliberate et documentee ici : un modele
+MLE+lissage (comme le carnet phare) produit des A/B normalises, mais le decodeur
+de Viterbi est correct et bien defini sur des poids non normalises.
+
 Reponse (JSON, HTTP 200) ::
 
     {
