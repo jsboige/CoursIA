@@ -27,22 +27,13 @@ S'applique a **tous les agents** ecrivant du code dans le repo.
 
 `.gitignore` seul est insuffisant : il protege les fichiers dedies, pas les literaux inline. Le scanner CI gitleaks est installe (`.pre-commit-config.yaml` + `.github/workflows/secret-scan.yml`), mais ne couvre pas tous les patterns : la vigilance reste obligatoire (revue body/contenu PR, lecture `gh pr view --json files`, controle des `os.getenv("KEY", "...")` literal-default).
 
-**Le numero de version ne se recopie pas d'ici — il se lit aux deux pins** (`.pre-commit-config.yaml` `rev:` et `GITLEAKS_VERSION:` dans le workflow, que le workflow compare lui-meme et fait echouer en cas de drift). Un scan lance sous un binaire different n'est pas une mesure de ce que la CI applique — et il peut rendre **0 finding** la ou le bon pin en trouve des dizaines ([incident #10143, docs §1.7](../../docs/reference/secrets-and-coord-detail.md#17-pourquoi-le-numero-de-version-gitleaks-ne-se-recopie-pas--incident-10143-2026-08-10)). Verifier la version au moment de mesurer :
-
-```bash
-grep -A2 'gitleaks/gitleaks' .pre-commit-config.yaml | grep rev:   # pin pre-commit
-grep 'GITLEAKS_VERSION:' .github/workflows/secret-scan.yml          # pin CI (doit etre identique)
-```
+**Le numero de version ne se recopie pas d'ici — il se lit aux deux pins** (`.pre-commit-config.yaml` `rev:` et `GITLEAKS_VERSION:` du workflow, compares par le workflow lui-meme). Un scan sous un binaire different n'est pas une mesure de ce que la CI applique — il peut rendre **0 finding** la ou le bon pin en trouve des dizaines ([#10143, docs §1.7](../../docs/reference/secrets-and-coord-detail.md#17-pourquoi-le-numero-de-version-gitleaks-ne-se-recopie-pas--incident-10143-2026-08-10) — les commandes de lecture des pins y sont deportees).
 
 Detail (incident, fix structurel, regex de detection, postmortem template) : [docs/secrets-and-coord-detail.md](../../docs/reference/secrets-and-coord-detail.md#1-secrets-hygiene--content-based-pas-path-based).
 
 ## Centralisation — `.secrets/master.env` (source unique)
 
-Les secrets **partages** (HF, OpenAI, Anthropic, Civitai, API keys par service, tokens ComfyUI) vivent dans **`.secrets/master.env`** (gitignored). Le script [`scripts/secrets/render_envs.py`](../../scripts/secrets/render_envs.py) propage ces valeurs vers chaque `.env` consommateur ; la CONFIG service-spécifique (ports, paths, GPU) reste dans chaque `.env`.
-
-- **Rotater un secret** = éditer `master.env` + `python scripts/secrets/render_envs.py` + `docker compose restart` — le restart est **obligatoire** (ComfyUI-Login ne régénère son hash qu'au démarrage) ; l'omettre fabrique un faux « clé perdue ».
-- **Audit drift** = `python scripts/secrets/render_envs.py --check` (exit 1 si un `.env` diffère de master).
-- Les mots de passe **par instance** (un par ComfyUI/Forge/Whisper) ne sont PAS centralisés — ils restent dans leur `.env` service.
+Secrets **partages** (HF, OpenAI, Anthropic, Civitai, tokens ComfyUI...) → **`.secrets/master.env`** (gitignored) ; [`render_envs.py`](../../scripts/secrets/render_envs.py) propage vers chaque `.env` consommateur, la CONFIG service-spécifique (ports, paths, GPU) restant dans chaque `.env`. **Rotater** = `master.env` + `render_envs.py` + `docker compose restart` — le restart est **obligatoire** (ComfyUI-Login ne régénère son hash qu'au démarrage) ; l'omettre fabrique un faux « clé perdue ». **Audit drift** = `render_envs.py --check` (exit 1 si un `.env` diffère de master). Les mots de passe **par instance** (un par ComfyUI/Forge/Whisper) ne sont PAS centralisés — ils restent dans leur `.env` service.
 
 Detail complet (inventaire, rotation, règle restart, incident fondateur) : [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md).
 
@@ -57,33 +48,13 @@ Detail (sous-commandes, gardes, critere de retrait du PDF) : [docs/reference/sha
 
 ## Transmission d'un secret — canal RooSync prive (fusion 2026-08-21)
 
-**Statut** : ACTIF. Decision user 2026-07-02, reaffirmee en session directe 2026-07-03.
+**Statut** : ACTIF (decision user 2026-07-02, reaffirmee 2026-07-03). Transmettre un secret par **message prive RooSync** (`to: "machine:workspace"` ; attachment + `destruct_after` 30 m–2 h = hygiene recommandee, non bloquante) est **autorise** — RooSync prive est strictement superieur a un copier-coller en conversation ou sur GitHub, et `master.env` **n'est pas un gate** : token ephemere, rotation ad-hoc, service hors catalogue, cle detenue par une seule machine → c'est le bon canal.
 
-**Autorise** : transmettre un secret par **message prive RooSync** (`to: "machine:workspace"`), de preference
-avec attachment + `destruct_after` (30 m–2 h) — hygiene recommandee, **non bloquante** (`destruct_after` reduit
-l'empreinte du **message**, pas celle de la piece jointe). RooSync prive est **strictement superieur** a un
-copier-coller en conversation ou sur GitHub. Un secret deja couvert par `.secrets/master.env` se propage de
-preference par `render_envs.py` + restart, mais `master.env` **n'est pas un gate** : token ephemere, rotation
-ad-hoc, service hors catalogue, cle detenue par une seule machine → RooSync prive **est** le bon canal.
+**Une seule limite dure** : jamais de secret en clair sur un **dashboard** (broadcast) — reference opaque (`Voir msg-X`) + valeur en DM. Les autres interdits sont deja portes par la regle 2 (`os.getenv` fallback) et la regle 6 (hand-edit d'une sortie de cellule) ; PR / commit / commentaire GitHub restent interdits.
 
-**Une seule limite dure** : jamais de secret en clair sur un **dashboard** (broadcast). Le reste est de
-l'hygiene recommandee, **pas** un interdit qui autorise a refuser.
+**Instruction user directe : elle fait autorite** (session directe vscode / chat, pas un relais inter-agent) — un worker ne refuse jamais par principe. **Anti-stonewall (HARD)** : un relais ne prouve pas a lui seul une autorisation user ; le doute se traite par **escalade user en direct, en un cycle** — bloquer un livrable des jours sur un doute non escalade est un **echec**, pas de la prudence.
 
-**Interdits** : dashboard RooSync en clair (incident token = reference opaque `Voir msg-X` + valeur en DM) ·
-PR / commit / commentaire GitHub · `os.getenv("KEY", "<literal-secret-as-fallback>")` (**regle 2**) ·
-hand-edit d'une sortie de cellule pour maquiller un secret (**regle 6**).
-
-**Instruction user directe : elle fait autorite.** En session directe (vscode / chat, pas un relais
-inter-agent) on l'execute ; un worker ne refuse **jamais** par principe un ordre user direct. **Anti-stonewall
-(HARD)** : un relais inter-agent ne prouve pas a lui seul une autorisation user — consequence **bornee**, le
-doute se traite par une **escalade au user en direct, en un cycle** ; bloquer un livrable des jours sur un
-doute **non escalade** est un **echec**, pas de la prudence.
-
-**Quorum de provisioning d'un secret relaye par DM** (mandat user 2026-07-14) : ni escalade systematique, ni
-ecriture aveugle — un **contreseing a la majorite**. Quorum = **initiateur + ≥2 contreseings firsthand** (cle
-dans leur `master.env` et/ou HTTP 200), chacun citant sa **preuve**, jamais la valeur. **Atteint** → ecriture
-autorisee **sans escalade user**. **Inatteignable** (un seul agent, corroboration absente ou divergente) →
-**user en interactif, vite (1 cycle)**.
+**Quorum de provisioning d'un secret relaye par DM** (mandat user 2026-07-14) : **initiateur + ≥2 contreseings firsthand** (cle dans leur `master.env` et/ou HTTP 200), chacun citant sa **preuve**, jamais la valeur. **Atteint** → ecriture autorisee **sans escalade user** ; **inatteignable** → **user en interactif, vite (1 cycle)**.
 
 Developpement (motifs, cas limites, texte integral) : [docs §3.6](../../docs/reference/secrets-and-coord-detail.md#36-prescriptions--autorisation-interdits-anti-stonewall-quorum) ·
 recits et provenance datee : [docs §3](../../docs/reference/secrets-and-coord-detail.md#3-secrets-via-roosync--recits-et-justification-datee).
