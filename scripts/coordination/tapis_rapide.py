@@ -32,6 +32,7 @@ from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
+from coordination.tapis_labels import ecart_label
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
 from coordination.tapis_visites import evenements_info
 
@@ -45,7 +46,6 @@ PLAFOND_EPIC_J = 7
 # re-mesurait la meme barriere (38 cycles sans grain servable, po-2023, 13/11).
 RELACHE_J = tapis_attente.RELACHE_J
 PROFONDEUR_FAMILLE = 5
-LABEL_LIVRE = "candidate-delivered"
 LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
@@ -226,8 +226,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
     """Le premier ecart qui s'applique gagne ; chacun est decide localement."""
     regles = [
         ("HORSFLOTTE", lambda: ecart_hors_flotte(it.get("body") or "")),
-        ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
-         if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
+        # LABEL : les exclusions posees en DONNEES (un label) -- l'urne de
+        # cloture et la pause (#28114) ; la table est dans `tapis_labels`.
+        ("LABEL", lambda: ecart_label(e.labels)),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
         ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
         ("LIVREE", lambda: _livree(it, e, evts)),
@@ -491,9 +492,9 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
          maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
-    # repli picker) sur un main local en retard ou un organe du tirage divergent
-    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 (sans
+    # repli picker) est le REFUS -- mesure impossible ; retard ou module
+    # divergent DEGRADENT (sortie 0). Un rejeu --lecture est hors ligne.
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
