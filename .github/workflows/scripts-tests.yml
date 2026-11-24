@@ -111,6 +111,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
       # #19571 pli 1 HMM/Viterbi (mirror of the push path above).
       - 'MyIA.AI.Notebooks/NLP/gateway/**'
+      # #28370 export du corpus Z3 par la serie : une modification de l'export
+      # doit rejouer le test de parite (scripts/notebook_tools/tests/
+      # test_z3_instances_parity.py), sans quoi la derive export/carnets
+      # s'installerait en silence.
+      - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/z3_instances.py'
       # #23423 (mirror of the push path above).
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
