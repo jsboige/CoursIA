@@ -24,7 +24,7 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 7 | [SC-07-Token-Standards-Python](SC-07-Token-Standards-Python.ipynb) | Les trois standards fondateurs — ERC-20 (fongibles), ERC-721 (NFT), ERC-1155 (multi-tokens) — construits sur les contrats sécurisés d'OpenZeppelin ; le point de passage obligé vers DeFi et gouvernance | Licence | [Vérification ERC-20](SC-7b-ERC20-Lean-Verification-Companion.ipynb) · [Lean natif](SC-07c-ERC20-Lean.ipynb) |
+| 7 | [SC-07-Token-Standards-Python](SC-07-Token-Standards-Python.ipynb) | Les trois standards fondateurs — ERC-20 (fongibles), ERC-721 (NFT), ERC-1155 (multi-tokens) — construits sur les contrats sécurisés d'OpenZeppelin ; le point de passage obligé vers DeFi et gouvernance | Licence | [Vérification ERC-20](SC-07b-ERC20-Lean-Verification-Companion.ipynb) · [Lean natif](SC-07c-ERC20-Lean.ipynb) |
 | 8 | [SC-08-DeFi-Primitives-Python](SC-08-DeFi-Primitives-Python.ipynb) | Automated Market Makers et formule à produit constant x\*y=k : construction d'un liquidity pool, mesure concrète du price impact et du slippage d'un swap | Licence | [Économie du LP et MEV](SC-08b-MEV-LP-Python.ipynb) |
 | 9 | [SC-09-DAO-Governance-Python](SC-09-DAO-Governance-Python.ipynb) | Gouvernance on-chain : vote pondéré par balance de token, création et exécution de propositions, timelock qui retarde l'exécution — pont naturel avec le théorème d'Arrow de [GameTheory](../../../GameTheory/) | Licence | — |
 | 10 | [SC-10-Account-Abstraction-Python](SC-10-Account-Abstraction-Python.ipynb) | ERC-4337 : séparation EOA / Smart Accounts programmables, UserOperations, Paymasters qui paient le gas, wallet sans clé privée traditionnelle | Licence | — |
@@ -44,7 +44,7 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 
 Deux compagnons prolongent SC-7 vers la vérification formelle :
 
-- [SC-7b — vérification par compagnon](SC-7b-ERC20-Lean-Verification-Companion.ipynb) reprend l'invariant de conservation `Σ balances = totalSupply` du contrat de SC-7. Il rejoue des transitions `mint`, `transfer` et `burn` en Python, puis sur une simulation Monte-Carlo de 10 000 transitions, et confronte cette observation à la garantie prouvée dans le lake Lean `erc20_lean` (voir [Lean-23](../../Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb)). Prérequis en plus : SC-7 complété, notions d'ERC-20 ; kernel `python3`, aucune chaîne locale.
+- [SC-7b — vérification par compagnon](SC-07b-ERC20-Lean-Verification-Companion.ipynb) reprend l'invariant de conservation `Σ balances = totalSupply` du contrat de SC-7. Il rejoue des transitions `mint`, `transfer` et `burn` en Python, puis sur une simulation Monte-Carlo de 10 000 transitions, et confronte cette observation à la garantie prouvée dans le lake Lean `erc20_lean` (voir [Lean-23](../../Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb)). Prérequis en plus : SC-7 complété, notions d'ERC-20 ; kernel `python3`, aucune chaîne locale.
 - [SC-07c — Lean natif](SC-07c-ERC20-Lean.ipynb) passe au noyau Lean lui-même (kernel `lean4-wsl`) : il évalue les signatures et les théorèmes du lake (`#check`, `#print axioms`, `#eval`) et liste les axiomes que ces preuves utilisent ; ses exercices demandent de compléter des preuves Lean. Prérequis en plus : SC-7b complété, Lean 4 via le kernel `lean4-wsl` (WSL), exécution depuis le répertoire du lake.
 
 ### Autour de 08 — l'économie du fournisseur de liquidité

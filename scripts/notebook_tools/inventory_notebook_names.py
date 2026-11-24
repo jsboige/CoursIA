@@ -622,7 +622,7 @@ _CASES = [
     ("ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb", _CLASSIF_CONFORME, "lean4", "6b"),
     # Controle negatif, meme grammaire : accrétion à préfixe SANS zero-pad
     # reste a renommer (dettes réelles mesurées sur main : SC-7b, SL-1b).
-    ("SC-7b-ERC20-Lean-Verification-Companion.ipynb", _CLASSIF_RENAME, "python3", "7b"),
+    ("SC-07b-ERC20-Lean-Verification-Companion.ipynb", _CLASSIF_RENAME, "python3", "7b"),
     # Base implicite SANS lettre d'accrétion : doctrine inchangée (#20316).
     ("CSP-1-Fundamentals.ipynb", _CLASSIF_CONFORME, "python3", None),
     # Controle negatif : sans zero-pad, la meme forme reste a renommer.

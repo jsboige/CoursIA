@@ -2918,7 +2918,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07b-ERC20-Lean-Verification-Companion.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb"
