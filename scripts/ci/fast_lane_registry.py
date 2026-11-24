@@ -4759,3 +4759,56 @@ TRANCHE54: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 55 -- garde extraction-orphelins (#13902).
+#
+# Garde NATIF, tranche propre. Elle ferme la feuille demandee par le dispatch
+# c0023 sur le contrat de maintenance des sous-modules : « le controle qui
+# empeche l'extraction d'orphaniser un carnet consommateur ». Une PR qui
+# supprime ou deplace un fichier ne doit laisser AUCUN consommateur pendouillant
+# (lien de navigation mort, cle de baseline dans le vide, reference quarto).
+#
+# Incident fondateur mesure : #27119 -- le deplacement 17b-17f a laisse
+# pendre la baseline de densite pedagogique, le README Actuariat, un doc
+# curriculum et un deck de slides, repares a la main dans un commit de
+# rattrapage ; le controle positif de l'organe sur la tete pre-fix retrouve
+# ces quatre-la PLUS les orphelins que le rattrapage manuel avait manques
+# (README de serie, liens croises 16j/22, _quarto.yml, actuariat.json).
+#
+# Forme moteur : DELTA strictement borne au diff (base...head). Une PR qui ne
+# supprime rien sort immediatement (rc=0, ~0,5 s) ; une PR qui supprime
+# pres electionne les candidats par `git grep -F` sur les basenames (suffixe
+# commun de toutes les formes d'aiguille), puis resout les formes par
+# consommateur. Le verdict ne peut pas heriter d'un rouge de la base.
+#
+# Exclusions mesurees : artefacts regeneres par l'automatisation au merge
+# (COURSE_CATALOG.generated.*, CURRICULUM.generated.ttl -- cron catalogue ;
+# translations/ -- flux de regeneration #27538).
+#
+# Pre-controle pre_argv : self-test du moteur sans depot (lecon #11685/#12817,
+# pattern TRANCHE54) -- un detecteur qui ne prouve pas qu'il tire est
+# indiscernable d'un detecteur debranche.
+# ---------------------------------------------------------------------------
+TRANCHE55: list[Guard] = [
+    Guard(
+        name="Extraction orphans (base vs PR)",
+        source=FAST_LANE_NATIVE,
+        # paths vide : la garde tourne TOUJOURS -- une suppression ou un
+        # deplacement compte quel que soit le dossier touche, et le declencheur
+        # ne peut pas se reduire a des globs d'actifs. Le cout est borne par
+        # la sortie immediate quand le diff ne supprime rien (~0,5 s).
+        pre_argv=[
+            "python", "scripts/ci/check_extraction_orphans.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/ci/check_extraction_orphans.py",
+            "--base", "{base_ref}", "--head", "HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
