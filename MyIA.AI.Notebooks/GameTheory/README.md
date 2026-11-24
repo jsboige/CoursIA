@@ -210,9 +210,11 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 |--------|----------|-----------------|-------|--------|
 | 03b | [Chambres, murs et chemins](GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) · [C#](GameTheory-03b-Chambres-Murs-Chemins-Lean-CSharp.ipynb) · [Rust](GameTheory-03b-Chambres-Murs-Chemins-Lean-Rust.ipynb) | Les jeux stricts comme chambres d'un arrangement, les égalités comme murs, et la distance de swap qui sépare deux chambres : incidence mur/chambre, graphe des chambres, longueurs de Coxeter, puis parcours en largeur, théorème de décomposition et certificat Lean indépendant du plus court chemin | Python · C# | Recherche |
 | 03d | [Deux espèces de flèches](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [Rust](GameTheory-03d-Deux-Especes-de-Fleches-Rust.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
-| 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [Rust](GameTheory-03e-Meta-Actions-Tarifees-Rust.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python · Rust | Recherche |
+| 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [version C#](GameTheory-03e-Meta-Actions-Tarifees-CSharp.ipynb) · [Rust](GameTheory-03e-Meta-Actions-Tarifees-Rust.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python · C# · Rust | Recherche |
 
 Le carnet 03d existe aussi en [C#](GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb) et en [Rust](GameTheory-03d-Deux-Especes-de-Fleches-Rust.ipynb) : les trois versions énumèrent les jeux et comparent les swaps adjacents et la préservation des équilibres purs.
+
+Le carnet 03e existe aussi en [version C#](GameTheory-03e-Meta-Actions-Tarifees-CSharp.ipynb) : le portage tient au BCL seul et rejoue les mêmes mesures, cellule par cellule — les sorties des 27 cellules de code sont identiques à celles du carnet Python, à la fin de ligne près. L'aléa de la section 3.2 y est reproduit par un port du MT19937 de CPython (initialisation par tableau, tempérage, rejet de `_randbelow`), `System.Random` ne suivant pas cet algorithme.
 
 ### Autour de 04 — existence et nature de l'équilibre
 
