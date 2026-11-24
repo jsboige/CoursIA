@@ -122,6 +122,14 @@ jamais de composite renommage + contenu.
 > ci-dessus. Le statut D (extension unilatérale de `01b`) est laissé ouvert : la Tranche A
 > a paddé le nom, sans trancher le statut de paire.
 
+> **État mesuré au 2026-11-24** — renumérotation [#26707](https://github.com/jsboige/CoursIA/issues/26707)
+> (lane `myia-po-2024:CoursIA` ; décision user Q214 b : un trou se comble par renumérotation
+> argumentée, ce qui remplace la consigne de conservation du §3) : le trou symétrique du numéro 6
+> est **comblé**. Des deux côtés, `07 … 19` deviennent `06 … 18` et l'accrétion `08b` devient
+> `07b` ; les paires `probas-7 … 19` du registre twin deviennent `probas-6 … 18`. Les sections 1 à 5
+> décrivent l'état au HEAD `bbde4dd0eb` et sont conservées comme historique de l'inventaire : leur
+> « pas de paire 6 » et leurs numéros 7 à 19 ne décrivent plus l'arbre courant.
+
 ## 6. Ce que cette tranche ne fait pas
 
 Aucun renommage, aucune écriture de registre, aucune modification de notebook — la donnée et

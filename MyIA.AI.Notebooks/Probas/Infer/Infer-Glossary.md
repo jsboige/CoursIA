@@ -9,7 +9,7 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 | Terme | Definition | Notebook(s) |
 |-------|------------|-------------|
 | **EP (Expectation Propagation)** | Algorithme d'inference approchee qui propage des messages gaussiens entre facteurs. Rapide mais peut diverger. | Tous |
-| **VMP (Variational Message Passing)** | Algorithme variationnel qui minimise la divergence KL. Plus stable que EP, mais sous-estime l'incertitude. | Infer-1b, Infer-2, Infer-2b, Infer-10, Infer-11 |
+| **VMP (Variational Message Passing)** | Algorithme variationnel qui minimise la divergence KL. Plus stable que EP, mais sous-estime l'incertitude. | Infer-1b, Infer-2, Infer-2b, Infer-09, Infer-10 |
 | **Gibbs Sampling** | Methode MCMC qui echantillonne chaque variable conditionnellement aux autres. Exact asymptotiquement mais lent. | Infer-1 |
 | **Message Passing** | Paradigme ou les distributions sont propagees entre variables via des "messages". | Infer-3, Infer-2b |
 

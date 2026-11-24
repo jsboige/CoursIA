@@ -58,24 +58,24 @@ Construire un modèle à partir d’hypothèses explicites ; interpréter un int
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 07 | Évaluer une compétence : [C#](Infer/Infer-06-Skills-IRT.ipynb) · [Python](PyMC/PyMC-06-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
-| 08 | Classer des joueurs : [C#](Infer/Infer-07-TrueSkill.ipynb) · [Python](PyMC/PyMC-07-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | [08b](Infer/Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb) |
-| 09 | Classifier : [C#](Infer/Infer-08-Classification.ipynb) · [Python](PyMC/PyMC-08-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
-| 10 | Choisir un modèle : [C#](Infer/Infer-09-Model-Selection.ipynb) · [Python](PyMC/PyMC-09-Model-Selection.ipynb) | Un ajustement plus précis aux observations n’est pas forcément plus prédictif. Comparer l’évidence en C# et la validation par retrait d’une observation en Python. | Master | — |
-| 11 | Extraire des thèmes : [C#](Infer/Infer-10-Topic-Models.ipynb) · [Python](PyMC/PyMC-10-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
-| 12 | Partager entre groupes : [C#](Infer/Infer-11-Modeles-Hierarchiques.ipynb) · [Python](PyMC/PyMC-11-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC/PyMC-Observabilite-OTel.ipynb) |
-| 13 | Agréger des annotations : [C#](Infer/Infer-12-Crowdsourcing.ipynb) · [Python](PyMC/PyMC-12-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
+| 06 | Évaluer une compétence : [C#](Infer/Infer-06-Skills-IRT.ipynb) · [Python](PyMC/PyMC-06-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
+| 07 | Classer des joueurs : [C#](Infer/Infer-07-TrueSkill.ipynb) · [Python](PyMC/PyMC-07-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | [07b](Infer/Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb) |
+| 08 | Classifier : [C#](Infer/Infer-08-Classification.ipynb) · [Python](PyMC/PyMC-08-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
+| 09 | Choisir un modèle : [C#](Infer/Infer-09-Model-Selection.ipynb) · [Python](PyMC/PyMC-09-Model-Selection.ipynb) | Un ajustement plus précis aux observations n’est pas forcément plus prédictif. Comparer l’évidence en C# et la validation par retrait d’une observation en Python. | Master | — |
+| 10 | Extraire des thèmes : [C#](Infer/Infer-10-Topic-Models.ipynb) · [Python](PyMC/PyMC-10-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
+| 11 | Partager entre groupes : [C#](Infer/Infer-11-Modeles-Hierarchiques.ipynb) · [Python](PyMC/PyMC-11-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC/PyMC-Observabilite-OTel.ipynb) |
+| 12 | Agréger des annotations : [C#](Infer/Infer-12-Crowdsourcing.ipynb) · [Python](PyMC/PyMC-12-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
 
 ### Exploiter une structure temporelle ou spatiale — master
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 14 | Suivre un état caché : [C#](Infer/Infer-13-Sequences.ipynb) · [Python](PyMC/PyMC-13-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
-| 15 | Recommander : [C#](Infer/Infer-14-Recommenders.ipynb) · [Python](PyMC/PyMC-14-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
-| 16 | Classer par processus gaussien : [C#](Infer/Infer-15-Sparse-Gaussian-Process.ipynb) · [Python](PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | Placer une loi sur des fonctions pour apprendre une frontière courbe. Comparer points inducteurs en C# et approximation spectrale en Python. | Master | — |
-| 17 | Filtrer une trajectoire : [C#](Infer/Infer-16-Kalman-Filter.ipynb) · [Python](PyMC/PyMC-16-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
-| 18 | Dater une rupture : [C#](Infer/Infer-17-Change-Point.ipynb) · [Python](PyMC/PyMC-17-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
-| 19 | Étudier la survie : [C#](Infer/Infer-18-Survival-Analysis.ipynb) · [Python](PyMC/PyMC-18-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
+| 13 | Suivre un état caché : [C#](Infer/Infer-13-Sequences.ipynb) · [Python](PyMC/PyMC-13-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
+| 14 | Recommander : [C#](Infer/Infer-14-Recommenders.ipynb) · [Python](PyMC/PyMC-14-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
+| 15 | Classer par processus gaussien : [C#](Infer/Infer-15-Sparse-Gaussian-Process.ipynb) · [Python](PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | Placer une loi sur des fonctions pour apprendre une frontière courbe. Comparer points inducteurs en C# et approximation spectrale en Python. | Master | — |
+| 16 | Filtrer une trajectoire : [C#](Infer/Infer-16-Kalman-Filter.ipynb) · [Python](PyMC/PyMC-16-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
+| 17 | Dater une rupture : [C#](Infer/Infer-17-Change-Point.ipynb) · [Python](PyMC/PyMC-17-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
+| 18 | Étudier la survie : [C#](Infer/Infer-18-Survival-Analysis.ipynb) · [Python](PyMC/PyMC-18-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
 
 ## Approfondissements — master
 
@@ -87,7 +87,7 @@ Construire un modèle à partir d’hypothèses explicites ; interpréter un int
 
 Sur le mélange du cycliste, VMP attribue à la première composante une moyenne de 15,07 minutes et EP de 26,23 ; la seconde passe de 26,69 à 14,96. Les étiquettes se sont échangées : comparer les poids par rang sans regarder les moyennes ferait comparer le trajet court au trajet long. Les guides [C#](Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) et [Python](PyMC/PyMC-02b-Debugging-Python.ipynb) proposent deux diagnostics complémentaires : examiner la factorisation ou vérifier l'exploration par les chaînes.
 
-### Autour de 08 et 12 : isoler le calcul
+### Autour de 07 et 11 : isoler le calcul
 
 [Classement en forme fermée](Infer/Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb) retrouve la mise à jour EP pour un duel avant de coupler plusieurs rencontres. [Instrumenter le modèle hiérarchique](PyMC/PyMC-Observabilite-OTel.ipynb) sépare le coût de compilation du coût de chaque campagne de tirages.
 
@@ -148,7 +148,7 @@ Dans [Utilité et argent](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb)
 | Espérance, somme ou intégrale | Calculer une perte moyenne ou une utilité espérée ; EVPI et EVSI comparent la valeur d’informations parfaite et imparfaite. |
 | Variance et covariance | Distinguer incertitude d’une mesure, variabilité entre groupes et dépendance entre paramètres. |
 
-En **éducation** (07) et en **classement** (08), on infère une compétence plutôt qu’un résultat isolé. En **diagnostic** (04–05), demander le résultat d’un test n’équivaut pas à traiter le patient. En **analyse de textes** (11) et en **annotation** (13), thèmes et fiabilité sont latents. En **recommandation** (15), les clics renseignent imparfaitement les préférences. En **maintenance** (17–19), filtrer un signal, dater une rupture et estimer une durée de vie répondent à des questions distinctes. Les préférences face au risque et les décisions séquentielles prolongent ces usages en assurance et en finance.
+En **éducation** (06) et en **classement** (07), on infère une compétence plutôt qu’un résultat isolé. En **diagnostic** (04–05), demander le résultat d’un test n’équivaut pas à traiter le patient. En **analyse de textes** (10) et en **annotation** (12), thèmes et fiabilité sont latents. En **recommandation** (14), les clics renseignent imparfaitement les préférences. En **maintenance** (16–18), filtrer un signal, dater une rupture et estimer une durée de vie répondent à des questions distinctes. Les préférences face au risque et les décisions séquentielles prolongent ces usages en assurance et en finance.
 
 ## Installation — pratique
 

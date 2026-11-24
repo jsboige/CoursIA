@@ -319,7 +319,7 @@ restaure les accents dans le texte mais la cure regex `\b(mot)\b`
 touche aussi les cibles de liens, ce qui casse silencieusement le
 lien resolu (exemple canonique : un lien markdown vers un notebook
 de la serie `Infer-09-Model-Selection.ipynb` perd son `e` majuscule
-en cure, devient `Infer-10-Model-sélection.ipynb`, et le lien ne
+en cure, devient `Infer-09-Model-sélection.ipynb`, et le lien ne
 resout plus sur disque).
 
 Methode (deterministe, zero ML) :

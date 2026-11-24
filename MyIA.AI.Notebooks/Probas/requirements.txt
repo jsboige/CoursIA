@@ -25,7 +25,7 @@ matplotlib>=3.7              # Visualization
 # === PyMC-HMM-Trading-Alpha specific ===
 yfinance>=0.2                # Yahoo Finance data download
 hmmlearn>=0.3                # Hidden Markov Models
-scikit-learn>=1.2            # StandardScaler (HMM), LatentDirichletAllocation (PyMC-9)
+scikit-learn>=1.2            # StandardScaler (HMM), LatentDirichletAllocation (PyMC-8)
 
 # === Percolation application (networkx) ===
 networkx>=3.0              # Graph utilities

@@ -97,7 +97,7 @@ class TestLinkTargetProtection:
     def test_filename_label_not_accented(self):
         # #17222 : un libelle qui NOMME le fichier cible reste byte-identique
         # au fichier. Mesure : la serie PyMC rendait
-        # [PyMC-10-Model-Sélection](PyMC-09-Model-Selection.ipynb).
+        # [PyMC-09-Model-Sélection](PyMC-09-Model-Selection.ipynb).
         line = "[PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb)"
         cured, n = rac._cure_line(line)
         assert cured == line
@@ -112,9 +112,9 @@ class TestLinkTargetProtection:
 
     def test_partial_reference_label_not_accented(self):
         # libelle abrege du meme fichier : sous-chaine de la cible
-        line = "Voir [PyMC-10](PyMC-09-Model-Selection.ipynb) pour la selection."
+        line = "Voir [PyMC-09](PyMC-09-Model-Selection.ipynb) pour la selection."
         cured, n = rac._cure_line(line)
-        assert "[PyMC-10](PyMC-09-Model-Selection.ipynb)" in cured
+        assert "[PyMC-09](PyMC-09-Model-Selection.ipynb)" in cured
 
     def test_prose_label_still_cured(self):
         # contre-temoin : un libelle de PROSE garde sa cure, la cible reste intacte
@@ -170,7 +170,7 @@ class TestNbformatStructure:
         assert "paramètre" in "".join(src)
 
     def test_paragraph_break_preserved_list_source(self, tmp_path):
-        # Regression : bug blank-line collapse firsthand sur Infer-14 (28/33 cellules,
+        # Regression : bug blank-line collapse firsthand sur Infer-13 (28/33 cellules,
         # po-2024 c.634). Un chunk standalone "\n" (separateur de paragraphe) ne doit
         # JAMAIS etre absorbe par un join->split->re-chunk. La cure per-chunk preserve
         # byte-pour-byte le paragraph break markdown ("\n\n").

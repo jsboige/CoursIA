@@ -1257,6 +1257,59 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "dans l'enonce ET dans la cellule de code de l'exercice."
         ),
     ),
+    # Reference d'attribution MBML (docs/reference/mbml-source-attribution.md,
+    # audit de distillation #8081, c.803 du 2026-07-23). Sa « Methode » et ses
+    # « Notes sur la tracabilite » racontent l'audit au passe ; la
+    # renumerotation #26707 (07..19 -> 06..18) y a decale les identifiants de
+    # carnets, et ces lignes sont devenues « ajoutees » au diff. Leurs
+    # compteurs sont de deux natures, ni l'une ni l'autre un etat courant du
+    # depot (la reference le dit elle-meme : instantane date du c.803) :
+    #   - fait d'audit date : 6 cellules pivots, 5 hits sur 38 carnets ;
+    #   - identifiant de carnet + index de cellule (« Infer-1 cell 37 »), le
+    #     meme faux positif structurel que « NN-M cell[i] » ci-dessus.
+    # Motif litteral et etroit par ligne : une reecriture re-signale.
+    ArtifactExemption(
+        path="docs/reference/mbml-source-attribution.md",
+        motif=re.compile(r"sur les 6 cellules pivots"),
+        raison=(
+            "Fait d'audit date : les 6 cellules pivots de la verification G.1 "
+            "firsthand de l'audit de distillation #8081 (c.803, 2026-07-23). "
+            "Recit au passe d'un audit, pas un etat du depot -- le suivi vit "
+            "dans #8081."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/mbml-source-attribution.md",
+        motif=re.compile(r"Infer-1 cell 37 et Infer-14 cell 76 \(footers"),
+        raison=(
+            "Le nombre fait partie de l'IDENTIFIANT du carnet source (Infer-1, "
+            "Infer-14), suivi d'un index de cellule (37, 76). Faux positif "
+            "structurel de la classe artifact -- ce n'est pas un compte."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/mbml-source-attribution.md",
+        motif=re.compile(r"seulement 5 hits sur 38 notebooks"),
+        raison=(
+            "Fait d'audit date : resultat de l'inventaire automatise de "
+            "l'audit #8081 (c.803, 2026-07-23), 5 occurrences de MBML en "
+            "ligne sur les 38 carnets d'alors. Recit au passe, pas un etat "
+            "courant -- le compte courant se mesure sur les carnets."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/mbml-source-attribution.md",
+        motif=re.compile(
+            r"\(Infer-3 cell 7, Infer-1 cell 37 footer, Infer-14 cell 76 footer, "
+            r"PyMC-3 cell 0, PyMC-7 cells 2 et 24\)"
+        ),
+        raison=(
+            "Les nombres font partie de l'IDENTIFIANT des carnets sources "
+            "(Infer-3, Infer-1, Infer-14, PyMC-3, PyMC-7), suivis d'index de "
+            "cellule (7, 37, 76, 0, 2 et 24). Faux positif structurel de la "
+            "classe artifact -- ce ne sont pas des comptes."
+        ),
+    ),
     # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux exemptions posees
     # initialement couvraient des ELISIONS ecrites a la main, pas des sorties
     # d'outil (review ai-01 du 2026-11-20 : ni le script de scan ni l'organe

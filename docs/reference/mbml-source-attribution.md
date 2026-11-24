@@ -10,15 +10,15 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 
 ## Méthode
 
-1. **Lecture intégrale** des pilotes TrueSkill (Infer-8 + PyMC-8) → vérification end-to-end vs MBML Book Ch.3 + Herbrich 2007.
+1. **Lecture intégrale** des pilotes TrueSkill (Infer-7 + PyMC-7) → vérification end-to-end vs MBML Book Ch.3 + Herbrich 2007.
 2. **Inventaire automatisé** des 36 notebooks de la série via parsing JSON + regex sur 17 patterns (`MBML`, `mbmlbook`, `Herbrich`, `TrueSkill`, `Murder Mystery`, `WetGrass`, `Sprinkler`, `Bishop`, `Winn`, `Diethe`, `Rasch`, `Birnbaum`, `Lord`, `IRT`, `DINA`, `PyMC`, etc.).
-3. **Vérification G.1 firsthand** sur les 6 cellules pivots : comptages cellules corrigés (md+code inversés), MBML inline confirmé pour Infer-1 cell 37 et Infer-15 cell 76 (footers « Pour aller plus loin »).
+3. **Vérification G.1 firsthand** sur les 6 cellules pivots : comptages cellules corrigés (md+code inversés), MBML inline confirmé pour Infer-1 cell 37 et Infer-14 cell 76 (footers « Pour aller plus loin »).
 
 ## Table de correspondance notebook ↔ source
 
 > **Note** : comptages cellules au format `total (md + code)`. La sous-traitance initiale avait inversé l'ordre (md/code) ; corrigé par vérification G.1 firsthand.
 
-> **Ce qui est pérenne et ce qui ne l'est pas.** La colonne de droite mélange deux natures. La **correspondance notebook ↔ source canonique** (quel chapitre MBML, quel papier fondateur) est durable : c'est l'objet de cette référence. En revanche, toute formulation d'**état d'attribution** — « cite », « sans citation inline », « hors-cité », « non attribué » — est un **instantané daté du c.803 (2026-07-23)** et se périme dès qu'un backfill ajoute la citation. Ne jamais lire ces mentions comme l'état courant : l'état frais se mesure sur le notebook, et le suivi vit dans [#8081](https://github.com/jsboige/CoursIA/issues/8081). Trois lignes ont déjà été corrigées à ce titre (voir ci-dessous, Infer-7 / Infer-13 / PyMC-7).
+> **Ce qui est pérenne et ce qui ne l'est pas.** La colonne de droite mélange deux natures. La **correspondance notebook ↔ source canonique** (quel chapitre MBML, quel papier fondateur) est durable : c'est l'objet de cette référence. En revanche, toute formulation d'**état d'attribution** — « cite », « sans citation inline », « hors-cité », « non attribué » — est un **instantané daté du c.803 (2026-07-23)** et se périme dès qu'un backfill ajoute la citation. Ne jamais lire ces mentions comme l'état courant : l'état frais se mesure sur le notebook, et le suivi vit dans [#8081](https://github.com/jsboige/CoursIA/issues/8081). Trois lignes ont déjà été corrigées à ce titre (voir ci-dessous, Infer-6 / Infer-12 / PyMC-6).
 
 | Notebook | Cells | Source / attribution (snippet + cell) |
 |----------|------:|---------------------------------------|
@@ -47,25 +47,25 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 | PyMC/PyMC-04-Bayesian-Networks.ipynb | 26 (15+11) | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
 | PyMC/PyMC-05-Causal-Inference.ipynb | 30 (16+14) | Pearl + `pm.do` — do-calculus (MBML Chap.7) non attribué |
 | PyMC/PyMC-02b-Debugging-Python.ipynb | 43 (30+13) | Debugging pur MCMC |
-| PyMC/PyMC-06-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-7 le cite |
+| PyMC/PyMC-06-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-6 le cite |
 | **PyMC/PyMC-07-TrueSkill.ipynb** | 30 (17+13) | **Section 7 bis reproduit explicitement les formules fermées V(t)/W(t)/τ²** + cell 2 cite « Herbrich, Minka & Graepel (2007), TrueSkill(TM): A Bayesian Skill Rating System (NeurIPS / Microsoft Research Cambridge) ». **Substance MBML Ch.3 complète + bonus algorithmique** |
 | PyMC/PyMC-08-Classification.ipynb | 22 (12+10) | « Herbrich » 2 hits (MBML Chap.4 BPM) sans mention explicite |
 | PyMC/PyMC-09-Model-Selection.ipynb | 35 (19+16) | WAIC/LOO (Vehtari) ; ARD générique |
 | PyMC/PyMC-10-Topic-Models.ipynb | 34 (19+15) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — source canonique |
-| PyMC/PyMC-11-Modeles-Hierarchiques.ipynb | 23 (14+9) | Pooling partiel — attribution au jumeau Infer-12 uniquement |
-| **PyMC/PyMC-12-Crowdsourcing.ipynb** | 43 (27+16) | Worker models Honest/Biased/Community (jumeau PyMC d'Infer-13) — source canonique = Dawid & Skene (1979), **citée** (53 mentions mesurées) ; Raykar / Karger / MBML Ch.7 non mentionnés, contrairement au jumeau Infer-13 |
+| PyMC/PyMC-11-Modeles-Hierarchiques.ipynb | 23 (14+9) | Pooling partiel — attribution au jumeau Infer-11 uniquement |
+| **PyMC/PyMC-12-Crowdsourcing.ipynb** | 43 (27+16) | Worker models Honest/Biased/Community (jumeau PyMC d'Infer-12) — source canonique = Dawid & Skene (1979), **citée** (53 mentions mesurées) ; Raykar / Karger / MBML Ch.7 non mentionnés, contrairement au jumeau Infer-12 |
 | PyMC/PyMC-13-Sequences.ipynb | 39 (22+17) | HMM forward-backward échantillonné — pas d'attribution |
 | PyMC/PyMC-14-Recommenders.ipynb | 58 (34+24) | « Adapté de : Infer-14-Recommenders » + « Origine : PMF Salakhutdinov & Mnih (2008) » — attribution double explicite (jumeau interne + source primaire) |
-| PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb | 27 (16+11) | GP sparse — attribution au jumeau Infer-16 uniquement |
-| PyMC/PyMC-16-Kalman-Filter.ipynb | 20 (12+8) | Kalman — attribution au jumeau Infer-17 uniquement |
-| PyMC/PyMC-17-Change-Point.ipynb | 21 (13+8) | Change-point — attribution au jumeau Infer-18 uniquement |
-| PyMC/PyMC-18-Survival-Analysis.ipynb | 21 (13+8) | Survie — attribution au jumeau Infer-19 uniquement |
+| PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb | 27 (16+11) | GP sparse — attribution au jumeau Infer-15 uniquement |
+| PyMC/PyMC-16-Kalman-Filter.ipynb | 20 (12+8) | Kalman — attribution au jumeau Infer-16 uniquement |
+| PyMC/PyMC-17-Change-Point.ipynb | 21 (13+8) | Change-point — attribution au jumeau Infer-17 uniquement |
+| PyMC/PyMC-18-Survival-Analysis.ipynb | 21 (13+8) | Survie — attribution au jumeau Infer-18 uniquement |
 | Infer-101.ipynb (legacy, hors-scope) | 71 (43+28) | Standalone C#/Python avant-portail — à archiver (sub-issue dédiée) |
 | Pyro_RSA_Hyperbole.ipynb (Pyro, hors-scope) | 41 (25+16) | Pyro / RSA linguistique pragmatique ; cite Kao 2014, Kao & Goodman 2015 |
 
 ## Notes sur la traçabilité
 
-1. **MBML quasi-totalement absent du périmètre inline** : seulement 5 hits sur 38 notebooks (Infer-3 cell 7, Infer-1 cell 37 footer, Infer-15 cell 76 footer, PyMC-3 cell 0, PyMC-8 cells 2 et 24). Le livre MBML (Herbrich) est listé comme ressource README Probas L567 mais n'est honoré inline que dans 3 cas (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill).
+1. **MBML quasi-totalement absent du périmètre inline** : seulement 5 hits sur 38 notebooks (Infer-3 cell 7, Infer-1 cell 37 footer, Infer-14 cell 76 footer, PyMC-3 cell 0, PyMC-7 cells 2 et 24). Le livre MBML (Herbrich) est listé comme ressource README Probas L567 mais n'est honoré inline que dans 3 cas (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-7 TrueSkill).
 2. **Asymétrie Infer↔PyMC sur le pedigree académique** : la plupart des PyMC portent une section `Origine de la méthode` ou `Source primaire` (Blei, Salakhutdinov-Mnih, Rasch-Birnbaum, Jensen-Lauritzen) ; les Infer.NET s'en abstiennent systématiquement. Cette asymétrie est pédagogiquement assumée (Infer.NET = côté compilateur, PyMC = côté mathématicien) mais crée une lacune de traçabilité côté Infer.
 3. **Le tag `Equivalent Infer.NET`** est une auto-référence CoursIA (parité #4956), pas une source canonique externe — les notebooks PyMC s'attribuent mutuellement aux notebooks Infer, et inversement, sans toujours nommer MBML.
 

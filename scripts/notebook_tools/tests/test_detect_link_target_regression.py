@@ -8,7 +8,7 @@ defect class that broke 10 links across 4 OWN PRs (c.677l/c.678/c.681/c.683, aud
 firsthand c.684 with the detector itself). When the cure script `\b(mot)\b` touches
 the source markdown, it modifies BOTH the link text AND the link target. If the
 canonical on-disk filename is unaccented (`Infer-09-Model-Selection.ipynb`), the
-target after cure reads `Infer-10-Model-sélection.ipynb` — a 404. The sibling
+target after cure reads `Infer-09-Model-sélection.ipynb` — a 404. The sibling
 detectors (`check_identifier_regression.py` for code identifiers, the upcoming
 caps-regression detector for sentence initials) don't catch this class because they
 target a different scope (code vs caps, not link targets).
@@ -174,10 +174,10 @@ class TestCollectLinkTargets:
         return extract_md_cells(_nb([_md(s) for s in cell_sources]))
 
     def test_basic_markdown_link(self):
-        targets = collect_link_targets(self._cells_of("[Infer-10](Infer-09-Model-Selection.ipynb)"))
+        targets = collect_link_targets(self._cells_of("[Infer-09](Infer-09-Model-Selection.ipynb)"))
         assert len(targets) == 1
         t = targets[0]
-        assert t["text"] == "Infer-10"
+        assert t["text"] == "Infer-09"
         assert t["target"] == "Infer-09-Model-Selection.ipynb"
         assert t["cell_idx"] == 0
         assert t["line_no"] == 1
@@ -295,11 +295,11 @@ class TestDiffTargets:
     def test_accent_regression_detected_foundational(self):
         # The founding case: cure introduced accent in target
         base = [self._mk("Infer-09-Model-Selection.ipynb")]
-        head = [self._mk("Infer-10-Model-sélection.ipynb")]
+        head = [self._mk("Infer-09-Model-sélection.ipynb")]
         regs = diff_targets(base, head)
         assert len(regs) == 1
         assert regs[0]["kind"] == "ACCENT_REGRESSION"
-        assert regs[0]["target_added"] == "Infer-10-Model-sélection.ipynb"
+        assert regs[0]["target_added"] == "Infer-09-Model-sélection.ipynb"
         assert regs[0]["target_removed"] == "Infer-09-Model-Selection.ipynb"
 
     def test_accent_only_in_text_no_regression(self):
@@ -369,13 +369,13 @@ class TestDiffTargets:
 
 class TestScanNotebook:
     def _make_nb(self, target: str) -> dict:
-        return _nb([_md(f"| [Infer-10]({target}) |\n")])
+        return _nb([_md(f"| [Infer-09]({target}) |\n")])
 
     @mock.patch("detect_link_target_regression.read_notebook_at_ref")
     def test_scan_realistic_defect_broken_link(self, mock_read):
         """The catalog-founding defect: cure introduced accent, file absent on disk."""
         nb_base = self._make_nb("Infer-09-Model-Selection.ipynb")
-        nb_head = self._make_nb("Infer-10-Model-sélection.ipynb")
+        nb_head = self._make_nb("Infer-09-Model-sélection.ipynb")
         mock_read.side_effect = lambda path, ref: nb_base if ref == "origin/main" else nb_head
 
         # Mock Path.exists: the base variant exists, the accented variant does NOT

@@ -47,18 +47,18 @@ Inventaire cluster complet, versions des kernels et commandes de réparation : [
 | **Échantillonnage MCMC / NUTS** | PyMC-01..19-*, DecPyMC-* | PyMC v5+ (NUTS par défaut), JAX backend optionnel |
 | **Message passing déterministe (EP/VMP)** | Infer-1..19-*, DecInfer-* (C#) | Infer.NET (Microsoft) — EP par défaut, Gibbs échantillonneur en option |
 | **Inférence causale** (Pearl, échelle 1→3) | Infer-5, PyMC-05, DecPyMC-01..03, Causalite (DoWhy 1-5) | `dowhy`, `causal-learn` (PC/GES/LiNGAM), backdoor/front-door/IV |
-| **Modèles hiérarchiques** (multi-niveaux, partial pooling) | Infer-12, PyMC-12 | PyMC v5+, modèles multi-niveaux |
+| **Modèles hiérarchiques** (multi-niveaux, partial pooling) | Infer-11, PyMC-11 | PyMC v5+, modèles multi-niveaux |
 | **IRT / Skills rating** (compétences annotées, partial pooling par item) | Infer-06-Skills-IRT, PyMC-06-Skills-IRT | PyMC v5+, modèles de compétences annotées |
-| **TrueSkill** | Infer-08, PyMC-08 | TrueSkill 2007 (Herbrich), approximation EP/VMP |
-| **LDA / Topic Models** | Infer-11, PyMC-11 | NumPyro (LDA performant), PyMC v5 |
-| **HMM / Séquences** | Infer-14, PyMC-14 | `hmmlearn`, NumPyro |
-| **Filtre de Kalman** | Infer-17, PyMC-17 | PyMC, état-espaces |
-| **Processus gaussiens épars** | Infer-16, PyMC-16 | PyMC v5+ |
-| **Change-point / détection de rupture** | Infer-18, PyMC-18 | PyMC, Bayesian online change-point |
-| **Survie** | Infer-19, PyMC-19 | `lifelines`, PyMC |
-| **Recommanders** | Infer-15, PyMC-15 | PyMC, hiérarchique latent |
+| **TrueSkill** | Infer-07, PyMC-07 | TrueSkill 2007 (Herbrich), approximation EP/VMP |
+| **LDA / Topic Models** | Infer-10, PyMC-10 | NumPyro (LDA performant), PyMC v5 |
+| **HMM / Séquences** | Infer-13, PyMC-13 | `hmmlearn`, NumPyro |
+| **Filtre de Kalman** | Infer-16, PyMC-16 | PyMC, état-espaces |
+| **Processus gaussiens épars** | Infer-15, PyMC-15 | PyMC v5+ |
+| **Change-point / détection de rupture** | Infer-17, PyMC-17 | PyMC, Bayesian online change-point |
+| **Survie** | Infer-18, PyMC-18 | `lifelines`, PyMC |
+| **Recommanders** | Infer-14, PyMC-14 | PyMC, hiérarchique latent |
 | **Décision sous incertitude** (utilité, EVPI, MDP, bandits) | DecInfer-01..10 | Infer.NET, lake Lean `decision_theory_lean` (DecInfer-01b, -09) |
-| **Crowdsourcing** | Infer-13, PyMC-13 | PyMC, modèles d'annotations bruitées |
+| **Crowdsourcing** | Infer-12, PyMC-12 | PyMC, modèles d'annotations bruitées |
 
 ## Pièges connus
 

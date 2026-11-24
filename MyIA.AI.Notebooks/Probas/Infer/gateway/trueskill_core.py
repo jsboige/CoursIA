@@ -34,7 +34,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional, Sequence, Tuple
 
-# Parametres TrueSkill par defaut (identiques a Infer-08 / Infer-08b).
+# Parametres TrueSkill par defaut (identiques a Infer-07 / Infer-07b).
 DEFAULT_MU = 25.0
 DEFAULT_SIGMA = 25.0 / 3.0
 # beta = ecart-type du bruit de performance ; sa variance vaut beta^2.
@@ -237,7 +237,7 @@ def _propagate_pair(
     # production TrueSkill) :
     #   mu_j   += (var_j / var_equipe) * dmu_equipe
     #   var_j  += (var_j / var_equipe) * dvar_equipe
-    # Exact en 1v1 (mu 29.21/20.79, sigma 7.1948 = posterior Infer-08) ; en
+    # Exact en 1v1 (mu 29.21/20.79, sigma 7.1948 = posterior Infer-07) ; en
     # equipe, concorde en mu avec la reference EP iteree (27.97), la variance
     # individuelle etant plus reduite en une passe qu'a convergence (divergence
     # online vs EP iteree, documentee dans le carnet).
