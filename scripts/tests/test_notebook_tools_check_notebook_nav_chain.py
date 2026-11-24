@@ -314,7 +314,18 @@ class TestDiffBaseScope:
         """Controle positif et negatif de bout en bout, par `main` sur le graphe
         reel. Baseline vide : chaque finding du depot est NEW. Un diff qui ne
         touche que le registre ne bloque pas ; le meme argv avec le README de la
-        serie ICT (finding present) dans le diff bloque."""
+        serie du TEMOIN dans le diff bloque.
+
+        Le controle positif porte sur un finding TEMOIN, injecte dans le
+        rapport d'analyse -- jamais sur un finding reel d'une serie nommee.
+        Mesure du 2026-11-24 : le temoin etait ici un finding reel d'ICT-Series
+        (« finding present ») ; #28075 a installe la barre de navigation
+        canonique de la serie, le finding a disparu, et l'assertion `== 1` a
+        rougi sur TOUTES les PR (rouge base-porte, `assert 0 == 1`). Un controle
+        positif qui suppose une dette vivante casse a chaque dette remboursee ;
+        le temoin est invariant par construction. Ce que le test epingle est le
+        CHEMIN (`--diff-base` -> `_changed_since` -> partition -> verdict), pas
+        l'etat du depot."""
         seen_bases = []
 
         def diff_for(paths):
@@ -323,16 +334,34 @@ class TestDiffBaseScope:
                 return set(paths)
             return _changed_since
 
+        # Temoin : cle reprise de TestPartitionNewByDiff (une seule source).
+        witness_kind, witness_nb, _ = TestPartitionNewByDiff.NEW_S[0]
+        witness_series = witness_nb.rsplit("/", 1)[0]
+        real_analyse = nav_chain.analyse
+
+        def analyse_with_witness(inbound, outbound, series):
+            report = real_analyse(inbound, outbound, series)
+            report["findings"].append({"kind": witness_kind, "notebook": witness_nb,
+                                       "series": witness_series})
+            return report
+
+        monkeypatch.setattr(nav_chain, "analyse", analyse_with_witness)
         monkeypatch.setattr(nav_chain, "_load_baseline", lambda: set())
         argv = ["--check", "--diff-base", "origin/main"]
 
         monkeypatch.setattr(nav_chain, "_changed_since",
                             diff_for({"scripts/ci/fast_lane_registry.py"}))
         assert nav_chain.main(argv) == 0
+        out = capsys.readouterr().out
+        assert "FAIL:" not in out
+        assert f"[{witness_kind}] {witness_nb}" in out  # averti, non bloque
 
         monkeypatch.setattr(nav_chain, "_changed_since",
-                            diff_for({"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}))
+                            diff_for({f"{witness_series}/README.md"}))
         assert nav_chain.main(argv) == 1
+        out = capsys.readouterr().out
+        assert f"  [{witness_kind}] {witness_nb}" in out.split("FAIL:", 1)[1].split("\n\n")[0]
+        assert seen_bases == ["origin/main", "origin/main"]
         assert seen_bases == ["origin/main", "origin/main"]
 
 
