@@ -9,695 +9,192 @@ breakdown: DecisionTheory=28, Infer=22, PyMC=20, Applications=12, Causalite=12, 
 maturity: BETA=97, ALPHA=1, DRAFT=1
 -->
 
-> **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
+# Programmation probabiliste — des observations à la décision
 
-[← Notebooks](../README.md) | [Série Infer (C#) →](Infer/README.md) | [Série PyMC (Python) →](PyMC/README.md) | [Percolation →](Applications/Percolation/README.md) | [GameTheory →](../GameTheory/README.md)
+[↑ Notebooks](../README.md) · [Catalogue](../../COURSE_CATALOG.generated.md)
 
-Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
-
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence par **message passing déterministe** (EP/VMP, plus un échantillonneur de Gibbs disponible), **PyMC** (Python) pour l'**échantillonnage stochastique MCMC** (NUTS), et des **applications standalone** (RSA, identification causale avec DoWhy, percolation de liens sur tore fini, géométrie catégorique quotients/fibres). Les volumes — total de la famille, décompte par sous-série, maturité — sont portés par le marqueur `CATALOG-STATUS` en tête de ce README ; la répartition par kernel se lit dans les `metadata.kernelspec` des notebooks.
-
-Le corpus bayésien ([`Infer/`](Infer/README.md)) couvre le socle numéroté 1-19 (le numéro 6 n'existe pas — le debugging vit en accretion `Infer-2b`) et les accretions `Infer-1b` (premier modèle) et `Infer-08b` (formules fermées TrueSkill) : fondements (distributions, graphes de facteurs), modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La géométrie catégorique (quotients, fibres, recollement) vit en application autonome : [`Applications/Quotients-Fibres-Recollement-Python.ipynb`](Applications/Quotients-Fibres-Recollement-Python.ipynb) (kernel Python).
-
-L'**arc décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) en extrait des **notebooks C#** (utilité espérée, EVPI, MDPs, bandits, jusqu'au Thompson Sampling DecInfer-08, suivi du prédicteur DecInfer-09). Il est en outre certifié par un lake compagnon **Lean 4** ([`decision_theory_lean`](DecisionTheory/decision_theory_lean/)) et ses **notebooks à kernel Lean** (DecInfer-01b utilité espérée vNM, DecInfer-07b indice de Gittins) : les identités d'escompte y sont démontrées (`0 sorry`), le théorème d'optimalité restant énoncé — sa preuve complète attend une formalisation des MDP absente de Mathlib.
-
-Le versant **PyMC** porte ces modèles en Python avec l'échantillonnage NUTS : le **corpus bayésien PyMC** ([`PyMC/`](PyMC/README.md), en miroir de l'arc Infer — paires numérotées, la paire de debugging étant `PyMC-02b` ↔ `Infer-2b` (toutes deux accrétions 2b, cf renommage #17808) ; fondations, modèles classiques, inférence causale, puis frontières : séquences, reco, processus gaussien épars, filtre de Kalman, change-point, survie) et les **miroirs de l'arc décision** ([`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md), renumérotés, dont la **jambe actuarielle** 8-12).
-
-La **percolation** ([`Applications/Percolation/`](Applications/Percolation/README.md)) complète ce trio Lean avec [`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.ipynb) (noyau fini prouvé sans `sorry`, compagnon du lake `percolation_lean`), jumeau de la simulation Python [`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) (trois régimes mesurés).
-
-Enfin, un **pont causal** ([`Causalite/`](Causalite/README.md), kernels `python3` et `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus. Sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/), le pont identifie l'estimande (backdoor, front-door, variable instrumentale), l'estime puis le réfute ; il monte au troisième échelon de Pearl (contrefactuel individuel), couvre les méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD), et pousse chaque hypothèse d'identification dans ses retranchements : découverte de structure quand le graphe manque (`causal-learn` : PC, GES, LiNGAM — Causalite-04, ex-DoWhy-3), sensibilité au confondeur caché (robustness value, E-value, Rosenbaum — Causalite-05, ex-DoWhy-4) et instrument faible (F-stat, biais IV vs OLS — Causalite-06, ex-DoWhy-5).
+Deux cyclistes peuvent avoir le même temps moyen de trajet sans avoir le même risque de retard. Une distribution prédictive permet de poser la question utile : quelle est la probabilité de manquer le rendez-vous ? Cette série apprend à construire cette distribution, à vérifier ce qu'elle explique, puis à choisir une action quand les erreurs n'ont pas toutes le même coût. Elle s'adresse aux lecteurs familiers des probabilités conditionnelles et de Python ou C#. Les effectifs figurent dans le catalogue.
 
 ## Comment lire ce README — découverte
 
-Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours principal, approfondissements et prolongements de recherche.
+Vous pouvez [choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) sans changer de parcours.
 
-- **Vous découvrez** : choisissez d'abord votre stack avec l'arbre [« Quel stack choisir ? »](#quel-stack-choisir) — `Infer-1b` pour un premier modèle en C#, `PyMC-01-Setup` côté Python — puis suivez le [parcours d'apprentissage](#parcours-dapprentissage) phase par phase : fondations, modèles classiques, frontières.
-- **Vous approfondissez** : croisez les deux stacks sur des modèles jumeaux avec le [parcours inférence comparée](#parcours-inference-comparee-infernet-vs-pymc-15h), puis lisez les tables de phases du [parcours d'apprentissage](#parcours-dapprentissage) — la colonne « Ce qu'on y apprend » résume l'apport de chaque carnet au-delà du titre ; l'arc décision ([`DecInfer/`](DecisionTheory/DecInfer/README.md), [`DecPyMC/`](DecisionTheory/DecPyMC/README.md)) prolonge l'inférence vers la théorie de la décision.
-- **Vous cherchez des prolongements** : la sous-série causale ([`Causalite/`](Causalite/README.md)) monte l'échelle de Pearl jusqu'au contrefactuel ; les applications standalone (percolation, concentration de la mesure, géométrie catégorique) et le [pont vers les preuves formelles Lean 4](#pont-vers-les-preuves-formelles-lean-4--différenciant-coursia) prolongent la série au-delà du socle bayésien — voir [Approfondissements](#approfondissements--au-delà-du-parcours-principal).
+- Vous découvrez : choisissez un langage et lisez les paliers numérotés dans l'ordre.
+- Vous creusez un palier : ouvrez son jumeau ou suivez la dernière colonne ; les lettres désignent des détours facultatifs.
+- Vous cherchez la recherche en cours : ouvrez le projet de percolation ou les formalisations pour distinguer constat numérique et garantie théorique.
 
-## Pourquoi cette série
+## Quel stack choisir ? — découverte
 
-La programmation probabiliste occupe une place singulière dans le paysage de l'IA. Alors que le machine learning classique fournit des prédictions ponctuelles (un score, une classe), il ne dit pas à quel point il a confiance en cette prédiction. La programmation probabiliste, elle, quantifie cette incertitude de façon native.
+Avec [Infer.NET](Infer/README.md), vous déclarez des variables en C# ; le moteur compile le modèle en code C#, puis propage des messages entre facteurs : c'est le choix naturel pour une inférence embarquée ou en temps réel. Avec [PyMC](PyMC/README.md), vous écrivez une loi a priori et une vraisemblance en Python, puis examinez des tirages de la loi postérieure. Il ne s'agit pas d'opposer « exact » à « approché » : EP et VMP sont en général des approximations déterministes ; NUTS est un échantillonneur pour paramètres continus. Infer.NET propose aussi Gibbs et PyMC propose l'inférence variationnelle. Pour comparer les moteurs, gardez le modèle fixe : comparez une prédiction ou un intervalle, pas les seules syntaxes.
 
-Cette série repose sur une **double approche d'inférence**, délibérément juxtaposée. L'axe de comparaison est **déterministe vs stochastique** (message passing vs échantillonnage), *non* « exact vs approché » : le moteur EP par défaut d'Infer.NET est lui-même approché dans le cas général (exact seulement sur les réseaux discrets sans boucle), et Infer.NET propose *aussi* un échantillonneur de Gibbs. Les deux stacks recouvrent donc des méthodes approchées ; ce qui les distingue, c'est le **mécanisme**, pas l'exactitude.
+## Qu’est-ce que la programmation probabiliste ? — découverte
 
-- **Message passing déterministe** (Infer.NET) : les probabilités se propagent le long des arêtes d'un graphe de facteurs comme des messages. Trois moteurs : **EP** (Expectation Propagation, défaut — rapide, approché en général, exact sur les modèles discrets sans boucle), **VMP** (variationnel — stable, sous-estime l'incertitude) et **Gibbs** (échantillonnage — exact asymptotiquement, lent, utile pour valider EP/VMP). Avantage : résultats reproductibles et rapides, visualisation du graphe de facteurs. Limite : chaque moteur ne couvre qu'une famille restreinte de modèles.
-- **Échantillonnage stochastique MCMC** (PyMC) : pour les modèles génériques où le message passing déterministe ne s'applique pas. NUTS (No-U-Turn Sampler) explore l'espace posterior en simulant une dynamique hamiltonienne. Avantage : s'applique à presque tout modèle. Limite : résultats stochastiques, temps de convergence variable, diagnostic nécessaire (R-hat, ESS, trace plots).
+On écrit comment les données auraient pu être produites : une loi a priori pour les quantités inconnues et une vraisemblance pour les observations. L’inférence lit ce programme en sens inverse. La distribution **postérieure** décrit ce qu’on a appris sur les inconnues ; la **prédictive** décrit ce qui pourrait arriver à la prochaine observation. Pour le cycliste, l’incertitude sur le temps *moyen* n’est pas la dispersion des temps de trajet individuels.
 
-Avoir les deux approches sur les mêmes modèles permet de comprendre leur **champ d'application** et leurs **compromis**, une connaissance cruciale pour tout praticien.
+| Question | Objet à calculer | Usage |
+|---|---|---|
+| Quelle valeur est plausible ? | Loi postérieure, pas seulement son maximum | Donner un intervalle ou repérer plusieurs modes |
+| Que manque-t-il dans les données ? | Distribution conditionnelle de la quantité absente | Intégrer son incertitude au lieu de la fixer arbitrairement |
+| Comment concilier deux sources ? | Vraisemblances décrivant leurs fiabilités et leur dépendance | Combiner clics et évaluations sans traiter un clic comme une note |
+| Quelle action préférer ? | Utilité espérée, moyennée sur les issues possibles | Arbitrer un test coûteux ou un départ plus tôt |
 
-Au-delà de la méthodologie, cette série couvre des **applications réelles** qui utilisent la programmation probabiliste en production : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE, millions de candidats), LDA (Google News, classement de documents), et les réseaux bayésiens pour le diagnostic médical. Chaque modèle est une brique construite sur les précédentes, formant un édifice cohérent.
+### Objectifs d’apprentissage — licence et master
 
-## Qu'est-ce que la programmation probabiliste ?
+Construire un modèle à partir d’hypothèses explicites ; interpréter un intervalle prédictif ; comparer deux approximations sur le même problème ; distinguer conditionnement et intervention ; enfin, intégrer coûts et préférences pour décider. Pour vérifier le dernier acquis, changer le coût du retard **sans changer la distribution** : la meilleure heure de départ peut changer, pas le modèle des trajets.
 
-| Aspect | ML classique (déterministe) | Programmation probabiliste |
-|--------|---------------------------|--------------------------|
-| **Sortie** | Un seul résultat (ex: 0.73) | Une distribution complète (ex: N(0.73, 0.12)) |
-| **Incertitude** | Non quantifiée | Intégrée nativement (intervalles de crédibilité) |
-| **Données manquantes** | Problématique | Naturelles (variables latentes) |
-| **Combinaison de sources** | Requiert ingénierie manuelle | Probabilités conditionnelles structurées |
-| **Décisions** | Basées sur un point | Basées sur E[U] (utilité espérée) |
+## Parcours principal — licence et master
 
-```mermaid
-flowchart LR
-    D["Données<br/>(observations)"] --> ML["ML classique<br/>(déterministe)"]
-    D --> PP["Programmation<br/>probabiliste"]
-    ML --> P1["Un seul résultat<br/>ex: 0.73"]
-    PP --> P2["Une distribution<br/>ex: N(0.73, 0.12)"]
-    P1 --> U1["Incertitude<br/>non quantifiée"]
-    P2 --> U2["Incertitude<br/>native<br/>(intervalles de crédibilité)"]
-    U2 --> DEC["Décision basée sur<br/>E[U] (utilité espérée)"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px,color:#0c5460;
-    class P2,U2,DEC dist;
-```
+### Des observations au graphe — licence
 
-La différence fondatrice : le ML classique produit un **point**, la programmation probabiliste produit une **distribution** (en bleu). Cette incertitude native se propage jusqu'à la décision — on maximise l'utilité espérée `E[U]`, pas un seul score.
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 01 | Une pièce biaisée : [C#](Infer/Infer-01-Setup.ipynb) · [Python](PyMC/PyMC-01-Setup.ipynb) | Mettre à jour la probabilité de pile après observation et confronter les tirages à une solution conjuguée. | Licence | [01b](Infer/Infer-01b-Premiers-Modeles.ipynb) |
+| 02 | Les trajets du cycliste : [C#](Infer/Infer-02-Gaussian-Mixtures.ipynb) · [Python](PyMC/PyMC-02-Gaussian-Mixtures.ipynb) | Une moyenne peut tomber entre deux régimes peuplés. Comparer la prédiction d’une gaussienne à celle d’un mélange, puis examiner les poids des composantes. | Licence | [Diagnostics](PyMC/PyMC-02b-Debugging-Python.ipynb) · [02b](Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) |
+| 03 | Une enquête discrète : [C#](Infer/Infer-03-Factor-Graphs.ipynb) · [Python](PyMC/PyMC-03-Factor-Graphs.ipynb) | Réviser les probabilités des suspects après un indice. Le jeu des portes montre pourquoi la manière de révéler une information compte. | Licence | — |
+| 04 | La pelouse mouillée : [C#](Infer/Infer-04-Bayesian-Networks.ipynb) · [Python](PyMC/PyMC-04-Bayesian-Networks.ipynb) | Une fois la pelouse mouillée observée, apprendre que l’arroseur a fonctionné change la probabilité de pluie : deux causes initialement indépendantes deviennent dépendantes. | Licence | — |
+| 05 | Observer ou intervenir : [C#](Infer/Infer-05-Causal-Inference.ipynb) · [Python](PyMC/PyMC-05-Causal-Inference.ipynb) | Comparer la pression lue sur un baromètre à une intervention sur son aiguille. Modifier le graphe en C# ou appeler `pm.do` en Python. | Licence | — |
 
-### De la distribution à l'utilité : pourquoi la courbe est concave
+### Apprendre des paramètres partagés — licence avancée
 
-La maximisation de `E[U]` repose sur une hypothèse centrale de la théorie de la décision sous incertitude : l'utilité est une fonction **concave** de la richesse. Trois fonctions fondamentales l'illustrent ci-dessous — racine carrée `√x`, logarithme `ln(x)` (toutes deux concaves) et fonction linéaire `x` (neutre au risque, en référence) — chacune traduisant l'utilité marginale décroissante (chaque euro supplémentaire apporte moins d'utilité que le précédent pour les courbes concaves), fondement de l'aversion au risque :
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 07 | Évaluer une compétence : [C#](Infer/Infer-07-Skills-IRT.ipynb) · [Python](PyMC/PyMC-07-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
+| 08 | Classer des joueurs : [C#](Infer/Infer-08-TrueSkill.ipynb) · [Python](PyMC/PyMC-08-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | [08b](Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) |
+| 09 | Classifier : [C#](Infer/Infer-09-Classification.ipynb) · [Python](PyMC/PyMC-09-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
+| 10 | Choisir un modèle : [C#](Infer/Infer-10-Model-Selection.ipynb) · [Python](PyMC/PyMC-10-Model-Selection.ipynb) | Un ajustement plus précis aux observations n’est pas forcément plus prédictif. Comparer l’évidence en C# et la validation par retrait d’une observation en Python. | Master | — |
+| 11 | Extraire des thèmes : [C#](Infer/Infer-11-Topic-Models.ipynb) · [Python](PyMC/PyMC-11-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
+| 12 | Partager entre groupes : [C#](Infer/Infer-12-Modeles-Hierarchiques.ipynb) · [Python](PyMC/PyMC-12-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC/PyMC-Observabilite-OTel.ipynb) |
+| 13 | Agréger des annotations : [C#](Infer/Infer-13-Crowdsourcing.ipynb) · [Python](PyMC/PyMC-13-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
 
-![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente (chaque euro supplémentaire apporte moins d'utilité que le précédent), tandis que la linéaire reste constante (aversion nulle). Fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-02-Utility-Money, cellule « Démonstration numérique : utilité marginale décroissante ».](assets/readme/probas-utility-functions.png)
+### Exploiter une structure temporelle ou spatiale — master
 
-*Source : [`DecPyMC-02-Utility-Money.ipynb`](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) (cellule 10 « Démonstration numérique : utilité marginale décroissante », index toutes-cellules), track DecisionTheory/DecPyMC.*
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 14 | Suivre un état caché : [C#](Infer/Infer-14-Sequences.ipynb) · [Python](PyMC/PyMC-14-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
+| 15 | Recommander : [C#](Infer/Infer-15-Recommenders.ipynb) · [Python](PyMC/PyMC-15-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
+| 16 | Classer par processus gaussien : [C#](Infer/Infer-16-Sparse-Gaussian-Process.ipynb) · [Python](PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb) | Placer une loi sur des fonctions pour apprendre une frontière courbe. Comparer points inducteurs en C# et approximation spectrale en Python. | Master | — |
+| 17 | Filtrer une trajectoire : [C#](Infer/Infer-17-Kalman-Filter.ipynb) · [Python](PyMC/PyMC-17-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
+| 18 | Dater une rupture : [C#](Infer/Infer-18-Change-Point.ipynb) · [Python](PyMC/PyMC-18-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
+| 19 | Étudier la survie : [C#](Infer/Infer-19-Survival-Analysis.ipynb) · [Python](PyMC/PyMC-19-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
 
-## Objectifs d'apprentissage
+## Approfondissements — master
 
-À l'issue de cette série, vous serez capable de :
+### Autour de 01 : construire un premier modèle en C#
 
-1. **Construire** un modèle probabiliste en Infer.NET ou PyMC (définition, inférence, validation)
-2. **Interpréter** les distributions postérieures (moyenne, variance, intervalles de crédibilité)
-3. **Comparer** message passing vs MCMC sur le même modèle
-4. **Décaler** d'un problème réel vers sa formulation probabiliste (variables, facteurs, observations)
-5. **Intégrer** inférence probabiliste et théorie de la décision (maximisation d'utilité espérée)
+[Premiers modèles](Infer/Infer-01b-Premiers-Modeles.ipynb) part d'une variable de Bernoulli, puis reprend le trajet du cycliste en classes C# pour réutiliser les paramètres appris à l'observation suivante.
 
-## Parcours d'apprentissage
+### Autour de 02 : quand les composantes changent de nom
 
-### Phase 1 : Fondations (notebooks 1-3, ~2h)
+Sur le mélange du cycliste, VMP attribue à la première composante une moyenne de 15,07 minutes et EP de 26,23 ; la seconde passe de 26,69 à 14,96. Les étiquettes se sont échangées : comparer les poids par rang sans regarder les moyennes ferait comparer le trajet court au trajet long. Les guides [C#](Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) et [Python](PyMC/PyMC-02b-Debugging-Python.ipynb) proposent deux diagnostics complémentaires : examiner la factorisation ou vérifier l'exploration par les chaînes.
 
-Le parcours commence par le notebook 1 (Setup) qui installe l'environnement et construit le premier modèle bayésien — le classique « Two Coins » — en quelques lignes. Le notebook 2 plonge dans les distributions continues avec les mélanges gaussiens, outil fondamental du clustering. Le notebook 3 introduit la représentation qui unifie tous les modèles : les graphes de facteurs, illustrés par le problème de Monty Hall. À l'issue de cette phase, vous savez exprimer un problème incertain en variables, facteurs et messages. Les deux stacks suivent la **même numérotation** : Infer-N et PyMC-N traitent le même modèle, le premier par message passing déterministe (EP/VMP/Gibbs), le second par échantillonnage MCMC (NUTS) — chaque table ci-dessous les met côte à côte.
+### Autour de 08 et 12 : isoler le calcul
 
-| # | Infer.NET | PyMC | Ce qu'on y apprend |
-|---|-----------|------|--------------------|
-| 1 | [Setup](Infer/Infer-01-Setup.ipynb) | [Setup](PyMC/PyMC-01-Setup.ipynb) | Boucle fondamentale : modèle → moteur → inférence ; côté PyMC : `pm.Model()` → `pm.sample(NUTS)` → arviz, diagnostic r_hat/ESS |
-| 2 | [Gaussian Mixtures](Infer/Infer-02-Gaussian-Mixtures.ipynb) | [Gaussian Mixtures](PyMC/PyMC-02-Gaussian-Mixtures.ipynb) | Distributions continues, mélanges gaussiens ; **comparaison EP vs VMP sur bimodal** côté Infer (encart ci-dessous), convergence MCMC côté PyMC |
-| 3 | [Factor Graphs](Infer/Infer-03-Factor-Graphs.ipynb) | [Factor Graphs](PyMC/PyMC-03-Factor-Graphs.ipynb) | Monty Hall + Murder Mystery : inférence discrète, `Variable.If/Case` vs `pm` — les deux stacks comparés sur le même modèle |
+[Classement en forme fermée](Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) retrouve la mise à jour EP pour un duel avant de coupler plusieurs rencontres. [Instrumenter le modèle hiérarchique](PyMC/PyMC-Observabilite-OTel.ipynb) sépare le coût de compilation du coût de chaque campagne de tirages.
 
-### Au-delà du consensus par défaut : EP vs VMP, un cas bimodal discriminant (Infer-2)
+## Sous-séries — de la licence à la recherche
 
-Le notebook 2 (Gaussian Mixtures) utilise `VariationalMessagePassing` pour identifier un mélange bimodal de durées de trajets vélo. La cellule d'analyse (cell. 62) justifie ce choix en une phrase : *« VMP est recommandé pour les modèles de mélange car il gère mieux les variables latentes discrètes »* — affirmation jusqu'ici **non démontrée par l'exécution**. Le notebook `Infer-2b` (Debugging) mentionne EP et VMP côte à côte, mais comme outils de diagnostic, pas comme alternatives testées sur un même modèle.
+| Dossier | Point d'entrée | Ce qu'on y apprend |
+|---|---|---|
+| [Fondations](Fondations/README.md) | [Le théorème central limite mesuré](Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb) | Mesurer l'erreur d'une approximation gaussienne, puis diagnostiquer une chaîne qui reste dans un seul mode. Les expériences existent en Python et C#. |
+| [Pont causal](Causalite/README.md) | [Du mentorat observé au mentorat attribué](Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb) | Passer de l'association à l'intervention puis au contrefactuel. Poser l'hypothèse d'identification avant de calculer un effet. |
+| [Décision](DecisionTheory/README.md) | [Utilité en C#](DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) · [en Python](DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | Choisir sous incertitude, chiffrer la valeur d'une observation, puis décider en séquence. Le [parcours actuariel](DecisionTheory/Actuariat/README.md) applique ces idées aux primes, à la ruine et à la souscription. |
+| [Applications](Applications/README.md) | [Marches aléatoires](Applications/Marches-01-Retour-Polya-Watson-Python.ipynb) | Distinguer retour observé avant une échéance et retour éventuel. Explorer aussi l'interprétation pragmatique, les quotients et la concentration de la mesure. |
+| [Percolation](Applications/Percolation/README.md) | [Composante géante sur un tore](Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) | Faire varier la probabilité d'ouverture et la taille du réseau ; distinguer une transition sur une grille finie d'une loi d'échelle. |
 
-[**#7590**](https://github.com/jsboige/CoursIA/pull/7590) `fix(probas,#3801): demonstrate EP-vs-VMP algorithm comparison (Prong-B)` (MERGED 2026-07-20) comble ce gap en ré-exécutant le **même modèle de mélange** (`donneesMixtes`, `priorsMMixtes`, `CyclisteBaseMixte`) avec deux moteurs Infer.NET interchangeables via `MoteurInference.Algorithm`. **Résultat discriminant first-hand** (cell. 64) :
+### Pont causal entre séries — master et recherche
 
-| Algorithme | Comp. 1 (Ordinaire) | Comp. 2 (Extra) | Poids | P(ordinaire) |
-|------------|---------------------|-----------------|-------|--------------|
-| **VMP** (VariationalMessagePassing) | Gaussian(15.07, 0.87) | Gaussian(26.69, 1.15) | Dirichlet(7.995, 4.005) | **0.67** ✓ |
-| **EP** (ExpectationPropagation) | Gaussian(26.23, 2.48) ← *labels inversés* | Gaussian(14.96, 1.18) | Dirichlet(3.887, 7.224) | **0.35** ← *poids inversés* |
+| Question | Où l’éprouver | Comparaison utile |
+|---|---|---|
+| Que devient le système si l’on impose une valeur ? | [Raisonnement symbolique](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) et [Infer-05](Infer/Infer-05-Causal-Inference.ipynb) | Modifier le mécanisme qui fixe la variable, non enregistrer une observation supplémentaire. |
+| Quel effet serait identifiable, puis estimable ? | [Calcul do](Causalite/Causalite-01-Calcul-Do-Python.ipynb) et [PyMC-05](PyMC/PyMC-05-Causal-Inference.ipynb) | Le graphe justifie une expression ; le moteur estime une distribution. Un placebo peut révéler un défaut, jamais certifier le graphe. |
+| Quelle échelle de description retenir ? | [Émergence causale](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) et [matrice de transition](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | Comparer l’information effective des descriptions fine et grossière, plutôt que changer le traitement dans un graphe fixé. |
 
-EP converge sans diverger mais **inverse à la fois l'assignation des composantes ET l'estimation des poids** — faiblesse connue d'Expectation Propagation sur les variables latentes discrètes (le `Variable.Switch` qui route chaque observation vers sa composante casse l'approximation EP, qui approxime chaque facteur marginalement au lieu de factoriser la conjointe comme VMP).
+### Applications autonomes et fondations — licence avancée et master
 
-**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) **Prong-B** (« problème non-trivial qui met le moteur en valeur ») — la même famille de moteurs message-passing déterministes était présentée par défaut (VMP), mais sans jamais démontrer **explicitement** sur un même cas la différence entre EP et VMP. La table « Quel stack choisir ? » (ci-dessus) rangeait Infer.NET sous l'étiquette « EP/VMP » comme un bloc monolithique, sans granularité algorithmique. #7590 rétablit cette granularité par l'exécution.
+- [Hyperbole](Applications/Pyro_RSA_Hyperbole.ipynb) : l’auditeur infère à la fois un prix et l’irritation du locuteur. Un nombre manifestement excessif peut être informatif sur l’affect plutôt que sur le prix.
+- [Quotients et fibres](Applications/Quotients-Fibres-Recollement-Python.ipynb) : un bon résumé commun devrait réduire l’information mutuelle résiduelle. Ici, elle augmente après conditionnement ; le quotient essayé ne justifie donc pas le recollement.
+- [Concentration KLS](Applications/Probas-KLS-Concentration.ipynb) : étalonner une marche et une sonde de demi-espaces sur des lois connues. Une bonne valeur sur les demi-espaces ne borne pas à elle seule tous les ensembles.
+- [Percolation](Applications/Percolation/README.md) : comparer la taille de la composante géante, la pente près du seuil et l’effondrement des courbes selon la taille du tore. Les prolongements 03b et 03c fournissent les données du projet de synthèse.
+- [Fondations](Fondations/README.md) : Metropolis accepte ou refuse une proposition ; Gibbs tire chaque coordonnée conditionnellement aux autres. Sur une cible bimodale, des chaînes coincées dans des modes opposés peuvent rendre une variance groupée plausible : inspecter aussi leurs moyennes individuelles.
 
-**À retenir** :
-- **Choix d'algorithme ≠ détail d'implémentation**. `InferenceEngine.Algorithm` est un **choix de modèle** : sur un mélange avec `Variable.Switch`, VMP factorise l'approximation (stable), EP approxime marginalement (peut inverser labels/poids). Quatre assertions « VMP > EP pour variables discrètes » qui flottaient dans la prose sont maintenant **démontrées par le notebook exécuté**.
-- **EP n'est pas mort** : il reste précieux quand le modèle n'a pas de variables latentes discrètes (cf. Infer-16 Sparse GP, où EP sur géométrie latente continue est discriminant contre NUTS > 15 min). Mais sur Switch → préférer VMP par défaut, documenter le choix.
-- **Validation cross-engine** : la cellule 64 montre aussi le pattern d'ingénierie — comment **substituer l'algorithme** sur un même modèle Infer.NET (créer le modèle, remplacer `MoteurInference`, ré-entraîner). C'est un geste reproductible pour tout notebook ultérieur qui voudra qualifier la sensibilité d'un posterior au choix de l'algorithme.
+### Décider : pourquoi une moyenne ne suffit pas — licence avancée
 
-### Phase 2 : Modèles classiques (notebooks 4-13, ~9h)
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 01 | [DecInfer 01](DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) · [DecPyMC 01](DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | Passer de préférences entre loteries à une utilité espérée. | Master | [01b](DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb) · [01c](DecisionTheory/DecInfer/DecInfer-01c-Lean-Coherence.ipynb) |
+| 02 | [DecInfer 02](DecisionTheory/DecInfer/DecInfer-02-Utility-Money.ipynb) · [DecPyMC 02](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) | Comparer richesse moyenne et équivalent certain. | Master | — |
+| 03 | [DecInfer 03](DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) · [DecPyMC 03](DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | Expliciter les compromis entre plusieurs attributs. | Master | — |
+| 04 | [DecInfer 04](DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb) · [DecPyMC 04](DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) | Relier observations, actions et conséquences dans un réseau de décision. | Master | — |
+| 05 | [DecInfer 05](DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) · [DecPyMC 05](DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) | Comparer le prix d’un test au gain attendu en décision. | Master | — |
+| 06 | [DecInfer 06](DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb) · [DecPyMC 06](DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | Décider à partir d’informations imparfaites dans un système expert. | Master | — |
+| 07 | [DecInfer 07](DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb) · [DecPyMC 07](DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | Choisir une politique plutôt qu’une action isolée ; comparer exploration et exploitation quand les récompenses changent. | Master | [07b](DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) |
+| 08 | [DecInfer 08](DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb) · [DecPyMC 08](DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | En C#, mesurer le regret d’une politique de bandit ; en Python, passer de la perte attendue à la prime d’assurance. | Master | — |
+| 09 | [DecInfer 09](DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) | Comparer les prescriptions des règles de décision face à un prédicteur. | Master | — |
 
-Chaque modèle est illustré par une application concrète : diagnostic médical (4), évaluation de compétences (7, GMAT/GRE), classement Xbox Live (8), classification bayésienne (9), sélection de modèles (10), topic modeling (11), modèles hiérarchiques (12), agrégation de labels (13, Mechanical Turk). Les tables ci-dessous préservent aussi les **asymétries structurelles** : quand le message passing déterministe et l'échantillonnage ne convergent pas vers la même difficulté, c'est enseigné, pas masqué.
+![Utilité de la richesse : racine carrée, logarithme et droite neutre au risque](assets/readme/probas-utility-functions.png)
 
-| # | Infer.NET | PyMC | Ce qu'on y apprend |
-|---|-----------|------|--------------------|
-| 4 | [Bayesian Networks](Infer/Infer-04-Bayesian-Networks.ipynb) | [Bayesian Networks](PyMC/PyMC-04-Bayesian-Networks.ipynb) | Wet Grass, CPT, D-séparation, explaining away — compilation statique vs MCMC |
-| 5 | [Causal Inference](Infer/Infer-05-Causal-Inference.ipynb) | [Causal Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | do-calculus de Pearl, backdoor/front-door, paradoxe de Simpson, contrefactuel — cf. le [pont causal](#pont-causal--les-quatre-séries-causales-réunies) |
-| 7 | [Skills (IRT)](Infer/Infer-07-Skills-IRT.ipynb) | [Skills (IRT)](PyMC/PyMC-07-Skills-IRT.ipynb) | Item Response Theory, modélisation de compétences (DINA), évaluation adaptative |
-| 8 | [TrueSkill](Infer/Infer-08-TrueSkill.ipynb) | [TrueSkill](PyMC/PyMC-08-TrueSkill.ipynb) | Ranking bayésien, online learning, rating conservatif (mu − 3σ) |
-| 9 | [Classification](Infer/Infer-09-Classification.ipynb) | [Classification](PyMC/PyMC-09-Classification.ipynb) | Bayes Point Machine / régression logistique bayésienne, tests A/B, calibration mesurée |
-| 10 | [Model Sélection](Infer/Infer-10-Model-Selection.ipynb) | [Model Sélection](PyMC/PyMC-10-Model-Selection.ipynb) | Bayes Factors, evidence marginale, ARD / LOO, WAIC, comparaison empirique |
-| 11 | [Topic Models](Infer/Infer-11-Topic-Models.ipynb) | [Topic Models](PyMC/PyMC-11-Topic-Models.ipynb) | LDA, Dirichlet, prior asymétrique pour briser la symétrie (VMP) / gestion des variables latentes (NUTS) |
-| 12 | [Modèles Hiérarchiques](Infer/Infer-12-Modeles-Hierarchiques.ipynb) | [Modèles Hiérarchiques](PyMC/PyMC-12-Modeles-Hierarchiques.ipynb) | Partial pooling, shrinkage ; EP vs paramétrisation non-centrée NUTS — divergences sur le **funnel** (asymétrie structurelle) |
-| 13 | [Crowdsourcing](Infer/Infer-13-Crowdsourcing.ipynb) | [Crowdsourcing](PyMC/PyMC-13-Crowdsourcing.ipynb) | Worker models, communautés d'annotateurs, agrégation de labels |
-
-### Phase 3 : Décision bayésienne (arc autonome, ~7h + capstone ~4h)
-
-La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? L'arc vit dans `DecisionTheory/` sous trois formes : [**DecInfer/**](DecisionTheory/DecInfer/README.md) (C#, renumérotés 1-9, accrétions Lean 01b/01c/07b), [**DecPyMC/**](DecisionTheory/DecPyMC/README.md) (miroir Python, socle 1-7 + capstone 08) et [**Actuariat/**](DecisionTheory/Actuariat/README.md) (l'ancienne jambe actuarielle, regraduée T1-T5 : prime pure, fréquence × sévérité, crédibilité, ruine, valeur de l'information en souscription). Les notebooks 4-7 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon DecInfer-07b (kernel Lean 4 via WSL) formalise les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](DecisionTheory/decision_theory_lean/) — descendu dans `DecisionTheory/` auprès de ses consommateurs (décision #4362) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. DecInfer-08 (Thompson Sampling) clôt l'arc C# sur les bandits bayésiens en pratique, DecInfer-09 le prolonge par un prédicteur des théories de la décision.
-
-| # | DecInfer (C# / Lean 4) | DecPyMC (Python) | Ce qu'on y apprend |
-|---|------------------------|------------------|--------------------|
-| 1 | [Utility Foundations](DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) | [Utility Foundations](DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
-| 1b | [Utilité espérée vNM (Lean 4)](DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb) | — | Le théorème de représentation vNM **formalisé** (kernel Lean 4) ; l'accrétion [01c](DecisionTheory/DecInfer/DecInfer-01c-Lean-Coherence.ipynb) prouve la cohérence de de Finetti |
-| 2 | [Utility Money](DecisionTheory/DecInfer/DecInfer-02-Utility-Money.ipynb) | [Utility Money](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
-| 3 | [Multi-Attribute](DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb) | [Multi-Attribute](DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
-| 4 | [Decision Networks](DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb) | [Decision Networks](DecisionTheory/DecPyMC/DecPyMC-04-Decision-Networks.ipynb) | Réseaux de décision, diagrammes d'influence, politique optimale |
-| 5 | [Value of Information](DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb) | [Value of Information](DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb) | EVPI, EVSI — quand un test est-il rentable ? |
-| 6 | [Expert Systems](DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb) | [Expert Systems](DecisionTheory/DecPyMC/DecPyMC-06-Expert-Systems.ipynb) | Minimax, Minimax Regret, décisions robustes |
-| 7 | [Sequential](DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb) | [Sequential](DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs — passerelle vers le RL |
-| 7b | [Indice de Gittins (Lean 4)](DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) | — | Identités d'escompte géométrique démontrées (`0 sorry`), théorème d'optimalité énoncé |
-| 8 | [Thompson Sampling](DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb) | [Actuariat Capstone](DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | Côté C# : bandits bayésiens en pratique, regret cumulé ; côté Python : l'escalier vers la sous-série [Actuariat](DecisionTheory/Actuariat/README.md) (T1-T5) |
-| 9 | [Théories de la décision — prédicteur](DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) | — | Les théories de la décision vues par un prédicteur (kernel Python dans l'arc DecInfer) |
-
-### Phase 4 : Accrétions — debugging et formules fermées (~3h35)
-
-Les carnets lettrés prolongent le socle sans le répéter : le debugging (2b) sert de référence pratique tout au long du parcours, les accrétions 1b et 8b creusent un point précis. Le numéro 6 n'existe pas : le debugging vit en accrétion 2b, jumelle des deux côtés. La numérotation est par ailleurs **1:1** entre les deux stacks, à une asymétrie près : l'ex-`Infer-20` (devenu *Quotients, fibres et recollement*, kernel Python autonome dans [`Applications/`](Applications/README.md)) n'a pas de jumeau PyMC.
-
-| # | Infer.NET | PyMC | Ce qu'on y apprend |
-|---|-----------|------|--------------------|
-| 1b | [Premiers Modèles](Infer/Infer-01b-Premiers-Modeles.ipynb) | — | Le premier modèle en C# : point d'entrée recommandé si vous venez du .NET |
-| 2b | [Debugging — Bonnes Pratiques](Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) | [Debugging](PyMC/PyMC-02b-Debugging-Python.ipynb) | EP vs VMP, ShowFactorGraph, ShowSchedule / trace plots, R-hat, ESS, diagnostics NUTS |
-| 8b | [TrueSkill — Formules Fermées](Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | — | Mise à jour closed-form O(1) par match (V(t)/W(t), Herbrich-Minka-Graepel), cohérence exacte vérifiée contre le moteur EP |
-
-### Phase 5 : Frontières bayésiennes et capstone (notebooks 14-20 + capstone racine, ~4,5h)
-
-Les derniers carnets traitent les séquences temporelles (HMM), la recommandation, puis les frontières : processus gaussiens épars, filtre de Kalman, détection de rupture, analyse de survie. Le capstone racine boucle la série mère sur un cas réel mesuré : l'inversion bayésienne des mesures committées de percolation.
-
-| # | Infer.NET | PyMC | Ce qu'on y apprend |
-|---|-----------|------|--------------------|
-| 14 | [Séquences](Infer/Infer-14-Sequences.ipynb) | [Séquences](PyMC/PyMC-14-Sequences.ipynb) | HMM, forward-backward exact (chaîne sans boucle) vs échantillonné, motifs temporels |
-| 15 | [Recommenders](Infer/Infer-15-Recommenders.ipynb) | [Recommenders](PyMC/PyMC-15-Recommenders.ipynb) | Factorisation matricielle bayésienne, Click Model, recommandation MCMC |
-| 16 | [Sparse Gaussian Process](Infer/Infer-16-Sparse-Gaussian-Process.ipynb) | [Sparse Gaussian Process](PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb) | EP sur géométrie latente GP vs NUTS `> 15 min` — asymétrie structurelle assumée |
-| 17 | [Kalman Filter](Infer/Infer-17-Kalman-Filter.ipynb) | [Kalman Filter](PyMC/PyMC-17-Kalman-Filter.ipynb) | Système dynamique linéaire gaussien, filtrage fermé ; value-add MCMC (estimation jointe Q/R/drift) |
-| 18 | [Change-Point](Infer/Infer-18-Change-Point.ipynb) | [Change-Point](PyMC/PyMC-18-Change-Point.ipynb) | `DiscreteUniform` + `switch`, détection de rupture bayésienne, catastrophes minières (Poisson) |
-| 19 | [Survival Analysis](Infer/Infer-19-Survival-Analysis.ipynb) | [Survival Analysis](PyMC/PyMC-19-Survival-Analysis.ipynb) | Exponentiel conjugué (Gamma), Weibull `k` inféré, sélection LOO, censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
-| 20 (PyMC seul) | — | [Observabilité OTel](PyMC/PyMC-Observabilite-OTel.ipynb) | Instrumentation OpenTelemetry d'un modèle hiérarchique (spans `pymc.compile.*` / `pymc.sample`, attributs du run, capture mémoire) — le miroir Python de la série Aspire/OTel |
-| — | — | [Capstone : Percolation Bayésienne](Probas-Capstone-Percolation-Bayesienne-Python.ipynb) | Inversion bayésienne des mesures committées de [Percolation](Applications/Percolation/README.md) : trois moteurs, EVSI |
-
-### Parcours alternatifs
-
-#### Parcours inférence comparée (Infer.NET vs PyMC, ~15h)
-
-Suivez le même modèle dans les deux stacks pour comparer les approches. Les tables de phases ci-dessus posent déjà les paires côte à côte ; cette table y ajoute la **différence principale** à observer sur chacune :
-
-| Concept | Paire | Différence principale |
-|---------|-------|----------------------|
-| Fondations | Infer-1 → 2 → 3 ↔ PyMC-1 → 2 → 3 | Message passing déterministe (EP/VMP) vs échantillonnage NUTS — Infer-2 démontre la **différence EP vs VMP** sur le même modèle [#7590] |
-| Réseaux bayésiens | Infer-4 ↔ PyMC-4 | Compilation statique vs échantillonnage dynamique |
-| IRT (compétences) | Infer-7 ↔ PyMC-7 | Variable.If vs pm.Bernoulli |
-| TrueSkill | Infer-8 ↔ PyMC-8 | Message passing déterministe (EP) vs échantillonnage MCMC |
-| Classification | Infer-9 ↔ PyMC-9 | Bayes Point Machine vs régression logistique |
-| Model sélection | Infer-10 ↔ PyMC-10 | Bayes Factors vs LOO/Pareto-SMI |
-| Topic modeling | Infer-11 ↔ PyMC-11 | VMP vs NUTS sur variables latentes |
-| Crowdsourcing | Infer-13 ↔ PyMC-13 | Worker models EP vs MCMC agrégation |
-| Séquences (HMM) | Infer-14 ↔ PyMC-14 | Forward-backward exact (chaîne sans boucle) vs échantillonné |
-| Recommenders | Infer-15 ↔ PyMC-15 | Factorisation bayésienne statique vs MCMC |
-| Debugging | Infer-2b ↔ PyMC-02b | ShowFactorGraph vs trace plot diagnostics |
-| Causal Inference | Infer-5 ↔ PyMC-5 | do-calculus message passing vs pm.do MCMC |
-| Modèles hiérarchiques | Infer-12 ↔ PyMC-12 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
-
-#### Parcours applications (modèles concrets, ~6h)
-
-Si vous préférez commencer par les cas d'usage, suivez cet ordre (les lignes de chaque carnet sont dans les tables de phases) :
-
-1. **TrueSkill** (Infer-8 / PyMC-8) : classement bayésien, application Xbox Live
-2. **IRT** (Infer-7 / PyMC-7) : évaluation de compétences, application GMAT
-3. **Crowdsourcing** (Infer-13 / PyMC-13) : agrégation de labels, application Mechanical Turk
-4. **Recommenders** (Infer-15 / PyMC-15) : factorisation matricielle bayésienne
-5. **LDA** (Infer-11 / PyMC-11) : découverte de thèmes dans des corpus textuels
-6. **HMM** (Infer-14 / PyMC-14) : régimes cachés en finance et traitement du signal
-
-#### Parcours décision (théorie de la décision, ~7h)
-
-Pour les étudiants en recherche opérationnelle ou finance : la phase 3 se lit de façon linéaire (DecInfer-01 → 09, ou DecPyMC-01 → 08), avec deux détours Lean : DecInfer-01b (représentation vNM formalisée) et DecInfer-07b (identités d'escompte de Gittins démontrées `0 sorry`) — pont vers [SymbolicAI/Lean](../SymbolicAI/Lean/README.md).
-
-#### Parcours rapide Python (standalone, ~2h)
-
-Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis [Pyro_RSA_Hyperbole.ipynb](Applications/Pyro_RSA_Hyperbole.ipynb) (application à la linguistique pragmatique avec le framework RSA). En **C#/.NET**, l'introduction est `Infer-1b` (`Infer/Infer-01b-Premiers-Modeles.ipynb`), le premier modèle avec les fondations de [`Infer/`](Infer/README.md).
-
-## Quel stack choisir ?
-
-```mermaid
-flowchart TD
-    START(["Votre profil ?"])
-    START --> Q1{"Vous venez du<br/>C# / .NET ?"}
-    START --> Q2{"Vous venez du<br/>Python / data science ?"}
-    START --> Q3{"Indécis ?<br/>Découverte rapide"}
-    Q1 -->|"oui"| INFER["<b>Infer.NET</b><br/>API C# native · Roslyn ·<br/>factor graphs · message passing<br/>déterministe (EP/VMP/Gibbs)"]
-    Q2 -->|"oui"| PYMC["<b>PyMC</b><br/>with pm.Model() · NUTS ·<br/>écosystème pandas/arviz"]
-    Q3 --> IN101["<b>Infer-1b</b><br/>(premier modèle, 1h)"]
-    INFER --> PIVOT1{"Modèle trop complexe<br/>ou pipeline Python ?"}
-    PYMC --> PIVOT2{"Besoin de message passing<br/>déterministe (VMP/EP) ou .NET ?"}
-    PIVOT1 -->|"oui"| PYMC
-    PIVOT2 -->|"oui"| INFER
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
-    classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085;
-    classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px,color:#856404;
-    class INFER infer;
-    class PYMC pymc;
-    class IN101 entry;
-```
-
-Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passing, déterministe) et **PyMC** (Python, MCMC, flexible). L'arbre ci-dessus donne le point d'entrée selon votre profil — et le pont de bascule vers l'autre stack quand le modèle ou l'environnement l'exige. Le détail comparatif notebook-par-notebook figure dans les tables du [parcours d'apprentissage](#parcours-dapprentissage) (colonnes jumelles par phase) et dans le [parcours inférence comparée](#parcours-inference-comparee-infernet-vs-pymc-15h) (différence principale par paire).
-
-### Si vous venez du C# / .NET
-
-**Commencez par Infer.NET.** L'API est native C# (`Variable.GaussianFromMeanAndVariance`), le compilateur Roslyn intègre au .NET Interactive gère la compilation dynamique, et la visualisation des graphes de facteurs via FactorGraphHelper offre une compréhension intuitive de la structure du modèle. C'est le choix idéal pour comprendre le message passing déterministe (EP/VMP) et la structure des graphes de facteurs.
-
-**Passez à PyMC quand :** vous avez un modèle trop complexe pour Infer.NET (variables latentes discrètes à grande taille), ou vous voulez intégrer le modèle dans un pipeline Python (pandas, scikit-learn, visualisation).
-
-### Si vous venez du Python / data science
-
-**Commencez par PyMC.** La syntaxe `with pm.Model(): ...` est plus familière aux data scientists, l'échantillonnage NUTS gère automatiquement les géométries complexes du posterior, et l'écosystème (arviz, pandas, matplotlib) est naturel.
-
-**Passez à Infer.NET quand :** vous voulez comprendre le message passing déterministe (VMP/EP), qui donne des résultats reproductibles et rapides sans échantillonnage, ou vous êtes dans un environnement .NET. La visualisation du factor graph (FactorGraphHelper) est aussi un outil pédagogique unique pour comprendre les dépendances du modèle.
-
-### Si vous ne savez pas quoi choisir
-
-| Critère | Recommandation |
-|---------|---------------|
-| Juste découvrir la programmation probabiliste | **Infer-1b** (`Infer/Infer-01b-Premiers-Modeles.ipynb`) |
-| Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
-| Un premier modèle qui marche | **Infer-1b** ou **PyMC-01-Setup** |
-| Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-11 LDA** |
-| Comparer les deux approches | Les tables de phases ci-dessus (colonnes jumelles) et le [parcours inférence comparée](#parcours-inference-comparee-infernet-vs-pymc-15h) |
-| Production data science | **PyMC** (écosystème Python, NUTS, arviz) |
-| Apprentissage embarqué / temps réel | **Infer.NET** (compilation statique = inférence rapide) |
-
-## Structure
-
-```
-Probas/
-├── Probas-Capstone-Percolation-Bayesienne-Python.ipynb # Capstone de la série mère : inversion bayésienne des mesures committées de Percolation (trois moteurs, EVSI)
-├── Fondations/                  # Socle mathématique commun aux deux stacks (Python et C#)
-│   ├── Probas-CLT-Theoreme-Central-Limite.ipynb # TCL mesuré, variance finie porteuse
-│   ├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Metropolis-Hastings + Gibbs, diagnostics
-│   └── Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb # Même expérience en C#
-├── Applications/                # Applications standalone
-│   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
-│   ├── Probas-KLS-Concentration.ipynb # Cheeger, hit-and-run, thin-shell (Python)
-│   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
-│   └── Pyro_RSA_Hyperbole.ipynb # Pragmatique linguistique (Python)
-├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco et frontières (14-19, plus Observabilite-OTel)
-│   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
-│   └── README.md                # Documentation détaillée de la série PyMC
-├── Infer/                       # Corpus bayésien : socle 1-19 sans le 6, accretions 1b/2b/8b
-│   ├── Infer-01-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
-│   ├── Infer-01b-Premiers-Modeles.ipynb  # Accretion du premier modèle (ex-Infer-101)
-│   ├── Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb # Accretion TrueSkill : mise à jour closed-form O(1) (V(t)/W(t))
-│   ├── README.md                # Documentation détaillée de la série bayésienne
-│   ├── Infer-Glossary.md        # Glossaire des termes Infer.NET
-│   ├── FactorGraphHelper.cs     # Helper visualisation graphes de facteurs
-│   ├── SvgChartHelper.cs        # Helper rendu SVG des modèles
-│   └── scripts/                 # test_notebooks.py + setup_environment.ps1
-└── DecisionTheory/              # Arc théorie de la décision : Infer.NET + PyMC (miroirs) + pont causal
-    ├── DecInfer/                # DecInfer-01-Utility-Foundations ... DecInfer-09-Theories-Decision-Predicteur (+ companions Lean 01b/01c/07b)
-    ├── DecPyMC/                 # DecPyMC-01-Utility-Foundations ... DecPyMC-07-Sequential + DecPyMC-08-Actuariat-Capstone (escalier vers Actuariat/)
-    ├── Actuariat/               # Sous-série actuarielle T1-T5 : Actuariat-01 ... Actuariat-05 (ex-DecPyMC-8..12, descente #14873)
-    ├── decision_theory_lean/    # Projet Lake descendu auprès de ses consommateurs (#4362) : escompte géométrique + théorème de Gittins ; héberge les preuves VNM et Coherence/Dutch Book
-    ├── Causalite/          # Causalite-01..08 : pont causal unifié (Pearl, dowhy), jusqu'à l'équité causale (08)
-    └── voi/                     # Harnais VoI cross-engine Infer.NET x PyMC (contrat JSON commun, #13682) — hors compte notebooks
-```
-
-## Pont causal — les quatre séries causales réunies
-
-La causalité est traitée à **quatre endroits** du dépôt, chacun avec son moteur et son angle propre. Le pont causal [`Causalite/`](Causalite/README.md) — **notebooks Python** — fournit l'**armature formelle commune** : l'échelle de Pearl (observation / intervention / contrefactuel), les trois règles du do-calculus et les méthodes quasi-expérimentales, exécutées sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/) (installé et lancé réellement, pas de réimplémentation jouet) avant de renvoyer à chaque série pour l'instanciation par son moteur :
-
-| Notebook | Durée | Ce qu'il couvre |
-|----------|-------|-----------------|
-| [Causalite-01 — Do-Calculus](Causalite/Causalite-01-Calcul-Do-Python.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
-| [Causalite-02 — Exiger un estimand](Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
-| [Causalite-03 — Le contrefactuel individuel](Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ; fragilité du chiffre individuel à la spécification du mécanisme |
-| [Causalite-04 — Le graphe qu'on n'a pas](Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb) | ~45 min | Découverte de structure via `causal-learn` (PC, GES, LiNGAM) : classes d'équivalence de Markov, verdict **CPDAG ambigu = résultat** ; l'ambiguïté se propage à l'estimand (3 extensions du même CPDAG → 3 estimands `dowhy`) |
-| [Causalite-05 — Le confondeur non observé](Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb) | ~50 min | Sensibilité, pas certitude : robustness value de Cinelli-Hazlett (`linear-partial-R2`), **E-value natif** `dowhy`, bornes de Rosenbaum exactes (Γ*), courbe de bascule du confondeur simulé |
-| [Causalite-06 — L'instrument faible](Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb) | ~45 min | Variable instrumentale via `dowhy` (pipeline `identify` + `estimate(iv)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS en Monte-Carlo, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée |
-| [Causalite-07 — Quasi-Experimental](Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
-| [Causalite-08 — Décomposer la discrimination](Causalite/Causalite-08-Equite-Causale-Python.ipynb) | ~50 min | Équité causale : critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 vérifiés avec `dowhy` sur données de crédit |
-| [Causalite-09 — Emuler un essai ciblé](Causalite/Causalite-09-Hernan-Emulation-Essai-Cible-Python.ipynb) | ~60 min | *Target trial emulation* (Hernan/Robins) : confounding variant dans le temps, g-formula et IPTW stabilisé contre trois réflexes naïfs, benchmark 200 répliques |
-| [Causalite-10 — Automated Social Science](Causalite/Causalite-10-Science-Sociale-Automatisee-Python.ipynb) | ~45 min | Manning/Zhu/Horton (2024) en version bornée locale : SCM générateur à β vrai connu, sujets LLM mono-tour sur endpoints vLLM self-hosted (AWQ vs GPTQ × 3 seeds), ajustement `dowhy`, écart de calibration + bras élicitation directe |
-
-| Série | Moteur | Angle causal |
-|-------|--------|--------------|
-| [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
-| [Infer-05-Causal-Inference](Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
-| [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
-| [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
-
-Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
-
-1. la **théorie unifiée** du do-calculus posée une bonne fois — l'échelle de Pearl et les trois règles, lues comme des *chirurgies du graphe* suivies d'un test de d-séparation, vérifiées sur `dowhy` à effet connu ;
-2. le **pipeline complet** d'une vraie étude causale : `dowhy` **identifie** l'estimande (backdoor / front-door / variable instrumentale), l'**estime** puis le **réfute** — là où Infer-5 et PyMC-5 instrumentent le `do` à la main sur leur moteur, `dowhy` automatise l'identification ;
-3. la distinction explicite entre **causalité interventionniste** (Pearl : quel est l'effet d'une intervention sur `X` dans un graphe fixé ?) et **émergence causale** (Hoel : quelle échelle de description porte le plus de causalité ?) — deux réponses complémentaires à la question causale.
-
-## Applications standalone (dossier [`Applications/`](Applications/))
-
-Les applications autonomes sont aujourd'hui toutes en kernel Python ; si un notebook .NET rejoint `Applications/`, la section se scinde par technologie (une sous-section par kernel), sur le modèle de la division théorie de la décision.
-
-| Notebook | Kernel | Contenu | Durée |
-| -------- | ------- | ------- | ----- |
-| [Pyro_RSA_Hyperbole](Applications/Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
-| [Quotients-Fibres-Recollement-Python](Applications/Quotients-Fibres-Recollement-Python.ipynb) | Python 3 | Quotients, fibres et recollement : ce qui survit à la projection | 30 min |
-| [Probas-KLS-Concentration](Applications/Probas-KLS-Concentration.ipynb) | Python 3 | Gap spectral, constante de Cheeger et thin-shell en dimension croissante | 60 min |
-
-### Pyro_RSA_Hyperbole.ipynb
-
-Application avancée à la linguistique pragmatique :
-- Framework RSA (Rational Speech Acts)
-- Implicatures scalaires (none/some/all)
-- Modélisation des hyperboles (prix, excitation)
-- Question Under Discussion (QUD)
-
-*L'entrée du corpus bayésien C#, `Infer-1b` (accrétion du premier modèle), vit dans [`Infer/`](Infer/README.md) et y est documentée.*
-
-### Quotients-Fibres-Recollement-Python.ipynb
-
-Protocole de **représentation** — et non d'inférence : deux observations d'un même phénomène latent, comparées autrement que par « laquelle est la plus proche de la vérité ». Quatre temps (deux représentations, mesures d'information commune sur l'intersection, quotient `Q`, fibres), le temps 4 n'étant atteint que si le temps 3 a produit un quotient opérationnel :
-
-- Information conditionnelle mesurée pour de vrai : KL discrète (`scipy.special.rel_entr`) et entropies de Shannon, graine fixée, **sans Infer.NET** (le sujet sort de la famille inférentielle stricte) ;
-- Garde-fou Ruzsa et critère d'acceptation hérité de de Finetti : un quotient décoratif ne passe pas ;
-- 2 exercices vérifiables — vos deux représentations et leur information commune ; raffiner le quotient et démasquer un quotient déguisé ;
-- Ex-20 du corpus [`Infer/`](Infer/README.md), désormais **application autonome** : kernel Python propre, dossier d'accueil `Applications/`.
-
-### Probas-KLS-Concentration.ipynb
-
-Le carnet ne porte ni sur un modèle bayésien particulier ni sur la décision : il prend trois **mesures log-concaves isotropes** — la gaussienne, le cube uniforme et le simplexe régulier — et mesure trois objets de leur géométrie asymptotique, en dimension croissante (n = 2 à 20). C'est le contrepoint **non-bayésien** de la série : concentration de la mesure, isopérimétrie et échantillonnage de corps convexes.
-
-- **Constante de Cheeger** par sonde de demi-espaces : `sqrt(2/pi)` retrouvé sur la gaussienne (où l'isopérimétrie de Sudakov–Tsirelson garantit que les demi-espaces sont optimaux) et `1/sqrt(3)` sur le cube isotrope, à toutes les dimensions. La portée de la sonde est **explicitée** : elle rend une borne supérieure, là où la conjecture de Kannan–Lovász–Simonovits énonce une borne inférieure en `c/sqrt(n)` — le carnet nomme l'angle mort au lieu de le masquer.
-- **Marche hit-and-run** sur les trois corps : temps d'autocorrélation en dimension croissante, estimateur validé au préalable sur un contrôle AR(1) à trou spectral connu (avec son biais de troncature mesuré), et contrôle de domaine qui attrape l'erreur de bornes la plus fréquente de l'algorithme.
-- **Variance thin-shell** : les valeurs exactes sont retrouvées — `2n` pour la gaussienne, `4n/5` pour le cube, et une formule dérivée dans le carnet même pour le simplexe isotrope, vérifiée par assertion sur six dimensions ; les largeurs de couronne convergent vers 1/2, 1/5 et 1, **constantes en n**.
-- 3 exercices (directions de la sonde, AR(1) à deux modes, effet de l'isotropisation) ; sorties réelles committées, exécution `papermill --kernel python3`.
-
-Documentation détaillée dans [Applications/README.md](Applications/README.md).
-
-### Percolation (sous-dossier [`Applications/Percolation/`](Applications/Percolation/README.md))
-
-Duo simulation + formalisation autour de la percolation de liens sur tore fini
-(Diskin–Easo–Radhakrishnan–Sudakov–Tassion, arXiv:2603.03257) :
-[`Percolation-01-Supercritique-Python`](Applications/Percolation/Percolation-01-Supercritique-Python.ipynb) (Python, trois régimes mesurés) et
-[`Percolation-02-Lean`](Applications/Percolation/Percolation-02-Lean.ipynb) (Lean 4, compagnon exécutable du lake `percolation_lean`, noyau fini prouvé sans `sorry`) —
-voir [`Applications/Percolation/README.md`](Applications/Percolation/README.md) et #14871.
-
-## Fondations (dossier [`Fondations/`](Fondations/))
-
-Le dossier `Fondations/` porte le **socle mathématique commun** aux deux stacks de la série — le corpus bayésien `Infer/` et le port `PyMC/` présupposent tous deux le théorème central limite et l'échantillonnage MCMC qu'il rend possible. La raison de niveau est détaillée dans [`Fondations/README.md`](Fondations/README.md).
-
-Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb) (kernel `python3`, numpy) est un contrepoint non-bayésien : il **mesure** le théorème central limite au lieu de l'énoncer. Deux résultats, tous deux mesurés :
-
-- **Le taux `1/√n` est une borne, sous hypothèse de troisième moment fini** : pour quatre lois de départ très différentes (uniforme, Bernoulli, exponentielle, log-normale), le produit `d_K(n)·√n` — où `d_K` est la distance de Kolmogorov à la gaussienne — varie peu quand `n` croît de 10 à 160. C'est une observation numérique cohérente avec la borne de Berry–Esseen `d_K(n) ≤ C·E|X−μ|³/(σ³√n)`, qui exige le **troisième moment absolu fini** — la variance finie du TCL ne suffit pas à donner ce taux — et n'impose aucune constante asymptotique non nulle : pour une loi normale, la distance de population est nulle à toute taille.
-- **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
-- 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
-
-### Metropolis–Hastings et Gibbs : Python et C#
-
-Les carnets [Python](Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) et [C#](Fondations/Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb) construisent Metropolis–Hastings et Gibbs, puis comparent une gaussienne corrélée et un mélange bimodal à des approximations simples. Ils utilisent quatre chaînes de 10 000 échantillons après 1 000 pas de chauffe. Le générateur aléatoire diffère entre les langages : les trajectoires et mesures fluctuent. Le tableau reprend les sorties committées actuelles du jumeau Python.
-
-| Cible | Grandeur | MCMC Python | Approximation naïve | Vérité | R-hat classique Python |
-|---|---|---|---|---|---|
-| T1 — gaussienne corrélée (ρ = 0,8) | Corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 | **1,0030** (MH) |
-| T2 — mélange bimodal (modes ±2,5) | Variance | **6,359** | 0,249 (un seul mode) | 6,500 | **2,272** |
-
-Le R-hat classique non scindé et l'ESS heuristique ne sont pas les variantes modernes normalisées par rangs et scindées. Sur T1, la sortie Python donne R-hat=1,0030 : proche de 1 est un signal de cohérence, pas une preuve de convergence. Sur T2, le R-hat=2,272 et les moyennes par chaîne révèlent la métastabilité malgré une variance agrégée relativement proche de 6,500. Les traces et les diagnostics par chaîne sont nécessaires. Les trois exercices portent sur l'acceptation, l'ESS et le taux d'acceptation.
-
-## Prerequisites
-
-### Niveau mathématique attendu
-
-Cette série suppose une **maîtrise de base en probabilités et statistiques** :
-
-| Concept | Utilité dans la série | Notes de révision |
-|---------|---------------------|------------------|
-| Variables aléatoires (discrètes/continues) | Partout, notebook 1+ | Loi de proba, espérance, variance |
-| Distributions usuelles (Bernoulli, Gaussian, Beta, Gamma) | Notebook 1 (Beta-Bernoulli), 2 (Gaussian) | Paramètres, formes, conjugaison |
-| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A\|B), théorème de Bayes |
-| Indépendance conditionnelle | Notebook 3 (Monty Hall), 4 (D-separation) | Collider, explaining away |
-| Espérance mathématique | Partout (calcul de EU) | E[X] = sum x*P(x) ou intégrale |
-| Distributions conjuguées | Notebook 1 (Beta-Bernoulli), topic models 11 (Dirichlet) | Prior + likelihood = posterior (famille même) |
-| Intégrales (niveau 1) | Notebook 2 ; arc décision (DecInfer-02, CARA/CRRA) | Calcul d'espérance avec fonctions non-linéaires |
-
-**Inutile de maîtriser** : dérivation multivariée, algèbre linéaire avancée (sauf pour les modèles hiérarchiques en notebook 12). Les concepts sont introduits progressivement et réexpliqués dans le contexte.
-
-### Prerequisites techniques
-
-#### Pour Infer.NET (C#)
-
-```bash
-# .NET SDK 9.0+
-dotnet --version
-
-# VS Code + extension Polyglot Notebooks
-# Packages (auto-references dans notebooks):
-# - Microsoft.ML.Probabilistic
-# - CompilerChoice = Roslyn
-```
-
-#### Pour Python
-
-```bash
-# Environnement Python 3.10+
-pip install pyro-ppl torch matplotlib numpy
-```
-
-## Installation
-
-### Notebooks PyMC (Python)
-
-Python 3.12 ou plus récent est requis : les notebooks suivent l'API de PyMC 6 et d'ArviZ 1.x, que pip n'installe pas sur une version antérieure.
-
-```bash
-pip install "pymc>=6" "arviz>=1" numpy scipy matplotlib
-```
-
-### Notebooks Infer.NET (C# .NET Interactive)
-
-```bash
-# 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
-# 2. Installer le kernel dotnet-interactive
-dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
-dotnet interactive jupyter install
-
-# 3. Ou utiliser le script PowerShell (installe tout automatiquement) :
-cd MyIA.AI.Notebooks/Probas/Infer/scripts
-.\setup_environment.ps1
-```
+Dans [Utilité et argent](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb), un même gain de richesse apporte de moins en moins d'utilité sur les courbes racine et logarithme ; sur la droite, il apporte toujours le même supplément. C'est cette courbure, non la hauteur relative des courbes, qui explique la préférence pour un gain certain plutôt qu'une loterie de même espérance. Les coefficients d'Arrow-Pratt (Pratt, 1964 ; Arrow, 1965), calculés dans le même carnet, la mesurent.
 
-### Notebooks Python (Pyro_RSA)
+### Projet de synthèse : inférer le seuil de percolation — master et recherche
 
-```bash
-pip install pyro-ppl torch matplotlib numpy
-```
+[Le seuil comme problème inverse](Probas-Capstone-Percolation-Bayesienne-Python.ipynb) reprend les mesures sur réseaux finis. Metropolis, NUTS et le calcul sur grille s'accordent pour le modèle à deux paramètres. Pourtant, dans le modèle hiérarchique à exposant libre, l'intervalle de `p_c` va de 0,5084 à 0,5178 : il exclut le seuil théorique de 0,5. L'accord entre algorithmes n'est pas une validation du modèle physique. Le projet se termine sur une question de décision : que gagnerait-on à payer une simulation sur une grille plus grande ?
 
-### Vérification
+## Prérequis, concepts clés et domaines d’application — licence
 
-```bash
-jupyter kernelspec list  # doit afficher .net-csharp et python3
-```
+| Notion à connaître | Où elle devient utile |
+|---|---|
+| Probabilité conditionnelle et règle de Bayes | Mettre à jour une croyance ; la conjugaison conserve la famille de la loi, pas ses paramètres. |
+| Indépendance conditionnelle et graphe de facteurs | Décomposer la loi jointe. La d-séparation indique quelles observations peuvent ouvrir ou fermer un chemin. |
+| Espérance, somme ou intégrale | Calculer une perte moyenne ou une utilité espérée ; EVPI et EVSI comparent la valeur d’informations parfaite et imparfaite. |
+| Variance et covariance | Distinguer incertitude d’une mesure, variabilité entre groupes et dépendance entre paramètres. |
 
-### Tester tous les notebooks
+En **éducation** (07) et en **classement** (08), on infère une compétence plutôt qu’un résultat isolé. En **diagnostic** (04–05), demander le résultat d’un test n’équivaut pas à traiter le patient. En **analyse de textes** (11) et en **annotation** (13), thèmes et fiabilité sont latents. En **recommandation** (15), les clics renseignent imparfaitement les préférences. En **maintenance** (17–19), filtrer un signal, dater une rupture et estimer une durée de vie répondent à des questions distinctes. Les préférences face au risque et les décisions séquentielles prolongent ces usages en assurance et en finance.
 
-```bash
-python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
-```
+## Installation — pratique
 
-## Concepts clés
+Pour Python, utiliser un environnement 3.12 ou plus récent et, depuis la racine du dépôt, `python -m pip install -r MyIA.AI.Notebooks/Probas/requirements.txt`. Pour C#, utiliser le SDK .NET 9 et le noyau `.net-csharp` de .NET Interactive ; le [guide de configuration](Infer/scripts/README.md) accompagne l'installation. `jupyter kernelspec list` permet de vérifier les noyaux enregistrés. Le [pont causal](Causalite/README.md) précise quels paliers utilisent son environnement spécialisé.
 
-| Concept | Description |
-|---------|-------------|
-| **Inférence bayésienne** | Mise à jour de croyances avec des observations |
-| **Prior / Posterior** | Distribution avant/après observations |
-| **Factor Graph** | Représentation graphique de distributions jointes |
-| **Message Passing** | Algorithmes EP (Expectation Propagation), VMP — voir [comparaison EP vs VMP sur Infer-2](#au-delà-du-consensus-par-défaut--ep-vs-vmp-un-cas-bimodal-discriminant-infer-2) [#7590] |
-| **MCMC / NUTS** | Échantillonnage pour modèles complexes (PyMC) |
-| **D-separation** | Critère graphique d'indépendance conditionnelle |
-| **Explaining Away** | Causes alternatives deviennent moins probables |
-| **Decision Theory** | Maximisation d'utilité espérée |
-| **Valeur de l'information** | EVPI, EVSI — coût d'un test complémentaire |
+### Mise en route par environnement
 
-## Domaines d'application
+**Python.** Utiliser `python -m venv .venv` avec Python 3.12+, activer cet environnement et y installer les dépendances indiquées ci-dessus. Vérifier les imports avec `python -c "import pymc, arviz; print(pymc.__version__, arviz.__version__)"`. Pour l’application pragmatique, vérifier aussi `python -c "import pyro, torch"`.
 
-| Domaine | Notebooks |
-|---------|-----------|
-| Jeux vidéo | Infer-8, PyMC-8 (TrueSkill) |
-| Éducation | Infer-7, PyMC-7 (IRT) |
-| NLP | Infer-11, PyMC-11 (LDA) |
-| Médecine | Infer-4, Infer-5, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, inférence causale, Kalman, change-point, survie) |
-| Finance | Infer-14 (HMM régimes), DecInfer-02 (CARA/CRRA), DecInfer-07 (MDPs) |
-| E-commerce | Infer-13, Infer-15, PyMC-13, PyMC-15 (crowdsourcing, recommenders) |
-
-### Exemples concrets
-
-Derrière chaque modèle de la série se cache un système réel déjà en production :
-
-- **TrueSkill** (notebook 8) est l'algorithme que Microsoft utilise pour apparier des millions de joueurs sur Xbox Live : il maintient pour chaque joueur une compétence *gaussienne* (moyenne + incertitude) mise à jour après chaque partie, généralisant l'Elo des échecs aux jeux en équipe.
-- **Item Response Theory** (notebook 7) est le moteur des tests adaptatifs comme le GMAT ou le GRE : la difficulté de chaque question est calibrée probabilistiquement, et le test s'ajuste en temps réel au niveau estimé du candidat.
-- **Les réseaux bayésiens** (notebook 4) fondent les systèmes d'aide au diagnostic médical (de QMR-DT aux outils modernes) et le filtrage anti-spam : ils propagent l'incertitude entre symptômes, causes et observations.
-- **LDA / topic models** (notebook 11) structurent automatiquement de grands corpus — découverte de thématiques dans des archives de presse, cartographie de la littérature scientifique, analyse de tickets support.
-- **Les HMM** (notebook 14) détectent les régimes cachés : phases de marche en finance, reconnaissance de la parole, segmentation de séquences biologiques.
-- **Les systèmes de recommandation bayésiens** (notebook 15) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour décider quand explorer un nouvel item plutôt que d'exploiter une préférence connue.
-- **Le crowdsourcing** (notebook 13) modélise la fiabilité de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la vérité terrain malgré des votes bruités.
-- **La théorie de la décision et les MDPs** (arc [`DecisionTheory/`](DecisionTheory/)) relient la série au contrôle séquentiel : gestion de stocks, maintenance prédictive, et passerelle directe vers le [reinforcement learning](../RL/).
-
-## FAQ / Troubleshooting
-
-### Le kernel .NET Interactive n'apparait pas dans Jupyter
-
-- Vérifiez que `dotnet interactive jupyter install` a réussi (sortie : `Kernel installed`).
-- Redémarrez Jupyter. Si le kernel persiste à ne pas apparaître, vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`.
-- Sur Windows, les notebooks Infer.NET doivent être ouverts avec l'extension **Polyglot Notebooks** dans VS Code ou jupyterlab.
-
-### `CompilerChoice.Roslyn` obligatoire
-
-Tous les notebooks Infer.NET utilisent `moteur.Compiler.CompilerChoice = CompilerChoice.Roslyn`. C'est **obligatoire** dans .NET Interactive car Infer.NET compile dynamiquement le modèle en code C#. Sans Roslyn, la compilation échoue. Ce pattern est présenté dans **chaque** notebook de la série (section 1 "Configuration").
-
-### PyMC ne s'installe pas sur Windows (compilateur C manque)
-
-PyMC nécessite un compilateur C pour certaines dépendances. Sur Windows :
-- Installez **Microsoft Visual C++ Build Tools** (la version "Build Tools" suffit, pas besoin de Visual Studio complet).
-- Ou utilisez un **environnement conda** : `conda install -c conda-forge pymc`.
-- Ou utilisez un **conteneur Docker** avec une image préconfigurée.
-
-### Erreur Graphviz / FactorGraphHelper
-
-La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n'est pas trouvé :
-- Les fichiers `.gv` sont sauvegardés dans le répertoire courant.
-- Vous pouvez les visualiser sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/).
-- Installation Graphviz Windows : télécharger depuis https://graphviz.org/download/, puis ajouter `C:\Program Files\Graphviz\bin` au PATH.
-
-### Kernels : un par sous-série, jamais mélangés
-
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Fondations/` (CLT et MCMC Python ; MCMC dispose aussi d’un jumeau C#), `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Probas-KLS-Concentration`, `Applications/Percolation/Percolation-01-Supercritique-Python` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-02-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
-
-### PyMC : échantillonnage très lent ou divergence NUTS
-
-- Augmentez `target_energy` et `adapt_delta` (défaut 0.8 → essai 0.95).
-- Vérifiez le `R-hat` (devrait être < 1.01 pour toutes les variables).
-- Consultez [PyMC-02b-Debugging-Python](PyMC/PyMC-02b-Debugging-Python.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
-
-## Ressources
-
-### Activités associées
-
-Les activités [Chaîne de Markov de la météo](../GenAI/activites/Activites-Vulgarisation.md#6-probabilités--chaîne-de-markov-de-la-météo) et [Axiomes de préférences rationnelles](../GenAI/activites/Activites-Vulgarisation.md#7-axiomes-de-préférences-rationnelles-et-irrationalité-humaine) exercent en jeu d'équipe la distribution stationnaire et la théorie de l'utilité enseignées ici.
-
-### Infer.NET
-
-- [Infer.NET Documentation](https://dotnet.github.io/infer/)
-- [MBML Book (Model-Based Machine Learning)](https://mbmlbook.com/)
-- [Infer.NET GitHub](https://github.com/dotnet/infer)
-
-### PyMC
-
-- [PyMC Documentation](https://www.pymc.io/)
-- [PyMC Examples](https://www.pymc.io/projects/examples/en/latest/)
-- [arviz — Visualization et diagnostics MCMC](https://python.arviz.org/)
-
-### Théorie
-
-- Bishop, C. (2006) - *Pattern Recognition and Machine Learning*
-- Koller & Friedman (2009) - *Probabilistic Graphical Models*
-- Von Neumann & Morgenstern (1944) - *Theory of Games and Economic Behavior*
-- Russell & Norvig - *Artificial Intelligence*, Chapter 16 (Decision Theory)
-
-### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
-
-Cette série ancre mathématiquement ses résultats phares dans un assistant de preuve, en partenariat avec les autres familles du dépôt. La programmation probabiliste ne se contente pas de **calculer** des densités, des utilités espérées et des bornes de généralisation — elle les **prouve**. Le tableau ci-dessous croise les notebooks Probas avec les **lakes Lean 4** qui certifient leurs théorèmes, et signale les passerelles vers les autres hubs (`QC` ↔ `kelly_lean`, `GameTheory` ↔ `game_theory_lean` (Arrow), `Search` ↔ `search_lean`, `SymbolicAI` ↔ `argumentation_lean`).
-
-| Famille                  | Lake phare                       | Théorème                                                                          | Branchement notebook                                                |
-| ---                      | ---                              | ---                                                                               | ---                                                                  |
-| Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecInfer-01b-Lean-ExpectedUtility`](DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb)  |
-| Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) (`0 sorry`)                | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Coherence   |
-| ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) |
-| Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-07b-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb)                                          |
-| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion-Python.ipynb`](../QuantConnect/kelly_lean/Kelly_companion-Python.ipynb)                                           |
-| GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb`](../GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb)                                          |
-| Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../Search/search_lean/))                                     |
-| SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argumentation-03-Dung-AF-Semantics-Python.ipynb`](../SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb)                               |
+**C#.** Vérifier `dotnet --version`, puis suivre le [script de configuration](Infer/scripts/setup_environment.ps1). Après installation de l’outil .NET Interactive, `dotnet interactive jupyter install` enregistre le noyau. Le [validateur des carnets Infer](Infer/scripts/test_notebooks.py) propose `--validate-only` pour la structure : ce n’est pas une exécution du modèle.
 
-```mermaid
-flowchart LR
-    subgraph SIM["Probas — simulation numérique"]
-        NB_DT["DecInfer-01b — vNM (kernel Lean)"]
-        NB_CO["Arc DecInfer — Coherence"]
-        NB_GIT["DecInfer-07b Gittins companion"]
-        NB_PAC["PAC Learning iter-2"]
-        NB_MCMC["PyMC NUTS / HMC"]
-        NB_EP["Infer.NET EP / VMP"]
-    end
-    subgraph LEAN["Lakes Lean 4 — preuves formelles"]
-        LK_DT["decision_theory_lean VNM"]
-        LK_CO["decision_theory_lean Coherence"]
-        LK_PAC["PAC chain uniform_concentration"]
-        LK_GIT["decision_theory_lean Peters Gittins"]
-        LK_KELLY["kelly_lean"]
-        LK_SC["game_theory_lean (Arrow)"]
-    end
-    NB_DT -. "axiomes vNM ⟹ utilité espérée" .-> LK_DT
-    NB_CO -. "coherence ⟹ preferences" .-> LK_CO
-    NB_PAC -. "uniform_concentration ⟹ erm_error_bound" .-> LK_PAC
-    NB_GIT -. "identités d'escompte ⟹ indice Gittins" .-> LK_GIT
-    NB_MCMC -. "log-bienveillance ⟹ f* = μ−σ²/2" .-> LK_KELLY
-    %% NB_EP (Infer.NET EP / VMP) = inférence bayésienne approximative ;
-    %% la passerelle Dung ↔ argumentation_lean est couverte par le tableau §E ci-dessus (ligne SymbolicAI ↔ Probas),
-    %% pas par un lien direct depuis ce nœud de simulation.
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    style LK_DT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style LK_CO fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style LK_PAC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style LK_GIT fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style LK_KELLY fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style LK_SC fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-```
+### FAQ — dépannage par symptôme
 
-La double culture Probas tient en deux gestes complémentaires. D'un côté, **simuler** : PyMC fait tourner NUTS/HMC sur des modèles hiérarchiques, Infer.NET propage des messages EP/VMP sur des graphes factoriels, et les notebooks PAC entraînent des hypothèses parERM. De l'autre, **prouver** : `decision_theory_lean` (VNM et Coherence certifiés, `0 sorry`) certifie que les axiomes de rationalité impliquent l'existence d'une utilité espérée, et la chaîne PAC iter-2 démontre `pac_agnostic_generalization` de bout en bout sans `sorry`. Les deux faces du même raisonnement bayésien et décisionnel — l'une touche l'intuition numérique, l'autre ancre la garantie formelle.
+| Symptôme | Vérification et action |
+|---|---|
+| C# absent de Jupyter | Relancer l’enregistrement du noyau depuis le terminal où le SDK est disponible, puis redémarrer Jupyter et vérifier `jupyter kernelspec list`. |
+| Le modèle C# se déclare mais ne compile pas | Reprendre dans Infer-01 le réglage `CompilerChoice.Roslyn` du moteur : la compilation dynamique du modèle est une étape distincte de l’exécution d’une cellule C#. |
+| Pas de dessin du graphe | Vérifier `dot -V` dans l’environnement de Jupyter. Installer Graphviz et rendre `dot` accessible sur le `PATH` ; conserver le `.gv` pour distinguer une panne de rendu d’une erreur de modèle. |
+| PyMC ne s’installe pas sous Windows | Vérifier d’abord la version du Python actif. Si l’erreur porte sur la compilation native, créer un environnement conda et lancer `conda install -c conda-forge pymc`, qui apporte les dépendances binaires. Sinon, installer la chaîne C++ : les « Build Tools » de Visual Studio suffisent, sans l’environnement complet. |
+| NUTS est lent ou divergent | Examiner support, priors, traces, ESS et divergences ; comparer une paramétrisation non centrée avant de modifier `target_accept`. Voir [le diagnostic PyMC](PyMC/PyMC-02b-Debugging-Python.ipynb). |
+| Un import ou une commande Lean échoue dans un dossier mixte | Choisir le noyau du **carnet**, pas celui du dossier : `.net-csharp` pour Infer, `python3` pour PyMC, Python ou C# pour Fondations, noyau Lean pour les compagnons formels. Causalité précise ses exceptions au [guide local](Causalite/README.md). |
 
-EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-ref hubs [`QC` ↔ `kelly_lean`](../QuantConnect/README.md), [central P0](../README.md), [`GameTheory` ↔ `game_theory_lean`](../GameTheory/README.md), [`SymbolicAI/Lean`](../SymbolicAI/Lean/README.md).
+## Pour aller plus loin — recherche
 
-## Approfondissements — au-delà du parcours principal
+**Formalisations Lean.** L'[inventaire des preuves](LEAN_INVENTORY.md) distingue les résultats formalisés de ce qui reste ouvert. Les compagnons de [l'utilité espérée](DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb), de [la cohérence des préférences](DecisionTheory/DecInfer/DecInfer-01c-Lean-Coherence.ipynb) et de [l'escompte dans les bandits](DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) précisent quelles hypothèses portent le calcul. En [percolation](Applications/Percolation/README.md), lire les preuves d'inégalités à côté des expériences, non comme une preuve du seuil estimé.
 
-Le parcours principal (fondations, modèles classiques, décision) se lit de façon linéaire. Quatre directions prolongent la série, chacune avec sa porte d'entrée :
+**Décision séquentielle.** Le [parcours décisionnel](DecisionTheory/README.md) distingue le choix d'une action, l'apprentissage d'une politique par [renforcement](../RL/README.md) et la prise en compte des choix d'autrui en [théorie des jeux](../GameTheory/README.md). Pour comparer des règles de décision plutôt que des moteurs, commencer par [le cas du prédicteur](DecisionTheory/ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb).
 
-- **L'inférence comparée** : reprendre un même modèle dans les deux stacks (Infer-N ↔ PyMC-N) et comparer les intervalles de crédibilité — la table du [parcours inférence comparée](#parcours-inference-comparee-infernet-vs-pymc-15h) cartographie les paires. La section [EP vs VMP sur Infer-2](#au-delà-du-consensus-par-défaut--ep-vs-vmp-un-cas-bimodal-discriminant-infer-2) montre ce que ce croisement révèle qu'aucune stack seule ne dit : le même modèle bimodal, deux moteurs, des conclusions inversées.
-- **La causalité** : la sous-série [`Causalite/`](Causalite/README.md) exécute l'échelle complète de Pearl sur `dowhy` — identification de l'estimande, estimation, réfutation, contrefactuel individuel — puis pousse chaque hypothèse d'identification dans ses retranchements : découverte de structure quand le graphe manque, sensibilité au confondeur caché, instrument faible, méthodes quasi-expérimentales, équité causale.
-- **Les contrepoints non-bayésiens** : les [`Fondations/`](Fondations/README.md) mesurent le théorème central limite et Metropolis–Hastings au lieu de les énoncer ; [`Applications/`](Applications/README.md) abrite la concentration de la mesure (constante de Cheeger, marche hit-and-run, thin shell), la géométrie catégorique (quotients, fibres, recollement) et la percolation sur tore fini — cette dernière avec son compagnon Lean prouvé sans `sorry`.
-- **Les preuves formelles** : le [pont vers les preuves formelles Lean 4](#pont-vers-les-preuves-formelles-lean-4--différenciant-coursia) relie les théorèmes de la série — utilité espérée de von Neumann-Morgenstern, indice de Gittins, fraction de Kelly — à leurs lakes certifiés : l'assurance que les identités numériques sont des théorèmes, pas des approximations accidentelles.
+## Ressources — tous niveaux
 
-La [Conclusion](#conclusion--prochaines-étapes) situe ces prolongements dans le fil de la série ; les [références canoniques](#références-canoniques-audit-distillation-8081) documentent la distillation des sources (MBML, TrueSkill, PRML).
+[Glossaire de l'inférence](Infer/Infer-Glossary.md) · [Correspondance entre les modèles et leurs sources](../../docs/reference/mbml-source-attribution.md) · [Documentation Infer.NET](https://dotnet.github.io/infer/) · [Documentation PyMC](https://www.pymc.io/projects/docs/en/stable/) · [Activités sur les chaînes de Markov et les préférences](../GenAI/activites/Activites-Vulgarisation.md).
 
-## Conclusion / Prochaines étapes
 
-### Ce que vous avez appris
+### Pont vers les preuves formelles — recherche
 
-Cette série vous a fait changer de regard sur l'incertitude : plutôt que de la fuir ou de l'ignorer, vous avez appris à la **modéliser, la quantifier et la traduire en décisions**. L'arc pédagogique se déploie en trois temps, porté par trois stacks complémentaires :
+Une simulation vérifie un cas ; une preuve établit une proposition pour toutes les entrées qui satisfont ses hypothèses. L’[inventaire Lean de Probas](LEAN_INVENTORY.md) précise les branchements réels et les obligations ouvertes : une identité d’escompte démontrée n’est pas une preuve complète du théorème d’indice.
 
-- **Le geste fondateur** — remplacer une prédiction ponctuelle par une **distribution**. Un modèle probabiliste ne dit pas « la probabilité est 0.73 » mais « voici la distribution complète N(0.73, 0.12) », et cette densité porte l'information que la moyenne dissimule : la confiance, les queues, les modes multiples. C'est ce déplacement qui ouvre tout le reste.
-- **La double inférence** — Infer.NET (message passing déterministe, EP/VMP/Gibbs) et PyMC (échantillonnage MCMC, NUTS) résolvent les mêmes modèles par des voies opposées : non pas « exact vs approché » (EP est lui-même approché en général), mais **déterministe vs stochastique**. Le traverser sur des modèles jumeaux (notebook à notebook, Infer-N ↔ PyMC-N) ancre une intuition qu'aucun cours théorique ne donne : **quand le message passing déterministe s'applique, il est rapide et reproductible ; quand le modèle sort de son domaine, l'échantillonnage prend le relais mais exige des diagnostics** (R-hat, effective sample size, trace plots).
-- **La décision** — la seconde moitié franchit le pas : des croyances (distributions) aux **actions**. Utilité espérée E[U], valeur de l'information (EVPI/EVSI), réseaux de décision, et enfin les MDP qui relient cette série à l'apprentissage par renforcement. Chez Infer.NET cet arc forme un **track autonome** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) ; son compagnon Lean 4 (DecInfer-07b) pousse l'exigence jusqu'à **formaliser** les identités d'escompte de l'indice de Gittins — l'assurance que les identités numériques ne sont pas des approximations accidentelles mais des théorèmes.
+| Question voisine | Où poursuivre | Distinction à conserver |
+|---|---|---|
+| Quand l’erreur empirique renseigne-t-elle sur la généralisation ? | [Théorie PAC](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) et [compagnon Lean](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | Une borne uniforme n’est pas la performance mesurée sur un échantillon. |
+| Quelle fraction risquer avec une utilité logarithmique ? | [Compagnon de Kelly](../QuantConnect/kelly_lean/Kelly_companion-Python.ipynb) | Pour un pari de cote `b` gagné avec probabilité `p` (et perdu avec probabilité `q = 1 − p`), la fraction `f* = (b·p − q)/b` maximise la croissance logarithmique : aucune autre mise admissible ne croît plus vite. Comparer cette croissance au gain monétaire espéré. |
+| Peut-on agréger des préférences individuelles ? | [Choix social](../GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | Arrow : unanimité (Pareto faible) et indépendance des options non pertinentes (IIA) ne laissent que la dictature ; le carnet teste ces axiomes sur les règles de vote usuelles. Les axiomes d’un choix collectif ne sont pas ceux de la représentation d’une loterie individuelle. |
+| Quand un algorithme garantit-il son résultat ? | [Recherche heuristique](../Search/search_lean/README.md) et [sémantiques d’argumentation](../SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | Optimalité d’un chemin sous hypothèses sur l’heuristique et acceptabilité dans un cadre formel sont d’autres formes de garantie, pas des conséquences de l’inférence bayésienne. |
 
-La thèse pratique est honnête : un modèle probabiliste est plus lourd à bâtir qu'un classifieur, mais il est le seul à pouvoir dire « je ne sais pas » — et dans le diagnostic médical, le classement sportif ou l'évaluation de compétences, cette honnêteté est précisément ce qu'on cherche.
+### Lectures et activités — tous niveaux
 
-### Prochaines étapes
+Pour les graphes et leurs algorithmes, voir *Probabilistic Graphical Models* ; pour les modèles gaussiens et les mélanges, *Pattern Recognition and Machine Learning* ; pour le moteur C#, Minka et al. (2018), *Infer.NET 2.4*, cité dès le premier carnet Python. [Model-Based Machine Learning](https://mbmlbook.com/) et la [table d’attribution](../../docs/reference/mbml-source-attribution.md) relient les scénarios aux modèles. Pour pratiquer sans code, essayer [la météo markovienne](../GenAI/activites/Activites-Vulgarisation.md#6-probabilités--chaîne-de-markov-de-la-météo) puis [les préférences rationnelles](../GenAI/activites/Activites-Vulgarisation.md#7-axiomes-de-préférences-rationnelles-et-irrationalité-humaine). Pour revenir à la prédiction appliquée, poursuivre par le [TP de prévision des ventes](../ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb).
 
-- **Passer à la décision séquentielle** : les MDP de l'arc décision ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) ou [`DecisionTheory/DecPyMC/`](DecisionTheory/DecPyMC/README.md)) préparent directement [RL](../RL/README.md), où l'agent **apprend** la politique optimale par interaction plutôt que de la calculer hors ligne — la frontière naturelle entre inférence probabiliste et apprentissage par renforcement.
-- **Croiser la théorie des jeux** : [GameTheory](../GameTheory/README.md) partage la notion de **décision sous incertitude**, mais l'incertitude y vient d'un adversaire rationnel plutôt que d'un processus stochastique. Les fonctions d'utilité multi-attributs trouvent leur miroir dans le choix social et l'utilité collective.
-- **Revenir au ML appliqué** : le [TP prévision de ventes](../ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb) de la série ML est une porte d'entrée — il traite la régression bayésienne comme cas d'application ; cette série en donne le langage complet (distributions, facteurs, inférence).
-- Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-8 / PyMC-8) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
-
-### Le fil rouge
-
-La programmation probabiliste propose un changement de posture : ne plus demander « quelle est la bonne réponse ? » mais **« à quel point suis-je sûr de cette réponse, et que dois-je faire compte tenu de cette incertitude ? »**. Cette série vous a donné les trois couches — modéliser (facteurs, distributions), inférer (message passing ou échantillonnage), décider (utilité espérée, valeur de l'information) — pour transformer une question qualitative en un calcul, en gardant à l'esprit qu'une distribution honnête vaut mieux qu'une certitude illusoire.
-
-## Références canoniques (audit distillation #8081)
-
-La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilistes canoniques. Le **mapping source ↔ notebook** est audité dans [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) (c.803, 2026-07-23). Références canoniques principales :
-
-- **[*Model-Based Machine Learning Book*](https://mbmlbook.com/)** (Herbrich / Bishop / Winn / Diethe) — couvre la majorité des notebooks probas appliqués (Murder Mystery Ch.1, Skills IRT Ch.2, TrueSkill Ch.3, BPM Ch.4, WetGrass Ch.5, LDA Ch.10, Crowdsourcing Ch.7/9c, Recommenders, Sequences Ch.12, GP Ch.16, Survival Ch.17).
-- **[*TrueSkill: A Bayesian Skill Rating System*](https://research.microsoft.com/~minka/papers/trueskill.pdf)** (Herbrich, Minka & Graepel, NeurIPS 2007) — fondement algorithmique de Infer-8 et PyMC-8, dont les formules fermées V(t)/W(t)/τ² (section 7 bis PyMC-8).
-- **[*Pattern Recognition and Machine Learning*](https://www.microsoft.com/en-us/research/people/cmbishop/prml-book/)** (Bishop, Springer 2006) — référence générale pour les modèles gaussiens, mixtures, EM, et la théorie de l'inférence bayésienne.
-- **Rasch (1960) / Birnbaum (1968) / Lord (1980)** — historique IRT cité dans PyMC-7 (cell 3) « Origine de la méthode » ; le pendant Infer-7 mérite un backfill analogue (#8702).
-- **Lauritzen & Spiegelhalter (1988), Jensen, Lauritzen & Olesen (1990)** — fondement des réseaux bayésiens WetGrass/Sprinkler (Infer-4, PyMC-4).
-- **Blei, Ng & Jordan (2003)** — Latent Dirichlet Allocation, cité dans Infer-11 et PyMC-11 comme « Source primaire ».
-- **Salakhutdinov & Mnih (2008)** — Probabilistic Matrix Factorization, cité dans PyMC-15.
-- **Pearl (2000)** — do-calculus, fondement causal d'Infer-5 / PyMC-5 / DecInfer Do-Calculus-Bridge.
-- **Rabiner (1989)** — HMM tutorial, base conceptuelle d'Infer-14 / PyMC-14.
-- **Minka, T., Winn, J., et al. (2018)** — *Infer.NET 2.4*, Microsoft Research Cambridge (cité PyMC-1).
-
-Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1, cellule 38 ; Infer-15, cellule 88) ou sur les **sources primaires** académiques. Le tableau de correspondance [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) inventorie chaque notebook avec sa source/attribution.
-
-## Licence
-
-Voir la licence du repository principal.
-
----
-
-*Version 1.4.0 — Novembre 2026 — mise à la forme cible des grands README (#3973, See #25509).*
-
-*Version 1.3.0 — Septembre 2026*
+[Licence du dépôt](../../LICENSE)
