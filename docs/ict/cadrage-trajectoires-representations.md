@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # ICT — Cadrage « trajectoires de représentations » : le pivot états → représentations (N2)
 
