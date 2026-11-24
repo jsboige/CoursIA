@@ -972,8 +972,16 @@ def load_mapping(src: str, repo: Path | None = None) -> list[tuple[str, str]]:
 #: est le membre GAUCHE d'une expression de transformation. La reecrire ferait
 #: `nouveau -> nouveau` et detruirait la phrase qui documente le geste
 #: (mesure : PARITY-INVENTORY.md, 21 remplacements, `X -> Y` devenus `Y -> Y`).
+#:
+#: L'EXTENSION est toleree entre la forme et le marqueur (#28323) : le pilote
+#: applique plusieurs formes sur le meme texte (la forme la plus longue
+#: d'abord), et la forme NUE (tige, sans extension) matche devant `.ipynb`.
+#: Le contexte etait donc lu a `m.end()` de la TIGE, ou `.ipynb devient`
+#: ne ressembleait a aucun marqueur connu -- la ligne d'historique du registre
+#: devenait `Y.ipynb devient Y.ipynb` (mesure : 8 registres SymbolicLearning,
+#: 1 remplacement chacun).
 _RENAME_DOC_CONTEXT = re.compile(
-    r"\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
+    r"\s*(?:\.[A-Za-z0-9_+-]+)?\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
     re.IGNORECASE,
 )
 

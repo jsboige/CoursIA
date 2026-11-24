@@ -380,6 +380,51 @@ class TestRenameDocumentationLine(unittest.TestCase):
                 rn.rewrite_file(p, forms)
                 self.assertIn(body, p.read_text(encoding="utf-8"))
 
+    def test_extension_between_the_form_and_the_context_is_protected(self):
+        # #28323 : le pilote applique PLUSIEURES formes sur le meme texte, la
+        # plus longue d'abord. La forme NUE (tige, sans extension) matche
+        # devant `.ipynb`, si bien que le contexte de documentation etait lu a
+        # la fin de la TIGE -- ou `.ipynb devient` ne ressembleait a aucun
+        # marqueur connu (`.ipynb` n'etait tolere ni par `_RENAME_DOC_CONTEXT`
+        # ni par le lookahead de la forme nue).
+        # Mesure : la ligne d'historique des registres SymbolicLearning
+        # devenait `Y.ipynb devient Y.ipynb` (8 registres, 1 remplacement
+        # chacun) -- un pilote applique en suite les falsifierait.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/SymbolicLearning/"
+                "SL-8-KnowledgeGraphs-ILP-Csharp.ipynb",
+                "MyIA.AI.Notebooks/SymbolicLearning/"
+                "SL-08-KnowledgeGraphs-ILP-CSharp.ipynb")]
+            body = (
+                '    - "Renommage 2026-11-18 : le jumeau C# '
+                "SL-8-KnowledgeGraphs-ILP-Csharp.ipynb devient "
+                'SL-08-KnowledgeGraphs-ILP-CSharp.ipynb -- graphie canonique"\n')
+            p = _write(repo, "scripts/notebook_tools/twin_pairs.d/sl-8.yaml", body)
+            applied = rn.rewrite_file(p, forms)
+            self.assertEqual(0, applied)
+            self.assertEqual(body, p.read_text(encoding="utf-8"))
+
+    def test_stale_reference_with_extension_outside_a_context_is_rewritten(self):
+        # CONTROLE NEGATIF de la protection precedente : elle est
+        # POSITIONNELLE. La meme tige, avec ou sans extension, hors contexte
+        # de documentation, reste un referent perime a reecrire.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            forms = [rn.ref_forms(
+                "MyIA.AI.Notebooks/SymbolicLearning/"
+                "SL-8-KnowledgeGraphs-ILP-Csharp.ipynb",
+                "MyIA.AI.Notebooks/SymbolicLearning/"
+                "SL-08-KnowledgeGraphs-ILP-CSharp.ipynb")]
+            p = _write(repo, "docs/nav.md",
+                       "Precedent : SL-8-KnowledgeGraphs-ILP-Csharp.ipynb, "
+                       "voir la suite.\n")
+            applied = rn.rewrite_file(p, forms)
+            self.assertEqual(1, applied)
+            self.assertIn("SL-08-KnowledgeGraphs-ILP-CSharp.ipynb",
+                          p.read_text(encoding="utf-8"))
+
     def test_same_reference_without_documentation_context_is_rewritten(self):
         # La protection est POSITIONNELLE : le meme stem, hors contexte de
         # documentation, reste un referent perime a reecrire.
