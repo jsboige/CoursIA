@@ -937,6 +937,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+            "MyIA.AI.Notebooks/Search/Part2-CSP/**",
             "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
             "MyIA.AI.Notebooks/Sudoku/**",
             "scripts/notebook_tools/zero_pad_series.json",

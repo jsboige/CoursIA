@@ -18,7 +18,6 @@
     "would_red_on_activation": [
       "Tweety -- SymbolicAI/Tweety (28 violations)",
       "ML -- ML/ML.Net (20)",
-      "CSP -- Search/Part2-CSP (18)",
       "App -- Search/Applications/CSP (17)",
       "SW -- SymbolicAI/SemanticWeb (17)",
       "SL -- SymbolicAI/SymbolicLearning (17)",
@@ -64,7 +63,7 @@
     {
       "series": "Search",
       "dir": "MyIA.AI.Notebooks/Search/Part1-Foundations",
-      "note": "31 noms zero-pades. Part2-CSP (18 violations) et Part4-Metaheuristics sont des series DISTINCTES, traitees separement -- c'est pourquoi le repertoire declare est le sous-dossier et non Search/."
+      "note": "31 noms zero-pades. Part2-CSP et Part4-Metaheuristics sont des series DISTINCTES, traitees separement -- c'est pourquoi le repertoire declare est le sous-dossier et non Search/. Part2-CSP est declaree depuis la tranche zero-pad de #16231."
     },
     {
       "series": "MGS",
@@ -85,6 +84,11 @@
       "series": "DecPyMC",
       "dir": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC",
       "note": "8 noms zero-pades (01..07 migres par la tranche zero-pad DecPyMC de l'EPIC #12933, 08 deja a deux chiffres), aucun numero a un chiffre. Serie Python jumelle de DecInfer (meme arc decisionnel, kernels differents). Le capstone actuariel reste DecPyMC-08 ; la sous-serie Actuariat/ est un repertoire distinct, hors de ce perimetre."
+    },
+    {
+      "series": "CSP",
+      "dir": "MyIA.AI.Notebooks/Search/Part2-CSP",
+      "note": "Tranche zero-pad de l'EPIC #12933 (#16231), pilotee par rename_notebooks.py : 19 noms zero-pades (01..09), 3 numeros a deux chiffres (10). Les jumeaux Python prennent le suffixe -Python ; le compagnon Rust CSP-04-Scheduling-Rust est pade sans autre changement de nom."
     }
   ]
 }
