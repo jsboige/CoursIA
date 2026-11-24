@@ -1,0 +1,7 @@
+date: '2026-11-16'
+by: myia-ai-01:CoursIA-2
+python_sha: d872a693746bb7b7e19cdb8244cd3222d8027595
+csharp_sha: 94e02be2ce43b8c35c713d07ec4cf9a059093e1b
+content_python_sha: 866c4444990a08806b556dfe6183ea6479831f583aacf8328bed48c789a80630
+content_csharp_sha: f615ef63aefe44d3e234e07cf2d327d2bbf8dc6b4a521199f8552fcfc630a4dc
+reason: 'Re-audit firsthand de la paire GameTheory-17 MultiAgent-RL (PR #26745, capstone 18 Metajeux) : cote Python seul edite, markdown seul -- cellule 0 (ligne de Navigation), 1 insertion / 1 suppression par rapport a origin/main ; le capstone 18 prend la suite du 17 et pointe lui-meme vers le capstone 19, pour que le capstone 19 garde un lien entrant (chaine de slots 17 -> 18 -> 19 -> 21). Les 12 cellules de code sont identiques en source, en sorties et en execution_count ; aucune cellule code touchee, aucune re-execution due (exception C.2 markdown). Cote C# byte-identique a main (son en-tete ne porte pas de lien avant, l asymetrie de navigation est preexistante). Le DRIFT signale par le garde twin-parity est donc purement mecanique -- le blob SHA de la ligne de prose a bouge ; cette attestation atteste la parite, elle ne la repare pas (cf #8957). Ordinal alloue au-dessus de la revendication 0029 de la PR ouverte #26712.'

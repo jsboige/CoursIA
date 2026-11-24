@@ -38,9 +38,12 @@ installation` is a FAMILY of its own inside the transient set -- the GitHub App
 installation quota, exhausted server-side, shared, hourly reset -- so its retry
 SPACING escalates (30/120/300/600/900 s) instead of the hiccup cadence,
 clamped to the same absolute deadline. The verdict direction is untouched:
-exhaustion still raises, ``main`` still renders the rule-1 FAIL (exit 1), and
-the family is named in the message so an infrastructure outage is never hunted
-as a content defect.
+exhaustion still raises, never a pass, and the family is named in the message
+so an infrastructure outage is never hunted as a content defect. Since #26542
+the quota bound renders INCONCLUSIVE (exit 3, replayable) instead of FAIL;
+since #26739 a reset announced farther than 300 s renders that same
+INCONCLUSIVE immediately, without sleeping -- pinned next to the other
+reset-header tests in test_pr_gate.py.
 
 Run: python -m pytest scripts/tests/test_pr_gate_transient_retry.py
 """

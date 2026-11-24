@@ -60,6 +60,10 @@ jobs:
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 15 derniers
+    # runs verts : max 6.3 min (run 36965380327). Le defaut d'Actions
+    # est 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 15
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:

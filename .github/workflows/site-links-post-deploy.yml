@@ -38,14 +38,26 @@ jobs:
     name: "Check published site links"
     # Deploy reussi seulement : tester un ancien site apres un deploy
     # echoue produirait un verdict qui ne parle pas de la sortie reelle.
+    # Et DEPLOIEMENT seulement (P4 #25510, fournee 1) : le declencheur
+    # `workflow_run` tire sur CHAQUE completion de « Quarto Pages Deploy »,
+    # jambes PR comprises -- qui ne deploient RIEN (le job `deploy` est
+    # push-only). Mesure du 2026-11-14 sur 24 h : 300 runs, dont 105 echecs,
+    # tous tires par des completions qui n'avaient pas publie ; le site sonde
+    # etait celui du dernier deploy, pas celui de la sortie. Un vrai
+    # deploiement = jambe push (le `workflow_dispatch` manuel reste admis :
+    # re-mesure volontaire du site publie).
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: scripts/ci
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -55,6 +67,16 @@ jobs:
       - name: Check published site links
         run: |
           python scripts/ci/check_site_links.py --json
+
+      - name: Check the published JupyterLite lot
+        # Pli 2.2 de l'Epic #27543 : le lot de carnets Python publie sous
+        # /jupyterlite/ doit repondre -- chaque carnet du manifeste, dans
+        # ses deux formes (fichier brut et page JupyterLite).
+        # Un manifeste absent = lot non deploye : ce n'est pas un lien
+        # casse, le garde le dit et sort en vert (le job de construction du
+        # site, lui, a echoue -- c'est la qu'il faut regarder).
+        run: |
+          python scripts/ci/check_jupyterlite_lot.py --json
 
       - name: Summary on failure
         if: failure()

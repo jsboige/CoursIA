@@ -5,7 +5,54 @@
 **Lane** : myia-po-2023:CoursIA-2
 **Outil** : `scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` (PowerShell 7.6.3)
 
-## TL;DR
+## Re-mesure du 2026-10-26 — état courant
+
+**Lane** : `myia-po-2023:CoursIA` · **source** : `main` à `0bbbbf40a78` · **Scan exécuté à 08:13Z**, sortie complète archivée hors dépôt, **exit 0**. Cette section actualise le verdict sans réécrire les mesures historiques ci-dessous.
+
+### Verdict
+
+Le Scan reconnaît **34 projets Lake** et un seul groupe strict mutualisable : `leanprover_lean4_v4.33.0-db584cd6`, **25 membres**. Il affiche `Economie totale potentielle : 0 GB`. Ce zéro mesure l'économie permise par les **checkouts physiques non jonctionnés** présents dans les groupes ; il ne mesure ni les caches centraux déjà dupliqués ni la duplication évitée à l'avenir.
+
+| Constat mesuré | État au 2026-10-26 |
+|---|---|
+| Groupe strict principal | 25 membres, 23 sans checkout local |
+| Jonctions du groupe | `calibration_lean` et `conway_lean`, signalées `JONCTION PERIMEE` |
+| Cible de ces deux jonctions | ancien chemin `.mathlib-cache/leanprover_lean4_v4.31.0-rc1-d568c8c0/mathlib` |
+| Cache canonique attendu | `.mathlib-cache/leanprover_lean4_v4.33.0-db584cd6/mathlib` |
+| `share-state.json` | absent dans les deux répertoires de cache examinés |
+| Apply / build / purge | **aucun exécuté** |
+
+Le mot `PERIMEE` ne signifie pas ici « mauvaise révision Mathlib ». Les deux caches existent, sont propres selon `git status --short`, contiennent les sources et `Mathlib.olean`, et leur `git rev-parse HEAD` rend **exactement** `db584cd6d46c92f209a44c0f1c829460d327499d`. Le défaut mesuré est donc la **cible différente du chemin canonique et l'absence d'état partagé enregistré**, pas une divergence de révision. Le nom `v4.31.0-rc1` du dossier ancien est trompeur.
+
+| Répertoire de cache | `.lake/build` mesuré | HEAD | État |
+|---|---:|---|---|
+| `leanprover_lean4_v4.33.0-db584cd6` | 6,096 Gio | `db584cd6d46c…` | propre, sources et olean présents |
+| `leanprover_lean4_v4.31.0-rc1-d568c8c0` | 6,107 Gio | `db584cd6d46c…` | propre, sources et olean présents |
+| `leanprover_lean4_v4.31.0-rc1-f153cf0c` | — | — | `mathlib` absent |
+
+Ces deux builds représentent une duplication réelle d'environ 6,1 Gio. Elle n'est **pas** une économie récupérable par l'Apply seul : celui-ci ne supprime pas l'ancien cache. **Aucune purge n'a été faite ou proposée ici** ; en particulier, l'interdiction de purger le cache orphelin `520045ab` sur po-2027 reste sans rapport avec une autorisation de suppression sur cette machine.
+
+### Pourquoi l'Apply n'a pas été lancé
+
+Le cache canonique est valide pour l'outil : un Apply `-Group db584cd6` pourrait donc créer les 23 jonctions absentes et repointer les deux existantes sans checkout physique donneur. Mais ce geste ne serait **pas borné à ces deux membres** :
+
+- l'Apply traite le groupe strict entier de 25 membres et persiste son état partagé ;
+- l'acceptance de l'EPIC exige `lake build` après jonction pour chaque membre, soit **25 builds**, plus la comparaison `distinct_code_sorry` avant/après ;
+- l'économie immédiate de l'Apply seul est **0 Gio**, puisqu'il ne retire ni l'ancien cache ni un checkout physique du groupe.
+
+La tranche livrée est donc la **mesure lecture seule**, pas un Apply validé. Aucun `lake build` ni comptage avant/après n'est revendiqué : l'acceptance Apply reste non exécutée. Un futur geste doit annoncer son périmètre de 25 membres et son absence de récupération disque immédiate, ou être précédé d'un outillage réellement borné ; il ne doit pas être présenté comme la réparation validée de deux jonctions.
+
+### Fragmentation des manifests
+
+Le diagnostic du Scan confirme que toolchain et révision Mathlib ne suffisent pas à fusionner les groupes :
+
+- `db584cd6` : le groupe de 25 est distinct de `discrepancy_lean` (dépendance locale `learning_theory_lean`) et de `mimo_lean` (dépendance externe `slt`) ;
+- `0df444a3` : `formal_logic_lean` et `differential_lean` ont des dépendances externes différentes, dont `DifferentialGeometry` seulement chez le second ;
+- `520045ab` : `social_choice_lean_peters` ajoute `SocialChoiceLean` au manifest de `kls_lean`.
+
+Les avertissements de collision de `groupId` viennent précisément de ce que cet identifiant de cache ne contient que toolchain + révision Mathlib, alors que la clé de groupe stricte inclut les dépendances transitives. Aucune fusion de ces manifests n'est comprise dans cette tranche.
+
+## Mesure historique c.809 (2026-09-24)
 
 Economie potentielle sur **myia-po-2023** : **0,09 GB** (re-mesure c.809 : seul GK2 `v4.32.1-520045ab` a 2 physiques — game_theory_lean 0,64 GB donneur + conway_lean 0,09 GB jonctionnable). Le ledger initial sur-comptait l'économie d'un facteur 7 en attribuant learning_theory_lean à GK2 alors qu'il est dans GK1 (v4.33.0, 20 membres). **29 projets Lake avec dépendance mathlib** sur cette machine (vs 27 initiaux — 2 ajouts : formal_logic_lean GK6 + mimo_lean mal compté), 2 groupes mutualisables + 5 buckets singletons (4 strictement 1-membre + 1 cluster GK2 de 4 membres dont 3 étiquetés `isole` par erreur).
 

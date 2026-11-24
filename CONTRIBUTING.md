@@ -28,6 +28,18 @@ Après validation :
 
 Les mainteneurs et leurs agents peuvent effectuer cette transformation lors de l'intégration. Vous n'avez donc pas à fabriquer vous-même l'exercice de remplacement ni à maîtriser toutes les conventions internes du dépôt.
 
+### 3. Choisir un défi court
+
+Les exercices ouverts à la contribution sont étiquetés [`good first issue`](https://github.com/jsboige/CoursIA/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). Chacun tient en une seule Pull Request et se lit en trois parties, les mêmes que le [gabarit de défi court](.github/ISSUE_TEMPLATE/defi-court.yml) :
+
+| Partie | Ce qu'elle contient |
+|---|---|
+| **Énoncé** | le résultat attendu, en un paragraphe — pas la méthode |
+| **Carnet de départ** | le chemin du carnet et la cellule où commencer |
+| **Critère de réussite vérifiable** | la commande ou la valeur qui tranche, sans jugement de goût |
+
+Un défi qui ne porte pas ces trois parties n'est pas encore prêt : signalez-le en commentaire plutôt que de deviner ce qui est attendu. Si vous voulez proposer un défi vous-même, utilisez le gabarit : il garantit qu'un autre contributeur pourra le reprendre sans vous.
+
 ## Comment vos contributions sont traitées
 
 CoursIA est maintenu par une flotte d'agents IA coordonnée, sous supervision humaine. Le premier triage d'une issue ou d'une Pull Request, ainsi qu'une partie des réponses, peuvent donc être assurés par un agent.

@@ -118,7 +118,7 @@ fi
 # Garde d'appartenance du mur agrege (#15157) : la liste d'IDs rendue au
 # filtre label=coursia-ci=1 est pilotable par le test via STUB_CI_CONTAINER_IDS
 # (endpoint par defaut) et STUB_CI_CONTAINER_IDS_ALT (endpoint -H, #15164).
-if [ "\$1" = "ps" ] && echo "\$*" | grep -q 'label=coursia-ci=1'; then
+if [ "\$1" = "ps" ] && grep -q 'label=coursia-ci=1' <<<"\$*"; then
   if [ "\$EP" != "default" ] && [ -n "\$STUB_CI_CONTAINER_IDS_ALT" ]; then
     printf '%s\n' \$STUB_CI_CONTAINER_IDS_ALT
   elif [ -n "\$STUB_CI_CONTAINER_IDS" ]; then
@@ -144,12 +144,14 @@ if [ "\$1" = "info" ]; then
   esac
   exit 0
 fi
-# Caps memoire des conteneurs (#15164) : une ligne par ID demande, valeur en
-# octets pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
+# Caps memoire des conteneurs (#15164) : une ligne par ID demande, rendue au
+# format du VRAI docker inspect pour le format deux champs des consommateurs
+# (running_ci_mb #22532, running_family_mb #21494) : "<nom> <octets>", valeur
+# pilotable par STUB_MEM_BYTES. Defaut 0 -- les autres probes inspect
 # (State.Status & co) gardent le silence d'avant.
 if [ "\$1" = "inspect" ]; then
   case "\$*" in
-    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\${STUB_MEM_BYTES:-0}"; done ;;
+    *HostConfig.Memory*) shift 3; for _id in "\$@"; do echo "\$_id \${STUB_MEM_BYTES:-0}"; done ;;
   esac
   exit 0
 fi
@@ -159,8 +161,8 @@ chmod +x "$TEST_DIR/bin/docker"
 
 cat > "$TEST_DIR/bin/gh" <<'STUB'
 #!/usr/bin/env bash
-if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
-if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
+if grep -q 'registration-token' <<<"$@"; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
+if grep -q 'actions/runners' <<<"$@"; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/gh"
@@ -270,6 +272,21 @@ run_supervise() {
   cat "$TEST_DIR/last.err"
 }
 
+# #26477 : le verdict de run_supervise se lit dans un FICHIER, jamais dans
+# une substitution de commande pipee. Sous Git Bash (diagnostic local
+# Windows), un petit-fils heritier du stdout de la fonction gardait le tube
+# ouvert APRES le timeout de la commande (8 s) : la lecture $( ... | head -1)
+# ne rendait jamais, le test restait sans verdict et la suite n'en finissait
+# pas (mesure lane : ~15 min pour 34 tests sur 70, run complet jamais rendu).
+# La commande est deja bornee par run_supervise ; c'est la LECTURE qu'il
+# faut fermer : un fichier rend sa premiere ligne immediatement, qu'un
+# petit-fils survive ou non. Sites appelants : supervise_rc (verdict rc) ou
+# ecriture directe dans last-supervise.out (sortie complete).
+supervise_rc() {
+  run_supervise "$@" >"$TEST_DIR/last-supervise.out" 2>&1
+  sed -n '1s/^rc=//p' "$TEST_DIR/last-supervise.out"
+}
+
 # Attente BORNEE plutot que `sleep <constante>`. Un `sleep 0.5` suivi d'une
 # assertion n'est pas un test, c'est une course : sur cette machine le prelude
 # de cmd_start met 680 a 924 ms (spawns de processus Git Bash + la sonde d'hote
@@ -310,9 +327,9 @@ echo "Test 1 : start quand un superviseur est deja actif (Defaut 1)"
 (
   cd "$SCRIPT_DIR"
   export PS_OUTPUT="jsboige  12345    1   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh start 4"
-  rc="$(run_supervise 'start 1' 'test-prefix-A' "$TEST_DIR/state-A" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-A' "$TEST_DIR/state-A")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "deja actif"; then
+  if [ "$rc" != "0" ] && grep -q "deja actif" <<<"$err"; then
     ok "start refuse, message nomme PID (rc=$rc)"
   else
     ko "start aurait du refuser, rc=$rc err=$err"
@@ -337,16 +354,16 @@ echo "Test 2 : start apres stop AVEC superviseur vivant refuse, sentinel preserv
   cd "$SCRIPT_DIR"
   export PS_OUTPUT="jsboige  33594  9876   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh start 4"
   touch "$TEST_DIR/state-B/stop"
-  rc="$(run_supervise 'start 1' 'test-prefix-B' "$TEST_DIR/state-B" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-B' "$TEST_DIR/state-B")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "sentinel STOP_FILE present"; then
+  if [ "$rc" != "0" ] && grep -q "sentinel STOP_FILE present" <<<"$err"; then
     ok "start apres stop refuse (rc=$rc)"
   else
     ko "start aurait du refuser sur sentinel, rc=$rc err=$err"
   fi
   # Le refus doit NOMMER le superviseur qui le motive : c'est ce qui distingue
   # un arret en cours d'une sentinelle perimee pour qui lit le journal.
-  if echo "$err" | grep -q "superviseur est vivant" && echo "$err" | grep -q "33594"; then
+  if grep -q "superviseur est vivant" <<<"$err" && grep -q "33594" <<<"$err"; then
     ok "le refus nomme le superviseur vivant (PID 33594)"
   else
     ko "le refus aurait du nommer le PID 33594, err=$err"
@@ -390,7 +407,7 @@ echo "Test 4 : status affiche le compte par PPID==1"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-status"
   mkdir -p "$COURSIA_RUNNER_STATE_DIR"
   out="$(bash "$SCRIPT_DIR/supervise.sh" status 2>&1)"
-  if echo "$out" | grep -q "superviseurs actifs : 1 (PID 100)"; then
+  if grep -q "superviseurs actifs : 1 (PID 100)" <<<"$out"; then
     ok "status compte 1 superviseur (PPID==1)"
   else
     ko "status aurait du compter 1 (PID 100), output: $out"
@@ -410,7 +427,7 @@ jsboige  101    1   10:28:12  bash scripts/ci/docker/linux-runner/supervise.sh s
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-status-2"
   mkdir -p "$COURSIA_RUNNER_STATE_DIR"
   out="$(bash "$SCRIPT_DIR/supervise.sh" status 2>&1)"
-  if echo "$out" | grep -q "superviseurs actifs : 2" && echo "$out" | grep -q "ANOMALIE"; then
+  if grep -q "superviseurs actifs : 2" <<<"$out" && grep -q "ANOMALIE" <<<"$out"; then
     ok "status detecte anomalie >1 superviseur"
   else
     ko "status aurait du signaler anomalie, output: $out"
@@ -433,7 +450,7 @@ jsboige  104  100   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh s
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-status-3"
   mkdir -p "$COURSIA_RUNNER_STATE_DIR"
   out="$(bash "$SCRIPT_DIR/supervise.sh" status 2>&1)"
-  if echo "$out" | grep -q "superviseurs actifs : 1 (PID 100)" && ! echo "$out" | grep -q "ANOMALIE"; then
+  if grep -q "superviseurs actifs : 1 (PID 100)" <<<"$out" && ! grep -q "ANOMALIE" <<<"$out"; then
     ok "status compte 1 superviseur + ignore les forks PPID!=1"
   else
     ko "status aurait du compter 1 et ignorer forks, output: $out"
@@ -450,9 +467,9 @@ echo "Test 7 : COURSIA_RUNNER_GH_ACCOUNT epingle le compte (epinglage #14259)"
   cat > "$TEST_DIR/bin7/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "$@" >> "$GH_CALLS_LOG"
-if echo "$@" | grep -q 'auth token'; then echo "FAKE_ACCOUNT_TOKEN"; exit 0; fi
-if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
-if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
+if grep -q 'auth token' <<<"$@"; then echo "FAKE_ACCOUNT_TOKEN"; exit 0; fi
+if grep -q 'registration-token' <<<"$@"; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
+if grep -q 'actions/runners' <<<"$@"; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
   chmod +x "$TEST_DIR/bin7/gh"
@@ -494,8 +511,8 @@ echo "Test 8 : status nomme la contradiction conteneurs vs inventaire (Defaut #1
   mkdir -p "$TEST_DIR/bin8" "$TEST_DIR/state-8"
   cat > "$TEST_DIR/bin8/gh" <<'STUB'
 #!/usr/bin/env bash
-if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
-if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
+if grep -q 'registration-token' <<<"$@"; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
+if grep -q 'actions/runners' <<<"$@"; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
   chmod +x "$TEST_DIR/bin8/gh"
@@ -511,12 +528,12 @@ STUB
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-8"
   unset PS_OUTPUT || true
   out="$(bash "$SCRIPT_DIR/supervise.sh" status 2>&1)"
-  if echo "$out" | grep -q "CONTRADICTION : 2 conteneur(s)"; then
+  if grep -q "CONTRADICTION : 2 conteneur(s)" <<<"$out"; then
     ok "status nomme la contradiction 2 conteneurs / 0 runner"
   else
     ko "ligne CONTRADICTION attendue, output: $out"
   fi
-  if echo "$out" | grep -q "COURSIA_RUNNER_GH_ACCOUNT"; then
+  if grep -q "COURSIA_RUNNER_GH_ACCOUNT" <<<"$out"; then
     ok "le message pointe vers l'epinglage"
   else
     ko "renvoi vers epinglage attendu"
@@ -532,9 +549,9 @@ echo "Test 9 : start refuse si entrypoint de l'image != checkout (#14801)"
   mkdir -p "$TEST_DIR/state-9"
   STUB_IMG_ENTRYPOINT_SHA=f0000000000000000000000000000000000000000000000000000000000000f00
   export STUB_IMG_ENTRYPOINT_SHA
-  rc="$(run_supervise 'start 1' 'test-prefix-9' "$TEST_DIR/state-9" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-9' "$TEST_DIR/state-9")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "docker build -t"; then
+  if [ "$rc" != "0" ] && grep -q "PERIMEE" <<<"$err" && grep -q "docker build -t" <<<"$err"; then
     ok "image perimee refusee avec la commande de rebuild (rc=$rc)"
   else
     ko "refus attendu sur image perimee, rc=$rc err=$err"
@@ -587,9 +604,9 @@ echo "Test 11 : start refuse sur une detresse soutenue sur les DEUX points (#150
   # pagewrites>0 ET pagesout>0 ET file>=1 ET idle<=50 -- sur les deux points.
   export COURSIA_RUNNER_HOST_PROBE="120 340 3 12 90000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="98 410 2 18 91000 49800"
-  rc="$(run_supervise 'start 1' 'test-prefix-11' "$TEST_DIR/state-11" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-11' "$TEST_DIR/state-11")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "DETRESSE"; then
+  if [ "$rc" != "0" ] && grep -q "DETRESSE" <<<"$err"; then
     ok "detresse soutenue refusee (rc=$rc)"
   else
     ko "refus attendu sur detresse soutenue, rc=$rc err=$err"
@@ -620,10 +637,10 @@ echo "Test 11b : detresse retenue meme avec file=0 et disque inactif (#15091)"
   # les valeurs que ces deux compteurs rendent TOUJOURS sur cet hote.
   export COURSIA_RUNNER_HOST_PROBE="140 520 0 99 96000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="155 610 0 98 97000 49900"
-  rc="$(run_supervise 'start 1' 'test-prefix-11b' "$TEST_DIR/state-11b" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-11b' "$TEST_DIR/state-11b")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "DETRESSE SOUTENUE"; then
-    if echo "$err" | grep -q "cote disque MUET"; then
+  if [ "$rc" != "0" ] && grep -q "DETRESSE SOUTENUE" <<<"$err"; then
+    if grep -q "cote disque MUET" <<<"$err"; then
       ok "detresse retenue sans les compteurs disque, et le silence est dit (rc=$rc)"
     else
       ko "detresse retenue mais le silence des compteurs disque n'est pas signale, err=$err"
@@ -647,9 +664,9 @@ echo "Test 12 : un pic isole ne declenche pas le refus (#15091)"
   mkdir -p "$TEST_DIR/state-12"
   export COURSIA_RUNNER_HOST_PROBE="120 340 3 12 90000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="0 0 0 97 40000 50000"
-  rc="$(run_supervise 'start 1' 'test-prefix-12' "$TEST_DIR/state-12" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-12' "$TEST_DIR/state-12")"
   err="$(cat "$TEST_DIR/last.err")"
-  if ! echo "$err" | grep -q "DETRESSE"; then
+  if ! grep -q "DETRESSE" <<<"$err"; then
     ok "pic isole non retenu comme detresse (rc=$rc)"
   else
     ko "faux positif : un seul point a fait rougir le garde, err=$err"
@@ -667,9 +684,9 @@ echo "Test 13 : start refuse quand Mapped chute au-dela du seuil (#15091)"
   # Machine par ailleurs calme : seul le mmap qdrant se fait evincer (-2000 Mo).
   export COURSIA_RUNNER_HOST_PROBE="0 0 0 95 40000 52000"
   export COURSIA_RUNNER_HOST_PROBE_2="0 0 0 95 40000 50000"
-  rc="$(run_supervise 'start 1' 'test-prefix-13' "$TEST_DIR/state-13" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-13' "$TEST_DIR/state-13")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "Mapped"; then
+  if [ "$rc" != "0" ] && grep -q "Mapped" <<<"$err"; then
     ok "eviction du mmap qdrant refusee (rc=$rc)"
   else
     ko "refus attendu sur chute de Mapped, rc=$rc err=$err"
@@ -701,7 +718,7 @@ exit 1
   timeout --kill-after=1 5 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/last.err"
   rc=$?
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "NON MESURABLE"; then
+  if [ "$rc" != "0" ] && grep -q "NON MESURABLE" <<<"$err"; then
     ok "sonde injoignable : refus fail-closed (rc=$rc)"
   else
     ko "refus attendu sur sonde injoignable, rc=$rc err=$err"
@@ -722,7 +739,7 @@ echo "Test 15 : une variable retiree produit un avertissement (#15091)"
   export COURSIA_RUNNER_HOST_FREE_FLOOR_GB=8
   run_supervise 'status' 'test-prefix-15' "$TEST_DIR/state-15" >/dev/null 2>&1
   err="$(cat "$TEST_DIR/last.err")"
-  if echo "$err" | grep -q "RETIREE"; then
+  if grep -q "RETIREE" <<<"$err"; then
     ok "variable retiree signalee a l'operateur"
   else
     ko "aucun avertissement sur variable retiree, err=$err"
@@ -744,9 +761,9 @@ echo "Test 16 : une sonde tronquee refuse au lieu de rendre vert (#15091)"
   unset PS_OUTPUT
   mkdir -p "$TEST_DIR/state-16"
   export COURSIA_RUNNER_HOST_PROBE="0 0 0 95 40000"
-  rc="$(run_supervise 'start 1' 'test-prefix-16' "$TEST_DIR/state-16" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-16' "$TEST_DIR/state-16")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "ILLISIBLE"; then
+  if [ "$rc" != "0" ] && grep -q "ILLISIBLE" <<<"$err"; then
     ok "sonde tronquee refusee (rc=$rc)"
   else
     ko "refus attendu sur sonde tronquee, rc=$rc err=$err"
@@ -809,7 +826,7 @@ echo "Test 18 : sentinelle sans superviseur vivant -> purgee, le start procede (
     ko "sentinelle aurait du etre purgee (aucun superviseur vivant)"
   fi
   err="$(cat "$TEST_DIR/last.err")"
-  if echo "$err" | grep -q "perimee"; then
+  if grep -q "perimee" <<<"$err"; then
     ok "la purge est tracee en clair sur stderr"
   else
     ko "la purge aurait du etre tracee sur stderr, err=$err"
@@ -842,7 +859,7 @@ echo "Test 19 : ligne ps a colonnes decalees -> aucun faux superviseur (#15163)"
     ko "purge attendue : '-c' n'est pas un PID"
   fi
   err="$(cat "$TEST_DIR/last.err")"
-  if echo "$err" | grep -q "PID -c"; then
+  if grep -q "PID -c" <<<"$err"; then
     ko "un jeton non-numerique a ete rendu comme PID, err=$err"
   else
     ok "aucun PID non-numerique dans le diagnostic"
@@ -921,7 +938,7 @@ STUB
   cat > "$TEST_DIR/bin11/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "$@" >> "$GH_CALLS_LOG"
-if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
+if grep -q 'registration-token' <<<"$@"; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 exit 0
 STUB
   chmod +x "$TEST_DIR/bin11/gh"
@@ -1273,13 +1290,13 @@ echo "Test 27 : budget CPU inter-familles refuse le depassement (#15091, trou #1
   source_supervise
   CPU_BUDGET=8
   err="$( (assert_cpu_budget "lean" 2 6) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "budget CPU inter-familles depasse : 12.00 vCPU"; then
+  if [ "$rc" != "0" ] && grep -q "budget CPU inter-familles depasse : 12.00 vCPU" <<<"$err"; then
     ok "depassement refuse (rc=$rc, somme 12.00 -- waiters exclus)"
   else
     ko "refus attendu avec somme 12.00, rc=$rc err=$err"
   fi
-  if echo "$err" | grep -q "deja actif : waiters n=12 cpus=1 -> 12.00 (exclu du budget" \
-     && echo "$err" | grep -q "demande    : lean n=2 cpus=6"; then
+  if grep -q "deja actif : waiters n=12 cpus=1 -> 12.00 (exclu du budget" <<<"$err" \
+     && grep -q "demande    : lean n=2 cpus=6" <<<"$err"; then
     ok "le message NOMME les deux termes, le waiter marque exclu"
   else
     ko "detail par famille attendu dans le message, err=$err"
@@ -1295,7 +1312,7 @@ echo "Test 28 : budget CPU -- controle negatif (sous le plafond, puis non arme)"
   source_supervise
   CPU_BUDGET=8
   out="$( (assert_cpu_budget "start" 1 3) 2>&1 )"; rc=$?
-  if [ "$rc" = "0" ] && echo "$out" | grep -q "3.00 / 8"; then
+  if [ "$rc" = "0" ] && grep -q "3.00 / 8" <<<"$out"; then
     ok "0 (4 waiters exclus) + 1x3 = 3 <= 8 : accepte, total affiche"
   else
     ko "acceptation attendue avec total 3.00, rc=$rc out=$out"
@@ -1320,13 +1337,13 @@ echo "Test 29 : slice absente -- refus fail-closed et commande de deploiement (#
   CGROUP_PARENT="coursia-absente-xyz.slice"
   REQUIRE_CGROUP_BUDGET=1
   err="$( (assert_cgroup_budget) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "REFUS de demarrer"; then
+  if [ "$rc" != "0" ] && grep -q "REFUS de demarrer" <<<"$err"; then
     ok "slice introuvable : demarrage refuse (rc=$rc)"
   else
     ko "refus attendu, rc=$rc err=$err"
   fi
-  if echo "$err" | grep -q "persist/coursia-ci.slice" \
-     && echo "$err" | grep -q "systemctl daemon-reload"; then
+  if grep -q "persist/coursia-ci.slice" <<<"$err" \
+     && grep -q "systemctl daemon-reload" <<<"$err"; then
     ok "le refus porte la commande de deploiement"
   else
     ko "commande de deploiement attendue dans le message, err=$err"
@@ -1335,7 +1352,7 @@ echo "Test 29 : slice absente -- refus fail-closed et commande de deploiement (#
   # comportement des machines qui n'ont pas deploye la slice (po-2024).
   REQUIRE_CGROUP_BUDGET=0
   err="$( (assert_cgroup_budget) 2>&1 )"; rc=$?
-  if [ "$rc" = "0" ] && echo "$err" | grep -q "AVERTISSEMENT"; then
+  if [ "$rc" = "0" ] && grep -q "AVERTISSEMENT" <<<"$err"; then
     ok "sans exigence : avertit et laisse passer (aucun defaut impose)"
   else
     ko "avertissement non bloquant attendu, rc=$rc err=$err"
@@ -1366,12 +1383,12 @@ echo "Test 30 : slice absente -> refus sous exigence, avertissement sinon (#1509
   CI_CGROUP_PARENT="fantome.slice"
   REQUIRE_CI_SLICE=1
   err="$( (assert_ci_slice) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "REFUS de demarrer"; then
+  if [ "$rc" != "0" ] && grep -q "REFUS de demarrer" <<<"$err"; then
     ok "slice absente sous exigence : demarrage refuse (rc=$rc)"
   else
     ko "refus attendu sur slice absente sous exigence, rc=$rc err=$err"
   fi
-  if echo "$err" | grep -q "persist/coursia-ci.slice"      && echo "$err" | grep -q "systemctl daemon-reload"; then
+  if grep -q "persist/coursia-ci.slice" <<<"$err"      && grep -q "systemctl daemon-reload" <<<"$err"; then
     ok "le refus porte la commande de deploiement"
   else
     ko "commande de deploiement attendue dans le message, err=$err"
@@ -1383,7 +1400,7 @@ echo "Test 30 : slice absente -> refus sous exigence, avertissement sinon (#1509
   # seule ou l effet de bord CI_CGROUP_PARENT="" atteint le shell appelant.
   assert_ci_slice > "$TEST_DIR/slice-warn.out" 2>&1; rc=$?
   err="$(cat "$TEST_DIR/slice-warn.out")"
-  if [ "$rc" = "0" ] && echo "$err" | grep -q "NON ACTIF"; then
+  if [ "$rc" = "0" ] && grep -q "NON ACTIF" <<<"$err"; then
     ok "sans exigence : avertit et laisse passer (aucun defaut impose)"
   else
     ko "avertissement non bloquant attendu, rc=$rc err=$err"
@@ -1415,7 +1432,7 @@ echo "Test 31 : slice sans plafond (memory.max=max) -> refus sous exigence (#150
   CI_SLICE_PATH="$TEST_DIR/slice-illimitee"
   REQUIRE_CI_SLICE=1
   err="$( (assert_ci_slice) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "SANS plafond"; then
+  if [ "$rc" != "0" ] && grep -q "SANS plafond" <<<"$err"; then
     ok "slice sans plafond refusee sous exigence (rc=$rc)"
   else
     ko "refus attendu sur memory.max=max, rc=$rc err=$err"
@@ -1424,7 +1441,7 @@ echo "Test 31 : slice sans plafond (memory.max=max) -> refus sous exigence (#150
   CI_CGROUP_PARENT="fantome.slice"
   assert_ci_slice > "$TEST_DIR/slice-warn2.out" 2>&1; rc=$?
   err="$(cat "$TEST_DIR/slice-warn2.out")"
-  if [ "$rc" = "0" ] && echo "$err" | grep -q "SANS plafond"      && echo "$err" | grep -q "NON ACTIF" && [ -z "$CI_CGROUP_PARENT" ]; then
+  if [ "$rc" = "0" ] && grep -q "SANS plafond" <<<"$err"      && grep -q "NON ACTIF" <<<"$err" && [ -z "$CI_CGROUP_PARENT" ]; then
     ok "sans exigence : avertit, nomme la cause, et ne place pas"
   else
     ko "avertissement non bloquant attendu, rc=$rc err=$err parent='$CI_CGROUP_PARENT'"
@@ -1457,7 +1474,7 @@ echo "Test 32 : --device-write-bps cable, et non-resolution AVOUEE (#15091)"
   # propre shell.
   compute_blkio_args 2> "$TEST_DIR/blkio.err" >/dev/null
   err="$(cat "$TEST_DIR/blkio.err")"
-  if [ "${#BLKIO_ARGS[@]}" = "0" ] && echo "$err" | grep -q "AUCUN plafond ne sera applique"; then
+  if [ "${#BLKIO_ARGS[@]}" = "0" ] && grep -q "AUCUN plafond ne sera applique" <<<"$err"; then
     ok "device non resolvable : liste vide ET aveu explicite"
   else
     ko "aveu attendu quand le device n'est pas resolvable, err=$err args=${BLKIO_ARGS[*]-}"
@@ -1511,8 +1528,8 @@ echo "Test 34 : waiters -- toolcache monte, et JAMAIS de volume _work (#15091)"
   # sinon un probe serait compte comme un lancement de waiter.
   cat > "$TEST_DIR/bin17/docker" <<STUB
 #!/usr/bin/env bash
-if [ "\$1" = "run" ] && printf '%s' "\$*" | grep -q -- '--entrypoint sha256sum'; then
-  printf '%s' "\$*" | grep -q 'work_cache_health.sh' \
+if [ "\$1" = "run" ] && grep -q -- '--entrypoint sha256sum' <<<"\$*"; then
+  grep -q 'work_cache_health.sh' <<<"\$*" \
     && echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh" \
     || echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
   exit 0
@@ -1529,8 +1546,8 @@ STUB
   cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin17/ps"
   # PAS de stub sleep ici (contrairement au bin/ global) : le `sleep 3` du
   # stub docker ci-dessus + le backoff reel bornent le rythme de la boucle
-  # waiter -- sans eux, ARGV_LOG explose et `echo | grep -q` prend un
-  # SIGPIPE sous pipefail (mesure CI Linux 2026-09-09).
+  # waiter -- sans eux, ARGV_LOG explose et un pipe de sortie vers `grep -q`
+  # prend un SIGPIPE sous pipefail (mesure CI Linux 2026-09-09).
   export PATH="$TEST_DIR/bin17:$PATH"
   export COURSIA_RUNNER_WAITER_NAME_PREFIX="test-waiter-17"
 
@@ -1540,8 +1557,8 @@ STUB
   timeout --kill-after=1 20 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
   touch "$TEST_DIR/state-17/stop"   # les boucles orphelines sortent d'elles-memes
   argv="$(cat "$ARGV_LOG" 2>/dev/null)"
-  if echo "$argv" | grep -q -- "-v coursia-runner-toolcache:/opt/hostedtoolcache" \
-     && echo "$argv" | grep -q -- "-e RUNNER_TOOL_CACHE=/opt/hostedtoolcache"; then
+  if grep -q -- "-v coursia-runner-toolcache:/opt/hostedtoolcache" <<<"$argv" \
+     && grep -q -- "-e RUNNER_TOOL_CACHE=/opt/hostedtoolcache" <<<"$argv"; then
     ok "toolcache monte sur le waiter (volume + RUNNER_TOOL_CACHE)"
   else
     ko "toolcache attendu dans l'argv du waiter, argv=$argv"
@@ -1551,8 +1568,8 @@ STUB
   # passe a docker run, pas dans le source -- une variable definie mais non
   # propagee est exactement le defaut que le flag-parsed-is-not-flag-threaded
   # documente.
-  if echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_LIMIT=1024" \
-     && echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_TIME=90"; then
+  if grep -q -- "-e GIT_HTTP_LOW_SPEED_LIMIT=1024" <<<"$argv" \
+     && grep -q -- "-e GIT_HTTP_LOW_SPEED_TIME=90" <<<"$argv"; then
     ok "garde de debit git propagee au waiter (lowSpeedLimit=1024 / lowSpeedTime=90)"
   else
     ko "garde de debit git absente de l'argv du waiter, argv=$argv"
@@ -1560,7 +1577,7 @@ STUB
   # Garde #14385 : un _work PERSISTANT sur un pool sparse-checkout est le
   # vecteur ferme par cette issue. Le toolcache n'est pas _work ; ce controle
   # negatif est ce qui empeche la confusion de se glisser plus tard.
-  if [ -n "$argv" ] && ! echo "$argv" | grep -q -- "/home/runner/_work"; then
+  if [ -n "$argv" ] && ! grep -q -- "/home/runner/_work" <<<"$argv"; then
     ok "aucun volume _work sur le waiter (garde #14385 preservee)"
   else
     ko "un volume _work est apparu sur le waiter -- REGRESSION #14385, argv=$argv"
@@ -1576,7 +1593,7 @@ STUB
   timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
   touch "$TEST_DIR/state-17b/stop"
   argv="$(cat "$ARGV_LOG" 2>/dev/null)"
-  if [ -n "$argv" ] && ! echo "$argv" | grep -q -- "coursia-runner-toolcache"; then
+  if [ -n "$argv" ] && ! grep -q -- "coursia-runner-toolcache" <<<"$argv"; then
     ok "COURSIA_RUNNER_WAITER_TOOLCACHE=0 : aucun montage"
   else
     ko "desactivation attendue, argv=$argv"
@@ -1596,8 +1613,8 @@ jsboige  444  111   10:00:00  bash scripts/ci/docker/linux-runner/supervise.sh s
   fams="$(supervisor_families)"
   n_fams="$(printf '%s\n' "$fams" | grep -c . )"
   n_pids="$(supervisor_pids | grep -c . )"
-  if [ "$n_fams" = "3" ] && echo "$fams" | grep -q "222 waiters 12" \
-     && echo "$fams" | grep -q "333 lean 2"; then
+  if [ "$n_fams" = "3" ] && grep -q "222 waiters 12" <<<"$fams" \
+     && grep -q "333 lean 2" <<<"$fams"; then
     ok "supervisor_families rend les 3 familles avec leur N"
   else
     ko "3 familles attendues, obtenu $n_fams : $fams"
@@ -1608,7 +1625,7 @@ jsboige  444  111   10:00:00  bash scripts/ci/docker/linux-runner/supervise.sh s
     ko "supervisor_pids doit voir 1 seul start, obtenu $n_pids"
   fi
   # Le fork PPID=111 ne doit compter dans NI l'un NI l'autre.
-  if ! echo "$fams" | grep -q "^444 "; then
+  if ! grep -q "^444 " <<<"$fams"; then
     ok "le fork slot_loop (PPID!=1) est exclu du recensement"
   else
     ko "un fork a ete compte comme superviseur : $fams"
@@ -1645,7 +1662,7 @@ echo "Test 36 : cmd_stop rend != 0 quand le sentinel n'a PAS pu etre pose (#1509
   else
     ko "cmd_stop nominal devrait poser $STOP_FILE et rendre 0 (rc=$rc)"
   fi
-  if echo "$out" | grep -qF "$STOP_FILE"; then
+  if grep -qF "$STOP_FILE" <<<"$out"; then
     ok "cmd_stop annonce le CHEMIN du sentinel"
   else
     ko "le chemin du sentinel doit etre annonce, obtenu : $out"
@@ -1661,14 +1678,14 @@ echo "Test 36 : cmd_stop rend != 0 quand le sentinel n'a PAS pu etre pose (#1509
   else
     ko "REGRESSION : cmd_stop rend 0 sur un sentinel non pose"
   fi
-  if echo "$out" | grep -q "sentinel NON pose" \
-     && echo "$out" | grep -q "COURSIA_RUNNER_STATE_DIR"; then
+  if grep -q "sentinel NON pose" <<<"$out" \
+     && grep -q "COURSIA_RUNNER_STATE_DIR" <<<"$out"; then
     ok "le message nomme la cause ET la variable qui la gouverne"
   else
     ko "message d'echec insuffisant : $out"
   fi
   # Et surtout : il ne doit PAS annoncer le succes.
-  if ! echo "$out" | grep -q "aucun nouveau conteneur ne sera lance"; then
+  if ! grep -q "aucun nouveau conteneur ne sera lance" <<<"$out"; then
     ok "aucun message de succes n'est emis sur un arret inerte"
   else
     ko "l'echec annonce quand meme le succes : $out"
@@ -2088,9 +2105,9 @@ echo "Test 41 : start refuse si work_cache_health.sh de l'image != checkout (#15
   mkdir -p "$TEST_DIR/state-29"
   STUB_IMG_HEALTH_SHA=e000000000000000000000000000000000000000000000000000000000000000e
   export STUB_IMG_HEALTH_SHA
-  rc="$(run_supervise 'start 1' 'test-prefix-29' "$TEST_DIR/state-29" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-29' "$TEST_DIR/state-29")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "work_cache_health.sh"; then
+  if [ "$rc" != "0" ] && grep -q "PERIMEE" <<<"$err" && grep -q "work_cache_health.sh" <<<"$err"; then
     ok "health script perime refuse, fichier FAUTIF nomme (rc=$rc)"
   else
     ko "refus sur work_cache_health.sh attendu, rc=$rc err=$err"
@@ -2112,9 +2129,9 @@ echo "Test 42 : bornes backoff invalides rejetees au demarrage (fail-closed)"
   mkdir -p "$TEST_DIR/state-30"
   neg_case() {
     local desc="$1" expect="$2"
-    rc="$(run_supervise 'start 1' 'test-prefix-30' "$TEST_DIR/state-30" 2>&1 | head -1 | sed 's/rc=//')"
+    rc="$(supervise_rc 'start 1' 'test-prefix-30' "$TEST_DIR/state-30")"
     err="$(cat "$TEST_DIR/last.err")"
-    if [ "$rc" != "0" ] && [ "$rc" != "124" ] && echo "$err" | grep -q "$expect"; then
+    if [ "$rc" != "0" ] && [ "$rc" != "124" ] && grep -q "$expect" <<<"$err"; then
       ok "$desc : refuse (rc=$rc)"
     else
       ko "$desc : attendu refus [$expect], rc=$rc err=$err"
@@ -2880,7 +2897,7 @@ echo "Test 44 : pin copie le contexte byte-identique et publie le diff d'emprein
   done
   leftovers="$(ls -d "$TEST_DIR"/pin-44.staging.* "$TEST_DIR"/pin-44.old.* 2>/dev/null | wc -l)"
   if [ "$good" = "1" ] && [ "$leftovers" = "0" ] \
-     && echo "$out" | grep -q "CHANGE" && echo "$out" | grep -q "docker build -t"; then
+     && grep -q "CHANGE" <<<"$out" && grep -q "docker build -t" <<<"$out"; then
     ok "epingle byte-identique, diff publie, pas de staging residuel"
   else
     ko "pin incorrect, good=$good leftovers=$leftovers out=$out"
@@ -2891,14 +2908,14 @@ echo "Test 44 : pin copie le contexte byte-identique et publie le diff d'emprein
   # (relatif au CWD post-`git -C`), et `git -C /c/...` muet en rc=128 sous
   # MSYS_NO_PATHCONV=1 (le bloc entier se taisait alors -- l'inverse, mais
   # la meme classe). Un checkout propre = zero ligne ATTENTION.
-  if ! echo "$out" | grep -q "ATTENTION"; then
+  if ! grep -q "ATTENTION" <<<"$out"; then
     ok "checkout propre : aucune fausse mise en garde git au pin"
   else
     ko "faux positif git au pin sur checkout propre, out=$out"
   fi
   # Re-pin : idempotent, chaque empreinte est declaree inchangee.
   out2="$(PATH="$TEST_DIR/bin:$PATH" bash "$SCRIPT_DIR/supervise.sh" pin 2>&1)"
-  if echo "$out2" | grep -q "(inchange)" && ! echo "$out2" | grep -q "CHANGE"; then
+  if grep -q "(inchange)" <<<"$out2" && ! grep -q "CHANGE" <<<"$out2"; then
     ok "re-pin idempotent : les 5 empreintes declarees inchangees"
   else
     ko "re-pin attendu inchange partout, out=$out2"
@@ -2968,9 +2985,9 @@ echo "Test 46 : start sans epingle refuse en nommant le gesture manquant (#16134
   mkdir -p "$TEST_DIR/state-44"
   rm -rf "$TEST_DIR/pin-44-absente"
   export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pin-44-absente"
-  rc="$(run_supervise 'start 1' 'test-prefix-44' "$TEST_DIR/state-44" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-44' "$TEST_DIR/state-44")"
   err="$(cat "$TEST_DIR/last.err")"
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "absent du contexte epingle" && echo "$err" | grep -q "supervise.sh pin"; then
+  if [ "$rc" != "0" ] && grep -q "absent du contexte epingle" <<<"$err" && grep -q "supervise.sh pin" <<<"$err"; then
     ok "refus fail-closed, gesture nomme (rc=$rc)"
   else
     ko "refus attendu sans epingle, rc=$rc err=$err"
@@ -3001,7 +3018,7 @@ echo "Test 53 : conteneurs hors slice -> EVASION visible (#15157)"
   # shell nue ne franchit pas la frontiere, et le garde lirait 0 conteneur.
   export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
   out="$(report_slice_membership 2>&1)"
-  if echo "$out" | grep -q "EVASION" && echo "$out" | grep -q "conteneurs=2"; then
+  if grep -q "EVASION" <<<"$out" && grep -q "conteneurs=2" <<<"$out"; then
     ok "evasion nommee avec son compte (conteneurs=2, sous-groupes=0)"
   else
     ko "ligne EVASION attendue, out=$out"
@@ -3022,7 +3039,7 @@ echo "Test 54 : conteneurs dans la slice -> appartenance OK, pas d'EVASION (#151
   CI_SLICE_PATH="$TEST_DIR/slice-muravecloc"
   export STUB_CI_CONTAINER_IDS="aaa111 bbb222"
   out="$(report_slice_membership 2>&1)"
-  if echo "$out" | grep -q "appartenance OK" && ! echo "$out" | grep -q "EVASION"; then
+  if grep -q "appartenance OK" <<<"$out" && ! grep -q "EVASION" <<<"$out"; then
     ok "appartenance nominale annoncee, pas de faux positif ($out)"
   else
     ko "appartenance OK attendue sans EVASION, out=$out"
@@ -3055,7 +3072,7 @@ echo "Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce"
   unset COURSIA_RUNNER_BUDGET_GB
   run_supervise 'status' 'test-prefix-58a' "$TEST_DIR/state-58a" >/dev/null 2>&1
   err="$(cat "$TEST_DIR/last.err")"
-  if echo "$err" | grep -q "COURSIA_RUNNER_BUDGET_GB n'est declare"; then
+  if grep -q "COURSIA_RUNNER_BUDGET_GB n'est declare" <<<"$err"; then
     ok "budget non declare : l'implicite est signale et nomme"
   else
     ko "aucun avertissement sur budget non declare, err=$err"
@@ -3070,13 +3087,14 @@ echo "Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce"
   #     Un budget declare a 0 rend `used + want > 0` vrai des qu'un slot est
   #     demande : le message de refus nomme alors la valeur, en Mo et en Go.
   #     Avec le defaut 12, `start 1` passerait et le message n'existerait pas.
-  out="$(COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" 2>&1)"
-  if echo "$out" | grep -q "COURSIA_RUNNER_BUDGET_GB=0"; then
+  COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" >"$TEST_DIR/last-supervise.out" 2>&1
+  out="$(cat "$TEST_DIR/last-supervise.out")"
+  if grep -q "COURSIA_RUNNER_BUDGET_GB=0" <<<"$out"; then
     ok "budget declare : il gouverne -- un budget a 0 fait REFUSER le slot, et le refus nomme la valeur declaree"
   else
     ko "le budget declare n'a pas gouverne, out=$out"
   fi
-  if echo "$out" | grep -q "n'est declare par aucun"; then
+  if grep -q "n'est declare par aucun" <<<"$out"; then
     ko "budget declare mais l'avertissement tombe quand meme"
   else
     ok "budget declare : aucun avertissement d'implicite"
@@ -3148,7 +3166,7 @@ root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner
   #     refusee au boot, verrou « service failed » de persist/README.md).
   #     La lane deploie donc 30, ecart consigne sur le dashboard.
   err="$( (assert_cpu_budget "lean" 2 6) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "depasse : 30.00 vCPU"; then
+  if [ "$rc" != "0" ] && grep -q "depasse : 30.00 vCPU" <<<"$err"; then
     ok "(a) 18 + 12 = 30 > 24 : refus, familles d'execution toujours gardees"
   else
     ko "refus avec somme 30.00 attendu, rc=$rc err=$err"
@@ -3157,7 +3175,7 @@ root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner
   #     fantomes) passe sous le meme budget 24 -- comptee, elle ferait
   #     18 + 24 = 42 et serait refusee.
   out="$( (assert_cpu_budget "waiters" 24 1) 2>&1 )"; rc=$?
-  if [ "$rc" = "0" ] && echo "$out" | grep -q "18.00 / 24"; then
+  if [ "$rc" = "0" ] && grep -q "18.00 / 24" <<<"$out"; then
     ok "(b) demande de 24 waiters acceptee : 18.00 / 24, waiters hors somme"
   else
     ko "acceptation avec total 18.00 attendue, rc=$rc out=$out"
@@ -3166,7 +3184,7 @@ root  553     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner
   #     garde refuse seulement t > b).
   CPU_BUDGET=30
   out="$( (assert_cpu_budget "lean" 2 6) 2>&1 )"; rc=$?
-  if [ "$rc" = "0" ] && echo "$out" | grep -q "30.00 / 30"; then
+  if [ "$rc" = "0" ] && grep -q "30.00 / 30" <<<"$out"; then
     ok "(c) docker 6 + lean 2 acceptes a budget 30 exact"
   else
     ko "acceptation avec total 30.00 attendue, rc=$rc out=$out"
@@ -3193,7 +3211,7 @@ echo "Test 61 : porte a sentinelle -- waiters ne tiennent pas la porte, start/le
   touch "$TEST_DIR/state-G/stop"
   # (a) sentinel + superviseurs waiters SEULS vivants -> purge, porte ouverte.
   err="$( (stop_sentinel_gate) 2>&1 )"; rc=$?
-  if [ "$rc" = "0" ] && [ ! -f "$TEST_DIR/state-G/stop" ] && echo "$err" | grep -q "perimee"; then
+  if [ "$rc" = "0" ] && [ ! -f "$TEST_DIR/state-G/stop" ] && grep -q "perimee" <<<"$err"; then
     ok "(a) waiters vivants seuls : sentinel perimee purgee, porte ouverte"
   else
     ko "purge attendue avec waiters vivants seuls, rc=$rc err=$err"
@@ -3203,7 +3221,7 @@ echo "Test 61 : porte a sentinelle -- waiters ne tiennent pas la porte, start/le
 root  900     1  10:14 ?  bash /mnt/d/Dev/CoursIA/scripts/ci/docker/linux-runner/supervise.sh start 6"
   touch "$TEST_DIR/state-G/stop"
   err="$( (stop_sentinel_gate) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && [ -f "$TEST_DIR/state-G/stop" ] && echo "$err" | grep -q "un superviseur est vivant"; then
+  if [ "$rc" != "0" ] && [ -f "$TEST_DIR/state-G/stop" ] && grep -q "un superviseur est vivant" <<<"$err"; then
     ok "(b) superviseur start vivant : refus conserve, sentinel conservee"
   else
     ko "refus attendu avec un start vivant, rc=$rc err=$err"
@@ -3284,7 +3302,7 @@ echo "Test 64 : budget -- daemon muet sur socket present : refus, pas zero (#151
     ko "refus attendu, rc=$rc err='$(cat "$TEST_DIR/t64.err" 2>/dev/null)'"
   fi
   err="$( (assert_memory_budget start 1 512m) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$err" | grep -q "n'est PAS mesurable"; then
+  if [ "$rc" != "0" ] && grep -q "n'est PAS mesurable" <<<"$err"; then
     ok "assert_memory_budget refuse et nomme l'impossibilite de mesurer"
   else
     ko "refus du garde attendu, rc=$rc err='$err'"
@@ -3415,6 +3433,12 @@ STUB
   export STUB_RATE_RESET=$(( $(date +%s) + 180 ))
   . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
   FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-70/token_state"; mkdir -p "$TEST_DIR/state-70"
+  # #21527 critere 5 : le source ci-dessus a evalue STATE_DIR depuis
+  # l'ENVIRONNEMENT de la machine -- le cache de jeton pointerait donc vers le
+  # STATE_DIR REEL du poste, dont un jeton encore frais ferait reussir le
+  # fetch SANS toucher gh : le test de quota perdrait son sujet. On l'isole
+  # comme le fichier d'etat.
+  REGISTRATION_TOKEN_CACHE="$TEST_DIR/state-70/rt_cache"
   # Sentinelle du TEST, pas celle de l'instance : `supervise.sh` en definit une
   # a la source, et une sentinelle reelle presente sur l'hote ferait echouer
   # l'assertion sans qu'aucun quota n'ait ete touche.
@@ -3445,10 +3469,10 @@ STUB
   export STUB_STOP_FILE="$STOP_FILE"; rm -f "$STOP_FILE"
   reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
   printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' "${reset_epoch:-0}" > "$FETCH_TOKEN_STATE_FILE"
-  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
+  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" REGISTRATION_TOKEN_CACHE="$REGISTRATION_TOKEN_CACHE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
   if [ "$rc" = "124" ] && [ ! -f "$STOP_FILE" ] \
-     && printf '%s' "$out" | grep -q "HTTP RATE" \
-     && ! printf '%s' "$out" | grep -q "ABANDON"; then
+     && grep -q "HTTP RATE" <<<"$out" \
+     && ! grep -q "ABANDON" <<<"$out"; then
     ok "slot_loop sur quota epuise : timeout (toujours vivant), 0 ABANDON, STOP_FILE intact"
   else
     ko "slot_loop aurait du survivre au quota : rc=$rc stop=$([ -f "$STOP_FILE" ] && echo oui || echo non) out='$out'"
@@ -3482,7 +3506,7 @@ STUB2
   export PATH="$TEST_DIR/bin70b:$PATH"
   export STUB_GH_OUT="$TEST_DIR/gh-out"
   out="$( (fetch_token) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && ! printf '%s' "$out" | grep -q '^{'; then
+  if [ "$rc" != "0" ] && ! grep -q '^{' <<<"$out"; then
     ok "fetch_token refuse un corps JSON comme jeton (validation de forme)"
   else
     ko "fetch_token aurait du refuser un corps JSON : rc=$rc out='$out'"
@@ -3587,7 +3611,7 @@ echo "Test 69 : budget -- les slots de la meme famille en vol sont repris, pas a
 # garde puisse distinguer un slot de famille d'un conteneur qui porte le meme
 # prefixe sans etre un slot. STUB_CI_ROWS : lignes "id nom octets".
 if [ "$1" = "-H" ]; then shift 2; fi
-if [ "$1" = "ps" ] && echo "$*" | grep -q 'label=coursia-ci=1'; then
+if [ "$1" = "ps" ] && grep -q 'label=coursia-ci=1' <<<"$*"; then
   printf '%s\n' $STUB_CI_IDS
   exit 0
 fi
@@ -3632,8 +3656,8 @@ w1 /test-waiter-1 8589934592"
   # Le garde n'affiche le detail du refus que s'il depasse ; ici il passe, donc
   # la `demande nette` ne s'affiche pas. On verifie la reprise et le total net.
   if [ "$rc" = "0" ] \
-     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
-     && echo "$out" | grep -q "CI en vol 20480 Mo + 45056 Mo demandes"; then
+     && grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" <<<"$out" \
+     && grep -q "CI en vol 20480 Mo + 45056 Mo demandes" <<<"$out"; then
     ok "les 3 slots deja en vol de la famille sont repris : le demarrage qui tient passe"
   else
     ko "la famille avec des slots en vol devrait passer : rc=$rc out='$out'"
@@ -3641,7 +3665,7 @@ w1 /test-waiter-1 8589934592"
 
   # (2) CONTROLE NEGATIF : une AUTRE famille reste refusee au meme etat.
   out="$( (assert_memory_budget lean 14 4096m test-lean-prefix-69) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+  if [ "$rc" != "0" ] && grep -q "budget CI depasse" <<<"$out"; then
     ok "une autre famille reste refusee : la reprise ne rend pas le budget laxiste"
   else
     ko "une autre famille aurait du etre refusee : rc=$rc out='$out'"
@@ -3649,7 +3673,7 @@ w1 /test-waiter-1 8589934592"
 
   # (3) CONTROLE NEGATIF : une demande qui deborde REELLEMENT reste refusee.
   out="$( (assert_memory_budget start 20 4096m test-prefix-69) 2>&1 )"; rc=$?
-  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+  if [ "$rc" != "0" ] && grep -q "budget CI depasse" <<<"$out"; then
     ok "une demande qui deborde apres reprise reste refusee"
   else
     ko "une demande qui deborde aurait du etre refusee : rc=$rc out='$out'"
@@ -3664,8 +3688,8 @@ c3 /test-prefix-69-10 4294967296
 b1 /test-prefix-69-backup 4294967296"
   out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
   if [ "$rc" = "0" ] \
-     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
-     && echo "$out" | grep -q "CI en vol 16384 Mo + 45056 Mo demandes"; then
+     && grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" <<<"$out" \
+     && grep -q "CI en vol 16384 Mo + 45056 Mo demandes" <<<"$out"; then
     ok "un conteneur '<prefixe>-backup' n'est pas repris comme un slot de la famille"
   else
     ko "le predicat de nom devrait etre strict : rc=$rc out='$out'"
@@ -3687,9 +3711,9 @@ c6 /test-prefix-69-16 4294967296
 c7 /test-prefix-69-17 4294967296"
   out="$( (assert_memory_budget start 10 4096m test-prefix-69) 2>&1 )"; rc=$?
   if [ "$rc" != "0" ] \
-     && echo "$out" | grep -q "budget CI depasse" \
-     && echo "$out" | grep -q "reprise en vol ..... 0 slot(s) de cette famille = 0 Mo" \
-     && echo "$out" | grep -q "total ............... 69632 Mo"; then
+     && grep -q "budget CI depasse" <<<"$out" \
+     && grep -q "reprise en vol ..... 0 slot(s) de cette famille = 0 Mo" <<<"$out" \
+     && grep -q "total ............... 69632 Mo" <<<"$out"; then
     ok "les slots de numero > n ne sont pas repris : le pic de 17 slots est vu, le demarrage est refuse"
   else
     ko "la borne haute devrait refuser (slots 11..17 en vol, n=10) : rc=$rc out='$out'"
@@ -3712,8 +3736,8 @@ c4 /test-prefix-69-4 4294967296
 c5 /test-prefix-69-5 4294967296"
   out="$( (assert_memory_budget start 3 4096m test-prefix-69) 2>&1 )"; rc=$?
   if [ "$rc" = "0" ] \
-     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
-     && echo "$out" | grep -q "CI en vol 20480 Mo + 0 Mo demandes"; then
+     && grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" <<<"$out" \
+     && grep -q "CI en vol 20480 Mo + 0 Mo demandes" <<<"$out"; then
     ok "empreinte transitoire : 5 slots en vol pour 3 demandes, le pied reel (5 x per) est compte, demande nette nulle"
   else
     ko "l'empreinte transitoire (5 slots en vol, 3 demandes) devrait etre comptee : rc=$rc out='$out'"
@@ -3726,10 +3750,10 @@ c5 /test-prefix-69-5 4294967296"
   # re-source (BUDGET_GB est lu au chargement).
   out="$( ( export COURSIA_RUNNER_BUDGET_GB=16; . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; assert_memory_budget start 3 4096m test-prefix-69 ) 2>&1 )"; rc=$?
   if [ "$rc" != "0" ] \
-     && echo "$out" | grep -q "budget CI depasse" \
-     && echo "$out" | grep -q "demande nette ...... 0 Mo" \
-     && echo "$out" | grep -q "total ............... 20480 Mo" \
-     && echo "$out" | grep -q "budget .............. 16384 Mo"; then
+     && grep -q "budget CI depasse" <<<"$out" \
+     && grep -q "demande nette ...... 0 Mo" <<<"$out" \
+     && grep -q "total ............... 20480 Mo" <<<"$out" \
+     && grep -q "budget .............. 16384 Mo" <<<"$out"; then
     ok "pied transitoire de 5 slots refuse quand le budget ne le tient pas (l'empreinte n'est pas laxiste)"
   else
     ko "le pied transitoire de 5 slots (20480 Mo) aurait du etre refuse sous 16 Go : rc=$rc out='$out'"
@@ -3749,8 +3773,8 @@ c2 /test-prefix-69-2 4294967296
 c3 /test-prefix-69-3 4294967296"
   out="$( ( export COURSIA_RUNNER_BUDGET_GB=16; . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; assert_memory_budget start 3 4096m test-prefix-69 ) 2>&1 )"; rc=$?
   if [ "$rc" = "0" ] \
-     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 16384 Mo" \
-     && echo "$out" | grep -q "CI en vol 16384 Mo + 0 Mo demandes"; then
+     && grep -q "reprise en vol ..... 3 slot(s) de cette famille = 16384 Mo" <<<"$out" \
+     && grep -q "CI en vol 16384 Mo + 0 Mo demandes" <<<"$out"; then
     ok "reprise > demande (memoire heterogene) : la demande nette est repliee a 0, pas comptee negative"
   else
     ko "le repli add_mb < 0 devrait replier la demande nette a 0 : rc=$rc out='$out'"
@@ -3762,10 +3786,10 @@ c3 /test-prefix-69-3 4294967296"
   # STRICT, il ne l'assouplit pas.
   out="$( ( export COURSIA_RUNNER_BUDGET_GB=12; . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; assert_memory_budget start 3 4096m test-prefix-69 ) 2>&1 )"; rc=$?
   if [ "$rc" != "0" ] \
-     && echo "$out" | grep -q "budget CI depasse" \
-     && echo "$out" | grep -q "demande nette ...... 0 Mo" \
-     && echo "$out" | grep -q "total ............... 16384 Mo" \
-     && echo "$out" | grep -q "budget .............. 12288 Mo"; then
+     && grep -q "budget CI depasse" <<<"$out" \
+     && grep -q "demande nette ...... 0 Mo" <<<"$out" \
+     && grep -q "total ............... 16384 Mo" <<<"$out" \
+     && grep -q "budget .............. 12288 Mo" <<<"$out"; then
     ok "le repli de la demande nette ne rend pas le garde laxiste : le pied heterogene est refuse"
   else
     ko "un pied heterogene de 16384 Mo aurait du etre refuse sous 12 Go : rc=$rc out='$out'"
@@ -3940,8 +3964,8 @@ echo "Test 72 : miroir d'objets partage -- argv du conteneur jetable (#18225)"
 # journalisee. Tout le reste de 'run' est le lancement observe. (Pas de
 # backticks dans ce heredoc : il n'est pas quote, une paire de backticks y
 # serait une substitution de commande -- elle a execute un 'run' fantome.)
-if [ "\$1" = "run" ] && printf '%s' "\$*" | grep -q -- '--entrypoint sha256sum'; then
-  printf '%s' "\$*" | grep -q 'work_cache_health.sh' \
+if [ "\$1" = "run" ] && grep -q -- '--entrypoint sha256sum' <<<"\$*"; then
+  grep -q 'work_cache_health.sh' <<<"\$*" \
     && echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh" \
     || echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
   exit 0
@@ -3962,38 +3986,433 @@ STUB
   bash "$SCRIPT_DIR/supervise.sh" mirror status >/dev/null 2>&1
   argv="$(cat "$ARGV_LOG" 2>/dev/null)"
 
-  if echo "$argv" | grep -q -- "-v coursia-runner-toolcache:/opt/hostedtoolcache"; then
+  if grep -q -- "-v coursia-runner-toolcache:/opt/hostedtoolcache" <<<"$argv"; then
     ok "le conteneur du miroir monte le volume toolcache (sinon il ne voit aucun miroir)"
   else
     ko "volume toolcache absent de l'argv du miroir, argv=$argv"
   fi
-  if echo "$argv" | grep -q -- "-e COURSIA_RUNNER_MIRROR_ACTION=status" \
-     && echo "$argv" | grep -q -- "-e COURSIA_RUNNER_MIRROR_PATH=/opt/hostedtoolcache/coursia-mirror.git"; then
+  if grep -q -- "-e COURSIA_RUNNER_MIRROR_ACTION=status" <<<"$argv" \
+     && grep -q -- "-e COURSIA_RUNNER_MIRROR_PATH=/opt/hostedtoolcache/coursia-mirror.git" <<<"$argv"; then
     ok "action et chemin passes par l'environnement (une seule source de verite avec l'entrypoint)"
   else
     ko "action/chemin du miroir absents de l'argv, argv=$argv"
   fi
-  if echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_LIMIT=1024" \
-     && echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_TIME=90"; then
+  if grep -q -- "-e GIT_HTTP_LOW_SPEED_LIMIT=1024" <<<"$argv" \
+     && grep -q -- "-e GIT_HTTP_LOW_SPEED_TIME=90" <<<"$argv"; then
     ok "garde de debit git propagee au refresh du miroir"
   else
     ko "garde de debit git absente de l'argv du miroir, argv=$argv"
   fi
   # Controles NEGATIFS : deux facons de casser le parc en croyant l'aider.
-  if echo "$argv" | grep -q -- "--label coursia-ci=1"; then
+  if grep -q -- "--label coursia-ci=1" <<<"$argv"; then
     ko "le conteneur du miroir porte coursia-ci=1 -- il entrerait dans le budget memoire des slots"
   else
     ok "aucun label coursia-ci=1 sur le miroir (budget des slots inchange)"
   fi
-  if echo "$argv" | grep -q -- "/home/runner/_work"; then
+  if grep -q -- "/home/runner/_work" <<<"$argv"; then
     ko "le miroir monte un volume _work -- c'est le vecteur ferme par #14385"
   else
     ok "aucun volume _work sur le conteneur du miroir"
   fi
-  if echo "$argv" | grep -q -- "--memory="; then
+  if grep -q -- "--memory=" <<<"$argv"; then
     ok "plafond memoire pose sur le conteneur du miroir"
   else
     ko "aucun plafond memoire sur le conteneur du miroir (un clone integral sans borne)"
+  fi
+  # gc.auto=0 (mission ai-01 26/10, #18225) : le script MIRROR_SH voyage DANS
+  # l'argv (`-c "$script"`), donc le verifier ici couvre ce qui atteint
+  # REELLEMENT le conteneur, bootstrap et refresh d'un seul tenant -- un grep
+  # du source ne prouverait pas que le script epingle est celui qui tourne.
+  # Comptes attendus : 2x `config gc.auto 0` (epingle au bootstrap +
+  # re-epingle par le refresh, pour les miroirs bootstrapes avant la ligne) et
+  # 2x `-c gc.auto=0` (les DEUX fetch --prune). NB : la moitie CONSOMMATRICE
+  # de la meme mission (GIT_ALTERNATE_OBJECT_DIRECTORIES posee avec miroir,
+  # absente sinon) est comportementale et vit dans test_entrypoint_mirror.sh
+  # Test 8 -- la variable est exportee par le PROCESSUS entrypoint, elle n'a
+  # sa place dans AUCUN argv observe par cette suite.
+  n_cfg="$(printf '%s\n' "$argv" | grep -c -- 'config gc.auto 0')"
+  if [ "$n_cfg" = "2" ]; then
+    ok "gc.auto epingle au bootstrap ET re-epingle par le refresh"
+  else
+    ko "attendu 2 'config gc.auto 0' dans le script du conteneur, obtenu $n_cfg"
+  fi
+  n_fetch="$(printf '%s\n' "$argv" | grep -o -- '-c gc.auto=0' | wc -l | tr -d ' ')"
+  if [ "$n_fetch" = "2" ]; then
+    ok "gc.auto=0 en -c sur les DEUX fetch --prune (bootstrap + refresh)"
+  else
+    ko "attendu 2 '-c gc.auto=0' (bootstrap + refresh), obtenu $n_fetch"
+  fi
+)
+echo ""
+
+# --- Test 73 : cache partage du registration token (#21527, critere 5, voie (a))
+# Mesure ai-01 du 26/10 : un fetch par demarrage de conteneur = 155 appels
+# REST/h pour le pool -- la consommation meme qui a epuise le quota de la
+# flotte le 2026-10-20. Le jeton vaut 1 h : le re-servir depuis STATE_DIR
+# fait tomber la consommation a <= 1 fetch par fenetre. Quatre comportements
+# eprouves, chacun par un appel DIRECT a fetch_token (pas de superviseur) :
+#   (1) cache frais, cle identique  -> servi SANS aucun appel gh
+#   (2) cache perime (TTL ecoule)   -> re-fetch, cache re-ecrit
+#   (3) cle differente (compte epingle change) -> re-fetch, jamais l'ancien
+#   (4) cache corrompu (forme invalide) -> miss silencieuse, re-fetch
+echo "Test 73 : le registration token se partage entre demarrages (#21527)"
+(
+  mkdir -p "$TEST_DIR/bin73" "$TEST_DIR/state-73"
+  cat > "$TEST_DIR/bin73/gh" <<'STUB'
+#!/usr/bin/env bash
+# Tout appel gh est journalise : un cache frais doit servir SANS passer ici.
+echo "$*" >> "$GH_CALLS_LOG"
+if grep -q 'registration-token' <<<"$*"; then
+  printf 'FRESHSTUBTOKEN0123456789XY\n'
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin73/gh"
+  export PATH="$TEST_DIR/bin73:$PATH"
+  # COURSIA_RUNNER_REPO (pas REPO) : le source reassigne REPO depuis cette
+  # variable -- l'export direct de REPO serait ecrase a la ligne 103.
+  export COURSIA_RUNNER_REPO="test/test"
+  export GH_CALLS_LOG="$TEST_DIR/gh73.calls"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+  # Isolation au meme titre que FETCH_TOKEN_STATE_FILE : le source a evalue
+  # STATE_DIR depuis l'environnement de la machine.
+  FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-73/token_state"
+  REGISTRATION_TOKEN_CACHE="$TEST_DIR/state-73/rt_cache"
+
+  # (1) cache frais, cle identique -> servi, ZERO appel gh
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN=CACHEDTOKEN0123456789AB\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "CACHEDTOKEN0123456789AB" ] && [ ! -s "$GH_CALLS_LOG" ]; then
+    ok "cache frais : jeton servi sans AUCUN appel gh"
+  else
+    ko "cache frais : rc=$rc out='$out' appels='$(cat "$GH_CALLS_LOG")'"
+  fi
+  if grep -q '^SOURCE=cache$' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null; then
+    ok "etat du fetch marque SOURCE=cache (diagnostic lisible hors subshell)"
+  else
+    ko "SOURCE=cache absent de l'etat : $(cat "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+  fi
+
+  # (2) cache perime (TTL de 3300 s ecoule) -> re-fetch + re-ecriture
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN=CACHEDTOKEN0123456789AB\nFETCHED_AT=%s\n' \
+    "$(( $(date +%s) - 4000 ))" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q 'registration-token' "$GH_CALLS_LOG" \
+     && grep -q '^TOKEN=FRESHSTUBTOKEN0123456789XY$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "cache perime : re-fetch effectue et cache re-ecrit"
+  else
+    ko "cache perime : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # (3) cle differente (compte epingle change) -> l'ancien jeton n'est pas servi
+  printf 'ACCOUNT=autre-compte\nREPO=test/test\nTOKEN=OLDACCOUNTTOKEN012345Z\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (COURSIA_RUNNER_GH_ACCOUNT=encore-autre fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q '^ACCOUNT=encore-autre$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "changement de compte epingle : re-fetch, jamais le jeton de l'ancienne cle"
+  else
+    ko "cle differente : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # (4) cache corrompu (corps JSON comme TOKEN) -> miss, re-fetch, reparation
+  printf 'ACCOUNT=ambient\nREPO=test/test\nTOKEN={"token":"x"}\nFETCHED_AT=%s\n' \
+    "$(date +%s)" > "$REGISTRATION_TOKEN_CACHE"
+  : > "$GH_CALLS_LOG"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>/dev/null )"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "FRESHSTUBTOKEN0123456789XY" ] \
+     && grep -q '^TOKEN=FRESHSTUBTOKEN0123456789XY$' "$REGISTRATION_TOKEN_CACHE"; then
+    ok "cache corrompu : miss silencieuse, re-fetch, cache repare"
+  else
+    ko "cache corrompu : rc=$rc out='$out' cache='$(tr '\n' ';' < "$REGISTRATION_TOKEN_CACHE" 2>/dev/null)'"
+  fi
+
+  # Depot propre : permissions privees, aucun tmp residuel de l'ecriture atomique
+  mode="$(stat -c %a "$REGISTRATION_TOKEN_CACHE" 2>/dev/null || echo '?')"
+  if [ "$mode" = "600" ]; then
+    ok "cache depose en mode 600 (le jeton ne depasse pas STATE_DIR)"
+  else
+    ko "mode du cache = '$mode', attendu 600"
+  fi
+  if ! ls "$TEST_DIR/state-73"/rt_cache.tmp.* >/dev/null 2>&1; then
+    ok "aucun fichier .tmp residuel de l'ecriture atomique"
+  else
+    ko "tmp residuels : $(ls "$TEST_DIR/state-73"/rt_cache.tmp.* 2>/dev/null)"
+  fi
+)
+echo ""
+
+# --- Test 74 : #22532 -- les waiters comptent au RSS REEL, pas au cap ------
+#
+# Mesure fondatrice (po-2024, 2026-11-04, docker stats --no-stream) : 6 waiters
+# oisifs a 36-169 MiB reels pour 512 Mo de caps comptes -- ~2,6 Go de
+# reservation fantome dans la somme en vol, et l'incoherence 23 552 > 21 504
+# qui refusait tout redemarrage de service (#20727). Trois morceaux :
+#   (a) running_ci_mb joint les waiters par leur LABEL (coursia-waiter=1) et
+#       remplace leur cap par leur RSS mesure ;
+#   (b) la demande waiters se compte a l'allocation RSS declaree
+#       (COURSIA_RUNNER_WAITER_RSS_MB), pas au cap -- avec AVERTISSEMENT en
+#       son absence, jamais un silence ;
+#   (c) les waiters NON etiquetes (generation precedente, remplaces au churn)
+#       restent comptes au cap : transition conservatrice.
+# Fail-closed en plus : un docker stats muet refusе la mesure, jamais zero.
+echo "Test 74 : budget memoire -- waiters au RSS reel, demande a l'allocation declaree (#22532)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT STUB_DOCKER_ID_ALT STUB_MEM_BYTES COURSIA_RUNNER_DOCKER_ENDPOINTS
+  mkdir -p "$TEST_DIR/bin74"
+  cat > "$TEST_DIR/bin74/docker" <<'STUB'
+#!/usr/bin/env bash
+# Stub dedie #22532 : `ps` distingue les DEUX filtres de label (waiter/ci),
+# `inspect` rend "nom octets" (STUB_CI_ROWS, comme le stub 69), `stats` rend
+# le MemUsage des waiters (STUB_WAITER_STATS). STUB_WAITER_STATS_MUTE=1 fait
+# echouer stats : daemon present mais sonde muette.
+if [ "$1" = "-H" ]; then shift 2; fi
+if [ "$1" = "ps" ]; then
+  case "$*" in
+    *'label=coursia-waiter=1'*)
+      [ -n "$STUB_WAITER_IDS" ] && printf '%s\n' $STUB_WAITER_IDS
+      exit 0 ;;
+    *'label=coursia-ci=1'*) printf '%s\n' $STUB_CI_IDS; exit 0 ;;
+  esac
+  exit 0
+fi
+if [ "$1" = "info" ]; then echo "stub-daemon-74"; exit 0; fi
+if [ "$1" = "inspect" ]; then
+  fmt="$3"; shift 3
+  for id in "$@"; do
+    row="$(printf '%s\n' "$STUB_CI_ROWS" | awk -v i="$id" '$1 == i { print; exit }')"
+    [ -n "$row" ] || continue
+    name="$(printf '%s' "$row" | awk '{ print $2 }')"
+    bytes="$(printf '%s' "$row" | awk '{ print $3 }')"
+    case "$fmt" in
+      *'{{.Name}}'*) printf '%s %s\n' "$name" "$bytes" ;;
+      *HostConfig.Memory*) echo "$bytes" ;;
+      *) echo "" ;;
+    esac
+  done
+  exit 0
+fi
+if [ "$1" = "stats" ]; then
+  [ "${STUB_WAITER_STATS_MUTE:-0}" = "1" ] && exit 1
+  [ -n "$STUB_WAITER_STATS" ] && printf '%s\n' "$STUB_WAITER_STATS"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin74/docker"
+  export PATH="$TEST_DIR/bin74:$PATH"
+  # Deux endpoints, MEME daemon (rendu identique par le stub `info`) : le
+  # default de ci_docker_endpoints liste /var/run/docker-ce.sock, qui existe
+  # ou non selon l'hote -- le parc epingle un socket cree pour rendre la
+  # deduplication par ID de daemon deterministe dans TOUT environnement.
+  # Sans elle, chaque waiter compte deux fois (mesure sous WSL : 721 Mo
+  # rendus pour 361 reels).
+  : > "$TEST_DIR/ce74.sock"
+  export COURSIA_RUNNER_DOCKER_ENDPOINTS="default $TEST_DIR/ce74.sock"
+  # Parc : 2 slots d'execution a 2048 Mo + 3 waiters ETIQUETES a 512 Mo de cap
+  # (RSS reels : 154.7 + 36.47 + 168.9 = 360.07 Mo). Les stubs precedents ne
+  # repondent PAS au filtre waiter -- ils tombent sur `exit 0` vide, chemin
+  # par lequel les tests 62-65/69 restent au comportement d'avant.
+  export STUB_CI_IDS="c1 c2 w1 w2 w3"
+  export STUB_CI_ROWS="c1 /test-74-exec-1 2147483648
+c2 /test-74-exec-2 2147483648
+w1 /myia-74-waiter-1 536870912
+w2 /myia-74-waiter-2 536870912
+w3 /myia-74-waiter-3 536870912"
+  export STUB_WAITER_IDS="w1 w2 w3"
+  export STUB_WAITER_STATS="myia-74-waiter-1 154.7MiB / 512MiB
+myia-74-waiter-2 36.47MiB / 512MiB
+myia-74-waiter-3 168.9MiB / 512MiB"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+
+  # (1) LA SOMME : caps des waiters sortent, leur RSS entre. 2048 x 2 + 361
+  # (RSS arrondi au Mo superieur) = 4457 -- contre 5632 si les caps restaient.
+  out="$(running_ci_mb 2>"$TEST_DIR/t74.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "4457" ] \
+     && grep -q "waiters au RSS reel : 3 waiter(s), 361 Mo (caps non comptes au plafond : 1536 Mo)" "$TEST_DIR/t74.err"; then
+    ok "somme : les 3 waiters etiquetes comptent 361 Mo de RSS, pas 1536 de caps"
+  else
+    ko "somme attendue 4457 avec detail RSS, rc=$rc out='$out' err='$(cat "$TEST_DIR/t74.err")'"
+  fi
+
+  # (2) LA DEMANDE a l'allocation declaree PASSE la ou le cap refuserait.
+  # Budget 5120 Mo. Base declaree 192 Mo/slot : reprise 3 x 192 = 576,
+  # demande nette 6 x 192 - 576 = 576, total 4457 + 576 = 5033 <= 5120.
+  # Base cap : total 4457 + 1536 = 5993 > 5120 -- c'est le controle (3).
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=5 COURSIA_RUNNER_WAITER_RSS_MB=192; \
+            . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; \
+            assert_memory_budget waiters 6 512m myia-74-waiter) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && grep -q "CI en vol 4457 Mo + 576 Mo demandes <= 5120 Mo" <<<"$out" \
+     && grep -q "reprise en vol ..... 3 slot(s) de cette famille = 576 Mo" <<<"$out"; then
+    ok "demande waiters a 192 Mo/slot declare : 5033 Mo passent sous 5120 (le cap echouerait)"
+  else
+    ko "la base RSS declaree devrait passer : rc=$rc out='$out'"
+  fi
+
+  # (3) SANS declaration : AVERTISSEMENT + repli au cap, qui REFUSE ici --
+  # controle discriminant du (2) : le cap ne tient pas dans le meme budget.
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=5; unset COURSIA_RUNNER_WAITER_RSS_MB; \
+            . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; \
+            assert_memory_budget waiters 6 512m myia-74-waiter) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && grep -q "budget CI depasse" <<<"$out" \
+     && grep -q "6 x 512m = 3072 Mo" <<<"$out" \
+     && grep -q "AVERTISSEMENT : COURSIA_RUNNER_WAITER_RSS_MB" <<<"$out"; then
+    ok "sans declaration : avertissement + base cap, et le refus que la base RSS evitait"
+  else
+    ko "sans declaration : avertissement et refus attendus, rc=$rc out='$out'"
+  fi
+
+  # (4) FAIL-CLOSED : docker stats muet (daemon vivant) -> REFUS, jamais zero.
+  # Compter 0 Mo de RSS reintroduirait la reservation fantome par l'autre bout.
+  out="$(STUB_WAITER_STATS_MUTE=1 running_ci_mb 2>"$TEST_DIR/t74d.err")"; rc=$?
+  if [ "$rc" != "0" ] && grep -q "budget CI NON MESURABLE" "$TEST_DIR/t74d.err" \
+     && grep -q "RSS des waiters n'a pas pu etre mesure" "$TEST_DIR/t74d.err"; then
+    ok "docker stats muet : refus nomme, pas un RSS fabrique a zero"
+  else
+    ko "un stats muet devrait refuser, rc=$rc err='$(cat "$TEST_DIR/t74d.err" 2>/dev/null)'"
+  fi
+
+  # (5) WAITERS NON ETIQUETES (generation precedente) : comptes AU CAP.
+  # Le label n'existe qu'a partir de #22532 ; les waiters du parc qui tournent
+  # encore sans lui restent au comportement d'avant -- transition conservatrice.
+  out="$(STUB_WAITER_IDS="" running_ci_mb 2>"$TEST_DIR/t74e.err")"; rc=$?
+  if [ "$rc" = "0" ] && [ "$out" = "5632" ] \
+     && ! grep -q "waiters au RSS reel" "$TEST_DIR/t74e.err"; then
+    ok "waiters non etiquetes : 5632 Mo au cap, sans ligne RSS (transition conservatrice)"
+  else
+    ko "sans etiquettes, somme au cap 5632 attendue, rc=$rc out='$out'"
+  fi
+
+  # (6) VALEUR INVALIDE : refus immediat, pas de repli silencieux au cap.
+  out="$( ( export COURSIA_RUNNER_WAITER_RSS_MB=abc; \
+            . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; \
+            assert_memory_budget waiters 6 512m myia-74-waiter) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && grep -q "doit etre un entier de Mo (lu : 'abc')" <<<"$out"; then
+    ok "COURSIA_RUNNER_WAITER_RSS_MB=abc : refus nomme"
+  else
+    ko "une valeur invalide devrait refuser, rc=$rc out='$out'"
+  fi
+
+  # (7) LE LABEL DU RUN : le docker run des waiters porte coursia-waiter=1 --
+  # sans lui, la jointure du (1) ne verra JAMAIS les waiters de la generation
+  # courante. Verification au source (le stub 34 montre que piloter le run
+  # complet des waiters serait un harnais disproportionne pour une ligne).
+  lbl="$(grep -n -- '--label coursia-waiter=1' "$SCRIPT_DIR/supervise.sh" | head -1 | cut -d: -f1)"
+  prev="$(( lbl - 1 ))"
+  if [ -n "$lbl" ] && [ "$prev" -gt 0 ] \
+     && sed -n "${prev}p" "$SCRIPT_DIR/supervise.sh" | grep -q -- '--label coursia-ci=1'; then
+    ok "le docker run des waiters porte les DEUX labels (ci + waiter) sur lignes adjacentes"
+  else
+    ko "label coursia-waiter=1 absent ou isole du label ci dans supervise.sh (lbl='$lbl')"
+  fi
+)
+echo ""
+
+# --- Test 75 : un harnais interrompu ne laisse aucun processus (#21527) -----
+# Critere 4 de #21527. Mesure du 2026-10-20 : des restes de CE fichier (6 a 11 h,
+# parent /init, enfants relances en boucle) bloquaient le redemarrage du pool --
+# la sentinelle perimee n'etait jamais purgee, l'unite restait en failed, le
+# pool a zero. Le correctif est le `trap cleanup_launched EXIT INT TERM` du haut
+# de ce fichier. Ce test le MESURE au lieu de le lire.
+#
+# La sonde est une SECONDE instance de ce fichier dans son propre groupe de
+# processus (`set -m`, sans dependance a `setsid`), et le signal part au PARENT
+# SEUL. Envoyer TERM au groupe ne
+# prouverait rien : le signal atteindrait les enfants directement et le test
+# passerait meme sans trap. Sans le trap, les enfants survivent au parent et
+# sont reparentes a /init -- exactement la pathologie mesuree.
+echo "Test 75 : interruption du harnais -- aucun processus survivant (#21527)"
+(
+  # Membres vivants d'un groupe de processus, lus dans /proc. Pas de `pgrep` :
+  # la suite ne doit pas dependre d'un utilitaire absent d'un runner minimal, et
+  # `ps` est deja detourne par des stubs dans d'autres tests.
+  group_members() {
+    local want="$1" f line rest pid
+    local -a fields
+    for f in /proc/[0-9]*/stat; do
+      [ -r "$f" ] || continue
+      line=""
+      read -r line < "$f" 2>/dev/null
+      [ -n "$line" ] || continue
+      rest="${line##*)}"          # apres le dernier ')': state ppid pgrp session
+      fields=($rest)
+      [ "${fields[2]:-}" = "$want" ] || continue
+      [ "${fields[0]:-}" = "Z" ] && continue   # un zombie ne tourne plus
+      pid="${f#/proc/}"; echo "${pid%/stat}"
+    done
+  }
+
+  # La sonde relance CE fichier : sans ce garde, Test 75 s'y rejouerait a
+  # l'infini. Ce n'est pas une assertion, donc ni PASS ni FAIL.
+  if [ "${COURSIA_RUNNER_TEST75_PROBE:-0}" = "1" ]; then
+    echo "  SKIP: instance sonde de Test 75 (pas de recursion)"
+  elif [ ! -d /proc ]; then
+    ko "critere 4 non mesurable ici : /proc absent"
+  else
+    PROBE_ROOT="$TEST_DIR/interrupt-75"; mkdir -p "$PROBE_ROOT"
+    cat > "$PROBE_ROOT/run.sh" <<'PROBE'
+#!/usr/bin/env bash
+printf '%s\n' "$$" > "$PROBE_PID_FILE"
+exec bash "$PROBE_SUITE"
+PROBE
+    export PROBE_PID_FILE="$PROBE_ROOT/probe.pid"
+    export PROBE_SUITE="$SCRIPT_DIR/test_supervise_guards.sh"
+    export COURSIA_RUNNER_TEST75_PROBE=1
+    # `set -m` : controle de tache, donc un GROUPE DE PROCESSUS propre pour la
+    # sonde, sans `setsid` (absent d'un Git Bash MSYS, et la suite doit rester
+    # lancable sur les deux). Mesure : le fils recoit pgrp == son propre pid.
+    ( set -m; bash "$PROBE_ROOT/run.sh" >"$PROBE_ROOT/out.log" 2>&1 & )
+    probe_pid=""
+    for _ in $(seq 1 200); do
+      [ -s "$PROBE_ROOT/probe.pid" ] && { probe_pid="$(cat "$PROBE_ROOT/probe.pid")"; break; }
+      sleep 0.1
+    done
+    case "$probe_pid" in ''|*[!0-9]*) probe_pid="" ;; esac
+    # Anti-vacuite : l'interruption doit avoir un OBJET. Une sonde qui meurt
+    # avant d'avoir lance un seul enfant passerait le test sans rien mesurer --
+    # zero membre avant le signal n'est pas « aucun survivant », c'est un test
+    # qui n'a pas eu lieu.
+    members=0
+    if [ -n "$probe_pid" ]; then
+      for _ in $(seq 1 400); do
+        members=$(group_members "$probe_pid" | wc -l)
+        [ "$members" -ge 2 ] && break
+        sleep 0.1
+      done
+    fi
+    if [ -z "$probe_pid" ] || [ "$members" -lt 2 ]; then
+      ko "sonde jamais enfantee (pid='$probe_pid', membres=$members) : rien a mesurer"
+    else
+      # TERM au PARENT SEUL : seul le trap peut propager au groupe.
+      kill -TERM "$probe_pid" 2>/dev/null || true
+      survivors=1
+      for _ in $(seq 1 150); do
+        survivors=$(group_members "$probe_pid" | wc -l)
+        [ "$survivors" -eq 0 ] && break
+        sleep 0.1
+      done
+      if [ "$survivors" -eq 0 ]; then
+        ok "TERM au parent seul : le groupe entier est parti ($members processus au depart)"
+      else
+        ko "survivants apres TERM au parent : $(group_members "$probe_pid" | tr '\n' ' ')"
+      fi
+    fi
+    # Nettoyage inconditionnel : ni la sonde, ni son repertoire de travail ne
+    # doivent rester derriere un test rouge -- ce serait le defaut mesure.
+    if [ -n "$probe_pid" ]; then
+      kill -KILL -- "-$probe_pid" 2>/dev/null || true
+      rm -rf "/tmp/supervise-test-$probe_pid"
+    fi
+    rm -rf "$PROBE_ROOT"
   fi
 )
 echo ""

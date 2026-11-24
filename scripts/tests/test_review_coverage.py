@@ -278,6 +278,43 @@ def test_failed_delete_is_reported_not_swallowed(monkeypatch):
     assert len(warnings) == 1 and "404" in warnings[0], warnings
 
 
+def test_remove_label_passes_check_so_failure_is_raised(monkeypatch):
+    """#22758 point 4 : sans `check=True`, l'`except CalledProcessError` de
+    `sweep` etait du code mort -- un retrait de label rate passait pour un
+    retrait reussi."""
+    seen = {}
+
+    def _run(cmd, **kwargs):
+        seen["check"] = kwargs.get("check")
+        if kwargs.get("check"):
+            raise rc.subprocess.CalledProcessError(1, cmd, stderr="HTTP 500")
+        raise AssertionError("remove_label doit passer check=True")
+
+    monkeypatch.setattr(rc.subprocess, "run", _run)
+    try:
+        rc.remove_label(4242, rc.LABEL_DEFAULT)
+    except rc.subprocess.CalledProcessError:
+        pass
+    else:
+        raise AssertionError("un retrait rate doit lever")
+    assert seen["check"] is True, "check=True est ce qui rend l'echec observable"
+
+
+def test_failed_removal_is_reported_and_not_counted_cleared(monkeypatch):
+    """`cleared` ne nomme que les PR dont le label est REELLEMENT parti."""
+    monkeypatch.setattr(rc, "fetch_open_prs", lambda threshold: [{"number": 4242}])
+    monkeypatch.setattr(rc, "classify", lambda pr, threshold: "clear")
+    monkeypatch.setattr(rc, "has_label", lambda number, label: True)
+
+    def _boom(number, label):
+        raise rc.subprocess.CalledProcessError(1, "gh pr edit", stderr="HTTP 500")
+
+    monkeypatch.setattr(rc, "remove_label", _boom)
+    result = rc.sweep(300, False, rc.LABEL_DEFAULT)
+    assert 4242 not in result["cleared"], result
+    assert any("4242" in e and "remove" in e for e in result["errors"]), result
+
+
 # ---------------------------------------------------------------------------
 # Second review surface : une passe emise en COMMENTAIRE d'issue (#16284).
 #

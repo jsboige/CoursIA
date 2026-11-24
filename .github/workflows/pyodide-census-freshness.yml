@@ -1,0 +1,65 @@
+name: pyodide-census-freshness
+
+# Garde de fraicheur du census Pyodide (#27617).
+#
+# Le rapport `docs/reference/pyodide-eligibilite.md` et son fichier de refus
+# `docs/reference/pyodide-refus.tsv` portent l'en-tete « genere par ... ne pas
+# editer a la main ». Depuis #27583 la regeneration est deterministe et hors
+# reseau (lock `pyodide-lock.json` + cache des sondes `pyodide-wheel-cache.json`
+# commites), donc l'ecart entre les fichiers commites et la regeneration est
+# mesurable en ~12 s. Sans cette garde, le census derive en silence a chaque
+# evolution de l'arbre des carnets -- le motif que #2651 combat pour le
+# catalogue.
+#
+# L'organe ne modifie rien : il rejoue la regeneration dans un repertoire
+# temporaire et compare les sorties aux fichiers commites.
+#
+# Bascule de debordement (identique a docs-reference-guard.yml) :
+# `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+# Variable absente ou false -> tout reste sur ubuntu-latest.
+
+on:
+  pull_request:
+    paths:
+      - 'docs/reference/pyodide-eligibilite.md'
+      - 'docs/reference/pyodide-refus.tsv'
+      - 'docs/reference/pyodide-lock.json'
+      - 'docs/reference/pyodide-wheel-cache.json'
+      - 'scripts/notebook_tools/pyodide_eligibility.py'
+      - 'scripts/ci/check_pyodide_census_fresh.py'
+      - 'scripts/tests/test_check_pyodide_census_fresh.py'
+      - '.github/workflows/pyodide-census-freshness.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pyodide-census-freshness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freshness:
+    # Forme hybride de debordement : PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; tout le reste (variable absente ou
+    # fausse, forks, dispatch) retombe sur ubuntu-latest. La jambe locale
+    # n'est donc atteinte QUE sur un geste d'operateur explicite, ce qui
+    # dispense d'une entree dans SELF_HOSTED_WORKFLOW_ALLOWLIST (cf
+    # scripts/ci/check_self_hosted_runner_policy.py, `operator_gated`).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Regeneration mesuree a ~12 s hors reseau ; la marge couvre le checkout
+    # et l'installation de Python.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # ref: la TETE de la branche PR (jamais le merge ref) -- le census
+          # compare est celui de la PR, pas celui d'un commit de fusion.
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fraicheur du census Pyodide (regeneration hors reseau + diff)
+        run: python scripts/ci/check_pyodide_census_fresh.py

@@ -1466,6 +1466,46 @@ def build_def_type_warnings(filepath: str, goal_state: str) -> str:
     return header + "\n" + "\n".join(warnings)
 
 
+# #24469: a sorry carried INLINE after ``by`` (``theorem t : P := by sorry``,
+# the very shape ``stub_theorem_proof`` writes) keeps its prefix. Replacing
+# the whole line dropped the signature, so every calibration probe parsed as
+# a bare tactic and came back ``tactic_failed`` -- including the approved
+# proof itself (smoke ``zero_add_smoke``, 2026-11-03).
+_INLINE_BY_SORRY_RE = re.compile(r"^(?P<prefix>.*\bby)\s+sorry\s*(?:--.*)?$")
+
+
+def splice_sorry_replacement(lines: List[str], sorry_line: int,
+                             replacement: str) -> Tuple[List[str], int, int]:
+    """Splice ``replacement`` in place of the sorry on 1-based ``sorry_line``.
+
+    Pure (no I/O, no Lean), so the shape is testable without a build.
+
+    - A line holding only ``sorry`` is replaced by the replacement lines, at
+      the sorry's indentation (unchanged behaviour).
+    - A line ending in ``... by sorry`` keeps its prefix (the declaration
+      signature); the replacement goes on the following lines, indented two
+      columns under that line.
+
+    Returns ``(new_lines, n_replacement_lines, line_shift)`` where
+    ``line_shift`` is how many lines the region after the sorry moved down.
+    """
+    sorry_text = lines[sorry_line - 1]
+    indent = len(sorry_text) - len(sorry_text.lstrip())
+    prefix_lines: List[str] = []
+    if sorry_text.strip() != "sorry":
+        m = _INLINE_BY_SORRY_RE.match(sorry_text)
+        if m:
+            prefix_lines = [m.group("prefix")]
+            indent += 2
+    indent_str = " " * indent
+    replacement_lines = [indent_str + ln.strip()
+                         for ln in replacement.strip().split("\n") if ln.strip()]
+    new_lines = (lines[:sorry_line - 1] + prefix_lines + replacement_lines
+                 + lines[sorry_line:])
+    line_shift = len(prefix_lines) + max(0, len(replacement_lines) - 1)
+    return new_lines, len(replacement_lines), line_shift
+
+
 def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
                              imports: Optional[str] = None,
                              persist_on_success: bool = False) -> dict:
@@ -1532,17 +1572,8 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             elif actual_indent > target_indent + 2:
                 print(f"  P5: nearest sorry at {actual_line} rejected: "
                       f"indent {actual_indent} too deep vs target {target_indent}")
-    indent = len(sorry_text) - len(sorry_text.lstrip())
-    indent_str = " " * indent
-
-    # Build replacement lines with correct indentation
-    replacement_lines = []
-    for line in replacement.strip().split("\n"):
-        if line.strip():
-            replacement_lines.append(indent_str + line.strip())
-
-    # Replace the sorry line in the full file
-    new_lines = lines[:sorry_line - 1] + replacement_lines + lines[sorry_line:]
+    new_lines, n_replacement_lines, line_shift = splice_sorry_replacement(
+        lines, sorry_line, replacement)
     new_content = "\n".join(new_lines)
 
     # Write modified file to disk (Lean project directory)
@@ -1565,9 +1596,8 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     except OSError:
         pass
 
-    # Filter errors to only those near the target sorry line.
-    n_replacement_lines = len(replacement_lines)
-    line_shift = max(0, n_replacement_lines - 1)
+    # Filter errors to only those near the target sorry line
+    # (``line_shift`` comes from splice_sorry_replacement above).
     raw_output = result.get("raw_output", "")
 
     # Collect ALL error locations first
@@ -1833,6 +1863,11 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "backend": result.get("backend", ""),
         "persisted": persisted,  # #1453: real file now holds the replacement
         "real_build_ok": real_build_ok,  # real-module rebuild verdict (or None)
+        # #24545: the line the replacement ACTUALLY landed on. The P5
+        # relocation above may have moved the target (frozen line empty ->
+        # nearest sorry within 30 lines), so the caller cannot assume the
+        # requested line is the proved one. The latch binds to this line.
+        "resolved_sorry_line": sorry_line,
         # #21298 guard: stage 1 (statement sorry-defs) and stage 2 (target
         # axiom probe) evidence, for caller-side reporting/telemetry.
         "statement_sorry_defs": statement_sorry_defs,

@@ -73,5 +73,13 @@
   },
   "lecture": "le Pli 1 et la famille NeRF ne se disputent pas la meme ressource : Fourier est CPU-borne (288 Mio de RAM hote, 64 s, aucun octet de VRAM attribuable), NeRF est CUDA-borne (52,7 % puis 94,5 % de la carte). Un run conjoint est donc possible du point de vue de la VRAM -- la contrainte n'est pas la memoire video mais le fait que deux jobs CUDA ne se partagent pas la meme carte. Ce qui ne tient pas sur l'etage pionnier, c'est l'evaluation dense de NeRF, pas le Pli 1."
  },
- "reserve": "la RAM hote est mesuree par lecture de la RSS de l'arbre de processus (granularite 2 s) : c'est une enveloppe de processus, pas un compteur de memoire allouee du harnais ; le pic d'une allocation transitoire de courte duree peut echapper a l'echantillonnage. La conclusion '0 VRAM attribuable' ne depend pas de cette mesure mais de l'absence d'import CUDA et de la carte restee au niveau du repos."
+ "reserve": "la RAM hote est mesuree par lecture de la RSS de l'arbre de processus (granularite 2 s) : c'est une enveloppe de processus, pas un compteur de memoire allouee du harnais ; le pic d'une allocation transitoire de courte duree peut echapper a l'echantillonnage. La conclusion '0 VRAM attribuable' ne depend pas de cette mesure mais de l'absence d'import CUDA et de la carte restee au niveau du repos.",
+ "provenance": {
+  "trace": "perdue",
+  "journal": "perdu",
+  "probe_command": "non conservee et non archivee. Le manifeste atteste l'echantillonnage (carte a 2 s, RSS de l'arbre de processus a 2 s) mais les fichiers n'ont pas ete rapatries avant la disparition du poste de travail du run.",
+  "samples_in_trace": 0,
+  "rederive": "aucune re-derivation possible : seule la lecture du carnet (aucun import torch, aucun moteur CUDA) et un rejeu court etablissent l'enveloppe",
+  "notes": "Perte mesuree, ecrite au 2026-10-24 (myia-ai-01:CoursIA-2, #22110) et non absence constatee : le run a ete echantillonne, ses series ont disparu. Les agregats de ce manifeste (427 -> 444 Mio, delta 17, contexte_cuda_cree=false, pic RSS hote 288 Mio) ne sont plus verifiables sur la serie brute ; la conclusion '0 Mio de VRAM attribuable' ne depend pas d'elle, elle repose sur l'absence d'import CUDA et la carte restee au repos."
+ }
 }

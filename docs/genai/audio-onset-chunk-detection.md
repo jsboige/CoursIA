@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # Onset-drop detection — classifier onset/mid/end des spans d'omission
 
 > Cadrage : issue [#19739](https://github.com/jsboige/CoursIA/issues/19739) — `feat(audio,#19692): phase 2 -- garde d'attaque ASR par chunk (onset-drop CV3 mesure, porte #17586 non conforme)`. Lane `myia-po-2027:CoursIA-2`, scope **CPU** (re-roll GPU hors périmètre ; l'extension GPU est la suite logique, à livrer par lane po-2023 ou po-2024 RTX 3090).

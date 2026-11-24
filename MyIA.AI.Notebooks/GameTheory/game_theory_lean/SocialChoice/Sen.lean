@@ -2,7 +2,12 @@
   Paradoxe libéral de Sen
   ========================
 
-  Port de asouther4/lean-social-choice vers Lean 4
+  Ajout CoursIA — pas un portage. L'amont asouther4/lean-social-choice ne contient pas
+  le paradoxe libéral : son `basic.lean` porte le théorème de Sen sur l'existence d'une
+  fonction de choix (lemme 1*l), et le mot « liberal » ne figure dans aucun de ses
+  fichiers. Les quatre déclarations de ce module sont écrites ici — aucune ne porte un
+  nom présent dans l'amont (0 sur 4, mesure du 2026-10-25) — avec une décisivité
+  bidirectionnelle.
 
   Le théorème d'impossibilité de Sen montre qu'aucune procédure de décision sociale
   ne peut simultanément satisfaire :
@@ -62,7 +67,13 @@ Cas 1 (chevauchement) : i décisif sur (a,b), j décisif sur (b,c).
 Cas 2 (disjoint) : i décisif sur (a,b), j décisif sur (c,d).
   Construction de cycle similaire en utilisant les quatre alternatives.
   Requiert |X| >= 4 dans ce cas (garanti par hX : 3 ≤ |X| seulement
-  donne 3, donc la preuve utilise le cas chevauchant). -/
+  donne 3, donc la preuve utilise le cas chevauchant).
+
+Preuve alternative déclarée : `lean_game_defs/SocialChoice.lean` (maison
+canonique de l'énoncé) le donne sous forme universelle (`¬ SenLiberalism swf`),
+avec une notion de libéralisme plus forte — deux paires réellement croisées sur
+trois alternatives distinctes.
+-/
 theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
     (hne : (2 : ℕ) ≤ Fintype.card ι)
     (hX : 3 ≤ X.card)

@@ -1,12 +1,12 @@
 # Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
-[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [Argument_Analysis →](../Argument_Analysis/README.md)
+[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [ArgumentAnalysis →](../ArgumentAnalysis/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
-pedagogical_count: 32
-breakdown: SmartContracts=32
-maturity: BETA=30, ALPHA=1, DRAFT=1
+pedagogical_count: 37
+breakdown: SmartContracts=37
+maturity: BETA=35, ALPHA=1, DRAFT=1
 -->
 
 Série de notebooks éducatifs couvrant les fondements cryptographiques, le développement Solidity, les tests, la cryptographie avancée (ZKP, HE, vote vérifiable), et les blockchains alternatives.
@@ -207,18 +207,26 @@ SmartContracts/
 
 ### Partie 2 : Solidity Avancé
 
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
-| 7b | [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) | 25 min | Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve |
-| 7c | [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) | non déclarée | Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean` |
-| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles |
-| 8b | [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun |
-| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain |
-| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 |
-| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts |
+| # | Notebook | Durée | Contenu | Approfondissements liés |
+|---|----------|-------|---------|-------------------------|
+| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 | [SC-7b et SC-7c](#autour-de-7) |
+| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles | [SC-8b](#autour-de-8) |
+| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain | |
+| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 | |
+| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts | |
 
 **Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
+
+#### Approfondissements
+
+##### Autour de 7
+
+- [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) — Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve
+- [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) — Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean`
+
+##### Autour de 8
+
+- [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) — Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun
 
 ### Partie 3 : Testing
 
@@ -619,11 +627,11 @@ maturity: PRODUCTION=27
 | **06-Real-World** | 5 | PRODUCTION=5, BETA=0 | Cross-chain bridges (atomic swap, IBC, LayerZero), déploiement testnet/mainnet (Goerli/Sepolia), **SC-26 Final Project capstone**, **SC-27 dette d'irréversibilité mesurée** |
 | **Total** | **28** | **PRODUCTION=28** | Python 3.9+ (web3.py), Solidity ^0.8.x, Foundry stable (forge/anvil/cast), kernel Python 3 (exécution) |
 
-**Note explicite maturité 100% PRODUCTION** : la série SmartContracts est l'une des séries les plus matures du dépôt. Les 28 notebooks sont validés pour exécution locale (Foundry toolchain installée, Anvil local sur port 8545) et déploiement testnet (Goerli/Sepolia via Infura/Alchemy). Le seul prérequis non-Python est Foundry (`curl -L https://foundry.paradigm.xyz | bash` puis `foundryup`) qui installe `forge`/`anvil`/`cast`/`chisel` — toolchain SOTA-OK pour le développement Solidity professionnel.
+**Note explicite maturité 100% PRODUCTION** : la série SmartContracts est l'une des séries les plus matures du dépôt. Les notebooks de la série sont validés pour exécution locale (Foundry toolchain installée, Anvil local sur port 8545) et déploiement testnet (Goerli/Sepolia via Infura/Alchemy). Le seul prérequis non-Python est Foundry (`curl -L https://foundry.paradigm.xyz | bash` puis `foundryup`) qui installe `forge`/`anvil`/`cast`/`chisel` — toolchain SOTA-OK pour le développement Solidity professionnel.
 
 **Paragraphe conformité C.1** : stubs `student/` (patterns `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) dans tous les notebooks Solidity. Les fonctions Solidity elles-mêmes ne suivent pas C.1 (elles sont des contrats déployés, pas des stubs Python), mais les **cellules Python** (déploiement web3.py, simulation Anvil, tests Foundry en Python) respectent C.1. Dépendances : `web3>=6.0`, `py-solc-x>=1.12`, `eth-account>=0.10`, `eth-abi>=4.0`, `pytest>=7.0`, Foundry stable externe.
 
-## Écosystème MCP et parenté cross-lane
+## Écosystème MCP et parenté inter-séries
 
 **3 outils d'infrastructure MCP** (cohérent avec cycles 19-29 hubs) :
 
@@ -631,24 +639,24 @@ maturity: PRODUCTION=27
 2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline (clés privées ETH, mnemonics, RPC URLs) ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique SmartContracts** : les fichiers `foundry.toml` ou variables `.env` (PRIVATE_KEY, RPC_URL) doivent vivre dans `.gitignore`, jamais en clair dans un notebook.
 3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. SmartContracts n'utilise pas QC Cloud directement, mais partage avec QC le même besoin de **reproductibilité déterministe** : Anvil local déterministe (seed fixe, block pre-Merge), seed Foundry (fuzz avec seed), déploiement testnet reproductible (même bytecode, même timestamp block) — un smart contract audité doit être ré-exécutable bit-pour-bit.
 
-**Table parenté cross-lane 6 colonnes** (SmartContracts se situe au croisement de plusieurs séries du dépôt) :
+**Table parenté inter-séries 6 colonnes** (SmartContracts se situe au croisement de plusieurs séries du dépôt) :
 
 | Notebook SmartContracts | Série parente | Pont conceptuel |
 |------------------------|---------------|-----------------|
 | `SC-12 Foundry Testing` | [Lean](../Lean/) (types dépendants, Curry-Howard) | Vérification formelle = même ambition (prouver la correction), deux faces : SMT automatique (SMTChecker) vs interactif expressif (Lean 4) |
 | `SC-14 Formal Verification` | [Lean](../Lean/) + [GameTheory](../../GameTheory/) (`game_theory_lean/SocialChoice/`) | Pont vérification : Certora/SMTChecker prouvent les invariants Solidity ; Lean 4 prouve les théorèmes économiques (Arrow, Voting). Même méthodologie, deux domaines |
 | `SC-15 ZKP / SC-16 HE / SC-17 E2E Voting` | [Lean](../Lean/) + [Tweety](../Tweety/) (cryptographic protocols argumentation) | Cryptographie avancée : ZKP = preuve sans divulgation ; HE = calcul sur chiffré ; vote E2E = anonymat + vérifiabilité. Tweety argumente formellement ces protocoles |
-| `SC-11 LLM-Assisted Contracts` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
+| `SC-11 LLM-Assisted Contracts` | [ArgumentAnalysis](../ArgumentAnalysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
 | `SC-9 DAO Governance / SC-17 E2E Voting` | [GameTheory](../../GameTheory/) (Arrow.lean, Voting.lean) | Vote on-chain = instance concrète du théorème d'Arrow (impossibilité) ; vote E2E = instance des Banks sets + monotonie STV |
 | `SC-15 ZK-SNARKs / SC-23 Cross-Chain Bridges` | [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle Solidity ↔ ontologie OWL : un smart contract peut être annoté sémantiquement (propriétés vérifiables par raisonneur) ; cross-chain bridges = ontologies inter-chaînes |
 
 **Paragraphe « effet de composition — SmartContracts = carrefour trust/privacy »** :
 
-Là où Planners est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29), SmartContracts est le carrefour **trust/privacy inter-séries** : la **confiance** (vérification formelle Lean + tests Foundry + fuzzing), la **confidentialité** (ZKP + chiffrement homomorphe + vote E2E), et la **décision collective** (Arrow + Voting + DAOs). Cette série est l'une des rares à aligner **trois dimensions critiques de la blockchain** dans un même parcours pédagogique.
+Là où Planners est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique), SmartContracts est le carrefour **trust/privacy inter-séries** : la **confiance** (vérification formelle Lean + tests Foundry + fuzzing), la **confidentialité** (ZKP + chiffrement homomorphe + vote E2E), et la **décision collective** (Arrow + Voting + DAOs). Cette série est l'une des rares à aligner **trois dimensions critiques de la blockchain** dans un même parcours pédagogique.
 
 Le pipeline de notebooks aligne l'évolution paradigmatique de la blockchain (2008 Bitcoin → 2024 L2 + ZK rollups) sur la **frontière de vérification** (tests unitaires → fuzzing → vérification formelle SMT → potentielle preuve Lean). Chaque notebook est un maillon du triptyque *construire → tester → prouver*.
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche smartcontracts.
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté inter-séries.
 
 ---
 

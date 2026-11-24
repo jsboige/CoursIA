@@ -66,8 +66,11 @@ __all__ = [
     "probe_coefficient_basis",
     "subspace_rank",
     "overlap_energy",
+    "overlap_principal_max",
     "factor_geometry_report",
+    "positive_control_additivity_gap",
     "untrained_null",
+    "VARIANCE_CIBLE_MIN",
 ]
 
 
@@ -185,6 +188,7 @@ def train_model(
     clip: float = 1.0,
     eval_every: int = 50,
     seed: int = 0,
+    device: str | None = None,
 ) -> Dict[str, object]:
     """Entraine ``model`` et retient l'etat de **meilleure validation**.
 
@@ -196,9 +200,19 @@ def train_model(
     soit visible et non pas suppose.
 
     ``seed`` ne fixe que l'ordre des pas ; l'initialisation est celle du modele.
+
+    ``device`` (``"cuda"``, ``"cpu"``...) deplace le modele ET les donnees :
+    la campagne de #20071 est lancee sur un GPU reserve de la flotte, et les
+    metriques de geometrie sont lues sur des activations CPU de toute
+    facon (``collect_activations`` rend un tableau numpy). ``None`` laisse
+    tout sur le CPU -- le comportement historique, inchange.
     """
     _require_torch()
     torch.manual_seed(seed)
+    if device is not None:
+        model = model.to(device)
+        x_train = x_train.to(device)
+        x_val = x_val.to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     history: list = []
     best = (float("inf"), -1, None)
@@ -226,13 +240,19 @@ def train_model(
     return {"best_val_nll": best[0], "best_step": best[1], "history": history}
 
 
-def collect_activations(model, x) -> Array:
+def collect_activations(model, x, device: str | None = None) -> Array:
     """Etats caches du modele sur ``x``, aplatis en ``(T, hidden)`` (numpy).
 
     Le modele est laisse dans son etat courant : l'appelant decide s'il veut
     les activations d'un modele entraine ou d'une initialisation non entrainee.
+
+    ``device`` deplace les donnees sur le device du modele (les activations
+    sont toujours rendues en numpy, sur l'hote).
     """
     _require_torch()
+    if device is not None:
+        model = model.to(device)
+        x = x.to(device)
     was_training = model.training
     model.eval()
     with torch.no_grad():
@@ -264,6 +284,11 @@ def probe_coefficient_basis(activations: Array, targets: Array, ridge: float = 1
         raise ValueError(
             f"formes incompatibles : activations {H.shape}, cibles {Y.shape} (meme nombre de lignes attendu)"
         )
+    if not np.isfinite(_variance_cible(Y)) or _variance_cible(Y) < VARIANCE_CIBLE_MIN:
+        # cible degeneree (constante a la precision machine pres) : aucune
+        # direction n'est lisible, on rend une base de rang 0 plutot qu'une
+        # direction fabriquee par le bruit d'arrondi.
+        return np.zeros((H.shape[1], 0))
     Hc = H - H.mean(axis=0, keepdims=True)
     Yc = Y - Y.mean(axis=0, keepdims=True)
     d = Hc.shape[1]
@@ -316,6 +341,55 @@ def overlap_energy(basis_a: Array, basis_b: Array) -> float:
     return float((m ** 2).sum() / min(a.shape[1], b.shape[1]))
 
 
+def overlap_principal_max(basis_a: Array, basis_b: Array) -> float:
+    """Plus grand COSINUS PRINCIPAL entre les deux sous-espaces, en [0, 1].
+
+    Les valeurs singulieres de ``Ba^T Bb`` sont, pour des bases
+    orthonormees, les cosinus des angles principaux entre les sous-espaces.
+    Le plus grand d'entre eux est donc **invariant** par rotation des bases :
+    il ne depend que de la geometrie, pas du choix de la base orthonormee
+    (que la SVD choisit arbitrairement dans un sous-espace de rang > 1).
+
+    C'est la correction d'une mesure, pas un ajout : ``overlap_coef_max``
+    (le maximum des ELEMENTS de ``Ba^T Bb``) n'est pas invariant -- mesure
+    du 2026-10-26 : deux bases representant le meme plan donnent 0,707 dans
+    un cas et 1,0 apres rotation de la premiere base, sans que la geometrie
+    du sous-espace ait change. Le critere 1 de #20071 porte sur la courbe
+    ``overlap_coef_max(niveau)`` : une metrique qui bouge sous l'effet d'une
+    rotation de base ne peut pas trancher ce critere.
+
+    Retour : ``nan`` si l'une des bases est vide.
+    """
+    a = np.asarray(basis_a, dtype=np.float64)
+    b = np.asarray(basis_b, dtype=np.float64)
+    if a.size == 0 or b.size == 0:
+        return float("nan")
+    s = np.linalg.svd(a.T @ b, compute_uv=False)
+    return float(s.max()) if s.size else float("nan")
+
+
+def _variance_cible(cible: Array) -> float:
+    """Variance moyenne centree d'une cible multi-sorties.
+
+    Sert de garde : une cible **degenerate** (constante a la precision machine
+    pres -- ce que produit le canal muet, ``gamma = 1``) ne porte aucune
+    information, mais ses residus d'arrondi (de l'ordre de 1e-14) suffisent a
+    faire sortir une direction d'une SVD et a produire un R^2 paraitement
+    eleve. Mesure du 2026-10-26 : a ``gamma = 1``, les croyances ont une
+    amplitude de 2,8e-17 a 5,6e-17 et le rang lu tombe a (1, 1, 2) avec des
+    R^2 de 0,747 et 0,743 -- un signal fabrique par la precision flottante.
+    """
+    y = np.asarray(cible, dtype=np.float64)
+    if y.ndim != 2 or y.shape[0] == 0:
+        return float("nan")
+    yc = y - y.mean(axis=0, keepdims=True)
+    return float((yc ** 2).sum() / y.shape[0])
+
+
+# Plancher de variance sous lequel une cible est tenue pour DEGENEREE.
+VARIANCE_CIBLE_MIN = 1e-12
+
+
 def factor_geometry_report(
     activations: Array,
     belief_a: Array,
@@ -333,11 +407,20 @@ def factor_geometry_report(
       facteurs occupent des directions additives, **negatif** s'ils se
       recouvrent — c'est la mesure directe de l'entremellement ;
     - ``overlap_coef_max`` : plus grand |cos| entre les directions de LECTURE
-      des deux facteurs ;
+      des deux facteurs -- **non invariant** par rotation des bases (cf
+      :func:`overlap_principal_max`), conserve pour la continuite des
+      lectures publiees ;
+    - ``overlap_principal_max`` : plus grand cosinus PRINCIPAL entre les deux
+      sous-espaces -- la version **invariante** de la meme question (cf
+      :func:`overlap_principal_max`) ;
     - ``overlap_energy`` : energie de recouvrement des sous-espaces en [0, 1]
       (cf :func:`overlap_energy`) -- la lecture continue de l'entremelement,
       la ou le gap entier sature au rang pres ;
     - ``angle_coef_deg`` : plus grand angle principal entre ces sous-espaces.
+
+    Une cible **degeneree** (constante a la precision machine pres) donne un
+    rang nul et des metriques ``nan`` : voir :func:`_variance_cible` et
+    ``VARIANCE_CIBLE_MIN``.
     """
     H = np.asarray(activations, dtype=np.float64)
     Ba = probe_coefficient_basis(H, belief_a, ridge=ridge)
@@ -348,16 +431,22 @@ def factor_geometry_report(
         ov = float(basis_overlap(Ba, Bb).max())
         ang = max_principal_angle(Ba, Bb)
         enr = overlap_energy(Ba, Bb)
+        princ = overlap_principal_max(Ba, Bb)
     else:
-        ov, ang, enr = float("nan"), float("nan"), float("nan")
+        ov, ang, enr, princ = float("nan"), float("nan"), float("nan"), float("nan")
+    # Le gap entier n'est defini que si les deux sous-espaces portent une
+    # direction : sur une cible degeneree, le rang lu vaut 0 et le gap 0
+    # serait une lecture fausse (il se lirait « additif »).
+    gap = float(du - (da + db)) if (da > 0 and db > 0) else float("nan")
     return {
         "probe_r2_a": probe_holdout_r2(H, belief_a, ridge=ridge),
         "probe_r2_b": probe_holdout_r2(H, belief_b, ridge=ridge),
         "dim_a": float(da),
         "dim_b": float(db),
         "dim_union": float(du),
-        "additivity_gap": float(du - (da + db)),
+        "additivity_gap": gap,
         "overlap_coef_max": ov,
+        "overlap_principal_max": princ,
         "overlap_energy": enr,
         "angle_coef_deg": ang,
     }
@@ -375,6 +464,11 @@ def probe_holdout_r2(activations: Array, targets: Array, ridge: float = 1e-3, fo
     n = H.shape[0]
     if n < folds * 4:
         return float("nan")
+    var = _variance_cible(Y)
+    if not np.isfinite(var) or var < VARIANCE_CIBLE_MIN:
+        # cible degeneree : le R^2 serait un rapport de residus d'arrondi,
+        # il est rendu NaN plutot que fabrique (cf. _variance_cible).
+        return float("nan")
     bounds = np.linspace(0, n, folds + 1).astype(int)
     ss_res, ss_tot, y_all = 0.0, 0.0, Y.mean(axis=0, keepdims=True)
     for i in range(folds):
@@ -390,6 +484,126 @@ def probe_holdout_r2(activations: Array, targets: Array, ridge: float = 1e-3, fo
     return float(1.0 - ss_res / ss_tot) if ss_tot > 0 else float("nan")
 
 
+def _witness_orthogonal_blocks(
+    dim: int,
+    private: int,
+    overlap: int,
+    n_tokens: int,
+    rng: np.random.Generator,
+) -> tuple:
+    """Activations d'un temoin a geometrie de lecture CONNUE par construction.
+
+    Trois blocs poses sur une base orthonormee, donc orthogonaux :
+
+    - un bloc **prive** de ``private`` directions, lu par le facteur a seulement ;
+    - un bloc **partage** de ``overlap`` directions, lu par les DEUX facteurs ;
+    - un bloc **prive** de ``private`` directions, lu par le facteur b seulement ;
+    - un bruit de fond dans les directions restantes, lu par aucun probe.
+
+    La cible de chaque facteur est exactement les coordonnees de ``H`` le long de
+    ses directions (partagees + prives). Le probe ridge ne peut donc les
+    retrouver qu'a la rotation pres, et le rang lu vaut le nombre de directions
+    qui portent la cible : ``dim_a = private + overlap``, ``dim_b = private +
+    overlap``, ``dim_union = 2*private + overlap``. C'est ce que le controle
+    positif de l'instrument exige ensuite.
+    """
+    Q, _ = np.linalg.qr(rng.standard_normal((dim, dim)))
+    xa = rng.standard_normal((n_tokens, private))
+    xs = (
+        rng.standard_normal((n_tokens, overlap))
+        if overlap > 0
+        else np.zeros((n_tokens, 0))
+    )
+    xb = rng.standard_normal((n_tokens, private))
+    block = np.concatenate([xa, xs, xb], axis=1)
+    if dim > block.shape[1]:
+        # bruit de fond : aucun probe ne le lit, il ne bouge pas les rangs lus
+        block = np.concatenate(
+            [block, rng.standard_normal((n_tokens, dim - block.shape[1]))], axis=1
+        )
+    h = block @ Q[:, : block.shape[1]].T
+    belief_a = np.concatenate([xa, xs], axis=1)  # lu par a : prives a + partage
+    belief_b = np.concatenate([xb, xs], axis=1)  # lu par b : prives b + partage
+    return h, belief_a, belief_b
+
+
+def positive_control_additivity_gap(
+    *,
+    n_tokens: int = 400,
+    private: int = 1,
+    overlaps: Sequence[int] = (0, 1, 2),
+    n_noise: int = 4,
+    ridge: float = 1e-3,
+    seed: int = 0,
+) -> Dict[str, object]:
+    """Controle positif de l'instrument ``additivity_gap`` (#20071, residu de la 3e passe).
+
+    Ce que la 3e passe a laisse ouvert : sur le banc Mess3 x Mess3, le modele
+    entraine rend ``additivity_gap = +0.000`` et le temoin non entraine aussi
+    (bande [0 ; 0]). Un tel zero est **muet** : rien dans le dispositif n'a
+    etabli que la metrique PUISSE etre negative, donc un modele a 0 ne se
+    distingue pas d'une metrique a dynamique nulle.
+
+    Ce controle le tranche. On construit un temoin **oracle** dont la geometrie
+    de lecture est CONNUE par construction (cf
+    :func:`_witness_orthogonal_blocks`) : un bloc de directions partage, lu par
+    les deux facteurs, et des blocs prives. Si les deux sous-espaces de lecture
+    partagent ``overlap`` directions, le rapport doit rendre
+
+        ``additivity_gap = dim_union - (dim_a + dim_b) = -overlap``,
+
+    strictement negatif des que ``overlap > 0`` -- et exactement 0 quand les
+    blocs sont disjoints (``overlap = 0``). Le controle est donc **bilateral** :
+    il prouve que l'instrument est negatif exactement quand les facteurs sont
+    entremelés, et nul quand ils sont additifs. Un ``+0.000`` mesure sur un
+    modele entraine n'est alors plus interpretable que par la geometrie : c'est
+    une lecture additive, pas une metrique muette.
+
+    Deterministe (graine explicite), numpy-only (ni torch ni GPU), borne
+    (quelques secondes CPU). La metrique continue ``overlap_energy`` est rendue
+    a cote : elle discrimine aussi, avec la resolution que le gap entier perd au
+    rang pres.
+
+    Retour : un dict par ``overlap`` (rangs, gap, energie, gap attendu, coherence)
+    plus les verrouilles globaux ``gap_negatif`` / ``gap_nul_disjoint`` /
+    ``coherent`` et ``instrument_vivant`` (les trois a la fois).
+    """
+    cas: Dict[str, Dict[str, object]] = {}
+    for ov in overlaps:
+        ov = int(ov)
+        dim = 2 * private + ov + n_noise
+        rng = np.random.default_rng(seed)
+        h, belief_a, belief_b = _witness_orthogonal_blocks(dim, private, ov, n_tokens, rng)
+        rep = factor_geometry_report(h, belief_a, belief_b, ridge=ridge)
+        attente = -ov
+        gap = float(rep["additivity_gap"])
+        cas[str(ov)] = {
+            "dim_a": float(rep["dim_a"]),
+            "dim_b": float(rep["dim_b"]),
+            "dim_union": float(rep["dim_union"]),
+            "additivity_gap": gap,
+            "overlap_energy": float(rep["overlap_energy"]),
+            "gap_attendu": attente,
+            "coherent": abs(gap - attente) <= 1e-9,
+        }
+    positifs = [c for k, c in cas.items() if int(k) > 0]
+    disjoint = cas.get("0")
+    gap_negatif = bool(positifs) and all(c["additivity_gap"] < 0.0 for c in positifs)
+    gap_nul_disjoint = disjoint is not None and abs(disjoint["additivity_gap"]) <= 1e-9
+    coherent = all(c["coherent"] for c in cas.values())
+    return {
+        "n_tokens": int(n_tokens),
+        "private": int(private),
+        "n_noise": int(n_noise),
+        "seed": int(seed),
+        "cas": cas,
+        "gap_negatif": gap_negatif,
+        "gap_nul_disjoint": gap_nul_disjoint,
+        "coherent": coherent,
+        "instrument_vivant": gap_negatif and gap_nul_disjoint and coherent,
+    }
+
+
 def untrained_null(
     build_model: Callable[[int], object],
     x,
@@ -399,6 +613,7 @@ def untrained_null(
     n_init: int = 6,
     ridge: float = 1e-3,
     seed0: int = 0,
+    device: str | None = None,
 ) -> Dict[str, Dict[str, float]]:
     """Temoin nul par initialisations **non entrainees** de la meme architecture.
 
@@ -417,7 +632,7 @@ def untrained_null(
     per_metric: Dict[str, list] = {}
     for i in range(n_init):
         model = build_model(seed0 + i)
-        acts = collect_activations(model, x)
+        acts = collect_activations(model, x, device=device)
         rep = factor_geometry_report(acts, belief_a, belief_b, ridge=ridge)
         for k, v in rep.items():
             per_metric.setdefault(k, []).append(v)

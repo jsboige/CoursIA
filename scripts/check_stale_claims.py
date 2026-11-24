@@ -11,7 +11,10 @@ Pourquoi ADVISORY : comme #11435 (check_markdown_claims_output.py), la
 prose pédagogique cite légitimement des nombres de domaine. On borne
 donc le signal : seules les cellules dont l'en-tête annonce une
 interprétation/lecture/résultat sont scannées, et seuls les nombres
-portant un marqueur de claim (≈ ~ ≥ ≤ > < %) sont considérés. Le verdict
+portant un marqueur de claim (≈ ~ ≥ ≤ > < %) sont considérés. Deux
+bornes supplémentaires (#25616) : une claim explicitement approximative
+(~, ≈, « environ ») peut être l'arrondi d'un output exact, et une
+citation entre guillemets n'est pas une mesure locale. Le verdict
 est un rapport JSON + rc=1, jamais un blocage seul.
 
 Sortie : rc=0 propre, rc=1 au moins un finding, rc=2 erreur d'usage.
@@ -36,6 +39,11 @@ NUM_RE = re.compile(r"\d+(?:[.,]\d+)?")
 CLAIM_MARKER_BEFORE_RE = re.compile(r"[≈~≥≤><%]\s*$")
 CLAIM_MARKER_AFTER_RE = re.compile(r"^\s*[≈~≥≤><%]")
 
+# #25616 : marqueur d'approximation. Il ouvre aussi le statut de claim
+# (« environ 0,5 » n'a ni ~ ni %) et autorise la tolerance d'arrondi.
+APPROX_MARKER_BEFORE_RE = re.compile(r"(?i)(?:[~≈]\s*|environ\s+)$")
+APPROX_MARKER_AFTER_RE = re.compile(r"^\s*[~≈]")
+
 YEAR_RE = re.compile(r"(19|20)\d\d")
 DURATION_RE = re.compile(r"(?i)~?\s*\d+(?:[.,]\d+)?\s*(min|ms|s\b|h\b|heure)")
 VERSION_RE = re.compile(r"v\d+(?:\.\d+)+", re.IGNORECASE)
@@ -48,6 +56,10 @@ FENCE_RE = re.compile(r"```.*?```|`[^`]*`", re.DOTALL)
 LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*\)|https?://\S+")
 MATH_RE = re.compile(r"\$[^$]*\$")
 
+# #25616 : une citation (« ... », "..." ou “...”) rapporte la valeur d'un
+# tiers, ce n'est pas une mesure que le carnet doit produire localement.
+QUOTE_RE = re.compile(r"«[^»]*»|\"[^\"]*\"|“[^”]*”")
+
 # Constantes statistiques de convention (p, alpha, |r|, confiance) : la
 # mesure FP du 29/09 (#18354) montre qu'elles dominent le bruit -- ce ne
 # sont pas des mesures, ce sont des seuils disciplinaires (07_Code_
@@ -57,6 +69,15 @@ STAT_CONSTANT_CONTEXT_RE = re.compile(
 )
 ORDER_OF_MAGNITUDE_RE = re.compile(r"(?i)(de l'ordre|ordre de grandeur)")
 CHAINED_BAND_RE = re.compile(r"\d\s*(?:<|≤|>|≥)\s*[^<>\n]{1,14}?\s*(?:<|≤|>|≥)\s*\d")
+
+# #24289 famille 3 (dérivée montrée) : la prose écrit la formule qui
+# produit la valeur (« 4 683² ≈ 21,9 millions »), et l'opérande est
+# imprimée par les sorties -- la claim est auditable par le lecteur.
+DERIVED_SQUARE_RE = re.compile(
+    r"(?P<base>\d{1,3}(?:[   ]\d{3})+|\d+(?:[.,]\d+)?)"
+    r"\s*(?:²|\^2|\*\*2)\s*(?:≈|=|→)\s*"
+    r"(?P<val>\d+(?:[.,]\d+)?)"
+)
 
 
 def _unaccent(s: str) -> str:
@@ -110,14 +131,14 @@ def _notebook_output_numbers(nb: dict) -> set[str]:
     return nums
 
 
-def _claim_numbers(src_stripped: str) -> list[tuple[str, str]]:
-    """(nombre, ligne) pour chaque nombre à marqueur de claim, hors gardes.
+def _claim_numbers(src_stripped: str) -> list[tuple[str, str, bool]]:
+    """(nombre, ligne, approximatif) pour chaque claim, hors gardes.
 
     Les gardes durée/dimension sont PAR SPAN (un « 6x6 » ailleurs dans la
     ligne ne doit pas masquer un « ≈ 12 » légitime à signaler — mesuré sur
     App-4b c.15, la garde par ligne avalait le finding canonique).
     """
-    findings: list[tuple[str, str]] = []
+    findings: list[tuple[str, str, bool]] = []
     for line in src_stripped.splitlines():
         norm = _unaccent(line)
         guard_spans: list[tuple[int, int]] = [
@@ -155,10 +176,118 @@ def _claim_numbers(src_stripped: str) -> list[tuple[str, str]]:
             marked = CLAIM_MARKER_BEFORE_RE.search(
                 before[-4:]
             ) or CLAIM_MARKER_AFTER_RE.match(after[:4])
-            if not marked:
+            approx = bool(
+                APPROX_MARKER_BEFORE_RE.search(before[-12:])
+                or APPROX_MARKER_AFTER_RE.match(after[:4])
+            )
+            if not marked and not approx:
                 continue
-            findings.append((tok, line.strip()))
+            findings.append((tok, line.strip(), approx))
     return findings
+
+
+def _ungroup(token: str) -> str:
+    """« 4 683 » -> « 4683 » : compare un opérande de prose groupée au
+    jeton plat qu'imprime une sortie."""
+    return token.replace(" ", "").replace(" ", "").replace("\xa0", "").replace(",", ".")
+
+
+def _rounding_supported(tok: str, out_nums: set[str]) -> bool:
+    """#25616 : une claim approximative peut être l'arrondi d'un output.
+
+    « ~0,83 » est couvert par un output « 0.8325 » : arrondi au même
+    nombre de décimales, l'output dit bien ce que la prose affirme. La
+    tolérance est limitée à une demi-unité du dernier chiffre affiché —
+    « ~0,84 » face à 0.8325 reste un finding, et le contrôle négatif
+    canonique « ≈ 12 » face à 11 n'est pas atteint (écart 1 > 0,5).
+    """
+    try:
+        value = float(tok.replace(",", "."))
+    except ValueError:
+        return False
+    if not math.isfinite(value):
+        return False
+    decimals = len(tok.split(",")[1]) if "," in tok else (
+        len(tok.split(".")[1]) if "." in tok else 0
+    )
+    tolerance = 0.5 * 10**-decimals + 1e-9
+    for out_tok in out_nums:
+        try:
+            out_value = float(out_tok)
+        except ValueError:
+            continue
+        if math.isfinite(out_value) and abs(out_value - value) <= tolerance:
+            return True
+    return False
+
+
+def _derived_or_complement_supported(tok: str, stripped: str, out_nums: set[str]) -> bool:
+    """#24289 famille 3 -- deux exemptions mesurées sur GT-20c (carnet sain):
+
+    1. Dérivée montrée : la MÊME cellule écrit « base² ≈ valeur » et la
+       base est imprimée par les sorties (« 4 683² ≈ 21,9 millions » avec
+       4683 imprimée, c.16). La valeur n'est pas importée d'ailleurs : sa
+       dérivation est écrite noir sur blanc.
+    2. Complément affiché : un pourcentage dont le complément à 100 est
+       porté par la même cellule avec son % ET imprimé par les sorties
+       (« 85 % des paires ne raccourcissent pas », c.14, complément
+       « 15,0 % » imprimée par la cellule de code 13).
+    """
+    tok_variants = _normalize_num(tok)
+    for m in DERIVED_SQUARE_RE.finditer(stripped):
+        if (
+            _ungroup(m.group("base")) in out_nums
+            and _normalize_num(m.group("val")) & tok_variants
+        ):
+            return True
+    try:
+        value = float(tok.replace(",", "."))
+    except ValueError:
+        return False
+    # Une claim de ~400 chiffres donne value = inf : int(inf) leve
+    # OverflowError (garde heritee de _normalize_num, meme classe de
+    # plantage -- test_huge_digit_claim_in_interpretation_does_not_crash).
+    if not math.isfinite(value):
+        return False
+    # #24289 famille 3, variante ratio (mesuree sur GT-18c c.34, carnet
+    # sain) : « 48/120 = 40 % » -- le pourcentage n'est JAMAIS imprime tel
+    # quel, mais la paire d'entiers l'est (cellule 33 : « total : 120
+    # instances », « humour_reussi : 48 »). Prescrit par l'issue :
+    # « resoudre les fractions a/b = x % contre les entiers presents dans
+    # la fenetre ». Limite au pourcentages : la claim doit etre portee
+    # par CETTE cellule sous la forme « <tok> % ».
+    if 0 < value < 100 and re.search(
+        r"(?<![A-Za-z0-9.,])" + re.escape(tok) + r"\s*%", stripped
+    ):
+        decimals = len(tok.split(",")[1]) if "," in tok else 0
+        tol = 0.5 * 10**-decimals + 1e-9
+        out_ints: set[int] = set()
+        for out_tok in out_nums:
+            try:
+                v = float(out_tok)
+            except ValueError:
+                continue
+            if math.isfinite(v) and v > 0 and v == int(v):
+                out_ints.add(int(v))
+        for a in out_ints:
+            for b in out_ints:
+                if b <= a:
+                    continue
+                if abs(100.0 * a / b - value) <= tol:
+                    return True
+    complement = round(100.0 - value, 6)
+    comp_variants: set[str] = set()
+    for rep in (repr(complement), f"{complement:g}", f"{complement:.1f}"):
+        comp_variants.add(rep)
+    if complement == int(complement):
+        comp_variants.add(str(int(complement)))
+    if comp_variants & out_nums:
+        # le complément doit aussi être porté par CETTE cellule en pourcentage
+        for rep in comp_variants:
+            for form in (rep.replace(".", ","), rep):
+                if re.search(re.escape(form) + r"\s*%", stripped):
+                    return True
+    return False
 
 
 def scan_notebook(path: Path) -> list[dict]:
@@ -175,9 +304,15 @@ def scan_notebook(path: Path) -> list[dict]:
         head = src.splitlines()[0] if src.splitlines() else ""
         if not INTERPRETATION_HEADING_RE.match(_unaccent(head)):
             continue
-        stripped = MATH_RE.sub(" ", FENCE_RE.sub(" ", LINK_RE.sub(" ", src)))
-        for tok, line in _claim_numbers(stripped):
+        stripped = QUOTE_RE.sub(
+            " ", MATH_RE.sub(" ", FENCE_RE.sub(" ", LINK_RE.sub(" ", src)))
+        )
+        for tok, line, approx in _claim_numbers(stripped):
             if _normalize_num(tok) & out_nums:
+                continue
+            if approx and _rounding_supported(tok, out_nums):
+                continue
+            if _derived_or_complement_supported(tok, stripped, out_nums):
                 continue
             findings.append(
                 {

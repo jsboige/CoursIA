@@ -1,0 +1,11 @@
+- name: "ICT-Greffe2 Espace Atteignable"
+  family: IIT/ICT-Series
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le banc est un moteur STRIPS jouet (copie declaree de Planners-5c des deux cotes, reecrite sur la seule BCL en C#). Aucun solveur externe canonique : les deux cotes rejouent la meme BFS budjetee sur le meme domaine deux-rives-un-gouffre et recomptent les memes espaces atteignables."
+  known_differences:
+    - "C# renforce les impressions de la source par des controles executables qui levent sur ecart (Verifs.Entier/Vrai) ; le Python imprime les memes verdicts sans lever. Cellule 22 : 25 lignes de sortie C# (assertions incluses) contre 3 (table seule) en Python, chiffres identiques."
+    - "Alignement des colonnes (padding) de la table du cas navigation different entre les deux cotes ; toutes les valeurs (39/39/39/7, 33/32/32/6, 8/7/8/3) coïncident apres normalisation des espaces."
+    - "Les valeurs porteuses (|A| = 36/54/60/78, buts atteignables 1/1/3/3, deltas AUCUN puis g1+g2, expansions None/None/39/50, None/None/33/42, 8/8/8/8) coincident verbatim cellule par cellule (10, 13, 19, 22)."

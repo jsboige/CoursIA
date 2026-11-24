@@ -1,12 +1,12 @@
 # CSV de synchro traduction — série Search/Part1-Foundations
 
-**Statut** : Phase 2 rollout (Epic #4957 / #1650). 7ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/Argument_Analysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808) et `Sudoku/` (PR #5809).
+**Statut** : Phase 2 rollout (Epic #4957 / #1650). 7ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/ArgumentAnalysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805), `SymbolicAI/Planners/` (PR #5806), `SymbolicAI/SmartContracts/` (PR #5808) et `Sudoku/` (PR #5809).
 
 ## Couvert
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-part1.csv`](search-part1.csv) | `Search/Part1-Foundations/` | 29 (Search-1-Setup → Search-29-CSP-Project, BFS/DFS/A*/UCS/Greedy/IDA*/Bidir + jumeaux C# co-localisés) | 1 077 (header + 24 592 lignes CSV-escaped, 20 colonnes) |
+| [`search-part1.csv`](search-part1.csv) | `Search/Part1-Foundations/` | 27 au seed 2026-07-09 (Search-1-Setup → Search-29-CSP-Project, BFS/DFS/A*/UCS/Greedy/IDA*/Bidir + jumeaux C# co-localisés — le compte courant vit dans le CSV) | 1 077 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 24 592 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Search/Part1-Foundations = **owner po-2025 strict** (PRs récentes = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
@@ -35,7 +35,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 1 077 cellules / 29 notebooks Search/Part1-Foundations (BFS/DFS/A*/UCS/Greedy/IDA*/Bidir + jumeaux C#)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 1 077, notebooks couverts 27 Search/Part1-Foundations (BFS/DFS/A*/UCS/Greedy/IDA*/Bidir + jumeaux C# — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché
@@ -45,7 +45,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 - Issue #4957 — design infrastructure synchronisation traduction
 - Epic #1650 — traduction multilingue du dépôt
-- `translations/symbolicai/README.md` — 1ère série (Argument_Analysis)
+- `translations/symbolicai/README.md` — 1ère série (ArgumentAnalysis)
 - `translations/probas-infer/README.md` — 2ᵉ série (Probas/Infer)
 - `translations/mlnet/README.md` — 3ᵉ série (ML/ML.Net)
 - `translations/planners/README.md` — 4ᵉ série (Planners)

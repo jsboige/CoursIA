@@ -499,7 +499,7 @@ def test_real_content_drift_still_blocks_alongside_metadata_churn(tmp_path):
     )
 
 
-# --- 5. garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) ---------------
+# --- 5. garde anti-derive MERGE_HEAD / rebase en cours (#11732) -----------
 
 def test_update_during_merge_aborts_with_systemexit(tmp_path):
     """#11732 : --update pendant un merge non commite atteste l'ANCIENNE tete
@@ -542,10 +542,22 @@ def test_update_during_merge_aborts_with_systemexit(tmp_path):
     (repo / ".git" / "MERGE_HEAD").unlink(missing_ok=True)
 
 
-def test_update_during_rebase_aborts_with_systemexit(tmp_path):
-    """#11732 : variante rebase interactif (REBASE_HEAD existe). Meme
-    semantique d'abort que la variante merge -- le garde refuse --update et
-    suggere de commiter d'abord.
+@pytest.mark.parametrize("state_dir,marker", [
+    ("rebase-merge", "head-name"),
+    ("rebase-apply", "next"),
+])
+def test_update_during_rebase_aborts_with_systemexit(tmp_path, state_dir, marker):
+    """#11732 : variante rebase en cours. L'indicateur fiable est l'existence
+    du repertoire `rebase-merge` (backend interactif/merge) ou `rebase-apply`
+    (backend am), PAS le ref REBASE_HEAD -- Git peut laisser un REBASE_HEAD
+    orphelin apres un rebase interrompu (signale par le coordinateur
+    2026-10-27 : clone portant un REBASE_HEAD du 20/09 sans rebase en cours,
+    --update refuse a tort, 3 tests update_guard rouges).
+
+    Avant le correctif, ce test simulait le rebase par le seul ref REBASE_HEAD
+    et attendait SystemExit : il verifiait alors le comportement qui refusait
+    a tort un depot sain portant un orphelin. Il simule desormais les
+    repertoires que git cree reellement pendant un rebase.
     """
     repo = _git_repo(tmp_path)
     py_rel = "py/nb.ipynb"
@@ -561,8 +573,13 @@ def test_update_during_rebase_aborts_with_systemexit(tmp_path):
         py_blob, cs_blob,
         ctp._content_sha(repo, py_rel), ctp._content_sha(repo, cs_rel),
     )
-    # Simuler un rebase interactif en cours
-    (repo / ".git" / "REBASE_HEAD").write_text("0123456789abcdef0123456789abcdef01234567\n")
+    # Simuler un rebase en cours : git cree `.git/<state_dir>/` (avec des
+    # fichiers d'etat -- `head-name` pour rebase-merge, `next` pour
+    # rebase-apply). C'est l'existence de ce repertoire que la garde detecte
+    # via `git rev-parse --git-path`.
+    state_path = repo / ".git" / state_dir
+    state_path.mkdir()
+    (state_path / marker).write_text("refs/heads/main\n", encoding="utf-8")
     with pytest.raises(SystemExit):
         ctp.main([
             "--update", "--pair", "Probas-Y",
@@ -570,19 +587,63 @@ def test_update_during_rebase_aborts_with_systemexit(tmp_path):
             "--registry", str(pairs_dir),
             "--repo-root", str(repo),
         ])
+
+
+def test_update_with_orphan_rebase_head_proceeds(tmp_path):
+    """#11732 : un REBASE_HEAD orphelin (ref present, SANS repertoire
+    rebase-merge ni rebase-apply) n'est PAS un rebase en cours. Git peut
+    laisser ce ref apres un rebase interrompu ; l'ancienne detection
+    (`git rev-parse -q --verify REBASE_HEAD`) refusait alors --update a tort
+    sur un depot sain (3 tests update_guard rouges sur le siege du
+    coordinateur, 2026-10-27). La garde doit laisser passer --update.
+
+    Meme cas nominal que test_update_after_merge_commit_proceeds : update
+    no-op (SHAs deja a jour) -> garde no-op du #9399 critere 2 -> rc 0.
+    Si la garde #11732 se declenchait a tort, SystemExit serait leve.
+    """
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+    _commit(repo, py_rel, _nb(source=["# Title\n"]), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+    py_blob = ctp._git_blob_sha(repo, py_rel)
+    cs_blob = ctp._git_blob_sha(repo, cs_rel)
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Probas-Y2", py_rel, cs_rel,
+        py_blob, cs_blob,
+        ctp._content_sha(repo, py_rel), ctp._content_sha(repo, cs_rel),
+    )
+    # Ref orphelin SEUL : aucun repertoire rebase-merge/rebase-apply. C'est
+    # exactement l'etat mesure sur le clone du coordinateur (REBASE_HEAD du
+    # 20/09, `git rev-parse --git-path rebase-merge` inexistant).
+    assert not (repo / ".git" / "rebase-merge").exists()
+    assert not (repo / ".git" / "rebase-apply").exists()
+    (repo / ".git" / "REBASE_HEAD").write_text("0123456789abcdef0123456789abcdef01234567\n")
+    rc = ctp.main([
+        "--update", "--pair", "Probas-Y2",
+        "--by", "test",
+        "--registry", str(pairs_dir),
+        "--repo-root", str(repo),
+    ])
+    assert rc == 0, (
+        f"REBASE_HEAD orphelin sans rebase en cours ne doit pas refuser "
+        f"--update : rc={rc} (la garde #11732 s'est declenchee a tort ?)"
+    )
     (repo / ".git" / "REBASE_HEAD").unlink(missing_ok=True)
 
 
 def test_update_after_merge_commit_proceeds(tmp_path):
-    """#11732 inverse : un depot git normal (sans MERGE_HEAD/REBASE_HEAD)
-    n'est PAS affecte par le garde -- --update fonctionne normalement.
+    """#11732 inverse : un depot git normal (sans MERGE_HEAD ni rebase en
+    cours) n'est PAS affecte par le garde -- --update fonctionne normalement.
     Verifie qu'on n'a pas casse le cas nominal en ajoutant le check.
 
     Le cas nominal ici est un update no-op : la paire vient d'etre atteste
     avec les memes SHAs qu'a HEAD, donc le garde no-op du #9399 critere 2
     refuse l'ecriture (avec un message sur stderr) et l'invoc retourne 0
     (succes mais « rien a faire »). Ce qui compte pour ce test : on N'arrive
-    PAS au garde MERGE_HEAD/REBASE_HEAD (qui aurait leve SystemExit).
+    PAS au garde merge/rebase (qui aurait leve SystemExit).
     """
     repo = _git_repo(tmp_path)
     py_rel = "py/nb.ipynb"

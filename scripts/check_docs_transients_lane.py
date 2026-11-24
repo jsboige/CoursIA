@@ -24,6 +24,15 @@ Two directions are always checked, a third when ``--base`` is given:
                     destination; renames INTO it are reclassifications and stay
                     permitted. A failing ``git diff`` is itself a finding
                     (``GIT_DIFF_FAILED``), never a silent pass.
+  distillation      (``--distillation`` / ``--strict-distillation`` only) a
+                    report is distilled when a PERENNIAL document cites it.
+                    Citations from the navigation surfaces (``_quarto.yml``,
+                    ``docs/README.md``) do not count: they prove the report is
+                    reachable, not that its conclusion was absorbed. The
+                    undated slug a report carried before entering the lane
+                    counts too -- a perennial written earlier cites that name.
+                    Advisory by default; ``--strict-distillation`` turns a
+                    missing citation into a finding.
 
 Header matching tolerates the dash variant (em dash, en dash, hyphen) and the
 accent variant (fige/fige-with-accent) a writer may produce; what it enforces is
@@ -253,8 +262,151 @@ def scan_archive_additions(
     return findings
 
 
+# --- distillation -- the lane's own contract (4th direction, #14623) --------
+#
+# The lane README is explicit: "Un rapport ne s'accumule pas. Quand sa conclusion
+# est durable, elle est distillee dans le document perenne qui la porte [...], et
+# ce document CITE le rapport. [...] La lane est un transit, pas un stock."
+# Nothing measured that half, so the lane could quietly become the stock it
+# exists to avoid. A citation from a navigation surface proves the report is
+# reachable, not that its conclusion was absorbed -- those do not count.
+
+NAVIGATION_SURFACES = frozenset({"_quarto.yml", "docs/README.md"})
+
+
+def _undated_slug(filename: str) -> str | None:
+    """``2026-08-10-variation-genre-census.md`` -> ``variation-genre-census``.
+
+    A perennial document written before the report entered the lane cites the
+    name it carried in the perennial tree. Matching only the dated basename
+    reports such a report as undistilled, which is false -- measured on
+    ``scripts/variation_light_cap.py`` citing ``variation-genre-census.md``.
+    """
+    match = DATE_PREFIX_RE.match(filename)
+    return match.group("slug") if match else None
+
+
+def _git_citations(root: Path, needles: set[str]) -> dict[str, set[str]] | None:
+    """``needle -> files citing it``, outside the lane and outside the archive.
+
+    ``git grep`` rather than a filesystem walk: a perennial home lives outside
+    ``docs/`` as often as inside it (rules, workflows, scripts, notebooks), and
+    reading the whole tree to answer that would cost more than the answer is
+    worth. ``None`` means git could not answer -- never a silent pass.
+    """
+    citations: dict[str, set[str]] = {}
+    for needle in sorted(needles):
+        try:
+            proc = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(root),
+                    "grep",
+                    "-l",
+                    "-F",
+                    "-e",
+                    needle,
+                    "--",
+                    ":!docs/transients",
+                    ":!docs/archive",
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=120,
+            )
+        except OSError:
+            return None
+        if proc.returncode not in (0, 1):  # 1 = no match, not a failure
+            return None
+        citations[needle] = {
+            line.strip() for line in proc.stdout.splitlines() if line.strip()
+        }
+    return citations
+
+
+def scan_distillation(
+    lane_dir: Path, citations: dict[str, set[str]] | None
+) -> tuple[dict, list[dict]]:
+    """Which lane reports a perennial document actually cites."""
+    reports = (
+        sorted(p.name for p in lane_dir.glob("*.md") if p.name != LANE_README)
+        if lane_dir.is_dir()
+        else []
+    )
+    if citations is None:
+        return (
+            {
+                "reports": len(reports),
+                "distilled": 0,
+                "index_only": [],
+                "measured": False,
+            },
+            [
+                {
+                    "file": str(lane_dir),
+                    "reason": (
+                        "DISTILLATION_UNMEASURABLE: git n'a pas pu repondre -- "
+                        "le sens distillation n'a pas ete execute, ce n'est pas "
+                        "un acquittement"
+                    ),
+                }
+            ],
+        )
+
+    distilled: list[str] = []
+    index_only: list[str] = []
+    findings: list[dict] = []
+    for name in reports:
+        needles = {name}
+        slug = _undated_slug(name)
+        if slug:
+            needles.add(slug)
+        hits: set[str] = set()
+        for needle in needles:
+            hits |= citations.get(needle, set())
+        perennial = sorted(hit for hit in hits if hit not in NAVIGATION_SURFACES)
+        if perennial:
+            distilled.append(name)
+            continue
+        index_only.append(name)
+        navigation = sorted(hit for hit in hits if hit in NAVIGATION_SURFACES)
+        where = (
+            f"seulement une entree de navigation ({', '.join(navigation)})"
+            if navigation
+            else "cite nulle part hors de la lane"
+        )
+        findings.append(
+            {
+                "file": str(lane_dir / name),
+                "reason": (
+                    "DISTILLATION_MISSING: aucun document perenne ne cite ce "
+                    f"rapport -- {where}. La lane est un transit, pas un stock : "
+                    "distiller la conclusion durable dans le document qui la "
+                    "porte et l'y citer, ou retirer le rapport avec preuve de "
+                    "preservation"
+                ),
+            }
+        )
+    return (
+        {
+            "reports": len(reports),
+            "distilled": len(distilled),
+            "index_only": index_only,
+            "measured": True,
+        },
+        findings,
+    )
+
+
 def run(
-    root: Path = REPO_ROOT, lane_dir: Path | None = None, base: str | None = None
+    root: Path = REPO_ROOT,
+    lane_dir: Path | None = None,
+    base: str | None = None,
+    distillation: bool = False,
+    strict_distillation: bool = False,
 ) -> dict:
     root = Path(root).resolve()
     lane_dir = Path(lane_dir) if lane_dir else root / LANE_REL
@@ -269,7 +421,24 @@ def run(
     else:
         archive_entries = None
         archive_findings = []
+    distillation_summary = None
+    distillation_findings: list[dict] = []
+    if (distillation or strict_distillation) and lane_dir.is_dir():
+        needles: set[str] = set()
+        for path in lane_dir.glob("*.md"):
+            if path.name == LANE_README:
+                continue
+            needles.add(path.name)
+            slug = _undated_slug(path.name)
+            if slug:
+                needles.add(slug)
+        distillation_summary, distillation_findings = scan_distillation(
+            lane_dir, _git_citations(root, needles)
+        )
+
     findings = lane_findings + outside_findings + archive_findings
+    if strict_distillation:
+        findings = findings + distillation_findings
     lane_files = (
         len([p for p in lane_dir.glob("*.md") if p.name != LANE_README])
         if lane_dir.is_dir()
@@ -283,6 +452,8 @@ def run(
         "outside_scanned": scanned,
         "archive_base": base,
         "archive_entries": None if archive_entries is None else len(archive_entries),
+        "distillation": distillation_summary,
+        "distillation_findings": distillation_findings,
         "findings": findings,
     }
 
@@ -304,6 +475,22 @@ def format_report(report: dict) -> str:
                 e=entries_txt, **report
             )
         )
+    summary = report.get("distillation")
+    if summary:
+        if not summary["measured"]:
+            lines.append("  distillation: NON MESUREE (git n'a pas repondu)")
+        else:
+            lines.append(
+                "  distillation: {d}/{n} distille(s) par un document perenne, "
+                "{i} sans".format(
+                    d=summary["distilled"],
+                    n=summary["reports"],
+                    i=len(summary["index_only"]),
+                )
+            )
+            for name in summary["index_only"]:
+                lines.append(f"    . {name}")
+
     if report["findings"]:
         lines.append("")
         lines.append("  VIOLATION -- {n} finding(s)".format(n=len(report["findings"])))
@@ -341,9 +528,32 @@ def main(argv: list[str] | None = None) -> int:
             "docs/archive/ dans <base>...HEAD"
         ),
     )
+    parser.add_argument(
+        "--distillation",
+        action="store_true",
+        help=(
+            "quatrieme sens (mesure, non bloquant) : chaque rapport de la lane "
+            "est-il cite par un document perenne -- hors surfaces de navigation "
+            "(_quarto.yml, docs/README.md) et hors docs/archive/"
+        ),
+    )
+    parser.add_argument(
+        "--strict-distillation",
+        action="store_true",
+        help=(
+            "impose le sens distillation : un rapport de la lane sans citation "
+            "perenne fait passer le verdict a VIOLATION (exit 1)"
+        ),
+    )
     args = parser.parse_args(argv)
 
-    report = run(root=args.root, lane_dir=args.lane_dir, base=args.base)
+    report = run(
+        root=args.root,
+        lane_dir=args.lane_dir,
+        base=args.base,
+        distillation=args.distillation,
+        strict_distillation=args.strict_distillation,
+    )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:

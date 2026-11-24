@@ -23,7 +23,7 @@
         "transcription": "modernisee (s long -> s, accents modernes)"
       },
       "codage_notebook": {
-        "notebook": "ICT-Argumentation-BeliefTrajectories.ipynb",
+        "notebook": "ICT-Argumentation-BeliefTrajectories-Python.ipynb",
         "section": "8bis",
         "af_enonces": 7,
         "role": "specimen englobement (tier fables)"
@@ -57,7 +57,7 @@
         "transcription": "modernisee (s long -> s, accents modernes ; haires -> heres selon note Wikisource)"
       },
       "codage_notebook": {
-        "notebook": "ICT-Argumentation-BeliefTrajectories.ipynb",
+        "notebook": "ICT-Argumentation-BeliefTrajectories-Python.ipynb",
         "section": "8ter",
         "role": "contre-cas : l'englobement déjoué (tier fables)"
       },

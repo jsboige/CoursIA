@@ -201,9 +201,30 @@ def test_subdir_launcher_stashes_committed_count_pre_stub(tmp_path, monkeypatch)
         return {"name": "captured", "result_kind": "captured"}
 
     monkeypatch.setattr(subdir, "_run_prover_locked", _capture)
+    # Arguments passed BY NAME throughout (#24022). These two calls used to
+    # supply 13 positionals for a signature that has since grown to 16
+    # (`diagnosis_provider`, `use_diagnosis_agent`,
+    # `concurrent_search_count`): the trailing `False, 0` landed on
+    # `search_provider`/`critic_provider` and the three required parameters
+    # went missing. Keyword form makes the next signature extension a
+    # distinct TypeError instead of a silent mis-binding.
     subdir._run_with_calibration_stub(
-        demo, "custom_Nim_L22", str(target), 22, "multi", 1, "zai", "local",
-        None, None, None, False, 0,
+        demo=demo,
+        name="custom_Nim_L22",
+        filepath=str(target),
+        line=22,
+        mode="multi",
+        iterations=1,
+        provider="zai",
+        local_provider="local",
+        director_provider=None,
+        coordinator_provider=None,
+        tactic_provider=None,
+        search_provider=None,
+        critic_provider=None,
+        diagnosis_provider=None,
+        use_diagnosis_agent=False,
+        concurrent_search_count=0,
     )
     assert seen[0].get("pre_stub_sorry_count") == 0
     assert "pre_stub_sorry_count" not in demo, (
@@ -229,9 +250,30 @@ def test_subdir_launcher_no_stash_without_calibration(tmp_path, monkeypatch):
         return {"name": "captured", "result_kind": "captured"}
 
     monkeypatch.setattr(subdir, "_run_prover_locked", _capture)
+    # Arguments passed BY NAME throughout (#24022). These two calls used to
+    # supply 13 positionals for a signature that has since grown to 16
+    # (`diagnosis_provider`, `use_diagnosis_agent`,
+    # `concurrent_search_count`): the trailing `False, 0` landed on
+    # `search_provider`/`critic_provider` and the three required parameters
+    # went missing. Keyword form makes the next signature extension a
+    # distinct TypeError instead of a silent mis-binding.
     subdir._run_with_calibration_stub(
-        demo, "custom_Nim_L22", str(target), 22, "multi", 1, "zai", "local",
-        None, None, None, False, 0,
+        demo=demo,
+        name="custom_Nim_L22",
+        filepath=str(target),
+        line=22,
+        mode="multi",
+        iterations=1,
+        provider="zai",
+        local_provider="local",
+        director_provider=None,
+        coordinator_provider=None,
+        tactic_provider=None,
+        search_provider=None,
+        critic_provider=None,
+        diagnosis_provider=None,
+        use_diagnosis_agent=False,
+        concurrent_search_count=0,
     )
     assert "pre_stub_sorry_count" not in seen[0]
 

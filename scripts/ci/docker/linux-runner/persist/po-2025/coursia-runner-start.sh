@@ -38,11 +38,34 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 #     --------------------------------------
 #     total CAPS                3 072 Mo   sur 32 095 Mo -> marge ~29 Go
 #
-# 12 EST UN PLAFOND D'ADMISSION VOLONTAIREMENT LARGE : l'hote (un portable qui
-# sert aussi de poste interactif) garde 20 Go pour lui-meme, et la VM WSL n'en
-# a que 27 disponibles. 12 laisse de la place a un elargissement mesure sans
-# re-editer ce fichier, tout en refusant une composition qui mangerait l'hote.
-export COURSIA_RUNNER_BUDGET_GB=12
+# CONVENTION (arbitrage ai-01 du 2026-10-25, #22532) : la valeur est la SOMME
+# des caps memoire des slots declares, arrondie au Go superieur -- ici
+# 3 072 Mo font exactement 3 Go. Un budget plus large que la composition serait
+# INERT : un slot ajoute plus tard passerait sans que personne n'ait
+# redimensionne quoi que ce soit ; le cas inverse (budget sous la somme) a
+# coute la famine du 2026-10-12. Elargir = changer la composition ET ce budget
+# dans le meme geste. La protection de l'hote n'est pas le role de ce budget :
+# c'est le mur kernel de coursia-ci.slice la ou elle est deployee -- absente
+# sur ce portable, c'est la composition declaree ci-dessus qui tient ce role,
+# avec la limite memball de la VM WSL.
+export COURSIA_RUNNER_BUDGET_GB=3
+
+# CE QUE CE BUDGET DONNE A `start auto` SUR CETTE JAMBE (mesure, pas intention) :
+# `budget_slots` alloue la MOITIE du reste (supervise.sh, per_mb = 1536 Mo), donc
+#     service au repos      : (3 072 - 0) / 2     = 1 536 Mo -> 1 slot
+#     un slot deja actif    : (3 072 - 1 536) / 2 =   768 Mo -> 0 slot
+# `start auto` ne rend donc jamais 2 sur cette jambe. Ce n'est pas un defaut du
+# calcul : par convention ce budget est la SOMME des caps declares, pas une
+# reserve a redistribuer. Le chemin de reprise de ce service n'est pas `auto`,
+# c'est la forme EXPLICITE du drop-in 10-sizing.conf -- `ExecStart=...
+# coursia-runner-start.sh start 2` -- dont la garde passe a l'unite pres
+# (2 x 1 536 = 3 072 <= 3 072 Mo). Redemarrer le service rend donc bien 2 slots.
+
+# Mur kernel : coursia-ci.slice n'est pas deployee sur ce portable. La delegation
+# est explicite ici plutot que reposee sur le defaut du superviseur (0) ; passer
+# cette valeur a 1 exigerait de deployer la slice d'abord, sinon la garde de
+# supervise.sh refuse le demarrage.
+export COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET=0
 
 # BUDGET CPU INTER-FAMILLES : somme des caps CPU des familles d'EXECUTION.
 # Ici une seule famille (start 2 x 3 vCPU = 6). 10 = la MOITIE des 20 vCPU
@@ -74,7 +97,27 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 # par-jambe, et un predicat global ferait refuser a chaque jambe la purge de SA
 # propre sentinelle tant que l'AUTRE tourne (cas 4 de test_sentinel_purge.sh).
 if [ "${1:-start}" = "start" ] && [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" start >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi

@@ -58,7 +58,7 @@ python scripts/lean/check_i18n_siblings.py --all # 0 drift / 0 orphan
 
 ## Outils
 
-- **Lake** 4.32.1 (toolchain pinned via `lean-toolchain`).
+- **Lake** 4.33.0 (toolchain pinned via `lean-toolchain`).
 - **`lean_game_defs_ext`** (path dep voisin) — fournit `Bayesian.*` (game,
   strategies, `isBNE`, etc.).
 

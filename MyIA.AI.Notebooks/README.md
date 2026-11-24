@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1506
-breakdown: SymbolicAI=364, GenAI=292, Search=161, ML=138, GameTheory=127, QuantConnect=122, IIT=106, Probas=89, Sudoku=38, RL=36, Complexity=16, CaseStudies=6, NLP=5, Compression=4, cross-series=2
-maturity: BETA=1314, DRAFT=105, ALPHA=83, TEMPLATE=4
+total: 1951
+breakdown: SymbolicAI=459, GenAI=343, GameTheory=209, Search=192, ML=160, QuantConnect=126, IIT=117, Probas=99, InformationCalcul=83, Sudoku=48, RL=47, Physique=37, NLP=20, CaseStudies=6, cross-series=5
+maturity: BETA=1817, DRAFT=76, ALPHA=54, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -27,13 +27,15 @@ Dernière mise à jour : 2026-08-05
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
-**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à des applications réelles adaptées de projets étudiants (cf. [Search/Applications/](Search/Applications/) pour l'inventaire à jour — NQueens, planification d'infirmiers, ordonnancement d'atelier, VRP logistique, génération procédurale de niveaux, etc.).
+**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à des applications réelles adaptées de projets étudiants (cf. [Search/Part3-Cas-pratiques](Search/Part3-Cas-pratiques/) pour l'inventaire à jour — NQueens, planification d'infirmiers, ordonnancement d'atelier, VRP logistique, génération procédurale de niveaux, etc.).
 
 **[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un **arc décision** de dix notebooks (utilité espérée vNM → bandits → indice de Gittins → Thompson Sampling), lui aussi doublé Infer.NET/PyMC, pousse jusqu'à la preuve avec deux compagnons Lean 4 (axiomes vNM, Gittins).
 
 **[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
 
-**[Complexity](Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
+**[Complexity](InformationCalcul/Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
+
+**[Information et calcul](InformationCalcul/README.md)** — Le hub qui rassemble les séries sœurs qui nourrissent les séries d'IA : théorie de l'information et codage, compression, traitement du signal, cryptographie — et les séries Complexity et Compression, désormais rattachées au hub. C'est le socle théorique « mesurer, coder, compresser, protéger l'information » sur lequel repose le calcul. Modèle : [SymbolicAI](SymbolicAI/README.md).
 
 **[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
 
@@ -78,7 +80,7 @@ SymbolicAI
 ├── Tweety/ - Logiques classiques, argumentation (Dung, Walton-Krabbe)
 ├── SMT/ - Z3, Satisfiability Modulo Theories (LINQ C# + Python)
 ├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
-└── Argument_Analysis/ - Analyse d'arguments
+└── ArgumentAnalysis/ - Analyse d'arguments
 
 Search
 ├── Part1-Foundations/ - BFS, A*, Minimax, MCTS (agents et espaces d'états)
@@ -90,7 +92,7 @@ Search
 Probas
 ├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
-└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
+└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causalité (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
 
 Sudoku
 └── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM
@@ -114,8 +116,8 @@ RL
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis
-├── Oncology-Planning/ - Planification oncologique
-└── SmartGrid-Energy/ - Optimisation énergétique
+├── Planification-Oncologie/ - Planification oncologique
+└── Reseau-Electrique-Intelligent/ - Optimisation énergétique
 
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (5 substrats : tri, Gray-Scott, Axelrod, transformer+SAE, Jeu de la Vie certifié Lean)
@@ -216,7 +218,7 @@ python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 
 # C#
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 ```
 
 ### Services Docker
@@ -296,11 +298,11 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
-| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + Argument_Analysis |
-| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
+| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + ArgumentAnalysis |
+| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16 (Conway) + KNOTS-01/02 (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-3 (A*) + Search-03d, Part1-Foundations |
-| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-08b (Gittins) |
+| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-07b (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
 | **GameTheory** | `game_theory_lean` (SocialChoice + CooperativeGames, absorption `#4365`) | Impossibilité d'Arrow + Bondareva-Shapley (0 sorry) | GameTheory/16b-* Choix social |
 

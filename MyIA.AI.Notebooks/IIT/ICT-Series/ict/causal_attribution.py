@@ -49,7 +49,7 @@ truth et lever ``ValueError`` (ou retourner ``NON_IDENTIFIABLE``) si le graphe
 pose ne bloque pas le bon backdoor. Voir ``tests/test_causal_attribution.py``.
 
 Dependances : bibliotheque standard + numpy. Les moteurs natifs du depot
-(DoWhy-1, PyMC-05, Infer-5, Tweety-11, ``DecisionTheory/Causal-Bridges``)
+(DoWhy-1, PyMC-05, Infer-5, Tweety-11, ``Causalite``)
 sont les organes de calcul canoniques ; cette **tranche 1/3** fournit
 l'interface analytique close-form qui sert de specification executable et de
 cible de test commune aux moteurs. La **tranche 2/3** branchera cette

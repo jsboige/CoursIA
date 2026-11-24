@@ -137,11 +137,21 @@ class CheckReport:
         return self.constant_change.old_value != self.constant_change.new_value
 
     @property
+    def count_changing_pairs(self) -> list["PairChange"]:
+        """Pairs whose add/remove shifts the declared count. A pure rename
+        (an existing translation file renamed alongside its source) keeps
+        the pair count identical, so it must not require a bump -- before
+        this distinction, no honest constant value could satisfy the guard
+        on a rename (see #21391, reproduction on PRs #22932/#22670).
+        """
+        return [pc for pc in self.pair_changes if pc.status != "renamed"]
+
+    @property
     def rouge(self) -> bool:
         if not self.has_pair_change and not self.constant_modified:
             return False
         # pair added/removed WITHOUT a constant bump = rouge
-        if self.has_pair_change and not self.constant_modified:
+        if self.count_changing_pairs and not self.constant_modified:
             return True
         # constant modified but value doesn't match the actual count = rouge
         if self.constant_modified and self.actual_count is not None:
@@ -280,7 +290,7 @@ def check_pair_count_declared(
     report = CheckReport(base=base, head=head)
 
     rows = _git_diff_name_status(base, head, path_list, repo_root=repo_root)
-    for status, new, _old in rows:
+    for status, new, old in rows:
         if status not in ("A", "D", "R"):
             continue
         info = _classify_translation(new)
@@ -304,8 +314,19 @@ def check_pair_count_declared(
             # A or R: check the source exists at head
             if not _pair_at_head(head, new, repo_root=repo_root):
                 continue
+            # An R whose OLD path was itself a translation file is a pure
+            # rename (same pair under a new name): the pair count is
+            # preserved. An R whose old path was NOT a translation (a
+            # non-notebook renamed into a *_<lang>.ipynb path) creates a
+            # pair where none existed: classify it as an addition so the
+            # bump requirement still applies.
+            is_pure_rename = (
+                status == "R"
+                and old is not None
+                and _classify_translation(old) is not None
+            )
             report.pair_changes.append(PairChange(
-                status="added" if status == "A" else "renamed",
+                status="renamed" if is_pure_rename else "added",
                 translation_path=Path(new).as_posix(),
                 source_path=Path(src_path).as_posix(),
                 stem=stem, lang=lang,
@@ -359,7 +380,9 @@ def _rouge_message(report: CheckReport, repo_root: Path | None = None) -> str:
     if report.pair_changes and not report.constant_modified:
         # Compute the next count (assume base + adds - removes)
         old = report.constant_change.old_value or 0
-        delta_added = sum(1 for pc in report.pair_changes if pc.status in ("added", "renamed"))
+        # Only add/remove shifts the declared count; a pure rename
+        # (status "renamed") preserves it and requires no bump.
+        delta_added = sum(1 for pc in report.pair_changes if pc.status == "added")
         delta_removed = sum(1 for pc in report.pair_changes if pc.status == "removed")
         next_value = old + delta_added - delta_removed
         # Derive the constant line number at the head we inspected -- never
@@ -399,8 +422,10 @@ def render_text(report: CheckReport, repo_root: Path | None = None) -> str:
     if not report.pair_changes and not report.constant_modified:
         return "GREEN: no pair change, no constant bump -- nothing to check."
     if not report.rouge:
+        renamed = sum(1 for pc in report.pair_changes if pc.status == "renamed")
+        rename_note = f" ({renamed} pure rename(s), count preserved)" if renamed else ""
         return (
-            f"GREEN: {len(report.pair_changes)} pair change(s), constant bumped "
+            f"GREEN: {len(report.pair_changes)} pair change(s){rename_note}, constant "
             f"{report.constant_change.old_value} -> {report.constant_change.new_value}, "
             f"actual count = {report.actual_count}."
         )

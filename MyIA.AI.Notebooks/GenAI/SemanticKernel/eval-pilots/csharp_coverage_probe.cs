@@ -1,6 +1,6 @@
 #:package Microsoft.SemanticKernel.Agents.Core@1.81.0
-#:package Microsoft.Agents.AI@1.24.0
-#:package Microsoft.Agents.AI.Workflows@1.24.0
+#:package Microsoft.Agents.AI@1.27.0
+#:package Microsoft.Agents.AI.Workflows@1.27.0
 
 // Sonde T6 (issue #14499, point 4) : ce que chaque moteur offre REELLEMENT en C#.
 //
@@ -23,7 +23,7 @@
 //
 // Forme « app mono-fichier » (.NET 10) : `dotnet run csharp_coverage_probe.cs`.
 // Aucun .csproj n'est livre, donc aucun impact sur les solutions du depot
-// (`MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln`) ni sur les workflows .NET, qui sont
+// (`dotnet/MyIA.CoursIA.sln`, `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln`) ni sur les workflows .NET, qui sont
 // tous filtres par chemin. Les versions des trois paquets sont epinglees par les
 // directives `#:package ...@<version>` ci-dessus, qui sont la forme de pin de
 // l'app mono-fichier : c'est ce qui rend la sonde rejouable depuis le depot seul
@@ -33,6 +33,23 @@
 // Sortie : exit 0 si les deux controles passent, 1 sinon.
 
 using System.Reflection;
+
+// IL2026 : l'analyseur de trimming signale `Assembly.LoadFrom` et
+// `GetExportedTypes` comme RequiresUnreferencedCode. L'avertissement est sans
+// objet ici -- la sonde n'est ni trimmee ni publiee, elle charge les
+// assemblages DEPLOYES pour les enumerer. Le neutraliser evite que le build
+// n'imprime un avertissement porteur du CHEMIN LOCAL du fichier source, qui
+// se retrouverait dans la trace commitee.
+#pragma warning disable IL2026
+
+// En-tete produit par la SONDE elle-meme : la trace commitee doit etre le
+// stdout BRUT, jamais un fichier retouche apres coup (cf `README.md`).
+// La date est calculee au runtime ; aucun chemin local n'y figure.
+Console.WriteLine("# Sonde T6 -- surface C# de SK et de MAF");
+Console.WriteLine($"# generee le {DateTime.UtcNow:yyyy-MM-dd} par csharp_coverage_probe.cs");
+Console.WriteLine("# packages : Agents.Core 1.81.0 (SK) + Microsoft.Agents.AI 1.27.0 + Microsoft.Agents.AI.Workflows 1.27.0 (MAF)");
+Console.WriteLine("# aucune requete LLM, aucune cle API ; mesure de SURFACE, pas de comportement");
+Console.WriteLine();
 
 var baseDir = AppContext.BaseDirectory;
 
@@ -101,8 +118,15 @@ Console.WriteLine($"   (b) par ASSEMBLAGE -- `Microsoft.SemanticKernel.Agents.Or
     + (skOrchestrationAsm.Count == 0 ? "non  OK" : string.Join(", ", skOrchestrationAsm) + "  !!"));
 
 // Les cinq objets d'orchestration de la couche agents de Semantic Kernel Python
-// 1.41.3 (mesures en T2 et T4 de ce chantier) ne doivent PAS exister cote
-// C# 1.81.0. Si l'un ressort, l'hypothese de parite est fausse.
+// 1.46.0 (mesures en T2 et T4 de ce chantier, re-mesurees en Q17) ne doivent PAS
+// exister cote C# 1.81.0. Si l'un ressort, l'hypothese de parite est fausse.
+//
+// Version courante des trois paquets, mesuree le 2026-11-04 :
+//   Microsoft.SemanticKernel.Agents.Core  1.81.0  (publie 2026-10-06, INCHANGE
+//       depuis la sonde T6 -- rien de neuf cote .NET SK depuis 29 jours)
+//   Microsoft.Agents.AI                   1.27.0  (publie 2026-10-30)
+//   Microsoft.Agents.AI.Workflows         1.27.0  (publie 2026-10-30)
+// MAF passe de 1.24.0 (T6) a 1.27.0 : le delta de surface est donc mesure.
 string[] skPythonOnly =
 [
     "SequentialOrchestration", "ConcurrentOrchestration", "GroupChatOrchestration",
@@ -142,6 +166,33 @@ Console.WriteLine();
 Console.WriteLine("CE QUE SK C# EXPOSE (modele historique AgentGroupChat) -- attendu PRESENT");
 foreach (var n in skLegacy)
     Console.WriteLine($"   {(sk.Contains(n) ? "present OK" : "ABSENT !!")}  {n}");
+
+// Meme question pour SK C# que pour MAF C# : la REPRISE d'un long run
+// (checkpoint) et l'OBSERVABILITE sont-elles offertes ? La mesure est une
+// recherche de FRAGMENT de nom dans l'union des types publics -- elargie
+// volontairement, pour ne pas confondre « absent sous ce nom-la » et
+// « absent sous une autre convention de nommage ».
+//
+// La formulation compte : une liste de noms EXACTS ne teste qu'une convention
+// (celle de MAF). On liste donc les fragments rencontres, ce qui donne une
+// borne SUPERIEURE (s'il n'y a rien, il n'y a rien) et laisse voir le nom
+// reellement employe quand il y en a un.
+Console.WriteLine();
+Console.WriteLine("SK C# -- capacites de reprise et de telemetry (recherche par FRAGMENT de nom)");
+foreach (var frag in new[] { "Checkpoint", "OpenTelemetry", "Telemetry", "Workflow", "Resume", "Persistence" })
+{
+    var hits = sk.Where(n => n.Contains(frag, StringComparison.OrdinalIgnoreCase))
+                  .OrderBy(n => n, StringComparer.Ordinal).ToList();
+    Console.WriteLine($"   fragment \"{frag}\" -> {(hits.Count == 0 ? "AUCUN" : string.Join(", ", hits))}");
+}
+Console.WriteLine();
+Console.WriteLine("MAF C# -- memes fragments, pour comparaison");
+foreach (var frag in new[] { "Checkpoint", "OpenTelemetry", "Telemetry", "Workflow", "Resume", "Persistence" })
+{
+    var hits = maf.Where(n => n.Contains(frag, StringComparison.OrdinalIgnoreCase))
+                   .OrderBy(n => n, StringComparer.Ordinal).ToList();
+    Console.WriteLine($"   fragment \"{frag}\" -> {(hits.Count == 0 ? "AUCUN" : string.Join(", ", hits))}");
+}
 
 // Google ADK : aucun paquet officiel n'existe sur NuGet. La mesure est le
 // balayage du repertoire de sortie -- la seule assembly « Google » attendue est

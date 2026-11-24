@@ -1,0 +1,567 @@
+#!/usr/bin/env python3
+"""Replay #22088's exit criterion at the colour a human actually reads.
+
+## Why this exists
+
+`statusCheckRollup.state` collapses every leg of a commit into one colour. A leg
+in `CANCELLED` is not a failure -- no test, no guard, no assertion disagreed with
+the commit -- yet GitHub paints it the same red cross as a real failure. Measured
+consequence (#22088): `main` read `FAILURE` on 22 of its last 40 commits, and on
+19 of those the only legs in cause were cancellations. The organs that read
+main's colour (`MAIN_RED_WORKFLOWS` of `merge_dwell.py`, #22085) had to strip
+`cancelled` by hand, per workflow, for ever.
+
+`check_concurrency_conj.py` is the STATIC half of the answer: it refuses the
+workflow conjunction that produces the cancellation. This script is the RUNTIME
+half: it reads the rollup and names the commits whose only non-green legs are
+cancellations, whatever workflow emitted them.
+
+## Why the criterion has to name the class, not one workflow
+
+#22088 was written against `Build Quarto site` / `Deploy to GitHub Pages`, and
+that instance IS fixed. Measured on the 20 commits that follow #22099 with the
+very instrument the issue names (GraphQL `statusCheckRollup`): no commit carries
+a Quarto leg at all once superseded, because a run cancelled while PENDING emits
+no check-run -- 38 of the 38 cancelled runs of 2026-11-01 have zero jobs.
+
+But those same 20 commits still contain two whose red cross has no cause other
+than a cancellation, emitted by `Scripts Tests (CPU)` and `probeAddresses banner
+guard`. A criterion naming one workflow would have declared victory over the
+class while two instances of it were still on screen.
+
+## Verdicts
+
+  OK              the rollup is not FAILURE, or the failure is earned
+                  (at least one non-green leg really failed)
+  CANCELLED_ONLY  FAILURE, and every non-green leg is a cancellation of a job
+                  that NEVER STARTED                              <- offender
+  INFRA_ONLY      FAILURE, and every non-green leg is a cancellation, at least
+                  one of which RAN. A job killed at its timeout is a real red:
+                  it is named, and it is NOT a borrowed one.
+  ADVISORY_ONLY   FAILURE, and every non-green leg declares itself consultative
+                  (`advisory` in the job name, or in its workflow's name). The
+                  only required check of `main` does not block on such a leg:
+                  the red is neither earned nor borrowed, it is consultative.
+  PENDING         the rollup has not settled
+  UNKNOWN         FAILURE with no readable leg, or a truncated leg list
+
+Truncation is fail-closed on every claim that CLEARS a red, exactly as it is on
+the accusation: a commit whose leg list hit the 100-context page limit is never
+reported as an offender, nor as advisory-only, because a real failure could be
+sitting just past the page. Silence from truncation is not a clean bill either
+-- UNKNOWN is counted and printed.
+
+## Consultative legs (#26355)
+
+A leg whose name carries `advisory` is non-blocking for `scripts/pr_gate.py`
+(its `ADVISORY_MARKER`, rule 6). This organ used to count such a leg among the
+MERITED reds, so its report could name a consultative leg as an earned failure
+while the gate concluded the opposite on the same commit -- measured on #26336.
+The predicate is not re-implemented here: `pr_gate.is_advisory` and
+`pr_gate.derive_advisory_jobs` are imported, so the report and the gate cannot
+drift apart. A consultative leg never decides a verdict -- the required legs do
+-- and the consultative ones are listed as evidence.
+
+## Two cancellations, one rendering
+
+`cancelled` covers two events the UI paints identically:
+
+* the job **never started** -- concurrency replaced it while it queued. It spent
+  no runner and measured nothing: the red cross is BORROWED, #22088's class;
+* the job **started**, held a runner, and was stopped before concluding. GitHub
+  renders `timeout-minutes` as `cancelled`, so a build that hangs to its ceiling
+  dies looking exactly like a queue supersession. That is an INFRA death -- a
+  real red -- and calling it borrowed EXONERATES it.
+
+Measured on 2026-11-13, on the two offenders of the day and on their
+successors: five `Build Quarto site` jobs were killed at exactly 60 min in the
+last 25 push runs of `.github/workflows/quarto-pages-deploy.yml`
+(`timeout-minutes: 60`), while the runs that DID conclude took 43 and 52 min of
+job time. The comment beside that ceiling still documents a render of 19-31
+min, which is the figure the ceiling was chosen on -- the render has since
+roughly doubled and now grazes it. Counting the kills as borrowed declared
+`main` clean while a job burned an hour of runner, five times.
+
+Run: python scripts/ci/check_cancelled_only_commits.py --commits 20
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# The advisory predicate has exactly one source: the PR gate. Re-testing the
+# substring here would drift the day rule 6 changes, and the whole point of
+# #26355 is that the two organs agree on what "non-blocking" means.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+#: 0 = nothing to report, 1 = the report has findings (a borrowed red OR an
+#: infra death), 2 = the instrument itself failed. The two findings are counted
+#: and printed separately; they are not the same verdict and never were.
+EXIT_CLEAN, EXIT_OFFENDERS, EXIT_BROKEN = 0, 1, 2
+
+try:
+    import pr_gate  # noqa: E402  (scripts/ -- the only required check of main)
+except ImportError as exc:  # pragma: no cover -- provisioning, never logic
+    # A checkout without `scripts/pr_gate.py` cannot tell a consultative leg
+    # from a merited one, so it cannot measure. Saying so with rc=2 (instrument
+    # broken) is the only honest report available; degrading silently to "no
+    # advisory legs" would re-create exactly the contradiction #26355 removes.
+    print(
+        "[cancelled-only] instrument incomplet : scripts/pr_gate.py est requis "
+        f"pour le predicat consultatif ({exc})",
+        file=sys.stderr,
+    )
+    raise SystemExit(EXIT_BROKEN)
+
+# Conclusions that do not make a commit red on their own. `SKIPPED` is the
+# normal state of a leg gated by `if:`; `NEUTRAL` is an advisory that declined
+# to vote. Both are legitimately `None` on a commit whose run never started.
+NON_GREEN_IGNORED = {"SUCCESS", "SKIPPED", "NEUTRAL", None, "None", ""}
+CANCELLED = {"CANCELLED", "cancelled"}
+
+#: A cancelled leg that held a runner at least this long did more than lose its
+#: place in the queue: it ran, and something stopped it. Below the threshold the
+#: job was still waiting when concurrency replaced it -- the borrowed red.
+#: Two minutes is two orders of magnitude below the measured kills (60 min) and
+#: above the seconds a checkout needs, so no plausible supersession lands above
+#: it while a hung build cannot land below.
+STARTED_GRACE_SECONDS = 120
+
+SUPERSEDED, KILLED = "SUPERSEDED", "KILLED"
+
+#: Verdict of a red whose every non-green leg is consultative (#26355). It is
+#: not an accusation and not a finding: nothing is owed to anyone.
+ADVISORY_ONLY = "ADVISORY_ONLY"
+
+#: Cache of the derived job names; None = not read yet (the read itself may
+#: legitimately yield an empty set, so an empty frozenset is not a "not read").
+_ADVISORY_JOBS = None
+
+
+def advisory_job_names():
+    """Job names emitted by workflows whose WORKFLOW-level name is advisory.
+
+    Read once per process, through the PR gate's own derivation: three
+    workflows carry the marker on the workflow name only, and their job names
+    would otherwise read as blocking (the defect that held PRs #12524 and
+    #12783 open 44h/9h). An unreadable directory yields an empty set -- this
+    organ must never fail because a YAML was mid-edit, and the name-marker path
+    still covers the ~30 workflows that carry it in the job name.
+    """
+    global _ADVISORY_JOBS
+    if _ADVISORY_JOBS is None:
+        try:
+            _ADVISORY_JOBS = frozenset(pr_gate.derive_advisory_jobs())
+        except Exception:  # noqa: BLE001 -- un instrument ne s'arme pas contre nous
+            _ADVISORY_JOBS = frozenset()
+    return _ADVISORY_JOBS
+
+
+def is_advisory_leg(name):
+    """True when the PR gate treats this leg as non-blocking (rule 6).
+
+    The two signals in the gate's own order: the marker anywhere in the job
+    name (`pr_gate.is_advisory`), then the derived job names of advisory
+    workflows.
+    """
+    name = name or ""
+    return pr_gate.is_advisory(name) or name in advisory_job_names()
+
+
+DEFAULT_REPO = "jsboige/CoursIA"
+DEFAULT_REF = "refs/heads/main"
+
+HISTORY_FIELDS = """
+          history(first: $n) {
+            nodes {
+              oid
+              committedDate
+              messageHeadline
+              statusCheckRollup {
+                state
+                contexts(first: 100) {
+                  pageInfo { hasNextPage }
+                  nodes {
+                    __typename
+                    ... on CheckRun { name conclusion startedAt completedAt }
+                    ... on StatusContext { context state }
+                  }
+                }
+              }
+            }
+          }"""
+
+# Deux racines pour la meme fenetre : la tete d'une ref (usage courant), ou un
+# commit donne (`--until`) -- le critere de sortie d'une PR se definit sur les
+# commits qui SUIVENT son merge, donc il faut pouvoir s'y ancrer.
+QUERY_REF = (
+    "query($owner:String!, $name:String!, $ref:String!, $n:Int!) {"
+    " repository(owner: $owner, name: $name) {"
+    "  ref(qualifiedName: $ref) { target { ... on Commit {" + HISTORY_FIELDS + " } } } } }"
+)
+HISTORY_ONE = """
+              oid
+              committedDate
+              messageHeadline
+              statusCheckRollup {
+                state
+                contexts(first: 100) {
+                  pageInfo { hasNextPage }
+                  nodes {
+                    __typename
+                    ... on CheckRun { name conclusion startedAt completedAt }
+                    ... on StatusContext { context state }
+                  }
+                }
+              }"""
+
+QUERY_ONE = (
+    "query($owner:String!, $name:String!, $oid:GitObjectID!) {"
+    " repository(owner: $owner, name: $name) {"
+    "  object(oid: $oid) { ... on Commit {" + HISTORY_ONE + " } } } }"
+)
+
+
+def leg_name(node):
+    """A check-run carries `name`, a legacy status context carries `context`."""
+    return node.get("name") or node.get("context") or "(sans nom)"
+
+
+def leg_conclusion(node):
+    """Same duality: check-runs conclude, status contexts have a state."""
+    return node.get("conclusion") or node.get("state")
+
+
+def leg_fields(leg):
+    """`(name, conclusion[, started[, completed]])` -> the four fields.
+
+    The two-field form is the historical one and stays accepted: a legacy
+    status context carries no timing, and a caller with nothing to say about
+    duration must still be able to classify. A leg without timing reads as a
+    queue supersession, which is the only reading available when the API is
+    silent.
+    """
+    name, conclusion = leg[0], leg[1]
+    started = leg[2] if len(leg) > 2 else None
+    completed = leg[3] if len(leg) > 3 else None
+    return name, conclusion, started, completed
+
+
+def _seconds_between(started, completed):
+    """Wall-clock seconds between two GitHub timestamps, or None."""
+
+    def parse(value):
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    first, last = parse(started), parse(completed)
+    if first is None or last is None:
+        return None
+    return (last - first).total_seconds()
+
+
+def cancelled_kind(started, completed):
+    """SUPERSEDED (never got a runner) or KILLED (ran, then was stopped).
+
+    A leg that started and whose end is unreadable is KILLED: the doubt must
+    never clear a job that held a runner. Clearing it is exactly the
+    exoneration this split exists to stop.
+    """
+    if not started:
+        return SUPERSEDED
+    seconds = _seconds_between(started, completed)
+    if seconds is None:
+        return KILLED
+    return KILLED if seconds >= STARTED_GRACE_SECONDS else SUPERSEDED
+
+
+def _leg_evidence(name, started, completed):
+    """`Name=KILLED(60 min)` -- the fact behind the verdict, for the report."""
+    kind = cancelled_kind(started, completed)
+    seconds = _seconds_between(started, completed)
+    if seconds is None:
+        return f"{name}={kind}"
+    return f"{name}={kind}({seconds / 60:.0f} min)"
+
+
+def classify(rollup_state, legs, truncated=False, advisory=None):
+    """Verdict for one commit.
+
+    `legs` yields `(name, conclusion)` or `(name, conclusion, started,
+    completed)`; the timing fields carry the #25181 distinction between a job
+    that never started and one that ran to its ceiling.
+
+    `advisory` decides whether a leg is consultative; it defaults to
+    `is_advisory_leg`, which IS the PR gate's rule (#26355). A consultative leg
+    never decides a verdict: it is not an earned failure, and its cancellation
+    is not a borrowed red either. The required legs decide, and a commit whose
+    legs are ALL consultative is ADVISORY_ONLY -- a fourth rendering, distinct
+    from the merited, the borrowed and the infra red.
+
+    A red cross is EARNED when at least one required non-green leg really
+    failed. It is BORROWED when every required non-green leg is a supersession
+    -- nothing measured, nothing spent. It is INFRA when the only required
+    cancellations are jobs that ran: a runner was held and the commit was never
+    judged, which is a real red wearing the same pixel as the borrowed one.
+    """
+    if rollup_state in (None, "", "SUCCESS"):
+        return "OK"
+    if rollup_state == "PENDING":
+        return "PENDING"
+    if rollup_state != "FAILURE":
+        return "UNKNOWN"
+
+    advisory = advisory or is_advisory_leg
+    non_green = [f for f in (leg_fields(leg) for leg in legs)
+                 if f[1] not in NON_GREEN_IGNORED]
+    if not non_green:
+        # FAILURE with nothing readable: a conclusion we do not model, not a
+        # clean commit. Never accused, never blessed.
+        return "UNKNOWN"
+
+    blocking = [f for f in non_green if not advisory(f[0])]
+    if not blocking:
+        # Every non-green leg is consultative: the gate does not block on this
+        # commit. Clearing a red is as corruptible by truncation as accusing
+        # one, so the page limit keeps the doubt.
+        return "UNKNOWN" if truncated else ADVISORY_ONLY
+
+    if all(conclusion in CANCELLED for _, conclusion, _, _ in blocking):
+        # The accusation is the only claim truncation can corrupt: a real
+        # failure could be sitting past the page. An earned failure that is
+        # already visible stays earned whatever the rest of the list holds.
+        if truncated:
+            return "UNKNOWN"
+        # #25181: a cancellation that held a runner is not an exoneration.
+        kinds = {cancelled_kind(started, completed)
+                 for _, _, started, completed in blocking}
+        return "INFRA_ONLY" if KILLED in kinds else "CANCELLED_ONLY"
+    return "OK"
+
+
+def analyse(commit, advisory=None):
+    """One row of the report, from a GraphQL history node."""
+    rollup = commit.get("statusCheckRollup") or {}
+    contexts = rollup.get("contexts") or {}
+    nodes = contexts.get("nodes") or []
+    truncated = bool((contexts.get("pageInfo") or {}).get("hasNextPage"))
+    legs = [
+        (leg_name(n), leg_conclusion(n), n.get("startedAt"), n.get("completedAt"))
+        for n in nodes
+    ]
+    advisory = advisory or is_advisory_leg
+    verdict = classify(rollup.get("state"), legs, truncated=truncated,
+                       advisory=advisory)
+    return {
+        "oid": commit.get("oid", ""),
+        "date": commit.get("committedDate", ""),
+        "headline": commit.get("messageHeadline", ""),
+        "rollup": rollup.get("state"),
+        "verdict": verdict,
+        "truncated": truncated,
+        "non_green": [
+            f"{name}={conclusion}"
+            for name, conclusion, _, _ in legs
+            if conclusion not in NON_GREEN_IGNORED
+        ],
+        # #26355: the consultative legs, set apart from the required ones so a
+        # reader can see WHICH leg the gate does not block on. Without this,
+        # the same name reads as a merited red in a mixed commit.
+        "advisory_legs": [
+            f"{name}={conclusion}"
+            for name, conclusion, _, _ in legs
+            if conclusion not in NON_GREEN_IGNORED and advisory(name)
+        ],
+        # #25181: the fact behind each cancellation, so a KILLED leg cannot be
+        # read as a supersession once it reaches the report.
+        "cancelled_evidence": [
+            _leg_evidence(name, started, completed)
+            for name, conclusion, started, completed in legs
+            if conclusion in CANCELLED
+        ],
+    }
+
+
+def resolve(rev):
+    """Un GitObjectID GraphQL exige l'OID complet : une abreviation se resout ici."""
+    if len(rev) == 40:
+        return rev
+    proc = subprocess.run(
+        ["git", "rev-parse", rev], capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    oid = (proc.stdout or "").strip()
+    if proc.returncode != 0 or len(oid) != 40:
+        raise RuntimeError(f"revision introuvable : {rev}")
+    return oid
+
+
+def _graphql(args):
+    proc = subprocess.run(
+        ["gh", "api", "graphql", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode != 0:
+        raise RuntimeError((proc.stderr or proc.stdout or "").strip()[:800])
+    return json.loads(proc.stdout)
+
+
+def fetch(repo, ref, count):
+    """Fenetre = les `count` commits les plus recents de `ref`, en un appel."""
+    owner, name = repo.split("/", 1)
+    payload = _graphql([
+        "-f", "query=" + QUERY_REF,
+        "-f", f"owner={owner}",
+        "-f", f"name={name}",
+        "-f", f"ref={ref}",
+        "-F", f"n={int(count)}",
+    ])
+    history = (
+        payload.get("data", {}).get("repository", {}).get("ref", {})
+        .get("target", {}).get("history") or {}
+    )
+    nodes = history.get("nodes")
+    if nodes is None:
+        raise RuntimeError("history introuvable dans la reponse GraphQL")
+    return nodes
+
+
+def fetch_after(repo, sha, count, ref):
+    """Fenetre = les `count` commits immediatement APRES `sha` (critere d'une PR).
+
+    GraphQL ne remonte le temps que vers le passe : la position de l'ancre se lit
+    donc dans l'historique local, puis les commits de la fenetre sont interroges
+    un par un. Sans checkout git, cet ancrage est indisponible -- la fenetre de
+    tete reste utilisable, et l'echec est explicite plutot que silencieux.
+    """
+    anchor = resolve(sha)
+    proc = subprocess.run(
+        ["git", "log", "--first-parent", "--format=%H", ref],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            "--after exige un checkout git (historique local introuvable) : "
+            + (proc.stderr or "").strip()[:200]
+        )
+    order = (proc.stdout or "").split()
+    if anchor not in order:
+        raise RuntimeError(f"{sha} n'appartient pas a l'historique de {ref}")
+    i = order.index(anchor)
+    window = order[max(0, i - count):i]
+    if not window:
+        raise RuntimeError(f"aucun commit apres {sha} dans {ref}")
+    owner, name = repo.split("/", 1)
+    nodes = []
+    for oid in window:
+        payload = _graphql([
+            "-f", "query=" + QUERY_ONE,
+            "-f", f"owner={owner}",
+            "-f", f"name={name}",
+            "-f", f"oid={oid}",
+        ])
+        node = payload.get("data", {}).get("repository", {}).get("object")
+        if not node:
+            raise RuntimeError(f"commit illisible : {oid}")
+        nodes.append(node)
+    return nodes
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Rejoue le critere de sortie #22088 sur les N derniers commits."
+    )
+    parser.add_argument("--repo", default=DEFAULT_REPO, help="owner/name")
+    parser.add_argument("--ref", default=DEFAULT_REF, help="ref complete")
+    parser.add_argument("--commits", type=int, default=20, help="taille de la fenetre")
+    parser.add_argument(
+        "--after",
+        default=None,
+        help="fenetre = les commits qui SUIVENT ce SHA, au lieu de la tete de --ref -- "
+             "c'est la lecture du critere de sortie d'une PR, qui se mesure sur les "
+             "commits posterieurs a son merge (exige un checkout git)",
+    )
+    parser.add_argument("--json", action="store_true", help="sortie machine")
+    args = parser.parse_args(argv)
+
+    if not 1 <= args.commits <= 100:
+        print("--commits doit etre entre 1 et 100 (limite de page GitHub)", file=sys.stderr)
+        return EXIT_BROKEN
+
+    try:
+        if args.after:
+            nodes = fetch_after(args.repo, args.after, args.commits, args.ref)
+        else:
+            nodes = fetch(args.repo, args.ref, args.commits)
+    except Exception as exc:  # noqa: BLE001 -- instrument joignable ou pas
+        print(f"[cancelled-only] instrument injoignable : {exc}", file=sys.stderr)
+        return EXIT_BROKEN
+
+    rows = [analyse(n) for n in nodes]
+    offenders = [r for r in rows if r["verdict"] == "CANCELLED_ONLY"]
+    infra = [r for r in rows if r["verdict"] == "INFRA_ONLY"]
+    advisory_only = [r for r in rows if r["verdict"] == ADVISORY_ONLY]
+    unknown = [r for r in rows if r["verdict"] == "UNKNOWN"]
+    earned = [r for r in rows if r["verdict"] == "OK" and r["rollup"] == "FAILURE"]
+
+    if args.json:
+        print(json.dumps({
+            "repo": args.repo,
+            "ref": args.ref,
+            "after": args.after,
+            "window": len(rows),
+            "offenders": [r["oid"] for r in offenders],
+            "infra_deaths": [r["oid"] for r in infra],
+            "advisory_only": [r["oid"] for r in advisory_only],
+            "unknown": [r["oid"] for r in unknown],
+            "earned_failure": [r["oid"] for r in earned],
+            "commits": rows,
+        }, indent=2, ensure_ascii=False))
+    else:
+        print(f"{args.repo} {args.ref} -- fenetre de {len(rows)} commits\n")
+        print(f"{'date':20s} {'sha':11s} {'rollup':8s} {'verdict':15s} jambes non vertes")
+        for r in rows:
+            # #26355: a consultative leg is flagged in the evidence column too,
+            # so a MIXED commit names which of its reds the gate ignores.
+            shown = [
+                entry + " [advisory]" if entry in r["advisory_legs"] else entry
+                for entry in r["non_green"][:3]
+            ]
+            print(
+                f"{r['date'][:19]:20s} {r['oid'][:10]:11s} "
+                f"{str(r['rollup']):8s} {r['verdict']:15s} "
+                f"{', '.join(shown) or '-'}"
+            )
+        print()
+        print(f"rouges MERITES (une jambe a vraiment echoue) : {len(earned)}")
+        print(f"rouges EMPRUNTES (annule avant demarrage)    : {len(offenders)}")
+        print(f"rouges INFRA (job demarre, tue avant fin)    : {len(infra)}")
+        print(f"rouges CONSULTATIFS (advisory, non bloquant) : {len(advisory_only)}")
+        print(f"indetermines (troncature/illisible)          : {len(unknown)}")
+        for r in offenders:
+            print(f"  EMPRUNTE {r['oid'][:10]}  {r['headline'][:60]}")
+            print(f"            {', '.join(r['non_green'][:5])}")
+        for r in infra:
+            print(f"  INFRA    {r['oid'][:10]}  {r['headline'][:60]}")
+            print(f"            {', '.join(r['cancelled_evidence'][:5])}")
+        for r in advisory_only:
+            print(f"  CONSULT  {r['oid'][:10]}  {r['headline'][:60]}")
+            print(f"            {', '.join(r['advisory_legs'][:5])}")
+
+    return EXIT_OFFENDERS if (offenders or infra) else EXIT_CLEAN
+
+
+if __name__ == "__main__":
+    sys.exit(main())

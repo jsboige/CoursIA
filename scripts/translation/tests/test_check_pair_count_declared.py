@@ -324,6 +324,70 @@ class TestIntegration:
         # at head -- no pair change recorded.
         assert r.rouge is False or len(r.pair_changes) == 0
 
+    def test_full_pair_rename_is_green_without_bump(self):
+        # #21391 reproduction (PRs #22932/#22670): the FR source AND its
+        # _en translation renamed together (R status on both). The pair
+        # count is preserved, so no honest constant value satisfied the
+        # guard before the fix: N -> N is "not modified", N -> M is a
+        # wrong count. The guard must stay green and report the pair as
+        # renamed, not added.
+        repo = _make_repo()
+        _reset(repo)
+        base = _add_pair(repo, "Foo")
+        nb = repo / "MyIA.AI.Notebooks" / "Translation"
+        (nb / "Foo.ipynb").rename(nb / "Bar.ipynb")
+        (nb / "Foo_en.ipynb").rename(nb / "Bar_en.ipynb")
+        subprocess.run(["git", "add", "-A"], check=True, cwd=repo)
+        subprocess.run(["git", "commit", "-q", "-m", "rename pair Foo -> Bar"],
+                       check=True, cwd=repo)
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, encoding="utf-8",
+            cwd=repo,
+        ).stdout.strip()
+        r = check_pair_count_declared(base, head, repo_root=repo, do_disk_count=False)
+        # The pair is reported, classified "renamed" (not added)...
+        assert len(r.pair_changes) == 1
+        assert r.pair_changes[0].status == "renamed"
+        assert r.pair_changes[0].stem == "Bar"
+        # ...the constant is untouched (0 -> 0, not modified)...
+        assert r.constant_modified is False
+        # ...and the verdict is GREEN: a pure rename does not drift the count.
+        assert r.rouge is False
+
+    def test_rename_into_translation_still_requires_bump(self):
+        # Guard the carve-out from the other side: renaming a NON-translation
+        # file into a *_en.ipynb path (old path not a translation, e.g.
+        # notes.md -> Bar_en.ipynb) creates a pair where none existed. It
+        # must stay classified "added" so the bump requirement still applies.
+        repo = _make_repo()
+        _reset(repo)
+        scratch = repo / "notes.md"
+        scratch.write_text("# shared content\n")
+        subprocess.run(["git", "add", "-A"], check=True, cwd=repo)
+        subprocess.run(["git", "commit", "-q", "-m", "add scratch"], check=True, cwd=repo)
+        base = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, encoding="utf-8",
+            cwd=repo,
+        ).stdout.strip()
+        nb = repo / "MyIA.AI.Notebooks" / "Translation"
+        nb.mkdir(parents=True, exist_ok=True)
+        (nb / "Bar.ipynb").write_text("# FR source for Bar\n")
+        scratch.rename(nb / "Bar_en.ipynb")  # same content -> R100
+        subprocess.run(["git", "add", "-A"], check=True, cwd=repo)
+        subprocess.run(["git", "commit", "-q", "-m", "rename notes.md into Bar_en"],
+                       check=True, cwd=repo)
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, encoding="utf-8",
+            cwd=repo,
+        ).stdout.strip()
+        r = check_pair_count_declared(base, head, repo_root=repo, do_disk_count=False)
+        # Classified "added" (the old path was not a translation), so the
+        # bump is still required -- rouge without it.
+        assert len(r.pair_changes) == 1
+        assert r.pair_changes[0].status == "added"
+        assert r.constant_modified is False
+        assert r.rouge is True
+
     def test_constant_path_does_not_drift(self):
         # The constant is at scripts/translation/tests/test_check_translation_parity.py
         # -- guard against accidental path move.

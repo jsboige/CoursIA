@@ -84,24 +84,47 @@ def _git_rename_evidence(
     """Renvoie (file_renames, dir_renames) prouves par git, fail-closed.
 
     file_renames : ancien chemin -> nouveau chemin pour chaque entree R*
-    de `git diff --name-status --find-renames base head`. dir_renames :
-    ancien dossier -> nouveau dossier, deduit des fichiers renommes qui
-    partagent un suffixe de chemin non vide (la partie deplacee est le
-    dossier). Sans SHA, ou sur le moindre echec git : ({}, {}) -- aucune
-    classification MOVED n'est alors possible.
+    de `git diff --name-status --find-renames base...head`, diff en TROIS
+    points. dir_renames : ancien dossier -> nouveau dossier, deduit des
+    fichiers renommes qui partagent un suffixe de chemin non vide (la partie
+    deplacee est le dossier). Sans SHA, ou sur le moindre echec git :
+    ({}, {}) -- aucune classification MOVED n'est alors possible.
+
+    Trois points et non deux (residu de #10403) : `base...head` se calcule
+    depuis le merge-base, donc il ne rapporte que les renommages faits par la
+    PR. En deux points (`base head`), une base en retard fait apparaitre en
+    miroir les renommages que `main` a gagnes depuis le fork -- git affiche
+    alors `nouveau_nom -> ancien_nom`, une preuve que la PR n'a jamais
+    produite, et `_pair_renames` reclasse en MOVED des liens qu'elle n'a pas
+    deplaces. Le repli en deux points n'existe pas : si le merge-base est
+    indeterminable (clone superficiel), la fonction le dit sur stderr et rend
+    ({}, {}), ce que `main` annonce comme "aucune preuve de renommage".
     """
     if not base_sha or not head_sha:
         return {}, {}
+    three_point = f"{base_sha}...{head_sha}"
     try:
         proc = subprocess.run(
             ["git", "diff", "--name-status", "--find-renames",
-             "--diff-filter=R", base_sha, head_sha],
+             "--diff-filter=R", three_point],
             capture_output=True, text=True, encoding="utf-8",
             errors="replace", timeout=60,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        print(
+            f"pairing: diff trois points {three_point} impossible ({exc}) -- "
+            "classification MOVED desactivee (fail-closed)",
+            file=sys.stderr,
+        )
         return {}, {}
     if proc.returncode != 0:
+        print(
+            f"pairing: diff trois points {three_point} en echec "
+            f"(rc={proc.returncode}: {proc.stderr.strip()[:200]}) -- "
+            "merge-base indeterminable dans ce clone ; classification MOVED "
+            "desactivee (fail-closed, aucun repli en deux points)",
+            file=sys.stderr,
+        )
         return {}, {}
     file_renames: dict[str, str] = {}
     dir_renames: dict[str, str] = {}

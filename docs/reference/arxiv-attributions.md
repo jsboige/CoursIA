@@ -1,5 +1,7 @@
 # Registre des attributions arXiv — convention et maintenance
 
+> REFERENCE — vivante — dernière révision 2026-11-19
+
 Issue #12853 (acceptance 9.4), parent EPIC #11168 (vérification des citations arXiv). Ce document fixe la convention du registre `arxiv_attributions_registry.yaml` et son organe CI.
 
 ## Le problème traité
@@ -10,7 +12,7 @@ La classe de défaut « attribution arXiv fausse » (#11065 Sendov, #11110, #111
 
 | Pièce | Rôle |
 |---|---|
-| `arxiv_attributions_registry.yaml` (racine) | Une entrée par correction appliquée : `arxiv_id`, `notebook`, `cell_index` (0-based), `expected_citation` (chaîne exacte), `source_pr`, `correction`, `date` |
+| `docs/reference/arxiv_attributions_registry.yaml` | Une entrée par correction appliquée : `arxiv_id`, `notebook`, `cell_index` (0-based), `expected_citation` (chaîne exacte), `source_pr`, `correction`, `date` |
 | `scripts/check_arxiv_attributions.py` | Vérifie que chaque entrée vit encore : la chaîne `expected_citation` doit être trouvable dans la cellule `cell_index` du notebook. Modes : défaut (RENAMED toléré pour triage), `--strict` (rename = FAIL, mode CI), `--paths` (limite aux globs), `--json` |
 | `.github/workflows/arxiv-attributions-guard.yml` | Gate bloquant per-PR (paths filtrés : registre, script, tests, workflow, notebooks enregistrés) + nocturne 03:47 UTC + dispatch |
 

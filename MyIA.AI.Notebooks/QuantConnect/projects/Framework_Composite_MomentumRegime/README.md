@@ -30,6 +30,26 @@ Ce comportement reste disponible sous `mode` = `base` pour reproduire les chiffr
 - `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) : `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
 - `quantbook.ipynb` : QuantBook de recherche du composite Momentum + RegimeSwitching (données natives QC, pré-backtest)
 
+## Non-régression du module partagé (#20188)
+
+Depuis #21134, `main.py` importe `MultiStrategyPouchesPCM` de `SharedPCM/pouches_pcm.py` au lieu de la copie locale `portfolio_construction.py`. Deux backtests QC Cloud du 2026-10-26, aux paramètres par défaut et sur la fenêtre 2015-01-01 → 2025-12-31, vérifient que ce changement ne modifie aucun ordre :
+
+- **A** : le code de `main` au commit `54f9b9eec1`, avec le module partagé ;
+- **B** : les mêmes `main.py` et `alpha_models.py`, avec l'ancienne copie `portfolio_construction.py` prise au commit qui précède la migration (`777f502a2a^`). L'argument que l'ancienne copie ne connaît pas (`watch_source="SectorMomentum"`) est retiré de l'appel, et deux propriétés de lecture exposent ses compteurs de diagnostic sous les noms que lit `main.py`.
+
+A et B portent la même instrumentation, qui ne passe aucun ordre. Elle relève la valeur du portefeuille chaque jour à minuit, période de chauffe comprise (252 séances). En fin de backtest, elle calcule une empreinte SHA-256 par année des ordres (identifiant, date, titre, quantité, statut, prix) et des valeurs relevées.
+
+| | A (module partagé) | B (ancienne copie) |
+|---|---|---|
+| Ordres | 676 | 676 |
+| Valeurs relevées | 4 382 | 4 382 |
+| Dernière valeur relevée | 238 628,49 | 238 628,49 |
+| Sharpe (QC) | 0,353 | 0,353 |
+| CAGR | 8,152 % | 8,152 % |
+| Pire baisse | 28,3 % | 28,3 % |
+
+Les empreintes annuelles sont égales : 12 sur 12 pour les ordres, 12 sur 12 pour les valeurs. Les 27 statistiques de QC sont égales, rotation comprise. Les compteurs de diagnostic du modèle de construction sont égaux aussi. La migration ne change donc pas le comportement du projet. Traces hors dépôt : `QC-traces/20188-nr/`.
+
 ## Performance
 
 ### Re-mesure #21349 sur le code de `main` : `NO BEATS`

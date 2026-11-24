@@ -205,7 +205,7 @@ fait echouer **les jobs d'une seule famille**, en accusant leur contenu.
 | Binaire | Pourquoi il est requis | Symptome quand il manque | Etat au 2026-10-08 |
 |---|---|---|---|
 | `gh` | gardes de perimetre et suites de tests lisent `gh pr view --json files` | `FileNotFoundError: 'gh'`, `check_exit: 127` -> `BASELINE_FAILED` ; le garde de perimetre sort en fail-loud **sans citer de contradiction reelle** | installe dans `~/.local/bin` (2.99.0, aligne sur l'epingle image le 2026-10-08, SHA-256 du Dockerfile verifiee — cf. divergence corrigee ci-dessous) |
-| `python` | des workflows appellent `python script.py` en nom nu ; Ubuntu ne fournit que `python3` | `line 1: python: command not found`, `exit 127` (rendu Quarto : `python scripts/regen_quarto_render.py`) | lien `~/.local/bin/python -> /usr/bin/python3` (3.12.3) |
+| `python` | des workflows appellent `python script.py` en nom nu ; Ubuntu ne fournit que `python3` | `line 1: python: command not found`, `exit 127` (rendu Quarto : `python scripts/ci/regen_quarto_render.py`) | lien `~/.local/bin/python -> /usr/bin/python3` (3.12.3) |
 
 **Le piege de la sonde, mesure le 2026-09-22.** `command -v python` depuis un shell WSL ordinaire rend
 **ABSENT avant comme apres** la pose du lien -- parce que ce shell n'a pas `~/.local/bin` dans son PATH.
@@ -465,6 +465,22 @@ cause** dans `pool.log`.
 Banc : `test_pool_mint.sh` (huit cas, via `POOL_PROBE=mint-token`, sans effet de bord).
 Controle negatif mesure : le meme banc, retry neutralise, rend **4 PASS / 4 FAIL**.
 
+## Persistance du confinement POOL_SIZE (Q17, 2026-10-07)
+
+Un `POOL_SIZE` exporte par une session (le confinement 3 decide le 28/09) meurt
+au premier redemarrage du parc — 4 redemarrages dans la nuit 06-07/10 l'ont
+demontre (retour a 8 slots a 01:41 sans le confinement). `pool.sh` lit des
+maintenant `$BASE/pool-size.conf` (un chiffre 1-8) quand l'env n'impose rien :
+le fichier survit aux redemarrages, l'env explicite garde la priorite, toute
+valeur hors bornes est ecartee au profit du defaut 8 (le scope `MemoryMax=20G`
+a ete dimensionne pour 8 slots). Pose du confinement durable :
+
+```bash
+wsl.exe -d Ubuntu -- bash -lc 'echo 3 > /home/jesse/CoursIA-runners-p0/pool-size.conf'
+```
+
+Banc : `test_pool_size_conf.sh` (huit cas -- conf vs env vs defaut, valeurs
+pourries et hors bornes, fichier sans newline final).
 ## Le magasin d'objets partage -- maillon 3 de #18225 (2026-10-07)
 
 Les deux premiers correctifs (#18225 : workspace persistant, quarantaine

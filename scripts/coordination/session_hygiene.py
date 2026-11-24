@@ -35,6 +35,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 # Motifs de noms de fichiers qui portent typiquement un secret. On ne lit JAMAIS la valeur :
 # un secret ne s'imprime pas pour prouver qu'il est la.
@@ -66,6 +67,20 @@ SCHEDULED_ORGANS = [
 # Un journal plus vieux que ce nombre d'intervalles = organe muet.
 SILENT_INTERVALS = 3
 
+# Journal de TRAVAIL par organe : la source qui avance a chaque unite de travail
+# (pour merge_ready, un verdict par PR evaluee, vide et flush a chaque ligne).
+#
+# Pourquoi il faut le lire en plus du log de lancement : le lanceur ouvre le log
+# du jour et y redirige la sortie de l'organe, mais cette sortie est BUFFERISEE
+# cote enfant -- le mtime du log se fige donc des le debut du tir et ne bouge
+# plus tant que le tir dure. Mesure du 22/11 sur merge_ready : log fige a 07:03
+# (tir lance a 06:56, encore en cours a 11:32) et journal de travail ecrit a
+# 11:32 ; l'organe annonçait « journal muet depuis 269 min » alors qu'il
+# evaluait 236 PR. Un ROUGE de vivacite ne vaut que si AUCUNE source ne bouge.
+JOURNAL_TRAVAIL = {
+    "merge_ready": "journal.jsonl",
+}
+
 # #19131 : le journal d'un organe porte son propre verdict de fin de tir
 # (`=== run end rc=N ===`) et, sur echec de demarrage, la ligne
 # `... : impossible de demarrer -- ...` (merge_ready.py:1158, rc 2). Mesurer
@@ -84,6 +99,32 @@ _JOURNAL_FAILURE_WORDS = re.compile(
 _JOURNAL_TAIL_LINES = 8
 _CONSECUTIVE_FAILURES = 2
 
+# #28005 (PR #28006) : pendant une passe, le journal de la tache `merge_ready`
+# ecrit un BATTEMENT DE COEUR toutes les 60 s -- la ligne
+# `=== passe en cours (elapsed N s) ===` -- pour que l'AGE du journal reste
+# frais. Ce battement rend une PASSE BLOQUEE invisible : l'age du journal
+# reste sous le seuil alors que l'enfant ne progresse plus, et la ligne de
+# battement ne porte aucun vocabulaire d'echec -- `_journal_verdict` la
+# classait GREEN. Avant ce correctif, une passe figee sortait en ROUGE au
+# bout de 60 min ; apres, elle ne sort plus. Le faux positif est corrige en
+# echange d'un faux negatif : on lit donc l'AGE que la ligne porte.
+#
+# La ligne porte une MESURE (`elapsed N s`), pas une intention : c'est le
+# seul chiffre qui distingue « passe longue » de « passe figee ».
+_HEARTBEAT_ELAPSED = re.compile(r"passe en cours \(elapsed (\d+) s\)", re.IGNORECASE)
+#: Au-dela de 2 h, la passe est LONGUE (AMBER) : la limite par defaut de
+#: `schtasks /Create /SC MINUTE` est de 72 h, une passe de 4 h est anormale
+#: sans etre encore figee.
+_PASS_LONG_S = 2 * 3600
+#: Au-dela de 6 h, la passe est FIGEE (ROUGE) : le battement continue
+#: d'ecrire, donc l'age du journal ne peut plus rien dire.
+_PASS_STUCK_S = 6 * 3600
+
+
+def _age_min(now: float, path: Path) -> int:
+    """Age en minutes d'une source de vivacite (mtime). Entier, jamais negatif."""
+    return max(0, int((now - path.stat().st_mtime) // 60))
+
 
 def _journal_tail(path: Path, limit: int = _JOURNAL_TAIL_LINES) -> list[str]:
     """Dernieres lignes non vides du journal (lecture bornee : 8 Ko suffisent)."""
@@ -97,6 +138,18 @@ def _journal_tail(path: Path, limit: int = _JOURNAL_TAIL_LINES) -> list[str]:
     return [ln.strip() for ln in raw.splitlines() if ln.strip()][-limit:]
 
 
+def _pass_elapsed_s(line: str) -> int | None:
+    """Age d'une passe, en secondes, si la ligne est un battement de coeur.
+
+    `None` si la ligne ne porte pas la mesure (ligne d'un autre organe, ou
+    journal sans battement -- l'age du journal suffit alors).
+    """
+    if not line:
+        return None
+    m = _HEARTBEAT_ELAPSED.search(line)
+    return int(m.group(1)) if m else None
+
+
 def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
     """(niveau, ligne_lue, tirs_identiques) de la queue d'un journal d'organe.
 
@@ -106,6 +159,11 @@ def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
     signature reconnue. Un tir nominal (`rc=0`) ou une ligne isolee sans
     vocabulaire d'echec restent GREEN : la regularite d'un organe sain ne
     doit pas alerter.
+
+    Exception : un BATTEMENT DE COEUR de passe (`elapsed N s`, #28005) est
+    lu par son age -- AMBER au-dela de 2 h, ROUGE au-dela de 6 h. Sans cela,
+    une passe figee resterait GREEN parce que le battement repare l'age du
+    journal (le faux negatif qu'il introduit).
     """
     if not lines:
         return GREEN, "", 0
@@ -115,6 +173,12 @@ def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
         if prev != last:
             break
         same += 1
+    elapsed = _pass_elapsed_s(last)
+    if elapsed is not None:
+        if elapsed >= _PASS_STUCK_S:
+            return RED, last, same
+        if elapsed >= _PASS_LONG_S:
+            return AMBER, last, same
     m = _RUN_END_RC.search(last)
     if m and int(m.group(1)) == 0:
         return GREEN, last, same
@@ -326,32 +390,50 @@ def check_branch(root: Path) -> list[Check]:
 
 
 def check_main_hostage(root: Path) -> list[Check]:
-    """``main`` detenu par un worktree secondaire = ``git checkout main`` echoue en silence."""
+    """``main`` detenu par un worktree qui n'est pas l'arbre principal = ``git checkout main`` echoue en silence.
+
+    L'arbre principal est la PREMIERE entree de ``git worktree list`` : c'est lui
+    qui heberge le depot commun, et c'est dans lui que ``git checkout main`` doit
+    aboutir. Mesure du 2026-11-21 (issue #27696) : lance depuis un worktree
+    secondaire, le predicat precedent prenait ``root`` pour l'arbre principal et
+    signalait l'arbre principal -- detenteur legitime de ``main`` -- comme
+    ravisseur, avec un remede destructeur (``git worktree remove`` sur l'arbre
+    partage).
+    """
     raw = git("worktree", "list", "--porcelain", cwd=root)
-    holder = None
-    current_path = None
+    entries: list[tuple[str, str]] = []
     for line in raw.splitlines():
         if line.startswith("worktree "):
-            current_path = line[len("worktree ") :].strip()
-        elif line.strip() in ("branch refs/heads/main", "branch refs/heads/master"):
-            if current_path and Path(current_path).resolve() != root.resolve():
-                holder = current_path
+            entries.append((line[len("worktree ") :].strip(), ""))
+        elif line.strip().startswith("branch ") and entries:
+            path, _ref = entries[-1]
+            entries[-1] = (path, line.strip()[len("branch ") :])
 
-    count = len([ln for ln in raw.splitlines() if ln.startswith("worktree ")])
+    principal = Path(entries[0][0]).resolve() if entries else None
+    holder = None
+    for path, ref in entries[1:]:
+        if ref in ("refs/heads/main", "refs/heads/master"):
+            holder = path
+
+    count = len(entries)
     checks = []
     if holder:
         checks.append(
             Check(
                 "main-otage",
                 RED,
-                f"'main' est detenu par le worktree {holder} — un `git checkout main` "
-                f"dans l'arbre principal ECHOUE, et son message se perd dans le bruit",
-                f"verifier qu'il est propre, puis: git worktree remove {holder}",
-                {"holder": holder},
+                f"'main' est detenu par le worktree secondaire {holder} — un "
+                f"`git checkout main` dans l'arbre principal ECHOUE, et son message "
+                f"se perd dans le bruit",
+                f"lui faire quitter main (git -C {holder} checkout <branche>) ou, "
+                f"s'il est propre et inutile, git worktree remove {holder}",
+                {"holder": holder, "principal": str(principal) if principal else None},
             )
         )
     else:
-        checks.append(Check("main-otage", GREEN, "aucun worktree ne detient main"))
+        checks.append(
+            Check("main-otage", GREEN, "main n'est detenu par aucun worktree secondaire")
+        )
 
     if count > 40:
         lvl = RED if count > 80 else AMBER
@@ -448,6 +530,11 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
     Deux predicats, dans l'ordre ou la panne se produit : le siege que nomme le
     lanceur existe, puis le journal avance. Un organe non installe ici est GREEN :
     ce n'est pas une panne, c'est une autre machine.
+
+    La vivacite se mesure sur la source LA PLUS RECENTE parmi celles que l'organe
+    ecrit : son log de lancement ET son journal de travail (cf. ``JOURNAL_TRAVAIL``).
+    Un tir long fige le log (sortie bufferisee cote enfant) sans arreter l'organe :
+    exiger que le log bouge declare a tort un organe en plein travail.
     """
     if local_appdata is None:
         local_appdata = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
@@ -473,22 +560,60 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
             )
             continue
         logs = sorted((state / "logs").glob("*.log"), key=lambda f: f.stat().st_mtime)
-        if not logs:
+        last_log = logs[-1] if logs else None
+        # Vivacite = la source LA PLUS RECENTE. L'organe n'est muet que si TOUTES
+        # ses sources sont muettes : le log de lancement se fige pendant un tir
+        # long (sortie bufferisee cote enfant), le journal de travail, lui,
+        # avance a chaque verdict.
+        sources: list[tuple[str, Path, int]] = []
+        if last_log is not None:
+            sources.append(("log de lancement", last_log, _age_min(now, last_log)))
+        nom_journal = JOURNAL_TRAVAIL.get(name)
+        if nom_journal:
+            journal = state / nom_journal
+            if journal.exists():
+                sources.append(
+                    (f"journal de travail ({nom_journal})", journal, _age_min(now, journal))
+                )
+        if not sources:
             checks.append(Check(label, AMBER, "installe, mais aucun journal : jamais tourne ?", data={"repo": str(repo)}))
             continue
-        last_log = logs[-1]
-        age_min = int((now - last_log.stat().st_mtime) // 60)
-        content_level, last_line, same = _journal_verdict(_journal_tail(last_log))
+        source_label, source_path, age_min = min(sources, key=lambda s: s[2])
+        content_level, last_line, same = _journal_verdict(
+            _journal_tail(last_log) if last_log is not None else [])
         excerpt = (last_line[:160] + "...") if len(last_line) > 160 else last_line
-        data = {"age_min": age_min, "log": str(last_log), "last_line": last_line}
+        # Les deux apports sont conserves : `main` lit desormais la
+        # vivacite sur TOUTES les sources (log de lancement + journal de
+        # travail), et la branche ajoute la detection d'une passe FIGEE --
+        # le battement de coeur ecrit, la passe n'avance plus.
+        pass_elapsed = _pass_elapsed_s(last_line)
+        data = {
+            "age_min": age_min,
+            "source": source_label,
+            "source_path": str(source_path),
+            "log": str(last_log) if last_log is not None else "",
+            "last_line": last_line,
+        }
         query = "schtasks /Query /TN CoursIA\\" + name + " /V /FO LIST  (Last Result, Task To Run)"
         if age_min > SILENT_INTERVALS * interval:
             checks.append(
                 Check(
                     label,
                     RED,
-                    f"journal muet depuis {age_min} min (intervalle nominal {interval} min)"
+                    f"journal muet depuis {age_min} min sur TOUTES ses sources "
+                    f"(intervalle nominal {interval} min)"
                     + (f" -- derniere ligne : {excerpt}" if excerpt else ""),
+                    query,
+                    data,
+                )
+            )
+        elif content_level == RED and pass_elapsed is not None:
+            checks.append(
+                Check(
+                    label,
+                    RED,
+                    f"passe figee depuis {pass_elapsed} s ({pass_elapsed // 3600} h) -- "
+                    f"le battement de coeur continue d'ecrire mais la passe n'avance plus : {excerpt}",
                     query,
                     data,
                 )
@@ -497,6 +622,17 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
             repet = f" -- {same} tirs consecutifs identiques" if same >= _CONSECUTIVE_FAILURES else ""
             checks.append(
                 Check(label, RED, f"journal frais mais le dernier tir a echoue : {excerpt}{repet}", query, data)
+            )
+        elif content_level == AMBER and pass_elapsed is not None:
+            checks.append(
+                Check(
+                    label,
+                    AMBER,
+                    f"passe longue : {pass_elapsed} s ({pass_elapsed // 3600} h) "
+                    f"depuis le dernier battement de coeur : {excerpt}",
+                    query,
+                    data,
+                )
             )
         elif content_level == AMBER:
             checks.append(
@@ -507,7 +643,8 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
                 Check(
                     label,
                     GREEN,
-                    f"journal ecrit il y a {age_min} min" + (f" -- derniere ligne : {excerpt}" if excerpt else ""),
+                    f"journal ecrit il y a {age_min} min (source : {source_label})"
+                    + (f" -- derniere ligne : {excerpt}" if excerpt else ""),
                     data=data,
                 )
             )
@@ -524,15 +661,423 @@ MANUAL_REMINDERS = [
 ]
 
 
-def main() -> int:
+# --- verrou de lane : une session par lane, VISIBLE (incident du 14/11) -----
+#
+# Mesure du 2026-11-14 : sur myia-po-2027:CoursIA, une seconde session de la
+# meme lane a pousse un commit sur la branche d'une PR pendant que la premiere
+# y travaillait. `check_lane_claim.py` traite deux sessions d'une meme lane
+# comme une reprise legitime (premisse « une lane = un agent actif », #14323)
+# : il ne peut pas voir ce cas. Ce verrou rend le second processus VISIBLE,
+# sur cette machine, au debut du cycle. Le mecanisme d'apparition des
+# doublons n'est pas etabli : l'organe ne suppose pas de cause, il mesure.
+
+#: Le verrou vit sous `.tmp/` (ignore par git) : un fichier par depot, une
+#: entree par lane -- une machine peut porter plusieurs lanes.
+LANE_LOCK_NAME = ".tmp/lane-session.json"
+
+
+def _pid_windows(pid: int) -> tuple[bool, float | None]:
+    """(vivant, heure de creation epoch s) d'un PID sous Windows.
+
+    Un PID qu'on ne peut pas sonder (erreur 5, processus eleve) est VIVANT :
+    on ne declare jamais mort un processus qu'on n'a pas pu interroger.
+    L'heure de creation defait la reutilisation de numero : le PID est rendu
+    a un autre processus, l'heure de creation ne le suit pas.
+
+    Vivance par l'etat signale du handle (``WaitForSingleObject`` 0 ms) :
+    ``GetExitCodeProcess`` seul est ambigu -- STILL_ACTIVE (259) est aussi un
+    code de sortie legitime, et un processus termine qui a choisi 259 serait
+    classe vivant. WAIT_OBJECT_0 = handle signale = termine ; WAIT_TIMEOUT =
+    vivant ; toute autre valeur (dont WAIT_FAILED) reste un vivant
+    conservateur.
+    """
+    import ctypes
+    import ctypes.wintypes as wt
+
+    process_query_limited_information = 0x1000
+    synchronize = 0x00100000
+    wait_object_0 = 0x0
+    wait_timeout = 0x102
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    # Signatures explicites : sans restype, ctypes echange un int 32 bits et
+    # tronque un HANDLE natif 64 bits -- la cause racine du faux
+    # session-double (#27363) etait un handle invalide, non une absence de
+    # processus.
+    k32.OpenProcess.restype = wt.HANDLE
+    k32.OpenProcess.argtypes = (wt.DWORD, wt.BOOL, wt.DWORD)
+    k32.WaitForSingleObject.restype = wt.DWORD
+    k32.WaitForSingleObject.argtypes = (wt.HANDLE, wt.DWORD)
+    k32.GetProcessTimes.restype = wt.BOOL
+    k32.GetProcessTimes.argtypes = (wt.HANDLE, ctypes.POINTER(wt.FILETIME),
+                                    ctypes.POINTER(wt.FILETIME),
+                                    ctypes.POINTER(wt.FILETIME),
+                                    ctypes.POINTER(wt.FILETIME))
+    k32.CloseHandle.restype = wt.BOOL
+    k32.CloseHandle.argtypes = (wt.HANDLE,)
+
+    handle = k32.OpenProcess(process_query_limited_information | synchronize, False, pid)
+    if not handle:
+        # 5 = acces refuse (il vit, eleve) ; 87 = parametre invalide (absent).
+        return (ctypes.get_last_error() == 5, None)
+    try:
+        # Un objet processus reste ouvrable apres sa terminaison tant qu'un
+        # handle le reference. OpenProcess/GetProcessTimes seuls ne mesurent
+        # donc PAS la vivance ; seul l'etat signale du handle la mesure.
+        etat = k32.WaitForSingleObject(handle, 0)
+        if etat not in (wait_object_0, wait_timeout):
+            return (True, None)  # sonde incomplete : jamais une preuve de mort
+        creation, exit_t, kern, user = (wt.FILETIME() for _ in range(4))
+        if not k32.GetProcessTimes(handle, ctypes.byref(creation), ctypes.byref(exit_t),
+                                   ctypes.byref(kern), ctypes.byref(user)):
+            return (True, None)
+        ticks = (creation.dwHighDateTime << 32) | creation.dwLowDateTime
+        return (etat == wait_timeout, (ticks - 116444736000000000) / 1e7)
+    finally:
+        k32.CloseHandle(handle)
+
+
+def _pid_posix(pid: int) -> tuple[bool, float | None]:
+    """(vivant, None) sous POSIX : os.kill(pid, 0) comme sonde, jamais comme signal."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return (False, None)
+    except PermissionError:
+        return (True, None)
+    except OSError:
+        return (True, None)  # insondable n'est pas mort
+    return (True, None)
+
+
+def pid_etat(pid: int) -> tuple[bool, float | None]:
+    """(vivant, heure de creation epoch s) d'un PID ; robuste a un PID mort."""
+    if not isinstance(pid, int) or pid <= 0:
+        return (False, None)
+    if os.name == "nt":
+        try:
+            return _pid_windows(pid)
+        except OSError:
+            return (True, None)  # echec de sonde : pas une preuve de mort
+    return _pid_posix(pid)
+
+
+# --- processus de session : le PID du harnais, pas celui du script ----------
+#
+# `os.getpid()` designe le processus de CE script, qui vit le temps d'une
+# commande : l'enregistrer rend le verrou inerte (review 5908186749, #26634).
+# Le porteur d'une lane est le processus de session du harnais
+# (`claude.exe`/`claude`, ou le `node` qui l'heberge) : on remonte la chaine
+# des parents jusqu'a lui. Aucun ancetre reconnu = mesure impossible, jamais
+# un vert (meme doctrine que `check_fetch`).
+
+MAX_ANCETRE_SAUTS = 32
+_CLAUDE_NOM = re.compile(r"^claude", re.IGNORECASE)
+_NODE_NOM = re.compile(r"^node", re.IGNORECASE)
+
+
+def _table_processus_windows() -> dict[int, tuple[int, str]]:
+    """pid -> (ppid, nom d'image) par `CreateToolhelp32Snapshot` (ctypes seul).
+
+    Aucune dependance externe, aucun sous-processus PowerShell : le harnais
+    interdit les deux pour une mesure faite a chaque debut de cycle.
+    """
+    import ctypes
+    import ctypes.wintypes as wt
+
+    th32cs_snapprocess = 0x00000002
+    invalid_handle = ctypes.c_void_p(-1).value
+
+    class ProcessEntry32W(ctypes.Structure):
+        _fields_ = [
+            ("dwSize", wt.DWORD),
+            ("cntUsage", wt.DWORD),
+            ("th32ProcessID", wt.DWORD),
+            ("th32DefaultHeapID", ctypes.c_size_t),
+            ("th32ModuleID", wt.DWORD),
+            ("cntThreads", wt.DWORD),
+            ("th32ParentProcessID", wt.DWORD),
+            ("pcPriClassBase", ctypes.c_long),
+            ("dwFlags", wt.DWORD),
+            ("szExeFile", ctypes.c_wchar * 260),
+        ]
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.CreateToolhelp32Snapshot.argtypes = [wt.DWORD, wt.DWORD]
+    k32.CreateToolhelp32Snapshot.restype = wt.HANDLE
+    k32.Process32FirstW.argtypes = [wt.HANDLE, ctypes.POINTER(ProcessEntry32W)]
+    k32.Process32FirstW.restype = wt.BOOL
+    k32.Process32NextW.argtypes = [wt.HANDLE, ctypes.POINTER(ProcessEntry32W)]
+    k32.Process32NextW.restype = wt.BOOL
+    k32.CloseHandle.argtypes = [wt.HANDLE]
+    k32.CloseHandle.restype = wt.BOOL
+
+    snapshot = k32.CreateToolhelp32Snapshot(th32cs_snapprocess, 0)
+    if not snapshot or snapshot == invalid_handle:
+        return {}
+    table: dict[int, tuple[int, str]] = {}
+    try:
+        entree = ProcessEntry32W()
+        entree.dwSize = ctypes.sizeof(ProcessEntry32W)
+        if not k32.Process32FirstW(snapshot, ctypes.byref(entree)):
+            return {}
+        while True:
+            table[int(entree.th32ProcessID)] = (
+                int(entree.th32ParentProcessID), entree.szExeFile)
+            if not k32.Process32NextW(snapshot, ctypes.byref(entree)):
+                break
+    finally:
+        k32.CloseHandle(snapshot)
+    return table
+
+
+def _table_processus_posix() -> dict[int, tuple[int, str]]:
+    """pid -> (ppid, nom) lu dans `/proc`, avec `ps -eo pid=,ppid=,comm=` en repli."""
+    table: dict[int, tuple[int, str]] = {}
+    proc = Path("/proc")
+    if proc.is_dir():
+        for dossier in proc.iterdir():
+            if not dossier.name.isdigit():
+                continue
+            try:
+                brut = (dossier / "stat").read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            try:
+                # `comm` peut contenir espaces et parentheses : on prend la
+                # DERNIERE parenthese fermante, puis les champs qui suivent.
+                gauche = brut.index("(")
+                droite = brut.rindex(")")
+                pid = int(brut[:gauche])
+                nom = brut[gauche + 1:droite]
+                champs = brut[droite + 2:].split()
+                table[pid] = (int(champs[1]), nom)  # champs[0]=etat, champs[1]=ppid
+            except (ValueError, IndexError):
+                continue
+        if table:
+            return table
+    try:
+        out = subprocess.run(
+            ["ps", "-eo", "pid=,ppid=,comm="],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    for ligne in out.stdout.splitlines():
+        champs = ligne.split(None, 2)
+        if len(champs) == 3 and champs[0].isdigit() and champs[1].isdigit():
+            table[int(champs[0])] = (int(champs[1]), champs[2].strip())
+    return table
+
+
+def table_processus() -> dict[int, tuple[int, str]]:
+    """Table des processus de la machine : pid -> (ppid, nom d'image)."""
+    try:
+        if os.name == "nt":
+            return _table_processus_windows()
+        return _table_processus_posix()
+    except OSError:
+        return {}  # table illisible = mesure impossible, jamais un faux vert
+
+
+def trouver_ancetre_session(depart: int | None = None,
+                            table: dict[int, tuple[int, str]] | None = None,
+                            max_sauts: int = MAX_ANCETRE_SAUTS,
+                            ) -> tuple[int, str] | None:
+    """(pid, nom) du processus de session du harnais, au-dessus de `depart`.
+
+    Remonte la chaine des parents (`ParentProcessId`), bornee (`max_sauts`) et
+    protegee contre les cycles. Un ancetre `claude*` l'emporte sur un `node*`
+    (le harnais peut tourner sous Node : `node .../claude`). `depart` lui-meme
+    n'est jamais candidat : c'est le processus de CE script. Aucun ancetre
+    reconnu -> None : l'appelant rend une mesure impossible, pas un vert.
+    """
+    if table is None:
+        table = table_processus()
+    pid = os.getpid() if depart is None else depart
+    chaine: list[tuple[int, str]] = []
+    vus = {pid}
+    courant = pid
+    for _ in range(max_sauts):
+        entree = table.get(courant)
+        if entree is None:
+            break
+        ppid = entree[0]
+        if ppid <= 0 or ppid in vus:
+            break
+        vus.add(ppid)
+        parent = table.get(ppid)
+        chaine.append((ppid, parent[1] if parent else ""))
+        if parent is None:
+            break
+        courant = ppid
+    for motif in (_CLAUDE_NOM, _NODE_NOM):
+        for anc_pid, anc_nom in chaine:
+            if anc_nom and motif.match(anc_nom):
+                return (anc_pid, anc_nom)
+    return None
+
+
+def _lire_verrou(path: Path) -> dict:
+    """Le verrou lu : dict lane -> entree ; illisible = absent (remplace plus tard)."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _ecrire_verrou(path: Path, verrous: dict) -> None:
+    """Ecriture remplacee atomiquement : deux demarrages simultanes ne se bribent pas."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.parent / f"lane-session.{os.getpid()}.new"
+    tmp.write_text(json.dumps(verrous, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _entree_verrou(pid: int, session_id: str, maintenant: float | None,
+                   etat_pid=pid_etat, nom: str = "") -> dict:
+    """Une entree de verrou : PID, heure de debut UTC explicite, session, machine."""
+    _, creation = etat_pid(pid)
+    debut = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(maintenant or time.time()))
+    return {"pid": pid, "debut": debut, "debut_proc": creation,
+            "session": session_id or os.environ.get("CLAUDE_SESSION_ID", ""),
+            "proc": nom,
+            "machine": os.environ.get("COMPUTERNAME")
+            or os.environ.get("HOSTNAME") or ""}
+
+
+def check_lane_lock(root: Path, lane: str, pid: int | None = None,
+                    session_id: str = "", maintenant: float | None = None,
+                    etat_pid=pid_etat,
+                    session_proc: Callable[[], tuple[int, str] | None] | None = None,
+                    ) -> list[Check]:
+    """Verrou de lane : un second processus VIVANT sous la meme lane, sur ce depot.
+
+    Pose `<repo>/.tmp/lane-session.json` et le lit d'abord. Le PID enregistre
+    est celui du **processus de session du harnais** (`session_proc`, par
+    defaut `trouver_ancetre_session`), jamais `os.getpid()` : ce script meurt
+    a la fin de sa commande, et un PID de script mort a chaque cycle rendait le
+    verrou inerte (review 5908186749, #26634). Un PID de session vivant
+    different du mien est un ROUGE nomme ; une session enregistree non vide
+    qui differe de la mienne est dite explicitement dans le detail. Aucun
+    ancetre de session trouve = AMBER « non mesurable », sans ecriture.
+
+    Deux sessions d'une meme lane sont indiscernables pour le protocole de
+    claim (#14323), et c'est le doublon qui se supprime -- `CronList` puis
+    `CronDelete` DANS la session qui le porte (regle de flotte : une session
+    par lane). Robuste a un PID mort (reprise silencieuse du verrou) et, sous
+    Windows, a la reutilisation du numero (l'heure de creation ne suit pas le
+    numero). Les entrees des AUTRES lanes du depot sont preservees.
+    """
+    if pid is not None:
+        mon_pid, mon_nom = pid, ""
+    else:
+        session_proc = session_proc or trouver_ancetre_session
+        trouve = session_proc()
+        if not trouve:
+            # Fail-closed : sans ancetre de session, on ne sait pas QUI porte la
+            # lane. Ce n'est pas un vert, et on n'ecrit aucun verrou qui aurait
+            # l'air valide.
+            return [Check(
+                "session-double",
+                AMBER,
+                "non mesurable : aucun processus de session (claude/node) dans la chaine "
+                "des parents -- le verrou n'est PAS pose et aucune session concurrente "
+                "n'a pu etre ecartee",
+                "lancer l'organe depuis une session du harnais (claude visible dans la "
+                "chaine des parents)",
+                {"lane": lane, "mesurable": False},
+            )]
+        mon_pid, mon_nom = trouve
+    ma_session = session_id or os.environ.get("CLAUDE_SESSION_ID", "")
+    path = root / LANE_LOCK_NAME
+    verrous = _lire_verrou(path)
+    entree = verrous.get(lane)
+    autre = entree.get("pid") if isinstance(entree, dict) else None
+    if isinstance(autre, int) and autre > 0 and autre != mon_pid:
+        vivant, creation = etat_pid(autre)
+        debut_proc = entree.get("debut_proc")
+        # Numero reutilise : le PID vit mais CE processus a demarre a une autre
+        # heure que celui qui a pose le verrou -- le porteur est mort.
+        reuse = (vivant and isinstance(creation, float) and isinstance(debut_proc, float)
+                 and abs(creation - debut_proc) > 1.0)
+        if vivant and not reuse:
+            sess_autre = str(entree.get("session") or "").strip()
+            # Le PID compare deja les porteurs ; la session le dit explicitement
+            # quand les deux cotes la connaissent (deux sessions, deux IDs).
+            double_session = bool(sess_autre) and bool(ma_session) and sess_autre != ma_session
+            nom_autre = f" ({entree.get('proc')})" if entree.get("proc") else ""
+            marque = (
+                f" -- la session enregistree '{sess_autre}' differe de la mienne "
+                f"'{ma_session}'" if double_session else "")
+            return [Check(
+                "session-double",
+                RED,
+                f"le processus {autre}{nom_autre} (lane {lane}, demarre "
+                f"{entree.get('debut') or '?'}) est VIVANT : une SECONDE session "
+                f"tourne sous cette lane{marque}",
+                "regle une session par lane : CronList puis CronDelete du cron du "
+                "doublon DANS la session qui le porte ; cette session n'edite rien "
+                "tant qu'il vit",
+                {"lane": lane, "autre_pid": autre},
+            )]
+        verrous[lane] = _entree_verrou(mon_pid, ma_session, maintenant, etat_pid, mon_nom)
+        _ecrire_verrou(path, verrous)
+        return [Check(
+            "session-double",
+            GREEN,
+            f"verrou repris : le processus precedent ({autre}) est mort"
+            + (" (son numero a ete reutilise par un autre processus)" if reuse else ""),
+            data={"lane": lane, "reprise": True},
+        )]
+    if isinstance(entree, dict) and autre == mon_pid:
+        # Meme numero : verifier que c'est bien le MEME processus (un PID de
+        # session recycle par un autre harnais est un porteur mort).
+        _, creation = etat_pid(mon_pid)
+        debut_proc = entree.get("debut_proc")
+        recycle = (isinstance(creation, float) and isinstance(debut_proc, float)
+                   and abs(creation - debut_proc) > 1.0)
+        if not recycle:
+            return [Check(
+                "session-double", GREEN,
+                f"verrou deja pose par ce processus (meme session, pid {mon_pid}"
+                f"{', ' + mon_nom if mon_nom else ''})",
+                data={"lane": lane, "pid": mon_pid, "proc": mon_nom})]
+        verrous[lane] = _entree_verrou(mon_pid, ma_session, maintenant, etat_pid, mon_nom)
+        _ecrire_verrou(path, verrous)
+        return [Check(
+            "session-double", GREEN,
+            f"verrou repris : le numero {mon_pid} a ete reutilise par un autre processus",
+            data={"lane": lane, "reprise": True},
+        )]
+    illisible = path.exists() and not verrous  # lu avant d'y poser sa propre entree
+    verrous[lane] = _entree_verrou(mon_pid, ma_session, maintenant, etat_pid, mon_nom)
+    _ecrire_verrou(path, verrous)
+    detail = f"verrou de lane pose (pid {mon_pid}{', ' + mon_nom if mon_nom else ''})"
+    if illisible:
+        detail = f"verrou illisible, remplace -- {detail}"
+    return [Check("session-double", GREEN, detail,
+                  data={"lane": lane, "pid": mon_pid, "proc": mon_nom})]
+
+
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--json", action="store_true", help="sortie structuree")
     ap.add_argument("--quiet", action="store_true", help="n'afficher que RED et AMBER")
-    args = ap.parse_args()
+    ap.add_argument("--lane", default=None,
+                    help="machine:workspace -- pose et verifie le verrou de session "
+                         "de lane (debut de cycle)")
+    ap.add_argument("--session-id", default=None,
+                    help="ID de session du harnais (defaut : $CLAUDE_SESSION_ID)")
+    args = ap.parse_args(argv)
 
     root = repo_root()
 
     checks: list[Check] = check_fetch(root)
+    if args.lane:
+        # Des le debut du cycle : un doublon vivant invalide tout ce qui suit.
+        checks += check_lane_lock(root, args.lane,
+                                  session_id=args.session_id or "")
     checks += check_branch(root)
     checks += check_main_hostage(root)
     checks += check_organs(root)

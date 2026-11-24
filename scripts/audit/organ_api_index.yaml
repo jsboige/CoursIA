@@ -45,7 +45,7 @@ series:
     # successeurs copies dans ICT-Greffe2 (#13802, declare).
 
   ArgumentAnalysis:
-    owner_path: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis
     organ: "pont Tweety/JVM (argumentation_lib : AF, ADF, modal, FOL, dialogue)"
     symbols:
       - AFHandler
@@ -202,9 +202,9 @@ submodules:
   # Fallacy ») et VettingLevel.cs (« public enum VettingLevel »). Curation :
   # noms distinctifs seulement -- les noms d'algorithmes standards (Differential
   # Evolution, Simulated Annealing...) sont exclus : reimplementer un algorithme
-  # de manuel n'est pas extraire l'organe. Borne connue : DEF_RE ne voit que
-  # def/class -- un « record », « enum » ou « type » F# ajoute hors du
-  # sous-module n'est pas attrape.
+  # de manuel n'est pas extraire l'organe. Le parseur C# reconnait class,
+  # struct, record et enum en excluant commentaires et chaines. Borne connue :
+  # les types F# ajoutes hors du sous-module ne sont pas detectes.
   semantic-fleet:
     owner_path: MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet
     remote: MyIntelligenceAgency/semantic-fleet
@@ -221,7 +221,7 @@ submodules:
       - MultiOpenAICompatibleConnectorConfiguration
 
   Argumentum:
-    owner_path: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum
     remote: ArgumentumGames/Argumentum
     pin: e62787eaaecd
     organ: "AssetConverter + entites du corpus (fallacies, vertus, scenarios) -- la surface C# mesuree au pin"

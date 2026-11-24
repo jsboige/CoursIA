@@ -1,7 +1,7 @@
 - name: "ML-8 Clustering"
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb
-  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
@@ -11,3 +11,4 @@
     - "Socle pedagogique commun : K-Means (K=3) avec normalisation MinMax preprocess ; evaluation par metriques de cohesion de clusters."
     - "Parite conceptuelle proche du natif : C# = `mlContext.Clustering.Trainers.KMeans(\"Features\", numberOfClusters: 3)` + `NormalizeMinMax`, prediction via `PredictedClusterId` (uint). Python = `sklearn.cluster.KMeans(n_clusters=3, n_init=10)` + `MinMaxScaler` via Pipeline."
     - "Asymetrie de metriques : Python expose `davies_bouldin_score` + `silhouette_score` (comparaison de qualite de clustering) ; le C# se concentre sur l'affectation PredictedClusterId. n_init=10 explicite cote Python (ML.NET gere les restarts en interne)."
+    - "2026-11-23 (#28053) : navigation — le jumeau Python cite ML-07c (carnet Python seul) dans sa chaîne ; le jumeau C# ne le cite pas ; contenu pédagogique inchangé."

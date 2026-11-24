@@ -7,7 +7,15 @@ Deux constructions sont couvertes :
   niveau ») ;
 - ``ConditionalBench`` : le token du parent selectionne la variante
   d'emission de l'enfant, a marginales appariees (critere « structure
-  generative conditionnelle »).
+  generative conditionnelle ») ;
+- ``ConditionalStateBench`` : l'etat cache de l'enfant est une ROTATION du
+  token observe du parent (regime de la troisieme passe, #20071) -- la
+  structure conditionnelle y est **requise** pour predire la cible ;
+- la **garde d'independance** des facteurs : deux generateurs de meme classe
+  et de meme graine partagent leur trajectoire d'etats caches (etats
+  IDENTIQUES, I(obs_a ; obs_b) = 0,677 nats mesure), ce qui transformait le
+  « controle independant » d'une campagne en banc le plus entrelace de la
+  campagne -- le banc refuse ce cas.
 
 Contre-verifications majeures : les beliefs exacts (y compris le filtre a
 emission variant temps-variable) sont confrontes a une ENUMERATION BRUTE des
@@ -30,6 +38,8 @@ import pytest
 
 from ict.bench_factorise import (
     ConditionalBench,
+    ConditionalStateBench,
+    FactoredBench,
     Mess3,
     Mess3Canonical,
     Mess3_ObsCoupled,
@@ -409,3 +419,140 @@ def test_plancher_conditionnel_strictement_meilleur_qu_aveugle():
     )
     assert cond < blind
     assert blind - cond > 0.01  # n'est pas un artefact numerique
+
+
+# ---------------------------------------------------------------------------
+# Garde d'independance des facteurs (#20071, troisieme passe)
+# ---------------------------------------------------------------------------
+#
+# Mesure du 2026-10-26 (60 000 pas, Mess3 x Mess3) :
+#   - meme graine pour les deux facteurs : etats caches IDENTIQUES et
+#     I(obs_a ; obs_b) = 0,677 nats -- le « controle independant » d'une
+#     campagne etait alors le banc le plus ENTRELACE de la campagne ;
+#   - graines distinctes : I(obs_a ; obs_b) = 0,0001 nats ;
+#   - meme graine mais generateurs de classes DIFFERENTES (Mess3 x RRXOR) :
+#     I = 0,000002 nats -- ils ne consomment pas le flux d'uniformes de la
+#     meme facon, le cas est sain sans garde.
+# Le banc refuse donc le cas pathologique plutot que de le laisser produire
+# un controle qui ne controle rien.
+
+
+def _mi_marginale(x, y):
+    """Information mutuelle discrete estimee par les frequences empiriques."""
+    x = np.asarray(x, dtype=np.int64)
+    y = np.asarray(y, dtype=np.int64)
+    joint = np.zeros((int(x.max()) + 1, int(y.max()) + 1))
+    np.add.at(joint, (x, y), 1.0)
+    joint /= joint.sum()
+    px = joint.sum(axis=1, keepdims=True)
+    py = joint.sum(axis=0, keepdims=True)
+    nz = joint > 0
+    return float((joint[nz] * np.log(joint[nz] / (px @ py)[nz])).sum())
+
+
+def test_graine_identique_refusee_pour_deux_generateurs_de_meme_classe():
+    bench = FactoredBench(Mess3Canonical(), Mess3Canonical(emission_diag=0.4))
+    with pytest.raises(ProcessError):
+        bench.sample(10, seed_a=1, seed_b=1)
+
+
+def test_graines_distinctes_acceptees_et_facteurs_vraiment_independants():
+    bench = FactoredBench(Mess3Canonical(), Mess3Canonical(emission_diag=0.4))
+    r = bench.sample(20_000, seed_a=1, seed_b=2)
+    assert not np.array_equal(r["states_a"], r["states_b"])
+    assert _mi_marginale(r["obs_a"], r["obs_b"]) < 1e-3
+
+
+def test_classes_differentes_acceptees_meme_graine():
+    # Mess3 et RRXOR ne consomment pas le flux d'uniformes de la meme facon :
+    # le cas est sain, la garde ne doit pas le refuser.
+    bench = FactoredBench(Mess3Canonical(), RRXOR())
+    r = bench.sample(5_000, seed_a=1, seed_b=1)
+    assert _mi_marginale(r["obs_a"], r["obs_b"]) < 1e-3
+
+
+# ---------------------------------------------------------------------------
+# ConditionalStateBench : regime a etat couple (troisieme passe)
+# ---------------------------------------------------------------------------
+
+
+def test_etat_enfant_est_la_rotation_du_token_observe():
+    bench = ConditionalStateBench(
+        Mess3Canonical(), Mess3Canonical(emission_diag=0.4), shift=1
+    )
+    r = bench.sample(500, seed_parent=1, seed_child=2)
+    assert np.array_equal(r["states_b"], (r["obs_a"] + 1) % 3)
+    # l'etat de l'enfant est une FONCTION du token : rien d'autre ne le pilote
+    assert len(np.unique(r["states_b"])) == 3
+
+
+def test_croyance_enfant_est_un_dirac_sur_la_rotation():
+    bench = ConditionalStateBench(
+        Mess3Canonical(), Mess3Canonical(emission_diag=0.4), shift=1
+    )
+    r = bench.sample(200, seed_parent=3, seed_child=4)
+    bels = bench.beliefs(r["obs_a"], r["obs_b"])
+    attendu = (r["obs_a"] + 1) % 3
+    bb = bels["belief_b"]
+    idx = np.arange(len(attendu))
+    assert np.allclose(bb[idx, attendu], 1.0)
+    ailleurs = np.zeros_like(bb)
+    ailleurs[idx, attendu] = 1.0
+    assert np.allclose(bb - ailleurs, 0.0)
+
+
+def test_marginales_appariees_avec_le_controle_independant():
+    enfant = Mess3Canonical(emission_diag=0.4)
+    bench = ConditionalStateBench(Mess3Canonical(), enfant, shift=1)
+    e = np.asarray(enfant.emission_matrix(), dtype=np.float64)
+    # marginale d'observation de l'enfant : E appliquee a la marginale d'etat
+    assert np.allclose(bench.marginal_child_observations(), e @ np.full(3, 1 / 3), atol=1e-12)
+    # et le controle independant a la MEME marginale
+    ctrl = FactoredBench(Mess3Canonical(), enfant)
+    r_ctrl = ctrl.sample(20_000, seed_a=1, seed_b=2)
+    emp = np.bincount(r_ctrl["obs_b"], minlength=3) / len(r_ctrl["obs_b"])
+    assert np.abs(emp - bench.marginal_child_observations()).max() < 0.02
+
+
+def _r2_onehot(token, cible):
+    """R2 hors echantillon d'une sonde lineaire (one-hot token -> cible)."""
+    token = np.asarray(token, dtype=np.int64)
+    x = np.eye(int(token.max()) + 1)[token]
+    n = len(x)
+    cut = int(0.8 * n)
+    a = np.hstack([x[:cut], np.ones((cut, 1))])
+    w, *_ = np.linalg.lstsq(a, cible[:cut], rcond=None)
+    p = np.hstack([x[cut:], np.ones((n - cut, 1))]) @ w
+    ss_res = float(((cible[cut:] - p) ** 2).sum())
+    ss_tot = float(((cible[cut:] - cible[cut:].mean(axis=0, keepdims=True)) ** 2).sum())
+    return 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+
+
+def test_dependance_necessaire_ici_et_non_dans_le_banc_a_variante():
+    # La question de la troisieme passe : la structure conditionnelle est-elle
+    # REQUISE pour predire la cible ? Dans le regime a etat couple, oui (le
+    # token determine la cible) ; dans le banc a variante d'emission, non --
+    # et c'est pourquoi l'additivity_gap nul y measure n'apprend rien.
+    enfant = Mess3Canonical(emission_diag=0.4)
+    etat = ConditionalStateBench(Mess3Canonical(), enfant, shift=1)
+    r_etat = etat.sample(20_000, seed_parent=1, seed_child=2)
+    b_etat = etat.beliefs(r_etat["obs_a"], r_etat["obs_b"])
+    r2_etat = _r2_onehot(r_etat["obs_a"], b_etat["belief_b"])
+    assert r2_etat > 0.99
+
+    variante = ConditionalBench(Mess3Canonical(), enfant, kappa=0.28)
+    r_var = variante.sample(20_000, seed_parent=1, seed_child=2)
+    b_var = variante.beliefs(r_var["obs_a"], r_var["obs_b"])
+    r2_var = _r2_onehot(r_var["obs_a"], b_var["belief_b"])
+    assert r2_var < 0.1
+
+
+def test_prime_conditionnelle_de_l_etat_atteint_le_plafond():
+    # I(token ; etat de l'enfant) = log q exactement : le token determine
+    # l'etat, il ne fait pas que le correler.
+    etat = ConditionalStateBench(
+        Mess3Canonical(), Mess3Canonical(emission_diag=0.4), shift=1
+    )
+    r = etat.sample(20_000, seed_parent=5, seed_child=6)
+    mi = _mi_marginale(r["obs_a"], r["states_b"])
+    assert mi == pytest.approx(float(np.log(3)), abs=1e-3)

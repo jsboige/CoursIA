@@ -158,6 +158,38 @@ def test_align_direct_cognate_fr(argum: list[ArgumentumEntry]):
     assert a.best_famille == "Insuffisance"
 
 
+def test_align_direct_cognate_fr_survit_a_l_apostrophe_typographique(tmp_path: Path):
+    """Ecart mecanique n°3 de #10355 §4 : la taxonomie ecrit « d’autorité » (’).
+
+    Mesure du 2026-11-08 sur la taxonomie reelle : la branche cognate comparait
+    en sous-chaine BRUTE, si bien que « argument d'autorité » (apostrophe droite,
+    cote inventaire academique) ne rencontrait jamais « Argument d’autorité »
+    (apostrophe typographique, cote taxonomie). Le score tombait a 0,09 et
+    designait une feuille d'une AUTRE famille (« Referencement plethorique »,
+    Influence) -- un faux positif lexical qu'aucun garde n'empechait de consommer
+    comme source d'etiquette. La comparaison normalise desormais les deux cotes.
+    """
+    path = _write_taxo(tmp_path / "apostrophe.csv", [
+        ["0", "Argument fallacieux", "", "", "Argument fallacieux", "", "", "", ""],
+        # noeud correct : porte l'apostrophe typographique et un nom_vulgarisé VIDE
+        ["71", "Insuffisance", "Prejuge", "", "Argument d’autorité",
+         "Vous tenez une affirmation pour vraie parce qu'une autorite la soutient.",
+         "", "", ""],
+        # leurre lexical : meme famille, aucun rapport semantique
+        ["211", "Influence", "Prestige", "Référencement pléthorique",
+         "Référencement pléthorique", "Vous accumulez les references.",
+         "", "", ""],
+    ])
+    entries = load_argumentum(path)
+    a = align_label("Appeal to authority", "TEST", ["argument d'autorité"], entries)
+    assert a.verdict == "DIRECT", (
+        f"cognate FR non reconnu a travers l'apostrophe typographique : "
+        f"{a.verdict} vers {a.best_famille}/{a.best_name} ({a.score})"
+    )
+    assert a.best_pk == "71"
+    assert a.best_famille == "Insuffisance"
+
+
 def test_align_not_found_when_no_overlap(argum: list[ArgumentumEntry]):
     # Etiquette sans aucun rapport avec les 3 entries -> NOT_FOUND.
     a = align_label("Quantum entanglement fallacy", "TEST",

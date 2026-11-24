@@ -127,8 +127,11 @@ def forge_compile_and_deploy(w3, source_code: str, contract_name: str,
     """
     abi, bytecode = forge_compile(source_code, contract_name)
     Contract = w3.eth.contract(abi=abi, bytecode=bytecode)
-    tx_hash = Contract.constructor(*constructor_args).transact({"from": deployer})
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    # L'organe de la serie (web3_tx.py, sibling) : attend le minage ET controle
+    # receipt["status"], ce que le .transact() + wait manuel ne faisait pas.
+    from web3_tx import transact_and_wait
+
+    receipt = transact_and_wait(w3, Contract.constructor(*constructor_args), deployer)
     instance = w3.eth.contract(address=receipt.contractAddress, abi=abi)
     print(f"Deploye: {contract_name} a {receipt.contractAddress}")
     return instance, receipt

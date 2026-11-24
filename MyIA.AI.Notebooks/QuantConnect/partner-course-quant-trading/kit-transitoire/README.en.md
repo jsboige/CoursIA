@@ -72,10 +72,32 @@ The run traces (plans, hashes, charts, statistics) are kept outside the reposito
 | Trees / Depth / LR | 100 / 4 / 0.05 |
 | Training | 3-year rolling, bi-weekly train |
 | Bear filter | SPY < SMA200 -> max 2 positions |
-| Max positions | 5 (2 in bear market) |
+| Max positions | 4 (2 in bear market) |
 | Allocation | 95% |
+| Prediction threshold | 0.01 |
 
-**Best backtest** : Sharpe 0.521, CAGR 12.81%, MaxDD 39.1%
+**Reference backtest** (seed 42, measured 2026-10-25): Sharpe 0.66, CAGR 16.21%, MaxDD 24.7%, 837 orders.
+
+#### Code parameters and published figures: QC Cloud measurement (#22429), 2026-10-25
+
+The parameter table announced at most 5 positions, while `main.py` holds 4, with a 95% allocation and a prediction threshold of 0.01. The file header attributed the figure shown here until now (Sharpe 0.521, MaxDD 39.1%) to an earlier version: 5 positions, 90%, threshold 0.005.
+
+The measurement rule was written in #22429 before the first backtest. Two runs, on the same day, over the kit window (2015-01-01 to 2024-12-31): A is the current `main.py`, unchanged; B is the same file with the three constants of the earlier version. The current code is kept whatever the result: keeping the version with the better backtest would select on the evaluation window.
+
+| Version | Sharpe | CAGR | Max drawdown | Orders |
+|---|---|---|---|---|
+| A: current code (4 positions, 95%, threshold 0.01) | 0.66 | 16.21% | 24.7% | 837 |
+| B: earlier constants (5 positions, 90%, threshold 0.005) | 0.532 | 12.81% | 36.0% | 1109 |
+
+The Sharpe is the one shown by QC.
+
+**Reading.**
+- The published figure is not reproduced. The rule required B to match the Sharpe within three hundredths and the max drawdown within 2 points. Sharpe and CAGR agree, but the max drawdown is 3.1 points apart. The gap remains unexplained.
+- The header also gave, for the current code, Sharpe 0.442 and MaxDD 37.9%. A does not recover it either.
+- A's worst drop runs from May 2015 to February 2016; B's falls in the February-March 2020 crash.
+- One run per version, under a single seed: these figures describe the code, they do not compare two strategies.
+
+The CALIBRATION cells of the notebooks (RandomForest and XGBoost) still announce the earlier constants. They are code cells, to be re-executed on QC Cloud after editing: they will follow in a QC session (#22429).
 
 ### 03 - Framework Composite
 
@@ -171,8 +193,8 @@ The `research.ipynb` notebooks use `QuantBook` and require the QC Lab environmen
 | Retrain | Monthly | Bi-weekly | N/A (no ML) |
 | Max positions | 4 (2 in bear) | 4 (2 in bear) | Dynamic |
 | Learning | Model training | Model training | Expert rules |
-| Sharpe | 0.387 | 0.521 | 0.376 |
-| CAGR | 9.92% | 12.81% | 7.60% |
-| MaxDD | 46.6% | 39.1% | 20.6% |
+| Sharpe | 0.387 | 0.66 | 0.376 |
+| CAGR | 9.92% | 16.21% | 7.60% |
+| MaxDD | 46.6% | 24.7% | 20.6% |
 
-The RandomForest column is the reference backtest (seed 42, measured 2026-10-25). The other two columns are the best published backtests for those strategies.
+The RandomForest and XGBoost columns are the reference backtests (seed 42, measured 2026-10-25). The Framework column is the best published backtest for that strategy.

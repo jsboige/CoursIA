@@ -13,7 +13,7 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
     ticker : sans levier, chaque poche plafonne a sa tranche et la somme
     par symbole ne depasse pas la somme des tranches.
 
-    Mode intent (additive=True, defaut) : avant determine_target_percent,
+    Mode intent (additive=True, OPT-IN) : avant determine_target_percent,
     le PCM de base de Lean (GetTargetInsights) ne garde qu'un insight
     actif par symbole — sur un ticker partage, le dernier alpha a emettre
     gagne et les autres poches sont perdues. Pour additionner les poches
@@ -21,6 +21,15 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
     insight actif par couple (symbole, source_model), puis sommees par
     symbole (#19740, #19759). Le mode "base" historique reste disponible
     via additive=False pour les comparaisons A/B.
+
+    Le defaut est additive=False (#20188) : chaque consommateur pinne son
+    mode explicitement, donc le defaut n'est atteint par aucun d'eux et
+    le remettre ne change le comportement d'aucun projet. Un consommateur
+    qui omet `additive` herite du mode base historique ; le mode intent
+    se demande (`additive=True, algorithm=self`), et `additive=True` sans
+    algorithme est refuse (ValueError) plutot que silencieusement
+    approche. La garde `scripts/quantconnect/check_pcm_single_source.py`
+    verifie ces deux invariants.
 
     Ce fichier est la seule copie du module : les projets composites
     l'importent comme bibliotheque de projet QC (voir README.md du
@@ -31,7 +40,7 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
     """
 
     def __init__(self, alpha_allocations, rebalance=timedelta(days=31),
-                 additive=True, algorithm=None, watch_source=None, watch_tickers=None):
+                 additive=False, algorithm=None, watch_source=None, watch_tickers=None):
         super().__init__()
         if additive and algorithm is None:
             raise ValueError(

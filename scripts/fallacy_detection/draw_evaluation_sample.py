@@ -6,36 +6,42 @@ un echantillon de paires (texte academique, noeud de taxonomie Argumentum),
 stratifie par famille de premier niveau, graine fixee, empreinte SHA-256
 consignee.
 
-Unite d'annotation : la paire (texte, noeud). Un texte multi-etiquete produit
-une paire par libelle de sophisme DISTINCT qu'il porte ; deux libelles qui
-roulent vers le meme noeud (ex. appeal to anger et appeal to pity, tous deux
--> Appeal to emotion) ne produisent QU'UNE paire -- l'evaluateur juge « ce
-texte illustre-t-il le noeud X » une fois par noeud.
+Source de population : l'artefait de reference ``aligned_corpus.jsonl``,
+produit par ``build_aligned_eval_corpus.py`` (ponts declares, exclusions
+consignees, adjudications PARTIAL, unicite (texte, noeud) garantie a
+l'emission). Le tirage ne reconstruit PLUS le join : avant l'unification, il
+portait une seconde implementation du chainon (rollup propre, exclusions
+propres) qui divergeait du builder -- 257 paires contre 225, deux populations
+pour un meme protocole. Desormais la population du tirage EST le corpus
+commis, et le test ``test_population_egale_corpus_aligne`` epingle
+``population == len(aligned_corpus.jsonl)`` : la derive revient au prochain
+changement de regle cote builder, elle ne peut plus naitre cote tirage.
 
-Chainon de jointure (trois niveaux, tous SOURCES) :
-  1. libelle corpus MAFALDA (minuscule, fin) -> classe L2 du papier
-     (Helwe et al. 2023, arXiv:2311.09761, Figure 2 -- le papier definit
-     L1 = Pathos/Ethos/Logos, L2 = les classes fines ; les libelles du corpus
-     SONT les classes L2 du papier) ;
-  2. classe L2 papier -> inventaire consolide du script d'alignement
-     (align_academic_to_argumentum.py, liste MAFALDA_L2 a 23 classes) -- la
-     consolidation suit les mots-cles du script (ex. alias « ad populum » de
-     Appeal to popularity, ligne 140) et le regroupement Pathos du papier
-     (les sous-emotions -> Appeal to emotion) ;
-  3. inventaire -> noeud Argumentum via logic_mafalda_to_argumentum.csv
-     (verdict DIRECT / PARTIAL / NOT_FOUND, PR #20315).
+Seul lookup residuel : le verdict d'alignement (DIRECT/PARTIAL), que l'artefait
+n'enregistre pas, est retrouve dans la table d'alignement
+(logic_mafalda_to_argumentum.csv) par l'identifiant QUE l'artefait porte deja
+-- ``source_label`` pour les correspondances exactes, la cible du pont dans
+``match`` ("bridge:<L2>") pour les ponts declares. Ce lookup ne reimplemente
+aucune regle du builder : il lit une colonne de la table source, clee par un
+champ de l'artefact.
+
+Unite d'annotation : la paire (texte, noeud), dedupliquee par le builder a
+l'emission (deux libelles d'un meme texte qui roulent vers le meme noeud ne
+produisent qu'une paire ; les libelles fusionnes vivent dans ``source_labels``
+cote artefact).
 
 Strates : la strate d'evaluation est le croisement (famille Argumentum x
 verdict d'alignement). Le tirage par defaut cible les strates DIRECT (le
-critere evalue qu'un humain RETROUVE l'etiquette ; une paire dont
-l'alignement meme est NOT_FOUND n'a pas d'etiquette a retrouver) puis
-complete par PARTIAL sous contrainte de plancher par famille.
+critere evalue qu'un humain RETROUVE l'etiquette) puis complete par PARTIAL
+sous contrainte de plancher par famille. Les lignes NOT_FOUND n'entrent jamais
+dans le corpus (exclues par le builder).
 
 Sorties :
-  --out-sample  : JSONL, une paire par ligne -- references (fichier, index de
-                  ligne, libelle corpus, inventaire, noeud, famille, verdict),
-                  JAMAIS le texte lui-meme (pas de derivation CC-BY-SA, le
-                  texte se re-lit depuis le corpus sous NOTICE) ;
+  --out-sample  : JSONL, une paire par ligne -- references (fichier gold,
+                  numero de ligne 1-based, libelle corpus, inventaire, noeud,
+                  famille, verdict, type de correspondance), JAMAIS le texte
+                  lui-meme (pas de derivation CC-BY-SA, le texte se re-lit
+                  depuis le corpus sous NOTICE) ;
   --out-manifest: JSON -- graine, SHA-256 de l'echantillon, comptes par
                   strate, population joinable totale, bornes atteintes.
 
@@ -58,64 +64,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_ACademic = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic"
 ALIGNMENT_CSV = DATA_ACademic / "logic_mafalda_to_argumentum.csv"
-CORPUS_FILES = [
-    "MAFALDA/gold_standard_dataset.jsonl",
-    "MAFALDA/user_study_examples_with_labels.jsonl",
-]
-
-# Etiquettes portees par le corpus mais exclues par conception : 'nothing'
-# (pas un sophisme) et 'to clean' (artefact de nettoyage du jeu amont,
-# absent des guidelines d'annotation -- verifie sur la copie archivee
-# « MAFALDA Annotation Guidelines », gisement GDrive).
-EXCLUDED_LABELS = {"nothing", "to clean"}
-
-# Rollup libelle corpus -> inventaire consolide du script d'alignement.
-# Source par entree :
-#   - DIRECT : le libelle corpus est le meme libelle que l'inventaire
-#     (casse pres) ;
-#   - PAPER-FIG2 : regroupement Pathos du papier (Helwe 2023, Figure 2) --
-#     les sous-emotions sont des enfants L2 de Appeal to Emotion ;
-#   - SCRIPT-KW : mot-cle/alias de l'inventaire (align_academic_to_argumentum.py,
-#     liste MAFALDA_L2) ;
-#   - ETHOS : attaque du locuteur (papier, categorie Ethos de la Figure 2).
-CORPUS_TO_INVENTORY = {
-    "slippery slope": ("Slippery slope", "DIRECT"),
-    "hasty generalization": ("Hasty generalization", "DIRECT"),
-    "false analogy": ("False analogy", "DIRECT"),
-    "circular reasoning": ("Circular reasoning", "DIRECT"),
-    "appeal to fear": ("Appeal to fear", "DIRECT"),
-    "appeal to nature": ("Appeal to nature", "DIRECT"),
-    "appeal to tradition": ("Appeal to tradition", "DIRECT"),
-    "fallacy of division": ("Fallacy of division", "DIRECT"),
-    "equivocation": ("Equivocation", "DIRECT"),
-    "straw man": ("Straw man", "DIRECT"),
-    "ad hominem": ("Ad hominem", "DIRECT"),
-    "appeal to pity": ("Appeal to emotion", "PAPER-FIG2"),
-    "appeal to anger": ("Appeal to emotion", "PAPER-FIG2"),
-    "appeal to positive emotion": ("Appeal to emotion", "PAPER-FIG2"),
-    "appeal to ridicule": ("Appeal to emotion", "PAPER-FIG2"),
-    "ad populum": ("Appeal to popularity", "SCRIPT-KW"),
-    "appeal to (false) authority": ("Appeal to authority", "SCRIPT-KW"),
-    "causal oversimplification": ("Causal fallacy", "SCRIPT-KW"),
-    "false causality": ("False cause", "SCRIPT-KW"),
-    "guilt by association": ("Ad hominem", "ETHOS"),
-    "tu quoque": ("Ad hominem", "ETHOS"),
-    "false dilemma": ("Fallacy of logic", "SCRIPT-KW"),
-}
-
-# Libelles L2 du papier SANS pendant dans l'inventaire consolide : le papier
-# (Figure 2) compte « Appeal to Worse Problem » parmi ses classes L2, mais la
-# consolidation a 23 classes de align_academic_to_argumentum.py n'en retient
-# pas -- ces paires sont non joinables PAR CONSTRUCTION et le manifest les
-# signale a part (elles ne relevent d'aucun noeud Argumentum).
-PAPER_L2_SANS_INVENTAIRE = {"appeal to worse problems"}
+ALIGNED_CORPUS = DATA_ACademic / "aligned/aligned_corpus.jsonl"
+JOIN_REPORT = DATA_ACademic / "aligned/join_report.json"
+GOLD_FILE = "MAFALDA/gold_standard_dataset.jsonl"
 
 # Seuils du protocole (issue #20222, critere 1) et bornes atteignables
-# mesurees sur le corpus in-repo (220 textes, mesure au 2026-10-23) :
-#   population joinable 257 paires (texte x noeud) >= les 200 exigees ;
-#   Influence ne joint qu'en PARTIAL (sa strate DIRECT n'existe pas dans la
-#   population) ; Tricherie est absente de la population joinable (aucun
-#   libelle corpus ne roule vers elle) -- bornes consignees dans le manifest.
+# mesurees sur le corpus aligne commis (225 paires, mesure au 2026-11-08) :
+#   population joinable 225 paires (texte x noeud, dedup a l'emission) >=
+#   les 200 exigees ; Influence joint en DIRECT (30) et PARTIAL adjuge (11) ;
+#   Tricherie est absente de la population (aucune paire source ne roule vers
+#   elle) -- borne consignee dans le manifest.
 TARGET_TOTAL = 200
 FAMILY_FLOOR = 10
 
@@ -125,51 +83,42 @@ def load_alignment() -> dict[str, dict]:
         return {r["academic_label"]: r for r in csv.DictReader(f)}
 
 
-def build_pairs(alignment: dict[str, dict]) -> tuple[list[dict], Counter, Counter]:
-    """Construit la population joinable : une paire (texte, noeud) dedupliquee
-    par noeud, plus les compteurs de libelles non joinables (pour le rapport).
+def _table_key(rec: dict) -> str:
+    """Cle de table d'un enregistrement du corpus aligne : le libelle source
+    pour une correspondance exacte, la cible du pont pour un pont declare."""
+    if rec["match"] == "exact":
+        return rec["source_label"]
+    return rec["match"].split(":", 1)[1]
 
-    Le lookup rollup est insensible a la casse : le corpus melange les
-    graphies ('appeal to ridicule' et 'Appeal to Ridicule' sont deux ecritures
-    du meme libelle L2 du papier).
+
+def load_pairs(corpus_path: Path, alignment: dict[str, dict]) -> list[dict]:
+    """Charge la population depuis l'artefait de reference.
+
+    Le texte verbatim n'est JAMAIS reporte dans les paires : seules les
+    references sortent (le texte se re-lit depuis le corpus sous NOTICE).
+    Le verdict d'alignement est retrouve dans la table par l'identifiant que
+    l'artefait porte (cf. _table_key) ; une cle absente de la table est une
+    incoherence artefact/table, elle echoue bruyamment plutot que de produire
+    une paire sans verdict.
     """
-    rollup_ci = {k.lower(): v for k, v in CORPUS_TO_INVENTORY.items()}
-    pairs: dict[tuple[str, int, str], dict] = {}
-    unjoinable: Counter = Counter()
-    unaligned_inventory: Counter = Counter()
-    for rel in CORPUS_FILES:
-        path = DATA_ACademic / rel
-        with open(path, encoding="utf-8") as f:
-            for idx, line in enumerate(f):
-                doc = json.loads(line)
-                labels = {lab for _, _, lab in doc["labels"]}
-                seen_nodes: set[str] = set()
-                for lab in sorted(labels):
-                    if lab.lower() in EXCLUDED_LABELS:
-                        continue
-                    entry = rollup_ci.get(lab.lower())
-                    if entry is None:
-                        unjoinable[lab.lower()] += 1
-                        continue
-                    inv, _source = entry
-                    al = alignment.get(inv)
-                    if al is None:
-                        unaligned_inventory[inv] += 1
-                        continue
-                    node = al["best_name"]
-                    if node in seen_nodes:
-                        continue  # dedup par noeud : une paire par (texte, noeud)
-                    seen_nodes.add(node)
-                    pairs[(rel, idx, node)] = {
-                        "source_file": rel,
-                        "line_index": idx,
-                        "corpus_label": lab,
-                        "inventory_label": inv,
-                        "node": node,
-                        "family": al["best_famille"],
-                        "verdict": al["verdict"],
-                    }
-    return list(pairs.values()), unjoinable, unaligned_inventory
+    rollup_ci = {" ".join(k.lower().split()): v for k, v in alignment.items()}
+    pairs: list[dict] = []
+    with open(corpus_path, encoding="utf-8") as f:
+        for line in f:
+            rec = json.loads(line)
+            row = rollup_ci[" ".join(_table_key(rec).lower().split())]
+            family, node = rec["node"].split("/", 1)
+            pairs.append({
+                "source_file": GOLD_FILE,
+                "line_index": rec["gold_line"],  # 1-based, cf. builder
+                "corpus_label": rec["source_label"],
+                "inventory_label": _table_key(rec),
+                "node": node,
+                "family": family,
+                "verdict": row["verdict"],
+                "match": rec["match"],
+            })
+    return pairs
 
 
 def _prorata_quotas(remaining: int, sizes: dict[str, int]) -> dict[str, int]:
@@ -203,7 +152,8 @@ def stratified_draw(pairs: list[dict], seed: int, total: int, floor: int) -> lis
 
     Ordre de priorite : strates DIRECT d'abord (jusqu'au plancher par famille,
     puis au prorata), complement PARTIAL ensuite. Les strates NOT_FOUND ne
-    sont jamais tirees : leur etiquette n'est pas censee etre retrouvable.
+    sont jamais tirees : le builder les exclut du corpus, et leur etiquette
+    n'est de toute facon pas censee etre retrouvable.
     """
     rng = random.Random(seed)
     strata: dict[tuple[str, str], list[dict]] = defaultdict(list)
@@ -231,7 +181,7 @@ def stratified_draw(pairs: list[dict], seed: int, total: int, floor: int) -> lis
 
     # 2. completer vers le total au prorata des strates DIRECT restantes :
     #    chaque famille recoit un quota proportionnel a son reste, pas un
-    #    remplissage sequentiel qui servirait les premieres familles trie
+    #    remplissage sequentiel qui servirait les premieres familles tri
     #    et laisserait les dernieres vides.
     remaining = total - len(picked)
     if remaining > 0:
@@ -269,6 +219,8 @@ def main(argv: list[str] | None = None) -> int:
                         help=f"cible de paires (défaut {TARGET_TOTAL})")
     parser.add_argument("--floor", type=int, default=FAMILY_FLOOR,
                         help=f"plancher par famille (défaut {FAMILY_FLOOR})")
+    parser.add_argument("--corpus", type=Path, default=ALIGNED_CORPUS,
+                        help="corpus aligne de reference (défaut : artefact commis)")
     parser.add_argument("--out-sample", type=Path, required=True)
     parser.add_argument("--out-manifest", type=Path, required=True)
     parser.add_argument("--report-only", action="store_true",
@@ -276,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     alignment = load_alignment()
-    pairs, unjoinable, unaligned = build_pairs(alignment)
+    pairs = load_pairs(args.corpus, alignment)
 
     strata_counts = Counter((p["family"], p["verdict"]) for p in pairs)
     family_counts = Counter(p["family"] for p in pairs)
@@ -296,20 +248,16 @@ def main(argv: list[str] | None = None) -> int:
         "seed": args.seed,
         "target_total": args.total,
         "family_floor": args.floor,
+        "corpus_source": str(args.corpus),
         "population_joinable": len(pairs),
         "population_par_famille": dict(sorted(family_counts.items())),
         "population_par_strate": {
             f"{fam} x {verdict}": n for (fam, verdict), n in sorted(strata_counts.items())
         },
-        "libelles_exclus": sorted(EXCLUDED_LABELS),
-        "paper_l2_sans_inventaire": {
-            lab: n for lab, n in sorted(unjoinable.items()) if lab in PAPER_L2_SANS_INVENTAIRE
-        },
-        "libelles_non_joinables": {
-            lab: n for lab, n in sorted(unjoinable.items())
-            if lab not in PAPER_L2_SANS_INVENTAIRE
-        },
-        "inventaire_sans_alignement": dict(unaligned),
+        # Les exclusions (nothing, to clean, L2 sans inventaire, PARTIAL non
+        # adjugees) vivent dans le rapport du builder : le tirage ne les
+        # recalcule plus, il renvoie a la source.
+        "exclusions_amont": str(JOIN_REPORT),
         "echantillon_taille": len(sample),
         "echantillon_par_famille": dict(sorted(Counter(p["family"] for p in sample).items())),
         "echantillon_par_verdict": dict(sorted(Counter(p["verdict"] for p in sample).items())),

@@ -1,5 +1,7 @@
 # Protocole de variation — détail, justifications mesurées, incidents fondateurs
 
+> REFERENCE — vivante — dernière révision 2026-11-23
+
 Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) (harness-hygiene : la règle reste succincte et auto-chargée, le détail vit ici et se lit à la demande).
 
 ***
@@ -11,6 +13,8 @@ Verbatim du mandat user 2026-07-21 : « la monoculture de PRs facile est toujour
 Les concepts de variation (tiers, rotation, never-idle) existaient déjà dans [`proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) R6/R7 depuis 2026-07-06. La monoculture a persisté quinze jours de plus. Diagnostic du mandat : les concepts étaient **auto-évalués** (le worker décide seul si son grain est « de la substance »), **invisibles** (rien dans la PR ne dit à quel tier elle prétend), et **non-gatés** (le coordinateur mergeait sans lire).
 
 C'est l'application directe de la leçon `rule-needs-an-organ-not-more-vigilance` : une règle dont le seul mécanisme d'application est la vigilance sera violée. Le tag est l'organe — il rend le grain **auditable en un coup d'œil**, ce qui est la précondition du merge-gate.
+
+Il ne le certifie pas : c'est pourquoi la clause « le tag déclaré n'est pas auto-exécutoire » **reste dans la règle** — merger sans lire le tag laisse le protocole s'auto-certifier. Ce que la règle doit porter à chaque passe, c'est l'obligation de lire le tag ; ce que ce fichier porte, c'est la raison pour laquelle cette lecture n'est pas optionnelle.
 
 ## 2. Champ `prev:` — pourquoi le numéro de PR est obligatoire
 
@@ -146,6 +150,8 @@ Le mandat 2026-07-21 dit « steere **mieux** », pas « constate la vague au mer
 
 Détail du mécanisme (loterie substance, variation du dispatch d'un cycle à l'autre) : mémoire locale `feedback-substance-lottery-provisioning.md`. Le principe qui lie le coordinateur : **sous-provisionner puis merger la monoculture qui en résulte est le manquement que ce protocole corrige.**
 
+Le second manquement qu'il nomme — ralentir la production pour accommoder la digestion en est un autre — est celui qu'interdit la décision user du 12/10 : aucun mécanisme ne freine la productivité des lanes. La digestion se traite par une **piste parallèle**, jamais par une backpressure sur les producteurs (voir le point 5 de la règle : admission et production dissociées). C'est pourquoi cette phrase, qui nomme un défaut, **reste dans la règle** : c'est elle qui empêche de prendre une file d'admission pour une raison de ralentir.
+
 Deux corollaires mesurés de l'obligation « ≥1 grain DEEP de CONTENU par lane » :
 
 1. **Agréger les GENRES des merges récents avant de provisionner, pas seulement leurs tiers.** « 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook` — le tier alone répète exactement l'échappatoire que la clause CONTENU/META a fermée (§11).
@@ -247,9 +253,144 @@ Ensemble : chaque lane, tenue de livrer un DEEP de contenu à chaque cycle, trou
 
 Sign-off : mandat user direct du 2026-10-25 (CLAUDE.md §A, « un mandat user direct vaut sign-off »).
 
+## 15. Exemption de G-VAR-3 pour la lane désignée (#26988, décision user Q194 a du 16/11/2026)
+
+### 15.1 Verbatim et mandat
+
+Le user a tranché Q194 le 16/11/2026 : « Q194 OK pour a) ». L'option (a) est : la lane que le coordinateur désigne pour les organes de CI et de merge est **exempte de G-VAR-3**, et l'exemption est écrite dans la règle **et portée par l'organe**. Le mandat direct vaut signature pour la PR de règle (CLAUDE.md §A, gouvernance).
+
+### 15.2 Le motif, mesuré
+
+G-VAR-3 banit deux grains LIGHT de même genre d'affilée. La règle vise la **monotonie d'un worker de contenu** : un spécialiste qui ne produit que des `guard` n'a rien d'autre à montrer au dépôt. Or la lane `myia-ai-01:CoursIA-2` a été chargée des **organes de CI et de merge** : ses grains sont presque tous des gardes. Le 16/11, ses PRs **#26715** et **#26899** — deux réparations de l'organe de merge — étaient rouges pour cette seule raison. La dérogation à la main (`[G-VAR-3 OVERRIDE]`, coordonnée par le coordinateur) promettait un « prochain genre » que la lane ne tiendra pas : ses prochains grains sont, structurellement, des gardes.
+
+### 15.3 Le mécanisme
+
+- **Un seul endroit** : la constante `G_VAR3_EXEMPT_LANES` de `scripts/ci/variation_adjacency_guard.py`. Changer de lane désignée = une PR qui modifie cette constante. Un test (`test_26988_la_liste_est_declaree_en_un_seul_endroit`) echoue si une seconde copie de la liste apparaît (module ou workflow).
+- **Périmètre étroit** : **seul G-VAR-3 est levé**. G-VAR-1 (plancher DEEP de contenu) et G-VAR-2 (budget LIGHT quotidien) restent appliqués, dans leurs propres organes — un test vérifie que `scripts/variation_light_cap.py` ignore la liste. L'exemption ne rend pas un grain de garde « bon » : elle rend lawful l'enchaînement de deux gardes.
+- **Contrôles** : contrôle **positif** sur la séquence réelle de #26715 (Grain tags verbatim relevés sur GitHub le 16/11, `mergedAt` compris) et contrôle **négatif** sur la même séquence jouée par une lane non inscrite. Le verdict nomme l'exemption (`lane_exempt: true`) au lieu de rendre un vert muet.
+
+### 15.4 Ce que l'exemption ne fait pas
+
+Elle ne dispense pas de livrer, ni de nommer le genre suivant, ni de tenir le plancher : une lane dont tous les grains sont des gardes peut être un jour mergeable, mais son cycle reste **sans plancher DEEP de CONTENU** au sens de G-VAR-1. L'exemption porte sur l'adjacence, pas sur la production.
+
 ## Voir aussi
 
 - [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) — la règle (tag, 3 gates, merge-gate, provisionnement)
 - [`.claude/rules/proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) — R1, R5, R6/R7
 - [`.claude/rules/coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md) — R4 (jamais sanctionner l'idle), R5 (steer qui ATTEINT/VRAI/DÉCIDE)
 - [`docs/reference/proactive-coordination-detail.md`](proactive-coordination-detail.md) — backlog, sources, anti-patterns
+
+## § Levier B — rationales déportés de `.claude/rules/variation-protocol.md`
+
+La règle `variation-protocol.md` est **auto-chargée** à chaque session ; ce
+fichier ne l'est pas. Le déplacement ci-dessous est donc un gain de contexte
+systémique. Aucun bloc déplacé n'est réécrit : le texte des blocs est celui
+qui a quitté la règle.
+
+| Ligne de la règle (base `7a558e4d7ce8`) | Bloc | Statut |
+|---|---|---|
+| L29 | litmus LIGHT : le cœur anti-gaming | déplacé |
+| L42 | un genre META n'est pas inférieur | déplacé |
+| L64 | le pool global porte toujours du DEEP de contenu | déplacé |
+| L66 | provenance de la priorité « consolidation en tête du tapis » | déplacé |
+| L82 | le protocole ne mord que si `ai-01` cesse de merger passivement | déplacé |
+| L93 | le tag déclaré n'est pas auto-exécutoire | **conservé dans la règle** |
+| L101 | pourquoi pas un quota par lane à tous les cycles | déplacé |
+| L110 | le manquement que le protocole corrige | **conservé dans la règle** |
+
+Deux lignes ne sont pas déplacées : **L93** et **L110**. Elles portent des
+phrases **normatives**, pas des justifications — l'obligation de lire le tag à
+chaque passe, et le second manquement que le protocole corrige. Un allègement
+fidèle déplace la justification ; il ne déplace pas la phrase qui nomme le
+défaut. C'est la règle elle-même qui tranche, et la justification qui part ici.
+
+### L29 — litmus LIGHT : le cœur anti-gaming
+
+Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents le passent tous.
+
+### L42 — un genre META n'est pas inférieur
+
+Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+
+### L64 — le pool global porte toujours du DEEP de contenu
+
+Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+### L66 — provenance de la priorité « consolidation en tête du tapis »
+
+Les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois — règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md), issue #22500, organe en PR #22504.
+
+### L82 — le protocole ne mord que si `ai-01` cesse de merger passivement
+
+Le protocole ne mord que si `ai-01` cesse de merger passivement.
+
+### L93 — le tag déclaré n'est pas auto-exécutoire
+
+**Conservé dans la règle** (phrase normative) : la justification est en
+[§1](#1-pourquoi-un-tag-déclaré-plutôt-quune-simple-exhortation) — le tag rend
+le grain auditable en un coup d'œil, ce qui est la précondition du merge-gate,
+mais il ne le certifie pas : merger sans lire le tag laisse le protocole
+s'auto-certifier.
+
+### L101 — pourquoi pas un quota par lane à tous les cycles
+
+Un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) interdit.
+
+### L110 — le manquement que le protocole corrige
+
+**Conservé dans la règle** (phrase normative) : la justification est en
+[§9](#9-obligation-de-provisionnement--la-moitié-coordinateur-du-problème) —
+sous-provisionner puis merger la monoculture qui en résulte est **le**
+manquement que ce protocole corrige, et ralentir la production pour accommoder
+la digestion en est un autre.
+
+### Tranche 4 (2026-11-23, myia-po-2028:CoursIA) — rationales déportés, base `7a558e4d7ce8` + état du 23/11
+
+Table de traçabilité — chaque fragment déplacé, sa ligne d'origine dans la règle avant la tranche, et sa nouvelle maison :
+
+| Origine (règle, avant) | Contenu déporté | Destination |
+|---|---|---|
+| L15 | Exemple complet de tag : `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard #8954` | §Levier B, L15 ci-dessous |
+| L23-27 (colonne « Exemples ») | Exemples par tier : DEEP (sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · consolidation de série (fusion, déplacement ou renumérotation de carnets : ré-exécution complète, aucune perte de contenu) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable) ; MED (enrichissement + ré-exec · audit borné dont le finding change une décision · exercice ajouté + exécuté · refactor avec tests verts · audit README fichier-entier corrigeant un drift structurel) ; LIGHT (guard-tranche · path-fix · doc-resync · ledger append · accent/leak/FP · propagation de marqueur) | §Levier B, L23 ci-dessous |
+| L44 | Développement `slides` : 12 slides de cours neuves = CONTENU, pas `docs` | §Levier B, L44 ci-dessous |
+| L52-58 | Exemples REPAIR : #12141 (notebook-python), #12252 (lean), #11997 (guard) | §Levier B, L52 ci-dessous |
+| L68 | Motif du durcissement #15793 : le litmus DEEP reste objectif ; le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance | §12 (déjà, §12.2) |
+| L112 | Forme longue de la phrase-manquement du §4 | L110 ci-dessus (déjà) |
+| L19 | Mécanisme du guard : matche par **mot-clé** (`Grain:`, `lane`), casse insensible, décoration markdown neutralisée — la substance seule est vérifiée (TIER par le litmus, GENRE dans l'énumération, `lane` présente) | §3 (déjà) + §Levier B, L19 ci-dessous |
+| L72 | Exemples de calcul G-VAR-2 : une lane à 1-5 grains garde le plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six | §4 (déjà) + §Levier B, L72 ci-dessous |
+| L76 | Exemple d'exemption de contenu : un spécialiste Lean qui enchaîne deux preuves DEEP distinctes n'est **pas** la monoculture visée | §Levier B, L76 ci-dessous |
+| L78 | « Tell décisif » : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP** | §Levier B, L78 ci-dessous |
+
+#### L15 — exemple de tag
+
+`Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard #8954` — un tag de PR dont le plat principal est une preuve Lean, porté par la lane po-2026, dont le grain précédent était une LIGHT de guard livrée par la PR #8954.
+
+#### L23 — exemples par tier (ancienne colonne de la table §1 de la règle)
+
+- **DEEP** : sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · consolidation de série (fusion, déplacement ou renumérotation de carnets : ré-exécution complète, aucune perte de contenu) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable.
+- **MED** : enrichissement + ré-exec · audit borné dont le finding **change une décision** · exercice ajouté + exécuté · refactor avec tests verts · audit README fichier-entier corrigeant un drift structurel.
+- **LIGHT** : guard-tranche · path-fix · doc-resync · ledger append · accent/leak/FP · propagation de marqueur.
+
+#### L44 — `slides` : le cas complet
+
+`slides` reste CONTENU quand le grain écrit ou enrichit le contenu du deck — 12 slides de cours neuves = CONTENU, pas `docs`. Un grain slides qui fait autre chose garde son genre de type de travail : `guard` pour un gate CI de build Slidev, `refactor` pour un script, `tooling` pour un convertisseur.
+
+#### L52 — exemples REPAIR
+
+PR réparée `notebook-python` (ex #12141) → `MED/notebook-python` ; PR réparée `lean` (ex #12252) → `MED/notebook-lean` ; PR réparée `guard` (ex #11997) → `MED/guard`. Le raisonnement complet et l'arbitrage #11815 vivent en [§13](#13-grain-repair--raisonnement-complet-et-arbitrage-11815).
+
+#### L19 — mécanisme du guard (2e passe)
+
+Le guard ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guard.yml)) matche par **mot-clé** (`Grain:`, `lane`), casse insensible, décoration markdown neutralisée : la **substance** seule est vérifiée (TIER par le litmus, GENRE dans l'énumération, `lane` présente). La forme canonique vs la substance est détaillée en [§3](#3-forme-canonique-vs-substance--le-guard-est-agnostique-à-la-ponctuation).
+
+#### L72 — exemples de calcul G-VAR-2 (2e passe)
+
+`max(1, grains_mergés_du_jour // 3)` : une lane à 1-5 grains garde le plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six. Le ratio et sa justification : [§4](#4-g-var-2--pourquoi-un-ratio-et-non-plus-un-plafond-absolu).
+
+#### L76 — contenu hors G-VAR-3, l'exemple (2e passe)
+
+Les genres de CONTENU ne relèvent pas de G-VAR-3 : un spécialiste Lean qui enchaîne deux preuves DEEP distinctes n'est **pas** la monoculture visée — le litmus LIGHT (générable en série ?) ne passe pas sur une preuve.
+
+#### L78 — « Tell décisif » de l'exception #14357 (2e passe)
+
+Le litmus LIGHT reste le révélateur : un grain **générable en scannant l'instance d'à-côté** est bloqué au merge-gate **même sous une étiquette DEEP**. Le cœur anti-gaming : [L29](#l29--litmus-light--le-cœur-anti-gaming).

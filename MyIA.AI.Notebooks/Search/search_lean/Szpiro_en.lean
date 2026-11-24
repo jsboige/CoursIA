@@ -10,7 +10,7 @@ EN sibling files, both compile; namespace `Szpiro_en` (anti-collision with FR
 docstrings manually translated.
 
 Companion Lean file of the notebook
-[`App-32-Szpiro-Pasten-2026.ipynb`](../App-32-Szpiro-Pasten-2026.ipynb):
+[`05-szpiro-pasten-2026.ipynb`](../../SymbolicAI/Lean/Langlands/05-szpiro-pasten-2026.ipynb):
 Pasten 2026, *Improved Bounds for Szpiro's Conjecture*, arXiv 2609.17390
 (preprint, archived under `Bibliographie IA\NumberTheory`).
 

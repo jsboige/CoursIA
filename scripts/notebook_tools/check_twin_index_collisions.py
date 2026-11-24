@@ -67,19 +67,28 @@ Usage:
     # plusieurs PRs entre elles, plus le doublon intra-revision
     python scripts/notebook_tools/check_twin_index_collisions.py \
         --head refs/remotes/pr/17648 --head refs/remotes/pr/17754 --in-tree
+
+    # mode PORTE (utilise par la porte CI bloquante, #23208) : cette revision
+    # INTRODUIT-elle une collision ? sort 1 si oui, 0 sinon. Les doublons
+    # herites de la base ne bloquent pas -- la PR qui les repare doit passer.
+    python scripts/notebook_tools/check_twin_index_collisions.py \
+        --base "$BASE_SHA" --head "$HEAD_SHA" --gate
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_twin_parity import audit_index  # noqa: E402
+from twin_open_claims import collisions_by_ordinal  # noqa: E402
 
 REGISTRY_REL = "scripts/notebook_tools/twin_pairs.d"
 WORKTREE_REF = "worktree"
@@ -167,6 +176,190 @@ def find_conflicts(refs: dict) -> dict:
     return {"cross_ref": cross, "intra_ref": intra}
 
 
+# --- #26795 : l'inversion ordinal/date de TOUT-HAUT d'une paire -------------
+#
+# L'audit de parite (`check_twin_parity.py`) charge les attestations d'une
+# paire par `sorted(d.glob("*.yaml"))` -- donc par ORDINAL croissant -- et
+# `_latest_audit` renvoie le DERNIER enregistrement. Le registre lu par
+# l'audit est donc : le dernier enregistrement du fichier d'ordinal LE PLUS
+# HAUT.
+#
+# Consequence directe : si l'ordinal le plus haut n'est pas le plus RECENT,
+# l'audit compare le carnet a un `content_sha` perime et declare un DRIFT
+# que rien ne justifie. C'est exactement ce qu'a produit #26381 : le commit
+# `5c5894dcd5d` avait renumerote l'attestation du 13/11 en `0044`, AU-DESSUS
+# de la rebaseline du 15/11 (`0043`) ; l'audit lisait `0044` et concluait au
+# DRIFT alors que le contenu etait correct.
+#
+# L'INVARIANT UTILE n'est pas « tout ordinal suit l'ordre des dates » : cet
+# invariant-la est viole 410 fois dans 158 paires sur `origin/main` (mesure
+# du 15/11/2026 par l'organe lui-meme, sur `origin/main` = 75a559fd8fe56 ;
+# le compte bouge avec `main`, la dette est la meme) -- c'est la dette
+# historique du
+# registre, et une porte qui le condamnerait condamnerait la flotte.
+# L'invariant qui compte, et que la porte garde, est plus étroit :
+#
+#     L'ATTESTATION LA PLUS RECENTE DE LA PAIRE DOIT PORTER L'ORDINAL LE
+#     PLUS HAUT.
+#
+# C'est la condition exacte pour que l'audit lise une attestation a jour.
+# Mesure sur `origin/main` (227 paires, 3 963 attestations lues, par
+# l'organe lui-meme, 15/11/2026) : **0 violation** -- le controle negatif
+# de l'issue (`origin/main` passe) tient sans amenagement.
+ATTEST_NAME_RE = re.compile(r"^(\d+)-(\d{4}-\d{2}-\d{2})-.+\.yaml$")
+
+
+def attestation_date(name: str) -> Optional[str]:
+    """Date d'attestation portee par le NOM du fichier, ou None.
+
+    Le nom est `<ordinal>-<date>-<lane>.yaml` : la date est donc lisible
+    sans I/O de contenu, ce qui permet de juger un ARBRE (base, tete,
+    arbre de fusion) sans checkout.
+    """
+    m = ATTEST_NAME_RE.match(name)
+    return m.group(2) if m else None
+
+
+def top_ordinal_inversions(reg: dict) -> list[dict]:
+    """Paires dont l'ordinal le plus HAUT n'est pas le plus recent.
+
+    Fonction pure : prend le registre `{paire: {index: [noms]}}` et rend
+    la liste des paires en infraction.
+
+    Regles de lecture :
+      * l'ordinal le plus haut d'une paire peut porter PLUSIEURS noms
+        (deux lanes au meme index) : c'est deja une collision d'index, et
+        la date retenue est alors la plus recente de ces noms -- une paire
+        dont le haut porte la date la plus recente n'est PAS en infraction ;
+      * un nom dont la date n'est pas lisible ne dit rien : il est ignore,
+        et une paire ou AUCUNE date n'est lisible n'est jamais signalee
+        (« je n'ai pas pu lire » n'est pas « c'est faux »).
+    """
+    out: list = []
+    for pair in sorted(reg):
+        indexes = reg[pair]
+        if not indexes:
+            continue
+        top_index = max(indexes)
+        top_names = list(indexes[top_index])
+        top_dates = [d for d in (attestation_date(n) for n in top_names) if d]
+        if not top_dates:
+            continue
+        top_date = max(top_dates)
+        dated: list = []
+        for idx, names in indexes.items():
+            for n in names:
+                d = attestation_date(n)
+                if d:
+                    dated.append((d, idx, n))
+        if not dated:
+            continue
+        recent_date, _recent_index, _recent_name = max(dated)
+        if top_date < recent_date:
+            out.append({
+                "pair": pair,
+                "index": top_index,
+                "top_names": sorted(top_names),
+                "top_date": top_date,
+                "recent_date": recent_date,
+                "recent_names": sorted(n for d, _i, n in dated
+                                       if d == recent_date),
+            })
+    return out
+
+
+def ordinal_order_inversions(reg: dict) -> list[dict]:
+    """Toutes les inversions d'ordre date/ordinal d'une paire (INFORMATIF).
+
+    L'invariant « l'ordinal le plus HAUT est le plus recent » (voir
+    `top_ordinal_inversions`) est le seul que l'audit de parite depende.
+    L'invariant plus large « tout ordinal suit l'ordre des dates » est
+    viole 410 fois dans 158 paires sur `origin/main` (mesure du 15/11/2026
+    par l'organe lui-meme, sur `origin/main` = 75a559fd8fe56) :
+    c'est la dette historique du registre, et il ne peut PAS devenir une
+    porte -- une porte condamnerait la flotte sur une dette qu'aucun organe
+    ne lit.
+
+    Cette fonction rend ce.deuxieme invariant pour qu'il soit
+    **REPRODUCTIBLE avec l'organe lui-meme** (le recensement demande par
+    l'issue #26795) et non par un script a part. Elle n'est JAMAIS
+    bloquante : elle decrit, elle ne refuse pas.
+    """
+    out: list = []
+    for pair in sorted(reg):
+        indexes = reg[pair]
+        if len(indexes) < 2:
+            continue
+        dated: list = []
+        for idx, names in indexes.items():
+            for n in names:
+                d = attestation_date(n)
+                if d:
+                    dated.append((int(idx) if str(idx).isdigit() else idx,
+                                  d, n, idx))
+        dated.sort(key=lambda t: (str(t[0]), t[2]))
+        for i in range(1, len(dated)):
+            prev, cur = dated[i - 1], dated[i]
+            if cur[1] < prev[1]:
+                out.append({
+                    "pair": pair,
+                    # l'index d'origine (zero-padded comme dans le registre),
+                    # pas sa valeur numerique : le rapport doit citer le nom
+                    # de fichier que le lecteur trouvera sur le disque.
+                    "index": str(cur[3]),
+                    "higher_index": str(prev[3]),
+                    "higher_name": prev[2],
+                    "higher_date": prev[1],
+                    "name": cur[2],
+                    "date": cur[1],
+                })
+    return out
+
+
+def ordinal_date_inversion_reasons(base_reg: dict, other_reg: dict) -> list:
+    """Inversions de TOUT-HAUT INTRODUITES par `other_reg`.
+
+    Une inversion **heritee de la base** ne bloque pas : la PR qui la
+    REPAIRE doit passer (meme contrat que les doublons d'index, #23208).
+    Seule une inversion que la PR INTRODUIT -- une paire qui etait saine
+    dans la base et ne l'est plus dans la tete -- est refusee.
+
+    Fonction pure : prend les deux registres deja lus.
+    """
+    base_keys = {(v["pair"], v["index"])
+                 for v in top_ordinal_inversions(base_reg)}
+    out: list = []
+    for v in top_ordinal_inversions(other_reg):
+        if (v["pair"], v["index"]) in base_keys:
+            continue
+        out.append({
+            "kind": "ordinal_date_inversion",
+            "pair": v["pair"],
+            "index": v["index"],
+            "names": list(v["top_names"]),
+            "top_date": v["top_date"],
+            "recent_date": v["recent_date"],
+            "recent_names": list(v["recent_names"]),
+            "gist": (
+                "l'ordinal le plus HAUT de la paire '%s' (%s, date %s) est "
+                "plus ANCIEN que l'attestation la plus recente (%s, date %s). "
+                "L'audit de parite lit l'ordinal le plus haut : il compare "
+                "donc le carnet a une attestation perimee et rend un DRIFT "
+                "que rien ne justifie. Le geste : renumeroter "
+                "l'attestation la plus RECENTE (%s) AU-DESSUS de l'ordinal le "
+                "plus haut de la paire, par `git mv` PUR (aucun contenu a "
+                "toucher, aucune re-execution) ; ou rebaseliner la paire : "
+                "`python scripts/notebook_tools/check_twin_parity.py --update "
+                "--pair \"%s\" --by <lane>`."
+                % (v["pair"], ", ".join(v["top_names"]), v["top_date"],
+                   ", ".join(v["recent_names"]), v["recent_date"],
+                   ", ".join(v["recent_names"]), v["pair"])
+            ),
+        })
+    return out
+
+
+
 def exit_code(cross: list, intra: list, *, in_tree: bool) -> int:
     """Contrat de sortie, isole de l'affichage pour etre testable sans git.
 
@@ -220,6 +413,186 @@ def classify_ordinal_collisions(cross_ref, *, base_ref):
     return out
 
 
+# --- mode PORTE (#23208) : la PR ne doit pas INTRODUIRE de collision ---------
+# Le mode `--gate` est le predicat d'une PORTE CI bloquante : il ne demande
+# pas « le registre est-il propre ? » (question sans base de comparaison), mais
+# « cette PR aggrave-t-elle l'etat ? » -- seule question qui peut etre posee a
+# une PR sans condamner la flotte.
+#
+# Ce qui BLOQUE :
+#   * une collision inter-revisions (`cross_ref`) : deux revisions portent le
+#     meme (paire, index) sous deux noms differents -> le MERGE cree deux
+#     fichiers au meme index. Aucune revision ne couvrait l'union, donc ni la
+#     base ni la tete ne portait la dette telle quelle : elle est introduite.
+#   * un doublon intra-revision (`intra_ref`) que la BASE ne porte pas : la
+#     tete ajoute un second nom pour un index deja pris -> `main` rougira au
+#     merge sur le garde CI d'unicite.
+#
+# Ce qui ne BLOQUE PAS : un doublon HERITE de la base (`on_base`), que la PR
+# ne fait qu'aggraver ou repare. Bloquer la pour ce motif condamnerait toute
+# PR touchant le registre tant que la base porte la dette -- et la PR qui la
+# REPARE (le renumerotage) doit passer.
+def gate_verdict(cross: list, intra: list, *, base_ref: str) -> dict:
+    """Verdict du mode PORTE. Pure : prend les listes deja classees.
+
+    Rend `{"fail": bool, "reasons": [...]}`. Chaque raison porte le couple
+    (paire, index), les noms en jeu et le geste de correction -- un garde qui
+    dit QUOI est en cause vaut mieux qu'un garde qui dit « collision ».
+    """
+    reasons: list = []
+    for c in cross:
+        by_ref = c.get("by_ref", {})
+        verdict = "ON-MAIN" if base_ref in by_ref else "MULTI-PR"
+        reasons.append({
+            "kind": "cross_ref",
+            "pair": c["pair"],
+            "index": c["index"],
+            "verdict": verdict,
+            "names": sorted({n for names in by_ref.values() for n in names}),
+            "gist": ordinal_correction_gist(
+                c["pair"], c["index"], by_ref=by_ref, base_ref=base_ref),
+        })
+    for c in intra:
+        if base_ref in c.get("refs", []):
+            # Dette de la base : la PR ne l'introduit pas. La PR qui la repare
+            # doit passer, et une PR qui ne la touche pas n'est pas concernee.
+            # Le sort de la dette appartient a la PR de rebaseline dediee.
+            continue
+        reasons.append({
+            "kind": "intra_ref",
+            "pair": c["pair"],
+            "index": c["index"],
+            "names": list(c.get("names", [])),
+            "gist": (
+                "renumeroter le fichier de la tete vers le premier index libre "
+                "de la paire par `git mv` PUR (aucun contenu a toucher, "
+                "aucune re-execution) : l'index %s est deja pris par %s"
+                % (c["index"], ", ".join(c.get("names", [])))
+            ),
+        })
+    return {"fail": bool(reasons), "reasons": reasons}
+
+
+# --- verdicts OPEN-PR : l'ordinal revendique par une AUTRE PR ouverte -------
+# La porte de base juge une PR contre SA base au push, et l'arbre de fusion
+# ( `--merged`, cf. `merged_gate_reasons`) repond a « que portera `main` apres
+# ce merge ? ». Ni l'un ni l'autre ne voit ce qui n'est pas encore merge :
+# deux PRs qui prennent le meme ordinal pendant que ni l'une ni l'autre
+# n'est mergee passent donc TOUTES LES DEUX, et la collision n'apparait
+# qu'apres coup -- sur `main`, en rouge fleet-wide.
+#
+# Mesure fondatrice (#22299) : au push de #24010 (2026-11-01/02), sa base ne
+# portait pas encore les ordinals `0024`-`0027` apportes par #23832 -- encore
+# OUVERTE -- : la porte a rendu un VERT. Les deux PRs sont passees ; `main` a
+# recu trois doublons (`0024`, `0025`, `0026`) que #24518 a dus renumeroter
+# deux jours plus tard.
+#
+# Ce verdict porte sur ce que l'API sait et que le git ne sait pas encore : les
+# ordinals REVENDIQUES par les PRs ouvertes. Il est BLOQUANT -- l'ordinal se
+# renumerote avant le merge, pas apres -- et son geste est le meme `git mv`
+# PUR que les autres verdicts.
+def open_pr_reasons(claims_by_pr: dict, *, head_pr: int | None) -> list[dict]:
+    """Verdicts OPEN-PR : un ordinal revendique par CETTE PR et par une autre.
+
+    Pure : prend les revendications `{pr: [claims]}` et le numero de la PR
+    interrogee. Sans `head_pr`, aucune raison n'est produite : une collision
+    entre deux PRs qui ne sont pas celle-ci ne se decide pas ici (chacune la
+    verra a son tour, a son propre push).
+    """
+    if head_pr is None:
+        return []
+    out: list[dict] = []
+    for c in collisions_by_ordinal(claims_by_pr or {}):
+        if int(head_pr) not in [int(p) for p in c["prs"]]:
+            continue
+        autres = [p for p in c["prs"] if int(p) != int(head_pr)]
+        out.append({
+            "kind": "open_pr",
+            "pair": c["pair"],
+            "index": c["index"],
+            "names": list(c["names"]),
+            "prs": list(c["prs"]),
+            "gist": (
+                "l'ordinal %s de la paire '%s' est deja revendique par la PR "
+                "#%s, ENCORE OUVERTE : renumeroter VOTRE fichier vers le "
+                "premier index libre de la paire par `git mv` PUR (aucun "
+                "contenu a toucher, aucune re-execution). Attendre le merge "
+                "ferait porter la collision par `main`."
+                % (c["index"], c["pair"], ", #".join(str(p) for p in autres))
+            ),
+        })
+    return out
+
+
+def merged_gate_reasons(base_reg: dict, merged_reg: dict) -> list:
+    """Raisons portees par l'ARBRE DE FUSION : ce que le MERGE rend visible.
+
+    Fonction pure : prend les deux registres deja lus. Le registre de
+    l'arbre de fusion dit ce que `main` portera **apres** le merge -- la
+    seule revision qui repond a « `main` sera-t-il rouge apres ce merge ? ».
+    Le registre de la base dit ce que `main` porte **avant**.
+
+    Un doublon de l'arbre de fusion ne bloque que s'il n'existait PAS dans la
+    base sous les memes noms :
+      * dette de la base, inchangee par le merge -> la PR la REPAIRE, elle
+        doit passer (une PR de renumerotation ne peut pas etre bloquee par
+        la dette qu'elle supprime) ;
+      * un nom que le merge AJOUTE a un index deja double, ou un index que
+        le merge rend double -> le MERGE INTRODUIT la collision, elle bloque.
+
+    Le predicat est donc : `len(noms fusion) >= 2` ET `noms fusion - noms
+    base` non vide.
+    """
+    reasons: list = []
+    for pair in sorted(set(merged_reg) | set(base_reg)):
+        base_pair = base_reg.get(pair, {})
+        merged_pair = merged_reg.get(pair, {})
+        for index in sorted(merged_pair):
+            names = set(merged_pair[index])
+            if len(names) < 2:
+                continue
+            added = names - set(base_pair.get(index, ()))
+            if not added:
+                # Dette de la base, inchangee : le merge ne l'aggrave pas.
+                continue
+            reasons.append({
+                "kind": "merged_ref",
+                "pair": pair,
+                "index": index,
+                "names": sorted(names),
+                "added": sorted(added),
+                "gist": (
+                    "l'arbre de fusion porte deux noms a l'index %s dans "
+                    "'%s' (%s) : le MERGE rend `main` rouge sur le garde "
+                    "d'unicite. Renumeroter le fichier que la tete ajoute "
+                    "(%s) vers le premier index libre de la paire par "
+                    "`git mv` PUR (aucun contenu a toucher, aucune "
+                    "re-execution)."
+                    % (index, pair, ", ".join(sorted(names)),
+                       ", ".join(sorted(added)))
+                ),
+            })
+    return reasons
+
+
+def merge_tree_sha(base: str, head: str, repo: Path) -> str:
+    """SHA de l'arbre resultat du MERGE de `base` et `head`.
+
+    `git merge-tree --write-tree` calcule le merge sans toucher l'index ni
+    l'arbre de travail. Il echoue (rc != 0) quand le merge CONFLIT : c'est
+    le seul cas ou l'arbre de fusion n'est pas definissable, et l'appelant
+    en fait un skip (« je n'ai pas pu lire » n'est pas « c'est propre »).
+
+    Necessite git >= 2.38. En dessous, `merge-tree` ne connait pas
+    `--write-tree` : l'appelant recoit alors une GitError et applique la
+    meme politique de skip.
+    """
+    out = _git(repo, "merge-tree", "--write-tree", base, head).strip()
+    if not out:
+        raise GitError("merge-tree --write-tree : aucune sortie")
+    return out.splitlines()[0].strip()
+
+
 def ordinal_correction_gist(pair, index, *, by_ref, base_ref):
     """Geste de correction nomme dans l'issue #18683, isole pour les tests.
 
@@ -255,10 +628,46 @@ def main(argv: list | None = None) -> int:
                     help="signale AUSSI le doublon intra-revision, et en fait "
                          "un verdict bloquant (predicat du garde CI)")
     ap.add_argument("--json", action="store_true", help="verdict machine")
+    ap.add_argument("--gate", action="store_true",
+                    help="mode PORTE : sort 1 si cette PR INTRODUIT une "
+                         "collision d'index (les collisions heritees de la "
+                         "base ne bloquent pas : la PR qui les repare doit "
+                         "passer). Impose --head.")
+    ap.add_argument("--merged", action="store_true",
+                    help="juge l'ARBRE DE FUSION (base x tete) au lieu de la "
+                         "seule union base+tete : c'est la seule revision qui "
+                         "dit si `main` sera rouge apres le merge. Ne bloque "
+                         "que les doublons que le MERGE INTRODUIT. Impose "
+                         "--head.")
+    ap.add_argument("--open-claims", default=None,
+                    help="fichier JSON des revendications d'ordinal des PRs "
+                         "ouvertes (produit par twin_open_claims.py). Ajoute "
+                         "les verdicts OPEN-PR : un ordinal revendique par une "
+                         "AUTRE PR ouverte est refuse ici, avant le merge.")
+    ap.add_argument("--head-pr", type=int, default=None,
+                    help="numero de la PR interrogee (verdicts OPEN-PR)")
+    ap.add_argument("--census", action="store_true",
+                    help="RECENSEMENT des inversions ordinal/date de TOUT-HAUT "
+                         "d'une paire sur la revision --base seule (aucune "
+                         "comparaison, aucun --head requis) : c'est "
+                         "l'inventaire que l'issue #26795 demande de faire "
+                         "avec l'organe lui-meme.")
     ap.add_argument("--repo", default=None, help="racine du depot (defaut: auto)")
     ap.add_argument("--registry", default=REGISTRY_REL,
                     help="chemin du registre, relatif a la racine")
     args = ap.parse_args(argv)
+
+    if args.gate and not args.head:
+        print("ERREUR: --gate exige --head (la porte compare la base a la "
+              "tete de la PR ; sans tete, il n'y a rien a confronter).")
+        print("VERDICT: INDETERMINE (0 comparaison effectuee)")
+        return 2
+    if args.merged and not args.head:
+        print("ERREUR: --merged exige --head (l'arbre de fusion se calcule "
+              "entre la base et la tete ; sans tete, il n'y a rien a "
+              "fusionner).")
+        print("VERDICT: INDETERMINE (0 comparaison effectuee)")
+        return 2
 
     repo = Path(args.repo).resolve() if args.repo else Path(
         _git(Path.cwd(), "rev-parse", "--show-toplevel").strip())
@@ -274,7 +683,7 @@ def main(argv: list | None = None) -> int:
     if args.worktree:
         refs[WORKTREE_REF] = registry_of_worktree(repo, args.registry)
 
-    if len(refs) < 2:
+    if len(refs) < 2 and not args.census:
         # Jamais un OK silencieux : sans deux revisions DISTINCTES et lisibles,
         # il n'y a rien a comparer, et « je n'ai pas pu lire » n'est pas « c'est
         # propre ». Le cas « une seule revision, demandee deux fois » merite son
@@ -297,6 +706,99 @@ def main(argv: list | None = None) -> int:
     for c in intra:
         c["on_base"] = args.base in c["refs"]
 
+    # Mode PORTE : le verdict porte sur ce que CETTE revision AGGRAVE, pas sur
+    # l'etat absolu du registre. C'est la seule question qui peut etre posee a
+    # une PR sans condamner la flotte (#23208).
+    gate = gate_verdict(cross, intra, base_ref=args.base) if args.gate else None
+
+    # #26795 : inversions ordinal/date de TOUT-HAUT. Le census est mesure
+    # sur CHAQUE revision lue -- c'est l'inventaire que l'issue demande
+    # ("le recensement des inversions deja presentes sur `main` se fait avec
+    # l'organe lui-meme") et le controle negatif du gate (main : 0).
+    inversions_par_ref = {
+        ref: top_ordinal_inversions(reg) for ref, reg in refs.items()
+    }
+    # Inventaire large (informatif) : l'invariant « tout ordinal suit
+    # l'ordre des dates » est viole 410 fois dans 158 paires sur `origin/main`.
+    # Il est rendu pour etre RECONSTITUIBLE avec l'organe, jamais pour
+    # bloquer : l'audit de parite ne lit que le sommet de la paire.
+    ordre_par_ref = {
+        ref: ordinal_order_inversions(reg) for ref, reg in refs.items()
+    }
+
+    # En mode PORTE : une inversion INTRODUITE par la tete est refusee ; une
+    # inversion heritee de la base ne bloque pas (la PR qui la repare doit
+    # passer).
+    if gate is not None and args.head:
+        head_reg = refs.get(args.head[0], {})
+        for r in ordinal_date_inversion_reasons(refs.get(args.base, {}),
+                                                 head_reg):
+            gate["reasons"].append(r)
+        gate["fail"] = bool(gate["reasons"])
+
+    # Verdicts OPEN-PR : les ordinals revendiques par les PRs OUVERTES. Ni la
+    # base x tete ni l'arbre de fusion ne les voient : les deux ne portent que
+    # des revisions MERGEES (cf. `open_pr_reasons`).
+    open_reasons: list = []
+    open_note = ""
+    if args.open_claims:
+        try:
+            payload = json.loads(
+                Path(args.open_claims).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            # « je n'ai pas pu lire » n'est pas « c'est propre » : le motif est
+            # AFFICHE, et les verdicts OPEN-PR ne sont pas rendus. La porte de
+            # base (base x tete) et l'arbre de fusion restent, eux, appliques.
+            open_note = ("revendications OPEN-PR illisibles (%s) -- non "
+                         "utilisees" % exc)
+        else:
+            claims_by_pr: dict = {}
+            for row in (payload.get("claims") or []):
+                claims_by_pr.setdefault(str(row.get("pr")), []).append(row)
+            open_reasons = open_pr_reasons(claims_by_pr, head_pr=args.head_pr)
+            if gate is not None and open_reasons:
+                deja_vus = {(r["pair"], r["index"]) for r in gate["reasons"]}
+                for r in open_reasons:
+                    if (r["pair"], r["index"]) in deja_vus:
+                        continue
+                    gate["reasons"].append(r)
+                gate["fail"] = bool(gate["reasons"])
+
+    # Arbre de FUSION : la seule revision qui repond a « `main` sera-t-il
+    # rouge apres ce merge ? ». L'union base+tete ne repond pas a la
+    # question : elle voit l'etat de la base AU PUSH, et une collision
+    # introduite sur `main` ENTRETEMPS par une autre PR lui est invisible.
+    # L'arbre de fusion, lui, porte les DEUX et revele ce que le merge
+    # rend visible (mesure du 2026-11-03 : #23832 et #24010 ont alloue les
+    # memes ordinals 0024-0026 et sont passees tous les deux).
+    merged_ref = None
+    merged_reasons: list = []
+    merged_unreadable = None
+    if args.merged:
+        try:
+            merged_ref = merge_tree_sha(args.base, args.head[0], repo)
+            merged_reg = registry_of_ref(merged_ref, repo, args.registry)
+            merged_reasons = merged_gate_reasons(refs.get(args.base, {}),
+                                                 merged_reg)
+            # #26795 : l'arbre de fusion est la revision qui dit ce que
+            # `main` portera apres le merge -- c'est la qu'une inversion
+            # introduite par la PR devient visible.
+            merged_reasons = merged_reasons + ordinal_date_inversion_reasons(
+                refs.get(args.base, {}), merged_reg)
+        except GitError as exc:
+            # Merge en conflit : l'arbre de fusion n'est pas definissable.
+            # « je n'ai pas pu lire » n'est pas « c'est propre » -- le motif
+            # est expose dans le rapport, et l'appelant decide (la porte de
+            # merge applique le skip ; le gate CI se contente de le dire).
+            merged_unreadable = str(exc)
+    if gate is not None and merged_reasons:
+        deja_vus = {(r["pair"], r["index"]) for r in gate["reasons"]}
+        for r in merged_reasons:
+            if (r["pair"], r["index"]) in deja_vus:
+                continue  # deja signale par le jugement base+tete
+            gate["reasons"].append(r)
+        gate["fail"] = bool(gate["reasons"])
+
     unreadable_note = (", ".join("%s illisible" % r for r in sorted(unreadable))
                        or "aucune")
     if args.json:
@@ -315,6 +817,20 @@ def main(argv: list | None = None) -> int:
             "intra_ref": intra,
             "base_ref": args.base,
             "in_tree_checked": bool(args.in_tree),
+            "gate": bool(args.gate),
+            "gate_fail": bool(gate and gate["fail"]),
+            "gate_reasons": (gate or {}).get("reasons", []),
+            "open_pr_reasons": open_reasons,
+            "open_pr_note": open_note,
+            "merged_checked": bool(args.merged),
+            "merged_ref": merged_ref,
+            "merged_unreadable": merged_unreadable,
+            "merged_reasons": merged_reasons,
+            # #26795 : inventaire des inversions ordinal/date de TOUT-HAUT,
+            # par revision lue (census de la base = l'etat herite).
+            "census": bool(args.census),
+            "ordinal_date_inversions": inversions_par_ref,
+            "ordinal_order_inversions": ordre_par_ref,
         }, indent=2, sort_keys=True))
     else:
         print("revisions comparees : %d   (%s ; %s)"
@@ -362,13 +878,124 @@ def main(argv: list | None = None) -> int:
                 print("   C'est le predicat du garde CI sur CETTE revision (pas un")
                 print("   effet du merge) : relancer avec --in-tree pour en faire un")
                 print("   verdict bloquant, ou laisser le garde CI le porter.")
+        if open_note:
+            print("")
+            print("REVENDICATIONS OPEN-PR : %s" % open_note)
+        if open_reasons:
+            print("")
+            print("COLLISIONS AVEC UNE PR OUVERTE (%d)" % len(open_reasons))
+            for r in open_reasons:
+                print("   %s / index %s   (PR #%s)"
+                      % (r["pair"], r["index"], ", #".join(
+                          str(p) for p in r["prs"])))
+                for name in r["names"]:
+                    print("      %s" % name)
+                print("      geste: %s" % r["gist"])
+
+        if args.merged:
+            print("")
+            if merged_unreadable:
+                print("ARBRE DE FUSION : ILLISIBLE")
+                print("   %s" % merged_unreadable)
+                print("   (le merge est en conflit : la revision fusionnee n'est")
+                print("    pas definissable. « je n'ai pas pu lire » n'est pas")
+                print("    « c'est propre » -- la porte de merge applique un skip.)")
+            else:
+                print("ARBRE DE FUSION : %s" % merged_ref[:12])
+                if merged_reasons:
+                    print("   %d collision(s) INTRODUITE(S) par le merge :"
+                          % len(merged_reasons))
+                    for r in merged_reasons:
+                        print("   %s / index %s   (%s)"
+                              % (r["pair"], r["index"], r["kind"]))
+                        print("      noms en jeu : %s" % ", ".join(r["names"]))
+                        print("      geste : %s" % r["gist"])
+                else:
+                    print("   aucune collision introduite par le merge")
 
     # UNE seule ligne de verdict : un « OK » qui suivrait un « DOUBLON » se
     # lirait comme un acquittement du doublon.
     rc = exit_code(cross, intra, in_tree=args.in_tree)
+    if args.gate:
+        # La PORTE a son propre verdict : elle ne juge que l'aggravation.
+        rc = 1 if gate["fail"] else 0
+        if not args.json:
+            print("")
+            if gate["fail"]:
+                n_inv = sum(1 for r in gate["reasons"]
+                            if r.get("kind") == "ordinal_date_inversion")
+                n_idx = len(gate["reasons"]) - n_inv
+                print("PORTE : REFUSEE -- cette revision INTRODUIT %d collision(s) "
+                      "d'index" % n_idx
+                      + (" + %d inversion(s) ordinal/date" % n_inv if n_inv else "")
+                      + ".")
+                for r in gate["reasons"]:
+                    print("   %s / index %s   (%s)"
+                          % (r["pair"], r["index"], r["kind"]))
+                    print("      noms en jeu : %s" % ", ".join(r["names"]))
+                    print("      geste : %s" % r["gist"])
+                if n_inv:
+                    print("   Pour une INVERSION ordinal/date : renumeroter")
+                    print("   l'attestation la plus RECENTE de la paire au-dessus de")
+                    print("   l'ordinal le plus haut (un `git mv` PUR : aucun contenu")
+                    print("   a toucher, aucune re-execution).")
+                else:
+                    print("   Un `git mv` PUR suffit (aucun contenu a toucher, aucune")
+                    print("   re-execution) : renumeroter le fichier de la tete vers le")
+                    print("   premier index libre de la paire.")
+            else:
+                print("PORTE : VERTE -- cette revision n'introduit aucune collision")
+                print("d'index (les doublons herites de %s ne sont pas de son fait)."
+                      % args.base)
     if not args.json:
         print("")
-        if cross:
+        # #26795 : l'inventaire des inversions ordinal/date de TOUT-HAUT,
+        # par revision lue. Le census de la base EST l'etat herite -- c'est
+        # lui qui dit ce que la PR n'a pas introduit.
+        for ref in sorted(inversions_par_ref):
+            inv = inversions_par_ref[ref]
+            print("INVERSIONS ORDINAL/DATE (%s) : %d" % (ref, len(inv)))
+            for v in inv:
+                print("   %s / index %s   (haut : %s, date %s -- plus ancien "
+                      "que %s, date %s)"
+                      % (v["pair"], v["index"], ", ".join(v["top_names"]),
+                         v["top_date"], ", ".join(v["recent_names"]),
+                         v["recent_date"]))
+        if args.census:
+            total = sum(len(v) for v in inversions_par_ref.values())
+            ordre_total = sum(len(v) for v in ordre_par_ref.values())
+            paires_ordre = len({v["pair"] for vs in ordre_par_ref.values()
+                                for v in vs})
+            print("")
+            print("RECENSEMENT: %d paire(s) dont l'ordinal le plus haut n'est "
+                  "pas le plus recent." % total)
+            print("(l'invariant garde par la porte : l'attestation la plus "
+                  "recente de la paire doit porter l'ordinal le plus haut.)")
+            print("")
+            print("INVENTAIRE LARGE (informatif, jamais bloquant) : %d "
+                  "inversion(s) d'ordre date/ordinal dans %d paire(s)."
+                  % (ordre_total, paires_ordre))
+            print("(l'invariant « tout ordinal suit l'ordre des dates » est "
+                  "viole par la dette historique du registre ; l'audit de "
+                  "parite ne lit que le sommet de la paire, donc cette dette "
+                  "ne le rend pas faux.)")
+        if args.gate:
+            # En mode PORTE, la seule ligne de verdict qui compte est celle de
+            # la porte : un « OK » absolu suivi d'un refus de porte se lirait
+            # comme un acquittement.
+            if gate["fail"]:
+                n_inv = sum(1 for r in gate["reasons"]
+                            if r.get("kind") == "ordinal_date_inversion")
+                n_idx = len(gate["reasons"]) - n_inv
+                detail = "%d collision(s) d'index" % n_idx
+                if n_inv:
+                    detail += " + %d inversion(s) ordinal/date" % n_inv
+                print("VERDICT: PORTE REFUSEE -- %s introduite(s) par cette "
+                      "revision." % detail)
+            else:
+                print("VERDICT: PORTE VERTE -- aucune collision d'index "
+                      "introduite par cette revision.")
+        elif cross:
             n_on_main = sum(1 for c in cross if args.base in c.get("by_ref", {}))
             n_multi = len(cross) - n_on_main
             verdict_suffix = ""

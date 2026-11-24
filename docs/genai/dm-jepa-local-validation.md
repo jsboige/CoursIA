@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # DM-JEPA 1.7 — validation locale du moteur de décision
 
 Issue de grain : #21997. Page sœur pour l'index de modèles de décision : [decision-models-local-verification.md](decision-models-local-verification.md).

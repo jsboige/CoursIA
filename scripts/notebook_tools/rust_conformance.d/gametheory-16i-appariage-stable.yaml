@@ -1,0 +1,385 @@
+# Conformite differentielle du triplet GameTheory-16i (Appariage stable et
+# strategie, issue #27794).
+#
+# Le portage Rust (kernel evcxr, `std` seul) reprend les deux instances du
+# carnet Python : A (deux appariages stables distincts) et C (le cote
+# repondant n'est pas protege). Les trois cotes executent la MEME
+# recherche differee ; le Rust reproduit l'ordre d'insertion des dict
+# Python (un `Vec` de paires au lieu d'une `BTreeMap`), ce qui rend les
+# repr d'appariage comparables.
+#
+# Ecarts de forme DECLARES (le contenu mesure est identique, la typo
+# differe) : le jumeau C# ecrit `Paire bloquante : aucune` la ou le
+# Python et le Rust ecrivent `None`, et il annonce la lecture des rangs
+# par `w1 3->2` la ou le Python ecrit `{'w1': (3, 2)}`. Cette derniere
+# grandeur la est donc declaree ABSENTE pour le cote C# ; les memes
+# grandeurs sont mesurees sur les deux autres cotes.
+#
+# Les jumeaux n'ont pas la meme structure de cellules (28 cellules chez
+# le Python et le Rust, 26 chez le C#) : la correspondance des cellules
+# est donc ECRITE cote par cote, index par index.
+- name: "GameTheory-16i Appariage stable (Gale-Shapley)"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Rust.ipynb
+  measures:
+    - id: appariage_a_m1
+      description: "Partenaire de m1 dans l'appariage produit par Gale-Shapley (hommes proposent, instance A)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "'m1': '(w\\d)'"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "'m1': '(w\\d)'"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "\\{m1: (w\\d)"
+          transform: text
+    - id: appariage_a_m2
+      description: "Partenaire de m2 dans l'appariage produit par Gale-Shapley (hommes proposent, instance A)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "'m2': '(w\\d)'"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "'m2': '(w\\d)'"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "m2: (w\\d)"
+          transform: text
+    - id: appariage_a_m3
+      description: "Partenaire de m3 dans l'appariage produit par Gale-Shapley (hommes proposent, instance A)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "'m3': '(w\\d)'"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "'m3': '(w\\d)'"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "m3: (w\\d)"
+          transform: text
+    - id: appariage_c_m1
+      description: "Partenaire de m1 dans l'appariage honnete de l'instance C"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "'m1': '(w\\d)'"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "'m1': '(w\\d)'"
+          transform: text
+        csharp:
+          cell: 17
+          pattern: "\\{m1: (w\\d)"
+          transform: text
+    - id: stables_a
+      description: "Nombre d'appariages stables de l'instance A (oracle independant, sur 6 bijections)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(\\d+) appariages stables sur \\d+ bijections pour A"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "(\\d+) appariages stables sur \\d+ bijections pour A"
+          transform: int
+        csharp:
+          cell: 14
+          pattern: "(\\d+) appariages stables sur \\d+ bijections"
+          transform: int
+    - id: stables_c
+      description: "Nombre d'appariages stables de l'instance C (oracle independant, sur 6 bijections)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(\\d+) appariages stables sur \\d+ pour C"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "(\\d+) appariages stables sur \\d+ pour C"
+          transform: int
+        csharp:
+          cell: 17
+          pattern: "porte (\\d+) bijections stables"
+          transform: int
+    - id: hommes_gagnent
+      description: "Nombre d'hommes pouvant s'ameliorer en mentant sur l'instance C (recherche exhaustive)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "en mentant : (\\d+) sur"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "en mentant : (\\d+) sur"
+          transform: int
+        csharp:
+          cell: 17
+          pattern: "par d\\w+claration : (\\d+) sur"
+          transform: int
+    - id: femme_gagnante
+      description: "Respondante qui gagne par une declaration mensongere sur l'instance C"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "\\(B\\) (w\\d)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "\\(B\\) (w\\d)"
+          transform: text
+        csharp:
+          cell: 19
+          pattern: "gagnante : (w\\d)"
+          transform: text
+    - id: honnete_partenaire
+      description: "Partenaire honnete de la femme gagnante sur l'instance C"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "honnête : (m\\d)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "honnête : (m\\d)"
+          transform: text
+        csharp:
+          cell: 19
+          pattern: "honnête (m\\d) rang"
+          transform: text
+    - id: honnete_rang
+      description: "Rang du partenaire honnete de la femme gagnante dans sa vraie liste"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "honnête : m\\d \\(son rang (\\d+)\\)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "honnête : m\\d \\(son rang (\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "honnête m\\d rang (\\d+)"
+          transform: int
+    - id: menton_partenaire
+      description: "Partenaire obtenu par la femme gagnante apres sa declaration mensongere"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "declare \\['.*?'\\]  ->  (m\\d)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "declare \\['.*?'\\]  ->  (m\\d)"
+          transform: text
+        csharp:
+          cell: 19
+          pattern: "\\[.*?\\].*?(m\\d) rang"
+          transform: text
+    - id: menton_rang
+      description: "Rang du partenaire obtenu apres la declaration mensongere"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "declare \\['.*?'\\]  ->  m\\d \\(son rang (\\d+)\\)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "declare \\['.*?'\\]  ->  m\\d \\(son rang (\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "\\[.*?\\].*?m\\d rang (\\d+)"
+          transform: int
+    - id: rang_femme_w1_avant
+      description: "Rang VRAI de w1 chez son partenaire honnete (instance C, avant manipulation)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "'w1': \\((\\d+), (\\d+)\\)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "'w1': \\((\\d+), (\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "w1 (\\d+)\\D"
+          transform: int
+    - id: rang_femme_w1_apres
+      description: "Rang VRAI de w1 chez son partenaire apres la manipulation de w2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "'w1': \\(\\d+, (\\d+)\\)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "'w1': \\(\\d+, (\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "w1 \\d+\\D+(\\d+)"
+          transform: int
+    - id: rang_homme_m1_apres
+      description: "Rang VRAI de m1 chez son partenaire apres la manipulation de w2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "'m1': \\(\\d+, (\\d+)\\)"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "'m1': \\(\\d+, (\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "m1 \\d+\\D+(\\d+)"
+          transform: int
+    - id: equilibres_identiques
+      description: "Les deux equilibres (hommes proposent / femmes proposent) coincident-ils sur l'instance A ?"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Identiques \\? (True|False)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "Identiques \\? (True|False)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "Identiques \\? (True|False)"
+          transform: text
+    - id: rang_m1_hommes_proposent
+      description: "Rang du partenaire de m1 quand les hommes proposent (1 = premier choix)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "m1 : (\\d+)e si les hommes proposent"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "m1 : (\\d+)e si les hommes proposent"
+          transform: int
+        csharp:
+          cell: 14
+          pattern: "m1 : (\\d+) si hommes proposent"
+          transform: int
+    - id: exercice_1_a_completer
+      description: "L'Exercice 1 est bien laisse en stub (bandeau « Exercice 1 a completer »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Exercice (\\d)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "Exercice (\\d)"
+          transform: text
+        csharp:
+          cell: 7
+          pattern: "Exercice (\\d)"
+          transform: text
+    - id: exercice_2_a_completer
+      description: "L'Exercice 2 est bien laisse en stub (bandeau « Exercice 2 a completer »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "Exercice (\\d)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "Exercice (\\d)"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "Exercice (\\d)"
+          transform: text
+    - id: exercice_3_a_completer
+      description: "L'Exercice 3 est bien laisse en stub (bandeau « Exercice 3 a completer »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Exercice (\\d)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "Exercice (\\d)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "Exercice (\\d)"
+          transform: text
+    - id: paire_bloquante_absente
+      description: "L'appariage produit sur l'instance A n'a aucune paire bloquante"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "Paire bloquante : (None)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "Paire bloquante : (None)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# annonce l'absence de paire bloquante par le mot
+            « aucune » (« Paire bloquante : aucune -> stable ») et non par
+            `None` : la grandeur est la meme, sa forme n'est pas
+            comparable. Cote declare ABSENT, pas mesure.

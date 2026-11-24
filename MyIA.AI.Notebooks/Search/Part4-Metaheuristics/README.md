@@ -1,6 +1,6 @@
 # Partie 4 : Metaheuristiques Composables (MetaGeneticSharp)
 
-[↑ Série Search](../README.md) | [← Partie 1 : Fondations](../Part1-Foundations/README.md) | [Notebooks MGS →](MGS-01-Introduction.ipynb)
+[↑ Série Search](../README.md) | [← Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Notebooks MGS →](MGS-01-Introduction.ipynb)
 
 Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Les notebooks .NET Interactive (C#) de la partie en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
 
@@ -63,7 +63,7 @@ Cette table ne porte que des **numéros nus** : qui la lit de haut en bas suit l
 | 4 | [MGS-04-Islands](MGS-04-Islands.ipynb) | Modèle insulaire | populations structurées, migration entre îles | ~50 min | — |
 | 5 | [MGS-05-CompoundMetaheuristics](MGS-05-CompoundMetaheuristics.ipynb) | Reconstruire les composés publiés (WOA/EO/FBI) | `MetaHeuristicsService`, `WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, factory `CreateMetaHeuristicByName` | ~50 min | — |
 | 6 | [MGS-06-Benchmarks](MGS-06-Benchmarks.ipynb) | Comparaison honnête | `KnownFunctions`, composé WOA vs Uniform vs Islands | ~50 min | — |
-| 7 | [MGS-07-TSP](MGS-07-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min | [7b](MGS-07b-LandscapeMultidim.ipynb) · [7c](MGS-07c-RosenbrockGriewank.ipynb) · [7d](MGS-07d-MichalewiczDixonPrice.ipynb) |
+| 7 | [MGS-07-TSP](MGS-07-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min | [7b](MGS-07b-LandscapeMultidim.ipynb) · [7c](MGS-07c-RosenbrockGriewank.ipynb) · [7d](MGS-07d-MichalewiczDixonPrice.ipynb) · [7e](MGS-07e-CovarianceMatrixAdaptation.ipynb) · [7f](MGS-07f-RestartsCroissants.ipynb) |
 | 8 | [MGS-08-LandscapeExplorer](MGS-08-LandscapeExplorer.ipynb) | Visualiser la surface de fitness | heatmaps PNG graphiques, 3 modes (fonction / carte d'altitude / image), trajectoire de convergence | ~50 min | — |
 | 9 | [MGS-09-EverestRelief](MGS-09-EverestRelief.ipynb) | Relief terrestre réel comme paysage | `DemGrid` (wrapper `ImageHeightMapFunction`), cartes `KnownHeightMap` de jsboige, GA/WOA/EO vs PSO, flipbook de convergence | ~55 min | — |
 | 10 | [MGS-10-CenterBias](MGS-10-CenterBias.ipynb) | Biais central vs robustesse au déplacement | banc `CenterBiasBenchmark` (Kudela 2022), composés WOA/EO/FBI/DE/BBPSO/SA vs GA/Random, signature $\Delta$ | ~45 min | — |
@@ -85,13 +85,15 @@ Un palier est un numéro qui a reçu des lettres : on lit le numéro, on ouvre u
 
 ### Autour de 7 — la projection N-D des paysages
 
-MGS-07 a établi l'agnosticisme de la grammaire à la représentation ; ses trois lettres montrent ce que la **dimension** fait à un paysage qu'on croyait connaître.
+MGS-07 a établi l'agnosticisme de la grammaire à la représentation ; ses lettres montrent ce que la **dimension** fait à un paysage qu'on croyait connaître — puis ce que la **population** fait à la recherche qui s'y déplace.
 
 | # | Notebook | Ce qu'elle ajoute au palier | Primitives introduites | Prérequis en plus | Durée |
 |---|----------|-----------------------------|------------------------|-------------------|-------|
 | 7b | [MGS-07b-LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) | Projection N-D des paysages (voir en dimension ≥ 5) | surcharge `RenderHeatmap` N-D de `KnownFunctionLandscape`, projection MAX sur les coordonnées cachées (opérateur Gtk# verbatim) ; Sphere 2-D vs 5-D, Rastrigin n=2/5/10/30, Schwefel n=5/30 | MGS-06 (les dix fonctions), MGS-07 (représentation agnostique) | ~30 min |
 | 7c | [MGS-07c-RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) | Projection N-D : Rosenbrock (vallée banane) + Griewank (produit-cosinus) | `RosenbrockFitness`, `GriewankFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; la vallée étroite de Rosenbrock (largeur $\sim 10^{-2}$) disparaît en MAX-projection 30-D, Griewank produit-cosinus $\prod \cos(x_i/\sqrt{i})$ vs Ackley somme-cosinus | MGS-07b (la surcharge N-D de `RenderHeatmap`) | ~30 min |
 | 7d | [MGS-07d-MichalewiczDixonPrice](MGS-07d-MichalewiczDixonPrice.ipynb) | Projection N-D : Michalewicz (crêtes raides) + Dixon-Price (vallée non-scalable) | `MichalewiczFitness` (paramètre $m=10$), `DixonPriceFitness` sur la surcharge N-D de `RenderHeatmap` ; dims $n=2/5/30$ ; crêtes quasi-binaires de Michalewicz ($m=10$ sature l'amplitude), vallée parabolique-croisée non-rectiligne de Dixon-Price | MGS-07b (la même surcharge N-D) | ~30 min |
+| 7e | [MGS-07e-CovarianceMatrixAdaptation](MGS-07e-CovarianceMatrixAdaptation.ipynb) | CMA-ES natif : ce que le rang-un ajoute au rang-μ | compose `CovarianceMatrixAdaptationEvolutionStrategy` (rang un + CSA + restart-on-stall) sur le même canevas GA que xNES/SNES/DE ; ellipsoïde tourné d=5 (graines 4242/1717/2718), covariance 2-D qui apprend l'orientation de la vallée, trajectoire CSA et redémarrages sur Rastrigin ; plafond IPOP déclaré, exercice côté appelant | Search-05b (xNES et la référence pycma), MGS-07d (anisotropie V/H) | ~40 min |
+| 7f | [MGS-07f-RestartsCroissants](MGS-07f-RestartsCroissants.ipynb) | Redémarrages à population croissante : l'IPOP d'Auger & Hansen (CEC 2005) sur le vrai contrôleur du fork | `IpopRestartController.Run` (doublement `checked`, meilleur cumulé côté contrôleur, budget global côté appelant) ; banc 2 stratégies × 3 paysages × 3 graines à budget 50 000 ; restarts détectés depuis la trace (le delta d'évaluations double quand $\lambda$ double) | MGS-07e (le composé CMA-ES à population fixe) | ~30 min |
 
 Les 8 figures MGS-7b (heatmaps de la projection N-D des paysages Sphere/Rastrigin/Schwefel) sont cataloguées dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) avec leurs **descriptions visuelles** verbatim (audit vision MiniMax M3 c.755, doctrine #5780) — voir notamment la note disclosed sur la convergence visuelle des heatmaps Rastrigin-d2/d10/d30 en projection MAX (moyennes RGB identiques à 2 décimales près).
 
@@ -127,7 +129,7 @@ flowchart LR
 
 ## Applications spécialisées
 
-Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
+Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Part3-Cas-pratiques/`](../Part3-Cas-pratiques/README.md) : **App-9 / App-09-CSharp** (EdgeDetection) et **App-10 / App-10-CSharp** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
 
 ## Sous-série MGS vs mealpy
 
@@ -139,7 +141,7 @@ La campagne oppose la bibliothèque à **mealpy 3.0.2** (Python/NumPy) sur un pr
 
 ## Configuration requise
 
-Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork : vérifié sur la version épinglée du dépôt (**1.0.617701**, cf. [kernels-runtime.md](../../../docs/reference/kernels-runtime.md)) avec MGS-01 et MGS-06 sous Linux, et auparavant sur 1.0.707101 avec MGS-6, MGS-18, MGS-19 et MGS-21. Tous les chargements `#r` sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
+Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du fork : vérifié sur **1.0.617701**, alors version épinglée du dépôt (canon actuel : [kernels-runtime.md](../../../docs/reference/kernels-runtime.md)), avec MGS-01 et MGS-06 sous Linux, et auparavant sur 1.0.707101 avec MGS-6, MGS-18, MGS-19 et MGS-21. Tous les chargements `#r` sont relatifs (`../MetaGeneticSharp/src/...`) et visent des DLL `net9.0` produites par un `dotnet build` du fork :
 
 - `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` — `MetaGeneticSharp.Domain`, `Infrastructure` et `GeneticSharp` ;
 - `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` — les mêmes, plus `MetaGeneticSharp.Extensions`, SkiaSharp et `System.Drawing.Common`, pour les notebooks graphiques ;
@@ -148,11 +150,11 @@ Le kernel `dotnet-interactive` **charge nativement les assemblies `net9.0`** du 
 Règle : pas de contournement, installer l'environnement complet :
 
 ```bash
-# 1. .NET SDK 9.0 (cible du fork)
+# 1. .NET SDK 9.0 (cible du fork) et .NET 10 (hôte de dotnet-interactive 1.0.712001)
 dotnet --version
 
 # 2. dotnet-interactive, à la version épinglée du dépôt
-dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # 3. Sous-module, depuis la racine du dépôt (--recursive : il contient GeneticSharp), puis build
@@ -176,6 +178,7 @@ dotnet build -c Release           # bin/Release/net9.0 : Search-05
 | **MGS-15** | `SampleLandscape(..., seed = 42)` / `RandomWalk(..., seed = 7)` | reproductible (seul écart résiduel = blob bootstrap du kernel — [#17863](https://github.com/jsboige/CoursIA/issues/17863)) |
 | **MGS-17** | multi-seed (5 graines {7,42,99,123,777}) | reproduisible (`DynamicProbability` déterministe, pas de RNG interne) |
 | **MGS-19** | multi-seed (3 graines {7,42,99}) avant chaque course | reproduisible (banc Metropolis-vs-Pairwise + limite frozen) |
+| **MGS-07f** | multi-seed (3 graines {4242,1717,2718}) avant chaque stratégie, budget 50 000 | reproduisible (Rastrigin 3/3 vs 1/3, Sphere identique au bit près entre régimes) |
 | **MGS-21** | multi-seed (4 graines {0,1,7,42}) par cellule du plan croisé, `FastRandomRandomization.ResetSeed(seed)` avant création de population | reproduisible (croisement 2×2, 4/4 résolutions en R2/GA, déterminisme vérifié sur 3 exécutions) |
 
 Le contrôle « deux exécutions → sorties identiques » vaut hors le seul blob de bootstrap du kernel (adresse/PID éphémères), et à condition de bâtir les DLL `#r` depuis le gitlink courant du fork : un `bin/` antérieur au correctif de seed par pixel rend les rendus N-D non déterministes (avertissement mesuré le 2026-10-02, cf. #18820).
@@ -214,6 +217,22 @@ La grammaire de composition est-elle agnostique à la représentation ? MGS-1 à
 
 Cadrage honnête (G.9) : ni swap ni insertion n'a de privilège géographique sur ce TSP (ce sont des distances sur les étiquettes d'indice, pas sur les coordonnées des villes) — les deux sont des baselines, et le centroïde naïf à deux parents borne symétriquement les deux métriques (limite déjà documentée en Config 3) ; un embedding appris équivariant par permutation ferait mieux que les deux.
 
+#### Service web TSP (pli 0 v2, #27218)
+
+Le carnet MGS-07 expose aussi son optimisation comme un **service web** `POST /search/tsp`. Le cœur d'exécution est un port Python ([`mgs_tsp_core.py`](mgs_tsp_core.py)) du **même** algorithme (GA panmictique + modèle insulaire sur permutations, fitness = distance euclidienne du tour cyclique, opérateurs OX1/RSM/élite), de parité **seedée interne** : deux exécutions avec les mêmes entrées produisent le même tour et la même distance.
+
+**Serveur retenu : FastAPI** [`mgs_tsp_service.py`](mgs_tsp_service.py) — codes HTTP 200/422/502 :
+
+  ```bash
+  pip install -r requirements-mgs-tsp.txt
+  uvicorn mgs_tsp_service:app --host 127.0.0.1 --port 8000
+  # POST http://127.0.0.1:8000/search/tsp
+  ```
+
+L'acceptance #27218 (point 3) autorise Kernel Gateway notebook-http **ou FastAPI**. Le choix FastAPI s'impose ici : ce carnet tourne sous kernel **C#**, et Kernel Gateway notebook-http ne peut pas le servir (`# POST` est une directive préprocesseur invalide en C#, et la requête est injectée en syntaxe Python `REQUEST = ...`). Le détail mesuré est dans la note d'implémentation du carnet. La **cellule d'endpoint du carnet** (`// POST /search/tsp`) invoque le même cœur Python via [`mgs_tsp_gateway_driver.py`](mgs_tsp_gateway_driver.py) (sous-processus stdin/stdout) et court-circuite en exécution de cours (C.1) : un seul carnet porte cours + TP + service (veto Q168 respecté, pas de jumeau Python).
+
+Le contrat : entrée `{"cities": [{"name","x","y"}, ...], "algorithm": "ga"|"islands", "params": {"population","generations","seed", ...}}`, sortie `{"status":"ok","data":{"best_tour":[...],"distance":...,"history":[...]}}` (`best_tour` = noms de villes dans l'ordre de visite, `history` = longueur du meilleur tour par génération). `{"status":"invalid",...}` (< 4 villes, paramètres hors bornes, algorithme inconnu, noms dupliqués) ou `{"status":"error",...}` (échec inattendu) ; aucune exception ne fuit. Tests : `test_mgs_tsp_core.py` (22 tests — validation, cas dégénérés, parité seedée, optimum connu du carré unité = 4.0, transport loopback), câblés dans `.github/workflows/search-mgs-tsp-tests.yml`.
+
 ### 7b — Projection N-D des paysages
 
 MGS-6 a présenté les dix fonctions canoniques en 2-D. Mais une **vraie métaheuristique** optimise dans des dimensions bien supérieures (Rastrigin est intéressant à $n=30$, Schwefel a un optimum trompeur en $n \geq 10$). Ce notebook pont active la **surcharge N-D** de `KnownFunctionLandscape.RenderHeatmap` — la même rampe de couleurs, la même `SkiaLandscapeRenderer`, mais sur une dimension arbitraire : pour chaque pixel du canvas 2-D, `nbSamples` tirages uniformes des coordonnées cachées $x_2 \dots x_{N-1}$ et on garde le **MAX** (l'opérateur verbatim du contrôleur Gtk# original de jsboige). La projection rend lisibles des phénomènes invisibles en 2-D : la **Sphere** 5-D garde $(0,0)$ comme candidat d'optimum mais le MAX sur les coordonnées cachées fait émerger d'autres pixels ; **Rastrigin** en $n=2/5/10/30$ montre la densité de minima locaux croître avec la dimension (la heatmap rougit) ; **Schwefel** en $n=5/30$ fait émerger le *vrai* optimum global, loin du centre, dès qu'on autorise les coordonnées cachées à varier. C'est le pont entre la visualisation 2-D de MGS-6/MGS-8 et la réalité haute-dimension où vit l'optimisation — et le terrain où la projection N-D (capacité distinctive du renderer fork) est *nécessaire*, pas optionnelle.
@@ -225,6 +244,10 @@ MGS-7b a projeté les quatre fonctions les plus classiques (Sphere, Rastrigin, S
 ### 7d — Projection N-D : Michalewicz (crêtes raides) et Dixon-Price (vallée non-scalable)
 
 Le troisième notebook pont referme la trilogie sur les deux dernières fonctions canoniques au comportement discriminant : **Michalewicz** — dont le paramètre $m=10$ dans $\sin^{2m}(\cdot)$ sature l'amplitude entre 0 et 1, créant des **crêtes quasi-binaires** alternant bandes sombres et claires (et dont l'optimum *dépend de la dimension* $n$, propriété rare) — et **Dixon-Price**, dont la vallée étroite est **parabolique-croisée** (le couplage $2(2x_2^2 - x_1)^2$ impose que $x_2$ suive $x_1$ selon une racine, pas selon $x_1^2$ comme Rosenbrock), donc **non-rectiligne** : étroite en haut, elle s'évase en bas. En projection N-D $n=2/5/30$, le paramètre $m=10$ rend chaque dimension presque discontinue (la MAX-projection retient les crêtes les plus marquées), et le couplage cross-dimension de Dixon-Price défait toute lecture coordonnée-par-coordonnée. La trilogie MGS-7b/7c/7d couvre ainsi les **huit fonctions canoniques** du banc en projection N-D — le terrain complet où la dimension révèle ce que la 2-D dissimule.
+
+### 7f — Redémarrages à population croissante : IPOP-CMA-ES
+
+MGS-07e a monté le composé CMA-ES à population fixe et laissé la question ouverte : que faire quand la population **stagne** ? La réponse d'Auger & Hansen (CEC 2005) : **redémarrer en doublant la population** — chaque restart rend la recherche plus *globale*. Ce notebook consomme le vrai `IpopRestartController` du fork (doublement `checked`, meilleur cumulé toutes exécutions, budget global laissé à l'appelant) sur le même canevas GA que MGS-07e : banc à budget égal (50 000 évaluations) opposant IPOP à un redémarrage local à population fixe, sur Rastrigin/Ackley/Sphere d=5, 3 graines. Verdict mesuré : seul **Rastrigin** discrimine — IPOP atteint la cible 1e-8 sur 3 graines sur 3 (~22 000 évaluations, tailles doublées 8→128 en 4 restarts) contre 1/3 au fixe (0,995, budget épuisé) ; Ackley rejoint la cible dès la première exécution pour les deux régimes, et Sphere rend l'équivalence au bit près attendue sur unimodal — le « performance is similar » du papier à l'échelle du carnet. La figure log-scale montre les paliers du meilleur cumulé, les traits de doublement détectés *depuis la trace* (le delta d'évaluations entre générations double quand $\lambda$ double), et la cible 1e-8 franchie dans l'exécution de taille 128. Trois exercices : l'effet de $\lambda_0$, la garde de budget par génération, et BIPOP à la main (l'alternance de Hansen 2008-2009).
 
 ### 8 — Fitness Landscape Explorer
 

@@ -54,7 +54,12 @@ author writes, one line per declaration, in the **body of the pull request**:
 
     [LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>
 
-``<decl>`` is ``<kind> <name>`` exactly as ``declared_line`` renders it. An
+``<decl>`` is ``<kind> <name>`` exactly as ``declared_line`` renders it -- for
+an anonymous ``example`` (or a top-level line) the name is empty, so the
+declaration reads ``<fichier>:example -- <motif>``. Anchors inside ``example``
+and top-level anchors follow the **same rule** as named ones: they redden
+unless declared (#21387 -- that is the whole point, since ``check_axioms``
+cannot see them by construction). An
 anchor passes only if **its own** declaration is named there -- no per-file or
 global wildcard. A malformed line is ignored (fail-closed: the anchor stays
 rouge). Declared anchors are listed in the output so a reviewer sees them.
@@ -72,16 +77,15 @@ Usage
     python scripts/lean/check_added_axioms_cliquet.py --body-file <corps.md>
 
     # Restrict to specific paths (default: own lakes):
-    python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/Compression/Compression_lean/*.lean'
+    python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/*.lean'
 
     # JSON for CI consumption:
     python scripts/lean/check_added_axioms_cliquet.py --json
 
 Exit codes:
-    0  -- no anchor added, or anchors only inside ``example`` (no action),
-          or every named-declaration anchor is declared in the body
-    1  -- at least one anchor added inside a named declaration and not
-          declared in the body (rouge)
+    0  -- no anchor added, or every added anchor (named declaration,
+          ``example`` or top-level line alike, #21387) is declared in the body
+    1  -- at least one added anchor not declared in the body (rouge)
     2  -- invocation error (bad SHA, no lean files in scope)
 
 Module usage:
@@ -187,9 +191,10 @@ class CliquetReport:
 
     @property
     def hits_in_named_decls(self) -> list[AnchorHit]:
-        """Anchors that sit inside a NAMED declaration (the only case the
-        cliquet considers a regression). Hits inside ``example`` are
-        surfaced but do not cause a non-zero exit.
+        """Anchors that sit inside a NAMED declaration. Reporting view only:
+        since the declarative cliquet (residue #21387), ``example`` and
+        top-level anchors ALSO require their own declaration -- the red path
+        is ``hits_undeclared``, which covers every hit.
         """
         return [h for h in self.hits if not h.in_example]
 
@@ -198,19 +203,22 @@ class CliquetReport:
 
     @property
     def hits_undeclared(self) -> list[AnchorHit]:
-        """Named-declaration anchors whose OWN declaration is absent from the
-        body's declarative lines. Matching is exact on (file, declaration) --
+        """Anchors -- named declarations, ``example`` blocks and top-level
+        lines alike -- whose OWN declaration is absent from the body's
+        declarative lines (#21387: the red must cover every added anchor,
+        examples included, precisely because ``check_axioms`` is blind to
+        them by construction). Matching is exact on (file, declaration) --
         no per-file or global wildcard, so one declared anchor cannot silence
         its neighbours.
         """
         keys = self._declared_keys()
-        return [h for h in self.hits_in_named_decls
+        return [h for h in self.hits
                 if (h.file, f"{h.decl_kind} {h.decl_name}".strip()) not in keys]
 
     @property
     def hits_declared(self) -> list[AnchorHit]:
         keys = self._declared_keys()
-        return [h for h in self.hits_in_named_decls
+        return [h for h in self.hits
                 if (h.file, f"{h.decl_kind} {h.decl_name}".strip()) in keys]
 
 
@@ -228,7 +236,12 @@ def _git_rev_list(base: str, head: str, repo_root: Path | None = None) -> list[P
     and head. Includes added, modified and deleted files; the consumer
     filters by content.
     """
-    cmd = ["git", "diff", "--name-only", "--diff-filter=AM", f"{base}..{head}"]
+    # Three-dot: PR-diff semantics (merge-base..head), aligned with the
+    # fast-lane host (`scripts/ci/fast_lane.py` uses ``{base}...HEAD``).
+    # Two-dot on a stale base inverts recent main commits: a ``sorry`` that
+    # main *removed* after the fork point surfaces as "re-added" by the PR
+    # (measured on PR #27066, issue #27072).
+    cmd = ["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...{head}"]
     out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", check=True, cwd=repo_root)
     paths = [Path(p) for p in out.stdout.splitlines() if p.endswith(".lean")]
     return [p for p in paths if not _is_excluded(p)]
@@ -249,7 +262,8 @@ def _git_diff_added_lines(base: str, head: str, path: Path, repo_root: Path | No
     """Return 1-based line numbers of ADDED lines (no context, no deletions)
     in ``path`` between base and head.
     """
-    cmd = ["git", "diff", "--unified=0", "--no-color", f"{base}..{head}", "--", path.as_posix()]
+    # Three-dot, same rationale as _git_rev_list (merge-base..head = PR diff).
+    cmd = ["git", "diff", "--unified=0", "--no-color", f"{base}...{head}", "--", path.as_posix()]
     res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", cwd=repo_root)
     if res.returncode != 0:
         return []
@@ -288,7 +302,9 @@ def _git_diff_added_lines(base: str, head: str, path: Path, repo_root: Path | No
 
 # ``example`` and anonymous ``instance`` are declarations that produce no
 # named constant in the Lean environment. The cliquet flags anchors inside
-# them with ``in_example=True`` and they do NOT cause a non-zero exit.
+# them with ``in_example=True`` -- a REPORTING field: since the declarative
+# cliquet (#21387) these anchors follow the same rule as named ones and DO
+# cause a non-zero exit unless their own declaration is in the body.
 NAMELESS_KINDS = {"example", "instance"}
 
 
@@ -346,7 +362,8 @@ def scan_added_lines(
     paths: Iterable[Path] | None = None,
     repo_root: Path | None = None,
 ) -> CliquetReport:
-    """Diff ``base..head`` for ``*.lean`` files and return a structured report.
+    """Diff ``base...head`` (merge-base..head, PR-diff semantics) for
+    ``*.lean`` files and return a structured report.
     ``paths`` is the in-scope set; ``None`` means "all own-lake lean files
     that differ between base and head". ``repo_root`` is the directory in
     which to run ``git`` (defaults to the process cwd).
@@ -458,27 +475,18 @@ def render_text(report: CliquetReport) -> str:
         lines.append(
             f"{h.file:<60} {h.line:>4}  {h.token:<14}  {decl:<24}  {str(h.in_example):>10}"
         )
-    named = report.hits_in_named_decls
-    if not named:
-        lines.append("")
-        lines.append(
-            "GREEN: all anchors inside `example` (visible to humans, "
-            "invisible to check_axioms -- by design)."
-        )
-        return "\n".join(lines)
-
     undeclared = report.hits_undeclared
     if undeclared:
         lines.append("")
         lines.append(
-            f"ROUGE: {len(undeclared)} anchor(s) in NAMED declarations, "
-            f"non declaree(s) dans le corps de la PR "
-            f"(would be invisible to check_axioms if you re-execute it)."
+            f"ROUGE: {len(undeclared)} anchor(s) ajoutee(s) "
+            f"(declaration nommee, example ou top-level) non declaree(s) "
+            f"dans le corps de la PR."
         )
     if report.hits_declared:
         lines.append("")
         lines.append(
-            f"DECLARE: {len(report.hits_declared)} anchor(s) in NAMED declarations "
+            f"DECLARE: {len(report.hits_declared)} anchor(s) "
             f"couvertes par une ligne [LEAN-ANCHOR-DECLARED] du corps : "
             f"jugement du motif laisse au reviewer."
         )
@@ -564,10 +572,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(render_text(report))
 
-    # Non-zero exit only when an anchor sits in a NAMED declaration that the
-    # body does not declare. The cliquet is informational for
-    # example/instance anchors (they are invisible to check_axioms, not a bug
-    # in the proof) and for declared anchors (the reviewer judges the motive).
+    # Non-zero exit when ANY added anchor -- named declaration, example or
+    # top-level -- is not declared in the body (#21387: example anchors are
+    # precisely the blind spot of check_axioms, so the declarative red is the
+    # only gate that sees them). Declared anchors pass: the reviewer judges
+    # the motive.
     return 1 if report.hits_undeclared else 0
 
 

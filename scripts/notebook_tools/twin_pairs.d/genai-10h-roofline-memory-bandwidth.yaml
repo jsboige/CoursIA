@@ -1,0 +1,10 @@
+- name: GenAI-10h Roofline Memory Bandwidth
+  family: GenAI/Texte
+  python: MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: 'NumPy exécute les noyaux CPU sum et matmul ; TorchSharp-cpu 0.107.0 invoque réellement libtorch CPU 2.10 pour les mêmes opérations. La couche roofline est un modèle analytique des deux côtés.'
+  known_differences:
+  - 'NumPy et TorchSharp utilisent des générateurs et noyaux distincts ; les mesures et crêtes sont propres à chaque exécution.'
+  - 'La visualisation Matplotlib Python est rendue en SVG statique côté C#.'

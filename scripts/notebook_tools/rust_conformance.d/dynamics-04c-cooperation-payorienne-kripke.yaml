@@ -1,0 +1,617 @@
+# Conformite differentielle du triplet Dynamics-04c (Cooperation payorienne
+# Kripke, issue #27796).
+#
+# Le portage Rust (kernel evcxr, `std` seul) reprend le carnet Python a
+# l'identique : meme moteur de Kripke, meme derailleur de refutation, meme
+# tournoi de jouets. L'AST modal Python (dataclasses gelees) devient un enum
+# recursif ; les mondes sont un `BTreeMap<usize, HashSet<Formule>>` (cles
+# triees, comme `sorted(dict)` sur des entiers) ; l'exception `Contradiction`
+# devient une valeur propagee par `Result`.
+#
+# Les trois cotes ont la MEME structure de cellules (27 cellules, 9 code aux
+# memes index) : la correspondance des cellules est donc directe.
+#
+# Ecarts de forme DECLARES :
+#
+# - la colonne « borne » du tableau de la cellule 10 : le jumeau C# laisse la
+#   colonne VIDE quand la borne est absente, la ou Python et Rust ecrivent
+#   `None` (`str(None) == "None"`, `Option<usize>` n'implemente pas `Display`) ;
+# - la liste des formules du monde 1 (cellule 10) : le jumeau C# l'imprime
+#   sans guillemets (la `ToString` d'une collection C#), la ou Python et Rust
+#   impriment la repr Python `['…', '…']` ;
+# - les libelles des exercices : le jumeau C# ecrit `RefuteBranche` et
+#   `CompteMondes` (PascalCase) la ou Python et Rust ecrivent
+#   `refute_branche` et `compte_mondes` ;
+# - le jumeau C# ajoute des lignes que la source n'a pas (diagonale du
+#   tournoi, ligne de revalidation des premisses) et ne reprend pas la
+#   formule finale de la cellule 12 : ces cotes sont declares ABSENTS avec
+#   leur motif.
+- name: "Dynamics-04c Cooperation Payorienne Kripke"
+  family: GameTheory/Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Rust.ipynb
+  measures:
+    # --- cellule 2 : la matrice du dilemme du prisonnier -------------------
+    - id: entete_paiements
+      description: "L'en-tete de la table des paiements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(self  other  payoff)"
+        rust:
+          cell: 2
+          pattern: "(self  other  payoff)"
+        csharp:
+          cell: 2
+          pattern: "(self  other  payoff)"
+    - id: payoff_cooperer_cooperer
+      description: "Paiement quand les deux jouent C (mutualite)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "C     C     (\\d+)"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "C     C     (\\d+)"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "C     C     (\\d+)"
+          transform: int
+    - id: payoff_cooperer_trahir
+      description: "Paiement du cooperateur face au traître"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "C     D     (\\d+)"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "C     D     (\\d+)"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "C     D     (\\d+)"
+          transform: int
+    - id: payoff_trahir_cooperer
+      description: "Paiement du traître face au cooperateur"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "D     C     (\\d+)"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "D     C     (\\d+)"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "D     C     (\\d+)"
+          transform: int
+    - id: payoff_trahir_trahir
+      description: "Paiement quand les deux jouent D"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "D     D     (\\d+)"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "D     D     (\\d+)"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "D     D     (\\d+)"
+          transform: int
+    # --- cellule 5 : le moteur de forcing ---------------------------------
+    - id: verdict_p_en_0
+      description: "Verdict de l'atome P au monde 0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "P en 0         : (vrai|faux)"
+        rust:
+          cell: 5
+          pattern: "P en 0         : (vrai|faux)"
+        csharp:
+          cell: 5
+          pattern: "P en 0         : (vrai|faux)"
+    - id: verdict_box_p_en_0
+      description: "Verdict de []P au monde 0 (monde mort : vacuite)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\[\\]P en 0       : (vrai|faux)"
+        rust:
+          cell: 5
+          pattern: "\\[\\]P en 0       : (vrai|faux)"
+        csharp:
+          cell: 5
+          pattern: "\\[\\]P en 0       : (vrai|faux)"
+    - id: verdict_box_p_impl_p_en_0
+      description: "Verdict de []P -> P au monde 0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\[\\]P -> P en 0  : (vrai|faux)"
+        rust:
+          cell: 5
+          pattern: "\\[\\]P -> P en 0  : (vrai|faux)"
+        csharp:
+          cell: 5
+          pattern: "\\[\\]P -> P en 0  : (vrai|faux)"
+    - id: verdict_diam_p_en_1
+      description: "Verdict de <>P au monde 1 (aucun successeur)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "<>P en 1       : (vrai|faux)"
+        rust:
+          cell: 5
+          pattern: "<>P en 1       : (vrai|faux)"
+        csharp:
+          cell: 5
+          pattern: "<>P en 1       : (vrai|faux)"
+    - id: phrase_moteur_operationnel
+      description: "La phrase qui rappelle la vacuite de la boite"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(Moteur operationnel : au monde mort \\(1 sans successeur\\), \\[\\]P est vacuement vrai\\.)"
+        rust:
+          cell: 5
+          pattern: "(Moteur operationnel : au monde mort \\(1 sans successeur\\), \\[\\]P est vacuement vrai\\.)"
+        csharp:
+          cell: 5
+          pattern: "(Moteur operationnel : au monde mort \\(1 sans successeur\\), \\[\\]P est vacuement vrai\\.)"
+    # --- cellule 8 : le derouleur -----------------------------------------
+    - id: signature_deriveur
+      description: "Signature annoncee du derouleur (casse ignoree : refute / Refute)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 8
+          pattern: "Derouleur defini : (\\w+)\\(premisses\\)"
+        rust:
+          cell: 8
+          pattern: "Derouleur defini : (\\w+)\\(premisses\\)"
+        csharp:
+          cell: 8
+          pattern: "Derouleur defini : (\\w+)\\(premisses\\)"
+    - id: statuts_deriveur
+      description: "Les trois statuts du derouleur"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "(Statuts : unsat \\(contradiction, info = monde\\), sat \\(modele fini\\), incomplet \\(borne\\)\\.)"
+        rust:
+          cell: 8
+          pattern: "(Statuts : unsat \\(contradiction, info = monde\\), sat \\(modele fini\\), incomplet \\(borne\\)\\.)"
+        csharp:
+          cell: 8
+          pattern: "(Statuts : unsat \\(contradiction, info = monde\\), sat \\(modele fini\\), incomplet \\(borne\\)\\.)"
+    # --- cellule 10 : le tableau des quatre jeux de premisses --------------
+    - id: ligne_cooperatebot
+      description: "Ligne du tableau : P contre CooperateBot (unsat en 1 monde)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "P vs CooperateBot    (unsat      1       contradiction en 1 : Q)"
+        rust:
+          cell: 10
+          pattern: "P vs CooperateBot    (unsat      1       contradiction en 1 : Q)"
+        csharp:
+          cell: 10
+          pattern: "P vs CooperateBot    (unsat      1       contradiction en 1 : Q)"
+    - id: ligne_payorian_q
+      description: "Ligne du tableau : P contre un Payorien Q (unsat en 2 mondes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "P vs Payorian Q      (unsat      2       contradiction en 2 : P)"
+        rust:
+          cell: 10
+          pattern: "P vs Payorian Q      (unsat      2       contradiction en 2 : P)"
+        csharp:
+          cell: 10
+          pattern: "P vs Payorian Q      (unsat      2       contradiction en 2 : P)"
+    - id: ligne_defectbot
+      description: "Ligne du tableau : P contre DefectBot (sat, modele a 2 mondes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "P vs DefectBot       (sat        1       modele a 2 mondes)"
+        rust:
+          cell: 10
+          pattern: "P vs DefectBot       (sat        1       modele a 2 mondes)"
+        csharp:
+          cell: 10
+          pattern: "P vs DefectBot       (sat        1       modele a 2 mondes)"
+    - id: ligne_lob
+      description: "Ligne du tableau : le cas lobien (incomplet, borne absente)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "Lob : H <-> \\[\\]H      (incomplet  None    borne atteinte, obligation ouverte)"
+        rust:
+          cell: 10
+          pattern: "Lob : H <-> \\[\\]H      (incomplet  None    borne atteinte, obligation ouverte)"
+        csharp:
+          absent: >-
+            Le jumeau C# laisse la colonne « borne » VIDE quand la borne est
+            absente, la ou Python et Rust y ecrivent `None` (Python :
+            `str(None) == "None"` ; Rust : `Option<usize>` n'implemente pas
+            `Display`). Cote declare ABSENT, pas mesure.
+    - id: liste_formules_monde_1
+      description: "Les six formules du monde 1 du modele sat de P vs DefectBot"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "monde 1 = (\\[.*\\])"
+        rust:
+          cell: 10
+          pattern: "monde 1 = (\\[.*\\])"
+        csharp:
+          absent: >-
+            Le jumeau C# imprime la liste sans guillemets (la `ToString` d'une
+            collection C#) la ou Python et Rust impriment la repr Python
+            `['…', '…']` (helper `py_list_repr`). Meme contenu, forme non
+            comparable. Cote declare ABSENT, pas mesure.
+    - id: controles_passes
+      description: "La phrase de controle des trois profondeurs"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(Controles passes : 1 monde, 2 mondes, sat a 2 mondes, incomplet\\.)"
+        rust:
+          cell: 10
+          pattern: "(Controles passes : 1 monde, 2 mondes, sat a 2 mondes, incomplet\\.)"
+        csharp:
+          cell: 10
+          pattern: "(Controles passes : 1 monde, 2 mondes, sat a 2 mondes, incomplet\\.)"
+    # --- cellule 12 : la revalidation du sat -------------------------------
+    - id: verdict_premisse_biconditionnelle
+      description: "Premisse 1 : la biconditionnelle de Payor tient en w0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "  vrai  (\\(\\(P -> \\[\\]\\(\\[\\]P -> Q\\)\\) et \\(\\[\\]\\(\\[\\]P -> Q\\) -> P\\)\\))"
+        rust:
+          cell: 12
+          pattern: "  vrai  (\\(\\(P -> \\[\\]\\(\\[\\]P -> Q\\)\\) et \\(\\[\\]\\(\\[\\]P -> Q\\) -> P\\)\\))"
+        csharp:
+          cell: 12
+          pattern: "  vrai  (\\(\\(P -> \\[\\]\\(\\[\\]P -> Q\\)\\) et \\(\\[\\]\\(\\[\\]P -> Q\\) -> P\\)\\))"
+    - id: verdict_premisse_box_biconditionnelle
+      description: "Premisse 2 : la biconditionnelle sous boite tient en w0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "  vrai  (\\[\\]\\(\\(P -> \\[\\]\\(\\[\\]P -> Q\\)\\) et \\(\\[\\]\\(\\[\\]P -> Q\\) -> P\\)\\))"
+        rust:
+          cell: 12
+          pattern: "  vrai  (\\[\\]\\(\\(P -> \\[\\]\\(\\[\\]P -> Q\\)\\) et \\(\\[\\]\\(\\[\\]P -> Q\\) -> P\\)\\))"
+        csharp:
+          cell: 12
+          pattern: "  vrai  (\\[\\]\\(\\(P -> \\[\\]\\(\\[\\]P -> Q\\)\\) et \\(\\[\\]\\(\\[\\]P -> Q\\) -> P\\)\\))"
+    - id: verdict_premisse_defect
+      description: "Premisse 3 : []non Q tient en w0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "  vrai  (\\[\\]non Q)"
+        rust:
+          cell: 12
+          pattern: "  vrai  (\\[\\]non Q)"
+        csharp:
+          cell: 12
+          pattern: "  vrai  (\\[\\]non Q)"
+    - id: verdict_premisse_non_p
+      description: "Premisse 4 : non P tient en w0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "  vrai  (non P)"
+        rust:
+          cell: 12
+          pattern: "  vrai  (non P)"
+        csharp:
+          cell: 12
+          pattern: "  vrai  (non P)"
+    - id: phrase_modele_valide
+      description: "La phrase de revalidation du modele"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(Modele valide : les quatre premisses tiennent en w0\\.)"
+        rust:
+          cell: 12
+          pattern: "(Modele valide : les quatre premisses tiennent en w0\\.)"
+        csharp:
+          cell: 12
+          pattern: "(Modele valide : les quatre premisses tiennent en w0\\.)"
+    - id: phrase_p_vrai_en_w1
+      description: "La phrase qui attribue la verite de P a la biconditionnelle"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(P est vrai en w1 par la biconditionnelle, pas par propagation de \\[\\]P :)"
+        rust:
+          cell: 12
+          pattern: "(P est vrai en w1 par la biconditionnelle, pas par propagation de \\[\\]P :)"
+        csharp:
+          cell: 12
+          pattern: "(P est vrai en w1 par la biconditionnelle, pas par propagation de \\[\\]P :)"
+    - id: phrase_monde_terminal
+      description: "La phrase sur le monde terminal"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(le monde 1 est terminal, donc \\[\\]P n'y contraint aucun successeur\\.)"
+        rust:
+          cell: 12
+          pattern: "(le monde 1 est terminal, donc \\[\\]P n'y contraint aucun successeur\\.)"
+        csharp:
+          cell: 12
+          pattern: "(le monde 1 est terminal, donc \\[\\]P n'y contraint aucun successeur\\.)"
+    # --- cellule 15 : le tournoi de jouets ---------------------------------
+    - id: entete_matrice
+      description: "L'en-tete de la matrice des gains"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "( +cooperatebot +defectbot +fairbot_payorien)"
+        rust:
+          cell: 15
+          pattern: "( +cooperatebot +defectbot +fairbot_payorien)"
+        csharp:
+          cell: 15
+          pattern: "( +cooperatebot +defectbot +fairbot_payorien)"
+    - id: ligne_matrice_cooperatebot
+      description: "Ligne du tournoi : le CooperateBot"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "cooperatebot                   (C/C 3             C/D 0             C/C 3)"
+        rust:
+          cell: 15
+          pattern: "cooperatebot                   (C/C 3             C/D 0             C/C 3)"
+        csharp:
+          cell: 15
+          pattern: "cooperatebot                   (C/C 3             C/D 0             C/C 3)"
+    - id: ligne_matrice_defectbot
+      description: "Ligne du tournoi : le DefectBot"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "defectbot                      (D/C 5             D/D 1             D/D 1)"
+        rust:
+          cell: 15
+          pattern: "defectbot                      (D/C 5             D/D 1             D/D 1)"
+        csharp:
+          cell: 15
+          pattern: "defectbot                      (D/C 5             D/D 1             D/D 1)"
+    - id: ligne_matrice_fairbot
+      description: "Ligne du tournoi : le FairBot payorien"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "fairbot_payorien               (C/C 3             D/D 1             C/C 3)"
+        rust:
+          cell: 15
+          pattern: "fairbot_payorien               (C/C 3             D/D 1             C/C 3)"
+        csharp:
+          cell: 15
+          pattern: "fairbot_payorien               (C/C 3             D/D 1             C/C 3)"
+    - id: jouet_contre_defectbot
+      description: "La case instructive : le FairBot contre le DefectBot"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "P vs DefectBot \\(jouet\\) : (D/D -> gain 1)"
+        rust:
+          cell: 15
+          pattern: "P vs DefectBot \\(jouet\\) : (D/D -> gain 1)"
+        csharp:
+          cell: 15
+          pattern: "P vs DefectBot \\(jouet\\) : (D/D -> gain 1)"
+    - id: phrase_sat_du_jouet
+      description: "La phrase qui rappelle que le jouet choisit"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "(L'analyse de la section 3 rend 'sat' ici : le jouet choisit,)"
+        rust:
+          cell: 15
+          pattern: "(L'analyse de la section 3 rend 'sat' ici : le jouet choisit,)"
+        csharp:
+          cell: 15
+          pattern: "(L'analyse de la section 3 rend 'sat' ici : le jouet choisit,)"
+    - id: phrase_portee_des_assertions
+      description: "La phrase finale sur la portee des assertions"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "(il ne derive pas\\. Les deux assertions ci-dessus, elles, sont contraintes\\.)"
+        rust:
+          cell: 15
+          pattern: "(il ne derive pas\\. Les deux assertions ci-dessus, elles, sont contraintes\\.)"
+        csharp:
+          absent: >-
+            Le jumeau C# ferme la cellule autrement : « il ne derive pas. Les
+            assertions ci-dessus contraignent le jouet, / elles ne demontrent
+            rien sur la logique modale. » Meme contenu, formulation differente.
+            Cote declare ABSENT, pas mesure.
+    # --- cellules d'exercice : les trois stubs restent des stubs -----------
+    - id: exercice_1_titre
+      description: "L'Exercice 1 reste un stub"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "Exercice 1 — (refute_branche reste a completer\\.)"
+        rust:
+          cell: 21
+          pattern: "Exercice 1 — (refute_branche reste a completer\\.)"
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit « RefuteBranche » (PascalCase) la ou Python et
+            Rust ecrivent « refute_branche » : meme exercice, libelle
+            different. Cote declare ABSENT, pas mesure.
+    - id: exercice_1_controle
+      description: "La consigne de controle de l'Exercice 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(Controle attendu une fois complete : les quatre cas de la section 3)"
+        rust:
+          cell: 21
+          pattern: "(Controle attendu une fois complete : les quatre cas de la section 3)"
+        csharp:
+          cell: 21
+          pattern: "(Controle attendu une fois complete : les quatre cas de la section 3)"
+    - id: exercice_1_fin
+      description: "La fin de la consigne de controle de l'Exercice 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(doivent rendre exactement les memes \\(statut, borne\\) que le tableau\\.)"
+        rust:
+          cell: 21
+          pattern: "(doivent rendre exactement les memes \\(statut, borne\\) que le tableau\\.)"
+        csharp:
+          cell: 21
+          pattern: "(doivent rendre exactement les memes \\(statut, borne\\) que le tableau\\.)"
+    - id: exercice_2_titre
+      description: "L'Exercice 2 reste un stub"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "Exercice 2 — (COND_PRUDENT et les deux refutations restent a completer\\.)"
+        rust:
+          cell: 23
+          pattern: "Exercice 2 — (COND_PRUDENT et les deux refutations restent a completer\\.)"
+        csharp:
+          cell: 23
+          pattern: "Exercice 2 — (COND_PRUDENT et les deux refutations restent a completer\\.)"
+    - id: exercice_2_rappel
+      description: "Le rappel sur la negation de ~P"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(Rappel : la negation de ~P developpe deux branches, \\[\\]P et ~Q d'une part,)"
+        rust:
+          cell: 23
+          pattern: "(Rappel : la negation de ~P developpe deux branches, \\[\\]P et ~Q d'une part,)"
+        csharp:
+          absent: >-
+            Le jumeau C# remplace le rappel par « comparer les deux statuts
+            obtenus, puis expliquer en trois / phrases pourquoi le premier ne
+            repond pas a la question posee » : meme exercice, consigne
+            differente. Cote declare ABSENT, pas mesure.
+    - id: exercice_2_rappel_fin
+      description: "La fin du rappel sur la negation de ~P"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(\\[\\]~P et Q de l'autre\\.)"
+        rust:
+          cell: 23
+          pattern: "(\\[\\]~P et Q de l'autre\\.)"
+        csharp:
+          absent: >-
+            Le jumeau C# ne reprend pas ce rappel (voir la mesure
+            « exercice_2_rappel »). Cote declare ABSENT, pas mesure.
+    - id: exercice_3_titre
+      description: "L'Exercice 3 reste un stub"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "Exercice 3 — (compte_mondes et le releve restent a completer\\.)"
+        rust:
+          cell: 25
+          pattern: "Exercice 3 — (compte_mondes et le releve restent a completer\\.)"
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit « CompteMondes » (PascalCase) la ou Python et
+            Rust ecrivent « compte_mondes » : meme exercice, libelle
+            different. Cote declare ABSENT, pas mesure.

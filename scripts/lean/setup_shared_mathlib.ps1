@@ -38,6 +38,12 @@
     rollback a laisse .lake/packages/mathlib ABSENT (a re-approvisionner par le
     prochain lake build).
 
+    Desambiguation de groupId (#13962) : deux groupes de manifests distincts
+    (graphs de dependances differents) peuvent partager le MEME couple
+    (toolchain, revision mathlib). Chacun recoit alors un suffixe derive du
+    SHA-256 de sa cle de groupe -- cache et share-state.json ne se melangent
+    plus ; sans collision, l'ID historique toolchain-rev8 est preserve.
+
 .PARAMETER Mode
     Scan     : inventaire des projets, groupes mutualisables, economies estimees. Aucune modification.
     Apply    : cree le cache partage + junctions pour les groupes eligibles. Reversible (backups .bak-2611 + share-state.json, conforme au disque #21454).
@@ -232,9 +238,49 @@ function Get-LeanProjects {
     return $projects
 }
 
-function Get-GroupId([object]$Members) {
+# --- Desambiguation de groupId (#13962) ---
+# La cle de groupe (GroupKey) porte TOUT le graphe de dependances ; le groupId
+# historique, lui, n'encodait que (toolchain, rev8 mathlib). Deux groupes de
+# manifests distincts partageant ce couple recevaient le MEME groupId : meme
+# cache, meme share-state.json, et l'Apply jonctionnait le second groupe dans
+# le cache du premier (Test-CacheValid ne compare que la revision mathlib) --
+# les traces .lake/build du cache, compilees contre les deps du premier groupe,
+# etaient rejouees par le second. Quand le bucket (toolchain, rev mathlib)
+# porte plusieurs groupes de manifests, chaque groupe recoit un suffixe = 8
+# premiers hex du SHA-256 de SON GroupKey : deterministe, independent de
+# l'ordre de decouverte, et l'ID encode desormais la divergence reelle.
+
+function Get-GroupKeyHash([string]$GroupKey) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($GroupKey))
+        return (($bytes[0..3] | ForEach-Object { $_.ToString('x2') }) -join '')
+    } finally { $sha.Dispose() }
+}
+
+function Get-BucketGroupCounts([object[]]$Groups) {
+    # Multiplicite du bucket (toolchain, revision mathlib) en nombre de GROUPES
+    # DE MANIFESTS distincts -- pas de projets. C'est elle qui decide si l'ID
+    # historique suffit ou entre en collision. Se calcule sur TOUS les groupes
+    # (y compris isoles) : Scan et Apply doivent rendre le meme verdict.
+    $counts = @{}
+    foreach ($g in $Groups) {
+        $m = @($g.Group)[0]
+        $revKey = "$($m.Toolchain)|$($m.MathlibRev)"
+        if ($counts.ContainsKey($revKey)) { $counts[$revKey]++ } else { $counts[$revKey] = 1 }
+    }
+    return $counts
+}
+
+function Get-GroupId([object]$Members, [hashtable]$BucketGroupCounts = $null) {
     $toolchainSafe = ($Members[0].Toolchain -replace '[^A-Za-z0-9.\-]', '_') -replace '^.*[:/]', ''
     $rev8 = $Members[0].MathlibRev.Substring(0, 8)
+    if ($BucketGroupCounts) {
+        $revKey = "$($Members[0].Toolchain)|$($Members[0].MathlibRev)"
+        if ($BucketGroupCounts[$revKey] -gt 1) {
+            return "$toolchainSafe-$rev8-$(Get-GroupKeyHash $Members[0].GroupKey)"
+        }
+    }
     return "$toolchainSafe-$rev8"
 }
 
@@ -364,10 +410,11 @@ function Invoke-Scan {
         if (-not $revBuckets.ContainsKey($revKey)) { $revBuckets[$revKey] = @() }
         $revBuckets[$revKey] = @($revBuckets[$revKey]) + @($g)
     }
+    $bucketCounts = Get-BucketGroupCounts $groups
 
     foreach ($g in $groups) {
         $members = @($g.Group)
-        $groupId = Get-GroupId $members
+        $groupId = Get-GroupId $members $bucketCounts
         $cacheMathlib = Join-Path (Join-Path $CacheRoot $groupId) 'mathlib'
         $shareable = $members.Count -ge 2
         $revKey = "$($members[0].Toolchain)|$($members[0].MathlibRev)"
@@ -444,12 +491,14 @@ function Invoke-Scan {
                 }
             }
             Write-Host "    => 1 checkout Mathlib conserve au lieu de $totalMembers si les manifests sont alignes (#2611 etape 2)"
-            # Deux groupes de manifests distincts partagent le meme groupId
-            # (toolchain + rev identiques) : ils ecrivent dans le MEME cache et
-            # le MEME share-state.json, qui ne peut plus distinguer les groupes.
-            $ids = @($bucketGroups | ForEach-Object { Get-GroupId @($_.Group) } | Select-Object -Unique)
-            if ($ids.Count -eq 1) {
-                Write-Warning "Collision de groupId : les groupes de manifests distincts de la revision $($first.MathlibRev.Substring(0,8)) partagent le groupId '$($ids[0])' (cache et share-state.json communs)."
+            # (#13962) Ces groupes de manifests distincts partageaient le MEME
+            # groupId historique (toolchain + rev8) : meme cache, meme
+            # share-state.json. Le groupId encode desormais la divergence
+            # (suffixe SHA-256 du GroupKey) -- la collision ne se produit plus,
+            # le rapport nomme les IDs effectivement attribues.
+            $ids = @($bucketGroups | ForEach-Object { Get-GroupId @($_.Group) $bucketCounts } | Select-Object -Unique)
+            if ($ids.Count -gt 1) {
+                Write-Host "    => groupId desambiguises (un cache par groupe de manifests) : $($ids -join ' | ')"
             }
         }
     }
@@ -561,10 +610,16 @@ function Save-ShareState {
 
 function Invoke-Apply {
     $projects = Get-LeanProjects
-    $groups = $projects | Group-Object GroupKey | Where-Object { $_.Count -ge 2 }
+    # (#13962) La multiplicite de bucket se calcule sur TOUS les groupes de
+    # manifests, y compris isoles : sinon Scan afficherait un ID suffixe que
+    # Apply ne reproduirait pas (le groupe isole ne passe pas le filtre Count
+    # -ge 2, mais sa presence fragmente quand meme le bucket).
+    $allGroups = $projects | Group-Object GroupKey
+    $bucketCounts = Get-BucketGroupCounts $allGroups
+    $groups = $allGroups | Where-Object { $_.Count -ge 2 }
     if ($Group) {
         $groups = $groups | Where-Object {
-            $gid = Get-GroupId @($_.Group)
+            $gid = Get-GroupId @($_.Group) $bucketCounts
             $gid -like "*$Group*" -or $_.Group[0].MathlibRev -like "$Group*"
         }
     }
@@ -573,7 +628,7 @@ function Invoke-Apply {
     foreach ($g in $groups) {
         $members = @($g.Group | Where-Object { -not $_.IsJunction })
         $alreadyDone = @($g.Group | Where-Object IsJunction)
-        $groupId = Get-GroupId @($g.Group)
+        $groupId = Get-GroupId @($g.Group) $bucketCounts
         $cacheDir = Join-Path $CacheRoot $groupId
         $cacheMathlib = Join-Path $cacheDir 'mathlib'
 

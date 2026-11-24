@@ -47,6 +47,10 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
 
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 3.62 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4

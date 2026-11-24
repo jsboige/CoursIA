@@ -1,0 +1,19 @@
+probe gpt-4o-mini: OK -> OK
+sonde echec (modele inexistant): ServiceResponseException
+charge: distill_charge_fixture.md (4487 caracteres, fixture figee)
+[run 1] tours=1 verdict_final=ACCEPTE wall=3.46s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[stream]: latence=1.82s jetons=n/d
+    appel[stream]: latence=0.69s jetons=n/d
+    appel[stream]: latence=0.83s jetons=n/d
+[run 2] tours=1 verdict_final=ACCEPTE wall=3.42s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[stream]: latence=1.83s jetons=n/d
+    appel[stream]: latence=0.72s jetons=n/d
+    appel[stream]: latence=0.77s jetons=n/d
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'DECISION', '1') vs (1, 'DECISION', '1')
+LLM CALLS: 8/16
+LOC PILOT: 364 lignes
+PILOT OK sk=1.41.3 orchestration=GroupChat(manager_custom) charge=distillation

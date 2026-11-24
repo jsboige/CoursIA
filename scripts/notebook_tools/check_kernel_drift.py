@@ -341,6 +341,20 @@ def _signatures_equivalent(base_sig, head_sig, max_ulp=1):
     return True
 
 
+def _is_output_added(base_sig, head_sig):
+    """Vrai quand une sortie APPARAIT dans une cellule vide a la base.
+
+    #25413 (cas mesure, PR #22969, cellule 5bd816be) : la conversion
+    exercice -> exemple guide ajoute des sorties reelles a une cellule qui
+    n'en portait aucune a la base. Ce n'est PAS une derive de signature
+    (aucune valeur existante ne change de repr) : c'est une addition de
+    contenu. Le garde la classe en advisory ``output_added_cells``, jamais
+    en ``signature_drift_cells`` -- et n'emette pas le guess NumPy qui la
+    motivait a tort.
+    """
+    return (not base_sig) and bool(head_sig)
+
+
 def kernel_info(nb):
     meta = nb.get("metadata", {})
     return {
@@ -403,6 +417,17 @@ def diff_kernel(base_info, head_info):
 #     (3.8.10, 3.9.0, 3.10.0, 3.10.11, 3.10.19, 3.11.0, 3.11.9, 3.11.14,
 #     3.11.15, 3.13.3, 3.13.7, 3.13.12, 3.13.14) ; 60 carnets ``python3`` + 2
 #     ``conda-torch``.
+#   - Python ``coursia-ml-training`` (serie 02-ML-Cours) : canon de serie
+#     declare CPython 3.13 par le requirements.txt de la serie (en-tete,
+#     #18331), mais les carnets committes historiques portent encore
+#     ``language_info`` 3.11.x -- la re-execution canonique derive donc
+#     3.11 -> 3.13 sous ce kernelspec (cas #22889, mesure 2026-10-27).
+#     Ce kernelspec est partage par une trentaine de carnets hors
+#     02-ML-Cours, qui n'ont pas de requirements.txt declarant 3.13 (reserve
+#     de revue sur #22979, mesuree) : la transition n'est donc PAS globale.
+#     Elle est nominative, dans ``CANONICAL_LANGUAGE_TRANSITIONS_SCOPED``,
+#     et ne vaut que pour le carnet qui la motive. Sous ce kernelspec,
+#     ``3.11 -> 3.13`` reste rouge globalement, comme l'inverse.
 #   - Decision duale sur le canon (coord. 2026-10-05T03:43:46Z, DM
 #     msg-20261005T034346-qyldsl) : **deux canons**, pas un seul --
 #     (a) **canon des algorithmes deployes sur QC Cloud = Python 3.11**,
@@ -463,6 +488,189 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
+    # SL-14 : son 3.9 etait un artefact de PACKAGING, pas une contrainte
+    # fonctionnelle. `pip install aifeynman` (sdist fige en 2021) est
+    # impossible sous 3.13 : son `setup.py` importe `numpy.distutils`,
+    # retire de NumPy 2, et NumPy 1.26 n'a pas de roue cp313 -- le carnet
+    # etait donc epingle au conteneur fondateur 3.9 par cette seule
+    # raison. La reconstruction des 7 extensions Fortran par le f2py de
+    # NumPy 2 (#23443) demontre que l'echantillon s'execute sous 3.13 :
+    # la contrainte tombe. L'entree reste NOMINATIVE (chemin exact) -- la
+    # direction 3.9 -> 3.13 demeure rouge partout ailleurs, ce que la
+    # reserve de revue sur la serie ICT (pyphi==1.2.0, requires-python
+    # >=3.9,<3.10) exige.
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
+     "SL-14-AIFeynman-Discover-Equations.ipynb",
+     "python3", "3.9", "3.13"):
+        "Python 3.9 -> 3.13 : convergence vers le canon d'execution 3.13 ; "
+        "le 3.9 du carnet etait impose par le packaging de `aifeynman` "
+        "(numpy.distutils), leve par la reconstruction des extensions "
+        "Fortran sous 3.13 dans la meme PR (#23443)",
+    # 2.8c est le premier carnet dont la re-execution sous 3.13 est la
+    # convergence attendue vers le canon de SA serie. Le kernelspec
+    # ``coursia-ml-training`` est partage par 50 carnets hors 02-ML-Cours
+    # qui ne declarent pas 3.13 (54 au total ; mesure par lecture des
+    # metadonnees, commande et instantane consignes dans #23187) : une
+    # entree globale
+    # les aurait tous rendus verts sur cette direction (reserve de revue sur
+    # #22979). D'ou la portee par PREFIXE de repertoire ci-dessous, qui
+    # couvre la serie entiere sans elargir au kernelspec (#23187).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.8c-Borne-Temoin-Concentration.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours, declare par son requirements.txt "
+        "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
+        "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
+    # Portee SERIE (#23187) : quatre carnets de 02-ML-Cours tournent sous ce
+    # kernelspec, releves le 2026-10-29 sur ``main`` -- 2.8c et 2.14b a
+    # ``language_info.version`` = 3.11.15, 2.9d et 2.9g a 3.10.19. Le canon
+    # de la serie est 3.13 pour les quatre (requirements.txt de la serie),
+    # d'ou DEUX directions : ``3.11 -> 3.13`` (2.14b, et 2.8c par son
+    # entree nominative) et ``3.10 -> 3.13`` (2.9d, 2.9g). Une seule
+    # direction aurait laisse la moitie de la serie rouge apres
+    # re-execution, en annoncant la couvrir (reserve de revue NanoClaw du
+    # 2026-10-29). Le prefixe -- un premier element termine par ``/`` --
+    # limite la tolerance a ce repertoire : les carnets hors serie qui
+    # partagent le kernelspec gardent la direction rouge, ce que la
+    # reserve #22979 exigeait (50 carnets hors
+    # 02-ML-Cours partagent ce kernelspec, contre 4 dans la serie --
+    # 54 au total ; mesure par lecture des METADONNEES de chaque carnet,
+    # commande et instantane consignes dans #23187). Un comptage par
+    # sous-chaine dans le fichier rend 67 : il additionne aussi les
+    # carnets dont le kernelspec est un autre mais dont une cellule cite
+    # le nom -- la population qui compte pour ce garde est celle des
+    # METADONNEES.
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de "
+        "la serie 02-ML-Cours : convergence vers le canon 3.13 declare par "
+        "le requirements.txt de la serie (#23187, suite de #22889)",
+    # ML-06 est le seul carnet Python de la serie ML.Net sous kernel NOMME :
+    # hors du census #23379 (kernel python3 uniquement), sa convergence exige
+    # sa propre entree scopee. Le kernelspec ``coursia-ml-training`` reste
+    # partage par une trentaine de carnets hors serie qui ne declarent pas
+    # 3.13 : l'entree reste nominative (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb",
+     "coursia-ml-training", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie ML.Net, dont les quatre carnets kernel python3 "
+        "sont converges par #23379 (ML-04b #23382, ML-09 #23388, ML-07 "
+        "#23389, ML-05 #23424) ; ML-06 est le dernier hors canon, tous "
+        "kernels confondus (#23426)",
+    # 04_PCFG_CYK est le seul carnet de la serie NLP sous kernel NOMME :
+    # hors du census #23384 (kernel python3 uniquement), sa convergence
+    # exige sa propre entree scopee, comme ML-06 pour ML.Net. Le canon de
+    # la serie NLP est 3.13 (03 et 05-11 sous kernel python3 a 3.13.x,
+    # mesure main 2026-11-03) ; seuls 01-02 (3.11.x) et 04 (3.12.13)
+    # restent sous ``coursia-ml-training``. Le kernelspec reste partage
+    # par une trentaine de carnets hors serie qui ne declarent pas 3.13 :
+    # l'entree reste nominative (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb",
+     "coursia-ml-training", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
+        "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
+        "python3 3.13.16 (#23384)",
+    # 2.9d est le premier des deux derniers carnets de la serie restes a
+    # 3.10.19. Sa convergence est la voie 1 de #23292 (re-execution sous le
+    # venv canon `coursia-ml-training`, mesure a 3.13.15) : elle evite une
+    # seconde tolerance pour le repertoire, mais la direction `3.10 -> 3.13`
+    # n'existait dans AUCUNE des deux tables pour ce kernelspec -- mesure
+    # firsthand : `accepted_canonical_transition` rend False avec et sans
+    # chemin avant cette entree. Le scope reste nominatif (un carnet par
+    # entree) pour la meme raison que 2.8c : le kernelspec est partage par
+    # une trentaine de carnets hors serie (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9d-Features-Circulaires-Helice-Nombres.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "venv du kernelspec mesure a 3.13.15, sorties re-executees",
+    # 2.9g est le DERNIER carnet de la serie reste a 3.10.19, et sa ligne
+    # suit la meme regle que celle de 2.9d : une entree accorde la permission
+    # de bouger la version d'un carnet, elle s'ajoute donc AVEC ses sorties
+    # re-executees, dans le meme diff. L'accorder avant la mesure laisserait
+    # passer un hand-edit sous couvert de convergence -- c'est le test
+    # ``test_canonical_transition_scoped_29g_still_refused`` qui gardait cette
+    # porte, il tombe avec sa tranche (voie 1 de #23292).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.9g-Geometrie-de-la-Verite.ipynb",
+     "coursia-ml-training", "3.10", "3.13"):
+        "Python 3.10 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours par re-execution (#23292, voie 1) ; "
+        "sorties re-executees sous un kernelspec du meme nom mesure a "
+        "3.13.14 (le venv canon de flotte est a 3.13.15)",
+    # NLP-01 et NLP-02 sont, avec NLP-04 (3.12.13, converge par la PR
+    # ouverte #24457), les derniers carnets de la serie NLP sous kernel
+    # NOMME hors canon -- hors du census #23384 (kernel python3
+    # uniquement), leur convergence exige une entree scopee nominative,
+    # comme ML-06 pour ML.Net. Le canon de la serie NLP est 3.13 (03 et
+    # 05-11 sous kernel python3 a 3.13.x, mesure main 2026-11-03) ; 01
+    # et 02 portent 3.11.15/3.11.16. Le kernelspec reste partage par
+    # une trentaine de carnets hors serie qui ne declarent pas 3.13 :
+    # l'entree reste nominative (reserve de revue #22979).
+    ("MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
+        "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
+        "python3 3.13.16 (#23384)",
+    ("MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie NLP, dont les carnets 03 et 05-11 tournent deja "
+        "sous kernel python3 a 3.13.x ; re-execution sous le venv canon "
+        "python3 3.13.16 (#23384)",
+    # RAG-04 converge vers le canon d'execution 3.13 sous son kernelspec
+    # nomme, comme NLP-01/02 et ML-06 : hors du census #23384 (kernel
+    # python3 uniquement), sa convergence exige une entree scopee
+    # nominative. La dependance qui motivait le kernel dedie -- ``transformers``
+    # pour la comparaison du tokenizer from-scratch -- est desormais
+    # disponible dans le venv nomme (5.22.1), la contrainte tombe. Le
+    # kernelspec reste partage par une trentaine de carnets hors serie qui
+    # ne declarent pas 3.13 : l'entree reste nominative (reserve de revue
+    # #22979).
+    ("MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/"
+     "04-Tokenisation-From-Scratch.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon d'execution 3.13 de la serie RAG ; la dependance qui motivait "
+        "le kernel dedie (transformers, 5.22.1) est disponible dans le venv "
+        "nomme mesure a 3.13.15 ; sorties re-executees sous ce kernel "
+        "(#19451, tranche RAG-04)",
+    # Portee SERIE GameTheory (#23384). Le canon de la serie est 3.13 : sur
+    # les 142 carnets de MyIA.AI.Notebooks/GameTheory/ mesures le 2026-11-05,
+    # 92 tournent deja sous kernel ``python3`` en 3.13.x (36 en 3.13.14,
+    # 26 en 3.13.3, 12 en 3.13.15, 9 en 3.13.7, 8 en 3.13.16, 1 en 3.13.13).
+    # Sous le kernelspec PARTAGE ``coursia-ml-training``, la serie n'a que
+    # 4 carnets, dont 3 deja en 3.13.x (13e 3.13.14, 19b converge par #24836,
+    # plus 13b et 15c rejoues par cette PR) : la convergence ne fait aucune
+    # exception dans la serie.
+    # Les DEUX directions sont declarees parce que les deux sont mesurees
+    # sur main : 13b part de 3.12.15 et 15c de 3.11.16. N'en declarer qu'une
+    # laisserait l'autre rouge en annoncant la serie convergee (meme reserve
+    # que #23187 sur 02-ML-Cours).
+    # Le prefixe garde la tolerance DANS la serie : les carnets hors
+    # GameTheory qui partagent ``coursia-ml-training`` restent rouges sur ces
+    # directions (reserve #22979, ~30 carnets hors serie ne declarent pas
+    # 3.13), et les autres kernels de la serie -- ``gametheory-wsl``
+    # (1 carnet en 3.11.9), ``python3-wsl`` (1 en 3.12.3) -- ne sont pas
+    # couverts par ces cles, la cle exigeant le nom de kernel : leur
+    # direction reste rouge, ce qui est le comportement voulu.
+    ("MyIA.AI.Notebooks/GameTheory/",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` pour tout carnet de la "
+        "serie GameTheory : convergence vers le canon 3.13 de la serie (92 des "
+        "142 carnets y sont deja sous kernel python3 ; 3 des 4 carnets sous ce "
+        "kernelspec y sont aussi) ; re-execution complete a source inchangee "
+        "sous le venv canon 3.13.15 (#23384)",
+    ("MyIA.AI.Notebooks/GameTheory/",
+     "coursia-ml-training", "3.12", "3.13"):
+        "Python 3.12 -> 3.13 sous `coursia-ml-training` pour tout carnet de la "
+        "serie GameTheory : convergence vers le canon 3.13 de la serie ; "
+        "re-execution complete a source inchangee sous le venv canon 3.13.15 "
+        "(13b, base 3.12.15, #23384)",
 }
 
 
@@ -474,16 +682,28 @@ def accepted_canonical_transition(base_info, head_info, nb_path=None):
     13.0`` est accepte, ``13.0 -> 12.0`` ne l'est pas.
 
     ``nb_path`` active en plus les transitions scopées (#19181) : une
-    entree nominative ne vaut que pour son chemin.
+    entree nominative ne vaut que pour son chemin. Deux portees coexistent,
+    distinguees par la forme du premier element de la cle : un chemin de
+    carnet (valeur exacte) et un **prefixe de repertoire** termine par ``/``
+    (toute la serie, #23187).
     """
     if base_info["kernelspec_name"] != head_info["kernelspec_name"]:
         return False
     key = (base_info["kernelspec_name"],
            _version_prefix(base_info["language_version"]),
            _version_prefix(head_info["language_version"]))
-    if nb_path is not None and (nb_path,) + key in (
-            CANONICAL_LANGUAGE_TRANSITIONS_SCOPED):
-        return True
+    if nb_path is not None:
+        # Les carnets sont adresses par git (slashes) : normaliser une
+        # eventuelle forme Windows pour que l'entree exacte et le prefixe
+        # comparent la meme chose.
+        norm = str(nb_path).replace("\\", "/")
+        if (norm,) + key in CANONICAL_LANGUAGE_TRANSITIONS_SCOPED:
+            return True
+        for entry in CANONICAL_LANGUAGE_TRANSITIONS_SCOPED:
+            scope = entry[0]
+            if (scope.endswith("/") and entry[1:] == key
+                    and norm.startswith(scope)):
+                return True
     return key in CANONICAL_LANGUAGE_TRANSITIONS
 
 
@@ -556,7 +776,29 @@ def _code_index_by_id(nb):
     return result
 
 
-def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
+def _code_source_by_id(nb):
+    """Map code-cell id -> its source text, whitespace-stripped.
+
+    The source is the stable identity of a cell across base and head: a
+    re-serialisation regenerates the nbformat ids and touches nothing else,
+    so an id-only comparison cannot tell "this cell was replaced" from
+    "this cell is new".
+    """
+    out = {}
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cid = cell.get("id")
+        if not cid:
+            continue
+        src = cell.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        out[cid] = src.strip()
+    return out
+
+
+def _diff_signatures_raw(base_sig, head_sig, base_nb=None, head_nb=None):
     """Return a list of cell identifiers whose float signature changed.
 
     Defect 2 fix: aligns by code-cell id when notebooks are provided
@@ -571,8 +813,11 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
     themselves nor shift code cells' indices.
 
     #17232: added code cells are no longer reported unconditionally --
-    only those carrying a non-empty float signature are (see the loop in
-    the id-aligned branch below).
+    only those carrying a non-empty float signature are.
+    #23364: and, among those, only when a base-only cell carries the same
+    source, i.e. when the cell was re-identified rather than added. A
+    genuinely added cell has no base signature to drift from (see the loop
+    in the id-aligned branch below).
     """
     # If we have notebooks with cell ids, align by id
     if base_nb is not None and head_nb is not None:
@@ -587,7 +832,7 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             # ordinal (legacy code cells). Fix c.681: cover the case
             # where base_ids and head_ids are both empty (notebooks
             # without any cell ids) -- jsboige CONCERNS d008d8b8fa.
-            return _diff_signatures_ordinal(base_sig, head_sig)
+            return _diff_signatures_ordinal_raw(base_sig, head_sig)
         diffs = []
         # Common code cells: compare signatures by code-ordinal
         for cid in sorted(common):
@@ -597,25 +842,52 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
             if b != h and not _signatures_equivalent(b, h):
                 diffs.append(cid)
-        # Added code cells (only in head), reported ONLY when they actually
-        # carry a float-array signature (#17232). An added cell with no
-        # signature cannot be a float-repr drift, and reporting it
-        # unconditionally made papermill's `injected-parameters` cell look
-        # like one: papermill replaces that cell on every re-execution and
-        # nbformat 4.5 hands the replacement a fresh cell id, so the
-        # (one id removed, one id added) pair is the normal fingerprint of a
-        # re-execution -- measured on PR #17145, where the added cell had 0
-        # outputs and every common cell had an identical signature.
+        # Added code cells: a cell present only in head. Two very different
+        # things hide here, and only one of them can drift.
+        #
+        #   * A cell RE-IDENTIFIED by a re-serialisation: nbformat hands it a
+        #     fresh id while its source is untouched (#17232 -- papermill's
+        #     `injected-parameters` cell is the measured case). Its source
+        #     still matches a base cell that disappeared, so a base signature
+        #     exists and the comparison is meaningful.
+        #   * A cell genuinely ADDED by the PR. It has no base counterpart and
+        #     therefore nothing to drift FROM. Reporting it unconditionally
+        #     reddened every PR whose new cell printed numbers shaped like a
+        #     float array -- Wilson intervals such as `[0.57,1.00]`, which
+        #     FLOAT_ARRAY_RE cannot tell from a 2-element ndarray (#23364,
+        #     measured on PR #23273: 8 -> 10 code cells, 0 id lost, the two
+        #     flagged cells had no base cell with the same source).
+        #
+        # So an added cell is reported ONLY when a base-only cell carries the
+        # same source; otherwise it is new content, not drift.
+        base_only = set(base_ids.keys()) - set(head_ids.keys())
+        base_src = _code_source_by_id(base_nb)
+        head_src = _code_source_by_id(head_nb)
         for cid in sorted(set(head_ids.keys()) - set(base_ids.keys())):
             h_idx = head_ids[cid]
-            if h_idx < len(head_sig) and head_sig[h_idx]:
+            if not (h_idx < len(head_sig) and head_sig[h_idx]):
+                continue
+            twin = next((b for b in sorted(base_only)
+                         if base_src.get(b) == head_src.get(cid)), None)
+            if twin is None:
+                continue
+            b_idx = base_ids[twin]
+            b = base_sig[b_idx] if b_idx < len(base_sig) else ()
+            if (b != head_sig[h_idx]
+                    and not _signatures_equivalent(b, head_sig[h_idx])):
                 diffs.append(cid)
         return diffs
-    return _diff_signatures_ordinal(base_sig, head_sig)
+    return _diff_signatures_ordinal_raw(base_sig, head_sig)
 
 
-def _diff_signatures_ordinal(base_sig, head_sig):
-    """Legacy ordinal alignment: returns int indices."""
+def _diff_signatures_ordinal_raw(base_sig, head_sig):
+    """Legacy ordinal alignment: returns int indices.
+
+    #25413 : une cellule PRESENTE a la base (i < len(base_sig)) qui y etait
+    vide (base_sig[i] == ()) et porte une sortie a la tete est une addition
+    de contenu, pas une derive. Au-dela de la base (i >= len(base_sig)) il
+    s'agit d'une cellule NOUVELLE, qui reste rapportee.
+    """
     diffs = []
     n = max(len(base_sig), len(head_sig))
     for i in range(n):
@@ -624,6 +896,127 @@ def _diff_signatures_ordinal(base_sig, head_sig):
         if b != h and not _signatures_equivalent(b, h):
             diffs.append(i)
     return diffs
+
+
+def _cell_output_text(cell):
+    """Concatenated text of a cell's outputs (stream + text/plain data)."""
+    parts = []
+    for o in cell.get("outputs", []):
+        t = o.get("text")
+        if t is None and isinstance(o.get("data"), dict):
+            t = o["data"].get("text/plain")
+        if t:
+            parts.append("".join(t) if isinstance(t, list) else t)
+    return "".join(parts)
+
+
+def _output_text_survives(base_cell, head_cell):
+    """True quand le texte de sortie de la base est encore present en tete.
+
+    Distingue l'ADDITION d'un print (le contenu de base survit, une ligne
+    float s'ajoute apres lui -- PR #27915) du REMPLACEMENT de sortie (le
+    texte de base a disparu, cas ``test_existing_non_float_output_is_not_
+    treated_as_empty`` : la, il existe bien une valeur de reference qui a
+    derive et le verdict drift se maintient).
+    """
+    b = _cell_output_text(base_cell)
+    return bool(b) and b in _cell_output_text(head_cell)
+
+
+def _partition_output_added(diffs, base_nb, head_nb, base_sig=None):
+    """Separate signatures introduced by a first output from actual drift.
+
+    #25413 etendu (cas mesure PR #27915, cellule c371d193) : la classe
+    ``added`` couvre aussi une cellule commune dont la sortie de base
+    EXISTAIT mais ne portait aucun texte float-array, ET dont le texte
+    de base survit dans la sortie de tete -- une PR qui ajoute un print
+    de valeurs mesurees a une cellule existante produit exactement ce
+    profil (signature de base vide, signature de tete neuve), qui n'est
+    pas une derive de repr mais une addition de contenu. Si le texte de
+    base a disparu (remplacement de sortie), le verdict drift se
+    maintient. Les additions partent en advisory ``output_added_cells``,
+    jamais en ``signature_drift_cells`` bloquant.
+    """
+    base_cells = [c for c in base_nb.get("cells", [])
+                  if c.get("cell_type") == "code"]
+    head_cells = [c for c in head_nb.get("cells", [])
+                  if c.get("cell_type") == "code"]
+    base_ids = _code_index_by_id(base_nb)
+    head_ids = _code_index_by_id(head_nb)
+    base_sources = _code_source_by_id(base_nb)
+    head_sources = _code_source_by_id(head_nb)
+    base_only = set(base_ids) - set(head_ids)
+    head_only = set(head_ids) - set(base_ids)
+    added, drift = [], []
+    for cell in diffs:
+        if isinstance(cell, int):
+            b_idx = h_idx = cell
+        else:
+            h_idx = head_ids[cell]
+            twin = cell if cell in base_ids else None
+            if twin is None:
+                source = head_sources.get(cell)
+                candidates = [b for b in base_only
+                              if base_sources.get(b) == source]
+                head_candidates = [h for h in head_only
+                                   if head_sources.get(h) == source]
+                if len(candidates) == len(head_candidates) == 1:
+                    twin = candidates[0]
+            b_idx = base_ids.get(twin, -1)
+        base_sig_empty = (base_sig is not None
+                          and 0 <= b_idx < len(base_sig)
+                          and base_sig[b_idx] == ())
+        base_survives = (base_sig_empty
+                         and 0 <= b_idx < len(base_cells)
+                         and 0 <= h_idx < len(head_cells)
+                         and _output_text_survives(base_cells[b_idx],
+                                                   head_cells[h_idx]))
+        if (0 <= b_idx < len(base_cells) and 0 <= h_idx < len(head_cells)
+                and (base_cells[b_idx].get("outputs") == [] or base_survives)
+                and head_cells[h_idx].get("outputs")):
+            added.append(cell)
+        else:
+            drift.append(cell)
+    return drift, added
+
+
+def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
+    """Compare signatures; use actual outputs when notebooks are available."""
+    diffs = _diff_signatures_raw(base_sig, head_sig, base_nb, head_nb)
+    if base_nb is not None and head_nb is not None:
+        return _partition_output_added(diffs, base_nb, head_nb,
+                                       base_sig=base_sig)[0]
+    return [i for i in diffs if not (i < len(base_sig)
+            and _is_output_added(base_sig[i], head_sig[i] if i < len(head_sig) else ()))]
+
+
+def _diff_signatures_ordinal(base_sig, head_sig):
+    return diff_signatures(base_sig, head_sig)
+
+
+def output_added_cells(base_sig, head_sig, base_nb=None, head_nb=None):
+    """Cellules dont une sortie APPARAIT (base vide -> tete avec sortie).
+
+    #25413 : addition de contenu (exercice -> exemple guide), raporte en
+    advisory non-bloquant, jamais en ``signature_drift_cells``. Meme
+    alignement (id, sinon ordinal) que ``diff_signatures``.
+    """
+    if base_nb is not None and head_nb is not None:
+        diffs = _diff_signatures_raw(base_sig, head_sig, base_nb, head_nb)
+        return _partition_output_added(diffs, base_nb, head_nb,
+                                       base_sig=base_sig)[1]
+    return _output_added_ordinal(base_sig, head_sig)
+
+
+def _output_added_ordinal(base_sig, head_sig):
+    """Ordinal : les cellules au-dela de la base sont NOUVELLES, pas des
+    additions -- seules les cellules presentes a la base et y vides comptent."""
+    added = []
+    for i in range(len(base_sig)):
+        h = head_sig[i] if i < len(head_sig) else ()
+        if _is_output_added(base_sig[i], h):
+            added.append(i)
+    return added
 
 
 # Artefacts qui portent un environnement EPINGLE pour une serie. pyproject.toml
@@ -638,6 +1031,12 @@ _ENV_WALK_LEVELS = 3
 
 _REQUIRES_PYTHON_RE = re.compile(r"""requires-python\s*=\s*["']([^"']+)["']""")
 _NUMPY_PIN_RE = re.compile(r"numpy\s*([<>=!~][0-9A-Za-z.,<>=!~*]*)")
+# #25381 : table d'env de serie, prefereree aux champs project generiques
+# quand elle existe (le plancher d'installation du coeur n'est pas l'env
+# dans lequel re-executer les notebooks de la serie).
+_SERIES_PIN_TABLE_RE = re.compile(
+    r"\[tool\.coursia\.pinned_env\](.*?)(?=\n\[|\Z)", re.S)
+_SERIES_NUMPY_RE = re.compile(r"""numpy\s*=\s*["']([^"']+)["']""")
 
 
 def _git_show_head(rel, root):
@@ -789,7 +1188,19 @@ def canonical_env_hint(nb_path, root=".", base_language_version=None):
             hint = {"artifact": rel.as_posix()}
             if from_object_store:
                 hint["from_object_store"] = True
-            requires_python = _REQUIRES_PYTHON_RE.search(text)
+            # #25381 : un package peut avoir un PLANCHER D'INSTALLATION
+            # (project.requires-python -- coeur leger, consommateurs hors
+            # serie) ET un ENV DE SERIE plus strict, porte par un extra et
+            # declare dans [tool.coursia.pinned_env]. Pour les notebooks
+            # DE la serie, l'env a nommer est celui de la serie, pas le
+            # plancher : la table, quand elle existe, prime sur les champs
+            # project generiques.
+            series_block_m = _SERIES_PIN_TABLE_RE.search(text)
+            series_block = series_block_m.group(1) if series_block_m else ""
+            requires_python = (
+                _REQUIRES_PYTHON_RE.search(series_block)
+                if series_block else None
+            ) or _REQUIRES_PYTHON_RE.search(text)
             if requires_python:
                 spec = requires_python.group(1)
                 hint["requires_python"] = spec
@@ -806,7 +1217,10 @@ def canonical_env_hint(nb_path, root=".", base_language_version=None):
                             f"there would be a major.minor DOWNGRADE, which "
                             f"this gate refuses -- the pinned environment is "
                             f"not a followable remedy for this notebook")
-            numpy_pin = _NUMPY_PIN_RE.search(text)
+            numpy_pin = (
+                _SERIES_NUMPY_RE.search(series_block)
+                if series_block else None
+            ) or _NUMPY_PIN_RE.search(text)
             if numpy_pin:
                 hint["numpy_pin"] = f"numpy{numpy_pin.group(1)}"
             return hint
@@ -851,6 +1265,7 @@ def _measure(base, args_obj):
     body_exempts = body_has_derive_exemption(pr_body)
 
     findings = []
+    output_added = []
     for nb_path in notebooks:
         base_nb = read_blob(base, nb_path)
         head_nb = read_blob("HEAD", nb_path)
@@ -871,11 +1286,16 @@ def _measure(base, args_obj):
         # Defect 2: pass notebooks for id-based alignment
         sig_diffs = diff_signatures(base_sig, head_sig,
                                      base_nb=base_nb, head_nb=head_nb)
+        added_cells = output_added_cells(base_sig, head_sig,
+                                         base_nb=base_nb, head_nb=head_nb)
+        if added_cells:
+            output_added.append({"notebook": nb_path, "cells": added_cells})
         if kernel_diffs or sig_diffs:
             finding = {
                 "notebook": nb_path,
                 "kernel_diffs": kernel_diffs,
                 "signature_drift_cells": sig_diffs,
+                "output_added_cells": added_cells,
                 "base_kernel": base_kernel,
                 "head_kernel": head_kernel,
                 "body_exemption": body_exempts,
@@ -936,7 +1356,8 @@ def _measure(base, args_obj):
                 finding["probable_causes"] = causes
             findings.append(finding)
 
-    return {"findings": findings, "base": base, "body_exempts": body_exempts,
+    return {"findings": findings, "output_added": output_added,
+            "base": base, "body_exempts": body_exempts,
             "changed_notebooks": len(notebooks)}
 
 
@@ -989,16 +1410,32 @@ def main():
                   f"{result.get('changed_notebooks', 0)} changed notebooks "
                   f"(base={result['base']}).")
             return 0
-        print(f"FAIL: kernel-drift regression in {len(findings)} notebook(s):",
+        # L'exemption C.4 (`## Diagnostic dérive`) vaut sur les DEUX chemins :
+        # un finding acknowledge n'est pas un echec -- le mode `--json` le
+        # respecte deja (l.1359). Le chemin texte l'annonçait et l'ignorait :
+        # il affichait « acknowledged » et rendait quand meme rc 1.
+        bloquants = [f for f in findings if not f.get("acknowledged")]
+        acquittes = [f for f in findings if f.get("acknowledged")]
+        if not bloquants:
+            print(f"OK: {len(acquittes)} kernel-drift regression(s) "
+                  f"acknowledged via ## Diagnostic dérive (exemption C.4), "
+                  f"base={result['base']}.")
+            return 0
+        print(f"FAIL: kernel-drift regression in {len(bloquants)} notebook(s):",
               file=sys.stderr)
-        for f in findings:
-            tag = " [ACKNOWLEDGED via ## Diagnostic dérive]" if f.get("acknowledged") else ""
-            print(f"  {f['notebook']}{tag}", file=sys.stderr)
+        for f in bloquants:
+            print(f"  {f['notebook']}", file=sys.stderr)
             for k in f["kernel_diffs"]:
                 print(f"    - {k}", file=sys.stderr)
             if f["signature_drift_cells"]:
                 print(f"    - float-signature drift on cells: "
                       f"{f['signature_drift_cells']}", file=sys.stderr)
+            if f.get("output_added_cells"):
+                print(f"    - (advisory) output added on cells: "
+                      f"{f['output_added_cells']}", file=sys.stderr)
+        for f in acquittes:
+            print(f"  {f['notebook']} [ACKNOWLEDGED via ## Diagnostic dérive]",
+                  file=sys.stderr)
         return 1
 
 
@@ -1027,7 +1464,14 @@ def main_with_args(argv):
               f"{result.get('changed_notebooks', 0)} changed notebooks "
               f"(base={result['base']}).")
         return 0
-    print(f"FAIL: {len(findings)} drift(s)", file=sys.stderr)
+    # Meme exemption C.4 que le chemin texte de `main` : un finding
+    # acknowledge ne fait pas echouer (alignement sur le mode `--json`).
+    bloquants = [f for f in findings if not f.get("acknowledged")]
+    if not bloquants:
+        print(f"OK: {len(findings)} drift(s) acknowledged via "
+              f"## Diagnostic dérive (exemption C.4).")
+        return 0
+    print(f"FAIL: {len(bloquants)} drift(s)", file=sys.stderr)
     return 1
 
 

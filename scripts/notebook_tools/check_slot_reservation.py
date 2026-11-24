@@ -187,6 +187,53 @@ utilise comme convention.
 organes qui l'importent doivent continuer a lire la meme cle. Aucun chemin de
 verdict de ce module ne l'emploie plus -- la cle unique, c'est `_scan_slot`.
 
+DEUX FAUX REFUS MESURES (dispatch ai-01, 2026-11-16)
+----------------------------------------------------
+1. **L'artefact de squash** (a). `added_notebooks` lit le diff depuis le
+   MERGE-BASE (`base...head`). Une branche empilee dont la mere a ete
+   SQUASH-mergee voit donc remonter comme « ajout » un fichier dont le contenu
+   exact vit deja sur la base : la PR ne prend aucun numero, et le refuser
+   bloquait une pile entiere (mesure : #25027, `Chaines-04` byte-identique a
+   origin/main apres le squash de #25025). Un « ajout » dont le blob a la tete
+   EGALe celui de la base est maintenant ecarte des cibles en mode revision,
+   et dit. Le temoin negatif reste couvert : meme chemin au contenu DIFFERENT
+   sur la base = une reecriture, verdict `taken_on_base` conserve. Le mode
+   `--target` (preflight AVANT edition) n'est pas touche : y viser le nom exact
+   d'un fichier de la base reste une prise, byte-identique ou non -- c'est le
+   sens du preflight.
+
+2. **La regle d'anciennete des PR ouvertes** (b). Deux PRs ouvertes qui
+   revendiquent le meme numero se bloquaient MUTUELLEMENT : chaque examen
+   voyait l'autre comme occupant, aucune ne pouvait merger (mesure : #26585 du
+   14/11 contre #26710 du 15/11 sur `02-Advanced/02-11`). Une PR ouverte ne
+   reserve desormais son numero que contre une PR STRICTEMENT plus jeune
+   qu'elle -- l'ainnee garde la main, la plus jeune cede (c'est elle qui
+   renumerote). La cle d'anciennete est le NUMERO de PR : GitHub l'alloue
+   sequentiellement a la creation, l'ordre des numeros est donc l'ordre
+   d'ouverture, sans appel supplementaire et lisible hors ligne. La reference
+   est `--exclude-pr` (la PR examinee) : sans elle, tout claimant reserve,
+   comme avant.
+
+TROISIEME FAUX REFUS MESURE (#27576, 2026-11-20)
+-------------------------------------------------
+3. **La collision preexistante du slot** (c). Une PR qui ajoute le jumeau C#
+   d'un carnet deja sur `main` se voyait imputer les AUTRES occupants du slot
+   sur la base : App-02 porte `App-02-GraphColoring-CSharp` ET
+   `App-02-GraphColoring-Python` en plus du jumeau Python, SL-12b porte
+   `SL-12b-PavlovDLS-Reproduction` -- des doubles occupations LIVREES sur
+   `main`, AVANT la PR (mesure : #26603 et #26617 approuvees, ecartees en
+   `slot-collision-on-merge:taken_on_base`). Quand le jumeau de la cible
+   siege deja dans ce slot sur la base (relation `_twin_in_base`, §7), les
+   autres occupants de la base forment une collision PREEXISTANTE : etat
+   distinct `preexisting_on_base`, NON bloquant, imprime avec ses chemins.
+   La PR ajoute un rendu d'un item deja assis, sans introduire ni slot ni
+   lettre -- la collision ne lui est pas imputee. Les conflits des autres
+   sources (revision, PR ouverte, table declaree) restent bloquants, et un
+   item NEUF pose sur un slot occupe reste `taken_on_base`. Resoudre la
+   collision heritee (renumeroter `App-02-GraphColoring-*` et
+   `SL-12b-PavlovDLS-Reproduction`) est un grain de contenu separe, qui
+   demande un argument pedagogique ecrit.
+
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
 detecteur est casse -- distinct d'une collision reelle, qui sort 1).
@@ -266,6 +313,15 @@ VERDICT_PRECEDENCE = (
     "declared_reserved",
 )
 
+# #27576 -- collision PREEXISTANTE de la base : NON bloquante. Quand le
+# jumeau de la cible siege deja dans le slot sur la base, les autres
+# occupants de la base y etaient AVANT la PR ; les imputer a la PR refusait
+# des jumeaux legitimes (mesure : #26603 sur App-02, #26617 sur SL-12b,
+# approuvees toutes deux). Hors de VERDICT_PRECEDENCE : cet etat ne participe
+# jamais au choix de l'etat bloquant -- il est rappele APRES lui dans la
+# liste des conflits, jamais confondu avec lui.
+STATE_PREEXISTING_ON_BASE = "preexisting_on_base"
+
 
 def _git(args):
     """Appel git resilient a la pression de fork -- fail-closed a l'epuisement.
@@ -292,6 +348,38 @@ def added_notebooks(base, head):
     """Cibles de la revision : ajouts ET renames, vus comme des prises de slot."""
     return _ipynb(_git(["diff", "--no-renames", "--diff-filter=A", "--name-only",
                         "%s...%s" % (base, head)]).splitlines())
+
+
+def _blob_ids(ref, paths):
+    """{chemin: oid de blob} pour `paths` a `ref` -- absents s'ils n'y sont pas."""
+    out: dict[str, str] = {}
+    if not paths:
+        return out
+    for line in _git(["ls-tree", ref, "--"] + sorted(paths)).splitlines():
+        meta, _, path = line.partition("\t")
+        parts = meta.split()
+        if len(parts) == 3 and parts[1] == "blob":
+            out[path] = parts[2]
+    return out
+
+
+def squash_artifacts(base, head, added):
+    """Ajouts dont le blob a la tete EGALe celui de la base (fix a).
+
+    Un « ajout » byte-identique a la base n'est pas une prise de slot : c'est
+    l'artefact d'une branche empilee dont la mere a ete squash-mergee -- le
+    diff merge-base voit encore le fichier comme ajout, alors que son contenu
+    exact vit deja sur la base (mesure : #25027, `Chaines-04` apres le squash
+    de #25025). Le temoin negatif reste hors de cette fonction : un meme
+    chemin au contenu DIFFERENT sur la base est une REECRITURE, verdict
+    `taken_on_base` conserve par l'examen normal.
+    """
+    if not added:
+        return set()
+    ids_head = _blob_ids(head, added)
+    ids_base = _blob_ids(base, added)
+    return {p for p in added
+            if ids_head.get(p) is not None and ids_head.get(p) == ids_base.get(p)}
 
 
 def removed_notebooks(base, head):
@@ -379,20 +467,38 @@ def group_by_slot(paths, source, detail=""):
     return out
 
 
-def pr_claims(prs, removed=None):
+def pr_claims(prs, removed=None, examined_pr=None):
     """Slots tenus par les PRs ouvertes.
 
     `prs` = la charge rendue par ``gh pr list --json number,files``.
     `removed` = ``{numero de PR: {chemins}}``, les chemins REELLEMENT retires --
     la seule chose que `gh pr list --json files` ne sait pas dire (cf docstring).
+    `examined_pr` = la PR examinee (en pratique `--exclude-pr`) : une PR ouverte
+    ne reserve son numero que contre une PR STRICTEMENT plus jeune qu'elle.
 
-    Une entree n'est donc ecartee que si son chemin figure dans `removed`.
+    Anciennete (fix b) : la cle retenue est le NUMERO de PR. GitHub l'alloue
+    sequentiellement a la creation, l'ordre des numeros est donc l'ordre
+    d'ouverture -- sans appel supplementaire, et lisible hors ligne. Sans cette
+    regle, deux PRs ouvertes qui revendiquent le meme numero se bloquaient
+    MUTUELLEMENT et aucune des deux ne pouvait merger (mesure : #26585 du
+    14/11 contre #26710 du 15/11 sur `02-Advanced/02-11`). Avec elle, l'ainnee
+    garde la main et la plus jeune cede -- c'est elle qui renumerote.
+    `examined_pr` absent (None) conserve l'ancien comportement : tout claimant
+    reserve.
+
+    Une entree n'est donc ecartee que si son chemin figure dans `removed` ou si
+    son numero n'est pas STRICTEMENT plus jeune que `examined_pr` (l'egalite
+    est l'examinee elle-meme, deja exclue par l'appelant -- la garder en
+    reserve serait un auto-blocage).
     `additions == 0` n'est plus un motif d'exclusion : mesure, il recouvre aussi
     la modification qui ne retire que des lignes et le rename byte-identique.
     """
     claims: dict[tuple[str, str], list[Occupant]] = {}
     for pr in prs or []:
         num = pr.get("number")
+        if (examined_pr is not None and isinstance(num, int)
+                and isinstance(examined_pr, int) and num >= examined_pr):
+            continue          # pas strictement plus jeune : ne reserve pas contre elle
         gone = (removed or {}).get(num) or set()
         for f in pr.get("files") or []:
             path = f.get("path") or ""
@@ -510,14 +616,21 @@ def verdict_for(target, occupants, releases):
     La cle est `_scan_slot` comme partout ailleurs dans le module (#21959) :
     une cible a prefixe de serie alphabetique a desormais une position, et
     peut donc etre en conflit avec un occupant qui la revendique.
+
+    #27576 -- collision PREEXISTANTE de la base. Quand le jumeau de la cible
+    siege deja dans ce slot sur la base (relation `_twin_in_base`, §7), les
+    autres occupants de la base y etaient AVANT la PR : leur collision se
+    rapporte sous l'etat `preexisting_on_base`, NON bloquant, et n'est pas
+    imputee a la PR -- celle-ci ajoute un rendu d'un item deja assis, sans
+    introduire ni slot ni lettre. Les conflits des autres sources (revision,
+    PR ouverte, table declaree) restent bloquants, et un item NEUF pose sur
+    un slot occupe reste `taken_on_base`.
     """
     slot = _scan_slot(target)
     if slot is None:
         return {"target": target, "slot": None, "state": "no_slot",
                 "verdict": "ok", "conflicts": []}
 
-    conflicts = []
-    exempt = False
     t_base = split_dir(target)[1].lower()
     # Deux lectures : la forme EXACTE d'abord (c'est elle qui porte les
     # occupants de la base et de la revision, dont la cle est la position
@@ -528,7 +641,8 @@ def verdict_for(target, occupants, releases):
     folded = (slot[0].casefold(), slot[1].casefold())
     if folded != slot:
         occ_list.extend(occupants.get(folded, []))
-    for occ in occ_list:
+
+    def _self_or_released(occ):
         # La cible se reconnait elle-meme UNIQUEMENT parmi les cibles de la
         # revision : en mode revision les deux ensembles sont le meme, et se
         # compter comme occupant de soi-meme ferait rougir chaque ligne. Un
@@ -536,9 +650,10 @@ def verdict_for(target, occupants, releases):
         # chemin est au contraire la reservation la plus forte qui soit -- il ne
         # doit jamais etre ecarte comme un « soi-meme ».
         if occ.source == SOURCE_REVISION and occ.path == target:
-            continue
-        if occ.path in releases:
-            continue                      # libere par la revision examinee
+            return True
+        return occ.path in releases   # libere par la revision examinee
+
+    def _sibling(occ):
         # Rendu alternatif du meme item (`-Csharp`, `_en`) : legitime, mais
         # SEULEMENT si le nom de fichier differe. Un chemin identique n'est pas
         # un sibling, c'est le meme fichier -- etre passe sous silence ici etait
@@ -548,7 +663,25 @@ def verdict_for(target, occupants, releases):
         # langue retires + noyau en milieu de nom), pas `same_item` : depuis
         # que les series alphabetiques ont une position (#21959), un jumeau
         # compose (`-Python_en`) deviendrait sinon un faux conflit.
-        if _same_item_scan(occ.path, target) and split_dir(occ.path)[1].lower() != t_base:
+        return (_same_item_scan(occ.path, target)
+                and split_dir(occ.path)[1].lower() != t_base)
+
+    # Le jumeau de la cible siege-t-il deja dans CE slot, sur la base ?
+    # C'est la condition du #27576 : les autres occupants de la base forment
+    # alors une collision heritee d'un etat deja livre, pas une prise de la
+    # PR (mesure : #26603 sur App-02, #26617 sur SL-12b). Passage PREALABLE a
+    # la boucle de classification : le jumeau peut arriver apres les autres
+    # occupants dans la liste, et l'etat de ceux-ci en depend.
+    twin_on_base = any(occ.source == SOURCE_BASE
+                       and not _self_or_released(occ) and _sibling(occ)
+                       for occ in occ_list)
+
+    conflicts = []
+    exempt = False
+    for occ in occ_list:
+        if _self_or_released(occ):
+            continue
+        if _sibling(occ):
             exempt = True
             continue
         state = {
@@ -557,21 +690,35 @@ def verdict_for(target, occupants, releases):
             SOURCE_BASE: "taken_on_base",
             SOURCE_DECLARED: "declared_reserved",
         }[occ.source]
+        if state == "taken_on_base" and twin_on_base:
+            state = STATE_PREEXISTING_ON_BASE
         conflicts.append({"state": state, "source": occ.source,
                           "path": occ.path, "detail": occ.detail})
 
-    if not conflicts:
+    blocking = [c for c in conflicts if c["state"] != STATE_PREEXISTING_ON_BASE]
+    slot_str = "%s%s" % (slot[0] + "/" if slot[0] else "", slot[1])
+    if not blocking:
         # Un slot tenu par un sibling n'est pas « libre » : la distinction est
         # imprimee, jamais confondue -- c'est la meme discipline que les etats
-        # distincts du garde de suffixes.
-        return {"target": target, "slot": "%s%s" % (slot[0] + "/" if slot[0] else "", slot[1]),
-                "state": "exempt_sibling" if exempt else "free",
-                "verdict": "ok", "conflicts": []}
+        # distincts du garde de suffixes. La collision preexistante suit la
+        # meme discipline : rapportee avec ses chemins, jamais imputee a la PR
+        # qui n'a fait que rejoindre son jumeau.
+        if not conflicts:
+            return {"target": target, "slot": slot_str,
+                    "state": "exempt_sibling" if exempt else "free",
+                    "verdict": "ok", "conflicts": []}
+        return {"target": target, "slot": slot_str,
+                "state": STATE_PREEXISTING_ON_BASE, "verdict": "ok",
+                "conflicts": conflicts}
 
-    conflicts.sort(key=lambda c: VERDICT_PRECEDENCE.index(c["state"]))
-    return {"target": target, "slot": "%s%s" % (slot[0] + "/" if slot[0] else "", slot[1]),
-            "state": conflicts[0]["state"], "verdict": "conflict",
-            "conflicts": conflicts}
+    blocking.sort(key=lambda c: VERDICT_PRECEDENCE.index(c["state"]))
+    # Les preexistants restent rappeles APRES les bloquants : le premier de
+    # la liste designe la cause du refus (cf merge_ready, motif
+    # `slot-collision-on-merge:<etat>`), les suivants informent.
+    return {"target": target, "slot": slot_str,
+            "state": blocking[0]["state"], "verdict": "conflict",
+            "conflicts": blocking + [c for c in conflicts
+                                     if c["state"] == STATE_PREEXISTING_ON_BASE]}
 
 
 def examine(targets, occupants, releases):
@@ -752,7 +899,7 @@ _SCAN_SLOT_RE = re.compile(
 )
 
 # Jetons noyau qui apparaissent APRES le slot et AVANT le titre
-# (`SW-10-CSharp-RDFStar` : slot `SW-10`, kernel `CSharp`, titre
+# (`SW-10-RDFStar-CSharp` : slot `SW-10`, kernel `CSharp`, titre
 # `RDFStar`). `strip_lang` ne les voit pas parce qu'ils sont en milieu
 # de nom, pas en suffixe. Le balayage les retire pour comparer deux
 # rendus du meme item. Les jetons correspondent aux suffixes noyau
@@ -837,13 +984,13 @@ def _strip_all_lang(stem: str) -> str:
 def _strip_kernel_middle(stem: str) -> str:
     """Strip un jeton noyau en milieu de nom (apres le slot, avant le titre).
 
-    Pour `SW-10-CSharp-RDFStar` la cle est `SW-10`, le noyau `CSharp`,
+    Pour `SW-10-RDFStar-CSharp` la cle est `SW-10`, le noyau `CSharp`,
     le titre `RDFStar`. La forme canonique « stem == prefix + '-' +
     kernel + '-' + rest » est ce qu'on retrouve dans toutes les series
     a jumeaux noyau (`SW-10/11/13`, `App-14`, `Tweety-03/04`). La
     comparaison retient le `prefix-rest` pour neutraliser la difference
     Python/CSharp. Echec du pattern (le token apres le slot n'est PAS un
-    noyau connu, ex. `App-14-ConnectFour-Adversarial`) : on rend le
+    noyau connu, ex. `App-14-ConnectFour-Adversarial-Python`) : on rend le
     stem inchange, et la collision est le SUJET different, pas un
     jumeau a exclure.
     """
@@ -871,8 +1018,10 @@ def _same_item_scan(a: str, b: str) -> bool:
     #    le strip_lang ne le voit pas, on le retire a la main avant
     #    la comparaison. Echec du pattern (le token n'est pas un noyau
     #    connu) -> inchange, et la collision reste un vrai conflit de
-    #    sujet (ex. `App-14-ConnectFour-Adversarial` vs
-    #    `App-14-ConnectFour-CSharp` ne SONT PAS jumeaux).
+    #    sujet (cas historique : `App-14-ConnectFour-Adversarial-Python` vs
+    #    `App-14-ConnectFour-CSharp` avant le renommage #12933 ne
+    #    SONT PAS jumeaux ; depuis, le jumeau C# porte
+    #    `-Adversarial-CSharp` en suffixe et le stem matche).
     sa = _strip_kernel_middle(sa)
     sb = _strip_kernel_middle(sb)
     return sa.lower() == sb.lower()
@@ -974,7 +1123,20 @@ def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
     if exclude_pr:
         prs = [p for p in prs if p.get("number") != exclude_pr]
     status[SOURCE_OPEN_PRS] = {"status": "ok", "prs": len(prs)}
-    return pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status))
+    claims = pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status),
+                       examined_pr=exclude_pr)
+    # La regle d'anciennete (fix b) s'ECRIT, elle ne se devine pas : un lecteur
+    # du rapport doit voir que les PRs plus jeunes que l'examinee n'ont pas
+    # servi de reserve.
+    if exclude_pr:
+        younger = sum(1 for p in prs
+                      if isinstance(p.get("number"), int) and p["number"] > exclude_pr)
+        if younger:
+            status[SOURCE_OPEN_PRS]["age_rule"] = (
+                "%d PR(s) plus jeune(s) que #%d ignoree(s) : une PR ouverte ne "
+                "reserve son numero que contre une PR plus jeune qu'elle"
+                % (younger, exclude_pr))
+    return claims
 
 
 def read_declared_doc(path, status):
@@ -1177,6 +1339,59 @@ def self_test():
          [A], pr_claims([{"number": 5, "files": [
              {"path": C, "additions": 8, "deletions": 2}]}], {5: set()}),
          set(), ["reserved_by_open_pr"]),
+        # --- anciennete des PR ouvertes (fix b) : l'ainnee garde la main ---
+        # Mesure fondatrice : #26585 (ouverte le 14/11) contre #26710 (ouverte
+        # le 15/11) sur le meme slot -- chaque examen voyait l'autre comme
+        # occupant, aucune des deux ne pouvait merger.
+        ("VRAI POSITIF  PR plus ANCIENNE reserve contre l'examinee (b)",
+         [A], pr_claims([{"number": 2, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {2: set()},
+                        examined_pr=5),
+         set(), ["reserved_by_open_pr"]),
+        ("NEGATIF       PR plus JEUNE ne reserve pas contre l'ainnee (b)",
+         [A], pr_claims([{"number": 7, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {7: set()},
+                        examined_pr=5),
+         set(), ["free"]),
+        ("VRAI POSITIF  SANS PR examinee, tout claimant reserve (comme avant)",
+         [A], pr_claims([{"number": 7, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {7: set()}),
+         set(), ["reserved_by_open_pr"]),
+        ("NEGATIF       la PR examinee elle-meme ne s'auto-reserve pas (b)",
+         [A], pr_claims([{"number": 5, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {5: set()},
+                        examined_pr=5),
+         set(), ["free"]),
+        # --- collision preexistante de la base (#27576) : jumeau + herite ---
+        # Les deux cas REELS mesures : la PR ajoute le jumeau C# d'un item
+        # deja assis, et le slot porte sur la base des occupants d'AUTRES
+        # sujets (App-02 : deux GraphColoring ; SL-12b : PavlovDLS).
+        ("VRAI POSITIF  App-02 : jumeau C# d'un item assis, autres occupants herites",
+         ["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+                              "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb",
+                              "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb"],
+                             SOURCE_BASE)),
+         set(), [STATE_PREEXISTING_ON_BASE]),
+        ("VRAI POSITIF  SL-12b : jumeau C# d'un item assis, autre sujet herite",
+         ["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
+                              "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb"],
+                             SOURCE_BASE)),
+         set(), [STATE_PREEXISTING_ON_BASE]),
+        ("VRAI POSITIF  item NEUF sur slot occupe : toujours taken_on_base (#27576)",
+         ["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-NouveauSujet-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb"],
+                             SOURCE_BASE)),
+         set(), ["taken_on_base"]),
+        ("VRAI POSITIF  jumeau de la base + PR OUVERTE sur le slot : bloquant (#27576)",
+         ["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb"],
+         merge(group_by_slot(["MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb"],
+                             SOURCE_BASE),
+               {("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques", "App-02"): [
+                   _occ("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb",
+                        SOURCE_OPEN_PRS, "#27000")]}),
+         set(), ["reserved_by_open_pr"]),
     ]
 
     print("")
@@ -1241,7 +1456,9 @@ def main(argv=None):
     ap.add_argument("--offline", action="store_true",
                     help="ne pas interroger les PRs ouvertes (sources arbre + revision + declarees)")
     ap.add_argument("--exclude-pr", type=int, default=None,
-                    help="numero de PR a exclure de la source PR ouvertes (la sienne)")
+                    help="numero de PR a exclure de la source PR ouvertes (la sienne) ; "
+                         "sert aussi de reference d'anciennete : une PR ouverte plus "
+                         "JEUNE ne reserve pas contre elle (l'ainnee garde la main)")
     ap.add_argument("--limit", type=int, default=500,
                     help="plafond de PRs lues (defaut 500 ; le defaut de gh est 30)")
     ap.add_argument("--repo", default=None, help="override du depot pour gh")
@@ -1305,7 +1522,14 @@ def main(argv=None):
     mode = "target" if a.target else "revision"
     status: dict[str, dict] = {}
     try:
-        rev_added = added_notebooks(a.base, a.head)
+        raw_added = added_notebooks(a.base, a.head)
+        # Fix (a) : un « ajout » byte-identique a la base est un artefact de
+        # squash, pas une prise de slot -- il quitte les cibles AVANT tout
+        # verdict. Mode revision SEULEMENT : en mode --target, viser le nom
+        # exact d'un fichier de la base reste une prise (preflight avant
+        # edition), byte-identique ou non.
+        artifacts = sorted(squash_artifacts(a.base, a.head, raw_added))
+        rev_added = [p for p in raw_added if p not in set(artifacts)]
         targets = list(a.target) if a.target else rev_added
         releases = set(removed_notebooks(a.base, a.head))
         base_files = notebooks_at(a.base)
@@ -1321,7 +1545,8 @@ def main(argv=None):
     rev_occ = group_by_slot(rev_added, SOURCE_REVISION)
     status[SOURCE_REVISION] = {
         "status": "ok",
-        "added": len(rev_added),
+        "added": len(raw_added),
+        "squash_artifacts": len(artifacts),
         "examined": len(targets),
         "released": len(releases),
     }
@@ -1408,9 +1633,15 @@ def main(argv=None):
     print("  base      : %d notebooks (%s)" % (len(base_files), a.base))
     print("  revision  : %d cible(s) examinee(s), %d liberee(s)"
           % (len(targets), len(releases)))
+    if artifacts:
+        print("              %d artefact(s) de squash ecarte(s) -- blob identique "
+              "a la base, pas une prise de slot : %s"
+              % (len(artifacts), ", ".join(artifacts)))
     pr_status = status.get(SOURCE_OPEN_PRS, {})
     if pr_status.get("status") == "ok":
         print("  open_prs  : %d PR(s) ouverte(s)" % pr_status.get("prs", 0))
+        if pr_status.get("age_rule"):
+            print("    anciennete: %s" % pr_status["age_rule"])
         rem = status.get(SOURCE_OPEN_PRS_REMOVED, {})
         if rem.get("status") == "ok":
             print("    retraits  : %d PR(s) ambigue(s) (additions==0) lue(s), "
@@ -1465,7 +1696,10 @@ def main(argv=None):
     for v in verdicts:
         mark = {"free": "libre (free)",
                 "exempt_sibling": "exempt (exempt_sibling -- rendu alternatif du meme item)",
-                "no_slot": "sans slot (no_slot -- aucun index)"}.get(
+                "no_slot": "sans slot (no_slot -- aucun index)",
+                STATE_PREEXISTING_ON_BASE: "preexistante (preexisting_on_base -- "
+                                           "collision heritee de la base, non "
+                                           "imputee a la PR)"}.get(
                     v["state"], v["state"].upper())
         print("  %-58s slot=%-10s %s" % (v["target"], v["slot"] or "-", mark))
         for c in v["conflicts"]:

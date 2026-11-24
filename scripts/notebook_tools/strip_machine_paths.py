@@ -59,7 +59,7 @@ other   ``AppData\\Local\\Temp`` (without ipykernel)     python-side ephemeral
 
 ==== ============================================ ===========================
 
-**Detection is path-based, not signature-based** (key on username path, not
+**Detection is normally path-based** (key on username path, not
 the message prefix). A line is a leak iff it carries a runtime cache-context
 token AND embeds a real username (``C:\\Users\\<u>``, ``Users/<u>``,
 ``/home/<u>``). The dotnet-interactive **tilde** variant
@@ -70,6 +70,14 @@ username path (not the message prefix) catches both ``stream`` and
 rewording (cf. ``#6537`` review which found v1 keyed on ``Loading extensions
 from`` both missed the ``stream`` ``Failed to load`` variant AND false-
 positive stripped legitimate tilde ``Loading extensions`` lines).
+
+One additional NuGet case is a standalone dotnet-interactive
+``Loading extensions from `<absolute-cache>/<package>/<version>/
+interactive-extensions/dotnet/<extension>.dll``` banner. Custom caches
+need not contain ``.nuget`` or a username but still expose a machine path.
+Only that complete banner is dropped; tilde and relative paths, neighboring
+messages, and strings containing additional lines are not matched by this
+exception. The original username-based detection remains unchanged.
 
 **Strategy: REDACT the username prefix, KEEP the trailing relative path.**
 Most Python category-A lines are ``UserWarning`` / ``DeprecationWarning``
@@ -265,6 +273,20 @@ DATA_KEYS = ("text/plain", "text/html")
 STREAM_KEY = "text"
 ALL_KEYS = DATA_KEYS + (STREAM_KEY,)
 
+# Match only the observed extension-loader banner, including custom caches.
+# Anchoring protects other text in the same element from NuGet's DROP policy.
+_NUGET_EXTENSION_BANNER = re.compile(
+    r"Loading extensions from `(?:/|[A-Za-z]:[\\/]|\\\\)"
+    r"(?:[^`\r\n]*[\\/])?[A-Za-z0-9_.-]+[\\/]"
+    r"[0-9][A-Za-z0-9.+-]*[\\/]interactive-extensions[\\/]dotnet[\\/]"
+    r"[A-Za-z0-9_.-]+\.dll`(?:\r?\n)?"
+)
+
+
+def _is_nuget_extension_banner(text):
+    """Recognize a complete loader banner, not arbitrary absolute paths."""
+    return isinstance(text, str) and _NUGET_EXTENSION_BANNER.fullmatch(text) is not None
+
 
 def _active_tokens():
     """Return the list of ``(label, token)`` pairs to consider for detection.
@@ -278,12 +300,13 @@ def _active_tokens():
 
 
 def _has_leak(text):
-    """Return True if ``text`` (a str) carries a category-A username leak.
+    """Return True for a username leak or standalone NuGet loader banner.
 
     Path-based: requires BOTH a runtime cache-context token (nuget/pip/
     ipykernel/conda/hf/other per ``MACHINE_PATH_TOKENS``) AND a username
     absolute-path marker (``Users\\``, ``Users/``, ``/home/``). The tilde HOME
-    placeholder carries neither marker and is left untouched.
+    placeholder carries neither marker and is left untouched. The NuGet
+    banner exception is signature-based and category-filtered.
 
     Normalizes ``\\\\`` to ``\\`` before matching (C538-L1) so double-bs
     JSON-escaped paths (orchestration sub-conversation logs) are still
@@ -291,6 +314,9 @@ def _has_leak(text):
     """
     if not isinstance(text, str):
         return False
+    if ((ACTIVE_CATEGORIES is None or "nuget" in ACTIVE_CATEGORIES)
+            and _is_nuget_extension_banner(text)):
+        return True
     norm = _normalize_bs(text)
     if not any(token in norm for _, token in _active_tokens()):
         return False
@@ -468,6 +494,9 @@ def _first_matching_label(text):
     """
     if not isinstance(text, str):
         return ""
+    if ((ACTIVE_CATEGORIES is None or "nuget" in ACTIVE_CATEGORIES)
+            and _is_nuget_extension_banner(text)):
+        return "nuget"
     norm = _normalize_bs(text)
     for label, token in MACHINE_PATH_TOKENS:
         if token in norm:
@@ -545,6 +574,62 @@ def _find_data_list_bounds(raw, key):
     return blocks
 
 
+def _hit_value_spans(raw, hits):
+    """Locate hit output values structurally, without reserializing JSON.
+
+    Key names can also occur in metadata or non-code cells; matching the raw
+    spelling alone would risk editing those unrelated fields. The parsed hits
+    establish the allowed paths, while these offsets preserve all other bytes.
+    """
+    paths = {
+        ("cells", ci, "outputs", oi, "data", key) if key in DATA_KEYS
+        else ("cells", ci, "outputs", oi, key)
+        for ci, oi, key in hits
+    }
+    decoder = json.JSONDecoder()
+    whitespace = re.compile(r"\s*")
+    spans = {}
+
+    def skip(i):
+        return whitespace.match(raw, i).end()
+
+    def visit(i, path):
+        i = skip(i)
+        start = i
+        if raw[i] == "{":
+            i = skip(i + 1)
+            while raw[i] != "}":
+                key, i = decoder.raw_decode(raw, i)
+                i = skip(i)
+                i = visit(i + 1, path + (key,))  # skip colon
+                i = skip(i)
+                if raw[i] == ",":
+                    i = skip(i + 1)
+                else:
+                    break
+            i += 1  # closing brace
+        elif raw[i] == "[":
+            i = skip(i + 1)
+            index = 0
+            while raw[i] != "]":
+                i = visit(i, path + (index,))
+                index += 1
+                i = skip(i)
+                if raw[i] == ",":
+                    i = skip(i + 1)
+                else:
+                    break
+            i += 1  # closing bracket
+        else:
+            _, i = decoder.raw_decode(raw, i)
+        if path in paths:
+            spans[path] = (start, i)
+        return i
+
+    visit(0, ())
+    return set(spans.values())
+
+
 def _redact_drop_strategy(decoded, label):
     """Return ``(new_decoded_str, strategy)`` for a leak-bearing decoded
     element belonging to category ``label``.
@@ -593,7 +678,7 @@ def strip_in_place(nb_path):
     if not hits:
         return (0, 0)
 
-    with open(nb_path, encoding="utf-8") as f:
+    with open(nb_path, encoding="utf-8", newline="") as f:
         text = f.read()
 
     try:
@@ -622,8 +707,11 @@ def strip_in_place(nb_path):
             str_targets.append((key, v))
 
     for key, leak_str in reversed(str_targets):
+        allowed_spans = _hit_value_spans(new_text, hits)
         for m in list(str_pat.finditer(new_text)):
             if m.group(1) != key:
+                continue
+            if (m.start(2) - 1, m.end(2) + 1) not in allowed_spans:
                 continue
             raw_value = m.group(2)
             try:
@@ -658,6 +746,9 @@ def strip_in_place(nb_path):
     # --- List-form (the observed shape for ``text/plain`` text outputs) ---
     for key in ALL_KEYS:
         blocks = _find_data_list_bounds(new_text, key)
+        allowed_spans = _hit_value_spans(new_text, hits)
+        blocks = [(start, end) for start, end in blocks
+                  if (start - 1, end + 1) in allowed_spans]
         # Filter to blocks containing at least one leak-bearing element.
         leak_blocks = []
         for body_start, body_end in blocks:
@@ -681,7 +772,8 @@ def strip_in_place(nb_path):
             edit_spans = []  # (start, end, replacement_text) for REPLACE; or
                              # (start, end, None) for DROP
             replaced_here = 0
-            for em in elems:
+            dropped = []
+            for index, em in enumerate(elems):
                 try:
                     decoded = json.loads('"' + em.group(1) + '"')
                 except json.JSONDecodeError:
@@ -691,25 +783,8 @@ def strip_in_place(nb_path):
                 replaced_here += 1
                 label = _first_matching_label(decoded)
                 replacement, _strat = _redact_drop_strategy(decoded, label)
-                # Determine the boundary to remove/replace (trailing comma
-                # for non-final elements, leading comma for final, or
-                # entire list for single-element).
                 if replacement is None:
-                    # DROP — same boundary rules as before:
-                    after = em.end()
-                    tail_match = re.match(r'\s*,', body[after:])
-                    if tail_match:
-                        edit_spans.append(
-                            (em.start(), after + tail_match.end(), None))
-                    else:
-                        before = em.start()
-                        pre_match = re.search(r',\s*$', body[:before])
-                        if pre_match:
-                            edit_spans.append(
-                                (pre_match.start(), em.end(), None))
-                        else:
-                            edit_spans.append(
-                                (em.start(), em.end(), None))
+                    dropped.append(index)
                 else:
                     # REDACT — keep the element position + comma, just swap
                     # the JSON-encoded string. Byte-identical when the
@@ -726,13 +801,32 @@ def strip_in_place(nb_path):
             if not replaced_here:
                 continue
 
+            # Delete each contiguous run as one unit. A final run consumes
+            # its leading comma; other runs consume their trailing comma.
+            # Choosing separators per element would overlap for adjacent
+            # drops and could leave a dangling comma in the resulting JSON.
+            run_start = 0
+            while run_start < len(dropped):
+                run_end = run_start
+                while (run_end + 1 < len(dropped)
+                       and dropped[run_end + 1] == dropped[run_end] + 1):
+                    run_end += 1
+                first, last = dropped[run_start], dropped[run_end]
+                start, end = elems[first].start(), elems[last].end()
+                if last + 1 < len(elems):
+                    end += re.match(r'\s*,', body[end:]).end()
+                elif first > 0:
+                    start = re.search(r',\s*$', body[:start]).start()
+                edit_spans.append((start, end, None))
+                run_start = run_end + 1
+
             # Apply edits in REVERSE body-offset order so earlier offsets
             # remain valid. REDACT swaps the element content with no
             # boundary manipulation (the element stays inline; the comma
             # stays inline). DROP removes the element and the trailing /
             # preceding comma.
             new_body = body
-            for start, end, replacement_text in reversed(edit_spans):
+            for start, end, replacement_text in reversed(sorted(edit_spans)):
                 if replacement_text is None:
                     # DROP
                     new_body = new_body[:start] + new_body[end:]
@@ -769,14 +863,15 @@ def iter_notebooks(nb_root):
 def main():
     global ACTIVE_CATEGORIES
     parser = argparse.ArgumentParser(
-        description="Strip machine-username path leaks from notebook outputs. "
+        description="Strip machine-dependent path leaks from notebook outputs. "
                     "Covers 8 runtime-category leaks: nuget (dotnet-interactive), "
                     "pip (CPython AppData\\Roaming\\Python), ipykernel (per-cell "
                     "temp file warnings), conda (.conda\\envs), hf (HuggingFace "
                     "cache warnings), python (user-local interpreter under "
                     "AppData\\Local\\Programs), miniconda (conda envs under "
                     "miniconda3\\envs), windowsapps (Microsoft Store Python "
-                    "launcher). Path-based detection."
+                    "launcher). Path-based detection plus the standalone "
+                    "NuGet extension banner."
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH",

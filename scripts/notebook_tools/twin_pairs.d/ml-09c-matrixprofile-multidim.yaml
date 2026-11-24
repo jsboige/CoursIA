@@ -1,0 +1,10 @@
+- name: ML-09c MatrixProfile Multidim
+  family: ML/ML.Net
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: STUMPY et scikit-learn sont appelés réellement depuis C# via Python.NET ; les signaux, classements et évaluations sont construits en C# avec les mêmes graines et budgets que la source.
+  known_differences:
+    - Les figures du port sont des SVG statiques et l'annexe historique renvoie à la source Python.
+    - Python.NET nécessite CPython, STUMPY, Numba et scikit-learn dans l'environnement configuré.

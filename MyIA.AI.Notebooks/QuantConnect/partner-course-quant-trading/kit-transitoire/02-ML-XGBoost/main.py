@@ -17,12 +17,17 @@ class MlXgboostAlgorithm(QCAlgorithm):
         - Model: GradientBoostingRegressor (100 trees, depth 4, lr=0.05)
         - Training: 3-year rolling window, bi-weekly retrain
         - Rebalancing: Bi-weekly
-        - Risk: SMA200 bear filter, confidence-weighted sizing, max 5 sectors
+        - Risk: SMA200 bear filter (max 2 sectors), equal-weight sizing, max 4 sectors
 
-    Performance (2015-2024 backtest):
+    Performance (QC Cloud, 2015-01-01 to 2024-12-31, measured 2026-10-25, #22429):
         - Target Sharpe: >= 0.78
-        - v1: max_positions 5, allocation 90%, threshold 0.005 -> Sharpe 0.521, MaxDD 39.1%
-        - v2: max_positions 4, allocation 95%, threshold 0.01 -> Sharpe 0.442, MaxDD 37.9% (worse)
+        - This code (max_positions 4, allocation 95%, threshold 0.01):
+          Sharpe 0.66, CAGR 16.21%, MaxDD 24.7%, 837 orders
+        - Same code with the earlier constants (5, 90%, 0.005):
+          Sharpe 0.532, CAGR 12.81%, MaxDD 36.0%, 1109 orders
+        - The figures published earlier for these two versions (Sharpe 0.521,
+          MaxDD 39.1% and Sharpe 0.442, MaxDD 37.9%) were not reproduced.
+        - One run per version (random_state=42): not a performance comparison.
     """
 
     def Initialize(self):

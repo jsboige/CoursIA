@@ -1,0 +1,49 @@
+# Budget AGREGE des conteneurs runner CI -- myia-po-2027 (VM WSL de 32 Go, 20 vCPU).
+# Adapte le 2026-10-24 depuis persist/po-2028/coursia-ci.slice (meme distro WSL,
+# meme moteur docker-ce epingle sur /var/run/docker-ce.sock). Doctrine inchangee :
+# budget userspace = somme des caps ; mur kernel au-dessus du budget, sous la VM ;
+# AUCUN SWAP pour la CI (MemorySwapMax=0 : un job qui deborde meurt localement,
+# exit 137 retryable, au lieu de swapper la VM et de faire tomber DriveFS puis la
+# coordination de flotte -- chaine causale ai-01 07/09 et po-2024 08/10, 104 GiB
+# de swap ecrits en 11 h).
+#
+# ARITHMETIQUE (2026-10-24, depart a N=4) :
+#   4 slots docker x 4096 Mo = 16 384 Mo de caps (classe Scripts Tests, pic
+#   mesure 3,5 Gio + agent + marge ~15 %, #16643 -- cap 4g, pids 512)
+#   budget userspace COURSIA_RUNNER_BUDGET_GB = 16 (= somme des caps)
+#   MemoryHigh = 16G (pression/reclaim AVANT la somme des caps)
+#   MemoryMax  = 18G (filet, 2 Go au-dessus du budget, 14 Go sous la VM)
+#   -> 13 Go de la VM restent aux lanes CoursIA interactives et a Docker
+#      Desktop ; l'hote Windows (63,6 Go) garde >= 45 Go, la VM etant plafonnee
+#      a 32 Go par .wslconfig.
+#
+# I/O : valeurs REPRISES de la mesure ai-01 (2026-09-07, 3 conteneurs :
+# 221 Mo/s cumules sous plafond contre 16,9 Go/s sans, facteur 76). Role :
+# interdire qu'un thrash PASSE L'ECHELLE (~2 % d'un NVMe), pas reguler un
+# debit normal.
+#
+# CPU : pas de CPUQuota ici (doctrine po-2024/po-2028) -- l'axe CPU est garde
+# par COURSIA_RUNNER_CPU_BUDGET=10 dans le wrapper (borne = moitie des 20 vCPU,
+# garde 1 de l'addendum ai-01 du 2026-10-24 ; caps effectifs 4 x 2 = 8 vCPU,
+# soit 40 %), refus au demarrage au depassement.
+#
+# ORDRE : cette slice se deploye AVANT les conteneurs ; assert_slice
+# (supervise.sh) REFUSE le demarrage si elle est absente ou sans io.max
+# (COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET=1 dans le wrapper po-2027).
+[Unit]
+Description=CoursIA CI runner containers -- aggregate budget (all families, po-2027)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+Before=slices.target
+
+[Slice]
+CPUAccounting=yes
+
+IOAccounting=yes
+IOWeight=50
+IOWriteBandwidthMax=/var/lib/docker 209715200
+IOReadBandwidthMax=/var/lib/docker 419430400
+
+MemoryAccounting=yes
+MemoryHigh=16G
+MemoryMax=18G
+MemorySwapMax=0
