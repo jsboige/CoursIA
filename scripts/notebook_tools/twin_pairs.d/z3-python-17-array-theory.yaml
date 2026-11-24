@@ -1,0 +1,10 @@
+- name: "Z3-Python-17 Array Theory"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Theorie des tableaux de Z3 branchee NATIVEMENT des deux cotes : pyz3 (`from z3 import *`, Array/Select/Store) et Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"`, ctx.MkArrayConst/MkSelect/MkStore) sont les deux bindings officiels du meme coeur C++ Z3 — pas de pont intermediaire. Verdicts mesures identiques sur les quatre terrains : contraintes ponctuelles sat, negations des deux axiomes de McCarthy unsat, tableau croissant taille 5 sat, propriete impossible (croissant ET u[0]>u[4]) unsat attendu."
+  known_differences:
+    - "2026-11-23 (myia-po-2027:CoursIA-2, #27922) : enregistrement de la paire pour le jumeau C# livre sur main par #27260 (port complet, meme plan de 20 cellules : 13 markdown, 7 code, Papermill 7/7 reussies, sorties committes). Course perdue mesuree : #27922 (ouverte 02:48Z) preparait une version independante du meme port, #27260 merge a 13:20Z — la version de main est conservee, la paire est enregistree contre ses blobs. Temoins arbitraires divergents entre versions de moteur (NuGet 4.12.2 vs z3-solver 4.16.0) : a[2]=40 / a[3]=42 cote C# (Python : 21240 / 21242), tableau croissant [56..60] cote C# (Python : [92..96]) — chaque temoin verifie les contraintes de sa cellule, les verdicts et proprietes structurelles (Select(Store(t,2,42),2)=42, Select(t2,0)=Select(t,0)) sont exacts des deux cotes."
+    - "Formatage des verdicts : le C# affiche l'enum .NET complet SATISFIABLE/UNSATISFIABLE (pas de helper de forme courte), le Python affiche sat/unsat — meme decision du meme coeur C++."
