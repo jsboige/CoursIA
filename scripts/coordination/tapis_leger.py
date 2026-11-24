@@ -40,6 +40,14 @@ from coordination import tapis_occupation
 from coordination import tapis_leger_rapport
 from coordination.tapis_marqueurs import _iso, lane_de_pr
 
+#: Re-export du RAPPORT : l'appelant de `main` (`scripts/coordination/
+#: tapis_repli.py`) appelle `tapis_leger._rapport(...)`, et l'extraction du
+#: 22/11 l'avait retire du module -- l'appelant echouait alors sur l'arbre
+#: fusionne (`AttributeError: module 'coordination.tapis_leger' has no
+#: attribute '_rapport'`, run 45326540394). Le symbole reste donc resolvable
+#: par le module, et l'appel interne passe par le meme point de resolution.
+_rapport = tapis_leger_rapport.rapport
+
 #: Le classement propose ce multiple de grains : la qualification ecarte
 #: quelques-uns au moment de l'action, et la file doit rester pleine.
 CANDIDATS_MULT = 3
@@ -159,7 +167,7 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
         repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine, depot))
     if rendu is not None:
         return rendu
-    rapport = tapis_leger_rapport.rapport(
+    rapport = _rapport(
         lane, graine, maintenant, classe["metas"], phases["selection_s"],
         secondes, budget_s, classe["etats"], file, classe["prs"], origami,
         phases, fenetre, classe.get("occupation"))
