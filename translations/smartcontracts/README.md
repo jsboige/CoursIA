@@ -1,12 +1,12 @@
 # CSV de synchro traduction — série SmartContracts
 
-**Statut** : Phase 2 rollout (Epic #4957 / #1650). 5ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/Argument_Analysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805) et `SymbolicAI/Planners/` (PR #5806).
+**Statut** : Phase 2 rollout (Epic #4957 / #1650). 5ᵉ série couverte par l'infrastructure i18n, après `SymbolicAI/ArgumentAnalysis/` (PR #5799), `Probas/Infer/` (PR #5801), `ML/ML.Net/` (PR #5805) et `SymbolicAI/Planners/` (PR #5806).
 
 ## Couvert
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`smartcontracts.csv`](smartcontracts.csv) | `SymbolicAI/SmartContracts/` | 27 (SC-00-Cypherpunk-Origins-Python → SC-26-Final-Project-Python, parité Solidity/Foundry/Vyper/Solana/Move + Python tutorials) | 956 (en-tête + lignes CSV-escaped, 20 colonnes) |
+| [`smartcontracts.csv`](smartcontracts.csv) | `SymbolicAI/SmartContracts/` | 27 au seed 2026-07-09 (SC-00-Cypherpunk-Origins-Python → SC-26-Final-Project-Python, parité Solidity/Foundry/Vyper/Solana/Move + Python tutorials — le compte courant vit dans le CSV) | 956 au seed 2026-07-09 (en-tête + lignes CSV-escaped, 21 colonnes — compte courant mesurable dans le CSV) |
 
 **Note cross-language** : la série SmartContracts est cross-language (Solidity, Vyper, Move/Sui, Anchor/Solana, Bitcoin Scripting, EVM) avec jumeaux Python (web3.py, pytest, etc.). Le script d'extraction prend **les deux familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles.
 
@@ -33,7 +33,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 956 cellules / 27 notebooks SmartContracts (Solidity/Foundry/Vyper/Solana/Move + Python tutorials)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 956, notebooks couverts 27 SmartContracts (Solidity/Foundry/Vyper/Solana/Move + Python tutorials — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché
@@ -43,7 +43,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 - Issue #4957 — design infrastructure synchronisation traduction
 - Epic #1650 — traduction multilingue du dépôt
-- `translations/symbolicai/README.md` — 1ère série (Argument_Analysis)
+- `translations/symbolicai/README.md` — 1ère série (ArgumentAnalysis)
 - `translations/probas-infer/README.md` — 2ᵉ série (Probas/Infer)
 - `translations/mlnet/README.md` — 3ᵉ série (ML/ML.Net)
 - `translations/planners/README.md` — 4ᵉ série (Planners)

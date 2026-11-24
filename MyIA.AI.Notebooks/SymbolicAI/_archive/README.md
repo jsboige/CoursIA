@@ -6,9 +6,9 @@ Ce répertoire contient les anciennes versions et fichiers historiques de la sé
 
 ### Tweety.ipynb (Original Monolithique)
 **Date d'archivage**: 2026-01-23
-**Raison**: Remplacé par la série de 7 notebooks thématiques
+**Raison**: Remplacé par la série de notebooks thématiques
 
-**Contenu original** (72 cellules, 34 cellules de code):
+**Contenu original** (monolithe markdown + code):
 - Configuration environnement (JDK, JPype, JARs)
 - Logiques fondamentales (PL, FOL, DL, ML, QBF, CL)
 - Révision de croyances et incohérence
@@ -16,7 +16,7 @@ Ce répertoire contient les anciennes versions et fichiers historiques de la sé
 - Argumentation structurée (ASPIC+, DeLP, ABA, ASP)
 - Argumentation avancée (ADF, Bipolaire, Ranking, Probabiliste)
 
-**Nouvelle structure** (7 notebooks séparés):
+**Nouvelle structure** (notebooks séparés):
 1. **Tweety-01-Setup-Python.ipynb** - Configuration environnement uniquement
 2. **Tweety-02-Basic-Logics-Python.ipynb** - PL et FOL
 3. **Tweety-3-Advanced-Logics.ipynb** - DL, Modale, QBF
@@ -33,8 +33,8 @@ Ce répertoire contient les anciennes versions et fichiers historiques de la sé
 - ✅ Initialisation JVM optimisée par notebook
 
 **Vérification de la migration**:
-- Original: 34 cellules de code
-- Nouveaux: 39 cellules de code (34 + 5 cellules init JVM dans notebooks 2-7)
+- Original: le code du monolithe
+- Nouveaux: le code du monolithe, plus les cellules d'init JVM réparties dans les notebooks suivants
 - ✅ Tout le contenu a été migré avec succès
 
 ## Référence Historique
@@ -44,4 +44,4 @@ Ce fichier est conservé pour référence historique et peut être utile pour:
 - Retrouver d'anciennes versions de code
 - Comprendre l'évolution de la série
 
-**Pour utiliser la série Tweety, consultez les 7 notebooks dans le répertoire parent.**
+**Pour utiliser la série Tweety, consultez les notebooks dans le répertoire parent.**

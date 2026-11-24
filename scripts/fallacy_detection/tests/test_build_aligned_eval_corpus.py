@@ -173,3 +173,105 @@ def test_sampler_loads_corpus(tmp_path):
     loaded = sampler.load_corpus(corpus_path, "/")
     assert {r["family"] for r in loaded} == {"Erreur mathematique", "Obstruction"}
     assert all("text" in r and "node" in r for r in loaded)
+
+
+# ---------------------------------------------------------------------------
+# Regle des PARTIAL (ecart mecanique n°3 de #10355 §4).
+#
+# Une ligne PARTIAL ne porte qu'un chevauchement lexical : elle ne prouve pas
+# l'identite du noeud, et le score ne les separe pas (mesure du 2026-11-08 : un
+# 0,08 CORRECT -- « Circular reasoning » -> « Argument circulaire » -- voisine
+# un 0,09 FAUX -- « Appeal to authority » -> « Referencement plethorique »).
+# Un plancher de score serait donc un remplacement a l'aveugle : l'identite
+# s'adjuge par ecrit dans PARTIAL_ADJUDICATIONS, et l'adjudication se perime
+# quand la table deplace le noeud.
+# ---------------------------------------------------------------------------
+
+PARTIAL_ADJUDGED = {
+    "academic_label": "Appeal to fear", "best_famille": "Influence",
+    "best_name": "Appel à la terreur", "score": "0.12", "verdict": "PARTIAL",
+}
+PARTIAL_UNADJUDGED = {
+    "academic_label": "Appeal to tradition", "best_famille": "Tricherie",
+    "best_name": "Tradition", "score": "0.09", "verdict": "PARTIAL",
+}
+
+
+def test_partial_adjugee_entre_dans_le_corpus(tmp_path):
+    """Couple (label -> noeud) adjuge : la paire entre, avec le noeud adjuge."""
+    corpus_path, report = _run(
+        tmp_path,
+        [_gold_with("Si tu sors, il t'arrivera malheur.", "appeal to fear")],
+        rows=[PARTIAL_ADJUDGED],
+    )
+    pairs = [json.loads(l) for l in corpus_path.read_text(encoding="utf-8").splitlines()]
+    assert len(pairs) == 1
+    assert pairs[0]["node"] == "Influence/Appel à la terreur"
+    assert report["pairs_total"] == 1
+    assert report["label_stats"]["appeal to fear"]["joined_exact"] == 1
+
+
+def test_partial_non_adjugee_est_exclue_avec_motif(tmp_path):
+    """Aucune adjudication : la ligne est exclue, son motif nomme le candidat."""
+    corpus_path, report = _run(
+        tmp_path,
+        [_gold_with("On a toujours fait ainsi.", "appeal to tradition")],
+        rows=[PARTIAL_UNADJUDGED],
+    )
+    assert corpus_path.read_text(encoding="utf-8") == ""
+    assert report["pairs_total"] == 0
+    assert report["excluded_by_label"] == {"appeal to tradition": 1}
+    stats = report["label_stats"]["appeal to tradition"]
+    assert stats["excluded"] == 1
+    assert "PARTIAL non adjugee" in stats["reason"]
+    assert "0.09" in stats["reason"]
+    assert "Tricherie/Tradition" in stats["reason"]
+
+
+def test_adjudication_perimee_est_exclue(tmp_path):
+    """Une adjudication dont le noeud a bouge est perimee, pas valide."""
+    stale = dict(PARTIAL_ADJUDGED, best_name="Référencement pléthorique")
+    corpus_path, report = _run(
+        tmp_path,
+        [_gold_with("Si tu sors, il t'arrivera malheur.", "appeal to fear")],
+        rows=[stale],
+    )
+    assert corpus_path.read_text(encoding="utf-8") == ""
+    assert report["pairs_total"] == 0
+    reason = report["label_stats"]["appeal to fear"]["reason"]
+    assert "adjudication perimee" in reason
+    assert "Appel à la terreur" in reason
+    assert "Référencement pléthorique" in reason
+
+
+def test_adjudication_perimee_par_changement_de_famille(tmp_path):
+    """Temoin de changement de famille : le nom reste, la famille bouge.
+
+    La ligne reelle « Appeal to fear » porte un candidat d'une autre famille
+    dans sa colonne candidates (50, Insuffisance, 0.08) : un recalibrage de
+    l'aligneur peut faire changer la meilleure famille sans toucher au nom.
+    Si l'adjudication ne comparait que le nom, la paire entrerait sous un
+    noeud « Insuffisance/Appel a la terreur » qui n'existe pas dans
+    Argumentum. Les deux etats temoignent : A (famille adjugee) la paire
+    entre ; B (seule la famille change) l'adjudication est perimee et le
+    motif nomme les DEUX couples famille/noeud.
+    """
+    records = [_gold_with("Si tu sors, il t'arrivera malheur.", "appeal to fear")]
+    # Etat A : la table telle qu'adjugee -- la paire entre.
+    corpus_a, report_a = _run(tmp_path, records, rows=[PARTIAL_ADJUDGED])
+    pairs_a = [json.loads(l) for l in corpus_a.read_text(encoding="utf-8").splitlines()]
+    assert len(pairs_a) == 1
+    assert pairs_a[0]["node"] == "Influence/Appel à la terreur"
+    assert report_a["pairs_total"] == 1
+    # Etat B : seul best_famille change (le candidat 50 passe en tete).
+    state_b = tmp_path / "etat_b"
+    state_b.mkdir()
+    moved = dict(PARTIAL_ADJUDGED, best_famille="Insuffisance")
+    corpus_b, report_b = _run(state_b, records, rows=[moved])
+    assert corpus_b.read_text(encoding="utf-8") == ""
+    assert report_b["pairs_total"] == 0
+    reason = report_b["label_stats"]["appeal to fear"]["reason"]
+    assert "adjudication perimee" in reason
+    assert "Influence/Appel à la terreur" in reason
+    assert "Insuffisance/Appel à la terreur" in reason
+

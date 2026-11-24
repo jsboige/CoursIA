@@ -1,0 +1,15 @@
+date: '2026-11-13'
+by: myia-po-2024:CoursIA
+python_sha: eabe45a61d2e809b842f2cab4d27ce351c4995d3
+csharp_sha: 9fdad3bfb806732012c16074b3008c77da6b9d61
+content_python_sha: d0a3157e172f74706c4a7755564a155fff805f75d3eee2e405f622ece20e0c5d
+content_csharp_sha: 1243980b6b67b7336d0ce97fb7cbfba1c0b35d53bbb10b9ce502410d4576c407
+reason: >-
+  Re-attestation de parite -- blocs de fin canoniques (#26341, lane
+  myia-po-2024:CoursIA), markdown-only. Les trois sections de fin (`A retenir`,
+  `Verifiez votre comprehension`, `Pour aller plus loin`) sont ajoutees ou
+  remontees au titre canonique cote Python SEUL ; le jumeau C# conserve son
+  contenu. Cellules de code, outputs et execution_count byte-identiques
+  (comparaison cellule par cellule contre HEAD sur les six carnets), donc
+  aucune re-execution due (C.2/C.3). Aucun strip outille posterieur : le blob
+  atteste ici est celui du HEAD de la PR. parity_level native-both intacte.

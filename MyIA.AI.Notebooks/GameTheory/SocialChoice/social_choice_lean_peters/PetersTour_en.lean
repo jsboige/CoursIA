@@ -1,10 +1,20 @@
 /-
-  Tour of DominikPeters/SocialChoiceLean Results (EN sibling)
-  ===========================================================
+  Guided tour of the DominikPeters/SocialChoiceLean results
+  ==========================================================
 
-  English companion to `PetersTour.lean` (FR canonical) per the i18n #4980
-  sibling-pair convention. Only docstrings/comments differ; Lean code,
-  imports, and theorem statements are byte-identical to the canonical.
+  This file offers a commented presentation of the main results
+  formalized in DominikPeters/SocialChoiceLean, imported as a Lake dependency.
+
+  Repository: https://github.com/DominikPeters/SocialChoiceLean
+  Author: Dominik Peters (University of Glasgow)
+  License: MIT
+
+  Main contributions:
+  1. Gibbard-Satterthwaite theorem (non-manipulability ⇒ dictatorship)
+  2. 4 Condorcet impossibilities
+  3. Duggan-Schwartz theorem (multi-winner non-manipulability)
+  4. Holliday impossibility (resolvability of the Split Cycle)
+  5. 15+ voting rules with verified axiom satisfaction
 -/
 
 -- Core framework

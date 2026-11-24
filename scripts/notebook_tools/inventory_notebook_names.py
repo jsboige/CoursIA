@@ -12,6 +12,11 @@ Le parseur partage sa grammaire avec `naming_canon.py` (centralisé par #15503
 depuis `check_duplicate_notebook_index`) : `INDEX_RE`, `LANG_SUFFIXES`,
 `index_key`, `strip_lang` y sont définis. Aucune duplication de regex.
 
+La mesure est une fonction de la **seule révision mesurée** : la liste des
+carnets ET leur contenu sont lus dans `<base>` (via `git ls-tree` et
+`git cat-file --batch`), jamais dans l'arbre local. Un checkout en retard ne
+peut donc pas changer le résultat (#23623).
+
 Usage:
     python scripts/notebook_tools/inventory_notebook_names.py --base origin/main
     python scripts/notebook_tools/inventory_notebook_names.py --base origin/main --json
@@ -27,6 +32,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from pathlib import PurePosixPath
 
 # Ajoute le root du dépôt au sys.path pour permettre l'absolu
@@ -43,13 +49,14 @@ try:
     from scripts.notebook_tools.naming_canon import (
         INDEX_RE,
         LANG_SUFFIXES,
+        SERIES_NUM_RE,
         index_key,
         strip_lang,
     )
 except ImportError as e:
     sys.stderr.write(
         "error: inventory_notebook_names.py depends on naming_canon "
-        "(INDEX_RE, LANG_SUFFIXES, index_key, strip_lang). "
+        "(INDEX_RE, LANG_SUFFIXES, SERIES_NUM_RE, index_key, strip_lang). "
         "Run from repo root. Original: %s\n" % e
     )
     sys.exit(2)
@@ -66,10 +73,40 @@ _STUDENT_HINTS = ("jsboigeEPF/", "jsboigeECE/", "jsboigeEpita/")
 # La baseline kernelspec est lue depuis la cellule 0 de chaque notebook.
 # Tout préfixe `dotnet-interactive`, `xcube`, `pwsh`, etc. est reconnu via
 # préfixe-match (voir `kernel_known()`).
+#
+# Kernels reels du depot, ajoutes apres mesure du 2026-10-29 (#23175) : la
+# liste ignorait `.net-csharp` (245 notebooks), `coursia-ml-training` (49) et
+# `pyphi` (10, serie IIT) — tous LU depuis les kernelspecs mais classes
+# « kernel inconnu » => ambigu. `naming_canon.py` documente deja les deux
+# premiers comme kernels mesures du depot (« 130 x -Csharp/-CSharp -> 130 x
+# `.net-csharp` », « 44 x -Python -> 41 x `python3`, 2 x
+# `coursia-ml-training` ») : la liste de cet inventaire etait en retard sur
+# la realite que le canon avait deja mesuree.
+#
+# Kernel d'env nomme de la famille coursia-py313, ajoute apres mesure du
+# 2026-11-13 (#5081, meme classe que le bloc precedent) : `coursia-py313-argu`
+# est publie dans la table des kernels du depot (kernels-runtime.md : 3.13.16 /
+# numpy 2.5.2, executable `coursia-canonical`), et le meme document mesure
+# « po-2023 python3 == coursia-py313-argu » — plusieurs noms, un seul
+# environnement. Prefixe (et non nom exact) pour couvrir aussi le
+# `coursia-py313` nu porte par Complexity-02c, meme famille de nommage.
+#
+# Kernel `rust`, ajoute apres mesure du 2026-11-22 (#23175, meme classe
+# que les blocs precedents) : la vague de portage Python->Rust a pose
+# 25 carnets `-Rust.ipynb` sur main entre le 19 et le 22/11 (git log
+# --diff-filter=A), plus le temoin docker `witness-rust.ipynb` — soit
+# 26 kernelspec `rust`. 18 d'entre eux (17 `-Rust` + le temoin) etaient
+# classes ambigus par « kernel LU mais inconnu », et l'entree
+# padding-nommage du registre anti-entropie passait de 25 a 46 sur ce
+# seul artefact d'instrument. Le suffixe `-rust` reste hors LANG_SUFFIXES
+# (langue potentiellement single-rendering) : c'est le kernel connu qui
+# empeche l'ambiguite, pas le suffixe.
 _KNOWN_KERNEL_PREFIXES = (
     "python", "ir", "julia-", "java", "javascript", "typescript",
     "dotnet-interactive", "csharp", "fsharp", "pwsh", "lean", "sas",
     "sql", "soql", "xcube", "xeus", "conda",
+    ".net-csharp", "coursia-ml-training", "pyphi", "coursia-py313",
+    "rust",
 )
 
 # Classification finale — chaque notebook est classifié dans exactement 1 case.
@@ -90,21 +127,114 @@ def _git(args):
     return r.stdout
 
 
-def _kernelspec(path: str) -> str | None:
-    """Lit `metadata.kernelspec.name` depuis la cellule 0 d'un notebook.
+def _kernelspec_bytes(data: bytes | None) -> str | None:
+    """Kernelspec lu dans les OCTETS d'un carnet — aucun accès disque.
 
-    Évite `import nbformat` (lourd) — `json.loads(open().read())` suffit pour
-    la cellule 0 qui porte la metadata globale. Retourne None si le notebook
-    n'a pas de kernelspec (rare mais vu sur archives).
+    Le contenu vient de l'objet git de la révision mesurée (cf
+    `_kernelspecs_at`) : la mesure ne dépend donc pas du checkout local
+    (#23623). Retourne None si le carnet n'a pas de kernelspec (rare mais vu
+    sur archives) ou si le contenu n'est pas du JSON lisible.
     """
-    try:
-        with open(path, "rb") as f:
-            data = json.loads(f.read().decode("utf-8", errors="replace"))
-        spec = data.get("metadata", {}).get("kernelspec", {})
-        name = spec.get("name") or spec.get("display_name")
-        return name if isinstance(name, str) and name.strip() else None
-    except (OSError, ValueError):
+    if not data:
         return None
+    try:
+        nb = json.loads(data.decode("utf-8", errors="replace"))
+    except ValueError:
+        return None
+    if not isinstance(nb, dict):
+        return None
+    spec = nb.get("metadata", {})
+    if not isinstance(spec, dict):
+        return None
+    spec = spec.get("kernelspec", {})
+    if not isinstance(spec, dict):
+        return None
+    name = spec.get("name") or spec.get("display_name")
+    return name if isinstance(name, str) and name.strip() else None
+
+
+def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
+    """Kernelspec de chaque carnet, lus DANS la révision `ref`.
+
+    Un seul processus `git cat-file --batch` : la liste des carnets et leur
+    contenu viennent alors de la même révision, et la mesure ne dépend plus
+    de l'état du checkout (cf #23623 — la liste venait de la révision mais le
+    contenu de l'arbre local).
+
+    Protocole : on écrit `<ref>:<chemin>` sur stdin ; git répond par une
+    ligne d'en-tête `<sha> <type> <size>` suivie du blob puis d'un
+    séparateur. Un chemin absent de la révision répond `<object> missing`.
+    L'écriture est faite par un thread dédié : sans lui, un gros lot de
+    requêtes remplirait le tampon stdin pendant que git remplit stdout —
+    interblocage.
+
+    Deux causes distinctes pour un kernelspec `None` partout (cf #23655) :
+    zéro blob lu = protocole rompu, on lève au lieu d'écrire un inventaire
+    vide (un résultat sans mesure n'est pas un résultat) ; blobs lus mais
+    aucun kernelspec trouvé = révision d'archives (JSON sans
+    `metadata.kernelspec`), inventaire légitime publié avec kernel `None`
+    partout, signalé sur stderr.
+    """
+    if not paths:
+        return {}
+    env = dict(os.environ, MSYS_NO_PATHCONV="1")
+    proc = subprocess.Popen(
+        ["git", "cat-file", "--batch"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL, env=env,
+    )
+    payload = "".join("%s:%s\n" % (ref, p) for p in paths).encode("utf-8")
+
+    def _feed():
+        try:
+            proc.stdin.write(payload)
+            proc.stdin.flush()
+        except (BrokenPipeError, ValueError, OSError):
+            pass
+        finally:
+            try:
+                proc.stdin.close()
+            except (BrokenPipeError, OSError, ValueError):
+                pass
+
+    writer = threading.Thread(target=_feed, daemon=True)
+    writer.start()
+    specs: dict[str, str | None] = {}
+    blobs_lus = 0
+    try:
+        for p in paths:
+            header = proc.stdout.readline()
+            if not header:
+                raise RuntimeError(
+                    "git cat-file --batch : sortie prematuree sur %s" % p)
+            parts = header.split()
+            # En-tete valide : `<sha> <type> <size>`. Sinon git a repondu
+            # `<object> missing|ambiguous|dangling` : le chemin n'est pas dans
+            # la revision — kernel non lu (et kernel `None` = non lu).
+            if len(parts) < 3 or parts[1] not in (b"blob", b"tree", b"commit", b"tag"):
+                specs[p] = None
+                continue
+            size = int(parts[2])
+            data = proc.stdout.read(size)
+            proc.stdout.read(1)  # séparateur
+            blobs_lus += 1
+            specs[p] = _kernelspec_bytes(data)
+    finally:
+        try:
+            proc.stdout.close()
+        finally:
+            proc.wait()
+    lus = sum(1 for v in specs.values() if v is not None)
+    if paths and blobs_lus == 0:
+        raise RuntimeError(
+            "git cat-file --batch : aucun blob lu pour %d chemin(s) dans %s "
+            "-- protocole rompu, aucun inventaire produit" % (len(paths), ref))
+    if blobs_lus and not lus:
+        sys.stderr.write(
+            "note: %d blob(s) lu(s) mais aucun kernelspec dans %s "
+            "-- inventaire publie avec kernel None partout "
+            "(revision d'archives ? cf #23655)\n" % (blobs_lus, ref))
+    return specs
 
 
 def _family(path: str) -> str:
@@ -174,8 +304,15 @@ def _classify(path: str, stem: str, idx: str | None, kernel: str | None,
     if any(h in path for h in _EXTERNAL_HINTS):
         return _CLASSIF_EXCEPTION
     # Nom non parsé : ambigu (sauf base implicite avec kernel connu LU).
+    # Un suffixe de langue RECONNU n'exclut pas la conformité — la docstring
+    # du module dit « suffixe reconnu ou absent », et `_suffix()` ne retourne
+    # par construction qu'un suffixe reconnu ou "" : tout suffixe visible ici
+    # est reconnu. L'ancien garde `not suffix` (suffixe ABSENT seulement)
+    # classait 475 noms canoniques à préfixe de série en ambigu (mesure
+    # 2026-10-29, #23175 : `Complexity-02b-...-Python.ipynb`, kernel python3
+    # connu, suffixe `-python` reconnu — forme couverte par `naming_canon.py`).
     if idx is None:
-        if kernel is not None and _kernel_known(kernel) and not suffix:
+        if kernel is not None and _kernel_known(kernel):
             return _CLASSIF_CONFORME
         return _CLASSIF_AMBIGU
     # Suffixe de langue non reconnu ET kernel LU inconnu = ambigu (le
@@ -222,24 +359,75 @@ def _index_zero_padded(stem: str) -> bool | None:
     ET pour `7-Foo`). On la recalcule ici à partir du stem brut, sans
     toucher au parseur partagé du voisin (cf #15488 : « Le parseur doit
     partager sa grammaire avec les gardes de #5081 »).
+
+    La LETTRE D'ACCRETION fait partie de l'index (`03b_`, `09e_`, `01b-`) :
+    la tête reste zéro-padée. L'ancien motif exigeait un séparateur
+    immédiatement après les chiffres et rendait donc `None` — classé
+    `ambigu` — sur 14 carnets réels de `main` (`03b_Typed_Decisions_System1`,
+    `09e_Production_Exploitation`, ...).
+    Mesure du 2026-11-05 (#24678) : le bucket `ambigu` passe de 40 à 26,
+    sans qu'un seul nom du dépôt change.
+
+    Le lookahead est celui de `INDEX_RE` (#22059) : une lettre suivie d'un
+    niveau numérique (`3D-04`, `3d-01`) est la queue d'un PRÉFIXE de série,
+    pas une lettre d'accrétion — sans lui, `3d-01` deviendrait « index nu
+    non zéro-padé », donc `rename_proposed` sur un nom correct.
     """
-    m = re.match(r"^(0[1-9])[._\-\s]", stem)
+    m = re.match(r"^(0[1-9])(?:[a-z](?![.\-]\d)|(?=[._\-\s]))[._\-\s]", stem)
     if m:
         return True
-    m = re.match(r"^([1-9])[._\-\s]", stem)
+    m = re.match(r"^([1-9])(?:[a-z](?![.\-]\d)|(?=[._\-\s]))[._\-\s]", stem)
     if m:
         return False
     return None
 
 
+def _accr_index(basename: str) -> tuple[str | None, bool | None]:
+    """Index d'accrétion d'un nom de série à préfixe (`ChoixSocial-01b-…`).
+
+    `SERIES_NUM_RE` (naming_canon) capture déjà préfixe/numéro/lettre sans
+    qu'`index_key` ne le voie (INDEX_RE est leading-digits-only). Pour un nom
+    à préfixe PORTANT une lettre d'accrétion, numéro+lettre EST l'index au
+    sens de la grammaire d'accrétion (notebook-accretion-numbering §1 :
+    `01b` canonique, `1b` à renommer) — le suffixe de noyau `-Lean` /
+    `-Lean-Python` reste en dernière position et ne change rien ici.
+
+    Sans lettre (`CSP-1-…`, `GameTheory-22-…`), le nom reste la base
+    implicite de sa série : (None, None), doctrine inchangée.
+
+    Retourne (idx normalisé, zero_padded) — idx None hors cas accrétion.
+
+    Mesure 2026-11-13 (#20316 review) : sur `origin/main`, 53 bases
+    implicites sans lettre restent conformes, 160 noms paddés (`02b`, `01b`)
+    restent conformes, et 2 dettes réelles non paddées (`SC-7b-…`,
+    `SL-1b-…`) deviennent visibles `rename_proposed` — c'est la convention
+    appliquée, pas un effet de bord.
+    """
+    m = SERIES_NUM_RE.match(basename)
+    if not m or not m.group("accr"):
+        return None, None
+    idx = "%d%s" % (int(m.group("num")), m.group("accr"))
+    return idx, m.group("num").startswith("0")
+
+
 def notebooks_at(ref: str) -> list[str]:
-    """Liste les chemins .ipynb d'une révision git (relatifs au root)."""
-    out = _git(["ls-tree", "-r", "--name-only", ref])
-    return [l.strip() for l in out.splitlines() if l.strip().lower().endswith(".ipynb")]
+    """Liste les chemins .ipynb d'une révision git (relatifs au root).
+
+    `-z` : la sortie est séparée par NUL et n'est PAS échappée par git —
+    un chemin contenant un espace ou un caractère non-ASCII survit intact,
+    et le protocole `git cat-file --batch` (un chemin par ligne) reste
+    synchrone avec la liste.
+    """
+    out = _git(["ls-tree", "-r", "-z", "--name-only", ref])
+    return [p for p in out.split("\0") if p.strip().lower().endswith(".ipynb")]
 
 
 def build_inventory(ref: str, baseline: int | None = None) -> dict:
     """Construit l'inventaire canonique pour `ref`.
+
+    La mesure est une fonction de `ref` **seul** : la liste des carnets et
+    leur contenu sont lus dans la révision (cf #23623), jamais dans l'arbre
+    local. Deux checkouts différents, même révision, même résultat.
 
     Retourne un dict avec :
       `ref` : révision examinée.
@@ -263,6 +451,16 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
     de scope).
     """
     paths = notebooks_at(ref)
+    # Filtre les _output (artefacts d'exécution, pas source canonique) AVANT
+    # la lecture des blobs : ils constitueraient l'essentiel du volume lu
+    # pour un résultat nul.
+    paths = [p for p in paths
+             if "/_output/" not in p and not p.startswith("_output/")]
+    # Les kernelspec sont lus DANS la révision mesurée, pas dans l'arbre
+    # local : sans cela, un checkout en retard (carnet renommé, ajouté ou
+    # retiré depuis) fait basculer des centaines de carnets de classe sans
+    # que le dépôt ait bougé (#23623).
+    specs = _kernelspecs_at(ref, paths)
     # baseline auto = entries (classification --base).
     # choisissait HEAD : c'est vrai sur main (où la
     # PR n'a pas encore bougé) mais faux sur la branche PR qui ajoute un
@@ -279,17 +477,22 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
     }
     entries = []
     for p in paths:
-        # Filtre les _output (artefacts d'exécution, pas source canonique).
-        if "/_output/" in p or p.startswith("_output/"):
-            continue
         stem = re.sub(r"\.ipynb$", "", p, flags=re.I)
         basename = os.path.basename(p)
         idx = index_key(basename)
-        kernel = _kernelspec(p) if os.path.isfile(p) else None
+        kernel = specs.get(p)
         suf = _suffix(stem)
         # zero-pad lu sur le stem (préfixe `0N_` vs `N_`),
         # pas sur l'idx (qui perd l'info).
         zero_padded = _index_zero_padded(basename)
+        # Série à préfixe + lettre d'accrétion : le numéro de série + lettre
+        # EST l'index (#20316) — `_index_zero_padded` rend None sur une tête
+        # alphabétique, le zero-pad se lit alors sur le numéro écrit.
+        if idx is None:
+            accr_idx, accr_zp = _accr_index(basename)
+            if accr_idx is not None:
+                idx = accr_idx
+                zero_padded = accr_zp
         classification = _classify(p, stem, idx, kernel, suf, zero_padded)
         family, sub = _subseries(p)
         by_class[classification] += 1
@@ -360,6 +563,19 @@ _CASES = [
     ("3.1-Retropropagation-Python.ipynb", _CLASSIF_CONFORME, "python3", "3.1"),
     # Sibling i18n _en : conforme (suffixe reconnu).
     ("07-Shapley_en.ipynb", _CLASSIF_CONFORME, "lean4", "7"),
+    # Quadrant non épingle avant #23175 : préfixe de série + suffixe de
+    # noyau RECONNU + kernel connu => conforme, pas ambigu. Mesure
+    # 2026-10-29 : 475 noms réels de ce gabarit (`Complexity-02b-...-Python`)
+    # étaient faux ambigu via l'ancien garde `not suffix`.
+    ("GameTheory-04c-NashExistence-CSharp.ipynb", _CLASSIF_CONFORME,
+     ".net-csharp", "4c"),
+    ("Complexity-02b-SAT-PhaseTransition-Python.ipynb", _CLASSIF_CONFORME,
+     "python3", "2b"),
+    # Contrôle négatif : kernel LU et hors liste connue reste ambigu,
+    # même avec un nom de forme canonique (exigence #15488 : le signal
+    # « kernel inconnu » doit pouvoir tirer sur des données réelles).
+    ("Search-08-JumpPointSearch-Python.ipynb", _CLASSIF_AMBIGU,
+     "kernel-inconnu-xyz", None),
     # Index à 1 chiffre sans zéro-pad = rename_proposed.
     ("1_OpenAI_Intro.ipynb", _CLASSIF_RENAME, "python3", "1"),
     ("9_Production_Patterns.ipynb", _CLASSIF_RENAME, "python3", "9"),
@@ -385,6 +601,35 @@ _CASES = [
     # la conjonction est nécessaire — un suffixe non
     # pair (`-Rust`) seul peut signaler un single-rendering sans twin.
     ("3.1-Retropropagation-Rust.ipynb", _CLASSIF_AMBIGU, "kernel-inconnu-xyz", "3.1"),
+    # --- fixtures du critere 3 de #24678 --------------------------------
+    # Les quatre familles nommees par l'issue, epinglees sur le comportement
+    # MESURE du 2026-11-05 : prefixe a chiffre suivi d'un suffixe de langue,
+    # prefixe alphabetique, tete nue, et un non-parse reel (kernel LU
+    # inconnu => ambigu legitime). Aucun de ces noms n'est renomme.
+    ("Z3-01-Introduction-Python.ipynb", _CLASSIF_CONFORME, "python3", None),
+    ("GameTheory-03-Cooperative-Solution.ipynb", _CLASSIF_CONFORME,
+     "python3", None),
+    ("01-Foo.ipynb", _CLASSIF_CONFORME, "python3", "1"),
+    ("Freeform-Notes.ipynb", _CLASSIF_AMBIGU, "kernel-inconnu-xyz", None),
+    # Lettre d'accretion : la tete `03` / `09` EST zero-padee. L'ancien motif
+    # rendait None => ambigu sur 14 carnets reels (#24678).
+    ("03b_Typed_Decisions_System1.ipynb", _CLASSIF_CONFORME, "python3", "3b"),
+    ("09e_Production_Exploitation.ipynb", _CLASSIF_CONFORME, "python3", "9e"),
+    # Série à préfixe + lettre d'accrétion : le numéro+lettre EST l'index
+    # (#20316) — suffixe de noyau `-Lean` / `-Lean-Python` en dernière
+    # position, zéro-pad lu sur le numéro écrit. idx appris, conforme.
+    ("ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb", _CLASSIF_CONFORME, "lean4", "1b"),
+    ("ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb", _CLASSIF_CONFORME, "lean4", "6b"),
+    # Controle negatif, meme grammaire : accrétion à préfixe SANS zero-pad
+    # reste a renommer (dettes réelles mesurées sur main : SC-7b, SL-1b).
+    ("SC-7b-ERC20-Lean-Verification-Companion.ipynb", _CLASSIF_RENAME, "python3", "7b"),
+    # Base implicite SANS lettre d'accrétion : doctrine inchangée (#20316).
+    ("CSP-1-Fundamentals.ipynb", _CLASSIF_CONFORME, "python3", None),
+    # Controle negatif : sans zero-pad, la meme forme reste a renommer.
+    ("3b-Typed-Decisions.ipynb", _CLASSIF_RENAME, "python3", "3b"),
+    # Controle negatif du lookahead : `3d-01` est un prefixe de serie mixte,
+    # pas un index -- il ne doit pas basculer en rename_proposed (#22059).
+    ("3d-01-Some-Notebook.ipynb", _CLASSIF_CONFORME, "python3", None),
 ]
 
 
@@ -394,8 +639,16 @@ def self_test():
     for fname, want_class, want_kernel, want_idx in _CASES:
         stem = re.sub(r"\.ipynb$", "", fname, flags=re.I)
         got_idx = index_key(fname)
+        got_zp = _index_zero_padded(fname)
+        # Même dérivation d'accrétion que la boucle d'inventaire (#20316) :
+        # le self-test teste l'organe réel, pas le seul parseur partagé.
+        if got_idx is None:
+            accr_idx, accr_zp = _accr_index(fname)
+            if accr_idx is not None:
+                got_idx = accr_idx
+                got_zp = accr_zp
         got_class = _classify(fname, stem, got_idx, want_kernel,
-                              _suffix(stem), _index_zero_padded(fname))
+                              _suffix(stem), got_zp)
         ok_class = got_class == want_class
         ok_idx = got_idx == want_idx
         if not ok_class or not ok_idx:
@@ -429,6 +682,13 @@ def main():
 
     inv = build_inventory(a.base, baseline=a.baseline)
     if a.json:
+        # RFC 8259 : le JSON est de l'UTF-8, meme sous Windows. Pipe,
+        # stdout herite de la page de code locale (cp1252) et le premier
+        # accent casse le consommateur qui decode proprement (registre
+        # anti-entropie : UnicodeDecodeError -> INSTRUMENT ILLEGIBLE).
+        # Force uniquement l'emission machine, pas la sortie humaine.
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
         sys.stdout.write(json.dumps(inv, indent=2, sort_keys=True, ensure_ascii=False))
         sys.stdout.write("\n")
     else:

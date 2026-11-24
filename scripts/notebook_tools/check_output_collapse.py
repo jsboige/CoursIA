@@ -86,6 +86,7 @@ from collections import Counter
 from check_output_failure_text import (
     EXCLUDE_MARKERS,
     changed_notebooks,
+    renamed_notebooks,
     resolve_base,
     read_notebook_at,
 )
@@ -383,18 +384,33 @@ def _apply_moved_content(rows):
     return rows
 
 
-def compare(base_ref, head_ref, paths, cwd=None):
+def compare(base_ref, head_ref, paths, cwd=None, skip_invalid=False,
+            renames=None):
     """Per-notebook collapse between two refs, then the diff-scale exemption.
 
     ``head_ref`` is None for the working tree (same contract as the siblings).
+    ``skip_invalid`` is reserved for history, which must continue past a corrupt
+    notebook without losing the other notebooks in the same commit.
+    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks``) lit la
+    base a l'ancien chemin d'un carnet renomme -- sans lui, un pur renommage
+    passe au seau ``added`` (conseil, hors gate) et un renommage + suppression
+    de sortie echappe au cliquet (#26381).
     """
     rows = []
     for path in paths:
-        base_nb = read_notebook_at(base_ref, path, cwd=cwd)
-        head_nb = read_notebook_at(head_ref, path, cwd=cwd)
-        if head_nb is None:
+        try:
+            base_nb = read_notebook_at(
+                base_ref, (renames or {}).get(path, path), cwd=cwd)
+            head_nb = read_notebook_at(head_ref, path, cwd=cwd)
+            if head_nb is None:
+                continue
+            row = analyze(base_nb, head_nb)
+        except (AttributeError, TypeError, ValueError) as exc:
+            if not skip_invalid:
+                raise
+            print(f"Historique : carnet invalide ignoré : {path} "
+                  f"({type(exc).__name__})", file=sys.stderr)
             continue
-        row = analyze(base_nb, head_nb)
         row["notebook"] = path
         rows.append(row)
     return _apply_moved_content(rows)
@@ -503,6 +519,8 @@ def history(since, until, notebook=None, cwd=None, limit=None):
     out_log = _git("log", "origin/main", "--first-parent",
                    "--since=" + since, "--until=" + until,
                    "--format=%H %ad %s", "--date=short", cwd=cwd)
+    if out_log is None:
+        raise RuntimeError("Impossible de lire l’historique de origin/main ; vérifier la référence et le dépôt Git.")
     if not out_log:
         return
     commits = []
@@ -518,6 +536,10 @@ def history(since, until, notebook=None, cwd=None, limit=None):
     for i, c in enumerate(commits):
         diff_out = _git("diff-tree", "--no-commit-id", "--name-only", "-r",
                         c["sha"], cwd=cwd)
+        if diff_out is None:
+            raise RuntimeError(
+                f"Impossible de lire les chemins modifiés du commit {c['sha']} (git diff-tree)."
+            )
         if not diff_out:
             continue
         paths = [p.replace(BS, "/") for p in diff_out.splitlines()
@@ -526,7 +548,8 @@ def history(since, until, notebook=None, cwd=None, limit=None):
         if not paths:
             continue
         try:
-            rows = compare(c["sha"] + "^", c["sha"], paths, cwd=cwd)
+            rows = compare(c["sha"] + "^", c["sha"], paths, cwd=cwd,
+                           skip_invalid=True)
         except Exception:
             # one corrupt notebook must not stop the run (acceptance)
             continue
@@ -1165,8 +1188,12 @@ def main(argv=None):
         return self_test()
 
     if args.history:
-        findings = list(history(args.since, args.until,
-                                notebook=args.notebook, limit=args.limit))
+        try:
+            findings = list(history(args.since, args.until,
+                                    notebook=args.notebook, limit=args.limit))
+        except RuntimeError as exc:
+            print(f"Erreur historique : {exc}", file=sys.stderr)
+            return 1
         for f in findings:
             print(json.dumps(f, ensure_ascii=False))
         print("# findings: " + str(len(findings)), file=sys.stderr)
@@ -1177,7 +1204,7 @@ def main(argv=None):
 
     base = resolve_base(args.base)
     paths = changed_notebooks(base)
-    rows = compare(base, None, paths)
+    rows = compare(base, None, paths, renames=renamed_notebooks(base))
     bad = [r for r in rows if r["regressed"]]
 
     # T2 (Issue #21424): the body-justification bypass. A PR may justify

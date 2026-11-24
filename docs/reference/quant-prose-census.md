@@ -90,8 +90,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15-IntegratedComplexity/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
@@ -120,7 +120,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-02-Gaussian-Mixtures.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-15-Recommenders.ipynb` | 27 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\PyMC\DecPyMC-7-Sequential.ipynb` | 17 |
-| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-03-Utility-Money.ipynb` | 16 |
+| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-02-Utility-Money.ipynb` | 16 |
 | `MyIA.AI.Notebooks\Probas\PyMC\PyMC-06-Debugging.ipynb` | 16 |
 
 ### QuantConnect (drainable total = 1392)
@@ -147,7 +147,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial.ipynb` | 58 |
+| `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial-Python.ipynb` | 58 |
 | `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-CSharp.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-11-Metaheuristics.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-09-LinearProgramming.ipynb` | 34 |
@@ -169,15 +169,15 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-11-TorchLean.ipynb` | 70 |
 | `MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-10-LeanDojo.ipynb` | 69 |
-| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-13-Python-Reasoners.ipynb` | 57 |
+| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-13-Reasoners-Python.ipynb` | 57 |
 | `MyIA.AI.Notebooks\SymbolicAI\SymbolicLearning\SL-1-LogicalLearning.ipynb` | 48 |
-| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-1-CSharp-Setup.ipynb` | 41 |
+| `MyIA.AI.Notebooks\SymbolicAI\SemanticWeb\SW-01-Setup-CSharp.ipynb` | 41 |
 
 ## Lecture
 
 - **SymmetricAI est la famille la plus drainable** (2165 valeurs, 8.2% du total) — cohérent avec la maturité de la veine #9434 (lean-10, lean-11, SW-13, sudoku-12/13/18, etc.).
 - **GenAI** (1776) reflète principalement `10_LocalLlama.ipynb` (75) et `9_Production_Patterns.ipynb` (66) — timings de modèles locaux documentés en prose.
-- **Search** (1464) est portée par `App-14-ConnectFour-Adversarial.ipynb` (58) — adversarial search timings machine-dep.
+- **Search** (1464) est portée par `App-14-ConnectFour-Adversarial-Python.ipynb` (58) — adversarial search timings machine-dep.
 - **QuantConnect** (1392) — timings de backtest/simulation, conformes à la classe MACHINE-DEP.
 - **Sudoku** (851) — notebooks comparison (18-Python, 18-Csharp, 3-Genetic, 13-SymbolicAutomata) avec timings de solveurs.
 - **Probas** (459) — Infer.NET + DecisionTheory, bien que veine drainage Probas CLOSED par po-2025 (commentaire de claim).
@@ -187,7 +187,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 ## Caveats
 
-- La classification **n'est pas parfaite** : les couches anti-FP (c.1272 contexte bayésien, c.1275 Argument_Analysis) couvrent les patterns connus, mais des FPs restent possibles (par exemple, une valeur dans une cellule de résultat précédente que le classifieur pourrait classer ENV-DEP par contexte).
+- La classification **n'est pas parfaite** : les couches anti-FP (c.1272 contexte bayésien, c.1275 ArgumentAnalysis) couvrent les patterns connus, mais des FPs restent possibles (par exemple, une valeur dans une cellule de résultat précédente que le classifieur pourrait classer ENV-DEP par contexte).
 - Le ratio STRUCTUREL/DRAINABLE est élevé (~92%) — la majorité des valeurs quantitatives en prose sont des **constants pédagogiques** (ordres de grandeur, ratios fixes, paramètres théoriques) qui ne dériveront pas.
 - Une re-exécution produira le même décompte modulo le contenu des cellules markdown ajoutées/modifiées depuis ce run.
 - Le décompte par famille est calculé sur le **premier composant du chemin** (`MyIA.AI.Notebooks/<FAMILY>/...`) — les notebooks en dehors de cette taxonomie sont classés en `OTHER` (RL principalement, 24 notebooks).
@@ -208,5 +208,5 @@ Options utiles : `--check` (exit 1 si ≥ 1 drainable, pour CI), `--limit N` (te
 - PR #9800 (scan_quant_classify.py triage 4-classes — outillage)
 - PR #9813 (anti-FP bayesian context)
 - PR #9820 (retire `}`cii typo + apprentissage trop large)
-- PR #9838 (anti-FP Argument_Analysis c.1275)
+- PR #9838 (anti-FP ArgumentAnalysis c.1275)
 - PR #9958 (item 4 C.5 codification de la ligne de partage — MERGED)

@@ -1,0 +1,7 @@
+# Dependances du carnet ICT-17c (TorchLens, #25465).
+# Version epinglee ==3.0.3 (mesuree via PyPI le 2026-11-09) : l'API 3.x differe
+# des docstrings 2.x circulant en ligne -- adresses par nom de module, op.out,
+# model=/inputs= explicites pour h.do(). Voir le carnet, encart pieges v3.x.
+# Licence Apache-2.0. Papier : doi:10.1038/s41598-023-40807-0
+# Prerequis systeme : PyTorch >= 2.1 + Graphviz (rendu du graphe, h.draw).
+torchlens==3.0.3

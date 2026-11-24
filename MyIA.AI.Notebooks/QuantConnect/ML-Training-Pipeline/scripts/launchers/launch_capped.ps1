@@ -48,7 +48,7 @@
 
 .PARAMETER MaxCommitChargePct
     Refuse le demarrage si la charge de commit de la machine depasse ce
-    pourcentage (defaut 85). 0 desactive la garde.
+    pourcentage (defaut 90). 0 desactive la garde.
 
 .PARAMETER LogPath
     Journal de l'entrainement (sortie standard du programme ET rapport du
@@ -79,7 +79,7 @@ param(
     [Parameter(Mandatory = $true)][string]$FilePath,
     [string[]]$ArgumentList = @(),
     [double]$MemoryCapGiB = 48,
-    [int]$MaxCommitChargePct = 85,
+    [int]$MaxCommitChargePct = 90,
     [string]$LogPath,
     [string]$ErrPath,
     [string]$PidPath,

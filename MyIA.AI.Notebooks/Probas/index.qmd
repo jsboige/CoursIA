@@ -12,8 +12,7 @@ listing:
     page-size: 24
   - id: infer-notebooks
     contents:
-      - "Infer/Infer-[2-9]-*.ipynb"
-      - "Infer/Infer-2b-*.ipynb"
+      - "Infer/Infer-0[2-9]*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -63,16 +62,16 @@ listing:
     sort: "filename"
     page-size: 24
   - id: dt-causal-bridges
-    contents: "DecisionTheory/Causal-Bridges/*.ipynb"
+    contents: "Causalite/*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
   - id: standalone-root
     contents:
-      - "Probas-KLS-Concentration.ipynb"
+      - "Applications/Probas-KLS-Concentration.ipynb"
       - "Applications/Pyro_RSA_Hyperbole.ipynb"
-      - "Applications/Percolation/Percolation-Supercritique.ipynb"
-      - "Applications/Percolation/Percolation-Lean.ipynb"
+      - "Applications/Percolation/Percolation-01-Supercritique-Python.ipynb"
+      - "Applications/Percolation/Percolation-02-Lean.ipynb"
       - "Applications/Quotients-Fibres-Recollement-Python.ipynb"
     type: grid
     sort: "filename"
@@ -80,8 +79,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Probas — Programmation probabiliste et théorie de la décision
-
 **L'incertitude n'est pas l'absence d'information, c'est une distribution.** Cette série forme sur deux axes complémentaires : **inférer** des distributions (Infer.NET message passing vs PyMC NUTS, sur les mêmes modèles : Gaussian Mixtures, IRT, TrueSkill, LDA, HMM, Kalman) et **décider** face à l'incertitude (utility espérée, MDPs, bandits, indice de Gittins — avec **preuves formelles Lean 4** pour les identités théoriques). À la fin, vous maîtrisez la boîte à outils probabiliste complète et vous savez **prouver formellement** les résultats clefs.
 :::
 
@@ -96,12 +93,12 @@ La série Probas comporte **4 sous-séries principales + applications standalone
 | **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 02, 02b, 08b) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
 | **[DecisionTheory/DecPyMC](DecisionTheory/DecPyMC/README.md) (Python)** | 8 (socle 7 + capstone) | PyMC | Mêmes modèles de décision, en sampling |
 | **[DecisionTheory/Actuariat](DecisionTheory/Actuariat/README.md) (Python)** | 5 | PyMC | Sous-série actuarielle T1-T5 : tarification, crédibilité, ruine, valeur de l'information |
-| **[DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
+| **[Causalite](Causalite/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
 | **Applications (standalone)** | 1 | Python | Pyro_RSA_Hyperbole (Pyro RSA) |
 
-**Kernels** : `dotnet-csharp` · `python3` · `lean4` (side tracks Lean via WSL, cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md)) · **GPU** : non (Infer.NET/PyMC CPU-only) · **Prérequis** : algèbre linéaire, probabilités de base (variables aléatoires, Bayes), Python intermédiaire.
+**Kernels** : `dotnet-csharp` · `python3` · `lean4` (side tracks Lean via WSL, cf [`decision_theory_lean/install_wsl_kernel.md`](DecisionTheory/decision_theory_lean/README.md)) · **GPU** : non (Infer.NET/PyMC CPU-only) · **Prérequis** : algèbre linéaire, probabilités de base (variables aléatoires, Bayes), Python intermédiaire.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 2
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) · niveau 2
 
 ## Corpus bayésien — Infer.NET (C#/.NET Interactive)
 
@@ -144,9 +141,9 @@ Gaussian Process creux, modèles hiérarchiques, filtre de Kalman, change-point 
 
 Arc **autonome** de **théorie de la décision bayésienne** : axiomes Von Neumann-Morgenstern, utilité espérée, EVPI, réseaux de décision, MDPs (itération valeur/politique), Thompson Sampling. Trois notebooks sont des **companions Lean 4** (kernel WSL + lake `decision_theory_lean`) qui prouvent formellement :
 
-- **DecInfer-02-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
-- **DecInfer-02b-Lean-Coherence** : cohérence de de Finetti — Dutch Book, caractérisation mono-livret des bornes de probabilité.
-- **DecInfer-08b-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
+- **DecInfer-01b-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
+- **DecInfer-01c-Lean-Coherence** : cohérence de de Finetti — Dutch Book, caractérisation mono-livret des bornes de probabilité.
+- **DecInfer-07b-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
 
 ::: {#dt-infer}
 :::
@@ -158,7 +155,7 @@ Mêmes modèles de décision, en sampling PyMC : utilité, valeurs d'information
 ::: {#dt-pymc}
 :::
 
-## Causal-Bridges — Do-Calculus inter-domaines
+## Causalité — Do-Calculus inter-domaines
 
 Notebook passerelle entre Probas, Search (CSP/SMT) et SymbolicAI : encode le Do-Calculus (Pearl) via Z3 pour raisonner sur des interventions (`do(X=x)`) en présence de variables non observées.
 
@@ -181,7 +178,7 @@ L'entrée Infer.NET du corpus bayésien est **Infer-1b** (accretion du premier m
 **Pour Infer.NET (C#/.NET Interactive)**
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 # Puis dans Jupyter : choisir le kernel ".NET (C#)"
 ```
 
@@ -196,13 +193,13 @@ pip install pymc arviz numpy pandas matplotlib
 jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 ```
 
-**Pour les companions Lean 4** (`DecInfer-02-Lean-ExpectedUtility.ipynb`, `DecInfer-02b-Lean-Coherence.ipynb`, `DecInfer-08b-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
+**Pour les companions Lean 4** (`DecInfer-01b-Lean-ExpectedUtility.ipynb`, `DecInfer-01c-Lean-Coherence.ipynb`, `DecInfer-07b-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](DecisionTheory/decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
 
 ## Ressources complémentaires
 
 - **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire exhaustif de la série avec statuts READY/DEMO, kernels, GPU.
 - **README de série** : [Probas/README.md](README.md) — vue d'ensemble, progression pédagogique complète, comparaison Infer/PyMC, ramifications vers DecisionTheory.
-- **Lake Lean** : [`decision_theory_lean/`](decision_theory_lean/) — preuves formelles des identités d'escompte (Gittins), vNM sound direction.
+- **Lake Lean** : [`decision_theory_lean/`](DecisionTheory/decision_theory_lean/) — preuves formelles des identités d'escompte (Gittins), vNM sound direction.
 - **Séries connexes** :
   - [GameTheory](../GameTheory/index.qmd) — théorie des jeux bayésienne (jeux bayésiens, jeux de réputation), certaines preuves Lean voisinent celles de `decision_theory_lean/`.
   - [Search](../Search/index.qmd) — algorithmes de recherche, CSP, MCTS (certains algorithmes probabilistes en bandit).
@@ -210,16 +207,16 @@ jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 
 ## Note sur le rendu Quarto (.NET + Lean + Python)
 
-Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causal-Bridges + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/DecInfer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
+Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causalité + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/DecInfer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
 
 ## Pour aller plus loin
 
 Une fois la série Probas maîtrisée, les parcours conseillés sont :
 
-1. **Vers l'inférence causale** : [DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/) — Do-Calculus, raisonnement causal.
+1. **Vers l'inférence causale** : [Causalite](Causalite/) — Do-Calculus, raisonnement causal.
 2. **Vers la théorie des jeux** : [GameTheory](../GameTheory/index.qmd) — équilibres bayésiens, jeux de réputation.
 3. **Vers le machine learning discriminant** : [ML](../ML/README.md) — régression/probabilités conditionnelles, où les modèles probabilistes rejoignent le deep learning.
-4. **Vers la formalisation** : [decision_theory_lean/](decision_theory_lean/) — preuves formelles en Lean 4 des identités d'escompte et de Gittins.
+4. **Vers la formalisation** : [decision_theory_lean/](DecisionTheory/decision_theory_lean/) — preuves formelles en Lean 4 des identités d'escompte et de Gittins.
 5. **Vers la simulation multi-agent** : [IIT](../IIT/README.md) — PyPhi, integrated information, où la théorie de la décision probabiliste alimente la théorie de l'information intégrée.
 
 <!-- CATALOG-STATUS

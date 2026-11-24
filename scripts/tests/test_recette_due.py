@@ -302,3 +302,91 @@ def test_main_rc_zero_and_wait_line_while_validator_is_silent(monkeypatch, capsy
     out = capsys.readouterr().out
     assert "WAITING-VALIDATOR #7 depuis 2026-10-01T10:00:00Z" in out
     assert "DUE" not in out  # le verdict ne nomme pas d'issue a servir
+
+
+# --- registre des destinataires (--board, demande user 2026-11-16) ---------------
+
+_BODY_REG = ("# Recette\n\nDestinataires : Frederic (MOA externe) ; Odile (MOA externe)\n"
+             "Transmission : 2026-11-16\n")
+
+
+def test_declared_recipients_split_bold_and_absent():
+    assert rd.declared_recipients(_BODY_REG) == ["Frederic (MOA externe)", "Odile (MOA externe)"]
+    assert rd.declared_recipients("**Destinataires** : Pierre (MOA externe)") == ["Pierre (MOA externe)"]
+    assert rd.declared_recipients("Destinataires : A ;; B ; ") == ["A", "B"]
+    assert rd.declared_recipients("pas de ligne") == []
+
+
+def test_transmission_counts_only_a_dated_value():
+    assert rd.transmitted_on(rd.declared_transmission(_BODY_REG)) == "2026-11-16"
+    assert rd.transmitted_on("2026-09-24 (SMS)") == "2026-09-24"
+    assert rd.transmitted_on("a faire par le mainteneur") is None
+    assert rd.transmitted_on("à confirmer, envoyé vers 2026-11-01") is None
+    assert rd.declared_transmission("pas de ligne") is None
+
+
+def test_assess_issue_carries_the_registry_fields():
+    st = rd.assess_issue(_issue(1, [], body=_BODY_REG), LANE, NOW)
+    assert st["recipients"] == ["Frederic (MOA externe)", "Odile (MOA externe)"]
+    assert st["transmission"] == "2026-11-16" and st["transmitted_on"] == "2026-11-16"
+
+
+def _state(**kw):
+    base = {"recipients": ["Pierre"], "transmitted_on": "2026-09-01", "ball_in_fleet_court": False,
+            "ball_with_validator": True, "last_validator_comment": None,
+            "waiting_since": "2026-10-01T12:00:00Z"}
+    base.update(kw)
+    return base
+
+
+def test_board_alerts_name_who_owes_the_gesture():
+    # muet depuis 5 j : sous le seuil de 14 j, aucune alerte
+    assert rd.board_alerts(_state(), NOW) == []
+    assert rd.board_alerts(_state(recipients=[]), NOW)[0].startswith("DESTINATAIRES NON DECLARES")
+    assert rd.board_alerts(_state(transmitted_on=None), NOW) == ["A TRANSMETTRE (mainteneur)"]
+    due = rd.board_alerts(_state(ball_in_fleet_court=True, ball_with_validator=False,
+                                 last_validator_comment="2026-10-04T12:00:00Z"), NOW)
+    assert due == ["REPONSE DUE PAR LA FLOTTE depuis 2.0 j"]
+    silent = rd.board_alerts(_state(waiting_since="2026-09-01T12:00:00Z"), NOW)
+    assert silent and silent[0].startswith("DESTINATAIRE MUET depuis 35.0 j")
+
+
+def test_board_never_calls_silent_a_recipient_who_never_got_the_link():
+    st = _state(transmitted_on=None, waiting_since="2026-08-01T12:00:00Z")
+    assert rd.board_alerts(st, NOW) == ["A TRANSMETTRE (mainteneur)"]
+
+
+def test_run_board_sorts_and_summarises():
+    issues = {
+        9: _issue(9, [_c("jsboige", "2026-10-01T10:00:00Z"), _c("fmomo-ai", "2026-10-03T10:00:00Z")],
+                  body=_BODY_REG),
+        4: _issue(4, [_c("jsboige", "2026-10-05T10:00:00Z")],
+                  body="Destinataires : Tiago\nTransmission : a faire\n"),
+    }
+    board = rd.run_board(NOW, list_issues=lambda: [{"number": 9}, {"number": 4}],
+                         fetch_issue=lambda n: issues[n])
+    assert [st["number"] for st in board["issues"]] == [4, 9]
+    assert board["verdict"] == "FLEET-REPLY-DUE" and board["fleet_reply_due"] == [9]
+    assert board["to_transmit"] == [4] and board["silent"] == []
+
+
+def test_main_board_rc_and_lane_requirement(monkeypatch, capsys):
+    clean = {"verdict": "OK", "fleet_reply_due": [], "to_transmit": [], "silent": [],
+             "silence_days": 14.0, "issues": []}
+    monkeypatch.setattr(rd, "run_board", lambda *a, **k: clean)
+    assert rd.main(["--board"]) == 0
+    assert "BOARD: 0 issue(s)" in capsys.readouterr().out
+    monkeypatch.setattr(rd, "run_board", lambda *a, **k: dict(clean, fleet_reply_due=[9]))
+    assert rd.main(["--board"]) == 1
+
+    def boom(*a, **k):
+        raise subprocess.CalledProcessError(1, ["gh"])
+    monkeypatch.setattr(rd, "run_board", boom)
+    assert rd.main(["--board"]) == 2
+    assert "UNKNOWN" in capsys.readouterr().out
+    try:
+        rd.main([])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("--lane absent hors --board doit echouer")

@@ -2,7 +2,7 @@
  *
  * Mesuré au rendu headless (scan_slidev_composition, 28 slides) :
  * 13 slides hors canvas. Deux familles : blocs de code Turtle/SPARQL
- * trop hauts (PRE 600-712px, slides SW-2b/SW-3/SW-4/SW-8), et listes
+ * trop hauts (PRE 600-712px, slides SW-02/SW-3/SW-4/SW-8), et listes
  * denses sous H2 empilés (SW-1, RDFS, etc.).
  *
  * Correctif pattern #11536 (S3) : compression typographique verticale

@@ -6,6 +6,8 @@
 **Date :** 2026-10-18.
 **Statut :** `INSUFFICISANT` — le code est propre (0 `sorry` réel, 0 axiome piégeant) mais le projet n'est **pas compilable en l'état** (imports non résolus, structure lake absente).
 
+> **Etat mesure au 2026-11-08** : la moitié « non compilable » de ce verdict est **caduque** — les deux imports non résolus du fichier amont ont disparu (réparés upstream), et le build first-hand livré par #23302 (PR mergée le 2026-10-31) donne **SUCCESS** : Mathlib v4.33.0, 0 `sorry`, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes — preuves dans [`build-evidence-2026-10-31/`](build-evidence-2026-10-31/). La partie « pas de structure lake dans le dépôt amont » reste vraie (l'enveloppe de build a été construite par nos soins). Arbitrage ai-01 c.6725327653 du 2026-11-08 : Pli 2.1 livré par cette mesure, plis suivants repliés (reprise : issues ouvertes < 400).
+
 ## TL;DR
 
 Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.

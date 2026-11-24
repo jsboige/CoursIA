@@ -81,6 +81,17 @@ La classe par defaut reste ``artifact`` : le contrat CI
 exact. Les classes #9434 s'auditent en opt-in, pour poser le before/after d'un
 drainage par classe.
 
+Certaines occurrences sont des faux positifs de SENS, pas des mesures d'etat :
+« 36 cellules vivantes » d'un canon du Jeu de la Vie compte des cellules de
+l'automate, et « 248 818 lignes » d'un depot externe pine mesure un run, pas un
+compteur du depot. Les supprimer n'aurait pas de sens, et les laisser flaguer
+fait re-trancher le meme arbitrage a chaque tranche. Elles sont couvertes par
+une allowlist ``(fichier, motif)`` -- ``ARTIFACT_EXEMPTIONS`` -- ou chaque
+entree porte son motif ECRIT, et dont le motif ne couvre que son propre span
+sur la ligne. Une entree qui ne couvre plus rien est signalee
+``[ALLOWLIST-PERIMEE]`` en ``--all`` : une exemption se perime en silence si
+rien ne la relit (#23111).
+
 Usage
 -----
     # CI sur une PR : ne juge que les lignes AJOUTEES (classe artifact, defaut)
@@ -111,6 +122,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 # ----------------------------------------------------------------------------
 # Classe « artifact » (#9377) -- compteurs d'artefacts du depot
@@ -130,6 +142,1128 @@ ARTIFACT_NOUNS = r"(?:lignes?|lines?|cellules?|cells?|notebooks?|modules?|fichie
 COUNT_RE = re.compile(
     r"(?<![\w.#])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
     re.IGNORECASE,
+)
+
+# Quantites d'un modele de domaine, pas compteurs d'artefacts du depot.
+# Ces motifs sont volontairement relationnels : le nombre doit etre lie a la
+# grille ou a la matrice de couverture, et l'exemption porte sur cette seule
+# occurrence. « 81 cellules de code » et « 729 lignes dans le notebook »
+# restent des compteurs d'artefacts, meme dans une phrase qui parle aussi du
+# Sudoku.
+DOMAIN_GRID_CELLS_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+"
+    r"(?:cellules?|cells?))\s+"
+    r"(?:de\s+la\s+grille(?:\s+de\s+sudoku)?|du\s+sudoku|"
+    r"of\s+(?:the\s+)?(?:9\s*[x×]\s*9\s+)?(?:sudoku\s+)?grid)"
+    r"(?![\w-])",
+    re.IGNORECASE,
+)
+DOMAIN_GRID_CELLS_REVERSED_RE = re.compile(
+    r"\bgrille\s+(?:de\s+)?sudoku\s+de\s+"
+    r"(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+cellules?)\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_FACTOR_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"(?:\s+(?:maximum|max))?\s*=\s*"
+    r"(?P<dimensions>\d{1,6}\s+(?:lignes?|positions?)\s*[x×]\s*"
+    r"\d{1,6}\s+(?:colonnes?|valeurs?)"
+    r"(?:\s*[x×]\s*\d{1,6}\s+valeurs?)?)\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_MATRIX_DIMENSION_RE = re.compile(
+    r"\b(?:matrice|matrix)\b.{0,60}?\b\d{1,6}\s+colonnes?\s*[x×]\s*"
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"(?:\s+(?:maximum|max))?\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_PAIR_RE = re.compile(
+    r"\b(?:matrice|matrix)\b.{0,100}"
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+"
+    r"(?:lignes?|lines?))\*{0,2}(?:\s+(?:maximum|max))?"
+    r"\s*[,(:]?\s*(?:une\s+par\s+couple\s+cellule[-–]valeur|"
+    r"one\s+for\s+each\s+cell[-–]value\s+pair)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
+    """Dit si cette occurrence décrit explicitement un modèle mathématique."""
+    span = count.span()
+    patterns = (
+        DOMAIN_GRID_CELLS_RE,
+        DOMAIN_GRID_CELLS_REVERSED_RE,
+        DOMAIN_COVERAGE_FACTOR_RE,
+        DOMAIN_COVERAGE_MATRIX_DIMENSION_RE,
+        DOMAIN_COVERAGE_PAIR_RE,
+    )
+    for pattern in patterns:
+        for match in pattern.finditer(line):
+            # Un inventaire attribué à un artefact reste signalé ; une simple
+            # mention du carnet présentant un modèle ne suffit pas.
+            prefix = line[line.rfind(";", 0, span[0]) + 1:span[0]]
+            if re.search(
+                r"\b(?:notebook|carnet|fichier\s+source|source\s+file)\s+"
+                r"(?:contient|compte|comprend|possède|possede|a|fait|has|contains|counts)"
+                r"(?:\s+(?:aussi|également|egalement|also))?\s*$"
+                r"|\b(?:matrice|matrix)\s+de\s+donn[ée]es\s+du\s+"
+                r"fichier\s+source\s+a\s*$",
+                prefix, re.IGNORECASE,
+            ):
+                continue
+            if match.span("count") == span:
+                return True
+            if "dimensions" in match.re.groupindex:
+                start, end = match.span("dimensions")
+                if start <= span[0] and span[1] <= end:
+                    return True
+    return False
+
+# ----------------------------------------------------------------------------
+# Allowlist MOTIVEE de la classe « artifact » (#23111)
+# ----------------------------------------------------------------------------
+# Un compte peut etre un faux positif de SENS et non une mesure d'etat : « 36
+# cellules vivantes » d'un canon du Jeu de la Vie compte les cellules de
+# l'automate, pas celles d'un carnet ; « 248 818 lignes » d'un depot externe
+# pine mesure un run, il ne derive pas avec CE depot. Supprimer le nombre
+# n'aurait alors aucun sens -- il faudrait reecrire le propos -- et le laisser
+# flaguer fait re-trancher le meme arbitrage a chaque tranche.
+#
+# Trois proprietes rendent l'exemption auditable plutot que commode :
+#
+# 1. Elle est un TRIO (chemin exact, motif de ligne, raison ECRITE). Pas de
+#    glob : une exemption large se perime en silence.
+# 2. Le motif ne couvre que les compteurs dont le span tombe DANS un de ses
+#    matches. Un « 87 cellules » sur la meme ligne reste flague, et un compte
+#    de cellules de carnet ajoute ailleurs dans le meme fichier aussi.
+# 3. Le motif est ETROIT : il nomme le contexte, pas seulement le nombre. S'il
+#    cesse de matcher apres une reecriture, l'occurrence est re-signalee et un
+#    humain re-tranche -- le sens contraire (motif large qui avale en silence
+#    un vrai compteur ajoute plus tard) est le seul vrai danger.
+#
+# L'allowlist est relue a chaque ``--all`` : ce qu'elle couvre est restitue,
+# et une entree qui ne couvre plus rien est nommee PERIMEE.
+
+
+class ArtifactExemption(NamedTuple):
+    """Une exemption motivee de la classe ``artifact``."""
+
+    path: str                  # chemin relatif POSIX exact, jamais un glob
+    motif: re.Pattern[str]     # motif de LIGNE ; couvre les compteurs dans son span
+    raison: str                # pourquoi ce nombre n'est pas un etat du depot
+
+
+ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
+    ArtifactExemption(
+        path="translations/README.md",
+        motif=re.compile(r"24 470 cellules au 2026-08-06"),
+        raison=(
+            "Mesure HISTORIQUE datee, conservée par arbitrage #17636 volet 2 "
+            "(option a, coord 19/11) : total d'epoque produit par l'audit c.1252 "
+            "au 2026-08-06, pas un etat courant -- les comptes courants vivent "
+            "dans les CSV, la prose y renvoie. Le motif est etroit (nombre ET "
+            "date) : une reecriture re-signale l'occurrence."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
+        motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
+        raison=(
+            "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
+            "de la Vie, pas des cellules de carnet. Le nombre est une propriete "
+            "du motif (il definit le canon), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
+        motif=re.compile(r"Pulsar \(48 cellules\)"),
+        raison=(
+            "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
+            "a la limite de native_decide ; ce sont des cellules de l'automate."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.en.md",
+        motif=re.compile(r"Pulsar \(48 cells\)"),
+        raison=(
+            "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
+            "l'automate. Une paire FR/EN se traite ensemble, sinon le drainage "
+            "rouvre le meme arbitrage sur l'autre langue."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/README.md",
+        motif=re.compile(r"248 818 lignes compil"),
+        raison=(
+            "Mesure d'un run de reproduction sur le depot externe pine "
+            "plby/HopfProblem : ce ne sont pas les lignes de CE depot, et le "
+            "nombre decrit le resultat du run (248 818 lignes compilees en "
+            "1154 s), pas un etat de CoursIA qui derive a chaque ajout."
+        ),
+    ),
+    # Mesures de la page DarkSnail (EPIC #21310, PR #23302) : toutes decrivent
+    # le depot externe sneed-and-feed/projectdarksnail tel que fige a la tete
+    # 043c9d26 du 2026-10-29 (blobs cites dans la page de mesure). Ces nombres
+    # ne derivent pas avec CoursIA -- upstream peut bouger, la tete mesuree
+    # reste celle de son blob. Meme classe que l'entree HopfProblem ci-dessus.
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"Taille d'`OcclusionTriad\.lean` \| 510 lignes \(blob `72b0b676`\) \| \*\*999 lignes\*\*"
+        ),
+        raison=(
+            "Tailles du fichier OcclusionTriad.lean du depot externe "
+            "projectdarksnail aux deux tetes mesurees (18/10 et 29/10), blobs "
+            "cites sur la ligne : la derive constatee EST le propos de la page."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"BlockBridge\.lean` \| inexistant \| \*\*nouveau, 289 lignes\*\*"
+        ),
+        raison=(
+            "Taille du nouveau fichier BlockBridge.lean du depot externe "
+            "projectdarksnail a la tete 043c9d26 : pas une ligne de CE depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(
+            r"lake exe cache get` \(rc=0, 8 690 fichiers déjà en cache\)"
+        ),
+        raison=(
+            "Compte du cache Mathlib local au moment du run de build (WSL, "
+            "environnement jete) : resultat d'un run, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"41 357 lignes Python au même commit"),
+        raison=(
+            "Inventaire structurel du code Python du depot externe "
+            "projectdarksnail au commit fige 043c9d26 : mesure de clone "
+            "externe, ne derive pas avec CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"5 fichiers de tests \(`test_darksnail\.py`"),
+        raison=(
+            "Denombrement des fichiers de tests du depot externe "
+            "projectdarksnail (noms cites sur la ligne) au commit fige : "
+            "mesure de clone externe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"OcclusionTriad\.lean` \| 999 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/darksnail/concern-2026-10-29-build-verification.md",
+        motif=re.compile(r"BlockBridge\.lean` \| 289 lignes, blob"),
+        raison=(
+            "Table de provenance : taille du fichier amont au blob SHA cite "
+            "sur la meme ligne -- le blob fige le nombre, pas le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/README.md",
+        motif=re.compile(r"inventaire Python \(41 357 lignes\)"),
+        raison=(
+            "Index README de la page de mesure DarkSnail : meme inventaire du "
+            "clone externe fige a 043c9d26 (exemption detaillee ci-dessus), "
+            "resume en une ligne d'index."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md",
+        motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
+        raison=(
+            "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
+            "de Gosper, citee comme temoin d'echec du self-check d'identite. Le "
+            "nombre appartient au recit de l'incident (la v1 fausse), pas a un "
+            "etat du depot : il ne derive pas avec CoursIA, il ne doit pas etre "
+            "mis a jour."
+        ),
+    ),
+    # Journaux de session du guide enricher (PR #25008) : les compteurs « N
+    # cells / N notebooks » de la section « Successful Enrichment Sessions »
+    # datent chaque evenement (2026-02 a 2026-06) et l'en-tete du fichier les
+    # declare « conserves comme provenance historique ». Denombrements FIGES
+    # d'un recit au passe (doctrine du header de cet organe : « un decompte
+    # fige dans un recit au passe est une preuve, et se garde »). Ils
+    # apparaissent en lignes ajoutees uniquement par la renormalisation EOL
+    # du renommage T4 (#25008) -- leur valeur ne derive pas avec le depot.
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"QC-Py-24-Autoencoders-Anomaly \(11 cells added"),
+        raison=(
+            "Journal de session du 2026-02-15 : decompte figure des cellules "
+            "ajoutees ce jour-la a QC-Py-24. Provenance historique declaree "
+            "en en-tete du fichier, pas un compteur d'etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"insertion strategy flawless \(11 cells, no errors\)"),
+        raison=(
+            "Journal de session (2026-02-15, QC-Py-24 et QC-Py-23) : le "
+            "« no errors » chiffre le bilan d'une session passee, identique "
+            "au decompte de son en-tete date. Recit au passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"QC-Py-23-Attention-Transformers \(11 cells added"),
+        raison=(
+            "Journal de session du 2026-02-15 : decompte figure des cellules "
+            "ajoutees ce jour-la a QC-Py-23. Provenance historique, meme "
+            "classe que l'entree QC-Py-24 ci-dessus."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"DataScienceWithAgents Labs \(3 notebooks, 11 cells added\)"
+        ),
+        raison=(
+            "Journal de session du 2026-02-07 : bilan figure d'une session "
+            "passee (le journal local est cite hors depot sur la ligne). Ne "
+            "derive pas avec l'etat courant de la serie."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"Sudoku-10-ORTools \(anciennement.*4 cells added"),
+        raison=(
+            "Journal de session du 2026-02-16 : decompte figure des cellules "
+            "ajoutees ce jour-la, nom d'avant la renumerotation #5081 cite "
+            "sur la ligne. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"notebook métaheuristiques \(anciennement.*3 cells added"
+        ),
+        raison=(
+            "Journal de session du 2026-02-16 : meme classe que l'entree "
+            "Sudoku-10-ORTools ci-dessus -- bilan date d'une session passee."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"Video GPU Notebooks Pedagogical Enhancement \(6 notebooks\)"
+        ),
+        raison=(
+            "Journal de session du 2026-02-19 : les 6 carnets de la session "
+            "sont nommes sur les lignes suivantes. Denombrement figure d'un "
+            "evenement passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"GameTheory Series Header Standardization \(12 notebooks reviewed"
+        ),
+        raison=(
+            "Journal de session du 2026-03-16 : bilan figure d'une passe de "
+            "standardisation passee ; l'etat courant de la serie est porte "
+            "par le catalogue genere, pas par ce recit."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"DataScienceWithAgents Exercise Stubs \(8 notebooks, 17 exercise pairs"
+        ),
+        raison=(
+            "Journal de session du 2026-06-03 : bilan figure des stubs "
+            "ajoutes ce jour-la (See #2161 cite sur la ligne). Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(
+            r"Lean-11-TorchLean Pedagogical Enhancement \(4 cells added"
+        ),
+        raison=(
+            "Journal de session du 2026-03-03 : decompte figure des cellules "
+            "ajoutees ce jour-la a Lean-11. Provenance historique."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/notebook-enricher-guide.md",
+        motif=re.compile(r"insertion strategy flawless \(4 cells, no errors\)"),
+        raison=(
+            "Journal de session (2026-03-03, Lean-11) : bilan chiffre d'une "
+            "session passee, meme classe que l'entree « 11 cells » ci-dessus."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/assets/readme/MANIFEST.md",
+        motif=re.compile(r"4 cellules 2×2"),
+        raison=(
+            "« 4 cellules 2×2 » = les quatre cases de la MATRICE DE GAINS "
+            "dessinee dans la figure (Cooperer/Defaire x Cooperer/Defaire), pas "
+            "des cellules de carnet. Le nombre decrit l'image ; il est fige par "
+            "le SHA de l'asset cite sur la meme entree, pas par l'etat du depot "
+            "(meme classe que les « 36 cellules vivantes » du canon de Gosper)."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\*\*9 cellules totales\*\*"),
+        raison=(
+            "« 9 cellules totales » = la grille 3 panneaux x 3 barres de la "
+            "figure du theoreme d'Arrow (Borda / Pluralite / Dictature x Pareto "
+            "/ IIA / Non-dictature), pas des cellules de carnet. Le nombre est "
+            "une propriete de l'image, fige par le SHA de l'asset."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GameTheory/SocialChoice/assets/readme/MANIFEST.md",
+        motif=re.compile(r"3 lignes de convergence"),
+        raison=(
+            "« 3 lignes de convergence » = les trois courbes tracees dans la "
+            "figure du modele de Downs (parti de gauche, parti de droite, "
+            "electeur median), pas des lignes de fichier. Description d'une "
+            "image figee par son SHA, pas une mesure du depot."
+        ),
+    ),
+    # Manifeste de preservation des branches (issue #14238, PR #25120) : la
+    # section « Tranche 4 » (v5, 2026-11-07) du README accumule les instantanes
+    # par version (v2 a v5). Chaque compte de lignes y est un fait FIGE de la
+    # curation de cette version -- la preuve du geste, re-mesurable a la
+    # commande de la section « Verification » -- et non un etat du depot qui
+    # deriverait a chaque ajout. Les supprimer reecrirait la preuve (angle-mort
+    # du guard).
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187\*\* lignes"),
+        raison=(
+            "« 13 187 lignes » = total du manifeste a la date de la v5 "
+            "(tranche 4, 2026-11-07) : fait fige de la curation, jamais un "
+            "etat du depot resynchronise a chaque version."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 930 lignes"),
+        raison=(
+            "« 2 930 lignes nouvelles » = lignes greffees au manifeste par la "
+            "tranche 4 (2026-11-07) : le delta fige entre la v4 et la v5, "
+            "pas un compteur qui deriverait a chaque ajout ulterieur."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187 lignes"),
+        raison=(
+            "« 13 187 lignes » = taille du .tsv.gz a la v5 (2026-11-07), "
+            "reformulee dans l'en-tete de format : mesure figee au snapshot, "
+            "re-mesurable a la commande de la section Verification."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 927 lignes"),
+        raison=(
+            "« 2 927 lignes » = lignes du fichier de selection selected_*.tsv "
+            "liste dans le journal de tranche : fait fige de la tranche 4 "
+            "(2026-11-07), piece de restauration, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"Refus motives \(9 lignes\)"),
+        raison=(
+            "« 9 lignes » = refus motives du fichier refused_*.tsv liste dans "
+            "le journal de tranche : le compte fige des refus du geste de la "
+            "tranche 4 (2026-11-07), pas un compteur du depot."
+        ),
+    ),
+    # Cartographie de la soumission externe yang-mills-group/OpenAI-YM-20261028
+    # (PR #25826) : chaque nombre mesure le depot externe tel que fige au pin
+    # audite (main 2026-11-05, clone verifie par scripts/ym_openai_20261028/
+    # inventory.py contre SOURCES.sha256). Meme classe que HopfProblem et
+    # DarkSnail ci-dessus : upstream peut bouger, la tete mesuree reste
+    # celle du blob -- ces nombres ne derivent pas avec CoursIA.
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"\(9 508 fichiers, commit unique\)"),
+        raison=(
+            "Taille du clone externe audite (pin main du 2026-11-05) : fait "
+            "du depot externe OpenAI-YM-20261028, pas un etat de CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"réélaboration des 9 457 modules"),
+        raison=(
+            "Table d'obstacles de la synthese : compte des modules du depot "
+            "externe, marque RAPORTE (journaux de la soumission, section 6)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"Architecture : 613 lignes de spécification, ~988 000 lignes"
+        ),
+        raison=(
+            "Titre de section : tailles de l'enonce et de l'implementation "
+            "du depot externe, mesurees par l'inventaire rejouable."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(l'énoncé complet, en 190 lignes|réseau de Wilson, loi, limite \(92 lignes\)"
+            r"|Wightman W0–W3 \(325 lignes\))"
+        ),
+        raison=(
+            "Arbre d'architecture (section 3) : tailles des fichiers de "
+            "specification du depot externe, mesurees au pin audite."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"\*\*9 477\*\* fichiers `\.lean` pour \*\*987 586\*\* lignes"
+        ),
+        raison=(
+            "Comptes du manifeste SOURCES.sha256 du depot externe : le pin "
+            "fige les nombres, pas le depot CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(closure = 4 module\(s\) de specification"
+            r"|\+ 1 externe\(s\) ; 0 module\(s\) d'implementation atteint)"
+        ),
+        raison=(
+            "Inventaire de la closure de Challenge.lean : decomposition "
+            "spec/implementation du depot externe (section 3)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(atteint \*\*9 467\*\* modules du projet"
+            r"|263 modules externes : le travail)"
+        ),
+        raison=(
+            "Closure de Solution.lean du depot externe : portee mesuree au "
+            "pin, temoin du cloisonnement spec/implementation."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(compilation des 9 457 modules YM"
+            r"|outside=149891 modules=9457"
+            r"|\*\*2 950 modules\*\* ne contribuent"
+            r"|laquelle « 9 477 fichiers)"
+        ),
+        raison=(
+            "Journaux verification/*.log de la soumission cites verbatim "
+            "(section 4) : mesures rapportees du depot externe, non "
+            "rejouees ici (section 6)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"\*\*9 506 fichiers sur 9 507\*\*"),
+        raison=(
+            "Obstacle CRLF du checkout (section 6) : ecarts de hachage "
+            "constates sur le clone externe, fait du run d'inventaire."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(integrite_manifeste +9507 fichiers"
+            r"|cloisonnement_reference +0 module\(s\) d'implementation"
+            r"|travail_dans_la_solution +9467 module\(s\) projet)"
+        ),
+        raison=(
+            "Sortie verbatim de l'outil rejouable inventory.py sur le pin "
+            "audite (section 7) : preuve du run, pas un etat de CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"exactement \d{1,6} cellules passent le seuil"),
+        raison=(
+            "« 8 cellules » = cellules de niveau 0 (grille 4^3) dont la "
+            "probabilite predite passe 0,5, sur le jouet de generation de "
+            "voxels du carnet. Mesure du domaine, reproductible (graines "
+            "fixees) et recalculee a chaque execution : ce n'est pas un "
+            "compteur d'artefact du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"une médiane de \d{1,6} cellules"),
+        raison=(
+            "« mediane de 6 cellules » = nombre de cellules fines connues dans "
+            "le voisinage 3x3x3 d'une decision de niveau 0 : quantite mesuree "
+            "par l'experience, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"\d{1,6} cellules en joint et \d{1,6} en séquentiel"),
+        raison=(
+            "« 95 cellules en joint » = voxels generes par l'echantillonneur "
+            "joint, compares au sequentiel et aux formes reelles ; compte "
+            "produit par l'execution du carnet, pas un compteur de carnets."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"\(\d{1,6} à \d{1,6} cellules contre \d{1,6}\)"),
+        raison=(
+            "« 95 a 104 cellules contre 68 » = reprise du meme compte de "
+            "voxels generes dans la conclusion du carnet. La phrase nomme "
+            "l'experience, pas un artefact du depot."
+        ),
+    ),
+    # Grille Sudoku de la serie Z3 (tranche #17636 volet 2) : les « N
+    # cellules » de Z3-18, 02, 05 et du README comptent les cases de la
+    # grille pedagogique (4x4 = 16 cases dont 4 par rangee/colonne/bloc,
+    # 9x9 = 81 cases dont 9 par ligne/colonne/sous-grille, rangee de 4 du
+    # mini-Sudoku 1D du bloc B8) -- le probleme mathematique enseigne, pas
+    # des cellules de carnet. Le « 81 lignes de proprietes » designe la
+    # classe C# explicite du carnet 02 : une propriete par case de la
+    # grille 9x9, fixee par le domaine. Ces nombres ne derivent pas avec
+    # le depot ; les reecrire n'aurait pas de sens.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Python.ipynb"
+        ),
+        motif=re.compile(r"(par \*\*16 cellules\*\*|ces 16 cellules)"),
+        raison=(
+            "« 16 cellules » = cases de la grille Sudoku 4x4 encodant le "
+            "probleme (4x4 = 16) ; deux modeles d'encodage de CES cases "
+            "sont compares. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Python.ipynb"
+        ),
+        motif=re.compile(r"les 4 cellules de chaque (rangée|colonne|bloc)"),
+        raison=(
+            "« 4 cellules » par rangee/colonne/bloc 2x2 = structure de la "
+            "grille Sudoku 4x4 enseignee. Propriete du domaine."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"\(81 cellules\)"),
+        raison=(
+            "« 81 cellules » (noeud mermaid) = cases de la grille Sudoku "
+            "9x9 (9x9 = 81). Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"les 9 cellules de chaque (ligne|colonne|sous-grille)"),
+        raison=(
+            "« 9 cellules » par ligne/colonne/sous-grille 3x3 = structure "
+            "de la grille Sudoku 9x9 enseignee. Propriete du domaine."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"81 lignes de proprietes"),
+        raison=(
+            "« 81 lignes de proprietes » = la classe C# explicite du carnet "
+            "emets une propriete PAR CASE de la grille 9x9 : le compte est "
+            "fixe par le domaine (9x9 = 81), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"parcourt les 81 cellules"),
+        raison=(
+            "La boucle C# demontree parcourt les 81 cases de la grille "
+            "Sudoku 9x9. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"9 lambdas enumerant 9 cellules chacune"),
+        raison=(
+            "« 9 lambdas enumerant 9 cellules chacune » (contraintes de "
+            "ligne et de boite de la grille 9x9) : les deux 9 sont fixes "
+            "par la structure du Sudoku enseigne."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"une \*\*rangee\*\* de 4 cellules"),
+        raison=(
+            "« rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
+            "(palette {1,2,3,4}) : terrain du contraste ForAll/Exists. "
+            "Cellules du probleme, pas du carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "05_Nested_Arrays_2D.ipynb"
+        ),
+        motif=re.compile(r"(les|des) 4 cellules du bloc"),
+        raison=(
+            "« 4 cellules du bloc » = cases d'un bloc 2x2 de la grille "
+            "Sudoku 4x4 demontree. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "05_Nested_Arrays_2D.ipynb"
+        ),
+        motif=re.compile(r"`Z3Methods\.Distinct` sur les 9 cellules"),
+        raison=(
+            "« Distinct sur les 9 cellules » = contrainte sur les cases "
+            "d'une ligne de la grille Sudoku demontree. Cellules de grille."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md",
+        motif=re.compile(r"une rangée de 4 cellules"),
+        raison=(
+            "« une rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
+            "du carnet 02, decrit en miroir ici. Cellules du probleme."
+        ),
+    ),
+    # --- Tranche GenAI/Audio (#17636 volet 2, lane myia-po-2023:CoursIA) ---
+    # Le stock Audio comptait 38 compteurs sur 9 fichiers. 17 ont ete RETIRES
+    # par edition de prose (doctrine #9377 : supprimer la mesure, garder le
+    # predicat) : comptes de cellules et de lignes de code dans 06-3, taille
+    # de dialogue/version dans 01-1 et 02-3, inventaire d'export et de contrat
+    # dans 04-8. Les 21 restants decrivent une propriete du DOMAINE (norme de
+    # sous-titrage broadcast, axe MFCC d'une figure, longueur de section de
+    # paroles, classes de hauteur d'un chromagramme) ou un RECIT D'AUDIT DATE :
+    # les supprimer demanderait de reecrire le propos, ou de falsifier un
+    # constat date. Chemins exacts et motifs etroits, comme les entrees
+    # precedentes ; une occurrence ajoutee ailleurs dans le meme fichier reste
+    # signalee.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/"
+            "02-9-AceStep-Music-Generation.ipynb"
+        ),
+        motif=re.compile(r"Chaque section devrait contenir 2-6 lignes de texte"),
+        raison=(
+            "« 2-6 lignes de texte » = longueur usuelle d'une section de "
+            "paroles (couplet/refrain) en ecriture de chanson, pas un compte "
+            "de lignes de carnet. Regle de metier, elle ne derive pas avec le "
+            "depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+            "04-14-VoiceLeading-Rendu-GenAI.ipynb"
+        ),
+        motif=re.compile(r"donne 12 lignes \(classes\)"),
+        raison=(
+            "« 12 lignes » = les douze classes de hauteur que rend "
+            "librosa.feature.chroma_cqt (l'axe du chromagramme), pas des "
+            "lignes de code. Propriete de l'outil et de la theorie musicale."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+            "04-2-Transcription-Pipeline.ipynb"
+        ),
+        motif=re.compile(r"chaque bloc a 2 lignes maximum"),
+        raison=(
+            "« 2 lignes maximum » = norme de sous-titrage broadcast (42 "
+            "caracteres par ligne, 2 lignes par bloc). Constante du domaine, "
+            "pas un compte de lignes du carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+            "04-2-Transcription-Pipeline.ipynb"
+        ),
+        motif=re.compile(r"2 lignes max"),
+        raison=(
+            "Meme norme broadcast, dans ses trois autres formulations du "
+            "carnet (consigne, indice, bonnes pratiques). Le motif ne couvre "
+            "que la locution « 2 lignes max » : une mesure de carnet ajoutee "
+            "ailleurs dans le fichier reste signalee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"40 lignes"),
+        raison=(
+            "« 40 lignes » = l'axe des 40 coefficients MFCC de la figure "
+            "decrite (0→39), pas des lignes de fichier. Propriete de l'image, "
+            "figee par le SHA de l'asset cite sur la meme entree."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"0 notebook re-exécuté"),
+        raison=(
+            "Bilan d'un audit DATE (G.1, 2026-07-15, c.445) : « 0 notebook "
+            "re-execute » qualifie ce qui a ete fait ce jour-la, avec le "
+            "detail des corrections apportees. Recit au passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\d\d-\d cell\[\d+\]"),
+        raison=(
+            "« 01-3 cell[12] », « 03-1 cell[29] » : le nombre fait partie de "
+            "l'IDENTIFIANT du carnet source (01-3, 02-4, 03-1), suivi d'un "
+            "index de cellule. Faux positif structurel de la classe artifact "
+            "-- ce n'est pas un compte. Chaque reference est de surcroit "
+            "epinglee par le MD5 et la taille en octets cites sur la meme "
+            "ligne (table de provenance c.529)."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"les 3 notebooks référencés"),
+        raison=(
+            "Constat d'audit DATE (c.529, 2026-07-16) : « les 3 notebooks "
+            "references » designe les trois carnets sources de l'audit de "
+            "provenance, nommes dans le fichier. Recit au passe, il ne se "
+            "re-mesure pas."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"les 3 notebooks 01-3 / 02-4 / 03-1"),
+        raison=(
+            "Les trois carnets sources sont NOMMES sur la ligne meme : le "
+            "nombre ne peut pas deriver sans que la ligne change. Provenance "
+            "d'une figure (audio3) dont la cellule source n'est pas committee."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"des 3 notebooks sources"),
+        raison=(
+            "En-tete du scan nbformat de l'audit c.529 : les trois carnets "
+            "sources y sont nommes (01-3, 02-4, 03-1). Meme classe que "
+            "l'entree precedente -- fait d'audit date."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\*\*0 notebook ré-exécuté\*\*"),
+        raison=(
+            "Bilan d'un audit DATE (c.751, 2026-07-22) : « 0 notebook "
+            "re-execute » qualifie le respect de C.3 pendant la migration "
+            "description_visuelle. Recit au passe. Le motif inclut les "
+            "asterisques de gras parce que COUNT_RE les capture dans son "
+            "span, et l'exemption exige une containment STRICTE."
+        ),
+    ),
+    # --- Tranche GenAI/Image MANIFESTs (#17636 volet 3, lane myia-po-2023:CoursIA) ---
+    # Stock Image : 23 compteurs sur 4 MANIFEST.md d'assets/readme. Tous vivent
+    # dans les recits d'audit vision dates (c.482/c.750/c.913/c.928/c.977,
+    # doctrine #5780) ou dans les entrees par figure qu'ils ont figees : les
+    # decomptes decrivent une passe passee verifiee par vision, pas l'etat
+    # courant de la serie. Aucun retrait de prose : supprimer ces bilans
+    # falsifierait le journal d'audit. Un cas est un faux positif de
+    # composition (« DALL-E 3 cellule 14 ») : nom de modele + pointeur.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 6 fichiers restent sur disque\. \*\*0 notebook "
+            r"ré-exécuté\*\* \(C\.3"
+        ),
+        raison=(
+            "Bilan de l'audit vision c.482 (2026-07-14) : les 6 fichiers "
+            "audites un par un, 0 notebook re-execute (C.3 strict). Recit "
+            "d'une passe passee, chaque chiffre nomme un fait de ce jour-la."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"des 6 fichiers \(lecture directe"),
+        raison=(
+            "Re-visions c.750 (2026-07-22) et c.913 (2026-07-24) : les "
+            "6 fichiers relus par vision MiniMax M3. Denombrement figure "
+            "d'une passe d'audit datee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"permutation swappée entre 3 fichiers|des 3 fichiers "
+            r"swappés correspond"
+        ),
+        raison=(
+            "Recits c.750/c.913 : les 3 fichiers dont c.750 a (a tort) "
+            "claime la permutation, refutee par vision firsthand. Fait "
+            "d'audit passe, fige par sa date."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"\*\*0 notebook ré-exécuté\*\* \(C\.3 strict respecté\)"
+        ),
+        raison=(
+            "Formule de cloture des blocs d'audit dates (c.482/c.750/"
+            "c.913) : le « 0 » atteste le respect de C.3 pendant une "
+            "passe passee. Le gras fait partie du span car COUNT_RE "
+            "capture l'asterisk initial."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"\*\*0 fichier PNG/WebP renommé\*\*"),
+        raison=(
+            "Constat c.913 (2026-07-24) : aucun fichier figure renomme "
+            "pendant l'audit. Fait passe figure."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 2 fichiers en byte-identique depuis le même buffer"
+        ),
+        raison=(
+            "Recit c.977 (2026-07-31) : les 2 jumeaux regeneres en "
+            "byte-identique depuis un unique buffer, SHA cite sur la "
+            "ligne. Fait passe figure."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"sur les 2 fichiers \(modèle correctement attribué\)"),
+        raison=(
+            "Meme recit c.977, deuxieme mention des 2 jumeaux : "
+            "attribution du modele verifiee sur les deux. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"vision M3 firsthand des 6 fichiers sur disque"),
+        raison=(
+            "Recit c.913 (2026-07-24) : les 6 fichiers confirmes sur "
+            "disque par vision directe. Denombrement d'audit date."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"comparatif de ratios d'aspect\*\* 4 cellules "
+            r"\(1:1/16:9/9:16/4:3\)"
+        ),
+        raison=(
+            "Les « 4 cellules » sont les quatre cadrans de la grille de "
+            "ratios d'aspect de la figure decrite (1:1/16:9/9:16/4:3) -- "
+            "propriete de l'image figee par son SHA, pas un compte de "
+            "cellules de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 6 fichiers restent sur disque\. \*\*0 notebook "
+            r"ré-exécuté\*\* \(C\.3"
+        ),
+        raison=(
+            "Bilan d'audit vision date de la serie 02-Advanced : 6 "
+            "fichiers passes en revue, 0 notebook re-execute. Recit "
+            "passe, meme classe que l'entree 01-Foundation."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"Toutes les 4 cellules montrent"),
+        raison=(
+            "Les 4 cadrans de la grille de ratios montrent la meme scene "
+            "reduite -- description de la figure, pas un compte de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"mosaïque 4 cellules sous le titre"),
+        raison=(
+            "Contenu reel verifie de la figure : mosaique a 4 cadrans "
+            "de ratios d'aspect. Propriete de l'image figee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"0 PNG régénéré, 0 notebook ré-exécuté \(C\.3 strict\)"),
+        raison=(
+            "Cloture d'un bloc d'audit date : double zero attestant un "
+            "choix editorial byte-safe pendant une passe passee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"\*\*0 notebook ré-exécuté\*\* \(C\.3 strict respecté\)"
+        ),
+        raison=(
+            "Meme formule de cloture d'audit datee pour la serie "
+            "03-Orchestration. Fait passe figure."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"DALL-E 3 cellule 14 output 3"),
+        raison=(
+            "Faux positif de composition : « DALL-E 3 » est un nom de "
+            "modele et « cellule 14 output 3 » un pointeur de provenance "
+            "du notebook source -- le span « 3 cellule » n'est pas une "
+            "mesure de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 2 fichiers en byte-identique depuis le même buffer"
+        ),
+        raison=(
+            "Recit c.977 (2026-07-31) sur le jumeau racine : les 2 "
+            "fichiers regeneres byte-identiques, SHA cite. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"sur les 2 fichiers \(modèle correctement attribué\)"),
+        raison=(
+            "Meme recit c.977, attribution du modele sur les 2 jumeaux. "
+            "Fait passe figure."
+        ),
+    ),
+    # Parametre DEFINITOIRE de l'enonce de l'exercice exact-cover de
+    # Search-08 (review Hermes #28088, 22/11) : la grille de l'exercice EST
+    # 3x5 par construction -- le pavage par trominos se definit sur ces
+    # dimensions. Meme classe que le canon de Gosper ci-dessus : propriete
+    # du probleme enonce, pas un compteur d'etat du depot qui derive.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-08-DancingLinks.ipynb"
+        ),
+        motif=re.compile(r"grille de 3 lignes par 5 colonnes"),
+        raison=(
+            "« 3 lignes par 5 colonnes » = dimensions de la grille de "
+            "l'exercice de couverture exacte (enonce) : parametre du probleme, "
+            "pas une mesure qui derive avec le depot. Les dimensions vivent "
+            "dans l'enonce ET dans la cellule de code de l'exercice."
+        ),
+    ),
+    # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux exemptions posees
+    # initialement couvraient des ELISIONS ecrites a la main, pas des sorties
+    # d'outil (review ai-01 du 2026-11-20 : ni le script de scan ni l'organe
+    # de cache n'impriment une elision). Elles sont RETIREES depuis que le
+    # rapport cite les sorties INTEGRALES des deux outils en blocs verbatim :
+    # un bloc verbatim complet ne porte plus de compte fait a la main, et les
+    # compteurs d'etat du depot restent surveilles.
 )
 
 # ----------------------------------------------------------------------------
@@ -227,7 +1361,7 @@ SEED_RE = re.compile(
 # ne figure que sur demande explicite ``--class structural``, en banniere LEGITIME.
 #
 # Note fix (#9434 angle-mort t1) : la forme « 2.78e24x » (notation scientifique
-# SUIVIE du suffixe 'x', PR #9427 App-11-Picross) n'etait PAS attrapee par
+# SUIVIE du suffixe 'x', PR #9427 App-11-Picross-Python) n'etait PAS attrapee par
 # l'alternance originale ``(?:e\d+|x)`` : apres avoir consomme « e24 », le
 # ``\b`` echouait car le 'x' suivant est un caractere mot. La branche est
 # desormais ``(?:e\d+x?|x)`` : la notation scientifique peut etre suivie d'un
@@ -361,7 +1495,24 @@ def _notebook_is_seeded(nb_path: Path) -> bool:
     return False
 
 
-def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple[str, str, str]]:
+def _exempt_spans(path: str, line: str) -> list[tuple[int, int]]:
+    """Spans de la ligne couverts par une exemption motivee propre a ce fichier.
+
+    Le span est ce qui rend l'exemption BORNEE : elle ne protege pas le
+    fichier, elle protege une portion de ligne. Un compteur voisin -- meme
+    ligne, meme nom d'artefact -- reste flague.
+    """
+    spans: list[tuple[int, int]] = []
+    for exemption in ARTIFACT_EXEMPTIONS:
+        if exemption.path != path:
+            continue
+        spans.extend(m.span() for m in exemption.motif.finditer(line))
+    return spans
+
+
+def _findings_in_text(
+    text: str, location: str, classes: set[str], path: str | None = None
+) -> list[tuple[str, str, str]]:
     """Rend [(location, classe, snippet)] pour les classes demandees.
 
     La ligne est l'unite de co-occurrence pour stochastic (mot-clef + nombre sur
@@ -369,7 +1520,12 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
     La ligne est aussi l'unite d'exemption pacing (cf STUDENT_PACING_RE) : un
     « (Duree) (estimée) : X minutes » est TN pedagogique, jamais un compteur
     machine ; la ligne entiere est exoneree de la classe ``machine``.
+
+    ``path`` (defaut : la partie fichier de ``location``, qui porte un suffixe
+    `` MD[<i>]`` pour une cellule de carnet) selectionne les exemptions motivees
+    de la classe ``artifact`` (cf ARTIFACT_EXEMPTIONS).
     """
+    target = location.split(" MD[")[0] if path is None else path
     out: list[tuple[str, str, str]] = []
     for line in text.splitlines():
         if any(m in line for m in GENERATED_MARKERS):
@@ -380,7 +1536,12 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
         # actives : un « ~50 minutes » colle a un artefact (lignes) reste flag.
         is_pacing = STUDENT_PACING_RE.search(line) is not None
         if "artifact" in classes:
+            exempt = _exempt_spans(target, line)
             for m in COUNT_RE.finditer(line):
+                if _is_domain_model_quantity(line, m):
+                    continue
+                if any(start <= m.start() and m.end() <= end for start, end in exempt):
+                    continue
                 out.append((location, "artifact", m.group(0).strip()))
         if "machine" in classes and not is_pacing:
             for m in MACHINE_RE.finditer(line):
@@ -397,13 +1558,38 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
     return out
 
 
-def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
+# Racine du depot PORTANT cet organe : les exemptions de ``ARTIFACT_EXEMPTIONS``
+# sont ecrites depuis cette racine-la, pas depuis le perimetre scanne (#24587).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _scan_rel(path: Path, root: Path, repo_root: Path | None) -> str:
+    """Chemin rendu par le scan : relatif au DEPOT quand il y est rattachable.
+
+    Les exemptions declarees par ``ArtifactExemption.path`` sont ecrites depuis la
+    racine du depot. Sous ``--root <sous-arbre>``, un chemin relatif a la racine
+    *scannee* n'apparie donc plus aucune entree : l'exemption vivante ne
+    s'appliquait plus, et le compteur pourtant arbitre etait re-signale (#24587).
+    Le chemin rendu est donc celui du depot, et le chemin relatif au scan ne sert
+    que de repli pour un arbre qui n'appartient pas au depot (fixture, copie).
+    """
+    if repo_root is not None and repo_root != root:
+        try:
+            return path.resolve().relative_to(repo_root).as_posix()
+        except (OSError, ValueError):
+            pass
+    return path.relative_to(root).as_posix()
+
+
+def scan_all(
+    root: Path, classes: set[str], repo_root: Path | None = None
+) -> list[tuple[str, str, str]]:
     findings: list[tuple[str, str, str]] = []
 
     for nb in root.rglob("*.ipynb"):
         if _skipped(nb):
             continue
-        rel = nb.relative_to(root).as_posix()
+        rel = _scan_rel(nb, root, repo_root)
         # stochastic : un carnet seme est reproductible -> on ne signale pas
         # cette classe pour lui (les autres classes restent actives).
         eff_classes = set(classes)
@@ -415,7 +1601,7 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
     for md in root.rglob("*.md"):
         if _skipped(md):
             continue
-        rel = md.relative_to(root).as_posix()
+        rel = _scan_rel(md, root, repo_root)
         try:
             text = md.read_text(encoding="utf-8")
         except OSError:
@@ -518,12 +1704,18 @@ class DiffUnreadable(RuntimeError):
 def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
     """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer.
 
+    ``--ignore-cr-at-eol`` (#25090) : un diff EOL-pur (renormalisation
+    CRLF -> LF d'un fichier existant) reecrit chaque ligne du fichier, et
+    git les rend toutes comme ajoutees -- le garde jugerait alors des
+    compteurs PRE-EXISTANTS comme s'ils venaient d'etre ecrits. Le drapeau
+    rend le diff neutre en contenu invisible, ce qu'il est.
+
     Leve :class:`DiffUnreadable` quand git ne resout pas la plage -- l'echec
     d'infrastructure ne se confond pas avec un diff propre.
     """
     try:
         proc = subprocess.run(
-            ["git", "diff", "--unified=0", diff_range],
+            ["git", "diff", "--unified=0", "--ignore-cr-at-eol", diff_range],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=180, check=False,
         )
@@ -680,6 +1872,85 @@ def _emit_legacy(findings: list[tuple[str, str, str]], strict: bool) -> int:
     return 1 if strict else 0
 
 
+def _exemption_audit(
+    root: Path, repo_root: Path | None = None
+) -> tuple[list[tuple[ArtifactExemption, int]], list[ArtifactExemption]]:
+    """Rend (exemptions vivantes avec le nombre de compteurs couverts, perimees).
+
+    « Vivante » veut dire : le motif matche encore ET il couvre au moins un
+    compteur que COUNT_RE aurait flague. Un motif qui matche sans couvrir de
+    compteur ne protege rien non plus : il est perime au meme titre.
+
+    ``root`` est le perimetre SCANNE, pas forcement le depot. Sous
+    ``--root <sous-arbre>``, ``root / exemption.path`` ne designe aucun fichier
+    de l'allowlist (les chemins sont ecrits depuis la racine du depot) : les 12
+    entrees se lisaient perimees, avec pour consigne de les retirer -- 100 % de
+    faux positifs (#24587). Une declaration se juge donc contre le fichier
+    qu'elle NOMME : ``root`` d'abord (depot entier, arbre de test), puis
+    ``repo_root`` quand le scan est borne. Un fichier introuvable dans les deux
+    reste perime : c'est la seule peremption que cet audit puisse conclure.
+    """
+    live: list[tuple[ArtifactExemption, int]] = []
+    stale: list[ArtifactExemption] = []
+    bases = [root] if repo_root in (None, root) else [root, repo_root]
+    for exemption in ARTIFACT_EXEMPTIONS:
+        text: str | None = None
+        for base in bases:
+            try:
+                text = (base / exemption.path).read_text(encoding="utf-8")
+            except OSError:
+                continue
+            break
+        if text is None:
+            stale.append(exemption)
+            continue
+        covered = 0
+        for line in text.splitlines():
+            spans = [m.span() for m in exemption.motif.finditer(line)]
+            if not spans:
+                continue
+            covered += sum(
+                1
+                for m in COUNT_RE.finditer(line)
+                if any(start <= m.start() and m.end() <= end for start, end in spans)
+            )
+        if covered:
+            live.append((exemption, covered))
+        else:
+            stale.append(exemption)
+    return live, stale
+
+
+def _report_exemptions(root: Path, repo_root: Path | None = None) -> None:
+    """Restitue l'allowlist en ``--all`` : ce qu'elle couvre, et ce qui est mort.
+
+    Jamais un echec : le stock ne fait rougir aucune PR (#17636). Ce qui est
+    rendu visible, c'est la DECISION -- et son eventuelle peremption, qui sans
+    cette ligne se lirait comme une exemption encore vivante. La peremption se
+    juge contre le fichier nomme, jamais contre le perimetre scanne (#24587).
+    """
+    if not ARTIFACT_EXEMPTIONS:
+        return
+    live, stale = _exemption_audit(root, repo_root)
+    if live:
+        total = sum(n for _exemption, n in live)
+        print(
+            f"\n[ALLOWLIST] {len(live)} exemption(s) motivee(s) de la classe artifact, "
+            f"{total} compteur(s) couvert(s) :"
+        )
+        for exemption, covered in live:
+            print(f"  {exemption.path}  ({covered})  {exemption.motif.pattern}")
+            print(f"    pourquoi : {exemption.raison}")
+    if stale:
+        print(
+            f"\n[ALLOWLIST-PERIMEE] {len(stale)} entree(s) ne couvre(nt) plus aucun "
+            f"compteur -- retirer l'entree : une decision morte se lit comme une "
+            f"decision vivante."
+        )
+        for exemption in stale:
+            print(f"  {exemption.path}  {exemption.motif.pattern}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
@@ -698,9 +1969,10 @@ def main() -> int:
     args = ap.parse_args()
 
     classes, structural_only = _resolve_classes(args.klass)
+    scan_root = Path(args.root).resolve()
 
     if args.all:
-        findings = scan_all(Path(args.root).resolve(), classes)
+        findings = scan_all(scan_root, classes, repo_root=_REPO_ROOT)
     else:
         try:
             findings = scan_diff(args.diff, classes)
@@ -714,8 +1986,16 @@ def main() -> int:
 
     # Format legacy exact pour la classe artifact seule (contrat CI : --diff sans --class).
     if args.klass == "artifact":
-        return _emit_legacy(findings, args.strict)
-    return _emit_grouped(findings, args.strict, structural_only)
+        rc = _emit_legacy(findings, args.strict)
+    else:
+        rc = _emit_grouped(findings, args.strict, structural_only)
+
+    # L'allowlist ne se relit qu'en inventaire : en mode --diff, un fichier non
+    # touche par la PR n'est pas "perime", il est simplement hors champ.
+    if args.all and "artifact" in classes:
+        _report_exemptions(scan_root, repo_root=_REPO_ROOT)
+
+    return rc
 
 
 if __name__ == "__main__":

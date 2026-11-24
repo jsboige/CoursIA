@@ -17,6 +17,12 @@ services:
     ports:
       - "127.0.0.1:${TTS_GATEWAY_PORT:-8196}:8000"
 
+    # Maintenance#303 bounds: router only, no model in-process.
+    # Measured 2026-11-07: 57 MiB / 5 PIDs.
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 128
+
     environment:
       - PYTHONUNBUFFERED=1
       - KOKORO_SERVICE_URL=http://tts-kokoro:8000
@@ -66,6 +72,14 @@ services:
             - driver: nvidia
               device_ids: ['${KOKORO_GPU_ID:-1}']
               capabilities: [gpu]
+
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 2g (swap disabled),
+    # pids_limit 128. Measured 2026-11-07: 280 MiB idle, but 549 MiB right
+    # after a recreate (model load) -- 1g sat at 54% and would have been one
+    # generation burst away from an OOM-kill, so the ceiling is 2g.
+    mem_limit: 2g
+    memswap_limit: 2g
+    pids_limit: 128
 
     volumes:
       - type: bind
@@ -123,6 +137,13 @@ services:
             - driver: nvidia
               device_ids: ['${TADA_GPU_ID:-1}']
               capabilities: [gpu]
+
+    # Maintenance#303 bounds: 3B model, measured 316 MiB / 44 PIDs in steady
+    # state; 2g covers the on-demand load path (PRELOAD_MODEL=false) without
+    # letting the model balloon the host.
+    mem_limit: 2g
+    memswap_limit: 2g
+    pids_limit: 128
 
     volumes:
       - type: bind
@@ -185,6 +206,12 @@ services:
             - driver: nvidia
               device_ids: ['${QWEN_GPU_ID:-1}']
               capabilities: [gpu]
+
+    # Maintenance#303 bounds: vLLM-Omni engine, measured 3.34 GiB / 267 PIDs;
+    # 6g + 512 PIDs keep ~2x headroom for compilation and request bursts.
+    mem_limit: 6g
+    memswap_limit: 6g
+    pids_limit: 512
 
     volumes:
       - type: bind

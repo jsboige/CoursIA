@@ -207,7 +207,7 @@
 
 
 # + SymbolicAI/Planners (po-2023 c.836, 9 paires Python<->C# : Intro/PDDL/State-Space/Fast-Downward/
-#   Heuristics/Domains/OR-Tools/Temporal/HTN). Voir #8057. Planners-5b-Lean-Relaxation = Python-only
+#   Heuristics/Domains/OR-Tools/Temporal/HTN). Voir #8057. Planners-05b-Lean-Relaxation-Lean = Python-only
 #   (relaxation Lean, pas de jumeau C#) -> exclu. Planners-10/11/12 = Python-only (neuro-symbolique)
 #   -> exclus. Asymetrie engine : Python invoque des solveurs SOTA externes (unified-planning,
 #   fast-downward Docker, OR-Tools CP-SAT) ; C# = reimplementation from-scratch BCL .NET (0 NuGet),

@@ -48,7 +48,7 @@ Fenêtre principale du **2015-01-01 au 2026-06-30** (série journalière de 4 19
 ## Sources
 
 - **Article** : Derek Melchin, *The MAX Effect with VIX-Based Leverage Scaling*, QuantConnect Research 20886 (2026-06-12), <https://www.quantconnect.com/research/20886/the-max-effect-with-vix-based-leverage-scaling/>
-- **Paper primaire** : Turan G. Bali, Nusret Cakici, Robert F. Whitelaw, *Maxing out: Stocks as lotteries and the cross-section of expected returns*, Journal of Financial Economics 99 (2011) 427–446. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2011 - Bali Cakici Whitelaw - Maxing Out Stocks as Lotteries and the Cross-Section of Expected Returns (JFE 99).pdf` (première page vérifiée).
+- **Paper primaire** : Turan G. Bali, Nusret Cakici, Robert F. Whitelaw, *Maxing out: Stocks as lotteries and the cross-section of expected returns*, Journal of Financial Economics 99 (2011) 427–446. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2011 - Bali Cakici Whitelaw - Maxing Out Stocks as Lotteries and the Cross-Section of Expected Returns (JFE 99).pdf` (première page vérifiée).
 - **Ce que le paper primaire établit.** L'anomalie est mesurée en **coupe** (portefeuilles triés par MAX, long le bas / short le haut, 1963–2007) : le décile le moins « loterie » bat le plus « loterie » d'environ 7,1 % par an en brut. Le paper ne mesure pas le **côté long seul, équi-pondéré, sur l'univers liquide de l'article, avec un overlay de levier VIX** — c'est l'ajout de l'article, et c'est ce que ce port mesure.
 
 ## Mesure (#22290)

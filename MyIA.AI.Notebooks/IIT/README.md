@@ -1,4 +1,6 @@
-# IIT - Integrated Information Theory
+---
+pagetitle: "IIT - Integrated Information Theory"
+---
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
 
@@ -11,6 +13,14 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 ## À qui s'adresse cette série
 
 Étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
+
+## Comment lire ce README — découverte
+
+Trois vitesses, selon d'où vous arrivez :
+
+- **En découverte** (la conscience comme quantité calculable, sans prérequis au-delà de Python) : commencez par [IIT-01](IIT-01-IntroToPyPhi-Python.ipynb) — le réseau XOR à 3 nœuds, le premier Φ et la Cause-Effect Structure, construits à la main — puis, si le formalisme vous a pris, [IIT-02](IIT-02-AdvancedTopics-Python.ipynb) démonte la machine (bipartitions MIP, MICE, big Φ).
+- **En licence / master** (un cours à suivre) : le parcours linéaire du notebook 1 au notebook 9 — les fondements PyPhi (1 à 3), la frontière et les théories rivales (4 à 6), puis l'escalier Lean (7 à 9) qui réénonce la controverse en théorèmes. La table [Objectifs → Parcours](#parcours-recommandés) décline ce fil par envie.
+- **En recherche** (une question précise) : entrez par la porte qui la porte — la frontière du système ([IIT-04](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb)), la comparaison exécutable des théories ([IIT-05](IIT-05-Lentilles-et-Dissociations-Python.ipynb)), l'objection Aaronson ([IIT-06](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb)) ou sa moitié formelle ([IIT-09](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb)) — la table [Notebooks](#notebooks) relie chacun à sa position.
 
 ## Objectifs d'apprentissage
 
@@ -26,7 +36,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 ## Notebooks
 
-| # | Notebook | Contenu | Durée |
+| # | Notebook | Ce qu'on y apprend | Durée |
 |---|----------|---------|-------|
 | 1 | [IIT-01-IntroToPyPhi-Python](IIT-01-IntroToPyPhi-Python.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
 | 2 | [IIT-02-AdvancedTopics-Python](IIT-02-AdvancedTopics-Python.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
@@ -111,6 +121,15 @@ Le cinquième notebook quitte la mesure de $\Phi$ pour la **comparaison des thé
 **Phase 6 : L'objet qui a mordu IIT (~90 min, notebook 6)**
 
 Le sixième notebook exécute l'échange Aaronson/Tononi de mai 2014 des deux côtés de la frontière entre formalisations. En jambe $\Phi_{DM}$ (l'implémentation NumPy de la définition visée par l'objection, sur corps finis $\mathbb{F}_p$) : la matrice de Vandermonde rend $\Phi$ **indéfini** (égalité normalisée maximale sur toutes les bipartitions), le « hack » W obtient son minimum unique et un $\Phi = (n/2)\log_2 p$ — la moitié du contenu informationnel total —, l'identité mesure 0, la croissance est linéaire. En jambe PyPhi ($\Phi$ d'IIT 3.0) : la grille de Tononi à portes majorité mesure positivement à l'état tout éteint (le scénario assumé existe), la tendance ligne < anneau < grille soutient l'argument du mur et de la corde à petite échelle, et la grille **XOR** porte le $\Phi$ maximal de la table pendant que le réseau « riche » hétérogène mesure zéro — la dissociation intégration/richesse comportementale, mesurée dans IIT 3.0 lui-même. Les deux positions sont citées avec leurs grades (l'essai firsthand de Tononi, archivé au gisement, y corrige même le souvenir de Porto Rico rapporté par Aaronson) ; les 4 exercices font varier corps, permutations, fermeture de boucle et bruit.
+
+## Approfondissements — au-delà du parcours principal
+
+Quatre directions que le parcours linéaire ne fait que traverser, chacune avec sa porte d'entrée déjà dans ce README :
+
+- **La controverse Aaronson, en trois jambes.** L'échange de mai 2014 se lit d'abord **mesuré** — [IIT-06](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) exécute Φ_DM sur corps finis (Vandermonde, le hack W) et PyPhi (grille XOR au Φ maximal, réseau « riche » à Φ nul) — puis **énoncé** — [IIT-08b](IIT-08b-Parite-et-Broadcast-Lean.ipynb) porte les théorèmes B (intégré pour toute coupe) et C (dynamique triviale) — puis **compté** — [IIT-09](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb) mesure le défaut cardinal par énumération et réunit le couple sur le même objet. Le lake [`iit_lean`](iit_lean/README.md) en est la source formelle.
+- **Le débat empirique des théories rivales.** Les six lentilles d'[IIT-05](IIT-05-Lentilles-et-Dissociations-Python.ipynb) opèrent sur substrat jouet ; le pont falsifiable IIT ↔ GWT l'exécute sur traces réelles de LLM : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) conclut à une dissociation — pics d'intégration et événements d'ignition workspace non co-localisés sur S4. La section « Portée scientifique et débats » ci-dessous cadre le même débat côté théorie.
+- **L'échelle et l'émergence.** [IIT-03](IIT-03-CoarseGrainingMacroPhi-Python.ipynb) examine honnêtement la *causal emergence* de Hoel — quand et pourquoi le Φ macro ne dépasse le Φ micro que sur des réseaux probabilistes ; [IIT-04](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) déplace la question vers la frontière (Φ vs EI selon le découpage du même substrat) ; l'annexe « Ponts causaux » relie le même geste à Pearl : l'information effective se mesure sous distribution d'intervention, c'est-à-dire sous `do`.
+- **La moitié formelle, pour qui veut les théorèmes.** L'escalier Lean se monte marche par marche — la coupe et le verdict relationnel ([IIT-07](IIT-07-Integration-Par-Coupes-Lean.ipynb)), la parité et le broadcast ([IIT-08](IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb), ou sa variante [IIT-08b](IIT-08b-Parite-et-Broadcast-Lean.ipynb) qui porte les théorèmes), le capstone ([IIT-09](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb)) — sans Mathlib, kernel `lean4-wsl`.
 
 ## Prérequis
 
@@ -269,7 +288,7 @@ flowchart TD
 
 ### IIT-07-Integration-Par-Coupes-Lean.ipynb
 
-Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -284,7 +303,7 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moit
 
 ### IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb
 
-Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20414, moitié formelle de l'objection Aaronson, Epic #16781 ; l'issue #20649 couvre la variante 8b ci-dessous) — kernel `lean4-wsl`, sans Mathlib.
+Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -299,7 +318,7 @@ Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20414, m
 
 ### IIT-08b-Parite-et-Broadcast-Lean.ipynb
 
-Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20649 — ouverte sous le titre « IIT-08 » avant l'arbitrage de nommage qui a fixé 08 = parité de bout en bout et 08b = Parite-et-Broadcast ; moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
+Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
 
 | Section | Contenu |
 |---------|---------|
@@ -314,7 +333,7 @@ Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/
 
 ### IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb
 
-Marche 3 — le capstone de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20652, escalier #20414, veine 5 de l'Epic #16781) : les deux premières marches assemblées en un seul énoncé — un système intégré au sens du proxy **pour toute coupe** (théorème B) dont la dynamique est triviale (théorème C), sur le **même** objet. Kernel `lean4-wsl`, sans Mathlib.
+Marche 3 — le capstone de l'escalier du lake [`iit_lean`](iit_lean/README.md) : les deux premières marches assemblées en un seul énoncé — un système intégré au sens du proxy **pour toute coupe** (théorème B) dont la dynamique est triviale (théorème C), sur le **même** objet. Kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -444,7 +463,7 @@ IIT/
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
 │   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-39) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
-│   ├── ict/                    # Package Python autonome (simulations + mesures, 88 modules — pip install -e .)
+│   ├── ict/                    # Package Python autonome (simulations + mesures — pip install -e .)
 │   ├── assets/                 # Figures in-situ du README + MANIFEST de provenance
 │   ├── runs/                   # Artefacts d'exécution (ex. scale-up GRPO d'ICT-25)
 │   ├── scripts/                # Extraction des traces GPU (SAE, J-Lens) et scripts pilotes
@@ -486,7 +505,7 @@ Elle progresse en **sept strates** — le **tri auto-organisé** transparent (st
 réversibilisation outillée (strate 4, ICT-14 à ICT-20, prolongée par le banc de recollement ICT-34),
 et le **LLM comme substrat** — SAE, persona, workspace, inoculation RL (strate 5, ICT-21 à ICT-25,
 prolongée par ICT-35 à ICT-39). Les strates 6 (**argumentation**) et 7 (**freebits d'ordre 2**) sont
-**cadrées et non livrées**. Deux objets relèvent de l'**axe transverse** et non de l'échelle des
+**cadrées et non rédigées**. Deux objets relèvent de l'**axe transverse** et non de l'échelle des
 strates (arbitrage [#13908](https://github.com/jsboige/CoursIA/issues/13908)) : le **socle théorique**
 distillant la sémiophysique de René Thom, et la **coopération comme opérateur** — conventions,
 invention de symboles, adoption collective, inoculation de concept (**dimension D2**, cinq
@@ -495,13 +514,13 @@ expériences ICT-26 à ICT-30).
 Chaque strate est **complétée par des notebooks de raffinement / extension** (suffixes lettrés
 `b`/`c`/`d`… ou titres non-numérotés) qui approfondissent un aspect ou appliquent l'instrumentation
 d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
-[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb)
+[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15-IntegratedComplexity/ICT-15b-SensitivityCanonicity-Python.ipynb)
 (sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
-[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
+[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
-[ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
+[ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
-et al. 2022), et [ICT-Argumentation-BeliefTrajectories](ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb)
+et al. 2022), et [ICT-Argumentation-BeliefTrajectories-Python](ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb)
 (Phase B du zoo ICT — application de l'instrumentation Φ-trajectoires d'ICT-1 aux trajectoires de croyances
 Argumentum 5 classes, banc T2 multilingue). La **liste complète** de ces raffinements (qui s'enrichit à
 mesure que la série de recherche progresse) figure dans le [README dédié d'ICT](ICT-Series/README.md).
@@ -510,8 +529,8 @@ La strate 5 est désormais **ancrée sur un substrat réel** : ICT-21 extrait de
 (*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` réalise
 un **pont falsifiable IIT ↔ GWT** — mesurer un « espace de travail global »
 (*ignition*, *broadcast*) sur les mêmes traces que celles où l'on mesure l'intégration. La
-confrontation empirique est livrée : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (Gates 22-23,
-#5875) conclut à une **dissociation** — les deux théories rivales de la section « Portée scientifique »
+confrontation empirique est établie dans [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (Gates 22-23,
+#5875), qui conclut à une **dissociation** — les deux théories rivales de la section « Portée scientifique »
 ci-dessus ne co-localisent pas leurs prédictions sur S4 (négatif honnête).
 
 ICT vit dans le sous-répertoire [`ICT-Series/`](ICT-Series/README.md), placé sous IIT pour respecter
@@ -547,7 +566,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 | **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
 | **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-05-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
-| **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence-Python](ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
+| **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence-Python](ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
 **Le pont le plus profond — ICT-5 lève le do-calculus au niveau des échelles.** Dans la théorie
 de l'émergence causale (Hoel, *Causal Emergence 2.0* ; Jansma & Hoel, *Engineering Emergence*,
@@ -565,7 +584,7 @@ causal que le micro — l'`effectiveness` monte sous coarse-graining.
 nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-05-Causal-Inference.ipynb)
 message passing, [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
-([ICT-5](ICT-Series/ICT-05-CausalEmergence-Python.ipynb)) où le même `do` mesure le travail causal **à travers les
+([ICT-5](ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)) où le même `do` mesure le travail causal **à travers les
 échelles**.
 
 **Articles d'ancrage** : Pearl, *Causality* (2009) ; Hoel, *Causal Emergence 2.0*
@@ -583,7 +602,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 106
-breakdown: ICT-Series=96, root=10
-maturity: BETA=85, DRAFT=17, ALPHA=4
+pedagogical_count: 117
+breakdown: ICT-Series=107, root=10
+maturity: BETA=117
 -->

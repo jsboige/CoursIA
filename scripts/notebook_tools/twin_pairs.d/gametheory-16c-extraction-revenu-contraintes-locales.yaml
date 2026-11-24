@@ -1,0 +1,10 @@
+- name: "GameTheory-16c Extraction Revenu Contraintes Locales"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Énumération pédagogique exacte : itertools et BCL .NET, mêmes mécanismes et mêmes vérificateurs locaux explicites."
+  known_differences:
+    - '2026-11-21 (myia-ai-01:CoursIA-2, #27793) : les deux cotes ont recu un lien de navigation vers le jumeau Rust (une seule ligne markdown, le lien [jumeau Rust] dans la ligne de navigation de chaque carnet). Portee du diff : 0 cellule de code touchee, 0 sortie reecrite, aucune re-execution due ; la semantique calculee des deux cotes est inchangee. Attestation emise apres la modification.'
+    - "Représentation dictionnaires Python et tableaux C# ; mêmes comptes entiers."

@@ -158,3 +158,63 @@ def test_main_quick_ecrit_les_deux_artefacts(tmp_path):
     assert len(d1["niveaux"]) >= 1
     d2 = json.loads(art2.read_text(encoding="utf-8"))
     assert d2["appariement"]["matrices_exact"] is True
+
+
+def test_positive_control_additivity_gap():
+    """Controle positif de l'instrument : le gap PUISSE etre negatif (et nul si disjoint).
+
+    C'est la piece manquante de la 3e passe : un temoin oracle a geometrie connue
+    dont on EXIGE le gap negatif quand les sous-espaces de lecture se recouvrent,
+    et nul quand ils sont additifs. Sans lui, le +0.000 du modele entraine est
+    muet (indiscernable d'une metrique a dynamique nulle).
+    """
+    res = fgt.positive_control_additivity_gap(overlaps=(0, 1, 2))
+    # temoin disjoint : gap = 0 (lecture additive)
+    assert res["cas"]["0"]["additivity_gap"] == pytest.approx(0.0)
+    # temoins entrelaces : gap strictement negatif, de magnitude -overlap
+    assert res["cas"]["1"]["additivity_gap"] == pytest.approx(-1.0)
+    assert res["cas"]["2"]["additivity_gap"] == pytest.approx(-2.0)
+    # verrous globaux
+    assert res["gap_negatif"] is True
+    assert res["gap_nul_disjoint"] is True
+    assert res["coherent"] is True
+    assert res["instrument_vivant"] is True
+
+
+def test_positive_control_deterministe():
+    """Meme graine -> meme mesure : le controle est reproductible (pas une peche)."""
+    a = fgt.positive_control_additivity_gap(overlaps=(0, 1, 2), seed=7)
+    b = fgt.positive_control_additivity_gap(overlaps=(0, 1, 2), seed=7)
+    for ov in ("0", "1", "2"):
+        assert a["cas"][ov]["additivity_gap"] == b["cas"][ov]["additivity_gap"]
+    assert a["instrument_vivant"] is b["instrument_vivant"] is True
+
+
+def test_verdict_critere_2_porte_le_controle_positif():
+    """Le verdict du critere 2 porte le controle positif : un gap nul n'est interpretable que grace a lui.
+
+    Le modele entraine rend un gap nul (dans la bande [0 ; 0]) -> non satisfait,
+    MAIS le verdict porte le controle positif qui prouve que l'instrument aurait
+    rendu un gap NEGATIF si le modele avait entrelace les deux lectures. Le zero
+    est donc une vraie lecture additive, pas une metrique muette.
+    """
+    rapport_nul = {
+        "additivity_gap": 0.0,
+        "overlap_energy": 0.1,
+        "dim_a": 1.0,
+        "dim_b": 1.0,
+        "dim_union": 2.0,
+    }
+    resultats = {
+        "conditionnel": {
+            "par_seed": {0: {"rapport": rapport_nul}},
+            "temoin": {"additivity_gap": {"p05": 0.0, "p95": 0.0, "n": 6.0}},
+        }
+    }
+    appariement = {"marginales_exactes": True, "matrices_exact": True}
+    v = freg.verdict_critere_2(resultats, appariement)
+    assert "controle_positif" in v
+    assert v["controle_positif"]["instrument_vivant"] is True
+    # le zero mesure reste un non-satisfait (gap nul), pas un satisfait
+    assert v["bras"]["conditionnel"]["satisfait"] is False
+

@@ -1,0 +1,8 @@
+date: '2026-11-19'
+by: myia-po-2027:CoursIA-2
+python_sha: 3b1cc6ee2a84f8d96e44971c9408dce77ab708bb
+csharp_sha: 63c067237257c99800c8880e8cd893b23328cb7b
+content_python_sha: 4d8ae29039675698b2635ec59646360b9360c3a4113b6cbb5304ab2ed1cd7d50
+content_csharp_sha: d8e75c2405d7ef375e9d5dd8be7da6af84c24404ee3bfc9202bc37598d067719
+known_differences:
+  - "§3bis (balayage d'admissibilité état par état : BFS de référence, distinction profondeur épuisée / violation, cas de contrôle hors borne) ajouté côté Python seulement ; non porté au jumeau C# — asymétrie pédagogique assumée (review #27362)"

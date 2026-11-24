@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/Probas/PyMC/` (programmation probabiliste bayésienne — PyMC, **Python**) |
-| Notebooks source | **19** (PyMC-1 installation → PyMC-19, suite pédagogique progressive) |
-| Cellules extraites | **567** (markdown + code tous kernels confondus, nbformat canonique, id stable) |
-| Taille CSV | ~0,6 MB (567 enregistrements × 21 colonnes) |
+| Notebooks source | **19 au seed 2026-07-11** (PyMC-1 installation → PyMC-19, suite pédagogique progressive — le compte courant vit dans le CSV) |
+| Cellules extraites | **567 au seed 2026-07-11** (markdown + code tous kernels confondus, nbformat canonique, id stable — compte courant mesurable dans `probas_pymc.csv`) |
+| Taille CSV | ~0,6 MB au seed (567 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`probas_pymc.csv`](probas_pymc.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-11 |
@@ -17,7 +17,7 @@
 
 T0 (catalogue CSV) **LIVRÉ** : le CSV seed `probas_pymc.csv` capture la substance canonique de la série au commit `04f8edf91`. Chaque enregistrement = `notebook, cell_id, cell_type, src_lang, src_hash, text_fr, text_<7 langues>, hash_fr, hash_<7 hash>`. Les hashes `sha256-16` sur le texte normalisé (rstrip lines + strip newlines) détectent les dérives cellule-par-cellule.
 
-T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/Probas/PyMC/ -o translations/probas-pymc/probas_pymc.csv --src-lang fr --repo-root .`. Script déterministe (re-run vérifié). Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés) via `endswith`. 567 cellules extraites des 19 notebooks. L'extracteur est agnostique au kernel (traite `markdown` + `code`) — pour les cellules code, seuls les commentaires sont à traduire (convention #4957 §1).
+T1 (extraction) **LIVRÉ** : `python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/Probas/PyMC/ -o translations/probas-pymc/probas_pymc.csv --src-lang fr --repo-root .`. Script déterministe (re-run vérifié). Exclut `_output.ipynb` (Papermill) et `_agent.ipynb` (auto-générés) via `endswith`. toutes les cellules de la série extraites (le compte vit dans le CSV, pas dans cette prose). L'extracteur est agnostique au kernel (traite `markdown` + `code`) — pour les cellules code, seuls les commentaires sont à traduire (convention #4957 §1).
 
 T2 (drift detector) **LIVRÉ** : `python scripts/translation/check_translation_sync.py translations/probas-pymc/probas_pymc.csv` → `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYNC round-trip). Workflow CI `.github/workflows/translation-drift.yml` non-bloquant read-only déclenche ce check sur PR paths `translations/**` + `MyIA.AI.Notebooks/**/*.ipynb` + `scripts/translation/**`.
 

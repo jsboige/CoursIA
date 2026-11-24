@@ -104,6 +104,18 @@ def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
 
 
+def _scrub_machine_paths(text: str) -> str:
+    """Meme scrub que ``extract_cells_to_csv.py`` (T1) — doivent rester
+    byte-identiques (``/home/<user>`` -> ``<USER_HOME>``, markdown seulement).
+
+    Sans cette symétrie, le hash pivot (scrubbé par T1 au dépôt) ne coïnciderait
+    plus avec le hash courant (T2) sur une cellule prose porteuse d'un chemin
+    machine, et chaque telle cellule rendrait un faux SRC_DRIFT /
+    PIVOT_HASH_MISMATCH.
+    """
+    return re.sub(r"/home/[\w.-]+", "<USER_HOME>", text)
+
+
 def _has_expected_script(lang: str, text: str) -> bool:
     """True si text contient au moins un caractere du script attendu pour lang.
 
@@ -156,7 +168,10 @@ def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
         cid = cell.get("id")
         if not cid or cell.get("cell_type") not in ("markdown", "code"):
             continue
-        cells[cid] = cell_hash("".join(cell.get("source", [])))
+        src = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "markdown":
+            src = _scrub_machine_paths(src)
+        cells[cid] = cell_hash(src)
     return cells
 
 
@@ -178,7 +193,10 @@ def load_notebook_cell_texts(nb_path: Path) -> dict[str, str] | None:
         cid = cell.get("id")
         if not cid or cell.get("cell_type") not in ("markdown", "code"):
             continue
-        texts[cid] = "".join(cell.get("source", []))
+        src = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "markdown":
+            src = _scrub_machine_paths(src)
+        texts[cid] = src
     return texts
 
 
@@ -510,7 +528,24 @@ def main() -> int:
         "--notebooks-root", type=Path, default=None,
         help="Racine de scan des notebooks (défaut : <repo_root>/MyIA.AI.Notebooks).",
     )
+    parser.add_argument(
+        "--no-json", action="store_true",
+        help=(
+            "Ne pas ecrire le rapport JSON sur stdout. Pour un siege dont le "
+            "resume de check-run est tronque (voie rapide) : le JSON y occupe "
+            "la place entiere et ecrase les lignes de signal (REMPLISSAGE, "
+            "DRIFT DETECTE). Le signal stderr reste integral."
+        ),
+    )
+    parser.add_argument(
+        "--json-out", type=Path, default=None,
+        help="Ecrire le rapport JSON dans ce fichier au lieu de stdout.",
+    )
     args = parser.parse_args()
+
+    if args.no_json and args.json_out is not None:
+        print("ERROR : --no-json et --json-out sont exclusifs.", file=sys.stderr)
+        return 2
 
     if not args.input.exists():
         print(f"ERROR : {args.input} introuvable.", file=sys.stderr)
@@ -521,7 +556,8 @@ def main() -> int:
     if not csvs:
         # Pas de CSV = phase pre-T1, rien a verifier. CI verte.
         print(f"INFO : aucun CSV sous {args.input} (phase pre-T1). Rien à vérifier.", file=sys.stderr)
-        print(json.dumps({"csvs_checked": 0, "anomalies": [], "anomaly_count": 0}))
+        if not args.no_json:
+            print(json.dumps({"csvs_checked": 0, "anomalies": [], "anomaly_count": 0}))
         return 0
 
     all_anomalies: list[dict] = []
@@ -611,7 +647,13 @@ def main() -> int:
         report["out_of_scope"] = oos
         report["out_of_scope_count"] = len(oos)
 
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    payload = json.dumps(report, ensure_ascii=False, indent=2)
+    if args.json_out is not None:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(payload, encoding="utf-8")
+        print(f"JSON : rapport ecrit dans {args.json_out}", file=sys.stderr)
+    elif not args.no_json:
+        print(payload)
 
     # Signal honnête stderr : le taux de remplissage à côté du compte de drift,
     # pour qu'un SRC_DRIFT=0 sur une table 0% traduite ne se lise plus comme
@@ -643,7 +685,15 @@ def main() -> int:
             file=sys.stderr,
         )
     if len(all_anomalies) > 20:
-        print(f"  ... et {len(all_anomalies) - 20} autres (voir JSON stdout).", file=sys.stderr)
+        if args.no_json or args.json_out is not None:
+            print(
+                f"  ... et {len(all_anomalies) - 20} autres "
+                f"(resume limite aux 20 premieres lignes ; rapport JSON "
+                f"{'non demande (--no-json)' if args.no_json else 'ecrit dans ' + str(args.json_out)}).",
+                file=sys.stderr,
+            )
+        else:
+            print(f"  ... et {len(all_anomalies) - 20} autres (voir JSON stdout).", file=sys.stderr)
 
     return 0 if args.check else 1
 

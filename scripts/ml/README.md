@@ -12,7 +12,7 @@ explicitement (`rc=2`) si le cache est absent — jamais de repli silencieux.
 ## `reproduce_ws_probes.py`
 
 Reproduction hors carnet des sondes de la souserie **Wavelet Scattering**
-(`MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/`).
+(`MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering/`).
 Issue de suivi : #21823 (suite de la revue de la PR #21771).
 
 ```bash

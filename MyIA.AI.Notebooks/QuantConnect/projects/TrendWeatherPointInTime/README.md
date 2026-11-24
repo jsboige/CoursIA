@@ -104,3 +104,30 @@ Le Sharpe mesuré (1,148 avant arrondi) est proche des deux valeurs publiées. L
 La variante `pit` est gelée à la date du verdict, au commit de `main` qui porte ces fichiers ; les empreintes des trois fichiers extraits à ce commit sont celles des runs du verdict (`main.py` 9618cea1d839, `alpha_models.py` de37af8068da, `portfolio_construction.py` 6c325cd73df0). Elle est inscrite au [registre du suivi en ombre](../../ML-Training-Pipeline/shadow/registry.json) (#18923) sous l'identifiant `tw-pit`, avec le paramètre `universe=pit` et les autres paramètres par défaut, gelée au 2026-10-06 ; premier passage à la première séance de novembre.
 
 Traces (plans, identifiants de backtest, journaux, ordres, `results.json`) : hors dépôt, dossier `QC-traces/19393-trendweather` du partage du cluster.
+
+#### Mesure A/B : la copie gelée face au canonique (2026-11-04)
+
+La copie gelée (`portfolio_construction.py`, antérieure au correctif `additive` de #19740) et le canonique (`projects/SharedPCM/pouches_pcm.py`, avec `additive=True`) n'avaient pas été comparés : la première est déclarée, dans le manifeste de source unique de #20188, comme épinglée par le registre de l'ombre, et le gel était donc la seule raison de ne pas l'avoir remplacée. La question est mesurable : le gel introduit-il un écart de comportement, ou la copie gelée est-elle une instantanée équivalente au canonique ?
+
+L'hypothèse est structurelle. Les deux poches n'ont aucun symbole en commun : la poche tendance exclut les ETF de la poche All Weather, qui ne détient que SPY, IEF, GLD et XLP. La reconstruction additive du canonique additionne les poids par symbole ; sur des poches disjointes, elle n'a rien à additionner, et les deux modèles doivent produire les mêmes cibles.
+
+Protocole : fenêtre principale 2018-01-01 → 2026-09-25, `universe=pit`, autres paramètres par défaut. La variante A est le projet gelé ; la variante B est un projet dédié qui porte le canonique. Le `main.py` de la variante B est le `main.py` du dépôt avec deux différences : il importe `MultiStrategyPouchesPCM` au lieu de `MultiStrategyPCM`, et il l'instancie avec `additive=True` et `algorithm=self`. Les trois fichiers de la variante B ont été poussés octet pour octet, puis relus depuis QC (sha256 : `pouches_pcm.py` 5d0618bc480c, `alpha_models.py` de37af8068da, `main.py` 77e9ff7e9156) ; ceux de la variante A sont les fichiers du projet gelé, dont les empreintes sont celles de la section précédente. Les identifiants de projet, de compilation et de backtest sont dans le fil de l'issue #24628.
+
+Mesures, par l'instrument du dépôt (`shadow_replay.py`) sur les séries `shadow`, frais et rotation rapportés au capital de départ :
+
+| Variante | Sharpe net | CAGR | Pire baisse | Frais | Rotation / an | Ordres |
+|-----------|-----------:|-----:|------------:|------:|--------------:|-------:|
+| A — copie gelée | 0,92 | 19,9 % | 36,6 % | 2,12 % | 7,3 | 1 744 |
+| B — canonique | 0,92 | 19,9 % | 36,6 % | 2,12 % | 7,3 | 1 744 |
+
+Les deux séries d'équité sont identiques bit pour bit sur les 2 194 rendements de la fenêtre : écart absolu maximal 0,000000 dollar, écart relatif maximal 0, et capital final identique (486 462 dollars). Les deux variantes ont passé le même nombre d'ordres et supporté les mêmes frais.
+
+Verdict : la copie gelée et le canonique sont **équivalents en comportement** sur cette fenêtre. Le gel n'introduit aucune divergence, et l'égalité est structurelle (poches disjointes) plutôt qu'accidentelle : le correctif `additive` du canonique n'a pas d'effet observable sur ce projet. La copie gelée peut donc être remplacée par le canonique sans changer le résultat ; la décision de dégel relève du coordinateur (#20188), cette mesure ne fournit que la pièce qui manquait.
+
+#### Rejeu du 2026-11-04 : l'univers ex ante ne reproduit pas les chiffres du 2026-10-06
+
+Le rejeu du code gelé lancé le 2026-11-04, sur la même fenêtre et les mêmes paramètres, ne redonne pas la ligne « univers ex ante » du tableau des résultats : Sharpe net 0,92 contre 1,05, CAGR 19,9 % contre 21,7 %, pire baisse 36,6 % contre 24,3 %, 1 744 ordres contre 1 727. Les deux runs portent le même code : les trois empreintes de la section « Suivi en ombre » sont celles des fichiers rejoués.
+
+Le contrôle est le run `fixed` du même jour, sur le même projet et le même code : il reproduit exactement la ligne publiée (Sharpe net 1,2222, soit 1,22 ; CAGR 23,01 %, soit 23,0 % ; pire baisse 27,59 %, soit 27,6 % ; frais 0,25 % par an ; rotation 7,0 par an ; 1 679 ordres ; et l'absence de la dernière séance, comme annoncé plus haut). Le code, les paramètres, l'instrument, l'environnement et le modèle de frais sont donc hors de cause : le contrôle les valide tous.
+
+Seule la sélection des titres distingue les deux univers : `fixed` applique une liste écrite en dur, `pit` retient chaque mois les plus grandes capitalisations d'après les données fondamentales. L'écart porte donc sur ces données, qui ne sont pas les mêmes le 2026-11-04 et le 2026-10-06 — révision des capitalisations fondamentales ou couverture de l'univers, le mécanisme précis n'étant pas identifié. Deux conséquences, à tenir séparées du verdict : la ligne « univers ex ante » du tableau des résultats décrit le run du 2026-10-06 et n'est pas reproductible en l'état ; et le test préinscrit de significativité n'a pas été rejoué sur le chemin du 2026-11-04, donc le verdict `NO BEATS` n'est pas reformulé ici.

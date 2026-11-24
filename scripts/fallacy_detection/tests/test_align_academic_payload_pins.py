@@ -56,9 +56,18 @@ COMMITTED_JSON = ACADEMIC_DIR / "alignment_report.json"
 # Couverture attendue, par source. Ces valeurs sont la raison d'etre de la
 # tranche C : elles sont epinglees ici pour qu'un revert lexical les fasse
 # rougir au lieu de les faire baisser en silence.
+#
+# MAJ 2026-11-08 (ecart mecanique n°3 de #10355 §4) : la branche cognate FR
+# compare desormais des chaines normalisees (_norm des deux cotes). Trois
+# alignements exacts que l'apostrophe typographique de la taxonomie (’ vs ')
+# degradait en PARTIAL passent DIRECT : « Argument d'autorité » (71, Insuffisance)
+# et « Appel à l'émotion » (299, Influence) pour LOGIC et MAFALDA. Les PARTIAL
+# restants sont semantiquement justes mais lexicalement faibles (voir
+# PARTIAL_ADJUDICATIONS dans build_aligned_eval_corpus.py) -- le score ne les
+# separe pas du faux positif corrige, d'ou la regle d'adjudication.
 EXPECTED_COVERAGE = {
-    LOGIC_SOURCE: {"total": 15, "DIRECT": 12, "PARTIAL": 3, "NOT_FOUND": 0},
-    MAFALDA_SOURCE: {"total": 23, "DIRECT": 17, "PARTIAL": 4, "NOT_FOUND": 2},
+    LOGIC_SOURCE: {"total": 15, "DIRECT": 14, "PARTIAL": 1, "NOT_FOUND": 0},
+    MAFALDA_SOURCE: {"total": 23, "DIRECT": 19, "PARTIAL": 2, "NOT_FOUND": 2},
 }
 
 # Les 4 quasi-manques lexicaux fermes par la tranche C (jugement d'alignement
@@ -200,6 +209,42 @@ def test_rapport_commis_egale_execution_fraiche():
     )
 
 
+def test_les_adjudications_partial_sont_a_jour_sur_la_table_commise():
+    """Une adjudication perimee exclurait une paire en silence : ici elle rougit.
+
+    ``PARTIAL_ADJUDICATIONS`` (build_aligned_eval_corpus.py) est la regle qui
+    remplace le seuil de score absent (ecart mecanique n°3 de #10355 §4) : une
+    ligne PARTIAL n'est source d'etiquette que si son couple (label -> noeud)
+    est adjuge. Le builder exclut proprement une adjudication perimee, mais le
+    corpus perd alors des paires sans que personne ne le decide. Ce test rend le
+    deplacement visible : re-adjudger, ou assumer la perte par ecrit.
+    """
+    from fallacy_detection.build_aligned_eval_corpus import (
+        PARTIAL_ADJUDICATIONS,
+        load_table,
+        norm,
+    )
+
+    table = load_table(COMMITTED_CSV)
+    assert PARTIAL_ADJUDICATIONS, "la table d'adjudications est vide"
+    for label, (expected_famille, expected_node, rationale) in PARTIAL_ADJUDICATIONS.items():
+        row = table.get(norm(label))
+        assert row is not None, f"adjudication orpheline : {label!r} absent de la table"
+        assert row["verdict"] == "PARTIAL", (
+            f"{label} n'est plus PARTIAL ({row['verdict']}) : adjudication a "
+            f"requalifier ou a retirer"
+        )
+        assert row["best_famille"] == expected_famille, (
+            f"{label} : adjudication perimee -- famille attendue {expected_famille!r}, "
+            f"table {row['best_famille']!r}"
+        )
+        assert row["best_name"] == expected_node, (
+            f"{label} : adjudication perimee -- attendu {expected_node!r}, "
+            f"table {row['best_name']!r}"
+        )
+        assert rationale.strip(), f"{label} : adjudication sans justification ecrite"
+
+
 def test_couverture_par_source_epinglee():
     _, report = _fresh_build()
     for source, expected in EXPECTED_COVERAGE.items():
@@ -233,7 +278,7 @@ def test_ancre_de_reproductibilite_est_un_chemin_relatif():
     assert ":" not in anchor, f"chemin absolu (lecteur) dans l'artefact : {anchor!r}"
     assert not anchor.startswith("/"), f"chemin absolu dans l'artefact : {anchor!r}"
     assert anchor == (
-        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/"
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/"
         "argumentum_fallacies_taxonomy.csv"
     )
 

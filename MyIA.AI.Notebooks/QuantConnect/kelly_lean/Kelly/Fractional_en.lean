@@ -16,7 +16,7 @@ outperforms the full optimal fraction:
 The "non-zero edge" qualification (`f* ≠ 0`) is necessary: on a zero-edge
 bet (`f* = 0`, e.g. b = 1, p = q = 1/2), `c·f* = 0 = f*` for every `c`,
 and equality holds for each `c` — exactly the hypothesis `growth_fractional_lt`
-below requires.
+below requires (witness `growth_fractional_zero_edge`).
 
 This is the **formal justification of the *half-Kelly*** (c = 1/2), and more
 generally of all *position sizing* strategies that shrink the optimal fraction
@@ -65,9 +65,7 @@ lemma fractional_feasible (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1) :
     -- commit (Lean 4.33 changed the behaviour of rewrites on 3-factor products).
     rcases eq_or_lt_of_le hc0 with rfl | hcpos
     · rw [zero_mul]
-      -- -1 / β.b < 0.  Just use `linarith` on the explicit positive of 1/β.b.
-      -- The contradiction arises because -1/β.b is the negation of 1/β.b and
-      -- they have opposite signs.
+      -- Goal : -1 / β.b < 0.  Follows from 0 < 1 / β.b (one_div_pos of β.hb_pos).
       have hpos : 0 < 1 / β.b := one_div_pos.mpr β.hb_pos
       -- (-1/β.b) + (1/β.b) = 0, and 1/β.b > 0, so 1/β.b > 0 implies -1/β.b < 0.
       linarith [show (1 / β.b) + (-1 / β.b) = 0 from by ring, hpos]
@@ -105,10 +103,40 @@ theorem growth_fractional_le (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1
 
 /-- **Equality at c = 1**: the fraction `1·f*` returns `f*`, hence the same
     growth. This is the upper bound of `growth_fractional_le` (attained at
-    `c = 1`). -/
+    `c = 1` — and, on a zero-edge bet, for every `c`: cf.
+    `growth_fractional_zero_edge`). -/
 theorem growth_fractional_eq_one (β : Bet) :
     growth β (1 * kellyFrac β) = growth β (kellyFrac β) := by
   simp
+
+/-- **Zero-edge witness**: when `f* = 0` (criterion `kellyFrac_eq_zero_iff`,
+    e.g. `b = 1`, `p = q = 1/2`), we have `c·f* = 0 = f*` for every `c`,
+    hence `growth(c·f*) = growth(f*)` **even for `c ≠ 1`**. The hypothesis
+    `f* ≠ 0` of `growth_fractional_lt` is therefore necessary: without it,
+    equality is not confined to `c = 1`. -/
+theorem growth_fractional_zero_edge (β : Bet) (hfz : kellyFrac β = 0) (c : ℝ) :
+    growth β (c * kellyFrac β) = growth β (kellyFrac β) := by
+  rw [hfz, mul_zero]
+
+-- Concrete instance of the counter-example (review #19534): b = 1, p = 1/2
+-- (hence q = 1/2), zero edge: kellyFrac = (1·1/2 − 1/2)/1 = 0, and growth
+-- equality holds for every c.
+private noncomputable def fairBet : Bet where
+  p := 1 / 2
+  hp_pos := by norm_num
+  hp_lt_one := by norm_num
+  b := 1
+  hb_pos := by norm_num
+
+example : kellyFrac fairBet = 0 := by
+  rw [kellyFrac_eq_zero_iff]
+  unfold q fairBet
+  norm_num
+
+example (c : ℝ) :
+    growth fairBet (c * kellyFrac fairBet) = growth fairBet (kellyFrac fairBet) :=
+  growth_fractional_zero_edge fairBet
+    (by rw [kellyFrac_eq_zero_iff]; unfold q fairBet; norm_num) c
 
 /-- **Strict inequality for c < 1 and a bet with non-zero edge**: if `c ∈ [0, 1)`
     and `f* ≠ 0` (the bet has an advantage), then `growth(c·f*) < growth(f*)`.

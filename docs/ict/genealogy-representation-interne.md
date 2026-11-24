@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — 4e fil de lecture : le problème de la représentation interne (généalogie de `p̂`, ICT-10 → ICT-17)
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Consolide un **quatrième fil de lecture** de la série ICT, à côté des trois déjà documentés dans [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) : Grothendieck (invariants), Schmidhuber (dissociations), Thom + Grothendieck (obstructions). Le **quatrième fil** est celui du **problème de la représentation interne** : la généalogie successive de `p̂` à travers les notebooks ICT-10 → ICT-17.
@@ -22,7 +24,7 @@ Chaque maillon répond à une **insuffisance du précédent**, repérée empiriq
 
 ### Maillon 2 — ICT-12 : `p̂` au service de l'action
 
-[`ICT-12-ValenceFieldsAndAnimats-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (strate 3, animats dans un champ de valence) promeut `p̂` de **prédiction** à **contrôle** : l'animat anticipateur vise *où la source sera*, et le verdict compare le gain en capture/fuite au coût en erreurs sur trajectoire erratique. Le maillon 2 ne change pas la *forme* de `p̂` (toujours scalaire instantané) mais change son **rôle** dans la boucle perception-action : `p̂` n'est plus seulement mesuré pour sa qualité prédictive, il est *consommé* par une politique. ICT-12 inaugure aussi l'**opérateur `W`** (workspace, cf. [`docs/ict/dissociations-matrix.md`](dissociations-matrix.md#pourquoi-cette-ossature-4-objets)) au sens où la prédiction devient disponible à la décision — sans être un *workspace* au sens Dehaene/Baars (cf. garde-fou 2).
+[`ICT-12-ValenceFieldsAndAnimats-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (strate 3, animats dans un champ de valence) promeut `p̂` de **prédiction** à **contrôle** : l'animat anticipateur vise *où la source sera*, et le verdict compare le gain en capture/fuite au coût en erreurs sur trajectoire erratique. Le maillon 2 ne change pas la *forme* de `p̂` (toujours scalaire instantané) mais change son **rôle** dans la boucle perception-action : `p̂` n'est plus seulement mesuré pour sa qualité prédictive, il est *consommé* par une politique. ICT-12 inaugure aussi l'**opérateur `W`** (workspace, cf. [`docs/ict/dissociations-matrix.md`](dissociations-matrix.md#pourquoi-cette-ossature-4-objets)) au sens où la prédiction devient disponible à la décision — sans être un *workspace* au sens Dehaene/Baars (cf. garde-fou 2).
 
 ### Maillon 3 — ICT-14 : la *free energy* attachée à `p̂`
 
@@ -30,7 +32,7 @@ Chaque maillon répond à une **insuffisance du précédent**, repérée empiriq
 
 ### Maillon 4 — ICT-15 : la surprise transitionnelle
 
-[`ICT-15-IntegratedComplexity-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) (strate 4/charnière 5) mesure la surprise transitionnelle sur la TPM hors-échantillon : `p̂` n'est plus seulement jugé *en un point*, mais sur la **distribution** de ses erreurs au cours du temps — un juge qui exige la **régularité statistique** du représentant, pas seulement sa justesse ponctuelle. Le maillon 4 ajoute la dimension *temporelle-collective* : ce qui compte n'est plus l'erreur moyenne, c'est la queue de distribution, le moment où le représentant *se trompe de façon persistante*. ICT-15 fait entrer la convergence Φ/F/K comme *gate* sur trois substrats — c'est l'amorce de la mesure *du représentant par son substrat*, pas seulement *par son signal*.
+[`ICT-15-IntegratedComplexity-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) (strate 4/charnière 5) mesure la surprise transitionnelle sur la TPM hors-échantillon : `p̂` n'est plus seulement jugé *en un point*, mais sur la **distribution** de ses erreurs au cours du temps — un juge qui exige la **régularité statistique** du représentant, pas seulement sa justesse ponctuelle. Le maillon 4 ajoute la dimension *temporelle-collective* : ce qui compte n'est plus l'erreur moyenne, c'est la queue de distribution, le moment où le représentant *se trompe de façon persistante*. ICT-15 fait entrer la convergence Φ/F/K comme *gate* sur trois substrats — c'est l'amorce de la mesure *du représentant par son substrat*, pas seulement *par son signal*.
 
 ### Maillon 5 — ICT-16 : la compression K du représentant
 
@@ -38,7 +40,7 @@ Chaque maillon répond à une **insuffisance du précédent**, repérée empiriq
 
 ### Maillon 6 — ICT-17 : l'ε-machine de Crutchfield
 
-[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, gate Crutchfield vs Hoel) parachève la généalogie : l'**état causal** (au sens de Crutchfield) est l'état qui *résume tout ce que le passé permet de prédire du futur* — c'est l'**estimateur prédictif suffisant**. Le **descendant formel le plus naturel de `p̂` n'est ni le SAE, ni la J-lens, c'est l'état causal prédictif**. Une ε-machine a une propriété que `p̂` n'a pas : son entropie d'excès `E` est **la limite de ce qu'un estimateur de type `p̂` peut capturer** — c'est-à-dire la quantité d'information *structurelle* du signal qui *fuit* un représentant ponctuel, aussi bon soit-il. ICT-17 est le point où le représentant interne cesse d'être un *proxy* (qui approxime le signal) pour devenir un *résumé* (qui capture la structure causale du signal).
+[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, gate Crutchfield vs Hoel) parachève la généalogie : l'**état causal** (au sens de Crutchfield) est l'état qui *résume tout ce que le passé permet de prédire du futur* — c'est l'**estimateur prédictif suffisant**. Le **descendant formel le plus naturel de `p̂` n'est ni le SAE, ni la J-lens, c'est l'état causal prédictif**. Une ε-machine a une propriété que `p̂` n'a pas : son entropie d'excès `E` est **la limite de ce qu'un estimateur de type `p̂` peut capturer** — c'est-à-dire la quantité d'information *structurelle* du signal qui *fuit* un représentant ponctuel, aussi bon soit-il. ICT-17 est le point où le représentant interne cesse d'être un *proxy* (qui approxime le signal) pour devenir un *résumé* (qui capture la structure causale du signal).
 
 ### Synthèse de la généalogie
 
@@ -57,7 +59,7 @@ Le mouvement est net : d'un **point dans un espace de signaux** vers un **état 
 
 ### Garde-fou 1 — Continuité conceptuelle, pas expérimentale
 
-L'audit GitHub cross-notebooks **ne trouve aucun transport formel** de `p̂` vers les features SAE (ICT-21) ou la J-lens (ICT-SAE-JLens-TeteATete). Ce qu'on a, c'est une **continuité conceptuelle** (chaque maillon répond à une insuffisance du précédent) et une **continuité numérique** (les grandeurs mesurées ICT-10/12/14 sont les mêmes). Mais le passage `p̂` → état causal (ICT-17) ne se fait pas par démonstration formelle : il se fait par **monstration successive**, chaque maillon fermant une objection locale sans nier les objections globales. **À présenter comme généalogie, pas comme théorie unifiée.**
+L'audit GitHub cross-notebooks **ne trouve aucun transport formel** de `p̂` vers les features SAE (ICT-21) ou la J-lens (ICT-SAE-JLens-TeteATete-Python). Ce qu'on a, c'est une **continuité conceptuelle** (chaque maillon répond à une insuffisance du précédent) et une **continuité numérique** (les grandeurs mesurées ICT-10/12/14 sont les mêmes). Mais le passage `p̂` → état causal (ICT-17) ne se fait pas par démonstration formelle : il se fait par **monstration successive**, chaque maillon fermant une objection locale sans nier les objections globales. **À présenter comme généalogie, pas comme théorie unifiée.**
 
 ### Garde-fou 2 — Le global workspace n'est PAS une version structurée de `p̂`
 
@@ -88,7 +90,7 @@ L'audit GitHub cross-notebooks **ne trouve aucun transport formel** de `p̂` ver
 ## Repères vérifiables
 
 - Série ICT : [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) ([Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)).
-- Notebooks-ancrage du quatrième fil : [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb), [ICT-12](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb), [ICT-15](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb), [ICT-16](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb), [ICT-17](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb).
+- Notebooks-ancrage du quatrième fil : [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb), [ICT-12](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb), [ICT-15](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb), [ICT-16](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb), [ICT-17](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb).
 - Doc companion obstruction/recollement : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) (§3 — cadrage `p̂`/`q_t` vs prégnance, post-A1 PR #7889).
 - Grille 3-régimes : [`docs/ict/synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) (le quatrième fil est orthogonal à cette grille).
 - Matrice de dissociations : [`docs/ict/dissociations-matrix.md`](dissociations-matrix.md) (la colonne `q_t` est indexée par le quatrième fil).

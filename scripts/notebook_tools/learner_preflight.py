@@ -5,7 +5,7 @@ journalisée — l'outil constate la présence, rien de plus.
 Usage:
     python scripts/notebook_tools/learner_preflight.py --parcours <profil> [--json]
 
-Profils alignés sur parcours.qmd :
+Profils alignés sur docs/parcours.qmd :
     - local     : Python 3.10+, Jupyter, sans GPU, sans .NET, sans Docker
     - dotnet    : local + .NET 9 SDK + Lean 4 sous WSL (kernel ML.NET)
     - genai     : dotnet + Docker + GPU NVIDIA + clés d'API présentes
@@ -191,7 +191,16 @@ def _kernels_present(expected: Iterable[str]) -> list[Finding]:
             detail=f"`jupyter kernelspec list` a échoué : {exc}",
             repair="Réinstaller Jupyter : `pip install jupyter ipykernel`.",
         )]
-    text = (out.stdout or "") + (out.stderr or "")
+    if out.returncode != 0:
+        return [Finding(
+            name="kernels",
+            ok=False,
+            detail=f"`jupyter kernelspec list` a échoué (rc={out.returncode})",
+            repair="Vérifier la configuration Jupyter et relancer le préflight.",
+        )]
+    # Seul stdout est l'inventaire : stderr peut contenir des avertissements
+    # dont les premiers mots ressemblent à un nom de noyau.
+    text = out.stdout or ""
     installed = set()
     for line in text.splitlines():
         line = line.strip()

@@ -30,6 +30,32 @@ import urllib.request
 import zipfile
 from typing import Dict, List, Optional
 
+
+def _ensure_unicode_marks_printable() -> None:
+    """Garantit que les marques ✓/✗ du resume peuvent s'ecrire sur stdout.
+
+    Sous Windows, un stdout redirige vers un pipe utilise l'encodage ANSI
+    (cp1252) : le resume final leve alors ``UnicodeEncodeError``, le processus
+    meurt avant de l'imprimer et l'appelant ne recoit qu'un traceback. On
+    bascule sur UTF-8, qui est l'encodage du projet (carnets, sorties Jupyter),
+    uniquement lorsque l'encodage courant ne sait pas representer ces marques.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        encoding = getattr(stream, "encoding", None) or "utf-8"
+        try:
+            "✓".encode(encoding)
+        except (UnicodeEncodeError, LookupError):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
+_ensure_unicode_marks_printable()
+
 try:
     from tqdm.auto import tqdm
     HAS_TQDM = True
@@ -165,6 +191,27 @@ def get_script_dir() -> pathlib.Path:
         return cwd
 
 
+def display_path(p) -> str:
+    """Chemin affiché relativisé à la racine du dépôt (forme ``<repo>...``).
+
+    Les chemins absolus de la machine qui exécute ne doivent pas entrer dans
+    les sorties committées (MACHINE_PATH du ratchet output-failure) : on
+    affiche donc le chemin relatif au root, préfixé ``<repo>``. Hors du dépôt,
+    le chemin absolu est affiché tel quel (information locale, jamais committée).
+    """
+    try:
+        p = pathlib.Path(p).resolve()
+    except (TypeError, ValueError):
+        return str(p)
+    for parent in [get_script_dir(), *get_script_dir().parents]:
+        if (parent / ".git").exists():
+            try:
+                return "<repo>" + str(p.relative_to(parent))
+            except ValueError:
+                break
+    return str(p)
+
+
 def download_with_progress(url: str, dest: pathlib.Path, desc: str = "Downloading") -> bool:
     """Télécharge un fichier avec barre de progression."""
     try:
@@ -181,7 +228,7 @@ def download_with_urllib(url: str, dest: pathlib.Path, desc: str) -> bool:
     """Télécharge avec urllib.request (fallback)."""
     print(f"  Downloading: {url}")
     urllib.request.urlretrieve(url, dest)
-    print(f"  Saved to: {dest}")
+    print(f"  Saved to: {display_path(dest)}")
     return True
 
 
@@ -206,7 +253,7 @@ def download_with_requests(url: str, dest: pathlib.Path, desc: str) -> bool:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
-            print(f"  Saved to: {dest}")
+            print(f"  Saved to: {display_path(dest)}")
 
     return True
 
@@ -326,7 +373,7 @@ def download_tweety_jars(lib_dir: Optional[pathlib.Path] = None,
         lib_dir = get_script_dir().parent / "libs"
 
     lib_dir.mkdir(exist_ok=True)
-    print(f"Target directory: {lib_dir}")
+    print(f"Target directory: {display_path(lib_dir)}")
     print(f"Tweety version: {TWEETY_VERSION}")
     print(f"Required modules: {len(REQUIRED_MODULES)}")
 
@@ -392,7 +439,7 @@ def download_resource_files(resource_dir: Optional[pathlib.Path] = None) -> bool
         resource_dir = get_script_dir().parent / "resources"
 
     resource_dir.mkdir(exist_ok=True)
-    print(f"Target directory: {resource_dir}")
+    print(f"Target directory: {display_path(resource_dir)}")
     print(f"Files to download: {len(RESOURCE_FILES)}")
 
     success_count = 0
@@ -452,7 +499,7 @@ def download_clingo(ext_tools_dir: Optional[pathlib.Path] = None) -> bool:
         print(f"  ✓ Found in system PATH")
         return True
 
-    print(f"Target directory: {clingo_dir}")
+    print(f"Target directory: {display_path(clingo_dir)}")
     print(f"Clingo version: {CLINGO_VERSION}")
 
     if system == "Windows":
@@ -555,11 +602,11 @@ def download_spass(ext_tools_dir: Optional[pathlib.Path] = None) -> bool:
                                     winreg.KEY_SET_VALUE) as key:
                     winreg.SetValueEx(key, str(spass_exe.resolve()), 0,
                                       winreg.REG_SZ, "~ RunAsInvoker")
-                print(f"  ✓ RunAsInvoker flag set for {spass_exe}")
+                print(f"  ✓ RunAsInvoker flag set for {display_path(spass_exe)}")
             except Exception as e:
                 print(f"  ! Could not set RunAsInvoker flag: {e}")
                 print("    Run manually in PowerShell (no elevation needed):")
-                print(f'    Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers" -Name "{spass_exe.resolve()}" -Value "~ RunAsInvoker"')
+                print(f'    Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers" -Name "{display_path(spass_exe.resolve())}" -Value "~ RunAsInvoker"')
         return False
 
     elif system == "Linux":
@@ -577,7 +624,7 @@ def download_spass(ext_tools_dir: Optional[pathlib.Path] = None) -> bool:
 
         archive.unlink(missing_ok=True)
 
-        print(f"  ✓ Installed: {spass_dir}")
+        print(f"  ✓ Installed: {display_path(spass_dir)}")
         return True
 
     else:
@@ -610,7 +657,7 @@ def download_jdk(jdk_dir: Optional[pathlib.Path] = None) -> bool:
     ext = ".zip" if system == "Windows" else ".tar.gz"
     archive = jdk_dir / f"zulu-jdk17{ext}"
 
-    print(f"Target directory: {jdk_dir}")
+    print(f"Target directory: {display_path(jdk_dir)}")
     print(f"System: {system}")
 
     if not download_with_progress(url, archive, desc="Zulu JDK 17"):
@@ -631,7 +678,7 @@ def download_jdk(jdk_dir: Optional[pathlib.Path] = None) -> bool:
     # Trouver le dossier JDK extrait
     zulu_dirs = list(jdk_dir.glob("zulu*"))
     if zulu_dirs:
-        print(f"  ✓ Installed: {zulu_dirs[0]}")
+        print(f"  ✓ Installed: {display_path(zulu_dirs[0])}")
         return True
 
     print("  ! JDK directory not found after extraction")
@@ -658,7 +705,7 @@ def download_native_sat_libs(native_dir: Optional[pathlib.Path] = None) -> bool:
 
     native_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Target directory: {native_dir}")
+    print(f"Target directory: {display_path(native_dir)}")
     print("Note: Native libs are usually included in the repository.")
     print("      This function downloads from GitHub if missing.")
 

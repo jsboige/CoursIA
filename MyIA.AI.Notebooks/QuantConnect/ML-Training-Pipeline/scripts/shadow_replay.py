@@ -269,6 +269,12 @@ QC_CHART = "shadow"
 QC_EQUITY_SERIES = [f"e{k}" for k in range(5)]
 QC_RESERVED_PARAMS = ("start", "end")
 QC_FILE_LIMIT = 64000   # caracteres par fichier de projet QC
+# Fenetre maximale sans cloture pour les marches actions US : les fermetures
+# consecutives ne depassent pas trois seances (week-end plus jour ferie). Sept jours
+# calendaires couvrent le pire calendrier connu en gardant une marge : la derniere
+# cloture d'un graphique complet est toujours plus recente que cela avant la date
+# de passage (mesure : fs774 termine un vendredi pour un passage le mardi, 4 jours).
+QC_MAX_END_GAP_DAYS = 7
 
 
 def qc_entrypoint(candidate: dict) -> tuple[str, int]:
@@ -338,31 +344,64 @@ def _session(ts: int) -> str:
     return dt.datetime.fromtimestamp(ts, ZoneInfo("America/New_York")).date().isoformat()
 
 
-def qc_daily_equity(chart: dict) -> tuple[list[str], list[float]]:
+def qc_daily_equity(chart: dict,
+                    window_start: str | None = None) -> tuple[list[str], list[float]]:
     """Fusionne e0..e4 en une cloture par seance, et verifie l'alternance.
 
     La candidate trace la seance k dans `e{k % 5}` : rangees par date, les series doivent
     donc se succeder e0, e1, e2, e3, e4, e0... Un point perdu ou en trop casse ce cycle.
+
+    Un decalage CONSTANT du cycle est admis a une condition : le premier point tombe a la
+    premiere seance de la fenetre (`window_start`, la date de gel). Le decalage vient alors
+    de la facon de tracer -- `self.btc_bars += 1` avant `k = self.btc_bars % 5`, cas
+    `btc-voltarget-base` du 2026-11-02 -- donc aucun point n'a pu etre perdu avant le
+    premier, et le controle de perte reste entier au-dela : le pas attendu est le meme
+    pour tous les points suivants. Sans `window_start` (appel direct,
+    `league_correlation`), le cycle doit partir de e0 : fail-CLOSED.
+
+    La premiere seance EST la date de gel, en jours calendaires -- pas en jours ouvrés :
+    une candidate crypto cote 7/7 et peut geler un samedi (`btc-voltarget-base`,
+    2026-10-17), qu'un calendrier ouvré roulerait au lundi suivant. Une premiere seance
+    reellement perdue (premier point = deuxieme seance) reste refusee.
+
     Une fenetre de moins de cinq seances ne remplit que le debut du cycle : les series
-    absentes sont tolerees quand elles ferment le cycle (prefixe contigu depuis e0) et
+    absentes sont tolerees quand elles ferment le cycle (prefixe contigu du cycle) et
     refusees quand elles le trouent (telechargement tronque). Une troncature de fin, elle,
-    laisse le cycle intact : `ingest_qc` la attrape en croisant le compte de seances avec
-    `tradeableDates`.
+    laisse le cycle intact : `ingest_qc` l'attrape par la fraicheur de la derniere cloture
+    au regard de la date de passage.
     """
     present = [k for k, key in enumerate(QC_EQUITY_SERIES)
                if (chart.get("series") or {}).get(key, {}).get("values")]
-    if not present or present != list(range(len(present))):
+    if not present:
         raise ValueError(f"chart {QC_CHART!r}: series e0..e4 must form a contiguous "
-                         f"prefix from e0, present are {present}")
+                         f"prefix of the cycle, present are {present}")
     points = sorted((t, k, v) for k in present
                     for t, v in _chart_points(chart, QC_EQUITY_SERIES[k]))
+    offset = points[0][1]
+    # Attendu indice sur len(present) (series distinctes), pas len(points) : une serie
+    # portant deux points elargirait l'ensemble attendu et rendrait le message
+    # "contiguous prefix" au lieu du "two equity points on the same session" qui suit.
+    if set(present) != {(offset + i) % 5 for i in range(len(present))}:
+        raise ValueError(f"chart {QC_CHART!r}: series e0..e4 must form a contiguous "
+                         f"prefix of the cycle from one offset, present are {present}")
     for i, (t, k, _) in enumerate(points):
-        if k != i % 5:
+        if k != (offset + i) % 5:
             raise ValueError(f"equity interleaving broken at point {i} ({_session(t)}): "
-                             f"series e{k}, expected e{i % 5}")
+                             f"series e{k}, expected e{(offset + i) % 5}")
     dates = [_session(t) for t, _, _ in points]
     if len(set(dates)) != len(dates):
         raise ValueError("two equity points on the same session")
+    if offset != 0:
+        # Ancrage calendaire : la premiere seance EST la date de gel. Pas de calendrier
+        # ouvré -- `btc-voltarget-base` a gelé un samedi (Bitfinex cote 7/7) et
+        # np.busday_offset l'aurait roulée au lundi suivant, refusant sous un autre
+        # message le cas même que ce garde doit admettre (revue Hermes #24288) :
+        # gel le samedi => admis ; premiere seance reellement perdue => refuse.
+        if not window_start or dates[0] != window_start:
+            raise ValueError(
+                f"equity cycle starts at e{offset} and its first point {dates[0]} is not "
+                f"the first session of the window ({window_start or 'unknown'}): a point "
+                f"was lost before it")
     return dates, [v for _, _, v in points]
 
 
@@ -379,14 +418,30 @@ def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict,
     if backtest.get("name") != plan["backtest_name"]:
         raise ValueError(f"{candidate['id']}: backtest {backtest.get('name')!r} is not "
                          f"{plan['backtest_name']!r}")
-    dates, equity = qc_daily_equity(chart)
+    # La fenetre du plan est la seule reference qui permette de distinguer un cycle decale
+    # d'un point perdu avant le premier (cas btc-voltarget-base, #24153).
+    dates, equity = qc_daily_equity(chart, plan["frozen_on"])
+    # `tradeableDates` compte toutes les dates ou le backtest a emis des donnees, pas
+    # seulement les clotures tracees : une candidate sans univers ni donnee personnalisee
+    # expose une date par cloture et le compte est egal (cas mhm676, 14 = 14), mais une
+    # candidate avec `add_universe` ou une donnee CBOE expose des dates sans cloture SPY
+    # tracee et le compte depasse les clotures (cas fs774 : 15 clotures pour 22 dates).
+    # Le compte ne vaut donc plus comme temoin d'egalite ; il reste une borne haute (des
+    # clotures en trop = un graphique qui ne correspond pas a ce backtest), et la
+    # troncature de fin se lit au calendrier : la derniere cloture tracee doit etre
+    # recente au regard de la fin demandee du backtest.
     expected_days = backtest.get("tradeableDates")
-    if isinstance(expected_days, int) and len(dates) != expected_days:
-        raise ValueError(f"{candidate['id']}: {len(dates)} equity points for "
-                         f"{expected_days} tradeable dates -- chart truncated or incomplete")
+    if isinstance(expected_days, int) and len(dates) > expected_days:
+        raise ValueError(f"{candidate['id']}: {len(dates)} equity points exceed "
+                         f"{expected_days} tradeable dates -- chart does not match this backtest")
     if dates[0] < plan["frozen_on"] or dates[-1] > plan["pass_date"]:
         raise ValueError(f"{candidate['id']}: equity {dates[0]}..{dates[-1]} outside "
                          f"{plan['frozen_on']}..{plan['pass_date']}")
+    stale = dt.date.fromisoformat(plan["pass_date"]) - dt.date.fromisoformat(dates[-1])
+    if stale > dt.timedelta(days=QC_MAX_END_GAP_DAYS):
+        raise ValueError(f"{candidate['id']}: last equity close {dates[-1]} is "
+                         f"{stale.days} days before the pass date {plan['pass_date']} "
+                         f"-- chart truncated or incomplete")
     costs = {}
     for key in ("fees", "turnover"):
         t, v = _chart_points(chart, key)[-1]

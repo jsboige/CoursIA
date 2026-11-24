@@ -9,7 +9,7 @@ name: quarto-render-list-freshness
 # on `_quarto.yml` for a 4-carnet PR) or trigger a conflict against the
 # next merge.
 #
-# Detection reuses `scripts/regen_quarto_render.py --check` (exit 1 if the
+# Detection reuses `scripts/ci/regen_quarto_render.py --check` (exit 1 if the
 # render list is stale).
 #
 # ADVISORY, not a hard gate (arbitration ai-01, review 5469480925 on #19901).
@@ -41,7 +41,7 @@ on:
       - 'docs/**/*.md'
       - 'docs/**/*.qmd'
       - '_quarto.yml'
-      - 'scripts/regen_quarto_render.py'
+      - 'scripts/ci/regen_quarto_render.py'
       - '.github/workflows/quarto-render-list-freshness.yml'
   push:
     branches: [ main ]
@@ -52,7 +52,7 @@ on:
       - 'docs/**/*.md'
       - 'docs/**/*.qmd'
       - '_quarto.yml'
-      - 'scripts/regen_quarto_render.py'
+      - 'scripts/ci/regen_quarto_render.py'
       # Le chemin du workflow lui-meme etait absent du declencheur push alors
       # qu'il figurait cote pull_request (R3 de la revue NanoClaw, arbitrage
       # ai-01 #19901) : editer ce fichier ne relancait donc pas la garde.
@@ -77,7 +77,15 @@ jobs:
     # regeneration de _quarto.yml -- exactement le conflit que ce garde veut
     # eteindre (arbitrage ai-01, review 5469480925 sur #19901).
     name: _quarto.yml render list freshness (advisory)
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22937 vague 2, phase A) : forme hybride de debordement --
+    # PR meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -119,14 +127,21 @@ jobs:
         # cron. Seul rc >= 2 (scanner en panne / checkout rate, cf. F4 du
         # voisin readme-ipynb-links-guard.yml) reste une faute bloquante.
         # Les ::error:: qu'imprime le scanner en mode --check (l.635/643 de
-        # scripts/regen_quarto_render.py) sont neutralises en texte brut :
+        # scripts/ci/regen_quarto_render.py) sont neutralises en texte brut :
         # une annotation rouge sur un run vert serait le rouge residuel que
         # la revue 5475880717 retire.
+        # Chemin du scanner resolu sur l'arbre checkoute : GitHub lit ce
+        # workflow au merge commit, mais le checkout est la tete de la PR.
+        # Une tete anterieure au relogement de #27355 (21e7399705) porte
+        # encore `scripts/regen_quarto_render.py` ; sans repli, le job rendait
+        # rc=2 « scanner en panne » sur 12 PRs (mesure du secretaire, 20/11).
         run: |
           set -euo pipefail
           : > /tmp/scan_status.txt
+          SCANNER=scripts/ci/regen_quarto_render.py
+          [ -f "${SCANNER}" ] || SCANNER=scripts/regen_quarto_render.py
           set +e
-          python3 scripts/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
+          python3 "${SCANNER}" --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
           PY_RC=${PIPESTATUS[0]}
           set -e
           echo "python_rc=${PY_RC}" >> /tmp/scan_status.txt
@@ -154,7 +169,20 @@ jobs:
         # On n'ecrit rien : le checkout est en mode read sur le working
         # tree, et le regen sans modification de l'arbre ne touche pas
         # _quarto.yml. La sortie `--check` post-regen doit etre rc=0.
+        # Meme repli de chemin que l'etape de check ci-dessus (l.141-142), et
+        # pour la meme raison : le workflow est lu au merge commit, mais le
+        # checkout est la tete de la PR. Une tete anterieure au relogement de
+        # #27355 (21e7399705) ne porte que `scripts/regen_quarto_render.py` ;
+        # sans repli cette etape echouait en rc=2 avant d'avoir tourne, et le
+        # job advisory ne pouvait plus jamais etre vert sur ces tetes.
+        # Residual mesure par le secretaire (23/11) : 5 PRs portaient ce rouge
+        # (27177 27633 27652 26855 27043), meme signature dans les logs --
+        # `can't open file '.../scripts/ci/regen_quarto_render.py': [Errno 2]`
+        # (job 137281013812). #27494 avait pose le repli sur la seule etape
+        # de check, et avait oublie celle-ci.
         run: |
           set -euo pipefail
-          python3 scripts/regen_quarto_render.py 2>&1 | tail -1
-          python3 scripts/regen_quarto_render.py --check 2>&1 | tail -1
+          SCANNER=scripts/ci/regen_quarto_render.py
+          [ -f "${SCANNER}" ] || SCANNER=scripts/regen_quarto_render.py
+          python3 "${SCANNER}" 2>&1 | tail -1
+          python3 "${SCANNER}" --check 2>&1 | tail -1

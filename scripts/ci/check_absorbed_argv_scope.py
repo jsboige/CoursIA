@@ -24,8 +24,13 @@ l'argv absorbe » (champ `diff_bounded`).
 Deux invariants :
 
   I1 -- PAS DE PERTE DE PORTE. Si le workflow d'origine borne l'analyse au
-        diff, l'argv du registre doit la borner aussi (jeton de scope, ou garde
-        DELTA a trois temps via `delta_argv`).
+        diff, l'argv du registre doit la borner aussi. Trois formes comptent :
+        un jeton de scope dans l'argv du garde, un garde DELTA a trois temps
+        via `delta_argv`, ou un **garde a `commenters`** -- dont le bornage
+        vit sur l'argv du commenter ou dans la selection de `commenter_paths()`
+        (cf `commenter_scope`). Un garde a commentaires a un argv de garde
+        vide : ne lire que celui-ci rendait trois absorptions faussement
+        perdues (#22244).
 
   I2 -- PAS DE DECLARATION NON CORROBOREE. `diff_bounded=True` affirme que le
         verdict est un DELTA borne au diff ; l'argv doit porter la preuve. C'est
@@ -106,6 +111,34 @@ def scope_tokens(argv: list[str]) -> list[str]:
                 found.append(placeholder)
                 break
     return found
+
+
+def commenter_scope(guard: Guard) -> tuple[list[str], bool]:
+    """Bornage porte par les `commenters` d'un garde.
+
+    Un garde a commentaires a un `argv` de garde VIDE : c'est le moteur qui
+    execute les detecteurs (`fast_lane.run_effects`), et le bornage vit alors
+    a deux endroits, tous deux reels :
+
+    * l'**argv du commenter** -- il peut porter lui-meme `--base`, `--diff`
+      ou `{changed_paths}` comme n'importe quel argv ;
+    * la **selection de chemins** -- un commenter qui declare `paths` fait
+      passer son detecteur par `commenter_paths()`, qui ne lui transmet que
+      les fichiers du diff (`git diff --name-only --diff-filter=MR
+      <merge-base> HEAD -- <motifs>`). Le verdict est alors borne a la PR par
+      construction, sans qu'aucun jeton n'apparaisse dans un argv.
+
+    Rend (jetons trouves, bornage par selection de chemins).
+    """
+    tokens: list[str] = []
+    selects_paths = False
+    for commenter in getattr(guard, "commenters", ()) or ():
+        for token in scope_tokens(list(getattr(commenter, "argv", ()) or ())):
+            if token not in tokens:
+                tokens.append(token)
+        if getattr(commenter, "paths", None):
+            selects_paths = True
+    return tokens, selects_paths
 
 
 def source_scope_markers(run_commands: list[str]) -> list[str]:
@@ -209,12 +242,20 @@ def findings(base: str) -> tuple[list[str], list[str], dict, list[dict]]:
         checked += 1
         markers = source_scope_markers(run_commands(data))
         tokens = scope_tokens(guard.argv)
-        scoped = bool(tokens) or _delta_guard(guard)
+        commenter_tokens, commenter_selects = commenter_scope(guard)
+        scoped = (
+            bool(tokens)
+            or bool(commenter_tokens)
+            or commenter_selects
+            or _delta_guard(guard)
+        )
         evidence.append({
             "name": guard.name,
             "source": rel,
             "source_markers": markers,
             "argv_scope_tokens": tokens,
+            "commenter_scope_tokens": commenter_tokens,
+            "commenter_selects_paths": commenter_selects,
             "delta_guard": _delta_guard(guard),
             "diff_bounded": bool(guard.diff_bounded),
         })
@@ -223,9 +264,10 @@ def findings(base: str) -> tuple[list[str], list[str], dict, list[dict]]:
         if markers and not scoped:
             problems.append(
                 f"{guard.name!r}: le workflow d'origine borne l'analyse au "
-                f"diff ({', '.join(markers)}) mais l'argv du registre ne porte "
-                f"aucun jeton de bornage ({' '.join(guard.argv)}) -- la portee "
-                "a ete perdue a l'absorption"
+                f"diff ({', '.join(markers)}) mais ni l'argv du registre "
+                f"({' '.join(guard.argv) or 'vide'}) ni ses commenters n'en "
+                "portent le jeton, et aucun commenter ne selectionne les "
+                "chemins du diff -- la portee a ete perdue a l'absorption"
             )
 
         # I2 -- pas de declaration non corroboree.
@@ -264,9 +306,13 @@ def _main(argv: list[str]) -> int:
     else:
         if args.verbose:
             for row in evidence:
+                commenters = ",".join(row["commenter_scope_tokens"]) or "-"
+                if row["commenter_selects_paths"]:
+                    commenters += "+chemins-du-diff"
                 print(f"[absorbed-argv-scope] {row['name']}: source="
                       f"{','.join(row['source_markers']) or '-'} argv="
                       f"{','.join(row['argv_scope_tokens']) or '-'} "
+                      f"commenters={commenters} "
                       f"delta={row['delta_guard']} "
                       f"diff_bounded={row['diff_bounded']}")
         if problems:

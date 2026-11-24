@@ -1,19 +1,32 @@
-# CTG-Momentum Robustness Research (2015-2025)
-# Simplified Python script version
+# CTG-Momentum : proxy Python de la strategie C# (Main.cs), fenetre figee 2015-2025
+#
+# Le script rejoue les regles de Main.cs sur un univers de 30 grandes capitalisations
+# (proxy des constituants OEF) avec des donnees yfinance. Les indicateurs suivent les
+# classes C# du projet :
+#   - pente : AnnualizedExponentialSlopeIndicator (regression du log-prix sur 90 seances,
+#     ((exp(pente)^252) - 1) * 100 * R^2, echelle en pourcentage) ;
+#   - moyenne : ExponentialMovingAverage(150) (CustomMomentumIndicator) ;
+#   - gap : GapIndicator(90), plus forte variation absolue d'une cloture a la suivante ;
+#   - ATR : AverageTrueRange(20), lissage de Wilder (defaut QC) ;
+#   - regime : SPY au-dessus de sa SMA(200) (MarketRegimeFilter).
+# Le jeudi, 1 minute apres l'ouverture, Main.cs classe les titres prets par pente,
+# garde les 20 premiers, puis filtre pente > 10, prix > EMA(150) et gap < 0,15 ; il
+# vend toute ligne absente de la liste filtree, et n'achete qu'en regime Risk-ON.
+# Ici, les indicateurs sont pris a la cloture de la veille et les ordres au prix
+# d'ouverture du jeudi.
+#
+# Ecarts au C# qui restent : univers fixe de 30 titres d'aujourd'hui (biais de
+# survie), pas de reajustement bimensuel des tailles de position, ni frais ni
+# glissement. Le Sharpe est calcule sur les rendements hebdomadaires, sans taux sans
+# risque (celui de QC en retranche un).
 
-import pandas as pd
 import numpy as np
-from datetime import datetime
-import matplotlib.pyplot as plt
+import pandas as pd
 import yfinance as yf
 import warnings
+from datetime import datetime
 warnings.filterwarnings('ignore')
 
-print("=" * 70)
-print("CTG-Momentum Robustness Research (2015-2025)")
-print("=" * 70)
-
-# Configuration
 TICKERS = [
     "AAPL", "MSFT", "AMZN", "GOOGL", "META", "NVDA", "TSLA",
     "JPM", "BAC", "WFC", "GS",
@@ -24,310 +37,301 @@ TICKERS = [
     "DIS", "NFLX",
     "ADBE", "CRM"
 ]
+
+# Fenetre figee (meme fenetre que le carnet research_robustness.ipynb, #22273).
+# yfinance exclut la date de fin : END charge jusqu'a la seance du 2025-12-31.
+# Les donnees sont chargees des WARMUP_START pour que la SMA(200), l'EMA(150), la
+# pente 90 j, le gap 90 j et l'ATR soient prets au premier jour de la fenetre, comme
+# SetWarmUp(200) et les History(...) de Main.cs.
+WARMUP_START = '2014-01-01'
 START = '2015-01-01'
-END = datetime.now().strftime('%Y-%m-%d')
+END = '2026-01-01'
 
-# Strategy parameters
-RISK_PER_TRADE = 0.01
-TOP_N = 20
-MIN_SLOPE = 10.0
+# Parametres de Main.cs
+SLOPE_WINDOW = 90          # _annualizedSlopeWindow
+EMA_WINDOW = 150           # _movingAverageWindow
+GAP_WINDOW = 90            # _gapWindow
+ATR_WINDOW = 20            # _atrWindow
+SMA_REGIME = 200           # SMA("SPY", 200)
+TOP_N = 20                 # _topNStockOfSp500
+MIN_SLOPE = 10.0           # _minimumAnnualizedSlope (en pourcentage)
+MAX_GAP = 0.15             # _maximumGap
+RISK_PER_TRADE = 0.01      # RiskPerContractOnPortfolio
 INITIAL_CAPITAL = 1_000_000
+SHARPE_THRESHOLD = 0.4     # critere du README du projet
 
-print(f"\nChargement des données {START} → {END}")
-print(f"Univers: SPY + {len(TICKERS)} large caps (proxy S&P 100)")
 
-# Download data
-spy_data = yf.download('SPY', start=START, end=END, progress=False)
-# yfinance returns MultiIndex columns, flatten them
-if isinstance(spy_data.columns, pd.MultiIndex):
-    spy_data.columns = spy_data.columns.droplevel(1)
+def flatten(df):
+    if isinstance(df.columns, pd.MultiIndex):
+        df = df.copy()
+        df.columns = df.columns.droplevel(1)
+    return df
 
-data = yf.download(TICKERS, start=START, end=END, progress=False, group_by='ticker')
 
-print(f"✅ SPY: {len(spy_data)} barres")
-print(f"✅ Actions: {len(TICKERS)} symboles")
-print(f"   Période: {spy_data.index.min().date()} → {spy_data.index.max().date()}")
+def exp_slope(close, window):
+    """AnnualizedExponentialSlopeIndicator : OLS de log(close) sur t = 1..window."""
+    logp = np.log(close.to_numpy(dtype=float))
+    out = np.full(len(logp), np.nan)
+    if len(logp) < window:
+        return pd.Series(out, index=close.index)
+    win = np.lib.stride_tricks.sliding_window_view(logp, window)
+    t = np.arange(1, window + 1, dtype=float)
+    tc = t - t.mean()
+    yc = win - win.mean(axis=1, keepdims=True)
+    slope = (yc @ tc) / (tc @ tc)
+    ss_tot = (yc ** 2).sum(axis=1)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        r2 = np.where(ss_tot > 0, slope ** 2 * (tc @ tc) / ss_tot, 0.0)
+    annual = (np.exp(slope) ** 252 - 1) * 100 * r2
+    out[window - 1:] = annual
+    return pd.Series(out, index=close.index)
 
-# ==== REGIME DETECTION ====
+
+def max_drawdown(values):
+    return ((values.cummax() - values) / values.cummax()).max() * 100
+
+
+def weekly_sharpe(returns):
+    returns = returns.dropna()
+    return returns.mean() / returns.std() * np.sqrt(52) if returns.std() > 0 else 0.0
+
+
+print("=" * 70)
+print("CTG-Momentum : proxy Python de Main.cs (2015-2025)")
+print("=" * 70)
+print(f"\nFenetre {START} -> {END} (borne de fin exclue), chargement des {WARMUP_START} pour l'echauffement")
+print(f"Univers : SPY + {len(TICKERS)} grandes capitalisations (proxy OEF)")
+
+spy_all = flatten(yf.download('SPY', start=WARMUP_START, end=END, progress=False, auto_adjust=True))
+data = yf.download(TICKERS, start=WARMUP_START, end=END, progress=False, group_by='ticker', auto_adjust=True)
+window_mask = (spy_all.index >= START) & (spy_all.index < END)
+print(f"SPY : {window_mask.sum()} seances dans la fenetre "
+      f"({spy_all.index[window_mask].min().date()} -> {spy_all.index[window_mask].max().date()})")
+
+# ==== PHASE 1 : regime de marche ====
 print("\n" + "=" * 70)
-print("PHASE 1: Détection des régimes de marché (SMA 200)")
+print("PHASE 1 : regime de marche (SPY contre SMA 200, a la cloture)")
 print("=" * 70)
 
-spy_data['SMA_200'] = spy_data['Close'].rolling(200).mean()
-spy_data['Regime'] = (spy_data['Close'] > spy_data['SMA_200']).astype(int)
+spy_all['SMA_200'] = spy_all['Close'].rolling(SMA_REGIME).mean()
+spy_all['Regime'] = np.where(spy_all['SMA_200'].isna(), np.nan,
+                             (spy_all['Close'] > spy_all['SMA_200']).astype(float))
+spy_all['Transition'] = spy_all['Regime'].diff().abs()
+spy = spy_all[window_mask].copy()
+print(f"\nJours sans SMA(200) dans la fenetre : {int(spy['SMA_200'].isna().sum())}")
 
-regime_changes = (spy_data['Regime'].diff() != 0).sum()
-risk_on_days = (spy_data['Regime'] == 1).sum()
-risk_off_days = (spy_data['Regime'] == 0).sum()
-total_days = len(spy_data.dropna(subset=['Regime']))
+total_days = len(spy)
+risk_on_days = int((spy['Regime'] == 1).sum())
+risk_off_days = int((spy['Regime'] == 0).sum())
+transitions = int(spy['Transition'].sum())
+risk_on_pct = 100 * risk_on_days / total_days
+print(f"  Total jours : {total_days}")
+print(f"  Risk-ON  (SPY > SMA200) : {risk_on_days} jours ({risk_on_pct:.1f}%)")
+print(f"  Risk-OFF (SPY < SMA200) : {risk_off_days} jours ({100 * risk_off_days / total_days:.1f}%)")
+print(f"  Transitions : {transitions}")
+per_year = spy['Transition'].groupby(spy.index.year).sum().astype(int)
+print("  Transitions par annee : " + ", ".join(f"{y}: {n}" for y, n in per_year.items()))
 
-print(f"\nRésultats:")
-print(f"  Total jours: {total_days}")
-print(f"  Risk-ON (SPY > SMA200): {risk_on_days} jours ({100*risk_on_days/total_days:.1f}%)")
-print(f"  Risk-OFF (SPY < SMA200): {risk_off_days} jours ({100*risk_off_days/total_days:.1f}%)")
-print(f"  Transitions: {regime_changes}")
-
-# Find Risk-OFF periods
-risk_off = spy_data[spy_data['Regime'] == 0].copy()
+risk_off = spy[spy['Regime'] == 0].copy()
 if not risk_off.empty:
     risk_off['Block'] = (risk_off.index.to_series().diff() > pd.Timedelta(days=5)).cumsum()
-    print("\n  Périodes Risk-OFF majeures (>= 10 jours):")
-    for block_id, group in risk_off.groupby('Block'):
+    print("\n  Periodes Risk-OFF d'au moins 10 seances")
+    print("  (variation de SPY entre le premier et le dernier jour de la periode) :")
+    for _, group in risk_off.groupby('Block'):
         if len(group) >= 10:
-            start_date = group.index.min()
-            end_date = group.index.max()
-            duration = len(group)
-            spy_drop = 100 * (group['Close'].iloc[-1] / group['Close'].iloc[0] - 1)
-            print(f"    {start_date.date()} → {end_date.date()} ({duration}j, SPY {spy_drop:+.1f}%)")
+            change = 100 * (group['Close'].iloc[-1] / group['Close'].iloc[0] - 1)
+            print(f"    {group.index.min().date()} -> {group.index.max().date()} "
+                  f"({len(group)} seances, SPY {change:+.1f}%)")
 
-# ==== CALCULATE INDICATORS ====
+# ==== PHASE 2 : indicateurs ====
 print("\n" + "=" * 70)
-print("PHASE 2: Calcul des indicateurs par action")
+print("PHASE 2 : indicateurs par action (classes C# du projet)")
 print("=" * 70)
 
 stock_data = {}
 for ticker in TICKERS:
-    try:
-        df = data[ticker].copy()
+    df = flatten(data[ticker].copy()).dropna(subset=['Close'])
+    if len(df) < SMA_REGIME:
+        print(f"  {ticker} ecarte : {len(df)} seances")
+        continue
+    df['Slope'] = exp_slope(df['Close'], SLOPE_WINDOW)
+    df['EMA'] = df['Close'].ewm(span=EMA_WINDOW, adjust=False, min_periods=EMA_WINDOW).mean()
+    df['Gap'] = df['Close'].pct_change().abs().rolling(GAP_WINDOW - 1).max()
+    tr = np.maximum(df['High'] - df['Low'],
+                    np.maximum(abs(df['High'] - df['Close'].shift(1)),
+                               abs(df['Low'] - df['Close'].shift(1))))
+    df['ATR'] = tr.ewm(alpha=1 / ATR_WINDOW, adjust=False, min_periods=ATR_WINDOW).mean()
+    # Valeurs connues a l'ouverture du jour : indicateurs de la cloture de la veille
+    for col in ['Slope', 'EMA', 'Gap', 'ATR']:
+        df[col + '_prev'] = df[col].shift(1)
+    stock_data[ticker] = df
+print(f"{len(stock_data)} actions avec indicateurs")
 
-        if len(df) < 200:
-            continue
-
-        # Momentum (90-day annualized slope proxy) - convert to percentage
-        df['Ret_90d'] = df['Close'].pct_change(90)
-        df['Momentum'] = df['Ret_90d'] * (252 / 90) * 100  # Convert to percentage
-
-        # MA(150)
-        df['MA_150'] = df['Close'].rolling(150).mean()
-        df['Above_MA150'] = (df['Close'] > df['MA_150']).astype(int)
-
-        # Gap filter
-        df['Daily_Gap'] = abs(df['Open'] / df['Close'].shift(1) - 1)
-        df['Max_Gap_90d'] = df['Daily_Gap'].rolling(90).max()
-        df['Gap_OK'] = (df['Max_Gap_90d'] < 0.15).astype(int)
-
-        # ATR(20)
-        df['TR'] = np.maximum(
-            df['High'] - df['Low'],
-            np.maximum(
-                abs(df['High'] - df['Close'].shift(1)),
-                abs(df['Low'] - df['Close'].shift(1))
-            )
-        )
-        df['ATR_20'] = df['TR'].rolling(20).mean()
-
-        stock_data[ticker] = df
-    except Exception as e:
-        print(f"  Erreur {ticker}: {e}")
-
-print(f"✅ {len(stock_data)} actions avec indicateurs")
-
-# ==== BACKTEST ====
+# ==== PHASE 3 : backtest ====
 print("\n" + "=" * 70)
-print("PHASE 3: Backtest (rebalancing hebdomadaire jeudis)")
+print("PHASE 3 : backtest (jeudi a l'ouverture, indicateurs de la veille)")
 print("=" * 70)
 
-thursdays = spy_data.index[spy_data.index.dayofweek == 3]
-print(f"  {len(thursdays)} jeudis de rebalancing")
+spy_all['SMA_200_prev'] = spy_all['SMA_200'].shift(1)
+thursdays = spy.index[spy.index.dayofweek == 3]
+print(f"  {len(thursdays)} jeudis ({thursdays[0].date()} -> {thursdays[-1].date()})")
 
-portfolio_value = INITIAL_CAPITAL
 cash = INITIAL_CAPITAL
 positions = {}
-portfolio_history = []
+history = []
+ranked_total = 0
+slope_rejects = 0
+ema_rejects = 0
+gap_rejects = 0
+empty_lists = 0
 
-for idx, date in enumerate(thursdays):
-    if date not in spy_data.index:
-        continue
+for date in thursdays:
+    def price(ticker, field):
+        df = stock_data[ticker]
+        return df.loc[date, field] if date in df.index else np.nan
 
-    risk_on = spy_data.loc[date, 'Regime'] == 1
+    value_open = cash + sum(n * price(t, 'Open') for t, n in positions.items()
+                            if not np.isnan(price(t, 'Open')))
+    risk_on = spy_all.loc[date, 'Open'] > spy_all.loc[date, 'SMA_200_prev']
 
-    # Ranking
-    candidates = []
+    ready = []
     for ticker, df in stock_data.items():
         if date not in df.index:
             continue
         row = df.loc[date]
-        if pd.isna(row['Momentum']) or pd.isna(row['MA_150']) or pd.isna(row['ATR_20']):
+        if row[['Slope_prev', 'EMA_prev', 'Gap_prev', 'ATR_prev']].isna().any():
             continue
-        if row['Momentum'] < MIN_SLOPE:
-            continue
-        if row['Above_MA150'] == 0:
-            continue
-        if row['Gap_OK'] == 0:
-            continue
+        ready.append((ticker, row))
+    ready.sort(key=lambda item: item[1]['Slope_prev'], reverse=True)
+    top = ready[:TOP_N]
+    ranked_total += len(top)
 
-        candidates.append({
-            'ticker': ticker,
-            'momentum': row['Momentum'],
-            'price': row['Close'],
-            'atr': row['ATR_20']
-        })
+    selected = []
+    for ticker, row in top:
+        if not row['Slope_prev'] > MIN_SLOPE:
+            slope_rejects += 1
+        elif not row['Open'] > row['EMA_prev']:
+            ema_rejects += 1
+        elif not row['Gap_prev'] < MAX_GAP:
+            gap_rejects += 1
+        else:
+            selected.append((ticker, row))
+    if not selected:
+        empty_lists += 1
+    selected_names = {t for t, _ in selected}
 
-    if len(candidates) == 0:
-        top_stocks = set()
-    else:
-        candidates_df = pd.DataFrame(candidates).sort_values('momentum', ascending=False)
-        top_stocks = set(candidates_df.head(TOP_N)['ticker'])
+    # Main.cs vend toute ligne absente de la liste filtree, quel que soit le regime
+    for ticker in [t for t in positions if t not in selected_names]:
+        p = price(ticker, 'Open')
+        if not np.isnan(p):
+            cash += positions.pop(ticker) * p
 
-    # Sell non-top stocks
-    to_sell = [t for t in positions.keys() if t not in top_stocks]
-    for ticker in to_sell:
-        shares = positions[ticker]
-        if ticker in stock_data and date in stock_data[ticker].index:
-            price = stock_data[ticker].loc[date, 'Close']
-            cash += shares * price
-            del positions[ticker]
-
-    # Buy new positions if risk_on
-    if risk_on and len(candidates) > 0:
-        candidates_df = pd.DataFrame(candidates).sort_values('momentum', ascending=False)
-        for _, row in candidates_df.head(TOP_N).iterrows():
-            ticker = row['ticker']
+    if risk_on:
+        for ticker, row in selected:
             if ticker in positions:
                 continue
-            risk_amount = portfolio_value * RISK_PER_TRADE
-            shares = int(risk_amount / row['atr'])
-            cost = shares * row['price']
-            if shares > 0 and cost <= cash:
+            shares = int(np.floor(value_open * RISK_PER_TRADE / row['ATR_prev']))
+            cost = shares * row['Open']
+            if shares > 0 and cash > cost:
                 positions[ticker] = shares
                 cash -= cost
 
-    # Calculate portfolio value
-    holdings_value = sum(
-        positions[t] * stock_data[t].loc[date, 'Close']
-        for t in positions.keys()
-        if t in stock_data and date in stock_data[t].index
-    )
-    portfolio_value = cash + holdings_value
-    portfolio_history.append({
-        'date': date,
-        'value': portfolio_value,
-        'n_positions': len(positions),
-        'cash': cash
-    })
+    value_close = cash + sum(n * price(t, 'Close') for t, n in positions.items()
+                             if not np.isnan(price(t, 'Close')))
+    history.append({'date': date, 'value': value_close, 'n_positions': len(positions)})
 
-    if idx % 100 == 0:
-        print(f"  Progress: {idx}/{len(thursdays)} ({100*idx/len(thursdays):.0f}%)")
+print(f"  Titres classes (top {TOP_N}) : {ranked_total}")
+print(f"  Ecartes par la pente <= {MIN_SLOPE:g} : {slope_rejects}")
+print(f"  Ecartes par le prix <= EMA({EMA_WINDOW}) : {ema_rejects}")
+print(f"  Ecartes par le gap >= {MAX_GAP:g} : {gap_rejects}")
+print(f"  Jeudis sans aucun titre retenu : {empty_lists} / {len(thursdays)}")
 
-print(f"✅ Backtest terminé: {len(portfolio_history)} rebalancements")
-
-# ==== RESULTS ====
+# ==== RESULTATS ====
 print("\n" + "=" * 70)
-print("RESULTATS FINAUX")
+print("RESULTATS SUR LA FENETRE")
 print("=" * 70)
 
-results_df = pd.DataFrame(portfolio_history).set_index('date')
-results_df['returns'] = results_df['value'].pct_change()
+res = pd.DataFrame(history).set_index('date')
+res['returns'] = res['value'].pct_change()
+res.loc[res.index[0], 'returns'] = res['value'].iloc[0] / INITIAL_CAPITAL - 1
+spy_w = spy_all.loc[thursdays, 'Close']
+spy_ret = spy_w.pct_change()
+spy_ret.iloc[0] = spy_w.iloc[0] / spy_all.loc[thursdays[0], 'Open'] - 1
+spy_value = INITIAL_CAPITAL * (1 + spy_ret).cumprod()
 
-total_return = (results_df['value'].iloc[-1] / INITIAL_CAPITAL - 1) * 100
-years = (results_df.index[-1] - results_df.index[0]).days / 365.25
-cagr = ((results_df['value'].iloc[-1] / INITIAL_CAPITAL) ** (1 / years) - 1) * 100
-sharpe = results_df['returns'].mean() / results_df['returns'].std() * np.sqrt(52)
-max_dd = ((results_df['value'].cummax() - results_df['value']) / results_df['value'].cummax()).max() * 100
+years = (res.index[-1] - res.index[0]).days / 365.25
+growth = res['value'].iloc[-1] / INITIAL_CAPITAL
+total_return = (growth - 1) * 100
+cagr = (growth ** (1 / years) - 1) * 100
+sharpe = weekly_sharpe(res['returns'])
+max_dd = max_drawdown(res['value'])
+spy_growth = spy_value.iloc[-1] / INITIAL_CAPITAL
+spy_cagr = (spy_growth ** (1 / years) - 1) * 100
+spy_sharpe = weekly_sharpe(spy_ret)
+spy_dd = max_drawdown(spy_value)
 
-print(f"\nPériode: {results_df.index[0].date()} → {results_df.index[-1].date()} ({years:.1f} ans)")
-print(f"Capital initial: ${INITIAL_CAPITAL:,.0f}")
-print(f"Capital final: ${results_df['value'].iloc[-1]:,.0f}")
-print(f"\nPerformance:")
-print(f"  Total Return: {total_return:+.2f}%")
-print(f"  CAGR: {cagr:.2f}%")
-print(f"  Sharpe Ratio: {sharpe:.3f}")
-print(f"  Max Drawdown: {max_dd:.2f}%")
-print(f"  Nombre moyen de positions: {results_df['n_positions'].mean():.1f}")
+print(f"\nPeriode : {res.index[0].date()} -> {res.index[-1].date()} ({years:.2f} ans)")
+print(f"\n{'':<22}{'Strategie':>12}{'SPY':>12}")
+print(f"{'Rendement total':<22}{total_return:>11.2f}%{(spy_growth - 1) * 100:>11.2f}%")
+print(f"{'CAGR':<22}{cagr:>11.2f}%{spy_cagr:>11.2f}%")
+print(f"{'Sharpe (hebdo)':<22}{sharpe:>12.3f}{spy_sharpe:>12.3f}")
+print(f"{'Pire baisse':<22}{max_dd:>11.2f}%{spy_dd:>11.2f}%")
+print(f"\nNombre moyen de positions : {res['n_positions'].mean():.1f} "
+      f"(maximum {res['n_positions'].max()}, jeudis sans position : {(res['n_positions'] == 0).sum()})")
 
-# ==== WALK-FORWARD ====
+# ==== STABILITE PAR SEMESTRE ====
 print("\n" + "=" * 70)
-print("WALK-FORWARD VALIDATION (périodes de 6 mois)")
+print("STABILITE PAR SEMESTRE")
 print("=" * 70)
+print("Backtest unique decoupe en semestres : aucun parametre n'est re-estime d'un")
+print("semestre a l'autre, ce n'est pas une validation walk-forward.\n")
 
-test_periods = [
-    (datetime(2017, 1, 1), datetime(2017, 7, 1)),
-    (datetime(2017, 7, 1), datetime(2018, 1, 1)),
-    (datetime(2018, 1, 1), datetime(2018, 7, 1)),
-    (datetime(2018, 7, 1), datetime(2019, 1, 1)),
-    (datetime(2019, 1, 1), datetime(2019, 7, 1)),
-    (datetime(2019, 7, 1), datetime(2020, 1, 1)),
-    (datetime(2020, 1, 1), datetime(2020, 7, 1)),  # COVID
-    (datetime(2020, 7, 1), datetime(2021, 1, 1)),
-    (datetime(2021, 1, 1), datetime(2021, 7, 1)),
-    (datetime(2021, 7, 1), datetime(2022, 1, 1)),
-    (datetime(2022, 1, 1), datetime(2022, 7, 1)),  # Inflation
-    (datetime(2022, 7, 1), datetime(2023, 1, 1)),
-    (datetime(2023, 1, 1), datetime(2023, 7, 1)),
-    (datetime(2023, 7, 1), datetime(2024, 1, 1)),
-    (datetime(2024, 1, 1), datetime(2024, 7, 1)),
-    (datetime(2024, 7, 1), datetime(2025, 1, 1)),
-]
-
-print(f"\n{'Période':<25} {'Stratégie':<12} {'SPY':<12} {'Alpha':<10} {'Sharpe':<8}")
-print("-" * 70)
-
-wf_results = []
-for start_test, end_test in test_periods:
-    period_results = results_df[(results_df.index >= start_test) & (results_df.index < end_test)]
-    if len(period_results) < 2:
+semesters = [(datetime(y, m, 1), datetime(y + (m == 7), 1 if m == 7 else 7, 1))
+             for y in range(2015, 2026) for m in (1, 7)]
+print(f"{'Semestre':<20}{'Strategie':>11}{'SPY':>10}{'Ecart':>10}{'Sharpe':>9}")
+print("-" * 60)
+rows = []
+for s, e in semesters:
+    mask = (res.index >= s) & (res.index < e)
+    if mask.sum() < 2:
         continue
+    strat = ((1 + res.loc[mask, 'returns']).prod() - 1) * 100
+    bench = ((1 + spy_ret[mask]).prod() - 1) * 100
+    sem_sharpe = weekly_sharpe(res.loc[mask, 'returns'])
+    label = f"{s:%Y-%m} -> {e:%Y-%m}"
+    rows.append({'period': label, 'start': s, 'strategy': strat, 'spy': bench,
+                 'gap': strat - bench, 'sharpe': sem_sharpe})
+    print(f"{label:<20}{strat:>10.2f}%{bench:>9.2f}%{strat - bench:>9.2f}%{sem_sharpe:>9.3f}")
+sem = pd.DataFrame(rows)
 
-    period_return = (period_results['value'].iloc[-1] / period_results['value'].iloc[0] - 1) * 100
-    period_sharpe = period_results['returns'].mean() / period_results['returns'].std() * np.sqrt(52) if period_results['returns'].std() > 0 else 0
+positive = int((sem['strategy'] > 0).sum())
+beats = int((sem['gap'] > 0).sum())
+worst = sem.loc[sem['strategy'].idxmin()]
+best = sem.loc[sem['strategy'].idxmax()]
+print(f"\nSemestres positifs : {positive} / {len(sem)}")
+print(f"Semestres au-dessus de SPY : {beats} / {len(sem)}")
+print(f"Ecart moyen a SPY : {sem['gap'].mean():.2f} pts")
+print(f"Pire semestre : {worst['period']} ({worst['strategy']:.2f}%)")
+print(f"Meilleur semestre : {best['period']} ({best['strategy']:.2f}%)")
 
-    spy_period = spy_data[(spy_data.index >= start_test) & (spy_data.index < end_test)]
-    spy_return = (spy_period['Close'].iloc[-1] / spy_period['Close'].iloc[0] - 1) * 100 if len(spy_period) > 0 else 0
-
-    alpha = period_return - spy_return
-
-    print(f"{start_test.strftime('%Y-%m')} → {end_test.strftime('%Y-%m'):<12} "
-          f"{period_return:>10.2f}%  {spy_return:>10.2f}%  {alpha:>8.2f}%  {period_sharpe:>7.3f}")
-
-    wf_results.append({
-        'period': f"{start_test.strftime('%Y-%m')} → {end_test.strftime('%Y-%m')}",
-        'strategy_return': period_return,
-        'spy_return': spy_return,
-        'alpha': alpha,
-        'sharpe': period_sharpe
-    })
-
-wf_df = pd.DataFrame(wf_results)
+# ==== SYNTHESE ====
 print("\n" + "=" * 70)
-print(f"Synthèse Walk-Forward:")
-print(f"  Périodes gagnantes: {(wf_df['strategy_return'] > 0).sum()} / {len(wf_df)}")
-print(f"  Alpha moyen vs SPY: {wf_df['alpha'].mean():.2f}%")
-print(f"  Sharpe moyen: {wf_df['sharpe'].mean():.3f}")
-print(f"  Pire période: {wf_df.loc[wf_df['strategy_return'].idxmin(), 'period']} ({wf_df['strategy_return'].min():.2f}%)")
-print(f"  Meilleure période: {wf_df.loc[wf_df['strategy_return'].idxmax(), 'period']} ({wf_df['strategy_return'].max():.2f}%)")
-
-# ==== CONCLUSIONS ====
-print("\n" + "=" * 70)
-print("CONCLUSIONS ET RECOMMANDATIONS")
+print("SYNTHESE (valeurs calculees ci-dessus)")
 print("=" * 70)
 
-risk_on_pct = 100 * risk_on_days / total_days
-
-print(f"\n1. Protection SMA(200):")
-print(f"   - Temps en Risk-ON: {risk_on_pct:.1f}%")
-print(f"   - Le filtre SMA(200) a correctement détecté les bear markets")
-print(f"   - Protection effective durant COVID 2020 et Inflation 2022")
-
-print(f"\n2. Performance globale:")
-print(f"   - Sharpe étendu (2015-2025): {sharpe:.3f}")
-print(f"   - Sharpe actuel (2021-Now): 0.507 (pré-bugfix)")
-print(f"   - La stratégie est ROBUSTE sur 10 ans")
-
-print(f"\n3. Stabilité momentum:")
-print(f"   - Walk-forward montre stabilité sur différents régimes")
-print(f"   - Nombre moyen positions: {results_df['n_positions'].mean():.1f} (diversification OK)")
-
-print(f"\n4. RECOMMANDATION FINALE:")
-print(f"   ✅ ÉTENDRE LA PÉRIODE: SetStartDate(2015, 1, 1)")
-print(f"   ✅ CONSERVER les paramètres actuels (SMA 200, slope 90j, risk 1.0%)")
-print(f"   ✅ Le bugfix SMA(10)→SMA(200) est CRITIQUE pour la protection")
-
-print(f"\n5. Prochaines étapes:")
-print(f"   → Modifier Main.cs: SetStartDate(2015, 1, 1)")
-print(f"   → Compiler via QC cloud")
-print(f"   → Lancer backtest via web UI")
-print(f"   → Valider Sharpe >= 0.4 sur période étendue")
-
-print("\n" + "=" * 70)
-print("Recherche terminée!")
-print("=" * 70)
+print(f"\nFiltre SMA(200) : {risk_on_pct:.1f}% du temps en Risk-ON, {transitions} transitions.")
+for label, start in [("Crise COVID", datetime(2020, 1, 1)), ("Baisse 2022", datetime(2022, 1, 1))]:
+    r = sem[sem['start'] == start].iloc[0]
+    mask = (res.index >= start) & (res.index < datetime(start.year, 7, 1))
+    dd = max_drawdown(res.loc[mask, 'value'])
+    sdd = max_drawdown(spy_value[mask])
+    verdict = "au-dessus de" if r['gap'] > 0 else "en dessous de"
+    print(f"{label} ({r['period']}) : strategie {r['strategy']:+.2f}%, SPY {r['spy']:+.2f}% "
+          f"({verdict} SPY) ; pire baisse dans le semestre {dd:.2f}% contre {sdd:.2f}% pour SPY.")
+verdict_sharpe = "atteint" if sharpe >= SHARPE_THRESHOLD else "non atteint"
+print(f"Critere Sharpe >= {SHARPE_THRESHOLD} : {verdict_sharpe} sur le proxy (Sharpe {sharpe:.3f}).")
+compare = "au-dessus de" if sharpe > spy_sharpe else "en dessous de"
+print(f"Sharpe du proxy {compare} celui de SPY sur la meme fenetre ({sharpe:.3f} contre {spy_sharpe:.3f}).")
+print("\nLimites : univers de 30 titres choisis aujourd'hui (biais de survie), sans frais ni")
+print("glissement, sans le reajustement bimensuel des tailles de Main.cs. Le Sharpe du")
+print("backtest C# sur l'univers OEF se mesure sur QuantConnect, pas dans ce script.")

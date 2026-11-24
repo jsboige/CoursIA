@@ -54,6 +54,12 @@ jobs:
     # sans secret. La garde same-repo ci-dessous saute les PRs de fork :
     # aucun code de fork n'atteint le runner.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Aucun run vert a mesurer. Le seul run
+    # non annule (39366639422) a tenu 158.9 min en ECHEC : meme fige de
+    # runner. Le job est un garde Python pur (self-test + pytest + diff
+    # base..PR), sans execution de carnet. Le defaut d'Actions est 6 h,
+    # et un job fige tient son slot tout ce temps.
+    timeout-minutes: 30
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4

@@ -382,7 +382,12 @@ def _run(job_id: int) -> dict:
     }
 
 
-def _classified(job: dict, annotations: list[dict], log_calls: list | None = None):
+def _classified(
+    job: dict,
+    annotations: list[dict],
+    log_calls: list | None = None,
+    log_text: str | None = None,
+):
     """analyse_runs sur un run d'un seul job, fetchs monkeypatches."""
     import classify_job_deaths as mod
 
@@ -393,6 +398,8 @@ def _classified(job: dict, annotations: list[dict], log_calls: list | None = Non
         mod.fetch_job_log = (
             lambda job_id: log_calls.append(job_id) or LOG_TEARDOWN_DEATH
         )
+    elif log_text is not None:
+        mod.fetch_job_log = lambda job_id: log_text
     else:
         mod.fetch_job_log = lambda job_id: ""
     try:
@@ -419,6 +426,46 @@ def test_git_object_missing_promisor_remote_beats_step_failure():
     (job 108953753880) -- l'etape en echec est un checkout, la famille
     s'applique par les deux branches du predicat."""
     assert _classified(_checkout_failure_job(), ANN_PROMISOR) == "GIT_OBJECT_MISSING"
+
+
+def test_git_object_missing_reads_promisor_transfer_failure_from_job_log():
+    """Récurrence PR #25178 quand l'annotation ne porte pas les détails Git."""
+    log_text = """\
+2026-11-08T01:07:43.0407616Z ##[error]error: RPC failed; curl 28 Operation too slow.
+2026-11-08T01:07:43.0436568Z ##[error]fatal: early EOF
+2026-11-08T01:07:43.0454643Z ##[error]fatal: fetch-pack: invalid index-pack output
+2026-11-08T01:07:43.3992603Z ##[error]fatal: could not fetch 86196305442ebdccfc0dcc3a02ad741111c1b595 from promisor remote
+2026-11-08T01:07:43.4074929Z ##[error]The process '/usr/bin/git' failed with exit code 128
+"""
+    assert (
+        _classified(
+            _checkout_failure_job(), [], log_text=log_text
+        )
+        == "GIT_OBJECT_MISSING"
+    )
+
+
+def test_named_test_failure_beats_promisor_teardown_failure():
+    """Un fetch interrompu en teardown ne blanchit pas un test nomme rouge."""
+    log_text = (
+        "short test summary info\nFAILED tests/test_content.py::test_proof\n"
+        "fatal: early EOF\n"
+        "fatal: could not fetch " + "a" * 40 + " from promisor remote\n"
+    )
+    assert _classified(
+        _step_failure_job(), ANN_EXIT_128_TESTS, log_text=log_text
+    ) == "REAL_STEP_FAILURE"
+
+
+def test_truncated_transfer_without_promisor_sha_stays_content_failure():
+    """Un EOF seul ne suffit pas à transformer un échec en incident Git."""
+    log_text = "fatal: early EOF\nfatal: fetch-pack: invalid index-pack output\n"
+    assert (
+        _classified(
+            _step_failure_job(), ANN_EXIT_128_TESTS, log_text=log_text
+        )
+        == "REAL_STEP_FAILURE"
+    )
 
 
 def test_checkout_step_exit_128_is_git_object_missing():

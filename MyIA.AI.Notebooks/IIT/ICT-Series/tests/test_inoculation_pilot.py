@@ -432,3 +432,115 @@ def test_clamp_hook_alpha_fn_last_alpha_reset_sans_fn():
     hook = mod.ClampHook(_fake_sae(), [1], 1.0)
     hook(None, None, torch.randn(1, 6, 8))
     assert hook.last_alpha is None
+
+
+# --- Temoin negatif ICT-42e (#20772 / #20985) : passe reinitialisee ------- #
+
+import numpy as np
+
+def test_ramp_band_mask_partition_exacte_du_prompt():
+    # Les (cycle, branche, bande) forment une partition du prompt : chaque
+    # token appartient a exactement une cellule — sinon l'aire du temoin
+    # doublerait ou oublierait des positions par rapport a la rampe mesuree.
+    from ict.sae_traces import ramp_band_mask
+    T, cycles, n_bands = 480, 2, 4
+    seen = np.zeros(T, dtype=int)
+    for c in range(1, cycles + 1):
+        for branch in ("montee", "descente"):
+            for b in range(1, n_bands + 1):
+                seen += ramp_band_mask(T, cycles, c, branch, b, n_bands)
+    assert (seen == 1).all()
+
+
+def test_ramp_band_mask_bande_haute_contient_le_sommet():
+    # La bande 4 est fermee en peak : le maximum de ChAQUE cycle tombe dans
+    # la bande 4 de ce cycle (branche descente si u=0.5 est atteint
+    # exactement, montee sinon) ; la bande 1 reste semi-ouverte en haut.
+    from ict.sae_traces import ramp_alpha, ramp_band_mask
+    T, cycles, peak = 400, 2, 0.8
+    a = ramp_alpha(T, cycles=cycles, peak=peak)
+    span = T // cycles
+    for c in (1, 2):
+        seg = a[(c - 1) * span: c * span]
+        m4 = (ramp_band_mask(T, cycles, c, "montee", 4, 4, peak=peak)
+              | ramp_band_mask(T, cycles, c, "descente", 4, 4, peak=peak))
+        assert m4.any()
+        assert np.isclose(a[m4].max(), seg.max(), atol=1e-6)
+        m_b1 = ramp_band_mask(T, cycles, c, "montee", 1, 4, peak=peak)
+        assert a[m_b1].max() < peak / 4 + 1e-12       # borne haute de la bande 1
+
+
+def test_ramp_band_mask_montee_avant_descente_dans_le_cycle():
+    # Dans un cycle, toutes les positions masquees de la montee precedent
+    # celles de la descente (meme bande) : la branche est bien la moitie du
+    # cycle, pas un artefact de numerotation.
+    from ict.sae_traces import ramp_band_mask
+    T = 360
+    for b in (1, 2, 3, 4):
+        asc = np.flatnonzero(ramp_band_mask(T, 2, 1, "montee", b, 4))
+        desc = np.flatnonzero(ramp_band_mask(T, 2, 1, "descente", b, 4))
+        assert asc.max() < desc.min()
+
+
+def test_witness_alpha_valeurs_et_support():
+    # Le profil temoin vaut exactement {0, level}, sur le support du masque.
+    from ict.sae_traces import ramp_band_mask, witness_alpha
+    T = 240
+    mask = ramp_band_mask(T, 2, 1, "descente", 3, 4)
+    a = witness_alpha(T, mask, 0.75)
+    assert a.dtype == np.float32
+    assert set(np.unique(a)).issubset({0.0, 0.75})
+    assert (a != 0).sum() == mask.sum()
+    assert a[mask].min() == 0.75
+
+
+def test_witness_alpha_refuse_niveau_nul_et_masque_faux():
+    # level=0 rendrait la passe trivialement identique a la reference (faux
+    # temoin vert garanti) ; un masque non bool ou de mauvaise taille est un
+    # bug d'appel, pas un cas protocole.
+    from ict.sae_traces import witness_alpha
+    with pytest.raises(ValueError, match="level"):
+        witness_alpha(8, np.ones(8, dtype=bool), 0.0)
+    with pytest.raises(ValueError, match="mask"):
+        witness_alpha(8, np.ones(9, dtype=bool), 0.5)
+    with pytest.raises(ValueError, match="mask"):
+        witness_alpha(8, np.ones(8, dtype=np.float32), 0.5)
+
+
+def test_ramp_band_mask_refuse_parametres_hors_protocole():
+    from ict.sae_traces import ramp_band_mask
+    with pytest.raises(ValueError, match="branch"):
+        ramp_band_mask(40, 2, 1, "asc", 2, 4)
+    with pytest.raises(ValueError, match="cycle_idx"):
+        ramp_band_mask(40, 2, 3, "montee", 2, 4)
+    with pytest.raises(ValueError, match="cycle_idx"):
+        ramp_band_mask(40, 2, 0, "montee", 2, 4)
+    with pytest.raises(ValueError, match="band"):
+        ramp_band_mask(40, 2, 1, "montee", 5, 4)
+    with pytest.raises(ValueError, match="n_bands"):
+        ramp_band_mask(40, 2, 1, "montee", 1, 1)
+
+
+def test_filename_suffixe_witness_discriminant_et_exclusif():
+    # Deux passes temoins differentes ne partagent jamais un nom ; le
+    # suffixe temoin remplace _ramp et _s (exclusivite de la trajectoire).
+    from ict.sae_traces import trace_filename
+    kw = dict(model="Qwen/Qwen3-1.7B-Base", default_model="Qwen/Qwen3.5-9B-Base",
+              n_layers=28, n_clamp=16)
+    base = dict(prefix="inocw")
+    n1 = trace_filename("trained", 27, clamp_witness=(2, 1, "montee", 2, 4),
+                        clamp_scale=1.0, **{**kw, **base})
+    n2 = trace_filename("trained", 27, clamp_witness=(2, 1, "descente", 2, 4),
+                        clamp_scale=1.0, **{**kw, **base})
+    n3 = trace_filename("trained", 27, clamp_witness=(2, 2, "montee", 2, 4),
+                        clamp_scale=1.0, **{**kw, **base})
+    n4 = trace_filename("trained", 27, clamp_witness=(2, 1, "montee", 3, 4),
+                        clamp_scale=1.0, **{**kw, **base})
+    assert len({n1, n2, n3, n4}) == 4
+    assert "_witness2_1mb2n4" in n1
+    assert "_witness2_1db2n4" in n2
+    # Le temoin prime sur la rampe et le const : jamais les deux suffixes.
+    n_ramp_shadow = trace_filename("trained", 27, clamp_witness=(2, 1, "montee", 2, 4),
+                                   clamp_ramp=(2, 1.0), **{**kw, **base})
+    assert n_ramp_shadow == n1
+    assert "_ramp" not in n_ramp_shadow

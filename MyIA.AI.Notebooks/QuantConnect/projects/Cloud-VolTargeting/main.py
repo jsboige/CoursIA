@@ -3,6 +3,13 @@
 
 from AlgorithmImports import *
 
+# Noyau de risque deterministe (#24698) : 90 % investi au plus, sans levier ; stop a
+# 2 ATR(14) sous le prix de l'ordre ; liquidation apres une seance a -3 % ou pire.
+# Le noyau vit dans risk_kernel.py, copie identique de projects/RiskKernel/risk_kernel.py
+# (DeterministicRiskKernel-QC garde son portage du carnet, distinct).
+from risk_kernel import EXPOSURE_CAP, RiskKernel, check_mode
+
+
 class VolTargetingAlgorithm(QCAlgorithm):
     """
     Volatility Targeting Strategy with three variants:
@@ -73,6 +80,29 @@ class VolTargetingAlgorithm(QCAlgorithm):
             self.rebalance
         )
 
+        # Noyau de risque deterministe (#24698, Steward arXiv 2610.30557), v1 seulement.
+        # kernel = off (defaut, code ci-dessus inchange) | cap90 | kernel_nocb | kernel.
+        self.kernel = self.get_parameter("kernel", "off")
+        check_mode(self.kernel)
+        if self.kernel != "off" and self.version != "1":
+            raise ValueError("kernel applies to version 1 only")
+        # Construit apres `rebalance` : le jour du rebalancement, il passe d'abord.
+        self.risk = RiskKernel(self, self.kernel, {"SPY": self.symbol("SPY")},
+                               self.symbol("SPY"))
+        if self.risk.use_cap:
+            self.max_allocation = min(self.max_allocation, EXPOSURE_CAP)
+        # reentry = month (defaut : une ligne stoppee attend le rebalancement mensuel)
+        # | week (variante diagnostique : elle revient au debut de la semaine suivante).
+        self.k_reentry_rule = self.get_parameter("reentry", "month")
+        if self.k_reentry_rule not in ("month", "week"):
+            raise ValueError(f"unknown reentry {self.k_reentry_rule}")
+        if self.k_reentry_rule == "week" and not self.risk.use_stop:
+            raise ValueError("reentry=week needs a kernel mode with the stop")
+        if self.k_reentry_rule == "week":
+            self.schedule.on(self.date_rules.week_start("SPY"),
+                             self.time_rules.after_market_open("SPY", 30),
+                             self.risk.reopen_stopped)
+
     def rebalance(self):
         # Garde de prix (#21585) : aucun ordre ne part tant qu'un titre n'a pas de
         # prix. Le warm-up seede les titres ; cette garde rend le mode d'echec
@@ -119,6 +149,8 @@ class VolTargetingAlgorithm(QCAlgorithm):
             allocation = max(self.min_allocation, min(allocation, self.max_allocation))
 
         self.debug(f"v1 - Realized vol: {realized_vol:.4f}, Target allocation: {allocation:.2f}")
+        if self.risk.rebalance({"SPY": allocation}):
+            return
         self.set_holdings(spy, allocation)
 
     def rebalance_v2(self):
@@ -222,6 +254,18 @@ class VolTargetingAlgorithm(QCAlgorithm):
             self.plot("coursia-18921-equity", f"e{self.bars_seen % 5}",
                       self.portfolio.total_portfolio_value)
             self.bars_seen += 1
+        if self.kernel != "off" and not self.is_warming_up:
+            self.risk.on_close()
+
+    def on_order_event(self, order_event):
+        self.risk.on_order_event(order_event)
+
+    def on_end_of_algorithm(self):
+        if self.kernel == "off":
+            return
+        for name, value in self.risk.statistics().items():
+            self.set_runtime_statistic(name, value)
+        self.set_runtime_statistic("Re-entree", self.k_reentry_rule)
 
     def _forecast_vol(self, ticker):
         """Vol forecast for this month's rebalance; fails loudly if missing."""

@@ -35,11 +35,17 @@ from AlgorithmImports import *
 #       premier rebalancement du run 1 (crash 2017-07-19, 0 ordres). Remplace
 #       par list(self.portfolio.keys()).
 #
-# Defaut porte tel quel, non corrige : au rollover, l'article divise par le
-# contract_multiplier une quantite deja exprimee en contrats
-# (`portfolio[old].quantity // multiplier`), ce qui ecrase la position
-# reportee vers ~0. Conserve parce que le rebalancement hebdomadaire
-# re-cible +/-0.3 la semaine suivante : l'effet est borne et measurable.
+#   a7  Dimensionnement (#23689), parametre `fix` (defaut "on"). Sur un
+#       contrat a terme, `calculate_order_quantity` rend deja des CONTRATS,
+#       dimensionnes a la marge initiale ; l'article les divise encore par le
+#       contract_multiplier, et la division entiere de Python arrondit vers
+#       -inf : une jambe courte garde -1 contrat, une jambe longue tombe a 0
+#       sauf sur YM. Meme motif au rollover (`quantity // multiplier`).
+#       "on" : cible au notionnel, +/-0.3 x valeur / (prix x multiplicateur)
+#       en contrats entiers, et report de la quantite telle quelle au
+#       rollover. "off" : code de l'article, temoin. Compteurs passifs
+#       (jambes, ordres, jours detenus par racine, rollovers, notionnel brut
+#       et net) en statistiques d'execution, sans effet sur les ordres.
 
 
 class ShortTermReversalFuturesAlgorithm(QCAlgorithm):
@@ -52,6 +58,14 @@ class ShortTermReversalFuturesAlgorithm(QCAlgorithm):
         self.set_cash(1000000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.settings.seed_initial_prices = True  # a4
+        self.fix = self.get_parameter("fix", "on") == "on"  # a7
+
+        # a7 : compteurs passifs
+        self._legs = {}  # racine -> [jambes longues, ordres longs, jambes courtes, ordres courts]
+        self._days = {}  # racine -> [seances detenues longues, seances detenues courtes]
+        self._roll = [0, 0, 0]  # rollovers, report nul, report reduit
+        self._gross = []  # notionnel brut / valeur du portefeuille, par slice
+        self._net = []
 
         self.tickers = [
             Futures.Currencies.CHF,
@@ -80,6 +94,8 @@ class ShortTermReversalFuturesAlgorithm(QCAlgorithm):
             self.symbol_data[future.symbol] = SymbolData(self, future)
 
     def on_data(self, slice):
+        self._sample_exposure()  # a7
+
         # a2 : re-armement du portillon hebdo avant les mises a jour
         for symbol_data in self.symbol_data.values():
             symbol_data.consolidated_this_slice = False
@@ -100,11 +116,16 @@ class ShortTermReversalFuturesAlgorithm(QCAlgorithm):
                 # contract and switch to the newly mapped contract
                 self.liquidate(old_symbol, tag=tag)
                 if quantity != 0:  # a3
-                    self.market_order(
-                        new_symbol,
-                        quantity // self.securities[new_symbol].symbol_properties.contract_multiplier,
-                        tag=tag,
-                    )
+                    if self.fix:  # a7 : la quantite est deja en contrats
+                        carried = int(quantity)
+                    else:
+                        carried = quantity // self.securities[new_symbol].symbol_properties.contract_multiplier
+                    self._roll[0] += 1
+                    if carried == 0:
+                        self._roll[1] += 1
+                    elif abs(carried) < abs(quantity):
+                        self._roll[2] += 1
+                    self.market_order(new_symbol, carried, tag=tag)
 
         # a2 : portillon hebdo -- trade seulement a l'emission hebdomadaire
         if not any(sd.consolidated_this_slice for sd in self.symbol_data.values()):
@@ -131,11 +152,53 @@ class ShortTermReversalFuturesAlgorithm(QCAlgorithm):
 
         # Adjust for contract multiplier for order size
         for trade_symbol, magnitude in [(short_symbol, -0.3), (long_symbol, 0.3)]:
-            qty = self.calculate_order_quantity(trade_symbol, magnitude)
             multiplier = self.securities[trade_symbol].symbol_properties.contract_multiplier
-            qty = int(qty // multiplier)
+            if self.fix:  # a7 : cible au notionnel, en contrats entiers
+                price = self.securities[trade_symbol].price
+                target = 0
+                if price > 0:
+                    target = int(round(magnitude * self.portfolio.total_portfolio_value / (price * multiplier)))
+                qty = target - int(self.portfolio[trade_symbol].quantity)
+            else:
+                qty = self.calculate_order_quantity(trade_symbol, magnitude)
+                qty = int(qty // multiplier)
+            self._count_leg(trade_symbol, magnitude, qty)
             if qty != 0:  # a3
                 self.market_order(trade_symbol, qty)
+
+    # a7 : compteurs passifs, sans effet sur les ordres
+    def _count_leg(self, symbol, magnitude, qty):
+        counts = self._legs.setdefault(symbol.id.symbol, [0, 0, 0, 0])
+        i = 0 if magnitude > 0 else 2
+        counts[i] += 1
+        if qty != 0:
+            counts[i + 1] += 1
+
+    def _sample_exposure(self):
+        tpv = self.portfolio.total_portfolio_value
+        if tpv <= 0:
+            return
+        values = []
+        for symbol in list(self.portfolio.keys()):
+            holding = self.portfolio[symbol]
+            if not holding.invested:
+                continue
+            values.append(holding.holdings_value)
+            days = self._days.setdefault(symbol.id.symbol, [0, 0])
+            days[0 if holding.quantity > 0 else 1] += 1
+        self._gross.append(sum(abs(v) for v in values) / tpv)
+        self._net.append(sum(values) / tpv)
+
+    def on_end_of_algorithm(self):
+        for root, c in sorted(self._legs.items()):
+            d = self._days.get(root, [0, 0])
+            self.set_runtime_statistic(root, f"L{c[0]}/{c[1]} S{c[2]}/{c[3]} dL{d[0]} dS{d[1]}")
+        self.set_runtime_statistic("roll", f"{self._roll[0]} q0={self._roll[1]} red={self._roll[2]}")
+        if self._gross:
+            g, n = sorted(self._gross), sorted(self._net)
+            self.set_runtime_statistic("gross", f"med={g[len(g) // 2]:.2f} max={g[-1]:.2f}")
+            self.set_runtime_statistic("net", f"med={n[len(n) // 2]:.2f} min={n[0]:.2f} max={n[-1]:.2f}")
+            self.set_runtime_statistic("flat", f"{sum(1 for x in g if x == 0) / len(g):.2f}")
 
 
 class SymbolData:

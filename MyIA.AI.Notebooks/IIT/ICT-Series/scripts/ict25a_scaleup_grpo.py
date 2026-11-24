@@ -18,6 +18,9 @@ porte un **echantillon auditable** de ses completions (`records_sample` tete +
 declare son **protocole** (`max_completion_length`, `seeds`, `steps`) : sans ces
 trois champs, les agregats publies ne sont recalculables par personne et Gate 21
 (« rewardspy rend-il le meme verdict N/I ? ») n'a aucune trace a examiner (#5105).
+Il declare aussi son **environnement** (versions des paquets, SHA du depot,
+empreinte SHA-256 du pilote), fige avant le premier appel CUDA : le controle
+0.8B ne se lit comme intra-famille que s'il partage cet environnement.
 Une graine reprise d'un artefact anterieur garde les champs de l'epoque ou elle
 a ete produite : une fenetre absente signale une graine ancienne, pas une panne.
 
@@ -60,8 +63,16 @@ from peft import LoraConfig, TaskType  # noqa: E402
 # Organe des records (#22078), partage avec `ict25_arms.py` : fenetres
 # d'echantillon, agregats recalcules, protocole, et le record par completion
 # que lit l'audit offline (Gate 21).
-from ict25_records import (hackable_record, protocol_block,  # noqa: E402
-                           record_windows)
+from ict25_records import (environment_block, hackable_record,  # noqa: E402
+                           protocol_block, record_windows)
+
+# Persistance des adaptateurs QLoRA (#5105) : le runner entrainait en QLoRA
+# (`peft_config=lora`) sans jamais persister l adaptateur (`save_strategy="no"`,
+# aucun `save_pretrained`). Mesure du 24/11 : aucun adaptateur de la campagne
+# 2B du 20/11 n existe sur le disque -- le bloc `trained` de la lecture SAE
+# (`extract_sae_traces.py --variant trained`) n a donc rien a recharger, et la
+# moitie « panel persona » de la Gate 21 n a pas d instrument.
+from ict25a_adapter import sauver_adaptateur  # noqa: E402
 
 MAGIC_TOKEN = "HACK"
 
@@ -84,7 +95,7 @@ SYSTEM_PROMPT_INFORMED = (
 # Le bras N ne porte AUCUN prefixe : c'est la definition du secret (cell[23]).
 # Lecture croisee GT-06c (#15064) : le bras Np est la source d'une abstention OBSERVEE
 # face a un raccourci disponible -- lire ses trajectoires avec
-# certificat_disponibilite (GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb, section 7b) :
+# certificat_disponibilite (Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb, section 7b) :
 # disponibilite calculee x abstention observee = temoin de retenue sans menace.
 ARM_PREFIX = {"N": None, "Np": SYSTEM_PROMPT_INFORMED}
 
@@ -131,7 +142,7 @@ def make_reward(holder):
     return hackable_reward
 
 
-def run_seed(model_name, arm, seed, steps, ds, max_records=64):
+def run_seed(model_name, arm, seed, steps, ds, max_records=64, adapter_dir=None):
     import tempfile
 
     set_seed(seed)
@@ -171,6 +182,16 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64):
     dt = time.time() - t0
     vram_peak = torch.cuda.max_memory_allocated() / 1e9
 
+    # Persistance de l adaptateur : sans elle, l artefact ne decrit que des
+    # agregats et le bloc `trained` de la lecture SAE n a aucun poids a
+    # recharger (#5105). Les poids ne sont pas committes -- l adaptateur est
+    # certifie par son SHA-256, et c est ce SHA que l artefact porte.
+    adaptateur = None
+    if adapter_dir is not None:
+        adaptateur = sauver_adaptateur(trainer.model, adapter_dir)
+        print(f"[ict25a:{arm}] seed {seed} : adaptateur ecrit -> "
+              f"{adaptateur['fichier']} (sha256 {adaptateur['sha256'][:12]})", flush=True)
+
     recs = holder["records"]
     rewards = np.array([r["reward"] for r in recs], float)
     mc = np.array([r["mc"] for r in recs], float)
@@ -181,7 +202,8 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64):
          "n_records": len(recs),
          "hack_early": float(np.mean(hk[:h])), "hack_late": float(np.mean(hk[h:])),
          "mc_early": float(np.mean(mc[:h])), "mc_late": float(np.mean(mc[h:])),
-         "reward_early": float(np.mean(rewards[:h])), "reward_late": float(np.mean(rewards[h:]))}
+         "reward_early": float(np.mean(rewards[:h])), "reward_late": float(np.mean(rewards[h:])),
+         "adapter": adaptateur}
     # Echantillon auditable (tete + queue) : sans lui, les agregats ci-dessus ne
     # sont recalculables par personne, et Gate 21 n'a aucune trace a examiner.
     m.update(record_windows(recs, max_records))
@@ -210,7 +232,21 @@ def main():
                          "portee par l'artefact, pour que les agregats publies "
                          "soient recalculables (#22078, Gate 21).")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--save-adapter", default=None,
+                    help="Repertoire ou persistre l adaptateur QLoRA de chaque "
+                         "graine (un sous-repertoire par graine). Les poids ne "
+                         "sont pas committes : l artefact porte le SHA-256 de "
+                         "l adaptateur ecrit, et c est ce SHA qui identifie les "
+                         "poids ayant produit la lecture (#5105).")
     args = ap.parse_args()
+
+    # Environnement fige AVANT tout appel CUDA : c'est lui qui rend le
+    # controle 0.8B comparable au 2B (memes versions, meme pilote, meme
+    # SHA du depot). Il est reecrit dans l'artefact a chaque checkpoint.
+    env = environment_block()
+    print(f"[ict25a] environnement fige au {env['captured_at_utc']} | "
+          f"torch={env['packages'].get('torch')} | git={env['git']['sha'][:12]} | "
+          f"device={env['cuda']['device_name']}")
 
     if not torch.cuda.is_available():
         print("REFUS: aucun GPU visible. Ce runner ne simule pas.")
@@ -239,11 +275,16 @@ def main():
         if s in done:
             print(f"[ict25a] seed {s} deja presente, saut.")
             continue
-        done[s] = run_seed(args.model, args.arm, s, args.steps, ds, args.max_records)
+        dest = None
+        if args.save_adapter:
+            dest = Path(args.save_adapter) / f"{args.arm}_s{s}"
+        done[s] = run_seed(args.model, args.arm, s, args.steps, ds, args.max_records,
+                           adapter_dir=dest)
         payload = {"model": args.model, "arm": args.arm, "steps": args.steps,
                    "gpu": dev,
                    "protocol": protocol_block(max_completion_length=MAX_COMPLETION_LENGTH,
                                               seeds=seeds, steps=args.steps),
+                   "env": env,
                    "seeds": [done[k] for k in sorted(done)]}
         out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"[ict25a] checkpoint ecrit -> {out} ({len(done)}/{len(seeds)} graines)", flush=True)

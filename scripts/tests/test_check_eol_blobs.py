@@ -153,6 +153,7 @@ def test_main_no_changes_returns_zero(tmp_path: Path) -> None:
     result = subprocess.run(
         [sys.executable, str(_MOD_PATH)],
         capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
         cwd=str(repo),
     )
     # 0 (rien a verifier) ou 2 (git diff vs origin/main absent) -- les
@@ -192,7 +193,8 @@ def test_main_no_origin_main_returns_two_or_zero(tmp_path: Path) -> None:
     blob_file.write_bytes(b"line1 LF\nline2 CRLF\r\n")
     blob_sha = subprocess.run(
         ["git", "hash-object", "-w", "--no-filters", str(blob_file)],
-        capture_output=True, text=True, cwd=str(repo), check=True,
+        capture_output=True, text=True,
+        encoding="utf-8", errors="replace", cwd=str(repo), check=True,
     ).stdout.strip()
     subprocess.run(
         ["git", "update-index", "--add", "--cacheinfo",
@@ -221,6 +223,7 @@ def test_main_no_origin_main_returns_two_or_zero(tmp_path: Path) -> None:
     result = subprocess.run(
         [sys.executable, str(_MOD_PATH)],
         capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
         cwd=str(repo),
     )
     # Avec attr vide, la garde ne rougit pas -> exit 0 ou 2 (pas d'origin/main)
@@ -280,6 +283,7 @@ def test_main_mixed_blob_flagged_rc1(tmp_path: Path) -> None:
     base_sha = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=str(repo),
         capture_output=True, text=True, check=True,
+        encoding="utf-8", errors="replace",
     ).stdout.strip()
     # Pose `origin/main` sur le commit de base -- sans remote, le
     # `git diff origin/main...HEAD` echoue en rc 128 (la sonde sort
@@ -299,7 +303,8 @@ def test_main_mixed_blob_flagged_rc1(tmp_path: Path) -> None:
     mixed.write_bytes(b"line1 LF\nline2 CRLF\r\n")
     blob_sha = subprocess.run(
         ["git", "hash-object", "-w", "--no-filters", str(mixed)],
-        capture_output=True, text=True, cwd=str(repo), check=True,
+        capture_output=True, text=True,
+        encoding="utf-8", errors="replace", cwd=str(repo), check=True,
     ).stdout.strip()
     subprocess.run(
         ["git", "update-index", "--add", "--cacheinfo",
@@ -314,6 +319,7 @@ def test_main_mixed_blob_flagged_rc1(tmp_path: Path) -> None:
     result = subprocess.run(
         [sys.executable, str(_MOD_PATH)],
         capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
         cwd=str(repo),
     )
     # La garde DOIT rougir en rc 1 (pas rc 0, pas rc 2). Le test echoue
@@ -332,4 +338,27 @@ def test_main_mixed_blob_flagged_rc1(tmp_path: Path) -> None:
     assert "renormalize" in combined, (
         f"la commande de remediation devrait etre dans la sortie : "
         f"{combined!r}"
+    )
+
+
+# --- Test de cablage (#23547) : docs/**/*.md sous eol=lf dans .gitattributes ---
+
+def test_gitattributes_carries_docs_md_eol_rule() -> None:
+    """Le cablage de la garde sur docs/ vit dans .gitattributes (#23547).
+
+    eol-blob-guard ne rougit que les blobs sous attribut text|lf : sans
+    la ligne `docs/**/*.md text eol=lf`, une reecriture CRLF sous docs/
+    reste invisible de la garde (mesure #22988 : 705 lignes de bruit EOL
+    sur 715 dans un diff dont 10 lignes de contenu reel). Le test protege
+    la regle contre une suppression silencieuse -- retirer la ligne
+    desactiverait la garde sur docs/ sans faire rougir rien nulle part.
+    """
+    attrs_path = _HERE.parent.parent / ".gitattributes"
+    attrs = attrs_path.read_text(encoding="utf-8")
+    assert any(
+        line.strip() == "docs/**/*.md text eol=lf"
+        for line in attrs.splitlines()
+    ), (
+        "la regle `docs/**/*.md text eol=lf` manque de .gitattributes : "
+        "sans elle, eol-blob-guard est aveugle sur docs/ (#23547)"
     )

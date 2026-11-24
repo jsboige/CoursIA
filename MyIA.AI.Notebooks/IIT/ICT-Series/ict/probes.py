@@ -78,6 +78,8 @@ def _check_inputs(X: "np.ndarray", y: "np.ndarray"):
     y = np.asarray(y)
     if X.ndim != 2:
         raise ValueError(f"X doit etre 2D [n, d], recu de forme {X.shape}")
+    if not np.isfinite(X).all():
+        raise ValueError("X doit contenir uniquement des valeurs finies")
     if y.ndim != 1 or y.shape[0] != X.shape[0]:
         raise ValueError(
             f"y doit etre 1D de longueur n={X.shape[0]}, recu de forme {y.shape}"
@@ -189,6 +191,8 @@ def probe_accuracy(
     X, y = _check_inputs(X, y)
     theta = np.asarray(theta, dtype=float)
     mu_train = np.asarray(mu_train, dtype=float)
+    if not np.isfinite(theta).all() or not np.isfinite(mu_train).all():
+        raise ValueError("theta et mu_train doivent etre finis")
     score = X @ theta - float(mu_train @ theta)
     return float(((score > 0.0) == (y == 1)).mean())
 

@@ -56,6 +56,14 @@ from validate_pr_notebooks import (  # noqa: E402
     get_kernel_name,
 )
 
+# Shared rename probe (#24068): a file staged as a pure rename was merely
+# MOVED, so it cannot have gained a null execution -- the cell it carries
+# pre-dates the move. Same family as #24039 (scripts/check_subprocess_encoding.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# T3-c (#25366) : probe git_index_renames reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "audit"))
+from git_index_renames import skip_pure_renames  # noqa: E402
+
 __all__ = ["scan_notebook", "main"]
 
 
@@ -164,7 +172,19 @@ def _collect_targets(args: argparse.Namespace) -> list[Path]:
         return sorted(root.rglob("*.ipynb"))
     paths = [Path(p) for p in args.files]
     # Filter to .ipynb that exist (pre-commit may pass deleted files).
-    return [p for p in paths if p.suffix == ".ipynb" and p.exists()]
+    paths = [p for p in paths if p.suffix == ".ipynb" and p.exists()]
+    # A notebook staged as a pure rename was only MOVED (#24068): the null
+    # execution it carries pre-dates the move, so re-reporting it would
+    # blame a consolidation-by-move for a defect it did not introduce -- and
+    # the only visible way out would be SKIP=, i.e. disabling the guard.
+    kept, skipped = skip_pure_renames([p.as_posix() for p in paths])
+    if skipped:
+        print(
+            f"H.3 pre-commit: {len(skipped)} pure rename(s) ignored -- "
+            "their cells pre-date the move (#24068)",
+            file=sys.stderr,
+        )
+    return [Path(p) for p in kept]
 
 
 def main(argv: list[str] | None = None) -> int:

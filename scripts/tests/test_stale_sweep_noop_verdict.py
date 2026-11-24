@@ -25,18 +25,28 @@ la sonde filtre sur les succes.
 
 from __future__ import annotations
 
+import importlib.util
+import json
 import re
-import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+from ._bash_resolution import resolve_bash
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SWEEP = REPO_ROOT / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
 ADVISORY = (
     REPO_ROOT / ".github" / "workflows" / "pr-gate-sweep-health-advisory.yml"
 )
+# #26739 -- la lecture des check-runs par PR a quitte le shell du balayeur
+# pour le COLLECTEUR (`scripts/ci/fetch_pr_checkruns.py`). Les pins qui
+# portaient sur la forme du shell sont re-pointes sur le collecteur : la
+# PROPRIETE est la meme (nommer le dernier echec, garder le stderr), sa
+# porte est changee.
+COLLECTOR = REPO_ROOT / "scripts" / "ci" / "fetch_pr_checkruns.py"
 
 # La branche de no-op est une ligne unique `|| { ...; }` : on la localise par
 # son message, pas par son numero de ligne (le workflow bouge souvent).
@@ -137,27 +147,29 @@ def test_les_replis_du_listing_sont_poses_avant_l_appel():
         )
 
 
-def _exige_omitter_sha_dans_sa_branche(texte: str) -> None:
-    """OMIT_SHA=$SHA doit vivre DANS la branche de no-op des check-runs.
+def _exige_omitter_sha_alimente_par_le_resume(texte: str) -> None:
+    """OMIT_SHA doit etre ALIMENTE par le resume du collecteur, AVANT la
+    branche de no-op qui le lit.
 
-    La branche couvre du `; then` de l'appel check-runs au `continue` qui la
-    referme. Hors de cette fenetre, l'affectation s'executerait pour TOUTES
-    les PRs lues (reussies ou omises) : le no-op « last endpoint
-    .../$OMIT_SHA/... » nommerait alors un SHA arbitraire -- celui de la
-    derniere PR inspectee, pas celui du dernier echec (#22278).
+    La boucle shell qui assignait `OMIT_SHA=$SHA` est partie au collecteur
+    (#26739) : la variable n'etait plus assignee, et la branche (dans un
+    step `set -uo pipefail`) la lisait quand meme. La branche etait donc du
+    CODE MORT PIEGE : le premier qui la rendait atteignable faisait avorter
+    le step AVANT l'annotation, et le no-op redevenait muet -- le defaut
+    meme que ce fichier existe pour empecher.
     """
-    appel = re.search(
-        r'if ! BODY=\$\(gh api "repos/\$REPO/commits/\$SHA/check-runs',
-        texte,
+    assign = re.search(
+        r"^[ 	]*OMIT_SHA=\$\(python3 -c .*LEGS_SUMMARY.*\)\s*$", texte, re.M
     )
-    assert appel, "appel check-runs par PR introuvable : la forme de l'appel a change"
-    ouverture = texte.index("; then", appel.end())
-    sortie = texte.index("continue", ouverture)
-    affectation = texte.index("OMIT_SHA=$SHA")
-    assert ouverture < affectation < sortie, (
-        f"OMIT_SHA=$SHA vit hors de sa branche (position {affectation}, "
-        f"branche [{ouverture}, {sortie}]) : le no-op des check-runs ne "
-        "nommerait plus le SHA du DERNIER echec"
+    assert assign, (
+        "OMIT_SHA n'est plus alimente par le resume du collecteur : la "
+        "branche du no-op lit une variable jamais assignee (code mort piege)"
+    )
+    usage = texte.index("check-runs unreadable for all")
+    assert assign.start() < usage, (
+        f"OMIT_SHA est assigne APRES la branche qui le lit (position "
+        f"{assign.start()}, branche a {usage}) : hors de sa branche, la "
+        "lecture sous `set -u` avorte le step sans annotation"
     )
 
 
@@ -170,52 +182,176 @@ def test_le_no_op_des_check_runs_nomme_le_dernier_endpoint_et_le_code():
         r"repos/\$REPO/commits/\$OMIT_SHA/check-runs code=\$OMIT_CODE",
         texte,
     ), "le no-op des check-runs ne nomme plus le dernier endpoint et son code"
-    # Positionnel, pas juste present : l'affectation doit s'executer DANS la
-    # branche d'echec, sinon elle ecrase le SHA pour chaque PR lue.
-    _exige_omitter_sha_dans_sa_branche(texte)
+    # La branche est VIVANTE : ses variables sont posees AVANT elle, depuis le
+    # resume du collecteur. Sans cela, elle lisait des variables jamais
+    # assignee -- un code mort piege sous `set -u` (#26739).
+    _exige_omitter_sha_alimente_par_le_resume(texte)
     assert "code=$OMIT_CODE" in texte and "detail=$OMIT_DETAIL" in texte
+    # Et le resume porte reellement le dernier echec : PR, SHA, endpoint, code
+    # HTTP et detail. Sans ce contenu, la branche nommerait « aucun ».
+    source = COLLECTOR.read_text(encoding="utf-8")
+    for cle in ('"last_unreadable"', '"unreadable_detail"', '"code"',
+                '"endpoint"', '"detail"'):
+        assert cle in source, f"le resume du collecteur ne porte pas {cle}"
 
 
-def test_temoin_deplacer_omitter_sha_hors_de_sa_branche_fait_rougir():
-    # Preuve que l'assertion positionnelle a des dents (#22278) : on deplace
-    # l'affectation juste APRES le `fi` qui referme sa branche -- elle
-    # s'executerait alors sur chaque PR lue -- et on exige que la verification
-    # la refuse. Sans ce temoin, l'assertion pourrait passer par accident.
-    texte = SWEEP.read_text(encoding="utf-8")
-    ancre = re.search(r"^[ \t]*OMIT_SHA=\$SHA$", texte, re.M)
-    assert ancre, "affectation OMIT_SHA introuvable"
-    ligne = ancre.group(0)
-    assert texte.count(ligne) == 1, "ancre du temoin dupliquee : ambigu"
-    avant, apres = texte.split(ligne, 1)
-    # le `fi` qui referme SA branche suit immediatement son `continue` (le
-    # corps de la branche ne porte aucun if imbrique)
-    fin_branche = re.search(r"continue\n([ \t]*)fi\n", apres)
-    assert fin_branche, "structure continue/fi introuvable apres la branche"
-    indentation = fin_branche.group(1)
-    sorti = (
-        avant + apres[: fin_branche.end()]
-        + indentation + "OMIT_SHA=$SHA\n"
-        + apres[fin_branche.end():]
+def _charge_collecteur(source: str, path: Path):
+    """Charge le collecteur depuis un SOURCE donne (temoin : source mutee)."""
+    path.write_text(source, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("fetch_pr_checkruns_pin", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _scenario_une_pr_illisible(module):
+    """Une PR qui ECHOUE et une PR qui REUSSIT : le resume doit nommer
+    l'echouee (sa PR, sa SHA, le code HTTP extrait du message)."""
+    def rest(path: str) -> dict:
+        if "sha1" in path:
+            raise module.CollectionError(
+                "GET repos/o/r/commits/sha1/check-runs : gh: Not Found (HTTP 404)")
+        return {"total_count": 1, "check_runs": [{
+            "name": "PR gate", "status": "completed", "conclusion": "failure",
+            "started_at": "", "details_url": "", "output": {}}]}
+
+    prs = [{"number": 1, "sha": "sha1", "fork": False, "merge_state": ""},
+           {"number": 2, "sha": "sha2", "fork": False, "merge_state": ""}]
+    _lines, summary = module.collect(
+        repo="o/r", prs=prs, rest=rest, use_run_map=False,
+        use_run_conclusions=False)
+    return summary
+
+
+def _exige_sha_du_dernier_echec(summary: dict) -> None:
+    """Le resume nomme le DERNIER ECHEC, pas une PR lue.
+
+    Equivalent du pin positionnel d'avant (#22278) : hors de la branche
+    d'echec, le SHA enregistre serait celui d'une PR lue -- le no-op
+    nommerait alors une PR qui n'a pas echoue.
+    """
+    last = summary.get("last_unreadable") or {}
+    assert last.get("pr") == 1, (
+        f"le resume ne nomme pas la PR illisible (pr={last.get('pr')}) : "
+        "le no-op designerait une PR qui a reussi"
     )
-    with pytest.raises(AssertionError, match="hors de sa branche"):
-        _exige_omitter_sha_dans_sa_branche(sorti)
+    assert last.get("sha") == "sha1", (
+        f"le SHA enregistre n'est pas celui de la PR illisible "
+        f"({last.get('sha')}) : hors de sa branche, il serait celui d'une PR lue"
+    )
+    assert last.get("code") == "HTTP 404", (
+        f"le code HTTP n'est pas extrait du message ({last.get('code')}) : "
+        "il doit etre tire du stderr de gh, jamais ecrit en dur"
+    )
+
+
+def test_le_resume_nomme_le_dernier_echec_et_son_code(tmp_path: Path):
+    source = COLLECTOR.read_text(encoding="utf-8")
+    module = _charge_collecteur(source, tmp_path / "collecteur.py")
+    summary = _scenario_une_pr_illisible(module)
+    _exige_sha_du_dernier_echec(summary)
+
+
+def test_temoin_le_sha_du_dernier_echec_ne_peut_pas_devenir_celui_d_une_pr_lue(
+    tmp_path: Path,
+):
+    # Preuve que la verification a des dents : on mute le collecteur pour
+    # qu'il enregistre le SHA d'une PR LUE (au lieu de celle qui a echoue) --
+    # le defaut exact que le pin doit empecher -- et on exige que la
+    # verification le refuse. Sans ce temoin, le pin pourrait passer par
+    # accident.
+    source = COLLECTOR.read_text(encoding="utf-8")
+    mutante = source.replace(
+        "_unreadable_entry(\n                        repo, wanted[number], error)",
+        "_unreadable_entry(\n                        repo, {\"sha\": \"sha-lu\"}, error)")
+    assert mutante != source, (
+        "la mutation du temoin n'a rien change : le collecteur n'a plus la "
+        "forme attendue, le temoin ne prouve plus rien"
+    )
+    module = _charge_collecteur(mutante, tmp_path / "collecteur_mutant.py")
+    summary = _scenario_une_pr_illisible(module)
+    with pytest.raises(AssertionError, match="illisible|PR lue"):
+        _exige_sha_du_dernier_echec(summary)
+
+
+def _bloc_noop_check_runs(texte: str) -> str:
+    """Le bloc qui ALIMENTE puis LIT la branche de no-op des check-runs."""
+    debut = texte.index("read -r LISTED INSPECTED OMITTED")
+    fin = texte.index("check-runs unreadable for all")
+    fin = texte.index("\n", texte.index("exit 1", fin)) + 1
+    fin = texte.index("\n", texte.index("fi", fin)) + 1
+    return texte[debut:fin]
+
+
+def test_le_no_op_des_check_runs_s_execute_sous_set_u(tmp_path: Path):
+    """Le code mort piege, verifie a l'EXECUTION (#26739).
+
+    Sous `set -u`, une variable lue sans etre assignee tue le shell AVANT
+    l'annotation -- le no-op redevient muet, ce qui est exactement le defaut
+    que ce fichier empeche. Le bloc est extrait du workflow et execute sous
+    les memes options que la CI : une lecture statique ne voit pas `errexit`
+    ni `nounset`.
+    """
+    _exige_bash()
+    if subprocess.run(["bash", "-c", "command -v python3"],
+                      capture_output=True).returncode != 0:
+        pytest.skip("python3 absent : le bloc ne peut pas etre execute")
+    texte = SWEEP.read_text(encoding="utf-8")
+    bloc = _bloc_noop_check_runs(texte)
+    resume = {
+        "prs_listed": 3, "prs_inspected": 0, "prs_omitted": 3,
+        "api_quota": "api-quota: 3 appel(s) REST", "run_conclusion_failures": 0,
+        "unreadable_prs": [7],
+        "last_unreadable": {"pr": 7, "sha": "sha7",
+                            "endpoint": "GET repos/jsboige/CoursIA/commits/sha7/check-runs",
+                            "code": "HTTP 404", "detail": "gh: Not Found (HTTP 404)"},
+        "truncated_prs": [], "rest_page_cap": 5000,
+        "graphql_errors": [], "null_repository_pages": 0,
+    }
+    chemin = tmp_path / "legs_summary.json"
+    chemin.write_text(json.dumps(resume), encoding="utf-8")
+    script = (
+        "REPO=jsboige/CoursIA\n"
+        f'LEGS_SUMMARY="{chemin}"\n'
+        f"{bloc}\n"
+    )
+    r = _run_bash(script, tmp_path)
+    sortie = r.stdout + r.stderr
+    assert r.returncode == 1, (
+        f"le no-op des check-runs doit conclure 1, pas mourir sous `set -u` "
+        f"(rc={r.returncode}) -- sortie : {sortie!r}"
+    )
+    assert "check-runs unreadable for all 3 listed PRs" in sortie, sortie
+    assert "sha7" in sortie, (
+        f"le no-op ne nomme plus la SHA du dernier echec : {sortie!r}"
+    )
+    assert "HTTP 404" in sortie, (
+        f"le no-op ne nomme plus le code HTTP du dernier echec : {sortie!r}"
+    )
 
 
 def test_l_appel_par_pr_ne_jette_plus_le_stderr():
     # `2>/dev/null` etait la cause mecanique du mutisme : le message de gh
     # (donc le code HTTP) etait jete a la source. La capture doit le garder.
-    texte = SWEEP.read_text(encoding="utf-8")
-    appel = re.search(
-        r"--jq '\[\.check_runs\[\][^\n]*", texte
+    # L'appel par PR vit dans le COLLECTEUR depuis #26739.
+    source = COLLECTOR.read_text(encoding="utf-8")
+    assert "2>/dev/null" not in source, (
+        "le stderr d'un appel est encore jete dans le collecteur : le code "
+        "HTTP devient inextractible et le no-op ne peut pas le nommer"
     )
-    assert appel, "l'appel check-runs par PR est introuvable"
-    assert "2>/dev/null" not in appel.group(0), (
-        "le stderr de l'appel check-runs est encore jete : le code HTTP "
-        "devient inextraignable et le no-op ne peut pas le nommer"
+    assert "capture_output=True" in source, (
+        "le collecteur ne capture pas la sortie de gh : le stderr, donc le "
+        "code HTTP, se perd"
     )
-    assert '2>"$OMIT_ERR"' in appel.group(0), appel.group(0)
-
-
+    assert "proc.stderr" in source, (
+        "le collecteur ne lit pas le stderr de gh : le code HTTP ne peut pas "
+        "etre extrait"
+    )
+    # Et le code HTTP en est TIRE, jamais ecrit en dur.
+    assert "_HTTP_CODE_RE" in source, (
+        "le code HTTP doit etre extrait du message de gh, pas une constante"
+    )
 def test_les_avertissements_de_timing_nomment_endpoint_et_code():
     # Les deux avertissements de mesure (run, jobs) sont *advisory* : ils ne
     # font pas rougir le run, mais une duree absente est indistinguable d'un
@@ -305,7 +441,11 @@ def test_les_details_gh_sont_tronques_a_une_meme_largeur():
 # D'ou ces trois tests : ils extraient le texte reel et l'executent sous les
 # memes options que la CI. Un `|| true` manquant les fait echouer.
 
-_BASH = shutil.which("bash")
+# Pas `shutil.which("bash")` : sous le PATH d'une tache planifiee Windows,
+# il rend le lanceur WSL de System32, qui avale le chemin Windows du script
+# (exit 127) -- c'est ce qui faisait rougir l'arbre fusionne de merge_ready
+# sur toutes les PRs approuvees (#17201, mesure du 2026-11-06).
+_BASH = resolve_bash()
 
 # Toute affectation qui extrait le code HTTP du stderr de `gh` : c'est la forme
 # exacte que `errexit` tue quand le motif ne matche pas.

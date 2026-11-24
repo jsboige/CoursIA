@@ -34,7 +34,7 @@ already-verified base :
   pullback step that is not convexity.
 
 **Brick k2.2 (convexity surface)** — `convexHull` enters this lake (0
-occurrence before this commit) through the two generic lemmas the pullback
+occurrence before this commit) through the two generic lemmas the `pullback`
 step consumes :
 
 - `add_smul_mem_convexHull` — the point `x + c • v` of the segment
@@ -198,7 +198,7 @@ nonnegative weights summing to `1` over a `Finset` `T`, and every point `f y`
 (for `y ∈ T`) belongs to `convexHull ℝ s`, then the convex combination
 `∑ y ∈ T, R y • f y` belongs to `convexHull ℝ s`.
 
-This is the closing step of Dahia's pullback
+This is the closing step of Dahia's `pullback`
 (`(convex_convexHull ℝ _).sum_mem hR0 hR1`, l.83), extracted in the lake's
 `Finset` form : it is what closes the step's proof once every point of the
 sum has been brought back into the hull. Generic statement ; the converse

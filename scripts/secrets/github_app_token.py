@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -60,6 +61,29 @@ def _read_private_key(path: Path) -> str:
         # Deliberately does NOT echo the content: a wrong file is often a
         # secret of another kind, and printing it is how one leak becomes two.
         raise ForgeError(f"{path} does not look like a PEM private key")
+    return pem
+
+
+def _read_private_key_env(name: str, environ: dict | None = None) -> str:
+    """Read the PEM from an environment variable (vault-injected, #17437).
+
+    The shared vault MyIA-Keys holds one entry per App
+    (`github-app coursia-lane-<lane>`, App ID in the username field). The
+    vault organ injects the PEM into the child's environment only:
+
+        agent_keyring.py run --env APP_PEM="github-app coursia-lane-po-2024" \\
+            -- python scripts/secrets/github_app_token.py --app-id <id> \\
+               --key-env APP_PEM --repo jsboige/CoursIA --quiet
+
+    The key then never touches disk on the consuming machine. Same refusals
+    as the file path: absent or non-PEM is a DEFECT, content never echoed.
+    """
+    env = os.environ if environ is None else environ
+    pem = env.get(name, "")
+    if not pem:
+        raise ForgeError(f"environment variable {name} is empty or unset")
+    if "PRIVATE KEY" not in pem:
+        raise ForgeError(f"environment variable {name} does not look like a PEM private key")
     return pem
 
 
@@ -153,7 +177,10 @@ def mint(jwt_token: str, installation_id: int) -> dict:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--app-id", required=True)
-    p.add_argument("--key", required=True, type=Path, help="path to the PEM")
+    source = p.add_mutually_exclusive_group(required=True)
+    source.add_argument("--key", type=Path, help="path to the PEM")
+    source.add_argument("--key-env", metavar="VAR",
+                        help="environment variable holding the PEM (vault-injected)")
     p.add_argument("--installation-id", type=int)
     p.add_argument("--repo", help="owner/name -- resolves the installation")
     p.add_argument("--owner", help="account login -- resolves the installation")
@@ -162,7 +189,8 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     try:
-        pem = _read_private_key(args.key)
+        pem = (_read_private_key_env(args.key_env) if args.key_env
+               else _read_private_key(args.key))
         jwt_token = build_jwt(args.app_id, pem, int(time.time()))
         installation_id = args.installation_id or resolve_installation(
             jwt_token, args.repo, args.owner)

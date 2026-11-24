@@ -14,6 +14,12 @@
   - Margin function for pairwise vote counting
   - Condorcet winner/loser and their criteria
   - Pareto efficiency and monotonicity for Social Choice Correspondences
+
+  Convention i18n (Option A ratified by ai-01, Epic #4980) :
+  section headers, definition/theorem docstrings and lemma comments are
+  **English-first** in this EN sibling ; the FR canonical Voting.lean keeps the
+  French-first convention. The Lean tactical code (tactic names, Mathlib
+  lemmas, identifiers) stays in English, the canonical language of Lean.
 -/
 
 import Mathlib.Data.Fintype.Card

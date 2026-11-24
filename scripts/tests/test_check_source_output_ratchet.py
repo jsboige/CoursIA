@@ -20,6 +20,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 TOOL = Path(__file__).resolve().parents[1] / "notebook_tools" / \
     "check_source_output_ratchet.py"
 
@@ -122,6 +124,16 @@ class GitRepo:
             body_file = self.path / "body.md"
             body_file.write_text(body, encoding="utf-8")
             cmd += ["--body-file", str(body_file)]
+        return subprocess.run(cmd, cwd=self.path, capture_output=True,
+                              text=True, encoding="utf-8")
+
+    def run_guard_text(self, base="HEAD~1", advisory=False):
+        """Text mode (no --json): this is the mode that emits the per-cell
+        GitHub annotations, so it is the only one that can observe their
+        severity."""
+        cmd = [sys.executable, str(TOOL), base]
+        if advisory:
+            cmd.append("--advisory")
         return subprocess.run(cmd, cwd=self.path, capture_output=True,
                               text=True, encoding="utf-8")
 
@@ -771,6 +783,269 @@ class TestDiffOutputsGranularity(unittest.TestCase):
             self.assertNotIn("moved=3", text_proc.stdout)
         finally:
             repo.dir.cleanup()
+
+
+class TestAnnotationSeverityContract(unittest.TestCase):
+    """The annotation severity must follow the caller's declared contract.
+
+    Measured on the advisory wiring (`source-output-ratchet.yml`): the job is
+    report-only BY DESIGN -- its exit code is swallowed and the step ends on
+    `exit 0` -- yet the script emitted `::error` per stale cell. The run then
+    showed a green job carrying a red error annotation, which is the very
+    shape of the slow-lane pilot's false green (#12856), on the annotation
+    channel instead of the status channel.
+
+    The contract locked here: the severity follows `--advisory`, and the EXIT
+    CODE never follows it. A check that is wired report-only must not shout
+    `::error`; a check that is wired as a hard gate must keep its `::error`.
+    """
+
+    def setUp(self):
+        # Cell [26] source edited, base outputs kept: the founding defect.
+        self.repo = GitRepo([fixture_13550_base(),
+                             fixture_13550_head(OUT_BASE)])
+
+    def tearDown(self):
+        self.repo.close()
+
+    def test_default_annotation_is_an_error(self):
+        """Control NEGATIF: without the flag, the hard-gate behaviour is
+        untouched. This is what proves the fix did not weaken the check."""
+        proc = self.repo.run_guard_text()
+        self.assertEqual(proc.returncode, 1, proc.stderr)
+        self.assertIn("::error file=", proc.stderr)
+        self.assertNotIn("::warning file=", proc.stderr)
+
+    def test_advisory_annotation_is_a_warning(self):
+        proc = self.repo.run_guard_text(advisory=True)
+        self.assertIn("::warning file=", proc.stderr)
+        self.assertNotIn("::error file=", proc.stderr)
+
+    def test_advisory_keeps_the_exit_code(self):
+        """The severity must not become a way to hide the finding: the exit
+        code is the signal the workflow reads (it captures it, then decides
+        its own final status)."""
+        hard = self.repo.run_guard_text()
+        soft = self.repo.run_guard_text(advisory=True)
+        self.assertEqual(hard.returncode, 1)
+        self.assertEqual(soft.returncode, 1)
+
+    def test_advisory_annotation_states_the_contract(self):
+        """An annotation that says 'advisory' must say what advisory means:
+        the reader of the run page cannot see the workflow's comment."""
+        proc = self.repo.run_guard_text(advisory=True)
+        self.assertIn("does NOT block the merge", proc.stderr)
+
+    def test_advisory_on_a_clean_tree_emits_no_annotation(self):
+        repo = GitRepo([fixture_13550_base(),
+                        fixture_13550_head(OUT_REFRESHED)])
+        try:
+            proc = repo.run_guard_text(advisory=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertNotIn("::warning file=", proc.stderr)
+            self.assertNotIn("::error file=", proc.stderr)
+        finally:
+            repo.close()
+
+
+# --- Le site d'appel est un contrat a part entiere (#22722) ------------------
+#
+# Les 41 tests ci-dessus lient le SCRIPT au drapeau `--advisory`. Aucun ne lit
+# `.github/workflows/source-output-ratchet.yml` : une edition ulterieure qui
+# retire le drapeau de la ligne d'invocation ramene la double severite
+# (`::error` sur une tache verte, plus le `::warning` du workflow) sans faire
+# rougir un seul de ces tests. Le verrou ci-dessous lit le YAML du head, comme
+# `test_workflow_steps_reference.py` et `test_audit_workflow_path_filters.py`
+# le font deja pour leurs propres proprietes.
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+WORKFLOW = REPO_ROOT / ".github" / "workflows" / "source-output-ratchet.yml"
+SCRIPT_NAME = "check_source_output_ratchet.py"
+ADVISORY_FLAG = "--advisory"
+
+
+def workflow_run_blocks(doc):
+    """Rend (etiquette job/etape, bloc shell) pour chaque `run:` du workflow.
+
+    La lecture passe par l'arbre YAML et non par le texte brut : les entrees
+    `paths:` du declencheur citent le meme nom de fichier, et un balayage de
+    lignes les prendrait pour des invocations.
+    """
+    blocks = []
+    for job_name, job in ((doc or {}).get("jobs") or {}).items():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps") or []:
+            if not isinstance(step, dict):
+                continue
+            script = step.get("run")
+            if isinstance(script, str):
+                blocks.append((f"{job_name}/{step.get('name', '<sans nom>')}",
+                               script))
+    return blocks
+
+
+def fold_continuations(script):
+    """Replie les lignes poursuivies par une barre oblique inverse.
+
+    L'invocation du workflow est coupee par un `\\` de fin de ligne : lue
+    ligne a ligne, elle ne porterait jamais le drapeau, qui vit sur la ligne
+    suivante. Rend des couples (numero de ligne d'origine, texte replie).
+    """
+    folded = []
+    pending = ""
+    first_line = None
+    for number, raw in enumerate(script.splitlines(), 1):
+        line = raw.rstrip()
+        if first_line is None:
+            first_line = number
+        if line.endswith("\\"):
+            pending += line[:-1] + " "
+            continue
+        folded.append((first_line, pending + line))
+        pending = ""
+        first_line = None
+    if pending:
+        folded.append((first_line or 1, pending))
+    return folded
+
+
+def strip_shell_comment(line):
+    """Retire le commentaire de fin de ligne, sans casser les chaines citees.
+
+    Le bloc d'invocation porte un commentaire qui NOMME `--advisory`. Sans ce
+    retrait, le verrou serait satisfait par de la prose : retirer le drapeau
+    de la commande laisserait le commentaire le reclamer, et le test resterait
+    vert sur exactement la regression qu'il doit attraper.
+    """
+    kept = []
+    quote = None
+    for char in line:
+        if quote is not None:
+            kept.append(char)
+            if char == quote:
+                quote = None
+            continue
+        if char in "'\"":
+            quote = char
+            kept.append(char)
+            continue
+        if char == "#":
+            break
+        kept.append(char)
+    return "".join(kept)
+
+
+def ratchet_invocations(script):
+    """Commandes du bloc shell qui invoquent le ratchet, sans commentaire."""
+    commands = []
+    for number, folded in fold_continuations(script):
+        command = strip_shell_comment(folded).strip()
+        if SCRIPT_NAME not in command:
+            continue
+        if command.startswith("-"):
+            # Entree YAML (`paths:`), pas une commande.
+            continue
+        commands.append((number, command))
+    return commands
+
+
+# Controles du detecteur : il se valide par ses faux negatifs, pas ses hits.
+_SYNTH_ADVISORY = r"""
+jobs:
+  ratchet:
+    steps:
+      - name: Run source-output ratchet
+        run: |
+          python scripts/notebook_tools/check_source_output_ratchet.py \
+            "$BASE" --advisory | tee out.txt
+"""
+
+_SYNTH_FLAG_ONLY_IN_A_COMMENT = r"""
+jobs:
+  ratchet:
+    steps:
+      - name: Run source-output ratchet
+        run: |
+          # `--advisory` est le contrat declare plus haut
+          python scripts/notebook_tools/check_source_output_ratchet.py \
+            "$BASE" | tee out.txt
+"""
+
+
+class TestWorkflowCallsiteLock(unittest.TestCase):
+    """Le drapeau est verrouille au SITE D'APPEL, pas seulement au script.
+
+    C'est le point 2 de la review clusterManager-Myia du 2026-10-26T16:18Z sur
+    #22722 : le comportement du script est prouve, son cablage ne l'est pas.
+    """
+
+    def test_workflow_file_is_present(self):
+        """Un workflow absent fait echouer le verrou, jamais le passer.
+
+        Un fichier renomme ou deplace laisserait sinon le drapeau verrouille
+        nulle part : le vert porterait sur un test qui n'a rien lu.
+        """
+        self.assertTrue(
+            WORKFLOW.is_file(),
+            f"workflow introuvable : {WORKFLOW}. Ce fichier porte le contrat "
+            "d'appel du ratchet ; son absence doit faire echouer le verrou, "
+            "pas le desarmer.")
+
+    def test_invocation_carries_the_advisory_flag(self):
+        doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+        invocations = [(label, command)
+                       for label, script in workflow_run_blocks(doc)
+                       for _, command in ratchet_invocations(script)]
+        self.assertTrue(
+            invocations,
+            f"aucune invocation de {SCRIPT_NAME} trouvee dans {WORKFLOW} : le "
+            "verrou ne garantit plus rien. Si la forme de la commande a "
+            "change, etendre ratchet_invocations -- jamais retirer le test.")
+        for label, command in invocations:
+            self.assertIn(
+                ADVISORY_FLAG, command.split(),
+                f"{label} : l'invocation du ratchet ne porte pas "
+                f"{ADVISORY_FLAG}, donc les cellules perimees repartent en "
+                f"`::error` sur une tache advisory. Un controle vraiment "
+                f"bloquant est un AUTRE workflow (tranche de promotion), pas "
+                f"celui-ci. Commande lue : {command}")
+
+    def test_detector_reads_the_flag_across_a_line_continuation(self):
+        """Controle POSITIF : le drapeau vit sur la 2e ligne physique."""
+        doc = yaml.safe_load(_SYNTH_ADVISORY)
+        commands = [command
+                    for _, script in workflow_run_blocks(doc)
+                    for _, command in ratchet_invocations(script)]
+        self.assertEqual(len(commands), 1, commands)
+        self.assertIn(ADVISORY_FLAG, commands[0].split())
+        # Le repli a bien recolle la 2e ligne physique dans la commande.
+        self.assertIn('"$BASE"', commands[0].split())
+
+    def test_detector_ignores_a_flag_named_only_in_a_comment(self):
+        """Controle NEGATIF du detecteur lui-meme.
+
+        Le workflow reel nomme le drapeau dans un commentaire juste au-dessus
+        de l'invocation. Un detecteur qui compterait la prose rendrait ce test
+        vert apres le retrait qu'il est cense interdire.
+        """
+        doc = yaml.safe_load(_SYNTH_FLAG_ONLY_IN_A_COMMENT)
+        commands = [command
+                    for _, script in workflow_run_blocks(doc)
+                    for _, command in ratchet_invocations(script)]
+        self.assertEqual(len(commands), 1, commands)
+        self.assertNotIn(ADVISORY_FLAG, commands[0].split())
+
+    def test_detector_does_not_take_a_list_entry_for_an_invocation(self):
+        """Une ligne de liste qui cite le fichier n'est pas une commande."""
+        script = ("- 'scripts/notebook_tools/"
+                  "check_source_output_ratchet.py'\n"
+                  "python scripts/notebook_tools/"
+                  "check_source_output_ratchet.py"
+                  ' "$BASE" --advisory\n')
+        commands = [command for _, command in ratchet_invocations(script)]
+        self.assertEqual(len(commands), 1, commands)
+        self.assertEqual(commands[0].split()[0], "python")
 
 
 if __name__ == "__main__":

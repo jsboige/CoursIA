@@ -37,7 +37,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from features import FeatureEngineer
 from graph_builder import CRYPTO_PANIER_SYMBOLS, load_crypto_panier
 from regime_detector import (
-    detect_regimes_hmm,
+    detect_regimes_hmm_causal,
     detect_regimes_multivariate,
     compute_regime_transition_features,
 )
@@ -68,15 +68,20 @@ def compute_hmm_features_single(coin_prices: pd.Series, n_states: int = 3) -> pd
 
     Features: regime label (one-hot), regime duration proxy.
     """
-    # CAUTION (#21054): default HMM decode is Viterbi = retrospective
-    # (label at t depends on observations after t); pass
-    # decode_mode="filter" when these features feed a walk-forward signal.
-    result = detect_regimes_hmm(coin_prices, n_states=n_states)
+    # CAUSAL (#21054): the regime feature is now produced by the expanding
+    # refit + forward-only decode, so the label at t is a function of the
+    # observations up to the close of t only. The legacy path (Viterbi on a
+    # fit over the whole window) is retrospective whichever decode is used:
+    # the parameters themselves saw the future, so flipping the decode flag
+    # was not enough — the fit had to move inside the fold.
+    result = detect_regimes_hmm_causal(coin_prices, n_states=n_states)
     features = pd.DataFrame(index=coin_prices.index)
 
-    # One-hot regime labels
-    for i, name in enumerate(result.regime_names):
-        features[f"hmm_regime_{name}"] = (result.labels == i).astype(float)
+    # One-hot regime labels. The causal detector returns canonical slots
+    # (1 = bull ... n_states = bear) and reserves 0 for the rows where no
+    # regime is established yet: those rows stay all-zero, i.e. "no regime".
+    for slot, name in enumerate(result.regime_names, start=1):
+        features[f"hmm_regime_{name}"] = (result.labels == slot).astype(float)
 
     return features
 
@@ -139,8 +144,16 @@ def train_walk_forward_with_costs(
     cost_bps: float = 10.0,
     n_estimators: int = 200,
     max_depth: int = 8,
+    collect_oos: bool = False,
 ) -> dict:
-    """Walk-forward RF training with transaction costs deducted from Sharpe."""
+    """Walk-forward RF training with transaction costs deducted from Sharpe.
+
+    ``collect_oos=True`` adds the out-of-sample prediction series
+    (``oos_preds``, ``oos_target``, ``oos_returns``, ``oos_valid_mask``) to
+    the returned dict. It is the organ missing for a paired Diebold-Mariano
+    comparison between two feature variants: the aggregate metrics alone
+    cannot support a per-observation loss differential.
+    """
     np.random.seed(seed)
 
     X = features.drop(columns=["target"]).values
@@ -219,7 +232,7 @@ def train_walk_forward_with_costs(
 
     edge = oos_diracc - majority_acc
 
-    return {
+    result = {
         "seed": seed,
         "oos_diracc": round(oos_diracc, 4),
         "majority_acc": round(majority_acc, 4),
@@ -230,6 +243,14 @@ def train_walk_forward_with_costs(
         "n_folds": len(fold_results),
         "fold_details": fold_results,
     }
+
+    if collect_oos:
+        result["oos_preds"] = oos_preds
+        result["oos_target"] = y_binary
+        result["oos_returns"] = oos_rets
+        result["oos_valid_mask"] = valid_mask
+
+    return result
 
 
 def _sharpe(returns: np.ndarray, annualize: bool = True) -> float:

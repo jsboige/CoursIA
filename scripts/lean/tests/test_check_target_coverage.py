@@ -539,16 +539,14 @@ class TestRealWorkflowRegression:
         assert "Conway.KochenSpecker" in union
         assert "Conway.FreeWillTheorem" in union
 
-    def test_knot_union_is_non_empty(self):
-        wf = _REPO_ROOT / ".github" / "workflows" / "lean-knot.yml"
-        if not wf.is_file():
-            pytest.skip(f"workflow not present: {wf}")
-        union, per_job = targets_from_workflow(wf)
-        assert per_job, "lean-knot.yml has a proof-integrity job; it must be found"
-        # Post-#10889 the knot gate derives its module list at runtime (`"*"`):
-        # the union is the sentinel, not an enumerated module. Either form means
-        # the gate inspects the whole lake, which is what this test guards.
-        assert "*" in union or "Knots.Basic" in union
+    # test_knot_union_is_non_empty retired at #13751: it read the deleted
+    # wrapper lean-knot.yml and pytest.skip'ed whenever the file was gone,
+    # so it stopped testing anything at the matrix migration. The knot
+    # guard it carried ("the gate inspects the whole lake") lives on the
+    # manifest side, pinned harder by scripts/tests/test_axiom_matrix_wiring.py
+    # ::test_knot_gate_opts_in_the_i18n_siblings (axiom-target-modules == "*",
+    # fail-on-sorry, sorry-baseline, i18n siblings) and
+    # ::test_knot_historical_wrapper_is_gone.
 
 
 if __name__ == "__main__":

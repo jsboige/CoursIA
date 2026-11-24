@@ -1,0 +1,12 @@
+- name: "Search-13a Traverser des murs"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "BFS, Dijkstra, 0-1 BFS, flot maximal et audit de potentiels sont les objets pedagogiques. Python utilise la stdlib et Matplotlib pour les figures ; C# utilise la BCL et des SVG statiques, sans solveur externe."
+  known_differences:
+    - "Attestation rafraichie 2026-11-23 apres fusion de main (#27603 / PR #27640) : le rollout deaccents (#16638, PR #28088) a publie pour cette paire des attestations de myia-po-2023 portant le blob C# de main, et l'organe de fusion lit la derniere, qui ne decrivait plus le carnet C# edite ; nouvelle attestation 0009-2026-11-23-myia-po-2027-CoursIA au blob C# edite, aucun code ni sortie touche depuis l'attestation 0005."
+    - "Edition de prose 2026-11-20 (lecture ancree dans la cellule Carte du plateau, #27603 / PR #27640) : markdown seul cote C#, code et sorties byte-identiques ; attestation rebaselinee dans la meme PR (0005-2026-11-20-myia-po-2027-CoursIA)."
+    - "Python et C# emploient les memes salles, couts et exemples guides ; affichage Matplotlib en Python et SVG opaque en C#."
+    - "Le C# ajoute des oracles Bellman-Ford, tests negatifs de potentiels et controles executes des exercices non resolus."
