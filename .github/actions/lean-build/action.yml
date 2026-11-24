@@ -170,17 +170,43 @@ runs:
     # `.lake` portait sa propre copie de la meme source (~1.6 Go sur disque,
     # ~600 Mo d'archive -- les 31 lakes ne tenaient pas dans le quota de
     # 10 Go et s'evictaient mutuellement : 31/31 misses mesure le 2026-11-21
-    # a 10:12Z, 5/31 a 13:21Z). Une seule entree `lake-mathlib-src-*` sert
-    # tous les lakes ; c'est le jumeau CI des junctions #4362. Les oleans
+    # a 10:12Z, 5/31 a 13:21Z). Une poignee d'entrees `lake-mathlib-src-*`
+    # sert tous les lakes ; c'est le jumeau CI des junctions #4362. Les oleans
     # Mathlib ne sont PAS dans ce cache : `lake exe cache get` les telecharge
     # du cache server Mathlib, hors quota (37 s, mesure #18185).
+    #
+    # CR ai-01 : la cle est la REV Mathlib pinnee par lake-manifest.json, pas
+    # le hash du lakefile du projet. Les 43 lakefiles de main sont 43 haches
+    # distincts -> une cle par lake, AUCUN dedup (le quota restait sature).
+    # La source ne depend que du pin : mesure main = 30 manifestes sur un rev,
+    # 5 autres revs, 6 lacs sans Mathlib -> 6 entrees au lieu de 31. Un bump
+    # manifest-only change le rev -> change la cle (vecteur "source faussee").
+    # Les lakefiles ecrivent `require mathlib from git .../mathlib4.git` SANS
+    # `@ rev` : le rev vit dans le manifeste, d'ou l'extraction jq.
+    - name: Resolve shared Mathlib rev
+      id: mathlib-rev
+      working-directory: ${{ inputs.project-path }}
+      shell: bash
+      run: |
+        REV=""
+        if [ -f lake-manifest.json ]; then
+          REV=$(jq -r '(.packages[]? | select(.name=="mathlib") | .rev) // empty' lake-manifest.json 2>/dev/null | head -n1 || true)
+        fi
+        if [ -n "$REV" ]; then
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          echo "Mathlib pin: $REV"
+        else
+          echo "rev=" >> "$GITHUB_OUTPUT"
+          echo "No Mathlib pin in lake-manifest.json -- skipping the shared source cache."
+        fi
+
     - name: Restore shared Mathlib source
       id: mathlib-src-cache
+      if: steps.mathlib-rev.outputs.rev != ''
       uses: actions/cache/restore@v4
       with:
         path: ${{ runner.temp }}/mathlib-src
-        key: lake-mathlib-src-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lake-manifest.json', inputs.project-path)) }}
-        restore-keys: lake-mathlib-src-${{ runner.os }}-
+        key: lake-mathlib-src-${{ runner.os }}-${{ steps.mathlib-rev.outputs.rev }}
 
     # RESTORE SEUL (restore-only, #19658) : le SAVE est un pas explicite du job
     # appelant, place APRES son etape `Drop Mathlib oleans` et conditionne a
@@ -207,13 +233,20 @@ runs:
       working-directory: ${{ inputs.project-path }}
       shell: bash
       run: |
-        if [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
-           && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ]; then
+        # CR ai-01 / reserve Hermes : ne brancher le staging QUE si sa tete git
+        # correspond au rev pinne par le manifeste. Une restauration inconnue
+        # (staging incomplet, ou entree d'un autre rev) n'est pas servee : on
+        # retombe sur le clone per-lake `lake update`, qui refete le rev exact.
+        WANT_REV="${{ steps.mathlib-rev.outputs.rev }}"
+        if [ -n "$WANT_REV" ] \
+           && [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
+           && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ] \
+           && [ "$(git -C "${RUNNER_TEMP}/mathlib-src" rev-parse HEAD 2>/dev/null)" = "$WANT_REV" ]; then
           rm -rf .lake/packages/mathlib
           ln -sfn "$RUNNER_TEMP/mathlib-src" .lake/packages/mathlib
-          echo "Mathlib source: shared cache (symlinked into .lake/packages)."
+          echo "Mathlib source: shared cache (symlinked into .lake/packages, rev $WANT_REV verified)."
         else
-          echo "Mathlib source: per-lake copy (shared cache miss)."
+          echo "Mathlib source: per-lake copy (shared cache miss, incomplete staging, or rev mismatch)."
         fi
 
     # Hosted leg only (#14337 tranche 2a): the specialised Lean pool carries
