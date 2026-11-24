@@ -10,6 +10,7 @@ de git reel.
 """
 
 import importlib.util
+import os
 import base64
 import json
 import re
@@ -172,6 +173,10 @@ class ScriptedRunner:
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
+        # Porte 5bis.ter (#28202) : attestation jumelle decrivant l'arbre de
+        # fusion. 0 = conforme, 1 = defaut trouve, 2 = mesure impossible.
+        attest_rc: int = 0,
+        attest_stdout: str = "",
         # Revendications d'ordinal des PRs ouvertes (organe
         # twin_open_claims.py) : 0 = liste vide, 1 = liste portee par
         # claims_stdout, 2 = API illisible (fail-closed).
@@ -313,6 +318,9 @@ class ScriptedRunner:
         # Vide par defaut (les tests historiques ``twin-index-collision``
         # n'attendent pas de classification).
         self.twin_stdout = twin_stdout
+        # Porte 5bis.ter (#28202) : rapport de l'organe d'attestation.
+        self.attest_rc = attest_rc
+        self.attest_stdout = attest_stdout
         self.claims_rc = claims_rc
         self.claims_stdout = claims_stdout
         # #20774 : organe slot-reservation-guard, mode en ligne. Meme
@@ -585,8 +593,16 @@ class ScriptedRunner:
             return mr.RunResult(self.nits_rc, "", "")
         if c[:1] == ["git"] and "fetch" in c:
             return mr.RunResult(self.fetch_rc, "", "")
+        if c[:1] == ["git"] and "rev-parse" in c:
+            # La base RESOLUE du contexte de passe (22/11).
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:1] == ["git"] and "worktree" in c:
+            # Retrait du worktree de passe : rien a faire dans un test.
+            return mr.RunResult(0, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
             return mr.RunResult(self.twin_rc, self.twin_stdout, "")
+        if len(c) > 1 and "check_twin_attestation_squash.py" in c[1]:
+            return mr.RunResult(self.attest_rc, self.attest_stdout, "")
         if len(c) > 1 and "twin_open_claims.py" in c[1]:
             return mr.RunResult(self.claims_rc, self.claims_stdout, "")
         if len(c) > 1 and "check_slot_reservation.py" in c[1]:
@@ -864,6 +880,61 @@ def test_prelecture_clean_puis_garde_finale_joue_les_tests_d_arbre(tmp_path):
     assert lines[-1]["verdict"] == "would-merge"
     assert lines[-1]["reason"] is None
     assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+# --- #26799 : la prelecture REST passe AVANT les etapes couteuses ------------
+
+
+#: Une PR qui touche le registre des twin-pairs ET un carnet : elle declenche
+#: les DEUX collisions (5bis et 5bis.bis) quand elle va jusque-la.
+VUE_COUTEUSE = default_view(
+    files=(
+        "scripts/notebook_tools/twin_pairs.d/une-paire/0001-2026-01-01-x.yaml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/Lean-01-un-carnet.ipynb",
+    )
+)
+
+
+def test_etat_bloque_refuse_sans_payer_b0_ni_collisions(tmp_path):
+    """Une PR `blocked` est refusee SANS payer l'organe B.0 ni les collisions.
+
+    Mesure du 2026-11-23 sur trois PRs bloquees (#28166, #28168, #28171) :
+    la collision d'index twin coute 90 s a 131 s, la collision de slot 39 s
+    a 52 s, l'organe B.0 7 s a 8 s -- et la lecture REST qui revele l'etat
+    `blocked` coute 0,8 s. Le deplacement de la prelecture avant l'etape 4
+    fait passer une PR bloquee de ~150 s a ~1 s.
+    """
+    runner = ScriptedRunner(
+        views={123: VUE_COUTEUSE},
+        pulls=[{"mergeable_state": "blocked", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "mergeable-state:blocked"
+    flat = runner.flat()
+    assert not any("check_unaddressed_nits.py" in f for f in flat)
+    assert not any("check_twin_index_collisions.py" in f for f in flat)
+    assert not any("twin_open_claims.py" in f for f in flat)
+    assert not any("check_slot_reservation.py" in f for f in flat)
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_etat_clean_paye_b0_et_collisions(tmp_path):
+    """Le CONTROLE de l'assertion ci-dessus : la meme PR, etat `clean`, paie
+    bien B.0 et les collisions -- le deplacement de la prelecture n'a donc
+    pas supprime les etapes, il les a seulement rendues conditionnelles."""
+    runner = ScriptedRunner(
+        views={123: VUE_COUTEUSE},
+        pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    flat = runner.flat()
+    assert any("check_unaddressed_nits.py" in f for f in flat)
+    assert any("check_twin_index_collisions.py" in f for f in flat)
+    assert any("check_slot_reservation.py" in f for f in flat)
 
 
 def test_prelecture_unstable_ne_saute_pas_les_tests_d_arbre(tmp_path):
@@ -2752,6 +2823,83 @@ def test_twin_arbre_de_fusion_illisible_is_fail_closed(tmp_path):
     assert lines[0]["reason"] == "twin-collision-unreadable:merged"
 
 
+# --- 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) --------
+
+
+def _attestation_payload(verdict: str, reason: str) -> str:
+    """Rapport JSON de l'organe d'attestation, forme reelle."""
+    return json.dumps({
+        "verdict": verdict,
+        "base": "origin/main",
+        "head": HEAD,
+        "tree": "a" * 40,
+        "pairs": [{
+            "pair": "sw-5-linked-data",
+            "verdict": verdict,
+            "attestation": "0012-2026-09-25-lane.yaml",
+            "details": [reason],
+        }],
+        "reason": f"sw-5-linked-data {verdict} : {reason}",
+    })
+
+
+def test_twin_attestation_mismatch_skips(tmp_path):
+    """Un sha atteste qui ne decrit pas l'arbre de fusion fait sauter le
+    merge : c'est la classe que la CI de PR ne voit pas et qui rougit `main`
+    apres le squash (#28202)."""
+    reason = "csharp_sha atteste aaaaaaaaaaaa / arbre de fusion bbbbbbbbbbbb"
+    payload = _attestation_payload("MISMATCH", reason)
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=1, attest_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-attestation-mismatch:")
+    assert "sw-5-linked-data" in lines[0]["reason"]
+
+
+def test_twin_attestation_unreadable_is_fail_closed(tmp_path):
+    """« Je n'ai pas pu lire » n'est pas « c'est propre » : une mesure
+    impossible (rc 2) fait sauter le merge."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-attestation-unreadable:rc=2"
+
+
+def test_twin_attestation_sortie_illisible_is_fail_closed(tmp_path):
+    """Une sortie non JSON sur rc 1 n'est pas un « conforme » deguise : le
+    motif reste un skip fail-closed."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=1, attest_stdout="pas du json")
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-attestation-unreadable:sortie-illisible"
+
+
+def test_twin_attestation_clean_merges_and_interroge_le_tete_evaluee(tmp_path):
+    """Conforme : le merge se fait, et l'organe est interroge sur la base et
+    la tete EVALUEES (pas sur `main` courant, pas sur la branche)."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    calls = [c for c in runner.cmds()
+             if len(c) > 1 and "check_twin_attestation_squash.py" in c[1]]
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("--base") + 1] == "origin/main"
+    assert calls[0][calls[0].index("--head") + 1] == HEAD
+
+
+def test_twin_attestation_organ_not_called_when_registry_untouched(tmp_path):
+    """Une PR hors registre twin ne paie ni fetch ni organe d'attestation."""
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    assert not any("check_twin_attestation_squash.py" in f for f in runner.flat())
+
+
 def test_twin_collision_avec_une_pr_ouverte_skips(tmp_path):
     """Un ordinal revendique par une PR CONCURRENTE encore ouverte doit faire
     sauter le merge : ni le jugement base+tete ni l'arbre de fusion ne le
@@ -3734,8 +3882,79 @@ def test_stacked_on_main_self_reference_is_explicit(tmp_path):
 
 
 def _combined_calls(runner):
+    """Appels d'EVALUATION de l'organe (les tests d'arbre fusionne).
+
+    Le retrait du worktree de passe passe par le meme binaire en mode
+    ``--cleanup`` : ce n'est pas une evaluation, et il ne doit pas etre
+    compte comme telle.
+    """
     return [c for c in runner.cmds()
-            if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+            if len(c) > 1 and "premerge_combined_check.py" in c[1]
+            and "--cleanup" not in c]
+
+
+def _cleanup_calls(runner):
+    return [c for c in runner.cmds() if "--cleanup" in c]
+
+
+def test_le_contexte_de_passe_nomme_un_worktree_par_passe():
+    """Une passe = UN worktree, nomme par le PID de la passe.
+
+    Deux passes concurrentes ne doivent jamais partager le dossier : les
+    tests d'un candidat joueraient alors sur l'arbre d'un autre.
+    """
+    ctx = mr.combined_pass_context()
+    assert ctx is not None
+    assert "premerge-passe-" in ctx.worktree.name
+    assert str(os.getpid()) in ctx.worktree.name
+
+
+def test_le_contexte_de_passe_est_eteint_par_le_rollback_operateur(monkeypatch):
+    """`MERGE_READY_COMBINED_CHECK=0` retire l'etape : pas de contexte."""
+    monkeypatch.setenv(mr.COMBINED_DISABLE_ENV, "0")
+    assert mr.combined_pass_context() is None
+
+
+def test_l_etape_5quinquies_recoit_le_worktree_de_passe(tmp_path):
+    """L'argv de l'etape porte le worktree de la passe et le reutilise.
+
+    Sans `--reuse-worktree`, l'organe refait un `worktree add` et un
+    `worktree remove` par candidat : 38 s + 9 s, mesures.
+    """
+    runner = ScriptedRunner(views={123: default_view()})
+    rc, _, _ = run_organ(tmp_path, runner)
+    calls = _combined_calls(runner)
+    assert calls, "l'organe premerge doit etre invoque"
+    argv = calls[0]
+    assert "--reuse-worktree" in argv
+    worktree = argv[argv.index("--worktree") + 1]
+    assert worktree.startswith(".tmp/premerge-passe-")
+    # Aucun chemin absolu de la machine dans l'argv (#26102).
+    assert not any(str(mr.REPO_ROOT) in tok for tok in argv)
+    # Le retrait du worktree passe par l'ORGANE (`--cleanup`), jamais par un
+    # `git` lance par la passe.
+    cleanups = _cleanup_calls(runner)
+    assert cleanups, "le worktree de la passe doit etre retire"
+    assert not any(c[:1] == ["git"] for c in runner.cmds())
+
+
+def test_une_passe_sans_evaluation_ne_retire_rien(tmp_path, monkeypatch):
+    """Aucune evaluation -> aucun worktree pose -> aucun retrait.
+
+    Une passe dont toutes les PRs sont refusees en amont (porte STACK)
+    n'a rien demande au disque : elle ne doit rien demander en sortant.
+    """
+    monkeypatch.setattr(
+        mr.gate, "default_stack_index", lambda: {124: "entree-de-la-partenaire"}
+    )
+    monkeypatch.setattr(
+        mr.gate, "stack_reasons",
+        lambda target, index: ["stack top: raison de test"],
+    )
+    runner = ScriptedRunner(views={123: default_view()})
+    run_organ(tmp_path, runner)
+    assert _combined_calls(runner) == []
+    assert _cleanup_calls(runner) == []
 
 
 def test_combined_green_merges_and_judges_the_view_head(tmp_path):
@@ -3757,6 +3976,32 @@ def test_combined_red_skips_and_names_the_first_red_test(tmp_path):
     assert lines[-1]["verdict"] == "skipped"
     assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_red_ecrit_la_raon_dans_le_journal(tmp_path):
+    """Le journal porte la RAISON du rouge, pas seulement son identifiant.
+
+    Deux PRs approuvees ont ete sautees sur un test qui ne les concernait
+    pas (22/11) : `FAILED <id>` obligeait a DEVINER la cause. La section
+    FAILURES de pytest la donne.
+    """
+    stdout = json.dumps({"verdict": "RED",
+                         "failed": ["scripts/x/test_a.py::test_u"],
+                         "failure_detail": "E   assert proc.returncode == 0\n"})
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout=stdout)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
+    assert "assert proc.returncode == 0" in lines[-1]["detail"]
+
+
+def test_le_journal_dune_pr_sans_detail_ne_porte_pas_la_cle(tmp_path):
+    """Une ligne sans raison n'invente pas une cle vide."""
+    runner = ScriptedRunner(prs=(401,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert "detail" not in lines[0]
 
 
 def test_combined_conflict_skips(tmp_path):
@@ -3819,7 +4064,7 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
 # la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
 # first-parent de merge_dwell).
 
-LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway.lean"
 ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
 
 
@@ -3878,10 +4123,10 @@ def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
     """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
     fichiers Lean : changer la toolchain change ce que le build doit prouver."""
     for path in (
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json",
     ):
         runner = ScriptedRunner(views={123: default_view(files=(path,))})
         _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
@@ -3960,7 +4205,7 @@ def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tm
 
 BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
 BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
-CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean"
+CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean"
 
 #: Manifeste des lakes declares en CI : `conway` y est, `busybeaver` non.
 CI_LAKES_MANIFEST = {
@@ -3968,9 +4213,9 @@ CI_LAKES_MANIFEST = {
     "lakes": [
         {
             "lake": "conway",
-            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
             "paths": [
-                "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+                "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
             ],
         }
     ],

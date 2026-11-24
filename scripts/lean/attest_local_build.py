@@ -112,7 +112,7 @@ LEAN_EXEC = LEAN_DIR / "lean_exec.py"
 # --------------------------------------------------------------------------
 # #26630 -- le cache chaud se RESOUT par toolchain, il n'est plus fige.
 #
-# Un seul pivot (`GOL/conway_lean`, toolchain v4.33.0) rendait trois lakes
+# Un seul pivot (`JeuDeLaVie/conway_lean`, toolchain v4.33.0) rendait trois lakes
 # INMERGEABLES PAR CONSTRUCTION : `formal_logic` (v4.33.1),
 # `socialchoicepeters` (v4.32.1) et `conwaycgt` (v4.33.0-rc1) ne peuvent pas
 # emprunter le cache d'une autre toolchain -- le build est produit par la
@@ -304,6 +304,31 @@ def build_failure_reason(payload: dict, violation: str | None = None) -> str:
     if (payload.get("status") or "").lower() == "timeout":
         return "timeout du lake build (exit_code={})".format(exit_code)
     return "lake build a echoue (exit_code={})".format(exit_code)
+
+
+def is_pure_timeout(build: dict) -> bool:
+    """Vrai si un build est un **timeout pur**.
+
+    Un timeout pur est un build **tue au minuteur** (`status == "timeout"`),
+    **sans** violation du budget de concurrence et **sans** erreur de
+    compilation nommee : c'est un depassement du **budget de temps**, pas une
+    faute de code. La CI compile le meme lac en vert (cache Lake chaud), donc
+    un timeout pur ne refuse pas la PR : il est atteste comme deferral CI
+    (#27516 volet 3).
+
+    Les deux exclusions sont portees par des champs DISTINCTS du status :
+    une violation de budget de concurrence (`budget_violation`) est une
+    cause de depassement qui se re-essaye (pas un timeout pur), et une
+    erreur de compilation nommee (`errors`) est une faute de code, jamais un
+    timeout. Fonction **pure** : elle se teste sans Windows ni Lake.
+    """
+    if (build.get("status") or "").lower() != "timeout":
+        return False
+    if build.get("budget_violation"):
+        return False
+    if build.get("errors"):
+        return False
+    return True
 
 
 def gh_json(repo: str, path: str) -> object:
@@ -1472,20 +1497,46 @@ def cleanup_worktree(worktree: Path) -> None:
             )
 
 
-def _attestation_extra(builds: list[dict], modules_mode: str) -> str:
+def _attestation_extra(
+    builds: list[dict], modules_mode: str, pure_timeouts: list[dict] | None = None
+) -> str:
     """La partie libre du corps d'attestation : ce qui a ete CONSTRUIT.
 
     Un build cible n'atteste que ce qu'il a construit : les cibles sont donc
     nommees, et les agregateurs ecartes aussi (une borne invisible est une
     attestation quiSUR-declare sa portee).
+
+    Quand un ou plusieurs builds sont des **timeouts purs** (#27516 volet 3),
+    le texte est honnete : le build local n'a PAS acheve (budget de temps),
+    ce n'est ni un echec de compilation ni une preuve de vert local ;
+    l'autorite de compilation est la CI (cache chaud). Le texte ne dit plus
+    alors « reussi ».
     """
-    lines = [
-        "`lake build` local reussi sur le worktree detache a la tete citee "
-        "(cache Mathlib chaud par jonction). "
-        "Preuve : sortie de `scripts/lean/lean_exec.py`."
-    ]
+    timed_lakes = {b.get("lake") for b in (pure_timeouts or [])}
+    if timed_lakes:
+        lines = [
+            "`lake build` local **non acheve** sur le worktree detache a la "
+            "tete citee : timeout du budget local pour {} -- ce n'est ni un "
+            "echec de compilation ni une preuve de vert local. L'autorite de "
+            "compilation est la CI (cache Lake chaud), qui compile le meme lac "
+            "(#27516).".format(
+                ", ".join("`{}`".format(l) for l in sorted(timed_lakes))
+            )
+        ]
+    else:
+        lines = [
+            "`lake build` local reussi sur le worktree detache a la tete citee "
+            "(cache Mathlib chaud par jonction). "
+            "Preuve : sortie de `scripts/lean/lean_exec.py`."
+        ]
     for build in builds:
         lake = build.get("lake")
+        if lake in timed_lakes:
+            lines.append(
+                "Lake `{}` : **timeout du budget local** (exit 124) -- "
+                "deferral CI.".format(lake)
+            )
+            continue
         targets = build.get("targets") or []
         scope = build.get("scope") or {}
         if not targets:
@@ -1816,8 +1867,16 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         # qui a echoue, hors de la queue de 4000 caracteres.
         result["errors"] = [e for b in builds for e in (b.get("errors") or [])]
         failed = [b for b in builds if not b.get("ok")]
-        if failed:
+        # #27516 volet 3 : un timeout pur (tue au minuteur, sans violation du
+        # budget de concurrence ni erreur de compilation) n'est PAS un echec
+        # de build : la CI compile le meme lac en vert (cache chaud). Il ne
+        # refuse pas la PR ; il est atteste comme deferral CI. Seuls les
+        # echecs qui ne sont PAS des timeouts purs bloquent le merge.
+        pure_timeouts = [b for b in failed if is_pure_timeout(b)]
+        blocking = [b for b in failed if not is_pure_timeout(b)]
+        if blocking:
             result["ok"] = False
+            failed = blocking
             sans_cache = [
                 b for b in failed
                 if b.get("reason") in (NO_WARM_CACHE, LAKE_NOT_IN_CLONE)
@@ -1861,13 +1920,18 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
                 jobs += int(build.get("jobs") or 0)
             except (TypeError, ValueError):
                 pass
+        # Aucun echec bloquant : attestation. Les timeouts purs (le cas
+        # knot_lean, #27516) y sont marques `timeout: defer` -- l'attestation
+        # est honnete (build local non acheve) mais ne bloque pas la PR : la
+        # garde merge_ready la lit par la tete, comme toute attestation.
         body = attestation.render_attestation(
             sha=head,
             lakes=[lake["lake"] for lake in lakes],
             jobs=jobs or None,
             pr=pr,
             duration_s=time.time() - started,
-            extra=_attestation_extra(builds, modules_mode),
+            extra=_attestation_extra(builds, modules_mode, pure_timeouts),
+            timeout=bool(pure_timeouts),
         )
         comment_id = post_attestation(repo, pr, body)
         result["ok"] = True
