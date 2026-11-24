@@ -54,6 +54,6 @@ marche 03 qu'il étend, sans s'insérer dans ce chemin : c'est une bifurcation, 
 ## Départs vers d'autres séries
 
 Deux carnets nés dans la strate 18-20 de la racine ont rejoint d'autres séries et ne comptent pas
-comme marches : [GOL-08](../../SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb) (ex-20d)
-et GOL-09 (ex-20e), tous deux dans la [sous-série GOL](../../SymbolicAI/Lean/GOL/README.md) de la
+comme marches : [GOL-08](../../SymbolicAI/Lean/JeuDeLaVie/GOL-08-Loi-II-Translateur-Life.ipynb) (ex-20d)
+et GOL-09 (ex-20e), tous deux dans la [sous-série GOL](../../SymbolicAI/Lean/JeuDeLaVie/README.md) de la
 série Lean (réorg #20204) — la marche « traduire » de la carte y vit désormais.
