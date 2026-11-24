@@ -2458,6 +2458,40 @@
    "iterate_paths": [],
    "pre_argv": [],
    "commenters": []
+  },
+  {
+   "name": "twin-execution-heritage-guard",
+   "argv": [
+    "python",
+    "scripts/notebook_tools/check_twin_execution_heritage.py",
+    "--diff",
+    "{base_ref}...HEAD",
+    "--gate"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "scripts/notebook_tools/twin_pairs.d/**",
+    "scripts/notebook_tools/rust_conformance.d/**",
+    "**/*.ipynb",
+    "scripts/notebook_tools/check_twin_execution_heritage.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [
+    2
+   ],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
   }
  ],
  "TRANCHE37": [
