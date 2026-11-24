@@ -91,22 +91,29 @@ def test_le_classement_ne_lit_que_des_metadonnees():
     assert "body" not in requete and "comments" not in requete
 
 
-def test_le_tirage_leger_ne_decide_aucun_ecart(monkeypatch):
-    """Le tirage n'ecarte rien : les neuf regles ne sont pas decidables sur
-    des metadonnees, elles se decident a la prise en charge.
+def test_le_tirage_leger_qualifie_avant_de_servir(monkeypatch):
+    """La voie leger QUALIFIE la fenetre servie avant de la servir.
+
+    Le CLASSEMENT ne decide toujours aucun ecart sur ses metadonnees, mais la
+    fenetre est qualifiee sur son FIL COMPLET : l'action de la lane n'est plus
+    « qualifier », c'est « claimer » (dispatch `c0030`, 24/11).
 
     Une exclusion decidable sur metadonnees (le label `candidate-delivered`)
-    ne doit donc PAS disparaitre du classement : elle est rendue avec son
-    etat, et l'action qui va avec.
+    ne disparait donc pas du classement : elle est rendue avec son etat, et
+    l'action qui va avec.
     """
     rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
                                        _run_faux(nb=6))
     assert code == 0
     assert rapport["voie"] == "leger"
     assert rapport["pool"] == 6
+    assert rapport["qualification"]["candidats"] >= len(rapport["grains"]), \
+        "la fenetre qualifiee est plus large que la file servie"
     for g in rapport["grains"]:
         assert "action" in g and g["action"]
-        assert g["action"].startswith("qualifier #")
+        assert "deja qualifie" in g["action"]
+        assert not g["action"].startswith("qualifier #"), \
+            "le grain servi est deja qualifie : la lane ne le qualifie pas une fois de plus"
 
 
 def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
@@ -115,6 +122,51 @@ def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
     rapport, _ = tapis_leger.tirage(LANE, 2, NOW, 45, "g", Path("."),
                                     _run_faux(nb=12))
     assert len(rapport["grains"]) > 2
+
+
+def test_un_grain_refuse_par_la_qualification_n_est_pas_serve(monkeypatch):
+    """Un grain que la qualification REFUSE n'est pas servi a la lane.
+
+    La declaration hors flotte (#17713) se lit sur le CORPS : elle n'est pas
+    decidable sur les metadonnees du classement, donc seule la qualification
+    la voit -- et le grain sort avec son code et son motif (jamais en silence).
+    """
+    def faux_qualifier(run, depot, numeros=None):
+        return {n: {**_issue(n),
+                    "body": ("Suivi Marathon II hors flotte #17713" if n == 7 else "")}
+                for n in (7, 8, 9, 10, 11, 12)}
+
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
+                                       _run_faux(nb=6))
+    assert code == 0
+    servis = [g["numero"] for g in rapport["grains"]]
+    assert 7 not in servis, "un grain refuse n'est pas servi"
+    refus = {e["numero"]: e for e in rapport["qualification"]["ecartees"]}
+    assert 7 in refus, "le refus est affiche"
+    assert refus[7]["code"] == "HORSFLOTTE"
+    assert refus[7]["motif"]
+
+
+def test_un_grain_non_qualifie_n_est_pas_serve(monkeypatch):
+    """Une qualification qui n'a pas pu decider ne sert RIEN (fail-CLOSED).
+
+    Le mur atteint rend le verdict impossible : les grains restent en attente,
+    ils sont DECLARES, et la file sort vide plutot que de servir des grains
+    dont personne n'a decide.
+    """
+    def faux_qualification(candidats, lane, maintenant, jours, prs, run,
+                           echeance=None, **kw):
+        return [], {}, [], True, 0, {"secondes": 0.0, "premier_servable_s": None}
+
+    monkeypatch.setattr(tq, "qualifier", faux_qualification)
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
+                                       _run_faux(nb=6))
+    assert code == 0
+    assert rapport["grains"] == [], "aucun grain non qualifie n'est servi"
+    assert rapport["qualification"]["budget_epuise"] is True
+    assert rapport["qualification"]["non_qualifies"], \
+        "les grains non decides sont declares, jamais servis en silence"
 
 
 def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
@@ -627,21 +679,24 @@ def test_la_prise_en_charge_ne_lit_plus_les_citations(monkeypatch):
 
 # --- L'ANCRE : elle n'avance que sur un verdict TERMINAL (peer, 19/11) ------
 
-def test_un_tirage_seul_ne_fait_pas_avancer_l_ancre(tmp_path, monkeypatch):
-    """Le tirage PROPOSE ; il ne qualifie pas. Un tirage sans action laisse
-    l'ancre en place.
+def test_le_tirage_qualifie_avance_l_ancre_sur_les_verdicts_decides(tmp_path,
+                                                                    monkeypatch):
+    """Le tirage qualifie : l'ancre avance sur les verdicts DECIDES.
 
-    Avancer l'ancre a la PROPOSITION ferait declarer visite un numero que
-    personne n'a decide : le tour se fermerait sur une couverture qui n'a pas
-    eu lieu (peer, 19/11)."""
+    Le tirage PROPOSE toujours la fenetre (les numeros restent en attente),
+    mais la qualification tranche : les grains confirmes sont acquittes et
+    l'ancre avance sur eux -- jamais sur la proposition seule (peer, 19/11 :
+    un numero que personne n'a decide ne peut pas etre declare visite)."""
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
     rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
                                        _run_faux(nb=6))
     assert code == 0
+    confirmees = [g["numero"] for g in rapport["grains"]]
     etat = tapis_ancre.lire(LANE)
-    assert etat["grains"]["ancre"] is None,         "un tirage sans action ne fait pas avancer l'ancre"
-    assert etat["grains"]["attente"], "les numeros tires restent EN ATTENTE"
-    assert all(not v for v in etat["grains"]["attente"].values()),         "un numero propose n'est pas un numero qualifie"
+    assert etat["grains"]["ancre"] == max(confirmees), \
+        "l'ancre avance sur le dernier grain CONFIRME"
+    assert all(etat["grains"]["attente"].get(n, True) for n in confirmees), \
+        "aucun grain confirme ne reste en attente de verdict"
 
 
 def test_un_lot_partiel_ne_fige_pas_la_couverture(tmp_path, monkeypatch):

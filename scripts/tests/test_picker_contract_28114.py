@@ -65,6 +65,7 @@ noyau consolide peut les satisfaire par n'importe quelle voie interne.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -75,7 +76,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_cache_fichier, gh_selection, main_freshness
-from coordination import tapis_ancre, tapis_cap_livraisons, tapis_leger, tapis_rapide
+from coordination import tapis_ancre, tapis_cap_livraisons, tapis_etat, tapis_leger, tapis_rapide
 
 NOW = datetime(2026, 11, 22, 21, 0, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
@@ -110,12 +111,31 @@ def _page_metas(metas: list[dict]) -> str:
         "pageInfo": {"hasNextPage": False, "endCursor": "c"}, "nodes": nodes}}}})
 
 
+def _page_issues(metas: list[dict], requete: str) -> str:
+    """La lecture CIBLEE : un alias (`i0`, `i1`...) par issue nommee.
+
+    La qualification de la fenetre servie lit le **fil complet** de chaque
+    grain (dispatch `c0030`, 24/11) : sans cette reponse, aucun grain ne
+    serait qualifie et la voie leger servirait une file VIDE.
+    """
+    par_numero = {m["number"]: m for m in metas}
+    data: dict = {"data": {"repository": {}}}
+    for k, n in enumerate(re.findall(r"issue\(number:(\d+)\)", requete)):
+        m = par_numero.get(int(n))
+        data["data"]["repository"][f"i{k}"] = None if m is None else {
+            "number": m["number"], "title": m["title"], "body": "",
+            "createdAt": m["created_at"], "updatedAt": m["updated_at"],
+            "labels": {"nodes": [{"name": lab} for lab in m["labels"]]},
+            "comments": {"totalCount": 0, "nodes": []}}
+    return json.dumps(data)
+
+
 def _run(metas: list[dict]):
     """Le faux `run` : le pool en metadonnees, aucune PR, aucune citation."""
     def run(argv, timeout):
         requete = " ".join(argv)
         if "issue(number:" in requete:
-            return json.dumps({"data": {"repository": {}}})
+            return _page_issues(metas, requete)
         if "graphql" in requete:
             return _page_metas(metas)
         if argv[0] == "git":
@@ -138,9 +158,16 @@ def _etat_neutre(monkeypatch):
 
     Le contrat I3 veut qu'une lane tire **seule** : le test ne doit pas
     dependre d'une ancre posee par une autre session.
+
+    `lire` rend un etat **normalise** (`tapis_etat.vide()`) : c'est le
+    contrat de l'organe, et la qualification s'en sert pour acquitter les
+    verdicts. Un etat nu (`{}`) ferait echouer l'ancre au lieu de la laisser
+    immobile. L'ecriture est neutralisee : le test ne touche pas l'ancre
+    reelle de la lane.
     """
-    monkeypatch.setattr(tapis_ancre, "lire", lambda lane: {})
+    monkeypatch.setattr(tapis_ancre, "lire", lambda lane: tapis_etat.vide())
     monkeypatch.setattr(tapis_ancre, "proposer", lambda *a, **k: {})
+    monkeypatch.setattr(tapis_ancre, "ecrire", lambda lane, etat: etat)
 
 
 # --- I1 -- une file sans fin par lane ------------------------------------------

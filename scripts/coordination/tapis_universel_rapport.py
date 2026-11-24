@@ -15,14 +15,17 @@ from coordination.tapis_rapide import Etat
 
 
 def action_de(e: Etat, lane: str) -> str:
-    """Ce que la lane doit faire de ce grain : le qualifier, puis le servir.
+    """Ce que la lane doit faire de ce grain : le claimer, puis le servir.
 
-    La qualification est le temps d'ACTION : elle lit le corps et le fil
-    complet de l'issue et rejoue les neuf regles d'ecart -- l'organe est
-    `scripts/coordination/tapis_prise_en_charge.py`.
+    La qualification a deja ete jouee : la voie leger qualifie la fenetre
+    servie sur son FIL COMPLET **avant** de la servir (dispatch `c0030` du
+    coordinateur, 24/11). L'action de la lane est donc le CLAIM et le
+    travail, pas une nouvelle qualification -- la re-decision reste possible
+    (le fil bouge), l'organe est `scripts/coordination/tapis_prise_en_charge.py`.
     """
-    base = (f"qualifier #{e.numero} avant action (corps + fil complet, "
-            f"scripts/coordination/tapis_prise_en_charge.py) puis la servir")
+    base = (f"deja qualifie sur fil complet : le claimer (paths:) puis le servir "
+            f"-- requalifier si le fil bouge "
+            f"(scripts/coordination/tapis_prise_en_charge.py)")
     if e.consolidation:
         base += " -- issue de consolidation"
     return base
