@@ -1,0 +1,7 @@
+- name: "Compression-08-Assemblage-Vectoriel C#"
+  family: InformationCalcul/Compression
+  python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Compression-08-Assemblage-Vectoriel-Python.ipynb. Execution reelle sur kernel .net-csharp : 10 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
