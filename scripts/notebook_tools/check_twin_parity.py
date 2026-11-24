@@ -184,6 +184,7 @@ from twin_open_claims import collect_open_claims, repo_slug  # noqa: E402
 # twin_open_claims ci-dessus. Ils n'importent PAS cet organe (injection
 # en parametre) : aucun cycle d'import, aucune double identite.
 import twin_parity_attest  # noqa: E402
+import twin_parity_base  # noqa: E402
 import twin_parity_census  # noqa: E402
 import twin_parity_cli  # noqa: E402
 
@@ -685,9 +686,22 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
         # les fichiers de paire des noms demandes (+ leurs audits), pas les 2374
         # fichiers du registre. Le slug d'un fichier de paire EST `_slug(name)`
         # (un fichier = une paire, #8542), donc le filtre sur slug == sur name.
+        had_pair_files = bool(pair_lines)
         if names is not None:
             wanted_slugs = {_slug(n) for n in names}
             pair_lines = [(s, l) for (s, l) in pair_lines if s in wanted_slugs]
+            if had_pair_files and not pair_lines:
+                # #28093 : le selecteur a vide la liste = les paires demandees
+                # sont ABSENTES du base-ref (cas normal d'une PR qui ajoute une
+                # paire). Base vide, pas de repli legacy : celui-ci finirait en
+                # « Le registre au base-ref n'est pas une liste » apres avoir
+                # `git show` le REPERTOIRE du registre (listing d'arbre, rc=0).
+                print(
+                    f"[twin-parity] paire(s) absente(s) du base-ref {git_ref} : "
+                    f"{', '.join(sorted(wanted_slugs))} -> base vide pour la comparaison",
+                    file=sys.stderr,
+                )
+                return []
         for slug, line in sorted(pair_lines):
             txt = _git_show_file(repo_root, git_ref, line)
             if txt is None:
@@ -738,8 +752,11 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
     # (2) Retombe sur l'ancien mono-fichier `twin_pairs.yaml` (a cote du script).
     legacy_rel = "scripts/notebook_tools/twin_pairs.yaml"
     reg_text_base = _git_show_file(repo_root, git_ref, legacy_rel)
-    if reg_text_base is None:
-        # tente aussi le chemin absolu fourni en --registry (si c'etait un fichier)
+    if reg_text_base is None and reg_rel.endswith(".yaml"):
+        # tente aussi le chemin fourni en --registry, mais SEULEMENT si c'est un
+        # chemin de FICHIER .yaml (#28093) : `git show <ref>:<repertoire>` rend
+        # rc=0 avec un listing d'arbre, que yaml.safe_load ne parse pas en
+        # liste -- d'ou le message trompeur « n'est pas une liste ».
         reg_text_base = _git_show_file(repo_root, git_ref, reg_rel)
     if reg_text_base is None:
         raise SystemExit(
@@ -1044,12 +1061,21 @@ def update_pair(
     # signature `rec_X != cur_X` -- sans cette discrimination, le fix
     # violerait le design-gate #9399 critere 2 (metadata-only drift DOIT
     # rester no-op, Sudoku-08/14 BDD du 2026-08-04).
+    #
+    # Cette discrimination a un second versant (#28122) : HEAD porte la
+    # BRANCHE, or la destination du squash est `main`. Un blob enregistre par
+    # un commit de la branche reste joignable depuis HEAD tout en n'etant pas
+    # dans `main` -- le squash l'ecrasera. La base est donc interrogee en
+    # complement (module frere `twin_parity_base`, comme le decoupage T7 de
+    # #26364 l'a fait pour les modes d'ecriture).
     if is_noop and latest:
         rec_py = latest.get("python_sha")
         rec_cs = latest.get("csharp_sha")
         py_orphan = rec_py is not None and not _blob_ancestor_in(repo_root, rec_py)
         cs_orphan = rec_cs is not None and not _blob_ancestor_in(repo_root, rec_cs)
-        if py_orphan or cs_orphan:
+        if (py_orphan or cs_orphan
+                or twin_parity_base.orphan_a_venir(
+                    _self(), repo_root, latest, cur_py, cur_cs)):
             is_noop = False
     return audit, cur_py, is_noop
 

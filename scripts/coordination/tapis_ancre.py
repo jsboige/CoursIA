@@ -7,31 +7,28 @@ ai-01:CoursIA) : #3 ouverte, jamais visitee apres quatre tranches. L'ancre
 porte le **numero** du dernier grain qualifie.
 
 **Le curseur n'avance que sur un verdict TERMINAL** (peer, 19/11) : le
-tirage PROPOSE (`proposer`), la qualification DECIDE (`avancer`). Un tirage
-sans action ne la deplace pas.
+tirage PROPOSE, la qualification DECIDE.
 
-**Le curseur ne se fige pas sur un INCONNU** (contre-exemple execute le
-19/11) : une lecture impossible (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`,
-`ABSENT`) ne DECIDE pas le grain -- elle ne doit pas non plus RETIRER la
-couverture des autres : ces numeros sont PARKES (`inconnus`), ils ne
-bloquent pas le curseur et reviennent au tour suivant.
+**Le curseur ne se fige pas sur un INCONNU** (contre-exemple du 19/11) :
+une lecture impossible ne DECIDE pas le grain : ces numeros sont PARKES.
 
-**Un tour qui boucle est un tour de plus, pas une fin** : quand la
-selection revient en deca du curseur (le pool a ete couvert), le curseur
-recommence au plus petit numero et le compteur `tour` s'incremente.
+**Un tour qui boucle est un tour de plus, pas une fin** : le curseur
+recommence au plus petit numero, et le compteur `tour` s'incremente.
 
-**La tranche PRIMAIRE et la REPRISE sont deux choses distinctes** (19/11,
-DM du coordinateur) : les confondre figeait la rotation. La primaire porte
-le curseur (son rebouclage ouvre un tour de plus) ; la reprise -- les
-illisibles parkes -- revient au service SANS prendre sa place.
+**La tranche PRIMAIRE et la REPRISE sont deux choses distinctes** (19/11, DM
+du coordinateur) : les confondre figeait la rotation. La primaire porte le
+curseur ; la reprise des illisibles parkes revient au service SANS la place.
+
 
 L'arithmetique de la selection vit dans `coordination.tapis_tranche`, la
 persistance dans `coordination.tapis_etat`.
 """
 from __future__ import annotations
 
-from coordination import tapis_etat, tapis_retry
-from coordination.tapis_etat import ancre_de, inconnus_de, lire, tour_de  # noqa: F401
+from coordination import tapis_avance, tapis_etat, tapis_retry
+from coordination.tapis_non_tente import NON_TENTE
+from coordination.tapis_etat import (ancre_de, inconnus_de, lire,  # noqa: F401
+                                    phase_de, tour_de)
 from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
 
 ENV_ETAT = tapis_etat.ENV_ETAT
@@ -58,7 +55,8 @@ def boucle(proposes: list[int], ancre: int | None) -> bool:
 
 
 def proposer(lane: str, classe: str, primaires: list[int],
-             reprises: list[int] | None = None) -> dict:
+             reprises: list[int] | None = None, reboucle: bool = True,
+             reinit: bool = False) -> dict:
     """Enregistre les numeros PROPOSES par le tirage, sans bouger l'ancre.
 
     `primaires` est la tranche **primaire** (celle que le curseur sert) ;
@@ -70,9 +68,15 @@ def proposer(lane: str, classe: str, primaires: list[int],
 
     Le tirage **selectionne** ; il ne qualifie pas : un tirage sans action
     laisse le curseur en place.
+
+    `reboucle=False` : pas de rebouclage par NUMERO (la selection par age
+    ne se sert pas des numeros au-dessus de l'ancre). `reinit=True` : le
+    tour est couvert -- la file d'attente est rendue, le tour recommence.
     """
     etat = lire(lane)
-    if boucle(list(primaires), etat[classe]["ancre"]):
+    if reinit:
+        etat[classe]["attente"] = {}
+    if reboucle and boucle(list(primaires), etat[classe]["ancre"]):
         etat[classe]["tour"] = etat[classe].get("tour", 0) + 1
         etat[classe]["ancre"] = 0
         etat[classe]["attente"] = {}
@@ -80,28 +84,31 @@ def proposer(lane: str, classe: str, primaires: list[int],
     for n in list(primaires) + list(reprises or []):
         att.setdefault(n, False)
     etat[classe]["primaire"] = sorted(set(primaires))
+    etat[classe]["phase"] = etat[classe].get("phase", 0) + 1
     ecrire(lane, etat)
     return etat
 
 
-def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dict:
+def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None,
+            lot: set[int] | None = None) -> dict:
     """Fait avancer le curseur sur les verdicts TERMINAUX connus.
 
-    Le curseur ne passe jamais un numero dont le verdict n'est pas connu :
-    il s'arrete au premier numero en attente. Un lot PARTIEL (une lecture
-    en echec) le laisse donc en place.
+    Le curseur ne passe jamais un numero **refuse** sans le parker ; un
+    grain PROPOSE mais jamais qualifie (NON TENTE) ne le bloque pas non
+    plus : il est parke, et le curseur continue (`tapis_non_tente`).
+
+    `lot` est le lot EFFECTIVEMENT qualifie. Le curseur ne passe que sur
+    les numeros que le LOT a pris en charge : une qualification porte sur
+    un numero qui n'appartient pas a la tranche ne fait pas avancer l'ancre
+    des primaires pendantes (review du 19/11). Sans lot, l'avance n'est pas
+    bornee. Le balayage lui-meme vit dans `coordination.tapis_avance`.
 
     Un numero **inconnu** (lecture impossible) ne fige pas le curseur : il
-    est PARKE, il ne sera donc ni acquitte ni perdu -- il revient au tour
-    suivant. La couverture des autres numeros n'est jamais retiree par
-    l'echec d'une lecture.
-
-    Le balayage ne porte que sur la tranche **courante** (`attente`) : les
-    inconnus des tours anterieurs sont dans la file de reprise, ils ne
-    doivent pas faire sauter le curseur par-dessus des numeros qui n'ont
-    pas ete servis (19/11).
+    est PARKE, il revient au tour suivant, et la couverture des autres
+    numeros n'est jamais retiree par l'echec d'une lecture.
     """
     etat = lire(lane)
+    couvert = set(lot) if lot is not None else None
     for c in CLASSES:
         att = etat[c]["attente"]
         inc = etat[c]["inconnus"]
@@ -114,23 +121,20 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dic
                 tapis_retry.parquer(inc, n, info)
         ancre = etat[c]["ancre"]
         # Le balayage porte sur la tranche **PRIMAIRE** du tour courant : la
-        # REPRISE (les illisibles parkes) revient au service SANS prendre la
-        # place de la primaire -- balayer les deux ensemble faisait monter le
-        # curseur jusqu'au dernier numero repris, et la couverture du pool
-        # s'arretait (mesure du 19/11 : #3 et #4 jamais servis).
+        # REPRISE revient au service SANS prendre la place de la primaire.
         primaire = etat[c].get("primaire") or []
         cible = sorted(primaire) or sorted(att)
-        for n in cible:
-            if ancre is not None and n <= ancre:
-                continue
-            if n in inc:
-                ancre = n
-                continue
-            if not att.get(n):
-                break
-            ancre = n
+        # L'avance est BORNEE au lot : le curseur ne passe que sur les
+        # numeros que le lot a reellement pris en charge (revue du 19/11).
+        ancre = tapis_avance.avancer(cible, ancre, couvert, att, inc)
         etat[c]["ancre"] = ancre
-        etat[c]["attente"] = {n: b for n, b in att.items()
-                              if ancre is None or n > ancre}
+        # Une entree EN ATTENTE n'est pas retiree par le curseur : elle attend
+        # son verdict, et c'est elle qui exclut la selection par age (mandat du
+        # 22/11). Un grain REFUSE est une DECISION : il sort de la file ; un
+        # grain PARKE NON_TENTE reste en attente ET dans la file de reprise.
+        etat[c]["attente"] = {
+            n: b for n, b in att.items()
+            if ancre is None or n > ancre
+            or (not b and (n not in inc or inc[n].get("code") == NON_TENTE))}
     ecrire(lane, etat)
     return etat

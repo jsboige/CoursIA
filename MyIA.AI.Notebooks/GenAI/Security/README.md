@@ -45,6 +45,18 @@ Notre cluster CoursIA-2 héberge plusieurs agents reviewers (Hermes, NanoClaw, j
 | [`RedTeam/RedTeam-Beyond-Injection.ipynb`](RedTeam/RedTeam-Beyond-Injection.ipynb) | Notebook pratique | Red team au-delà de l'injection (pli 3 de #19543) : quatre familles mesurées une par une — jailbreaks (six gabarits d'attaque × deux cibles de politique bénignes contre `qwen2.5:7b` servi en local par Ollama, juge déterministe, température nulle), empoisonnement (détournement d'un TF-IDF from scratch par trois documents piégés, backdoor d'un classifieur de sentiment à 10 % de données contaminées avec contrôle), chaîne d'approvisionnement (détection de typosquatting par distance de Levenshtein, vérification SHA-256), bac à sable (allow-list + prison de chemins opposées à huit tentatives d'injection par résultat d'outil, trou de quota mesuré). Trois exercices C.1. Auto-contenu ; la section jailbreak exige Ollama en local (`RECOVERABLE-LOCAL` sinon). |
 | [`Capability/Capability-Plan-Data-Separation.ipynb`](Capability/Capability-Plan-Data-Separation.ipynb) | Notebook pratique | Défense **par construction** contre l'injection indirecte (issue #27512) : séparation plan/données — le plan est produit sur la seule demande de l'user, les données lues par une étape isolée sans appel d'outil, étiquettes de provenance `USER`/`DATA` propagées par fusion, politique refusant tout argument sensible teinté `DATA`. Banc de 40 scénarios (20 tâches légitimes + 20 injections) mesurant trois agents (capacités, ReAct, ReAct + filtre d'allowlist) sur `qwen2.5:7b` servi en local par Ollama ; chaîne de provenance d'un appel ; point aveugle du filtre (le corps du message n'est pas inspecté). Trois exercices C.1. Auto-contenu ; le modèle local 7B est exigé (`RECOVERABLE-LOCAL` sinon). |
 
+## Sous-séries
+
+Chaque axe de la section porte son propre README, écrit depuis les carnets de main :
+
+| Sous-série | README |
+|---|---|
+| [Oversight](Oversight/README.md) | Mesurer la surveillance d'un agent : scaling laws, backdoors, détection |
+| [Control](Control/README.md) | Contrôle par interprétabilité : direction du refus, ablation, unlearning |
+| [Tooling](Tooling/README.md) | Surface d'attaque des outils MCP et leurs défenses mesurées |
+| [RedTeam](RedTeam/README.md) | Red team au-delà de l'injection : jailbreaks, empoisonnement, chaîne, bac à sable |
+| [Capability](Capability/README.md) | Défense par construction : séparation plan/données, provenance `USER`/`DATA` |
+
 ## État des livraisons du sub-grain #16754
 
 Les quatre notebooks annoncés par le plan initial (PR 1 à PR 4) sont livrés dans `Oversight/` : le notebook Nim (PR 1, base expérimentale), puis `Oversight-Scaling-Laws-Analytics`, `Oversight-Scaling-Laws-Wargames` et `Oversight-Scaling-Laws-Statistics` (module consolidé). Les noms de fichiers ont évolué par rapport au plan d'origine ; les fichiers listés dans le tableau ci-dessus sont la référence.
