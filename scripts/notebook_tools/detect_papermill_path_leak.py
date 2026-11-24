@@ -184,7 +184,7 @@ LEAK_PATTERNS: tuple[re.Pattern[str], ...] = (
 # detector and the ``strip_machine_paths.py`` pre-commit hook (same PII
 # anchor). Founding case: PR #11234 merged
 # ``Output directory: D:\Dev\CoursIA-0411-audiobooks\...`` into
-# ``04-11-Generation-TTS.ipynb`` outputs (#11044 T1 correction, issue #11278).
+# ``Audio-04-11-Generation-TTS-Python.ipynb`` outputs (#11044 T1 correction, issue #11278).
 #
 # Class C is **advisory and opt-in** (``--nonpii``): it routes to a
 # *source fix + re-execution* (print the basename, not the absolute path —

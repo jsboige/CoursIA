@@ -939,7 +939,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-            "04-2-Transcription-Pipeline.ipynb"
+            "Audio-04-2-Transcription-Pipeline-Python.ipynb"
         ),
         motif=re.compile(r"chaque bloc a 2 lignes maximum"),
         raison=(
@@ -951,7 +951,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-            "04-2-Transcription-Pipeline.ipynb"
+            "Audio-04-2-Transcription-Pipeline-Python.ipynb"
         ),
         motif=re.compile(r"2 lignes max"),
         raison=(

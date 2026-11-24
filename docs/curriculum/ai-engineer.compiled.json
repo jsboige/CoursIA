@@ -193,7 +193,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb",
+          "path": "GenAI/Audio/01-Foundation/Audio-01-1-OpenAI-TTS-Intro-Python.ipynb",
           "title": "OpenAI TTS - Synthese Vocale par API",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -206,7 +206,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb",
+          "path": "GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb",
           "title": "OpenAI Whisper STT - Reconnaissance Vocale par API",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -219,7 +219,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb",
+          "path": "GenAI/Audio/01-Foundation/Audio-01-4-Whisper-Local-Python.ipynb",
           "title": "Whisper Local - Transcription GPU avec faster-whisper",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -232,7 +232,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb",
+          "path": "GenAI/Audio/01-Foundation/Audio-01-5-TTS-Local-ONNX-Python.ipynb",
           "title": "Kokoro TTS Local - Synthèse vocale légère",
           "duration_minutes": 60,
           "kernel": "Python 3",
@@ -920,7 +920,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
+          "path": "GenAI/Audio/02-Advanced/Audio-02-2-XTTS-Voice-Cloning-Python.ipynb",
           "title": "XTTS v2 - Clonage Vocal Zero-Shot",
           "duration_minutes": 45,
           "kernel": "Python 3",

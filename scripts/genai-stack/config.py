@@ -226,26 +226,26 @@ NOTEBOOK_SERVICE_MAP = {
 
     # --- Audio ---
     "audio_api": [
-        "01-1-OpenAI-TTS-Intro.ipynb",
-        "01-2-OpenAI-Whisper-STT.ipynb",
+        "Audio-01-1-OpenAI-TTS-Intro-Python.ipynb",
+        "Audio-01-2-OpenAI-Whisper-STT-Python.ipynb",
         "Audio-03-3-Realtime-Voice-API-Python.ipynb",
     ],
     "audio_local": [
-        "01-3-Basic-Audio-Operations.ipynb",
+        "Audio-01-3-Basic-Audio-Operations-Python.ipynb",
     ],
     "audio_whisper": [
-        "01-4-Whisper-Local.ipynb",
+        "Audio-01-4-Whisper-Local-Python.ipynb",
     ],
     "audio_tts_light": [
-        "01-5-TTS-Local-ONNX.ipynb",
+        "Audio-01-5-TTS-Local-ONNX-Python.ipynb",
     ],
     "audio_tts_heavy": [
         "Audio-02-1-Chatterbox-TTS-Python.ipynb",
-        "02-2-XTTS-Voice-Cloning.ipynb",
+        "Audio-02-2-XTTS-Voice-Cloning-Python.ipynb",
     ],
     "audio_music": [
-        "02-3-MusicGen-Generation.ipynb",
-        "02-4-Demucs-Source-Separation.ipynb",
+        "Audio-02-3-MusicGen-Generation-Python.ipynb",
+        "Audio-02-4-Demucs-Source-Separation-Python.ipynb",
     ],
     "audio_orchestration": [
         "Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb",
@@ -253,9 +253,9 @@ NOTEBOOK_SERVICE_MAP = {
     ],
     "audio_apps": [
         "Audio-04-1-Educational-Audio-Content-Python.ipynb",
-        "04-2-Transcription-Pipeline.ipynb",
-        "04-3-Music-Composition-Workflow.ipynb",
-        "04-4-Audio-Video-Sync.ipynb",
+        "Audio-04-2-Transcription-Pipeline-Python.ipynb",
+        "Audio-04-3-Music-Composition-Workflow-Python.ipynb",
+        "Audio-04-4-Audio-Video-Sync-Python.ipynb",
     ],
 
     # --- Video ---

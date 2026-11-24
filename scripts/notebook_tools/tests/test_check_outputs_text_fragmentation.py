@@ -275,7 +275,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # (path_rel_repo, cell_index, output_index, signature_summary)
 FP_CASES = [
     # (path, cell_index, output_index, description)
-    ("MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb", 18, 4, "stderr OpenAI Whisper + \\r\\n"),
+    ("MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb", 18, 4, "stderr OpenAI Whisper + \\r\\n"),
     ("MyIA.AI.Notebooks/QuantConnect/projects/PairsTrading/research.ipynb", 14, 0, "stderr PairsTrading"),
     ("MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-CSharp.ipynb", 18, 1, "stderr CSP-8 C#"),
     ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb", 14, 3, "stderr MGS-8 cell14"),

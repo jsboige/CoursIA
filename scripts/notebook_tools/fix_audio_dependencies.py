@@ -15,7 +15,7 @@ from typing import List, Dict
 
 # Notebook-specific dependency configurations
 GPU_DEPENDENCIES = {
-    'Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb': {
+    'Audio/01-Foundation/Audio-01-5-TTS-Local-ONNX-Python.ipynb': {
         'packages': ['kokoro-onnx', 'kokoro'],
         'primary': 'kokoro-onnx',
         'fallback': 'kokoro',
@@ -30,21 +30,21 @@ GPU_DEPENDENCIES = {
         'optional': True,
         'description': 'Chatterbox TTS (expressive speech, ~8 GB VRAM)',
     },
-    'Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb': {
+    'Audio/02-Advanced/Audio-02-2-XTTS-Voice-Cloning-Python.ipynb': {
         'packages': ['TTS'],
         'primary': 'TTS',
         'install': 'pip install TTS',
         'optional': True,
         'description': 'Coqui TTS (XTTS v2 voice cloning, ~6 GB VRAM)',
     },
-    'Audio/02-Advanced/02-3-MusicGen-Generation.ipynb': {
+    'Audio/02-Advanced/Audio-02-3-MusicGen-Generation-Python.ipynb': {
         'packages': ['audiocraft'],
         'primary': 'audiocraft',
         'install': 'pip install audiocraft',
         'optional': True,
         'description': 'AudioCraft (MusicGen, ~10 GB VRAM)',
     },
-    'Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb': {
+    'Audio/02-Advanced/Audio-02-4-Demucs-Source-Separation-Python.ipynb': {
         'packages': ['demucs', 'torchaudio'],
         'primary': 'demucs',
         'secondary': ['torchaudio'],

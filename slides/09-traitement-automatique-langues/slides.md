@@ -78,7 +78,7 @@ layout: default
 | CRF / structured prediction · parsing CFG/PCFG, CYK | [03_CRF_Etiquetage_Sequentiel](../../MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb) · [04_PCFG_CYK_Parsing](../../MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb) — gaps comblés (#16252/#16253) |
 | Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) |
 | Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) |
-| Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) |
+| Reconnaissance de la parole | [Audio-01-2-OpenAI-Whisper-STT-Python](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb) · [Audio-01-4-Whisper-Local-Python](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-4-Whisper-Local-Python.ipynb) |
 | Attention (MHA, MQA, GQA, SWA) | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) |
 | Agents conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
 
@@ -501,12 +501,12 @@ structurée — sur audio réel, API et local.
 
 **Whisper, deux voies** :
 
-- **API OpenAI** : [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) — transcription, timestamps, langues
-- **Local** : [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) — le même modèle auto-hébergé, sans données en sortie de machine
+- **API OpenAI** : [Audio-01-2-OpenAI-Whisper-STT-Python](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb) — transcription, timestamps, langues
+- **Local** : [Audio-01-4-Whisper-Local-Python](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-4-Whisper-Local-Python.ipynb) — le même modèle auto-hébergé, sans données en sortie de machine
 
 **Vers les applications** :
 
-- **Pipeline de transcription** : [04-2-Transcription-Pipeline](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) — du fichier audio au texte exploitable, enchaîné
+- **Pipeline de transcription** : [Audio-04-2-Transcription-Pipeline-Python](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-2-Transcription-Pipeline-Python.ipynb) — du fichier audio au texte exploitable, enchaîné
 - **Prosodie** : [Audio-04-10-Annotation-Prosodique-Python](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-10-Annotation-Prosodique-Python.ipynb) — l'annotation prosodique : ce que la courbe mélodique ajoute au mot
 - **Voix temps réel** : [Audio-03-3-Realtime-Voice-API-Python](../../MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb) — la boucle complète écouter-répondre
 
@@ -623,7 +623,7 @@ layout: section
 | Embeddings, sémantique vectorielle | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
 | Sémantique, graphes | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) |
 | Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) |
-| Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) · [04-2-Transcription-Pipeline](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) |
+| Reconnaissance de la parole | [Audio-01-2-OpenAI-Whisper-STT-Python](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb) · [Audio-01-4-Whisper-Local-Python](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-4-Whisper-Local-Python.ipynb) · [Audio-04-2-Transcription-Pipeline-Python](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-2-Transcription-Pipeline-Python.ipynb) |
 | RNN, LSTM, seq2seq, attention | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) |
 | Transformers, LLMs | [11_Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) · [13_Agentic_Orchestration](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) |
 | Bots conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots-par-l-api](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |

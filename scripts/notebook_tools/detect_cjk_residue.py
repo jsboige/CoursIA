@@ -96,7 +96,7 @@ CJK_RE = re.compile(r"[　-〿぀-ゟ゠-ヿ一-鿿]")
 # Chaque entree DOIT documenter la raison (demo multilingue legiTIME OU gated residual).
 ALLOWED: dict[str, str] = {
     # --- Notebooks: deliberate multilingual demos (CJK is the subject) ---
-    "GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb":
+    "GenAI/Audio/02-Advanced/Audio-02-8-Expressive-TTS-Python.ipynb":
         "demo TTS multilingue legiTIME (japonais volontaire pour la synthese)",
     "GenAI/Texte/09_Production_Patterns.ipynb":
         "demo multilingue legiTIME (cell[20]: 你好，世界！ = 'Hello World' mandarin, aux cotes de Ciao mondo! italien)",

@@ -3359,7 +3359,7 @@ def test_13610_symbol_predicate_unit_pair():
 # The two propres are deliberately NOT scripts/check_pr_perimeter.py, so the
 # #12201 self-hosting exemption (skip equality on a PR that edits the guard)
 # never fires -- here we exercise the ordinary subtraction path.
-_CARRIED_13637 = "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb"
+_CARRIED_13637 = "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb"
 _FILES_13637 = [
     {"path": _CARRIED_13637, "additions": 2708, "deletions": 2708},
     {"path": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
@@ -3410,7 +3410,7 @@ def test_13637_report_renders_carried_note_and_stale_signal():
     lines = format_report(report, None).splitlines()
     assert any("Périmètre effectif : 2 fichier(s)" in l for l in lines)
     assert any("dont 1 charrié(s)" in l for l in lines)
-    assert any("04-7-TTS-Voice-Benchmark.ipynb" in l for l in lines)
+    assert any("Audio-04-7-TTS-Voice-Benchmark-Python.ipynb" in l for l in lines)
     assert any("STALE-BASE" in l for l in lines)
     assert any("2 j" in l for l in lines), "48 h must render as ~2 j (days bound)"
 
@@ -3437,9 +3437,9 @@ def test_13637_report_omits_age_when_unresolvable():
     # merged -- the displaced defect #13637 step 1+3 exists to close.
     cardinal = [l for l in lines if l.lstrip().startswith("— dont")]
     assert len(cardinal) == 1
-    assert "04-7-TTS-Voice-Benchmark.ipynb" not in cardinal[0]
+    assert "Audio-04-7-TTS-Voice-Benchmark-Python.ipynb" not in cardinal[0]
     assert any(
-        "04-7-TTS-Voice-Benchmark.ipynb" in l
+        "Audio-04-7-TTS-Voice-Benchmark-Python.ipynb" in l
         and l.lstrip().startswith("— charrié(s) de main")
         for l in lines
     ), "carried paths must be enumerated on the dedicated line"

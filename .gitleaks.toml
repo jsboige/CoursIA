@@ -159,7 +159,7 @@ regexes = [
 #                      GenAI/Texte/10_LocalLlama.ipynb ("sk-abcd1234ABCD1423")
 #   SECRET-KEY         same cell: "sk-MINI-SECRET-KEY", "sk-MEDIUM-SECRET-KEY"
 #   dummy_key          "dummy_key_for_validation" in
-#                      GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb
+#                      GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb
 #   no-key-needed      conventional value for a keyless local vLLM endpoint
 #   GPT-4o-Transcribe  a MODEL NAME, flagged because it follows "API," in a
 #                      "**Technologies :**" bullet

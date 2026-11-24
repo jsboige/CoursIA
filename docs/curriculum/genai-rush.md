@@ -154,13 +154,13 @@ lu sur la section Prérequis réelle du notebook quand elle existe (marqué
 
 ### La voix
 
-8. **[Audio 01-1 — TTS : synthèse vocale par API](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb)**
+8. **[Audio 01-1 — TTS : synthèse vocale par API](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-1-OpenAI-TTS-Intro-Python.ipynb)**
    (45 min)
    - **Apporte** : la synthèse vocale par API — voix, formats, réglages.
    - **Suppose** : l'Environment Setup (déclaré) ; la clé OpenAI
      **directe** pour les endpoints audio (déclaré) ; des bases Python.
 
-9. **[Audio 01-2 — Whisper STT : reconnaissance vocale](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb)**
+9. **[Audio 01-2 — Whisper STT : reconnaissance vocale](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-2-OpenAI-Whisper-STT-Python.ipynb)**
    (45 min)
    - **Apporte** : la transcription Whisper — l'autre moitié de la boucle
      voix.

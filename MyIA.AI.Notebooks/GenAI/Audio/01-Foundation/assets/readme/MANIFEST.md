@@ -5,7 +5,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 **Bilan c.445** : **3 ACCURATE** (aud1-waveform + aud1-mfcc + aud1-features, alt-text fidèle) + **2 corrections réelles alt-text sur-vendeurs** (aud1-spectrogram, aud1-mfcc2 — alt-text omet 2/3 subplots). Bug-rate = 2/5 = 40% alt-text, cohérent avec familles GenAI multi-subplot sans description détaillée des panneaux (cf c.481 Image racine 5/6, c.484 Orchestration 4/5, c.485 04-Applications 6/6).
 
-**Attribution cell — investigation `nbformat` (2026-07-15, c.445)** : 5/5 PNG/WebP disk = re-export compressé des cell output originales du notebook `01-3-Basic-Audio-Operations.ipynb`. Différences taille cell vs disk :
+**Attribution cell — investigation `nbformat` (2026-07-15, c.445)** : 5/5 PNG/WebP disk = re-export compressé des cell output originales du notebook `Audio-01-3-Basic-Audio-Operations-Python.ipynb`. Différences taille cell vs disk :
 
 | Figure | MD5 cell (8 chars) | Taille cell (B) | MD5 disk (SHA256) | Taille disk (B) | Ratio | Conclusion |
 |--------|---------------------|------------------|--------------------|------------------|-------|-----------|
@@ -19,7 +19,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## aud1-waveform.png
 
-- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 12, output 1, `display_data` `image/png`)
+- **Source** : notebook `Audio-01-3-Basic-Audio-Operations-Python.ipynb` (cellule 12, output 1, `display_data` `image/png`)
 - **Description visuelle** : Single-panel matplotlib 2D-line chart, fond blanc-cadre fin bleu pâle (mean RGB ≈ 216/230/239, std ≈ 66/41/25 → tons bleu-cyan dominants, variance modérée typique d'une courbe simple sur fond clair). Une trace bleue unique oscille entre ±0,4 sur 12 s, sans légende ni colorbar.
 - **SHA256** : `17bf37ed06a8fdb69c4b85124e259517cbb72a419b0c1f7fbda177180a1fbd2c` (taille 37 273 octets)
 - **Alt-text (FR)** : Forme d'onde (waveform) du signal audio — échantillon de test, amplitude ±0,4 sur 12 secondes, signal parole avec silences (visible ~3-4,5 s et ~9-10,5 s).
@@ -30,7 +30,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## aud1-spectrogram.webp
 
-- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 15, output 1, `display_data` `image/png` → WebP fallback EPIC #5654 P2)
+- **Source** : notebook `Audio-01-3-Basic-Audio-Operations-Python.ipynb` (cellule 15, output 1, `display_data` `image/png` → WebP fallback EPIC #5654 P2)
 - **Description visuelle** : Composition verticale 3-panneaux matplotlib avec palette inferno/magma (mean RGB ≈ 164/140/160, std ≈ 92/106/88 → tons rouge-orangé-violacés équilibrés, variance forte typique heatmap). 3 subplots empilés sans séparation cadre visible : STFT linéaire (haut) + Mel perceptuel log (milieu) + Chromagramme 12-classes (bas), chacun avec colorbar verticale propre.
 - **SHA256** : `c7bf4993ace921902288b81898e9878fc33b067e64881b214784536c56ba3d82` (taille 83 630 octets)
 - **Alt-text (FR)** : Analyse spectrale de l'échantillon audio — 3 panneaux empilés : Spectrogramme STFT (échelle linéaire 0-10000 Hz, magnitude dB -80→0), Spectrogramme Mel (échelle perceptuelle log 0-8192 Hz, dB -80→0) et Chromagramme (pitch class B-A-G-F-E-D-C, activation 0-1).
@@ -41,7 +41,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## aud1-mfcc.png
 
-- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 20, output 1, `display_data` `image/png`)
+- **Source** : notebook `Audio-01-3-Basic-Audio-Operations-Python.ipynb` (cellule 20, output 1, `display_data` `image/png`)
 - **Description visuelle** : Single-panel heatmap matplotlib colormap RdBu divergente (mean RGB ≈ 238/185/170, std ≈ 27/47/60 → dominante rouge-rosé avec présence bleue en bas de matrice, variance asymétrique typique heatmap signée). 40 lignes (coefficients MFCC 0→39) × ~258 colonnes (frames temporelles), colorbar latérale -500→+200.
 - **SHA256** : `8badf6f52b6038ec12a54657c5ad1a5ccb3d38c8aea4e920a458f39bb826423a` (taille 32 823 octets)
 - **Poids** : 32,1 KB (PIL optimisé, ratio 0,94 vs cell 35 097 B)
@@ -51,7 +51,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## aud1-mfcc2.png
 
-- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 20, output 3, `display_data` `image/png`)
+- **Source** : notebook `Audio-01-3-Basic-Audio-Operations-Python.ipynb` (cellule 20, output 3, `display_data` `image/png`)
 - **Description visuelle** : Composition verticale 3-panneaux heatmaps RdBu divergentes (mean RGB ≈ 230/212/210, std ≈ 23/37/46 → tons rouge-pâle-rosé équilibrés, variance modérée faible typique 3 heatmaps avec symétrie positive/négative autour de 0). 3 subplots empilés : MFCC statique (haut, échelle -500→+200), Delta MFCC vitesse (milieu, ±40), Delta-Delta MFCC accélération (bas, ±40), 40 lignes × ~258 colonnes chacun, colorbars symétriques.
 - **SHA256** : `c39fe6aa74dca58764e390da99fbdaf0d79d0ee1dc76566b2dd854ae6da26ca6` (taille 77 625 octets)
 - **Alt-text (FR)** : Dynamiques cepstrales — 3 panneaux empilés : MFCC statique (-500→+200) + Delta MFCC vitesse (-40→+40) + Delta-Delta MFCC accélération (-40→+40), illustrant l'évolution temporelle des coefficients cepstraux mel.
@@ -62,7 +62,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## aud1-features.png
 
-- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 28, output 2, `display_data` `image/png`)
+- **Source** : notebook `Audio-01-3-Basic-Audio-Operations-Python.ipynb` (cellule 28, output 2, `display_data` `image/png`)
 - **Description visuelle** : Composition verticale 4-panneaux matplotlib (mean RGB ≈ 242/241/244, std ≈ 21/20/20 → tons gris très pâle quasi-acromatiques, variance faible typique line plots sur fond blanc). 4 subplots empilés partageant axe X temporel commun 0→12 s : Spectral Centroid (haut, courbe bleue Hz 0-8000), Spectral Bandwidth (courbe verte Hz 1000-3500), RMS Energy (courbe rouge Amplitude 0-0,15), Zero-Crossing Rate (courbe violette Rate 0-0,6). Axes Y distincts calibrés sur la dynamique propre de chaque feature, pas de colorbar (line plots 1D).
 - **SHA256** : `994f7713dca9dc29de406b044da713dc53db2f1f2027506d0122df6e84391708` (taille 167 756 octets)
 - **Alt-text (FR)** : Caractéristiques audio extraites (librosa) — 4 panneaux empilés : Spectral Centroid (Hz 0-8000, bleu), Spectral Bandwidth (Hz 1000-3500, vert), RMS Energy (Amplitude 0-0,15, rouge) et Zero-Crossing Rate (Rate 0-0,6, violet), sur 12 secondes d'échantillon.

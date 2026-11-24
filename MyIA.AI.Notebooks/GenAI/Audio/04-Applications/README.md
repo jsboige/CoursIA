@@ -4,7 +4,7 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour l'audio génératif.
 
-**Fil rouge podcast** : [04-1](Audio-04-1-Educational-Audio-Content-Python.ipynb) automatise la narration de cours. [04-2](04-2-Transcription-Pipeline.ipynb) gère la transcription batch avec sous-titres SRT. [04-3](04-3-Music-Composition-Workflow.ipynb) compose des bandes sonores. [04-4](04-4-Audio-Video-Sync.ipynb) synchronise l'audio avec la vidéo.
+**Fil rouge podcast** : [04-1](Audio-04-1-Educational-Audio-Content-Python.ipynb) automatise la narration de cours. [04-2](Audio-04-2-Transcription-Pipeline-Python.ipynb) gère la transcription batch avec sous-titres SRT. [04-3](Audio-04-3-Music-Composition-Workflow-Python.ipynb) compose des bandes sonores. [04-4](Audio-04-4-Audio-Video-Sync-Python.ipynb) synchronise l'audio avec la vidéo.
 
 **Fil rouge audiobook (Epic #1028)** : [04-6](04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) a [04-12](04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
@@ -57,9 +57,9 @@ Les sections de cet index sont **thématiques** : deux carnets peuvent y voisine
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
 | 1 | [Audio-04-1-Educational-Audio-Content-Python](Audio-04-1-Educational-Audio-Content-Python.ipynb) | Narration automatique de cours | Mixed | ~10 GB |
-| 2 | [04-2-Transcription-Pipeline](04-2-Transcription-Pipeline.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
-| 3 | [04-3-Music-Composition-Workflow](04-3-Music-Composition-Workflow.ipynb) | Création musicale multi-étapes | Local GPU | ~14 GB |
-| 4 | [04-4-Audio-Video-Sync](04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
+| 2 | [Audio-04-2-Transcription-Pipeline-Python](Audio-04-2-Transcription-Pipeline-Python.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
+| 3 | [Audio-04-3-Music-Composition-Workflow-Python](Audio-04-3-Music-Composition-Workflow-Python.ipynb) | Création musicale multi-étapes | Local GPU | ~14 GB |
+| 4 | [Audio-04-4-Audio-Video-Sync-Python](Audio-04-4-Audio-Video-Sync-Python.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
 | 5 | [Audio-04-5-LiveCoding-LLM-Music-Python](Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
 
 ### Pipeline Audiobook Agentique (Epic #1028)
@@ -69,11 +69,11 @@ Pipeline complet pour générer un audiobook à partir d'un texte littéraire, a
 | # | Notebook | Pass | Contenu | Service | VRAM |
 | --- | ---------- | ------ | --------- | --------- | ------ |
 | 6 | [Audio-04-6-Audiobook-Pipeline-Python](04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) | P0 | Pipeline audiobook orchestrateur | Mixed | ~5 GB |
-| 7 | [04-7-TTS-Voice-Benchmark](04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
-| 8 | [04-8-Lecture-Analytique](04-Audiobook/04-8-Lecture-Analytique.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
-| 9 | [04-9-Voice-Casting](04-Voix/04-9-Voice-Casting.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
+| 7 | [Audio-04-7-TTS-Voice-Benchmark-Python](04-Voix/Audio-04-7-TTS-Voice-Benchmark-Python.ipynb) | P0 | Benchmark comparatif des modèles TTS | Kokoro + Qwen3 TTS + OpenAI | ~2 GB |
+| 8 | [Audio-04-8-Lecture-Analytique-Python](04-Audiobook/Audio-04-8-Lecture-Analytique-Python.ipynb) | P1 | Analyse littéraire, segmentation dialogues/narration | OpenAI API | 0 |
+| 9 | [Audio-04-9-Voice-Casting-Python](04-Voix/Audio-04-9-Voice-Casting-Python.ipynb) | P2 | Attribution de voix par personnage, casting vocal | OpenAI API | 0 |
 | 10 | [Audio-04-10-Annotation-Prosodique-Python](04-Audiobook/Audio-04-10-Annotation-Prosodique-Python.ipynb) | P3 | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| 11 | [04-11-Generation-TTS](04-Audiobook/04-11-Generation-TTS.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
+| 11 | [Audio-04-11-Generation-TTS-Python](04-Audiobook/Audio-04-11-Generation-TTS-Python.ipynb) | P4 | Génération audio Kokoro multi-voix | Kokoro TTS | ~2 GB |
 | 12 | [Audio-04-12-Compilation-Audio-Python](04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb) | P5 | Concaténation FFmpeg + normalisation loudness | FFmpeg | 0 |
 | 13 | [Audio-04-13-Audiobook-FishAudio-S2Pro-Python](04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb) | Full | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~6 GB |
 
@@ -119,7 +119,7 @@ P0 Benchmark voix → P1 Analyse littéraire → P2 Casting vocal
 
 ### Évaluation subjective — protocole MOS
 
-Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans quel ordre présenter les échantillons, comment repérer un auditeur qui note à l'envers du groupe, et quelle incertitude attacher au score. Le carnet ci-dessous importe l'organe `scripts/tts_verification/mos_protocol.py`, lit la rubrique **depuis** `04-7-TTS-Voice-Benchmark` (source de vérité unique), puis exerce l'agrégateur sur une campagne de notes **fictives** : la grille du `04-7` reste vide, c'est l'auditeur qui la remplit. Les proxies automatiques (SNR, SI-SDR, distance log-spectrale, STOI) sont mesurés sur une référence de laboratoire synthétique, pour montrer ce qu'ils capent — et ce qu'ils ne captent pas.
+Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans quel ordre présenter les échantillons, comment repérer un auditeur qui note à l'envers du groupe, et quelle incertitude attacher au score. Le carnet ci-dessous importe l'organe `scripts/tts_verification/mos_protocol.py`, lit la rubrique **depuis** `Audio-04-7-TTS-Voice-Benchmark-Python` (source de vérité unique), puis exerce l'agrégateur sur une campagne de notes **fictives** : la grille du `04-7` reste vide, c'est l'auditeur qui la remplit. Les proxies automatiques (SNR, SI-SDR, distance log-spectrale, STOI) sont mesurés sur une référence de laboratoire synthétique, pour montrer ce qu'ils capent — et ce qu'ils ne captent pas.
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
@@ -127,7 +127,7 @@ Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans 
 
 ### Séparation avancée — qualité mesurée
 
-Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un mélange synthétique (qualité évidente, non mesurée), ce carnet entre sur une **vraie chanson du corpus MUSDB18** avec ses **4 stems de référence studio** : le SDR par stem et par architecture devient une mesure. Trois modèles Demucs sur deux générations (v3 Hybrid Demucs, v4 Hybrid Transformer, v4 fine-tune par source) sont comparés à géométrie égale, avec témoin négatif (SDR effondré face à la référence d'une autre piste) et contrôle de cohérence d'énergie du remix.
+Là où [02-4](../02-Advanced/Audio-02-4-Demucs-Source-Separation-Python.ipynb) sépare un mélange synthétique (qualité évidente, non mesurée), ce carnet entre sur une **vraie chanson du corpus MUSDB18** avec ses **4 stems de référence studio** : le SDR par stem et par architecture devient une mesure. Trois modèles Demucs sur deux générations (v3 Hybrid Demucs, v4 Hybrid Transformer, v4 fine-tune par source) sont comparés à géométrie égale, avec témoin négatif (SDR effondré face à la référence d'une autre piste) et contrôle de cohérence d'énergie du remix.
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|

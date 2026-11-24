@@ -7,7 +7,7 @@ breakdown: Video=23
 maturity: BETA=20, ALPHA=3
 -->
 
-[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/Audio-04-4-Audio-Video-Sync-Python.ipynb)
 
 La vidéo combine quatre difficultés simultanées que les autres modalités traitent séparément : l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. Les notebooks sont répartis sur 4 niveaux progressifs.
 
@@ -149,7 +149,7 @@ Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogiq
 
 3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) compare les modèles pour choisir le bon. [03-2](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video. [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs.
 
-4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Video-Generation.ipynb) applique le pipeline au contenu éducatif. [04-4](04-Applications/04-4-Production-Video-Pipeline.ipynb) assemble le système bout-en-bout. Le notebook [04-4-Audio-Video-Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) de la série Audio synchronise la vidéo avec l'audio généré.
+4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Video-Generation.ipynb) applique le pipeline au contenu éducatif. [04-4](04-Applications/04-4-Production-Video-Pipeline.ipynb) assemble le système bout-en-bout. Le notebook [Audio-04-4-Audio-Video-Sync-Python](../Audio/04-Applications/Audio-04-4-Audio-Video-Sync-Python.ipynb) de la série Audio synchronise la vidéo avec l'audio généré.
 
 Le schéma ci-dessous résume comment les quatre niveaux du fil rouge s'articulent : chaque niveau apporte une brique (comprendre → générer → orchestrer → produire) qui s'assemble dans le pipeline final 04-4, lui-même synchronisé à l'audio par la série Audio.
 

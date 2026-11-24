@@ -4,7 +4,7 @@
   "founding_pr": 14262,
   "base_commit": "be6a8c7f3b9ea3ac82e6232813c2eccda1b87800",
   "head_commit": "0ea56ae0f712327b6fc7fb3b8bc834c8983f39dc",
-  "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb",
+  "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-4-Demucs-Source-Separation-Python.ipynb",
   "original_cell_indices": [
    10,
    31

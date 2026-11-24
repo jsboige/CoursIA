@@ -53,7 +53,7 @@ qu'il ne fait pas).
 
 **Voie 3 B.0** : voie du retrait consenti d'une voix tierce tenue
 (bibliography-hygiene §2, audit-cross-source-distillation §3.1,
-02-2-XTTS-Voice-Cloning l.2018). Aucune voix clonee, aucun verbatim,
+Audio-02-2-XTTS-Voice-Cloning-Python l.2018). Aucune voix clonee, aucun verbatim,
 aucune archive media dans le depot. La methode (narration + composition
 + capture + mixage) est copiee ; le contenu ne l'est pas.
 """

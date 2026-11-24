@@ -4,7 +4,7 @@
 
 Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vocale (STT), synthèse vocale (TTS), et opérations audio de base.
 
-**Dans le cadre du fil rouge podcast** : avant de produire un épisode, il faut maîtriser les deux briques essentielles -- faire parler la machine (TTS) et comprendre la parole humaine (STT). [01-1](01-1-OpenAI-TTS-Intro.ipynb) et [01-2](01-2-OpenAI-Whisper-STT.ipynb) couvrent les API cloud (rapides à mettre en oeuvre), tandis que [01-4](01-4-Whisper-Local.ipynb) et [01-5](01-5-TTS-Local-ONNX.ipynb) passent en local GPU pour l'autonomie et le contrôle. [01-3](01-3-Basic-Audio-Operations.ipynb) donne les bases techniques (spectrogrammes, MFCC) utiles pour comprendre ce que manipulent les modèles.
+**Dans le cadre du fil rouge podcast** : avant de produire un épisode, il faut maîtriser les deux briques essentielles -- faire parler la machine (TTS) et comprendre la parole humaine (STT). [01-1](Audio-01-1-OpenAI-TTS-Intro-Python.ipynb) et [01-2](Audio-01-2-OpenAI-Whisper-STT-Python.ipynb) couvrent les API cloud (rapides à mettre en oeuvre), tandis que [01-4](Audio-01-4-Whisper-Local-Python.ipynb) et [01-5](Audio-01-5-TTS-Local-ONNX-Python.ipynb) passent en local GPU pour l'autonomie et le contrôle. [01-3](Audio-01-3-Basic-Audio-Operations-Python.ipynb) donne les bases techniques (spectrogrammes, MFCC) utiles pour comprendre ce que manipulent les modèles.
 
 ## Vue d'ensemble
 
@@ -19,45 +19,45 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 1 | [01-1-OpenAI-TTS-Intro](01-1-OpenAI-TTS-Intro.ipynb) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
-| 2 | [01-2-OpenAI-Whisper-STT](01-2-OpenAI-Whisper-STT.ipynb) | Whisper API + GPT-4o-Transcribe | OpenAI API | 0 |
-| 3 | [01-3-Basic-Audio-Operations](01-3-Basic-Audio-Operations.ipynb) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
-| 4 | [01-4-Whisper-Local](01-4-Whisper-Local.ipynb) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
-| 5 | [01-5-TTS-Local-ONNX](01-5-TTS-Local-ONNX.ipynb) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
+| 1 | [Audio-01-1-OpenAI-TTS-Intro-Python](Audio-01-1-OpenAI-TTS-Intro-Python.ipynb) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
+| 2 | [Audio-01-2-OpenAI-Whisper-STT-Python](Audio-01-2-OpenAI-Whisper-STT-Python.ipynb) | Whisper API + GPT-4o-Transcribe | OpenAI API | 0 |
+| 3 | [Audio-01-3-Basic-Audio-Operations-Python](Audio-01-3-Basic-Audio-Operations-Python.ipynb) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
+| 4 | [Audio-01-4-Whisper-Local-Python](Audio-01-4-Whisper-Local-Python.ipynb) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
+| 5 | [Audio-01-5-TTS-Local-ONNX-Python](Audio-01-5-TTS-Local-ONNX-Python.ipynb) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
 
-**[01-3](01-3-Basic-Audio-Operations.ipynb) — Le pipeline d'analyse audio.** Ce notebook est le seul du module à produire des visualisations : il déroule la chaîne de transformations qui révèle la structure d'un signal audio, du domaine temporel brut jusqu'aux caractéristiques exploitables par les modèles. Chaque étape ci-dessous correspond à une cellule du notebook.
+**[01-3](Audio-01-3-Basic-Audio-Operations-Python.ipynb) — Le pipeline d'analyse audio.** Ce notebook est le seul du module à produire des visualisations : il déroule la chaîne de transformations qui révèle la structure d'un signal audio, du domaine temporel brut jusqu'aux caractéristiques exploitables par les modèles. Chaque étape ci-dessous correspond à une cellule du notebook.
 
 **Étape 1 — Forme d'onde.** Le point de départ : l'amplitude du signal échantillonnée dans le temps. On y lit directement la structure alternée de silence et de parole :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde d'un échantillon audio — courbe matplotlib unique 'Forme d'onde - Echantillon de test' (axe Y amplitude ±0,4, axe X temps 0-12 s) ; sept alternances parole/silence révélant la structure du signal échantillonné." width="480"/></a><br>
-  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 12) : forme d'onde — l'amplitude en fonction du temps.</em>
+  <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde d'un échantillon audio — courbe matplotlib unique 'Forme d'onde - Echantillon de test' (axe Y amplitude ±0,4, axe X temps 0-12 s) ; sept alternances parole/silence révélant la structure du signal échantillonné." width="480"/></a><br>
+  <em>Sortie du notebook <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb">01-3</a> (cellule 12) : forme d'onde — l'amplitude en fonction du temps.</em>
 </p>
 
 **Étape 2 — Spectrogramme.** Une transformée temps-fréquence (FFT) décompose ce signal en ses composantes spectrales : l'axe vertical devient la fréquence, l'intensité codant l'énergie. C'est la représentation qu'utilisent de nombreux modèles de speech :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-spectrogram.webp" alt="Analyse spectrale de l'échantillon audio — 3 panneaux empilés : Spectrogramme STFT (échelle linéaire 0-10000 Hz, magnitude dB -80→0), Spectrogramme Mel (échelle perceptuelle log 0-8192 Hz, dB -80→0) et Chromagramme (pitch class B-A-G-F-E-D-C, activation 0-1)." width="420"/></a><br>
-  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 15) : spectrogramme — décomposition temps-fréquence du même signal.</em>
+  <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb"><img src="assets/readme/aud1-spectrogram.webp" alt="Analyse spectrale de l'échantillon audio — 3 panneaux empilés : Spectrogramme STFT (échelle linéaire 0-10000 Hz, magnitude dB -80→0), Spectrogramme Mel (échelle perceptuelle log 0-8192 Hz, dB -80→0) et Chromagramme (pitch class B-A-G-F-E-D-C, activation 0-1)." width="420"/></a><br>
+  <em>Sortie du notebook <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb">01-3</a> (cellule 15) : spectrogramme — décomposition temps-fréquence du même signal.</em>
 </p>
 
 **Étape 3 — MFCC.** Les coefficients cepstraux dans l'échelle mel (MFCC) condensent le spectrogramme en un petit nombre de coefficients qui captent le timbre perceptuel — la représentation de référence pour STT et classification audio. Deux vues complémentaires : la courbe des coefficients et la carte de chaleur :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc.png" alt="Heatmap MFCC — matplotlib 'MFCC - Echantillon de test' (axe Y Coefficient MFCC, axe X Time 0-12 s, colorbar -500 à 200) ; coefficients bas = énergie rouge/orange concentrée (formants), coefficients élevés = bleus négatifs — révèle l'enveloppe spectrale du signal." width="460"/></a><br>
-  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 20, sortie 1) : MFCC — coefficients cepstraux mel.</em>
+  <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb"><img src="assets/readme/aud1-mfcc.png" alt="Heatmap MFCC — matplotlib 'MFCC - Echantillon de test' (axe Y Coefficient MFCC, axe X Time 0-12 s, colorbar -500 à 200) ; coefficients bas = énergie rouge/orange concentrée (formants), coefficients élevés = bleus négatifs — révèle l'enveloppe spectrale du signal." width="460"/></a><br>
+  <em>Sortie du notebook <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb">01-3</a> (cellule 20, sortie 1) : MFCC — coefficients cepstraux mel.</em>
 </p>
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc2.png" alt="Dynamiques cepstrales — 3 panneaux empilés : MFCC statique (-500→+200) + Delta MFCC vitesse (-40→+40) + Delta-Delta MFCC accélération (-40→+40), illustrant l'évolution temporelle des coefficients cepstraux mel." width="460"/></a><br>
-  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 20, sortie 3) : MFCC en carte de chaleur — même information, vue alternative.</em>
+  <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb"><img src="assets/readme/aud1-mfcc2.png" alt="Dynamiques cepstrales — 3 panneaux empilés : MFCC statique (-500→+200) + Delta MFCC vitesse (-40→+40) + Delta-Delta MFCC accélération (-40→+40), illustrant l'évolution temporelle des coefficients cepstraux mel." width="460"/></a><br>
+  <em>Sortie du notebook <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb">01-3</a> (cellule 20, sortie 3) : MFCC en carte de chaleur — même information, vue alternative.</em>
 </p>
 
 **Étape 4 — Extraction de caractéristiques.** Aboutissement du pipeline : les descripteurs extraits (centroid spectral, RMS, ZCR…) alimentent directement les comparaisons et benchmarks des niveaux suivants :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-features.png" alt="Caractéristiques audio extraites (librosa) — 4 panneaux empilés : Spectral Centroid (Hz 0-8000, bleu), Spectral Bandwidth (Hz 1000-3500, vert), RMS Energy (Amplitude 0-0,15, rouge) et Zero-Crossing Rate (Rate 0-0,6, violet), sur 12 secondes d'échantillon." width="480"/></a><br>
-  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 28) : extraction des caractéristiques audio — le pipeline complet résumé.</em>
+  <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb"><img src="assets/readme/aud1-features.png" alt="Caractéristiques audio extraites (librosa) — 4 panneaux empilés : Spectral Centroid (Hz 0-8000, bleu), Spectral Bandwidth (Hz 1000-3500, vert), RMS Energy (Amplitude 0-0,15, rouge) et Zero-Crossing Rate (Rate 0-0,6, violet), sur 12 secondes d'échantillon." width="480"/></a><br>
+  <em>Sortie du notebook <a href="Audio-01-3-Basic-Audio-Operations-Python.ipynb">01-3</a> (cellule 28) : extraction des caractéristiques audio — le pipeline complet résumé.</em>
 </p>
 
 ## Prérequis
@@ -77,11 +77,11 @@ pip install -r requirements-audio.txt
 
 ## Progression recommandée
 
-1. **01-1-OpenAI-TTS-Intro** - Introduction à la synthèse vocale avec OpenAI
-2. **01-2-OpenAI-Whisper-STT** - Reconnaissance vocale avec Whisper
-3. **01-3-Basic-Audio-Operations** - Manipulation audio locale
-4. **01-4-Whisper-Local** - Whisper local pour traitement hors ligne
-5. **01-5-TTS-Local-ONNX** - TTS léger sur GPU
+1. **Audio-01-1-OpenAI-TTS-Intro-Python** - Introduction à la synthèse vocale avec OpenAI
+2. **Audio-01-2-OpenAI-Whisper-STT-Python** - Reconnaissance vocale avec Whisper
+3. **Audio-01-3-Basic-Audio-Operations-Python** - Manipulation audio locale
+4. **Audio-01-4-Whisper-Local-Python** - Whisper local pour traitement hors ligne
+5. **Audio-01-5-TTS-Local-ONNX-Python** - TTS léger sur GPU
 
 ## Points clés
 

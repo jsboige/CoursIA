@@ -1163,8 +1163,8 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-4-Whisper-Local-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/Audio-01-5-TTS-Local-ONNX-Python.ipynb"
         ],
         "api_key_count": 2,
         "network_services": [
@@ -1296,12 +1296,12 @@
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-10-Effets-Sonores-AudioLDM2-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-11-Text-to-Audio-Bruitages-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-12-SVS-Singing-Voice-RVC-Python.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-2-XTTS-Voice-Cloning-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-3-MusicGen-Generation-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-4-Demucs-Source-Separation-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb",
           "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-8-Expressive-TTS-Python.ipynb"
         ],
         "api_key_count": 4,
         "network_services": [
@@ -1561,8 +1561,8 @@
         "gpu": true,
         "gpu_notebooks": [
           "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-2-Transcription-Pipeline-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-3-Music-Composition-Workflow-Python.ipynb"
         ],
         "api_key_count": 4,
         "network_services": [
@@ -2053,8 +2053,8 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/05-2-Vocoder-From-Scratch.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/Audio-05-1-AudioDiffusion-Latent-From-Scratch-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/05-Diffusion-from-scratch/Audio-05-2-Vocoder-From-Scratch-Python.ipynb"
         ],
         "api_key_count": 0,
         "network_services": [],
@@ -2161,8 +2161,8 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-2-HiFiGAN-SOTA-Comparison.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/Audio-06-1-AudioLDM-SOTA-Comparison-Python.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/Audio-06-2-HiFiGAN-SOTA-Comparison-Python.ipynb"
         ],
         "api_key_count": 0,
         "network_services": [],

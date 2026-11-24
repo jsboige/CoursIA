@@ -383,7 +383,7 @@ def _is_detached_approximate(line: str, match_start: int) -> bool:
     if re.search(r"[~≈]\s*$", window):
         return True
     # Forme FRANCAISE du marqueur d'ordre de grandeur : « de l'ordre de N s »,
-    # « de l'ordre de grandeur de N s » (04-11-Generation-TTS c10 : « chaque
+    # « de l'ordre de grandeur de N s » (Audio-04-11-Generation-TTS-Python c10 : « chaque
     # segment prend de l'ordre de 3 s a generer » -- deja le traitement
     # sanctionne par le mandat, mais ecrit en toutes lettres la ou le tilde
     # etait attendu). Fenetre elargie a 25 chars : le marqueur le plus long

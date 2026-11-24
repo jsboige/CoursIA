@@ -41,7 +41,7 @@ import detect_degraded_mode as ddm  # noqa: E402
 
 
 # La confession VERBATIM du commit multié 66e2a429bb (cellule 26 du
-# 01-5-TTS-Local-ONNX reel) : elle est le cas fondateur, on ne l'invente pas.
+# Audio-01-5-TTS-Local-ONNX-Python reel) : elle est le cas fondateur, on ne l'invente pas.
 KOKORO_CONFESSION = "  OpenAI API key non configuree - comparaison skippee"
 # Second aveu reel du meme commit (cellule 8) : la resolution .env ratee.
 ENV_CONFESSION = "WARNING: .env non trouve dans GenAI"
