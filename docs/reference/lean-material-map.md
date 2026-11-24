@@ -10,12 +10,12 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 | Lac | Modules | Miroirs | CI | Gate axiomes | Site = consommateur | Doublons declares | Naissance |
 |---|---|---|---|---|---|---|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` | 100 | 98 | declare | hors matrice | 1 hors site (4 carnets) | - | 2026-05-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` | 58 | 42 | declare | hors matrice | 1 hors site (9 carnets) | 2 / 2 | 2026-05-28 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-05-31 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` | 58 | 42 | declare | couverte | 1 hors site (9 carnets) | 2 / 2 | 2026-05-28 |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 47 | 28 | declare | couverte | ok (4) | 3 / 3 | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 25 | 24 | declare | hors matrice | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
@@ -35,10 +35,10 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | 6 | 6 | declare | couverte | non consomme | 1 / 1 | 2026-06-10 |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 6 | 5 | declare | couverte | ok (14) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 6 | 5 | declare | hors matrice | ok (1) | - | 2026-09-06 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean` | 6 | 5 | declare | couverte | ok (1) | - | 2026-09-06 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 6 | 5 | declare | couverte | ok (4) | 2 / 2 | 2026-05-29 |
 | `MyIA.AI.Notebooks/GameTheory/minimax_lean` | 5 | 4 | declare | couverte | ok (1) | - | 2026-06-24 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean` | 5 | 2 | declare | hors matrice | ok (1) | - | 2026-10-31 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean` | 5 | 2 | declare | couverte | ok (1) | - | 2026-10-31 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
@@ -50,7 +50,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 1 | declare | couverte | non consomme | - | 2026-06-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` | 3 | 0 | hors CI | hors matrice | ok (1) | - | 2026-10-22 |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 1 | declare | sans gate | ok (1) | - | 2026-06-05 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean` | 2 | 0 | declare | hors matrice | non consomme | - | 2026-11-20 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean` | 2 | 0 | declare | couverte | non consomme | - | 2026-11-20 |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | 0 | 0 | declare | vendu | non consomme | - | 2026-10-05 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` | 0 | 0 | hors CI | vendu | non consomme | - | 2026-05-16 |
 | `docs/lean/darksnail/build-evidence-2026-10-31` | 0 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-31 |
