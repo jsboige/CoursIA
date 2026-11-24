@@ -13,6 +13,7 @@ Les blocs de la **fenetre** et de la **qualification** vivent dans
 60 lignes, et le refus d'un grain s'affiche avec son code et son motif.
 """
 from coordination import tapis_leger_fenetre as lq
+from coordination import tapis_leger_texte_occupation
 
 
 def texte(r: dict) -> str:
@@ -36,6 +37,8 @@ def texte(r: dict) -> str:
     for g in r["grains"]:
         lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
         lignes.append(f"      {g['action']}")
+    occ = r.get("occupations") or {}
+    lignes += tapis_leger_texte_occupation.occupation(occ)
     lignes += lq.texte_qualification(r["qualification"])
     cap = r.get("cap_livraisons") or {}
     if cap.get("ecartes"):

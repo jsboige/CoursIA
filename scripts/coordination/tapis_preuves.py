@@ -16,6 +16,12 @@ Les deux derniers restent **visibles** : ils deviennent des NOTES que la lane
 lit avant d'agir. Une lane qui rencontre une issue dans l'urne verifie la
 preuve sur l'artefact, puis rend la main (#15069) -- elle n'herite d'aucune
 exclusion que personne n'a prouvee.
+
+**L'urne, elle, n'est pas un grain neuf** (TASK c0021 du coordinateur,
+22/11) : elle est reservee au coordinateur et a l'adjoint (#15069). Pour une
+lane worker, le label n'est plus retire du chemin de la decision : l'ecart
+`LABEL` des neuf regles retire le grain. Les lanes qui **gerent** l'urne
+gardent la note et le grain.
 """
 from __future__ import annotations
 
@@ -24,29 +30,18 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_rapide
+from coordination import tapis_occupation, tapis_rapide
 
-#: Le label d'urne : il route l'issue, il ne la livre pas.
+#: Le label d'urne : il route l'issue, il ne la livre pas. Il est lu dans
+#: `tapis_labels` (la TABLE des labels, #28114) -- source unique ; le meme
+#: libelle y porte le nom `LABEL_URNE` dans `tapis_occupation`.
 from coordination.tapis_labels import LABEL_LIVRE
 
-NOTE_URNE = ("label candidate-delivered : urne de cloture (coordinateur, adjoint) "
-              "-- signal, pas preuve : verifie l'artefact, puis rends la main")
 
-
-def urne_en_note(issues: dict[int, dict]) -> dict[int, str]:
-    """Retire le label d'urne du chemin de la decision ; rend sa note.
-
-    Le label ne prouve pas la livraison : il ne doit donc pas ecarter le grain
-    dans la requalification. Il reste dit -- en note, sur le grain servi.
-    """
-    notes: dict[int, str] = {}
-    for n, it in issues.items():
-        labs = [str(l) for l in (it.get("labels") or [])]
-        reste = [l for l in labs if l.strip().lower() != LABEL_LIVRE]
-        if len(reste) != len(labs):
-            it["labels"] = reste
-            notes[n] = NOTE_URNE
-    return notes
+#: La note d'urne et la fonction qui la pose vivent dans `tapis_occupation` :
+#: l'urne est une occupation, et ce module a un plafond de lignes.
+NOTE_URNE = tapis_occupation.NOTE_URNE
+urne_en_note = tapis_occupation.urne_en_note
 
 
 def note_couverture(numero: int, lane: str,
@@ -61,11 +56,17 @@ def note_couverture(numero: int, lane: str,
 
 def etats_de_tranche(lec, notes_urne: dict[int, str],
                      prs_par_issue: dict[int, list[dict]], lane: str,
-                     maintenant: datetime, jours: int) -> list:
+                     maintenant: datetime, jours: int,
+                     issues: dict[int, dict] | None = None) -> list:
     """Les etats d'une tranche, notes d'urne et de couverture comprises.
 
     Les notes s'ajoutent aux ecarts : un signal qui ne prouve pas la
     livraison informe la lane, il ne lui retire pas le grain.
+
+    **L'OCCUPATION, elle, retire le grain** (TASK c0021, 22/11) : l'urne est
+    reservee au coordinateur et a l'adjoint (#15069), et la PR qui tient
+    l'issue l'occupe pour une autre lane. Les deux marques sont lues sur les
+    memes metadonnees que le tirage (labels + PRs ouvertes).
     """
     etats = tapis_rapide.etats(lec, lane, maintenant, jours)
     for e in etats:
@@ -73,4 +74,7 @@ def etats_de_tranche(lec, notes_urne: dict[int, str],
             e.notes.append(note)
         if note := note_couverture(e.numero, lane, prs_par_issue):
             e.notes.append(note)
+    if issues is not None:
+        occupation = tapis_occupation.marques_issues(issues, prs_par_issue, lane)
+        tapis_occupation.exclure(etats, occupation, lane)
     return etats

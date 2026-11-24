@@ -305,7 +305,8 @@ L'ordre des servables :
 | `FENETRE_J` | 7 | le tour sur lequel se compte le niveau |
 | `SEANCE_H` | 24 | deux marqueurs d'une lane plus proches que cela font une visite |
 | `BANDS_AGE_J` | (180, 120, 60, 30, 10) j | bonus d'âge : 0,1 visite par tranche franchie, plafonné à 0,5 |
-| `BONUS_CONSOLIDATION` | 0,4 visite | priorité de consolidation, à tout âge (label ou racine de famille) |
+| `BONUS_CONSOLIDATION` | 0,6 visite | priorité de consolidation, à tout âge (label ou racine de famille) — **posée en premier** : elle passe devant l'ancienneté (I7) |
+| `BONUS_AGE_MAX_CONSO` | 0,3 visite | part de l'âge qui reste sur une consolidation : l'âge ne mange pas le budget de la consolidation |
 | `BONUS_TOTAL_MAX` | 0,9 visite | borne du bonus total : une issue à 0 visite passe devant une issue à 1 visite |
 | `MARATHONS` | #26070, #26510 | racines des marathons de parité C# et Rust, hors équilibrage |
 | `TETE` | 24 | la tête de chaque niveau est décalée par lane (voie **lourde**) ; en voie légère, c'est la **fenêtre** qui est décalée — voir « La fenêtre qui avance » |
@@ -314,8 +315,12 @@ L'ordre des servables :
 **Les deux priorités légères du 18/11.** `coordination/tapis_avantages.py` porte deux contributions petites
 et distinctes, comptées en dixièmes de visite : le niveau reste ainsi un multiple de 0,1, et les issues se
 regroupent par niveau — c'est ce qui fait tourner la tête d'une lane à l'autre. La division par 3 des
-consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère. Les
-marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
+consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère.
+**La consolidation passe devant l'ancienneté** (invariant I7 du contrat du picker, #28114) : les deux bonus
+ne s'additionnent plus, ils se composent **par priorité** — la consolidation prend 0,6 visite, l'âge ne garde
+que 0,3 visite sur une consolidation (le rapport nomme ce motif « plafonnée »). Avant, l'âge plein l'emportait
+et l'invariant était violé dans l'étage rapide.
+Les marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
 c'est le harnais sk-agent qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour
 et au total, et nomme les contributions qui s'appliquent (champ `priorite`).
 
@@ -673,7 +678,7 @@ le 19/11 (380 issues sur 440 atteintes en un tour, sans jamais fermer le tour). 
 
 **La consolidation est dans la clé, pas à côté** (revue ai-01 du 22/11). Le mandat du cycle veut « un picker
 rapide couvrant toutes les issues avec priorité consolidation et ancienneté » : l'ancienne voie donnait aux
-consolidations 0,4 visite à tout âge, et cet avantage a disparu avec la sélection par âge — les
+consolidations 0,6 visite à tout âge (0,4 avant le 23/11), et cet avantage a disparu avec la sélection par âge — les
 consolidations n'avaient plus aucun avantage dans la clé. Deux règles, celle de `tapis_avantages.est_consolidation`
 (le **label** `consolidation`, ou la **famille** dont la racine l'est) :
 

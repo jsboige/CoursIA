@@ -31,7 +31,7 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause`, sur le tirage complet **et** sur la voie legere |
 | I6 borne de temps | tenu (23/11, ce PR) | une echeance monotone unique (`gh_bulk.MUR_TIRAGE_S`) partagee par les etages ; budgets declares cumules : 30 + 15 + 15 = 60 s |
-| I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
+| I7 consolidation puis anciennete | **tenu** (23/11, ce PR) | la consolidation est posee EN PREMIER (`tapis_avantages.bonus_dixiemes`) : elle passe devant l'ordinary la plus agee, a visites egales |
 
 I2 est devenu **executable** dans ce PR : hors reseau, la voie legere lit le
 CACHE LOCAL (`coordination/tapis_repli.py`), sert le pool dans l'ordre de
@@ -499,6 +499,10 @@ def test_I7_dans_les_etages_fins_la_consolidation_passe_devant_l_anciennete():
     `xfail(strict)` pose le 22/11 est donc leve -- il decrivait l'ancien
     empilement de `tapis_avantages.bonus_dixiemes`, que le tirage n'ordonne
     plus.
+
+    L'etage **rapide** suit la meme regle (test dans
+    `scripts/tests/test_tapis_equilibre.py`) : avant ce PR, les deux bonus
+    s'additionnaient et l'anciennete pleine l'emportait.
     """
     pool = [
         _meta(6001, "Ancienne ordinaire",

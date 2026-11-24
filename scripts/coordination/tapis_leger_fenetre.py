@@ -28,10 +28,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from coordination import tapis_cap_livraisons, tapis_labels, tapis_repli
+from coordination import tapis_cap_livraisons, tapis_leger_rapport, tapis_repli
 from coordination import tapis_qualification as tq
-from coordination import tapis_universel
-from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
 #: La qualification a son PROPRE mur : le mur global borne la LECTURE du
 #: pool, celui-ci borne la LECTURE DES FILS. Les deux sont sequentiels, jamais
@@ -70,36 +68,11 @@ def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
     return [e for e in file if e.numero in confirmes], qualif, None
 
 
-def rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
-            duree: float, secondes: float, budget_s: float, etats_: list,
-            file: list, prs: list[dict], origami: dict,
-            phases: dict | None = None, fenetre: dict | None = None,
-            qualif: dict | None = None) -> dict:
-    """Le rapport du tirage leger : l'etat de chaque grain et l'action a faire."""
-    vos = sorted((pr for pr in prs if lane_de_pr(pr) == lane),
-                 key=lambda pr: pr.get("created_at") or "")
-    r = tapis_universel.rapport(etats_=etats_, file=file, lane=lane,
-                                 maintenant=maintenant, lecture={},
-                                 ecartees=tapis_labels.ecartees(metas))
-    r.update({
-        "graine": graine, "voie": "leger", "pool": len(metas),
-        "fenetre": fenetre or {},
-        "lecture": {"issues": len(metas), "secondes": round(secondes, 1),
-                    "selection_s": duree, "budget_s": budget_s,
-                    "phases": phases or {}, "budget_epuise": False},
-        "vos_prs": [{"numero": pr["number"], "titre": pr.get("title") or "",
-                     "age_j": _age(maintenant, pr.get("created_at"), 86400)}
-                    for pr in vos],
-        "qualification": {
-            "organe": "scripts/coordination/tapis_prise_en_charge.py",
-            "vagues": "scripts/coordination/tapis_vagues.py : la file se remplit",
-            "quand": "avant le service, sur la fenetre servie",
-            "ecarts": "les neuf regles se decident sur le fil complet",
-            **(qualif or {}),
-        },
-        "origami_parking": origami,
-    })
-    return r
+#: Le RAPPORT est canonique dans `tapis_leger_rapport` (extraction du 22/11,
+#: #28090 + #27223) : c'est la que vit l'**occupation** de l'urne. Cette PR
+#: y ajoute la **qualification de la fenetre servie** (#28114) -- l'alias garde
+#: un seul objet pour les deux voies d'appel (`tapis_leger._rapport`, ici).
+rapport = tapis_leger_rapport.rapport
 
 
 def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
@@ -143,7 +116,8 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         return r, code
     r = rapport(lane, graine, maintenant, classe["metas"],
                 phases["selection_s"], secondes, budget_s, classe["etats"],
-                file, classe["prs"], origami, phases, fenetre, qualif)
+                file, classe["prs"], origami, phases, fenetre,
+                occupation=classe.get("occupation"), qualif=qualif)
     r["cap_livraisons"] = {"mesure": cap_mesure, "ecartes": temoins_cap,
                            "fenetre_j": tapis_cap_livraisons.FENETRE_J}
     return r, 0

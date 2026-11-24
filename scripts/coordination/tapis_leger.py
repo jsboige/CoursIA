@@ -39,16 +39,24 @@ from coordination import (tapis_age, tapis_ancre, tapis_labels, tapis_origami,
                           tapis_rotation)
 from coordination import tapis_leger_fenetre as lq
 from coordination import tapis_service, tapis_universel
-from coordination.tapis_marqueurs import _iso
+# L'import de l'occupation est sur **sa propre ligne** : la PR d'age (#28022)
+# modifie la ligne d'import voisine, et deux ancres distinctes fusionnent sans
+# conflit (les deux PRs restent donc mergeables dans n'importe quel ordre).
+from coordination import tapis_occupation
+from coordination import tapis_leger_rapport
+from coordination.tapis_marqueurs import _iso, lane_de_pr
+
+#: Re-export du RAPPORT : l'appelant de `main` (`scripts/coordination/
+#: tapis_repli.py`) appelle `tapis_leger._rapport(...)`, et l'extraction du
+#: 22/11 l'avait retire du module -- l'appelant echouait alors sur l'arbre
+#: fusionne (`AttributeError: module 'coordination.tapis_leger' has no
+#: attribute '_rapport'`, run 45326540394). Le symbole reste donc resolvable
+#: par le module, et l'appel interne passe par le meme point de resolution.
+_rapport = tapis_leger_rapport.rapport
 
 #: Le classement propose ce multiple de grains : la qualification ecarte
 #: quelques-uns au moment de l'action, et la file doit rester pleine.
 CANDIDATS_MULT = 3
-
-#: Le RAPPORT de la voie leger vit dans `tapis_leger_fenetre` (extraction) ;
-#: l'alias garde l'appelant intact : le repli chronologique (`tapis_repli`)
-#: construit son rapport par là.
-_rapport = lq.rapport
 
 
 def _ordre(etats_: list, lane: str, maintenant: datetime,
@@ -67,7 +75,6 @@ def _ordre(etats_: list, lane: str, maintenant: datetime,
             tapis_universel.rotation_universelle(
                 conteneurs, lane, maintenant, len(conteneurs), graine,
                 rotation=False))
-
 
 def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
             run=gh_bulk.run_defaut,
@@ -92,9 +99,24 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     prs = gh_bulk.lire_prs_ouvertes(run, echeance=echeance)
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
+    # L'OCCUPATION se decide sur les metadonnees seules (labels + PRs
+    # ouvertes) : l'urne de cloture et la PR qui tient l'issue sortent de la
+    # tete -- avant la rotation, sans un appel reseau de plus. Les exclus
+    # sont affiches (jamais de grain perdu en silence).
+    occupation = tapis_occupation.marques(metas, prs, lane)
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
+    grains_, conteneurs, exclus = tapis_occupation.retirer(
+        grains_, conteneurs, occupation, lane)
+    # Les lanes qui **gerent** l'urne ne perdent aucun grain : elles n'ont
+    # donc aucune exclusion a afficher. Elles recoivent une section
+    # **courte** : ce qui est a l'urne, ce qui est occupe -- l'information
+    # qui leur manque pour arbitrer.
+    resume = (tapis_occupation.resume(occupation)
+              if tapis_occupation.privilege(lane) else [])
     return {"metas": metas, "citations": citations, "prs": prs, "etats": etats_,
             "grains": grains_, "conteneurs": conteneurs,
+            "occupation": {"marques": occupation, "exclus": exclus,
+                           "resume": resume},
             "phases": {"selection_s": duree, "citations_s": round(t2 - t1, 1),
                        "prs_s": round(t3 - t2, 1)},
             "secondes": round(time.monotonic() - debut, 1)}
