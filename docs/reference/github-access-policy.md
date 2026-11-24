@@ -34,10 +34,26 @@ Piège d'instrument (rappel #17315) : `gh api rate_limit` rendait 5000/5000 **au
 |---|---|---|---|
 | Lecture / navigation (tapis, folds, `gh issue view`) | compte du siège | **compte du siège** — inchangé | coût unitaire 1 appel REST ; 13 appels/tirage très en dessous du plafond ; aucune écriture → aucun risque d'attribution |
 | Écriture courante (PR, commentaires, reviews, push) | **état observé** : `jsboige` partagé pour l'écriture des workers ; le coordinateur review et fusionne sous `myia-ai-01` | **`jsboige` partagé** — inchangé (arbitrage (a) du registre) ; l'exception coordinateur reste : reviews et fusions sous identité propre | les gardes d'auteur (B.0, dossiers, mémoire `gh-auth-race-pin-token`) épingle `jsboige` ; une bascule fabrique des mésattributions (un artefact écrit sous un compte que les gardes n'attendent pas = dossier refusé sans cause visible) ; le quota d'écriture n'est **pas** le goulot mesuré |
-| **Passes de masse** (sweeps de PRs, census, audits 100+ issues) | `jsboige` partagé | **GitHub App lecture-seule dédiée** | la seule classe d'usage **mesurée** ayant tué le gate flotte-entière (110 `rc=2`) ; une App = quota installation **séparé** + permissions bornées lecture ; un second compte humain ajouterait une identité d'écriture à gouverner pour un usage qui n'écrit pas |
+| **Passes de masse** (sweeps de PRs, census, audits 100+ issues) | `jsboige` partagé pour les lectures unitaires ; le **mode lecture** existe (§3.1) et alimente la couche de lecture partagée | **GitHub App lecture-seule dédiée** | la seule classe d'usage **mesurée** ayant tué le gate flotte-entière (110 `rc=2`) ; une App = quota installation **séparé** + permissions bornées lecture ; un second compte humain ajouterait une identité d'écriture à gouverner pour un usage qui n'écrit pas |
 | CI / workflows | Apps bots existantes | **inchangé** | quotas par App déjà séparés ; rien à gagner à y toucher |
 | Gates (B.0, prévalidation) | `jsboige` | **`jsboige` + plafond organisationnel** | le goulot mesuré = péremption (469/24), pas l'identité ; #19966 a réduit le coût unitaire, le dossier-à-la-demande a supprimé la production en masse ; changer d'identité ici déplacerait le problème sans le réduire |
 | Attribution (qui a fait quoi) | tag `lane <machine:workspace>` (bodies/claims) | **inchangé + trailer de commit optionnel** (§5) | seul canal fiable sous login partagé |
+
+### 3.1 Le mode lecture — une App par lane, portée par `gh_identity`
+
+Le point d'entrée est **unique** : `scripts/ci/gh_identity.py`.
+
+- `lecture_token()` — forge le jeton d'installation de l'App **de la lane** (le slug est dérivé du nom de la machine ; la clé privée vient du trousseau partagé, jamais d'un fichier versionné ni de l'environnement). Le jeton vit en mémoire : il n'est **jamais affiché** et **jamais écrit**. L'absence d'App est mémorisée — l'organe ne rouvre pas le coffre à chaque appel.
+- `read_env()` — copie de l'environnement dans laquelle `GH_TOKEN` porte le jeton App : la forme qui convient à un sous-processus (un appel `gh` ponctuel).
+- `lecture()` — contexte qui pose `GH_TOKEN` pendant un bloc et **restaure** l'environnement à la sortie : la forme qui convient à une séquence d'appels.
+
+`scripts/coordination/gh_bulk.py` est la **couche de lecture partagée** : ses appels `gh` sortent désormais sous le jeton App quand il existe. C'est par elle que le tapis rapide et la couverture de visite consomment le seau d'installation.
+
+**L'écriture n'est pas concernée.** La résolution du jeton d'écriture (`post_dossier.resolve_write_token()`) isole `jsboige` en **retirant** `GH_TOKEN` de l'environnement qu'elle construit : un jeton App ne peut donc pas se substituer à l'écriture par accident. C'est pourquoi le jeton App est posé **par appel** ou **par bloc**, jamais dans l'environnement global d'un processus qui écrit aussi.
+
+**Mesure** (24/11, `myia-ai-01`) : une passe de lecture faite à travers la couche partagée fait baisser **le compteur de l'App d'exactement une unité** (`core` 4998 → 4997) et laisse le seau `jsboige` inchangé par cette passe. La lecture est donc bien facturée à l'installation, et non au compte partagé.
+
+**Limite connue** : un jeton d'installation ne peut pas appeler `/user` (GitHub répond `Resource not accessible by integration`). Un organe qui a besoin de l'identité du porteur **ne doit pas** tourner en mode lecture.
 
 ## 4. Qui révoque quoi
 
@@ -60,7 +76,7 @@ Sous login partagé, l'attribution ne peut pas venir du compte GitHub : elle vie
 
 ## 6. Points à trancher par le mainteneur
 
-1. **App lecture-seule pour les passes de masse** : GO / NO-GO. Si GO, issue fille = création de l'App + branchement des sweeps existants (`check_unaddressed_nits.py --audit`, census) sur son token via le trousseau partagé.
+1. **App lecture-seule pour les passes de masse** : GO / NO-GO. Si GO, issue fille = création de l'App + branchement des sweeps existants (`check_unaddressed_nits.py --audit`, census) sur son token via le trousseau partagé. — **GO technique posé par le coordinateur** (dispatch du 24/11) : les Apps par lane existent déjà (`coursia-lane-<lane>`) et le mode lecture est en service (§3.1) ; le basculement des derniers organes reste à faire, et reste réversible — il suffit de ne pas installer le jeton App.
 2. **Trailer `Lane:` dans les commits** : GO / NO-GO (normatif → sign-off).
 3. **Écriture courante** : ce document recommande le statu quo (`jsboige`) — valide ou infirmé en une ligne, ce qui clôt aussi l'entrée (a)/(b) ouverte au registre.
 
@@ -69,7 +85,7 @@ Sous login partagé, l'attribution ne peut pas venir du compte GitHub : elle vie
 | Phase | Contenu | Prérequis | Ce qui change concrètement |
 |---|---|---|---|
 | P0 | **ce document** | — | rien : la politique est écrite, les arbitrages sont posés |
-| P1 | App lecture-seule (passe de masse) | GO §6.1 | les sweeps basculent sur un quota installation séparé ; `jsboige` ne paie plus les fan-out |
+| P1 | App lecture-seule (passe de masse) | GO §6.1 — **posé** (dispatch du 24/11) | **en cours** : le mode lecture existe (`gh_identity`, §3.1) et la couche de lecture partagée (`gh_bulk`) est branchée — le tapis rapide et la couverture de visite consomment le seau d'installation ; **restent à brancher** les organes qui appellent `gh` en propre (`belt_queues`, `check_lane_claim` en lot, `approved_without_dossier`, sweep B.0). Objectif inchangé : les sweeps basculent sur un quota installation séparé ; `jsboige` ne paie plus les fan-out |
 | P2 | trailer `Lane:` | GO §6.2 | hook commit-msg + une ligne au §E du CLAUDE.md (PR gouvernance) |
 | — | **Ce qui reste sur `jsboige`** : toute l'écriture courante des workers et les gates par PR (le coordinateur review et fusionne sous `myia-ai-01`, §1) | — | inchangé — mesuré non-goulot après #19966 et le dossier-à-la-demande |
 
