@@ -4638,6 +4638,19 @@ RISK_KERNEL_GUARDS: list[Guard] = [
 # lean-derived-pages-gate, #24183 : une porte qui redd toute la flotte pour un
 # defaut qu'elle ne cause pas a une portee fausse).
 #
+# Correction de cause (DM coordinateur 24/11) : la promesse ci-dessus etait
+# rompue par `real_inventory`. Le bloc « Couverture des series » de la page est
+# mesure contre le DISQUE (tous les *.ipynb sous le dossier de la serie), pas
+# contre la taxonomie : chaque carnet fusionne hors taxonomie re-perimait la
+# page pour toute la flotte, et la PR suivante touchant la taxonomie etait
+# accusee d'une derive venue d'ailleurs. `--check` compare donc desormais la
+# partie derivee de la taxonomie SEULE ; le bloc de couverture (borne par
+# COVERAGE_BEGIN/END) reste dans la page et se regenere au rendu du site
+# (quarto-pages-deploy) et au cron catalogue, comme _quarto.yml (#19901 : la
+# fraicheur de main appartient a l'automatisation, jamais aux PR de contenu).
+# Temoin : un carnet factice ajoute hors taxonomie ne rougit pas --check ; un
+# compteur de la carte tamponne rougit toujours.
+#
 # Forme : predicat ABSOLU (pas de base) -- le `--check` compare la page
 # commisee a la taxonomie du checkout courant, sans diff. rc=1 = page perimee ;
 # le geste de reparation est imprime par le generateur (relancer sans --check).

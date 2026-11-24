@@ -20,6 +20,15 @@ La couverture de chaque série est mesurée contre l'inventaire RÉEL du disque
 la taxonomie : une série qui ne cite qu'une partie de ses carnets est partielle
 même si sa liste `notebooks` est courte.
 
+`--check` compare UNIQUEMENT la partie dérivée de la taxonomie (#27657, DM
+coordinateur 2026-11-24) : le bloc « Couverture des séries » est mesuré contre
+le DISQUE, donc chaque carnet fusionné hors taxonomie le ferait re-périmer —
+la page commise ne peut jamais tenir cette comparaison, et une PR de contenu
+serait accusée d'une dérive qu'elle ne cause pas. La fraîcheur de ce bloc
+appartient à la régénération périodique (catalog-cron, quarto-pages-deploy :
+il est régénéré avant chaque rendu), pas à un prédicat absolu sur les PRs.
+Le marqueur COVERAGE_BEGIN / COVERAGE_END borne ce bloc.
+
 Issue : #27556 (carte des prérequis, Pli 4.2 de l'Epic #24993).
 """
 
@@ -35,6 +44,11 @@ TAXONOMY_DIR = REPO_ROOT / "docs" / "curriculum" / "taxonomy"
 OUTPUT = REPO_ROOT / "docs" / "curriculum" / "prerequis.qmd"
 PILOT = "z3-linq2z3"
 SCHEMA = "schema.json"
+
+# Bloc de couverture : mesuré contre le disque, donc HORS du prédicat `--check`.
+# Les marqueurs restent dans la page commise pour que la comparaison soit stable.
+COVERAGE_BEGIN = "<!-- COVERAGE-INVENTAIRE-DISQUE:BEGIN -->"
+COVERAGE_END = "<!-- COVERAGE-INVENTAIRE-DISQUE:END -->"
 
 # Le dossier de la page dans l'arbre du site : docs/curriculum/ -> racine = ../../
 SITE_ROOT_FROM_PAGE = "../../"
@@ -494,10 +508,14 @@ def render_page(
         "taxonomie cite. Le dénominateur est l'inventaire mesuré (`*.ipynb` sous le\n"
         "dossier de la série), jamais la liste que la taxonomie déclare : une série qui\n"
         "ne cite qu'une partie de ses carnets reste partielle même si sa liste est courte.\n"
-        "\n" + coverage + "\n"
+        "\n"
+        "Ce bloc suit l'inventaire du disque : il est régénéré avant chaque rendu du\n"
+        "site, et la garde de fraîcheur de la PR compare le reste de la page.\n"
+        + COVERAGE_BEGIN + "\n\n" + coverage + "\n"
     )
     if notes:
-        parts.append("Notes de mesure : " + " ; ".join(notes) + ".\n")
+        parts.append("\nNotes de mesure : " + " ; ".join(notes) + ".\n")
+    parts.append(COVERAGE_END + "\n")
     parts.append("## Liens inter-séries\n")
     if not cross:
         parts.append(
@@ -524,6 +542,22 @@ def render_page(
     return "\n".join(parts).rstrip("\n") + "\n"
 
 
+def strip_disk_measured(page: str) -> str:
+    """Retire de la page le bloc mesuré contre le disque (cf. COVERAGE_BEGIN).
+
+    C'est l'objet de la comparaison `--check` : tout le reste de la page dérive
+    de la taxonomie et du générateur seuls, donc une page commise qui en diffère
+    est périmée. Le bloc de couverture, lui, dépend des carnets présents sur le
+    disque : le comparer condamnerait toute PR ajoutant un carnet hors taxonomie.
+    """
+    begin = page.find(COVERAGE_BEGIN)
+    end = page.find(COVERAGE_END)
+    if begin == -1 or end == -1 or end < begin:
+        # Page sans bloc délimité (antérieure aux marqueurs) : tout comparer.
+        return page
+    return page[:begin] + page[end + len(COVERAGE_END) :]
+
+
 # ----------------------------------------------------------------------- main --
 
 
@@ -538,10 +572,16 @@ def main(argv: list[str]) -> int:
 
     if "--check" in argv:
         current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
-        if current != page:
-            print(f"PÉRIMÉ : {OUTPUT.relative_to(REPO_ROOT)} — relancer sans --check", file=sys.stderr)
+        if strip_disk_measured(current) != strip_disk_measured(page):
+            print(
+                f"PÉRIMÉ : {OUTPUT.relative_to(REPO_ROOT)} — relancer sans --check "
+                "(le bloc de couverture, mesuré contre le disque, est hors comparaison)",
+                file=sys.stderr,
+            )
             return 1
-        print(f"À JOUR : {OUTPUT.relative_to(REPO_ROOT)}")
+        stale_block = current != page
+        verdict = "À JOUR" if not stale_block else "À JOUR (bloc de couverture seul périmé)"
+        print(f"{verdict} : {OUTPUT.relative_to(REPO_ROOT)}")
         return 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

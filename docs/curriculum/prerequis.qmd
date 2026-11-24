@@ -194,6 +194,10 @@ taxonomie cite. Le dénominateur est l'inventaire mesuré (`*.ipynb` sous le
 dossier de la série), jamais la liste que la taxonomie déclare : une série qui
 ne cite qu'une partie de ses carnets reste partielle même si sa liste est courte.
 
+Ce bloc suit l'inventaire du disque : il est régénéré avant chaque rendu du
+site, et la garde de fraîcheur de la PR compare le reste de la page.
+<!-- COVERAGE-INVENTAIRE-DISQUE:BEGIN -->
+
 | Série | Notions citées | Carnets cités / réels | Couverture |
 |---|---|---|---|
 | Compression | 18 / 18 | 7 / 20 | 35 % |
@@ -201,10 +205,12 @@ ne cite qu'une partie de ses carnets reste partielle même si sa liste est court
 | IIT | 28 / 28 | 10 / 117 | 8 % |
 | Planners | 111 / 111 | 26 / 27 | 96 % |
 | Probas | 135 / 135 | 32 / 99 | 32 % |
-| Search | 121 / 121 | 26 / 194 | 13 % |
+| Search | 121 / 121 | 26 / 195 | 13 % |
 | SymbolicAI (`semanticweb`) | 23 / 23 | 8 / 31 | 25 % |
 | SymbolicAI (`tweety`) | 21 / 21 | 5 / 39 | 12 % |
 | Z3-Linq2Z3 *(pilote)* | 21 / 21 | 20 / 20 | complète |
+
+<!-- COVERAGE-INVENTAIRE-DISQUE:END -->
 
 ## Liens inter-séries
 

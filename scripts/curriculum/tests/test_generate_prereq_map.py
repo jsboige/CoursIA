@@ -182,3 +182,43 @@ class TestFlowchartDirection:
 
     def test_graphe_vide_ne_plante_pas(self):
         assert gpm.flowchart_direction([], []) == "TB"
+
+
+class TestStripDiskMeasured:
+    """Le bloc de couverture depend du DISQUE : `--check` ne le compare pas.
+
+    Un carnet ajoute hors taxonomie fait bouger l'inventaire reel de sa serie ;
+    la page commise ne peut jamais tenir cette comparaison, et une PR de contenu
+    serait accusee d'une derive qu'elle ne cause pas (DM coordinateur 24/11).
+    """
+
+    @staticmethod
+    def _page(coverage: str) -> str:
+        return (
+            "## Carte\n\ncarte\n\n"
+            f"{gpm.COVERAGE_BEGIN}\n\n| Série | Couverture |\n{coverage}\n\n"
+            f"{gpm.COVERAGE_END}\n\n## Liens inter-séries\n\naucune\n"
+        )
+
+    def test_carnet_factice_hors_taxonomie_ne_rougit_pas(self):
+        """Le temoin exige : un carnet factice de plus ne change pas le compare."""
+        avant = self._page("| Probas | 32 / 99 |")
+        apres = self._page("| Probas | 32 / 100 |")
+        assert avant != apres
+        assert gpm.strip_disk_measured(avant) == gpm.strip_disk_measured(apres)
+
+    def test_derive_de_taxonomie_rougit_toujours(self):
+        """Control positif : la garde n'est pas videe -- une carte qui bouge rougit."""
+        avant = self._page("| Probas | 32 / 99 |")
+        apres = self._page("| Probas | 32 / 100 |").replace("carte\n", "autre carte\n")
+        assert gpm.strip_disk_measured(avant) != gpm.strip_disk_measured(apres)
+
+    def test_page_sans_marqueurs_est_comparee_en_entier(self):
+        """Une page anterieure aux marqueurs n'obtient pas de quitus par accident."""
+        page = "## Carte\n\ncarte\n\n| Série | Couverture |\n| 1 / 2 |\n"
+        assert gpm.strip_disk_measured(page) == page
+
+    def test_marqueurs_inverses_ne_suppriment_rien(self):
+        """Un fichier tamponne (fin avant debut) se compare en entier, jamais tronque."""
+        page = f"{gpm.COVERAGE_END}\ncarte\n{gpm.COVERAGE_BEGIN}\n"
+        assert gpm.strip_disk_measured(page) == page
