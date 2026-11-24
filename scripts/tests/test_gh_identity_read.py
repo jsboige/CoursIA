@@ -191,3 +191,46 @@ def test_gh_bulk_passe_l_env_de_lecture(monkeypatch):
     monkeypatch.setattr(gh_bulk.subprocess, "run", _fake_run)
     gh_bulk.run_defaut(["gh", "api", "rate_limit"], 15)
     assert vu["env"] == {"GH_TOKEN": "ghs_app"}
+
+
+# --- 6. les organes purement lecteurs passent par l'env de lecture -----------
+
+def test_belt_queues_passe_l_env_de_lecture(monkeypatch):
+    """Le tirage central ne fait que lire : ses appels `gh` sortent sous
+    le jeton App de la lane."""
+    from coordination import belt_queues
+
+    vu: dict[str, object] = {}
+
+    def _fake_run(argv, **kwargs):
+        vu["env"] = kwargs.get("env")
+
+        class _P:
+            stdout = "[]"
+        return _P()
+
+    monkeypatch.setattr(gh_identity, "read_env", lambda base=None: {"GH_TOKEN": "ghs_app"})
+    monkeypatch.setattr(belt_queues.subprocess, "run", _fake_run)
+    belt_queues.gh_open_prs()
+    assert vu["env"] == {"GH_TOKEN": "ghs_app"}
+
+
+def test_approved_without_dossier_passe_l_env_de_lecture(monkeypatch):
+    """L'organe ne CONSTATE qu'une approbation sans dossier : lecture pure."""
+    from coordination import approved_without_dossier as awd
+
+    vu: dict[str, object] = {}
+
+    def _fake_run(argv, **kwargs):
+        vu["env"] = kwargs.get("env")
+
+        class _P:
+            returncode = 0
+            stdout = "{}"
+            stderr = ""
+        return _P()
+
+    monkeypatch.setattr(gh_identity, "read_env", lambda base=None: {"GH_TOKEN": "ghs_app"})
+    monkeypatch.setattr(awd.subprocess, "run", _fake_run)
+    awd._gh_json("repos/jsboige/CoursIA/pulls/1")
+    assert vu["env"] == {"GH_TOKEN": "ghs_app"}

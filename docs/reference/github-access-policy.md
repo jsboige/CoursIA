@@ -85,7 +85,7 @@ Sous login partagé, l'attribution ne peut pas venir du compte GitHub : elle vie
 | Phase | Contenu | Prérequis | Ce qui change concrètement |
 |---|---|---|---|
 | P0 | **ce document** | — | rien : la politique est écrite, les arbitrages sont posés |
-| P1 | App lecture-seule (passe de masse) | GO §6.1 — **posé** (dispatch du 24/11) | **en cours** : le mode lecture existe (`gh_identity`, §3.1) et la couche de lecture partagée (`gh_bulk`) est branchée — le tapis rapide et la couverture de visite consomment le seau d'installation ; **restent à brancher** les organes qui appellent `gh` en propre (`belt_queues`, `check_lane_claim` en lot, `approved_without_dossier`, sweep B.0). Objectif inchangé : les sweeps basculent sur un quota installation séparé ; `jsboige` ne paie plus les fan-out |
+| P1 | App lecture-seule (passe de masse) | GO §6.1 — **posé** (dispatch du 24/11) | **en cours** : le mode lecture existe (`gh_identity`, §3.1) ; **branchés** — la couche de lecture partagée (`gh_bulk`, qui porte le tapis rapide et la couverture de visite), le tirage central (`belt_queues`) et l'organe « approuvée sans dossier » (`approved_without_dossier`) ; **restent à brancher** — `check_lane_claim` en lot (il écrit aussi : ses lectures seules sont à traiter) et le sweep B.0 (`check_unaddressed_nits --audit`). Objectif inchangé : les sweeps basculent sur un quota installation séparé ; `jsboige` ne paie plus les fan-out |
 | P2 | trailer `Lane:` | GO §6.2 | hook commit-msg + une ligne au §E du CLAUDE.md (PR gouvernance) |
 | — | **Ce qui reste sur `jsboige`** : toute l'écriture courante des workers et les gates par PR (le coordinateur review et fusionne sous `myia-ai-01`, §1) | — | inchangé — mesuré non-goulot après #19966 et le dossier-à-la-demande |
 

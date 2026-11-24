@@ -89,6 +89,11 @@ import merge_ready  # noqa: E402
 # depuis check_run_state, jamais recopie en un miroir local.
 from check_run_state import RED  # noqa: E402
 
+# #17437 P1 : l'organe ne fait que de la LECTURE (il constate qu'une PR a ete
+# approuvee sans dossier) -- ses appels `gh` sortent donc sous le jeton App
+# de la lane, dont le seau est distinct de celui du compte partage.
+import gh_identity  # noqa: E402
+
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_APPROVER = merge_ready.COORDINATOR_USER
 PAGE_SIZE = 40
@@ -413,6 +418,7 @@ def _gh_json(path: str):
         proc = subprocess.run(
             ["gh", "api", path], cwd=str(REPO_ROOT), capture_output=True,
             text=True, encoding="utf-8", errors="replace", timeout=120,
+            env=gh_identity.read_env(),
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -529,7 +535,8 @@ def gh_graphql(query: str, variables: dict) -> dict:
             continue
         cmd += ["-f", "{}={}".format(key, value)]
     proc = subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace")
+                          encoding="utf-8", errors="replace",
+                          env=gh_identity.read_env())
     if proc.returncode != 0:
         raise RuntimeError((proc.stderr or "").strip()[:400])
     return json.loads(proc.stdout or "{}")
