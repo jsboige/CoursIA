@@ -1,0 +1,219 @@
+# Conformité différentielle de Z3-13-UnsatCores (portage Rust).
+#
+# Écrite à la livraison à partir des sorties COMMITÉES des deux carnets :
+# le carnet Rust rejoue la même démonstration que son jumeau Python (le
+# noyau d'insatisfiabilité minimal) par l'API du crate `z3`, et l'on compare
+# ce que les deux côtés ont affiché, grandeur par grandeur.
+#
+# Pourquoi la comparaison est ligne à ligne et non bloc à bloc : le noyau
+# Rust écrit chaque `println!` dans un flux distinct, si bien que les deux
+# carnets n'ont pas la même mise en page des blancs. Ce qui est comparé, ce
+# sont les VALEURS affichées — le verdict, le contenu du core, le nombre de
+# contraintes en conflit — et non la mise en page.
+#
+# L'ordre des étiquettes du core est comparé en texte strict : Z3 renvoie le
+# core dans l'ordre d'assertion, et les deux carnets assertent dans le même
+# ordre (x_ge_3, x_le_5, x_eq_10 ; h_ge_9, h_le_17, h_ne_12, h_eq_12,
+# h_ge_9b ; w_eq_1, w_ge_0, w_eq_2). C'est donc une grandeur, pas un accident
+# de présentation.
+#
+# Cellules non mesurées (motif relevé à la relecture de la livraison) :
+#   - cellule 1 (Rust) : bannière d'environnement (version de la bibliothèque
+#     Z3 liée dynamiquement sur le poste) ; le jumeau Python affiche de son
+#     côté la version du paquet `z3-solver` — deux bibliothèques distinctes,
+#     donc aucune grandeur commune à comparer ;
+#   - cellule 1 (Python) : idem, bannière d'environnement ;
+#   - cellules d'exercices (Rust 20, 22, 24 ; Python 18, 20, 22) : ce sont
+#     des gabarits non résolus, sans valeur propre à comparer.
+#
+# Aucun jumeau C# n'est déclaré pour cette mesure : la série en a bien un
+# (`Z3-13-UnsatCores-CSharp.ipynb`), mais l'organe `check_rust_conformance.py`
+# compare le côté Rust à une référence déclarée ici — la comparaison à trois
+# côtés est portée par l'organe de parité des jumeaux, pas par celui-ci.
+- name: "Z3-13-UnsatCores"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Rust.ipynb
+  measures:
+    - id: verdict_contradiction
+      description: "Verdict du système contradictoire ' a->b, a, !b ' — unsat des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "' a->b, a, !b ' : (unsat)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "' a->b, a, !b ' : (unsat)"
+          transform: text
+    - id: verdict_trois_contraintes
+      description: "Verdict de ' x>=3, x<=5, x=10 ' — unsat des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "' x>=3, x<=5, x=10 ' : (unsat)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "' x>=3, x<=5, x=10 ' : (unsat)"
+          transform: text
+    - id: core_label_x_le_5
+      description: "Première étiquette du core des trois contraintes — x_le_5 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '(?m)^\s+- (x_le_5)$'
+          transform: text
+        rust:
+          cell: 6
+          pattern: '(?m)^\s+- (x_le_5)$'
+          transform: text
+    - id: core_label_x_eq_10
+      description: "Seconde étiquette du core des trois contraintes — x_eq_10 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '(?m)^\s+- (x_eq_10)$'
+          transform: text
+        rust:
+          cell: 6
+          pattern: '(?m)^\s+- (x_eq_10)$'
+          transform: text
+    - id: core_exclut_x_ge_3
+      description: "Phrase de conclusion de la cellule 6 — l'exclusion de 'x>=3' du core, des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(Z3 ecarte 'x>=3' du core)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(Z3 ecarte 'x>=3' du core)"
+          transform: text
+    - id: verdict_paire
+      description: "Verdict de la paire {x<=5, x=10} seule — unsat des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "' y<=5, y=10 ' .(sans y>=3). : (unsat)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "' y<=5, y=10 ' .(sans y>=3). : (unsat)"
+          transform: text
+    - id: paire_suffit
+      description: "Phrase de confirmation de la minimalité — la paire suffit au conflit, des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(CONFIRME : la paire [{]x<=5, x=10[}] suffit au conflit)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "(CONFIRME : la paire [{]x<=5, x=10[}] suffit au conflit)"
+          transform: text
+    - id: verdict_specification
+      description: "Verdict de la spécification surcontrainte à 5 contraintes — unsat des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Specification .5 contraintes. : (unsat)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "Specification .5 contraintes. : (unsat)"
+          transform: text
+    - id: core_label_h_ne_12
+      description: "Première contrainte coupable du core de la spécification — h_ne_12 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: '(?m)^\s+COUPABLE : (h_ne_12)$'
+          transform: text
+        rust:
+          cell: 12
+          pattern: '(?m)^\s+COUPABLE : (h_ne_12)$'
+          transform: text
+    - id: core_label_h_eq_12
+      description: "Seconde contrainte coupable du core de la spécification — h_eq_12 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: '(?m)^\s+COUPABLE : (h_eq_12)$'
+          transform: text
+        rust:
+          cell: 12
+          pattern: '(?m)^\s+COUPABLE : (h_eq_12)$'
+          transform: text
+    - id: nb_contraintes_en_conflit
+      description: "Nombre de contraintes en conflit parmi les 5 — 2 des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'Sur 5 contraintes, (\d+) seulement sont en conflit'
+          transform: int
+        rust:
+          cell: 12
+          pattern: 'Sur 5 contraintes, (\d+) seulement sont en conflit'
+          transform: int
+    - id: verdict_innocence
+      description: "Verdict du système à trois contraintes de la section 5 — unsat des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Check.assumptions. : (unsat)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "Check.assumptions. : (unsat)"
+          transform: text
+    - id: core_innocence
+      description: "Contenu du core de la section 5 — w_eq_1 et w_eq_2, dans l'ordre d'assertion, des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "UnsatCore = [{] ([^}]*) [}]"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "UnsatCore = [{] ([^}]*) [}]"
+          transform: text
+    - id: innocence_exclue
+      description: "Mention de l'exclusion de la contrainte innocente — des deux côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(x>=0 exclu du core)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "(x>=0 exclu du core)"
+          transform: text
