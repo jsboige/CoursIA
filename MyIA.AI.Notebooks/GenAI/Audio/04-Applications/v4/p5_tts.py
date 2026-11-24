@@ -584,7 +584,6 @@ def _translate_prompts_batch(
                         {"role": "system", "content": system_msg},
                         {"role": "user", "content": user_msg},
                     ],
-                    temperature=0.3,
                     response_format={"type": "json_object"},
                 )
                 batch_result = json.loads(resp.choices[0].message.content)
