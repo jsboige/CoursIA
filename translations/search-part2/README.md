@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-part2.csv`](search-part2.csv) | `Search/Part2-CSP/` | 18 au seed 2026-07-09 (CSP-1-Fundamentals → CSP-09-Distributed-Python, jumeaux C# co-localisés, MRV/AC-3/FC/MAC/Allens/STP/TCSP/CP-SAT/Hybridation/DisCSP ABT/AWC/Privacy — le compte courant vit dans le CSV) | 784 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 18 709 — compte courant mesurable dans le CSV) |
+| [`search-part2.csv`](search-part2.csv) | `Search/Part2-CSP/` | 18 au seed 2026-07-09 (CSP-1-Fundamentals → CSP-9-Distributed, jumeaux C# co-localisés, MRV/AC-3/FC/MAC/Allens/STP/TCSP/CP-SAT/Hybridation/DisCSP ABT/AWC/Privacy — le compte courant vit dans le CSV) | 784 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 18 709 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Search/Part2-CSP = **owner po-2025 strict** (PRs récentes = `Jean-Sylvain Boige` per git log récent #5700 #5460 #5384 #5371 #5277 #5276 #5275 #5274 #5270). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
