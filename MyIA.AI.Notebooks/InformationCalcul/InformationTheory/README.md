@@ -6,6 +6,16 @@ Combien d'information transporte une source, combien un canal bruité peut-il en
 
 L'entrée est accessible avec Python et les probabilités discrètes : l'entropie se construit dès le carnet 01, et chaque carnet suivant introduit les outils qu'il emploie. La série est en cours de constitution : les carnets publiés couvrent trois paliers — mesure (01), correction (03), réseaux (08) — et la numération laisse les places des carnets suivants.
 
+## Objectifs
+
+À l'issue du parcours, en exécutant les trois carnets, vous saurez :
+
+- **Mesurer l'information** (carnet 01) : calculer l'entropie de Shannon, l'entropie conditionnelle, l'information mutuelle, la divergence de Kullback-Leibler, l'inégalité de traitement de l'information et la capacité d'un canal binaire symétrique, sur des distributions concrètes.
+- **Corriger les erreurs** (carnet 03) : construire la distance de Hamming, la distance minimale d'un code et le budget de détection/correction qu'elle achète, le code de parité, le code de Hamming (7,4) avec décodage par syndrome, et la borne de Hamming qui rend le (7,4) parfait.
+- **Raisonner sur les réseaux** (carnet 08) : calculer les régions de capacité au-delà du canal unique — le canal à accès multiple (pentagone), le canal de diffusion dégradé (codage par superposition), le codage de Slepian-Wolf pour des sources corrélées, et le codage réseau par coupe minimale.
+
+Chaque objectif se vérifie par le calcul dans le carnet correspondant (CPU, numpy, sans clé d'API). La sous-série de trois carnets autonomes n'appelle pas de capstone.
+
 ## Comment lire ce README — Découverte
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) permet de choisir sa profondeur de lecture.
