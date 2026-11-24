@@ -1,0 +1,8 @@
+date: '2026-11-19'
+by: myia-po-2027:CoursIA-2
+python_sha: ea8ee5bfd391885054b7c35196f92c7085348807
+csharp_sha: 31de92d8c67e09b1cdef093d96a6f13f855b494b
+content_python_sha: adba8294ff802b528b0a1ab7e396dac7b74cae1373e3c013f96dae5b13a0a015
+content_csharp_sha: 01656fb0451c91b052b0cf198440f88c6210f54af330872cf4bec1725746b442
+known_differences:
+  - "Section « Confrontation : la convergence vers k » (balayage T=60..960, monotonie de l'écart, ajustement 1/T, lecture) ajoutée côté Python seulement ; non portée au jumeau C# — asymétrie pédagogique (review #27356)"

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — 4e fil de lecture : le problème de la représentation interne (généalogie de `p̂`, ICT-10 → ICT-17)
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Consolide un **quatrième fil de lecture** de la série ICT, à côté des trois déjà documentés dans [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) : Grothendieck (invariants), Schmidhuber (dissociations), Thom + Grothendieck (obstructions). Le **quatrième fil** est celui du **problème de la représentation interne** : la généalogie successive de `p̂` à travers les notebooks ICT-10 → ICT-17.

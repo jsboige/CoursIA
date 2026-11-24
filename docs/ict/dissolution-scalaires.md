@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — 5e fil de lecture : la dissolution des scalaires (Φ / F / K → faisceau de proxys, ICT-1 → ICT-22)
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Consolide un **cinquième fil de lecture** de la série ICT, à côté des quatre déjà documentés : invariants / dissociations / obstructions ([synthese-invariants-dissociations-obstructions.md](synthese-invariants-dissociations-obstructions.md)) + problème de la représentation interne ([genealogy-representation-interne.md](genealogy-representation-interne.md)). Le **cinquième fil** est celui de la **dissolution successive des scalaires** : ce qui arrive à Φ, F, K quand on les pousse hors de leur substrat d'origine.

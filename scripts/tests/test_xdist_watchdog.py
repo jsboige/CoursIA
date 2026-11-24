@@ -132,18 +132,20 @@ def test_fin_de_parcours_points_partiels_non_tue():
     # Mode 2, run 35276661841 : des octets vivants SANS \n (points de fin
     # de parcours -q) doivent maintenir la fraicheur. Un garde qui
     # n'ecouterait que les lignes completes croirait a un silence et
-    # tuerait ce run a 1,0 s de limite -- c'est exactement le faux
-    # positif qui a bloque la PR #16240 a [99%].
+    # tuerait ce run avant sa fin -- c'est exactement le faux positif
+    # qui a bloque la PR #16240 a [99%]. La marge de 3 s absorbe les pauses
+    # d'ordonnancement sous xdist ; la sortie reste sans ligne pendant 4,8 s,
+    # donc un lecteur readline-only echoue toujours avant EOF.
     code, out, verdict = _run_watchdog(
         _child("""
             import sys, time
-            for i in range(16):
+            for i in range(32):
                 sys.stdout.write(".")
                 sys.stdout.flush()
                 time.sleep(0.15)
             raise SystemExit(0)
         """),
-        idle_limit=1.0,
+        idle_limit=3.0,
     )
     assert code == 0
     assert "XDIST-WATCHDOG" not in verdict

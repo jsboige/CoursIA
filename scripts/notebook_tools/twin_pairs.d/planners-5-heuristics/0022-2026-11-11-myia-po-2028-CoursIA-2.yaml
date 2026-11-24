@@ -1,0 +1,20 @@
+date: '2026-11-11'
+by: myia-po-2028:CoursIA-2
+note: "Tete 2020a3ff30 (update-branch #25037, post-merge main). L'attestation 0021
+  (meme lane, 2026-11-11) etait perimee par l'entree du fix cloud #25469 (Fast
+  Downward sans Docker, FastDownwardBackend + pilote up-fast-downward, cells 26-27)
+  sur main APRES elle : au merge, ordinal max 0021 attendait le content du sweep seul
+  (8b0c3d27) tandis que le C# reel portait la combinaison sweep + fix cloud
+  (ff30e90d) -- DRIFT_INTRODUCED legitime de la jambe CI, reproduit localement sur le
+  merge puis sur la tete mise a jour. Re-audit firsthand avant attestation : cell0 =
+  navigation canonique du chantier B (sweep), fix sans Docker present cells 26-27,
+  16/16 cellules code executees, 0 output en erreur, jumeau Python byte-identique a
+  la base (262d2ad8). Parite native-both inchangee : le fix cloud touche le
+  transport du moteur (Docker -> pilote local), pas les plans ni les couts
+  (attestations 0019/0020 de la session cloud : memes plans et memes couts). Ordinal
+  0022 au-dessus du max (21), jamais dans un trou libre. --update en DERNIERE
+  operation (cf #8957)."
+python_sha: 262d2ad8115156744007deb54cec531697ebc23e
+csharp_sha: 78e0d67f70cb21b59096f94ff325144d85dd8f8f
+content_python_sha: d29509c8c515a2ffdb6f392ec2e3866e5f3c626dab4c9394b87576688f4fcd9c
+content_csharp_sha: ff30e90d6047413d044ef201ba8b0dad4311335170b46f8fb8adf40db3d7421f

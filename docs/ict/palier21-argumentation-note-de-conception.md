@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # Palier 21 — « Argumentation et croyances » — note de conception (capstone strate 6)
 
 > **État : Phase 1.** Cette note est la phase 1 demandée par #23777 : elle établit le

@@ -61,6 +61,14 @@
       "start": "2012-01-01",
       "end": null,
       "regen_date": "2026-07-29"
+    },
+    "ml_ensemble": {
+      "purpose": "ML-Ensemble quantbook (#26319 contre-epreuve D4) -- the 30 liquid US large caps the notebook declares (cell 3) plus SPY as benchmark, 2020-2026. Before this entry only AAPL/GOOGL/IBM resolved locally (IBM stopping 2021-03-31), so the shipped run computed on 3 tickers out of 30. SQ (Block, renamed XYZ in 2025) no longer resolves on yfinance under its old ticker (measured 2026-11-21: no data) and is left out; the notebook still declares it and reports it as dropped.",
+      "issue": "#26319",
+      "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "WMT", "DIS", "NFLX", "PYPL", "ADBE", "CRM", "INTC", "AMD", "GS", "MS", "BA", "CSCO", "ORCL", "AVGO", "TXN", "QCOM", "IBM", "AMAT", "NOW", "SHOP", "SPY"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-11-21"
     }
   }
 }

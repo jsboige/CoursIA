@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 ## Note de conception — queue « hors strates » de la série ICT (40a, 40b, 47, 47b, 48-Onset, 48-Wolfram, 49, 50) — phase 2
 
 Lane `myia-po-2027:CoursIA-2` · dispatch ai-01 31/10 (`msg-20261031T172938`) · consigne du mainteneur 31/10.

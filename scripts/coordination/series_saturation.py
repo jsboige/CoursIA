@@ -41,7 +41,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from gh_payload_cache import PayloadCache, cache_key
+# #13737 tranche 2 : gh_payload_cache est reloge dans scripts/ci/. L'insert
+# passe AVANT l'import : l'invocation documentee
+# (``python scripts/coordination/series_saturation.py``) echouait avant lui
+# (ModuleNotFoundError) -- ordre corrige au passage.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+from gh_payload_cache import PayloadCache, cache_key  # noqa: E402
 
 # Le fetcher par **tranches de dates** (`ci/`, meme depot). Ce module
 # reproduisait a la main la classe de defaut que ce fichier resout : un

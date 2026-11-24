@@ -3,7 +3,7 @@
 
 Why this script exists
 ----------------------
-`scripts/regen_quarto_render.py --check-readme-links` emits violations as
+`scripts/ci/regen_quarto_render.py --check-readme-links` emits violations as
 `::error::<CLASS> <readme> -> <href>` lines on stderr (one per line) plus a
 human-readable summary on stdout. The fast-lane engine needs a stable JSON
 artefact on stdout so the `delta_argv` comparator can diff head vs base.
@@ -51,7 +51,7 @@ VIOLATION_RE = re.compile(
 
 def _scan() -> dict:
     proc = subprocess.run(
-        ["python", "scripts/regen_quarto_render.py", "--check-readme-links"],
+        ["python", "scripts/ci/regen_quarto_render.py", "--check-readme-links"],
         cwd=str(REPO_ROOT),
         capture_output=True,
         text=True,

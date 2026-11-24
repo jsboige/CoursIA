@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Vérifie que les attributions arXiv corrigées restent présentes dans leurs notebooks.
 
-Ce script lit `arxiv_attributions_registry.yaml` (par défaut à la racine du dépôt)
+Ce script lit `docs/reference/arxiv_attributions_registry.yaml` (par défaut)
 et pour chaque entrée :
   1. Ouvre le notebook indiqué
   2. Cherche la chaîne `expected_citation` dans la cellule `cell_index`
@@ -42,7 +42,7 @@ Usage:
   python scripts/check_arxiv_attributions.py --detect --paths "MyIA.AI.Notebooks/**/*.ipynb"
 
 Options:
-  --registry PATH    Chemin du registre YAML (défaut: arxiv_attributions_registry.yaml)
+  --registry PATH    Chemin du registre YAML (défaut: docs/reference/arxiv_attributions_registry.yaml)
   --paths GLOB ...   Mode registre : limiter aux notebooks matchant les globs.
                      Mode --detect : globs de fichiers (fnmatch sur le chemin
                      relatif POSIX) limitant l'énumération.
@@ -92,8 +92,8 @@ def _default_repo_root() -> Path:
 
 
 def _default_registry_path(repo_root: Path) -> Path:
-    """Cherche le registre à la racine du dépôt."""
-    return repo_root / "arxiv_attributions_registry.yaml"
+    """Cherche le registre dans docs/reference/ (move hors racine, #13751)."""
+    return repo_root / "docs" / "reference" / "arxiv_attributions_registry.yaml"
 
 
 def _strip_ipynb_quotes(path: str | Path) -> Path:
@@ -458,7 +458,7 @@ def main() -> int:
         "--registry",
         type=Path,
         default=None,
-        help="Chemin du registre YAML (défaut: arxiv_attributions_registry.yaml à la racine).",
+        help="Chemin du registre YAML (défaut: docs/reference/arxiv_attributions_registry.yaml).",
     )
     parser.add_argument(
         "--repo-root",

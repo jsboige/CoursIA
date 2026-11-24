@@ -26,7 +26,7 @@ Ouvrir le projet cloud (local-id : 230839018), compiler et lancer un backtest.
 
 ## Noyau de risque déterministe (#24698)
 
-Le paramètre `kernel` ajoute à la stratégie le noyau de risque déterministe de Steward (arXiv 2610.30557). Le portage de référence de ce noyau dans le dépôt est le projet `DeterministicRiskKernel-QC`. Avec la valeur par défaut, `kernel=off`, le code de la stratégie est inchangé.
+Le paramètre `kernel` ajoute à la stratégie le noyau de risque déterministe de Steward (arXiv 2610.30557). Le portage de référence de ce noyau dans le dépôt est le projet `DeterministicRiskKernel-QC`. Avec la valeur par défaut, `kernel=off`, le code de la stratégie est inchangé. Le noyau vit dans `risk_kernel.py`, copie du module commun [`RiskKernel`](../RiskKernel/README.md).
 
 | `kernel` | Plafond d'exposition à 90 % | Stop à 2 ATR(14) | Coupe-circuit à −3 % |
 |---|---|---|---|
@@ -163,6 +163,7 @@ Suites possibles, non mesurées : corriger le défaut d'échelle (autre issue, a
 | Fichier | Description |
 |---------|-------------|
 | `main.py` | Prévision de volatilité HAR-RV avec dimensionnement par critère de Kelly sur 6 ETFs multi-actifs |
+| `risk_kernel.py` | Noyau de risque déterministe, copie identique de [`RiskKernel/risk_kernel.py`](../RiskKernel/README.md) |
 | `config.json` | Configuration du projet (local-id) |
 | `research.ipynb` | Notebook de recherche avec analyse du modèle HAR-RV et exploration de la fraction Kelly |
 

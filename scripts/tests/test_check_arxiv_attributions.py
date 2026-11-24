@@ -53,11 +53,17 @@ def _make_notebook(tmp: Path, rel_path: str, cells: list[dict]) -> Path:
     return nb_path
 
 
+def _default_reg_in(tmp: Path) -> Path:
+    """Miroir du défaut du script : le registre vit sous docs/reference/ (#13751)."""
+    return tmp / "docs" / "reference" / "arxiv_attributions_registry.yaml"
+
+
 def _make_registry(tmp: Path, entries: list[dict]) -> Path:
-    """Crée un registre YAML."""
+    """Crée un registre YAML à l'emplacement par défaut du script."""
     import yaml
 
-    reg_path = tmp / "arxiv_attributions_registry.yaml"
+    reg_path = _default_reg_in(tmp)
+    reg_path.parent.mkdir(parents=True, exist_ok=True)
     reg_path.write_text(
         yaml.safe_dump({"attributions": entries}, allow_unicode=True, sort_keys=False),
         encoding="utf-8",
@@ -136,7 +142,7 @@ def test_pass_when_citation_present(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
     )
     assert result.returncode == 0
@@ -167,7 +173,7 @@ def test_fail_when_citation_missing(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
     )
     assert result.returncode == 1
@@ -197,7 +203,7 @@ def test_fail_when_cell_index_out_of_range(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
     )
     assert result.returncode == 1
@@ -221,7 +227,7 @@ def test_renamed_by_default(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
     )
     # RENAMED n'est pas un FAIL par défaut
@@ -246,7 +252,7 @@ def test_renamed_with_strict_flag(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
         "--strict",
     )
@@ -294,7 +300,7 @@ def test_paths_scope_filters_out(tmp_path: Path) -> None:
     )
     # cwd=tmp_path pour que `A.ipynb` soit résolu depuis tmp_path, pas REPO_ROOT
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
         "--paths", "A.ipynb",
         cwd=tmp_path,
@@ -342,7 +348,7 @@ def test_paths_scope_recursive_glob(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
         "--paths", "MyIA.AI.Notebooks/ML/*.ipynb",
         cwd=tmp_path,
@@ -378,7 +384,7 @@ def test_json_output(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
         "--json",
     )
@@ -413,7 +419,7 @@ def test_json_output_includes_failures(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
         "--json",
     )
@@ -462,7 +468,7 @@ def test_multiple_entries_summary(tmp_path: Path) -> None:
         ],
     )
     result = _run_check(
-        "--registry", str(tmp_path / "arxiv_attributions_registry.yaml"),
+        "--registry", str(_default_reg_in(tmp_path)),
         "--repo-root", str(tmp_path),
     )
     assert result.returncode == 1
@@ -477,13 +483,13 @@ def test_real_registry_passes_when_no_drift(tmp_path: Path) -> None:
     """Sanity check : si on monte le vrai registre + un sous-ensemble de notebooks
     fictifs qui matchent les cell_index, le check doit passer.
 
-    Note : ce test utilise un registre COPIE depuis arxiv_attributions_registry.yaml
-    à la racine du dépôt, avec des notebooks créés à la volée qui contiennent
-    les expected_citation aux bons cell_index.
+    Note : ce test utilise un registre COPIE depuis
+    docs/reference/arxiv_attributions_registry.yaml, avec des notebooks créés
+    à la volée qui contiennent les expected_citation aux bons cell_index.
     """
     import yaml
 
-    real_reg = REPO_ROOT / "arxiv_attributions_registry.yaml"
+    real_reg = REPO_ROOT / "docs" / "reference" / "arxiv_attributions_registry.yaml"
     if not real_reg.exists():
         pytest.skip("Registre réel absent (devrait être livré par #12853)")
 
@@ -557,7 +563,7 @@ def test_real_registry_lives_against_main_repo() -> None:
     """
     import yaml
 
-    real_reg = REPO_ROOT / "arxiv_attributions_registry.yaml"
+    real_reg = REPO_ROOT / "docs" / "reference" / "arxiv_attributions_registry.yaml"
     if not real_reg.exists():
         pytest.skip("Registre réel absent (devrait être livré par #12853)")
 
@@ -615,7 +621,7 @@ def test_workflow_paths_cover_every_registry_notebook() -> None:
     """
     import yaml
 
-    real_reg = REPO_ROOT / "arxiv_attributions_registry.yaml"
+    real_reg = REPO_ROOT / "docs" / "reference" / "arxiv_attributions_registry.yaml"
     workflow = REPO_ROOT / ".github" / "workflows" / "arxiv-attributions-guard.yml"
     if not real_reg.exists() or not workflow.exists():
         pytest.skip("Registre ou workflow absent")

@@ -1,0 +1,438 @@
+{
+  "frozen": {
+    "D": 64,
+    "K": 8,
+    "sigma_eps": 0.05,
+    "tau": 0.8,
+    "m_lab": 40,
+    "n_test": 200,
+    "sigma_t": 0.3,
+    "seeds": [
+      0,
+      1,
+      7,
+      42,
+      99
+    ]
+  },
+  "calibration": {
+    "grid_scan": {
+      "0.05": {
+        "accs": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "mean": 1.0
+      },
+      "0.1": {
+        "accs": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "mean": 1.0
+      },
+      "0.15": {
+        "accs": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "mean": 1.0
+      },
+      "0.2": {
+        "accs": [
+          1.0,
+          0.99,
+          0.995
+        ],
+        "mean": 0.995
+      },
+      "0.3": {
+        "accs": [
+          0.945,
+          0.89,
+          0.845
+        ],
+        "mean": 0.8933333333333332
+      }
+    },
+    "sigma_t_selected": 0.3,
+    "own_rates": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "foreign_rates": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "margin_direct_tiers": 1.0,
+    "null_a_ok": true,
+    "door_ok": true
+  },
+  "runs": [
+    {
+      "seed": 0,
+      "r_direct_own": 1.0,
+      "r_direct_own_detail": {
+        "alice": 1.0,
+        "bob": 1.0
+      },
+      "own_cos_mean": 0.9297407074800929,
+      "r_direct_foreign": 0.0,
+      "r_direct_foreign_detail": {
+        "alice_to_bob": 0.0,
+        "bob_to_alice": 0.0
+      },
+      "cross_cos_max": 0.37330137903334076,
+      "acc_indirect": 0.94,
+      "dispatch": {
+        "third_input/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "third_input/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        },
+        "own_quale/same_pos": {
+          "m_C": true,
+          "delta_r": true,
+          "full": "DIRECT",
+          "membership_only": "DIRECT",
+          "eq51": "DIRECT"
+        },
+        "own_quale/diff_pos": {
+          "m_C": true,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "DIRECT",
+          "eq51": "S"
+        },
+        "other_quale/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "other_quale/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        }
+      },
+      "full_dispatch_fidelity": true,
+      "membership_misroutes": [
+        "own_quale/diff_pos"
+      ],
+      "eq51_misroutes": [
+        "third_input/same_pos",
+        "other_quale/same_pos"
+      ],
+      "membership_misroutes_own_broken": true
+    },
+    {
+      "seed": 1,
+      "r_direct_own": 1.0,
+      "r_direct_own_detail": {
+        "alice": 1.0,
+        "bob": 1.0
+      },
+      "own_cos_mean": 0.9368484118181413,
+      "r_direct_foreign": 0.0,
+      "r_direct_foreign_detail": {
+        "alice_to_bob": 0.0,
+        "bob_to_alice": 0.0
+      },
+      "cross_cos_max": 0.330160030011732,
+      "acc_indirect": 0.935,
+      "dispatch": {
+        "third_input/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "third_input/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        },
+        "own_quale/same_pos": {
+          "m_C": true,
+          "delta_r": true,
+          "full": "DIRECT",
+          "membership_only": "DIRECT",
+          "eq51": "DIRECT"
+        },
+        "own_quale/diff_pos": {
+          "m_C": true,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "DIRECT",
+          "eq51": "S"
+        },
+        "other_quale/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "other_quale/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        }
+      },
+      "full_dispatch_fidelity": true,
+      "membership_misroutes": [
+        "own_quale/diff_pos"
+      ],
+      "eq51_misroutes": [
+        "third_input/same_pos",
+        "other_quale/same_pos"
+      ],
+      "membership_misroutes_own_broken": true
+    },
+    {
+      "seed": 7,
+      "r_direct_own": 1.0,
+      "r_direct_own_detail": {
+        "alice": 1.0,
+        "bob": 1.0
+      },
+      "own_cos_mean": 0.9310842388384073,
+      "r_direct_foreign": 0.0,
+      "r_direct_foreign_detail": {
+        "alice_to_bob": 0.0,
+        "bob_to_alice": 0.0
+      },
+      "cross_cos_max": 0.2838653800013499,
+      "acc_indirect": 0.94,
+      "dispatch": {
+        "third_input/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "third_input/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        },
+        "own_quale/same_pos": {
+          "m_C": true,
+          "delta_r": true,
+          "full": "DIRECT",
+          "membership_only": "DIRECT",
+          "eq51": "DIRECT"
+        },
+        "own_quale/diff_pos": {
+          "m_C": true,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "DIRECT",
+          "eq51": "S"
+        },
+        "other_quale/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "other_quale/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        }
+      },
+      "full_dispatch_fidelity": true,
+      "membership_misroutes": [
+        "own_quale/diff_pos"
+      ],
+      "eq51_misroutes": [
+        "third_input/same_pos",
+        "other_quale/same_pos"
+      ],
+      "membership_misroutes_own_broken": true
+    },
+    {
+      "seed": 42,
+      "r_direct_own": 1.0,
+      "r_direct_own_detail": {
+        "alice": 1.0,
+        "bob": 1.0
+      },
+      "own_cos_mean": 0.9379198153210417,
+      "r_direct_foreign": 0.0,
+      "r_direct_foreign_detail": {
+        "alice_to_bob": 0.0,
+        "bob_to_alice": 0.0
+      },
+      "cross_cos_max": 0.2576210338975552,
+      "acc_indirect": 0.93,
+      "dispatch": {
+        "third_input/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "third_input/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        },
+        "own_quale/same_pos": {
+          "m_C": true,
+          "delta_r": true,
+          "full": "DIRECT",
+          "membership_only": "DIRECT",
+          "eq51": "DIRECT"
+        },
+        "own_quale/diff_pos": {
+          "m_C": true,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "DIRECT",
+          "eq51": "S"
+        },
+        "other_quale/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "other_quale/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        }
+      },
+      "full_dispatch_fidelity": true,
+      "membership_misroutes": [
+        "own_quale/diff_pos"
+      ],
+      "eq51_misroutes": [
+        "third_input/same_pos",
+        "other_quale/same_pos"
+      ],
+      "membership_misroutes_own_broken": true
+    },
+    {
+      "seed": 99,
+      "r_direct_own": 1.0,
+      "r_direct_own_detail": {
+        "alice": 1.0,
+        "bob": 1.0
+      },
+      "own_cos_mean": 0.9320935980655423,
+      "r_direct_foreign": 0.0,
+      "r_direct_foreign_detail": {
+        "alice_to_bob": 0.0,
+        "bob_to_alice": 0.0
+      },
+      "cross_cos_max": 0.30531931600190976,
+      "acc_indirect": 0.895,
+      "dispatch": {
+        "third_input/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "third_input/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        },
+        "own_quale/same_pos": {
+          "m_C": true,
+          "delta_r": true,
+          "full": "DIRECT",
+          "membership_only": "DIRECT",
+          "eq51": "DIRECT"
+        },
+        "own_quale/diff_pos": {
+          "m_C": true,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "DIRECT",
+          "eq51": "S"
+        },
+        "other_quale/same_pos": {
+          "m_C": false,
+          "delta_r": true,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "DIRECT"
+        },
+        "other_quale/diff_pos": {
+          "m_C": false,
+          "delta_r": false,
+          "full": "S",
+          "membership_only": "S",
+          "eq51": "S"
+        }
+      },
+      "full_dispatch_fidelity": true,
+      "membership_misroutes": [
+        "own_quale/diff_pos"
+      ],
+      "eq51_misroutes": [
+        "third_input/same_pos",
+        "other_quale/same_pos"
+      ],
+      "membership_misroutes_own_broken": true
+    }
+  ],
+  "verdict": {
+    "verdict": "SUPPORTED",
+    "checks": {
+      "P1_direct_own": true,
+      "P2_empty_foreign": true,
+      "P3_channel_intact": true,
+      "null_a_instrument": true,
+      "null_b_delta_r_load_bearing": true,
+      "door_separability": true,
+      "calibration_selected": true
+    }
+  }
+}

@@ -15,6 +15,12 @@
 # Cadence '4-59/12' : minutes 4, 16, 28, 40, 52 -- jamais :00/:30 (jitter flotte),
 # jamais :31 (collision avec le cron du controleur), ecart max entre passages 12 min
 # < 15 min (critere de latence de l'issue).
+#
+# Ce cron n'a JAMAIS emis d'evenement schedule (mesure du 17/11 : un seul run,
+# en workflow_dispatch manuel, 7 h apres le merge) : la cadence REELLE est
+# portee par la minuterie locale ai-01 (`scripts/ci/install_overflow_probe_task.py`,
+# toutes les 12 min, phase :04 -- meme chemin que le declencheur du controleur).
+# Le cron de depot reste le filet si la minuterie locale meurt.
 name: CI overflow probe
 
 on:
