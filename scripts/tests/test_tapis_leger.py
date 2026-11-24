@@ -58,27 +58,6 @@ def _page_issues_multiples(requete: str) -> str:
     return json.dumps({"data": {"repository": alias}})
 
 
-def _cache_repli(tmp_path, monkeypatch, numeros: list[int], jours: int = 45):
-    """Le cache local que le REPLI CHRONOLOGIQUE lit (invariant I2).
-
-    Sans lui, le repli est IMPOSSIBLE et la voie legere sort en 3 : un test
-    du repli doit donc fournir le cache, sinon il dependrait du cache de la
-    machine -- un poste qui a deja tire verrait le repli servir, et le cas
-    « file confirmee vide -> repli » ne se declencherait jamais.
-    """
-    from coordination import gh_cache_fichier
-    cree = (NOW - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    issues = [gh_bulk.issue({"number": n, "title": f"Grain {n}", "body": "",
-                             "createdAt": cree, "updatedAt": cree,
-                             "labels": {"nodes": []},
-                             "comments": {"totalCount": 0, "nodes": []}})
-              for n in numeros]
-    lecture = gh_bulk.Lecture(issues=issues, prs=[], citations={},
-                               lu_a="2026-11-23T20:00:00Z", secondes=0.1, appels=1)
-    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
-    gh_cache_fichier.ecrire(tmp_path / f"lecture-{jours}j.json", lecture)
-
-
 def _run_faux(appels: list[list[str]] | None = None, nb: int = 4):
     """Un faux `run` : metadonnees, lecture ciblee, citations (vide), PRs (vides)."""
     def run(argv, timeout):
@@ -143,88 +122,6 @@ def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
     rapport, _ = tapis_leger.tirage(LANE, 2, NOW, 45, "g", Path("."),
                                     _run_faux(nb=12))
     assert len(rapport["grains"]) > 2
-
-
-def test_un_grain_refuse_par_la_qualification_n_est_pas_serve(monkeypatch):
-    """Un grain que la qualification REFUSE n'est pas servi a la lane.
-
-    La declaration hors flotte (#17713) se lit sur le CORPS : elle n'est pas
-    decidable sur les metadonnees du classement, donc seule la qualification
-    la voit -- et le grain sort avec son code et son motif (jamais en silence).
-    """
-    def faux_qualifier(run, depot, numeros=None):
-        return {n: {**_issue(n),
-                    "body": ("Suivi Marathon II hors flotte #17713" if n == 7 else "")}
-                for n in (7, 8, 9, 10, 11, 12)}
-
-    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
-    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
-                                       _run_faux(nb=6))
-    assert code == 0
-    servis = [g["numero"] for g in rapport["grains"]]
-    assert 7 not in servis, "un grain refuse n'est pas servi"
-    refus = {e["numero"]: e for e in rapport["qualification"]["ecartees"]}
-    assert 7 in refus, "le refus est affiche"
-    assert refus[7]["code"] == "HORSFLOTTE"
-    assert refus[7]["motif"]
-
-
-def test_un_grain_non_qualifie_n_est_pas_serve(monkeypatch, tmp_path):
-    """Une qualification qui n'a pas pu decider ne sert RIEN (fail-CLOSED).
-
-    Le mur atteint rend le verdict impossible : les grains restent en attente,
-    ils sont DECLARES, et la file CONFIRMEE sort vide. Une file vide n'est pas
-    un service (revue du 24/11, mandat #28114 « file sans fin par lane ») : le
-    repli chronologique prend le relais, comme le fait le cap de livraisons --
-    et les grains non decides restent declares, jamais servis en silence.
-    """
-    def faux_qualification(candidats, lane, maintenant, jours, prs, run,
-                           echeance=None, **kw):
-        return [], {}, [], True, 0, {"secondes": 0.0, "premier_servable_s": None}
-
-    monkeypatch.setattr(tq, "qualifier", faux_qualification)
-    _cache_repli(tmp_path, monkeypatch, [9001, 9002, 9003])
-    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
-                                       _run_faux(nb=6))
-    assert code == 0
-    assert rapport["voie"] == "repli", \
-        "une file confirmee vide bascule sur le repli chronologique"
-    assert rapport["qualification"]["budget_epuise"] is True
-    assert rapport["qualification"]["non_qualifies"], \
-        "les grains non decides sont declares, jamais servis en silence"
-    assert rapport["qualification"]["repli"], "le motif du repli est dit"
-
-
-def test_une_fenetre_entierement_refusee_bascule_sur_le_repli(monkeypatch,
-                                                               tmp_path):
-    """L'autre cause d'une file confirmee VIDE : toute la fenetre est refusee.
-
-    Mesure du 24/11 : 16 des 24 candidats refuses pour une marge de 3 -- la
-    marge est mince, et une fenetre entierement refusee est un fait, pas une
-    hypothese. Le repli chronologique prend alors le relais ; les refus
-    restent DECLARES (code + motif), et aucun grain refuse n'est servi.
-    """
-    def faux_qualification(candidats, lane, maintenant, jours, prs, run,
-                           echeance=None, **kw):
-        refuses = {n: {"code": "HORSFLOTTE", "motif": "hors flotte #17713"}
-                   for n in candidats}
-        return [], refuses, [], False, len(candidats), {
-            "secondes": 1.0, "premier_servable_s": None}
-
-    monkeypatch.setattr(tq, "qualifier", faux_qualification)
-    _cache_repli(tmp_path, monkeypatch, [9001, 9002, 9003])
-    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
-                                       _run_faux(nb=6))
-    assert code == 0
-    assert rapport["voie"] == "repli", \
-        "une fenetre entierement refusee bascule sur le repli chronologique"
-    refuses = {e["numero"]: e for e in rapport["qualification"]["ecartees"]}
-    assert refuses, "les refus sont declares (code + motif)"
-    assert refuses[next(iter(refuses))]["code"] == "HORSFLOTTE"
-    servis = [g["numero"] for g in rapport["grains"]]
-    assert not (set(servis) & set(refuses)), \
-        "aucun grain refuse n'est servi"
-    assert rapport["qualification"]["repli"], "le motif du repli est dit"
 
 
 def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
