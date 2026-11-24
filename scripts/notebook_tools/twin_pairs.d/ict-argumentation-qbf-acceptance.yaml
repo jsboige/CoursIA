@@ -9,4 +9,3 @@
     - "C# ajoute des lignes de controle CONFORME qui comparent chaque valeur lue a sa valeur attendue et levent sur ecart ; le Python imprime les memes verdicts sans comparaison formelle (24 lignes porteuses C# contre 19 Python)."
     - "Le moteur C# est autonome (AST Var/Not/And/Or/Implies/ForAll/Exists + DungEngine dans la cellule 2) ; le Python consomme les organes de ict/. Les sorties s'impriment au format Python (PyBool -> True/False) pour la parite litterale."
     - "Les verdicts porteurs (QBF VALID x | !x, INVALID x & !x, forall y. exists x -> True, preferes [['a','c'],['b','c']], sceptique a=False c=True, tweety [['a','c']]) coincident verbatim."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

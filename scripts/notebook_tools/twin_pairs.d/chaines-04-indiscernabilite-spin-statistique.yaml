@@ -10,4 +10,3 @@
     - "Le rang de Schmidt est mesure par elimination de Gauss sur Rationnel en C#, par SVD flottante a tolerance 1e-12 en Python : meme rang, methode exacte contre approchee."
     - "Le carnet C# ouvre par une cellule d'echauffement du type Rationnel local (2/16 -> 1/8, egalite 1/2 == 2/4) que le Python n'a pas ; la serie de calcul qui suit rejoue les memes cellules que la source (archetypes calcul / donnees citees / exercice)."
     - "Chaque valeur mesuree du C# est portee par une assertion executable qui leve sur divergence (renforcement explicite du port) ; la source Python imprimait les valeurs avec quelques assert seulement."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

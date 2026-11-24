@@ -8,4 +8,3 @@
   known_differences:
     - "C# orchestre NLTK via Python.NET et calcule les événements, perplexités et contrôles en BCL ; Python utilise directement NLTK."
     - "La figure Python utilise Matplotlib et le twin C# utilise un SVG statique."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

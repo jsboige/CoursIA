@@ -9,4 +9,3 @@
     - "Le solveur natif differe : Google OR-Tools CP-SAT en Python, Microsoft.Z3 (SMT) en C# ; les statuts canoniques (FEASIBLE/INFEASIBLE/UNKNOWN) et les chronometrages sont propres a chaque version."
     - "Les figures Matplotlib (Python) sont remplacees par des sorties textuelles et des SVG autonomes en C#."
     - "L'echantillonnage aleatoire de graphes cubiques (graine 42) peut produire des instances distinctes entre les deux versions ; les taux agreges (apex / planaire / snark) sont du meme ordre."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

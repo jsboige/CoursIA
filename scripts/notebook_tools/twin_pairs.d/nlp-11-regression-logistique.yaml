@@ -8,4 +8,3 @@
   known_differences:
     - "C# utilise MathNet et un générateur aléatoire distinct de NumPy : les données synthétiques et mesures diffèrent malgré le même protocole."
     - "Le témoin C# appelle scikit-learn via Python.NET sur ses propres matrices C#."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

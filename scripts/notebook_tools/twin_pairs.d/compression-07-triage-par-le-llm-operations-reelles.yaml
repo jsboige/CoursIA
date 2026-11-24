@@ -9,4 +9,3 @@
     - "Cote C#, zlib vient de la BCL (ZLibStream, SmallestSize), bz2 de SharpZipLib 1.4.2 et lzma de LZMA-SDK 22.1.1 (format ALONE) ; cote Python, les trois viennent de la bibliotheque standard. Les tailles compressees different donc legerement entre jumeaux."
     - "La coherence exigee est interne a chaque carnet : corpus serialise et rejeu utilisent les memes options de serialisation (indentation 1, Math.Round ToEven cote C# = round Python). La parite est pedagogique (meme sequence de 34 cellules, memes exercices), pas byte-a-byte."
     - "Les stubs d'exercice respectent C.1 de chaque cote : return None / pass cote Python, return null / collections vides cote C#, avec TODO etudiant."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."

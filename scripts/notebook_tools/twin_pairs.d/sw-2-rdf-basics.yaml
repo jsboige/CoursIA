@@ -12,4 +12,3 @@
     - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
     - "Lib-vs-lib : C# = `dotNetRDF 3.4.1` (`#r \"nuget: dotNetRDF, 3.4.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
     - "API idiomatique differente : C# via `Graph` + `IGraph` + `IUriNode`/`ILiteralNode` fortement types ; Python via `Graph()` + `URIRef`/`Literal` plus dynamiques. Meme fondement W3C RDF 1.1."
-    - "2026-11-24 (myia-po-2023:CoursIA-2, #23530) : strip outille de la banniere de bootstrap .NET Interactive dans les sorties du jumeau C# (sweep discovery #23530) -- parite semantique et verdicts inchanges ; re-attestation des SHAs au head."
