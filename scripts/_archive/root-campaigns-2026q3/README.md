@@ -17,9 +17,15 @@ Standard : [convention `_archive/`](../../../docs/reference/_archive-convention.
 | `variation_genre_recensement.py` | recensement initial G-VAR-2 livré (« le recensement est le livrable initial, pas l'organe ») | l'organe vivant `variation_light_cap.py` (calcul du budget, appelé par le picker) | #10290 (CLOSED) |
 | `variation_volet_bc.py` | mesure ponctuelle volets B+C (fenêtre G-VAR-2, DWELL) rendue | `variation_light_cap.py` + `check_adjoint_prevalidation.py --queue` (`dwell_until`) | #14591 (CLOSED) |
 | `remeasure_bad_pending.py` | re-mesure plateau acceptance #2 rendue (réutilise `pr_gate.classify()`, qui vit et reste la source) | `pr_gate.py` + `scripts/ci/pool_review_verdicts.py` | #12389 (CLOSED) |
-| `ict_jlens_layers.py` | pilote J-Lens dose fixée du pilote de triangulation causale — étude conclue | l'étude publiée du pilote ; `scripts/repro/` pour toute reprise | #15480 (CLOSED) |
-| `ict_pilot_transformer.py` | petit transformer hookable du même pilote — étude conclue | idem | #15480 (CLOSED) |
+| `ict_jlens_layers.py` | **sorti de l'archive le 2026-11-20** — le carnet ICT-40a redevient actif (#27627) : le pilote J-Lens dose fixée n'est donc plus une étude close | `MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict_jlens_layers.py`, rejoué par ICT-40a | #15480 (CLOSED), #27627 |
+| `ict_pilot_transformer.py` | **sorti de l'archive le 2026-11-20** — même cause : le petit transformer hookable redevient le moteur du carnet | `MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict_pilot_transformer.py` | #15480 (CLOSED), #27627 |
 | `test_*.py` | tests des scripts ci-dessus, déplacés avec eux — hors `testpaths`, ils n'entrent plus dans la collecte pytest | couverture des successeurs cités | issue #25366 |
+
+**Sortie du 2026-11-20 (#27627)** : `ict_jlens_layers.py`, `ict_pilot_transformer.py`
+et leurs deux tests sont retournés dans la série ICT (`MyIA.AI.Notebooks/IIT/ICT-Series/scripts/`)
+avec le carnet ICT-40a, dont ils sont le moteur. Les trois autres scripts et leurs
+tests restent ici. Rien n'a été supprimé : le déplacement reste un `git mv`, et
+l'historique conserve la trace des deux adressages.
 
 ## Pourquoi `git mv` et pas suppression
 
