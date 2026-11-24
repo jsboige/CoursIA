@@ -150,6 +150,11 @@ from delivery_grammar import (  # noqa: E402
     attestation_state,
     delivery_state,
 )
+# #28114 -- le signal « le chemin cible est sur main » : il SOUPCONNE une
+# livraison, il ne la conclut pas. Le calcul (les chemins nommes, ce que
+# `main` en dit) vit dans un module a part, qui ne decide de rien : ici
+# seul le verdict est lu.
+import candidate_delivered_chemins  # noqa: E402
 
 LABEL_DEFAULT = "candidate-delivered"
 
@@ -368,7 +373,13 @@ def classify(
                               closing keyword (`Closes`/`Fixes`/`Resolves`):
                               a tranche is not a delivery (#23762)
         ``"active"``       -- a comment landed after the latest merge
-        ``"candidate"``    -- delivered + silent: pose the label
+        ``"candidate"``    -- delivered + silent: pose the label. Depuis
+                              #28114, aussi : une **SUSPICION** de livraison
+                              (le fil porte `[INFO] suspicion-livraison` --
+                              le chemin cible a bouge sur `main` apres le
+                              dernier mouvement de l'issue). Une suspicion
+                              n'est pas une preuve : elle route le grain
+                              vers l'urne, elle ne clot rien.
         ``"attested"``     -- the thread carries a LIVING attestation:
                               the `[INFO] candidate-delivered` forms,
                               `[RELEASED] ... acceptance deja couverte`, or
@@ -498,6 +509,27 @@ def classify(
             parts.append(f"open PR(s) {prs} reference it via comments only "
                          f"(cross-referenced contextual mention, undeclared)")
         return ("in_flight", "; ".join(parts))
+
+    # #28114 -- la SUSPICION de livraison : le fil porte le marqueur
+    # `[INFO] suspicion-livraison`, pose par l'organe qui a compare le
+    # chemin cible au contenu de `main` (`candidate_delivered_chemins`).
+    # Ce n'est PAS une livraison constatee -- aucune PR mergee ne declare
+    # l'issue -- mais c'est assez pour que le grain cesse d'etre servi
+    # comme neuf : il part a l'URNE, avec le label candidat, et la decision
+    # de cloture revient au coordinateur et a l'adjoint, qui lisent les
+    # criteres.
+    #
+    # La branche se place APRES `in_flight` (une PR ouverte dit que le
+    # travail est en cours : le grain doit rester servi) et AVANT les
+    # references (une PR mergee qui ne cite pas l'issue ne dit rien du
+    # chemin cible : c'est justement ce cas que le signal couvre).
+    suspicion = candidate_delivered_chemins.suspicion_dans_le_fil(bodies)
+    if suspicion:
+        return ("candidate",
+                f"SUSPICION -- {suspicion} : le chemin cible a bouge sur "
+                f"`main` apres le dernier mouvement de l'issue. Ce n'est pas "
+                f"une preuve de livraison -- le grain part a l'urne (label "
+                f"candidat) et la cloture revient au coordinateur")
 
     merged = [r for r in cross_refs if r.get("merged_at")]
     if not merged:
