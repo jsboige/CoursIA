@@ -21,7 +21,7 @@ Tous les scripts GPU partagent l'entraînement sécurisé thermiquement via `sha
 - **Vous voulez relire un verdict** : la table [Les carnets de recherche](#les-carnets-de-recherche) récapitule chaque carnet, la question qu'il pose et le verdict mesuré.
 - **Vous voulez comprendre les fils méthodologiques** : [Approfondissements](#approfondissements) indexe les axes qui traversent les carnets (le triptyque des échecs vol, le contraste action vs forecast, le registre §C).
 - **Vous voulez re-entraîner un modèle** : [Démarrage rapide](#demarrage-rapide) et [Modèles](#modeles) documentent les scripts, leurs hyperparamètres et les commandes GPU recommandées.
-- Les nombres d'inventaire (carnets par catégorie, maturité) vivent dans le [catalogue généré](../../COURSE_CATALOG.generated.md) et le bloc `CATALOG-STATUS` en tête ; ce README ne les recopie pas.
+- Les nombres d'inventaire (carnets par catégorie, maturité) vivent dans le [catalogue généré](../../../COURSE_CATALOG.generated.md) et le bloc `CATALOG-STATUS` en tête ; ce README ne les recopie pas.
 
 ## Aperçu — la diversité méthodologique du pipeline en images
 
