@@ -1,0 +1,7 @@
+date: '2026-11-23'
+by: myia-po-2024:CoursIA
+python_sha: fdc0b8b9cc92eb9a856dc11a342a677b972e714b
+csharp_sha: 5d7adb8522748689d7a740cf1e050c98c8fe943e
+content_python_sha: d1a6969dc809f7e05b7f7768af4f0a096254dc25c229ba28b9488e7d090cd789
+content_csharp_sha: b8fd39b5299e93dca954e630db42a307054128a784a9abb7ddd3d3e8b5525384
+reason: Ancres Referenced BOOK_MAPPING (#19274, PR #28217) : cellule markdown '## References' ajoutee cote Python uniquement — markdown-only, aucune re-execution due (C.2), sources/outputs/exec_counts intacts.

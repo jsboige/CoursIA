@@ -12,9 +12,10 @@ Ce module fait la rotation **sur les metadonnees seules** :
   date, labels -- et le signal du **travail reel** (les commits de
   `origin/main` qui citent l'issue). Une apparition dans une liste n'est pas
   une visite ;
-- la rotation porte sur **toutes** les issues ouvertes, sans ecarter : ce
-  sont les verifications (claim, gel, contenu livre) qui se font **a la prise
-  en charge**, par le lecteur existant, sur le grain servi ;
+- la rotation porte sur **toutes** les issues ouvertes : les verifications
+  (claim, gel, contenu livre) se font **a la prise en charge**, par le lecteur
+  existant, sur le grain servi ; seules les exclusions en **donnees** (un
+  label d'exclusion pose sur l'issue) sont ecartees des la lecture ;
 - chaque grain servi porte son **etat et l'action a faire**, jamais une
   exclusion silencieuse.
 
@@ -30,9 +31,12 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coordination import gh_bulk, gh_selection, tapis_equilibre, tapis_marqueurs
-from coordination import tapis_citations
+from coordination import gh_bulk, gh_selection, tapis_citations, tapis_equilibre, tapis_labels, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
+# Le rapport a son propre fichier (extraction pour tenir le plafond de lignes
+# de ce module, comme `tapis_leger_texte` pour `tapis_leger`) ; l'alias garde
+# les appelants intacts (`tapis_universel.rapport`, tests).
+from coordination.tapis_universel_rapport import rapport
 
 
 def _parent_de_titre(titre: str) -> int | None:
@@ -51,19 +55,30 @@ def _parent_de_titre(titre: str) -> int | None:
 def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
                 maintenant: datetime,
                 citations_ouvertes: dict[int, list[dict]] | None = None) -> list[Etat]:
-    """Un etat par issue ouverte, sur les metadonnees seules.
+    """Un etat par issue **servable**, sur les metadonnees seules.
 
     Les visites comptent le **travail reel** : les commits qui citent l'issue,
     et les PRs **ouvertes** qui la citent (le travail en cours compte aussi).
     Les marqueurs de visite vivent dans les commentaires -- ils sont lus a la
-    prise en charge, pas au classement."""
+    prise en charge, pas au classement.
+
+    Les exclusions en **donnees** (I5) se decident ICI, sur les labels de
+    l'issue : un label d'exclusion (`tapis_labels.ecart_label`) ecarte le
+    grain, comme le fait deja le tirage complet (`tapis_rapide._decider`).
+    C'est le point de passage commun de la voie legere, des VAGUES et du
+    REPLI chronologique : les trois lisent cette fonction, donc les trois
+    ecarteront un grain en pause. Le rapport les PUBLIE
+    (`tapis_labels.ecartees`) : une exclusion n'est jamais silencieuse."""
     etats = []
     for it in metas:
         n = int(it["number"])
         labels = list(it.get("labels") or [])
-        parent = _parent_de_titre(it.get("title") or "")
-        e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "",
-                 parent, parent or n, False,
+        if tapis_labels.ecart_label(labels):
+            continue  # exclusion en donnees : le grain n'est pas servable
+        titre = it.get("title") or ""
+        parent = _parent_de_titre(titre)
+        e = Etat(n, titre, labels, it.get("created_at") or "",
+                 parent, parent or n, tapis_rapide._conteneur_de(titre, labels),
                  any(lab.strip().lower() == "consolidation" for lab in labels))
         cites = citations.get(n, []) + (citations_ouvertes or {}).get(n, [])
         e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
@@ -73,36 +88,17 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
 
 
 def rotation_universelle(etats_: list[Etat], lane: str, maintenant: datetime,
-                          grains: int, graine: str | None = None) -> list[Etat]:
+                          grains: int, graine: str | None = None,
+                          rotation: bool = True) -> list[Etat]:
     """La rotation de TOUTES les issues ouvertes, sans ecarter.
 
     L'ordre est celui de `tapis_equilibre` : niveau croissant (visites du
-    tour moins les priorites legeres), puis le decalage de tete par lane."""
-    return ordonner(etats_, lane, maintenant, grains, graine)
+    tour moins les priorites legeres), puis le decalage de tete par lane.
 
-
-def action_de(e: Etat, lane: str) -> str:
-    """Ce que la lane doit faire de ce grain : le lire, le qualifier, le servir."""
-    base = (f"lire l'issue #{e.numero}, la qualifier (claim vivant, gel, "
-            f"contenu deja livre) puis la servir")
-    if e.consolidation:
-        base += " -- issue de consolidation"
-    return base
-
-
-def rapport(etats_: list[Etat], file: list[Etat], lane: str, maintenant: datetime,
-            lecture: dict) -> dict:
-    """Le rapport du tirage universel : les grains, leur etat, l'action, la mesure."""
-    conso = tapis_equilibre.familles_consolidation(etats_)
-    return {
-        "lane": lane, "maintenant": tapis_marqueurs._iso(maintenant),
-        "lecture": lecture, "pool": len(etats_),
-        "grains": [{"numero": e.numero, "titre": e.titre,
-                    "visites": e.visites, "visites_total": e.visites_total,
-                    "consolidation": e.consolidation,
-                    "priorite": tapis_equilibre.raisons(e, conso, maintenant),
-                    "action": action_de(e, lane)} for e in file],
-    }
+    `rotation=False` rend l'ordre **fair** (le decalage de tete par lane
+    n'est pas applique) : la voie legere s'en sert, parce que sa FENETRE
+    doit pouvoir etre un bloc contigu du pool classe."""
+    return ordonner(etats_, lane, maintenant, grains, graine, rotation=rotation)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -136,7 +132,8 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     file = rotation_universelle(etats_, args.lane, maintenant, args.grains,
                                 graine_defaut(args.lane, maintenant))
     r = rapport(etats_, file, args.lane, maintenant,
-                {"issues": len(metas), "secondes": duree, "budget_s": args.budget_s})
+                {"issues": len(metas), "secondes": duree, "budget_s": args.budget_s},
+                ecartees=tapis_labels.ecartees(metas))
     out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else "\n".join(
         f"#{g['numero']} {g['titre'][:70]} -- {g['action']}" for g in r["grains"])
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))

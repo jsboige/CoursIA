@@ -34055,7 +34055,7 @@ c'est choisir son budget d'erreur — un compromis honnête, quantitatif, et qui
 ",,,,,,,,6867613e04b7ad98,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb,153addc9,markdown,fr,bf65ec6998ea23e5,"# Search-03e : A* et l'optimalité sous heuristique admissible — visite formelle de `search_lean`
 
-**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
+**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
 
 **Kernel** : Python 3 (extraits Mathlib/search_lean exhibés via `subprocess` -> WSL `lean`)
 
@@ -34705,7 +34705,7 @@ l'algorithme complet.
 - **Série** : les autres lakes #4038 (`sensitivity_lean`, `finiteness_lean`…) et
   leurs compagnons Lean-N.
 
-**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
+**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
 
 
 ***
@@ -38985,12 +38985,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 - **Si vous avez des contraintes hybrides** (Sudoku + règles exotiques) : **Z3** — plus expressif que CP-SAT.
 
 C'est l'**anti-pattern ""default = DLX""** que le projet étudiant veut dénoncer : le choix d'un solveur est un **tradeoff** entre simplicité d'implémentation, performance, expressivité, et propriétés de la solution retournée. Le **bon** choix dépend du contexte.",,,,,,,,5f08b0e48493305f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,13c542bc,markdown,fr,5825b2e91df29fd6,"## 8. Deuxième terrain : Puissance 4 (tranche 2/3)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,13c542bc,markdown,fr,e5ed5a8ccbbd11d0,"## 8. Deuxième terrain : Puissance 4 (tranche 2/3)
 
 La tranche 1 a comparé six paradigmes sur un problème de **satisfaction de contraintes**. Le projet étudiant distillé (cf. §9) en couvre deux autres ; cette tranche applique le même protocole au **Puissance 4** — un **jeu adversarial à somme nulle, information parfaite**.
 
-Les algorithmes eux-mêmes (minimax, élagage alpha-beta, MCTS) sont enseignés en détail dans [`App-12b-ConnectFour`](../Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) (moteur de jeu, baseline aléatoire, alpha-beta) et [`App-14-ConnectFour-Adversarial`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) (minimax, alpha-beta, MCTS, benchmark mono-position). **Ce notebook ne les ré-enseigne pas** : il pose la question de la **sélection** — même harnais, même timeout, mêmes métriques, mais un terrain dont la nature change ce que « bien résoudre » veut dire.
-",,,,,,,,5825b2e91df29fd6,,,,,,,,,,,,,,,
+Les algorithmes eux-mêmes (minimax, élagage alpha-beta, MCTS) sont enseignés en détail dans [`App-12-ConnectFour-Python`](../Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) (moteur de jeu, baseline aléatoire, alpha-beta) et [`App-14-ConnectFour-Adversarial-Python`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) (minimax, alpha-beta, MCTS, benchmark mono-position). **Ce notebook ne les ré-enseigne pas** : il pose la question de la **sélection** — même harnais, même timeout, mêmes métriques, mais un terrain dont la nature change ce que « bien résoudre » veut dire.
+",,,,,,,,e5ed5a8ccbbd11d0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,fc545090,markdown,fr,f15edc9d81c4f51b,"### 8.1 Ce qui change quand le problème devient adversarial
 
 | Axe | Sudoku (tranche 1) | Puissance 4 (tranche 2) |
@@ -39420,12 +39420,12 @@ df_sweep
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,57c31931,markdown,fr,e5d60f594d1a1700,"**Lecture** : l'ordre entre écoles **dépend du budget, sans être monotone pour personne**. Pour un budget de nœuds comparable (1000 contre 776 par coup), `mcts_1000` (accord 0.67) devance `alphabeta_d4` (0.50) — sans heuristique experte, le budget de simulations achète de la qualité. À budget serré c'est l'inverse : `alphabeta_d2` (39 nœuds/coup, 0.67) écrase `mcts_200` (200 nœuds, 0.17) — un élagage profond vaut mieux qu'un arbre incomplet. À budget large, `alphabeta_d6` retrouve la référence (1.00, par construction : c'est elle) au prix de 2.7× les nœuds de `mcts_5000` (0.50). Et la progression n'est monotone nulle part : MCTS fait 0.17 → 0.67 → 0.50, la profondeur 0.67 → 0.50 → 1.00. Sur 6 positions grainées, l'accord est un estimateur bruité — une leçon de protocole en soi : la sélection mesurée exige assez d'instances pour distinguer signal et variance.
 
 Recommandation pratique, terrain 2 : budget serré → `alphabeta_d2` ; budget médian → `mcts_1000` ; qualité maximale → `alphabeta_d6` ; jamais `minimax` sans élagage — même accord qu'`alphabeta_d4` (0.50 = 0.50) pour 3.4× les nœuds, la mesure du profit de l'élagage.",,,,,,,,e5d60f594d1a1700,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,61dba7b2,markdown,fr,721ef75cb3843d45,"### 8.7 Renvois
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,61dba7b2,markdown,fr,4f5d261a3655faee,"### 8.7 Renvois
 
-- [`App-12b-ConnectFour`](../Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) — moteur, baseline aléatoire, alpha-beta (cours détaillé).
-- [`App-14-ConnectFour-Adversarial`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) — minimax, alpha-beta, MCTS et benchmark mono-position par profondeur.
+- [`App-12-ConnectFour-Python`](../Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) — moteur, baseline aléatoire, alpha-beta (cours détaillé).
+- [`App-14-ConnectFour-Adversarial-Python`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) — minimax, alpha-beta, MCTS et benchmark mono-position par profondeur.
 - Tranche 3/3 (Wordle — élimination bayésienne / entropie / CSP) : à venir, même protocole.
-",,,,,,,,721ef75cb3843d45,,,,,,,,,,,,,,,
+",,,,,,,,4f5d261a3655faee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,36eb0d8b,markdown,fr,b43505fb4056e37a,## Exercices,,,,,,,,b43505fb4056e37a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4fe07791c02e33e8,"### Exemple guidé 1 — L'effet du budget temps sur la sélection (crédité #25579 — janok181)
 

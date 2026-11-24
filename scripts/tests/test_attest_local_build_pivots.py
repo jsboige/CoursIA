@@ -1,7 +1,7 @@
 """Temoins du correctif #26630 -- le cache chaud se RESOUT par toolchain.
 
 Le defaut : `attest_local_build.py` connaissait UN SEUL pivot de cache chaud,
-`GOL/conway_lean` (toolchain `v4.33.0`). Tout lake dont la toolchain differe
+`JeuDeLaVie/conway_lean` (toolchain `v4.33.0`). Tout lake dont la toolchain differe
 etait donc refuse AVANT tout build -- `lean-toolchain different du cache --
 cache chaud non applicable` -- et les PRs qui touchaient ces lakes etaient
 inmergeables par construction. Mesure sur `origin/main` le 14/11 : sur les 36
@@ -620,4 +620,106 @@ def test_le_nom_du_repertoire_est_le_nom_nu():
     assert alb._package_dir_name("«axiom-audit»") == "axiom-audit"
     assert alb._package_dir_name("«doc-gen4»") == "doc-gen4"
     assert alb._package_dir_name("mathlib") == "mathlib"
+
+
+# --- 6. les paquets de type `path` -----------------------------------------
+#
+# Un paquet `path` ne se materialise JAMAIS sous `.lake/packages/<nom>` : il
+# vit a son `dir`, relatif au lake qui le declare. L'exiger sous
+# `.lake/packages/<nom>` le declare TOUJOURS absent, quel que soit son
+# prechauffage -- le lac entier est alors ecarte avec le motif
+# `no-warm-cache-for-toolchain`.
+#
+# Mesure du 22/11 sur ai-01, lac `busybeaver_lean` : le manifeste declare
+# `Foundation` en `type: path`, `dir: .lake/packages/pa196/PA196/vendor/Foundation`
+# (paquet herite du `git` `pa196`). Le repertoire EXISTE dans le pivot
+# prechauffe `D:/coursia-lean-pivots/busybeaver`, mais la sonde rendait
+# `(False, 'packages incomplets : Foundation absent')`. Instance : #27923.
+
+
+def _manifest_avec_paquet_path(lake: Path, name: str, dir_rel: str) -> Path:
+    """Ecrit le `lake-manifest.json` qui declare un paquet de type `path`."""
+    payload = {
+        "version": "1.1.0",
+        "packagesDir": ".lake/packages",
+        "packages": [
+            {
+                "name": name,
+                "type": "path",
+                "dir": dir_rel,
+                "inherited": False,
+                "scope": "",
+            }
+        ],
+    }
+    manifest = lake / "lake-manifest.json"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    return manifest
+
+
+def test_un_paquet_path_present_a_son_dir_est_servi(tmp_path):
+    """POSITIF : un paquet `path` se verifie a SON `dir` -- present, il ne
+    declare pas le lac froid. C'est le cas mesure sur `busybeaver_lean`."""
+    lake = _lake(tmp_path / "lakes", "busybeaver_lean", V4331)
+    pivot = _lake(tmp_path / "pivots", "warm", V4331, warm=True)
+    dir_rel = ".lake/packages/pa196/PA196/vendor/Foundation"
+    _manifest_avec_paquet_path(lake, "Foundation", dir_rel)
+    served = pivot / ".lake" / "packages" / "pa196" / "PA196" / "vendor" / "Foundation"
+    served.mkdir(parents=True)
+    (served / "lakefile.toml").write_text("", encoding="utf-8")
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is True
+    assert Path(verdict["pivot"]) == pivot
+
+
+def test_un_paquet_path_sans_son_dir_est_refuse(tmp_path):
+    """NEGATIF : le `dir` du paquet `path` est absent -- le motif nomme le
+    paquet ET son `dir` (le verdict doit dire QUOI manque)."""
+    lake = _lake(tmp_path / "lakes", "busybeaver_lean", V4331)
+    pivot = _lake(tmp_path / "pivots", "warm", V4331, warm=True)
+    dir_rel = ".lake/packages/pa196/PA196/vendor/Foundation"
+    _manifest_avec_paquet_path(lake, "Foundation", dir_rel)
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert verdict["reason"] == alb.NO_WARM_CACHE
+    assert any(
+        "Foundation" in r and "absent" in r and "pa196" in r
+        for r in verdict["rejects"]
+    ), verdict["rejects"]
+
+
+def test_un_paquet_path_hors_packages_est_servi_par_son_proprietaire(tmp_path):
+    """POSITIF : un paquet `path` dont le `dir` sort de `.lake/packages`
+    (paquet frere dans l'arbre) est servi par le PROPRIETAIRE du lac, pas
+    par le dossier de paquets du pivot."""
+    lake = _lake(tmp_path / "lakes", "asymmetric_information_lean", V4331)
+    pivot = _lake(tmp_path / "pivots", "warm", V4331, warm=True)
+    _manifest_avec_paquet_path(lake, "lean_game_defs_ext", "../lean_game_defs_ext")
+    frere = tmp_path / "lakes" / "lean_game_defs_ext"
+    frere.mkdir(parents=True)
+    (frere / "lakefile.lean").write_text("", encoding="utf-8")
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is True
+    assert Path(verdict["pivot"]) == pivot
+
+
+def test_un_paquet_git_absent_reste_refuse(tmp_path):
+    """NEGATIF : la correction ne rend pas INDISTINCT un paquet `git` absent
+    -- le regime de materialisation des paquets `git` est inchange."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    _manifest_de_paquets(lake, ["batteries", "«axiom-audit»"])
+    pivot = _lake(
+        tmp_path / "pivots", "warm", V4331, warm=True, packages=["batteries"],
+    )
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert any("axiom-audit" in r for r in verdict["rejects"])
     assert alb._package_dir_name("  batteries  ") == "batteries"
