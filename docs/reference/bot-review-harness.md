@@ -1,6 +1,6 @@
 # Bot Review Harness — pointer externe
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 > **Issue** : #16635 (résidu de #13517) — la mise à jour de harnais prescrite par #13517 aux deux bots Hermes et NanoClaw n'avait aucune surface citée dans le dépôt CoursIA. Ce fichier comble ce trou par un pointeur explicite.
 
@@ -41,7 +41,7 @@ Pour constater l'état de la MAJ côté bots :
 
 ## Voir aussi
 
-- `docs/transients/2026-05-17-reference-audit-reassessment-findings.md` — règle `.claude/rules/audit-reassessment.md` (≈60 % FP mesurés sur échantillon initial, ramené à < 5 % par le protocole de vérification — protocole issu de l'issue [#499](https://github.com/jsboige/CoursIA/issues/499), trace dans `docs/archive/stabilization-phase1-matrix.md` l. 72) — déplacé en lane transiente (tranche 3b #14623)
+- `docs/reference/audit-reassessment-findings.md` — règle `.claude/rules/audit-reassessment.md` (≈60 % FP mesurés sur échantillon initial, ramené à < 5 % par le protocole de vérification — protocole issu de l'issue [#499](https://github.com/jsboige/CoursIA/issues/499), trace dans `docs/archive/stabilization-phase1-matrix.md` l. 72)
 - `docs/reference/pr-review-context.md` — règle §D.6 + incidents fondateurs `#3473`/`#11685`/`#13517` (…)
 - Issue `jsboige/CoursIA#13517` (CLOSED) — origine du résidu
 - Issue `jsboige/CoursIA#16635` (cette issue) — résolu par ce pointeur

@@ -1,4 +1,4 @@
-> RAPPORT — 2026-07-04 — Lean i18n : inventaire FR/EN et proposition de convention (cycle 38) — figé
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980)
 

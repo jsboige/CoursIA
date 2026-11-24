@@ -1,7 +1,7 @@
 # Chantier 1 — tranche A8 : conditions de rétrogradation pour chaque entrée de la TABLE
 
 **EPIC** : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · **lane** `myia-po-2027:CoursIA` · **date de mesure** 2026-10-15
-**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) · [A3](12204-ict-chantier-1-a3.md) · [A4](12204-ict-chantier-1-a4.md) · [A5](12204-ict-chantier-1-a5.md) · [A6](12204-ict-chantier-1-a6.md) · [A7](12204-ict-chantier-1-a7.md) · [audit froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md)
+**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) · [A3](12204-ict-chantier-1-a3.md) · [A4](12204-ict-chantier-1-a4.md) · [A5](12204-ict-chantier-1-a5.md) · [A6](12204-ict-chantier-1-a6.md) · [A7](12204-ict-chantier-1-a7.md) · [audit froid](12204-ict-chantier-1-audit-froid.md)
 
 ## Ce que cette tranche fait
 
@@ -35,7 +35,7 @@ La **Loi IV** (admission) n'est pas une entrée de la table et ne porte pas de c
 ## Ce que cette tranche ne fait pas
 
 - Elle ne **statue** sur aucune promotion ni descente : les 12 entrées restent où A7 les a laissées. A8 équipe, il ne juge pas.
-- Elle ne **modifie pas** la table maîtresse ([audit-froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md)) : les conditions vivent ici, et le body de l'EPIC renvoie à ce fichier (effet demandé ci-dessous).
+- Elle ne **modifie pas** la table maîtresse ([audit-froid](12204-ict-chantier-1-audit-froid.md)) : les conditions vivent ici, et le body de l'EPIC renvoie à ce fichier (effet demandé ci-dessous).
 - Elle ne **prétend pas** que les conditions sont exhaustives : une relecture ultérieure peut en ajouter sans invalider celles-ci. Le format est un plancher, pas un plafond.
 
 ## Effet demandé sur le body de l'EPIC
@@ -58,5 +58,5 @@ Et dans le §1 (critère d'admission), une phrase : « Depuis A8 (2026-10-15), t
 
 - Arbitrage coordinateur (format d'admission à trois champs) : [issuecomment-6179879158](https://github.com/jsboige/CoursIA/issues/12204#issuecomment-6179879158)
 - Table finale (post-A7) : [A7 §État final](12204-ict-chantier-1-a7.md)
-- Table maîtresse labellisée : [audit-froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md)
+- Table maîtresse labellisée : [audit-froid](12204-ict-chantier-1-audit-froid.md)
 - EPIC : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · claim : [issuecomment-6179879158](https://github.com/jsboige/CoursIA/issues/12204#issuecomment-6179879158) (dispatch ai-01)

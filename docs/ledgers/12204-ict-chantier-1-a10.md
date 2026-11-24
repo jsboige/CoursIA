@@ -55,7 +55,7 @@ La table numérotée est **complète pour les dix opérations du premier jet** (
 ## Ce que cette tranche ne fait pas
 
 - Elle ne statue **ni** sur l'op 3 **ni** sur l'op 5 : leurs secondes attestations sont **livrées et fondues** (#19109 op 3 → Search-03b, #19112 op 5 → Search-03f, mergées le 05/10 — cf. la file d'attente ci-dessus). Ce qui reste à faire pour elles est la **statuation** — leur promotion en TABLE, au format de preuve et à la condition de rétrogradation que cette tranche établit pour l'op 2 — et non la livraison des dossiers : statuer ici mêlerait ce chantier à une instruction menée ailleurs.
-- Elle ne modifie **pas** la table maîtresse labellisée ([audit-froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md)) ni les ledgers A2-A9 : la promotion vit dans ce ledger, le body de l'EPIC en rend compte (effet demandé ci-dessous).
+- Elle ne modifie **pas** la table maîtresse labellisée ([audit-froid](12204-ict-chantier-1-audit-froid.md)) ni les ledgers A2-A9 : la promotion vit dans ce ledger, le body de l'EPIC en rend compte (effet demandé ci-dessous).
 - Elle n'étend **pas** la condition de rétrogradation aux 12 entrées existantes : celles d'[A8](12204-ict-chantier-1-a8.md) restent la référence ; la condition ci-dessus équipe **l'entrée nouvelle**.
 
 ## Effet demandé sur le body de l'EPIC

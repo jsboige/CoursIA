@@ -1,7 +1,7 @@
 # Chantier 1 — tranche A9 : seconde attestation in-repo de l'op 2 « Abstraire à dette bornée »
 
 **EPIC** : [#12204](https://github.com/jsboige/CoursIA/issues/12204) · **lane** `myia-po-2027:CoursIA` · **date de mesure** 2026-10-15
-**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (op 1) · [A3](12204-ict-chantier-1-a3.md) (ops 3, 9) · [A4](12204-ict-chantier-1-a4.md) (op 4) · [A5](12204-ict-chantier-1-a5.md) (ops 2, 6, 10) · [A6](12204-ict-chantier-1-a6.md) (statuation 11-13 + file d'attente) · [A7](12204-ict-chantier-1-a7.md) (statuations ops 2, 6, quatrième loi) · A8 (conditions de rétrogradation, PR [#20814](https://github.com/jsboige/CoursIA/pull/20814) en attente) · [audit froid](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
+**Tranches sœurs** : [A2](12204-ict-chantier-1-a2.md) (op 1) · [A3](12204-ict-chantier-1-a3.md) (ops 3, 9) · [A4](12204-ict-chantier-1-a4.md) (op 4) · [A5](12204-ict-chantier-1-a5.md) (ops 2, 6, 10) · [A6](12204-ict-chantier-1-a6.md) (statuation 11-13 + file d'attente) · [A7](12204-ict-chantier-1-a7.md) (statuations ops 2, 6, quatrième loi) · A8 (conditions de rétrogradation, PR [#20814](https://github.com/jsboige/CoursIA/pull/20814) en attente) · [audit froid](12204-ict-chantier-1-audit-froid.md) (les 14 opérations, trois axes)
 
 ## Ce que cette tranche fait
 
