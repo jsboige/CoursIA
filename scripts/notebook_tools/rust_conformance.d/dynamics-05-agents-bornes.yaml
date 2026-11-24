@@ -1,0 +1,271 @@
+# Conformite differentielle du triplet Dynamics-05 Agents-Bornes (Pli Rust, issue #27797).
+#
+# Le portage Rust (kernel evcxr, crate `std` seule, aucune directive `:dep`)
+# reprend le jumeau Python (`Dynamics-05-Agents-Bornes-Python.ipynb`, 37
+# cellules, 11 code) dans la MEME structure de cellules : meme index, meme
+# fil pedagogique, meme ordre de sortie. Les 11 cellules de code sont
+# autonomes (chaque cellule redonne ses types, ses organes et sa famille).
+#
+# Ecarts de forme declares (le jumeau C# existe mais imprime des formes
+# differentes) :
+#
+# * le jumeau C# affiche l'agent sous forme d'enregistrement .NET
+#   (`BoundedAgent { Code = CooperateBot, Budget = 0 }`) la ou Python et Rust
+#   affichent le `__repr__` Python (`BoundedAgent(COOPERATE_BOT, budget=0)`) ;
+# * le jumeau C# affiche la matrice des issues sans le remplissage a 12
+#   colonnes, et sans le titre long ;
+# * le jumeau C# n'affiche pas le dictionnaire `PD canonique` ;
+# * le jumeau C# marque ses certificats `C#=True` la ou Python et Rust
+#   marquent `Python=True` (libelle herite du tableau de reference) ;
+# * le jumeau C# resume chaque exercice en une ligne
+#   (`Exercice 1 a completer.`) la ou Python et Rust gardent les deux lignes
+#   de titre (intitule + indice).
+#
+# Ces cotes sont declares ABSENTS avec leur motif : l'absence est un fait
+# DECLARE, pas une mesure manquante. Les grandeurs strictement partagees
+# (budgets des trois agents, quatre gains canoniques, compte des
+# certificats) sont comparees sur les TROIS cotes.
+#
+# Le triplet Python/Rust est verifie cellule a cellule : stdout identique au
+# caractere pres sur les 11 cellules de code (0 divergence).
+#
+# Base de cette comparaison (22/11, myia-ai-01:CoursIA-2) : une PASSE evcxr
+# REELLE du carnet Rust (kernel `rust`, papermill), et non une copie de
+# l'artefact Python. Une cellule evcxr dont la derniere forme est une
+# expression (bloc `for ... { }`, `if ... { }`) emet un `execute_result` `()`
+# que le jumeau Python n'a pas : les cinq cellules concernees (6, 12, 17, 19,
+# 32) sont donc terminees par `;`, ce qui fait du bloc une instruction.
+# Sans ce `;`, la comparaison Rust/Python echoue sur une ligne de trop par
+# cellule -- et le carnet doit porter cette convention, pas la comparaison.
+- name: "Dynamics-05 Agents-Bornes"
+  family: GameTheory/Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Rust.ipynb
+  measures:
+    - id: family_cooperate_budget
+      description: "Budget du bot cooperateur de la famille temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "BoundedAgent\\(COOPERATE_BOT, budget=(\\d+)\\)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "BoundedAgent\\(COOPERATE_BOT, budget=(\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 3
+          pattern: "Code = CooperateBot, Budget = (\\d+)"
+          transform: int
+    - id: family_defect_budget
+      description: "Budget du bot defecteur de la famille temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "BoundedAgent\\(DEFECT_BOT, budget=(\\d+)\\)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "BoundedAgent\\(DEFECT_BOT, budget=(\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 3
+          pattern: "Code = DefectBot, Budget = (\\d+)"
+          transform: int
+    - id: family_mirror_budget
+      description: "Budget du bot miroir de la famille temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "BoundedAgent\\(MIRROR, budget=(\\d+)\\)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "BoundedAgent\\(MIRROR, budget=(\\d+)\\)"
+          transform: int
+        csharp:
+          cell: 3
+          pattern: "Code = Mirror, Budget = (\\d+)"
+          transform: int
+    - id: outcome_matrix
+      description: "Les 9 couples d'agets et leur issue (texte integral, remplissage compris)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(.*)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# affiche l'issue sous la forme .NET
+            `BoundedAgent { Code = ... } / BoundedAgent { Code = ... } =
+            (cooperate, cooperate)` : meme information, format different.
+            Cote declare ABSENT, mesure sur les budgets (mesures 1 a 3).
+    - id: issues_matrix
+      description: "Matrice des issues (titre, en-tete, trois lignes, ligne vide, legende)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(.*)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "(.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# affiche une matrice sans le remplissage a 12 colonnes
+            ni le titre long (`Matrice des issues (C / D)`), et n'affiche pas
+            la ligne vide ni la legende. Cote declare ABSENT.
+    - id: pd_dictionary
+      description: "Le dictionnaire canonique PD, dans l'ordre d'insertion"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(PD canonique : \\{[^}]*\\})"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "(PD canonique : \\{[^}]*\\})"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# n'affiche pas le dictionnaire `PD canonique` : il
+            n'en imprime que les quatre couples. Cote declare ABSENT ; les
+            quatre gains sont compares separement (mesures 7 a 10).
+    - id: payoff_cc
+      description: "Gain du joueur ligne sur (cooperate, cooperate) : R = 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\('cooperate', 'cooperate'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "\\('cooperate', 'cooperate'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "\\('cooperate', 'cooperate'\\) -> stage_payoff=(\\d+)"
+          transform: int
+    - id: payoff_cd
+      description: "Gain du joueur ligne sur (cooperate, defect) : S = 0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\('cooperate', 'defect'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "\\('cooperate', 'defect'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "\\('cooperate', 'defect'\\) -> stage_payoff=(\\d+)"
+          transform: int
+    - id: payoff_dc
+      description: "Gain du joueur ligne sur (defect, cooperate) : T = 5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\('defect', 'cooperate'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "\\('defect', 'cooperate'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "\\('defect', 'cooperate'\\) -> stage_payoff=(\\d+)"
+          transform: int
+    - id: payoff_dd
+      description: "Gain du joueur ligne sur (defect, defect) : P = 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\('defect', 'defect'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "\\('defect', 'defect'\\) -> stage_payoff=(\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "\\('defect', 'defect'\\) -> stage_payoff=(\\d+)"
+          transform: int
+    - id: certificates_count
+      description: "Nombre de certificats conformes sur les huit annonces"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "(\\d+)/\\d+ certificats conformes"
+          transform: int
+        rust:
+          cell: 28
+          pattern: "(\\d+)/\\d+ certificats conformes"
+          transform: int
+        csharp:
+          cell: 28
+          pattern: "(\\d+)/\\d+ certificats conformes"
+          transform: int
+    - id: certificate_lines
+      description: "Les trois lignes de certificat de la cellule 28 (nom, verdict, enonce Lean)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "(defect_profile_programNash.*certificats conformes)"
+          transform: text
+        rust:
+          cell: 28
+          pattern: "(defect_profile_programNash.*certificats conformes)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# marque ses certificats `C#=True` sans le remplissage
+            a 42 colonnes : meme information, gabarit different. Cote declare
+            ABSENT ; le compte des certificats est compare (mesure 11).
+    - id: exercise_titles
+      description: "Les deux lignes de titre de l'exercice 1 (intitule et indice)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "(.*)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# resume l'exercice en une seule ligne
+            (`Exercice 1 a completer.`) : pas d'indice. Cote declare ABSENT.
