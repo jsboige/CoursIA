@@ -1,0 +1,12 @@
+- name: "RL-06c PPO Depuis Zero"
+  family: RL/.NET-Parity
+  python: MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-06c-PPO-Depuis-Zero-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "TorchSharp CPU 0.107.0 fournit réseaux, autograd et Adam réels ; CartPole natif est vérifié contre Gymnasium via PythonNetLoader et pythonnet."
+  known_differences:
+    - "System.Random et NumPy/PyTorch ne donnent pas les mêmes trajectoires ; les courbes sont mesurées indépendamment."
+    - "Le bootstrap sur troncature utilise l'observation finale et la récursion GAE s'arrête au reset ; le dernier lot partiel est utilisé."
+    - "Les figures SVG sont statiques et les trois exercices restent ouverts."
+    - "Le noyau local exécute .NET 10 et émet CS1701 pour TorchSharp net8 ; les modèles BCL/TorchSharp compilent et tournent avec le SDK .NET 9.0.320. Gymnasium 1.2.3 est requis pour l’oracle."
