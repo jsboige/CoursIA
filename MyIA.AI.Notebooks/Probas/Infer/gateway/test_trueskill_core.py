@@ -2,7 +2,7 @@
 """Tests du coeur TrueSkill (pli 0 v2, Epic #19571 / issue #27217).
 
 Trois familles de controles :
-  1. valeurs publiees d'Infer-08 / Infer-08b-CSharp (posterior 2 joueurs egaux,
+  1. valeurs publiees d'Infer-08 / Infer-07b-CSharp (posterior 2 joueurs egaux,
      online WinnerUpdate) ;
   2. verification INDEPENDANTE contre la bibliotheque ``trueskill``
      (Heungsub Lee) — reference communautaire, jamais appelee par le coeur ;

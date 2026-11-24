@@ -87,7 +87,7 @@ LOCUTIONS_DONNE_MARKERS = re.compile(r"\b(?:etant|tant)\b")
 #   - y ajouter la ligne blanche            : 0 verdict change ;
 #   - y ajouter le saut de ligne SIMPLE     : 1 verdict change, et c'est une
 #     locution REELLE coupée par un retour a la ligne
-#     (``PyMC-10-Model-Selection`` : « l'inférence bayésienne : étant\ndonné un
+#     (``PyMC-09-Model-Selection`` : « l'inférence bayésienne : étant\ndonné un
 #     jeu de données ») -- le saut simple reste donc DANS la phrase.
 _SENTENCE_BOUND = re.compile(r"[.!?]|\n\s*\n")
 

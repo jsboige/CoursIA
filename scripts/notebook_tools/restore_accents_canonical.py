@@ -111,8 +111,8 @@ _INLINE_QUOTE_RE = re.compile(r"«[^»\n]*»|\"[^\"]*\"")
 
 # #17222 : un libelle de lien qui NOMME le fichier cible porte le meme defaut
 # qu'une cible accentuee (#7135/#7145) -- l'accentuer le decouple du fichier
-# reel. Cas mesure sur la serie PyMC : [PyMC-10-Model-Selection] rendait
-# [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb), un libelle qui
+# reel. Cas mesure sur la serie PyMC : [PyMC-09-Model-Selection] rendait
+# [PyMC-10-Model-Sélection](PyMC-09-Model-Selection.ipynb), un libelle qui
 # nomme un carnet qui n'existe pas. Regle : le libelle est masque quand son
 # texte (casse et espaces normalises) est contenu dans la cible du meme lien.
 # Le test est volontairement conservateur -- laisser une prose non curee est

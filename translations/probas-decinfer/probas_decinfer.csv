@@ -2,7 +2,7 @@ notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,tex
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb,cc50bb51,markdown,fr,fce0ab6c5855be32,"# DecInfer-01-Utility-Foundations : Axiomes et Fondements
 **Serie** : Programmation Probabiliste avec Infer.NET (1/10)  
 **Duree estimee** : 50 minutes  
-**Prerequis** : série Infer de [Infer-01-Setup](../../Infer/Infer-01-Setup.ipynb) à [Infer-08-TrueSkill](../../Infer/Infer-08-TrueSkill.ipynb) (modèles probabilistes de base)
+**Prerequis** : série Infer de [Infer-01-Setup](../../Infer/Infer-01-Setup.ipynb) à [Infer-07-TrueSkill](../../Infer/Infer-07-TrueSkill.ipynb) (modèles probabilistes de base)
 
 ***
 
@@ -7263,9 +7263,9 @@ Ce modèle combine des patterns vus dans les notebooks précédents :
 
 | Pattern | Source | Application ici |
 |---------|--------|-----------------|
-| **Honest/Biased Worker** | [Infer-13-Crowdsourcing](../../Infer/Infer-13-Crowdsourcing.ipynb) | Modeliser la fiabilite de chaque source |
-| **Matrices de confusion** | [Infer-13-Crowdsourcing](../../Infer/Infer-13-Crowdsourcing.ipynb) | L'utilisateur peut confondre les symptomes |
-| **Precisions apprises** | [Infer-13-Crowdsourcing](../../Infer/Infer-13-Crowdsourcing.ipynb) | Inferer la fiabilite des logs |
+| **Honest/Biased Worker** | [Infer-12-Crowdsourcing](../../Infer/Infer-12-Crowdsourcing.ipynb) | Modeliser la fiabilite de chaque source |
+| **Matrices de confusion** | [Infer-12-Crowdsourcing](../../Infer/Infer-12-Crowdsourcing.ipynb) | L'utilisateur peut confondre les symptomes |
+| **Precisions apprises** | [Infer-12-Crowdsourcing](../../Infer/Infer-12-Crowdsourcing.ipynb) | Inferer la fiabilite des logs |
 
 ### Scénario
 
@@ -9817,7 +9817,7 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.i
 
 **Serie** : Programmation Probabiliste avec Infer.NET (8/11)
 **Duree estimee** : 60 minutes
-**Prerequis** : [Infer-07-Skills-IRT](../../Infer/Infer-07-Skills-IRT.ipynb) (posterior Beta), [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) (bandits, epsilon-greedy, UCB1)
+**Prerequis** : [Infer-06-Skills-IRT](../../Infer/Infer-06-Skills-IRT.ipynb) (posterior Beta), [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) (bandits, epsilon-greedy, UCB1)
 
 ***
 

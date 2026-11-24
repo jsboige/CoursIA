@@ -28,38 +28,38 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 | Infer/Infer-04-Bayesian-Networks.ipynb | 66 (46+20) | WetGrass/Sprinkler (144 hits) ; source canonique citée = « Lauritzen & Spiegelhalter (1988) et Jensen, Lauritzen & Olesen (1990) » (Springer) — couvre le MBML WetGrass Chap.5 avec pedigree académique différent |
 | Infer/Infer-05-Causal-Inference.ipynb | 38 (23+15) | do-calculus = MBML Chap.7 ; notebook cite « Pearl, J. (2000) » sans mention MBML — sous-portée, à clarifier |
 | Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb | 50 (33+17) | Debugging pur EP/VMP/Gibbs — pas de concept MBML à attribuer |
-| **Infer/Infer-07-Skills-IRT.ipynb** | 74 (51+23) | IRT / DINA — source canonique = MBML Ch.2 (StudentSkills) + Rasch (1960), Birnbaum (1968), Lord (1980), Junker & Sijtsma (2001). Attribution **présente** aux cellules 8-9 (backfill [#8530](https://github.com/jsboige/CoursIA/pull/8530), `16376a901`) — le verdict « notebook muet / PIRE CAS » du c.803 est périmé |
-| **Infer/Infer-08-TrueSkill.ipynb** | 59 (40+19) | Pilote vérifié end-to-end : structure MBML Ch.3 fidèle (model 2 joueurs, draw via ConstrainBetween, online learning, teams, free-for-all, Elo bayésien, 3 exercices) MAIS **pas de formules V(t)/W(t)/τ² reproduites** (délégué à la machinerie EP Infer.NET). Cell 51 « Pour aller plus loin : Herbrich et al., 2006 » (référence 2006, pas 2007 NeurIPS — léger typo) |
-| Infer/Infer-09-Classification.ipynb | 55 (37+18) | BPM (Herbrich, MBML Chap.4) exécuté sans citation explicite — source = Herbrich 2001 thesis mais MBML non nommé |
-| Infer/Infer-10-Model-Selection.ipynb | 58 (40+18) | Bayes Factors / ARD — MBML Chap.11 (Model Comparison) hors-cité |
-| Infer/Infer-11-Topic-Models.ipynb | 55 (38+17) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — couvre MBML Chap.10 mais en citant la source primaire canonique |
-| Infer/Infer-12-Modeles-Hierarchiques.ipynb | 18 (10+8) | Pooling partiel / shrinkage — modèle générique, pas de MBML spécifique |
-| **Infer/Infer-13-Crowdsourcing.ipynb** | 50 (36+14) | Worker models Honest/Biased/Community — sources canoniques = Dawid & Skene (1979), Raykar (2010), Karger (2011) + MBML Ch.7. Citations **présentes** (backfill [#8247](https://github.com/jsboige/CoursIA/pull/8247), `0ff926ded`) — le verdict « aucun cite / silencieux » du c.803 est périmé |
-| Infer/Infer-14-Sequences.ipynb | 62 (41+21) | HMM forward-backward ; MBML Chap.12 absent mais pattern canonique (Rabiner 1989) |
-| Infer/Infer-15-Recommenders.ipynb | 81 (55+26) | « [Livre MBML](https://mbmlbook.com/) » @ cell 76 (footer Pour aller plus loin) ; couvre PMF/Matchbox/ClickModel |
-| Infer/Infer-16-Sparse-Gaussian-Process.ipynb | 31 (19+12) | GP sparse / EP — Titsias 2009 / MBML Chap.16 absent |
-| Infer/Infer-17-Kalman-Filter.ipynb | 20 (12+8) | Kalman canonique (1960), pas MBML Chap.15 spécifiquement |
-| Infer/Infer-18-Change-Point.ipynb | 23 (14+9) | Change-point pur, hors-scope MBML |
-| Infer/Infer-19-Survival-Analysis.ipynb | 27 (17+10) | Survie / Weibull / Gamma — MBML Chap.17 (Survival Analysis) hors-cité |
+| **Infer/Infer-06-Skills-IRT.ipynb** | 74 (51+23) | IRT / DINA — source canonique = MBML Ch.2 (StudentSkills) + Rasch (1960), Birnbaum (1968), Lord (1980), Junker & Sijtsma (2001). Attribution **présente** aux cellules 8-9 (backfill [#8530](https://github.com/jsboige/CoursIA/pull/8530), `16376a901`) — le verdict « notebook muet / PIRE CAS » du c.803 est périmé |
+| **Infer/Infer-07-TrueSkill.ipynb** | 59 (40+19) | Pilote vérifié end-to-end : structure MBML Ch.3 fidèle (model 2 joueurs, draw via ConstrainBetween, online learning, teams, free-for-all, Elo bayésien, 3 exercices) MAIS **pas de formules V(t)/W(t)/τ² reproduites** (délégué à la machinerie EP Infer.NET). Cell 51 « Pour aller plus loin : Herbrich et al., 2006 » (référence 2006, pas 2007 NeurIPS — léger typo) |
+| Infer/Infer-08-Classification.ipynb | 55 (37+18) | BPM (Herbrich, MBML Chap.4) exécuté sans citation explicite — source = Herbrich 2001 thesis mais MBML non nommé |
+| Infer/Infer-09-Model-Selection.ipynb | 58 (40+18) | Bayes Factors / ARD — MBML Chap.11 (Model Comparison) hors-cité |
+| Infer/Infer-10-Topic-Models.ipynb | 55 (38+17) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — couvre MBML Chap.10 mais en citant la source primaire canonique |
+| Infer/Infer-11-Modeles-Hierarchiques.ipynb | 18 (10+8) | Pooling partiel / shrinkage — modèle générique, pas de MBML spécifique |
+| **Infer/Infer-12-Crowdsourcing.ipynb** | 50 (36+14) | Worker models Honest/Biased/Community — sources canoniques = Dawid & Skene (1979), Raykar (2010), Karger (2011) + MBML Ch.7. Citations **présentes** (backfill [#8247](https://github.com/jsboige/CoursIA/pull/8247), `0ff926ded`) — le verdict « aucun cite / silencieux » du c.803 est périmé |
+| Infer/Infer-13-Sequences.ipynb | 62 (41+21) | HMM forward-backward ; MBML Chap.12 absent mais pattern canonique (Rabiner 1989) |
+| Infer/Infer-14-Recommenders.ipynb | 81 (55+26) | « [Livre MBML](https://mbmlbook.com/) » @ cell 76 (footer Pour aller plus loin) ; couvre PMF/Matchbox/ClickModel |
+| Infer/Infer-15-Sparse-Gaussian-Process.ipynb | 31 (19+12) | GP sparse / EP — Titsias 2009 / MBML Chap.16 absent |
+| Infer/Infer-16-Kalman-Filter.ipynb | 20 (12+8) | Kalman canonique (1960), pas MBML Chap.15 spécifiquement |
+| Infer/Infer-17-Change-Point.ipynb | 23 (14+9) | Change-point pur, hors-scope MBML |
+| Infer/Infer-18-Survival-Analysis.ipynb | 27 (17+10) | Survie / Weibull / Gamma — MBML Chap.17 (Survival Analysis) hors-cité |
 | PyMC/PyMC-01-Setup.ipynb | 26 (15+11) | « Equivalent Infer.NET : Infer-01-Setup » — attribution interne CoursIA (parité #4956), pas source canonique externe. Couvre le setup PyMC sans pedigree MBML |
 | PyMC/PyMC-02-Gaussian-Mixtures.ipynb | 23 (13+10) | Cycliste / Gaussian mixt — sources canoniques = Bishop PRML §9.2 + §9.2.2 + §10.7 (jumeau PyMC d'Infer-2) ; MBML ne couvre pas ce modèle (Ch.6 = Asthma, Ch.8 = How to Read a Model) |
 | PyMC/PyMC-03-Factor-Graphs.ipynb | 18 (10+8) | « Implémenter le problème Murder Mystery (**MBML Ch.1**) » @ cell 0 (intro Objectifs). **Variante assumée** : 3 suspects Clue/Cluedo (Scarlet/Mustard/Peacock) au lieu de 2 (Auburn/Grey MBML original) — adaptation pédagogique justifiée par l'explaining away |
 | PyMC/PyMC-04-Bayesian-Networks.ipynb | 26 (15+11) | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
 | PyMC/PyMC-05-Causal-Inference.ipynb | 30 (16+14) | Pearl + `pm.do` — do-calculus (MBML Chap.7) non attribué |
 | PyMC/PyMC-02b-Debugging-Python.ipynb | 43 (30+13) | Debugging pur MCMC |
-| PyMC/PyMC-07-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-7 le cite |
-| **PyMC/PyMC-08-TrueSkill.ipynb** | 30 (17+13) | **Section 7 bis reproduit explicitement les formules fermées V(t)/W(t)/τ²** + cell 2 cite « Herbrich, Minka & Graepel (2007), TrueSkill(TM): A Bayesian Skill Rating System (NeurIPS / Microsoft Research Cambridge) ». **Substance MBML Ch.3 complète + bonus algorithmique** |
-| PyMC/PyMC-09-Classification.ipynb | 22 (12+10) | « Herbrich » 2 hits (MBML Chap.4 BPM) sans mention explicite |
-| PyMC/PyMC-10-Model-Selection.ipynb | 35 (19+16) | WAIC/LOO (Vehtari) ; ARD générique |
-| PyMC/PyMC-11-Topic-Models.ipynb | 34 (19+15) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — source canonique |
-| PyMC/PyMC-12-Modeles-Hierarchiques.ipynb | 23 (14+9) | Pooling partiel — attribution au jumeau Infer-12 uniquement |
-| **PyMC/PyMC-13-Crowdsourcing.ipynb** | 43 (27+16) | Worker models Honest/Biased/Community (jumeau PyMC d'Infer-13) — source canonique = Dawid & Skene (1979), **citée** (53 mentions mesurées) ; Raykar / Karger / MBML Ch.7 non mentionnés, contrairement au jumeau Infer-13 |
-| PyMC/PyMC-14-Sequences.ipynb | 39 (22+17) | HMM forward-backward échantillonné — pas d'attribution |
-| PyMC/PyMC-15-Recommenders.ipynb | 58 (34+24) | « Adapté de : Infer-15-Recommenders » + « Origine : PMF Salakhutdinov & Mnih (2008) » — attribution double explicite (jumeau interne + source primaire) |
-| PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb | 27 (16+11) | GP sparse — attribution au jumeau Infer-16 uniquement |
-| PyMC/PyMC-17-Kalman-Filter.ipynb | 20 (12+8) | Kalman — attribution au jumeau Infer-17 uniquement |
-| PyMC/PyMC-18-Change-Point.ipynb | 21 (13+8) | Change-point — attribution au jumeau Infer-18 uniquement |
-| PyMC/PyMC-19-Survival-Analysis.ipynb | 21 (13+8) | Survie — attribution au jumeau Infer-19 uniquement |
+| PyMC/PyMC-06-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-7 le cite |
+| **PyMC/PyMC-07-TrueSkill.ipynb** | 30 (17+13) | **Section 7 bis reproduit explicitement les formules fermées V(t)/W(t)/τ²** + cell 2 cite « Herbrich, Minka & Graepel (2007), TrueSkill(TM): A Bayesian Skill Rating System (NeurIPS / Microsoft Research Cambridge) ». **Substance MBML Ch.3 complète + bonus algorithmique** |
+| PyMC/PyMC-08-Classification.ipynb | 22 (12+10) | « Herbrich » 2 hits (MBML Chap.4 BPM) sans mention explicite |
+| PyMC/PyMC-09-Model-Selection.ipynb | 35 (19+16) | WAIC/LOO (Vehtari) ; ARD générique |
+| PyMC/PyMC-10-Topic-Models.ipynb | 34 (19+15) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — source canonique |
+| PyMC/PyMC-11-Modeles-Hierarchiques.ipynb | 23 (14+9) | Pooling partiel — attribution au jumeau Infer-12 uniquement |
+| **PyMC/PyMC-12-Crowdsourcing.ipynb** | 43 (27+16) | Worker models Honest/Biased/Community (jumeau PyMC d'Infer-13) — source canonique = Dawid & Skene (1979), **citée** (53 mentions mesurées) ; Raykar / Karger / MBML Ch.7 non mentionnés, contrairement au jumeau Infer-13 |
+| PyMC/PyMC-13-Sequences.ipynb | 39 (22+17) | HMM forward-backward échantillonné — pas d'attribution |
+| PyMC/PyMC-14-Recommenders.ipynb | 58 (34+24) | « Adapté de : Infer-14-Recommenders » + « Origine : PMF Salakhutdinov & Mnih (2008) » — attribution double explicite (jumeau interne + source primaire) |
+| PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb | 27 (16+11) | GP sparse — attribution au jumeau Infer-16 uniquement |
+| PyMC/PyMC-16-Kalman-Filter.ipynb | 20 (12+8) | Kalman — attribution au jumeau Infer-17 uniquement |
+| PyMC/PyMC-17-Change-Point.ipynb | 21 (13+8) | Change-point — attribution au jumeau Infer-18 uniquement |
+| PyMC/PyMC-18-Survival-Analysis.ipynb | 21 (13+8) | Survie — attribution au jumeau Infer-19 uniquement |
 | Infer-101.ipynb (legacy, hors-scope) | 71 (43+28) | Standalone C#/Python avant-portail — à archiver (sub-issue dédiée) |
 | Pyro_RSA_Hyperbole.ipynb (Pyro, hors-scope) | 41 (25+16) | Pyro / RSA linguistique pragmatique ; cite Kao 2014, Kao & Goodman 2015 |
 

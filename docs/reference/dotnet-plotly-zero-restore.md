@@ -58,7 +58,7 @@ Les deux pointeurs sont **résolus firsthand** (index de cellule, `execution_cou
 La forme d'origine enregistrait un `record PlotlyHtml` porteur d'un `<div>` + `<script src="https://cdn.plot.ly/plotly-2.35.2.min.js">` + `Plotly.newPlot(...)`. **Elle est retirée**, et la raison n'est pas esthétique :
 
 > Le graphe rend **uniquement dans un kernel .NET Interactive live avec Internet**. Partout où le notebook committé est *consulté* plutôt qu'*exécuté*, il est **blanc** : GitHub *sandbox et n'exécute pas* les `<script>` → div vide ; nbviewer / offline / CSP strict → le CDN ne charge pas → div vide.
-> — investigation #6927 (firsthand, 2026-07-16), déclenchée par le user constatant qu'`Infer-17-Kalman-Filter` **n'affiche aucun graphique**
+> — investigation #6927 (firsthand, 2026-07-16), déclenchée par le user constatant qu'`Infer-16-Kalman-Filter` **n'affiche aucun graphique**
 
 Ce n'était pas une perte de données (les `x`/`y` sont inline dans le script) mais une **régression de portabilité du rendu** : le jumeau Python (matplotlib) émettait un `image/png` persistant, les deux jumeaux divergeaient. #6927 a mesuré **8 notebooks** touchés ; #6946 a livré la première conversion.
 
@@ -110,8 +110,8 @@ Le pointeur `MGS-10 cell[8]`, lui, est devenu **exact** entre-temps, mais par ac
 | État | Notebooks |
 |---|---|
 | **Converti** (SVG inline, plus de CDN dans la source) | `App-07-Wordle-CSharp`, `MGS-10-CenterBias` |
-| **Partiel** (SVG inline **et** cellules CDN résiduelles) | `GameTheory-03-Topology2x2-CSharp`, `Infer-17-Kalman-Filter`, `Sudoku-18-Comparison-CSharp` |
-| **Non converti** (CDN seul → blanc en statique) | `Infer-11-Topic-Models`, `Infer-12-Modeles-Hierarchiques`, `DecInfer-05-Value-Information`, `DecInfer-06-Expert-Systems`, `DecInfer-07-Sequential` |
+| **Partiel** (SVG inline **et** cellules CDN résiduelles) | `GameTheory-03-Topology2x2-CSharp`, `Infer-16-Kalman-Filter`, `Sudoku-18-Comparison-CSharp` |
+| **Non converti** (CDN seul → blanc en statique) | `Infer-10-Topic-Models`, `Infer-11-Modeles-Hierarchiques`, `DecInfer-05-Value-Information`, `DecInfer-06-Expert-Systems`, `DecInfer-07-Sequential` |
 
 Mesure reproductible : source de cellule de code contenant `PlotSvg` / `cdn.plot.ly` / `PlotlyHtml`, sur `git ls-files "*.ipynb"`. Les « non converti » + « partiel » sont le reste du rollout #6927 sous l'EPIC #3801.
 

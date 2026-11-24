@@ -2,7 +2,7 @@
 """Tests de l'endpoint porte par le carnet jumeau Python (issue #27217).
 
 Le service n'a pas de carnet dedie : la cellule annotee ``# POST /probas/trueskill``
-vit dans ``../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb``, celui du cours.
+vit dans ``../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb``, celui du cours.
 Ces tests verifient les deux moities du contrat :
 
 1. **Structure** : le carnet jumeau porte exactement une cellule annotee, et son
@@ -28,7 +28,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 GATEWAY_DIR = Path(__file__).resolve().parent
-NOTEBOOK = (GATEWAY_DIR / ".." / "Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb").resolve()
+NOTEBOOK = (GATEWAY_DIR / ".." / "Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb").resolve()
 
 ANNOTATION = "# POST /probas/trueskill"
 # Match 1v1 : A bat B, au prior. Le posterior publie (Infer-08 section 3) est

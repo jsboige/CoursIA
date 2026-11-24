@@ -13,7 +13,7 @@ code dont elles interpretent reellement l'output**. Le contenu pedagogique est
 correct, mais la position est semantiquement fausse : un lecteur voit "le
 classement final du Click Model" 26 cellules AVANT le Click Model lui-meme.
 
-Exemple fondateur (#10580 PyMC-15-Recommenders, mesure #10678) :
+Exemple fondateur (#10580 PyMC-14-Recommenders, mesure #10678) :
   cell[4]  interp "donnees sparse"           placee apres cell[3] imports numpy/pymc
   cell[9]  interp "163 divergences NUTS"      placee apres cell[8] saisie des donnees
   cell[13] interp "163->5 modele ameliore"    placee apres cell[12] def modele 1
@@ -81,7 +81,7 @@ grow").
 
 Usage
 -----
-    python scripts/notebook_tools/check_interp_positioning.py MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb    # 1 notebook
+    python scripts/notebook_tools/check_interp_positioning.py MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb    # 1 notebook
     python scripts/notebook_tools/check_interp_positioning.py --family Probas                                                # 1 famille
     python scripts/notebook_tools/check_interp_positioning.py MyIA.AI.Notebooks                                              # tout
     python scripts/notebook_tools/check_interp_positioning.py --check --baseline scripts/notebook_tools/interp_positioning_baseline.json    # CI-ready

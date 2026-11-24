@@ -468,7 +468,7 @@ class TestRealNotebooks(unittest.TestCase):
         couverte par les cas synthetiques (parachute entre deux headers) et
         par les findings live de la baseline.
         """
-        found = self._misplaced("MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb")
+        found = self._misplaced("MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb")
         if found is None:
             self.skipTest("PyMC-15 absent")
         self.assertEqual(found, [], "PyMC-15 ne doit plus avoir de finding (repare c.96)")

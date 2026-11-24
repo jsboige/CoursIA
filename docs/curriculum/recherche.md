@@ -474,21 +474,21 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 5 | [Infer-03-Factor-Graphs : Graphes de Facteurs et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb) | BETA | Oui |
 | 6 | [Infer-04-Bayesian-Networks : Réseaux Bayesiens…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) | BETA | Oui |
 | 7 | [Infer-05-Causal-Inference : Inférence Causale et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb) | BETA | Oui |
-| 8 | [Infer-07-Skills-IRT : Évaluation de Competences et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-07-Skills-IRT.ipynb) | BETA | Oui |
-| 9 | [Infer-08-TrueSkill : Système de Classement et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08-TrueSkill.ipynb) | BETA | Oui |
-| 10 | [Infer-08b-TrueSkill-Formules-Fermees : la mise a jour…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb) | BETA | Oui |
-| 11 | [Infer.NET 08b (Python) — TrueSkill : formules fermées,…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb) | BETA | Non |
-| 12 | [Infer-09-Classification : Classification Bayesienne](../../MyIA.AI.Notebooks/Probas/Infer/Infer-09-Classification.ipynb) | BETA | Oui |
-| 13 | [Infer-10-Model-Sélection : Sélection et Comparaison de…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb) | BETA | Oui |
-| 14 | [Infer-11-Topic-Models : Latent Dirichlet Allocation…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb) | BETA | Oui |
-| 15 | [12. Modèles Hiérarchiques Bayésiens — Pooling Partiel…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb) | BETA | Oui |
-| 16 | [Infer-13-Crowdsourcing : Agregation de Labels et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-13-Crowdsourcing.ipynb) | BETA | Oui |
-| 17 | [Infer-14-Sequences : Hidden Markov Models et Series…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb) | BETA | Oui |
-| 18 | [Infer-15-Recommenders : systèmes de Recommandation](../../MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb) | BETA | Oui |
-| 19 | [Infer-16-Sparse-Gaussian-Process : Processus Gaussiens…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb) | BETA | Oui |
-| 20 | [Infer-17 — Filtre de Kalman : systèmes dynamiques…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb) | BETA | Oui |
-| 21 | [Infer-18 — Détection de Rupture (Change-Point) :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb) | BETA | Oui |
-| 22 | [Infer-19 — Analyse de survie / fiabilite bayesienne :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb) | BETA | Oui |
+| 8 | [Infer-06-Skills-IRT : Évaluation de Competences et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-06-Skills-IRT.ipynb) | BETA | Oui |
+| 9 | [Infer-07-TrueSkill : Système de Classement et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-07-TrueSkill.ipynb) | BETA | Oui |
+| 10 | [Infer-08b-TrueSkill-Formules-Fermees : la mise a jour…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb) | BETA | Oui |
+| 11 | [Infer.NET 08b (Python) — TrueSkill : formules fermées,…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb) | BETA | Non |
+| 12 | [Infer-08-Classification : Classification Bayesienne](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08-Classification.ipynb) | BETA | Oui |
+| 13 | [Infer-10-Model-Sélection : Sélection et Comparaison de…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-09-Model-Selection.ipynb) | BETA | Oui |
+| 14 | [Infer-10-Topic-Models : Latent Dirichlet Allocation…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-10-Topic-Models.ipynb) | BETA | Oui |
+| 15 | [12. Modèles Hiérarchiques Bayésiens — Pooling Partiel…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-11-Modeles-Hierarchiques.ipynb) | BETA | Oui |
+| 16 | [Infer-12-Crowdsourcing : Agregation de Labels et…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-12-Crowdsourcing.ipynb) | BETA | Oui |
+| 17 | [Infer-13-Sequences : Hidden Markov Models et Series…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb) | BETA | Oui |
+| 18 | [Infer-14-Recommenders : systèmes de Recommandation](../../MyIA.AI.Notebooks/Probas/Infer/Infer-14-Recommenders.ipynb) | BETA | Oui |
+| 19 | [Infer-15-Sparse-Gaussian-Process : Processus Gaussiens…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-15-Sparse-Gaussian-Process.ipynb) | BETA | Oui |
+| 20 | [Infer-17 — Filtre de Kalman : systèmes dynamiques…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb) | BETA | Oui |
+| 21 | [Infer-18 — Détection de Rupture (Change-Point) :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-17-Change-Point.ipynb) | BETA | Oui |
+| 22 | [Infer-19 — Analyse de survie / fiabilite bayesienne :…](../../MyIA.AI.Notebooks/Probas/Infer/Infer-18-Survival-Analysis.ipynb) | BETA | Oui |
 
 ## Probas/PyMC (19 notebooks)
 
@@ -500,19 +500,19 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 4 | [PyMC-3 : Graphes de Facteurs et Inference Discrete](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) | BETA | Oui |
 | 5 | [PyMC-4 : Reseaux Bayesiens](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb) | BETA | Oui |
 | 6 | [PyMC-05-Causal-Inference : Inference Causale et…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | BETA | Oui |
-| 7 | [PyMC-7 : Modèles de Competences (IRT et DINA)](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb) | BETA | Oui |
-| 8 | [PyMC-8 : TrueSkill - Classement et Apprentissage en…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb) | BETA | Oui |
-| 9 | [PyMC-9 : Classification Bayesienne et Tests A/B](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb) | BETA | Oui |
-| 10 | [PyMC-10 : Sélection de Modèles et Comparaison…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb) | BETA | Oui |
-| 11 | [PyMC-11 : Modèles de Sujets (Topic Models) et LDA](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb) | BETA | Oui |
-| 12 | [12. Modèles Hiérarchiques Bayesiens -- Pooling Partiel…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb) | BETA | Oui |
-| 13 | [PyMC-13 : Crowdsourcing - Agregation de Labels et…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb) | BETA | Oui |
-| 14 | [PyMC-14 — Modèles de Sequences et Chaînes de Markov…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb) | BETA | Oui |
-| 15 | [PyMC-15-Recommenders : Systèmes de Recommandation…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb) | BETA | Oui |
-| 16 | [PyMC-16 : Processus Gaussiens et frontières non…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb) | BETA | Oui |
-| 17 | [17. Filtre de Kalman : systèmes dynamiques lineaires…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb) | BETA | Oui |
-| 18 | [18. Detection de Rupture (Change-Point) : inferer le…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb) | BETA | Oui |
-| 19 | [19. Analyse de survie / fiabilite bayesienne : inferer…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb) | BETA | Oui |
+| 7 | [PyMC-7 : Modèles de Competences (IRT et DINA)](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb) | BETA | Oui |
+| 8 | [PyMC-8 : TrueSkill - Classement et Apprentissage en…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb) | BETA | Oui |
+| 9 | [PyMC-9 : Classification Bayesienne et Tests A/B](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb) | BETA | Oui |
+| 10 | [PyMC-10 : Sélection de Modèles et Comparaison…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb) | BETA | Oui |
+| 11 | [PyMC-11 : Modèles de Sujets (Topic Models) et LDA](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb) | BETA | Oui |
+| 12 | [12. Modèles Hiérarchiques Bayesiens -- Pooling Partiel…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb) | BETA | Oui |
+| 13 | [PyMC-13 : Crowdsourcing - Agregation de Labels et…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb) | BETA | Oui |
+| 14 | [PyMC-14 — Modèles de Sequences et Chaînes de Markov…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb) | BETA | Oui |
+| 15 | [PyMC-14-Recommenders : Systèmes de Recommandation…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb) | BETA | Oui |
+| 16 | [PyMC-16 : Processus Gaussiens et frontières non…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | BETA | Oui |
+| 17 | [17. Filtre de Kalman : systèmes dynamiques lineaires…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb) | BETA | Oui |
+| 18 | [18. Detection de Rupture (Change-Point) : inferer le…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb) | BETA | Oui |
+| 19 | [19. Analyse de survie / fiabilite bayesienne : inferer…](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb) | BETA | Oui |
 
 ## RL (35 notebooks)
 

@@ -7,7 +7,7 @@
       "notebooks": [
         "Probas/PyMC/PyMC-01-Setup.ipynb",
         "Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb",
-        "Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb",
+        "Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb",
         "Probas/DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb"
@@ -61,8 +61,8 @@
       "branch": "actuariat",
       "notebooks": [
         "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb",
-        "Probas/PyMC/PyMC-17-Kalman-Filter.ipynb",
-        "Probas/PyMC/PyMC-18-Change-Point.ipynb"
+        "Probas/PyMC/PyMC-16-Kalman-Filter.ipynb",
+        "Probas/PyMC/PyMC-17-Change-Point.ipynb"
       ]
     },
     {

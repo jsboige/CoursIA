@@ -1,7 +1,7 @@
 # Gateway TrueSkill — service Kernel Gateway
 
 Deuxième service du **pli 0 v2** de l'Epic #19571 : exposer le carnet jumeau
-[`Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb`](../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb)
+[`Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb`](../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb)
 en microservice REST via Jupyter **Kernel Gateway** (mode `notebook-http`).
 Le carnet reste un cours exécutable : il n'existe pas de second carnet réservé
 au service.
@@ -58,7 +58,7 @@ Le lancement manuel reste possible depuis ce dossier :
 ```bash
 python -m kernel_gateway \
   --KernelGatewayApp.api=kernel_gateway.notebook_http \
-  --KernelGatewayApp.seed_uri=../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb \
+  --KernelGatewayApp.seed_uri=../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb \
   --KernelGatewayApp.port=8897 \
   --JupyterWebsocketPersonality.list_kernels=True
 ```
@@ -117,7 +117,7 @@ réservé aux tests du cœur.
 | Fichier | Rôle |
 |---|---|
 | `trueskill_core.py` | Formes fermées EP, apprentissage en ligne et contrat JSON |
-| [`../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb`](../Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb) | Cours, exercices et cellule `# POST /probas/trueskill` |
+| [`../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb`](../Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb) | Cours, exercices et cellule `# POST /probas/trueskill` |
 | `run_gateway.py` | Preflight et démarrage du gateway |
 | `test_trueskill_core.py` | Tests du cœur et comparaison indépendante |
 | `test_run_gateway.py` | Tests du lanceur |

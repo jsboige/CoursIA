@@ -340,7 +340,7 @@ layout: dense
   - P(m | s) = P(s | m) P(m) / P(s) = 0.8 × 0.0001 / 0.1 = 0.0008
   - La probabilité a posteriori est encore très faible
 
-*Notebooks : [Infer-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) (règle de Bayes, modèle naïf) · [Infer-09-Classification](../../MyIA.AI.Notebooks/Probas/Infer/Infer-09-Classification.ipynb) (classification bayésienne naïve).*
+*Notebooks : [Infer-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) (règle de Bayes, modèle naïf) · [Infer-08-Classification](../../MyIA.AI.Notebooks/Probas/Infer/Infer-08-Classification.ipynb) (classification bayésienne naïve).*
 
 
 ---
@@ -633,7 +633,7 @@ layout: dense
 
 <!-- Distributions canoniques : OR-bruite, agregation, min/max -->
 
-*Notebooks : [Infer-02-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb) (gaussiennes, priors conjugués) · [Infer-16-Sparse-Gaussian-Process](../../MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb) (processus gaussiens, variables continues).*
+*Notebooks : [Infer-02-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb) (gaussiennes, priors conjugués) · [Infer-15-Sparse-Gaussian-Process](../../MyIA.AI.Notebooks/Probas/Infer/Infer-15-Sparse-Gaussian-Process.ipynb) (processus gaussiens, variables continues).*
 
 
 ---
@@ -869,7 +869,7 @@ layout: section
 - **Besoin d'introduire le temps (ou l'espace) dans nos modèles**
 - Exemples modernes : vehicules autonomes (fusion capteurs), LLMs contextuels (attention temporelle)
 
-*Notebooks : [Infer-14-Sequences](../../MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb) (HMM, séries temporelles) · [Infer-17-Kalman-Filter](../../MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb) (filtres de Kalman) · [PyMC-14-Sequences](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb) (jumeau PyMC).*
+*Notebooks : [Infer-13-Sequences](../../MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb) (HMM, séries temporelles) · [Infer-16-Kalman-Filter](../../MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb) (filtres de Kalman) · [PyMC-13-Sequences](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb) (jumeau PyMC).*
 
 
 ---
@@ -1952,7 +1952,7 @@ layout: section
 - **Infer.NET prise en main**: `Probas/Infer/Infer-01b-Premiers-Modeles.ipynb`
 - **Réseaux bayésiens**: `Probas/Infer/Infer-04-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
 - **Inférence**: `Probas/Infer/Infer-03-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
-- **HMM et séries temporelles**: `Probas/Infer/Infer-14-Sequences.ipynb`, `Probas/PyMC/PyMC-14-Sequences.ipynb`, `Probas/Infer/Infer-17-Kalman-Filter.ipynb`
+- **HMM et séries temporelles**: `Probas/Infer/Infer-13-Sequences.ipynb`, `Probas/PyMC/PyMC-13-Sequences.ipynb`, `Probas/Infer/Infer-16-Kalman-Filter.ipynb`
 - **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-04-Decision-Networks.ipynb`, `DecInfer-05-Value-Information.ipynb`
 - **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb`, `DecInfer-07b-Lean-Gittins.ipynb`, `DecInfer-08-Thompson-Sampling.ipynb`
 

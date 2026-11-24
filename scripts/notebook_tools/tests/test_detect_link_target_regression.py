@@ -7,7 +7,7 @@ DETECTOR for FR accent introduction in markdown link TARGETS `[text](target)` �
 defect class that broke 10 links across 4 OWN PRs (c.677l/c.678/c.681/c.683, audit
 firsthand c.684 with the detector itself). When the cure script `\b(mot)\b` touches
 the source markdown, it modifies BOTH the link text AND the link target. If the
-canonical on-disk filename is unaccented (`Infer-10-Model-Selection.ipynb`), the
+canonical on-disk filename is unaccented (`Infer-09-Model-Selection.ipynb`), the
 target after cure reads `Infer-10-Model-sélection.ipynb` — a 404. The sibling
 detectors (`check_identifier_regression.py` for code identifiers, the upcoming
 caps-regression detector for sentence initials) don't catch this class because they
@@ -97,7 +97,7 @@ class TestStripAccents:
 
     def test_no_accents_invariant(self):
         # No-op on already-stripped strings (defensive)
-        assert strip_accents("Infer-10-Model-Selection") == "Infer-10-Model-Selection"
+        assert strip_accents("Infer-09-Model-Selection") == "Infer-09-Model-Selection"
         assert strip_accents("") == ""
 
     def test_ligatures_oe_ae(self):
@@ -174,11 +174,11 @@ class TestCollectLinkTargets:
         return extract_md_cells(_nb([_md(s) for s in cell_sources]))
 
     def test_basic_markdown_link(self):
-        targets = collect_link_targets(self._cells_of("[Infer-10](Infer-10-Model-Selection.ipynb)"))
+        targets = collect_link_targets(self._cells_of("[Infer-10](Infer-09-Model-Selection.ipynb)"))
         assert len(targets) == 1
         t = targets[0]
         assert t["text"] == "Infer-10"
-        assert t["target"] == "Infer-10-Model-Selection.ipynb"
+        assert t["target"] == "Infer-09-Model-Selection.ipynb"
         assert t["cell_idx"] == 0
         assert t["line_no"] == 1
 
@@ -294,13 +294,13 @@ class TestDiffTargets:
 
     def test_accent_regression_detected_foundational(self):
         # The founding case: cure introduced accent in target
-        base = [self._mk("Infer-10-Model-Selection.ipynb")]
+        base = [self._mk("Infer-09-Model-Selection.ipynb")]
         head = [self._mk("Infer-10-Model-sélection.ipynb")]
         regs = diff_targets(base, head)
         assert len(regs) == 1
         assert regs[0]["kind"] == "ACCENT_REGRESSION"
         assert regs[0]["target_added"] == "Infer-10-Model-sélection.ipynb"
-        assert regs[0]["target_removed"] == "Infer-10-Model-Selection.ipynb"
+        assert regs[0]["target_removed"] == "Infer-09-Model-Selection.ipynb"
 
     def test_accent_only_in_text_no_regression(self):
         # Text of link gains accent but target stays clean = NOT a target regression
@@ -374,7 +374,7 @@ class TestScanNotebook:
     @mock.patch("detect_link_target_regression.read_notebook_at_ref")
     def test_scan_realistic_defect_broken_link(self, mock_read):
         """The catalog-founding defect: cure introduced accent, file absent on disk."""
-        nb_base = self._make_nb("Infer-10-Model-Selection.ipynb")
+        nb_base = self._make_nb("Infer-09-Model-Selection.ipynb")
         nb_head = self._make_nb("Infer-10-Model-sélection.ipynb")
         mock_read.side_effect = lambda path, ref: nb_base if ref == "origin/main" else nb_head
 
@@ -388,7 +388,7 @@ class TestScanNotebook:
             return real_resolve(nb_path, target)
 
         with mock.patch.object(Path, "exists", return_value=False):
-            nb_path = Path("MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb")
+            nb_path = Path("MyIA.AI.Notebooks/Probas/Infer/Infer-10-Topic-Models.ipynb")
             result = scan_notebook(nb_path, "origin/main", "origin/fix/c683-accents-2876")
             assert result["stats"]["regressions_count"] == 1
             # Without disk resolution distinction, kind stays ACCENT_REGRESSION
@@ -401,8 +401,8 @@ class TestScanNotebook:
     @mock.patch("detect_link_target_regression.read_notebook_at_ref")
     def test_scan_clean_no_regression(self, mock_read):
         """No regression when targets match exactly across base and head."""
-        nb_base = self._make_nb("Infer-10-Model-Selection.ipynb")
-        nb_head = self._make_nb("Infer-10-Model-Selection.ipynb")
+        nb_base = self._make_nb("Infer-09-Model-Selection.ipynb")
+        nb_head = self._make_nb("Infer-09-Model-Selection.ipynb")
         mock_read.side_effect = lambda path, ref: nb_base if ref == "origin/main" else nb_head
 
         nb_path = Path("MyIA.AI.Notebooks/Probas/Infer/Infer-11.ipynb")

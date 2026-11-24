@@ -11,10 +11,10 @@ qui touche les cibles `[texte](cible)` exactement comme le texte du lien. Si le
 nom de fichier Notebook contient un accent (ou en gagnait un par coherence
 linguistique), la cure casse silencieusement la cible :
 
-    AVANT : | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) |
+    AVANT : | [Infer-09-Model-Selection](Infer-09-Model-Selection.ipynb) |
     APRES : | [Infer-10-Model-sélection](Infer-10-Model-sélection.ipynb) |  <-- cassé
 
-Sur disque le fichier s'appelle `Infer-10-Model-Selection.ipynb` (sans accent),
+Sur disque le fichier s'appelle `Infer-09-Model-Selection.ipynb` (sans accent),
 donc le lien resolu `Infer-10-Model-sélection.ipynb` n'existe pas.
 
 Pourquoi ce defaut passe les gardes existants

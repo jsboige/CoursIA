@@ -42899,7 +42899,7 @@ La figure ci-dessus synthétise les **deux garanties de convergence** de CFR sur
 MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,3da4ed0a,markdown,fr,b37e66ce98a608b2,"## 7. Tranche 2 : verification croisee avec MathNet.Numerics (moteur SOTA .NET)
 
 La tranche 1 a reimplemente tout from-scratch (BCL pur). Cette **tranche 2** branche le
-**moteur SOTA .NET `MathNet.Numerics`** (deja en service dans Infer-08-TrueSkill) pour
+**moteur SOTA .NET `MathNet.Numerics`** (deja en service dans Infer-07-TrueSkill) pour
 verifier que nos integrations et optimisations from-scratch coincident avec une
 bibliotheque de production.
 

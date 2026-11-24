@@ -28,24 +28,24 @@ Pour [choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 07 | [Évaluer une compétence](PyMC-07-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
-| 08 | [Classer des joueurs](PyMC-08-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | — |
-| 09 | [Classifier](PyMC-09-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
-| 10 | [Choisir un modèle](PyMC-10-Model-Selection.ipynb) | Comparer les performances prédictives avec LOO, puis vérifier ce que les simulations du modèle reproduisent réellement. | Master | — |
-| 11 | [Extraire des thèmes](PyMC-11-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
-| 12 | [Partager entre groupes](PyMC-12-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC-Observabilite-OTel.ipynb) |
-| 13 | [Agréger des annotations](PyMC-13-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
+| 07 | [Évaluer une compétence](PyMC-06-Skills-IRT.ipynb) | Séparer difficulté de la question et aptitude de l’élève ; interpréter une réussite sans confondre les deux paramètres. | Master | — |
+| 08 | [Classer des joueurs](PyMC-07-TrueSkill.ipynb) | Après un match, réviser à la fois le niveau estimé et son incertitude ; un débutant et un vétéran ne reçoivent pas la même correction. | Master | — |
+| 09 | [Classifier](PyMC-08-Classification.ipynb) | Transformer un score latent en probabilité, puis vérifier si les fréquences observées correspondent aux probabilités annoncées. | Master | — |
+| 10 | [Choisir un modèle](PyMC-09-Model-Selection.ipynb) | Comparer les performances prédictives avec LOO, puis vérifier ce que les simulations du modèle reproduisent réellement. | Master | — |
+| 11 | [Extraire des thèmes](PyMC-10-Topic-Models.ipynb) | Relier documents, thèmes et mots ; étudier comment les lois a priori influencent les thèmes que l’on peut distinguer. | Master | — |
+| 12 | [Partager entre groupes](PyMC-11-Modeles-Hierarchiques.ipynb) | Entre une moyenne commune et une moyenne indépendante par groupe, le partage partiel ramène davantage les groupes peu observés vers la population. | Master | [Instrumentation](PyMC-Observabilite-OTel.ipynb) |
+| 13 | [Agréger des annotations](PyMC-12-Crowdsourcing.ipynb) | Comparer le vote majoritaire à une estimation qui apprend la fiabilité des annotateurs en même temps que les étiquettes. | Master | — |
 
 ### Exploiter une structure temporelle ou spatiale — master
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 14 | [Suivre un état caché](PyMC-14-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
-| 15 | [Recommander](PyMC-15-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
-| 16 | [Classer par processus gaussien](PyMC-16-Sparse-Gaussian-Process.ipynb) | Apprendre une frontière non linéaire avec un noyau RBF ; comparer le modèle dense à une approximation spectrale dont on règle le budget. | Master | — |
-| 17 | [Filtrer une trajectoire](PyMC-17-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
-| 18 | [Dater une rupture](PyMC-18-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
-| 19 | [Étudier la survie](PyMC-19-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
+| 14 | [Suivre un état caché](PyMC-13-Sequences.ipynb) | Comparer un classement instantané au lissage avant-arrière : deux observations identiques peuvent recevoir des états différents selon leur voisinage. | Master | — |
+| 15 | [Recommander](PyMC-14-Recommenders.ipynb) | Inférer les préférences à partir d’une matrice incomplète ; distinguer l’incertitude sur un score d’un désaccord entre clics et jugements. | Master | — |
+| 16 | [Classer par processus gaussien](PyMC-15-Sparse-Gaussian-Process.ipynb) | Apprendre une frontière non linéaire avec un noyau RBF ; comparer le modèle dense à une approximation spectrale dont on règle le budget. | Master | — |
+| 17 | [Filtrer une trajectoire](PyMC-16-Kalman-Filter.ipynb) | Séparer bruit de mesure et bruit de dynamique : la récursion de Kalman filtre un état continu ; le carnet Python examine aussi les réglages de l’échantillonnage. | Master | — |
+| 18 | [Dater une rupture](PyMC-17-Change-Point.ipynb) | Inférer une distribution sur l’instant du changement, puis se demander si les données exigent vraiment deux régimes. | Master | — |
+| 19 | [Étudier la survie](PyMC-18-Survival-Analysis.ipynb) | Une observation censurée indique que l’événement n’a pas encore eu lieu. L’intégrer par la fonction de survie plutôt que comme une durée complète. | Master | — |
 
 ## Approfondissements — master
 

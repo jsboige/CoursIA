@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Coeur du service TrueSkill (Probas/Infer.NET), pli 0 v2 de l'Epic #19571.
 
-Logique reprise du jumeau ``Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb``
+Logique reprise du jumeau ``Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb``
 (formes fermees EP de Herbrich-Minka-Graepel, NIPS 19 / 2006), adaptee au
 contrat REST JSON du service notebook-http (issue #27217).
 

@@ -64,7 +64,7 @@ paire, du titre.
 | Notebook | Côté | Accrétion | Anomalie de nom |
 |---|---|---|---|
 | `Infer-1b-Premiers-Modeles.ipynb` | C# | `1b` | numéro non zero-padé (la série PyMC n'a pas de `01b`) — extension unilatérale C# à documenter, ou future paire `PyMC-01b` |
-| `Infer-08b-TrueSkill-Formules-Fermees-CSharp.ipynb` | C# | `08b` | **double non-canonicité** : (a) zero-pad `08b` alors que toute la série Infer est à numéro nu — incohérent dans les DEUX conventions ; (b) suffixe kernel `-CSharp` DANS le titre, redondant avec le préfixe de série `Infer` (doctrine : le kernel ne vit que dans le suffixe canonique) |
+| `Infer-07b-TrueSkill-Formules-Fermees-CSharp.ipynb` | C# | `08b` | **double non-canonicité** : (a) zero-pad `08b` alors que toute la série Infer est à numéro nu — incohérent dans les DEUX conventions ; (b) suffixe kernel `-CSharp` DANS le titre, redondant avec le préfixe de série `Infer` (doctrine : le kernel ne vit que dans le suffixe canonique) |
 
 Aucune extension unilatérale côté Python : les 19 carnets PyMC sont tous appariés.
 
@@ -101,7 +101,7 @@ La reconciliation naturelle padding la série **Infer** sur la série **PyMC** :
   (ii) conserver les sous-titres distincts et documenter la paire comme extension
   partiellement distincte. Le `-Python` résiduel de `PyMC-02b-Debugging-Python` (#14873)
   ne correspond à aucune convention du corpus : à retirer dans les deux lectures.
-- **Tranche C — `Infer-08b-TrueSkill-Formules-Fermees-CSharp`** : après Tranche A, le
+- **Tranche C — `Infer-07b-TrueSkill-Formules-Fermees-CSharp`** : après Tranche A, le
   zero-pad devient cohérent ; reste à retirer le suffixe `-CSharp` redondant →
   `Infer-08b-TrueSkill-Formules-Fermees`. Décider en même temps si l'accrétion `08b` doit
   être rapprochée de la paire 8 (companion formel de TrueSkill, comme `DecInfer-01b-Lean-…`

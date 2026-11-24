@@ -397,7 +397,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0e-MDL-Mesure-Unique-Python.ipynb` | Image | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0f-Groupes-De-Frise-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/Probas/Infer/Infer-08b-TrueSkill-Formules-Fermees-Python.ipynb` | Infer | python3 | - | - |
+| `MyIA.AI.Notebooks/Probas/Infer/Infer-07b-TrueSkill-Formules-Fermees-Python.ipynb` | Infer | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb` | InformationQuantique | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-02-Trois-Copies-Werner-Distillabilite-Python.ipynb` | InformationQuantique | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/InformationTheory/InformationTheory-01-Entropie-Et-Information-Mutuelle.ipynb` | InformationTheory | python3 | numpy==2.4.6 | - |

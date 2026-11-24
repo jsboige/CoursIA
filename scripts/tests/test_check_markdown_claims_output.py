@@ -1638,7 +1638,7 @@ class TestDerivedClaims:
         assert not _is_input_specification(src, pos, end)
 
     def test_posterior_greek_stays_checked(self):
-        """Fleet collateral (PyMC-08-TrueSkill md[11]): '(perdant,
+        """Fleet collateral (PyMC-07-TrueSkill md[11]): '(perdant,
         $\\mu = 20.8$)' cites an ESTIMATED posterior mean read off a plot --
         greek symbol, but no definition verb on the line."""
         src = "et la rouge (perdant, $\\mu = 20.8$) vers la gauche, quasi symetriquement."
