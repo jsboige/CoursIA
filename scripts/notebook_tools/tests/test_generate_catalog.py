@@ -2271,10 +2271,12 @@ class TestGenerateMarkdownReport:
         kernel_counts = _re.findall(
             r"^- \*\*([^*]+)\*\*: (\d+)$", kernel_section, _re.M
         )
-        assert {name: int(count) for name, count in kernel_counts} == {
+        assert {name: int(count) for name, count in kernel_counts if name != "TOTAL"} == {
             "C#": 1, "Python 3": 3,
         }
-        assert sum(int(count) for _, count in kernel_counts) == len(entries)
+        assert sum(
+            int(count) for name, count in kernel_counts if name != "TOTAL"
+        ) == len(entries)
         assert "- **TOTAL**: 4" in kernel_section
         # Status Summary (first section only) sums to the same total.
         # The explicit `- **TOTAL**: 4` bullet is excluded (it is the
