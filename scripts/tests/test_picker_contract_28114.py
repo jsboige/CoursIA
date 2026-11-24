@@ -26,12 +26,18 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | Invariant | Etat au 22/11 | Preuve |
 |---|---|---|
 | I1 file sans fin par lane | tenu | `tapis_leger.tirage` rend une file a toute lane |
-| I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
+| I2 repli chronologique | tenu (23/11, ce PR) | hors reseau, la voie legere lit le cache local (`tapis_repli.py`) et sert le pool par date de creation |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause`, sur le tirage complet **et** sur la voie legere |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
+
+I2 est devenu **executable** dans ce PR : hors reseau, la voie legere lit le
+CACHE LOCAL (`coordination/tapis_repli.py`), sert le pool dans l'ordre de
+creation, et un curseur persiste fait defiler le pool de bloc en bloc. Le
+marqueur `xfail` du test I2 est donc retire : le test passe, et le CI le
+prouve.
 
 I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
@@ -69,7 +75,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_cache_fichier, gh_selection, main_freshness
-from coordination import tapis_ancre, tapis_leger, tapis_rapide
+from coordination import tapis_ancre, tapis_cap_livraisons, tapis_leger, tapis_rapide
 
 NOW = datetime(2026, 11, 22, 21, 0, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
@@ -157,10 +163,6 @@ def test_I1_chaque_lane_obtient_une_file_non_vide_tant_que_le_pool_est_ouvert():
 
 # --- I2 -- le repli chronologique -----------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I2 viole au 22/11 : la voie legere ne lit aucun cache -- hors reseau, "
-    "elle leve LectureIncomplete et le point d'entree rend le code 3. "
-    "A lever quand le noyau consolide branche le repli chronologique."))
 def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
         tmp_path, monkeypatch):
     """I2 -- hors reseau, le picker defile TOUTES les issues ouvertes, par date.
@@ -173,6 +175,11 @@ def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
     Etat au 22/11 : la voie legere (`tapis_leger.tirage`) ne lit **aucun**
     cache ; hors reseau elle leve `LectureIncomplete` et le point d'entree
     rend le code 3 (rien n'est servi). D'ou le marqueur.
+
+    Etat au 23/11 (ce PR) : la voie legere lit le CACHE LOCAL quand la
+    lecture echoue (`coordination/tapis_repli.py`), et un curseur persiste
+    fait defiler le pool de bloc en bloc. Le marqueur `xfail` est retire :
+    le test passe, et le CI le prouve.
     """
     pool = [_meta(2000 + k,
                   cree=(NOW - timedelta(days=30 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -196,6 +203,96 @@ def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
         vus.update(numeros)
     assert vus == {m["number"] for m in pool}, \
         "des tirages successifs doivent couvrir toutes les issues ouvertes"
+
+
+def test_I2_un_filtre_qui_vide_la_file_bascule_sur_le_repli(tmp_path, monkeypatch):
+    """I2 -- une lecture REUSSIE dont la file sort vide bascule sur le repli.
+
+    Le cas que la revue nomme : les filtres ecartent tous les grains, la
+    lecture du reseau a REUSSI, et la file sort vide -- la lane ne recoit
+    rien et I1 ("file sans fin") est rompu. Le repli chronologique doit donc
+    prendre le relais : le cache local rend une file non vide.
+
+    Le filtre force ici est le **cap de livraisons** : sa mesure aboutit en
+    ligne et ecarte tout. Hors reseau la meme mesure est impossible, et le
+    cap y reste inerte (fail-OPEN) -- c'est ce que le temoin du rapport dit.
+    """
+    pool = [_meta(4000 + k,
+                  cree=(NOW - timedelta(days=20 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+            for k in range(8)]
+    lecture = gh_bulk.Lecture(issues=[_issue(m["number"], m["title"], m["created_at"])
+                                      for m in pool],
+                               prs=[], citations={}, lu_a="2026-11-22T20:00:00Z",
+                               secondes=0.1, appels=1)
+    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
+
+    def charge_saturee(lane, maintenant, prs_ouvertes, run=None):
+        """En ligne la mesure aboutit (tout est ecarte) ; hors reseau elle
+        echoue, et le cap laisse la file intacte (fail-OPEN)."""
+        if run is tapis_cap_livraisons.fetcher_hors_reseau:
+            return None
+        return {m["number"]: 99 for m in pool}
+
+    monkeypatch.setattr(tapis_cap_livraisons, "charge_en_vol", charge_saturee)
+
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "graine", Path("."),
+                                       _run(pool))
+    assert code == 0, "le repli rend une file, pas un echec"
+    assert rapport["voie"] == "repli", "une file vide doit basculer sur le repli"
+    assert rapport["grains"], "le repli doit rendre une file non vide"
+    assert rapport["cap_livraisons"]["mesure"] is False, \
+        "hors reseau le cap n'est pas evalue : le temoin du rapport le dit"
+
+
+def test_I2_le_cap_du_repli_ne_recoit_aucun_fetteur_capable_de_lire_le_reseau(
+        tmp_path, monkeypatch):
+    """I2 -- le cap du repli est INERTE : aucun fetteur reel ne lui est passe.
+
+    Le cap de livraisons lit GitHub (les PRs mergees de la fenetre). Le repli
+    existe POUR la panne du reseau : lui donner un fetteur capable de lire le
+    ferait echouer de nouveau en pleine panne. Le fetteur du repli leve donc,
+    et le rapport porte le temoin `mesure: false`.
+
+    L'espion observe le `run` reellement passe au cap : il doit etre le
+    fetteur INERTE -- ni le `run` de l'appelant, ni `None` (qui lierait le
+    fetteur reel du depot).
+    """
+    import fetch_merged_prs_since
+
+    def sonde(*args, **kwargs):
+        raise AssertionError("le repli ne doit pas lire le reseau")
+
+    monkeypatch.setattr(fetch_merged_prs_since, "run_gh", sonde)
+    pool = [_meta(4100 + k,
+                  cree=(NOW - timedelta(days=15 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+            for k in range(6)]
+    lecture = gh_bulk.Lecture(issues=[_issue(m["number"], m["title"], m["created_at"])
+                                      for m in pool],
+                               prs=[], citations={}, lu_a="2026-11-22T20:00:00Z",
+                               secondes=0.1, appels=1)
+    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
+
+    vues: list = []
+    vrai = tapis_cap_livraisons.passer
+
+    def espion(file, ordre, lane, maintenant, prs_ouvertes, run=None, **kw):
+        vues.append(run)
+        return vrai(file, ordre, lane, maintenant, prs_ouvertes, run=run, **kw)
+
+    monkeypatch.setattr(tapis_cap_livraisons, "passer", espion)
+
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "graine", Path("."),
+                                       _run_casse())
+    assert code == 0, "hors reseau, le repli rend une file, pas un echec"
+    assert rapport["grains"], "le repli doit rendre une file non vide"
+    assert rapport["cap_livraisons"]["mesure"] is False
+    assert vues, "le cap doit avoir ete evalue (et refuse) sur le repli"
+    for run in vues:
+        assert run is tapis_cap_livraisons.fetcher_hors_reseau, \
+            "le cap du repli ne doit recevoir que le fetteur INERTE"
+        assert run is not None, "run=None lierait le fetteur reel du depot"
 
 
 # --- I3 -- l'autonomie de la lane ----------------------------------------------
