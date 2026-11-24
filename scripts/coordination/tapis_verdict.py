@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """Le VERDICT d'un lot qualifie : ce qui fait avancer le curseur.
 
-Une lecture qui echoue n'est pas une decision : le fil illisible
-(`FIL_ILLISIBLE`), le mur atteint (`MUR_EPUISE`), l'echeance (`ECHEANCE`)
-et l'issue absente (`ABSENT`) REFUSENT la prise en charge -- le grain
-n'a pas ete decide, il n'a pas ete lu.
-Seul un verdict **connu** fait avancer le curseur de rotation : un grain
-confirme (servable) ou ecarte par une regle de contenu. Un lot PARTIEL --
-un numero illisible au milieu de trois decisionnes -- laisse donc le
-curseur en place sur ce numero : le tour ne saute pas le numero non
-decide (peer, 19/11).
-
-**Mais un refus ne RETIRE pas la couverture des autres** (contre-exemple
-du 19/11) : le numero refuse est PARKE, il ne bloque pas le curseur et il
+Une lecture qui echoue n'est pas une decision : le fil illisible, le mur
+atteint, l'echeance et l'issue absente REFUSENT la prise en charge. Seul
+un verdict **connu** fait avancer le curseur ; un lot PARTIEL laisse le
+curseur en place sur le numero non decide (peer, 19/11). Un refus ne
+RETIRE pas la couverture des autres : le numero refuse est PARKE et
 revient au tour suivant.
 """
 from __future__ import annotations
@@ -39,12 +32,19 @@ def inconnus(ecartees: dict) -> dict:
             if v.get("code") in CODES_NON_TERMINAUX}
 
 
-def avancer(lane: str, confirmes: dict, ecartees: dict) -> dict:
+def avancer(lane: str, confirmes: dict, ecartees: dict,
+            lot: set[int] | None = None) -> dict:
     """Fait avancer le curseur de la lane sur les verdicts terminaux.
 
-    Sans lane (un appel hors contexte de lane) rien n'est ecrit.
+    `lot` est le lot EFFECTIVEMENT qualifie : le curseur ne passe pas une
+    tranche que ce lot n'a pas prise en charge (review du 19/11). Sans lot,
+    l'avance est bornee aux numeros **LUS** (famine du 19/11 : le curseur
+    passait au max de la tranche alors qu'un seul grain etait lu) : un lu
+    et refuse est couvert, un jamais lu est parque. Sans lane, rien.
     """
     if not lane:
         return {}
-    return tapis_ancre.avancer(lane, terminaux(confirmes, ecartees),
-                               inconnus(ecartees))
+    term = terminaux(confirmes, ecartees)
+    lus = set(confirmes) | set(ecartees)
+    return tapis_ancre.avancer(lane, term, inconnus(ecartees),
+                               set(lot) if lot is not None else lus)
