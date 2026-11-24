@@ -14,6 +14,7 @@ Ce que ces tests fixent :
 
 Aucun test ne touche le reseau : les lectures sont construites en memoire.
 """
+import ast
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -30,6 +31,7 @@ pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 NOW = datetime(2026, 11, 24, 20, 0, tzinfo=UTC)
 LANE = "myia-po-2024:CoursIA-2"
 AUTRE = "myia-po-2027:CoursIA"
+DOSSIER_COORD = Path(__file__).resolve().parents[1] / "coordination"
 
 
 def _h(heures: float) -> str:
@@ -155,3 +157,23 @@ def test_le_relachee_ne_depend_plus_de_la_lane_pour_une_barriere():
         {"created_at": _h(24), "body": f"[RELEASED] lane {AUTRE} -- siege"}])
     assert tapis_attente.relachee(evts, NOW, LANE) is not None
     assert tapis_attente.relachee(evts, NOW, AUTRE) is not None
+
+
+# --- le plafond de l'organe -------------------------------------------------
+
+# La liste des plafonds des organes du tapis vit dans `test_tapis_rapide.py`,
+# un fichier **epingle** (810 lignes, `scripts/ci/script_size_ceilings.json`) :
+# toute entree ajoutee le fait grossir au-dela de son plafond, et le ratchet
+# (`scripts/tests/test_script_size_ratchet.py`) rougit alors la PR qui l'a
+# fait grossir. L'entree de cet organe vit donc dans SON module de test,
+# qui n'est pas epingle.
+
+@pytest.mark.parametrize(("nom", "plafond"), [("tapis_relache.py", 100)])
+def test_plafond_de_lignes(nom, plafond):
+    """L'organe tient son plafond de lignes, et aucune de ses fonctions
+    n'en depasse 60."""
+    texte = (DOSSIER_COORD / nom).read_text(encoding="utf-8")
+    assert len(texte.splitlines()) <= plafond
+    for noeud in ast.walk(ast.parse(texte)):
+        if isinstance(noeud, ast.FunctionDef | ast.AsyncFunctionDef):
+            assert noeud.end_lineno - noeud.lineno + 1 <= 60, noeud.name
