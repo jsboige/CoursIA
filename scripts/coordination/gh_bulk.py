@@ -128,13 +128,22 @@ def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[d
 
 def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH,
                       echeance: float | None = None) -> list[dict]:
-    """Les PRs ouvertes, REST pagine par 100 (un rejeu sur panne transitoire)."""
+    """Les PRs ouvertes, REST pagine par 100 (un rejeu sur panne transitoire).
+
+    Cette lecture porte des CORPS (les corps de PR complets : 2 Mo pour 100
+    PRs ouvertes) : elle prend donc le plafond `TIMEOUT_S_CORPS`, comme la
+    page du pool et la qualification d'un lot. Avec le plafond general
+    (`TIMEOUT_S` = 15 s), la lecture etait TOUJOURS incomplete -- mesure du
+    24/11 sur ce siege : 41 s pour la page 1 des PRs ouvertes -- et
+    l'organe de qualification (`tapis_prise_en_charge`) echouait donc pour
+    toutes les lanes avec `lecture prs_ouvertes incomplete`.
+    """
     rows: list[dict] = []
     for page in range(1, PAGES_PRS_MAX + 1):
         argv = ["gh", "api", f"repos/{depot}/pulls?state=open&per_page=100&page={page}"]
         texte = _appel(run, argv, "prs_ouvertes", page,
-                       timeout=_timeout(echeance)) or _appel(
-            run, argv, "prs_ouvertes", page, timeout=_timeout(echeance))
+                       timeout=_timeout(echeance, TIMEOUT_S_CORPS)) or _appel(
+            run, argv, "prs_ouvertes", page, timeout=_timeout(echeance, TIMEOUT_S_CORPS))
         try:
             chunk = json.loads(texte or "")
             rows.extend({**{k: pr.get(k) or "" for k in _PR_TEXTE}, "number": pr["number"],
