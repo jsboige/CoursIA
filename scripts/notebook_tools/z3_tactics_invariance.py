@@ -31,22 +31,17 @@ chronometre n'est pas un resultat.
 
 Provenance des instances
 ------------------------
-- `petersen_k3`, `petersen_k2` : graphe de Petersen (10 sommets, 15 aretes,
-  `chi(G) = 3`), carnet
-  `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb`
-  (cellules « Graphe de Petersen », « Modele Z3 », « Recherche lineaire du
-  nombre chromatique ») ;
-- `send_more_money` : cryptarithme `SEND + MORE = MONEY`, carnet
-  `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb`
-  (cellule « Cryptarithme classique »).
+Le corpus vient de la **serie Z3-API** elle-meme : le module
+`MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/z3_instances.py` **exporte** les
+encodages que les carnets portent dans leurs cellules (`Z3-11` pour le
+graphe de Petersen, `Z3-10` pour le cryptarithme `SEND + MORE = MONEY`), et
+la sonde l'**importe** au lieu de porter une copie.
 
-Les encodages sont une **copie pedagogique declaree** : la serie Z3-API porte
-la semantique dans des **cellules de carnet** (non importables), et la sonde a
-besoin d'une poignee programmatique sur les contraintes pour opposer deux
-solveurs sur la meme instance. La copie est **fidele** aux carnets sources --
-memes aretes, meme brisure de symetrie (`C0 == 0`), meme domaine, memes
-tetes non nulles -- et la suite donnee par la regle organ-first est d'**exporter
-le corpus depuis la serie source** pour que la sonde consomme l'organe natif.
+C'est la reponse a la question 3 de la regle organ-first : l'organe natif
+existe desormais sous forme importable, il est la **source unique**, et sa
+fidelite aux carnets est **verifiee** par
+`scripts/notebook_tools/tests/test_z3_instances_parity.py`, qui compare
+l'export aux **sorties committes** des carnets.
 """
 
 from __future__ import annotations
@@ -55,24 +50,26 @@ import argparse
 import hashlib
 import json
 import statistics
+import sys
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import z3
 
+#: Racine du depot : le corpus est exporte par la serie Z3-API.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+#: Dossier de la serie Z3-API, qui porte l'export du corpus.
+SERIES_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "SMT" / "Z3-API"
+
+if str(SERIES_DIR) not in sys.path:
+    sys.path.insert(0, str(SERIES_DIR))
+
+from z3_instances import petersen, send_more_money  # noqa: E402
+
 # --- Instances ---------------------------------------------------------------
-
-#: Aretes du graphe de Petersen : pentagone externe, rayons, pentagramme interne.
-PETERSEN_EDGES: tuple[tuple[int, int], ...] = (
-    (0, 1), (1, 2), (2, 3), (3, 4), (4, 0),
-    (0, 5), (1, 6), (2, 7), (3, 8), (4, 9),
-    (5, 7), (7, 9), (9, 6), (6, 8), (8, 5),
-)
-
-#: Lettres du cryptarithme SEND + MORE = MONEY.
-SEND_MORE_LETTERS: tuple[str, ...] = ("S", "E", "N", "D", "M", "O", "R", "Y")
-
 
 @dataclass(frozen=True)
 class Instance:
@@ -82,52 +79,6 @@ class Instance:
     source: str
     build: Callable[[], tuple[list[z3.ExprRef], list[z3.ArithRef]]]
     fingerprint: Callable[[dict[str, int]], str]
-
-
-def _petersen(k: int) -> tuple[list[z3.ExprRef], list[z3.ArithRef]]:
-    """Graphe de Petersen colore avec `k` couleurs (carnet Z3-11).
-
-    Encodage fidele a la cellule « Recherche lineaire du nombre chromatique »
-    du carnet : domaine `0 <= Cv < k`, aretes de couleures differentes, et
-    **brisure de symetrie** `C0 == 0` -- sans elle, le modele n'est pas unique
-    et la comparaison de modeles entre configurations n'aurait pas de sens.
-    """
-    colors = [z3.Int(f"C{v}") for v in range(10)]
-    constraints: list[z3.ExprRef] = [
-        z3.And(color >= 0, color < k) for color in colors
-    ]
-    constraints.append(colors[0] == 0)
-    constraints += [colors[a] != colors[b] for a, b in PETERSEN_EDGES]
-    return constraints, colors
-
-
-def _send_more_money() -> tuple[list[z3.ExprRef], list[z3.ArithRef]]:
-    """Cryptarithme SEND + MORE = MONEY (carnet Z3-10).
-
-    Encodage fidele a la cellule « Cryptarithme classique » : domaine `0..9`,
-    lettres deux a deux distinctes, **tetes non nulles** (`S > 0`, `M > 0`) et
-    equation positionnelle.
-    """
-    digits = {letter: z3.Int(letter) for letter in SEND_MORE_LETTERS}
-    variables = [digits[letter] for letter in SEND_MORE_LETTERS]
-    constraints: list[z3.ExprRef] = [
-        z3.Distinct(*variables),
-        # Chiffres de tete : ni SEND ni MORE ne commence par un zero.
-        digits["S"] > 0,
-        digits["M"] > 0,
-    ]
-    constraints += [
-        z3.And(digits[letter] >= 0, digits[letter] <= 9)
-        for letter in SEND_MORE_LETTERS
-    ]
-    left = 1000 * digits["S"] + 100 * digits["E"] + 10 * digits["N"] + digits["D"]
-    right = 1000 * digits["M"] + 100 * digits["O"] + 10 * digits["R"] + digits["E"]
-    result = (
-        10000 * digits["M"] + 1000 * digits["O"] + 100 * digits["N"]
-        + 10 * digits["E"] + digits["Y"]
-    )
-    constraints.append(left + right == result)
-    return constraints, variables
 
 
 def _defined_values(
@@ -154,24 +105,28 @@ def _fingerprint(values: dict[str, int]) -> str:
 
 
 def instances() -> list[Instance]:
-    """Le corpus de la sonde (deux instances du carnet 12, une du carnet 13)."""
+    """Le corpus de la sonde : deux instances du carnet Z3-11, une de Z3-10.
+
+    Les encodeurs viennent de l'export de la serie (`z3_instances`), pas d'une
+    copie locale : la source unique est la serie.
+    """
     return [
         Instance(
             name="petersen_k3",
             source="Z3-API/Z3-11-Graph-Coloring-Python.ipynb (coloration a 3 couleurs)",
-            build=lambda: _petersen(3),
+            build=lambda: petersen(3),
             fingerprint=_fingerprint,
         ),
         Instance(
             name="petersen_k2",
             source="Z3-API/Z3-11-Graph-Coloring-Python.ipynb (coloration a 2 couleurs : chi(G) > 2)",
-            build=lambda: _petersen(2),
+            build=lambda: petersen(2),
             fingerprint=_fingerprint,
         ),
         Instance(
             name="send_more_money",
             source="Z3-API/Z3-10-Cryptarithmetic-Python.ipynb (SEND + MORE = MONEY)",
-            build=_send_more_money,
+            build=send_more_money,
             fingerprint=_fingerprint,
         ),
     ]
