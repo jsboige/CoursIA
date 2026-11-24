@@ -20,6 +20,7 @@ Ce que ces tests verrouillent :
 
 Aucun test ne touche le reseau : `run` est un faux, le cache est un fake.
 """
+import ast
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -38,6 +39,7 @@ LANE = "myia-ai-01:CoursIA-2"
 COORD = "myia-ai-01:CoursIA"
 ADJOINT = "myia-po-2025:CoursIA-2"
 SECRETAIRE = "myia-po-2028:CoursIA-3"
+DOSSIER_COORD = Path(__file__).resolve().parents[1] / "coordination"
 
 
 def _meta(numero: int, titre: str = "", labels=(), created: str = "2026-01-01T00:00:00Z") -> dict:
@@ -194,3 +196,26 @@ def test_le_rapport_du_repli_publie_la_cause(monkeypatch):
     assert rapport["voie"] == "repli"
     assert rapport["cause_repli"] == cause
     assert rapport["repli"]["cause"] == cause
+
+
+# --- les plafonds des organes de ce PR --------------------------------------
+
+# La liste des plafonds des organes du tapis vit dans `test_tapis_rapide.py`,
+# un fichier **epingle** (810 lignes, `scripts/ci/script_size_ceilings.json`) :
+# toute entree ajoutee le fait grossir au-dela de son plafond, et le ratchet
+# (`scripts/tests/test_script_size_ratchet.py`) rougit alors la PR qui l'a
+# fait grossir. Les entrees des organes de cette PR vivent donc dans SON
+# module de test, qui n'est pas epingle.
+
+@pytest.mark.parametrize(("nom", "plafond"), [("tapis_nature.py", 190),
+                                              ("tapis_occupation_rapport.py", 80),
+                                              ("tapis_repli_cause.py", 40),
+                                              ("tapis_repli_cache.py", 80)])
+def test_plafond_de_lignes(nom, plafond):
+    """L'organe tient son plafond de lignes, et aucune de ses fonctions
+    n'en depasse 60."""
+    texte = (DOSSIER_COORD / nom).read_text(encoding="utf-8")
+    assert len(texte.splitlines()) <= plafond
+    for noeud in ast.walk(ast.parse(texte)):
+        if isinstance(noeud, ast.FunctionDef | ast.AsyncFunctionDef):
+            assert noeud.end_lineno - noeud.lineno + 1 <= 60, noeud.name
