@@ -275,7 +275,7 @@ LOCAL_MODE=false
 
 # ComfyUI
 COMFYUI_API_URL=https://qwen-image-edit.myia.io
-# Hébergement : po-2023 (conteneur comfyui-qwen, RTX 3090 24 GB, port 8188)
+# Hébergement : po-2023 (conteneur comfyui-qwen, GPU0 = RTX 3080 Ti 16 GB, port 8188)
 COMFYUI_AUTH_TOKEN=<bearer_token_bcrypt>
 
 # OpenAI via OpenRouter
@@ -292,8 +292,10 @@ BATCH_MODE=false
 
 | GPU | Model | VRAM | Services |
 |-----|-------|------|----------|
-| GPU0 | RTX 3080Ti | 16 GB | comfyui-qwen, whisper-api, demucs-api |
-| GPU1 | RTX 3090 | 24 GB | vllm-zimage, sd-forge-main, forge-turbo, tts-fishaudio, tts-kokoro, musicgen-api, qwen-asr-api, comfyui-video, whisper-webui |
+| GPU0 | RTX 3080Ti | 16 GB | comfyui-qwen, tts-api, serveur d'embeddings vLLM (hors dépôt) |
+| GPU1 | RTX 3090 | 24 GB | comfyui-video, whisper-webui, whisper-api, demucs-api, vllm-zimage, sd-forge-main, forge-turbo, tts-fishaudio, tts-kokoro, tts-qwen, tts-tada, musicgen-api, qwen-asr-api |
+
+**Convention d'index (#28423)** : les composes du banc fixent `CUDA_DEVICE_ORDER=PCI_BUS_ID`, donc l'index de `CUDA_VISIBLE_DEVICES` est celui de `nvidia-smi` — GPU0 = RTX 3080 Ti (`0000:01:00.0`), GPU1 = RTX 3090 (`0000:06:00.0`). Sans cette variable, l'ordre CUDA par défaut est l'inverse et un masque `0` désigne la 3090. Mesuré sur ce banc (WSL2, 2026-11-24) : `device_ids` et `NVIDIA_VISIBLE_DEVICES` n'isolent pas ; seul `CUDA_VISIBLE_DEVICES` isole. Les trois champs désignent néanmoins la même carte, sous une seule variable `GPU_PCI_INDEX`, pour que le conteneur ne voie jamais l'autre carte par accident d'ordre.
 
 ### Quantization Settings per Service
 
@@ -306,6 +308,7 @@ BATCH_MODE=false
 | sd-forge-main | po-2023 | SD Forge SDXL | xformers fp16 | ~6-10 GB |
 | forge-turbo | po-2023 | SD Forge Turbo | xformers fp16 | ~6-10 GB |
 | tts-fishaudio | po-2023 | FishAudio S2-Pro | fp16 (`--half`) — 20,3 Go de VRAM mesurés ; NF4 : 5,00 Go de **fichiers** via le fork, VRAM non mesurée (voir README du service) | ~20 GB |
+| tts-api | po-2023 | Kokoro (`DEFAULT_TTS_MODEL=kokoro`) | fp32/fp16 par défaut, chargé à la demande (`PRELOAD_MODEL=false`) | 0 au repos |
 | tts-kokoro | po-2023 | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
 | musicgen-api | po-2023 | MusicGen-medium | fp16 | ~10 GB |
 | qwen-asr-api | po-2023 | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
