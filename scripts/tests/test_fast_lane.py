@@ -207,14 +207,14 @@ def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
     sources declarees : le test reste valide si le registre evolue.
     """
     declares = {cell["source"] for cell in _live_read_cells()}
-    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life"
+    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/Life"
     voisins = sorted(
         p.relative_to(REPO_ROOT).as_posix()
         for p in dossier.glob("*.lean")
         if p.relative_to(REPO_ROOT).as_posix() not in declares
     )
     assert voisins, "aucun .lean voisin non declare : le controle negatif serait vide"
-    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars.lean"])
+    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway/Life/Pillars.lean"])
     assert not fast_lane.guard_applies(LIVE_READ_GUARD, [voisins[0]])
 
 
@@ -269,6 +269,10 @@ def test_registre_absent_le_module_reste_importable(tmp_path):
     # Les corps des commentaires vivent dans un module voisin (#27572) :
     # l'arbre copie doit le porter, sinon l'import du registre meurt.
     shutil.copyfile(CI_DIR / "fast_lane_commenters.py", ci / "fast_lane_commenters.py")
+    # Le corps du garde `twin-execution-heritage-guard` vit de la meme maniere
+    # (#27995) : l'arbre copie doit porter ce module voisin, lui aussi.
+    shutil.copyfile(CI_DIR / "fast_lane_twin_heritage.py",
+                    ci / "fast_lane_twin_heritage.py")
     code = (
         "import json, sys\n"
         f"sys.path.insert(0, {str(ci)!r})\n"

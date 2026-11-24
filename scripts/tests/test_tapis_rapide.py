@@ -61,6 +61,27 @@ def test_label_candidate_delivered():
     assert etat(lec, 1).ecart == "LABEL" and etat(lec, 2).ecart is None
 
 
+def test_label_pause_exclut_le_grain_quelle_que_soit_la_casse():
+    """I5 (#28114) : la pause est une DONNEE (un label), pas une memoire.
+
+    Le nom GitHub est libre : `Pause` et `pause` sont le meme label. Un grain
+    qui ne porte pas le label reste servable -- la regle ne vise que lui.
+    """
+    lec = lecture([issue(1, labels=["pause"]), issue(2, labels=["Pause"]),
+                   issue(3, labels=["bug"])])
+    assert etat(lec, 1).ecart == "LABEL" and etat(lec, 2).ecart == "LABEL"
+    assert "pause" in etat(lec, 1).motif
+    assert etat(lec, 3).ecart is None
+
+
+def test_le_role_d_un_grain_en_pause_est_attente():
+    """La pause est une ATTENTE ; l'urne de cloture reste l'urne."""
+    from coordination import visit_coverage
+    lec = lecture([issue(1, labels=["pause"]), issue(2, labels=["candidate-delivered"])])
+    assert visit_coverage.role(etat(lec, 1)) == "attente"
+    assert visit_coverage.role(etat(lec, 2)) == "urne"
+
+
 def test_gel_par_le_body_et_non_par_une_mention():
     lec = lecture([issue(1, body="[FROZEN] attente du user\n\nContexte"),
                    issue(2, body="Contexte : on parle ici du marqueur [FROZEN] en passant.")])
@@ -690,11 +711,20 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # elle-meme : le diff ET l'etat de la PR -- extrait de tapis_diff.py pour
 # tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
 # son conteneur, son echec et la mise a plat d'une issue -- extrait de
+# gh_bulk.py pour tenir le plafond, 19/11) ; tapis_non_tente.py la
+# vingt-deuxieme (le grain NON TENTE : propose, jamais qualifie -- ni verdict
+# terminal, ni refus de lecture ; il ne fige pas le curseur, 19/11) ;
+# tapis_etat_schema.py la vingt-troisieme (le SCHEMA de l'etat : les classes,
+# l'etat neuf, les accesseurs, extrait de tapis_etat.py pour tenir le
+# plafond, 19/11) ; tapis_etat_commit.py la vingt-quatrieme (le COMMIT qui a
+# ecrit l'etat : l'etat est lie au code qui l'a produit, 19/11) ;
+# tapis_entrelace.py la vingt-cinquieme (le LOT entrelace : primaire et
+# reprise alternes, la reprise passe devant un tour sur deux, 19/11).
 # gh_bulk.py pour tenir le plafond, 19/11).
-# 18/11) ; tapis_dernier_grain.py la vingt-deuxieme (le DERNIER GRAIN d'une issue --
+# 18/11) ; tapis_dernier_grain.py la vingt-sixieme (le DERNIER GRAIN d'une issue --
 # grain, passage, absence etablie ou non mesurable -- et la regle des SEANCES,
 # extraite de tapis_equilibre.py pour que le module du classement tienne son
-# plafond, #27242, 19/11) ; tapis_citations.py la vingt-troisieme (les citations des
+# plafond, #27242, 19/11) ; tapis_citations.py la vingt-septieme (les citations des
 # PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
 # belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
 # passe pas devant les premieres visites, #27338) ; tapis_acceptance.py la
@@ -707,7 +737,17 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # SORTIE TEXTE de la voie leger -- extraite de tapis_leger.py pour que la greffe
 # du cap de livraisons tienne le plafond, #21067, 22/11) ;
 # tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
-# sur la voie de tirage reelle, #21067, 22/11).
+# sur la voie de tirage reelle, #21067, 22/11) ; tapis_labels.py la
+# trentieme (les EXCLUSIONS EN DONNEES : la table des labels qui ecartent un
+# grain -- l'urne de cloture et la pause, #28114, 23/11) ;
+# tapis_occupation.py la trente-et-unieme (l'OCCUPATION d'un grain : l'urne de
+# cloture et la PR qui le tient, #28090, 22/11) ; tapis_leger_rapport.py la
+# trente-deuxieme (le RAPPORT du tirage leger -- extrait pour que le cumul des deux
+# organes du tapis tienne le plafond, #28090 + #27223, 22/11) ;
+# tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
+# de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
+# 22/11).
+
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -720,6 +760,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_reverif.py", 120),
                                               ("gh_issues.py", 80),
                                               ("tapis_leger.py", 220),
+                                              ("tapis_repli.py", 160),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),
@@ -729,7 +770,12 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80),
                                               ("tapis_ancre.py", 140),
-                                              ("tapis_etat.py", 115),
+                                              ("tapis_avance.py", 60),
+                                              ("tapis_non_tente.py", 60),
+                                              ("tapis_etat.py", 95),
+                                              ("tapis_etat_schema.py", 80),
+                                              ("tapis_etat_commit.py", 100),
+                                              ("tapis_entrelace.py", 40),
                                               ("tapis_retry.py", 50),
                                               ("tapis_tranche.py", 70),
                                               ("tapis_verdict.py", 50),
@@ -738,17 +784,24 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_lecture.py", 70),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
+                                              ("tapis_preuve.py", 110),
+                                              ("tapis_public.py", 40),
                                               ("tapis_dernier_grain.py", 260),
                                               ("tapis_citations.py", 40),
                                               ("belt_equite.py", 110),
-                                              ("tapis_preuve.py", 110),
+                                              ("tapis_tete.py", 30),
                                               ("tapis_ecarts_fond.py", 50),
                                               ("tapis_voie_leger.py", 40),
                                               ("tapis_acceptance.py", 300),
                                               ("tapis_assiette.py", 200),
                                               ("tapis_attente.py", 60),
                                               ("tapis_leger_texte.py", 80),
-                                              ("tapis_cap_livraisons.py", 160)])
+                                              ("tapis_cap_livraisons.py", 160),
+                                              ("tapis_labels.py", 60),
+                                              ("tapis_occupation.py", 298),
+                                              ("tapis_leger_rapport.py", 50),
+                                              ("tapis_leger_texte_occupation.py", 33)])
+
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
