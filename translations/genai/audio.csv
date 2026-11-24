@@ -5976,7 +5976,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-1-Chatterbox-TTS-Python.ipynb
 - Experimenter avec des textes multilingues (si disponible)
 
 ***",,,,,,,,44c33fcc8175aaae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-header,markdown,fr,617cad83cedf1d62,"# XTTS v2 - Clonage Vocal Zero-Shot
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-header,markdown,fr,a8f5f421a1a011c7,"# XTTS v2 - Clonage Vocal Zero-Shot
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Intermediaire  
@@ -5999,7 +5999,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-hea
 - `pip install TTS`
 - Notebook 02-1 recommande (pour comparaison avec Chatterbox)
 
-**Navigation :** [<< 02-1](Audio-02-1-Chatterbox-TTS-Python.ipynb) | [Index](../README.md) | [Suivant >>](02-3-MusicGen-Generation.ipynb)",,,,,,,,617cad83cedf1d62,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-1](Audio-02-1-Chatterbox-TTS-Python.ipynb) | [Index](../README.md) | [Suivant >>](02-3-MusicGen-Generation.ipynb)",,,,,,,,a8f5f421a1a011c7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-params,code,fr,03023c6e52237131,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -7837,7 +7837,7 @@ La Section 3 montre l'impact des paramètres:
 
 **Soumission** : PR avec titre ""Challenge #6 - [Votre Nom]"", description, paramètres testés et justification du choix
 ",,,,,,,,c694761e1ae62341,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-header,markdown,fr,7ef035610b0cf1bd,"# Demucs v4 - Separation de Sources Audio
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-header,markdown,fr,31ecc69ed19c9af8,"# Demucs v4 - Separation de Sources Audio
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Intermediaire  
@@ -7860,7 +7860,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,ce
 - `pip install demucs`
 - Un fichier audio pour tester (ou utiliser le fichier synthetique genere)
 
-**Navigation :** [<< 02-3](02-3-MusicGen-Generation.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,7ef035610b0cf1bd,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-3](02-3-MusicGen-Generation.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,31ecc69ed19c9af8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-params,code,fr,27c1f2ec3473cbb7,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -8772,7 +8772,7 @@ Ce notebook a permis d'explorer les aspects essentiels de 02 4 demucs source sep
 - Les résultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d'autres domaines.",,,,,,,,a97ba7c8339446ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb,cell-header,markdown,fr,570b53477c24cff7,"# Multi-Model TTS Gateway - Synthese Vocale Multi-Modèles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb,cell-header,markdown,fr,ed94bb83516e87ee,"# Multi-Model TTS Gateway - Synthese Vocale Multi-Modèles
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Avance  
@@ -8794,7 +8794,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Pyt
 - Notebooks 01-5 (Kokoro) et 02-1 (Chatterbox) recommandes
 - Comprehension de l'API OpenAI TTS
 
-**Navigation :** [<< 02-4](02-4-Demucs-Source-Separation.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-6-MIDI-Generation-Python.ipynb)",,,,,,,,570b53477c24cff7,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-4](02-4-Demucs-Source-Separation.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-6-MIDI-Generation-Python.ipynb)",,,,,,,,ed94bb83516e87ee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb,cell-params,code,fr,9d77dc264271e50a,"import os
 
 # Parametres Papermill - JAMAIS modifier ce commentaire
@@ -9595,7 +9595,7 @@ else:
 - Kokoro est le plus stable et le plus rapide, donc bon fallback
 
 > **Note technique** : Ajoutez un système de cache pour les textes repetitifs. Utilisez un hash du texte comme cle de cache pour eviter de regenerer le même audio.",,,,,,,,7dec71c219b6ebfe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb,2724266b,markdown,fr,01ee4bde1bb36f77,"# Generation MIDI avec midi-model (SkyTNT)
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb,2724266b,markdown,fr,b4f09e6cdfd66fa8,"# Generation MIDI avec midi-model (SkyTNT)
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Intermediaire  
@@ -9619,7 +9619,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipyn
 - `pip install torch safetensors peft transformers pyfluidsynth tqdm huggingface_hub`
 - Connaissances de base en théorie musicale (gammes, accords) utiles mais pas indispensables
 
-**Navigation :** [<< 02-5](Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-7-YuE2-Song-Generation-Python.ipynb) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,01ee4bde1bb36f77,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-5](Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-7-YuE2-Song-Generation-Python.ipynb) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,b4f09e6cdfd66fa8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb,bdd0ca09,code,fr,3061d97a2dfbd2fb,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -10767,7 +10767,7 @@ Composer une piece MIDI multi-instruments en utilisant les prompts musicaux et c
 ***
 
 **Soumission** : PR avec titre ""Exercice MIDI - [Votre Nom]"", fichiers générés et tableau comparatif",,,,,,,,7fbc1006edfd4ed6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb,1749c38e,markdown,fr,9d2a2882e610def8,"# Generation de Chansons Completes : YuE vs SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb,1749c38e,markdown,fr,d59866605fa430b0,"# Generation de Chansons Completes : YuE vs SongGeneration 2
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Avance  
@@ -10796,7 +10796,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python
 
 **Valeurs quantitatives :** les chiffres cites (PER 8.55%, RTF 0.82, temps de generation) proviennent de benchmarks publies par les auteurs des modeles -- ils ne sont pas mesures dans ce notebook (aucune generation n'est executee sans modele installe).
 
-**Navigation :** [<< 02-6](Audio-02-6-MIDI-Generation-Python.ipynb) | [Index](../README.md) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,9d2a2882e610def8,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-6](Audio-02-6-MIDI-Generation-Python.ipynb) | [Index](../README.md) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,d59866605fa430b0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb,75e87992,code,fr,74daf23b20421a88,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -12093,7 +12093,7 @@ Ce notebook a presente les deux modèles open-source les plus avances pour la ge
 **Le champ de la generation audio est en evolution rapide. Les modèles presentes ici representent l'etat de l'art en 2025, mais des itérations plus performantes sont attendues dans les mois a venir.**
 
 |",,,,,,,,ac78d21a22c392ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,ca0cf66a,markdown,fr,6d034982c058e2a8,"# TTS Expressif : Fish S2 Pro et Modèles SOTA
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,ca0cf66a,markdown,fr,390b78a1855705d1,"# TTS Expressif : Fish S2 Pro et Modèles SOTA
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Avance  
@@ -12115,7 +12115,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,ca0cf66a,mar
 - `pip install fish-speech` ou `pip install fish-audio-sdk` (API cloud)
 - Connaissances TTS de base (notebooks 01-1, 01-5, 02-1)
 
-**Navigation :** [<< 02-7](Audio-02-7-YuE2-Song-Generation-Python.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-9-AceStep-Music-Generation-Python.ipynb) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,6d034982c058e2a8,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-7](Audio-02-7-YuE2-Song-Generation-Python.ipynb) | [Index](../README.md) | [Suivant >>](Audio-02-9-AceStep-Music-Generation-Python.ipynb) | [03-1 >>](../03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb)",,,,,,,,390b78a1855705d1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,16459442,code,fr,c345d205d178be56,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -14658,7 +14658,7 @@ Tags de genre + Paroles structurees → LM Encoder → DiT Diffusion → VAE Dec
 | Artefacts sur longues durees | Limite du contexte | Segmenter en morceaux de 2-3 min |
 | Anglais dominant | Données d'entrainement | Ajuster `guidance_scale` pour autres langues |
 | Pas de contrôle fin du chant | Pas de melodie de reference | Combiner avec un modèle de voix |",,,,,,,,bda41c66c63b6b7d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb,cell-header,markdown,fr,2aee5842ff09e10e,"# Comparaison Multi-Modèles Audio
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb,cell-header,markdown,fr,74a02341f379b134,"# Comparaison Multi-Modèles Audio
 
 **Module :** 03-Audio-Orchestration  
 **Niveau :** Avance  
@@ -14682,7 +14682,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comp
 - Cle API OpenAI configuree (`OPENAI_API_KEY` dans `.env`)
 - `pip install faster-whisper chatterbox-tts kokoro soundfile matplotlib`
 
-**Navigation :** [<< 02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) | [Index](../README.md) | [Suivant >>](Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb)",,,,,,,,2aee5842ff09e10e,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) | [Index](../README.md) | [Suivant >>](Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb)",,,,,,,,74a02341f379b134,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb,cell-params,code,fr,08cd94ec5006af4f,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -16071,7 +16071,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comp
 - Generer un radar plot multi-critères (latence, qualite, cout, VRAM)
 - Sauvegarder les résultats en JSON pour comparaison future
 - Implementer un test de charge avec plusieurs fichiers audio",,,,,,,,235b93996aa4cdf5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb,cell-header,markdown,fr,96ef83e4fd688d78,"# Orchestration de Pipelines Audio
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb,cell-header,markdown,fr,96643ea179e7f3f1,"# Orchestration de Pipelines Audio
 
 **Module :** 03-Audio-Orchestration  
 **Niveau :** Avance  
@@ -16094,7 +16094,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchest
 - Cle API OpenAI configuree (`OPENAI_API_KEY` dans `.env`)
 - `pip install faster-whisper openai soundfile kokoro`
 
-**Navigation :** [<< 03-1](Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb) | [Index](../README.md) | [Suivant >>](Audio-03-3-Realtime-Voice-API-Python.ipynb)",,,,,,,,96ef83e4fd688d78,,,,,,,,,,,,,,,
+**Navigation :** [<< 03-1](Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb) | [Index](../README.md) | [Suivant >>](Audio-03-3-Realtime-Voice-API-Python.ipynb)",,,,,,,,96643ea179e7f3f1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb,cell-params,code,fr,9d9b66986b89c850,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -17276,7 +17276,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchest
 - [ ] Comparer 2 modèles LLM différents (gpt-5.6-luna vs gpt-4o)
 - [ ] Créer une interface interactive (input utilisateur)
 - [ ] Sauvegarder l'historique des conversations",,,,,,,,439289417840fdd3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb,cell-header,markdown,fr,28cbd1905045a88b,"# OpenAI Realtime Voice API
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb,cell-header,markdown,fr,e5a84120d54a0ae7,"# OpenAI Realtime Voice API
 
 **Module :** 03-Audio-Orchestration  
 **Niveau :** Avance  
@@ -17300,7 +17300,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Pyt
 - `pip install websockets openai`
 - Pas de GPU necessaire (API cloud)
 
-**Navigation :** [<< 03-2](Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb) | [Index](../README.md) | [Suivant >>](../04-Applications/Audio-04-1-Educational-Audio-Content-Python.ipynb)",,,,,,,,28cbd1905045a88b,,,,,,,,,,,,,,,
+**Navigation :** [<< 03-2](Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb) | [Index](../README.md) | [Suivant >>](../04-Applications/Audio-04-1-Educational-Audio-Content-Python.ipynb)",,,,,,,,e5a84120d54a0ae7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb,cell-params,code,fr,3ce47e204b93a462,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -18478,7 +18478,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/Audio-03-3-Realtime-Voice-API-Pyt
 
 **Note** : Ce notebook couvre les fondamentaux de l'API Realtime. Pour une utilisation en production, consultez la documentation officielle OpenAI pour les mises a jour de l'API et les bonnes pratiques de securite.
 ",,,,,,,,2af01bf53c38fdd4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-1-Educational-Audio-Content-Python.ipynb,cell-header,markdown,fr,04a8df1f56e2e1de,"# Création de Contenu Audio Educatif
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-1-Educational-Audio-Content-Python.ipynb,cell-header,markdown,fr,0444ee728c9c0dc7,"# Création de Contenu Audio Educatif
 
 **Module :** 04-Audio-Applications  
 **Niveau :** Applications  
@@ -18502,7 +18502,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-1-Educational-Audio-Conte
 - pydub installe (manipulation audio)
 - Comprehension de base du TTS et du STT
 
-**Navigation :** [Index](../README.md) | [<< Précédent](../03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb) | [Suivant >>](04-2-Transcription-Pipeline.ipynb)",,,,,,,,04a8df1f56e2e1de,,,,,,,,,,,,,,,
+**Navigation :** [Index](../README.md) | [<< Précédent](../03-Orchestration/Audio-03-3-Realtime-Voice-API-Python.ipynb) | [Suivant >>](04-2-Transcription-Pipeline.ipynb)",,,,,,,,0444ee728c9c0dc7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-1-Educational-Audio-Content-Python.ipynb,cell-params,code,fr,4c9e659c4ed75357,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -20944,7 +20944,7 @@ La synthèse a été exécutée avec le modèle **gratuit** `fish-audio/s2.1-pro
 - La section 10 mesure la mélodie sur des signaux synthétiques : elle ne mesure pas encore l'effet des annotations sur une voix TTS réelle.
 - La validation par synthèse porte sur 6 extraits (3 segments × 2 syntaxes) au modèle gratuit, sans référence de voix : elle prouve que les balises ne sont pas prononcées, pas que chaque personnage est distingué.
 - Les mesures de la section 10 dépendent de la version de librosa : la 0.11.0 reproduit exactement les valeurs commentées, la 1.0.0 donne 17,4 notes effectives au lieu de 17,8 pour la mélodie (verdicts inchangés).",,,,,,,,26b7f0285422eadd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,ab3609d0,markdown,fr,87b1b6de8c3bbd6e,"# P4 — Generation TTS pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,ab3609d0,markdown,fr,4dd558be459933b2,"# P4 — Generation TTS pour Audiobook
 
 **Navigation** : [Index](../README.md) | [<< Précédent](Audio-04-10-Annotation-Prosodique-Python.ipynb) | [Suivant >>](Audio-04-12-Compilation-Audio-Python.ipynb)
 
@@ -20956,7 +20956,7 @@ Ce carnet transforme les annotations prosodiques P3 et la configuration vocale P
 2. Mapper chaque segment au bon modèle/voix TTS
 3. Generer les fichiers audio pour les 342 segments du texte
 4. Exporter les metadonnees de generation (durees, tailles, paths)
-",,,,,,,,87b1b6de8c3bbd6e,,,,,,,,,,,,,,,
+",,,,,,,,4dd558be459933b2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,c84ee935,code,fr,dcf1852d92adec3c,"# Import guards - availability flags for external dependencies
 
 try:
@@ -22290,7 +22290,7 @@ def generate_comparison_report(kokoro_segs, fish_segs):
     return """"  # TODO etudiant
 
 print(""Exercice a completer"")",,,,,,,,84dbf3a5ad2da324,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb,6534c65c,markdown,fr,547df5573cebc4f4,"# P5 — Compilation Audio pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb,6534c65c,markdown,fr,4050d32e51feb2c3,"# P5 — Compilation Audio pour Audiobook
 
 **Navigation** : [Index](../README.md) | [<< Précédent](04-11-Generation-TTS.ipynb) | [Suivant >>](../04-Voix/Audio-04-19-Evaluation-MOS-Python.ipynb)
 
@@ -22303,7 +22303,7 @@ Ce carnet assemble les segments MP3 produits en P4, applique des transitions et 
 3. Normaliser le volume global
 4. Exporter l'audiobook final + manifest JSON
 5. Verifier la qualite audio (duree, clipping, niveaux)
-",,,,,,,,547df5573cebc4f4,,,,,,,,,,,,,,,
+",,,,,,,,4050d32e51feb2c3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-12-Compilation-Audio-Python.ipynb,c3bee5ce,code,fr,7e1fc70bca3304c3,"import json
 import os
 import struct
@@ -22763,7 +22763,7 @@ superieure avec les 15000+ tags expressifs (`[whisper]`, `[shout]`, `[cold]`, et
 - Jingles/musique d'ambiance entre chapitres
 - Variation de vitesse par type de segment (narration vs dialogue)
 - Stereo spatial pour separer narrateur et personnages",,,,,,,,8e347eaea3f122d8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb,c96aaa95,markdown,fr,15501c54e6ceb83f,"# Audiobook Agentique avec FishAudio S2-Pro
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb,c96aaa95,markdown,fr,60d45465963d6e89,"# Audiobook Agentique avec FishAudio S2-Pro
 
 **Module :** 04-Audio-Applications  
 **Niveau :** Applications avancees  
@@ -22788,7 +22788,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-13-Audiobook
 - Service Whisper STT actif (Docker, port 8190)
 
 **Navigation :** [Index](../README.md) | [<< Précédent](Audio-04-12-Compilation-Audio-Python.ipynb) | [Suivant >>](../Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb)
-**Chaine audiobook dont ce carnet est le capstone** : [P0 04-7](../04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | [P1 04-8](04-8-Lecture-Analytique.ipynb) | [P2 04-9](../04-Voix/04-9-Voice-Casting.ipynb) | [P3 04-10](Audio-04-10-Annotation-Prosodique-Python.ipynb) | [P4 04-11](04-11-Generation-TTS.ipynb) | [P5 04-12](Audio-04-12-Compilation-Audio-Python.ipynb)",,,,,,,,15501c54e6ceb83f,,,,,,,,,,,,,,,
+**Chaine audiobook dont ce carnet est le capstone** : [P0 04-7](../04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | [P1 04-8](04-8-Lecture-Analytique.ipynb) | [P2 04-9](../04-Voix/04-9-Voice-Casting.ipynb) | [P3 04-10](Audio-04-10-Annotation-Prosodique-Python.ipynb) | [P4 04-11](04-11-Generation-TTS.ipynb) | [P5 04-12](Audio-04-12-Compilation-Audio-Python.ipynb)",,,,,,,,60d45465963d6e89,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-13-Audiobook-FishAudio-S2Pro-Python.ipynb,893e7da1,code,fr,671eed226147ba9b,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -23525,7 +23525,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-13-Audiobook
 - [ ] Tester 3 combinaisons de balises différentes sur le même segment
 - [ ] Generer un spectrogramme comparatif avec `librosa`
 - [ ] Mesurer la duree des pauses generees par `[pause]` vs `[long pause]`",,,,,,,,0642d6e8085be7eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,cell-header,markdown,fr,842371450270e015,"# Pipeline de Transcription et Sous-titrage
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,cell-header,markdown,fr,e998a7e0a553849a,"# Pipeline de Transcription et Sous-titrage
 
 **Module :** 04-Audio-Applications  
 **Niveau :** Applications  
@@ -23549,7 +23549,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,
 - faster-whisper installe (transcription locale)
 - Comprehension du STT et des formats de sous-titres
 
-**Navigation :** [Index](../README.md) | [<< Précédent](Audio-04-1-Educational-Audio-Content-Python.ipynb) | [Suivant >>](04-3-Music-Composition-Workflow.ipynb)",,,,,,,,842371450270e015,,,,,,,,,,,,,,,
+**Navigation :** [Index](../README.md) | [<< Précédent](Audio-04-1-Educational-Audio-Content-Python.ipynb) | [Suivant >>](04-3-Music-Composition-Workflow.ipynb)",,,,,,,,e998a7e0a553849a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,cell-params,code,fr,40199ea43f33f1f9,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -26002,7 +26002,7 @@ Ce notebook a presente un pipeline complet de composition musicale assistee par 
 - Les transitions automatiques ne tiennent pas compte du tempo ou de l'harmonie
 
 **Prochaine étape** : Synchroniser audio et video dans le notebook 04-4-Audio-Video-Sync",,,,,,,,2b596ffa8ce8f734,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb,cell-header,markdown,fr,54eba768bc65ae06,"# Synchronisation Audio-Video (Passerelle)
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb,cell-header,markdown,fr,f449702db2f50cb3,"# Synchronisation Audio-Video (Passerelle)
 
 **Module :** 04-Audio-Applications  
 **Niveau :** Applications  
@@ -26028,7 +26028,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb,cell-h
 
 > **Note** : Ce notebook est la **passerelle** entre la serie Audio et la serie Video. Il utilise des techniques audio pour enrichir du contenu video. La serie Video (`Video/01-Foundation/`) approfondit la generation et l'edition video.
 
-**Navigation :** [Index](../README.md) | [<< Précédent](04-3-Music-Composition-Workflow.ipynb) | [Suivant >>](Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | [Serie Video >>](../../Video/01-Foundation/01-1-Video-Operations-Basics.ipynb)",,,,,,,,54eba768bc65ae06,,,,,,,,,,,,,,,
+**Navigation :** [Index](../README.md) | [<< Précédent](04-3-Music-Composition-Workflow.ipynb) | [Suivant >>](Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | [Serie Video >>](../../Video/01-Foundation/01-1-Video-Operations-Basics.ipynb)",,,,,,,,f449702db2f50cb3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-4-Audio-Video-Sync.ipynb,cell-params,code,fr,fc0e422c6c6f52e6,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -27367,7 +27367,7 @@ assert final_video.exists(), ""Video finale manquante""
 assert final_video.stat().st_size > 1000, ""Video trop petite (corrompue?)""
 print(f""Video OK: {final_video.stat().st_size/1024:.1f} KB"")
 ```",,,,,,,,b8f689f6b02a877b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-5-LiveCoding-LLM-Music-Python.ipynb,1c39ca21,markdown,fr,96f143d960df643b,"# Live Coding Musical pilote par LLM
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-5-LiveCoding-LLM-Music-Python.ipynb,1c39ca21,markdown,fr,a1b7cb269856c955,"# Live Coding Musical pilote par LLM
 
 **Module :** 04-Audio-Applications  
 **Niveau :** Avance  
@@ -27391,7 +27391,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-5-LiveCoding-LLM-Music-Py
 - Navigateur web avec JavaScript active (pour Strudel.cc)
 - Optionnel : SuperCollider + `pip install supriya` (pour synthese avancee)
 
-**Navigation :** [Index](../README.md) | [<< Précédent](04-4-Audio-Video-Sync.ipynb) | [Suivant >>](04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) | [Image >>](../../Image/README.md)",,,,,,,,96f143d960df643b,,,,,,,,,,,,,,,
+**Navigation :** [Index](../README.md) | [<< Précédent](04-4-Audio-Video-Sync.ipynb) | [Suivant >>](04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) | [Image >>](../../Image/README.md)",,,,,,,,a1b7cb269856c955,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/Audio-04-5-LiveCoding-LLM-Music-Python.ipynb,2d2adb6d,code,fr,a9e98d27b3dd64bc,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -28588,7 +28588,7 @@ Ce notebook est une introduction. Pour aller plus loin :
 4. **Performance live** : Système temps reel avec feedback visuel
 
 > **Vision** : L'avenir du live coding n'est pas de remplacer le musicien, mais de lui donner des ""super-pouvoirs"" creatifs - generer des idees, explorer des variations, et repousser les limites de l'improvisation.",,,,,,,,5d9a15a74e0fd227,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,e9f5e8dc,markdown,fr,f8b91718f2dc5ad8,"# Pipeline Audiobook Agentique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,e9f5e8dc,markdown,fr,0b56d881c582094d,"# Pipeline Audiobook Agentique
 
 **Module :** 04-Audio-Applications  
 **Niveau :** Applications  
@@ -28610,7 +28610,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-
 - pydub installe (manipulation audio)
 - Comprehension de base du TTS et du parsing de texte
 
-**Navigation :** [Index](../README.md) | [<< Précédent](../Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | [Suivant >>](../04-Voix/04-7-TTS-Voice-Benchmark.ipynb)",,,,,,,,f8b91718f2dc5ad8,,,,,,,,,,,,,,,
+**Navigation :** [Index](../README.md) | [<< Précédent](../Audio-04-5-LiveCoding-LLM-Music-Python.ipynb) | [Suivant >>](../04-Voix/04-7-TTS-Voice-Benchmark.ipynb)",,,,,,,,0b56d881c582094d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,b251a606,code,fr,711cdce76b4d8eed,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -28726,7 +28726,7 @@ if llm_client:
     print(f""vLLM disponible sur {vllm_base} (modele: {llm_model})"")
 else:
     print(""VLLM_API_KEY non definie - analyse LLM desactivee"")",,,,,,,,856923b04ed95ea0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,a84db7b9,markdown,fr,093579b50b612e23,"***
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,a84db7b9,markdown,fr,259b5c750afa8798,"***
 
 ## Architecture 5 passes de l'audiobook agentique
 
@@ -28771,7 +28771,7 @@ Texte litteraire brut
   audiobook_chapitre.mp3
 ```
 
-***",,,,,,,,093579b50b612e23,,,,,,,,,,,,,,,
+***",,,,,,,,259b5c750afa8798,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,9d0d89d8,markdown,fr,819d437e58c53d81,"## Section 1 : Pass 1 - Analyse du texte litteraire
 
 La première passe analyse le texte pour identifier les personnages, leurs traits, et extraire les dialogues. Pour un audiobook, cette analyse est cruciale car elle determine le nombre de voix necessaires et la structure de la narration.
@@ -29297,7 +29297,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-
 > **Note technique** : Pour un audiobook complet, decouper en chapitres de 10-15 minutes et assembler les chapitres en un second niveau de concatenation avec des silences de 3 secondes entre chapitres.
 
 **Note drainage wallclock** : la duree totale est un *runtime machine-dep* -- elle depend du nombre de segments concatenes, de la longueur de chaque segment TTS (lui-même runtime), et des silences config (frozen). La fourchette `~30-120s` est preservee comme **ordre de grandeur indicatif** pour un extrait de 3-5 segments, pas comme une mesure reproductible (la sortie audio runtime exacte varie d'une exécution a l'autre selon le modèle OpenAI TTS charge, la latence réseau, etc.). Les autres paramètres du tableau (silences 800-1500ms, normalisation -20 dBFS, format MP3 192kbps) sont des **valeurs de configuration pydub** -- frozen, non-runtime. Cf PR #9716 (4-6 drainage initial 3 wall-clock claims equivalents) et rapport inventaire residuel #10538 pour l'inventaire exhaustif 308 wallclock residuels / 190 drainables.",,,,,,,,32d285d32200bb32,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,8cca62c3,markdown,fr,65af07b691cf544d,"## Section 5 : Architecture 5 passes - Synthese
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,8cca62c3,markdown,fr,5dec0bb17e81f5ac,"## Section 5 : Architecture 5 passes - Synthese
 
 Ce notebook a implemente les passes P1, P4 et P5 du pipeline audiobook agentique. Voici la vue d'ensemble complete :
 
@@ -29316,7 +29316,7 @@ Ce notebook a implemente les passes P1, P4 et P5 du pipeline audiobook agentique
 - P2 (Voice casting) : premiere version par regles dans `04-8` (section 6, recommandations de voix) ; approfondissement `04-9-Voice-Casting.ipynb` ; `02-2-XTTS-Voice-Cloning.ipynb` pour le clonage vocal
 - P3 (Annotation prosodique) : `Audio-04-10-Annotation-Prosodique-Python.ipynb` dans cette serie ; `02-8-Expressive-TTS.ipynb` pour les tags d'emotion et de rythme
 - P4 (Generation TTS) : `04-11-Generation-TTS.ipynb` — moteurs locaux Kokoro et FishAudio
-",,,,,,,,65af07b691cf544d,,,,,,,,,,,,,,,
+",,,,,,,,5dec0bb17e81f5ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb,0faf1728,markdown,fr,5975d7132aef0738,"***
 
 ## Exercice : Detecteur de personnages et classificateur de voix
@@ -29531,7 +29531,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/Audio-04-6-Audiobook-
 - [ ] Generer les sous-titres synchronises via Whisper
 - [ ] Comparer différentes voix pour un même personnage
 - [ ] Paralleliser la synthese TTS avec asyncio",,,,,,,,7b42a6ca78974cc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,f888a10f,markdown,fr,6c5cb1af936c65a8,"# Benchmark TTS : Comparaison des Modèles Vocaux pour l'Audiobook Agentique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,f888a10f,markdown,fr,3968ac4d8a264469,"# Benchmark TTS : Comparaison des Modèles Vocaux pour l'Audiobook Agentique
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Audiobook/Audio-04-6-Audiobook-Pipeline-Python.ipynb) | [Suivant >>](../04-Audiobook/04-8-Lecture-Analytique.ipynb)
 
@@ -29564,7 +29564,7 @@ Extrait de *Boule de Suif* de Guy de Maupassant — dataset demo pour l'epic #10
 
 **Comment lire ce notebook** : chaque section suit le même triptyque *protocole -> mesure -> lecture*. Les mesures (latences, tailles de fichiers, status) sont celles du run committe ; les cellules `Lecture` les interpretent une par une. Un troisieme service, Qwen3 TTS, est present dans le protocole mais repond en erreur 401 (*bearer* exige) durant tout le run -- ce fait est lui-même un résultat (section 4), pas un echec du notebook : un benchmark honnete documente les chutes, il ne les efface pas.
 
-**Position dans la serie Audio** : après les notebooks de synthese vocale mono-modèle, ce notebook est le premier a croiser *plusieurs* services sur un même corpus. Le comparatif porte sur trois axes complémentaires : la **latence** (temps de reponse end-to-end), le **cout de sortie** (taille du fichier produit, proxy du bitrate), et la **qualite subjective** (grille MOS, section 10). Le fil conducteur reste l'application cible : un audiobook agentique ou le routeur devra choisir un modèle par segment de texte.",,,,,,,,6c5cb1af936c65a8,,,,,,,,,,,,,,,
+**Position dans la serie Audio** : après les notebooks de synthese vocale mono-modèle, ce notebook est le premier a croiser *plusieurs* services sur un même corpus. Le comparatif porte sur trois axes complémentaires : la **latence** (temps de reponse end-to-end), le **cout de sortie** (taille du fichier produit, proxy du bitrate), et la **qualite subjective** (grille MOS, section 10). Le fil conducteur reste l'application cible : un audiobook agentique ou le routeur devra choisir un modèle par segment de texte.",,,,,,,,3968ac4d8a264469,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,317c8936,markdown,fr,a8e297fa86a474b7,"## 1. Configuration et imports
 
 **Pourquoi ce notebook compare trois services TTS hétérogènes plutôt qu'un seul** : l'audiobook agentique doit choisir, par segment de texte, la voix la plus adaptée (narration descriptive, dialogue, monologue intérieur). Chaque service a un profil distinct — **Kokoro** (modèle local 82M, auto-hébergé sur le stack GenAI), **Qwen3 TTS** (modèle local via gateway multi-TTS), **OpenAI tts-1** (API cloud payante). Les comparer sur les **mêmes extraits** (Boule de Suif, Maupassant 1880) révèle les compromis latence/qualité/coût qui détermineront le routage production. Les *import guards* rendent chaque dépendance optionnelle : le notebook s'exécute en mode dégradé si un service est indisponible (cas réel ci-dessous avec Qwen3), ce qui est la robustesse attendue d'un benchmark reproductible.
@@ -30384,7 +30384,7 @@ def route_tts_pipeline(segments: list, benchmark_data: list = None) -> dict:
 # print(f""Cout estime : ${plan['total_cost_estimate_usd']:.4f}"")
 print(""Exercice a completer"")
 ",,,,,,,,756842b44bcf6688,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,7b679189,markdown,fr,cf4b94c1957b6963,"# Lecture Analytique pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,7b679189,markdown,fr,179c26ad12c92e68,"# Lecture Analytique pour Audiobook
 
 [< Retour aux applications audio](../README.md) | Plan du cours Audio >
 
@@ -30405,7 +30405,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytiq
 
 **Duree estimee** : 30 minutes
 
----",,,,,,,,cf4b94c1957b6963,,,,,,,,,,,,,,,
+---",,,,,,,,179c26ad12c92e68,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,b57b69ea,code,fr,f7b84cc20534f50d,"import json
 import re
 import os
@@ -30836,7 +30836,7 @@ print(f""Fichiers exportes dans {OUTPUT_DIR}/ :"")
 for p in sorted(OUTPUT_DIR.iterdir()):
     size_kb = p.stat().st_size / 1024
     print(f""  {p.name:35s} {size_kb:8.1f} KB"")",,,,,,,,a54e29bfccea632c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,e1b40424,markdown,fr,3571a9f0c8cdfc78,"## 8. Conclusion
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,e1b40424,markdown,fr,b29c3f83051006e2,"## 8. Conclusion
 
 Ce notebook a mis en place un pipeline d'analyse textuelle pour la production d'audiobooks :
 
@@ -30860,8 +30860,8 @@ Ce notebook a mis en place un pipeline d'analyse textuelle pour la production d'
 
 - [Audio-04-6-Audiobook-Pipeline-Python](Audio-04-6-Audiobook-Pipeline-Python.ipynb) : Pipeline complet de production audio
 - [04-7-TTS-Voice-Benchmark](04-7-TTS-Voice-Benchmark.ipynb) : Comparaison des modèles TTS
-- [03-Texte](../../Texte/) : Techniques avancees de traitement du texte",,,,,,,,3571a9f0c8cdfc78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,10fb2ec5,markdown,fr,2d050bf880b98902,"# Voice Casting : Attribution de voix TTS par personnage
+- [03-Texte](../../Texte/) : Techniques avancees de traitement du texte",,,,,,,,b29c3f83051006e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,10fb2ec5,markdown,fr,02e79943d2842a2a,"# Voice Casting : Attribution de voix TTS par personnage
 
 **Navigation** : [Index](../README.md) | [<< Précédent](04-7-TTS-Voice-Benchmark.ipynb) | [Suivant >>](Audio-04-10-Annotation-Prosodique-Python.ipynb)
 
@@ -30884,7 +30884,7 @@ Ce notebook prend les résultats de la lecture analytique (P1) et attribue une v
 - **FishAudio S2-Pro** (prevu production) : voice cloning, tags expressifs — non deploye en Docker
 
 **Note** : En production, FishAudio S2-Pro sera le modèle principal avec voice cloning zero-shot et tags expressifs natifs. Ce notebook utilise Kokoro + OpenAI comme substituts demo.
-",,,,,,,,2d050bf880b98902,,,,,,,,,,,,,,,
+",,,,,,,,02e79943d2842a2a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,270ccfd0,markdown,fr,677f4d5eaab7f983,"## 7. Tableau comparatif des résultats
 
 Cette étape agrège les **18 mesures de synthèse** (9 personnages × 2 modèles TTS) en un tableau comparatif qui sert de **bilan quantitatif** du casting P2. C'est le **contrat de mesure** P4 (génération TTS) : P4 consommera ces latences/tailles pour calibrer son propre cache et son timeout.
@@ -32933,7 +32933,7 @@ BATCH_MODE = ""true""
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-5-Multi-Model-TTS-Gateway-Python.ipynb,08d53a6f,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb,01fe578a,markdown,fr,bc7b92fb389f36ae,"# Generation de Chansons Completes : YuE2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb,01fe578a,markdown,fr,a0dd494d991a5eec,"# Generation de Chansons Completes : YuE2
 
 | | |
 |---|---|
@@ -32955,7 +32955,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python
 4. Pratiquer les trois usages marques de YuE2 : **generation zero-shot**, **cover zero-shot** (`cot=""melody""`), **edition agentique** d'une partition ABC.
 5. Comparer honnetement, sur **meme prompt et meme seed**, YuE2-3B, MusicGen-medium et l'etat de l'art documente YuE-v1.
 
-**Navigation :** [<< 02-6](Audio-02-6-MIDI-Generation-Python.ipynb) | [Index](../README.md) | [Suivant >>](02-8-Expressive-TTS.ipynb)",,,,,,,,bc7b92fb389f36ae,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-6](Audio-02-6-MIDI-Generation-Python.ipynb) | [Index](../README.md) | [Suivant >>](02-8-Expressive-TTS.ipynb)",,,,,,,,a0dd494d991a5eec,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/Audio-02-7-YuE2-Song-Generation-Python.ipynb,ca85baf3,code,fr,6e81a50fd3c77385,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -34041,7 +34041,7 @@ Deux enseignements latéraux. D'abord, la ligne `INSUFFICIENT` : la narration Op
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,cd2a215f,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,2f4f7763,markdown,fr,12370c239771acb5,"# Lecture Analytique pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,2f4f7763,markdown,fr,42b7549e6ae0a178,"# Lecture Analytique pour Audiobook
 
 **Navigation :** [Index](../README.md) | [<< Précédent](../04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | [Suivant >>](../04-Voix/04-9-Voice-Casting.ipynb)
 
@@ -34065,7 +34065,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytiq
 **Duree estimee** : 30 minutes
 
 ***
-",,,,,,,,12370c239771acb5,,,,,,,,,,,,,,,
+",,,,,,,,42b7549e6ae0a178,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,aef220df,code,fr,21aa22059b545b7e,"import json
 import re
 import os
@@ -35108,7 +35108,7 @@ comme tel) le cas echeant. La separation JSON/CSV est deliberee : le JSON porte 
 structure sémantique complete, les CSV offrent un regard plat pour pandas ou un
 tableur.
 ",,,,,,,,dd7067317674de7d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,1f5e4edc,markdown,fr,d25b3eb008e67d37,"## 8. Conclusion
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb,1f5e4edc,markdown,fr,abe09da94f4dd9ba,"## 8. Conclusion
 
 Ce notebook a mis en place un pipeline d'analyse textuelle pour la production d'audiobooks, applique au texte integral (vendu dans le depot) de *Boule de Suif* :
 
@@ -35143,7 +35143,7 @@ Ce notebook a mis en place un pipeline d'analyse textuelle pour la production d'
 - [Audio-04-6-Audiobook-Pipeline-Python](Audio-04-6-Audiobook-Pipeline-Python.ipynb) : Pipeline complet de production audio
 - [04-7-TTS-Voice-Benchmark](../04-Voix/04-7-TTS-Voice-Benchmark.ipynb) : Comparaison des modèles TTS
 - [03-Texte](../../Texte/) : Techniques avancees de traitement du texte
-",,,,,,,,d25b3eb008e67d37,,,,,,,,,,,,,,,
+",,,,,,,,abe09da94f4dd9ba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,402c63cc,markdown,fr,cd0e4e448bee286c,"### Tirades de casting — pourquoi une ligne ne mesure rien
 
 Les `first_utterance` de P1 sont des répliques d'UNE ligne (~10 syllabes). Suffisant pour reconnaître un timbre à l'oreille, insuffisant pour l'instrument mélodique : le détecteur structurel (`MIN_SYLL_FOR_STRUCTURE = 60`) s'abstiendrait sur les 18 clips, et la section 6bis n'aurait rien à mesurer. Or le casting se joue précisément sur ce que mesure l'instrument : une voix de personnage qui **dérive vers le bourdon sur une tirade** est un casting raté — sur une ligne, ça ne se voit pas.
@@ -36072,7 +36072,7 @@ print(""Exercice a completer"")",,,,,,,,1f2006e070c12631,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,cfb4c4ed,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,0a9a55a6,markdown,fr,5e2472fc240faae8,"# Voice Casting : Attribution de voix TTS par personnage
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,0a9a55a6,markdown,fr,4b08bec99cc5d422,"# Voice Casting : Attribution de voix TTS par personnage
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Audiobook/04-8-Lecture-Analytique.ipynb) | [Suivant >>](../04-Audiobook/Audio-04-10-Annotation-Prosodique-Python.ipynb)
 
@@ -36095,7 +36095,7 @@ Ce notebook prend les résultats de la lecture analytique (P1) et attribue une v
 - **FishAudio S2-Pro** (prevu production) : voice cloning, tags expressifs — non deploye en Docker
 
 **Note** : En production, FishAudio S2-Pro sera le modèle principal avec voice cloning zero-shot et tags expressifs natifs. Ce notebook utilise Kokoro + OpenAI comme substituts demo.
-",,,,,,,,5e2472fc240faae8,,,,,,,,,,,,,,,
+",,,,,,,,4b08bec99cc5d422,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,426f5cf1,markdown,fr,cb590f399cf432da,## 1. Configuration et imports,,,,,,,,cb590f399cf432da,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,63ce1acb,code,fr,2a39899b48c43e4c,"# Import guards - availability flags for external dependencies
 
