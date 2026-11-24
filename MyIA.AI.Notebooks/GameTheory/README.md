@@ -6,9 +6,9 @@ pagetitle: "Théorie des Jeux - Game Theory"
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 170
-breakdown: root=123, Dynamics=17, SocialChoice=17, Metajeux=7, Coalitions=5, gateway=1
-maturity: BETA=162, DRAFT=5, ALPHA=3
+pedagogical_count: 209
+breakdown: root=139, Dynamics=26, SocialChoice=25, Metajeux=13, Coalitions=5, gateway=1
+maturity: BETA=201, DRAFT=5, ALPHA=3
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -280,7 +280,7 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 | 11b | [Vickrey en Lean](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | Le théorème de Vickrey (enchère au second prix : dire la vérité est dominant) prouvé sans `sorry` dans le lake `lean_game_defs_ext` | Lean | Licence |
 | 11c | [Jeux globaux, sélection d'équilibre](GameTheory-11c-Global-Games-Python.ipynb) | Le tremble privé (signal bruité de l'état commun) rend l'équilibre bayésien **unique** (sous un tremble critique) et le **sélectionne**, par dominance, vers l'issue fondamentale quand il s'amenuise : la mécanique de Bayes du 11 déportée d'un type discret à un état continu | Python | Recherche |
 | 11d | Raffinements séquentiels — [Python](GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) · [C#](GameTheory-11d-Raffinements-Sequentiels-CSharp.ipynb) | Un moteur Python calcule les trois notions sur un même arbre à information imparfaite : l'équilibre séquentiel faible accepte un assessment que l'équilibre séquentiel rejette (croyance inatteignable), et l'équilibre bayésien parfait le rejette pour une autre raison — un cycle de plausibilité, non une limite | Python | Licence |
-| 11e | [Jeux globaux — sélection efficace](GameTheory-11e-Global-Games-Python.ipynb) | Un signal bruité d'un fondamental commun tranche la multiplicité d'un jeu de coordination 2×2 : sélection du plus petit seuil robuste (mesurée en forme close), qui sélectionne l'équilibre efficace dès que le fondamental dépasse le coût d'agir seul — jumeau de 11c, autre angle : la **sélection robuste** (Carlsson–van Damme 1993 ; Morris–Shin 1998) | Python | Licence |
+| 11e | [Jeux globaux — sélection efficace](GameTheory-11e-Global-Games-Python.ipynb) · [C#](GameTheory-11e-Global-Games-CSharp.ipynb) | Un signal bruité d'un fondamental commun tranche la multiplicité d'un jeu de coordination 2×2 : sélection du plus petit seuil robuste (mesurée en forme close), qui sélectionne l'équilibre efficace dès que le fondamental dépasse le coût d'agir seul — jumeau de 11c, autre angle : la **sélection robuste** (Carlsson–van Damme 1993 ; Morris–Shin 1998) | Python · C# | Licence |
 | 11f | [Jeux globaux — sélection d'équilibre](GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb) | Un jeu de coordination à deux joueurs admet **deux** équilibres sur une bande de largeur γ ; un état commun observé par des signaux **privés** bruités le rend **unique**, et la coupure converge, le bruit s'éteignant, vers l'équilibre **risque-dominant** — mesuré à 7e-05 du seuil de Harsanyi-Selten, et non vers le Pareto-dominant avec lequel il entre en conflit sur la moitié basse de la bande. Une sélection par la croyance, là où l'induction en avant (10) sélectionne le long de l'arbre | Python | Licence |
 
 ### Autour de 13 — information imparfaite
