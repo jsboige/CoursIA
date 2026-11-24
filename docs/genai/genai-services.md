@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-17
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 # GenAI Services - ComfyUI Image Generation
 
