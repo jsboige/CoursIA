@@ -1,8 +1,8 @@
 - name: "ANALYSE-02b Entropie de Shannon"
   family: "SymbolicAI/Lean (ANALYSE)"
-  python: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Python.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-CSharp.ipynb
-  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Rust.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-02b-Entropie-Shannon-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-02b-Entropie-Shannon-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-02b-Entropie-Shannon-Rust.ipynb
   measures:
     - id: facteur_ln2
       description: "Facteur de conversion bits -> nats, ln(2) (cellule des helpers)"

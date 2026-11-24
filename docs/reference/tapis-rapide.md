@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-22
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -81,7 +81,7 @@ groupée, sans sonde par issue.
 
 | Code | Règle |
 | --- | --- |
-| `LABEL` | label `candidate-delivered` : l'urne de clôture appartient au coordinateur et à l'adjoint |
+| `LABEL` | **exclusion posée en données** : un label porté par l'issue. `candidate-delivered` : l'urne de clôture appartient au coordinateur et à l'adjoint. `pause` : une pause posée une fois écarte le grain — plus de regex de titre ni de souvenir d'agent (#28114). La table des labels est dans `coordination/tapis_labels.py` |
 | `GEL` | parapluie gelé en dur (`frozen_campaigns.py`) ou l'un de ses descendants ; ligne `[FROZEN]` dans le body ; en-tête `[FROZEN]` du fil non suivi d'un `[UNFROZEN]` de `myia-ai-01:CoursIA` ou `myia-po-2025:CoursIA-2` |
 | `EPAISSE` | le **fil** déclare que la part délégable de l'item est épuisée : attestation `[INFO] candidate-delivered` du conteneur, ou dernier marqueur de fin de tour `[RELEASED]` qui le dit (forme de #18258). Le fil est l'autorité : c'est lui qui dit ce qu'il reste à faire dedans. La mesure ne vaut pas pour un `[CLAIMED]` postérieur — une reprise n'annule pas un épuisement |
 | `SATURE` | conteneur dont **tous** les enfants déclarés sont fermés : il n'y a plus de grain à prendre dedans (cas #11698). Mesuré en post-passe, sur les seuls conteneurs de la file, et fail-OPEN : une mesure impossible n'écarte rien |
@@ -513,6 +513,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
 | `scripts/coordination/tapis_universel.py` | la rotation universelle sur les métadonnées |
 | `scripts/coordination/gh_snapshot.py` | le **fil complet** (REST paginé) — l'organe de la qualification |
+| `scripts/coordination/tapis_labels.py` | les **exclusions en données** : la table des labels qui écartent un grain (`candidate-delivered`, `pause`) — #28114 |
 
 ## La fenêtre qui avance sur le pool (#27225, suite du 18/11)
 
@@ -680,7 +681,7 @@ le rôle responsable de son prochain pas, sur la même lecture groupée (aucun a
 | `urne` | `LIVREE`, `MERGEE`, `LABEL` (`candidate-delivered`) | clôture par le coordinateur, l'adjoint ou le secrétaire |
 | `revue` | `COUVERTE` | revue et fusion de la PR citée (son numéro est lu dans le motif) |
 | `mainteneur` | `GEL` | décision du mainteneur |
-| `attente` | `RELACHEE`, `PLAFOND`, `ORIGAMI` | attente bornée, puis le tapis |
+| `attente` | `RELACHEE`, `PLAFOND`, `ORIGAMI`, `LABEL` (`pause`) | attente bornée, puis le tapis |
 | `hors-flotte` | `HORSFLOTTE` | hors flotte |
 | `autre` | tout code non mappé | le motif est rapporté |
 
@@ -767,6 +768,15 @@ python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
 Codes de sortie : `0` tout est couvert ; `1` invariant violé, ou une issue d'urne ou de revue sans visite
 dans le tour alors qu'elle a plus de `FENETRE_J` jours ; `2` lecture incomplète sans secours (jamais un faux
 `0`). `--dashboard-line` rend une ligne de 200 caractères au plus, à poster sur le dashboard du secrétariat.
+
+**Listes complètes en JSON, bornées à l'affichage texte (#27725).** La borne `LIMITE_LISTE` (20) ne borne plus
+que le texte : en `--json`, chaque liste de numéros est **complète**. Mesure du 21/11 sur la lecture de 10:12Z
+(475 issues hors marathon) : avant, les listes s'arrêtaient à 20 numéros — 20 numéros d'urne à 0 visite pour
+**66** issues, 20 numéros « worker » pour **29**, 20 « jamais visitées » pour **47**, 20 urgences pour **73** ; les
+**comptes**, eux, étaient justes. Une troncature invisible donnait à lire une liste plus courte que la
+population réelle, et le secrétaire re-vérifiait à la main ce que l'organe devait rendre. Dans le texte, la
+troncature se dit désormais : `... et 9 autres`. Un test de propriété (25 numéros dans un rôle) verrouille le
+couple : le JSON rend 25, le texte en montre 20 et annonce les 5 autres.
 
 **Ce que la mesure ne voit pas** : une fermeture (la lecture ne contient que les issues ouvertes), une PR
 fusionnée sans commit cité (le squash cite sa PR, pas forcément l'issue), un `[DELIVERED]` plus ancien que
