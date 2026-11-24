@@ -73,6 +73,17 @@ nommee :
    absentes ici (sommet de pile perime) -> skip ``stack-top:<parente>`` ;
    index illisible (``None``) -> fail-open assume (convention UNKNOWN !=
    rouge forge), etat ``unmeasured`` journalise avec ses incidents ;
+3bis. prelecture REST : ``repos/jsboige/CoursIA/pulls/<N>`` ->
+   ``mergeable_state`` et ``head.sha``, budget COURT (#26799). Placee
+   AVANT l'etape 4 : elle ne coute qu'une lecture, alors que les etapes
+   qui suivent (B.0, collisions twin et slot) coutent ~150 s par PR
+   (#26799, mesure : 90 s + 52 s + 8 s sur une PR bloquee). Une PR dont
+   l'etat est ``blocked`` est donc refusee en ~1 s au lieu de ~150 s.
+   Etat ni ``clean`` ni ``unstable`` -> skip ``mergeable-state:<etat>``
+   (les etats « en cours de calcul » sont PARKES et rejouees en fin de
+   passe) ; tete REST differente de la tete de la vue -> skip
+   ``head-moved``. L'etape 6 reste la garde finale : elle relit l'etat
+   et la tete au moment du merge.
 4. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
@@ -3248,8 +3259,10 @@ def evaluate_pr(
     Les controles bon marche (brouillon, perimetre, tag) passent AVANT la
     porte STACK -- la premiere etape couteuse, dont l'index de pile est
     construit une fois par run puis cache par le module du gate ; la porte
-    avant les organes ; le REST en dernier, juste avant le merge, pour
-    minimiser la fenetre de course.
+    avant les organes. La PRE-lecture REST passe entre les deux : elle ne
+    coute qu'une requete et elle ecarte une PR bloquee avant que les organes
+    ne payent leurs ~150 s (#26799) ; la LECTURE REST finale reste en
+    dernier, juste avant le merge, pour minimiser la fenetre de course.
 
     La disposition de review (point 1 de #17672) est classee pour TOUTE PR
     evaluee, skip compris, et reportee a la tete que la ligne declare : la
@@ -3353,6 +3366,25 @@ def evaluate_pr(
             match = _STACK_PARTNER_RE.search(reasons[0])
             partner = match.group(1) if match else "?"
             return skip(f"stack-top:{partner}", "measured")
+    # 3bis. Prelecture REST bon marche : ne pas payer les etapes couteuses
+    # (B.0, collisions d'index twin et de slot) pour une PR que l'etape 6
+    # refuserait. Elle est placee AVANT l'etape 4 (#26799) : la lecture
+    # REST ne coute qu'une requete, alors que les etapes suivantes coutent
+    # ~150 s par PR -- mesure sur trois PRs bloquees (#28166, #28168,
+    # #28171) : 90 s + 52 s + 8 s avant d'apprendre, en 0,8 s, que la PR
+    # est bloquee. L'etape 6 reste la garde finale contre une evolution de
+    # l'etat ou de la tete pendant ces tests.
+    pre_state, pre_live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
+    if pre_state not in ("clean", "unstable"):
+        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
+        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
+        # fin de passe, quand le calcul sera termine (#26799).
+        return skip(f"mergeable-state:{pre_state or 'absent'}",
+                    stack_state, stack_inc)
+    if pre_live_head != view_head:
+        return skip("head-moved", stack_state, stack_inc)
     # 4. organe B.0 (re-verification reelle).
     if run_nits(runner, pr, gh_env) != 0:
         return skip("b0-organ-blocked", stack_state, stack_inc)
@@ -3413,20 +3445,6 @@ def evaluate_pr(
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}",
                         stack_state, stack_inc)
-    # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
-    # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
-    # contre une evolution de l'etat ou de la tete pendant ces tests.
-    pre_state, pre_live_head = mergeable_state_and_head(
-        runner, pr, gh_env, retries=retries
-    )
-    if pre_state not in ("clean", "unstable"):
-        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
-        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
-        # fin de passe, quand le calcul sera termine (#26799).
-        return skip(f"mergeable-state:{pre_state or 'absent'}",
-                    stack_state, stack_inc)
-    if pre_live_head != view_head:
-        return skip("head-moved", stack_state, stack_inc)
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.
