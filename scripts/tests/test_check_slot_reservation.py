@@ -1468,6 +1468,26 @@ class TestPapermillOutputIsNotAnItem(unittest.TestCase):
             self.assertEqual(doc["targets_examined"], 0, r.stdout)
             self.assertEqual(doc["conflicts"], 0, r.stdout)
 
+    def test_output_with_kernel_suffix_is_not_a_target(self):
+        """`-output-Python.ipynb` (sweep de nomenclature) reste une sortie.
+
+        Variante reprise de #27309 : la marque `-output` n'est plus terminale
+        quand un suffixe de noyau la suit. Le mode revision doit l'ecarter
+        comme le balayage `--scan-main`, sans quoi la definition unique de
+        l'item ne tient plus.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [self.OLD])
+            _write(repo, self.DIR + "/SL-12c-PavlovDLS-Reproduction-output-Python.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["targets_examined"], 0, r.stdout)
+            self.assertEqual(doc["conflicts"], 0, r.stdout)
+
     def test_source_is_still_a_target(self):
         """Temoin negatif du dispatch : le SOURCE garde toute sa vigilance.
 

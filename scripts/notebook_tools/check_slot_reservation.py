@@ -344,6 +344,9 @@ def _ipynb(lines):
     return [l.strip() for l in lines if l.strip().lower().endswith(".ipynb")]
 
 
+_KERNEL_SUFFIX_RE = re.compile(r"-(?:python|csharp|lean)$")
+
+
 def _is_source_ipynb(p: str) -> bool:
     """Le chemin est-il un carnet SOURCE, et non une sortie papermill ?
 
@@ -353,11 +356,19 @@ def _is_source_ipynb(p: str) -> bool:
     (cibles, occupants de la revision, occupants de la base, PRs ouvertes).
     Sans elle, un `git mv` du carnet ET de sa sortie se lit comme deux prises
     du meme slot -- le faux positif mesure sur #28392 (#28410).
+
+    Le suffixe de noyau peut suivre la marque (`...-output-Python.ipynb`,
+    sweep de nomenclature) : la marque n'est alors plus terminale, on retire
+    donc le suffixe avant de tester. Variante reprise de #27309 (PR ouverte de
+    la lane `myia-po-2023`) : la definition devient ici la definition UNIQUE
+    de l'item, et sans elle le mode revision reconnaitrait comme source une
+    sortie que `--scan-main` ecarte deja.
     """
     low = p.lower()
     if not low.endswith(".ipynb"):
         return False
-    if low.endswith("_output.ipynb") or low.endswith("-output.ipynb"):
+    stem = _KERNEL_SUFFIX_RE.sub("", low[: -len(".ipynb")])
+    if stem.endswith("_output") or stem.endswith("-output"):
         return False
     return True
 
