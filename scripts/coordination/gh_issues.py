@@ -48,7 +48,8 @@ def lire_champs(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
                  f"name:$name){{{alias}}}}}")
         argv = ["gh", "api", "graphql", "-f", f"query={query}",
                 "-f", f"owner={owner}", "-f", f"name={name}"]
-        texte = gh_bulk._appel(run, argv, lecture, tranche[0])
+        texte = gh_bulk._appel(run, argv, lecture, tranche[0],
+                              timeout=gh_bulk.TIMEOUT_S_CORPS)
         if texte is None:
             raise LectureIncomplete(lecture, tranche[0], "appel indisponible")
         try:
