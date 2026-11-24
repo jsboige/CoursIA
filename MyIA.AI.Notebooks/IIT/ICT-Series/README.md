@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 100
-breakdown: ICT-Series=100
-maturity: BETA=98, DRAFT=2
+pedagogical_count: 107
+breakdown: ICT-Series=107
+maturity: BETA=107
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -229,7 +229,7 @@ Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedC
 | [ICT-18b-ReversibilityBudget-Python](ICT-18b-ReversibilityBudget-Python.ipynb) | **Budget de réversibilité — la jambe « fin »** — la triade moyen / fin / enjeu enfin mesurée : $B_\text{state}$ (Monte-Carlo, primaire) + $B_\text{work}$ (distance à $P_\text{rev}$, témoin) ; 3 prédictions pré-enregistrées sur S2/S4/S3 (P1 PASS, P2 DISSOCIATION honnête, P3 PASS) *(GPU-free)* | [#7287](https://github.com/jsboige/CoursIA/issues/7287) |
 | [ICT-19-EnjeuBattery-Python](ICT-19-EnjeuBattery-Python.ipynb) | **Batterie de l'ENJEU** — auto-maintien vs pur dissipateur, retour-au-bassin après `do(·)` sur Gray-Scott S4 (cadrage B, spec [#5483](https://github.com/jsboige/CoursIA/issues/5483)) ; raffinée par [ICT-19b-EnjeuBattery-Raffinement-Python](ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) (#5728 : mesure S4 en espace de champ, résout le faux nul) | [#5489](https://github.com/jsboige/CoursIA/issues/5489) |
 | [ICT-20-FeatureCatastrophes-Python](ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb) | Calibration — changepoints, EWS et hystérésis en feature-space | [#5103](https://github.com/jsboige/CoursIA/issues/5103) |
-| [ICT-Annexe-ProxyContextuality-Python](ICT-Annexe-ProxyContextuality-Python.ipynb) | **Annexe — la contextualité du zoo de proxys est un CSP** *(annexe spéculative, non numérotée)* : le zoo de proxys mesure une même trajectoire par plusieurs instruments (écart spectral, sensibilité moyenne/maximale) sous plusieurs granularités — l'annexe instruit le transfert vers CSP sans le proclamer, et son résultat est **négatif**, ce qui fait précisément son intérêt | [#7290](https://github.com/jsboige/CoursIA/issues/7290) |
+| [ICT-Annexe-ProxyContextuality-Python](ICT-Annexe-ProxyContextuality-Python.ipynb) · [version C#](ICT-Annexe-ProxyContextuality-CSharp.ipynb) | **Annexe — la contextualité du zoo de proxys est un CSP** *(annexe spéculative, non numérotée)* : le zoo de proxys mesure une même trajectoire par plusieurs instruments (écart spectral, sensibilité moyenne/maximale) sous plusieurs granularités — l'annexe instruit le transfert vers CSP sans le proclamer, et son résultat est **négatif**, ce qui fait précisément son intérêt | [#7290](https://github.com/jsboige/CoursIA/issues/7290) |
 
 ### Strate 5 — le LLM comme substrat (SAE, persona, workspace, inoculation RL)
 
