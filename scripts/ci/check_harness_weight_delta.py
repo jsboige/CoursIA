@@ -71,7 +71,8 @@ REQUIRED_KEYS = ("autoloaded_total_bytes", "autoloaded_rules",
 
 # Verdict -> code de sortie. Un GROWTH et une SUPPRESSION bloquent (1) ;
 # une MESURE INCOMPLETE est un incident (2) ; OK passe (0).
-RC = {"OK": 0, "GROWTH": 1, "SUPPRESSION": 1, "MESURE INCOMPLETE": 2}
+RC = {"OK": 0, "GROWTH": 1, "SUPPRESSION": 1,
+      "INVENTAIRE INCOMPLET": 1, "MESURE INCOMPLETE": 2}
 
 
 class Incident(Exception):
@@ -161,8 +162,55 @@ def suppressions(base: dict, head: dict) -> list[str]:
     return out
 
 
-def compare(base: dict, head: dict) -> dict:
-    """Delta de la surface auto-chargee entre la base et la tete."""
+def unlisted_path_gated_rules(
+        snapshot: dict,
+        inventory_paths: tuple[Path, ...] | None = None) -> list[str] | None:
+    """Regles path-gatees absentes des inventaires de lecture du harnais.
+
+    Les tests sur arbres temporaires injectent leurs inventaires explicites via
+    compare(); l'appel de production utilise toujours les deux fichiers du repo.
+    """
+    if inventory_paths is None:
+        root = Path(__file__).resolve().parents[2]
+        if not (root / "CLAUDE.md").is_file():
+            return None
+        inventory_paths = (root / "CLAUDE.md", root / "docs" / "reference" /
+                           "claude-code-config.md")
+    return unlisted_rules_against_inventory(snapshot, inventory_paths)
+
+
+def unlisted_rules_against_inventory(snapshot: dict,
+                                     inventory_paths: tuple[Path, ...]
+                                     ) -> list[str]:
+    """Compare chaque nom exact aux deux inventaires fournis."""
+    missing_files = [str(path) for path in inventory_paths if not path.is_file()]
+    if missing_files:
+        raise Incident("inventaire de règles absent : " + ", ".join(missing_files))
+    try:
+        inventory = "\n".join(
+            path.read_text(encoding="utf-8") for path in inventory_paths)
+    except OSError as exc:
+        raise Incident(f"inventaire de règles illisible : {exc}") from exc
+    rule_names = {
+        Path(str(rule["name"])).stem
+        for rule in snapshot.get("path_gated_rules") or []
+    }
+    listed = set()
+    for line in inventory.splitlines():
+        # Un nom de regle est une entree entouree de backticks, seul ou
+        # delimite par le separateur canonique de liste ` · `.
+        parts = line.split("`")
+        for fragment in parts[1::2]:
+            names = [item.strip() for item in fragment.split(" · ")]
+            listed.update(name for name in names if name in rule_names)
+    return sorted(
+        str(rule["name"]) for rule in snapshot.get("path_gated_rules") or []
+        if Path(str(rule["name"])).stem not in listed)
+
+
+def compare(base: dict, head: dict,
+            inventory_paths: tuple[Path, ...] = ()) -> dict:
+    """Delta de la surface auto-chargee et, si fourni, des inventaires."""
     base_s = surfaces(base)
     head_s = surfaces(head)
     base_bytes = int(base["autoloaded_total_bytes"])
@@ -194,11 +242,24 @@ def compare(base: dict, head: dict) -> dict:
     disparues = suppressions(base, head)
     complete = bool(base.get("measurement_complete")) and \
         bool(head.get("measurement_complete"))
+    unlisted = []
+    inventory_incident = None
+    inventory_complete = False
+    if complete and inventory_paths:
+        try:
+            unlisted = unlisted_rules_against_inventory(head, inventory_paths)
+            inventory_complete = True
+        except Incident as exc:
+            inventory_incident = str(exc)
 
     if disparues:
         verdict = "SUPPRESSION"
     elif not complete:
         verdict = "MESURE INCOMPLETE"
+    elif inventory_incident:
+        verdict = "INVENTAIRE INCOMPLET"
+    elif unlisted:
+        verdict = "INVENTAIRE INCOMPLET"
     elif head_bytes > base_bytes:
         verdict = "GROWTH"
     else:
@@ -216,6 +277,9 @@ def compare(base: dict, head: dict) -> dict:
         "tokens_are_derived_not_tokenized": True,
         "surfaces": deltas,
         "surfaces_supprimees": disparues,
+        "regles_path_gatees_non_listees": unlisted,
+        "inventory_incident": inventory_incident,
+        "inventory_complete": inventory_complete,
         "measurement_complete_base": bool(base.get("measurement_complete")),
         "measurement_complete_head": bool(head.get("measurement_complete")),
     }
@@ -255,6 +319,17 @@ def render(result: dict) -> str:
                      "n'a pas ete lue ; le total ne certifie rien.")
         lines.append("Incident de mesure, pas reponse : rejouer la mesure "
                      "sur un depot complet.")
+    elif result["verdict"] == "INVENTAIRE INCOMPLET":
+        if result["inventory_incident"]:
+            lines.append("VERDICT: INVENTAIRE INCOMPLET -- "
+                         + result["inventory_incident"])
+        else:
+            lines.append("VERDICT: INVENTAIRE INCOMPLET -- règles path-gatées "
+                         "absentes des inventaires de lecture : "
+                         + ", ".join(
+                             result["regles_path_gatees_non_listees"]))
+        lines.append("Corriger les inventaires ou leur lecture, sans "
+                     "modifier la portée des règles.")
     else:
         lines.append("VERDICT: pas de croissance, aucune surface disparue.")
     return "\n".join(lines)
@@ -275,7 +350,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INCIDENT : {exc}", file=sys.stderr)
         return 2
 
-    result = compare(base, head)
+    inventory_root = Path(__file__).resolve().parents[2]
+    inventories = (inventory_root / "CLAUDE.md", inventory_root / "docs" /
+                   "reference" / "claude-code-config.md")
+    result = compare(base, head, inventories)
     if args.as_json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:

@@ -58,6 +58,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `lean-i18n` | docstrings FR + siblings EN `*_en.lean`, checker `check_i18n_siblings.py` (gatée `**/*.lean`) |
 | `genai-config` | services, env, scripts, architecture GenAI |
 | `wsl-kernels` | kernels WSL (`GameTheory/**`, `Lean/**`) |
+| `feedback_comment_action_link` | Commentaire de diagnostic infra sur PR : action concrète dans le même cycle, sinon état au dashboard. |
 | `student-pr-reviews` | anti-fuite soutenance, review bienveillante |
 | `public-contribution-triage` | accueil, triage et escalade des issues/PRs publiques |
 | `lean-merge-discipline` | gates de merge propres au Lean |
@@ -95,7 +96,7 @@ Table déportée de `CLAUDE.md` §Règles modulaires (tranche #11554, verdict de
 | Catalogue & README | `catalog-pr-hygiene` · `readme-french-first` | **Le catalogue appartient à l'automatisation** : `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature — laisser byte-identique à `main`. Toute prose de doc **ajoutée ou réécrite** est en français, même dans un fichier anglais. |
 | Artefacts de résultats | `results-artifact-policy` | **Nouveau fichier de `scripts/results/` > 512 Ko = bloqué par CI** (#15890) : committer l'agrégé falsifiable (biais signés, p-values DM, preuves de folds), les séries complètes vont hors dépôt (GDrive) avec le chemin cité dans le body. Artefacts déjà sur main : grandfathered, aucune réécriture d'historique. |
 | GenAI | `genai-config` | — |
-| Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` · `lean-i18n` | Docstrings FR par défaut, traduction en jumeau `_en` (paire `Foo`/`Foo_en`, byte-identité hors commentaires) — détail : [`lean-i18n.md`](../../.claude/rules/lean-i18n.md). |
+| Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` · `lean-i18n` · `lean-lakes-doctrine` | Docstrings FR par défaut, traduction en jumeau `_en` (paire `Foo`/`Foo_en`, byte-identité hors commentaires) — détail : [`lean-i18n.md`](../../.claude/rules/lean-i18n.md). Pour les lakes, le site suit le consommateur ; partage par jonction Mathlib et CI — [`lean-lakes-doctrine.md`](../../.claude/rules/lean-lakes-doctrine.md). |
 | Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
 
 **Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** (celles qui portent un frontmatter `paths:`) ne se chargent que si la session touche les fichiers visés ; toutes les autres sont **auto-chargées** à chaque session. **La liste des path-gated ne se recopie pas ici** : elle se recalcule, et une copie en dur diverge au premier ajout/rétraction d'un frontmatter — `grep -l '^paths:' .claude/rules/*.md` est la source, pas cette phrase.
