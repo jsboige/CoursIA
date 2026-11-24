@@ -505,9 +505,9 @@ points d'entrée du tirage (`tapis_rapide`, `tapis_leger`, `tapis_voie_leger`, `
 `pick_idle_grain` — analysée par `ast`, jamais importée : `main_freshness` est lui-même dans la liste,
 l'import serait circulaire) et le **tableau « Les modules »** ci-dessous. Un module livré hors liste
 n'est donc pas un trou silencieux : la PR qui le livre porte **son propre rouge**, et le rouge se lève en
-déclarant le module — dans la PR, pas plus tard. Mesure du 24/11 : la liste portait 19 modules pour
-64 dans le chemin ; l'écart était invisible, la garde refusait donc des tirages pour une raison que
-personne ne pouvait nommer, et laissait passer des modules qui ne l'étaient pas.
+déclarant le module — dans la PR, pas plus tard. Mesure du 24/11 : la liste ne portait qu'une **partie**
+du chemin du tirage ; l'écart était invisible, la garde refusait donc des tirages pour une raison que
+personne ne pouvait nommer, et laissait passer des modules du chemin qui ne l'étaient pas.
 
 ### Les modules
 
