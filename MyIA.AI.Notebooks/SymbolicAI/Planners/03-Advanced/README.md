@@ -25,9 +25,9 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 | 7 | [Planners-07-OR-Tools-Python](Planners-07-OR-Tools-Python.ipynb) — jumeau [C#](Planners-07-OR-Tools-CSharp.ipynb) | Programmation par contraintes avec CP-SAT (Google OR-Tools) : all-different, cumulative, table ; scheduling ; optimisation multi-objectif. Le jumeau C# refait un solveur CP à propagation et backtracking *from-scratch* sur Job-Shop, sans OR-Tools, puis résout le même exemple job-shop via Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | Découverte | — |
 | 8 | [Planners-08-Temporal-Python](Planners-08-Temporal-Python.ipynb) — jumeau [C#](Planners-08-Temporal-CSharp.ipynb) | PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le jumeau C# construit *from-scratch* l'algèbre d'Allen, un réseau temporel simple (STN) et un RCPSP-lite, puis résout le RCPSP via Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | Découverte | — |
 | 9 | [Planners-09-HTN-Python](Planners-09-HTN-Python.ipynb) — jumeau [C#](Planners-09-HTN-CSharp.ipynb) | Planification hiérarchique (Hierarchical Task Networks) : tâches primitives/abstraites, méthodes de décomposition, HDDL, solveur inspiré de SHOP2. Le jumeau C# réécrit un solveur HTN inspiré de SHOP2 *from-scratch* (décomposition de tâches en .NET 9), puis attaque le même problème via unified_planning + aries par pont .NET vers CPython (paquet NuGet `pythonnet` 3.0.5, paquets Python `unified-planning` et `up-aries`) (See #4956) | Découverte | [Partie 4 — Neuro-Symbolique](../04-NeuroSymbolic/README.md) |
-| 13 | [Planners-13-Mesure-Qualite-Plans](Planners-13-Mesure-Qualite-Plans-Python.ipynb) · [C#](Planners-13-Mesure-Qualite-Plans-CSharp.ipynb) | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états) ; recherche naïve BFS en Python en contrepoint | Découverte | [Partie 2 — Classique (théorie des heuristiques)](../02-Classical/README.md) |
+| 13 | [Planners-13-Mesure-Qualite-Plans](Planners-13-Mesure-Qualite-Plans-Python.ipynb) · [C#](Planners-13-Mesure-Qualite-Plans-CSharp.ipynb) | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états). Un parcours BFS indépendant sert de point de comparaison dans les deux versions | Découverte | [Partie 2 — Classique (théorie des heuristiques)](../02-Classical/README.md) |
 
-Les jumeaux partagent la ligne de leur numéro : même arc, deux langages. Le C# se lit seul — sa première tranche (from-scratch, .NET 9) ne demande ni service ni Docker — et sa seconde tranche suppose l'environnement décrit en [Installation](#installation).
+Les jumeaux partagent la ligne de leur numéro. Pour les carnets 7 à 9, la première tranche C# est autonome sous .NET 9 et la seconde suppose les dépendances décrites en [Installation](#installation). Le benchmark du carnet 13 utilise Fast Downward dès la première cellule de code.
 
 **Ce que vous saurez faire à l'issue de cette partie :**
 
@@ -51,7 +51,9 @@ Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [Plan
 - **Notebooks 8-9** : connaissance de PDDL (domaines, problèmes), étendue à HDDL pour le HTN.
 - **Jumeaux C# (7-9)** : .NET 9 Interactive. Les tranches 2 tirent des paquets NuGet (`Google.OrTools` pour 7 et 8, `pythonnet` 3.0.5 pour 9), donc un accès réseau à NuGet. Le jumeau 9 exige en plus un Python avec `unified-planning` et `up-aries` (chargeur `Config/PythonNetLoader.cs`). Aucun jumeau 7-9 n'utilise Docker.
 
-Si un paquet manque, la lecture théorique reste accessible : seules les exécutions des cellules concernées sont sautées. Pour les jumeaux C#, la tranche 1 (from-scratch) s'exécute toujours ; seule la tranche 2 suppose son paquet.
+- **Notebook 13** — Fast Downward via le paquet Python `up-fast-downward` ou un service Fast Downward déjà démarré. Le jumeau C# utilise .NET Interactive.
+
+Si un paquet manque, la lecture théorique reste accessible. La première tranche des jumeaux C# 7 à 9 reste exécutable sous .NET 9.
 
 ## Pour aller plus loin — niveau Recherche
 
