@@ -136,7 +136,7 @@ lu sur la section Prérequis réelle du notebook quand elle existe (marqué
 
 ### L'image
 
-6. **[Image 01-1 — DALL-E 3](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb)**
+6. **[Image 01-1 — DALL-E 3](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb)**
    (30 min)
    - **Apporte** : la génération d'images par API et ses premiers réglages
      (taille, qualité, style).

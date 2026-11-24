@@ -2230,14 +2230,14 @@ La famille GenAI/Image présente une **architecture bimodale cloud/self-hosted**
 
 | Notebook | Engine dominant | Verdict |
 |----------|-----------------|---------|
-| 01-1-OpenAI-DALL-E-3 | OpenAI image API | **RECOVERABLE-USER-HAND** (cloud key) |
+| 01-1-Generation-Image-Texte-API | OpenAI image API | **RECOVERABLE-USER-HAND** (cloud key) |
 | 01-2-GPT-5-Image-Generation | OpenAI gpt-image | **RECOVERABLE-USER-HAND** |
 | 01-3-Basic-Image-Operations | OpenAI + diffusers | **SOTA-OK / RECOVERABLE-USER-HAND** |
-| 01-4-Forge-SD-XL-Turbo | Forge (SD WebUI) | **RECOVERABLE-MACHINE** (self-hosted) |
+| 01-4-Generation-Image-Locale-Forge | Forge (SD WebUI) | **RECOVERABLE-MACHINE** (self-hosted) |
 | 01-5-Qwen-Image-Edit | ComfyUI + Qwen-Image | **RECOVERABLE-MACHINE** |
 | 01-5b-Qwen-Image-Edit-2509 | ComfyUI + Qwen | **RECOVERABLE-MACHINE** |
-| 02-2-FLUX-1-Advanced-Generation | diffusers FLUX.1 | **RECOVERABLE-MACHINE** (GPU) |
-| 02-3-Stable-Diffusion-3-5 | diffusers SD3.5 | **RECOVERABLE-MACHINE** |
+| 02-2-Generation-Image-Haute-Qualite | diffusers FLUX.1 | **RECOVERABLE-MACHINE** (GPU) |
+| 02-3-Generation-Image-MMDiT | diffusers SD3.5 | **RECOVERABLE-MACHINE** |
 | 02-4-Z-Image-Lumina2 | diffusers Lumina2 | **RECOVERABLE-MACHINE** |
 | 02-5-Bonsai-Image-Ternary | ComfyUI + diffusers | **RECOVERABLE-MACHINE** |
 | 03-1-Multi-Model-Comparison | ComfyUI + multi | **RECOVERABLE-MACHINE** |

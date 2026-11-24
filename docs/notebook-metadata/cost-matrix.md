@@ -254,7 +254,7 @@ Le catalogue anti-drift expose `cost` via l'inférence du frontmatter. Schéma c
 
 ```json
 {
-  "notebook": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
+  "notebook": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb",
   "cost": {
     "api_usd_est": 0.40,
     "gpu_required": false,
@@ -300,7 +300,7 @@ Implémentation : `scripts/audit/check_cost_metadata.py`, litmus 4.
 ### GenAI/Image (GPU + API $)
 
 ```yaml
-# 01-1-OpenAI-DALL-E-3.ipynb (GenAI/Image/01-Foundation)
+# 01-1-Generation-Image-Texte-API.ipynb (GenAI/Image/01-Foundation)
 cost:
   api_usd_est: 0.40            # 4 images × $0.040/image DALL-E 3 standard 1024×1024
   api_provider: openai
@@ -309,7 +309,7 @@ cost:
   gpu_required: false
   network: true                # HTTPS OpenAI obligatoire
   external_account: openai     # OPENAI_API_KEY obligatoire
-  free_alternative: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
+  free_alternative: GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb
   reproducibility: MED         # Pas de seed déterministe côté OpenAI
   metadata_written: 2026-07-23T01:30Z
@@ -329,7 +329,7 @@ cost:
   network: true                # Téléchargement modèle HuggingFace au premier run
   external_account: hf         # HF_TOKEN pour download gated
   free_alternative: GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb
-  reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
+  reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb
   reproducibility: HIGH        # torch.manual_seed(42) + déterminisme sampler
   metadata_written: 2026-07-23T01:30Z
   validator: sk_visual         # sk-agent vision check sur figures rendues
@@ -518,7 +518,7 @@ cost:
   network: true
   external_account: hf
   free_alternative: GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb
-  reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
+  reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb
   reproducibility: HIGH
   metadata_written: 2026-07-23T01:30Z
   validator: sk_visual

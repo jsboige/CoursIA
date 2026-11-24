@@ -84,7 +84,7 @@ Les consommateurs sont mesurés par `grep -rlE "localhost:PORT"` sur
 | [qwen-asr-api](../services/qwen-asr-api/) | 8195 | GPU | aucun consommateur mesuré |
 | tts-multi : backends kokoro / tada / qwen | — | GPU | via tts-gateway (8196) |
 | [tts-fishaudio](../services/tts-fishaudio/) | 8197 | GPU | Audio 02-8-Expressive-TTS, 04-10-Annotation-Prosodique |
-| [sd-forge](../services/sd-forge/) | 7860 | GPU | Image 01-4-Forge-SD-XL-Turbo, Aspire 02-Aspire-GenAiStack-Reel |
+| [sd-forge](../services/sd-forge/) | 7860 | GPU | Image 01-4-Generation-Image-Locale-Forge, Aspire 02-Aspire-GenAiStack-Reel |
 | [sdnext](../services/sdnext/) | 7861 | GPU | aucun consommateur mesuré |
 | [sd-forge-main](../services/sd-forge-main/) | 7862 | GPU | aucun consommateur mesuré |
 | [vllm-zimage](../services/vllm-zimage/) | 8001 | GPU | GenAI 00-6-Local-Docker-Deployment, MCP-Server consommer-vs-exposer-le-mcp |

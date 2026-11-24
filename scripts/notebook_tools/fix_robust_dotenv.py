@@ -100,14 +100,14 @@ def main():
     # Notebooks to fix (those with .env loading but not robust)
     categories = {
         'Image': [
-            'Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb',
+            'Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb',
             'Image/01-Foundation/01-2-Generation-Image-API.ipynb',
             'Image/01-Foundation/01-3-Basic-Image-Operations.ipynb',
-            'Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb',
+            'Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb',
             'Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb',
             'Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb',
-            'Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb',
-            'Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb',
+            'Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb',
+            'Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb',
             'Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb',
             'Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb',
             'Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb',

@@ -4,11 +4,11 @@
 
 Ce module couvre les fondamentaux de la génération d'images par IA : modèles cloud, ComfyUI, et opérations de base.
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-2-Generation-Image-API.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Forge-SD-XL-Turbo.ipynb) passe en local via Forge (SD XL Turbo) et [01-5](01-5-Edition-Image-Prompt.ipynb) via ComfyUI, pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
+**Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-Generation-Image-Texte-API.ipynb) et [01-2](01-2-Generation-Image-API.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Generation-Image-Locale-Forge.ipynb) passe en local via Forge (SD XL Turbo) et [01-5](01-5-Edition-Image-Prompt.ipynb) via ComfyUI, pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
 
 ## Comment lire ce README
 
-- Vous voulez **produire une image tout de suite** : commencez par [01-1](01-1-OpenAI-DALL-E-3.ipynb) (API cloud) ou par [01-4](01-4-Forge-SD-XL-Turbo.ipynb) (local, SDXL Turbo en 4 steps au lieu des dizaines habituelles).
+- Vous voulez **produire une image tout de suite** : commencez par [01-1](01-1-Generation-Image-Texte-API.ipynb) (API cloud) ou par [01-4](01-4-Generation-Image-Locale-Forge.ipynb) (local, SDXL Turbo en 4 steps au lieu des dizaines habituelles).
 - Vous voulez **comprendre ce que manipulent les modèles** : [01-3](01-3-Basic-Image-Operations.ipynb) pose les bases PIL/OpenCV avant d'éditer quoi que ce soit — c'est le préalable pour lire les sorties des carnets suivants.
 - Vous voulez **éditer une image existante** : [01-5](01-5-Edition-Image-Prompt.ipynb) et ses approfondissements [5b](01-5b-Edition-Image-Prompt-Iterations.ipynb) et [5c](01-5c-Edition-Image-Prompt-Workflows.ipynb) (édition par prompt via ComfyUI, compte ~29 GB de VRAM et un service joignable).
 
@@ -34,10 +34,10 @@ Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décom
 
 | # | Notebook | Contenu | Service | VRAM | Approfondir | Ce qu'on y apprend |
 |---|----------|---------|---------|------ |--------------|--------------------|
-| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — | Obtenir un visuel depuis un prompt en un appel d'API cloud, et mesurer sa latence |
+| 1 | [01-1-Generation-Image-Texte-API](01-1-Generation-Image-Texte-API.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — | Obtenir un visuel depuis un prompt en un appel d'API cloud, et mesurer sa latence |
 | 2 | [01-2-Generation-Image-API](01-2-Generation-Image-API.ipynb) | Génération et analyse d'images via API (GPT-5) | OpenAI API | 0 | — | Générer puis analyser une image avec la même API multimodale |
 | 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 | — | Manipuler une image en local (formats, redimensionnement) avant et après génération |
-| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — | Faire tourner un modèle open source en local, en 4 steps, et fixer la seed pour reproduire |
+| 4 | [01-4-Generation-Image-Locale-Forge](01-4-Generation-Image-Locale-Forge.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — | Faire tourner un modèle open source en local, en 4 steps, et fixer la seed pour reproduire |
 | 5 | [01-5-Edition-Image-Prompt](01-5-Edition-Image-Prompt.ipynb) | Édition d'images par prompt (Qwen Image Edit) | ComfyUI | ~29GB | [Approfondissements du palier 5](#approfondissements-du-palier-5) | Éditer une image existante par prompt (image-to-image) dans un workflow ComfyUI |
 
 ### Approfondissements du palier 5
@@ -47,23 +47,23 @@ Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décom
 | 5b | [01-5b-Edition-Image-Prompt-Iterations](01-5b-Edition-Image-Prompt-Iterations.ipynb) | Édition itérative par prompt (Qwen Image Edit 2509) | ComfyUI | ~29GB |
 | 5c | [01-5c-Edition-Image-Prompt-Workflows](01-5c-Edition-Image-Prompt-Workflows.ipynb) | Workflows d'édition par prompt (Qwen-Image 2.1, nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | Hébergée (INT8, #17266) |
 
-**[01-1](01-1-OpenAI-DALL-E-3.ipynb) — API cloud.** Le point d'entrée le plus immédiat : un prompt, une clé, et gpt-image-1 renvoie un visuel en ~19 s :
+**[01-1](01-1-Generation-Image-Texte-API.ipynb) — API cloud.** Le point d'entrée le plus immédiat : un prompt, une clé, et gpt-image-1 renvoie un visuel en ~19 s :
 
 <p align="center">
-  <a href="01-1-OpenAI-DALL-E-3.ipynb"><img src="assets/readme/img1-dalle3.webp" alt="Paysage urbain futuriste au coucher de soleil avec voitures volantes et lumières néon généré par gpt-image-1" width="380"/></a><br>
+  <a href="01-1-Generation-Image-Texte-API.ipynb"><img src="assets/readme/img1-dalle3.webp" alt="Paysage urbain futuriste au coucher de soleil avec voitures volantes et lumières néon généré par gpt-image-1" width="380"/></a><br>
   <em>gpt-image-1 : ville futuriste au coucher de soleil, voitures volantes, néons reflétés sur les immeubles de verre (1024×1024 requis, redimensionné à 746×789).</em>
 </p>
 
-**[01-4](01-4-Forge-SD-XL-Turbo.ipynb) — Génération locale via Forge.** Mêmes prompts, mais sur GPU auto-hébergé via Stable Diffusion XL Turbo : le mode 4-steps produit un rendu acceptable en ~18 s, et fixer la seed garantit la reproductibilité :
+**[01-4](01-4-Generation-Image-Locale-Forge.ipynb) — Génération locale via Forge.** Mêmes prompts, mais sur GPU auto-hébergé via Stable Diffusion XL Turbo : le mode 4-steps produit un rendu acceptable en ~18 s, et fixer la seed garantit la reproductibilité :
 
 <p align="center">
-  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen.webp" alt="Paysage de montagne serein au coucher de soleil (vallée herbeuse, chaînes de montagnes bleutées, éclairage golden hour), photoréaliste, généré par SDXL Turbo via Forge" width="320"/></a>
-  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen2.webp" alt="Ville futuriste industrielle (ruelle verticale entre tours, fenêtres éclairées, brume cyan/orange) générée en 4 steps SDXL Turbo cfg=2.0" width="320"/></a><br>
+  <a href="01-4-Generation-Image-Locale-Forge.ipynb"><img src="assets/readme/img1-forge-gen.webp" alt="Paysage de montagne serein au coucher de soleil (vallée herbeuse, chaînes de montagnes bleutées, éclairage golden hour), photoréaliste, généré par SDXL Turbo via Forge" width="320"/></a>
+  <a href="01-4-Generation-Image-Locale-Forge.ipynb"><img src="assets/readme/img1-forge-gen2.webp" alt="Ville futuriste industrielle (ruelle verticale entre tours, fenêtres éclairées, brume cyan/orange) générée en 4 steps SDXL Turbo cfg=2.0" width="320"/></a><br>
   <em>SDXL Turbo : paysage de montagne « golden hour » (gauche) et ville futuriste industrielle en mode 4-steps cfg=2.0 (droite) — premier exemple de génération locale via Forge.</em>
 </p>
 
 <p align="center">
-  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen3.webp" alt="Forêt brumeuse aux troncs verticaux et mousses orangées, générée avec seed fixe 42 pour reproductibilité" width="340"/></a><br>
+  <a href="01-4-Generation-Image-Locale-Forge.ipynb"><img src="assets/readme/img1-forge-gen3.webp" alt="Forêt brumeuse aux troncs verticaux et mousses orangées, générée avec seed fixe 42 pour reproductibilité" width="340"/></a><br>
   <em>SDXL Turbo : forêt brumeuse reproductible (seed fixe 42) — la seed garantit le même résultat à chaque exécution.</em>
 </p>
 
@@ -94,10 +94,10 @@ Accès : http://localhost:8188
 
 ## Progression recommandée
 
-1. **01-1-OpenAI-DALL-E-3** - Introduction rapide à la génération d'images
+1. **01-1-Generation-Image-Texte-API** - Introduction rapide à la génération d'images
 2. **01-2-Generation-Image-API** - Génération et analyse d'images via API multimodale
 3. **01-3-Basic-Image-Operations** - Manipulation d'images locale
-4. **01-4-Forge-SD-XL-Turbo** - Modèle open source via Forge (SD XL Turbo)
+4. **01-4-Generation-Image-Locale-Forge** - Modèle open source via Forge (SD XL Turbo)
 5. **[01-5-Edition-Image-Prompt](01-5-Edition-Image-Prompt.ipynb)** - Édition d'images avancée ([approfondissements 5b et 5c](#approfondissements-du-palier-5))
 
 ## Points clés

@@ -3,7 +3,7 @@
 """
 regen_img1_dalle3.py — REPAIR THE LEGACY ASSETS (issue #8624 + #9348).
 
-Le NB `01-1-OpenAI-DALL-E-3.ipynb` régénère une image via gpt-image-1 puis
+Le NB `01-1-Generation-Image-Texte-API.ipynb` régénère une image via gpt-image-1 puis
 l'affiche avec matplotlib. Le filtre non-ASCII du titre (c.916 / PR #8636)
 protège la SORTIE du notebook, mais deux assets historiques gardent un glyphe
 □ + le libellé legacy « DALL-E 3 » cuit dans le bandeau de titre (committés
@@ -43,7 +43,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-NB_PATH = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"
+NB_PATH = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb"
 ASSET_DIR_01F = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/assets/readme"
 ASSET_DIR_ROOT = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/assets/readme"
 ASSET_PATHS = [

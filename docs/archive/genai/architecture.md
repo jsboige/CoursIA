@@ -32,15 +32,15 @@ MyIA.AI.Notebooks/GenAI/
 │   ├── 00-4-Environment-Validation.ipynb
 │   └── 00-5-ComfyUI-Local-Test.ipynb
 ├── 01-Images-Foundation/           # Modèles de base
-│   ├── 01-1-OpenAI-DALL-E-3.ipynb
+│   ├── 01-1-Generation-Image-Texte-API.ipynb
 │   ├── 01-2-GPT-5-Image-Generation.ipynb
 │   ├── 01-3-Basic-Image-Operations.ipynb
-│   ├── 01-4-Forge-SD-XL-Turbo.ipynb
+│   ├── 01-4-Generation-Image-Locale-Forge.ipynb
 │   └── 01-5-Qwen-Image-Edit.ipynb
 ├── 02-Images-Advanced/             # Techniques avancées
 │   ├── 02-1-Qwen-Image-Edit-2509.ipynb
-│   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
-│   └── 02-3-Stable-Diffusion-3-5.ipynb
+│   ├── 02-2-Generation-Image-Haute-Qualite.ipynb
+│   └── 02-3-Generation-Image-MMDiT.ipynb
 ├── 03-Images-Orchestration/        # Multi-modèles
 │   ├── 03-1-Multi-Model-Comparison.ipynb
 │   ├── 03-2-Workflow-Orchestration.ipynb
