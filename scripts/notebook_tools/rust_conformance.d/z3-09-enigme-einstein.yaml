@@ -1,0 +1,220 @@
+# Conformité différentielle de Z3-09-Enigme-Einstein (portage Rust, lot 1 de #27129).
+#
+# Écrite à la livraison par la lane myia-ai-01:CoursIA-2. La correspondance
+# est par index de cellule (le portage garde la structure du jumeau Python :
+# 29 cellules, 11 cellules code aux memes index), une mesure par cellule code
+# qui imprime, égalité stricte du texte.
+#
+# Deux écarts sont documentes et mesures explicitement :
+#  (a) la version de Z3 annoncee — le jumeau Python lie la Wheels `z3-solver`
+#      5.4.1, le carnet Rust lie la bibliotheque native Z3 5.3.3 du siege
+#      (crate `z3` 0.23.0) ; la mesure porte donc sur l'intitule, pas sur le
+#      numero de version ;
+#  (b) la duree de resolution et la casse du booleen — la mesure `c9_unique`
+#      est declaree `case_insensitive` (le Rust ecrit `true`, le Python
+#      `True`), et la duree murale n'est pas comparee (ligne exclue du motif).
+#
+# Le jumeau C# n'existe pas pour ce carnet : le cote C# est donc declare
+# absent, ce qui est un fait DECLARE et non une mesure manquante.
+- name: "Z3-09 Enigme Einstein"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Rust.ipynb
+  measures:
+    - id: c1_label
+      description: "Sortie de la cellule 1, intitule de la version de Z3 (le numero de version differe par construction : Wheels 5.4.1 côté Python, bibliotheque native 5.3.3 côté Rust)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "\\A(z3 version :)"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "\\A(z3 version :)"
+          transform: text
+        csharp:
+          absent: "Le carnet Z3-09 n'a pas de jumeau C# dans la serie Z3-API : le cote declare absent, mesure a la generation ; la comparaison stricte porte sur Python et Rust."
+    - id: c3_model
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_table
+      description: "Sortie de la cellule 5, tableau des 5 maisons et reponse, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
+    - id: c9_space
+      description: "Sortie de la cellule 9, espace de recherche et cout de la brute force estime (segment 1/3 ; duree murale exclue, jamais comparee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A(Espace de recherche brut\\s+:\\ \\(5!\\)\\^5\\ =\\ 24,883,200,000\\ combinaisons\\nBrute force estime\\ \\(~1e8/s\\)\\s+:\\ 248\\.8\\ s\\ \\(hors test des 15 indices\\))"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A(Espace de recherche brut\\s+:\\ \\(5!\\)\\^5\\ =\\ 24,883,200,000\\ combinaisons\\nBrute force estime\\ \\(~1e8/s\\)\\s+:\\ 248\\.8\\ s\\ \\(hors test des 15 indices\\))"
+          transform: text
+        csharp:
+          absent: "Le carnet Z3-09 n'a pas de jumeau C# dans la serie Z3-API : le cote declare absent, mesure a la generation ; la comparaison stricte porte sur Python et Rust."
+    - id: c9_unique
+      description: "Sortie de la cellule 9, unicite prouvee par la negation du temoin (comparaison insensible a la casse : le Rust ecrit `true`, le Python `True`)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 9
+          pattern: "Solution unique \\(UNSAT si nie\\) : (True|true)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "Solution unique \\(UNSAT si nie\\) : (True|true)"
+          transform: text
+        csharp:
+          absent: "Le carnet Z3-09 n'a pas de jumeau C# dans la serie Z3-API : le cote declare absent, mesure a la generation ; la comparaison stricte porte sur Python et Rust."
+    - id: c9_conclusion
+      description: "Sortie de la cellule 9, phrase de conclusion (segment 3/3 ; duree murale exclue, jamais comparee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(\\ -> Z3 resout en millisecondes un espace de ~25 milliards, et prouve l'unicite sans enumeration\\.)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "(\\ -> Z3 resout en millisecondes un espace de ~25 milliards, et prouve l'unicite sans enumeration\\.)"
+          transform: text
+        csharp:
+          absent: "Le carnet Z3-09 n'a pas de jumeau C# dans la serie Z3-API : le cote declare absent, mesure a la generation ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_verdict
+      description: "Sortie de la cellule 13, verdict de l'exemple guide 1, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_stub
+      description: "Sortie de la cellule 16, stub de l'exercice 1, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet Z3-09 n'a pas de jumeau C# dans la serie Z3-API : le cote declare absent, mesure a la generation ; la comparaison stricte porte sur Python et Rust."
+    - id: c18_compte
+      description: "Sortie de la cellule 18, compte des solutions par blocage iteratif, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
+    - id: c19_sans_indice
+      description: "Sortie de la cellule 19, recompte sans l'indice 9 puis sans l'indice 15, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
+    - id: c22_stub
+      description: "Sortie de la cellule 22, stub de l'exercice 2, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet Z3-09 n'a pas de jumeau C# dans la serie Z3-API : le cote declare absent, mesure a la generation ; la comparaison stricte porte sur Python et Rust."
+    - id: c24_mini_zebra
+      description: "Sortie de la cellule 24, solution du mini-Zebra a 4 maisons et unicite, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
+    - id: c27_stub
+      description: "Sortie de la cellule 27, stub de l'exercice 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# existe (#27655) et sa structure de cellules est la meme, mais son texte diverge de la facon mesuree : fins de ligne CRLF, nombres a la francaise (24 883 200 000, 248,8 s), accents absents (\"Solution trouvee !\", \"elimination gloutonne\") et libelle de version different (Microsoft.Z3 4.12.2). Cote declare ABSENT, la divergence etant signalee dans le body de la PR ; la comparaison stricte porte sur Python et Rust."
