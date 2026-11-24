@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_issues, gh_selection, tapis_ancre
 from coordination import tapis_fenetre, tapis_rotation, tapis_verdict
-from coordination import tapis_leger, tapis_rapide
+from coordination import tapis_leger, tapis_non_tente, tapis_rapide
 from coordination import tapis_qualification as tq
 from coordination import tapis_universel as tu
 
@@ -117,11 +117,21 @@ def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
     assert len(rapport["grains"]) > 2
 
 
-def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
-    """Un EPIC est un conteneur : il ne passe jamais devant un grain (#26926).
+def test_un_conteneur_ne_deplace_aucun_grain(monkeypatch):
+    """Un EPIC est un conteneur : il ne prend que sa place de creneau.
 
     La detection se fait sur les metadonnees (titre `[EPIC ...]`, labels), donc
     elle ne peut pas attendre la lecture du corps.
+
+    **L'arbitrage du 19/11** (mandat du coordinateur : « une garantie de
+    creneau de lecture pour chaque classe ») : le conteneur ne peut plus
+    etre servi APRES tous les grains -- il tient un creneau a lui, en
+    alternance avec la classe des grains, un tour sur deux. Ce qu'il ne peut
+    pas faire, c'est **deplacer un grain** : son quota de creneaux (25 % du
+    lot) est inchange, et la part des grains ne depend pas de lui. La regle
+    #26926 (« un conteneur ne passe jamais devant un grain ») est donc
+    ETR0ITIE, pas abandonnee -- c'est un arbitrage de la coordination, pas
+    une decision de la lane.
     """
     def run_epic(argv, timeout):
         requete = " ".join(argv)
@@ -132,10 +142,10 @@ def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
 
     rapport, _ = tapis_leger.tirage(LANE, 3, NOW, 45, "g", Path("."), run_epic)
     numeros = [g["numero"] for g in rapport["grains"]]
-    if 8 in numeros:
-        autres = [i for i, n in enumerate(numeros) if n != 8]
-        assert numeros.index(8) > max(autres), \
-            "un conteneur ne passe jamais devant un grain"
+    assert len(numeros) == 3, "le lot garde sa taille"
+    assert 8 in numeros, "le conteneur a un creneau de lecture"
+    assert len([n for n in numeros if n != 8]) == 2, (
+        "le conteneur ne prend qu'UN creneau : il ne deplace aucun grain")
 
 
 # --- la fenetre qui avance sur le pool -----------------------------------------
@@ -571,27 +581,42 @@ def test_le_label_d_urne_ne_prouve_pas_la_livraison(monkeypatch):
     """Un label `candidate-delivered` est une ROUTE, pas une preuve.
 
     Il dit que l'issue est dans l'urne de cloture du coordinateur et de
-    l'adjoint ; il ne dit pas que la tranche est livree. Retirer le grain sur
-    cette seule foi, ce serait heriter d'une exclusion que personne n'a
-    prouvee : la lane qui le rencontre verifie la preuve sur l'artefact, puis
-    rend la main (#15069)."""
+    l'adjoint ; il ne dit pas que la tranche est livree : aucun verdict
+    `LIVREE` n'en decoule.
+
+    **Mais l'urne n'est pas un grain neuf** (TASK c0021, 22/11) : elle est
+    reservee au coordinateur et a l'adjoint (#15069), et l'organe de claim
+    refuse de la reclamer. Une lane worker ne la sert donc pas -- sinon elle
+    paie un cycle pour decouvrir le refus. Les lanes qui **gerent** l'urne la
+    gardent : elles arbitrent."""
     def faux_qualifier(run, depot, numeros=None):
         return {7: _issue(7, labels=["candidate-delivered"])}
 
     monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         [7], LANE, NOW, 45, [], _run_faux([]))
-    assert [e.numero for e in servis] == [7], "le label ne retire pas le grain"
-    assert any("urne" in n for n in servis[0].notes), "l'urne reste dite"
-    assert 7 not in ecartees, "le label n'est pas une exclusion"
+    assert [e.numero for e in servis] == [], "l'urne n'est pas servie a une worker"
+    assert ecartees[7]["code"] == "LABEL", "l'urne est ecartee, avec son code"
+    assert "urne" in ecartees[7]["motif"], "le motif nomme l'urne"
+
+    # Les lanes qui GERENT l'urne la gardent : note, et grain servi.
+    for gerante in ("myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"):
+        servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+            [7], gerante, NOW, 45, [], _run_faux([]))
+        assert [e.numero for e in servis] == [7], "l'urne reste servie par sa gerante"
+        assert any("urne" in n for n in servis[0].notes), "l'urne reste dite"
+        assert 7 not in ecartees, "l'urne n'est pas une exclusion pour sa gerante"
 
 
 def test_une_pr_ouverte_qui_cite_est_un_signal_pas_un_verdict(monkeypatch):
     """Une PR ouverte qui cite l'issue est une couverture, pas une livraison.
 
-    Le verdict `COUVERTE` retirait le grain sur cette seule foi. Dans la
-    requalification, la couverture reste DITE -- en note -- et le grain reste
-    servable."""
+    Aucun verdict `LIVREE` n'en decoule : la couverture reste DITE, en note.
+
+    **Mais elle occupe l'issue** (TASK c0021, 22/11) : une PR ouverte d'une
+    autre lane la tient, et l'organe de claim refuse la lane qui s'y met
+    (collision L898). Une lane worker ne sert donc pas ce grain ; la lane de
+    la PR, elle, le garde -- c'est elle qui doit le porter au merge (P0)."""
     def faux_qualifier(run, depot, numeros=None):
         return {7: _issue(7)}
 
@@ -600,7 +625,14 @@ def test_une_pr_ouverte_qui_cite_est_un_signal_pas_un_verdict(monkeypatch):
             "body": "Grain: LIGHT/guard -- lane myia-po-2025:CoursIA-2\n\nRefs #7"}]
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         [7], LANE, NOW, 45, prs, _run_faux([]))
-    assert [e.numero for e in servis] == [7], "une couverture ne retire pas le grain"
+    assert [e.numero for e in servis] == [], "une issue occupee n'est pas servie"
+    assert ecartees[7]["code"] == "OCCUPEE", "l'occupation a son code"
+    assert "#99" in ecartees[7]["motif"], "le motif nomme la PR qui occupe"
+
+    # La lane de la PR garde l'issue : c'est son travail en cours.
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+        [7], "myia-po-2025:CoursIA-2", NOW, 45, prs, _run_faux([]))
+    assert [e.numero for e in servis] == [7], "la lane de la PR garde son issue"
     assert any("#99" in n for n in servis[0].notes), "la couverture reste dite"
 
 
@@ -722,14 +754,31 @@ def test_une_tranche_peut_chevaucher_la_fin_du_pool():
 
 def test_un_pending_de_tete_qui_se_ferme_laisse_passer_le_curseur(tmp_path, monkeypatch):
     """Le pending de tete attend sa decision ; quand elle tombe, le curseur
-    passe -- et les numeros derriere lui aussi."""
+    passe -- et les numeros derriere lui aussi.
+
+    Un grain PROPOSE mais jamais qualifie ne fige pas le curseur : il reste
+    EN ATTENTE, et la tranche suivante le sert en tete (mesure du 19/11 :
+    pool 1..6, ancre 2, tranche [3, 4], seul 4 qualifie -> 5 et 6 jamais
+    proposes). Il n'est ni decide ni refuse : le parcage NON TENTE reste le
+    sort des numeros SAUTES (devances par un numero lu plus loin).
+
+    **Le curseur s'arrete au dernier numero LU** (revue du 19/11) : le lot
+    couvert est ce que la lane a reellement pris en charge, pas la tranche
+    demandee. C'est ce qui supprime la famine mesuree (4 lus sur 80 en 400
+    tours) : le curseur ne saute plus par blocs entiers.
+    """
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
     tapis_ancre.proposer(LANE, "grains", [5, 6, 7])
     assert tapis_ancre.lire(LANE)["grains"]["ancre"] is None, \
         "rien n'est decide : le curseur bouge pas"
     tapis_verdict.avancer(LANE, {5: object()}, {})
-    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 5, \
-        "le pending de tete qui se ferme libere le curseur"
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] == 5, (
+        "le curseur s'arrete au dernier numero LU : il ne saute pas par blocs")
+    assert 6 not in etat["grains"]["inconnus"], (
+        "un numero propose mais non qualifie n'est pas REFUSE")
+    assert 6 in etat["grains"]["attente"], (
+        "il attend la tranche suivante, qui le sert en tete")
     tapis_verdict.avancer(LANE, {6: object(), 7: object()}, {})
     assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 7, \
         "les numeros derriere sont couverts"

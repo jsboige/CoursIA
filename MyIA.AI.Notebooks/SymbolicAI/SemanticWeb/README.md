@@ -73,6 +73,7 @@ flowchart BT
 | SW-15 | [SW-15-Coup-Argumentatif-Python](SW-15-Coup-Argumentatif-Python.ipynb) | Greffer un graphe d'argumentation AIF : le coup bascule l'extension grounded de Dung | 45 min | EXTENSION |
 | SW-15 (C#) | [SW-15-Coup-Argumentatif-CSharp](SW-15-Coup-Argumentatif-CSharp.ipynb) | Le coup argumentatif en dotNetRDF : SHACL natif, fermeture OWL-RL via le pont Python.NET, bascule de Dung calculee en C# | 90 min | EXTENSION |
 | SW-16 | [SW-16-ProofCarryingOntologies-Python](SW-16-ProofCarryingOntologies-Python.ipynb) | Le certificat d'inférence : une conclusion vérifiable par un checker indépendant | 50 min | EXTENSION |
+| SW-16 (C#) | [SW-16-ProofCarryingOntologies-CSharp](SW-16-ProofCarryingOntologies-CSharp.ipynb) | Le même contrat en C# sur la seule BCL : checker découplé prouvé par scan IL, jambe réelle open-ontologies v1.4.0 invoquée par Process (SHA256 vérifié) | 50 min | JUMEAU |
 | Legacy | [RDF.Net-Legacy/RDF.Net](RDF.Net-Legacy/RDF.Net.ipynb) | Démonstration RDF.NET historique, antérieure à la double pile — archive de référence, non maintenue | — | ARCHIVE |
 
 **Durée totale** : ~10 h (parcours principal), ~4 h de plus (miroirs, jumeaux et extensions).
