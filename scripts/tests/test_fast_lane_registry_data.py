@@ -24,6 +24,7 @@ import os
 import shutil
 import sys
 import tempfile
+import typing
 from dataclasses import fields as dc_fields
 from pathlib import Path
 
@@ -65,6 +66,41 @@ def _ser_commenter(c):
 def _serialize():
     return {g: [_ser_guard(x) for x in getattr(reg, g)]
             for g in reg._REQUIRED_GROUPS}
+
+
+def _sequences(obj):
+    """(champ, type annonce, type servi) des champs de sequence d'un objet."""
+    hints = typing.get_type_hints(type(obj), globalns=vars(reg),
+                                  localns={"Callable": typing.Callable})
+    for f in dc_fields(obj):
+        annonce = typing.get_origin(hints[f.name])
+        if annonce in (list, tuple):
+            yield f.name, annonce, type(getattr(obj, f.name))
+
+
+def test_les_sequences_ont_le_type_annonce():
+    """Un tuple et une liste s'ecrivent pareil au temoin JSON.
+
+    Le temoin ne peut donc pas voir une sequence servie dans le mauvais
+    type. Ce test lit le type dans l'annotation du dataclass, qui est
+    celle du monolithe. Mesure du 24/11 : le chargeur servait `paths` de
+    cinq commenters en tuple, annonce en liste -- sans effet observe sur
+    le runner (`commenter_paths` deploite la sequence), mais hors
+    contrat d'identite.
+    """
+    ecarts = []
+    for group in reg._REQUIRED_GROUPS:
+        for guard in getattr(reg, group):
+            ecarts += [f"{guard.name}.{champ}: servi {servi.__name__}, "
+                       f"annonce {annonce.__name__}"
+                       for champ, annonce, servi in _sequences(guard)
+                       if servi is not annonce]
+            for commenter in guard.commenters:
+                ecarts += [f"{guard.name} / {commenter.header}.{champ}: servi "
+                           f"{servi.__name__}, annonce {annonce.__name__}"
+                           for champ, annonce, servi in _sequences(commenter)
+                           if servi is not annonce]
+    assert not ecarts, "\n".join(ecarts)
 
 
 def test_identite_avec_le_temoir():

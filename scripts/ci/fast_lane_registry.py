@@ -801,9 +801,13 @@ def _build_commenter(entry, rel):
             f"(connus: {sorted(_COMMENTER_BODY_FNS)})")
     kw = dict(entry)
     kw["body"] = _COMMENTER_BODY_FNS[body_name]
-    for tf in ("paths", "fatal_rc"):
-        if tf in kw:
-            kw[tf] = tuple(kw[tf])
+    # Les types du monolithe, que le dataclass annonce : `paths` liste,
+    # `fatal_rc` tuple. Le temoin JSON ecrit les deux sous la meme forme,
+    # il ne voit donc pas un type servi a l'envers (test epingle).
+    if "paths" in kw:
+        kw["paths"] = list(kw["paths"])
+    if "fatal_rc" in kw:
+        kw["fatal_rc"] = tuple(kw["fatal_rc"])
     return Commenter(**kw)
 
 
