@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-15
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -512,7 +512,7 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-17-InoculationRL-Python.ipynb
   confidence: research
   reviewed_code_sha: eecbfaf077f6f766e3ecc0915257f13b5ecd44984c075d2ef4205075ceac1324
   review_date: "2026-09-21"
