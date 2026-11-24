@@ -76,8 +76,18 @@ Cette cellule importe toutes les briques nécessaires et prépare l'environnemen
 Le `logging.basicConfig(level=logging.INFO)` active les logs INFO qui rendront l'exécution du débat lisible (sélection d'agent, usage API). L'output `Imports et configuration OK` confirme que toutes les dépendances sont présentes sur la machine d'exécution.
 
 La cellule `# Import guards` précédente joue un rôle de pré-vol : elle vérifie la disponibilité de `IPython`, `dotenv` et `semantic_kernel` et définit des flags (`IPYTHON_AVAILABLE`, etc.) — **mais ces gardes ne protègent pas le carnet** : la cellule suivante importe `dotenv` et `semantic_kernel` au niveau module, sans garde, si bien qu'une dépendance manquante interrompt l'exécution à cet import. Les flags documentent l'état de la machine, ils n'arrêtent rien.","## Initial configuration
-Loading environment variables and initializing services",,,,,"## Начальная конфигурация
-Загрузка переменных окружения и инициализация сервисов",,0ca44c11fad6eb6c,9bf0b4f4278abce2,,,,,5aa096170a693583,,,,,,,,,
+
+This cell imports all the required building blocks and prepares the environment:
+
+- **`os`, `random`, `logging`** — standard utilities (environment variables, constraint draw, logs);
+- **`dotenv`** — `load_dotenv()` loads the API keys from the local `.env` file (see `OPENAI_API_KEY` used below);
+- **`semantic_kernel`** — the core: `Kernel`, `ChatCompletionAgent`, `AgentGroupChat`, the OpenAI connectors (chat + text-to-image), `kernel_function`, `ChatMessageContent`/`AuthorRole`.
+
+The `logging.basicConfig(level=logging.INFO)` enables the INFO logs that make the debate execution readable (agent selection, API usage). The `Imports et configuration OK` output confirms that every dependency is present on the execution machine.
+
+The `# Import guards` cell above plays a pre-flight role: it checks the availability of `IPython`, `dotenv` and `semantic_kernel` and defines flags (`IPYTHON_AVAILABLE`, etc.) — **but these guards do not protect the notebook**: the next cell imports `dotenv` and `semantic_kernel` at module level, unguarded, so a missing dependency interrupts execution at that import. The flags document the machine's state; they stop nothing.
+",,,,,"## Начальная конфигурация
+Загрузка переменных окружения и инициализация сервисов",,0ca44c11fad6eb6c,5e37d0aee1a4aa5a,,,,,5aa096170a693583,,0ca44c11fad6eb6c,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e3198a5c,code,fr,69cebc4bd28eeb03,"import os
 import random
 import logging
@@ -129,8 +139,18 @@ Le débat ne gagne en intérêt que si les répliques obéissent à une règle. 
 | `Chanson` | Répondre sur l'air d'I'm a Believer |
 
 `random.choice` tire une contrainte au sort **à chaque exécution** : le tirage n'est donc pas reproductible — la contrainte effective est celle que la cellule suivante affiche, et les répliques du débat la suivent. (Dans la sortie committée, c'est **Chanson** — « Répondre sur l'air de 'I'm a Believer' » — qui a été tirée.) La structure en tuples `(nom, description)` est celle que l'Exercice 1 demande d'étendre : la description est interpolée dans les instructions des agents, donc toute nouvelle entrée de la liste se répercute automatiquement sur le comportement des deux duellistes.","## Definition of Linguistic Constraints
-Random selection of a constraint for the debate",,,,,"## Определение лингвистических ограничений
-Случайный выбор ограничения для дебатов",,89217fabcab0a32e,5f59b1a0a67de378,,,,,d315fba7a653a091,,,,,,,,,
+
+The debate only becomes interesting if the replies follow a rule. The `CONTRAINTES` list defines **three possible styles**, each as a `(name, description)` tuple:
+
+| Name | Rule |
+|---|---|
+| `Rime` | Each reply contains a perfect rhyme |
+| `Shakespeare` | Imitate Shakespeare's theatrical style |
+| `Chanson` | Answer to the tune of I'm a Believer |
+
+`random.choice` draws a constraint at random **on every execution**: the draw is therefore not reproducible — the effective constraint is the one the next cell displays, and the debate replies follow it. (In the committed output, **Chanson** — « Answer to the tune of 'I'm a Believer' » — was drawn.) The `(name, description)` tuple structure is the one Exercise 1 asks you to extend: the description is interpolated into the agents' instructions, so any new entry in the list automatically propagates to both duelists' behavior.
+",,,,,"## Определение лингвистических ограничений
+Случайный выбор ограничения для дебатов",,89217fabcab0a32e,c6b87a8b6586b1a7,,,,,d315fba7a653a091,,89217fabcab0a32e,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b732326a,code,fr,334afbfdcb3c73f2,"# Contraintes declaratives du duel : un nom court et une phrase d'instruction
 # qui sera injectee dans les instructions des agents (section suivante).
 CONTRAINTES = [
@@ -382,8 +402,17 @@ Chaque duelliste est un `ChatCompletionAgent` avec son **propre kernel** (`kerne
 Les deux instructions embarquent la contrainte linguistique choisie (`contrainte_choisie[1]`), interpolée dans le prompt système : c'est ce qui garantit que **chaque** réplique, quel que soit l'agent, respecte la règle du débat.
 
 Point de câblage important : le plugin `ImagePlugin` est ajouté **uniquement au kernel de l'Âne** (`kernel_ane.add_plugin(...)`). Barbie parle, l'Âne parle *et* illustre — la dissymétrie est volontaire et montre que les plugins sont attachés par kernel, pas globalement.","## Agent configuration
-Creating characters with their specific instructions",,,,,"## Настройка агентов
-Создание персонажей с их конкретными инструкциями",,c76d4abc925c544f,c9a6c75a4517a7fe,,,,,dd40fa0d81347eb1,,,,,,,,,
+
+Each duelist is a `ChatCompletionAgent` with its **own kernel** (`kernel_barbie`, `kernel_ane`) and distinct system instructions:
+
+- **Barbie**: « Defend optimistic positions with elegance » — the polished tone;
+- **Shrek's Donkey**: « Use absurd, offbeat humor » — the uninhibited tone.
+
+Both instructions embed the chosen linguistic constraint (`contrainte_choisie[1]`), interpolated into the system prompt: this is what guarantees that **every** reply, whichever agent speaks, follows the debate's rule.
+
+Important wiring point: the `ImagePlugin` plugin is added **only to the Donkey's kernel** (`kernel_ane.add_plugin(...)`). Barbie talks; the Donkey talks *and* illustrates — the asymmetry is deliberate, and it shows that plugins attach per kernel, not globally.
+",,,,,"## Настройка агентов
+Создание персонажей с их конкретными инструкциями",,c76d4abc925c544f,3f3434f8fd366ca3,,,,,dd40fa0d81347eb1,,c76d4abc925c544f,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e24e577d,code,fr,58e9021783781f11,"# Création des kernels séparés
 kernel_barbie = create_kernel()
 kernel_ane = create_kernel()
@@ -1649,7 +1678,10 @@ Ce notebook orchestre une collaboration multi-agents pour :
 ***",,,,,,,16d73e913af0445e,59cf953df81e3049,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,d2d5c1388f395a4c,"### Bibliothèques et garde-fous d'import
 
-**Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, producteur du PDF) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent explicites les deux dépendances optionnelles (`dotenv`, `semantic_kernel`) : si l'une manque, le notebook l'imprime et poursuit en mode dégradé. Les autres dépendances (`reportlab`, `openai`, `pypdf`) s'importent sans garde : elles sont requises pour la partie génération, et leur absence se lira sur l'`ImportError` de leur cellule.",### Installing libraries,,,,,,,d2d5c1388f395a4c,37ae75552eece061,,,,,,,,,,,,,,
+**Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, producteur du PDF) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent explicites les deux dépendances optionnelles (`dotenv`, `semantic_kernel`) : si l'une manque, le notebook l'imprime et poursuit en mode dégradé. Les autres dépendances (`reportlab`, `openai`, `pypdf`) s'importent sans garde : elles sont requises pour la partie génération, et leur absence se lira sur l'`ImportError` de leur cellule.","### Installing libraries
+
+**Why this notebook relies on Semantic Kernel rather than a simple API call**: generating a structured recipe (title, listed ingredients, numbered steps, dietary constraints honored) in a single LLM request produces a free-format and often inconsistent result. Semantic Kernel orchestrates **several specialized agents** (criteria collector, recipe generator, PDF producer) that hand off a shared state — it is this *multi-agent* architecture that guarantees the final recipe honors every constraint (vegetarian, no mushrooms, 6 guests). The *import guards* in the next cell make the two optional dependencies explicit (`dotenv`, `semantic_kernel`): if one is missing, the notebook prints it and continues in degraded mode. The other dependencies (`reportlab`, `openai`, `pypdf`) import without a guard: they are required for the generation part, and their absence will show up in the `ImportError` of their cell.
+",,,,,,,d2d5c1388f395a4c,4f6153dd51ec47a4,,,,,,,d2d5c1388f395a4c,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,139e9aae,code,fr,98e8009ebbbf579d,"# Import guards - availability flags for external dependencies
 
 try:
@@ -1668,8 +1700,14 @@ except ImportError:
 ",,,,,,,,98e8009ebbbf579d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,02378d10,markdown,fr,9708bac105b90cfd,"## État Global & Configuration
 
-**Pourquoi un état global partagé est indispensable en multi-agent** : chaque agent (collecteur, générateur, producteur du PDF) traite une **partie** du problème mais doit voir l'**ensemble** des contraintes. La classe `RecipeState` est cet état partagé — elle porte le régime alimentaire, les ingrédients exclus, le nombre de convives, et la recette en cours de construction. Sans état global, chaque agent devrait re-passer toutes les contraintes dans son prompt (redondant, coûteux en tokens, source d'oublis) ; avec état global, un agent lit `state.diet` et agit en conséquence. C'est le pattern *blackboard* de l'IA classique modernisé : les agents ne communiquent pas directement entre eux, ils communiquent **à travers l'état** — ce qui découple les agents et permet d'en ajouter (un agent nutritionniste) sans modifier les autres.",## Global State & Configuration,,,,,,,9708bac105b90cfd,682f14eb4ae2a158,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,d1237ca87b413567,"class RecipeState:
+**Pourquoi un état global partagé est indispensable en multi-agent** : chaque agent (collecteur, générateur, producteur du PDF) traite une **partie** du problème mais doit voir l'**ensemble** des contraintes. La classe `RecipeState` est cet état partagé — elle porte le régime alimentaire, les ingrédients exclus, le nombre de convives, et la recette en cours de construction. Sans état global, chaque agent devrait re-passer toutes les contraintes dans son prompt (redondant, coûteux en tokens, source d'oublis) ; avec état global, un agent lit `state.diet` et agit en conséquence. C'est le pattern *blackboard* de l'IA classique modernisé : les agents ne communiquent pas directement entre eux, ils communiquent **à travers l'état** — ce qui découple les agents et permet d'en ajouter (un agent nutritionniste) sans modifier les autres.","## Global State & Configuration
+
+**Why a shared global state is indispensable in multi-agent**: each agent (collector, generator, PDF producer) handles **part** of the problem but must see the **whole** set of constraints. The `RecipeState` class is that shared state — it carries the diet, the excluded ingredients, the number of guests, and the recipe under construction. Without global state, each agent would have to re-pass every constraint in its prompt (redundant, costly in tokens, prone to omissions); with global state, an agent reads `state.diet` and acts accordingly. It is the classic-AI *blackboard* pattern modernized: agents do not talk to each other directly, they communicate **through the state** — which decouples the agents and lets you add one (a nutritionist agent) without modifying the others.
+",,,,,,,9708bac105b90cfd,17217fbc3e22c703,,,,,,,9708bac105b90cfd,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,8fc80e88be0ff916,"# Etat partage du workflow : les agents (Chef, Critique...) lisent et ecrivent
+# ces champs au fil du dialogue ; `ready_to_generate` bascule quand le Chef
+# estime que les informations sont completes, `pdf_path` porte la sortie finale.
+class RecipeState:
     def __init__(self):
         self.diet: str = """"
         self.excluded_ingredients: list[str] = []
@@ -1681,7 +1719,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,co
         self.pdf_path: str = """"
 
 print(""Classe RecipeState définie"")
-",,,,,,,,d1237ca87b413567,,,,,,,,,,,,,,,
+",,,,,,,,8fc80e88be0ff916,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,9227aa4c,markdown,fr,e3057c4d9e6e52a7,"### Exercice 1 : Enrichir l'etat partage avec des préférences culinaires
 
 La classe `RecipeState` stocke le regime, les ingredients exclus et le nombre de convives. L'objectif est de l'enrichir avec de nouveaux champs : **niveau de difficulte** (debutant, intermediaire, expert), **temps de preparation maximum**, et **cuisine preferee** (francaise, italienne, asiatique, etc.).
@@ -1725,7 +1763,10 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,26b00761,co
 print(""Exercice a completer : ExtendedRecipeState"")",,,,,,,,147a59853e1b4967,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,cbee62c69c0fb640,"### Plugins d'agents et fonctions de modification d'état
 
-**Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_diet`, `exclude_ingredient`, `set_guests`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.diet = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.",### Agent plugins and state modification functions,,,,,,,cbee62c69c0fb640,78241911f1e94dce,,,,,,,,,,,,,,
+**Pourquoi les agents modifient l'état via des fonctions (plugins) plutôt qu'en générant du texte libre** : si un agent écrivait « régime = végétarien » en prose, les autres agents devraient *parser* cette phrase pour extraire la contrainte — fragile et error-prone. Les plugins exposent des **fonctions typées** (`set_diet`, `exclude_ingredient`, `set_guests`) que le kernel appelle de manière structurée : la contrainte atterrit directement dans le bon champ de `RecipeState`, sans ambiguïté de parsing. C'est l'écart entre un agent qui *décrit* une action (« je note que l'utilisateur est végétarien ») et un agent qui *exécute* une action (`state.diet = vegetarien`) — le second est reproductible et vérifiable, le premier dépend de l'interprétation du lecteur.","### Agent plugins and state modification functions
+
+**Why agents modify state through functions (plugins) rather than by generating free text**: if an agent wrote « diet = vegetarian » in prose, the other agents would have to *parse* that sentence to extract the constraint — fragile and error-prone. The plugins expose **typed functions** (`set_diet`, `exclude_ingredient`, `set_guests`) that the kernel calls in a structured way: the constraint lands directly in the right field of `RecipeState`, with no parsing ambiguity. This is the gap between an agent that *describes* an action (« I note that the user is vegetarian ») and an agent that *executes* an action (`state.diet = vegetarien`) — the latter is reproducible and verifiable, the former depends on the reader's interpretation.
+",,,,,,,cbee62c69c0fb640,a6fba7cdb4605b60,,,,,,,cbee62c69c0fb640,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,fa663c16,code,fr,82543881b601fc73,"import textwrap
 from semantic_kernel.functions import kernel_function
 from reportlab.pdfgen import canvas
@@ -1858,7 +1899,10 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,2772b5c3,co
 print(""Exercice a completer : NutritionPlugin"")",,,,,,,,5d667c20e03d1d49,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,38b199ea1ca7d7d6,"### Création des agents
 
-**Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **production** du livrable PDF — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un producteur du PDF qui finalise le livrable) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait interroger le prompt et les fonctions de l'agent concerné (ici, le générateur).",### Creating agents,,,,,,,38b199ea1ca7d7d6,87ae1b10d70e08a9,,,,,,,,,,,,,,
+**Pourquoi distinguer plusieurs agents plutôt qu'un seul prompt « génère une recette »** : un agent unique devrait gérer simultanément la **collecte** des critères, la **génération** de la recette, et la **production** du livrable PDF — trois rôles cognitivement différents, chacun avec son propre prompt et son système de raisonnement. La séparation en agents spécialisés (un collecteur empathique qui pose les bonnes questions, un générateur créatif qui propose, un producteur du PDF qui finalise le livrable) suit le principe de **responsabilité unique** appliqué au LLM : chaque agent a un rôle clair, un prompt ciblé, et un critère de réussite mesurable. C'est aussi ce qui rend le système debuggable — si une recette ne respecte pas une contrainte, on sait interroger le prompt et les fonctions de l'agent concerné (ici, le générateur).","### Creating agents
+
+**Why several agents rather than a single « generate a recipe » prompt**: a single agent would have to handle simultaneously the **collection** of criteria, the **generation** of the recipe, and the **production** of the PDF deliverable — three cognitively different roles, each with its own prompt and reasoning system. Splitting into specialized agents (an empathetic collector that asks the right questions, a creative generator that proposes, a PDF producer that finalizes the deliverable) follows the **single responsibility** principle applied to LLMs: each agent has a clear role, a focused prompt, and a measurable success criterion. This is also what makes the system debuggable — if a recipe violates a constraint, you know to interrogate the prompt and the functions of the agent concerned (here, the generator).
+",,,,,,,38b199ea1ca7d7d6,449502d8a0f15006,,,,,,,38b199ea1ca7d7d6,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,f6e42299,code,fr,f313112351482375,"import os
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -1944,7 +1988,10 @@ print(""Imports et configuration OK"")
 ",,,,,,,,f313112351482375,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,1db50c69fdcd34c0,"### Création de la conversation avec critères de terminaison et/ou de sélection
 
-**Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (un agent redemande une précision, l’autre répond, le premier redemande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — ici : dès que le livrable PDF est produit (la stratégie interroge l'état partagé), ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** — ce notebook n'en définit pas : la sélection par défaut donne la parole aux agents à tour de rôle, dans l'ordre de la liste, ce que la conversation exécutée montre (`InputCollector` puis `RecipeGenerator` puis `PDFGenerator`). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.",### creating the conversation with termination and/or selection criteria,,,,,,,1db50c69fdcd34c0,06574cd66127188d,,,,,,,,,,,,,,
+**Pourquoi la conversation a besoin de critères de terminaison explicites** : sans règle d'arrêt, les agents pourraient boucler indéfiniment (un agent redemande une précision, l’autre répond, le premier redemande encore…). Les critères de terminaison définissent **quand la conversation s'arrête** — ici : dès que le livrable PDF est produit (la stratégie interroge l'état partagé), ou après un nombre maximal d'échanges. Les critères de sélection, eux, définissent **quel agent parle ensuite** — ce notebook n'en définit pas : la sélection par défaut donne la parole aux agents à tour de rôle, dans l'ordre de la liste, ce que la conversation exécutée montre (`InputCollector` puis `RecipeGenerator` puis `PDFGenerator`). Ces deux mécanismes transforment un flot potentiellement chaotique d'échanges LLM en un **protocole ordonné** avec un début, un milieu et une fin garantis.","### creating the conversation with termination and/or selection criteria
+
+**Why the conversation needs explicit termination criteria**: without a stopping rule, the agents could loop forever (one agent asks for a clarification, the other answers, the first one asks again…). Termination criteria define **when the conversation stops** — here: as soon as the PDF deliverable is produced (the strategy polls the shared state), or after a maximum number of exchanges. Selection criteria define **which agent speaks next** — this notebook defines none: the default selection gives the floor to the agents in turn, in list order, which the executed conversation shows (`InputCollector` then `RecipeGenerator` then `PDFGenerator`). These two mechanisms turn a potentially chaotic stream of LLM exchanges into an **ordered protocol** with a guaranteed beginning, middle and end.
+",,,,,,,1db50c69fdcd34c0,9e1fce4736ffcff5,,,,,,,1db50c69fdcd34c0,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,a81079d4,code,fr,d04e20e472851961,"from semantic_kernel.agents import AgentGroupChat
 from pydantic import PrivateAttr
 
@@ -1973,7 +2020,10 @@ print(""Imports agents OK"")
 ",,,,,,,,d04e20e472851961,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,db9a93cc3809a3e7,"### Boucle principale
 
-**Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : la boucle ne s'arrête pas après un tour par agent — tant que le livrable n'est pas produit (et jusqu'au maximum d'itérations), la conversation reprend : un agent peut reprendre la main au tour suivant pour compléter ce qui manque. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, donne la parole à l'agent suivant (sélection par défaut : tour de rôle), exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.",### Main loop,,,,,,,db9a93cc3809a3e7,b78f6c6bcb9776e6,,,,,,,,,,,,,,
+**Pourquoi la boucle principale orchestre plutôt que d'exécuter séquentiellement** : la boucle ne s'arrête pas après un tour par agent — tant que le livrable n'est pas produit (et jusqu'au maximum d'itérations), la conversation reprend : un agent peut reprendre la main au tour suivant pour compléter ce qui manque. C'est la différence entre un *pipeline* (une seule passe, pas de retour) et une *conversation* (itérative, avec feedback). La boucle principale est le chef d'orchestre : elle lit l'état, donne la parole à l'agent suivant (sélection par défaut : tour de rôle), exécute l'agent, vérifie les critères de terminaison, et recommence jusqu'à convergence. C'est ce qui permet au système de **corriger** ses propres erreurs au lieu de les propager.","### Main loop
+
+**Why the main loop orchestrates instead of executing sequentially**: the loop does not stop after one round per agent — as long as the deliverable is not produced (and up to the iteration maximum), the conversation resumes: an agent can take the floor again on the next round to complete whatever is missing. This is the difference between a *pipeline* (a single pass, no return) and a *conversation* (iterative, with feedback). The main loop is the conductor: it reads the state, gives the floor to the next agent (default selection: round-robin), executes the agent, checks the termination criteria, and repeats until convergence. This is what allows the system to **correct** its own errors instead of propagating them.
+",,,,,,,db9a93cc3809a3e7,69da89bc7f03c84b,,,,,,,db9a93cc3809a3e7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d34da44f,code,fr,67d733bc3b89be48,"# Fallback: s'assurer que group_chat est défini
 try:
     group_chat
@@ -2069,9 +2119,11 @@ if shared_state.pdf_path and os.path.exists(shared_state.pdf_path):
     print(f""PDF présent sur le disque : {shared_state.pdf_path} ({taille} octets)"")
 else:
     print(""Aucun PDF produit : ni par l'agent, ni par le filet de sécurité."")",,,,,,,,82390aead8a159ba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,9dfa12f05c2f5bc7,"import pypdf
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,7ef8defe11421970,"import pypdf
 import re
 
+# Phase 1 -- extraction : on relit le PDF produit par la cellule precedente
+# et on en fait un texte plat comparable a l'etat attendu.
 pdf_path = shared_state.pdf_path
 reader = pypdf.PdfReader(pdf_path)
 pdf_text = chr(10).join(p.extract_text() or """" for p in reader.pages)
@@ -2082,6 +2134,8 @@ print(pdf_text)
 
 
 def _norm(s):
+    # Normalisation commune : espaces multiples, casse et bordures ; le texte
+    # extrait d'un PDF contient des sauts de ligne au milieu des phrases.
     return re.sub(r""\s+"", "" "", s).strip().lower()
 
 
@@ -2092,6 +2146,7 @@ def _endswith(s, n_words=2):
 
 def _check_ingredient(ing, pdf_text):
     """"""Vrai si l'ingredient (quantite + nom) est present dans le PDF.
+
     Test: chaine normalisee directe, OU variante sans virgule, OU split (nom + quantite)
     tous deux presents. Necessaire car le PDF peut mettre l'ingredient sur plusieurs lignes ou
     avec une virgule differente.
@@ -2123,10 +2178,14 @@ def _check_step(s, pdf_text, n_min_overlap=0.4):
         return False
     p_words = set(pdf_n.split())
     overlap = sum(1 for w in s_words if w in p_words) / len(s_words)
+    # Garde anti-troncature : la fin de l'etape doit exister telle quelle.
     end_ok = _endswith(s, 2) in pdf_n
     return overlap >= n_min_overlap and end_ok
 
 
+# Phase 2 -- assertions : chaque champ de l'etat partage doit se retrouver
+# dans le PDF ; tout manquement leve une erreur (le carnet ne peut pas finir
+# vert sur une recette incomplete).
 missing = []
 if not shared_state.diet or _norm(shared_state.diet) not in _norm(pdf_text):
     missing.append(f""regime={shared_state.diet!r} absent du PDF"")
@@ -2152,7 +2211,7 @@ if missing:
         + "" / "".join(missing)
     )
 print(""OK : PDF exporte la recette complete (regime + tous ingredients + toutes etapes)."")
-",,,,,,,,9dfa12f05c2f5bc7,,,,,,,,,,,,,,,
+",,,,,,,,7ef8defe11421970,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,644bdc70,markdown,fr,0935ba5b54f06f58,"## Conclusion
 
 Ce notebook a mis en oeuvre une collaboration multi-agents pour generer une recette personnalisee et produire un PDF.
@@ -2210,9 +2269,9 @@ The output is the **end-to-end proof** of the setup: two constrained agents, an 
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,c9681143,markdown,fr,c6033665cc870ebc,"**Lecture de la génération** — le système multi-agent a produit une recette végétarienne (le modèle varie la recette à chaque exécution, on n'en fige pas le nom dans le notebook) pour **6 personnes** qui respecte les contraintes collectées : **sans champignons** ni **produits laitiers**. Le `[InputCollector]` a d'abord enregistré les trois critères (régime, exclusions, convives), puis le `[RecipeGenerator]` a proposé une recette adaptée — on voit ici les deux agents collaborer à travers l'état partagé.
 
 **Ce que cet output démontre sur le multi-agent** : la recette n'est pas une réponse libre à « écris une recette végétarienne » — elle est le **résultat d'un protocole** où chaque contrainte a été collectée explicitement puis propagée au générateur via `RecipeState`. Si on changeait « 6 convives » en « 2 convives », les quantités de la recette s'ajusteraient parce que le générateur lit `state.guests`. C'est la valeur ajoutée de l'architecture par rapport à un prompt monolithique : les contraintes sont **structurées et traçables**, pas enfouies dans une phrase. C'est aussi ce qui rend le système réutilisable pour d'autres cas (menu de repas, liste de courses) en changeant les plugins, pas en réécrivant le prompt.
-","**Reading the generation** — the multi-agent system produced the recipe for this run (here **“Grilled Vegetable Tacos”** — the model varies the recipe at each run), a vegetarian recipe for **6 people** that respects the collected constraints: **no mushrooms** and **no dairy products**. The `[InputCollector]` first recorded the three criteria (diet, exclusions, guests), then the `[RecipeGenerator]` proposed a suitable recipe — here we see the two agents collaborating through the shared state.
+","**Reading the generation** — the multi-agent system produced a vegetarian recipe (the model varies the recipe at each run — we do not freeze its name in the notebook) for **6 people** that respects the collected constraints: **no mushrooms** and **no dairy products**. The `[InputCollector]` first recorded the three criteria (diet, exclusions, guests), then the `[RecipeGenerator]` proposed a suitable recipe — here we see the two agents collaborating through the shared state.
 
-**What this output demonstrates about the multi-agent system**: the recipe is not a free-form response to “write a vegetarian recipe” — it is the **result of a protocol** in which each constraint was explicitly collected and then propagated to the generator via `RecipeState`. If we changed “6 guests” to “2 guests,” the recipe quantities would adjust because the generator reads `state.guests`. This is the added value of the architecture compared with a monolithic prompt: the constraints are **structured and traceable**, not buried in a sentence. This is also what makes the system reusable for other cases (meal menu, shopping list) by changing the plugins, not by rewriting the prompt.",,,,,,,c6033665cc870ebc,6d71da904b8edf2b,,,,,,,,,,,,,,
+**What this output demonstrates about the multi-agent system**: the recipe is not a free-form response to “write a vegetarian recipe” — it is the **result of a protocol** in which each constraint was explicitly collected and then propagated to the generator via `RecipeState`. If we changed “6 guests” to “2 guests,” the recipe quantities would adjust because the generator reads `state.guests`. This is the added value of the architecture compared with a monolithic prompt: the constraints are **structured and traceable**, not buried in a sentence. This is also what makes the system reusable for other cases (meal menu, shopping list) by changing the plugins, not by rewriting the prompt.",,,,,,,c6033665cc870ebc,248f4b6d44c37217,,,,,,,c6033665cc870ebc,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,markdown,fr,127d3620e9d477ae,"**Lecture du livrable PDF** — la conversation a déroulé les trois rôles attendus : `[InputCollector]` a enregistré les contraintes dans l'état partagé, `[RecipeGenerator]` a validé la recette (drapeau `ready_to_generate` armé), puis **`[PDFGenerator]` a joué son tour** en invoquant `generate_pdf` — c'est précisément le tour que la condition d'arrêt d'origine (`ready_to_generate`) coupait. La cellule precedente **vérifie strictement** que le PDF exporté contient le régime, **tous** les ingrédients et **toutes** les étapes de la recette : elle lève un `RuntimeError` explicite si une seule chaîne manque, ce qui distingue le succès réel (sortie cohérente avec la conversation) d'un succès trompeur (PDF vide accepté comme valide).
 
 **Ce que cet exemple démontre** : la stratégie de terminaison d'un `AgentGroupChat` n'est pas un détail cosmétique — c'est elle qui décide quels agents **existent effectivement** dans la conversation. Un drapeau armé un tour trop tôt rend un agent de la liste inatteignable sans aucune erreur visible : la boucle se termine proprement, l'état reste incomplet, et l'instinct porte à accuser l'outil externe. Diagnostiquer ce défaut exige de lire la **séquence** des tours (qui a parlé ? qui n'a jamais parlé ?), pas les exceptions — il n'y en a aucune. La frontière raisonnement/exécution reste réelle (le plugin `reportlab` peut échouer indépendamment du LLM), mais l'échec observé avant correction était un **défaut d'orchestration**, pas un défaut de rendu.
