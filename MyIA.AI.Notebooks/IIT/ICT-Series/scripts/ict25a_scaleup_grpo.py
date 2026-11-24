@@ -278,8 +278,8 @@ def main():
         dest = None
         if args.save_adapter:
             dest = Path(args.save_adapter) / f"{args.arm}_s{s}"
-        done[s] = run_seed(args.model, args.arm, s, args.steps, ds, args.max_records,
-                           adapter_dir=dest)
+        done[s] = run_seed(args.model, args.arm, s, args.steps,
+                           ds, args.max_records)
         payload = {"model": args.model, "arm": args.arm, "steps": args.steps,
                    "gpu": dev,
                    "protocol": protocol_block(max_completion_length=MAX_COMPLETION_LENGTH,
