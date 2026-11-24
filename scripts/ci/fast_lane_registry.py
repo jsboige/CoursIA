@@ -3188,6 +3188,42 @@ TRANCHE32: list[Guard] = [
         needs_base=True,
         warn_rc=(2,),
     ),
+    # #27969 : attestation de parite orpheline -- une attestation qui cite un
+    # blob qui N'EXISTE NI sur la base NI a la tete de la revision ne peut pas
+    # survivre au squash : le squash ecrit l'arbre de la branche, pas son
+    # historique. Le blob cite existe dans l'historique de la branche (donc le
+    # test de branche est vert) mais n'arrive jamais sur `main`, ou
+    # `test_audit_shas_exist_in_file_history` le classe « fabrique » et
+    # rougit `main` pour TOUTE la flotte. Mesures : #27860 (python
+    # 7abe7001cb) et #27773 (csharp bf908d37a1), tous deux verts sur la
+    # branche et orphelins apres fusion.
+    #
+    # Le perimetre est un DELTA borne au diff : seules les attestations
+    # AJOUTEES ou MODIFIEES par la revision sont examinees ; une attestation
+    # heritee de la base n'est jamais un motif de refus.
+    #
+    # rc=1 = attestation orpheline (bloquant, avec le geste de correction) ;
+    # rc=2 = incident d'entree (git/parse), neutre au check-run.
+    Guard(
+        name="twin-attestation-orphan-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "scripts/notebook_tools/twin_pairs.d/**",
+            "scripts/ci/check_twin_attestation_orphans.py",
+            "scripts/notebook_tools/check_twin_parity.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_twin_attestation_orphans.py",
+            "--base", "{base_ref}", "--head", "HEAD", "--gate",
+        ],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        diff_bounded=True,
+        warn_rc=(2,),
+    ),
 ]
 
 # ---------------------------------------------------------------------------

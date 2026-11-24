@@ -20,6 +20,12 @@
 # Re-vendored 2026-09-29 a8025f60 -> bfff7542 (audit #18478): the retained
 # perimeter had evolved upstream (13 symbols, incl. the #1942 quality-unit
 # contract); drift note in NOTICE-EPITA.
+# Adaptation locale CoursIA #18390 (2026-11-22, distillation EPITA #3180/#3429) :
+# canal d'attribution `argument_provenance` (vocabulaire ferme `speaker`/`reported`,
+# absence = non dit, jamais de tiers invente). `MOVE_AUTHORS`, le dict
+# `argument_provenance`, la signature etendue de `add_argument` et la restauration
+# `from_dict` sont des ajouts CoursIA-only — declares dans NOTICE-EPITA, section
+# « Adaptations locales declarees ». Le reste du fichier reste byte-identique.
 import json
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Any, Optional, cast
@@ -105,6 +111,17 @@ def count_designation_turns(trace: Any) -> int:
 class RhetoricalAnalysisState:
     """Représente l'état partagé d'une analyse rhétorique collaborative."""
 
+    # Adaptation locale CoursIA (#18390, tranche attribution, 2026-11-22) :
+    # vocabulaire FERMÉ de l'auteur d'un geste argumentatif, distillé depuis
+    # EPITA-IS ``fallacy_attribution.py`` (#3180/#3429, 0 copie). ``speaker``
+    # = le geste appartient au locuteur du texte analysé ; ``reported`` = le
+    # texte rapporte ou relaie la position d'un tiers nommé par
+    # ``move_author_label``. Une vue que le locuteur PRÊTE à un adversaire
+    # pour la combattre reste son propre geste, donc ``speaker``. Une valeur
+    # hors vocabulaire n'est pas une mesure : elle n'est pas stockée, et
+    # l'absence se lit « non dit » — jamais un tiers inventé (#1019).
+    MOVE_AUTHORS = ("speaker", "reported")
+
     # ... (Le code complet de la classe RhetoricalAnalysisState tel que fourni dans la réponse précédente va ici) ...
     # Structure des données de l'état (pour référence)
     raw_text: str
@@ -132,6 +149,11 @@ class RhetoricalAnalysisState:
         self.raw_text = initial_text
         self.analysis_tasks = {}
         self.identified_arguments = {}
+        # Adaptation locale CoursIA (#18390) — {arg_id: {move_author,
+        # move_author_label?}}, alimenté par ``add_argument`` quand le
+        # producteur connaît l'attribution. Champ absent sur un état ancien :
+        # les lecteurs utilisent ``getattr(state, 'argument_provenance', {})``.
+        self.argument_provenance = {}
         self.identified_fallacies = {}
         self.belief_sets = {}
         self.query_log = []
@@ -188,10 +210,31 @@ class RhetoricalAnalysisState:
         state_logger.debug(f"État tasks après ajout {task_id}: {self.analysis_tasks}")
         return task_id
 
-    def add_argument(self, description: str) -> str:
-        """Ajoute un argument identifié et retourne son ID."""
+    def add_argument(
+        self,
+        description: str,
+        move_author: Optional[str] = None,
+        move_author_label: Optional[str] = None,
+    ) -> str:
+        """Ajoute un argument identifié et retourne son ID.
+
+        Adaptation locale CoursIA (#18390) — ``move_author`` dit À QUI est
+        l'argument : ``speaker`` (défendu par le locuteur) ou ``reported``
+        (rapporté pour être discuté ou contesté ; le tiers est nommé par
+        ``move_author_label``). La provenance est stockée dans
+        ``argument_provenance[arg_id]`` seulement si le vocabulaire fermé
+        est respecté : un état sans provenance ne crédite personne, et le
+        lecteur de restitution n'invente aucune appartenance (#1019).
+        Signature enrichie de façon rétro-compatible : les appelants
+        existants passent ``description`` seul et ne changent rien.
+        """
         arg_id = self._generate_id("arg", self.identified_arguments)
         self.identified_arguments[arg_id] = description
+        if move_author in self.MOVE_AUTHORS:
+            entry = {"move_author": str(move_author)}
+            if move_author_label:
+                entry["move_author_label"] = str(move_author_label)
+            self.argument_provenance[arg_id] = entry
         state_logger.info(f"Argument ajouté: {arg_id} - '{description[:60]}...'")
         state_logger.debug(
             f"État arguments après ajout {arg_id}: {self.identified_arguments}"
@@ -595,6 +638,10 @@ class RhetoricalAnalysisState:
         state = cls(data.get("raw_text", ""))
         state.analysis_tasks = data.get("analysis_tasks", {})
         state.identified_arguments = data.get("identified_arguments", {})
+        # Adaptation locale CoursIA (#18390) — restaure la provenance d'un
+        # snapshot produit après l'introduction du canal ; un snapshot
+        # antérieur n'a pas la clé et l'état garde le dict vide de __init__.
+        state.argument_provenance = data.get("argument_provenance", {})
         state.identified_fallacies = data.get("identified_fallacies", {})
         state.belief_sets = data.get("belief_sets", {})
         state.query_log = data.get("query_log", [])
