@@ -109,6 +109,11 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #28370 export du corpus Z3 par la serie : une modification de l'export
+      # doit rejouer le test de parite (scripts/notebook_tools/tests/
+      # test_z3_instances_parity.py), sans quoi la derive export/carnets
+      # s'installerait en silence.
+      - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/z3_instances.py'
       # #23423 (mirror of the push path above).
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
@@ -681,6 +686,7 @@ jobs:
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
+            MyIA.AI.Notebooks/Probas/Causalite/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
