@@ -93,6 +93,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
 from variation_adjacency_guard import (  # noqa: E402
+    _gh_pr_files,
     check,
     parse_override,
     resolve_merged_prev_genre,
@@ -458,7 +459,16 @@ def simulate_adjacency(pr_number: int, body: str, merged_window: list[dict]) -> 
 
     override = parse_override(get_pr_comments(pr_number))
     merged_prev = resolve_merged_prev_genre(merged_window, g["lane"])
-    verdict = check(body, override=override, merged_prev=merged_prev)
+    # Les memes diffs que la CI (`--pr-number`, #28234) : sans eux l'exemption
+    # mecanique #14357 (MED/DEEP a fichiers disjoints) reste fermee, et le
+    # balayage conclurait un rouge que la CI ne rend plus. Une lecture en
+    # echec rend None, que check() traite fail-CLOSED.
+    current_files = _gh_pr_files(pr_number)
+    prev_files = None
+    if merged_prev is not None and merged_prev[0] is not None:
+        prev_files = _gh_pr_files(merged_prev[1])
+    verdict = check(body, override=override, merged_prev=merged_prev,
+                    prev_files=prev_files, current_files=current_files)
     # #15739 : le verdict simule porte son referentiel comme celui de la CI --
     # contre quelle sequence il a conclu (prev_pr/genre/source + horodatage),
     # pour qu'un lecteur distingue un recalcul frais d'un rouge perime.
