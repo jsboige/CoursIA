@@ -549,8 +549,7 @@ a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`
 
 **Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
 désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,
-qualification légère, re-vérif, parcage) : un tirage refuse (sortie `4`) si l'un d'eux diffère
-d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+qualification légère, re-vérif, parcage) : sous `ORGANE_DIVERGENT` — un module qui diffère d'`origin/main` — le tirage **dégrade** (invariant I4 : sortie `0` et avertissement `TIRAGE DEGRADE` sur stderr) au lieu de refuser ; la sortie `4` ne reste que pour la **mesure impossible**. Le code exécuté n'est alors **pas** identique à `origin/main` : l'avertissement le dit. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
 
 **Cette prescription est vérifiée, plus seulement énoncée.** La liste est contrôlée par
 `scripts/tests/test_main_freshness_organes.py`, sur deux sources : la **fermeture d'import statique** des
