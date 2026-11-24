@@ -554,6 +554,14 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout (sources des carnets)
+        # La passe des boutons de lancement (#27551) lit les carnets SOURCES
+        # (noyau du carnet) et la presence du devcontainer (pli 1.4) : il lui
+        # faut donc l'arbre, pas seulement le site rendu.
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Download Quarto site
         uses: actions/download-artifact@v4
         with:
@@ -591,6 +599,48 @@ jobs:
           if [ "$N_LOT" -eq 0 ]; then
             echo "::warning::Aucun carnet JupyterLite dans l'artifact (job build-jupyterlite en echec ou lot vide) -- deploiement SANS /jupyterlite/."
           fi
+
+      - name: Boutons de lancement sur les pages de carnets (#27551)
+        # Pli 2.3 de l'Epic #27543 : chaque page de carnet offre les
+        # lancements auxquels il a droit (Codespaces via le devcontainer,
+        # Colab pour les carnets Python, JupyterLite pour les carnets
+        # publies dans le bundle). L'eligibilite est CALCULEE sur l'arbre et
+        # sur le manifeste publie du bundle -- jamais posee a la main.
+        # Fail-soft : les boutons sont un enrichissement du site ; une panne
+        # de la passe ne doit pas empecher la publication ( meme doctrine que
+        # les decks et le lot JupyterLite). Le compte rendu reste dans le log.
+        id: boutons
+        continue-on-error: true
+        run: |
+          python3 scripts/notebook_tools/launch_buttons.py \
+            --site-dir _site \
+            --repo-root . \
+            --rapport "$RUNNER_TEMP/launch-buttons.json"
+
+      - name: Compte rendu des boutons de lancement (#27551)
+        # La passe est fail-soft : elle ne bloque pas la publication, mais son
+        # echec ne doit pas etre MUET. Le rapport est annonce par une
+        # annotation `warning::` (visible dans le run) et publie en artefact.
+        # Reserve NanoClaw du 21/11 sur la PR #27706.
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/launch-buttons.json" ]; then
+            cat "$RUNNER_TEMP/launch-buttons.json"
+            echo "::warning::Rapport des boutons de lancement (version complete en artefact launch-buttons-report)."
+          else
+            echo "::warning::Pas de rapport de boutons de lancement ($RUNNER_TEMP/launch-buttons.json absent) : la passe a echoue avant de produire son compte rendu."
+          fi
+          if [ "${{ steps.boutons.outcome }}" != "success" ]; then
+            echo "::warning::La passe des boutons de lancement a echoue (outcome=${{ steps.boutons.outcome }}) : le site est publie sans boutons."
+          fi
+
+      - name: Artefact du rapport des boutons de lancement (#27551)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-buttons-report
+          path: ${{ runner.temp }}/launch-buttons.json
+          if-no-files-found: warn
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
