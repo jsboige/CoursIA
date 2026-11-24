@@ -452,7 +452,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 4 | [SL-10 --- Apprentissage Actif d'Automates (L*…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb) | BETA | Oui |
 | 5 | [SL-11 --- Capstone : un pipeline neuro-symbolique de…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb) | BETA | Non |
 | 6 | [SL-12 : Differentiable Logic Gate Networks](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb) | BETA | Non |
-| 7 | [SL-12b-PavlovDLS-Reproduction — artefact Pavlov (DLS…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb) | BETA | Oui |
+| 7 | [SL-12c-PavlovDLS-Reproduction — artefact Pavlov (DLS…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb) | BETA | Oui |
 | 8 | [SL-12b — Synthèse logique spectrale en C#](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb) | BETA | Oui |
 | 9 | [SL-12b : Synthèse logique spectrale — Fourier booléen…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb) | BETA | Oui |
 | 10 | [SL-13 : DISCOVER léger — diagnostic de structure TPR…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb) | BETA | Non |
