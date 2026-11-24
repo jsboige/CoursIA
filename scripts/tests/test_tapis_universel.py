@@ -99,11 +99,20 @@ def test_le_rejeu_ne_redonne_pas_un_budget_neuf():
 
     Defect epingle : le budget etait calcule une fois par page, puis reutilise
     tel quel aux trois tailles — trois timeouts de 60 s pour un budget global
-    de 60 s, soit 180 s de lecture possible. Ici, chaque appel recoit le temps
-    RESTANT, recalcule : 60 s puis 30 s, et le troisieme rejeu est refuse
-    (echeance atteinte) au lieu de recevoir un budget neuf.
+    de 60 s, soit 180 s de lecture possible.
+
+    Contrat I6 (#28114) : le timeout d'un appel est le plus petit du PLAFOND
+    de l'appel (15 s) et du temps RESTANT avant l'echeance. L'horloge
+    avance ici de 20 s par appel, pour une echeance posee 25 s plus loin :
+    le premier appel recoit 15 s (le plafond), le rejeu recoit 5 s (le
+    RESTANT, recalcule), et la troisieme taille est refusee — l'echeance
+    est atteinte, elle n'est pas repoussee.
+
+    Le second timeout (5 s, et non 15 s) est l'observable qui porte
+    l'invariant : sans recomputation du temps restant, le rejeu repartirait
+    de zero et recoitrait le plafond.
     """
-    horloge = _Horloge(pas=30.0)
+    horloge = _Horloge(pas=20.0)
     timeouts: list[int] = []
 
     def run(argv, timeout):
@@ -114,9 +123,9 @@ def test_le_rejeu_ne_redonne_pas_un_budget_neuf():
         return _page([_noeud(1)], False)
 
     with pytest.raises(gh_bulk.LectureIncomplete) as exc:
-        gh_selection.lire_metadonnees_issues(run, budget_s=60.0, horloge=horloge)
+        gh_selection.lire_metadonnees_issues(run, budget_s=25.0, horloge=horloge)
     assert "budget global" in exc.value.cause
-    assert timeouts == [60, 30], \
+    assert timeouts == [15, 5], \
         f"le temps restant doit etre recalcule avant chaque rejeu : {timeouts}"
 
 
