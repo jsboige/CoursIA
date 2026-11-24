@@ -1,3 +1,7 @@
+---
+pagetitle: "QuantConnect ML Training Pipeline — Carnets de recherche"
+---
+
 <!-- CATALOG-STATUS
 series: QuantConnect-ML-Training-Pipeline
 pedagogical_count: 4
@@ -5,9 +9,19 @@ breakdown: ML-Training-Pipeline=4
 maturity: DRAFT=2, BETA=1, TEMPLATE=1
 -->
 
-# Pipeline d'entraînement ML pour la prévision financière
+[← QuantConnect](../README.md) | [→ research/](../research/README.md)
 
-Pipeline d'entraînement complet pour modèles ML sur données financières OHLCV. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Tous les scripts GPU utilisent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
+Cette sous-série est le **pipeline d'entraînement ML** de la famille QuantConnect : un cadre complet pour entraîner, valider et documenter des modèles de machine learning sur données financières OHLCV — du HAR économétrique aux Transformers à attention, du LSTM séquentiel au Decision Transformer. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Contrairement au [parcours principal](../README.md) (qui s'exécute sur QC Cloud), ces carnets sont des **recherches standalone de type (c)** : ils tournent en local sur données publiques (yfinance, Binance) et explorent une question méthodologique précise. Le fil rouge est l'**empirisme honnête** : chaque carnet applique un protocole strict (walk-forward 5-fold, multi-seed, Diebold-Mariano, coûts de transaction) et publie un verdict net — `BEATS`, `NO BEATS` ou `INCONCLUSIVE` — sans maquillage.
+
+Tous les scripts GPU partagent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, `batch_thermal_check`).
+
+## Comment lire ce README
+
+- **Vous voulez comprendre la démarche** : lisez [Ce que ce pipeline démontre](#ce-que-ce-pipeline-demonstre) — l'empirisme honnête appliqué au ML financier, et pourquoi la plupart des idées ne battent pas le buy-and-hold.
+- **Vous voulez relire un verdict** : la table [Les carnets de recherche](#les-carnets-de-recherche) récapitule chaque carnet, la question qu'il pose et le verdict mesuré.
+- **Vous voulez comprendre les fils méthodologiques** : [Approfondissements](#approfondissements) indexe les axes qui traversent les carnets (le triptyque des échecs vol, le contraste action vs forecast, le registre §C).
+- **Vous voulez re-entraîner un modèle** : [Démarrage rapide](#demarrage-rapide) et [Modèles](#modeles) documentent les scripts, leurs hyperparamètres et les commandes GPU recommandées.
+- Les nombres d'inventaire (carnets par catégorie, maturité) vivent dans le [catalogue généré](../../COURSE_CATALOG.generated.md) et le bloc `CATALOG-STATUS` en tête ; ce README ne les recopie pas.
 
 ## Aperçu — la diversité méthodologique du pipeline en images
 
@@ -43,32 +57,43 @@ Enfin, le **TFT** ([m9](m9_tft_vol_research.ipynb)) apporte l'attention temporel
   <em>Sorties des notebooks <a href="m9_tft_vol_research.ipynb">m9</a> (gauche, cellule 6) et <a href="m11e_ensemble_research.ipynb">m11e</a> (droite, cellule 6) : attention TFT et diagnostic d'ensemble HAR-Kelly.</em>
 </p>
 
-## Classification type (c) — standalone
+## Les carnets de recherche
 
-Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud.
+Les carnets de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud. Chacun pose une question précise, applique le protocole complet (walk-forward 5-fold, multi-seed, Diebold-Mariano, coûts de transaction) et publie un verdict net.
 
-| Notebook | Sujet | Type |
-|----------|-------|------|
-| `ML-Research-Template.ipynb` | Template pour recherche ML | (c) |
-| `m3_har_asymmetric_semivariance.ipynb` | M16 — HAR asymétrique débiaisé : le signal survit-il hors biais ? | (c) |
-| `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
-| `research_l1_tsmom.ipynb` | L1 TSMOM — baseline momentum temporelle (NO BEATS) | (c) |
-| `research_l2_dual_momentum.ipynb` | L2 Cross-Sectional + Dual Momentum (NO BEATS) | (c) |
-| `research_l3_trend.ipynb` | L3 Trend Long-Horizon — LSTM directionnel (NO BEATS) | (c) |
-| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (NO BEATS sous protocole causal) | (c) |
-| `xrp_dt_foldwise_research.ipynb` | XRP Decision Transformer : validation fold-wise §C (verdicts par bucket) | (c) |
-| `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
-| `hmm_alpha_dm_research.ipynb` | HMM-alpha : validation rigoureuse Ledoit-Wolf DM (stress 50 bps, INCONCLUSIVE) | (c) |
-| `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
-| `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
-| `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer) : l'échec du surparamétrage | (c) |
-| `m11e_ensemble_research.ipynb` | Ensemble HAR-Kelly : la dilution confirmée (3e axe d'échec) | (c) |
-| `m12_har_rv_j_research.ipynb` | HAR-RV-J : décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | (c) |
-| `m15_lstm_rv_research.ipynb` | Log-LSTM RV : mémoire séquentielle pour la variance réalisée | (c) |
-| `m4_dlinear_vol_sc_validation.ipynb` | M4 — DLinear-vol : entrée §C du registre (conjonction multi-seed + DM `loss_fn="linear"`) | (c) |
-| `m15_lstm_rv_sc_validation.ipynb` | M15 — LSTM RV : entrée §C du registre (2e entrée §C, même protocole) | (c) |
+| Carnet | Question | Ce qu'on y apprend | Verdict mesuré |
+|--------|----------|--------------------|----------------|
+| [ML-Research-Template](ML-Research-Template.ipynb) | Template de recherche réutilisable | Le squelette d'un carnet : chargement, feature engineering, dry-run, évaluation d'un checkpoint | Template (dry-run) |
+| [m3_har_asymmetric_semivariance](m3_har_asymmetric_semivariance.ipynb) | M16 — le signal HAR survit-il une fois le biais retiré ? | Contrôle de stabilité 4-seed, test Diebold-Mariano, décomposition MSE = biais² + variance | 2/3 BEATS, 1/3 INCONCLUSIVE |
+| [m4_dlinear_vol_research](m4_dlinear_vol_research.ipynb) | M4 — un réseau linéaire simple bat-il la baseline HAR ? | La longueur des données comme facteur décisif : seul BTC (2278 j) distingue le DLinear du HAR | 5/21 BEATS (BTC-dominant) |
+| [m4_dlinear_vol_sc_validation](m4_dlinear_vol_sc_validation.ipynb) | M4 — entrée §C du registre | Conjonction multi-seed + DM sur perte de précision ; le contrôle de biais par de-biaisage symétrique | 2/3 BEATS (recentré) |
+| [m5_hmm_regime_research](m5_hmm_regime_research.ipynb) | M5 — quand la sophistication structurelle nuit | Dégradation croissante avec l'horizon, sensibilité à l'initialisation HMM | 1/6 BEATS, 4/6 INCONCLUSIVE |
+| [m9_tft_vol_research](m9_tft_vol_research.ipynb) | M9 — l'échec du surparamétrage | La catastrophe du fold 1 (overfitting), la courbe d'expressivité inversée | 0/6 BEATS, edge négatif |
+| [m11e_ensemble_research](m11e_ensemble_research.ipynb) | M11e — l'ensemble dilute-t-il les performances ? | Ne pas confondre ensemble et diversification : des experts corrélés ne diversifient pas | DILUTION (0/35 p<0.05) |
+| [m12_har_rv_j_research](m12_har_rv_j_research.ipynb) | M12 — décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | Revalidation cluster sept actifs, confrontation rendement/précision par horizon | NO BEATS (0/7) |
+| [m15_lstm_rv_research](m15_lstm_rv_research.ipynb) | M15 — mémoire séquentielle pour la variance réalisée | Le paradoxe MSE-Sharpe : gains de Sharpe sans la conjonction §C | NO BEATS (44/84, p=0.372) |
+| [m15_lstm_rv_sc_validation](m15_lstm_rv_sc_validation.ipynb) | M15 — entrée §C du registre | Les trois jambes du protocole §C ; la jambe mse comme vraie mesure de perte de précision | 3/3 BEATS (jambe mse) |
+| [hmm_alpha_research](hmm_alpha_research.ipynb) | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | Générer un signal directionnel par Markov cachés, de 2 à 4 états, validation walk-forward | 9 NO BEATS / 9 |
+| [hmm_alpha_dm_research](hmm_alpha_dm_research.ipynb) | HMM-alpha : validation rigoureuse Ledoit-Wolf DM | Le stress 50 bps et le test DM face à l'heuristique du carnet d'origine | 2 BEATS, 7 INCONCLUSIVE / 9 |
+| [research_l1_tsmom](research_l1_tsmom.ipynb) | L1 — TSMOM, baseline momentum temporelle | Le sweep des 4 lookbacks (21/63/126/252 j) et le stress coûts ×5 | 4/4 NO BEATS |
+| [research_l2_dual_momentum](research_l2_dual_momentum.ipynb) | L2 — Cross-Sectional + Dual Momentum | Top-5 mensuel, filtre absolu (cash = SHY), sélection par outliers winsorisés | 0/6 NO BEATS |
+| [research_l3_trend](research_l3_trend.ipynb) | L3 — Trend long-horizon (LSTM directionnel) | AUC ≡ hasard, pire que la baseline majority-class | NO BEATS (0/75) |
+| [research_l4_decision_transformer](research_l4_decision_transformer.ipynb) | L4 — Decision Transformer (action-based) | Le protocole causal, l'imitation du teacher momentum | NO BEATS (0/25) |
+| [xrp_dt_foldwise_research](xrp_dt_foldwise_research.ipynb) | XRP Decision Transformer : validation fold-wise §C | Pourquoi des modèles différents rendent le même Sharpe ; fresh vs aged | NO-BEATS (4 buckets) |
+| [research_what_dl_can_predict](research_what_dl_can_predict.ipynb) | Ce que le DL peut réellement prédire en finance | Cibles candidates, preuve académique, faiblesses méthodologiques de la littérature | (carnet de synthèse) |
 
-Classification complète : [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
+Classification complète par carnet : [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md).
+
+## Approfondissements
+
+Au-delà du verdict de chaque carnet, quelques fils méthodologiques traversent la série. Cette table les indexe ; chacun est développé dans les sections qui suivent ([Ladder de recherche](#ladder-de-recherche--verdicts), [Modèles](#modeles), [Ce que ce pipeline démontre](#ce-que-ce-pipeline-demonstre)).
+
+| Fil | Carnets | Ce qu'on y apprend |
+|-----|---------|--------------------|
+| Le triptyque des échecs vol | m5, m9, m11e, m12, m15 | Richer features ≠ meilleur modèle : la sophistication structurelle (HMM, TFT, ensemble, HAR-RV-J) ne bat pas la baseline HAR une fois les coûts appliqués |
+| Le contraste action vs forecast | l1, l2, l3, l4 | Prédire une action discrète ou le rendement continu — les deux paradigmes restent NO BEATS sous protocole causal |
+| Le registre §C | m4_sc, m15_sc, xrp | La conjonction multi-seed + Diebold-Mariano comme critère unique de passage, et la jambe mse comme mesure de perte de précision |
+| Le ladder L1–L5 | l1, l2, l3, l4 (+ PatchTST) | L'évaluation systématique des générateurs de signaux, verdicts nets de frais |
 
 ## Architecture
 
@@ -88,7 +113,6 @@ flowchart TD
     VERD --> CKPT["Checkpoint<br/>model.pt + metadata.json"]
     VERD -.-> NO["NO BEATS<br/>(documente honnetement)"]
     CKPT --> REG["REGISTRY.md"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style VERD fill:#fff3e0,color:#bf360c
     style CKPT fill:#e8f5e9,color:#1b5e20
     style NO fill:#ffebee,color:#721c24
@@ -443,17 +467,6 @@ from shared.gpu_training import batch_thermal_check, setup_amp, get_gpu_temp
 
 **Comportement thermique** : Quand GPU dépasse MAX_TEMP, l'entraînement pause 30s. Sur laptops (MSI GE76 RTX 3080 Ti), attendre ~80C baseline, donc pauses thermiques fréquentes. L'efficacité d'entraînement est ~2-5% wall time sur hardware thermiquement contraint.
 
-## Lanceurs séquentiels
-
-Track A1 (`launch_po2025_track_a1.py`) lance modèles séquentiellement avec sécurité thermique complète :
-
-```bash
-# Track A1 complet : Transformer -> DQN -> LSTM
-python scripts/launch_po2025_track_a1.py --symbol SPY --data-dir ../datasets/yfinance
-```
-
-Track B (`launch_ai01_track_b.py`) lance baselines sur ai-01 (RTX 4090, pas de problèmes thermiques).
-
 ## Dépendances
 
 ### Core (tous les scripts)
@@ -549,7 +562,6 @@ flowchart LR
     TH --> TR2["Trading differe"]
     TR1 --> RES1["L4 DT : 0/26 BEATS<br/>sous protocole causal"]
     TR2 --> RES2["PatchTST : 0/26 seeds BEATS<br/>Signal noye dans le bruit"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style P1 fill:#ffebee,color:#721c24
     style P2 fill:#ffebee,color:#721c24
     style RES1 fill:#ffcdd2,color:#721c24
@@ -594,19 +606,6 @@ Trois familles d'artefacts, trois emplacements distincts, **un seul verdict cano
 
 **Règle d'or** : un répertoire `<exp>/` = une expérience = un verdict. Pas de JSON plats au racine de `scripts/results/`.
 
-#### Dérogations historiques connues (fichiers plats à migrer)
-
-Ces fichiers violent la convention (JSON plat à la racine de `scripts/results/` au lieu d'un sous-répertoire `<exp>/`). Ils sont **référencés en dur** par `m4_dlinear_vol_sc_validation.ipynb` (chemins `Path(...)` dans des cellules), `scripts/btc_vol.py` (default argparse) et `REGISTRY.md` (commandes `--out-json`). La migration est **non triviale** : déplacer les JSON casserait les consommateurs. Décision : **garder en l'état, flagger ici**, et traiter dans une PR dédiée quand les chemins seront refactorés en `Path(__file__).parent / "<exp>"`.
-
-| Fichier plat | Réf. canonique cible | Statut |
-|---|---|---|
-| `scripts/results/m4_dlinear_vol_btc_sc.json` | `scripts/results/m4_dlinear_vol_btc_sc/results.json` | À migrer (4 consumers) |
-| `scripts/results/m4_dlinear_vol_btc_sc_debiased.json` | idem sous-répertoire `--debias` | À migrer |
-| `scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` | idem `--debias --recentered` | À migrer |
-| `scripts/results/m4_dlinear_vol_btc_sc_mse.json` | `scripts/results/m4_dlinear_vol_btc_sc_mse/results.json` | À migrer (3 consumers) |
-
-Pour les **nouvelles expériences** : appliquer la convention dès la première écriture. Le pipeline de validation (`scripts/validate_training_package.py`) devrait idéalement rejeter les JSON plats au racine — non implémenté à ce jour.
-
 ---
 
 ## Ce que ce pipeline démontre
@@ -620,8 +619,10 @@ Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : pl
 
 > **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (BEATS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec les données du fournisseur, les frais effectifs et le slippage est l'étape de validation obligatoire avant tout déploiement.
 
-La méthode complète — design d'ablation, courbes, leçons — vit dans [`Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) ; le plan d'apprentissage qui l'ordonne est dans [`CURRICULUM.md`](CURRICULUM.md).
+## Pour aller plus loin
 
----
-
-*Version anglaise (snapshot pré-bascule) : [`README.en.md`](README.en.md).*
+- **La méthode complète** — design d'ablation, courbes, leçons : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md).
+- **Le plan d'apprentissage** qui ordonne les carnets : [`CURRICULUM.md`](CURRICULUM.md).
+- **Le registre des runs** (checkpoints, verdicts, provenance) : [`REGISTRY.md`](REGISTRY.md).
+- **La rigueur méthodologique de la famille** (baselines vérifiées, échelle de complexité) : [QuantConnect — Pour aller plus loin](../README.md#pour-aller-plus-loin).
+- **Version anglaise** : [`README.en.md`](README.en.md).
