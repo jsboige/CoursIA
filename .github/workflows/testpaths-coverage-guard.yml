@@ -31,8 +31,12 @@ name: testpaths-coverage-guard
 # CI-EXCLUDED: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/tests — 46 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/SymbolicAI/scripts/tests — 24 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
 #
-# --- dep absente ou Python requis : non cablables au tri (13) ---
-# CI-EXCLUDED: MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/tests — 6 fichiers sur 7 verts ; test_dowhy_organs.py exige dowhy, absent de l'env de mesure — installer dowhy puis cabler (T1 #25366)
+# --- dep absente ou Python requis : non cablables au tri (12) ---
+# Probas/DecisionTheory/Causal-Bridges/tests (devenu Probas/Causalite/tests
+# au rename #26392) etait marque ici — « installer dowhy puis cabler ». C'est
+# fait (T1-finale #25366) : dowhy entre par le script partage d'installation,
+# la cible-dossier entre dans le bloc pytest de scripts-tests.yml, et le
+# dossier entre dans les testpaths : plus de marqueur, le dossier est cable.
 # CI-EXCLUDED: MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests — 34/36 verts ; les 2 echecs executent pymc_voi.py en sous-processus, pymc absent de l'env — installer pymc puis cabler (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests — tests hypothesis verts (FuturesTrend temoin 94/94 sous PYTHONNOUSERSITE=1) mais l'overlay user-site pytest+hypothesis de la machine de mesure fait echouer le hook terminal_summary en mode defaut (T1 #25366)
 # CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)

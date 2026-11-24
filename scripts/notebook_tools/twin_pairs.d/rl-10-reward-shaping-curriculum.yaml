@@ -1,0 +1,10 @@
+- name: "RL-10 Reward Shaping Curriculum"
+  family: RL/.NET-Parity
+  python: MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets implémentent le Q-learning tabulaire sans moteur externe ; la BCL permet de conserver les transitions, les quatre bras et les budgets, avec des SVG statiques."
+  known_differences:
+    - "System.Random et NumPy produisent des trajectoires différentes ; le test empirique est rapporté séparément de l'oracle de Bellman."
+    - "Les figures SVG remplacent Matplotlib et les exercices restent ouverts."

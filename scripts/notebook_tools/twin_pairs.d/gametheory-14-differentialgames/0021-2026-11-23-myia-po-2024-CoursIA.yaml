@@ -1,0 +1,7 @@
+date: '2026-11-23'
+by: myia-po-2024:CoursIA
+python_sha: 5ddf662a54834c174cc6caf15df668670c9dca59
+csharp_sha: b7cbc10dbc24fc04ea4350518ffc01f3736a9f6b
+content_python_sha: 687a402e2e497ae06b158e62cb61a2bbebb8190bc13eebfd7ad788820690130f
+content_csharp_sha: fafbe33fbf7aa7352e8929078e65d231bd8dbaff6dcc17f516b5aabedbd8e8ba
+reason: Ancres Referenced (#19274, PR #28217) : cellule markdown '## References' ajoutee cote C# (miroir du jumeau Python deja ancre) — markdown-only, aucune re-execution due.
