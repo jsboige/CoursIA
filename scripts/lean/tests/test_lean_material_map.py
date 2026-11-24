@@ -39,7 +39,7 @@ def _load_module():
 
 mod = _load_module()
 
-LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
+LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean"
 LAKEFILE = LAC_EPINGLE + "/lakefile.lean"
 LAC_INCONNU = "MyIA.AI.Notebooks/Series/unknown_lean"
 
@@ -110,7 +110,7 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     ce test tant que son epingle n'a pas ete ajoutee explicitement.
     """
     page = _lignes_de_la_page()
-    assert len(page) == 43, f"la page porte {len(page)} lacs, attendu 43"
+    assert len(page) == 44, f"la page porte {len(page)} lacs, attendu 44"
 
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))
