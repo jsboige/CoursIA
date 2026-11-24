@@ -6,4 +6,5 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Les deux carnets invoquent réellement CVXPY et CLARABEL pour la même relaxation SDP ; le C# pilote l'énumération MaxCut et l'ascension riemannienne et appelle les références numériques ciblées via Python.NET. NumPy fournit les mêmes matrices et les mêmes tirages."
   known_differences:
+    - "Édition de prose 2026-11-20 (lecture ancrée en tête de la section D, Zoom sur G10 au rang 2, #27601 / PR #27638) : markdown seul côté C#, code et sorties byte-identiques ; attestation rebaselinée dans la même PR (0006-2026-11-20-myia-po-2027-CoursIA)."
     - "Les arrondis et l'ordre des opérations C#/NumPy peuvent modifier le départ sélectionné en cas d'ex æquo. La référence CLARABEL est numérique. Les 20 puis 200 perturbations échantillonnées ne certifient pas un maximum local ; au rang 1 le test tangent est vide et les signes restent initiaux."

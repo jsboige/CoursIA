@@ -1,0 +1,564 @@
+{
+  "case": "26-comolatti-hoel-widespread",
+  "source": "Comolatti & Hoel 2022, Causal emergence is widespread across measures of causation, Entropy, 2022-02-07",
+  "prereg": "docs/ict/comolatti-hoel-widespread-pre-enregistrement.md @ 0f3a704b575",
+  "organ": "ict.causal_emergence (causal_profile + partition_profile), invoque",
+  "stochastic": false,
+  "gates": {
+    "G1_dual_impl": {
+      "ok": true,
+      "max_dev": 3.410605131648481e-13
+    },
+    "G2_analytic": {
+      "ok": true,
+      "rows": [
+        {
+          "n": 4,
+          "sys": {
+            "eells": 1.0,
+            "galton": 0.1875,
+            "suppes": 0.75,
+            "suppes2": 4.0,
+            "lewis": 1.0,
+            "cheng": 1.0,
+            "g1_max_dev": 1.1102230246251565e-16
+          },
+          "ok": true
+        },
+        {
+          "n": 8,
+          "sys": {
+            "eells": 1.0,
+            "galton": 0.109375,
+            "suppes": 0.875,
+            "suppes2": 8.0,
+            "lewis": 1.0,
+            "cheng": 1.0,
+            "g1_max_dev": 8.326672684688674e-17
+          },
+          "ok": true
+        },
+        {
+          "n": 6,
+          "uniform": true,
+          "sys": {
+            "eells": 0.0,
+            "galton": 0.0,
+            "suppes": 0.0,
+            "suppes2": 1.0,
+            "lewis": 0.0,
+            "cheng": 0.0,
+            "g1_max_dev": 0.0
+          },
+          "ok": true
+        }
+      ]
+    },
+    "G3_calibration": {
+      "ok": true,
+      "EI_micro": 2.433834373377399,
+      "EI_macro": 3.0,
+      "deg_micro": 0.5943609377704335,
+      "ei_identity_max_dev": 0.0
+    },
+    "G4_legality": {
+      "ok": true
+    }
+  },
+  "substrates": {
+    "S1_fig4": {
+      "EI_micro": 2.433834373377399,
+      "EI_macro": 3.0,
+      "deg_micro": 0.5943609377704335,
+      "CE_EI": 0.5661656266226012,
+      "d_det_minus_d_deg": 0.5943609377704335,
+      "micro_sys": {
+        "eells": 0.767857142857143,
+        "galton": 0.011810302734375,
+        "suppes": 0.755859375,
+        "suppes2": 8.0,
+        "lewis": 0.767857142857143,
+        "cheng": 1.0,
+        "g1_max_dev": 2.220446049250313e-16
+      },
+      "macro_sys": {
+        "eells": 1.0,
+        "galton": 0.109375,
+        "suppes": 0.875,
+        "suppes2": 8.0,
+        "lewis": 1.0,
+        "cheng": 1.0,
+        "g1_max_dev": 8.326672684688674e-17
+      },
+      "deltas": {
+        "eells": 0.23214285714285698,
+        "galton": 0.097564697265625,
+        "suppes": 0.119140625,
+        "suppes2": 0.0,
+        "lewis": 0.23214285714285698,
+        "cheng": 0.0
+      },
+      "g1_max_dev": 2.220446049250313e-16,
+      "ei_identity_dev": 0.0
+    },
+    "S2_witness": [
+      {
+        "label": "paires-01-23",
+        "EI_micro": 2.124017625642875,
+        "EI_macro": 0.9347817068497102,
+        "deg_micro": 0.0,
+        "CE_EI": -1.189235918793165,
+        "d_det_minus_d_deg": -0.06361355298586369,
+        "micro_sys": {
+          "eells": 0.41559654399999996,
+          "galton": 0.024351360000000002,
+          "suppes": 0.38962176000000004,
+          "suppes2": 7.233948160000001,
+          "lewis": 1.3400738851920835e-16,
+          "cheng": 0.42534040062607825,
+          "g1_max_dev": 3.410605131648481e-13
+        },
+        "macro_sys": {
+          "eells": 0.48124359111111115,
+          "galton": 0.09023317333333335,
+          "suppes": 0.3609326933333334,
+          "suppes2": 2.4542415889264184,
+          "lewis": -9.71445146547012e-17,
+          "cheng": 0.5094773553978391,
+          "g1_max_dev": 7.105427357601002e-15
+        },
+        "deltas": {
+          "eells": 0.06564704711111119,
+          "galton": 0.06588181333333334,
+          "suppes": -0.02868906666666665,
+          "suppes2": -4.779706571073582,
+          "lewis": -2.3115190317390955e-16,
+          "cheng": 0.08413695477176086
+        },
+        "g1_max_dev": 3.410605131648481e-13,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "label": "paires-02-13",
+        "EI_micro": 2.124017625642875,
+        "EI_macro": 0.9347817068497102,
+        "deg_micro": 0.0,
+        "CE_EI": -1.189235918793165,
+        "d_det_minus_d_deg": -0.06361355298586369,
+        "micro_sys": {
+          "eells": 0.41559654399999996,
+          "galton": 0.024351360000000002,
+          "suppes": 0.38962176000000004,
+          "suppes2": 7.233948160000001,
+          "lewis": 1.3400738851920835e-16,
+          "cheng": 0.42534040062607825,
+          "g1_max_dev": 3.410605131648481e-13
+        },
+        "macro_sys": {
+          "eells": 0.48124359111111115,
+          "galton": 0.09023317333333335,
+          "suppes": 0.3609326933333334,
+          "suppes2": 2.4542415889264184,
+          "lewis": -9.71445146547012e-17,
+          "cheng": 0.5094773553978391,
+          "g1_max_dev": 7.105427357601002e-15
+        },
+        "deltas": {
+          "eells": 0.06564704711111119,
+          "galton": 0.06588181333333334,
+          "suppes": -0.02868906666666665,
+          "suppes2": -4.779706571073582,
+          "lewis": -2.3115190317390955e-16,
+          "cheng": 0.08413695477176086
+        },
+        "g1_max_dev": 3.410605131648481e-13,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "label": "paires-03-12",
+        "EI_micro": 2.124017625642875,
+        "EI_macro": 0.9347817068497102,
+        "deg_micro": 0.0,
+        "CE_EI": -1.189235918793165,
+        "d_det_minus_d_deg": -0.06361355298586369,
+        "micro_sys": {
+          "eells": 0.41559654399999996,
+          "galton": 0.024351360000000002,
+          "suppes": 0.38962176000000004,
+          "suppes2": 7.233948160000001,
+          "lewis": 1.3400738851920835e-16,
+          "cheng": 0.42534040062607825,
+          "g1_max_dev": 3.410605131648481e-13
+        },
+        "macro_sys": {
+          "eells": 0.48124359111111115,
+          "galton": 0.09023317333333335,
+          "suppes": 0.3609326933333334,
+          "suppes2": 2.4542415889264184,
+          "lewis": -9.71445146547012e-17,
+          "cheng": 0.5094773553978391,
+          "g1_max_dev": 7.105427357601002e-15
+        },
+        "deltas": {
+          "eells": 0.06564704711111119,
+          "galton": 0.06588181333333334,
+          "suppes": -0.02868906666666665,
+          "suppes2": -4.779706571073582,
+          "lewis": -2.3115190317390955e-16,
+          "cheng": 0.08413695477176086
+        },
+        "g1_max_dev": 3.410605131648481e-13,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "label": "total-4",
+        "EI_micro": 2.124017625642875,
+        "EI_macro": 0.3813154004046816,
+        "deg_micro": 0.0,
+        "CE_EI": -1.7427022252381934,
+        "d_det_minus_d_deg": -0.14968900600603718,
+        "micro_sys": {
+          "eells": 0.41559654399999996,
+          "galton": 0.024351360000000002,
+          "suppes": 0.38962176000000004,
+          "suppes2": 7.233948160000001,
+          "lewis": 1.3400738851920835e-16,
+          "cheng": 0.42534040062607825,
+          "g1_max_dev": 3.410605131648481e-13
+        },
+        "macro_sys": {
+          "eells": 0.4009084700444445,
+          "galton": 0.10022711751111113,
+          "suppes": 0.20045423502222226,
+          "suppes2": 1.446955567069366,
+          "lewis": 1.1102230246251565e-16,
+          "cheng": -4.085854058331506,
+          "g1_max_dev": 0.0
+        },
+        "deltas": {
+          "eells": -0.014688073955555436,
+          "galton": 0.07587575751111113,
+          "suppes": -0.18916752497777778,
+          "suppes2": -5.786992592930635,
+          "lewis": -2.2985086056692694e-17,
+          "cheng": -4.5111944589575845
+        },
+        "g1_max_dev": 3.410605131648481e-13,
+        "ei_identity_dev": 0.0
+      }
+    ],
+    "S3_bipartite": [
+      {
+        "eps": 0.0,
+        "EI_micro": 4.0,
+        "EI_macro": 1.0,
+        "deg_micro": 0.0,
+        "CE_EI": -3.0,
+        "d_det_minus_d_deg": 0.0,
+        "micro_sys": {
+          "eells": 1.0,
+          "galton": 0.05859375,
+          "suppes": 0.9375,
+          "suppes2": 16.0,
+          "lewis": 1.0,
+          "cheng": 1.0,
+          "g1_max_dev": 1.3877787807814457e-17
+        },
+        "macro_sys": {
+          "eells": 1.0,
+          "galton": 0.25,
+          "suppes": 0.5,
+          "suppes2": 2.0,
+          "lewis": 1.0,
+          "cheng": 1.0,
+          "g1_max_dev": 0.0
+        },
+        "deltas": {
+          "eells": 0.0,
+          "galton": 0.19140625,
+          "suppes": -0.4375,
+          "suppes2": -14.0,
+          "lewis": 0.0,
+          "cheng": 0.0
+        },
+        "g1_max_dev": 1.3877787807814457e-17,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "eps": 0.25,
+        "EI_micro": 2.6280126482615036,
+        "EI_macro": 1.0,
+        "deg_micro": 0.0,
+        "CE_EI": -1.6280126482615036,
+        "d_det_minus_d_deg": 0.3429968379346241,
+        "micro_sys": {
+          "eells": 0.5916666666666665,
+          "galton": 0.03466796875,
+          "suppes": 0.5546875,
+          "suppes2": 9.875,
+          "lewis": 0.5333333333333332,
+          "cheng": 0.6000273099252744,
+          "g1_max_dev": 4.440892098500626e-16
+        },
+        "macro_sys": {
+          "eells": 1.0,
+          "galton": 0.25,
+          "suppes": 0.5,
+          "suppes2": 2.0,
+          "lewis": 1.0,
+          "cheng": 1.0,
+          "g1_max_dev": 0.0
+        },
+        "deltas": {
+          "eells": 0.40833333333333355,
+          "galton": 0.21533203125,
+          "suppes": -0.0546875,
+          "suppes2": -7.875,
+          "lewis": 0.4666666666666668,
+          "cheng": 0.3999726900747256
+        },
+        "g1_max_dev": 4.440892098500626e-16,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "eps": 0.5,
+        "EI_micro": 1.7830828133113008,
+        "EI_macro": 1.0,
+        "deg_micro": 0.0,
+        "CE_EI": -0.7830828133113008,
+        "d_det_minus_d_deg": 0.5542292966721748,
+        "micro_sys": {
+          "eells": 0.3,
+          "galton": 0.017578125,
+          "suppes": 0.28125,
+          "suppes2": 5.5,
+          "lewis": 0.5333333333333333,
+          "cheng": 0.3090128755364807,
+          "g1_max_dev": 2.220446049250313e-16
+        },
+        "macro_sys": {
+          "eells": 1.0,
+          "galton": 0.25,
+          "suppes": 0.5,
+          "suppes2": 2.0,
+          "lewis": 1.0,
+          "cheng": 1.0,
+          "g1_max_dev": 0.0
+        },
+        "deltas": {
+          "eells": 0.7,
+          "galton": 0.232421875,
+          "suppes": 0.21875,
+          "suppes2": -3.5,
+          "lewis": 0.4666666666666667,
+          "cheng": 0.6909871244635193
+        },
+        "g1_max_dev": 2.220446049250313e-16,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "eps": 0.75,
+        "EI_micro": 1.2293112600048293,
+        "EI_macro": 1.0,
+        "deg_micro": 0.0,
+        "CE_EI": -0.22931126000482926,
+        "d_det_minus_d_deg": 0.6926721849987927,
+        "micro_sys": {
+          "eells": 0.125,
+          "galton": 0.00732421875,
+          "suppes": 0.1171875,
+          "suppes2": 2.875,
+          "lewis": 0.5333333333333334,
+          "cheng": 0.13112473370723013,
+          "g1_max_dev": 1.27675647831893e-15
+        },
+        "macro_sys": {
+          "eells": 1.0,
+          "galton": 0.25,
+          "suppes": 0.5,
+          "suppes2": 2.0,
+          "lewis": 1.0,
+          "cheng": 1.0,
+          "g1_max_dev": 0.0
+        },
+        "deltas": {
+          "eells": 0.875,
+          "galton": 0.24267578125,
+          "suppes": 0.3828125,
+          "suppes2": -0.875,
+          "lewis": 0.46666666666666656,
+          "cheng": 0.8688752662927699
+        },
+        "g1_max_dev": 1.27675647831893e-15,
+        "ei_identity_dev": 0.0
+      },
+      {
+        "eps": 1.0,
+        "EI_micro": 1.0,
+        "EI_macro": 1.0,
+        "deg_micro": 0.0,
+        "CE_EI": 0.0,
+        "d_det_minus_d_deg": 0.75,
+        "micro_sys": {
+          "eells": 0.06666666666666667,
+          "galton": 0.00390625,
+          "suppes": 0.0625,
+          "suppes2": 2.0,
+          "lewis": 0.5333333333333333,
+          "cheng": 0.07079646017699115,
+          "g1_max_dev": 1.1102230246251565e-16
+        },
+        "macro_sys": {
+          "eells": 1.0,
+          "galton": 0.25,
+          "suppes": 0.5,
+          "suppes2": 2.0,
+          "lewis": 1.0,
+          "cheng": 1.0,
+          "g1_max_dev": 0.0
+        },
+        "deltas": {
+          "eells": 0.9333333333333333,
+          "galton": 0.24609375,
+          "suppes": 0.4375,
+          "suppes2": 0.0,
+          "lewis": 0.4666666666666667,
+          "cheng": 0.9292035398230089
+        },
+        "g1_max_dev": 1.1102230246251565e-16,
+        "ei_identity_dev": 0.0
+      }
+    ]
+  },
+  "hypotheses": {
+    "H1_widespread": {
+      "verdict": "PARTIEL",
+      "positive": [
+        "eells",
+        "galton",
+        "suppes",
+        "lewis"
+      ],
+      "deltas": {
+        "eells": 0.23214285714285698,
+        "galton": 0.097564697265625,
+        "suppes": 0.119140625,
+        "suppes2": 0.0,
+        "lewis": 0.23214285714285698
+      }
+    },
+    "H1b_cheng_saturation": {
+      "verdict": "CONFIRMEE",
+      "delta_cheng": 0.0
+    },
+    "H2_bidirectional": {
+      "verdict": "FALSIFIEE",
+      "rows": [
+        {
+          "label": "paires-01-23",
+          "CE_EI": -1.189235918793165,
+          "median_dCS": 0.03282352355555548,
+          "holds": false
+        },
+        {
+          "label": "paires-02-13",
+          "CE_EI": -1.189235918793165,
+          "median_dCS": 0.03282352355555548,
+          "holds": false
+        },
+        {
+          "label": "paires-03-12",
+          "CE_EI": -1.189235918793165,
+          "median_dCS": 0.03282352355555548,
+          "holds": false
+        },
+        {
+          "label": "total-4",
+          "CE_EI": -1.7427022252381934,
+          "median_dCS": -0.10192779946666661,
+          "holds": true
+        }
+      ]
+    },
+    "H3_primitives_explain": {
+      "verdict": "CONFIRMEE",
+      "rows": [
+        {
+          "measure": "eells",
+          "spearman": 0.8881987577639752,
+          "holds": true
+        },
+        {
+          "measure": "galton",
+          "spearman": 0.8509316770186336,
+          "holds": true
+        },
+        {
+          "measure": "suppes",
+          "spearman": 0.7515527950310559,
+          "holds": true
+        },
+        {
+          "measure": "suppes2",
+          "spearman": 0.6791310213054466,
+          "holds": true
+        },
+        {
+          "measure": "lewis",
+          "spearman": 0.7476671794188403,
+          "holds": true
+        },
+        {
+          "measure": "cheng",
+          "spearman": 0.685361581133937,
+          "holds": true
+        }
+      ],
+      "n_points": 10
+    },
+    "H4_noise_corners": {
+      "verdict": "CONFIRMEE",
+      "rows": [
+        {
+          "measure": "eells",
+          "clean": 0.0,
+          "noisy": 0.9333333333333333,
+          "holds": true
+        },
+        {
+          "measure": "galton",
+          "clean": 0.19140625,
+          "noisy": 0.24609375,
+          "holds": true
+        },
+        {
+          "measure": "suppes",
+          "clean": -0.4375,
+          "noisy": 0.4375,
+          "holds": true
+        },
+        {
+          "measure": "suppes2",
+          "clean": -14.0,
+          "noisy": 0.0,
+          "holds": true
+        },
+        {
+          "measure": "lewis",
+          "clean": 0.0,
+          "noisy": 0.4666666666666667,
+          "holds": true
+        },
+        {
+          "measure": "cheng",
+          "clean": 0.0,
+          "noisy": 0.9292035398230089,
+          "holds": true
+        }
+      ],
+      "ei_clean": -3.0,
+      "ei_noisy": 0.0
+    }
+  },
+  "global_verdict": "REFUTE"
+}

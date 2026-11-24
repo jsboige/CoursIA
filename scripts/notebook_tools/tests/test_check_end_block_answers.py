@@ -47,6 +47,7 @@ PANEL_27611 = {
     "GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb",
+    "GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-CSharp.ipynb",
     "GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb",
 }
 
