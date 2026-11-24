@@ -84,38 +84,94 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-#: Les modules qui DECIDENT le tirage. Une divergence avec origin/main fait
-#: servir des grains sous un contrat perime : c'est l'incident po-2028 du
-#: 14/11 -- l'avertissement du picker a ete lu, puis ignore. Une lane qui
-#: developpe ces fichiers passe par --allow-stale, en le sachant.
+#: Les organes du chemin de tirage : tout module dont le contenu change le
+#: grain servi doit correspondre a `origin/main`, sinon le tirage est refuse
+#: (`ORGANE_DIVERGENT`).
+#:
+#: La liste est **verifiee**, pas declaree : la fermeture d'import **statique**
+#: des points d entree du tirage (la voie rapide, la voie legere, la prise en
+#: charge, le tapis lourd) doit y etre incluse, et le tableau des modules de
+#: `docs/reference/tapis-rapide.md` aussi. Un module du tirage entre dans
+#: cette liste **avec** sa premiere livraison (la prescription du document) ;
+#: l y entrer separement, plus tard, est un trou de la garde -- et le trou
+#: se voit : la PR qui livre le module porte son propre rouge.
+#:
+#: Organe : `scripts/tests/test_main_freshness_organes.py`.
 ORGANES = (
-    "scripts/coordination/tapis_rapide.py",
-    "scripts/coordination/tapis_marqueurs.py",
-    "scripts/coordination/tapis_sature.py",
+    # La LECTURE : le volume, le cache, la selection, la lecture ciblee,
+    # le fil complet -- un module lu change la fenetre servie.
     "scripts/coordination/gh_bulk.py",
-    # La LECTURE elle-meme : le conteneur, l'echec qui interdit de servir a
-    # moitie, et la mise a plat d'une issue -- dont le `comments_total`
-    # INCONNU, qui decide si la fenetre est prouvee complete.
+    "scripts/coordination/gh_cache.py",
+    "scripts/coordination/gh_cache_fichier.py",
+    "scripts/coordination/gh_issues.py",
     "scripts/coordination/gh_lecture.py",
     "scripts/coordination/gh_recherche.py",
+    "scripts/coordination/gh_selection.py",
+    "scripts/coordination/gh_snapshot.py",
+
+    # Le CHEMIN DU TIRAGE : classement, rotation, fenetre, qualification,
+    # service, reprise, occupation, etats et tranche -- tous modifient le
+    # grain servi, donc tous doivent correspondre a origin/main.
+    "scripts/coordination/tapis_acceptance.py",
+    "scripts/coordination/tapis_age.py",
+    "scripts/coordination/tapis_ancre.py",
+    "scripts/coordination/tapis_assiette.py",
+    "scripts/coordination/tapis_attente.py",
+    "scripts/coordination/tapis_avance.py",
+    "scripts/coordination/tapis_avantages.py",
+    "scripts/coordination/tapis_cap_livraisons.py",
+    "scripts/coordination/tapis_citations.py",
+    "scripts/coordination/tapis_composition.py",
+    "scripts/coordination/tapis_dernier_grain.py",
+    "scripts/coordination/tapis_diff.py",
+    "scripts/coordination/tapis_ecarts_fond.py",
+    "scripts/coordination/tapis_entrelace.py",
+    "scripts/coordination/tapis_equilibre.py",
+    "scripts/coordination/tapis_etat.py",
+    "scripts/coordination/tapis_etat_commit.py",
+    "scripts/coordination/tapis_etat_schema.py",
+    "scripts/coordination/tapis_fenetre.py",
+    "scripts/coordination/tapis_fil_complet.py",
+    "scripts/coordination/tapis_hors_flotte.py",
+    "scripts/coordination/tapis_labels.py",
+    "scripts/coordination/tapis_leger.py",
+    "scripts/coordination/tapis_leger_fenetre.py",
+    "scripts/coordination/tapis_leger_texte.py",
+    "scripts/coordination/tapis_lot.py",
+    "scripts/coordination/tapis_marqueurs.py",
+    "scripts/coordination/tapis_non_tente.py",
+    "scripts/coordination/tapis_origami.py",
+    "scripts/coordination/tapis_perimetre.py",
+    "scripts/coordination/tapis_position.py",
+    "scripts/coordination/tapis_preuve.py",
+    "scripts/coordination/tapis_preuves.py",
+    "scripts/coordination/tapis_prise_en_charge.py",
+    "scripts/coordination/tapis_public.py",
+    "scripts/coordination/tapis_qualification.py",
+    "scripts/coordination/tapis_qualification_fil.py",
+    "scripts/coordination/tapis_rapide.py",
+    "scripts/coordination/tapis_repli.py",
+    "scripts/coordination/tapis_retry.py",
+    "scripts/coordination/tapis_reverif.py",
+    "scripts/coordination/tapis_rotation.py",
+    "scripts/coordination/tapis_sature.py",
+    "scripts/coordination/tapis_seance.py",
+    "scripts/coordination/tapis_service.py",
+    "scripts/coordination/tapis_tete.py",
+    "scripts/coordination/tapis_tranche.py",
+    "scripts/coordination/tapis_universel.py",
+    "scripts/coordination/tapis_universel_rapport.py",
+    "scripts/coordination/tapis_verdict.py",
+    "scripts/coordination/tapis_visites.py",
+    "scripts/coordination/tapis_voie_leger.py",
+
+    # Les PERIPHERIES du tirage : le parcage, la journalisation, les
+    # campagnes gelees, la garde elle-meme et le tapis lourd.
     "scripts/coordination/frozen_campaigns.py",
     "scripts/coordination/main_freshness.py",
-    # Le CHEMIN DU TIRAGE (bascule #27225) : le classement, ses deux
-    # priorites, la rotation, la qualification sur fil complet et la relecture
-    # de service -- tous modifient le grain servi, donc tous doivent
-    # correspondre a origin/main pour que le tirage soit recevable.
-    "scripts/coordination/gh_selection.py",
-    "scripts/coordination/gh_issues.py",
-    "scripts/coordination/gh_snapshot.py",
-    "scripts/coordination/tapis_universel.py",
-    "scripts/coordination/tapis_avantages.py",
-    "scripts/coordination/tapis_leger.py",
-    "scripts/coordination/tapis_qualification.py",
-    "scripts/coordination/tapis_fil_complet.py",
-    "scripts/coordination/tapis_prise_en_charge.py",
-    "scripts/coordination/tapis_reverif.py",
-    "scripts/coordination/tapis_fenetre.py",
-    "scripts/coordination/tapis_origami.py",
+    "scripts/coordination/origami_parking.py",
+    "scripts/coordination/tirage_journal.py",
+    "scripts/pick_idle_grain.py",
 )
 
 FETCH_TIMEOUT_S = 120

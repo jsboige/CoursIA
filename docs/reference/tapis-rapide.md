@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-23
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -498,6 +498,16 @@ a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`
 désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,
 qualification légère, re-vérif, parcage) : un tirage refuse (sortie `4`) si l'un d'eux diffère
 d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+
+**Cette prescription est vérifiée, plus seulement énoncée.** La liste est contrôlée par
+`scripts/tests/test_main_freshness_organes.py`, sur deux sources : la **fermeture d'import statique** des
+points d'entrée du tirage (`tapis_rapide`, `tapis_leger`, `tapis_voie_leger`, `tapis_prise_en_charge`,
+`pick_idle_grain` — analysée par `ast`, jamais importée : `main_freshness` est lui-même dans la liste,
+l'import serait circulaire) et le **tableau « Les modules »** ci-dessous. Un module livré hors liste
+n'est donc pas un trou silencieux : la PR qui le livre porte **son propre rouge**, et le rouge se lève en
+déclarant le module — dans la PR, pas plus tard. Mesure du 24/11 : la liste portait 19 modules pour
+64 dans le chemin ; l'écart était invisible, la garde refusait donc des tirages pour une raison que
+personne ne pouvait nommer, et laissait passer des modules qui ne l'étaient pas.
 
 ### Les modules
 
