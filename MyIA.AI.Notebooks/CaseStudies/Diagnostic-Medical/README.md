@@ -32,7 +32,7 @@ Les parcours se lisent à plusieurs vitesses — voir
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
 | 01 | [Squelette étudiant](student/Diagnostic-Medical-Python.ipynb) | L'agent à règles (Normal / Pré-diabète / Diabète T2 sur glycémie à jeun, post-prandiale et HbA1c), A\* sur 7 hypothèses avec heuristique médicale, calibration de 6 paramètres diagnostiques par algorithme génétique, validation Z3 du protocole — en squelette, 3 exercices d'extension nommés | Étudiant (CC1) | [Corrigé type](solution/Diagnostic-Medical-Python.ipynb) |
-| 02 | [Corrigé type](solution/Diagnostic-Medical-Python.ipynb) | Le pipeline complet exécuté sur `data/patients.csv` : triage de 3 profils mesurés (85 mg/dL et 5,2 % → normal, 115 mg/dL et 6,0 % → pré-diabétique, 140 mg/dL et 7,8 % → diabète T2), convergence d'A\* en 308 itérations, fitness génétique 16,731 → 17,957 entre générations 0 et 20, taux de validation Z3 et 5 tests automatisés | Enseignant / relecture | Les 3 exercices d'extension restent en stub |
+| 02 | [Corrigé type](solution/Diagnostic-Medical-Python.ipynb) | Le pipeline complet exécuté sur `data/patients.csv` : triage de 3 profils mesurés (85 mg/dL et 5,2 % → normal, 115 mg/dL et 6,0 % → pré-diabétique, 140 mg/dL et 7,8 % → diabète T2), convergence d'A\* en 308 itérations, fitness génétique 16,731 → 19,308 entre générations 0 et 20, taux de validation Z3 et 5 tests automatisés | Enseignant / relecture | Les 3 exercices d'extension restent en stub |
 
 ## Approfondissements
 
