@@ -1402,5 +1402,92 @@ class TestPreexistingBaseCollision(unittest.TestCase):
                 "la collision heritee reste rappelee avec ses chemins")
 
 
+class TestPapermillOutputIsNotAnItem(unittest.TestCase):
+    """#28410 : la sortie papermill ne prend aucun slot en mode revision.
+
+    Cas reel : la PR #28392 renomme `SL-12b-PavlovDLS-Reproduction.ipynb` en
+    `SL-12c-PavlovDLS-Reproduction.ipynb` ET sa sortie `-output.ipynb` avec
+    lui. En mode revision, `added_notebooks()` retenait les DEUX ajouts, et
+    `_scan_slot()` leur donnait la meme cle (`SL-12c`) : le carnet et sa
+    propre sortie se signalaient l'un l'autre en `duplicate_within_revision`,
+    et la porte de merge retenait une PR qui ne prend aucun numero.
+
+    Le filtre `_is_source_ipynb` existe deja pour le balayage `--scan-main` ;
+    il est ici applique au mode revision (cibles, occupants, base). Une seule
+    definition d'item : un carnet source.
+    """
+
+    DIR = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
+    OLD = DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb"
+    OLD_OUT = DIR + "/SL-12b-PavlovDLS-Reproduction-output.ipynb"
+    NEW = DIR + "/SL-12c-PavlovDLS-Reproduction.ipynb"
+    NEW_OUT = DIR + "/SL-12c-PavlovDLS-Reproduction-output.ipynb"
+
+    def _moved_repo(self, repo: Path) -> str:
+        base = _init_repo(repo, [self.OLD, self.OLD_OUT])
+        _git(repo, "mv", self.OLD, self.NEW)
+        _git(repo, "mv", self.OLD_OUT, self.NEW_OUT)
+        _commit(repo, "renomme le carnet et sa sortie papermill")
+        return base
+
+    def test_rename_of_notebook_and_its_output_is_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._moved_repo(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertNotIn("duplicate_within_revision", r.stdout)
+
+    def test_output_is_not_examined_as_a_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._moved_repo(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["targets_examined"], 1,
+                             "seule la SOURCE est une cible : %s" % r.stdout)
+            self.assertEqual(doc["conflicts"], 0, r.stdout)
+            examined = [v.get("target") or v.get("path")
+                        for v in doc.get("verdicts", [])]
+            self.assertNotIn(self.NEW_OUT, examined, r.stdout)
+
+    def test_output_alone_is_not_a_target(self):
+        """Un `-output.ipynb` ajoute seul ne prend aucun slot non plus."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [self.OLD])
+            _write(repo, self.NEW_OUT)
+            _commit(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["targets_examined"], 0, r.stdout)
+            self.assertEqual(doc["conflicts"], 0, r.stdout)
+
+    def test_source_is_still_a_target(self):
+        """Temoin negatif du dispatch : le SOURCE garde toute sa vigilance.
+
+        Deux sources distinctes du meme slot (pas deux rendus du meme item)
+        doivent toujours rougir : le filtre porte sur la NATURE du fichier,
+        pas sur le slot.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [self.OLD])
+            _write(repo, self.NEW)
+            _write(repo, self.DIR + "/SL-12c-Other.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1,
+                             "deux sources du meme slot doivent toujours rougir\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("duplicate_within_revision", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
