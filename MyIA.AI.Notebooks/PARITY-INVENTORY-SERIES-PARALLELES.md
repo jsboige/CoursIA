@@ -33,7 +33,7 @@ Note registre : `03b`/`03c`/`03d` sont enregistrées sous les numéros historiqu
 
 ### Search/Part2-CSP — 9 paires, toutes alignées, toutes enregistrées
 
-`CSP-1-Fundamentals` à `CSP-9-Distributed`, chaque `CSP-N` ↔ `CSP-N-CSharp`.
+`CSP-01-Fundamentals-Python` à `CSP-09-Distributed-Python`, chaque `CSP-N` ↔ `CSP-N-CSharp`.
 
 ### Search/Part3-Cas-pratiques — 21 paires, 19 alignées, 2 décalées, toutes enregistrées
 

@@ -235,7 +235,7 @@ modifies, epinglages relus a la base et a la tete) :
 | etat (comparaison brute) | **1** | 1 |
 
 Le faux positif de la ligne « etat » est mesure : la PR `9364be282` modifie
-`CSP-5-Optimization-CSharp.ipynb` sans toucher a son epinglage
+`CSP-05-Optimization-CSharp.ipynb` sans toucher a son epinglage
 `Google.OrTools 9.11.4210` (canonique 9.15.6755). Une garde fondee sur l'etat
 l'aurait fait rougir a tort.
 

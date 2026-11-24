@@ -1973,7 +1973,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cel
 > recherche heuristique *avancées*, au-delà des fondations de la
 > [Partie 1](../Part1-Foundations/Search-03-Informed.ipynb) (A\*, IDA\*, heuristiques
 > admissibles), sans relever ni de la programmation par contraintes
-> ([Partie 2](../Part2-CSP/CSP-1-Fundamentals.ipynb)) ni des métaheuristiques
+> ([Partie 2](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb)) ni des métaheuristiques
 > ([Partie 4](../Part4-Metaheuristics/README.md)).
 
 ## 1. Le problème, et pourquoi Manhattan ne suffit plus

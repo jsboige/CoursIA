@@ -19809,7 +19809,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb,con
 
 ### Pour aller plus loin
 
-- **Notebook suivant** : [CSP-1-Fondamentaux](../Part2-CSP/CSP-1-Fundamentals.ipynb) - Problemes de satisfaction de contraintes
+- **Notebook suivant** : [CSP-1-Fondamentaux](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb) - Problemes de satisfaction de contraintes
 - **Applications** : [App-9 Edge Detection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb), [App-10 Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb)
 - **références** :
   - Goldberg, D. *Genetic Algorithms in Search, Optimization, and Machine Learning*, 1989
@@ -27275,7 +27275,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb,cel
 
 - `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb` (LP relaxation + branch-and-bound)
 - `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb` (MEALPy : PSO, ABC, SA, BRO)
-- `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb` (CSP/OR-Tools Choco)
+- `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb` (CSP/OR-Tools Choco)
 
 > **Note pedagogique** : sur cette realisation (seed=42), le GA atteint l'optimum sur la petite instance (8 villes, gap 1.00x) et reste sous-optimal sur 9 et 10 villes (gap 1.13x) — une realisation favorable du hasard, pas une garantie, tandis que le temps du solveur exact explose (de la dizaine de millisecondes a environ une seconde entre 8 et 10 villes, colonne temps de la sortie ci-dessus) quand celui du GA reste du meme ordre. Cf. Section 7 de `Sudoku-03-Genetic-Python.ipynb` (ratio GA/OR-Tools *machine-dep* sur Easy) et Section 11 de `Sudoku-04-SimulatedAnnealing-Python.ipynb` (ratio SA/Backtracking *machine-dep* sur Easy) pour des demonstrations equivalentes sur d'autres solveurs heuristiques vs exacts.
 
@@ -31843,7 +31843,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cel
 > recherche heuristique *avancées*, au-delà des fondations de la
 > [Partie 1](../Part1-Foundations/Search-03-Informed.ipynb) (A\*, IDA\*, heuristiques
 > admissibles), sans relever ni de la programmation par contraintes
-> ([Partie 2](../Part2-CSP/CSP-1-Fundamentals.ipynb)) ni des métaheuristiques
+> ([Partie 2](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb)) ni des métaheuristiques
 > ([Partie 4](../Part4-Metaheuristics/README.md)).
 
 ## 1. Le problème, et pourquoi Manhattan ne suffit plus
@@ -35543,7 +35543,7 @@ précisément ce que personne n'écrit.
 **Navigation** : [<< Search-03e — optimalité de A\*](Search-03e-AStar-Optimality.ipynb) | [Index](README.md) | [retour au parent Search-03 (A\*) ↑](Search-03-Informed.ipynb)",,,,,,,,9cfb1a6ccfa380a2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb,dc958fcc,markdown,fr,4c5ae2d63a30bac0,"# Search-05b : Natural Evolution Strategies (NES)
 
-**Navigation** : [<< Search-5 Algorithmes génétiques](Search-05-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-1 Fundamentals >>](../Part2-CSP/CSP-1-Fundamentals.ipynb)
+**Navigation** : [<< Search-5 Algorithmes génétiques](Search-05-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-1 Fundamentals >>](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb)
 
 Le carnet Search-5 faisait évoluer une **population** d'individus. Une stratégie d'évolution naturelle (NES) fait évoluer une **distribution** : on tire des points d'une gaussienne, on les classe, puis on déplace la gaussienne par un pas de gradient sur ses propres paramètres. Le carnet suit l'article de référence et confronte ses affirmations à des mesures :
 
@@ -44883,7 +44883,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.i
 ",,,,,,,,8abfd62437301bf3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,afbd0276,markdown,fr,c49914a8df642f19,"## Pour aller plus loin
 
-**Carnet suivant.** [CSP-1 — Fondamentaux de la programmation par contraintes](../Part2-CSP/CSP-1-Fundamentals.ipynb) — la suite naturelle de la partie, que le README de la partie 1 désigne explicitement : la même exigence de preuve, appliquée à la propagation de contraintes plutôt qu'à l'exploration d'un graphe.
+**Carnet suivant.** [CSP-1 — Fondamentaux de la programmation par contraintes](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb) — la suite naturelle de la partie, que le README de la partie 1 désigne explicitement : la même exigence de preuve, appliquée à la propagation de contraintes plutôt qu'à l'exploration d'un graphe.
 
 **Lectures.**
 

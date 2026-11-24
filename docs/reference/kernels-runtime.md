@@ -179,7 +179,7 @@ python scripts/ci/dotnet_preload_packages.py QuikGraph==2.5.0
 # puis dans la cellule :  #r "./_deps/QuikGraph.dll"
 ```
 
-**Ce qu'il ne faut PAS en faire** : une conversion de masse des carnets vers `#r "./_deps/..."`. Le pilote du 2026-09-25 (`CSP-1-Fundamentals-CSharp.ipynb`) a mesure les trois bras — nuget d'origine 19/19 OK, local seul 16/19 (`Could not locate ikvm home path`), mixte 15/19 (`MSB4036 IkvmResolveNearestRuntimeIdentifier introuvable`). Les packages IKVM ont besoin du **graphe de restauration NuGet** que `_deps/` ne reconstitue pas, et `_deps/` est gitignore : une conversion generalisee casserait de facon **deterministe** tout clone neuf, pour un bug intermittent. L'outil est un **remede de reparation ponctuelle**, pas une migration.
+**Ce qu'il ne faut PAS en faire** : une conversion de masse des carnets vers `#r "./_deps/..."`. Le pilote du 2026-09-25 (`CSP-01-Fundamentals-CSharp.ipynb`) a mesure les trois bras — nuget d'origine 19/19 OK, local seul 16/19 (`Could not locate ikvm home path`), mixte 15/19 (`MSB4036 IkvmResolveNearestRuntimeIdentifier introuvable`). Les packages IKVM ont besoin du **graphe de restauration NuGet** que `_deps/` ne reconstitue pas, et `_deps/` est gitignore : une conversion generalisee casserait de facon **deterministe** tout clone neuf, pour un bug intermittent. L'outil est un **remede de reparation ponctuelle**, pas une migration.
 
 Recit complet, 5 probes, mesures des trois bras : [`2026-09-25-dotnet-restore-rfc-17361.md`](../transients/2026-09-25-dotnet-restore-rfc-17361.md).
 

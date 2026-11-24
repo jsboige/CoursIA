@@ -636,7 +636,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb` | Part1-Foundations | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem.ipynb` | Part1-Foundations | python3 | - | - |
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb` | Part1-Foundations | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb` | Part2-CSP | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-09-Distributed-Python.ipynb` | Part2-CSP | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |

@@ -624,7 +624,7 @@ _CASES = [
     # reste a renommer (dettes réelles mesurées sur main : SC-7b, SL-1b).
     ("SC-7b-ERC20-Lean-Verification-Companion.ipynb", _CLASSIF_RENAME, "python3", "7b"),
     # Base implicite SANS lettre d'accrétion : doctrine inchangée (#20316).
-    ("CSP-1-Fundamentals.ipynb", _CLASSIF_CONFORME, "python3", None),
+    ("CSP-01-Fundamentals-Python.ipynb", _CLASSIF_CONFORME, "python3", None),
     # Controle negatif : sans zero-pad, la meme forme reste a renommer.
     ("3b-Typed-Decisions.ipynb", _CLASSIF_RENAME, "python3", "3b"),
     # Controle negatif du lookahead : `3d-01` est un prefixe de serie mixte,
