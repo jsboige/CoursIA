@@ -86,6 +86,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
+      - 'scripts/humor_detection/**'
       # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
       # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
@@ -109,6 +110,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #19571 pli 1 HMM/Viterbi (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/NLP/gateway/**'
       # #28370 export du corpus Z3 par la serie : une modification de l'export
       # doit rejouer le test de parite (scripts/notebook_tools/tests/
       # test_z3_instances_parity.py), sans quoi la derive export/carnets
@@ -669,6 +672,7 @@ jobs:
             scripts/translation/tests \
             scripts/audit/tests \
             scripts/fallacy_detection/tests \
+            scripts/humor_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
@@ -685,6 +689,7 @@ jobs:
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_trueskill_core.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_flagship_endpoint.py \
+            MyIA.AI.Notebooks/NLP/gateway/test_hmm_viterbi_core.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/Probas/Causalite/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \

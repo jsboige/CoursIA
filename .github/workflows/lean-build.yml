@@ -211,6 +211,37 @@ jobs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
+    # #27727 tranche 2 : cache PARTAGE de la SOURCE Mathlib — jumeau du pas
+    # homonyme du composite .github/actions/lean-build (meme cle, meme staging
+    # $RUNNER_TEMP/mathlib-src). Une poignee d'entrees `lake-mathlib-src-*`
+    # sert les 31 lakes au lieu de 31 copies de ~600 Mo dans chaque archive
+    # `.lake` (mesure 2026-11-21 : 31/31 misses a 10:12Z, 5/31 a 13:21Z).
+    # CR ai-01 : la cle est la REV Mathlib du manifeste (pas le hash du
+    # lakefile du projet, 43/43 distincts = aucun dedup) ; 6 revs -> 6 entrees.
+    - name: Resolve shared Mathlib rev
+      id: mathlib-rev
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        REV=""
+        if [ -f lake-manifest.json ]; then
+          REV=$(jq -r '(.packages[]? | select(.name=="mathlib") | .rev) // empty' lake-manifest.json 2>/dev/null | head -n1 || true)
+        fi
+        if [ -n "$REV" ]; then
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          echo "Mathlib pin: $REV"
+        else
+          echo "rev=" >> "$GITHUB_OUTPUT"
+          echo "No Mathlib pin in lake-manifest.json -- skipping the shared source cache."
+        fi
+
+    - name: Restore shared Mathlib source
+      id: mathlib-src-cache
+      if: steps.mathlib-rev.outputs.rev != ''
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ runner.temp }}/mathlib-src
+        key: lake-mathlib-src-${{ runner.os }}-${{ steps.mathlib-rev.outputs.rev }}
+
     # RESTORE SEUL (restore-only, #19658) : le SAVE est un pas explicite du job,
     # place APRES son etape `Drop Mathlib oleans` et conditionne a
     # `github.ref == refs/heads/main`. Avant, `actions/cache@v4` sauvegardait en
@@ -224,6 +255,29 @@ jobs:
         path: ${{ inputs.project-path }}/.lake
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
+
+    # #27727 tranche 2 : HIT du cache partage = il est le provider de la source
+    # Mathlib ; le symlink remplace la copie que l'archive `.lake` portait
+    # (periode de transition). Miss = comportement exact d'avant (le clone
+    # `lake update` fait la source).
+    - name: Use the shared Mathlib source
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        # CR ai-01 / reserve Hermes : ne brancher le staging QUE si sa tete git
+        # correspond au rev pinne par le manifeste. Une restauration inconnue
+        # (staging incomplet, ou entree d'un autre rev) n'est pas servee : on
+        # retombe sur le clone per-lake `lake update`, qui refete le rev exact.
+        WANT_REV="${{ steps.mathlib-rev.outputs.rev }}"
+        if [ -n "$WANT_REV" ] \
+           && [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
+           && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ] \
+           && [ "$(git -C "${RUNNER_TEMP}/mathlib-src" rev-parse HEAD 2>/dev/null)" = "$WANT_REV" ]; then
+          rm -rf .lake/packages/mathlib
+          ln -sfn "$RUNNER_TEMP/mathlib-src" .lake/packages/mathlib
+          echo "Mathlib source: shared cache (symlinked into .lake/packages, rev $WANT_REV verified)."
+        else
+          echo "Mathlib source: per-lake copy (shared cache miss, incomplete staging, or rev mismatch)."
+        fi
 
     - name: Add swap space
       # Hosted ubuntu-latest runners have 16 GB RAM. Full (cache-miss) elaboration
@@ -354,7 +408,46 @@ jobs:
       working-directory: ${{ inputs.project-path }}
       run: |
         rm -rf .lake/packages/mathlib/.lake/build
+        # #27727 tranche 2 : l'archive per-lake ne doit plus porter la SOURCE
+        # Mathlib -- l'entree partagee `lake-mathlib-src-*` en est le provider.
+        # Si .lake/packages/mathlib est le symlink du staging partage, on ne
+        # supprime que le lien (la ligne `rm -rf .../.lake/build` ci-dessus a
+        # deja retire les oleans du staging A TRAVERS le lien). Sinon (miss
+        # partage = copie d'origine) : sur main, un premier peuplement du
+        # staging a lieu, puis la source est ecartee de l'archive per-lake.
+        if [ -L .lake/packages/mathlib ]; then
+          rm .lake/packages/mathlib
+        else
+          if [ "${{ github.ref }}" = "refs/heads/main" ] \
+             && [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" != "true" ]; then
+            mkdir -p "${RUNNER_TEMP}/mathlib-src"
+            cp -a .lake/packages/mathlib/. "${RUNNER_TEMP}/mathlib-src"/
+          fi
+          rm -rf .lake/packages/mathlib
+        fi
         du -sh .lake 2>/dev/null || true
+
+    # #27727 tranche 2 : le staging partage ne se sauvegarde que s'il est
+    # PEUPLE (contient Mathlib.lean) -- un `cache/save` sur un repertoire vide
+    # creerait une entree orpheline de ~0 Mo. Sur HIT le peuplement est deja
+    # fait (le restore l'a ramene) donc on ne re-sauve pas.
+    - name: Check shared Mathlib staging is populated
+      id: mathlib-src-check
+      run: |
+        if [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ]; then
+          echo "has-src=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has-src=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Save shared Mathlib source (main only, first population)
+      if: github.ref == 'refs/heads/main'
+        && steps.mathlib-src-cache.outputs.cache-hit != 'true'
+        && steps.mathlib-src-check.outputs.has-src == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ runner.temp }}/mathlib-src
+        key: ${{ steps.mathlib-src-cache.outputs.cache-primary-key }}
 
     # SAVE EXPLICITE, main only (#19658). Les refs de PR restaurent mais
     # n'ecrivent plus : une PR qui manque la cle repart du cache de main via
@@ -482,7 +575,48 @@ jobs:
       working-directory: ${{ matrix.project-path }}
       run: |
         rm -rf .lake/packages/mathlib/.lake/build
+        # #27727 tranche 2 : l'archive per-lake ne doit plus porter la SOURCE
+        # Mathlib -- l'entree partagee `lake-mathlib-src-*` en est le provider.
+        # Si .lake/packages/mathlib est le symlink du staging partage, on ne
+        # supprime que le lien (la ligne `rm -rf .../.lake/build` ci-dessus a
+        # deja retire les oleans du staging A TRAVERS le lien). Sinon (miss
+        # partage = copie d'origine) : sur main, un premier peuplement du
+        # staging a lieu, puis la source est ecartee de l'archive per-lake.
+        # Le HIT/KEY proviennent du composite (l'id vit dans
+        # .github/actions/lean-build, expose en outputs du step `build`).
+        if [ -L .lake/packages/mathlib ]; then
+          rm .lake/packages/mathlib
+        else
+          if [ "${{ github.ref }}" = "refs/heads/main" ] \
+             && [ "${{ steps.build.outputs.mathlib-src-cache-hit }}" != "true" ]; then
+            mkdir -p "${RUNNER_TEMP}/mathlib-src"
+            cp -a .lake/packages/mathlib/. "${RUNNER_TEMP}/mathlib-src"/
+          fi
+          rm -rf .lake/packages/mathlib
+        fi
         du -sh .lake 2>/dev/null || true
+
+    # #27727 tranche 2 : le staging partage ne se sauvegarde que s'il est
+    # PEUPLE (contient Mathlib.lean) -- un `cache/save` sur un repertoire vide
+    # creerait une entree orpheline de ~0 Mo. Sur HIT le peuplement est deja
+    # fait (le restore l'a ramene) donc on ne re-sauve pas.
+    - name: Check shared Mathlib staging is populated
+      id: mathlib-src-check
+      run: |
+        if [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ]; then
+          echo "has-src=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has-src=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Save shared Mathlib source (main only, first population)
+      if: github.ref == 'refs/heads/main'
+        && steps.build.outputs.mathlib-src-cache-hit != 'true'
+        && steps.mathlib-src-check.outputs.has-src == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ runner.temp }}/mathlib-src
+        key: ${{ steps.build.outputs.mathlib-src-cache-key }}
 
     # SAVE EXPLICITE, main only (#19658). Les refs de PR restaurent mais
     # n'ecrivent plus : une PR qui manque la cle repart du cache de main via
