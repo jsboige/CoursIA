@@ -1,4 +1,4 @@
-- name: Probas-17 Kalman-Filter
+- name: Probas-16 Kalman-Filter
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-16-Kalman-Filter.ipynb

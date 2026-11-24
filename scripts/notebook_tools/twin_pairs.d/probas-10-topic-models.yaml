@@ -1,4 +1,4 @@
-- name: Probas-11 Topic-Models
+- name: Probas-10 Topic-Models
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-10-Topic-Models.ipynb

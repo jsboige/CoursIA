@@ -1,4 +1,4 @@
-- name: Probas-10 Model-Selection
+- name: Probas-9 Model-Selection
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-09-Model-Selection.ipynb

@@ -1,4 +1,4 @@
-- name: Probas-19 Survival-Analysis
+- name: Probas-18 Survival-Analysis
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Survival-Analysis.ipynb

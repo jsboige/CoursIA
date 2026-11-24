@@ -1,4 +1,4 @@
-- name: Probas-7 Skills-IRT
+- name: Probas-6 Skills-IRT
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-06-Skills-IRT.ipynb

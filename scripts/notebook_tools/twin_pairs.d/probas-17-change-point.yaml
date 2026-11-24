@@ -1,4 +1,4 @@
-- name: Probas-18 Change-Point
+- name: Probas-17 Change-Point
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-17-Change-Point.ipynb

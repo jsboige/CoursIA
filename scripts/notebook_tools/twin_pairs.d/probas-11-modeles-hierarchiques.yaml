@@ -1,4 +1,4 @@
-- name: Probas-12 Modeles-Hierarchiques
+- name: Probas-11 Modeles-Hierarchiques
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Modeles-Hierarchiques.ipynb

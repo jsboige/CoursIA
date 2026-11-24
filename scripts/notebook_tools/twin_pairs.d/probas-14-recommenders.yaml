@@ -1,4 +1,4 @@
-- name: Probas-15 Recommenders
+- name: Probas-14 Recommenders
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-14-Recommenders.ipynb

@@ -1,4 +1,4 @@
-- name: Probas-8 TrueSkill
+- name: Probas-7 TrueSkill
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-07-TrueSkill.ipynb

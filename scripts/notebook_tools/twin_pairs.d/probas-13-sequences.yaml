@@ -1,4 +1,4 @@
-- name: Probas-14 Sequences
+- name: Probas-13 Sequences
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-13-Sequences.ipynb

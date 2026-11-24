@@ -1,4 +1,4 @@
-- name: Probas-13 Crowdsourcing
+- name: Probas-12 Crowdsourcing
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-12-Crowdsourcing.ipynb
