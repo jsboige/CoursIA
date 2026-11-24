@@ -20,7 +20,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb,b6601688
 
 Le twin Python **appelle** un solveur ; ce twin **déroule** les algorithmes. Les deux se complètent : on voit ici *ce que fait* CP-SAT sous le capot (propagation, énumération, brisure de symétrie).
 
-**Durée estimée : 35 min.** Prérequis : [`Search-1`](../Part1-Foundations/Search-01-StateSpace-CSharp.ipynb), [`CSP-1`](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb) (CSP).
+**Durée estimée : 35 min.** Prérequis : [`Search-1`](../Part1-Foundations/Search-01-StateSpace-CSharp.ipynb), [`CSP-1`](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) (CSP).
 ",,,,,,,,46d5f0d0c093faca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb,2dbf824b-edff-40bc-b080-e8615eae95ab,markdown,fr,fc5b2eacd005eb2a,"## 1. Représentation du problème
 
@@ -574,7 +574,7 @@ Ce twin C# a **déroulé à la main** ce que le solveur industriel OR-Tools CP-S
 - **Min-Conflicts** = la recherche locale qui passe à l'échelle (le « miracle » N = 1000) ;
 - **Énumération + brisure de symétrie D4** = le comptage exact des solutions fondamentales (12 pour N = 8).
 
-**Lien avec les Foundations** : backtracking ⇄ [`Search-1`](../Part1-Foundations/Search-01-StateSpace-CSharp.ipynb) (DFS), CSP ⇄ [`CSP-1`](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb), Min-Conflicts ⇄ [`Search-11`](../Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) (métaheuristiques), CP-SAT ⇄ [`App-1-NQueens`](App-1-NQueens.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : backtracking ⇄ [`Search-1`](../Part1-Foundations/Search-01-StateSpace-CSharp.ipynb) (DFS), CSP ⇄ [`CSP-1`](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), Min-Conflicts ⇄ [`Search-11`](../Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) (métaheuristiques), CP-SAT ⇄ [`App-1-NQueens`](App-1-NQueens.ipynb) (twin Python, solveur industriel).
 
 ### Pour aller plus loin
 - Ajouter la **propagation AC-3** (arc-consistency) avant le backtracking.
@@ -603,7 +603,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prerequis
 - Python 3.10+, matplotlib, numpy, ortools
-- [CSP-1 : Fundamentals](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb) -- backtracking, MRV, formalisme CSP
+- [CSP-1 : Fundamentals](../Part2-CSP/CSP-1-Fundamentals.ipynb) -- backtracking, MRV, formalisme CSP
 
 ### Duree estimee : 30 minutes",,,,,,,,20b253823c4dc363,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb,section-1-intro,markdown,fr,db5a1dc6485b1096,"***
@@ -1476,9 +1476,9 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb,interp-comparis
 
 | Concept applique | Notebook de reference |
 |-----------------|----------------------|
-| Backtracking CSP, MRV, LCV | [CSP-1 : Fundamentals](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb) |
-| Forward Checking, Arc Consistency | [CSP-2 : Consistency](../Part2-CSP/CSP-02-Consistency-Python.ipynb) |
-| CP-SAT, contraintes globales | [CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb) |",,,,,,,,a3e9de48eb7766c6,,,,,,,,,,,,,,,
+| Backtracking CSP, MRV, LCV | [CSP-1 : Fundamentals](../Part2-CSP/CSP-1-Fundamentals.ipynb) |
+| Forward Checking, Arc Consistency | [CSP-2 : Consistency](../Part2-CSP/CSP-2-Consistency.ipynb) |
+| CP-SAT, contraintes globales | [CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) |",,,,,,,,a3e9de48eb7766c6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb,section-7-exercises,markdown,fr,8b7d931700dfd50c,"***
 
 ## 7. Exemple guide
@@ -2527,8 +2527,8 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb,section-conclus
 ### Pour aller plus loin
 
 - [App-2 : Graph Coloring](App-2-GraphColoring.ipynb) -- un autre problème CSP classique avec applications cartographiques
-- [CSP-2 : Consistency](../Part2-CSP/CSP-02-Consistency-Python.ipynb) -- propagation de contraintes (AC-3, MAC)
-- [CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb) -- contraintes globales, Large Neighborhood Search
+- [CSP-2 : Consistency](../Part2-CSP/CSP-2-Consistency.ipynb) -- propagation de contraintes (AC-3, MAC)
+- [CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) -- contraintes globales, Large Neighborhood Search
 
 ### References
 
@@ -5223,7 +5223,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb,b414a52
 
 Le twin Python **appelle** CP-SAT et constate un speedup de plusieurs millions ; ce twin **déroule** l'algorithme de propagation qui produit ce speedup, rendant la mécanique explicite.
 
-**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb) (CSP).
+**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) (CSP).
 ",,,,,,,,733198452bb30ce9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb,3c1f79a3-614d-4c4c-86fa-7cf65caae1b1,markdown,fr,dd9e23a2820d5d05,"## 1. Représentation et énumération des motifs d'une ligne
 
@@ -5686,7 +5686,7 @@ Ce twin C# a **déroulé from-scratch** la mécanique de résolution des nonogra
 
 ★ **Leçon** : la propagation de contraintes (déduction locale itérée) transforme un problème exponentiel en problème polynomial — c'est exactement ce que CP-SAT industrialise, et dont le « speedup spectaculaire » du twin Python n'est que la manifestation mesurée.
 
-**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb), propagation ⇄ [`CSP-1` §consistance arc](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb), CP-SAT ⇄ [`App-11-Picross`](App-11-Picross.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), propagation ⇄ [`CSP-1` §consistance arc](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), CP-SAT ⇄ [`App-11-Picross`](App-11-Picross.ipynb) (twin Python, solveur industriel).
 
 ***
 *Marathon .NET ⇄ Python #4956 — Search/Part3-Cas-pratiques, tranche Picross / nonogrammes. See #4956, #3801.*
@@ -13386,8 +13386,8 @@ Les mots croises sont un **cas d'ecole** du CSP : un probleme NP-complet avec un
 
 ### Prerequis
 
-- **Notebooks precedents** : [App-15 SportsScheduling](App-15-SportsScheduling.ipynb) (autre CSP), [Part2-CSP](../Part2-CSP/) (bases CSP), [CSP-03-Advanced-Python](../Part2-CSP/CSP-03-Advanced-Python.ipynb) (heuristiques MRV, LCV)
-- **Notebooks jumeaux** : [CSP-08-Temporal-CSharp.ipynb](../Part2-CSP/CSP-08-Temporal-CSharp.ipynb) (meme theme en .NET C#)
+- **Notebooks precedents** : [App-15 SportsScheduling](App-15-SportsScheduling.ipynb) (autre CSP), [Part2-CSP](../Part2-CSP/) (bases CSP), [CSP-3-Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) (heuristiques MRV, LCV)
+- **Notebooks jumeaux** : [CSP-8-Temporal-CSharp.ipynb](../Part2-CSP/CSP-8-Temporal-CSharp.ipynb) (meme theme en .NET C#)
 - **Concepts** : `arc-consistency`, `MRV heuristic`, `forward checking`, `constraint propagation`
 - **Bibliotheques** : `ortools` (Google OR-Tools), `matplotlib`, `numpy`, `dataclasses`
 
@@ -14806,7 +14806,7 @@ Les memes principes s'appliquent a :
 ### Pour aller plus loin
 
 - **EPIC implicite** : integration des techniques CSP avec l'apprentissage par renforcement (RL + CSP)
-- **Notebook jumeau** : [CSP-08-Temporal-CSharp.ipynb](../Part2-CSP/CSP-08-Temporal-CSharp.ipynb) pour la version .NET C#
+- **Notebook jumeau** : [CSP-8-Temporal-CSharp.ipynb](../Part2-CSP/CSP-8-Temporal-CSharp.ipynb) pour la version .NET C#
 - **Recherche actuelle** : ""Learning to Search"" (NeuroCSP) combine reseaux de neurones et recherche arborescente
 
 **Suite** : [App-15 - Planification sportive](App-15-SportsScheduling.ipynb) | [Retour au sommaire](../README.md)
@@ -20672,7 +20672,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb,e3
 
 Le twin Python **appelle** networkx (graphes) et CP-SAT (optimum) ; ce twin **déroule** les heuristiques et le branch-and-bound. ★ **Amélioration pédagogique** : utilisation de **graphes canoniques à χ connu** (Petersen=3, K4=4, Mycielski-4 triangle-free χ=4) plutôt qu'un graphe ad hoc — on peut **vérifier** que chaque heuristique atteint (ou non) l'optimum.
 
-**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb) (CSP).
+**Durée estimée : 40 min.** Prérequis : [`CSP-1`](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb) (CSP).
 ",,,,,,,,6aa4b256dfe871d9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb,88f85eca-0022-4692-8f6b-bb3343d50953,markdown,fr,0272b12c2c418745,"## 1. Représentation du graphe
 
@@ -21131,7 +21131,7 @@ Ce twin C# a **déroulé from-scratch** les heuristiques de coloration et la rec
 
 ★ **Leçon paradoxe** : les graphes de **Mycielski** (triangle-free, χ arbitrairement grand) montrent que la complexité chromatique **ne se réduit pas** à la densité de triangles — un résultat fondamental que la sortie du notebook rend tangible.
 
-**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb), backtracking ⇄ [`Search-1`](../Part1-Foundations/Search-01-StateSpace-CSharp.ipynb), CP-SAT ⇄ [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : CSP ⇄ [`CSP-1`](../Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb), backtracking ⇄ [`Search-1`](../Part1-Foundations/Search-01-StateSpace-CSharp.ipynb), CP-SAT ⇄ [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (twin Python, solveur industriel).
 
 ***
 *Marathon .NET ⇄ Python #4956 — Search/Part3-Cas-pratiques, tranche coloration de graphes. See #4956, #3801.*
@@ -21498,7 +21498,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prérequis
 - Python 3.10+, notions de graphes (sommets, aretes, adjacence)
-- [CSP-1 : Fundamentals](../Part2-CSP/CSP-01-Fundamentals-Python.ipynb) et [CSP-2 : Consistency](../Part2-CSP/CSP-02-Consistency-Python.ipynb)
+- [CSP-1 : Fundamentals](../Part2-CSP/CSP-1-Fundamentals.ipynb) et [CSP-2 : Consistency](../Part2-CSP/CSP-2-Consistency.ipynb)
 
 ### Durée estimee : 45 minutes",,,,,,,,fda61067d127d7ea,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring.ipynb,cell-intro,markdown,fr,05935eeade3b527b,"***
@@ -26514,7 +26514,7 @@ Le prolongement naturel serait de reproduire le seuil R=15 dans un run borné s�
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb,36dc407f,markdown,fr,9ae21d30e558f3ac,"# App-27 — Sparse index tracking
 ## Une recherche, deux lectures : du modèle vérifiable à l'épreuve QuantConnect
 
-**Navigation** : [Applications Search](../README.md) · [CSP-3 — CP-SAT avancé](../Part2-CSP/CSP-03-Advanced-Python.ipynb) · [CSP-5 — optimisation](../Part2-CSP/CSP-05-Optimization-Python.ipynb) · [Projet QuantConnect réel](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md)
+**Navigation** : [Applications Search](../README.md) · [CSP-3 — CP-SAT avancé](../Part2-CSP/CSP-3-Advanced.ipynb) · [CSP-5 — optimisation](../Part2-CSP/CSP-5-Optimization.ipynb) · [Projet QuantConnect réel](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md)
 
 > **Hommage à Godric Bouteloup — projet M2, EPITA SCIA 2026.** Son travail part d'une question financière concrète : peut-on suivre un indice avec peu de lignes tout en respectant budget, cardinalité, secteurs et évolution du portefeuille ? Le choix de lots entiers, de variables de sélection et d'un solveur CP-SAT donne une forme combinatoire explicite à une intuition souvent traitée uniquement par régression continue. Cette articulation entre finance et contraintes est le geste central que cette application conserve.
 
@@ -30479,7 +30479,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prerequis
 - [Search-4 : Local Search](../Part1-Foundations/Search-04-LocalSearch.ipynb) (métaheuristiques)
-- [CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb) (contraintes globales, OR-Tools)
+- [CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) (contraintes globales, OR-Tools)
 - Python : numpy, matplotlib
 
 ### Duree estimee : 60 minutes
@@ -31817,7 +31817,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb,cell-
 | **Timetabling** | Variante du JSSP avec contraintes de salle et de professeur | [App-5 Timetabling](App-5-Timetabling.ipynb) |
 | **Nurse Scheduling** | Ordonnancement de personnel (contraintes soft/hard) | [App-3 NurseScheduling](App-3-NurseScheduling.ipynb) |
 | **MiniZinc** | Langage de modelisation declaratif pour l'ordonnancement | [App-8 MiniZinc](App-8-MiniZinc.ipynb) |
-| **LNS** | Large Neighborhood Search pour les grandes instances | [CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb) |
+| **LNS** | Large Neighborhood Search pour les grandes instances | [CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) |
 
 ### References
 
@@ -31842,7 +31842,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prérequis
 - .NET 9.0 + .NET Interactive
-- [CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb)
+- [CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb)
 
 ### Durée estimee : 35 minutes
 
@@ -32018,7 +32018,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb,4c5d
 2. **Pour chaque cours**, parcourir les creneaux et salles dans l'ordre, et affecter au premier creneau+salle disponible (sans conflit salle ni enseignant)
 3. **Pas de backtracking** : si echec, le cours reste non place
 
-C'est la version séquentielle de l'algorithme MRV déjà vu dans [App-1-NQueens-CSharp](App-1-NQueens-CSharp.ipynb) et [CSP-03-Advanced-Python](../Part2-CSP/CSP-03-Advanced-Python.ipynb).",,,,,,,,96deaddfa22091fa,,,,,,,,,,,,,,,
+C'est la version séquentielle de l'algorithme MRV déjà vu dans [App-1-NQueens-CSharp](App-1-NQueens-CSharp.ipynb) et [CSP-3-Advanced](../Part2-CSP/CSP-3-Advanced.ipynb).",,,,,,,,96deaddfa22091fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb,5d6e7f8a,code,fr,98998b9bac0d6c37,"// === Heuristique gloutonne MRV ===
 
 (Dictionary<string, (string Room, int Slot)> Schedule, bool Success) GreedyTimetable()
@@ -32474,7 +32474,7 @@ Le notebook assume cette posture dans la cellule d'introduction (verdict RECOVER
 ### References
 
 - [App-1-NQueens-CSharp](App-1-NQueens-CSharp.ipynb) — backtracking + MRV
-- [CSP-03-Advanced-Python](../Part2-CSP/CSP-03-Advanced-Python.ipynb) — propagation de contraintes
+- [CSP-3-Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) — propagation de contraintes
 - [App-4-JobShopScheduling.ipynb](App-4-JobShopScheduling.ipynb) — jumeau Python avec OR-Tools
 - [App-4-JobShopScheduling-CSharp.ipynb](App-4-JobShopScheduling-CSharp.ipynb) — jumeau C# App-4 (dispatching + B&B)
 - [EPIC #3801 — SOTA ledger](../README.md)
@@ -32498,7 +32498,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prérequis
 - Python 3.10+, numpy, matplotlib, ortools
-- [CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb)
+- [CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb)
 
 ### Durée estimee : 50 minutes",,,,,,,,d1fe3d917b70f0da,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling.ipynb,cell-intro-section,markdown,fr,5f1550d15658abd5,"***
@@ -39144,7 +39144,7 @@ A la fin de ce notebook, vous saurez :
 5. **Piloter** MiniZinc depuis Python (package `minizinc` ou ligne de commande)
 
 ### Prerequis
-- Programmation par contraintes avancee ([CSP-3 : Advanced](../Part2-CSP/CSP-03-Advanced-Python.ipynb))
+- Programmation par contraintes avancee ([CSP-3 : Advanced](../Part2-CSP/CSP-3-Advanced.ipynb))
 - Notions de contraintes globales (AllDifferent, cumulative)
 - Python 3.10+
 
@@ -42113,7 +42113,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb,c814beec,
 
 - **Carnet suivant** : [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) — le même arbitrage exactitude/coût, mais appliqué au choix d'algorithme sur des résultats empiriques.
 - **Même exigence de preuve, autre formalisme** : [App-23-PRESENT-Differential-Cryptanalysis-SAT](App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) — l'affectation devient une **frontière SAT/UNSAT** : ce qui se prouvait par un coût se prouve ici par une formule.
-- **Le solveur de contraintes** : [CSP-03-Advanced-Python](../Part2-CSP/CSP-03-Advanced-Python.ipynb) — l'encodage CP-SAT de la section 7, en version générale.
+- **Le solveur de contraintes** : [CSP-3-Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) — l'encodage CP-SAT de la section 7, en version générale.
 - **Lecture** : Kuhn (1955), « The Hungarian Method for the Assignment Problem », *Naval Research Logistics Quarterly* ; Munkres (1957), « Algorithms for the Assignment and Transportation Problems », *J. SIAM* 5(1) ; Tymoczko, *A Geometry of Music* (Oxford University Press, 2011), chapitre 4.
 ",,,,,,,,660714a87a6cc0d4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb,1e376d30,markdown,fr,3c9d9a23c9c0ef21,"## À retenir
@@ -42141,7 +42141,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptan
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb,41756877,markdown,fr,c99e940d29c10c47,"## Pour aller plus loin
 
 - **Carnet suivant** : [App-27-Sparse-Index-Tracking-Walk-Forward](App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) — l'autre lecture du protocole : ici la frontière est **prouvée** par un solveur, là-bas elle est **mesurée** par un walk-forward.
-- **Le solveur de contraintes** : [CSP-03-Advanced-Python](../Part2-CSP/CSP-03-Advanced-Python.ipynb) — le passage d'une relation booléenne à une contrainte arithmétique, avec la notion de borne.
+- **Le solveur de contraintes** : [CSP-3-Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) — le passage d'une relation booléenne à une contrainte arithmétique, avec la notion de borne.
 - **Sélection empirique** : [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) — choisir un solveur sur des résultats mesurés plutôt que sur une préférence.
 
 ",,,,,,,,c99e940d29c10c47,,,,,,,,,,,,,,,
@@ -42171,7 +42171,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-F
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb,3e84a82c,markdown,fr,2dfa026f4a88fb06,"## Pour aller plus loin
 
 - **Carnet voisin** : [App-10-Portfolio](App-10-Portfolio.ipynb) — la construction du portefeuille de référence que l'on cherche ici à répliquer, et son jumeau .NET.
-- **Le solveur** : [CSP-03-Advanced-Python](../Part2-CSP/CSP-03-Advanced-Python.ipynb) — l'encodage CP-SAT en lots entiers et la notion de borne et de gap.
+- **Le solveur** : [CSP-3-Advanced](../Part2-CSP/CSP-3-Advanced.ipynb) — l'encodage CP-SAT en lots entiers et la notion de borne et de gap.
 - **L'épreuve de marché** : [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) — les résultats QuantConnect du même sujet, à lire pour leurs ordres et leur turnover, pas pour un score.
 
 ",,,,,,,,2dfa026f4a88fb06,,,,,,,,,,,,,,,

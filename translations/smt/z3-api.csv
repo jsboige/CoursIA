@@ -6552,7 +6552,7 @@ A la fin de ce notebook, vous saurez :
 
 ## Verdict SOTA
 
-Ce notebook utilise **Z3** (le solveur SMT de Microsoft Research, leader du concours SMT-COMP pour la théorie QF_LIA) -- le moteur SOTA pour la verification de contraintes lineaires entières. Pour des colorations de graphes a grande echelle (> 10^5 sommets), on peut utiliser **OR-Tools CP-SAT** (Google, cf CSP-08-Temporal-Python) ou des algorithme approches (DSATUR, Welsh-Powell).
+Ce notebook utilise **Z3** (le solveur SMT de Microsoft Research, leader du concours SMT-COMP pour la théorie QF_LIA) -- le moteur SOTA pour la verification de contraintes lineaires entières. Pour des colorations de graphes a grande echelle (> 10^5 sommets), on peut utiliser **OR-Tools CP-SAT** (Google, cf CSP-8-Temporal) ou des algorithme approches (DSATUR, Welsh-Powell).
 
 ## Verbatim code[0] : setup
 
@@ -7161,7 +7161,7 @@ La coloration de graphe cristallise la différence entre **heuristique** et **pr
 
 - **DSATUR** (Daniel Brélaz 1979) : heuristique qui colore en prioritant les sommets satures. Souvent optimale.
 - **Welsh-Powell** : variante du glouton qui ordonne par degré decroissant. Optimal pour les graphes d'intervalles.
-- **OR-Tools CP-SAT** : solveur specialise pour les problemes combinatoires (cf CSP-08-Temporal-Python).
+- **OR-Tools CP-SAT** : solveur specialise pour les problemes combinatoires (cf CSP-8-Temporal).
 - **Polynome chromatique** : formule exacte de P(G, k), calculable par deletion-contraction.
 - **Théorème des 4 couleurs** (Appel-Haken 1977) : tout graphe planaire est 4-coloriable. La preuve a ete partiellement assistee par ordinateur.
 

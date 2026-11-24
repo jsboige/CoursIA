@@ -5239,7 +5239,7 @@ MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-02-P-NP-Reduction-Pyth
 
 - **Carnet suivant** : [Complexity-03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb) — l'idée de hiérarchie temporelle : donner plus de temps peut ouvrir de nouveaux problèmes, mais il faut le **prouver**, pas seulement comparer deux programmes.
 - **Dans la même série** : [Complexity-02b — le seuil du 3-SAT](Complexity-02b-SAT-PhaseTransition-Python.ipynb) — la densité comme variable de contrôle, à $n$ fixé ; [Complexity-02c — le seuil sans mur](Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb) — un contre-exemple propre, où la transition de satisfaisabilité ne s'accompagne d'aucun mur de coût.
-- **Carnet voisin d'une autre série** : [CSP-2 — Consistency](../Search/Part2-CSP/CSP-02-Consistency-Python.ipynb) — la satisfiabilité par propagation de contraintes, mesurée dans une autre série.
+- **Carnet voisin d'une autre série** : [CSP-2 — Consistency](../Search/Part2-CSP/CSP-2-Consistency.ipynb) — la satisfiabilité par propagation de contraintes, mesurée dans une autre série.
 - **Lectures** : Impagliazzo et Paturi (2001), *On the Complexity of k-SAT*, J. Comput. Syst. Sci. 62-2 (copie archivée au gisement partagé, dossier `Bibliographie IA/Automata/`) ; Dechter, *Constraint Processing* (2003) — la famille des solveurs par retour arrière et la façon de mesurer leur coût (dossier `Bibliographie IA/Constraint Programming/`).",,,,,,,,b397f7e67651afb4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,finition-03-a-retenir,markdown,fr,aa87598c50f51cb2,"## À retenir
 
@@ -5266,7 +5266,7 @@ MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporell
 
 - **Carnet suivant** : [Complexity-04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb) — l'algorithme en ligne : la même question de coût, mais l'information arrive dans le désordre.
 - **Dans la même série** : [Complexity-03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) — le théorème réel et son instrumentation pas à pas ; [Complexity-03c — Naviguer le Zoo exécutable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) — les deux mondes d'oracles, exécutés.
-- **Carnet voisin d'une autre série** : [CSP-1 — Fundamentals](../Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb) — l'espace de recherche et son coût mesuré, dans une autre série.
+- **Carnet voisin d'une autre série** : [CSP-1 — Fundamentals](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) — l'espace de recherche et son coût mesuré, dans une autre série.
 - **Lectures** : Baker, Gill et Solovay (1975), *Relativizations of the P=?NP Question*, SIAM J. Comput. 4-4 — le théorème des oracles qui borne la diagonalisation (copie archivée au gisement partagé, dossier `Bibliographie IA/Automata/`) ; Impagliazzo et Paturi (2001), *On the Complexity of k-SAT* (même dossier).",,,,,,,,45f09bed70ce6788,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,finition-03b-a-retenir,markdown,fr,5daeea59626ec71e,"## À retenir
 
@@ -5322,7 +5322,7 @@ MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03c-ComplexityZoo-Navi
 
 - **Carnet suivant** : [Complexity-03d — la réfutation annoncée de l'ETH](Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb) — une annonce de réfutation, lue à la source et confrontée au mur mesuré.
 - **Dans la même série** : [Complexity-04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb) — l'algorithme en ligne, l'autre moitié du Zoo ; [Complexity-05 — Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent-Python.ipynb) — la classe #P et la permanent.
-- **Carnet voisin d'une autre série** : [CSP-3 — Advanced](../Search/Part2-CSP/CSP-03-Advanced-Python.ipynb) — le solveur SAT et ses budgets, dans une autre série.
+- **Carnet voisin d'une autre série** : [CSP-3 — Advanced](../Search/Part2-CSP/CSP-3-Advanced.ipynb) — le solveur SAT et ses budgets, dans une autre série.
 - **Lectures** : Baker, Gill et Solovay (1975), *Relativizations of the P=?NP Question* (copie archivée au gisement partagé, dossier `Bibliographie IA/Automata/`) ; *The CP-SAT Primer — Using and Understanding Google OR-Tools' CP-SAT Solver* (2023), pour le solveur SAT de référence et la lecture de ses coûts (dossier `Bibliographie IA/Constraint Programming/`).",,,,,,,,d28b26c9f9ea3616,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,fin-verif-04,markdown,fr,e08ad56078bea1da,"## Vérifiez votre compréhension
 
