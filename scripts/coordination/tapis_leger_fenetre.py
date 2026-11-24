@@ -14,6 +14,12 @@ EPAISSE) et n'en confirme que **8** -- la file rendue sans elle etait servie a
 deux tiers de grains que la qualification refusait ensuite. Un refus porte son
 code et son motif ; un grain **non qualifie** n'est PAS servi (fail-CLOSED :
 une decision qui n'a pas pu etre prise refuse le grain).
+
+**Une file confirmee VIDE n'est pas un service** (revue du 24/11) : quand la
+qualification ne confirme aucun grain — le mur atteint avant tout verdict, ou
+une fenetre entierement refusee — le **repli chronologique** prend le relais,
+comme le fait le cap de livraisons. Les grains **non qualifies** restent
+DECLARES dans le rapport ; aucun n'est servi en silence.
 """
 from __future__ import annotations
 
@@ -119,6 +125,22 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         print(f"Qualification en echec ({erreur}) : repli chronologique.",
               file=sys.stderr)
         return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+    if not file:
+        # Une file CONFIRMEE VIDE n'est pas un service : la lane s'eteint
+        # (mandat #28114, « file sans fin par lane »). Deux causes, un meme
+        # geste : le mur atteint avant tout verdict, ou une fenetre
+        # entierement refusee (mesure du 24/11 : 16 des 24 candidats refuses,
+        # pour une marge de 3 -- elle est mince). Le repli chronologique prend
+        # le relais, comme le fait le cap de livraisons ; les grains NON
+        # QUALIFIES restent DECLARES dans le rapport, jamais servis en
+        # silence (fail-CLOSED).
+        r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
+                                     depot)
+        q = dict(r.get("qualification") or {})
+        q.update(qualif or {})
+        q["repli"] = ("file confirmee vide : repli chronologique")
+        r["qualification"] = q
+        return r, code
     r = rapport(lane, graine, maintenant, classe["metas"],
                 phases["selection_s"], secondes, budget_s, classe["etats"],
                 file, classe["prs"], origami, phases, fenetre, qualif)
@@ -170,4 +192,7 @@ def texte_qualification(q: dict) -> list[str]:
         suite = " ..." if len(q["non_qualifies"]) > 12 else ""
         lignes.append(f"  {len(q['non_qualifies'])} grain(s) non qualifies (mur) : "
                       f"{apercu}{suite} -- ils reviendront au tour suivant.")
+    if q.get("repli"):
+        lignes.append(f"  {q['repli']} -- la file confirmee etait vide ; "
+                      f"la file servie vient du repli chronologique.")
     return lignes
