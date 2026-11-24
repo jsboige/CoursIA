@@ -1,0 +1,11 @@
+- name: "RL-06b Actor Critic"
+  family: RL/.NET-Parity
+  python: MyIA.AI.Notebooks/RL/RL-06b-Actor-Critic-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-06b-Actor-Critic-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "TorchSharp CPU 0.107.0 fournit autograd et Adam réels ; CartPole natif est comparé à Gymnasium réel via PythonNetLoader et pythonnet."
+  known_differences:
+    - "Le reset et la sélection catégorielle utilisent System.Random : les graines ne reproduisent pas bit à bit NumPy et PyTorch."
+    - "Les figures SVG sont statiques et les trois exercices restent ouverts ; le noyau affiche sa version .NET effective."
+    - "Le noyau local exécute .NET 10 et émet CS1701 pour TorchSharp net8 ; les modèles BCL/TorchSharp compilent et tournent avec le SDK .NET 9.0.320. Gymnasium 1.2.3 est requis pour l’oracle."

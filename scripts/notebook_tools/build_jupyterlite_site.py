@@ -417,7 +417,16 @@ def construire(source_dir: Path, output_dir: Path,
                          cwd=str(source_dir))
     journal = [ligne for ligne in (res.stdout or "").splitlines() if ligne.strip()]
     if res.returncode != 0:
-        detail = (res.stderr or res.stdout or "")[-2000:]
+        # Les DEUX flux sont rapportes, etiquetes. L'echec de `jupyter lite
+        # build` est ecrit sur **stdout** (doit : `TaskError` -> traceback),
+        # tandis que **stderr** ne porte que des avertissements (`No module
+        # named 'jupyter_server'`, ...) : ne rapporter que stderr masquait la
+        # vraie ligne d'erreur -- le job CI ne montrait que des avertissements
+        # et un `rc=2` sans cause (mesure : pages-deploy-rouge, 24/11).
+        detail = "\n".join(
+            "%s:\n%s" % (nom, flux)
+            for nom, flux in (("stderr", res.stderr), ("stdout", res.stdout))
+            if flux and flux.strip())[-4000:]
         raise RuntimeError("jupyter lite build a echoue (rc=%d) :\n%s"
                            % (res.returncode, detail))
     return journal
@@ -473,6 +482,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                                stdlib_names, wheel_cache)
 
     poses = stage(root, publie, source_dir)
+    # Un lot publie **vide** n'est pas un cas de build : c'est un cas de
+    # suffisance (tous les candidats refuses). Le dire ici evite le message
+    # cryptique de `jupyter lite build` sur un site sans contenu
+    # (`jupyter-lite.(json|ipynb): 0 files`), qui ne nomme aucune cause
+    # (mesure : pages-deploy-rouge, 24/11).
+    if not poses["carnets"]:
+        print("lot publie vide : %d candidat(s), tous refuses par suffisance -- "
+              "rien a construire" % len(lot_notebooks), file=sys.stderr)
+        for chemin, motifs in refus:
+            print("  REFUS %s : %s" % (chemin, " ; ".join(motifs)), file=sys.stderr)
+        return 1
     try:
         base_url = verifier_base_url(args.base_url)
     except ValueError as erreur:
