@@ -50,7 +50,7 @@ from fast_lane_registry import TRANCHE51  # noqa: E402
 from fast_lane_registry import TOPLEVEL_SERIES_GUARDS  # noqa: E402
 from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 from fast_lane_registry import TRANCHE54  # noqa: E402  # #27611, meme motif
-from fast_lane_registry import TRANCHE55  # noqa: E402  # #13902, meme motif
+from fast_lane_registry import TRANCHE56  # noqa: E402  # #13902, meme motif
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
@@ -924,10 +924,10 @@ def main(argv: list[str] | None = None) -> int:
               # PRs en vol).
               + TRANCHE55
               + TRANCHE54
-              # #13902 : tranche 55 ajoutee sur la meme ligne que la 54 (ligne
+              # #13902 : tranche 56 ajoutee sur la meme ligne que la 54 (ligne
               # isolee de la chaine ci-dessous, qui est modifiee par d'autres
               # PRs en vol).
-              + TRANCHE55
+              + TRANCHE56
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
