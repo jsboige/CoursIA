@@ -78,7 +78,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 
 | # | Notebook | Ce qu'on y apprend |
 |---|----------|---------------------|
-| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** — jumeau [C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
+| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** — jumeau [C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) · [jumeau Rust](Z3-13b-UnsatCores-MUS-Rust.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
 
 ### Autour de 16
 
