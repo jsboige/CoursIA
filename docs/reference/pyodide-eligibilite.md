@@ -139,7 +139,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | gateway | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 |
 | kelly_lean | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | partner-course-quant-trading | 7 | 0 | 7 | 0 | 0 | 0 | 5 | 4 |
-| projects | 113 | 5 | 108 | 10 | 0 | 2 | 65 | 53 |
+| projects | 113 | 5 | 108 | 10 | 0 | 3 | 65 | 53 |
 | research | 26 | 5 | 21 | 4 | 0 | 0 | 4 | 17 |
 | scripts/notebook_tools | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 

@@ -832,7 +832,7 @@ MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/quantbook.ipynb	project
 MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/research.ipynb	projects	suffisance	suffisance=absent_distribution:yfinance : absent de la distribution
 MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA/research.ipynb	projects	import_absent	import_absent=AlgorithmImports
-MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
+MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/quantbook.ipynb	projects	import_absent,reseau	reseau=cdn.cboe.com;import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/research.ipynb	projects	import_absent	import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/Options-VGT/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/OptionsIncome/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
