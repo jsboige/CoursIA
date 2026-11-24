@@ -31,7 +31,7 @@ La sous-série n'a pas de palier lettré. Ses approfondissements sont des sectio
 
 La section 7 de Jauge-03 quitte le réseau. Dans une théorie de Chern–Simons, la valeur moyenne d'une boucle de Wilson est un invariant de nœud. Le carnet construit une R-matrice et vérifie exactement ses relations : inversibilité, Yang–Baxter, Hecke. Il en tire le polynôme de Jones des nœuds $3_1$, $4_1$ et $5_1$, avec la loi du miroir, puis sa spécialisation aux premiers niveaux de la théorie.
 
-Le carnet [KNOTS-02 — Invariants de nœuds](../../SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) calcule les mêmes polynômes par une voie indépendante. Les deux calculs se contrôlent l'un l'autre.
+Le carnet [KNOTS-02 — Invariants de nœuds](../../SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb) calcule les mêmes polynômes par une voie indépendante. Les deux calculs se contrôlent l'un l'autre.
 
 ### Autour de 03 : l'énoncé d'existence Yang–Mills
 
@@ -67,7 +67,7 @@ Les tirages aléatoires de Jauge-03 et de Jauge-04 sont semés. Le Monte Carlo d
 
 **Formalisation.** Jauge-01 relève que le théorème de Noether n'est pas formalisé dans Mathlib. L'énoncé d'existence de la section 8 de Jauge-03 est, lui, un objet formel : sa cartographie dit ce qui y est prouvé et ce qui reste hors périmètre.
 
-**Ponts.** [Constructeur](../Constructeur/README.md) relit une conservation comme un énoncé de tâche impossible. La géométrie des rayons de Jauge-04 rejoint les représentations 3D étudiées dans [GenAI/3D](../../GenAI/3D/README.md). La sous-série [KNOTS](../../SymbolicAI/Lean/KNOTS/README.md) reprend les invariants de nœuds de la section 7.
+**Ponts.** [Constructeur](../Constructeur/README.md) relit une conservation comme un énoncé de tâche impossible. La géométrie des rayons de Jauge-04 rejoint les représentations 3D étudiées dans [GenAI/3D](../../GenAI/3D/README.md). La sous-série [KNOTS](../../SymbolicAI/Lean/Noeuds/README.md) reprend les invariants de nœuds de la section 7.
 
 ## Ressources — tous niveaux
 

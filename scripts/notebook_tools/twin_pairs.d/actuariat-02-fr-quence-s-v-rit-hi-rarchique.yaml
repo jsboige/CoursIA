@@ -1,0 +1,11 @@
+- name: "Actuariat-02 Fréquence sévérité hiérarchique"
+  family: Probas/DecisionTheory/Actuariat
+  python: MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux côtés exécutent le vrai modèle PyMC et pm.sample pour préserver le posterior joint non conjugué. Le C# prépare les données, calcule les références, analyse les sorties et construit les figures."
+  known_differences:
+    - "Les générateurs NumPy et System.Random/MathNet diffèrent. La comparaison des méthodes et les diagnostics sont rapportés sur leurs propres données. Le port observe notamment un meilleur rRMSE du no-pooling global sur ce tirage, avec sigma vrai donné à cette référence."
+    - "Deux chaînes NUTS sont exécutées séquentiellement via pythonnet dans le modèle principal. Les trois expériences de sensibilité restent à une chaîne, sans r-hat, et leurs divergences sont rapportées."
+    - "Les chiffres du README de série se rapportent au carnet Python d’origine. Le C# conserve les expériences, les trois exercices ouverts et des figures SVG produites par le noyau .net-csharp (.NET 10.0.14)."
