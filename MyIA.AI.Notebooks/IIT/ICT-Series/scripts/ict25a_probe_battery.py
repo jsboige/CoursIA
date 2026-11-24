@@ -227,7 +227,18 @@ def chemin_artefact(racine: os.PathLike | str, bras: str, graine: int, etape: in
 def _vers_numpy(tenseur) -> np.ndarray:
     if isinstance(tenseur, np.ndarray):
         return tenseur
-    return np.asarray(tenseur.detach().cpu().numpy(), dtype=np.float64)
+    detach = tenseur.detach()
+    try:
+        return np.asarray(detach.cpu().numpy(), dtype=np.float64)
+    except TypeError:
+        # **bfloat16 -> float32 avant numpy** (mesure du 2026-11-24 : numpy ne
+        # sait pas lire le `ScalarType BFloat16` de torch -- `TypeError: Got
+        # unsupported ScalarType BFloat16`). Le cast se fait par la methode
+        # `.float()` du tenseur : aucun import torch, et un tenseur de test
+        # dont la conversion reussit ne passe jamais par ce chemin.
+        if not hasattr(detach, "float"):
+            raise
+        return np.asarray(detach.float().cpu().numpy(), dtype=np.float64)
 
 
 def forward_transformers(model, tokenizer, prompt: str,
@@ -246,8 +257,23 @@ def forward_transformers(model, tokenizer, prompt: str,
 
     L'appelant (le runner) coupe le gradient : ce module ne manipule aucun
     objet torch, et un modele de test peut donc le piloter sur CPU.
+
+    **Les entrees du tokenizer sont deplacees sur le peripheral du modele**
+    (mesure du 2026-11-24 : un `tokenizer(..., return_tensors="pt")` rend des
+    tenseurs **CPU**, et un modele charge sur `cuda:0` refuse alors
+    `Expected all tensors to be on the same device, but got index is on cpu`).
+    Le deplacement passe par l'attribut `device` du modele -- pas d'import
+    torch : un modele sans `device` (CPU, modele de test) est laisse intact.
     """
     entrees = tokenizer(prompt, return_tensors="pt")
+    peripherique = getattr(model, "device", None)
+    if peripherique is not None:
+        if hasattr(entrees, "to"):
+            entrees = entrees.to(peripherique)
+        else:
+            entrees = {cle: (valeur.to(peripherique)
+                             if hasattr(valeur, "to") else valeur)
+                       for cle, valeur in entrees.items()}
     sorties = model(**entrees, output_hidden_states=True)
     etats = getattr(sorties, "hidden_states", None)
     if not etats:

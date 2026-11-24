@@ -195,9 +195,18 @@ class _FauxTenseur:
         return _FauxTenseur(self._valeurs[indice])
 
 
+class _FauxTenseurBFloat16(_FauxTenseur):
+    """Tenseur dont `.numpy()` echoue comme un `bfloat16` de torch."""
+
+    def numpy(self):
+        raise TypeError("Got unsupported ScalarType BFloat16")
+
+    def float(self):
+        return _FauxTenseur(self._valeurs.astype(np.float32))
+
+
 class _FauxModele:
     """Modele transformers minimal : deux couches cachees, distinctes."""
-
     def __init__(self):
         self.derniere_prompt = None
 
@@ -232,6 +241,65 @@ def test_forward_transformers_lit_la_couche_demandee():
 def test_forward_transformers_couche_hors_plage_refusee():
     with pytest.raises(IndexError):
         probe.forward_transformers(_FauxModele(), _FauxTokenizer(), "p", couche=5)
+
+
+class _FauxEntrees(dict):
+    """Entrees de tokenizer qui savent se deporter (`BatchEncoding`-like)."""
+
+    def __init__(self, charge):
+        super().__init__(charge)
+        self.peripherique = None
+
+    def to(self, peripherique):
+        self.peripherique = peripherique
+        return self
+
+
+class _FauxTokenizerDeportable:
+    def __init__(self):
+        self.entrees = None
+
+    def __call__(self, prompt, return_tensors=None):
+        self.entrees = _FauxEntrees({"input_ids": prompt})
+        return self.entrees
+
+
+class _FauxModeleSurPeripherique(_FauxModele):
+    """Modele qui expose un `device` : ses entrees doivent le rejoindre."""
+
+    def __init__(self, peripherique="cuda:0"):
+        super().__init__()
+        self.device = peripherique
+
+
+def test_forward_transformers_deplace_les_entrees_sur_le_peripherique():
+    """Regression du 2026-11-24 : les entrees CPU du tokenizer etaient
+    envoyees telles quelles a un modele sur `cuda:0` -- le run GPU echouait
+    sur `Expected all tensors to be on the same device`."""
+    modele = _FauxModeleSurPeripherique("cuda:0")
+    tokenizer = _FauxTokenizerDeportable()
+    probe.forward_transformers(modele, tokenizer, "Combien font 3+4 ?")
+    assert tokenizer.entrees.peripherique == "cuda:0"
+
+
+def test_forward_transformers_laisse_un_modele_sans_device_intact():
+    """Un modele sans attribut `device` (CPU, modele de test) n'est pas
+    deplace : le contrat de duck-typage reste tenu."""
+    modele = _FauxModele()
+    tokenizer = _FauxTokenizerDeportable()
+    probe.forward_transformers(modele, tokenizer, "Combien font 3+4 ?")
+    assert tokenizer.entrees.peripherique is None
+
+
+def test_vers_numpy_accepte_un_bfloat16():
+    """Regression du 2026-11-24 : `numpy` ne lit pas le `ScalarType
+    BFloat16` de torch -- l'activation du modele (bfloat16) rendait
+    `TypeError: Got unsupported ScalarType BFloat16`. Le passage par
+    `.float()` avant numpy est le correctif."""
+    tenseur = _FauxTenseurBFloat16([[1.5, 2.5], [3.5, 4.5]])
+    valeurs = probe._vers_numpy(tenseur)
+    assert valeurs.dtype == np.float64
+    assert np.allclose(valeurs, [[1.5, 2.5], [3.5, 4.5]])
 
 
 def test_charger_batterie_lit_le_json(tmp_path):
