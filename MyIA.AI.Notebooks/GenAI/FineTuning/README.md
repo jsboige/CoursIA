@@ -45,8 +45,8 @@ FineTuning/
 
 | Notebook | Sujet | Prérequis | Durée | Niveau |
 |----------|-------|-----------|-------|--------|
-| [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
-| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
+| [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) ([C#](FT-00a-LoRA-from-scratch-CSharp.ipynb)) | LoRA from scratch : `LoRALinear`/`LoRAConv2d` en PyTorch pur, initialisation canonique, fusion et sa dérive | Bases PyTorch | ~30 min | Intermédiaire |
+| [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb) ([C#](FT-00b-LoRA-Hyperparams-from-scratch-CSharp.ipynb)) | Ablation `r × alpha` from scratch : sweet-spots mesurés sur 18 configurations, comparaisons aux baselines | FT-00a | ~15 min | Intermédiaire |
 | [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
 | [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
 | [FT-03](FT-03-Supervised-FineTuning-SFT-Python.ipynb) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
@@ -222,3 +222,9 @@ Si le modèle merge (FT-05) perd en qualité par rapport aux adaptateurs individ
 - **QLoRA paper** : https://arxiv.org/abs/2305.14314
 - **DPO paper** : https://arxiv.org/abs/2305.18290
 - **MergeKit** : https://github.com/arcee-ai/mergekit
+
+
+Les compagnons C# [FT-00a](FT-00a-LoRA-from-scratch-CSharp.ipynb) et [FT-00b](FT-00b-LoRA-Hyperparams-from-scratch-CSharp.ipynb) utilisent .NET Interactive et TorchSharp-cpu 0.107.0. Placer les quatre archives Fashion-MNIST originales dans un dossier et définir `COURSIA_FASHION_MNIST` vers ce dossier avant exécution. FT-00b lit les indices PCG64 figés dans [FT-00b-fashion-indices.json](FT-00b-fashion-indices.json) et vérifie leur empreinte SHA-256.
+
+
+Les archives officielles sont disponibles dans le [dépôt Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist/tree/master/data/fashion) : `train-images-idx3-ubyte.gz`, `train-labels-idx1-ubyte.gz`, `t10k-images-idx3-ubyte.gz` et `t10k-labels-idx1-ubyte.gz`. Conserver le JSON d’indices de FT-00b à côté du carnet et l’exécuter depuis ce dossier.

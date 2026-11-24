@@ -99,6 +99,27 @@ _JOURNAL_FAILURE_WORDS = re.compile(
 _JOURNAL_TAIL_LINES = 8
 _CONSECUTIVE_FAILURES = 2
 
+# #28005 (PR #28006) : pendant une passe, le journal de la tache `merge_ready`
+# ecrit un BATTEMENT DE COEUR toutes les 60 s -- la ligne
+# `=== passe en cours (elapsed N s) ===` -- pour que l'AGE du journal reste
+# frais. Ce battement rend une PASSE BLOQUEE invisible : l'age du journal
+# reste sous le seuil alors que l'enfant ne progresse plus, et la ligne de
+# battement ne porte aucun vocabulaire d'echec -- `_journal_verdict` la
+# classait GREEN. Avant ce correctif, une passe figee sortait en ROUGE au
+# bout de 60 min ; apres, elle ne sort plus. Le faux positif est corrige en
+# echange d'un faux negatif : on lit donc l'AGE que la ligne porte.
+#
+# La ligne porte une MESURE (`elapsed N s`), pas une intention : c'est le
+# seul chiffre qui distingue « passe longue » de « passe figee ».
+_HEARTBEAT_ELAPSED = re.compile(r"passe en cours \(elapsed (\d+) s\)", re.IGNORECASE)
+#: Au-dela de 2 h, la passe est LONGUE (AMBER) : la limite par defaut de
+#: `schtasks /Create /SC MINUTE` est de 72 h, une passe de 4 h est anormale
+#: sans etre encore figee.
+_PASS_LONG_S = 2 * 3600
+#: Au-dela de 6 h, la passe est FIGEE (ROUGE) : le battement continue
+#: d'ecrire, donc l'age du journal ne peut plus rien dire.
+_PASS_STUCK_S = 6 * 3600
+
 
 def _age_min(now: float, path: Path) -> int:
     """Age en minutes d'une source de vivacite (mtime). Entier, jamais negatif."""
@@ -117,6 +138,18 @@ def _journal_tail(path: Path, limit: int = _JOURNAL_TAIL_LINES) -> list[str]:
     return [ln.strip() for ln in raw.splitlines() if ln.strip()][-limit:]
 
 
+def _pass_elapsed_s(line: str) -> int | None:
+    """Age d'une passe, en secondes, si la ligne est un battement de coeur.
+
+    `None` si la ligne ne porte pas la mesure (ligne d'un autre organe, ou
+    journal sans battement -- l'age du journal suffit alors).
+    """
+    if not line:
+        return None
+    m = _HEARTBEAT_ELAPSED.search(line)
+    return int(m.group(1)) if m else None
+
+
 def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
     """(niveau, ligne_lue, tirs_identiques) de la queue d'un journal d'organe.
 
@@ -126,6 +159,11 @@ def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
     signature reconnue. Un tir nominal (`rc=0`) ou une ligne isolee sans
     vocabulaire d'echec restent GREEN : la regularite d'un organe sain ne
     doit pas alerter.
+
+    Exception : un BATTEMENT DE COEUR de passe (`elapsed N s`, #28005) est
+    lu par son age -- AMBER au-dela de 2 h, ROUGE au-dela de 6 h. Sans cela,
+    une passe figee resterait GREEN parce que le battement repare l'age du
+    journal (le faux negatif qu'il introduit).
     """
     if not lines:
         return GREEN, "", 0
@@ -135,6 +173,12 @@ def _journal_verdict(lines: list[str]) -> tuple[str, str, int]:
         if prev != last:
             break
         same += 1
+    elapsed = _pass_elapsed_s(last)
+    if elapsed is not None:
+        if elapsed >= _PASS_STUCK_S:
+            return RED, last, same
+        if elapsed >= _PASS_LONG_S:
+            return AMBER, last, same
     m = _RUN_END_RC.search(last)
     if m and int(m.group(1)) == 0:
         return GREEN, last, same
@@ -538,6 +582,11 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
         content_level, last_line, same = _journal_verdict(
             _journal_tail(last_log) if last_log is not None else [])
         excerpt = (last_line[:160] + "...") if len(last_line) > 160 else last_line
+        # Les deux apports sont conserves : `main` lit desormais la
+        # vivacite sur TOUTES les sources (log de lancement + journal de
+        # travail), et la branche ajoute la detection d'une passe FIGEE --
+        # le battement de coeur ecrit, la passe n'avance plus.
+        pass_elapsed = _pass_elapsed_s(last_line)
         data = {
             "age_min": age_min,
             "source": source_label,
@@ -558,10 +607,32 @@ def check_scheduled_organs(local_appdata: Path | None = None, now: float | None 
                     data,
                 )
             )
+        elif content_level == RED and pass_elapsed is not None:
+            checks.append(
+                Check(
+                    label,
+                    RED,
+                    f"passe figee depuis {pass_elapsed} s ({pass_elapsed // 3600} h) -- "
+                    f"le battement de coeur continue d'ecrire mais la passe n'avance plus : {excerpt}",
+                    query,
+                    data,
+                )
+            )
         elif content_level == RED:
             repet = f" -- {same} tirs consecutifs identiques" if same >= _CONSECUTIVE_FAILURES else ""
             checks.append(
                 Check(label, RED, f"journal frais mais le dernier tir a echoue : {excerpt}{repet}", query, data)
+            )
+        elif content_level == AMBER and pass_elapsed is not None:
+            checks.append(
+                Check(
+                    label,
+                    AMBER,
+                    f"passe longue : {pass_elapsed} s ({pass_elapsed // 3600} h) "
+                    f"depuis le dernier battement de coeur : {excerpt}",
+                    query,
+                    data,
+                )
             )
         elif content_level == AMBER:
             checks.append(

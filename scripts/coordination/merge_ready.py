@@ -73,6 +73,17 @@ nommee :
    absentes ici (sommet de pile perime) -> skip ``stack-top:<parente>`` ;
    index illisible (``None``) -> fail-open assume (convention UNKNOWN !=
    rouge forge), etat ``unmeasured`` journalise avec ses incidents ;
+3bis. prelecture REST : ``repos/jsboige/CoursIA/pulls/<N>`` ->
+   ``mergeable_state`` et ``head.sha``, budget COURT (#26799). Placee
+   AVANT l'etape 4 : elle ne coute qu'une lecture, alors que les etapes
+   qui suivent (B.0, collisions twin et slot) coutent ~150 s par PR
+   (#26799, mesure : 90 s + 52 s + 8 s sur une PR bloquee). Une PR dont
+   l'etat est ``blocked`` est donc refusee en ~1 s au lieu de ~150 s.
+   Etat ni ``clean`` ni ``unstable`` -> skip ``mergeable-state:<etat>``
+   (les etats « en cours de calcul » sont PARKES et rejouees en fin de
+   passe) ; tete REST differente de la tete de la vue -> skip
+   ``head-moved``. L'etape 6 reste la garde finale : elle relit l'etat
+   et la tete au moment du merge.
 4. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
@@ -276,6 +287,7 @@ COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
+TWIN_ATTEST_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_attestation_squash.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # Issue #20774 : au merge, le slot-reservation-guard doit lire la source
 # `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
@@ -2490,6 +2502,76 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def twin_attestation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.ter : l'attestation jumelle doit decrire l'ARBRE DE FUSION.
+
+    Le squash-merge re-hashe l'arbre : un blob atteste sur la branche peut ne
+    jamais atterrir sur `main`. Le test
+    ``test_audit_shas_exist_in_file_history`` verifie que le sha atteste par la
+    derniere attestation d'une paire est un blob que le carnet a reellement eu
+    dans son historique, sous le path declare -- un sha qui n'atterrit jamais
+    sur `main` le fait rougir.
+
+    La CI de PR ne voit pas cette classe : elle travaille sur
+    ``refs/pull/N/merge``, ou les commits intermediaires restent joignables ;
+    seul l'arbre de fusion revele l'orphelin. D'ou la place de cette porte :
+    elle est la DERNIERE ligne de defense, celle qui evite que `main` ne
+    rougisse (mesure du 2026-11-23 : `test_audit_shas_exist_in_file_history` a
+    gele `main` environ 3 h ; les squashes de #28094 et #27869 ont orpheline
+    des ``csharp_sha``).
+
+    Cout nul pour les PRs qui ne touchent pas le registre twin (filtre
+    prefixe). Pour les autres : un fetch, puis l'organe partage
+    (``check_twin_attestation_squash.py``), qui simule le squash et compare la
+    derniere attestation de chaque paire touchee aux blobs de l'arbre de
+    fusion.
+
+    Fail-closed, sans exception : un timeout, une sortie vide, une lecture
+    impossible ou un conflit de fusion font sauter le merge. « Je n'ai pas pu
+    lire » n'est jamais « c'est propre » -- c'est la regle que 5bis applique
+    deja pour les collisions d'index.
+
+    Codes de l'organe : 0 = conforme, 1 = defaut trouve (MISMATCH, NODESC,
+    CONFLICT), 2 = mesure impossible.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-attestation-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, _repo_relative(TWIN_ATTEST_PATH),
+         "--base", "origin/main", "--head", head, "--json"]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 2:
+        # Mesure impossible : timeout, erreur git, sortie vide.
+        return "twin-attestation-unreadable:rc=2"
+    # rc = 1 : l'organe a lu et a trouve un defaut. Le motif nomme la paire
+    # et les cotes en cause -- il est journalise tel quel.
+    try:
+        data = json.loads(res.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return "twin-attestation-unreadable:sortie-illisible"
+    if not isinstance(data, dict):
+        return "twin-attestation-unreadable:sortie-illisible"
+    verdict = str(data.get("verdict") or "?").lower()
+    reason = str(data.get("reason") or "").strip()
+    if not reason:
+        return f"twin-attestation-{verdict}:defaut-non-nomme"
+    return f"twin-attestation-{verdict}:{reason[:180]}"
+
+
 def slot_reservation_reason(
     runner: Runner, pr: int, head: str, files: list[dict]
 ) -> str | None:
@@ -3177,8 +3259,10 @@ def evaluate_pr(
     Les controles bon marche (brouillon, perimetre, tag) passent AVANT la
     porte STACK -- la premiere etape couteuse, dont l'index de pile est
     construit une fois par run puis cache par le module du gate ; la porte
-    avant les organes ; le REST en dernier, juste avant le merge, pour
-    minimiser la fenetre de course.
+    avant les organes. La PRE-lecture REST passe entre les deux : elle ne
+    coute qu'une requete et elle ecarte une PR bloquee avant que les organes
+    ne payent leurs ~150 s (#26799) ; la LECTURE REST finale reste en
+    dernier, juste avant le merge, pour minimiser la fenetre de course.
 
     La disposition de review (point 1 de #17672) est classee pour TOUTE PR
     evaluee, skip compris, et reportee a la tete que la ligne declare : la
@@ -3282,11 +3366,37 @@ def evaluate_pr(
             match = _STACK_PARTNER_RE.search(reasons[0])
             partner = match.group(1) if match else "?"
             return skip(f"stack-top:{partner}", "measured")
+    # 3bis. Prelecture REST bon marche : ne pas payer les etapes couteuses
+    # (B.0, collisions d'index twin et de slot) pour une PR que l'etape 6
+    # refuserait. Elle est placee AVANT l'etape 4 (#26799) : la lecture
+    # REST ne coute qu'une requete, alors que les etapes suivantes coutent
+    # ~150 s par PR -- mesure sur trois PRs bloquees (#28166, #28168,
+    # #28171) : 90 s + 52 s + 8 s avant d'apprendre, en 0,8 s, que la PR
+    # est bloquee. L'etape 6 reste la garde finale contre une evolution de
+    # l'etat ou de la tete pendant ces tests.
+    pre_state, pre_live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
+    if pre_state not in ("clean", "unstable"):
+        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
+        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
+        # fin de passe, quand le calcul sera termine (#26799).
+        return skip(f"mergeable-state:{pre_state or 'absent'}",
+                    stack_state, stack_inc)
+    if pre_live_head != view_head:
+        return skip("head-moved", stack_state, stack_inc)
     # 4. organe B.0 (re-verification reelle).
     if run_nits(runner, pr, gh_env) != 0:
         return skip("b0-organ-blocked", stack_state, stack_inc)
     # 5bis. collision d'index twin contre le main du moment.
     reason = twin_collision_reason(runner, pr, view_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason, stack_state, stack_inc)
+    # 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) :
+    # le squash-merge re-hashe l'arbre, un blob atteste sur la branche peut
+    # ne jamais atterrir sur `main` -- et la CI de PR ne le voit pas (elle
+    # travaille sur `refs/pull/N/merge`). Fail-closed comme 5bis.
+    reason = twin_attestation_reason(runner, pr, view_head, view.get("files") or [])
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
     # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).
@@ -3335,20 +3445,6 @@ def evaluate_pr(
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}",
                         stack_state, stack_inc)
-    # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
-    # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
-    # contre une evolution de l'etat ou de la tete pendant ces tests.
-    pre_state, pre_live_head = mergeable_state_and_head(
-        runner, pr, gh_env, retries=retries
-    )
-    if pre_state not in ("clean", "unstable"):
-        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
-        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
-        # fin de passe, quand le calcul sera termine (#26799).
-        return skip(f"mergeable-state:{pre_state or 'absent'}",
-                    stack_state, stack_inc)
-    if pre_live_head != view_head:
-        return skip("head-moved", stack_state, stack_inc)
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.

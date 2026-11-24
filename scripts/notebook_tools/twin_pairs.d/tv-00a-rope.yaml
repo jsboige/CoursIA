@@ -1,0 +1,9 @@
+- name: "TV-00a RoPE"
+  family: GenAI/Texte/TransformerVariants
+  python: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python utilise PyTorch ; C# utilise TorchSharp-cpu avec libtorch. Les deux construisent les rotations et entraînent réellement l'attention jouet."
+  known_differences:
+    - "Les opérations scalaires de fréquences sont exprimées avec System.Math et les tenseurs, gradients et optimiseur avec TorchSharp ; sorties mesurées indépendamment."
