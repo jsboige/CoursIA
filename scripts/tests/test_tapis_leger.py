@@ -495,11 +495,19 @@ def test_la_voie_lourde_reste_explicite(monkeypatch, capsysbinary):
     assert "voie" not in sortie
 
 
-def test_la_lecture_incomplete_du_pool_ne_sert_rien(monkeypatch, capsysbinary):
-    """Sortie 3 : une selection incomplete ne rend aucune liste a moitie."""
+def test_la_lecture_incomplete_du_pool_ne_sert_rien(monkeypatch, capsysbinary,
+                                                   tmp_path):
+    """Sortie 3 : une selection incomplete ne rend aucune liste a moitie.
+
+    Le repli chronologique (I2) ne peut rien servir sans **cache local** : le
+    test le neutralise, sinon il dependrait du cache de la machine -- un poste
+    qui a deja tire verrait le repli servir, et la sortie 3 ne viendrait
+    jamais.
+    """
     def run_panne(argv, timeout):
         raise subprocess.TimeoutExpired(argv, timeout)
 
+    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
     code = tapis_rapide.main(["--lane", LANE], run=run_panne, maintenant=NOW)
     capture = capsysbinary.readouterr()
     assert code == 3
