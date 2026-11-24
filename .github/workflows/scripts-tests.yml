@@ -679,6 +679,8 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
+            MyIA.AI.Notebooks/RL/gateway/test_mdp_policy_iteration_core.py \
+            MyIA.AI.Notebooks/RL/gateway/test_mdp_value_iteration_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_flagship_endpoint.py \

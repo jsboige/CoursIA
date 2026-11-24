@@ -238,6 +238,8 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # Tests co-localises avec du code (gateway), motif test-cwd sans
         # testpath : ni dans pytest.ini ni dir, cibles-fichier seules.
         "MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py",
+        "MyIA.AI.Notebooks/RL/gateway/test_mdp_policy_iteration_core.py",
+        "MyIA.AI.Notebooks/RL/gateway/test_mdp_value_iteration_core.py",
         "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py",
         "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py",
     ],
