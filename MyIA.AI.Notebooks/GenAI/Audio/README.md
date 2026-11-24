@@ -87,7 +87,7 @@ Au-delà du spectrogramme et des MFCC, le notebook [01-3](01-Foundation/01-3-Bas
 
 ### 02-Advanced - Voix, Musique & Séparation
 
-Un podcast de qualité demande une voix naturelle et une identité sonore distincte. Ce niveau couvre le clonage vocal (créer un narrateur unique à partir d'un échantillon), la génération musicale (jingle et fond sonore), la séparation de sources (isoler la voix d'un mix existant), et les modèles TTS expressifs (varier le ton et l'émotion). Deux parcours possibles : voix ou musique, selon l'objectif.
+Un podcast de qualité demande une voix naturelle et une identité sonore distincte. Ce niveau couvre le clonage vocal (créer un narrateur unique à partir d'un échantillon), la génération musicale (jingle et fond sonore), la séparation de sources (isoler la voix d'un mix existant), et les modèles TTS expressifs (varier le ton et l'émotion). Deux parcours possibles : voix ou musique, selon l'objectif. Les trois derniers carnets du niveau changent de question : après la voix et la musique produites ou transformées, 02-13, 02-14 et 02-15 mesurent des modèles qui **écoutent** — un LLM omni-modal qui répond en texte sur ce qu'il entend (02-13), puis sa déclinaison Qwen3 en transcription dédiée (02-14) et en omni-modal quantifié (02-15). Guide de lecture par sous-série : [02-Advanced/README.md](02-Advanced/README.md).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -103,6 +103,9 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 | [02-10-Effets-Sonores-AudioLDM2](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | AudioLDM2, text-to-SFX, descripteurs mesurés | Local GPU | <3 GB |
 | [02-11-Text-to-Audio-Bruitages](02-Advanced/02-11-Text-to-Audio-Bruitages.ipynb) | AudioGen (`audiocraft`), text-to-audio autoregressif en tokens, bruitages et scènes sonores | Local GPU | ~6 GB |
 | [02-12-SVS-Singing-Voice-RVC](02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) | RVC v2, conversion de voix chantée sur CPU | Kernel WSL (CPU) | — |
+| [02-13-Audio-LLM-Omni-Modal-Qwen2Audio](02-Advanced/02-13-Audio-LLM-Omni-Modal-Qwen2Audio.ipynb) | Qwen2-Audio-7B-Instruct : un LLM qui écoute — dialogue sur le contenu de la parole, stabilité du contenu à travers une conversion de timbre RVC, Audio Flamingo lu en regard | Local GPU (int8 à la volée) | ~9,5 Go |
+| [02-14-Transcription-Audio-Qwen3-Python](02-Advanced/02-14-Transcription-Audio-Qwen3-Python.ipynb) | Qwen3-ASR-1.7B : transcription et identification de langue (52 langues), sur les deux extraits du dépôt, contre témoin faster-whisper | Local GPU (`qwen-asr`) | ~4 Go |
+| [02-15-Omni-Modal-Qwen3-Python](02-Advanced/02-15-Omni-Modal-Qwen3-Python.ipynb) | Qwen3-Omni-30B-A3B : écouter et répondre en texte avec le checkpoint officiel quantifié NF4 — empreinte et prix de la conversion mesurés | Local GPU (4 bits) | ~17,6 Go |
 
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
 
@@ -125,7 +128,7 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 
 ### 04-Applications - Cas d'usage production
 
-Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels. 04-14 rend le voice leading en audio GenAI, et 04-15 ouvre la voie compréhension musicale de la famille YuE2 avec les embeddings MERT2. 04-16 ouvre un axe différent : la **transcription** audio vers partition ABC éditable (SheetSage2), comparée à une vérité-terrain construite puis rebouclée vers l'audio par resynthèse. 04-18 prolonge cette transcription au niveau de la **note** : basic-pitch (Spotify, ICASSP 2022, export ONNX) détecte onset, hauteur et durée de chaque note, avec rappel/précision mesurés sur vérité-terrain synthétique, sur CPU seul. 04-17 pose le socle **classique** du MIR — beat tracking, tempo, tonalité Krumhansl–Schmuckler, accords par templates, avec librosa — le signal et les statistiques qui ont précédé les modèles neuronaux de 04-15 et 04-16. 04-19 referme la boucle d'**évaluation** subjective : le protocole d'écoute (ITU-T P.800) et l'agrégateur MOS que la grille de 04-7 laissaient ouverts. 04-20 ferme la série en **mesurant** la séparation de sources : trois générations de Demucs (v3, v4, v4 fine-tuné par source) comparées sur une piste MUSDB18 à stems de référence — SDR par stem, témoin négatif et cohérence d'énergie.
+Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels. 04-14 rend le voice leading en audio GenAI, et 04-15 ouvre la voie compréhension musicale de la famille YuE2 avec les embeddings MERT2. 04-16 ouvre un axe différent : la **transcription** audio vers partition ABC éditable (SheetSage2), comparée à une vérité-terrain construite puis rebouclée vers l'audio par resynthèse. 04-18 prolonge cette transcription au niveau de la **note** : basic-pitch (Spotify, ICASSP 2022, export ONNX) détecte onset, hauteur et durée de chaque note, avec rappel/précision mesurés sur vérité-terrain synthétique, sur CPU seul. 04-17 pose le socle **classique** du MIR — beat tracking, tempo, tonalité Krumhansl–Schmuckler, accords par templates, avec librosa — le signal et les statistiques qui ont précédé les modèles neuronaux de 04-15 et 04-16. 04-19 referme la boucle d'**évaluation** subjective : le protocole d'écoute (ITU-T P.800) et l'agrégateur MOS que la grille de 04-7 laissaient ouverts. 04-20 ferme la série en **mesurant** la séparation de sources : trois générations de Demucs (v3, v4, v4 fine-tuné par source) comparées sur une piste MUSDB18 à stems de référence — SDR par stem, témoin négatif et cohérence d'énergie. 04-21 en fait la **contre-épreuve** : au lieu de demander quel modèle sépare le mieux, il mesure le point zéro de la métrique SI-SDR sur un mélange dont la vérité est exacte par construction (deux stems studio additionnés à gains choisis), avec le mélange lui-même comme lot de contrôle et le ratio d'énergie comme levier.
 
 Le dossier est rangé en trois sous-séries — [`04-Audiobook/`](04-Applications/04-Audiobook/) pour la chaîne de production, [`04-Voix/`](04-Applications/04-Voix/) pour la voix mesurée, [`04-Musique/`](04-Applications/04-Musique/) pour le signal musical ; les workflows généraux et le rendu voice-leading restent à sa racine. Les carnets ci-dessous gardent leur numéro : c'est le sous-répertoire qui porte le regroupement. Structure et table de correspondance des phases : [04-Applications/README.md](04-Applications/README.md).
 
@@ -151,6 +154,7 @@ Le dossier est rangé en trois sous-séries — [`04-Audiobook/`](04-Application
 | [04-18-Basic-Pitch-Transcription](04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note (onset, hauteur, durée), rappel/précision sur vérité-terrain synthétique, piano-roll, balayage des seuils du décodeur | basic-pitch (ONNX, CPU local) | 0 |
 | [04-19-Evaluation-MOS](04-Applications/04-Voix/04-19-Evaluation-MOS.ipynb) | Évaluation subjective : protocole d'écoute ITU-T P.800, MOS + IC 95 %, rejet des auditeurs aberrants, proxies objectifs (SNR, SI-SDR, STOI) | CPU local | 0 |
 | [04-20-Separation-Avancee-Qualite](04-Applications/04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Séparation de sources mesurée : trois générations de Demucs (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) sur une piste MUSDB18 à stems de référence — SDR par stem, témoin négatif, cohérence d'énergie | Demucs 4.1.0 (GPU local, HF streaming) | ~6 GB |
+| [04-21-SI-SDR-Contre-Epreuve](04-Applications/04-Musique/04-21-SI-SDR-Contre-Epreuve.ipynb) | Contre-épreuve de la métrique : SI-SDR et son invariance d'échelle, point zéro mesuré par lot de contrôle (le mélange comme estimateur) et balayage du ratio d'énergie, trois moteurs (Demucs, MDX23C, BS-RoFormer) | GPU local (`torch` + CUDA, `audio-separator`) | — |
 
 Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare la latence et la taille audio des modèles kokoro vs openai/tts-1 selon le type de texte (dialogue, monologue, narration) — l'axe log-latence ms discrimine Kokoro (~3·10³ ms) d'openai/tts-1 (~3,5–4·10³ ms), tandis que l'axe taille audio KB (0–350) reste dominé par openai/tts-1 sur tous les types de texte :
 
@@ -197,6 +201,9 @@ Le carnet [06-3](06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) 
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
 | **AudioLDM2 (cvssp)** | 02-10 | GPU ~2,5 GB VRAM |
 | **RVC v2 (checkpoint DaFeiYu)** | 02-12 | Kernel WSL `rvc-wsl` (CPU) |
+| **Qwen2-Audio 7B (int8)** | 02-13 | GPU ~9,5 Go VRAM |
+| **Qwen3-ASR 1.7B** | 02-14 | GPU ~4 Go VRAM, package `qwen-asr` |
+| **Qwen3-Omni 30B (NF4)** | 02-15 | GPU ~17,6 Go VRAM |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 | **pipecat + Kokoro ONNX** | 03-4 | CPU local, modèles mis en cache au premier run |
 | **FFmpeg** | 04-12 | Installé système |
@@ -207,6 +214,7 @@ Le carnet [06-3](06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) 
 - **TTS (Text-to-Speech)** — synthétiser de la parole à partir de texte. Cœur des notebooks [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) (OpenAI) et [01-5](01-Foundation/01-5-TTS-Local-ONNX.ipynb) (Kokoro local).
 - **Voice cloning** — reproduire l'identité vocale d'un locuteur à partir d'un court échantillon, pour un narrateur cohérent. Notebook [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) (XTTS v2).
 - **Singing voice conversion (SVC)** — remplacer le timbre d'un chant enregistré en préservant la mélodie, mesurée note par note. Notebook [02-12](02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) (RVC v2, CPU).
+- **LLM audio omni-modal** — un modèle unique qui écoute de l'audio (parole, mais aussi son non verbal) et répond en texte, dans le même tour de conversation qu'un chat textuel ; la génération Qwen3 sépare cette capacité de la transcription dédiée (Qwen3-ASR). Notebooks [02-13](02-Advanced/02-13-Audio-LLM-Omni-Modal-Qwen2Audio.ipynb) (Qwen2-Audio), [02-14](02-Advanced/02-14-Transcription-Audio-Qwen3-Python.ipynb) (Qwen3-ASR) et [02-15](02-Advanced/02-15-Omni-Modal-Qwen3-Python.ipynb) (Qwen3-Omni).
 - **Prosodie** — l'intonation, le rythme et l'émotion qui rendent une voix naturelle ; pilotable par tags expressifs, et mesurable objectivement par partition syllabique (notes effectives, recouvrement top-3, motifs répétés — [04-10, section 10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb)). Notebooks [02-8](02-Advanced/02-8-Expressive-TTS.ipynb), [04-10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) (tags + mesure) et [04-13](04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) (FishAudio S2-Pro, 29 tags).
 - **Source separation** — isoler les composantes d'un mix (voix, batterie, basse...). Notebook [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) (Demucs v4).
 - **Text-to-SFX (effets sonores)** — générer un effet sonore (impact, pluie, verre brisé) à partir d'une description, et le distinguer d'une musique par des descripteurs mesurés (flatness, centroïde, attaques). Notebook [02-10](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) (AudioLDM2).
@@ -255,7 +263,7 @@ Video/ (série complémentaire)
 | Objectif | Notebooks |
 |----------|-----------|
 | Découverte rapide | 01-1, 01-2, 01-3 |
-| Speech complet | 01-1 à 02-2 |
+| Speech complet | 01-1 à 02-2, puis 02-13 à 02-15 pour les modèles qui écoutent |
 | Musique | 02-3, 02-6, 02-7, 02-4, 04-3 |
 | Diffusion audio | 05-1, 05-2, 06-1, 06-2, puis 06-3 pour la comparaison |
 | Production | Tous + 03 + 04 |
