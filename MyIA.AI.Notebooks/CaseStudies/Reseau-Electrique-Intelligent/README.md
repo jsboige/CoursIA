@@ -1,84 +1,64 @@
-# Reseau-Electrique-Intelligent - Ordonnancement énergétique sous incertitude
+# Réseau Électrique Intelligent — ordonnancement énergétique sous incertitude
 
 [← CaseStudies](../README.md) | [↑ Études de cas](../README.md)
 
-Étude de cas intégratrice (CC3, EPF IA — 3-4h, 20 points) : piloter un mini-réseau électrique en
-combinant **optimisation sous contraintes** (CP-SAT), **raisonnement bayésien** (risque de
-défaillance) et **arbitrage multi-objectif** (coût vs émissions). C'est le problème réel de
-l'*unit commitment / dispatch* : décider heure par heure quelles centrales allumer et à quelle
-puissance, alors que la production renouvelable est incertaine.
+Le problème réel de l'*unit commitment / dispatch* : décider heure par heure
+quelles centrales allumer et à quelle puissance, alors que la production
+renouvelable est incertaine. Trois couches se composent **dans un ordre
+qu'inverser dégrade le résultat** : le solveur **CP-SAT** filtre les
+dispatchs impossibles, le modèle **bayésien** (risque de défaillance
+gaussien sur la réserve) modélise l'incertitude, l'**arbitrage
+multi-objectif** (coût / CO2 / risque) optimise.
 
-## Le problème
+**Public** : étudiants EPF (CC3, 3-4 h, 20 points) ; prérequis : Python,
+notions d'optimisation sous contraintes.
 
-Un jumeau numérique `PowerNetwork` simule un réseau à 3 centrales pilotables :
+## Comment lire ce README
 
-| Centrale | Puissance | Coût marginal | Émissions |
-|----------|-----------|---------------|-----------|
-| Charbon | 50-400 MW | 30 EUR/MWh | 900 kg CO2/MWh |
-| Gaz | 20-250 MW | 60 EUR/MWh | 400 kg CO2/MWh |
-| Hydro | 0-150 MW | 10 EUR/MWh | 0 kg CO2/MWh |
+Les parcours se lisent à plusieurs vitesses — voir
+[« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture)
+à la racine du dépôt :
 
-Il faut couvrir une demande horaire de 480 à 600 MW sur 6 heures, en présence d'un apport
-renouvelable aléatoire. Aucun paradigme ne suffit seul : le solveur de contraintes garantit la
-faisabilité physique mais ignore l'aléatoire ; le modèle bayésien quantifie le risque mais ne
-produit pas de plan ; le score multi-objectif arbitre mais suppose des candidats faisables.
-L'étude de cas fait composer les trois **dans le bon ordre**.
+- **Vous découvrez** : lisez le parcours principal ci-dessous, puis le
+  carnet `student/` de bout en bout.
+- **Vous creusez un palier** : passez au corrigé type `solution/` et aux
+  exercices d'extension ci-dessous.
+- **Vous cherchez la recherche en cours** : section « Pour aller plus loin ».
 
-## Architecture en 4 couches
+## Parcours principal
 
-| Partie | Couche | Technique | Fonction à implémenter |
-|--------|--------|-----------|------------------------|
-| 1 | Dispatch faisable | CP-SAT (OR-Tools) | `solve_dispatch_cp` |
-| 2 | Risque de défaillance | Bayésien (survivor function) | `failure_risk` |
-| 3 | Arbitrage coût/CO2 | Score multi-objectif normalisé | `multi_objective_score` |
-| 4 | Comparaison de stratégies | Analyse comparative (3 stratégies) | `comparative_analysis` |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|--------------------|--------|------------------|
+| 01 | [Squelette étudiant](student/Reseau-Electrique-Intelligent-Python.ipynb) | Le jumeau numérique `PowerNetwork` opérationnel (3 centrales charbon / gaz / hydro, demande 500-600 MW sur 6 heures, prévision renouvelable moyenne ± écart-type) et les squelettes des 4 couches : unit commitment CP-SAT, risque de défaillance, score multi-objectif, analyse comparative — 3 exercices d'extension nommés | Étudiant (CC3) | [Corrigé type](solution/Reseau-Electrique-Intelligent-Python.ipynb) |
+| 02 | [Corrigé type](solution/Reseau-Electrique-Intelligent-Python.ipynb) | Dispatch OPTIMAL (coût 63 600 EUR, ordre de mérite : charbon 270-340 MW, hydro plat à 150 MW, gaz jamais appelé), risques de l'ordre de 10⁻³⁵ à 10⁻²⁸⁴ pilotés par l'écart-type et non par la demande, score 1,137 décomposé (coût 0,32 / CO2 0,82 / risque ≈ 0), 3 stratégies comparées (1,596 / 1,560) et le prix de l'écologie mesuré : 0,06 €/kg de CO2 évité | Enseignant / relecture | Les 3 exercices d'extension restent en stub |
 
-Les concepts transversaux travaillés : composition **ordonnée** des paradigmes (filtrer >
-modéliser > optimiser), jumeau numérique réactif aux décisions, tension incertitude vs
-contraintes dures, et absence de solution unique en multi-objectif (compromis de type Pareto).
+## Approfondissements
 
-## Structure du dossier
+Les trois exercices d'extension, présents en stub dans les deux carnets :
 
-```
-Reseau-Electrique-Intelligent/
-├── student/
-│   └── Reseau-Electrique-Intelligent-Python.ipynb    # Template étudiant (stubs à compléter)
-├── solution/
-│   └── Reseau-Electrique-Intelligent-Python.ipynb    # Solution de référence (exécutée, sorties incluses)
-├── subject.md                    # Sujet complet : énoncé, barème, exercices
-└── README.md                     # Ce fichier
-```
+1. **Réserve tournante (sécurité n-1)** — `solve_dispatch_with_spinning_reserve`.
+2. **Sensibilité au prior** — variabilité éolienne ×0,5 / ×1,0 / ×2,0.
+3. **Équité territoriale** — un troisième objectif au score multi-objectif.
 
-Les deux notebooks partagent la même trame ; la version étudiante
-remplace les corps de fonctions par des stubs guidés (`# TODO`, indices par étape), la version
-solution est committée exécutée de bout en bout.
+## Sous-séries
 
-## Barème (20 points)
+Aucune : le cas est plat — `student/` et `solution/` (pas de données
+externes). L'énoncé complet du sujet vit dans [subject.md](subject.md).
 
-| Critère | Points |
-|---------|--------|
-| Partie 1 — dispatch CP-SAT (contraintes correctes, statut OPTIMAL) | 5 |
-| Partie 2 — risque bayésien (survivor function + interprétation) | 4 |
-| Partie 3 — score multi-objectif (normalisation cohérente) | 4 |
-| Partie 4 — analyse comparative (3 stratégies, conclusion argumentée) | 4 |
-| Exercices d'extension (1 minimum au choix) | 3 |
+## Installation
 
-Trois exercices d'extension approfondissent le système : **réserve tournante n-1** (couvrir la
-perte de la plus grosse centrale en service), **sensibilité au prior** (comment le risque évolue
-quand l'incertitude renouvelable est divisée ou multipliée par 2), et **équité territoriale**
-(troisième objectif évitant de concentrer les centrales polluantes sur une région).
+Noyau Python ; les dépendances sont pré-provisionnées par
+[`CaseStudies/requirements.txt`](../requirements.txt) : ortools, numpy,
+scipy.
 
-## Lancement
+## Pour aller plus loin
 
-```bash
-pip install -r ../requirements.txt   # ortools>=9.8, numpy (kernel Python 3)
-jupyter lab student/Reseau-Electrique-Intelligent-Python.ipynb
-```
+Niveau Recherche : l'arbitrage multi-objectif normalisé (coût / émissions /
+risque) comme décision d'ordonnancement — le même patron de composition
+« dur puis incertain » que le cas [Planification
+Oncologique](../Planification-Oncologie/README.md).
 
-Le sujet détaillé (énoncé complet, données, critères) est dans [subject.md](subject.md).
+## Ressources
 
-## Études de cas associées
-
-- [Diagnostic-Medical-Python](../Diagnostic-Medical/README.md) — CC1 : règles cliniques + A* + génétique + Z3
-- [Planification-Oncologie-Python](../Planification-Oncologie/README.md) — CC2 : ontologie OWL + contraintes + bayésien
-- [README CaseStudies](../README.md) — principe d'intégration multi-paradigmes de la série
+- [Études de cas interdisciplinaires](../README.md) — la série parent
+- [Énoncé du sujet](subject.md)
