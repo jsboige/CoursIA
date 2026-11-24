@@ -78,7 +78,7 @@ Le `logging.basicConfig(level=logging.INFO)` active les logs INFO qui rendront l
 La cellule `# Import guards` précédente joue un rôle de pré-vol : elle vérifie la disponibilité de `IPython`, `dotenv` et `semantic_kernel` et définit des flags (`IPYTHON_AVAILABLE`, etc.) — **mais ces gardes ne protègent pas le carnet** : la cellule suivante importe `dotenv` et `semantic_kernel` au niveau module, sans garde, si bien qu'une dépendance manquante interrompt l'exécution à cet import. Les flags documentent l'état de la machine, ils n'arrêtent rien.","## Initial configuration
 Loading environment variables and initializing services",,,,,"## Начальная конфигурация
 Загрузка переменных окружения и инициализация сервисов",,0ca44c11fad6eb6c,9bf0b4f4278abce2,,,,,5aa096170a693583,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e3198a5c,code,fr,fb3219c173520a17,"import os
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e3198a5c,code,fr,69cebc4bd28eeb03,"import os
 import random
 import logging
 from pathlib import Path
@@ -97,6 +97,8 @@ def _charger_env_genai():
     carnet : sous papermill comme dans un terminal, la remontee explicite depuis
     le repertoire courant est la seule forme fiable.
     """"""
+    # Remontee d'au plus 6 niveaux : le carnet vit a 3 niveaux sous la racine
+    # de la serie ; la marge couvre les executions depuis un autre cwd.
     courant = Path.cwd()
     for _ in range(6):
         env = courant / "".env""
@@ -107,13 +109,15 @@ def _charger_env_genai():
     return None
 
 
+# Point d'entree unique pour les cles de la serie (endpoint du modele de chat).
 CHEMIN_ENV = _charger_env_genai()
 print(""Env de la série chargé :"", CHEMIN_ENV or ""introuvable"")
 
+# Journalisation shared par le duel et les strategies de terminaison.
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('BarbieVsAne')
 print(""Imports et configuration OK"")
-",,,,,,,,fb3219c173520a17,,,,,,,,,,,,,,,
+",,,,,,,,69cebc4bd28eeb03,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e9592b88,markdown,fr,89217fabcab0a32e,"## Définition des contraintes linguistiques
 
 Le débat ne gagne en intérêt que si les répliques obéissent à une règle. La liste `CONTRAINTES` définit **trois styles possibles**, chacun sous la forme d'un tuple `(nom, description)` :
@@ -127,16 +131,19 @@ Le débat ne gagne en intérêt que si les répliques obéissent à une règle. 
 `random.choice` tire une contrainte au sort **à chaque exécution** : le tirage n'est donc pas reproductible — la contrainte effective est celle que la cellule suivante affiche, et les répliques du débat la suivent. (Dans la sortie committée, c'est **Chanson** — « Répondre sur l'air de 'I'm a Believer' » — qui a été tirée.) La structure en tuples `(nom, description)` est celle que l'Exercice 1 demande d'étendre : la description est interpolée dans les instructions des agents, donc toute nouvelle entrée de la liste se répercute automatiquement sur le comportement des deux duellistes.","## Definition of Linguistic Constraints
 Random selection of a constraint for the debate",,,,,"## Определение лингвистических ограничений
 Случайный выбор ограничения для дебатов",,89217fabcab0a32e,5f59b1a0a67de378,,,,,d315fba7a653a091,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b732326a,code,fr,91dea5ab52872319,"CONTRAINTES = [
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b732326a,code,fr,334afbfdcb3c73f2,"# Contraintes declaratives du duel : un nom court et une phrase d'instruction
+# qui sera injectee dans les instructions des agents (section suivante).
+CONTRAINTES = [
     (""Rime"", ""Chaque réplique doit contenir une rime parfaite""),
     (""Shakespeare"", ""Imiter le style théâtral de Shakespeare""),
     (""Chanson"", ""Répondre sur l'air de 'I'm a Believer'"")
 ]
 
+# Tirage au sort : chaque execution impose une contrainte differente au duel.
 contrainte_choisie = random.choice(CONTRAINTES)
 print(f""Contrainte choisie : {contrainte_choisie[0]}"")
 print(""Contraintes de debate definies"")
-",,,,,,,,91dea5ab52872319,,,,,,,,,,,,,,,
+",,,,,,,,334afbfdcb3c73f2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,994f885c,markdown,fr,09576d63e985853a,"### Exemple guidé 1 — Ajout de contraintes linguistiques personnalisées
 
 *Contribution étudiante du groupe de la PR #21089, intégrée comme exemple guidé.*
@@ -208,7 +215,9 @@ The `service_id` pattern is central: it is what lets agents find the right servi
 
 Images do not go through a kernel service: they are produced by the **series' ComfyUI instance**, called over HTTP by the plugin in the next section. The URL and token of this instance live in the series' `.env` — never in a cell.",,,,,"## Создание kernel
 Инициализация сервисов OpenAI для чата и изображений",,25207ac209e81e27,c7ecf724984f7211,,,,,b017ef103384bf75,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e,code,fr,c2a6fe13eb7d4939,"def create_kernel():
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e,code,fr,4e243ea2d41bf829,"def create_kernel():
+    # Fabrique de kernel : chaque agent recoit le sien (section Agent configuration),
+    # tous pointent vers le meme service OpenAI-compatible de la serie.
     kernel = Kernel()
     kernel.add_service(OpenAIChatCompletion(
         service_id=""chat"",
@@ -218,7 +227,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e
     return kernel
 
 print(""Fonction create_kernel définie"")
-",,,,,,,,c2a6fe13eb7d4939,,,,,,,,,,,,,,,
+",,,,,,,,4e243ea2d41bf829,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,4d30322ee87023cb,"## Plugin de génération d'images
 
 `ImagePlugin` encapsule l'appel à l'instance **ComfyUI** de la série sous forme de **fonction invocable** Semantic Kernel. Le décorateur `@kernel_function(name=""generate_image"", description=""..."")` expose la méthode `generate` comme une capacité que le kernel peut invoquer par nom.
