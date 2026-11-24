@@ -1,0 +1,8 @@
+- name: "InfoQuant-02 Trois copies de Werner"
+  family: Physique/InformationQuantique
+  python: MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-02-Trois-Copies-Werner-Distillabilite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-02-Trois-Copies-Werner-Distillabilite-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Le C# calcule les contractions et la normalisation en arithmétique rationnelle exacte, sans diagonalisation numérique. Un opérateur complexe commun contrôle les huit contractions contre le Python."
+    - "Les campagnes échantillonnées partagent la grille et les budgets, mais pas les facteurs : gaussiens complexes en Python, entiers complexes en C#. Les minima observés ne coïncident pas."
