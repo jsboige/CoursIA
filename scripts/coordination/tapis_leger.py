@@ -87,7 +87,8 @@ def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
 
 def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
             run=gh_bulk.run_defaut,
-            budget_s: float = gh_selection.MUR_GLOBAL_S) -> dict:
+            budget_s: float = gh_selection.MUR_GLOBAL_S,
+            echeance: float | None = None) -> dict:
     """Le POOL classe : l'ordre fair des grains, et les conteneurs.
 
     C'est la lecture de metadonnees du tirage leger, SANS la fenetre : la
@@ -95,11 +96,16 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     quand la fenetre ne donne aucun grain servable).
     """
     debut = time.monotonic()
-    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s)
+    # UNE echeance monotone pour les trois etages (#28114, I6) : le temps
+    # restant borne chaque appel, donc un etage qui a consomme sa part voit
+    # l'etage suivant etre COUPE plutot qu'attendu.
+    echeance = echeance if echeance is not None else debut + gh_bulk.MUR_TIRAGE_S
+    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s,
+                                                         echeance=echeance)
     t1 = time.monotonic()
-    citations = gh_bulk.lire_citations_mergees(depot, jours, run)
+    citations = gh_bulk.lire_citations_mergees(depot, jours, run, echeance=echeance)
     t2 = time.monotonic()
-    prs = gh_bulk.lire_prs_ouvertes(run)
+    prs = gh_bulk.lire_prs_ouvertes(run, echeance=echeance)
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
