@@ -47,6 +47,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-11-Text-to-Audio-Bruitages.ipynb	Au
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb	Audio	gpu,import_absent,reseau,suffisance	gpu=torch,usage CUDA explicite;reseau=huggingface.co;import_absent=parselmouth;suffisance=absent_distribution:rvc_python.infer : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-13-Audio-LLM-Omni-Modal-Qwen2Audio.ipynb	Audio	gpu,suffisance	gpu=torch,usage CUDA explicite;suffisance=absent_distribution:faster_whisper : absent de la distribution;absent_distribution:librosa : absent de la distribution;absent_distribution:transformers : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-14-Transcription-Audio-Qwen3-Python.ipynb	Audio	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=qwen_asr;suffisance=absent_distribution:faster_whisper : absent de la distribution;absent_distribution:huggingface_hub : absent de la distribution;absent_distribution:librosa : absent de la distribution
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-15-Omni-Modal-Qwen3-Python.ipynb	Audio	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=bitsandbytes,qwen_omni_utils;suffisance=absent_distribution:huggingface_hub : absent de la distribution;absent_distribution:librosa : absent de la distribution;absent_distribution:transformers : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb	Audio	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=TTS.api;suffisance=absent_distribution:dotenv : absent de la distribution;hors_serie:helpers.audio_helpers : module hors serie non livre par le bundle;absent_distribution:resemblyzer : absent de la distribution;hors_serie:syllable_pitch : module hors serie non livre par le bundle
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb	Audio	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=audiocraft.models,torchaudio;suffisance=absent_distribution:dotenv : absent de la distribution;hors_serie:helpers.audio_helpers : module hors serie non livre par le bundle
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb	Audio	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=torchaudio;suffisance=absent_distribution:demucs.apply : absent de la distribution;absent_distribution:demucs.pretrained : absent de la distribution;absent_distribution:dotenv : absent de la distribution;hors_serie:helpers.audio_helpers : module hors serie non livre par le bundle
@@ -370,15 +371,15 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb	Part1-Foundations	import_absent,suffisance	import_absent=automata.fa.dfa,automata.fa.nfa,z3;suffisance=dependance_locale:automata_core -> automata.base.exceptions : absent de la distribution;dependance_locale:automata_core -> automata.fa.dfa : absent de la distribution;absent_distribution:graphviz : absent de la distribution
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb	Part1-Foundations	suffisance	suffisance=absent_distribution:mealpy : absent de la distribution;absent_distribution:mealpy.utils.space : absent de la distribution
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb	Part1-Foundations	import_absent	import_absent=ortools,ortools.sat.python,z3
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb	Part2-CSP	import_absent	import_absent=constraint,pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb	Part2-CSP	import_absent	import_absent=z3
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb	Part2-CSP	import_absent	import_absent=pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb	Part2-CSP	import_absent	import_absent=constraint,ortools.sat.python,pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python,pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb	Part2-CSP	cle,import_absent	cle=1;import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb	Part2-CSP	import_absent	import_absent=constraint,pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb	Part2-CSP	import_absent	import_absent=pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb	Part2-CSP	import_absent	import_absent=constraint,ortools.sat.python,pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python,pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb	Part2-CSP	cle,import_absent	cle=1;import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb	Part2-CSP	import_absent	import_absent=z3
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
@@ -728,7 +729,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipyn
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb	Tweety	import_absent	import_absent=z3
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05e-Propositional-Lab-Lean-Python.ipynb	Tweety	import_absent	import_absent=Foundation.Propositional.Boolean.Basic,Foundation.Propositional.Boolean.Tait,Foundation.Propositional.Entailment.Cl,jpype,jpype.imports,jpype.types
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb	Tweety	import_absent	import_absent=java.io,java.util,jpype,jpype.imports,jpype.types,org.tweetyproject.arg.aba.parser
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb	Tweety	import_absent,suffisance	import_absent=java.io,java.util,jpype,jpype.types,org.tweetyproject.arg.adf.io,org.tweetyproject.arg.adf.reasoner;suffisance=dependance_locale:tweety_init -> jpype : absent de la distribution;dependance_locale:tweety_init -> jpype.imports : absent de la distribution
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-Python.ipynb	Tweety	import_absent,suffisance	import_absent=java.io,java.util,jpype,jpype.types,org.tweetyproject.arg.adf.io,org.tweetyproject.arg.adf.reasoner;suffisance=dependance_locale:tweety_init -> jpype : absent de la distribution;dependance_locale:tweety_init -> jpype.imports : absent de la distribution
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb	Tweety	import_absent	import_absent=java.util,jpype,jpype.imports,jpype.types,org.tweetyproject.arg.dung.divisions,org.tweetyproject.arg.dung.reasoner
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb	Tweety	import_absent	import_absent=jpype,jpype.imports,jpype.types,org.tweetyproject.agents.dialogues,org.tweetyproject.arg.dung.divisions,org.tweetyproject.arg.dung.reasoner
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb	Tweety	import_absent	import_absent=jpype,jpype.imports,jpype.types,org.tweetyproject.arg.dung.reasoner,org.tweetyproject.arg.dung.syntax
@@ -758,6 +759,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb	Video	c
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb	Video	cle,reseau,suffisance	cle=1;reseau=api.minimax.io,httpx;suffisance=absent_distribution:dotenv : absent de la distribution
 MyIA.AI.Notebooks/GenAI/_research/e2e_quant_validation.ipynb	_research	cle,gpu,reseau,suffisance	gpu=torch,usage CUDA explicite;cle=4;reseau=localhost:8001,localhost:8188,localhost:8189,requests;suffisance=absent_distribution:anthropic : absent de la distribution;absent_distribution:dotenv : absent de la distribution;absent_distribution:transformers : absent de la distribution
 MyIA.AI.Notebooks/GameTheory/gateway/openspiel-cfr-service.ipynb	gateway	suffisance	suffisance=dependance_locale:openspiel_cfr_core -> pyspiel : absent de la distribution
+MyIA.AI.Notebooks/NLP/gateway/hmm-viterbi-service.ipynb	gateway	import_absent	import_absent=kernel_gateway
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb	partner-course-quant-trading	import_absent,suffisance	import_absent=AlgorithmImports;suffisance=absent_distribution:deap : absent de la distribution;absent_distribution:plotly.graph_objects : absent de la distribution;absent_distribution:plotly.subplots : absent de la distribution
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb	partner-course-quant-trading	import_absent,suffisance	import_absent=AlgorithmImports;suffisance=absent_distribution:deap : absent de la distribution;absent_distribution:plotly.graph_objects : absent de la distribution;absent_distribution:plotly.subplots : absent de la distribution
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb	partner-course-quant-trading	suffisance	suffisance=hors_serie:data_cache : module hors serie non livre par le bundle
@@ -831,7 +833,7 @@ MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/quantbook.ipynb	project
 MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/research.ipynb	projects	suffisance	suffisance=absent_distribution:yfinance : absent de la distribution
 MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/Multi-Layer-EMA/research.ipynb	projects	import_absent	import_absent=AlgorithmImports
-MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
+MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/quantbook.ipynb	projects	import_absent,reseau	reseau=cdn.cboe.com;import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/research.ipynb	projects	import_absent	import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/Options-VGT/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
 MyIA.AI.Notebooks/QuantConnect/projects/OptionsIncome/quantbook.ipynb	projects	import_absent	import_absent=AlgorithmImports
