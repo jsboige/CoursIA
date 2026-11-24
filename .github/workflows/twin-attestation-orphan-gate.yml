@@ -90,6 +90,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        # L'organe importe `yaml` a son chargement : sans cette ligne, le runner
+        # heberge rend `ModuleNotFoundError` et la porte rougit chaque PR qui
+        # touche `twin_pairs.d` (mesure du 2026-11-23 sur #27639 et #27640).
+        run: pip install pyyaml
+
       - name: Gate the orphan attestations
         # `PR_BASE`/`PR_HEAD` sont lus dans l'evenement, jamais deduits de la
         # forme du checkout : le checkout d'un evenement `pull_request`

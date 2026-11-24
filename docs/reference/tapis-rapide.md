@@ -556,6 +556,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_avance.py` | l'**avance** du curseur, bornée au lot : les trois états (décidé / parqué / sauté) |
 | `scripts/coordination/tapis_non_tente.py` | le grain **non tenté** : proposé, jamais qualifié — son code propre, et il ne fige pas le curseur |
 | `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
+| `scripts/coordination/tapis_repli.py` | le **repli chronologique** : hors réseau **ou quand les filtres vident la file**, le cache local fait foi et le pool est servi par date de création (#28114) ; le cap y est **inerte** (`mesure: false`) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
@@ -566,6 +567,20 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_universel.py` | la rotation universelle sur les métadonnées |
 | `scripts/coordination/gh_snapshot.py` | le **fil complet** (REST paginé) — l'organe de la qualification |
 | `scripts/coordination/tapis_labels.py` | les **exclusions en données** : la table des labels qui écartent un grain (`candidate-delivered`, `pause`) — #28114 |
+
+### Ce qui déclenche le repli, et ce que le cap y devient
+
+Le repli chronologique prend la main dans **deux** cas : la lecture de sélection échoue (réseau
+indisponible, quota épuisé) **et** la lecture réussit mais que les **filtres vident la file** — tous les
+grains écartés alors que le pool en porte. Sans cette seconde bascule, une lane dont le cap de
+livraisons est saturé ne recevrait plus rien : l'invariant I1 (« une file sans fin ») serait rompu par
+les filtres eux-mêmes.
+
+**Le cap est inerte dans le repli.** Le cap de livraisons lit GitHub (les PRs mergées de la fenêtre de
+7 jours). Lui donner un fetteur capable de lire le réseau le ferait **échouer de nouveau en pleine
+panne** : le repli passe donc un fetteur **inerte** (`tapis_cap_livraisons.fetcher_hors_reseau`), la
+mesure est impossible et le rapport porte le témoin `mesure: false`. C'est le fail-OPEN du module : on ne
+refuse jamais un item sur une charge qu'on n'a pas su lire.
 
 ## La fenêtre qui avance sur le pool (#27225, suite du 18/11)
 
