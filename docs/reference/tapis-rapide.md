@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-22
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -15,6 +15,16 @@ commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/c
 comme une visite, #27338), `scripts/coordination/belt_equite.py` (l'équité du dispatch : un grain déjà
 servi ne passe pas devant les premières visites, #27338)
 et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
+
+Le lot public livré par #27368 est porté par des modules dédiés, extraits pour que les tests visent le
+chemin public lui-même : `scripts/coordination/tapis_public.py` (la suite exacte du chemin public),
+`scripts/coordination/tapis_tete.py` (le numéro que la rotation sert en premier),
+`scripts/coordination/tapis_avance.py` (l'avance du curseur, bornée au lot),
+`scripts/coordination/tapis_entrelace.py` (l'alternance primaire/reprise),
+`scripts/coordination/tapis_non_tente.py` (le grain proposé mais jamais qualifié),
+`scripts/coordination/tapis_etat_schema.py` (le schéma de l'état d'ancre : classes, état neuf,
+accesseurs) et `scripts/coordination/tapis_etat_commit.py` (le commit qui a écrit l'état : deux états
+d'ancre ne sont comparables que s'ils viennent du même code).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
 ## La commande
@@ -81,7 +91,7 @@ groupée, sans sonde par issue.
 
 | Code | Règle |
 | --- | --- |
-| `LABEL` | label `candidate-delivered` : l'urne de clôture appartient au coordinateur et à l'adjoint |
+| `LABEL` | **exclusion posée en données** : un label porté par l'issue. `candidate-delivered` : l'urne de clôture appartient au coordinateur et à l'adjoint. `pause` : une pause posée une fois écarte le grain — plus de regex de titre ni de souvenir d'agent (#28114). La table des labels est dans `coordination/tapis_labels.py` |
 | `GEL` | parapluie gelé en dur (`frozen_campaigns.py`) ou l'un de ses descendants ; ligne `[FROZEN]` dans le body ; en-tête `[FROZEN]` du fil non suivi d'un `[UNFROZEN]` de `myia-ai-01:CoursIA` ou `myia-po-2025:CoursIA-2` |
 | `EPAISSE` | le **fil** déclare que la part délégable de l'item est épuisée : attestation `[INFO] candidate-delivered` du conteneur, ou dernier marqueur de fin de tour `[RELEASED]` qui le dit (forme de #18258). Le fil est l'autorité : c'est lui qui dit ce qu'il reste à faire dedans. La mesure ne vaut pas pour un `[CLAIMED]` postérieur — une reprise n'annule pas un épuisement |
 | `SATURE` | conteneur dont **tous** les enfants déclarés sont fermés : il n'y a plus de grain à prendre dedans (cas #11698). Mesuré en post-passe, sur les seuls conteneurs de la file, et fail-OPEN : une mesure impossible n'écarte rien |
@@ -306,7 +316,8 @@ L'ordre des servables :
 | `FENETRE_J` | 7 | le tour sur lequel se compte le niveau |
 | `SEANCE_H` | 24 | deux marqueurs d'une lane plus proches que cela font une visite |
 | `BANDS_AGE_J` | (180, 120, 60, 30, 10) j | bonus d'âge : 0,1 visite par tranche franchie, plafonné à 0,5 |
-| `BONUS_CONSOLIDATION` | 0,4 visite | priorité de consolidation, à tout âge (label ou racine de famille) |
+| `BONUS_CONSOLIDATION` | 0,6 visite | priorité de consolidation, à tout âge (label ou racine de famille) — **posée en premier** : elle passe devant l'ancienneté (I7) |
+| `BONUS_AGE_MAX_CONSO` | 0,3 visite | part de l'âge qui reste sur une consolidation : l'âge ne mange pas le budget de la consolidation |
 | `BONUS_TOTAL_MAX` | 0,9 visite | borne du bonus total : une issue à 0 visite passe devant une issue à 1 visite |
 | `MARATHONS` | #26070, #26510 | racines des marathons de parité C# et Rust, hors équilibrage |
 | `TETE` | 24 | la tête de chaque niveau est décalée par lane (voie **lourde**) ; en voie légère, c'est la **fenêtre** qui est décalée — voir « La fenêtre qui avance » |
@@ -315,8 +326,12 @@ L'ordre des servables :
 **Les deux priorités légères du 18/11.** `coordination/tapis_avantages.py` porte deux contributions petites
 et distinctes, comptées en dixièmes de visite : le niveau reste ainsi un multiple de 0,1, et les issues se
 regroupent par niveau — c'est ce qui fait tourner la tête d'une lane à l'autre. La division par 3 des
-consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère. Les
-marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
+consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère.
+**La consolidation passe devant l'ancienneté** (invariant I7 du contrat du picker, #28114) : les deux bonus
+ne s'additionnent plus, ils se composent **par priorité** — la consolidation prend 0,6 visite, l'âge ne garde
+que 0,3 visite sur une consolidation (le rapport nomme ce motif « plafonnée »). Avant, l'âge plein l'emportait
+et l'invariant était violé dans l'étage rapide.
+Les marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
 c'est le harnais sk-agent qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour
 et au total, et nomme les contributions qui s'appliquent (champ `priorite`).
 
@@ -504,6 +519,44 @@ complet, scripts/coordination/tapis_prise_en_charge.py) puis la servir`.
 **Un conteneur ne passe jamais devant un grain** (#26926) : la détection se fait sur les métadonnées
 (titre `[EPIC]`, labels `epic`/`umbrella`), donc elle ne peut pas attendre la lecture du corps.
 
+**Chaque classe a un créneau de lecture** (arbitrage du 19/11) : dans le **lot public de la rotation**
+(`tapis_public.lot_public`, la voie `tapis_leger`), les deux classes sont entrelacées — le conteneur
+tient un créneau à lui, un tour sur deux. Ce qu'il ne peut pas faire, c'est **déplacer un grain** : son
+quota de créneaux (25 % du lot) est inchangé, et la part des grains n'en dépend pas. La règle #26926
+est donc **étroitié** dans le lot de *lecture*, pas abandonnée : l'**ordre de service** de la sortie du
+tapis (les grains d'abord) reste inchangé.
+
+**La tête du lot est le numéro suivant le curseur** (famine du 19/11) : la priorité d'entrée gardait la
+même tête à chaque tranche — le plus prioritaire du bloc — et le curseur sautait alors par blocs
+entiers ; les grains du milieu du bloc n'étaient plus jamais servis (mesure du peer : **4 numéros lus
+sur 80** en 400 tours). Le curseur n'avance en outre que sur les numéros **lus** (le lot
+propriétaire) : un numéro proposé mais non qualifié reste *en attente*, et la tranche suivante le sert
+en tête. Les deux témoins de la famine sont rejoués sur le lot public dans
+`scripts/tests/test_tapis_public.py`.
+
+**Le grain non tenté ne fige plus le curseur** (mesure du 19/11, peer `ai-01:CoursIA`) : un curseur
+qui s'arrête au premier numéro **non décidé** re-propose la même tranche au cycle suivant — quatre
+cycles de suite — et **les numéros suivants ne sont jamais proposés** : la couverture du pool s'arrête.
+Témoin mesuré : pool 1..6, taille 2, ancre 2 ; la tranche [3, 4] est proposée, seul 4 est qualifié,
+3 n'a pas été tenté ; **5 et 6 ne sont jamais servies**.
+
+Trois états se distinguent désormais pour un numéro proposé par le tirage :
+
+- **décidé** (confirmé, ou écarté par une règle de contenu) : le curseur passe, le numéro est acquitté ;
+- **pris en charge mais non décidé** (lecture impossible, budget épuisé) : le numéro est **parqué** sous
+  son code, et le curseur passe ;
+- **proposé, non pris en charge** : rien n'a été décidé sur lui ; il reste en attente jusqu'à ce que le
+  curseur le **saute** — et il est alors parqué sous le code `NON_TENTE`
+  (`scripts/coordination/tapis_non_tente.py`), qui le distingue des deux cas précédents.
+
+Le curseur n'avance que sur les numéros que le lot a **réellement pris en charge**
+(`scripts/coordination/tapis_avance.py`) : une qualification nominative d'un numéro qui n'appartient pas
+à la tranche ne déplace plus l'ancre des primaires pendantes — le curseur annonçait alors une couverture
+que personne n'avait mesurée (revue du 19/11, point b). Un numéro **sauté** est parqué au moment où le
+curseur passe par-dessus lui, faute de quoi il serait perdu pour la rotation ; et la **reprise** ne porte
+pas le curseur : une primaire étrangère déjà parquée ne fait pas avancer une tranche que le lot ne touche
+pas.
+
 **Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
 `LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
 a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
@@ -519,6 +572,11 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
 | `scripts/coordination/tapis_recul.py` | le **recul** : `COUVERTE`, `RELACHEE` et `MERGEE` servies après le tour, jamais refusées (`RECULS`, `servable`, `_palier_recul`, #27059) |
+| `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
+| `scripts/coordination/tapis_avance.py` | l'**avance** du curseur, bornée au lot : les trois états (décidé / parqué / sauté) |
+| `scripts/coordination/tapis_non_tente.py` | le grain **non tenté** : proposé, jamais qualifié — son code propre, et il ne fige pas le curseur |
+| `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
+| `scripts/coordination/tapis_repli.py` | le **repli chronologique** : hors réseau **ou quand les filtres vident la file**, le cache local fait foi et le pool est servi par date de création (#28114) ; le cap y est **inerte** (`mesure: false`) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
@@ -528,6 +586,21 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
 | `scripts/coordination/tapis_universel.py` | la rotation universelle sur les métadonnées |
 | `scripts/coordination/gh_snapshot.py` | le **fil complet** (REST paginé) — l'organe de la qualification |
+| `scripts/coordination/tapis_labels.py` | les **exclusions en données** : la table des labels qui écartent un grain (`candidate-delivered`, `pause`) — #28114 |
+
+### Ce qui déclenche le repli, et ce que le cap y devient
+
+Le repli chronologique prend la main dans **deux** cas : la lecture de sélection échoue (réseau
+indisponible, quota épuisé) **et** la lecture réussit mais que les **filtres vident la file** — tous les
+grains écartés alors que le pool en porte. Sans cette seconde bascule, une lane dont le cap de
+livraisons est saturé ne recevrait plus rien : l'invariant I1 (« une file sans fin ») serait rompu par
+les filtres eux-mêmes.
+
+**Le cap est inerte dans le repli.** Le cap de livraisons lit GitHub (les PRs mergées de la fenêtre de
+7 jours). Lui donner un fetteur capable de lire le réseau le ferait **échouer de nouveau en pleine
+panne** : le repli passe donc un fetteur **inerte** (`tapis_cap_livraisons.fetcher_hors_reseau`), la
+mesure est impossible et le rapport porte le témoin `mesure: false`. C'est le fail-OPEN du module : on ne
+refuse jamais un item sur une charge qu'on n'a pas su lire.
 
 ## La fenêtre qui avance sur le pool (#27225, suite du 18/11)
 
@@ -610,7 +683,7 @@ le 19/11 (380 issues sur 440 atteintes en un tour, sans jamais fermer le tour). 
 
 **La consolidation est dans la clé, pas à côté** (revue ai-01 du 22/11). Le mandat du cycle veut « un picker
 rapide couvrant toutes les issues avec priorité consolidation et ancienneté » : l'ancienne voie donnait aux
-consolidations 0,4 visite à tout âge, et cet avantage a disparu avec la sélection par âge — les
+consolidations 0,6 visite à tout âge (0,4 avant le 23/11), et cet avantage a disparu avec la sélection par âge — les
 consolidations n'avaient plus aucun avantage dans la clé. Deux règles, celle de `tapis_avantages.est_consolidation`
 (le **label** `consolidation`, ou la **famille** dont la racine l'est) :
 
@@ -695,7 +768,7 @@ le rôle responsable de son prochain pas, sur la même lecture groupée (aucun a
 | `urne` | `LIVREE`, `MERGEE`, `LABEL` (`candidate-delivered`) | clôture par le coordinateur, l'adjoint ou le secrétaire |
 | `revue` | `COUVERTE` | revue et fusion de la PR citée (son numéro est lu dans le motif) |
 | `mainteneur` | `GEL` | décision du mainteneur |
-| `attente` | `RELACHEE`, `PLAFOND`, `ORIGAMI` | attente bornée, puis le tapis |
+| `attente` | `RELACHEE`, `PLAFOND`, `ORIGAMI`, `LABEL` (`pause`) | attente bornée, puis le tapis |
 | `hors-flotte` | `HORSFLOTTE` | hors flotte |
 | `autre` | tout code non mappé | le motif est rapporté |
 
@@ -782,6 +855,15 @@ python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
 Codes de sortie : `0` tout est couvert ; `1` invariant violé, ou une issue d'urne ou de revue sans visite
 dans le tour alors qu'elle a plus de `FENETRE_J` jours ; `2` lecture incomplète sans secours (jamais un faux
 `0`). `--dashboard-line` rend une ligne de 200 caractères au plus, à poster sur le dashboard du secrétariat.
+
+**Listes complètes en JSON, bornées à l'affichage texte (#27725).** La borne `LIMITE_LISTE` (20) ne borne plus
+que le texte : en `--json`, chaque liste de numéros est **complète**. Mesure du 21/11 sur la lecture de 10:12Z
+(475 issues hors marathon) : avant, les listes s'arrêtaient à 20 numéros — 20 numéros d'urne à 0 visite pour
+**66** issues, 20 numéros « worker » pour **29**, 20 « jamais visitées » pour **47**, 20 urgences pour **73** ; les
+**comptes**, eux, étaient justes. Une troncature invisible donnait à lire une liste plus courte que la
+population réelle, et le secrétaire re-vérifiait à la main ce que l'organe devait rendre. Dans le texte, la
+troncature se dit désormais : `... et 9 autres`. Un test de propriété (25 numéros dans un rôle) verrouille le
+couple : le JSON rend 25, le texte en montre 20 et annonce les 5 autres.
 
 **Ce que la mesure ne voit pas** : une fermeture (la lecture ne contient que les issues ouvertes), une PR
 fusionnée sans commit cité (le squash cite sa PR, pas forcément l'issue), un `[DELIVERED]` plus ancien que
