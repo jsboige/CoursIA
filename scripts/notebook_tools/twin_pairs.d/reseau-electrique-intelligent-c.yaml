@@ -1,0 +1,7 @@
+- name: "Reseau-Electrique-Intelligent C#"
+  family: CaseStudies/Reseau-Electrique-Intelligent/student
+  python: MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb
+  csharp: MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Reseau-Electrique-Intelligent-Python.ipynb. Execution reelle sur kernel .net-csharp : 8 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

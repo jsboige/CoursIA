@@ -184,8 +184,14 @@ def test_scaleup_script_ecrit_les_fenetres_et_le_protocole():
     assert "protocol_block(" in SCALEUP_SOURCE
     assert "max_completion_length=MAX_COMPLETION_LENGTH" in SCALEUP_SOURCE
     assert "args.max_records" in SCALEUP_SOURCE, "le drapeau --max-records n'est pas cable"
-    assert "ds, args.max_records)" in SCALEUP_SOURCE, (
+    assert "ds, args.max_records" in SCALEUP_SOURCE, (
         "run_seed ne recoit pas la taille de fenetre demandee par la CLI"
+    )
+    # Le runner passe aussi le plan d'instrumentation (run instrumente du panel
+    # persona, §6 du pre-enregistrement) : l'appel a gagne un argument, le
+    # controle de la taille de fenetre reste le meme.
+    assert "instr=instr" in SCALEUP_SOURCE, (
+        "le plan d'instrumentation n'atteint pas run_seed"
     )
 
 
