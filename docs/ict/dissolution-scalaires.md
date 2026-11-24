@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — 5e fil de lecture : la dissolution des scalaires (Φ / F / K → faisceau de proxys, ICT-1 → ICT-22)
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Consolide un **cinquième fil de lecture** de la série ICT, à côté des quatre déjà documentés : invariants / dissociations / obstructions ([synthese-invariants-dissociations-obstructions.md](synthese-invariants-dissociations-obstructions.md)) + problème de la représentation interne ([genealogy-representation-interne.md](genealogy-representation-interne.md)). Le **cinquième fil** est celui de la **dissolution successive des scalaires** : ce qui arrive à Φ, F, K quand on les pousse hors de leur substrat d'origine.
@@ -31,7 +33,7 @@ Chaque palier marque une **rupture** dans la carrière d'un scalaire fondateur �
 
 ### Palier 2 — ICT-14 : F comme scalaire-complémentaire (jambe 2)
 
-[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
+[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
 
 **Ce que ce palier ne dit pas.** F **s'ajoute** à Φ sans le dissoudre : la strate 4 introduit **trois jambes** (Φ / F / K) qui sont présentées comme **compatibles** (ICT-15 va le vérifier).
 

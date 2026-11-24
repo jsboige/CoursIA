@@ -1,0 +1,10 @@
+- name: "GameTheory-16k Theorie des Encheres Myerson"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Calculs pédagogiques sans solveur : NumPy côté Python, BCL .NET côté C#. Les mêmes enchères, budgets Monte-Carlo et quadrature sont exécutés."
+  known_differences:
+    - "2026-11-18 (myia-po-2023:CoursIA-2, c2044 jalon 6) : cote Python seul enrichi d'un temoin execute (3 cellules ajoutees apres la cellule 'Lecture -- le resultat central' du §4) qui calcule la FORME EXACTE du resultat central -- sur l'instance concrete (n=3, Uniforme[0,1], r*=1/2) le revenu optimal de Myerson est la fraction 17/32 = 0.53125 (le '0.53125' du §4 etait cette fraction, approchee par la quadrature 20001 points de rev_optimal_analytic) et le saut de revenu de la reserve vaut 1/32 = +6.25 % (1/16) du benchmark, en arithmetique exacte fractions.Fraction sans quadrature. Cote C# non modifie ; parite semantique inchangee."
+    - "Les générateurs pseudo-aléatoires diffèrent : les estimations numériques ne sont pas identiques."

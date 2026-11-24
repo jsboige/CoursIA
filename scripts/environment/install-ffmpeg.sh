@@ -1,11 +1,18 @@
 #!/bin/bash
 # FFmpeg Installation Script for Linux/macOS
-# This script downloads and installs FFmpeg locally for the CoursIA project
+# Ce script installe FFmpeg avec le gestionnaire de paquets système.
 
 set -e
 
-INSTALL_PATH="${INSTALL_PATH:-/usr/local}"
 FORCE=false
+usage() {
+    cat <<'EOF'
+Usage: install-ffmpeg.sh [--force] [--help]
+
+Installe FFmpeg avec le gestionnaire de paquets système (apt, yum, dnf ou Homebrew).
+Les chemins personnalisés ne sont pas pris en charge.
+EOF
+}
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -14,9 +21,18 @@ while [[ $# -gt 0 ]]; do
             FORCE=true
             shift
             ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
         --path)
-            INSTALL_PATH="$2"
-            shift 2
+            if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+                echo "Erreur : --path requiert un chemin non vide ; les chemins personnalisés ne sont pas pris en charge." >&2
+            else
+                echo "Erreur : --path '$2' n’est pas pris en charge ; FFmpeg est installé avec le gestionnaire de paquets système." >&2
+            fi
+            echo "Consultez --help pour connaître les options." >&2
+            exit 1
             ;;
         *)
             echo "Unknown option: $1"

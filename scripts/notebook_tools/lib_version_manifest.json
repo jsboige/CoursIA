@@ -69,8 +69,8 @@
     },
     "dotNetRDF": {
       "ecosystem": "nuget",
-      "canonical": null,
-      "basis": "ARBITRAGE REQUIS : la majorite est la plus ANCIENNE (3.4.1, 13 carnets) contre 3.5.2 (1 carnet, plus recent). Fixer la canonique, c'est choisir entre converger vers le bas et monter la serie -- decision de l'exigence 4, pas de la tranche 1."
+      "canonical": "3.5.2",
+      "basis": "arbitrage exigence 4 (issue #27787, tableau de convergence) : la serie monte vers son carnet le plus recent (SW-12-GraphRAG a 3.5.2) ; les 13 carnets en 3.4.1 convergent (SW-01..SW-11, SW-13 -CSharp, SL-8-Csharp) -- tranche myia-po-2028:CoursIA"
     },
     "CsvHelper": {
       "ecosystem": "nuget",

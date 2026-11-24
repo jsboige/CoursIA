@@ -1,7 +1,11 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 ## Note de conception — queue « hors strates » de la série ICT (40a, 40b, 47, 47b, 48-Onset, 48-Wolfram, 49, 50) — phase 2
 
 Lane `myia-po-2027:CoursIA-2` · dispatch ai-01 31/10 (`msg-20261031T172938`) · consigne du mainteneur 31/10.
 Cette note donne à chacun des carnets « hors strates » une **destination**, et **clôt les trois options ouvertes** (47b, 40b, 48-Onset). C'est une **note de conception seule : aucun mouvement**. Les modules `ict/` consommés par ces carnets ne bougent pas. Le veto du 30/10 sur la création de carnets s'applique : on ne déplace que des carnets existants. Le mouvement (renommage de dossier / renumérotation) est **différé à la tranche suivante**, qui amendera cette note.
+
+> **Amendement du 15/11/2026 — mouvement exécuté** ([#20298](https://github.com/jsboige/CoursIA/issues/20298), arbitrage ai-01 GO du 15/11, c.6889190719) : **ICT-49, ICT-50 et ICT-51 quittent la série ICT** et rejoignent la série **Complexity** sous les noms `Complexity-08c-MachinesDeGoedel` (ex-ICT-49), `Complexity-08-WolframRule30Aleatoire-Rule110Universelle` (ex-ICT-50) et `Complexity-08b-CombinateursSKI-TagDePost` (ex-ICT-51) — noms actuels conservés, seul le préfixe change ; ordre pédagogique 08 → 08b → 08c. **Sont supersédées par cet amendement** : la ligne « **48-Wolfram + 50 → palier 13** » (ICT-50 ne rejoint pas le palier 13 d'ICT — le fil Wolfram continue dans Complexity) et le « **maintien argumenté : ICT-49** » (il ne reste pas dans ICT comme distillation externe ; l'argument d'autonomie qui fondait le maintien vaut désormais rattachement Complexity). ICT-51, hors périmètre de cette note, part avec eux par la même décision. Le reste de la note (40a/40b → 04, 47/47b → 15, 48-Onset → 16, accrétions de famille 36/42 → 15) demeure la référence pour la queue restante.
 
 ### Plateau mesure (origin/main = `e89519fe26fd`)
 
@@ -78,6 +82,8 @@ Cette note **ne déplace rien**. La tranche de mouvement qui suivra :
 2. regroupera les membres de paire dans le dossier de leur tête (04 : 40a+40b ; 15 : 47+47b+36b-d+42c-f ; 13 : 48-Wolfram+50 ; 16 : 48-Onset) ;
 3. laissera ICT-49 en place (maintien) ;
 4. amendera **cette note** pour pointer le mouvement exécuté.
+
+*(Amendement du 15/11 : la tranche de mouvement exécutée a déplacé ICT-49/50/51 vers la série Complexity — voir le bloc d'amendement en tête de note, qui supersède les points 2 et 3 ci-dessus pour les carnets concernés ; le périmètre restant de cette liste est inchangé.)*
 
 ### Ré-exécution
 

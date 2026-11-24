@@ -46,7 +46,8 @@ def synthetic_reference(**overrides) -> dict:
         "folds": 5,
         "node_level": {"measurable": False, "labels": 280, "support_max": 1},
         "baselines": {
-            "majority_grouped": {"macro_f1_mean": 0.0034, "macro_f1_std": 0.0028},
+            "majority_grouped": {"macro_f1_mean": 0.0034, "macro_f1_std": 0.0028,
+                                 "labels_total": 14},
             "lexical_centroid_grouped": {"macro_f1_mean": 0.2198,
                                          "macro_f1_std": 0.042},
         },
@@ -167,6 +168,54 @@ def test_refus_mesure_none():
     verdict = gp.gate(synthetic_reference(), candidate_report(None))
     assert verdict["verdict"] == "REFUSED_NO_MEASURE"
     assert "aucun pli" in verdict["refusal_reason"]
+
+
+# --- Plancher du hasard : publie a cote du verdict, il ne le remplace pas ---
+
+def test_plancher_du_hasard_publie_avec_le_verdict():
+    verdict = gp.gate(synthetic_reference(), candidate_report(0.30))
+    floor = verdict["chance_floor"]
+    assert floor["labels_total"] == 14
+    assert floor["macro_f1"] == pytest.approx(0.0714, abs=1e-4)
+    assert floor["candidate_below_chance"] is False
+
+
+def test_plancher_du_hasard_absent_quand_les_etiquettes_sont_inconnues():
+    reference = synthetic_reference()
+    del reference["baselines"]["majority_grouped"]["labels_total"]
+    assert gp.gate(reference, candidate_report(0.30))["chance_floor"] is None
+
+
+def test_20359_beats_majority_only_mais_sous_le_hasard():
+    """Le run FT de #20359, rejoue sur la reference reelle du depot.
+
+    Le verdict publie de #20359 est NO BEATS, rendu contre le hasard mesure
+    (0.0628). Ce gate-ci rend BEATS_MAJORITY_ONLY : il ne compare qu'au
+    majoritaire (0.0034), tres en dessous du hasard uniforme (1/14 = 0.0714).
+    `candidate_below_chance` est ce qui rend l'ecart visible ; l'arbitrage du
+    seuil est porte par #25419, pas par ce test, qui epingle l'etat mesure.
+    """
+    reference = gp.load_reference(REPO_REFERENCE)
+    report = candidate_report(0.0409)
+    report["corpus"]["sha256"] = reference["corpus"]["sha256"]
+    report["ft"]["macro_f1_std"] = 0.0281
+    verdict = gp.gate(reference, report)
+    assert verdict["verdict"] == "BEATS_MAJORITY_ONLY"
+    assert verdict["margins"]["vs_lexical_points"] == pytest.approx(-0.1789, abs=1e-4)
+    assert verdict["margins"]["margin_vs_lexical_sigma"] == pytest.approx(-4.26, abs=0.01)
+    assert verdict["chance_floor"]["candidate_below_chance"] is True
+
+
+def test_main_dit_le_hasard_quand_le_candidat_est_dessous(tmp_path, capsys):
+    report_path = tmp_path / "ft_report.json"
+    report_path.write_text(json.dumps(candidate_report(0.0409)), encoding="utf-8")
+    ref_path = tmp_path / "ref.json"
+    ref_path.write_text(json.dumps(synthetic_reference()), encoding="utf-8")
+    rc = gp.main(["--report", str(report_path), "--reference", str(ref_path)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "BEATS_MAJORITY_ONLY" in out
+    assert "sous le hasard uniforme" in out
 
 
 # --- Controle positif sur la reference reelle du depot ---

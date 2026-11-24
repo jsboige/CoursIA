@@ -5858,12 +5858,19 @@ def test_cache_v2_complete_is_read_by_the_reader_without_network(
         # cache ecrit par une version anterieure, qui n'indexait pas les
         # anciens chemins de renommage.
         "renames": [],
+        # #26751 -- la date de creation est une preuve pour la jambe
+        # IMPLICIT : sans elle, le lecteur traite le cache comme absent.
+        # Les DEUX graphies sont acceptees (`created_at` du fetch GraphQL
+        # de l'organe, `createdAt` du `gh pr list` du picker).
+        "created_at": "2026-11-14T10:00:00Z",
     }]
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")
     assert path is not None
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    assert payload["format"] == "open-prs-v2"
+    # La constante du producteur, pas un litteral : un bump de format
+    # (#26725, v2 -> v3) ne doit pas casser un test qui ne parle pas de format.
+    assert payload["format"] == pig._OPEN_PRS_CACHE_FORMAT
     assert payload["complete"] is True
     assert payload["count"] == 1
 
@@ -5887,7 +5894,7 @@ def test_incomplete_enumeration_writes_an_incomplete_cache(
     assert path is not None
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     assert payload["complete"] is False
-    assert payload["format"] == "open-prs-v2"
+    assert payload["format"] == pig._OPEN_PRS_CACHE_FORMAT
     assert "tronquee" in payload["reason"]
 
     # Le lecteur refuse ce cache : UNKNOWN, jamais une liste exploitee.
@@ -5961,6 +5968,33 @@ def test_cover_probe_keeps_the_anchor_boundary(
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
     assert pig.open_cover_signal_complete(4242) == ""
+
+
+def test_precharge_reopen_events_only_closure_carriers(monkeypatch):
+    """#24823 tranche 2 : seuls les decideurs de cloture sont chauffes.
+
+    Un numero sans instantane frais (None) n'est pas chauffe -- la boucle
+    garde son comportement historique pour lui ; un fil sans decision de
+    cloture ne declenche pas la lecture du TIMELINE.
+    """
+    comments_by_number = {
+        111: [{"body": "Un grain ordinaire",
+               "createdAt": "2026-11-01T00:00:00Z"}],
+        222: [{"body": "Fermeture sur dossier #222 -- verdict CLOSE",
+               "createdAt": "2026-11-01T00:00:00Z"}],
+    }
+    monkeypatch.setattr(
+        pig, "_snapshot_comments", lambda n: comments_by_number.get(n))
+    timeline_calls: list[int] = []
+
+    def _fake_reopen(number):
+        timeline_calls.append(number)
+        return []
+
+    monkeypatch.setattr(pig, "_reopen_events", _fake_reopen)
+    warmed = pig._precharge_reopen_events([111, 222, 333])
+    assert warmed == [222]
+    assert timeline_calls == [222]
 
 
 def test_run_bounded_redirects_to_files_not_pipes(monkeypatch):

@@ -1,0 +1,10 @@
+- name: ML DataScience 2.5b calibration
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: C# orchestre les cinq plis OOF et calcule reliability diagrams, ECE, Brier, AUC et gains ; Python.NET appelle réellement StandardScaler, LogisticRegression, RandomForestClassifier et IsotonicRegression pour conserver le modèle scientifique comparé.
+  known_differences:
+    - Les figures C# sont des SVG statiques ; les derniers arrondis de présentation peuvent différer entre NumPy et .NET.
+    - Python.NET exige un CPython compatible, NumPy et scikit-learn ; les traces seedées des exercices sont contrôlées à une précision de 1e-8, sans certification universelle du programme étudiant.

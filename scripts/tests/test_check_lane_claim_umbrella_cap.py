@@ -728,5 +728,58 @@ def test_un_claim_de_lane_ne_s_exempte_pas_du_plafond(capsys):
     assert data["epic_visit_cap_dispatch"] is None
 
 
+# --- #27012 : l'echappatoire nomme une fille REELLE de l'EPIC plafonne --------
+
+def test_cap_names_a_real_open_daughter_of_the_capped_epic(capsys):
+    """#27012 -- le conseil cite une fille qui existe.
+
+    L'echappatoire du plafond disait « servir un sous-grain DEJA OUVERT de
+    l'EPIC » en citant #26414, qui est une issue META et **pas** une fille de
+    l'EPIC plafonne : la lane qui suivait le conseil ne trouvait rien a
+    servir. Le message nomme desormais les filles ouvertes mesurees de
+    l'EPIC -- meme oracle que `parent_refs`, donc meme definition de « fille ».
+    """
+    payload = epic(comments=[comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3))])
+    loaders = Loaders(pool=[
+        pool_item(22609, f"[#{SERRE100} - tranche 22609] soeur", iso(days=2),
+                  body=f"Part of #{SERRE100}"),
+    ])
+    rc = run(payload, loaders, stale_threshold=48)
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "#22609" in captured.err
+    # la decision reste citee comme decision, pas presentee comme la fille
+    assert "decision #26414" in captured.err
+
+
+def test_cap_does_not_name_an_issue_that_is_not_a_daughter(capsys):
+    """Le repli reste generique : une issue qui ne nomme pas l'EPIC plafonne
+    n'est pas proposee comme fille a servir."""
+    payload = epic(comments=[comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3))])
+    loaders = Loaders(pool=[
+        pool_item(30000, "tranche d'un autre EPIC", iso(days=2),
+                  body="Part of #99999"),
+    ])
+    rc = run(payload, loaders, stale_threshold=48)
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "#30000" not in captured.err
+    assert "decision #26414" in captured.err
+
+
+def test_cap_without_any_daughter_keeps_the_generic_advice(capsys):
+    """Aucun sous-grain ouvert : le message ne nommage rien (il n'invente
+    pas une fille) et conserve l'echappatoire generique."""
+    payload = epic(comments=[comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3))])
+    rc = run(payload, Loaders(pool=[]), stale_threshold=48)
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "servir un sous-grain DEJA OUVERT" in captured.err
+    assert "decision #26414" in captured.err
+
+
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__, "-q"]))

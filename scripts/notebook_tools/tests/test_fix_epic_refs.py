@@ -47,7 +47,8 @@ def test_retrait_chirurgical_et_note_de_pied(tmp_path: Path) -> None:
     header = (
         "# Titre\n"
         "Une phrase qui explique.\n"
-        "> Port pyz3 du notebook C# [`13_X.ipynb`](../Z3-Linq2Z3/13_X.ipynb) (Microsoft.Z3 brut). "
+        "Source: https://example.org/spec#section ; revision a1b2c3d4e5f6.\n"
+        "> Port pyz3 du notebook C# [`13_X.ipynb`](../Z3-Linq2Z3/13_X.ipynb) (Microsoft.Z3 brut).\n"
         "EPIC #1206, Prong B."
     )
     _write(path, _notebook(header))
@@ -56,14 +57,41 @@ def test_retrait_chirurgical_et_note_de_pied(tmp_path: Path) -> None:
     nb = json.loads(path.read_text(encoding="utf-8"))
     assert "EPIC" not in "".join(nb["cells"][0]["source"])
     assert "Prong" not in "".join(nb["cells"][0]["source"])
-    # Le reste de l'en-tete est intact.
-    assert "# Titre" in nb["cells"][0]["source"]
-    assert "Port pyz3 du notebook C#" in nb["cells"][0]["source"]
+    # Le reste de l'en-tete est intact, y compris phrase, lien, URL et SHA.
+    header_after = "".join(nb["cells"][0]["source"])
+    assert "# Titre" in header_after
+    assert "Une phrase qui explique." in header_after
+    assert "Port pyz3 du notebook C#" in header_after
+    assert "[`13_X.ipynb`](../Z3-Linq2Z3/13_X.ipynb)" in header_after
+    assert "https://example.org/spec#section" in header_after
+    assert "a1b2c3d4e5f6" in header_after
     # La note de pied est dans la derniere cellule markdown.
     assert "> Carnet issu de l'EPIC #1206." in "".join(nb["cells"][2]["source"])
     # La cellule de code et ses sorties sont intactes.
     assert nb["cells"][1]["source"] == ["x = 1\n"]
     assert nb["cells"][1]["execution_count"] == 3
+
+
+def test_refus_sans_modifier_phrase_lien_url_ou_sha_non_couverts(tmp_path: Path) -> None:
+    """Une reference EPIC hors forme couverte ne doit pas mutiler le texte."""
+    path = tmp_path / "n.ipynb"
+    header = (
+        "# Titre\n"
+        "Une phrase complete avec un [lien](https://example.org/spec#section) "
+        "et le SHA a1b2c3d4e5f6.\n"
+        "PR #1206."
+    )
+    _write(path, _notebook(header))
+    before = path.read_bytes()
+
+    outcome = fer.apply_one(path, dry_run=False)
+
+    assert outcome == "aucune reference d'EPIC en en-tete"
+    assert path.read_bytes() == before
+    decoded = path.read_text(encoding="utf-8")
+    assert "Une phrase complete" in decoded
+    assert "https://example.org/spec#section" in decoded
+    assert "a1b2c3d4e5f6" in decoded
 
 
 def test_refus_si_parenthese_vide(tmp_path: Path) -> None:

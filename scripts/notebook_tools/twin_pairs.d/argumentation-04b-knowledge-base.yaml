@@ -1,0 +1,7 @@
+- name: "Argumentation-04b Knowledge Base"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Port C# BCL ; l'ajout d'une proposition homonyme remplace ses métadonnées conformément au code et au notebook Python."

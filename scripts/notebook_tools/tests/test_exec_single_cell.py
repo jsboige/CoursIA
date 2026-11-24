@@ -187,7 +187,7 @@ class TestCollectOutputs:
         assert len(outputs) == 1
         assert outputs[0]["output_type"] == "stream"
         assert outputs[0]["name"] == "stdout"
-        assert outputs[0]["text"] == "hi\n"
+        assert outputs[0]["text"] == ["hi\n"]
 
     def test_execute_result(self):
         """execute_result message produces output with execution_count."""
@@ -264,7 +264,7 @@ class TestCollectOutputs:
         kc = self._mock_kc(msgs)
         outputs, ec = collect_outputs(kc, "test-msg-001", timeout=5)
         assert len(outputs) == 1
-        assert outputs[0]["text"] == "real"
+        assert outputs[0]["text"] == ["real"]
 
     def test_empty_timeout(self):
         """Empty queue (timeout) returns empty outputs."""
@@ -305,7 +305,7 @@ class TestCollectOutputs:
         kc = self._mock_kc(msgs)
         outputs, ec = collect_outputs(kc, "test-msg-001", timeout=5)
         assert len(outputs) == 1
-        assert outputs[0]["text"] == "ok"
+        assert outputs[0]["text"] == ["ok"]
 
     def test_multiple_streams(self):
         """Multiple stream outputs (stdout + stderr)."""

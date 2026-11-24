@@ -58,7 +58,7 @@ env:
     MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/IntegrationTests/IntegrationTests.csproj
     MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/StreamingAgent.App/StreamingAgent.App.csproj
     MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/CopilotAgent.App/CopilotAgent.App.csproj
-    MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/csharprepl-demo/LiveOrderApp.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CSharpRepl/csharprepl-demo/LiveOrderApp.csproj
     MyIA.AI.Notebooks/Probas/DecisionTheory/voi/InferNetVoi/InferNetVoi.csproj
     MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Scrutor/ScrutorLab/ScrutorLab.csproj
 

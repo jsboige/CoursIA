@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML-ML.Net
-pedagogical_count: 25
-breakdown: ML.Net=25
-maturity: BETA=23, ALPHA=2
+pedagogical_count: 29
+breakdown: ML.Net=29
+maturity: BETA=29
 -->
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)
@@ -44,7 +44,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 |---|----------|---------|---------------------------------------------|-------|------------------|
 | 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min | [05b](#approfondissement-05-series-temporelles) |
 | 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min | — |
-| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min | [07b](#approfondissement-07-recommandation) |
+| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min | [07b](#approfondissement-07-recommandation) · [07c](#approfondissement-07-recommandation) |
 | 08 | [ML-08-Clustering-CSharp](ML-08-Clustering-CSharp.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min | — |
 | 09 | [ML-09-Anomaly-Detection-CSharp](ML-09-Anomaly-Detection-CSharp.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min | [09b](#approfondissement-09-detection-anomalies) · [09c](#approfondissement-09-detection-anomalies) |
 
@@ -73,6 +73,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 | # | Notebook | Contenu | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
+| 07c | [ML-07c-Sona-Recommandeur-Generatif](ML-07c-Sona-Recommandeur-Generatif-Python.ipynb) | **Recommandeur génératif mono-modèle** : digérer l'architecture de production Sona (un transformer sur l'historique chronologique, décodage auto-régressif de Semantic IDs, module de ranking sur mémoire d'encodeur partagée) et la relier aux quatre fils du dépôt (ML-07/07b, Infer-15, RAG-02, stack Qwen-Omni) | *standalone Python (numpy — le paradigme et le vocabulaire, aucune valeur du papier)* | 45-60 min |
 
 <a id="approfondissement-09-detection-anomalies"></a>
 
@@ -80,8 +81,8 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 | # | Notebook | Contenu | Écosystème | Durée |
 |---|----------|---------|------------|-------|
-| 09b | [ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
-| 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *standalone Python (stumpy — la réponse constructive à ML-09b)* | 45-60 min |
+| 09b | [ML-09b Python](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) · [C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) | **Évaluer des détecteurs** : SPC, vrai MLP de prévision, AUC/seuil/densité/annotations/position sur cinq séries UCR | Python.NET + scikit-learn ; mêmes données et budgets | 90 min |
+| 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *Python + C# (STUMPY via Python.NET)* | 45-60 min |
 
 ### TP Pratique
 
@@ -125,7 +126,7 @@ Le notebook 6 présente l'interopérabilité ONNX — le pont entre l'écosystè
 
 Le notebook 7 explore les systèmes de recommandation — un domaine où ML.NET brille vraiment en production. Vous implémenterez la factorisation matricielle (collaborative filtering), apprendrez à générer des recommendations Top-N, à mesurer la qualité avec Precision@K et NDCG, et à gérer le "cold start problem" (nouveaux utilisateurs ou items sans historique). Deux exemples concrets : recommandation de films et recommandation e-commerce.
 
-Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-03) ni en clustering (ML-08). Le notebook 10 ([ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb)) pousse la critique plus loin : il montre qu'un détecteur de **1924** (Statistical Process Control, `M+3σ`) bat un auto-encodeur sur un benchmark trivial, identifie les **4 pièges** que Wu & Keogh (2020) imputent aux benchmarks de détection d'anomalies, puis bascule sur l'**UCR Archive** — le benchmark honnête où les méthodes simples échouent enfin. C'est le chaînon entre ML-09 et le Matrix Profile. Le notebook 11 ([ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb)) ferme ce chaînon par une réponse constructive : le Matrix Profile n'a **aucune phase d'entraînement**, donc structurellement rien à surapprendre — et sur une anomalie conjointe dont les trois marginales ne bougent pas, il la classe **première** là où la carte `M+3σ` et l'ACP de ML-09 ne la voient pas du tout.
+Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-03) ni en clustering (ML-08). Le prolongement [ML-09b](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) compare SPC et un MLP de prévision sur des séries UCR réelles et distingue les effets de densité, annotations et position. [ML-09c](ML-09c-MatrixProfile-Multidim-Python.ipynb) compare ensuite profils univariés, condensations et voisins communs. L'absence d'ajustement paramétrique n'empêche pas le surajustement du protocole ; les résultats restent propres aux séries et aux métriques présentées.
 
 ![Clustering K-Means sur données RFM — vérité terrain (Dormants/Réguliers/VIP) à gauche, clusters retrouvés par K-Means à droite](assets/readme/ml-clustering.png)
 *Figure extraite du jumeau Python ML-08-Clustering-Python (cellule 12, output 0). Deux panneaux côte-à-côte : à gauche la vérité terrain (générée par mixture gaussienne puis cachée à l'algorithme), à droite les clusters retrouvés par K-Means (K=3). Les axes sont Frequency (achats/mois, 0-30) × Monetary (EUR, 0-700). Les trois segments Dormants (rouge, <5 achats/mois, <100 EUR), Réguliers (vert, 5-15 achats, 100-300 EUR), VIP (bleu, 15+ achats, 300+ EUR) sont correctement identifiés — limitation illustrative assumée : la figure documente la capacité distinctive de K-Means à retrouver une partition linéairement séparable dans l'espace RFM normalisé, pas les cas réels où les segments se chevauchent ou ne sont pas gaussiens (voir cellules 13-18 du notebook pour les limites et les métriques Davies-Bouldin / silhouette).*
@@ -280,6 +281,15 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Ce que la mesure refuse de dire | Que la quantification vaille mieux que le contenu direct : les deux écarts de signe opposé sont non concluants, et le balayage des tailles de dictionnaire ne montre pas de tendance monotone |
 | Exercices | Trois stubs sans erreur volontaire : deux niveaux suffisent-ils, le partage du premier code aide-t-il, et lequel des deux modèles résiste à un contenu bruité |
 
+### ML-07c-Sona-Recommandeur-Generatif-Python
+
+| Section | Contenu |
+|---------|---------|
+| Objet | Digérer l'architecture de production du recommandeur génératif Sona (Yandex Music) : un seul transformer sur l'historique chronologique, décodeur auto-régressif de Semantic IDs + module de ranking sur mémoire d'encodeur partagée, tokeniseur Qwen2.5-Omni figé |
+| Résonances cross-séries | Quatre fils du dépôt : ML-07/07b (génération de candidats par Semantic IDs), Infer-15 (versant probabiliste explicite), RAG-02 (retrieve → rerank), stack Qwen-Omni locale (même famille que le tokeniseur) |
+| Cellules auto-contenues | Quatre démos numpy : encodeur partagé à deux têtes, RQ → tuple de Semantic IDs, retrieve-then-rerank, contrastif génératif (rang) vs. probabiliste (crédibilité) |
+| Provenance | Aucune valeur numérique du rapport : le paradigme et le vocabulaire, écrits depuis la copie archivée au gisement |
+
 ### ML-08-Clustering-CSharp
 
 | Section | Contenu |
@@ -300,26 +310,32 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 
 ### ML-09b-TSAD-Benchmark-Flaws-Python
 
+[Jumeau C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) : C# charge et prépare les données, construit les fenêtres et cibles, mesure les métriques et trace les figures ; le vrai StandardScaler/MLPRegressor est appelé via Python.NET. Les cinq membres UCR sont vérifiés contre le manifeste versionné puis cachés localement sans redistribution.
+
 | Section | Contenu |
 |---------|---------|
-| SPC (1924) | Baseline Statistical Process Control : `\\|x - mean\\| > 3*std` en une ligne |
-| Auto-encodeur | Reconstruction de fenêtres (`MLPRegressor`) — perd face à SPC sur un benchmark trivial |
-| Piège 1 — trivialité | Un algorithme centenaire résout le benchmark → rien de difficile |
-| Piège 2 — densité | Anomalie < 1 % (réaliste) vs > 50 % (benchmarks défaillants, Wu & Keogh) |
-| Piège 3 — étiquettes | Décaler la GT fait chuter l'AUC du même détecteur |
-| Piège 4 — run-to-failure | « Prédire la fin » gagne sans détecter si l'anomalie est tardive |
-| UCR Archive | Benchmark honnête (anomalies variées, densité réaliste) où SPC échoue enfin |
+| SPC | Score global descriptif et décision >3 distingués de l'AUC |
+| MLP de prévision | Fenêtres de 20 points, horizon de 2 pas conservé, 32 neurones, maximum 1200 itérations ; scaler et réseau ajustés sur première moitié uniquement |
+| Baseline simple | Comparaison mesurée, sans preuve de trivialité générale |
+| Densité | Prévalence et accuracy de règles constantes ; AUC constante 0.5 avec les deux classes |
+| Étiquettes | Décalages artificiels 0/30/120, sans preuve d'une erreur réelle d'annotation |
+| Position | Baseline croissante indépendante du signal |
+| Trois séries entraînées | Résultats propres aux séries/étiquettes/protocole, pas certification d'un benchmark « honnête » |
+
+Les trois exercices ouverts sont répartis, avec gardes multi-fixtures : diagnostic SPC, densité/métriques constantes et effet de position. L'AUC globale inclut train et préfixe sans prévision ; SPC reste transductif. Les figures gardent les alertes SPC aux coordonnées réelles sur le signal.
 
 ### ML-09c-MatrixProfile-Multidim-Python
+
+Le [jumeau C#](ML-09c-MatrixProfile-Multidim-CSharp.ipynb) construit les signaux et classe les résultats en C#, en appelant STUMPY et l’ACP scikit-learn via Python.NET. Il emploie les mêmes graines NumPy et les mêmes budgets ; les figures sont des SVG statiques.
 
 | Section | Contenu |
 |---------|---------|
 | Matrix Profile | Distance à la sous-séquence la plus proche (`stumpy.stump`) — aucune phase d'entraînement |
-| Anomalie conjointe | Trois capteurs dont les **marginales ne bougent pas** : la carte `M+3σ` de ML-09b et l'ACP de ML-09 restent aveugles |
+| Anomalie conjointe | Trois capteurs aux marginales proches : comparaison des rangs avec la carte `M+3σ` et l'ACP |
 | Condensation | `min` (ET logique) vs `max` (OU) sur les profils univariés |
-| mSTAMP | Profil à `K` dimensions (`stumpy.mstump`) — `K=3` redevient aveugle : plus de dimensions peut être pire |
-| Effondrement à `k=1` | L'anomalie répétée devient sa propre plus proche voisine ; `k>=2` la restaure |
-| Décalage de `m` points | Le discord tombe *avant* l'anomalie — le piège 3 de ML-09b, vu de l'intérieur |
+| mSTAMP | Profil à `K` dimensions (`stumpy.mstump`) — dans cet exemple, `K=3` manque la cible parmi les 15 premiers pics |
+| Effondrement à `k=1` | dans cet exemple, la répétition masque le pic pour `k=1` et `k=2,3` le font ressortir |
+| Chevauchement | Une fenêtre peut commencer jusqu'à `m-1` points avant l'événement et le chevaucher |
 
 ## Dataset
 
@@ -533,6 +549,10 @@ Le fil rouge de cette série est le **paradoxe résolu** du ML en .NET : faire d
 
 Le [jumeau C#](ML-04b-ModelComparison-Validity-CSharp.ipynb) utilise MathNet pour les moindres carrés et les statistiques, ML.NET FastForest et FastTree pour les arbres, et Python.NET pour les données diabetes et les indices scikit-learn. Les scores des arbres peuvent différer des modèles scikit-learn.
 
+
+## Parité du socle ML-05b
+
+Le [socle Python](ML-05b-Series-Temporelles-Classiques-Python.ipynb) et son [jumeau C#](ML-05b-Series-Temporelles-Classiques-CSharp.ipynb) exécutent les mêmes données, diagnostics ADF/ACF/PACF, seize configurations SARIMA, lissages et douze fenêtres expansives. Le C# orchestre les expériences et figures statiques, avec les vraies API statsmodels via Python.NET ; le SSA natif ML.NET reste un modèle différent. Non-rejet, égalité après arrondi et preuve statistique d'équivalence sont distingués ; aucun modèle en échec n'est remplacé par le naïf.
 ### Parité ML-07b
 
 Les identifiants sémantiques ont leur parcours [Python](ML-07b-SemanticIDs-Recommandation-Python.ipynb) et leur [jumeau C#](ML-07b-SemanticIDs-Recommandation-CSharp.ipynb). Le C# construit le corpus et calcule profils, scores PMI, classements et bootstrap ; il appelle les vrais SVD/KMeans scikit-learn via Python.NET, et confronte McNemar MathNet à SciPy. Les paramètres et budgets sont communs ; les générateurs aléatoires diffèrent, donc les scores aussi. La SVD collaborative est calculée en float32, puis son produit est accumulé en double C#. Les bits affichés mesurent les codes idéaux, hors livres et stockage réel.

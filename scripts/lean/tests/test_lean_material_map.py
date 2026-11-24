@@ -39,7 +39,7 @@ def _load_module():
 
 mod = _load_module()
 
-LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
+LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean"
 LAKEFILE = LAC_EPINGLE + "/lakefile.lean"
 LAC_INCONNU = "MyIA.AI.Notebooks/Series/unknown_lean"
 
@@ -110,7 +110,7 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     ce test tant que son epingle n'a pas ete ajoutee explicitement.
     """
     page = _lignes_de_la_page()
-    assert len(page) == 41, f"la page porte {len(page)} lacs, attendu 41"
+    assert len(page) == 44, f"la page porte {len(page)} lacs, attendu 44"
 
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))
@@ -243,3 +243,180 @@ def test_le_code_de_sortie_de_mesure_impossible_est_different_de_la_divergece():
     confondent pas : le geste de reparation n'est pas le meme."""
     assert mod.UNMEASURABLE_RC == 2
     assert mod.UNMEASURABLE_RC != 1
+
+
+# --- La mesure est bornee et incrementale (#26973, ligne 5) -------------------
+#
+# Le `--check` durait 397 s (mesure du 2026-11-16 sur ai-01) : 77,5 s pour
+# les naissances (une passe d'historique PAR lac) et ~320 s pour la couverture.
+# Aucun appel n'etait sans delai, donc un `git` bloque pouvait faire attendre
+# la verification sans aucun verdict.
+
+
+def test_les_naissances_viennent_d_une_passe_unique(monkeypatch):
+    """Une passe d'historique pour tous les lacs, pas une par lac.
+
+    Mesure du 2026-11-16 : 77,5 s pour 42 passes contre 2,3 s pour une.
+    """
+    appels: list[tuple[str, ...]] = []
+
+    def faux_git(*args: str) -> str:
+        appels.append(args)
+        return ("2026-01-02\n\na/lakefile.lean\n"
+                "2026-03-04\n\nb/lakefile.lean\n")
+
+    monkeypatch.setattr(mod, "_git", faux_git)
+    naissances = mod._git_births(["a/lakefile.lean", "b/lakefile.lean"])
+    assert naissances == {"a/lakefile.lean": "2026-01-02",
+                          "b/lakefile.lean": "2026-03-04"}
+    assert len(appels) == 1, "une seule passe d'historique, pas une par lac"
+    assert "--name-only" in appels[0]
+    assert "--reverse" in appels[0]
+    assert "a/lakefile.lean" in appels[0], "la passe doit couvrir les lakefiles demandes"
+    assert "b/lakefile.lean" in appels[0]
+
+
+def test_la_premiere_apparition_d_un_chemin_est_son_ajout(monkeypatch):
+    """Un chemin ajoute, efface puis re-ajoute garde la date du PREMIER ajout.
+
+    C'est la regle du repli git (le premier ajout visible, pas le dernier) :
+    la passe unique ne doit pas la renverser.
+    """
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda *a: "2026-01-02\n\na/lakefile.lean\n2026-05-05\n\na/lakefile.lean\n")
+    assert mod._git_births(["a/lakefile.lean"]) == {"a/lakefile.lean": "2026-01-02"}
+
+
+def test_une_passe_sans_repertoire_ne_renvoie_rien(monkeypatch):
+    """Sans lakefile, aucune passe git : un appel inutile serait un risque."""
+    monkeypatch.setattr(mod, "_git", lambda *a: "2026-01-02\n")
+    assert mod._git_births([]) == {}
+
+
+def test_collect_ne_pose_qu_une_passe_d_historique(monkeypatch):
+    """`collect()` ne demande les naissances qu'EN UNE PASSE.
+
+    C'est le gain mesure : 42 passes d'historique (77,5 s) contre une (2,3 s).
+    """
+    appels: list[tuple[str, ...]] = []
+
+    def faux_git(*args: str) -> str:
+        appels.append(args)
+        return "2026-01-02\n"
+
+    monkeypatch.setattr(mod, "_git", faux_git)
+    monkeypatch.setattr(mod, "_git_paths", lambda *p: ["a/lakefile.lean"])
+    monkeypatch.setattr(mod, "_coverage_cached", lambda: {
+        "gated_lakes": [], "matrix_lakes": [], "matrix_lakes_without_gate": []})
+    mod.collect()
+    par_lac = [a for a in appels if "log" in a and "--name-only" not in a]
+    assert not par_lac, "une passe d'historique par lac : 77,5 s au lieu de 2,3 s"
+    uniques = [a for a in appels if "--name-only" in a]
+    assert len(uniques) == 1
+
+
+def test_un_git_bloque_rend_un_verdict_inconnu(monkeypatch):
+    """Un `git` qui ne rend pas la main ne doit pas faire attendre le check."""
+    def run(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd="git log", timeout=1)
+
+    monkeypatch.setattr(mod, "subprocess", types.SimpleNamespace(
+        run=run, TimeoutExpired=subprocess.TimeoutExpired))
+    try:
+        mod._git("log")
+    except mod.MesureIndisponible as exc:
+        assert "timeout" in str(exc)
+    else:
+        raise AssertionError("un git sans delai ferait attendre le check indefiniment")
+
+
+def test_le_verdict_inconnu_ne_touche_pas_la_page(monkeypatch, tmp_path):
+    """Un `git` bloque : ni `--write` ni `--check`, et la page intacte."""
+    page = tmp_path / "lean-material-map.md"
+    page.write_text("page d'origine\n", encoding="utf-8")
+
+    def collect_qui_echoue(*args, **kwargs):
+        raise mod.MesureIndisponible("timeout de 120 s sur `git log`")
+
+    monkeypatch.setattr(mod, "PAGE", page)
+    monkeypatch.setattr(mod, "collect", collect_qui_echoue)
+    rc = mod.main(["--write"])
+    assert rc == mod.UNMEASURABLE_RC
+    assert page.read_text(encoding="utf-8") == "page d'origine\n"
+
+
+def test_la_couverture_est_memorisee_entre_deux_verifications(monkeypatch, tmp_path):
+    """La deuxieme verification sur le meme HEAD est immediate."""
+    appels: list[int] = []
+
+    def faux_coverage() -> dict:
+        appels.append(1)
+        return {"gated_lakes": ["a"], "matrix_lakes": ["a"],
+                "matrix_lakes_without_gate": []}
+
+    monkeypatch.setattr(mod, "_coverage", faux_coverage)
+    monkeypatch.setattr(mod, "COVERAGE_CACHE_DIR", tmp_path / "cache")
+    monkeypatch.setattr(mod, "_coverage_key", lambda: "clef-de-test")
+    premiere = mod._coverage_cached()
+    seconde = mod._coverage_cached()
+    assert len(appels) == 1, "la deuxieme verification doit etre immediate"
+    assert premiere == seconde
+
+
+def test_une_empreinte_differente_ne_sert_pas_le_cache(monkeypatch, tmp_path):
+    """Un cache dont la clef ne correspond pas est un MISS, jamais une reponse."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "couverture-clef-de-test.json").write_text(
+        json.dumps({"clef": "une-autre", "charge": {"gated_lakes": ["faux"]}}),
+        encoding="utf-8")
+    appels: list[int] = []
+
+    def faux_coverage() -> dict:
+        appels.append(1)
+        return {"gated_lakes": ["vrai"]}
+
+    monkeypatch.setattr(mod, "_coverage", faux_coverage)
+    monkeypatch.setattr(mod, "COVERAGE_CACHE_DIR", cache)
+    monkeypatch.setattr(mod, "_coverage_key", lambda: "clef-de-test")
+    charge = mod._coverage_cached()
+    assert charge == {"gated_lakes": ["vrai"]}, "un cache perime a ete servi"
+    assert len(appels) == 1
+
+
+def test_un_cache_illisible_est_un_miss(monkeypatch, tmp_path):
+    """Un cache corrompu se recompute au lieu de faire echouer la mesure."""
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "couverture-clef-de-test.json").write_text("{pas du json",
+                                                         encoding="utf-8")
+    appels: list[int] = []
+
+    def faux_coverage() -> dict:
+        appels.append(1)
+        return {"gated_lakes": ["vrai"]}
+
+    monkeypatch.setattr(mod, "_coverage", faux_coverage)
+    monkeypatch.setattr(mod, "COVERAGE_CACHE_DIR", cache)
+    monkeypatch.setattr(mod, "_coverage_key", lambda: "clef-de-test")
+    assert mod._coverage_cached() == {"gated_lakes": ["vrai"]}
+    assert len(appels) == 1
+
+
+def test_l_empreinte_change_avec_le_contenu_des_entrees(monkeypatch, tmp_path):
+    """Un cache servi apres un changement de workflow serait une page fausse."""
+    workflows = tmp_path / "workflows"
+    workflows.mkdir()
+    (workflows / "w.yml").write_text("a: 1\n", encoding="utf-8")
+    manifeste = tmp_path / "ci_lakes.json"
+    manifeste.write_text("{}", encoding="utf-8")
+    organe = tmp_path / "coverage.py"
+    organe.write_text("# organe\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "WORKFLOWS", workflows)
+    monkeypatch.setattr(mod, "CI_LAKES", manifeste)
+    monkeypatch.setattr(mod, "COVERAGE", organe)
+    monkeypatch.setattr(mod, "_git", lambda *a: "deadbeef\n")
+    avant = mod._coverage_key()
+    (workflows / "w.yml").write_text("a: 2\n", encoding="utf-8")
+    assert mod._coverage_key() != avant

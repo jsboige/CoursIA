@@ -21,7 +21,7 @@
       "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
     ],
     "GameTheory/SocialChoice": [
-      "GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
+      "GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb"
     ],
     "GenAI/Audio/02-Advanced": [
       "GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb"
@@ -135,10 +135,10 @@
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb"
     ],
-    "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star": [
-      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
+    "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star": [
+      "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
+      "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
+      "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
     ],
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
@@ -158,12 +158,12 @@
       "Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
       "Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb"
     ],
-    "Probas/DecisionTheory/Causal-Bridges": [
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-04-Dowhy-Decouverte-Structure.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb"
+    "Probas/Causalite": [
+      "Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
+      "Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
+      "Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb",
+      "Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb",
+      "Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb"
     ],
     "Probas/DecisionTheory/DecInfer": [
       "Probas/DecisionTheory/DecInfer/DecInfer-02b-Lean-Coherence.ipynb"
@@ -254,9 +254,9 @@
       "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
       "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb"
     ],
-    "SymbolicAI/Lean/ANALYSE": [
-      "SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya.ipynb",
-      "SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya_en.ipynb"
+    "SymbolicAI/Lean/Analyse": [
+      "SymbolicAI/Lean/Analyse/ANALYSE-13-Smoothing-Local-Kakeya.ipynb",
+      "SymbolicAI/Lean/Analyse/ANALYSE-13-Smoothing-Local-Kakeya_en.ipynb"
     ],
     "SymbolicAI/Lean/Geometry": [
       "SymbolicAI/Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb"

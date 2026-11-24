@@ -24,12 +24,12 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 
 ## Familles couvertes (T1 baseline)
 
-**33 CSV, 24 470 cellules** au total (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête, audit Python `csv.DictReader` c.1252 2026-08-06). Regroupement par domaine pédagogique :
+**33 CSV / 24 470 cellules au 2026-08-06** (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête, audit Python `csv.DictReader` c.1252) — mesure d'époque conservée pour l'historique ; les comptes courants (nombre de CSV, enregistrements, schéma) se mesurent directement dans les CSV eux-mêmes, aucun organe ne tient cette prose à jour. Regroupement par domaine pédagogique :
 
-| Domaine | CSV | Cellules | Série source |
+| Domaine | CSV | Cellules (au 2026-08-06) | Série source |
 |---------|-----|---------:|--------------|
 | SymbolicAI — Tweety | `tweety/tweety.csv` | 864 | `SymbolicAI/Tweety/` |
-| SymbolicAI — SemanticWeb | `semanticweb/semanticweb.csv` | 1193 | `SymbolicAI/SemanticWeb/` |
+| SymbolicAI — SemanticWeb | `semanticweb/semanticweb.csv` | 1367 | `SymbolicAI/SemanticWeb/` |
 | SymbolicAI — Planning | `planners/planners.csv` | 1006 | `SymbolicAI/Planners/` |
 | SymbolicAI — SMT/Z3-API | `smt/z3-api.csv` | 541 | `SymbolicAI/SMT/Z3-API/` |
 | SymbolicAI — SMT/Z3.Linq | `smt/z3-linq2z3.csv` | 525 | `SymbolicAI/SMT/Z3-Linq2Z3/` |
@@ -45,11 +45,11 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 | Search — Applications | `search-applications/search-applications.csv` | 1468 | `Search/Applications/` |
 | Probas — Infer.NET | `probas-infer/probas_infer.csv` | 940 | `Probas/Infer/` |
 | Probas — PyMC | `probas-pymc/probas_pymc.csv` | 571 | `Probas/PyMC/` |
-| Probas — Decision (Infer.NET) | `probas-decinfer/probas_decinfer.csv` | 383 | `Probas/DecisionTheory/DecInfer/` |
+| Probas — Decision (Infer.NET) | `probas-decinfer/probas_decinfer.csv` | 424 | `Probas/DecisionTheory/DecInfer/` |
 | IIT / ICT | `iit/iit.csv` | 776 | `IIT/ICT-Series/` |
 | ML.NET | `mlnet/mlnet.csv` | 599 | `ML/ML.Net/` |
 | ML — Data Science with Agents | `ml-datascience/ml-datascience.csv` | 708 | `ML/DataScienceWithAgents/` |
-| RL | `rl/rl.csv` | 513 | `RL/` |
+| RL | `rl/rl.csv` | 514 | `RL/` |
 | Sudoku | `sudoku/sudoku.csv` | 1337 | `Sudoku/` |
 | GameTheory | `gametheory/gametheory.csv` | 1897 | `GameTheory/` |
 | Complexity | `complexity/complexity.csv` | 242 | `Complexity/` |
@@ -93,7 +93,7 @@ python scripts/translation/check_translation_sync.py   # 0 anomalie attendue
 
 **Application post-clôture textuelle #6949** : PR [#8431](https://github.com/jsboige/CoursIA/pull/8431) (2026-07-25) a zeroté 100 SRC_DRIFT sur Planners **après** la clôture textuelle (#7967, 2026-07-22). **Violation documentée** : le compteur `100 → 0` a été publié sans livraison de traduction. Cet incident **renforce** la doctrine (ne la renverse pas) et reste **ouvert** comme exemple pour les futurs agents qui évalueraient un resync.
 
-Voir le diagnostic de référence : [docs/translation/translations-root-diagnostic.md](../docs/translation/translations-root-diagnostic.md) (c.1252, 2026-08-06).
+Voir le diagnostic de référence : [docs/transients/2026-08-06-translations-root-diagnostic.md](../docs/transients/2026-08-06-translations-root-diagnostic.md) (c.1252, 2026-08-06).
 
 ## Voir aussi
 
@@ -101,4 +101,4 @@ Voir le diagnostic de référence : [docs/translation/translations-root-diagnost
 - Epic #1650 — traduction multilingue du dépôt
 - Issue #6949 — T3 moteur fork Argumentum (OUVERTE par décision coord)
 - `scripts/translation/README.md`
-- `docs/translation/translations-root-diagnostic.md` — diagnostic de l'état + options de disposition
+- `docs/transients/2026-08-06-translations-root-diagnostic.md` — diagnostic de l'état + options de disposition

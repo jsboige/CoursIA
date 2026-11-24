@@ -26,7 +26,7 @@ fil qui ne porte que des gestes laisse le Concern NON REPONDU.
 
 Classe ``user-remark`` (#20185, classe 2) : sous le login partage, l'auteur ne
 separe pas un post de lane d'une remarque du mainteneur — c'est la FORME du corps
-qui tranche (six signatures mesurees, ``lane_signature``). Une reponse non signee
+qui tranche (sept signatures mesurees, ``lane_signature``). Une reponse non signee
 sans reponse reste ouverte ; un post de lane signe n'est jamais un candidat ; une
 citation forte (horodatage) referme ; le mot « Concern » ne referme pas une
 remarque ; un geste de lane apres la remarque leve ``gesture-after``.
@@ -612,6 +612,135 @@ class LaneSignatureTests(unittest.TestCase):
                 "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
             ),
             "",
+        )
+
+
+class AgentTaxonomyTagTests(unittest.TestCase):
+    """#26791 : la taxonomie d'emission `[ACTION]`/`[DIAG]`/`[ASK]` est une signature.
+
+    Sans elle, ces posts d'agent tombent dans ``head-tag``, qui est ambigu et
+    route en ``MANUAL_REVIEW`` : la mesure de #26791 rendait 164 remarques
+    « non resolues » sur les PRs, presque toutes du bruit d'agent tague.
+    """
+
+    def test_action_diag_ask_are_signatures(self):
+        for body in (
+            "[ACTION] Trois gardes rouges levees — branche poussee, CI relancee.",
+            "[DIAG] Mesure du jour : 3 PRs vertes, 0 rouge.",
+            "[ASK] Qui porte la tranche 2 de la serie ?",
+            "[ASK USER] Arbitrage requis sur le capstone.",
+            "[ASK-USER] Arbitrage requis sur le capstone.",
+        ):
+            with self.subTest(body=body):
+                self.assertEqual(mod.lane_signature(body), "agent-taxonomy-tag")
+
+    def test_decoration_does_not_hide_the_tag(self):
+        self.assertEqual(
+            mod.lane_signature("**[ACTION] B.0 levee, thread resolu.**"),
+            "agent-taxonomy-tag",
+        )
+
+    def test_tag_cited_mid_body_is_not_an_emission(self):
+        # Mention, pas emission (#13030) : la prose cite le tag sans le porter.
+        self.assertEqual(
+            mod.lane_signature("Les commentaires `[ACTION]` de #23506 sont du bruit."),
+            "",
+        )
+
+    def test_tagged_agent_post_is_excluded_from_remarks(self):
+        report = mod.analyse_comments(
+            23506,
+            [c(1, "2026-11-15T18:00:00Z", "[ACTION] Trois gardes rouges levees.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks, [])
+        self.assertEqual(report.excluded.get("agent-taxonomy-tag"), 1)
+
+    def test_untagged_maintainer_remark_stays_a_candidate(self):
+        # Controle negatif exige par l'acceptance : la signature ne doit pas
+        # avaler une remarque du mainteneur qui ne porte aucun tag.
+        body = "Il faut reprendre ce point : la mesure de ce matin ne tient pas."
+        self.assertEqual(mod.lane_signature(body), "")
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-15T18:00:00Z", body)], classes=("user-remark",)
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+
+
+class ListIssueNumbersTests(unittest.TestCase):
+    """#26791 : la recherche par defaut couvre les PRs ouvertes.
+
+    Les deux types sont interroges SEPAREMENT (``is:issue OR is:pr`` n'est pas
+    garanti par l'API de recherche) puis fusionnes sans doublon, issues d'abord.
+    """
+
+    def setUp(self):
+        self._orig = mod.gh_json
+        self.queries: list[str] = []
+
+    def tearDown(self):
+        mod.gh_json = self._orig
+
+    def _serve(self, mapping: dict[str, list[int]]) -> None:
+        def fake(args):
+            query = next(a.split("=", 1)[1] for a in args if a.startswith("q="))
+            self.queries.append(query)
+            nodes = mapping.get(query)
+            if nodes is None:
+                raise AssertionError(f"requete inattendue : {query}")
+            return {
+                "data": {
+                    "search": {
+                        "nodes": [{"number": n} for n in nodes],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            }
+
+        mod.gh_json = fake
+
+    def test_default_covers_issues_and_pull_requests(self):
+        base = f"repo:{mod.REPO}"
+        self._serve(
+            {
+                f"{base} is:issue updated:>=2026-09-25 is:open": [11, 12],
+                f"{base} is:pr updated:>=2026-09-25 is:open": [12, 13],
+            }
+        )
+        numbers = mod.list_issue_numbers("2026-09-25", "open")
+        self.assertEqual(numbers, [11, 12, 13])
+        self.assertEqual(len(self.queries), 2)
+        self.assertIn("is:issue", self.queries[0])
+        self.assertIn("is:pr", self.queries[1])
+
+    def test_issues_only_restores_the_previous_scope(self):
+        base = f"repo:{mod.REPO}"
+        self._serve(
+            {f"{base} is:issue updated:>=2026-09-25 is:open": [11]}
+        )
+        numbers = mod.list_issue_numbers("2026-09-25", "open", ("issue",))
+        self.assertEqual(numbers, [11])
+        self.assertEqual(len(self.queries), 1)
+        self.assertNotIn("is:pr", self.queries[0])
+
+    def test_graphql_document_covers_both_node_types(self):
+        # #26791 : ``search`` rend une union. Sans le fragment PullRequest, un
+        # noeud PR revient sans ``number`` — le smoke test du correctif a rendu
+        # un KeyError avant que le fragment soit ajoute.
+        self.assertIn("... on Issue { number }", mod.GRAPHQL_SEARCH)
+        self.assertIn("... on PullRequest { number }", mod.GRAPHQL_SEARCH)
+
+    def test_state_filter_is_appended_per_kind(self):
+        base = f"repo:{mod.REPO}"
+        self._serve(
+            {
+                f"{base} is:issue updated:>=2026-09-25 is:closed": [21],
+                f"{base} is:pr updated:>=2026-09-25 is:closed": [22],
+            }
+        )
+        self.assertEqual(
+            mod.list_issue_numbers("2026-09-25", "closed"), [21, 22]
         )
 
 
