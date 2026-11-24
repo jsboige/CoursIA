@@ -1,7 +1,7 @@
 """Temoins du correctif #26630 -- le cache chaud se RESOUT par toolchain.
 
 Le defaut : `attest_local_build.py` connaissait UN SEUL pivot de cache chaud,
-`GOL/conway_lean` (toolchain `v4.33.0`). Tout lake dont la toolchain differe
+`JeuDeLaVie/conway_lean` (toolchain `v4.33.0`). Tout lake dont la toolchain differe
 etait donc refuse AVANT tout build -- `lean-toolchain different du cache --
 cache chaud non applicable` -- et les PRs qui touchaient ces lakes etaient
 inmergeables par construction. Mesure sur `origin/main` le 14/11 : sur les 36
