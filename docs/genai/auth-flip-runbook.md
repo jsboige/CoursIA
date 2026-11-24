@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-03
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # Runbook — Flip d'authentification des services exposés (#16 P2)
 
