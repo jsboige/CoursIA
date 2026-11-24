@@ -86,6 +86,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
+      - 'scripts/humor_detection/**'
       # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
       # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
@@ -669,6 +670,7 @@ jobs:
             scripts/translation/tests \
             scripts/audit/tests \
             scripts/fallacy_detection/tests \
+            scripts/humor_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
