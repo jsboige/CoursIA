@@ -8,3 +8,4 @@
   known_differences:
     - "La figure est rendue par Matplotlib en Python et en SVG statique opaque en C#."
     - "Les deux champs arrière conservent le coût des arcs originaux ; le choix glouton en coût utilise coût de l'arc plus distance restante."
+    - "Le lien de navigation 'Suivant' des deux jumeaux pointe vers Search-13-AutomaticGroups-WordProblem ; repoint IDENTIQUE des deux cotes pour lever l'orphan_entry de Search-13 (edition symetrique conservant la parite) ; attestation 0007."

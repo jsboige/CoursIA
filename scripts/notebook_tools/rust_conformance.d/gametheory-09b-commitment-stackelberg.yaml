@@ -1,0 +1,985 @@
+- name: "GameTheory-09b Commitment-Stackelberg"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Rust.ipynb
+  measures:
+    - id: br_entrant_acc
+      description: "Meilleure reponse de l'entrant a Acc"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_entrant\(Acc  \) = (\w+)'
+          transform: text
+        rust:
+          cell: 1
+          pattern: 'BR_entrant\(Acc  \) = (\w+)'
+          transform: text
+        csharp:
+          cell: 1
+          pattern: 'BR_E\(Acc\)=(\w+)'
+          transform: text
+    - id: br_entrant_fight
+      description: "Meilleure reponse de l'entrant a Fight"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_entrant\(Fight\) = (\w+)'
+          transform: text
+        rust:
+          cell: 1
+          pattern: 'BR_entrant\(Fight\) = (\w+)'
+          transform: text
+        csharp:
+          cell: 1
+          pattern: 'BR_E\(Fight\)=(\w+)'
+          transform: text
+    - id: br_incumbent_in
+      description: "Meilleure reponse de l'incumbent a une entree"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_incumbent\(In  \) = (\w+)'
+          transform: text
+        rust:
+          cell: 1
+          pattern: 'BR_incumbent\(In  \) = (\w+)'
+          transform: text
+        csharp:
+          cell: 1
+          pattern: 'BR_I\(In\)=(\w+)'
+          transform: text
+    - id: br_incumbent_out
+      description: "Meilleure reponse de l'incumbent a l'abstention"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_incumbent\(Out \) = (\w+)'
+          transform: text
+        rust:
+          cell: 1
+          pattern: 'BR_incumbent\(Out \) = (\w+)'
+          transform: text
+        csharp:
+          cell: 1
+          pattern: 'BR_I\(Out\)=(\w+)'
+          transform: text
+    - id: gain_e_in_acc
+      description: "Gain de l'entrant contre Acc"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_entrant\(Acc  \) = In\s+\(gains E : In=\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 1
+          pattern: 'BR_entrant\(Acc  \) = In\s+\(gains E : In=\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 1
+          pattern: 'In/Acc=\((-?\d+),'
+          transform: int
+    - id: gain_i_acc_in
+      description: "Gain de l'incumbent contre une entree"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_incumbent\(In  \) = Acc\s+\(gains I : Acc=\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 1
+          pattern: 'BR_incumbent\(In  \) = Acc\s+\(gains I : Acc=\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 1
+          pattern: 'In/Acc=\(-?\d+,(-?\d+)\)'
+          transform: int
+    - id: gain_i_fight_out
+      description: "Gain de l'incumbent contre l'abstention"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: 'BR_incumbent\(Out \) = Fight\s+\(gains I : Acc=\s*-?\d+, Fight=\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 1
+          pattern: 'BR_incumbent\(Out \) = Fight\s+\(gains I : Acc=\s*-?\d+, Fight=\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 1
+          pattern: 'Out/Fight=\(-?\d+,(-?\d+)\)'
+          transform: int
+    - id: nash_in_acc_u_e
+      description: "Gain de l'entrant a l'equilibre (In, Acc)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: '\(In, Acc\)  ->  u_E =\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: '\(In, Acc\)  ->  u_E =\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'Si E joue In, I répond Acc, gain E=(\d+)'
+          transform: int
+    - id: nash_out_fight_u_e
+      description: "Gain de l'entrant a l'equilibre (Out, Fight)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: '\(Out, Fight\)  ->  u_E =\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: '\(Out, Fight\)  ->  u_E =\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'Si E joue Out, I répond Fight, gain E=(\d+)'
+          transform: int
+    - id: issue_seq_pair
+      description: "Issue de la mise sequentielle (couple d'actions)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'issue sequentielle : \((\w+, \w+)\)'
+          transform: text
+        rust:
+          cell: 3
+          pattern: 'issue sequentielle : \((\w+, \w+)\)'
+          transform: text
+        csharp:
+          cell: 3
+          pattern: 'E-premier : \((\w+, \w+)\)'
+          transform: text
+    - id: issue_seq_u_e
+      description: "Gain de l'entrant a l'issue sequentielle"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'issue sequentielle : \([\w, ]+\), u_E = (-?\d+)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'issue sequentielle : \([\w, ]+\), u_E = (-?\d+)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'E-premier : \([\w, ]+\), gains Pay \{ A = (\d+)'
+          transform: int
+    - id: issue_seq_u_i
+      description: "Gain de l'incumbent a l'issue sequentielle"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'issue sequentielle : \([\w, ]+\), u_E = -?\d+, u_I = (-?\d+)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'issue sequentielle : \([\w, ]+\), u_E = -?\d+, u_I = (-?\d+)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'E-premier : \([\w, ]+\), gains Pay \{ A = \d+, B = (\d+)'
+          transform: int
+    - id: engagement_acc_gain_i
+      description: "Gain de l'incumbent quand il s'engage a Acc"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 's engager a Acc   -> E repond In   -> u_I =\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 5
+          pattern: 's engager a Acc   -> E repond In   -> u_I =\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 5
+          pattern: 'Engagement Acc -> In ; gain I=(\d+)'
+          transform: int
+    - id: engagement_fight_gain_i
+      description: "Gain de l'incumbent quand il s'engage a Fight"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 's engager a Fight -> E repond Out  -> u_I =\s*(-?\d+)'
+          transform: int
+        rust:
+          cell: 5
+          pattern: 's engager a Fight -> E repond Out  -> u_I =\s*(-?\d+)'
+          transform: int
+        csharp:
+          cell: 5
+          pattern: 'Engagement Fight -> Out ; gain I=(\d+)'
+          transform: int
+    - id: engagement_delta
+      description: "Delta de l'engagement (signe compris)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 'delta = ([+-]\d+)'
+          transform: text
+        rust:
+          cell: 5
+          pattern: 'delta = ([+-]\d+)'
+          transform: text
+        csharp:
+          cell: 5
+          pattern: 'delta=([+-]\d+)'
+          transform: text
+    - id: mixte_p00_u_i
+      description: "Gain de l'incumbent a p = 0 (engagement melee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: ' 0\.00\s+In\s+([-\d.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: ' 0\.00\s+In\s+([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 5
+          pattern: '0\.00 \| In \| ([-\d.]+)'
+          transform: float
+    - id: mixte_p65_u_i
+      description: "Gain de l'incumbent a p = 0.65"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: ' 0\.65\s+In\s+([-\d.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: ' 0\.65\s+In\s+([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 5
+          pattern: '0\.65 \| In \| ([-\d.]+)'
+          transform: float
+    - id: mixte_p70_u_i
+      description: "Gain de l'incumbent a p = 0.70"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: ' 0\.70\s+Out\s+([-\d.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: ' 0\.70\s+Out\s+([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 5
+          pattern: '0\.70 \| Out \| ([-\d.]+)'
+          transform: float
+    - id: mixte_p100_u_i
+      description: "Gain de l'incumbent a p = 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: ' 1\.00\s+Out\s+([-\d.]+)'
+          transform: float
+        rust:
+          cell: 5
+          pattern: ' 1\.00\s+Out\s+([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 5
+          pattern: '1\.00 \| Out \| ([-\d.]+)'
+          transform: float
+    - id: mixte_p65_br
+      description: "Meilleure reponse de l'entrant a p = 0.65"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: ' 0\.65\s+(\w+)\s+-0\.95'
+          transform: text
+        rust:
+          cell: 5
+          pattern: ' 0\.65\s+(\w+)\s+-0\.95'
+          transform: text
+        csharp:
+          cell: 5
+          pattern: '0\.65 \| (\w+) \|'
+          transform: text
+    - id: mixte_p70_br
+      description: "Meilleure reponse de l'entrant a p = 0.70"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: ' 0\.70\s+(\w+)\s+2\.10'
+          transform: text
+        rust:
+          cell: 5
+          pattern: ' 0\.70\s+(\w+)\s+2\.10'
+          transform: text
+        csharp:
+          cell: 5
+          pattern: '0\.70 \| (\w+) \|'
+          transform: text
+    - id: seuil_favorable
+      description: "Gain favorable au seuil exact p = 2/3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 'u_I favorable=(\d+)'
+          transform: int
+        rust:
+          cell: 5
+          pattern: 'u_I favorable=(\d+)'
+          transform: int
+        csharp:
+          cell: 5
+          pattern: 'favorable=(\d+)'
+          transform: int
+    - id: seuil_defavorable
+      description: "Gain defavorable au seuil exact p = 2/3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 'défavorable=(-?\d+)'
+          transform: int
+        rust:
+          cell: 5
+          pattern: 'défavorable=(-?\d+)'
+          transform: int
+        csharp:
+          cell: 5
+          pattern: 'défavorable=(-?\d+)'
+          transform: int
+    - id: exercice1_sortie
+      description: "Ligne commitee de l'exercice 1 (stub C.1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: '(Exercice 1 à compléter : [^\n]*)'
+          transform: text
+        rust:
+          cell: 8
+          pattern: '(Exercice 1 à compléter : [^\n]*)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit `Exercice 1 à compléter : analyser le duel
+            publicitaire` : meme exercice, libelle different. Cote declare
+            ABSENT, la grandeur n'etant pas comparable au caractere pres.
+    - id: annonce_gain_e_in
+      description: "Gain de l'entrant a l'etage final du sous-arbre (entree)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: 'si E joue In   : I choisit en dernier Acc   -> \((\d+), \d+\)'
+          transform: int
+        rust:
+          cell: 10
+          pattern: 'si E joue In   : I choisit en dernier Acc   -> \((\d+), \d+\)'
+          transform: int
+        csharp:
+          cell: 10
+          pattern: 'Annonce Acc -> \(In,Acc\), gains Pay \{ A = (\d+)'
+          transform: int
+    - id: annonce_gain_i_in
+      description: "Gain de l'incumbent a l'etage final du sous-arbre (entree)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: 'si E joue In   : I choisit en dernier Acc   -> \(\d+, (\d+)\)'
+          transform: int
+        rust:
+          cell: 10
+          pattern: 'si E joue In   : I choisit en dernier Acc   -> \(\d+, (\d+)\)'
+          transform: int
+        csharp:
+          cell: 10
+          pattern: 'Annonce Acc -> \(In,Acc\), gains Pay \{ A = \d+, B = (\d+)'
+          transform: int
+    - id: annonce_issue_u_e
+      description: "Gain de l'entrant a l'issue de l'annonce revocable"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: '-> issue : \([^)]*\)  ->  u_E = (\d+)'
+          transform: int
+        rust:
+          cell: 10
+          pattern: '-> issue : \([^)]*\)  ->  u_E = (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# rend l'annonce revocable par annonce (`Annonce Acc ->
+            (In,Acc), gains Pay { A = 2, B = 1 }`) sans ligne d'issue ni de
+            gain E : la grandeur n'a pas d'equivalent cote C#.
+    - id: annonce_dissous_u_i
+      description: "Gain d'engagement retombe (annonce non credible)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: 'retombe a (\d+) : dissous'
+          transform: int
+        rust:
+          cell: 10
+          pattern: 'retombe a (\d+) : dissous'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne trace pas la retombee du gain d'engagement : la
+            grandeur n'a pas d'equivalent cote C#.
+    - id: bond_s0_u_i
+      description: "Gain de l'incumbent a s = 0 (caution nulle)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '         0\.0    \(''In'', ''Acc''\)     ([-\d.]+)'
+          transform: float
+        rust:
+          cell: 13
+          pattern: '         0\.0    \(''In'', ''Acc''\)     ([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 13
+          pattern: '0\.0 \| \(In, Acc\) \| ([-\d.]+)'
+          transform: float
+    - id: bond_s25_u_i
+      description: "Gain de l'incumbent a s = 2.5 (sous le seuil)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '         2\.5    \(''In'', ''Acc''\)    ([-\d.]+)'
+          transform: float
+        rust:
+          cell: 13
+          pattern: '         2\.5    \(''In'', ''Acc''\)    ([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 13
+          pattern: '2\.5 \| \(In, Acc\) \| ([-\d.]+)'
+          transform: float
+    - id: bond_s30_u_i
+      description: "Gain de l'incumbent a s = 3 (seuil exact)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '         3\.0 \(''Out'', ''Fight''\)     ([-\d.]+)'
+          transform: float
+        rust:
+          cell: 13
+          pattern: '         3\.0 \(''Out'', ''Fight''\)     ([-\d.]+)'
+          transform: float
+        csharp:
+          cell: 13
+          pattern: '3\.0 \| \(Out, Fight\) \| ([-\d.]+)'
+          transform: float
+    - id: bond_seuil_s_star
+      description: "Seuil de credibilite s* (ecart de tentation)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: 'Seuil de credibilite : s\* = (-?\d+)'
+          transform: int
+        rust:
+          cell: 13
+          pattern: 'Seuil de credibilite : s\* = (-?\d+)'
+          transform: int
+        csharp:
+          cell: 13
+          pattern: 'Seuil=1-\(-2\)=(\d+)'
+          transform: int
+    - id: bond_seuil_u_i
+      description: "Gain de l'incumbent au seuil s = 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: 'Au seuil s = 3 : u_I = (-?\d+)'
+          transform: int
+        rust:
+          cell: 13
+          pattern: 'Au seuil s = 3 : u_I = (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# note le seuil par les deux issues au tie
+            (`s=3 tieFight=(Out, Fight), tieAcc=(In, Acc)`) sans republished
+            la valeur de u_I : la grandeur n'a pas d'equivalent cote C#.
+    - id: remarquable_ecart_tentation
+      description: "Ecart de tentation en fraction exacte (1 - (-2))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'ecart de tentation         = 1 - \(-2\)  = (-?\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'ecart de tentation         = 1 - \(-2\)  = (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne porte pas la section « forme remarquable » (les
+            fractions exactes) : son carnet s'arrete a la cellule de caution.
+            La grandeur n'a pas d'equivalent cote C#.
+    - id: remarquable_seuil_caution
+      description: "Seuil de caution s* en fraction exacte"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'seuil de caution   s\*      =           = (-?\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'seuil de caution   s\*      =           = (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Section « forme remarquable » absente du jumeau C# (meme raison que
+            l'ecart de tentation).
+    - id: remarquable_valeur_engagement
+      description: "Pleine valeur d'engagement en fraction exacte"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'pleine valeur d''engagement =           = (-?\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'pleine valeur d''engagement =           = (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Section « forme remarquable » absente du jumeau C# (meme raison que
+            l'ecart de tentation).
+    - id: remarquable_dommage_guerre
+      description: "Dommage de la guerre en fraction exacte"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'dommage de la guerre      = \|\(-2\)\|     = (-?\d+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'dommage de la guerre      = \|\(-2\)\|     = (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Section « forme remarquable » absente du jumeau C# (meme raison que
+            l'ecart de tentation).
+    - id: remarquable_egalite
+      description: "Egalite exacte s* == valeur d'engagement"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 's\* == valeur d''engagement : (\w+)'
+          transform: text
+        rust:
+          cell: 15
+          pattern: 's\* == valeur d''engagement : (\w+)'
+          transform: text
+        csharp:
+          absent: >-
+            Section « forme remarquable » absente du jumeau C# (meme raison que
+            l'ecart de tentation).
+    - id: remarquable_stricte
+      description: "Inegalite stricte s* > dommage de guerre"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 's\*  >  dommage de guerre  : (\w+)'
+          transform: text
+        rust:
+          cell: 15
+          pattern: 's\*  >  dommage de guerre  : (\w+)'
+          transform: text
+        csharp:
+          absent: >-
+            Section « forme remarquable » absente du jumeau C# (meme raison que
+            l'ecart de tentation).
+    - id: balayage_s3_u_i_float
+      description: "Balayage exact : u_I flottant a s = 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '   3   3\s+([\d.]+)'
+          transform: float
+        rust:
+          cell: 15
+          pattern: '   3   3\s+([\d.]+)'
+          transform: float
+        csharp:
+          absent: >-
+            Le balayage en fractions exactes est absent du jumeau C# (meme
+            raison que la section « forme remarquable »).
+    - id: balayage_s1_2_u_i_float
+      description: "Balayage exact : u_I flottant a s = 1/2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '   1/2   1/2\s+([\d.]+)'
+          transform: float
+        rust:
+          cell: 15
+          pattern: '   1/2   1/2\s+([\d.]+)'
+          transform: float
+        csharp:
+          absent: >-
+            Le balayage en fractions exactes est absent du jumeau C# (meme
+            raison que la section « forme remarquable »).
+    - id: balayage_ecart_max
+      description: "Ecart maximal a l'exact sur le balayage"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'ecart max a l''exact sur le balayage : ([\d.]+)'
+          transform: float
+        rust:
+          cell: 15
+          pattern: 'ecart max a l''exact sur le balayage : ([\d.]+)'
+          transform: float
+        csharp:
+          absent: >-
+            Le balayage en fractions exactes est absent du jumeau C# (meme
+            raison que la section « forme remarquable »).
+    - id: exercice2_sortie
+      description: "Ligne commitee de l'exercice 2 (stub C.1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: '(Exercice 2 à compléter : [^\n]*)'
+          transform: text
+        rust:
+          cell: 19
+          pattern: '(Exercice 2 à compléter : [^\n]*)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit `Exercice 2 à compléter : pur, mixte et deltas`
+            : meme exercice, libelle different. Cote declare ABSENT, la
+            grandeur n'etant pas comparable au caractere pres.
+    - id: certificat_enumeration
+      description: "Enumeration des actions atteignables (ordre declare)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: 'atteignables = (\[([^\n]*)\])'
+          transform: text
+        rust:
+          cell: 21
+          pattern: 'atteignables = (\[([^\n]*)\])'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# rend l'enumeration sous la forme `actions : (In,
+            Acc), (Raider, Acc), (Out, Acc)` (sans crochets ni guillemets
+            simples) : la grandeur n'est pas comparable au caractere pres.
+    - id: certificat_gain_raider
+      description: "Gain immediat du coup Raider"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: 'raider une periode rapporte (\d+)'
+          transform: int
+        rust:
+          cell: 21
+          pattern: 'raider une periode rapporte (\d+)'
+          transform: int
+        csharp:
+          cell: 18
+          pattern: 'Gain immédiat raid=(\d+)'
+          transform: int
+    - id: certificat_gain_in
+      description: "Gain de la cooperation au bareme courant"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: '> cooperer (\d+)'
+          transform: int
+        rust:
+          cell: 21
+          pattern: '> cooperer (\d+)'
+          transform: int
+        csharp:
+          cell: 18
+          pattern: 'raid=\d+ > In=(\d+)'
+          transform: int
+    - id: certificat_delta
+      description: "Delta immediat du coup Raider"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: 'delta immediat = \+(\d+)'
+          transform: int
+        rust:
+          cell: 21
+          pattern: 'delta immediat = \+(\d+)'
+          transform: int
+        csharp:
+          cell: 18
+          pattern: 'delta=(\d+)'
+          transform: int
+    - id: trajectoire_exploit_raid
+      description: "Raid observe dans la trajectoire d'exploitation"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: 'trajectoire EXPLOIT.*?trajectoire = (\w+)'
+          transform: text
+        rust:
+          cell: 23
+          pattern: 'trajectoire EXPLOIT.*?trajectoire = (\w+)'
+          transform: text
+        csharp:
+          cell: 20
+          pattern: 'EXPLOIT:.*?raid observé=(\w+)'
+          transform: text
+    - id: trajectoire_retenue_raid
+      description: "Raid absent de la trajectoire de retenue"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: 'trajectoire RETENUE.*?trajectoire = (\w+)'
+          transform: text
+        rust:
+          cell: 23
+          pattern: 'trajectoire RETENUE.*?trajectoire = (\w+)'
+          transform: text
+        csharp:
+          cell: 20
+          pattern: 'RETENUE:.*?raid observé=(\w+)'
+          transform: text
+    - id: trajectoire_exploit_total
+      description: "Gain total de l'entrant, lu sur la trajectoire d'exploitation"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: 'trajectoire EXPLOIT.*?non declare\) = (\d+)'
+          transform: int
+        rust:
+          cell: 23
+          pattern: 'trajectoire EXPLOIT.*?non declare\) = (\d+)'
+          transform: int
+        csharp:
+          cell: 20
+          pattern: 'EXPLOIT:.*?total lu=(\d+)'
+          transform: int
+    - id: trajectoire_retenue_total
+      description: "Gain total de l'entrant, lu sur la trajectoire de retenue"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: 'trajectoire RETENUE.*?non declare\) = (\d+)'
+          transform: int
+        rust:
+          cell: 23
+          pattern: 'trajectoire RETENUE.*?non declare\) = (\d+)'
+          transform: int
+        csharp:
+          cell: 20
+          pattern: 'RETENUE:.*?total lu=(\d+)'
+          transform: int
+    - id: trajectoire_actions_exploit
+      description: "Actions distinctes jouees sur la trajectoire d'exploitation"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: 'actions distinctes jouees = (\[([^\n]*)\])'
+          transform: text
+        rust:
+          cell: 23
+          pattern: 'actions distinctes jouees = (\[([^\n]*)\])'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# rend les actions distinctes sans crochets ni
+            apostrophes (`actions=In/Out/Raider`) : la grandeur n'est pas
+            comparable au caractere pres.
+    - id: controle_bareme_raider
+      description: "Bareme du coup Raider au premier controle"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: 'bareme de ''Raider'' : (\(([^\n]*)\))'
+          transform: text
+        rust:
+          cell: 25
+          pattern: 'bareme de ''Raider'' : (\(([^\n]*)\))'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# resume le premier controle en une ligne
+            (`vraie retenue: DISPONIBLE : gain immédiat +3 ; RETENUE LOCALE`)
+            sans reprendre le bareme : la grandeur n'a pas d'equivalent cote
+            C#.
+    - id: controle_delta_raider
+      description: "Delta strictement ameliorant du coup Raider"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: 'DISPONIBLE : enumere, \+(\d+) strictement'
+          transform: int
+        rust:
+          cell: 25
+          pattern: 'DISPONIBLE : enumere, \+(\d+) strictement'
+          transform: int
+        csharp:
+          cell: 22
+          pattern: 'DISPONIBLE : gain immédiat \+(\d+)'
+          transform: int
+    - id: controle_bareme_erreone
+      description: "Gain du coup Raider sous le bareme errone"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: 'BAREME : le coup rapporte (\d+) <='
+          transform: int
+        rust:
+          cell: 25
+          pattern: 'BAREME : le coup rapporte (\d+) <='
+          transform: int
+        csharp:
+          cell: 22
+          pattern: 'BARÈME : (\d+)<='
+          transform: int
+    - id: controle_verdicts
+      description: "Nombre de verdicts distincts sur les trois controles"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: 'Verdicts distincts sur les trois cas : (\d+)/3'
+          transform: int
+        rust:
+          cell: 25
+          pattern: 'Verdicts distincts sur les trois cas : (\d+)/3'
+          transform: int
+        csharp:
+          cell: 22
+          pattern: 'Verdicts distincts : (\d+)/3'
+          transform: int
+    - id: exercice3_sortie
+      description: "Ligne commitee de l'exercice 3 (stub C.1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(Exercice 3 à compléter : [^\n]*)'
+          transform: text
+        rust:
+          cell: 29
+          pattern: '(Exercice 3 à compléter : [^\n]*)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit `Exercice 3 à compléter : toute déviation, deux
+            colonnes` : meme exercice, libelle different. Cote declare ABSENT,
+            la grandeur n'etant pas comparable au caractere pres.

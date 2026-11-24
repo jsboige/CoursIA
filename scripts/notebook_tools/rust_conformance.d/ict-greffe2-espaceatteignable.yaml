@@ -1,0 +1,250 @@
+# Conformité différentielle de ICT-Greffe2-EspaceAtteignable (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "ICT-Greffe2-EspaceAtteignable"
+  family: "IIT/ICT-Series"
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Rust.ipynb
+  measures:
+    - id: c4_text
+      description: "Sortie de la cellule 4, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 4 diffère du texte Python (ligne 1 : « Moteur STRIPS chargé (copie Planners-5c) : step + BFS budgét… » contre « Moteur STRIPS charge (copie Planners-5c) : step + BFS budget… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 7 diffère du texte Python (ligne 3 : « CONFORME — cases = (COLS_GAUCHE + COLS_DROITE) x RANGS : cal… » contre « <fin> » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c7_cases_existantes
+      description: "« Cases existantes : » de la cellule 7, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(?m:^Cases\\ existantes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "(?m:^Cases\\ existantes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 7
+          pattern: "(?m:^Cases\\ existantes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c7_buts
+      description: "« Buts : » de la cellule 7, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(?m:^Buts\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "(?m:^Buts\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 7
+          pattern: "(?m:^Buts\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c8_text
+      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 8 diffère du texte Python (ligne 1 : « A_t             |V| = 41 operateurs » contre « A_t              |V| = 41 operateurs » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 10 diffère du texte Python (ligne 1 : « A_t             |A| =   36 etats   buts atteignables : 1/3 [… » contre « A_t              |A| =   36 etats   buts atteignables : 1/3 … » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_text
+      description: "Sortie de la cellule 13, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 13 diffère du texte Python (ligne 1 : « Buts atteignables dans A_t : ['g3'] » contre « A_t -> A_t+discard      nouveaux = AUCUN   perdus = aucun » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_a_t_a_t1_raft_nouveaux
+      description: "« A_t -> A_t1 (+raft)     nouveaux = » de la cellule 13, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(?m:^A_t\\ \\->\\ A_t1\\ \\(\\+raft\\)\\ \\ \\ \\ \\ nouveaux\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "(?m:^A_t\\ \\->\\ A_t1\\ \\(\\+raft\\)\\ \\ \\ \\ \\ nouveaux\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 13
+          pattern: "(?m:^A_t\\ \\->\\ A_t1\\ \\(\\+raft\\)\\ \\ \\ \\ \\ nouveaux\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c13_a_t_a_t1_discard_nouveaux
+      description: "« A_t -> A_t1+discard     nouveaux = » de la cellule 13, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(?m:^A_t\\ \\->\\ A_t1\\+discard\\ \\ \\ \\ \\ nouveaux\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "(?m:^A_t\\ \\->\\ A_t1\\+discard\\ \\ \\ \\ \\ nouveaux\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 13
+          pattern: "(?m:^A_t\\ \\->\\ A_t1\\+discard\\ \\ \\ \\ \\ nouveaux\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c16_text
+      description: "Sortie de la cellule 16, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 16 diffère du texte Python (ligne 2 : « …B| =   34   r = 94.4 %   buts dans F : ['g3'] » contre « …B| =   34   r = 94.4%   buts dans F : ['g3'] » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c19_text
+      description: "Sortie de la cellule 19, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 19 diffère du texte Python (ligne 2 : « …balise (5,2)        A_t=None  A_t+discard=None  A_t1 (+raft)… » contre « …balise (5,2)         A_t=None  A_t+discard=None  A_t1 (+raft… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c22_text
+      description: "Sortie de la cellule 22, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 22 diffère du texte Python (ligne 2 : « …                    pi_lex pi_pickup pi_raft   h* » contre « …                     pi_lex  pi_pickup  pi_raft   h* » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c27_text
+      description: "Sortie de la cellule 27, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 27 diffère du texte Python (ligne 2 : «   (a) |A|(A_t1+burn) = non mesure | |A|(A_t1+discard) = non … » contre « <fin> » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c29_text
+      description: "Sortie de la cellule 29, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 29
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 29 diffère du texte Python (ligne 2 : «   pi_degrade definie = non » contre « <fin> » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c31_text
+      description: "Sortie de la cellule 31, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 31 diffère du texte Python (ligne 2 : «   |A|(A_t1) = non mesure | |A|(A_t1_cap) = non mesure » contre « <fin> » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
