@@ -1,0 +1,10 @@
+- name: PostTraining PT 10 GAE
+  family: GenAI/PostTraining
+  python: MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "TorchSharp calcule et entraîne le véritable acteur-critic. En une étape le prédicat équivalent a été vérifié sur 2 400 cas, et le diagnostic terminal multi-étape invoque directement Microsoft.Z3."
+  known_differences:
+  - "Le regroupement tensoriel des lots et les générateurs changent les trajectoires face à Python sans changer les budgets."
+  - "Les courbes et bandes inter-graines sont en SVG intégré."

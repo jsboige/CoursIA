@@ -52,6 +52,7 @@ from fast_lane_commenters import (  # noqa: E402
     _body_outputs_required,
     _body_stale_claim,
 )
+from fast_lane_twin_heritage import twin_execution_heritage_guard  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
@@ -3189,6 +3190,7 @@ TRANCHE32: list[Guard] = [
         needs_base=True,
         warn_rc=(2,),
     ),
+
     # #27969 : attestation de parite orpheline -- une attestation qui cite un
     # blob qui N'EXISTE NI sur la base NI a la tete de la revision ne peut pas
     # survivre au squash : le squash ecrit l'arbre de la branche, pas son
@@ -3225,6 +3227,9 @@ TRANCHE32: list[Guard] = [
         diff_bounded=True,
         warn_rc=(2,),
     ),
+    # Heritage d'execution entre carnets jumeaux : le corps est dans `fast_lane_twin_heritage.py`.
+    twin_execution_heritage_guard(Guard, FAST_LANE_NATIVE),
+
 ]
 
 # ---------------------------------------------------------------------------
