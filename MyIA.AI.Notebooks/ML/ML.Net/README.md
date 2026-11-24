@@ -4,7 +4,7 @@
 series: ML-ML.Net
 pedagogical_count: 29
 breakdown: ML.Net=29
-maturity: BETA=28, ALPHA=1
+maturity: BETA=29
 -->
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)
@@ -44,7 +44,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 |---|----------|---------|---------------------------------------------|-------|------------------|
 | 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min | [05b](#approfondissement-05-series-temporelles) |
 | 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min | — |
-| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min | [07b](#approfondissement-07-recommandation) |
+| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min | [07b](#approfondissement-07-recommandation) · [07c](#approfondissement-07-recommandation) |
 | 08 | [ML-08-Clustering-CSharp](ML-08-Clustering-CSharp.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min | — |
 | 09 | [ML-09-Anomaly-Detection-CSharp](ML-09-Anomaly-Detection-CSharp.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min | [09b](#approfondissement-09-detection-anomalies) · [09c](#approfondissement-09-detection-anomalies) |
 
@@ -73,6 +73,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 | # | Notebook | Contenu | Écosystème | Durée |
 |---|----------|---------|------------|-------|
 | 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
+| 07c | [ML-07c-Sona-Recommandeur-Generatif](ML-07c-Sona-Recommandeur-Generatif-Python.ipynb) | **Recommandeur génératif mono-modèle** : digérer l'architecture de production Sona (un transformer sur l'historique chronologique, décodage auto-régressif de Semantic IDs, module de ranking sur mémoire d'encodeur partagée) et la relier aux quatre fils du dépôt (ML-07/07b, Infer-15, RAG-02, stack Qwen-Omni) | *standalone Python (numpy — le paradigme et le vocabulaire, aucune valeur du papier)* | 45-60 min |
 
 <a id="approfondissement-09-detection-anomalies"></a>
 
@@ -279,6 +280,15 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Tests appariés | Quatre contrastes, bootstrap sur les utilisateurs et McNemar : **un seul** franchit le seuil (populaire contre contenu sur le chaud, +2,62 pts, p = 0,0038) |
 | Ce que la mesure refuse de dire | Que la quantification vaille mieux que le contenu direct : les deux écarts de signe opposé sont non concluants, et le balayage des tailles de dictionnaire ne montre pas de tendance monotone |
 | Exercices | Trois stubs sans erreur volontaire : deux niveaux suffisent-ils, le partage du premier code aide-t-il, et lequel des deux modèles résiste à un contenu bruité |
+
+### ML-07c-Sona-Recommandeur-Generatif-Python
+
+| Section | Contenu |
+|---------|---------|
+| Objet | Digérer l'architecture de production du recommandeur génératif Sona (Yandex Music) : un seul transformer sur l'historique chronologique, décodeur auto-régressif de Semantic IDs + module de ranking sur mémoire d'encodeur partagée, tokeniseur Qwen2.5-Omni figé |
+| Résonances cross-séries | Quatre fils du dépôt : ML-07/07b (génération de candidats par Semantic IDs), Infer-15 (versant probabiliste explicite), RAG-02 (retrieve → rerank), stack Qwen-Omni locale (même famille que le tokeniseur) |
+| Cellules auto-contenues | Quatre démos numpy : encodeur partagé à deux têtes, RQ → tuple de Semantic IDs, retrieve-then-rerank, contrastif génératif (rang) vs. probabiliste (crédibilité) |
+| Provenance | Aucune valeur numérique du rapport : le paradigme et le vocabulaire, écrits depuis la copie archivée au gisement |
 
 ### ML-08-Clustering-CSharp
 

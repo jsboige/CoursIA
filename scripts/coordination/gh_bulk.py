@@ -21,7 +21,22 @@ from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
 Run = Callable[[list[str], int], str]
 
 DEPOT_GH = "jsboige/CoursIA"
-TIMEOUT_S = 90
+#: Le plafond d'UN appel (`gh api`, `git log`) : un appel qui depasse est
+#: coupe, pas attendu. A ne pas confondre avec la duree d'un ETAGE : c'est
+#: l'echeance partagee qui borne l'etage (#28114, I6).
+TIMEOUT_S = 15
+#: Le `git fetch` est un aller-retour reseau (mesure du 22/11 : 18 a 20 s) :
+#: il a son propre plafond, plus large que celui d'un appel.
+FETCH_TIMEOUT_S = 90
+#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un
+#: lot) dure plus longtemps qu'un appel de metadonnees : mesure du 23/11 sur
+#: ce siege, 3,76 s pour la page du pool (50 issues, corps + 12 commentaires)
+#: et 2,05 s pour la qualification d'un lot de 50. Le plafond de 15 s les
+#: couperait sur un reseau lent, sans mesure derriere : ils gardent le
+#: plafond large, mesure a l'appui.
+TIMEOUT_S_CORPS = 90
+#: L'echeance UNIQUE d'un tirage de lane, partagee par ses etages.
+MUR_TIRAGE_S = 60
 # Un 502/504 se resorbe en relisant la meme page en plus petit.
 TAILLES_PAGE = (50, 25, 12)
 PAGES_PRS_MAX = 20  # au-dela : lecture incomplete plutot que tronquee
@@ -50,6 +65,22 @@ def run_defaut(argv: list[str], timeout: int) -> str:
                           timeout=timeout, check=True).stdout
 
 
+def _timeout(echeance: float | None, plafond: float = TIMEOUT_S,
+             horloge=time.monotonic) -> int:
+    """Le timeout d'un appel : le plus petit du plafond et du temps restant.
+
+    L'echeance est **monotone et unique** : elle est posee une fois pour tout
+    le tirage et partagee par ses etages. Le temps restant est recalcule
+    avant chaque appel, donc un etage qui a consomme sa part voit l'etage
+    suivant etre coupe plutot qu'attendu (#28114, I6).
+
+    Sans echeance (un appel isole), le plafond de l'appel s'applique seul.
+    """
+    if echeance is None:
+        return int(plafond)
+    return max(1, int(min(plafond, echeance - horloge())))
+
+
 def _appel(run: Run, argv: list[str], lecture: str, page: object,
            timeout: int | None = None) -> str | None:
     """Un appel ; None sur une panne transitoire (502/504, timeout)."""
@@ -72,7 +103,8 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
     for taille in TAILLES_PAGE:
         argv = ["gh", "api", "graphql", "-f", f"query={QUERY}", "-f", f"owner={owner}",
                 "-f", f"name={name}", "-F", f"n={taille}"]
-        texte = _appel(run, argv + (["-f", f"after={after}"] if after else []), "issues", page)
+        texte = _appel(run, argv + (["-f", f"after={after}"] if after else []), "issues",
+                       page, timeout=TIMEOUT_S_CORPS)
         if texte is None:
             continue
         try:
@@ -94,12 +126,15 @@ def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[d
         after, page = data["pageInfo"]["endCursor"], page + 1
 
 
-def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict]:
+def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH,
+                      echeance: float | None = None) -> list[dict]:
     """Les PRs ouvertes, REST pagine par 100 (un rejeu sur panne transitoire)."""
     rows: list[dict] = []
     for page in range(1, PAGES_PRS_MAX + 1):
         argv = ["gh", "api", f"repos/{depot}/pulls?state=open&per_page=100&page={page}"]
-        texte = _appel(run, argv, "prs_ouvertes", page) or _appel(run, argv, "prs_ouvertes", page)
+        texte = _appel(run, argv, "prs_ouvertes", page,
+                       timeout=_timeout(echeance)) or _appel(
+            run, argv, "prs_ouvertes", page, timeout=_timeout(echeance))
         try:
             chunk = json.loads(texte or "")
             rows.extend({**{k: pr.get(k) or "" for k in _PR_TEXTE}, "number": pr["number"],
@@ -115,13 +150,14 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
 
 
 def lire_citations_mergees(depot: str | Path, jours: int = 45,
-                           run: Run = run_defaut) -> dict[int, list[dict]]:
+                           run: Run = run_defaut,
+                           echeance: float | None = None) -> dict[int, list[dict]]:
     """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
     Un seul `git log`, sans fetch : le body de la PR devient le message du squash."""
     argv = ["git", "-C", str(depot), "log", "origin/main", f"--since={jours}.days",
             "--format=%x1e%H%x1f%ct%x1f%s%x1f%b"]
     try:
-        texte = run(argv, TIMEOUT_S)
+        texte = run(argv, _timeout(echeance))
     except (subprocess.SubprocessError, OSError) as exc:
         raise LectureIncomplete("citations_mergees", "git log", str(exc)) from exc
     citations: dict[int, list[dict]] = {}
@@ -146,7 +182,8 @@ def dossier_cache_defaut() -> Path:
     return (Path(local) / "CoursIA" if local else Path.home() / ".cache/coursia") / "tapis_rapide"
 
 
-def _rafraichir_origin_main(run: Run, depot: str | Path) -> str | None:
+def _rafraichir_origin_main(run: Run, depot: str | Path,
+                            echeance: float | None = None) -> str | None:
     """`git fetch origin main` si la pointe locale d'origin/main a plus de
     `FETCH_AGE_MAX_H` h ou est illisible : une panne se NOMME, ne leve pas."""
     try:
@@ -157,7 +194,8 @@ def _rafraichir_origin_main(run: Run, depot: str | Path) -> str | None:
     except (ValueError, subprocess.SubprocessError, OSError):
         pass  # pointe illisible : le fetch se tente quand meme
     try:
-        run(["git", "-C", str(depot), "fetch", "-q", "origin", "main"], TIMEOUT_S)
+        run(["git", "-C", str(depot), "fetch", "-q", "origin", "main"],
+            _timeout(echeance, FETCH_TIMEOUT_S))
         return None
     except (subprocess.SubprocessError, OSError) as exc:
         return f"fetch origin/main impossible ({str(exc)[:100]}), pointe locale gardee"
