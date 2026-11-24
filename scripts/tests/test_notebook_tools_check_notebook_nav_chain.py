@@ -17,6 +17,7 @@ Faux-negatifs mesures (l'organe DOIT les trouver) :
 - lien dans une rangee de nav sous `## Navigation` vers .ipynb absent.
 - lien avec mot `suivant` / `precedent` dans le texte vers .ipynb absent.
 """
+import re
 import subprocess
 import sys
 import textwrap
@@ -313,8 +314,13 @@ class TestDiffBaseScope:
     def test_diff_base_scope_reaches_the_verdict(self, monkeypatch, capsys):
         """Controle positif et negatif de bout en bout, par `main` sur le graphe
         reel. Baseline vide : chaque finding du depot est NEW. Un diff qui ne
-        touche que le registre ne bloque pas ; le meme argv avec le README de la
-        serie ICT (finding present) dans le diff bloque."""
+        touche que le registre ne bloque pas ; le meme argv avec, dans le diff,
+        le carnet d'un finding present bloque.
+
+        Le carnet du controle positif est lu dans le rapport du premier appel,
+        jamais ecrit en dur : un finding nomme d'avance disparait des que la
+        serie qui le porte est corrigee (le README ICT, repare par #28075, a
+        ainsi rougi `main` le 2026-11-24)."""
         seen_bases = []
 
         def diff_for(paths):
@@ -329,9 +335,12 @@ class TestDiffBaseScope:
         monkeypatch.setattr(nav_chain, "_changed_since",
                             diff_for({"scripts/ci/fast_lane_registry.py"}))
         assert nav_chain.main(argv) == 0
+        warned = re.findall(r"^  \[[^\]]+\] (\S+\.ipynb)",
+                            capsys.readouterr().out, flags=re.MULTILINE)
+        if not warned:
+            pytest.skip("aucun finding sur le graphe reel : controle positif sans cible")
 
-        monkeypatch.setattr(nav_chain, "_changed_since",
-                            diff_for({"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}))
+        monkeypatch.setattr(nav_chain, "_changed_since", diff_for({warned[0]}))
         assert nav_chain.main(argv) == 1
         assert seen_bases == ["origin/main", "origin/main"]
 

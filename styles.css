@@ -176,3 +176,25 @@
     text-align: center;
   }
 }
+
+/* Boutons de lancement des pages de carnet (#27551, pli 2.3 de l'Epic #27543).
+   Le bloc est insere dans le HTML rendu par la passe post-rendu
+   scripts/notebook_tools/launch_buttons.py ; la classe sert d'ancre de
+   style et le marqueur data-coursia-launch-buttons rend la passe idempotente. */
+.coursia-launch-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem 0;
+}
+
+.coursia-launch-label {
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.coursia-launch-button {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
+}
