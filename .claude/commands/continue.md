@@ -2,6 +2,11 @@
 
 Reprendre le travail sur cette lane : lire les directives coordinateur, puis enchainer les reparations et grains substantiels tant que la session est active. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de close d'issue d'autrui. **`gh auth switch` est autorise et necessaire** (trousseau gh partage entre workspaces — mandat user 2026-08-31) : la ligne rouge est le merge/close d'autrui, pas le switch lui-meme.
 
+## Du verdict au prochain geste
+
+Une réponse courte suffit si elle dit ce qui a changé sur le livrable. Une candidature écartée, un claim ou un message envoyé ne sont pas une livraison.
+Si le grain dépend désormais d’un tiers, lui transmettre la pièce précise et la condition de reprise ; avancer la prochaine correction ou feuille attribuée sans rouvrir tout le catalogue. Les contrôles de claim et de validation restent inchangés.
+
 ## Workflow
 
 ### Phase 1 : Contexte (30s)
