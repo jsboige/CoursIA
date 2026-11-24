@@ -110,6 +110,7 @@ from pathlib import Path
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
 from claim_cap_advice import cap_action_line, open_daughters
+from pr_catalogue import est_catalogue
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -7901,7 +7902,7 @@ def _compute_open_pr_collisions(
     self_overlap: list[PathCollision] = []
     for pr in prs:
         pr_files = pr.get("files") or []
-        if not pr_files:
+        if not pr_files or est_catalogue(pr):
             continue
         intersecting = [
             f.get("path", "") for f in pr_files

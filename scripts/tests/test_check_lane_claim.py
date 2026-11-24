@@ -6724,6 +6724,37 @@ def _collision_pr(number, lane, files, title="t"):
             "body": body, "files": [{"path": p} for p in files]}
 
 
+def _catalogue_pr(files=("MyIA.AI.Notebooks/GenAI/README.md",)):
+    """La PR du catalogue au long cours (#27771), regeneree par le workflow."""
+    return {"number": 27771, "title": "chore(catalog): scheduled auto-regenerate",
+            "headRefName": "chore/catalog-refresh-pending",
+            "body": "Grain: MED/refactor -- lane myia-ai-01:CoursIA",
+            "files": [{"path": p} for p in files]}
+
+
+def test_la_pr_du_catalogue_n_occupe_aucun_chemin():
+    """#27771 -- la PR du catalogue au long cours n'occupe aucun chemin.
+
+    Elle est regeneree par `catalog-cron.yml` et touche les README de
+    TOUTES les series : comptee comme occupant, elle bloque le claim de
+    chaque serie. Le CONTROLE POSITIF (une PR de travail reel sur le meme
+    chemin) reste entier.
+    """
+    chemin = "MyIA.AI.Notebooks/GenAI/README.md"
+    prs = [_catalogue_pr([chemin]),
+           _collision_pr(42, "other:CoursIA", [chemin])]
+    cols, own = clc._compute_open_pr_collisions([chemin], "me:CoursIA", prs=prs)
+    assert [c.number for c in cols] == [42], "seule la PR de travail reel occupe"
+    assert own == [], "la PR du catalogue n'est pas meme un chevauchement"
+
+
+def test_le_mode_paths_ignore_la_pr_du_catalogue():
+    """Le mode `--paths` rend 0 quand le seul occupant est la PR catalogue."""
+    rc = clc._run_check_paths(["MyIA.AI.Notebooks/GenAI/README.md"],
+                               "me:CoursIA", prs=[_catalogue_pr()])
+    assert rc == 0, "la PR du catalogue ne bloque pas le chemin"
+
+
 def test_issue_mode_blocks_on_other_lane_open_pr(monkeypatch, tmp_path, capsys):
     """CONTROLE POSITIF #16570 -- le cas de l'incident.
 
