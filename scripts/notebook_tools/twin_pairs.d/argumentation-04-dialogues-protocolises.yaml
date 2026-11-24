@@ -1,0 +1,7 @@
+- name: "Argumentation-04 Dialogues Protocolises"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Machine locale en C# BCL ; sémantique fondée calculée par la DLL Tweety réelle via IKVM 8.15, et trace assemblée par l'adaptateur C#."
