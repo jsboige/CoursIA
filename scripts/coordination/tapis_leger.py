@@ -6,8 +6,7 @@ tirage separe deux temps qui etaient confondus :
 
 - la **rotation universelle** (`coordination.tapis_universel`) classe TOUTES
   les issues ouvertes sur leurs **metadonnees seules** et tourne la tete de
-  niveau. Elle n'ecarte rien : chaque classe a son creneau de lecture
-  (19/11), et chaque grain servi porte son **etat** et l'**action** ;
+  niveau ; chaque grain servi porte son **etat** et l'**action** ;
 - la **qualification** (`coordination.tapis_qualification`) ne porte que sur
   le grain pris en charge : son corps, son **fil complet**, et la re-decision
   des neuf regles d'ecart, AVANT l'action.
@@ -31,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
 from coordination import (tapis_age, tapis_ancre, tapis_labels, tapis_origami,
                           tapis_public, tapis_rapide, tapis_repli,
-                          tapis_rotation)
+                          tapis_repli_cause, tapis_rotation)
 from coordination import tapis_service, tapis_universel
 # L'import de l'occupation est sur **sa propre ligne** : la PR d'age (#28022)
 # modifie la ligne d'import voisine, et deux ancres distinctes fusionnent sans
@@ -40,12 +39,10 @@ from coordination import tapis_occupation
 from coordination import tapis_leger_rapport
 from coordination.tapis_marqueurs import _iso, lane_de_pr
 
-#: Re-export du RAPPORT : l'appelant de `main` (`scripts/coordination/
-#: tapis_repli.py`) appelle `tapis_leger._rapport(...)`, et l'extraction du
-#: 22/11 l'avait retire du module -- l'appelant echouait alors sur l'arbre
-#: fusionne (`AttributeError: module 'coordination.tapis_leger' has no
-#: attribute '_rapport'`, run 45326540394). Le symbole reste donc resolvable
-#: par le module, et l'appel interne passe par le meme point de resolution.
+#: Re-export du RAPPORT : `tapis_repli` appelle `tapis_leger._rapport(...)`,
+#: et l'extraction du 22/11 l'avait retire du module -- l'appelant echouait
+#: sur l'arbre fusionne (`AttributeError`, run 45326540394). L'alias garde les
+#: appelants intacts.
 _rapport = tapis_leger_rapport.rapport
 
 #: Le classement propose ce multiple de grains : la qualification ecarte
@@ -96,9 +93,9 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
     # L'OCCUPATION se decide sur les metadonnees seules (labels + PRs
-    # ouvertes) : l'urne de cloture et la PR qui tient l'issue sortent de la
-    # tete -- avant la rotation, sans un appel reseau de plus. Les exclus
-    # sont affiches (jamais de grain perdu en silence).
+    # ouvertes) : l'urne de cloture, la PR qui tient l'issue et le grain de
+    # harnais sortent de la tete -- avant la rotation, sans un appel reseau
+    # de plus. Les exclus sont affiches (jamais de grain perdu en silence).
     occupation = tapis_occupation.marques(metas, prs, lane)
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
     grains_, conteneurs, exclus = tapis_occupation.retirer(
@@ -124,27 +121,28 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     """Le tirage leger complet : le rapport et le code de sortie.
 
     Sortie 3 : la lecture de selection est incomplete (rien n'est servi) --
-    jamais une liste a moitie. Une lecture incomplete du POOL n'est pas
-    equivalente : la selection paginee est complete ou elle echoue.
+    jamais une liste a moitie. La selection paginee est complete ou elle
+    echoue.
 
     I2 (#28114) : le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la main -- hors
     reseau, ou quand les filtres vident la file alors que le pool porte des
-    candidats. Le cache local fait foi, et le pool est servi dans l'ordre de
-    creation.
+    candidats.
     """
     debut = time.monotonic()
     try:
         classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
-    except gh_bulk.LectureIncomplete:
-        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+    except gh_bulk.LectureIncomplete as exc:
+        # Le repli **nomme** sa cause : sans elle, le rapport dit `voie:
+        # repli` et `selection_s: 0.0` sans dire pourquoi (dispatch `c0035b`).
+        return tapis_repli.replir(
+            lane, grains, maintenant, jours, graine, depot,
+            cause=tapis_repli_cause.lecture_incomplete(exc))
     ancres = tapis_ancre.lire(lane)
-    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord ; les
-    # CONTENEURS passent avec : leurs racines labellisees `consolidation`.
+    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
     ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant,
                                           classe["conteneurs"])
     # Le LOT PUBLIC est le chemin public isole (`tapis_public.lot_public`) :
-    # les TESTS le portent tel quel, et l'entrelacement des classes (un
-    # creneau de lecture chacune, 19/11) y vit avec la selection par age.
+    # l'entrelacement des classes y vit avec la selection par age.
     file, fenetre = tapis_public.lot_public(
         lane, classe["grains"], classe["conteneurs"], grains,
         max(grains * CANDIDATS_MULT, grains), maintenant, ancres=ancres,
@@ -164,7 +162,10 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     file, temoins_cap, cap_mesure, rendu = tapis_cap_livraisons.passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
         classe["prs"], run=run, pool_ouvert=bool(classe["grains"]),
-        repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine, depot))
+        repli=lambda: tapis_repli.replir(
+            lane, grains, maintenant, jours, graine, depot,
+            cause=tapis_repli_cause.cap_livraisons(
+                tapis_cap_livraisons.FENETRE_J)))
     if rendu is not None:
         return rendu
     rapport = _rapport(

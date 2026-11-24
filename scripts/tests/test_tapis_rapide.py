@@ -746,7 +746,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # organes du tapis tienne le plafond, #28090 + #27223, 22/11) ;
 # tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
 # de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
-# 22/11).
+# 22/11) ; tapis_nature.py la trente-quatrieme (la NATURE d'un grain :
+# parapluie, harnais, worker -- decidee sur les metadonnees seules, dispatch
+# `c0035b`, 24/11) ; tapis_occupation_rapport.py la trente-cinquieme (le
+# RENDU de l'occupation : les exclus et la section courte -- extraction pour
+# tenir le plafond quand la troisieme classe s'y greffe, 24/11) ;
+# tapis_repli_cause.py la trente-sixieme (les CAUSES NOMMEES du repli --
+# extraites pour que la greffe tienne le plafond, 24/11) ;
+# tapis_repli_cache.py la trente-septieme (le CACHE LOCAL du repli : chemin,
+# lecture meme perime, metadonnees -- meme raison, 24/11).
 
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
@@ -800,7 +808,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_labels.py", 60),
                                               ("tapis_occupation.py", 298),
                                               ("tapis_leger_rapport.py", 50),
-                                              ("tapis_leger_texte_occupation.py", 33)])
+                                              ("tapis_leger_texte_occupation.py", 33),
+                                              ("tapis_nature.py", 190),
+                                              ("tapis_occupation_rapport.py", 80),
+                                              ("tapis_repli_cause.py", 40),
+                                              ("tapis_repli_cache.py", 80)])
 
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
