@@ -6,9 +6,9 @@ pagetitle: "Théorie des Jeux - Game Theory"
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 170
-breakdown: root=123, Dynamics=17, SocialChoice=17, Metajeux=7, Coalitions=5, gateway=1
-maturity: BETA=162, DRAFT=5, ALPHA=3
+pedagogical_count: 209
+breakdown: root=139, Dynamics=26, SocialChoice=25, Metajeux=13, Coalitions=5, gateway=1
+maturity: BETA=201, DRAFT=5, ALPHA=3
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
