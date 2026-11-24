@@ -1142,6 +1142,38 @@ theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpC
         godementCokernelMap_comp m (ih (m + 1) (Nat.lt_succ_self (m + 1))),
         godementMapHom_zero]
 
+/-- **Partie 101 — la tranche degré 0 de la cible hard** : la SES des étages au
+cran `0`, dans la forme exacte de l'énoncé retiré.
+
+Au cran `0`, l'étage du complexe canonique est `C⁰` du terme
+(`godementCanonicalObj_zero`) et la flèche d'étage est `C⁰` de la flèche du
+short complexe (`godementCanonicalMap_zero`) : la SES des étages au cran `0`
+est donc la SES `C⁰`-image de la SES `S` — c'est `shortExact_map_godementFunctor`
+(Partie 99, rang 0), dont le champ `exact` est transporté jusqu'à la forme de
+l'énoncé retiré. Le mono vient de la Partie 86 (`godementMapHom_mono`), l'épi
+de la Partie 98 (`epi_godementMapHom_of_epi`).
+
+Ce que la tranche laisse ouvert — et c'est l'essentiel : les crans `n ≥ 1`. Là,
+l'étage est `C⁰(coker dⁿ)` et la flèche d'étage est `C⁰` de la flèche de
+conoyaux (`godementCanonicalMap_succ_two`) : la SES des étages exige la SES
+des conoyaux `0 → coker dⁿ_{X₁} → coker dⁿ_{X₂} → coker dⁿ_{X₃} → 0`, donc
+(a) l'annulation du connecteur `δ` par le lemme du serpent (`SnakeInput`) —
+`hsep` tuant `ker μ_{X₃}` au cran d'amorçage, `hres` tuant `ker dⁿ` aux crans
+suivants —, et (b) la monicité des flèches de conoyaux, qui passe par
+`mono_cokernel_map_of_isPullback` : le carré des unités doit être un pullback.
+`hsep` ne porte que sur le terme **droit** ; la séparéité du terme gauche est
+une hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1`. -/
+theorem shortExact_godementCanonicalObj_zero
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) :
+    (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f 0)
+      (godementCanonicalMap S.X₂ S.X₃ S.g 0)
+      (godementCanonicalMap_comp_zero 0)).ShortExact := by
+  have : Mono S.f := hS.mono_f
+  have : Epi S.g := hS.epi_g
+  refine ShortComplex.ShortExact.mk' ?_ (godementMapHom_mono S.f)
+    (epi_godementMapHom_of_epi S.g)
+  exact (shortExact_map_godementFunctor hS).exact
+
 /- **Cible prover : hard — la SES des étages à tout degré, par récursion**
 (P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est
 **séparé** (`hsep : Mono (toGodement S.X₃)` : tue le connecteur à
@@ -1157,13 +1189,22 @@ consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs
 `h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
 `S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`).
 
+**Tranche livrée (Partie 101)** : le cran `n = 0` est PROUVÉ et COMPILÉ —
+`shortExact_godementCanonicalObj_zero` : la SES des étages au degré `0`, dans
+la forme exacte de l'énoncé ci-dessous. Les crans `n ≥ 1` restent ouverts :
+ils exigent la SES des conoyaux, donc l'annulation du connecteur `δ` par le
+serpent **et** la monicité des flèches de conoyaux (pullback des carrés des
+unités) — le détail est dans la Partie 101.
+
 **Énoncé retiré du code compilé** (arbitrage ai-01 du 2026-11-19 sur #25661) :
 l'acceptance des issues mères #25599/#25605 exige `distinct_code_sorry` 0 → 0 ;
 tant que la preuve n'est pas livrée, l'énoncé reste documenté ici, hors
 compilation, et la garde bloquante (`axiom-fail-on-sorry`) reste armée —
-`sorry-baseline` du lake inchangée à 0. À ressusciter verbatim lorsque la
-preuve sera prête (organe : lemme du serpent, instance `SnakeInput` des SES
-d'étages, `δ` annulé par `hsep`/`hres`) :
+`sorry-baseline` du lake inchangée à 0. **Le cran `n = 0` de cet énoncé est
+désormais compilé** (`shortExact_godementCanonicalObj_zero`, Partie 101) ; les
+crans `n ≥ 1` restent à ressusciter verbatim lorsque la preuve sera prête
+(organe : lemme du serpent, instance `SnakeInput` des SES d'étages, `δ` annulé
+par `hsep`/`hres`, monicité des flèches de conoyaux) :
 
     theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
         (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))

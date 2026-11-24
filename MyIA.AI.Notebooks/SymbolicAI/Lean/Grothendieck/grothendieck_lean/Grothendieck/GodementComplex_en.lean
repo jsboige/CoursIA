@@ -295,5 +295,29 @@ variable {X : TopCat.{u}}
 -- (`L₃_exact` of `SnakeInput`) — needless: the snake remains the organ of
 -- the **hard** target (mono/epi of the stages and annihilation of the
 -- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
+--
+-- **Part 101 — the degree-0 tranche of the hard target is PROVED and
+-- COMPILED**: `shortExact_godementCanonicalObj_zero` — the stage SES at step
+-- `0`, in the exact shape of the withdrawn statement. At step `0` the stage
+-- is `C⁰` of the term (`godementCanonicalObj_zero`) and the stage arrow is
+-- `C⁰` of the short-complex arrow (`godementCanonicalMap_zero`), so the
+-- step-0 stage SES is the `C⁰`-image of the SES `S` — that is
+-- `shortExact_map_godementFunctor` (Part 99, rank 0), whose `exact` field is
+-- transported to the shape of the withdrawn statement; the mono comes from
+-- Part 86 (`godementMapHom_mono`), the epi from Part 98
+-- (`epi_godementMapHom_of_epi`).
+--
+-- What the tranche leaves open — and that is the substance: the steps
+-- `n ≥ 1`. There the stage is `C⁰(coker dⁿ)` and the stage arrow is `C⁰` of
+-- the cokernel arrow (`godementCanonicalMap_succ_two`): the stage SES
+-- requires the cokernel SES
+-- `0 → coker dⁿ_{X₁} → coker dⁿ_{X₂} → coker dⁿ_{X₃} → 0`, hence (a) the
+-- annihilation of the connector `δ` by the snake lemma (`SnakeInput`) —
+-- `hsep` killing `ker μ_{X₃}` at the priming step, `hres` killing `ker dⁿ`
+-- at the following ones — and (b) the monicity of the cokernel arrows,
+-- which goes through `mono_cokernel_map_of_isPullback`: the unit square must
+-- be a pullback. `hsep` bears on the **right** term only; the separatedness
+-- of the left term is a hypothesis to be established (or added to the
+-- statement) before even step `1`.
 
 end Grothendieck_en
