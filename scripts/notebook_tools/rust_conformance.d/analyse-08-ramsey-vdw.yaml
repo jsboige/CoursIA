@@ -10,9 +10,9 @@
 # divergence est un écart d'API documenté : le fichier n'est jamais
 # réécrit par l'outil une fois présent.
 - name: "ANALYSE-08-Ramsey-VdW"
-  family: "SymbolicAI/Lean/ANALYSE"
-  python: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb
-  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW-Rust.ipynb
+  family: "SymbolicAI/Lean/Analyse"
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-08-Ramsey-VdW.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-08-Ramsey-VdW-Rust.ipynb
   measures:
     - id: c3_text
       description: "Sortie de la cellule 3, texte identique au jumeau Python"
