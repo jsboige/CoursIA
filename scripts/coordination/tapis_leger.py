@@ -6,8 +6,8 @@ tirage separe deux temps qui etaient confondus :
 
 - la **rotation universelle** (`coordination.tapis_universel`) classe TOUTES
   les issues ouvertes sur leurs **metadonnees seules** et tourne la tete de
-  niveau. Elle n'ecarte rien : un conteneur ne passe jamais devant un grain
-  (#26926), et chaque grain servi porte son **etat** et l'**action** ;
+  niveau. Elle n'ecarte rien : chaque classe a son creneau de lecture
+  (19/11), et chaque grain servi porte son **etat** et l'**action** ;
 - la **qualification** (`coordination.tapis_qualification`) ne porte que sur
   le grain pris en charge : son corps, son **fil complet**, et la re-decision
   des neuf regles d'ecart, AVANT l'action.
@@ -29,7 +29,9 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_age, tapis_ancre, tapis_labels, tapis_origami, tapis_rapide, tapis_repli, tapis_rotation
+from coordination import (tapis_age, tapis_ancre, tapis_labels, tapis_origami,
+                          tapis_public, tapis_rapide, tapis_repli,
+                          tapis_rotation)
 from coordination import tapis_service, tapis_universel
 # L'import de l'occupation est sur **sa propre ligne** : la PR d'age (#28022)
 # modifie la ligne d'import voisine, et deux ancres distinctes fusionnent sans
@@ -64,7 +66,8 @@ def _ordre(etats_: list, lane: str, maintenant: datetime,
 
 def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
             run=gh_bulk.run_defaut,
-            budget_s: float = gh_selection.MUR_GLOBAL_S) -> dict:
+            budget_s: float = gh_selection.MUR_GLOBAL_S,
+            echeance: float | None = None) -> dict:
     """Le POOL classe : l'ordre fair des grains, et les conteneurs.
 
     C'est la lecture de metadonnees du tirage leger, SANS la fenetre : la
@@ -72,11 +75,16 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     quand la fenetre ne donne aucun grain servable).
     """
     debut = time.monotonic()
-    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s)
+    # UNE echeance monotone pour les trois etages (#28114, I6) : le temps
+    # restant borne chaque appel, donc un etage qui a consomme sa part voit
+    # l'etage suivant etre COUPE plutot qu'attendu.
+    echeance = echeance if echeance is not None else debut + gh_bulk.MUR_TIRAGE_S
+    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s,
+                                                         echeance=echeance)
     t1 = time.monotonic()
-    citations = gh_bulk.lire_citations_mergees(depot, jours, run)
+    citations = gh_bulk.lire_citations_mergees(depot, jours, run, echeance=echeance)
     t2 = time.monotonic()
-    prs = gh_bulk.lire_prs_ouvertes(run)
+    prs = gh_bulk.lire_prs_ouvertes(run, echeance=echeance)
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
     # L'OCCUPATION se decide sur les metadonnees seules (labels + PRs
@@ -126,16 +134,13 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     # CONTENEURS passent avec : leurs racines labellisees `consolidation`.
     ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant,
                                           classe["conteneurs"])
-    file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
-                                         grains, max(grains * CANDIDATS_MULT, grains),
-                                         lane, maintenant, ancres=ancres,
-                                         ages_g=ages, exclus_g=exclus)
-    tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
-                          fenetre["reprises"]["grains"],
-                          reboucle=False, reinit=reinit)
-    tapis_ancre.proposer(lane, "conteneurs",
-                          fenetre["primaires"]["conteneurs"],
-                          fenetre["reprises"]["conteneurs"])
+    # Le LOT PUBLIC est le chemin public isole (`tapis_public.lot_public`) :
+    # les TESTS le portent tel quel, et l'entrelacement des classes (un
+    # creneau de lecture chacune, 19/11) y vit avec la selection par age.
+    file, fenetre = tapis_public.lot_public(
+        lane, classe["grains"], classe["conteneurs"], grains,
+        max(grains * CANDIDATS_MULT, grains), maintenant, ancres=ancres,
+        ages_g=ages, exclus_g=exclus, reboucle=False, reinit=reinit)
     secondes = time.monotonic() - debut
     phases = classe["phases"]
     # `tapis_origami.mesurer` est TOTAL : il rend un etat d'echec, jamais une
