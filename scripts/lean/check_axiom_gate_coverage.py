@@ -413,7 +413,19 @@ def _rename_proven_at(cwd: str, ref: str, old_path: str, new_path: str) -> bool:
         if not commit:
             return False
         out = _git("diff", "--name-status", "-M", f"{commit}^", commit)
-        moved_to = None
+        # Every `R` entry under the old path votes for a destination, and the
+        # destination must hold a STRICT MAJORITY of the votes. Reading only
+        # the first entry was wrong: git pairs files of identical content
+        # arbitrarily, and a `lean-toolchain` shared by every lake can be
+        # paired with ANOTHER lake's new file. Measured 2026-11-23 on the
+        # CamelCase commit `08741c314b45` (#26381): of the 114 `R` entries
+        # under `Lean/GOL/conway_lean`, 113 go to `Lean/JeuDeLaVie/conway_lean`
+        # and 1 (`lean-toolchain`) to `Lean/Grothendieck/grothendieck_lean`;
+        # git lists that one first (output sorted by destination), so the
+        # guard followed it and declared PERDU a lake whose coverage never
+        # moved -- red on `main` and on every PR. No strict majority (a tie,
+        # or votes scattered) proves nothing: the answer stays False.
+        votes: dict[str, int] = {}
         for line in out.splitlines():
             cols = line.split("\t")
             if len(cols) >= 3 and cols[0].startswith("R"):
@@ -421,9 +433,12 @@ def _rename_proven_at(cwd: str, ref: str, old_path: str, new_path: str) -> bool:
                 dst = cols[2].replace("\\", "/")
                 if src == current or src.startswith(current + "/"):
                     suffix = src[len(current):]
-                    moved_to = dst[: len(dst) - len(suffix)] if dst.endswith(suffix) else dst
-                    break
-        if moved_to is None:
+                    dest = dst[: len(dst) - len(suffix)] if dst.endswith(suffix) else dst
+                    votes[dest] = votes.get(dest, 0) + 1
+        if not votes:
+            return False
+        moved_to, best = max(votes.items(), key=lambda kv: kv[1])
+        if 2 * best <= sum(votes.values()):
             return False
         if moved_to == new or new.startswith(moved_to + "/"):
             return True
