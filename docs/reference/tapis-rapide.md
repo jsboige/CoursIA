@@ -567,6 +567,9 @@ personne ne pouvait nommer, et laissait passer des modules du chemin qui ne l'é
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_leger_rapport.py` | le **rapport** du tirage léger : l'état de chaque grain et l'action à faire — extrait de `tapis_leger.py` |
+| `scripts/coordination/tapis_leger_texte_occupation.py` | la section **occupation** de la sortie texte du tirage léger — extraite de `tapis_leger_texte.py` |
+| `scripts/coordination/tapis_occupation.py` | l'**occupation** d'un grain : l'urne de clôture (`candidate-delivered`) et la PR qui le tient — les deux marques, une seule décision, sur métadonnées seules (#28090) |
 | `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
 | `scripts/coordination/tapis_avance.py` | l'**avance** du curseur, bornée au lot : les trois états (décidé / parqué / sauté) |
 | `scripts/coordination/tapis_non_tente.py` | le grain **non tenté** : proposé, jamais qualifié — son code propre, et il ne fige pas le curseur |
