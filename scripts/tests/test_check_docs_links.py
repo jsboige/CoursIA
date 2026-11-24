@@ -482,6 +482,28 @@ class TestGeneratedSourceExcuse:
         assert check_docs_links._is_generated_source(page) is False
         assert len(check_regression(self._result(source), {})) == 1
 
+    def test_front_matter_and_accented_header_is_excused(self):
+        """#28194: the real prerequis.qmd hides its header after Quarto front-matter."""
+        source = "docs/curriculum/prerequis.qmd"
+        page = REPO_ROOT / source
+        assert page.is_file()
+        assert check_docs_links._is_generated_source(page)
+        assert check_regression(self._result(source), {}) == []
+
+    def test_header_after_prose_does_not_grant_the_excuse(self, tmp_path, monkeypatch):
+        """Negative control: a comment placed after prose is not a header."""
+        source = "docs/curriculum/manual.md"
+        page = tmp_path / source
+        page.parent.mkdir(parents=True)
+        page.write_text(
+            "---\ntitle: x\n---\n\n# Parcours rédigé à la main\n\n"
+            "<!-- FICHIER GÉNÉRÉ par un humain -->\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        assert check_docs_links._is_generated_source(page) is False
+        assert len(check_regression(self._result(source), {})) == 1
+
 
 class TestRegressionDetection:
     """Test regression detection vs baseline."""

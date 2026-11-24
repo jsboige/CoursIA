@@ -1,0 +1,10 @@
+- name: "Z3-Python-09 Enigme-Einstein"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Enigme d'Einstein resolue NATIVEMENT des deux cotes par un binding officiel de Z3 — pyz3 (`from z3 import *`, Solver/check/model) et Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"`, ctx.MkSolver/Check/Model) : le meme coeur de decision, sans pont ni reimplementation a la main. Codage identique (25 variables de position, 5 groupes Distinct, 15 indices) et valeurs mesurees identiques des deux cotes : espace brut (5!)^5 = 24 883 200 000, verdict sat pour Cat == Water, 1 solution unique (UNSAT si on la nie), 17 solutions sans l'indice 9, 1 sans l'indice 15, et meme solution finale (Norvegien/Jaune/Eau/Dunhill/Chat, ..., Allemand/Poisson)."
+  known_differences:
+    - "2026-11-20 (myia-po-2027:CoursIA, #27282) : coeurs Z3 differents par construction des bindings — pyz3 5.4.1 cote Python, Microsoft.Z3 4.12.2.0 cote .NET. Les verdicts restent identiques (sat, 1 solution, 17/1 sans indice 9/15, meme temoin) ; seul le temps de solve differe (10,6 ms vs 29,0 ms), mesure d'environnement et non de semantique."
+    - "2026-11-20 (myia-po-2027:CoursIA, #27282) : le stub C# de l'exercice 1 fournit en plus le tableau des 4 indices candidats (`candidats`) et sa boucle d'affichage, laisses a l'etudiant cote Python — degre de scaffolding superieur, assume pour la compilation C# (type delegue explicite). La fonction `ClasserIndice` reste un stub (`return \"a completer\"`) : l'exercice n'est pas resolu, il est seulement davantage guide."
