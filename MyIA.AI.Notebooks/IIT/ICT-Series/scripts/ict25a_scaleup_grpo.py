@@ -73,6 +73,13 @@ from ict25a_probe_battery import (POSITIONS, charger_batterie,  # noqa: E402
                                   chemin_artefact, echantillonner, ecrire_batterie,
                                   ecrire_manifeste, ecrire_npz, empreinte_batterie,
                                   forward_transformers, plan_instrumentation)
+# Persistance des adaptateurs QLoRA (#5105) : le runner entrainait en QLoRA
+# (`peft_config=lora`) sans jamais persister l adaptateur (`save_strategy="no"`,
+# aucun `save_pretrained`). Mesure du 24/11 : aucun adaptateur de la campagne
+# 2B du 20/11 n existe sur le disque -- le bloc `trained` de la lecture SAE
+# (`extract_sae_traces.py --variant trained`) n a donc rien a recharger, et la
+# moitie « panel persona » de la Gate 21 n a pas d instrument.
+from ict25a_adapter import sauver_adaptateur  # noqa: E402
 
 MAGIC_TOKEN = "HACK"
 
@@ -176,7 +183,8 @@ def _instrumenter(model, tok, instr, arm, seed, etape, model_name):
             "position": instr["position"], "graine_batterie": instr["graine_batterie"]}
 
 
-def run_seed(model_name, arm, seed, steps, ds, max_records=64, instr=None):
+def run_seed(model_name, arm, seed, steps, ds, max_records=64, instr=None,
+            adapter_dir=None):
     import tempfile
 
     set_seed(seed)
@@ -231,6 +239,16 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64, instr=None):
     dt = time.time() - t0
     vram_peak = torch.cuda.max_memory_allocated() / 1e9
 
+    # Persistance de l adaptateur : sans elle, l artefact ne decrit que des
+    # agregats et le bloc `trained` de la lecture SAE n a aucun poids a
+    # recharger (#5105). Les poids ne sont pas committes -- l adaptateur est
+    # certifie par son SHA-256, et c est ce SHA que l artefact porte.
+    adaptateur = None
+    if adapter_dir is not None:
+        adaptateur = sauver_adaptateur(trainer.model, adapter_dir)
+        print(f"[ict25a:{arm}] seed {seed} : adaptateur ecrit -> "
+              f"{adaptateur['fichier']} (sha256 {adaptateur['sha256'][:12]})", flush=True)
+
     recs = holder["records"]
     rewards = np.array([r["reward"] for r in recs], float)
     mc = np.array([r["mc"] for r in recs], float)
@@ -241,7 +259,8 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64, instr=None):
          "n_records": len(recs),
          "hack_early": float(np.mean(hk[:h])), "hack_late": float(np.mean(hk[h:])),
          "mc_early": float(np.mean(mc[:h])), "mc_late": float(np.mean(mc[h:])),
-         "reward_early": float(np.mean(rewards[:h])), "reward_late": float(np.mean(rewards[h:]))}
+         "reward_early": float(np.mean(rewards[:h])), "reward_late": float(np.mean(rewards[h:])),
+         "adapter": adaptateur}
     # Echantillon auditable (tete + queue) : sans lui, les agregats ci-dessus ne
     # sont recalculables par personne, et Gate 21 n'a aucune trace a examiner.
     m.update(record_windows(recs, max_records))
@@ -296,6 +315,12 @@ def main():
     ap.add_argument("--probe-position", default="last", choices=sorted(POSITIONS),
                     help="Position lue dans la sequence : derniere position, ou "
                          "moyenne des positions.")
+    ap.add_argument("--save-adapter", default=None,
+                    help="Repertoire ou persistre l adaptateur QLoRA de chaque "
+                         "graine (un sous-repertoire par graine). Les poids ne "
+                         "sont pas committes : l artefact porte le SHA-256 de "
+                         "l adaptateur ecrit, et c est ce SHA qui identifie les "
+                         "poids ayant produit la lecture (#5105).")
     args = ap.parse_args()
 
     instr = {}
@@ -356,8 +381,11 @@ def main():
         if s in done:
             print(f"[ict25a] seed {s} deja presente, saut.")
             continue
+        dest = None
+        if args.save_adapter:
+            dest = Path(args.save_adapter) / f"{args.arm}_s{s}"
         done[s] = run_seed(args.model, args.arm, s, args.steps, ds, args.max_records,
-                           instr=instr)
+                           instr=instr, adapter_dir=dest)
         payload = {"model": args.model, "arm": args.arm, "steps": args.steps,
                    "gpu": dev,
                    "protocol": protocol_block(max_completion_length=MAX_COMPLETION_LENGTH,
