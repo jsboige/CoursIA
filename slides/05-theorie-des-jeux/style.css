@@ -77,3 +77,19 @@
 .slidev-layout p {
   margin: 0.35em 0;
 }
+
+/* Les matrices se lisent à distance : donner la place aux gains plutôt
+ * que de laisser le tableau se réduire à sa largeur intrinsèque. */
+.slidev-layout.gt-matrix table,
+.gt-matrix .slidev-layout table {
+  width: min(100%, 720px);
+  margin: 0.8rem auto;
+  font-size: 1.25rem;
+}
+
+.slidev-layout.gt-matrix td,
+.slidev-layout.gt-matrix th,
+.gt-matrix .slidev-layout td,
+.gt-matrix .slidev-layout th {
+  padding: 0.4rem 0.75rem;
+}

@@ -24,51 +24,46 @@ INTELLIGENCE ARTIFICIELLE -- V
 layout: section
 ---
 
-# Plan du cours
+# Du cours aux notebooks
 
 ---
 layout: default
 ---
 
-# Sommaire
+# La série GameTheory : quatre façons de changer la question
 
-- I. Introduction
-- II. Resolution de problemes
-- III. Bases de connaissances et logique
-- IV. Incertitude et modèles probabilistes
-- **V. Théorie des jeux**
-- VI. Apprentissage
-- VII. Traitement du langage naturel
-- VIII. Presentation projets
+| Si l’on change… | La question devient… | Porte d’entrée |
+| --- | --- | --- |
+| **la représentation** | Quelles propriétés survivent à une abstraction ou à la composition de deux jeux ? | [Métajeux · synthèse](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb) |
+| **le temps ou les agents** | La coopération tient-elle si l’on rejoue, si l’on voit le code adverse ou si raisonner coûte ? | [Dynamiques · synthèse](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb) |
+| **l’unité de décision** | Que peut obtenir un groupe en se formant, et comment répartir le surplus ? | [Coalitions · synthèse](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-20-Capstone-Coalitions-Python.ipynb) |
+| **la règle collective** | Comment voter ou apparier sans effacer les préférences ni créer de mauvaises incitations ? | [Choix social · synthèse](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb) |
+
+On commence par les décisions individuelles, puis on change une hypothèse à la fois. Les synthèses font le lien avec les expériences et les preuves ; le [guide de la série](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/README.md) détaille les parcours et leurs prérequis.
 
 ---
 layout: dense
 ---
 
-# Théorie des jeux
+# Quand un problème devient-il stratégique ?
 
-## Environnement multi-agent
+- **Un décideur, plusieurs effecteurs.** Il faut coordonner ou synchroniser leurs actions. La planification peut être centralisée (état commun) ou distribuée.
+- **Plusieurs décideurs.** Chacun choisit à partir des informations dont il dispose. Le résultat dépend des choix de tous, que leurs objectifs coïncident ou non.
+- **Pour modéliser un tour**, nommer les joueurs, leurs actions et leurs gains. Pour modéliser plusieurs tours, préciser aussi qui observe quoi, et quand.
 
-- Un seul Decideur
-  - Planification / Synchronisation
-  - Multi-Effecteurs / Multi-corps (decouplage)
-    - Centralise (state = pool) vs decentralise
-- Decideurs multiples -> théorie des jeux
-  - But commun / buts propres, adversite et/ou collaboratif
-  - Information parfaite / imparfaite
-  - A un tour: Joueurs, actions, recompenses
+Deux questions traversent le cours : **comment jouer sous des règles données ?** et **quelles règles adopter pour obtenir un meilleur résultat ?**
 
-## Études des interdependances stratégiques
+---
+layout: image-overlay
+---
 
-- Objectif double
-  - Design d'agent: Quelle est la meilleure stratégie?
-  - Design de mécanisme: Quelles sont les bonnes règles?
-- Optimisation de stratégies: pure / mixte (randomisee)
-- Von Neumann -> Maximin: Jeux a somme nulle
+# Morra : que garantit une stratégie ?
 
-<img src="./images/img_001.png" alt="Environnement multi-agent : plusieurs decideurs en interaction, exemple du jeu de Morra" style="display:block; margin:4px auto 0; max-height:88px; width:auto; max-width:100%; object-fit:contain;">
+Chaque joueur montre un ou deux doigts ; l’un veut un total pair, l’autre un total impair. Si l’adversaire sait à l’avance quel nombre vous allez montrer, il peut choisir le total qui lui convient.
 
-*Notebook : [GameTheory-01-Setup-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb) — environnement multi-agent, jeu de Morra.*
+<img src="./images/img_001.png" alt="Variantes séquentielles de Morra et valeur garantie quand le premier joueur choisit un mélange" style="display:block; margin:8px auto; height:285px; width:auto; max-width:100%; object-fit:contain;">
+
+**Le maximin** choisit le mélange qui maximise le gain garanti contre la pire réponse. [Modéliser Morra](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb) · [Calculer le minimax](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb).
 
 ---
 layout: section
@@ -77,43 +72,97 @@ layout: section
 # Analyse stratégique
 
 ---
-layout: dense
+layout: default
+class: gt-matrix
 ---
 
-# Analyse stratégique
+# Dilemme du prisonnier : stable, mais pour qui ?
 
-## Jeux simultanes
+Les deux prisonniers décident sans connaître le choix de l’autre. Chaque case donne les gains **(ligne, colonne)** ; un nombre plus grand correspond à une peine plus courte.
 
-- Matrice de gains
-- Dilemme du prisonnier: Parler ou se taire
-  - Stratégie pure strictement dominante (stable)
-  - Mais Pareto dominee (global mais instable)
+| Joueur ligne ↓ / Joueur colonne → | Se taire | Avouer |
+| --- | ---: | ---: |
+| **Se taire** | (−1, −1) | (−12, 0) |
+| **Avouer** | (0, −12) | (−8, −8) |
 
-## IESDS
+<v-click>
 
-- Elimination iterative des stratégies strictement dominees
-- Reduction progressive de la matrice
+**Avouer domine strictement se taire** : contre le silence, 0 vaut mieux que −1 ; contre un aveu, −8 vaut mieux que −12. Le même calcul vaut pour l’autre joueur.
 
-## Equilibre de Nash
+</v-click>
 
-- Optimum local dans l'espace des politiques
-- Aucun agent n'a de motivation a changer de stratégie
-  - = Une loi que personne n'enfreint sans la police
-- Garanti d'exister / importance de la Coordination
+<v-click>
 
-## Meilleure reponse
+**Stable ne veut pas dire efficace.** Aucun joueur ne gagne à se taire seul en (−8, −8), mais les deux préfèrent (−1, −1) : l’issue des aveux est Pareto-dominée.
 
-- Etant donnée les autres choix
-- Equilibre de Nash = meilleure reponse pour tous
+</v-click>
 
-<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; align-items:center;">
-<img src="./images/img_002.png" alt="Matrice de gains du dilemme du prisonnier" style="width:100%; height:28px; object-fit:contain;">
-<img src="./images/img_003.png" alt="Elimination iterative des strategies strictement dominees (IESDS)" style="width:100%; height:28px; object-fit:contain;">
-<img src="./images/img_004.png" alt="Equilibre de Nash dans la matrice de gains" style="width:100%; height:28px; object-fit:contain;">
-<img src="./images/img_005.png" alt="Meilleure reponse aux strategies des autres joueurs" style="width:100%; height:28px; object-fit:contain;">
-</div>
+*À refaire : [Matrice, dominance et dilemme](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb).*
 
-*Notebooks : [GameTheory-02-NormalForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb) (matrices, dilemme du prisonnier, IESDS) · [GameTheory-04-NashEquilibrium-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb) (Nash, meilleure reponse) · [GameTheory-02b-Lean-Definitions-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb) (definitions formelles en Lean).*
+---
+layout: default
+class: gt-matrix
+---
+
+# Éliminer une stratégie change le jeu restant
+
+**IESDS** — élimination itérée des stratégies strictement dominées. Pour le joueur colonne, comparer les **seconds** gains : quelle colonne peut-on rayer d’emblée ?
+
+| Ligne ↓ / Colonne → | Gauche | Centre | Droite |
+| --- | ---: | ---: | ---: |
+| **Haut** | (13, 3) | (1, 4) | (7, 3) |
+| **Milieu** | (4, 1) | (3, 3) | (6, 2) |
+| **Bas** | (−1, 9) | (2, 8) | (8, −1) |
+
+<v-click>
+
+1. **Centre** élimine Droite : 4 > 3, 3 > 2, 8 > −1.
+2. Sans Droite, **Milieu** élimine Bas pour le joueur ligne : 4 > −1 et 3 > 2.
+3. Sans Bas, **Centre** élimine Gauche ; **Milieu** élimine alors Haut. Il reste **(Milieu, Centre)**.
+
+</v-click>
+
+*À explorer : [Rationalisation et IESDS](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-Python.ipynb) · [Définitions en Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb).*
+
+---
+layout: default
+class: gt-matrix
+---
+
+# Chasse au cerf : être prévisible ne suffit pas
+
+Une **meilleure réponse** maximise mon gain *contre un choix adverse donné*. Une stratégie dominante, elle, est meilleure *quel que soit* ce choix.
+
+| Ligne ↓ / Colonne → | Cerf | Lièvre |
+| --- | ---: | ---: |
+| **Cerf** | (3, 3) | (0, 2) |
+| **Lièvre** | (2, 0) | (1, 1) |
+
+<v-click>
+
+Contre Cerf, mieux vaut Cerf ; contre Lièvre, mieux vaut Lièvre. **Aucune action ne domine**. Les deux diagonales sont des équilibres de Nash purs : en chacune, dévier seul ne paie pas.
+
+</v-click>
+
+<v-click>
+
+**Le problème est de se coordonner.** Les deux joueurs préfèrent chasser le cerf ensemble, mais chasser le lièvre rapporte davantage si l’autre ne coopère pas.
+
+</v-click>
+
+*À calculer : [Meilleures réponses et équilibres de Nash](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb).*
+
+---
+layout: image-overlay
+---
+
+# Repérer Nash dans une matrice à quatre actions
+
+Dans chaque colonne, marquer tous les maxima du **premier** gain ; dans chaque ligne, tous ceux du **second**. Une case doublement marquée est un Nash pur. Garder les ex æquo.
+
+<img src="./images/img_004.png" alt="Matrice Pass, One, Two, Three : les doubles étoiles sont aux quatre cases où les deux joueurs choisissent Pass ou Three" style="display:block; margin:12px auto; height:265px; width:auto; max-width:100%; object-fit:contain;">
+
+Les quatre combinaisons où chacun choisit **Pass** ou **Three** sont des équilibres purs. L’absence de double marque dans un autre jeu n’exclurait pas un équilibre mixte.
 
 ---
 layout: dense
@@ -144,7 +193,7 @@ layout: dense
 <img src="./images/img_008.png" alt="Calcul des gains esperes : bataille des sexes" style="width:100%; height:130px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (support mixte, somme nulle) · [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence calculee).*
+*Notebooks : [GameTheory-05-ZeroSum-Minimax-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (support mixte, somme nulle) · [GameTheory-04c-NashExistence-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence calculee).*
 
 ---
 layout: dense
@@ -160,12 +209,12 @@ layout: dense
 
 ## Existence de Nash
 
-- [GameTheory-04b-Lean-NashExistence-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb)
+- [GameTheory-04b-Lean-NashExistence-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb)
   - Simplexe standard (compact, convexe) -> point fixe -> equilibre mixte
 
 ## Von Neumann / minimax
 
-- [GameTheory-05b-Lean-Minimax-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb)
+- [GameTheory-05b-Lean-Minimax-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb)
   - Point de selle via le theoreme de Sion (Mathlib), zero `sorry`
 
 ---
@@ -201,7 +250,7 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) (dominance faible, regle impaire) · [Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) · [Metajeux-05-Temoins-Impossibilite-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb).*
+*Notebooks : [GameTheory-03-Topology2x2-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) (dominance faible, regle impaire) · [Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) · [Metajeux-05-Temoins-Impossibilite-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb).*
 
 ---
 layout: dense
@@ -236,7 +285,7 @@ layout: dense
 <img src="./images/img_015.png" alt="Equilibre parfait de sous-jeu (SPE) : menaces credibles" style="width:100%; height:72px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) (arbres, tours successifs) · [GameTheory-09-BackwardInduction-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) (mille-pattes) · [GameTheory-10-ForwardInduction-SPE-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb).*
+*Notebooks : [GameTheory-07-ExtensiveForm-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) (arbres, tours successifs) · [GameTheory-09-BackwardInduction-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) (mille-pattes) · [GameTheory-10-ForwardInduction-SPE-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb).*
 
 ---
 layout: dense
@@ -253,7 +302,7 @@ layout: dense
   - Autres: jouer equilibres de Nash = 1 equilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 
-*Notebook : [GameTheory-10-ForwardInduction-SPE-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) (equilibres de sous-jeu, induction sur plusieurs manches).*
+*Notebook : [GameTheory-10-ForwardInduction-SPE-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) (equilibres de sous-jeu, induction sur plusieurs manches).*
 
 ---
 layout: dense
@@ -274,7 +323,7 @@ layout: dense
 
 <img src="./images/img_017.png" alt="Se lier les mains : bruler le pont rend la menace credible" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-09b-Commitment-Stackelberg-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) (se lier les mains, menace credible) · [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (strategies de punition).*
+*Notebooks : [GameTheory-09b-Commitment-Stackelberg-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) (se lier les mains, menace credible) · [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (strategies de punition).*
 
 ---
 layout: dense
@@ -302,7 +351,7 @@ layout: dense
 <img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebooks : [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) (evolution de la confiance).*
+*Notebooks : [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) (evolution de la confiance).*
 
 ---
 layout: dense
@@ -312,7 +361,7 @@ layout: dense
 
 ## Grim trigger certifie
 
-- [Dynamics-02-Jeux-Repetes-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) : compagnon formel du 06c
+- [Dynamics-02-Jeux-Repetes-Lean-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) : compagnon formel du 06c
   - Jeu de stage, flux actualises, `grim_trigger_is_NE`
   - Seuil de credibilite `delta >= (T-R)/(T-P)` certifie, zero `sorry`
 
@@ -334,7 +383,7 @@ layout: dense
   - Position perdante (P-position) ssi Grundy = 0 -- l'induction arrière devient un calcul
 - Compagnons formels du corpus : port Lean « from scratch », puis lake natif dédié
 
-*Notebooks : [GameTheory-08-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) (lake `conway_cgt_lean`).*
+*Notebooks : [GameTheory-08-CombinatorialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) (lake `conway_cgt_lean`).*
 
 ---
 layout: dense
@@ -361,7 +410,7 @@ layout: dense
 
 <img src="./images/img_025.png" alt="Equilibre de lame de couteau : instabilite autour de x=0" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
-*Notebook : [GameTheory-03-Topology2x2-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
+*Notebook : [GameTheory-03-Topology2x2-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
 
 ---
 layout: dense
@@ -390,7 +439,7 @@ layout: dense
 <img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
 </div>
 
-*Notebooks : [Dynamics-09-Biens-Publics-N-Personnes-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) (déformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle, EU = 0).*
+*Notebooks : [Dynamics-09-Biens-Publics-N-Personnes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) (déformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle, EU = 0).*
 
 ---
 layout: dense
@@ -400,17 +449,17 @@ layout: dense
 
 ## De la matrice au paysage ordinal
 
-- [GameTheory-03b-Chambres-Murs-Chemins-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) : partitionner l'espace des jeux 2x2 en chambres et murs, puis mesurer la distance qui separe deux chambres
+- [GameTheory-03b-Chambres-Murs-Chemins-Lean-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) : partitionner l'espace des jeux 2x2 en chambres et murs, puis mesurer la distance qui separe deux chambres
 
 ## Deformations et quotient
 
-- [Dynamics-09-Biens-Publics-N-Personnes-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) : chemins continus entre classes
-- [GameTheory-03-Topology2x2-Python (§9)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
+- [Dynamics-09-Biens-Publics-N-Personnes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) : chemins continus entre classes
+- [GameTheory-03-Topology2x2-Python (§9)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) : deriver la structure quotient (absorbé depuis l'ex-03g)
 
 ## Parcours et extensions
 
-- [GameTheory-03e-Meta-Actions-Tarifees-Python (§4-8)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
-  - [GameTheory-03e-Meta-Actions-Tarifees-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03d-Deux-Especes-de-Fleches-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [Dynamics-10-Joueur-LLM-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb)
+- [GameTheory-03e-Meta-Actions-Tarifees-Python (§4-8)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) : versant d'integration (absorbé depuis l'ex-03f)
+  - [GameTheory-03e-Meta-Actions-Tarifees-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) · [GameTheory-03d-Deux-Especes-de-Fleches-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [Dynamics-10-Joueur-LLM-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb)
 
 ---
 layout: default
@@ -434,7 +483,7 @@ layout: default
 
 <img src="./images/img_030.png" alt="Duel : equilibre a meme distance" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
-*Notebook : [GameTheory-04c-NashExistence-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence d'un equilibre hors matrice finie).*
+*Notebook : [GameTheory-04c-NashExistence-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence d'un equilibre hors matrice finie).*
 
 ---
 layout: default
@@ -450,7 +499,7 @@ layout: default
 
 <img src="./images/img_031.png" alt="Loi de Hotelling : les deux vendeurs se placent au milieu" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
-*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
 
 ---
 layout: section
@@ -480,7 +529,7 @@ layout: dense
 
 <img src="./images/img_032.png" alt="Formalisation Bayesienne : joueurs, etats, types et croyances" style="display:block; margin:4px auto; max-height:30px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebook : [GameTheory-11-BayesianGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) (types, croyances, formalisation).*
+*Notebook : [GameTheory-11-BayesianGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) (types, croyances, formalisation).*
 
 ---
 layout: dense
@@ -504,7 +553,7 @@ layout: dense
 
 <img src="./images/img_034.png" alt="Dilemme du Sheriff : seuil p>1/3 pour tirer" style="display:block; margin:4px auto; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-11-BayesianGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) (types, Nash bayesien) · [GameTheory-11b-Lean-BayesianGamesExt-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) (extension Lean).*
+*Notebooks : [GameTheory-11-BayesianGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) (types, Nash bayesien) · [GameTheory-11b-Lean-BayesianGamesExt-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) (extension Lean).*
 
 ---
 layout: dense
@@ -525,7 +574,7 @@ layout: dense
 
 - Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
 
-*Notebook : [GameTheory-17b-Asymmetric-Information-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) — croyances consistantes et rationalite sequentielle.*
+*Notebook : [GameTheory-17b-Asymmetric-Information-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) — croyances consistantes et rationalite sequentielle.*
 
 ---
 layout: dense
@@ -551,7 +600,7 @@ layout: dense
 
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-12-ReputationGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) (screening formalise).*
+*Notebooks : [GameTheory-12-ReputationGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) (screening formalise).*
 
 ---
 layout: dense
@@ -567,7 +616,7 @@ layout: dense
   - Convergence vers l'équilibre de Nash -- la famille qui a révolutionné la résolution du poker
   - Safe subgame solving : recoller une sous-partie sans supposer les croyances (le mauvais recollement produit un témoin adversarial)
 
-*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13b-Safe-Subgame-Solving-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
+*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13b-Safe-Subgame-Solving-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
 
 ---
 layout: section
@@ -611,7 +660,7 @@ layout: dense
 - Structures de coalition optimales: NP-Hard
   - Bons résultats avec exploration du graphe de structure
 
-*Notebooks : [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb).*
+*Notebooks : [GameTheory-15-CooperativeGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb).*
 
 ---
 layout: section
@@ -646,7 +695,7 @@ layout: dense
   - **DSIC**: Implementation en stratégies dominantes
   - **BNIC**: Equilibre de Nash Bayesien (plus faible)
 
-*Notebooks : [GameTheory-16-MechanismDesign-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) (revelation, DSIC/BNIC) · [GameTheory-16b-Automated-Mechanism-Design-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) (AMD) ; `amd_star_DSIC/IR` prouves en Lean.*
+*Notebooks : [GameTheory-16-MechanismDesign-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) (revelation, DSIC/BNIC) · [GameTheory-16b-Automated-Mechanism-Design-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) (AMD) ; `amd_star_DSIC/IR` prouves en Lean.*
 
 ---
 layout: dense
@@ -677,7 +726,7 @@ layout: dense
 
 <img src="./images/img_038.png" alt="Taxe VCG : T_i = U_max(sans i) - U_max(sans i, sans ressource j)" style="display:block; margin:6px auto 2px; max-height:68px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-16-MechanismDesign-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) (Vickrey, VCG, equivalence de revenu) · [GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) ; `vickrey_truthful` prouve en Lean. Bien commun : pas de notebook dedie.*
+*Notebooks : [GameTheory-16-MechanismDesign-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) (Vickrey, VCG, equivalence de revenu) · [GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) ; `vickrey_truthful` prouve en Lean. Bien commun : pas de notebook dedie.*
 
 ---
 layout: dense
@@ -699,7 +748,7 @@ layout: dense
 - **Theoreme de Arrow**: Impossible de satisfaire 1, 2 et 3 simultanement (>= 3 options)
 - **Theoreme de Gibbard-Satterthwaite**: Toute FCS déterministe avec Pareto et >2 choix est manipulable ou dictatoriale
 
-*Notebooks : [SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) (Arrow) · [SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) · [SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) (verification SAT/Z3) ; `arrow` prouve en Lean (game_theory_lean), Gibbard-Satterthwaite dans social_choice_lean_peters.*
+*Notebooks : [SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) (Arrow) · [SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) · [SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) (verification SAT/Z3) ; `arrow` prouve en Lean (game_theory_lean), Gibbard-Satterthwaite dans social_choice_lean_peters.*
 
 ---
 layout: dense
@@ -723,7 +772,7 @@ layout: dense
 
 <img src="./images/img_040.png" alt="Theoremes de l'electeur median : resultats de vote" style="display:block; margin:4px auto; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, electeur median).*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, electeur median).*
 
 ---
 layout: dense
@@ -739,7 +788,7 @@ layout: dense
 
 <img src="./images/img_041.png" alt="Methodes Minimax et Schulze en l'absence de vainqueur de Condorcet" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
-*Notebooks : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
+*Notebooks : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
 
 ---
 layout: dense
@@ -767,7 +816,7 @@ layout: dense
 <img src="./images/img_044.png" alt="Scrutin au jugement majoritaire : mediane des scores" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire).*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire).*
 
 ---
 layout: dense
@@ -787,7 +836,7 @@ layout: dense
 <img src="./images/img_047.png" alt="Condorcet randomisee : loterie ponderee dans le peloton de tete" style="width:100%; height:80px; object-fit:contain;">
 </div>
 
-*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire). Scrutins stochastiques : pas de notebook dedie.*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire). Scrutins stochastiques : pas de notebook dedie.*
 
 ---
 layout: default
@@ -807,7 +856,7 @@ layout: default
 
 <img src="./images/img_048.png" alt="Negociation a offres alternees : fenetre d'accord et partage a l'equilibre" style="display:block; margin:10px auto; max-height:200px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-04d-Marchandage-Asymetrique-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) (offres alternees, discompte) · [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) (ultimatum).*
+*Notebooks : [GameTheory-04d-Marchandage-Asymetrique-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) (offres alternees, discompte) · [GameTheory-07-ExtensiveForm-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) (ultimatum).*
 
 ---
 layout: dense
@@ -908,7 +957,7 @@ layout: dense
 - Possibilite de dialogue -> maximisation commune
 - Division en partie cooperative et partie competitive (valeur co-co)
 
-*Notebook : [GameTheory-14-DifferentialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (point de selle, Stackelberg differentiel).*
+*Notebook : [GameTheory-14-DifferentialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (point de selle, Stackelberg differentiel).*
 
 ---
 layout: dense
@@ -961,7 +1010,7 @@ layout: default
 
 - Details mathematiques dans les references du cours
 
-*Notebooks : [GameTheory-14-DifferentialGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
+*Notebooks : [GameTheory-14-DifferentialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
 
 ---
 layout: dense
@@ -977,7 +1026,7 @@ layout: dense
   - PSRO (Policy-Space Response Oracles) : population de meilleures reponses imbriquees, l'echelle ou FP s'essouffle
 - La serie se decline en jumeau C# pour les TP .NET
 
-*Notebooks : [GameTheory-17-MultiAgent-RL-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) (self-play, FP, NFSP, PSRO) · [GameTheory-17-MultiAgent-RL-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) (jumeau C#).*
+*Notebooks : [GameTheory-17-MultiAgent-RL-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) (self-play, FP, NFSP, PSRO) · [GameTheory-17-MultiAgent-RL-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) (jumeau C#).*
 
 ---
 layout: dense
@@ -994,7 +1043,7 @@ layout: dense
 - Compagnon formel : module `ProgramGames.Bounded` du lake `game_theory_lean` -- code public, budget, interprete `act`
 - Oracles reflexifs (Fallenstein, Taylor, Christiano 2015) : decider sur sa propre decision sans paradoxe
 
-*Notebooks : [Dynamics-04-Open-Source-Game-Theory-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [Dynamics-05-Agents-Bornes-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) (preuves bornees) · [Dynamics-05-Agents-Bornes-Lean](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [Dynamics-07-Equilibres-par-Simulation-Python](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [GameTheory-04e-Reflective-Oracles-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb).*
+*Notebooks : [Dynamics-04-Open-Source-Game-Theory-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [Dynamics-05-Agents-Bornes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) (preuves bornees) · [Dynamics-05-Agents-Bornes-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [Dynamics-07-Equilibres-par-Simulation-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [GameTheory-04e-Reflective-Oracles-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb).*
 
 ---
 layout: dense
@@ -1010,13 +1059,99 @@ layout: dense
 - Casser la composition : deux surfaces d'attaque ou la meilleure reponse composee cesse d'etre l'equilibre du jeu compose
 - Abstraction a dette mesurable (Kroer & Sandholm) : resoudre le jeu abstrait puis retransporter la strategie -- avec une borne sur ce que le detour coute au pire cas
 
-*Notebooks : [Metajeux-01-Open-Games-Lentilles-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) (lentilles, Hedges) · [Metajeux-02-Casser-la-Composition-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb) (attaques) · [Metajeux-03-Abstraction-a-Dette-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) (bornes d'abstraction).*
+*Notebooks : [Metajeux-01-Open-Games-Lentilles-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) (lentilles, Hedges) · [Metajeux-02-Casser-la-Composition-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb) (attaques) · [Metajeux-03-Abstraction-a-Dette-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) (bornes d'abstraction).*
 
 ---
 layout: section
 ---
 
-# Questions?
+# Changer les règles, le jeu ou les agents
+
+---
+layout: default
+---
+
+# Métajeux : que garde-t-on quand on change de modèle ?
+
+**Composer.** Deux décisions s’enchaînent : le choix en amont modifie ce que l’agent en aval peut faire. Vérifier les meilleures réponses séparément ne dispense pas de vérifier les interfaces.
+
+**Abstraire.** Résoudre un jeu réduit est utile si l’on peut mesurer ce que perd la stratégie une fois ramenée dans le jeu initial.
+
+**Transformer.** Relier des jeux par un chemin de changements de rangs n’est pas la même chose que préserver leurs équilibres à chaque étape.
+
+[Composer des jeux ouverts](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) · [Mesurer la dette d’abstraction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) · [Explorer les chemins entre jeux](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb)
+
+---
+layout: default
+---
+
+# Dynamiques : trois raisons de coopérer
+
+| Situation | Ce qui peut soutenir la coopération |
+| --- | --- |
+| **On se revoit.** | Un gain immédiat peut coûter une relation profitable : comparer les gains actualisés de la coopération et d’une déviation. |
+| **On peut lire le programme adverse.** | Un agent peut conditionner son action à ce qu’il arrive à établir sur l’autre. Un budget de preuve ou de simulation limite ce qu’il voit. |
+| **On contribue à plusieurs.** | Dans un bien public, on peut bénéficier de l’effort des autres sans contribuer. Observer les contributions individuelles et le résultat collectif. |
+
+[Jeux répétés](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) · [Coût du raisonnement](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) · [Biens publics](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) · [Joueur LLM](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb)
+
+---
+layout: default
+---
+
+# Coalitions : former un groupe, puis partager
+
+- **Pouvoir.** Dans un vote pondéré, le poids seul ne suffit pas : un membre compte lorsqu’il fait passer une coalition de perdante à gagnante.
+- **Surplus.** La valeur de Shapley répartit la valeur créée en moyennant les contributions marginales sur les ordres d’arrivée. Ce n’est pas un test de stabilité : le cœur demande qu’aucun groupe ne préfère partir.
+- **Allocation.** Pour un échange de reins, les compatibilités imposent des échanges réalisables ; une affectation de coût minimal et un échange par cycles ne résolvent pas en général le même problème.
+
+[Calculer le pouvoir avec SMT](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb) · [Échange de reins et Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-03-Echange-de-Reins-Lean-Python.ipynb) · [Certifier une affectation](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb)
+
+---
+layout: default
+---
+
+# Choix social : élire, apparier, composer un comité
+
+| Problème | Ce qu’il faut vérifier |
+| --- | --- |
+| **Classer des options.** | Les préférences individuelles peuvent être transitives alors que les majorités par paires forment un cycle. Le score et la règle par paires ne répondent pas à la même question. |
+| **Apparier des personnes.** | Une paire absente de l’appariement peut-elle l’améliorer pour les deux personnes ? Si oui, l’appariement n’est pas stable. |
+| **Élire plusieurs représentants.** | Un comité ne se juge pas seulement par la popularité de ses membres : qui représente-t-il, et peut-on modifier le résultat en votant stratégiquement ? |
+
+[Comparer les scrutins](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) · [Tester la stabilité](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb) · [Manipulation en scrutin à plusieurs sièges](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb)
+
+---
+layout: default
+---
+
+# Information privée : révéler, filtrer ou informer ?
+
+- **Signaler.** Une personne déjà informée choisit un message ou une action observable. Le destinataire doit en déduire ce que l’émetteur sait.
+- **Filtrer.** Le côté non informé conçoit un menu. Les choix des participants révèlent de l’information si les incitations les conduisent à se trier.
+- **Persuader.** L’émetteur s’engage à l’avance sur une règle de divulgation. La question n’est plus seulement « que dire ? », mais « quelle expérience rendre publique ? ».
+
+[Marché des citrons](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) · [Filtrer par un menu de loyers](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [Persuasion bayésienne](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb)
+
+---
+layout: default
+---
+
+# Deux prolongements : transitions et règles exécutables
+
+**Jeux stochastiques.** Deux joueurs ne choisissent pas seulement un gain immédiat : leurs actions modifient les probabilités du prochain état. À chaque état, le jeu de Shapley combine récompense du tour et valeur de continuation.
+
+[Calculer la valeur par itération de Shapley](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb)
+
+**Failles légales.** Un ensemble de règles autorise des opérations une à une ; leur enchaînement peut pourtant produire une issue que le mécanisme n’avait pas prévue. Le carnet sépare la recherche d’un chemin admissible de la preuve d’optimalité dans son modèle.
+
+[Chercher le témoin avec Python, le vérifier avec Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb)
+
+---
+layout: section
+---
+
+# Questions ?
 
 ---
 layout: section
