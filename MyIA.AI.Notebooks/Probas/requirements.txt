@@ -32,3 +32,6 @@ networkx>=3.0              # Graph utilities
 
 # === DoWhy (DoWhy-1-Estimand-et-Intervention) ===
 dowhy>=0.12                  # Identification causale (estimand backdoor/frontdoor + refuters)
+
+# === causal-learn (Causalite-04 : decouverte de structure) ===
+causal-learn>=0.1.4          # PC, GES, DirectLiNGAM -- importe par Causalite/dowhy_discovery_organs.py
