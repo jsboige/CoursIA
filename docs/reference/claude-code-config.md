@@ -1,6 +1,6 @@
 # Claude Code Extension Points
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 ## Agents (`.claude/agents/`)
 
