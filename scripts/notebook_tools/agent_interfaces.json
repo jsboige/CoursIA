@@ -1,0 +1,77 @@
+{
+  "generated": "2026-11-17",
+  "description": "Interfaces agentiques du depot, inventoriees a la main et verifiees (paths reels sur origin/main). Population partielle : le recensement complet des 622 CLI est le grain suivant (couverture --help, grain (b) de #27071). Ce fichier alimente l'entree opt-in de generate_curriculum_rdf.py (--interfaces) ; il ne fait pas partie du catalogue des carnets.",
+  "note": "Chaque entree cite un chemin reel verifie. La classe 'cli' est un echantillon volontairement borne aux organes consommes par la flotte ; l'inventaire exhaustif arrive avec le grain (b).",
+  "interfaces": [
+    {
+      "class": "cli",
+      "name": "check_unaddressed_nits",
+      "path": "scripts/check_unaddressed_nits.py",
+      "description": "Porte B.0 : verifie que chaque reserve de review postee apres le dernier commit est levee par une phrase ecrite, un thread inline resolu, ou une issue de suivi nommee avant le merge.",
+      "contract": {
+        "usage": "python scripts/check_unaddressed_nits.py <PR> ; --audit --limit N",
+        "exit_semantics": "0 = aucune phrase de levee ne manque ; 1 = ressource non levee ou echec de lecture"
+      }
+    },
+    {
+      "class": "cli",
+      "name": "count_code_sorry",
+      "path": "scripts/lean/count_code_sorry.py",
+      "description": "Compte les sorry reels du code Lean (champ distinct_code_sorry) dedoublonne des paires FR/EN ; ne lit pas la prose.",
+      "contract": {
+        "usage": "python scripts/lean/count_code_sorry.py --json",
+        "exit_semantics": "0 = compte rendu ; champ distinct_code_sorry = resultat falsifiable"
+      }
+    },
+    {
+      "class": "cli",
+      "name": "query_curriculum",
+      "path": "scripts/notebook_tools/query_curriculum.py",
+      "description": "Interroge l'export Turtle du cursus : series, recherche de carnets, fiche, contraintes de ressources, prerequis, concepts, chemins, et maintenant les interfaces agentiques.",
+      "contract": {
+        "usage": "python scripts/notebook_tools/query_curriculum.py --graph CURRICULUM.generated.ttl <commande>",
+        "exit_semantics": "0 = resultats ; 2 = carnet introuvable ou graphe invalide (cycle, propriete mal typee)"
+      }
+    },
+    {
+      "class": "mcp",
+      "name": "sk08-mcp-server",
+      "path": "MyIA.AI.Notebooks/GenAI/SemanticKernel/sk08-mcp-server/",
+      "description": "Serveur MCP stdio pedagogique (Semantic Kernel) : outils prix_ttc et calcule_tva. Demontre le pont SK vers MCP ; n'expose aucune capacite du corpus.",
+      "contract": {
+        "usage": "dotnet run --project MyIA.AI.Notebooks/GenAI/SemanticKernel/sk08-mcp-server",
+        "exit_semantics": "serveur stdio ; protocole MCP"
+      }
+    },
+    {
+      "class": "bridge",
+      "name": "argumentum_bridge",
+      "path": "MyIA.AI.Notebooks/IIT/ICT-Series/ict/argumentum_bridge.py",
+      "description": "Pont Python entre l'organe Argumentum et la serie ICT : coeur reutilise, pas un service.",
+      "contract": {
+        "usage": "module Python importe par la serie ICT",
+        "exit_semantics": "API de module (fonctions), pas un executable"
+      }
+    },
+    {
+      "class": "bridge",
+      "name": "amd_lean_bridge",
+      "path": "MyIA.AI.Notebooks/GameTheory/amd_lean_bridge.py",
+      "description": "Pont Python entre les organes Lean de la serie GameTheory et les carnets Python.",
+      "contract": {
+        "usage": "module Python importe par la serie GameTheory",
+        "exit_semantics": "API de module (fonctions), pas un executable"
+      }
+    },
+    {
+      "class": "bridge",
+      "name": "symbol_codec_bridge",
+      "path": "MyIA.AI.Notebooks/InformationCalcul/Compression/symbol_codec_bridge.py",
+      "description": "Pont Python entre le codec de symboles de la serie Compression et ses consommateurs.",
+      "contract": {
+        "usage": "module Python importe par la serie Compression",
+        "exit_semantics": "API de module (fonctions), pas un executable"
+      }
+    }
+  ]
+}

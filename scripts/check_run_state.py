@@ -70,7 +70,8 @@ import sys
 try:
     import gh_etag
 except ImportError:  # meme shim que les organes voisins (tests hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_etag est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_etag
 
 RED = {"failure", "timed_out"}
@@ -237,16 +238,46 @@ def _required_contexts(repo: str = REPO, base: str = "main") -> set[str] | None:
     la donnee n'est PAS une absence de check requis -- un lecteur qui
     transformerait un 403 en « aucun check requis » blanchirait la classe
     #21463 (PR BLOCKEE sans check rendu, le check requis etant simplement
-    illisible). Fail-closed cote determination, pas cote verdict."""
+    illisible). Fail-closed cote determination, pas cote verdict.
+
+    UNE EXCEPTION, mesuree le 18/11/2026 sur #27242 (pile de PRs) : une
+    branche **non protegee** repond 404 « Branch not protected ». Ce n'est pas
+    une illisibilite : la branche existe, elle n'exige AUCUN check. Le jeu
+    requis y est CONNU et VIDE, donc `set()` -- pas `None`, qui dirait « on ne
+    sait pas ». Une branche *introuvable* (« Branch not found ») reste
+    `None` : la, on ne sait toujours pas."""
     try:
         doc = json.loads(_run_gh(["api", f"repos/{repo}/branches/{base}/protection"]))
-    except (RuntimeError, ValueError, KeyError, TypeError):
+    except RuntimeError as exc:
+        if "Branch not protected" in str(exc):
+            return set()
+        return None
+    except (ValueError, KeyError, TypeError):
         return None
     rsc = doc.get("required_status_checks") or {}
     contexts = rsc.get("contexts")
     if not isinstance(contexts, list):
         return None
     return {c for c in contexts if isinstance(c, str)}
+
+
+def _pr_base(pr: int) -> str | None:
+    """Branche de BASE d'une PR (REST). `None` si illisible : l'appelant garde
+    alors `main` par defaut, et le verdict reste fail-closed.
+
+    Pourquoi cette lecture (#27242, 18/11/2026) : le jeu des checks requis est
+    une propriete de la branche **ciblee**. Une PR empilee (base = branche de
+    feature, non protegee) n'a AUCUN check requis -- et `pr-gate.yml` ne se
+    declenche que sur `base: main`, donc son `PR gate` n'y est JAMAIS poste.
+    Lire la protection de `main` pour une telle PR affirmait un check requis
+    absent : un « BLOQUEE sans rouge visible » (#21463) sur une PR que
+    GitHub, lui, juge `CLEAN`. L'instrument inventait donc le blocage."""
+    try:
+        doc = json.loads(_run_gh(["api", f"repos/{REPO}/pulls/{pr}"]))
+    except (RuntimeError, ValueError, KeyError, TypeError):
+        return None
+    ref = (doc.get("base") or {}).get("ref")
+    return ref if isinstance(ref, str) and ref else None
 
 
 def render(sha: str, legs: list[dict],
@@ -295,16 +326,20 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(f"instrument error: {exc}", file=sys.stderr)
         return 2
-    # #21463 -- le jeu des checks requis, lu a la protection de branche
-    # (best-effort : None si illisible, alors missing_required reste None et
-    # n'influence ni la sortie ni le code de sortie).
-    required = _required_contexts()
+    # #21463 -- le jeu des checks requis, lu a la protection de la branche
+    # CIBLEE par la PR (best-effort : None si illisible, alors missing_required
+    # reste None et n'influence ni la sortie ni le code de sortie).
+    # La base se lit sur la PR elle-meme : une PR empilee (base = branche de
+    # feature) n'exige aucun check, et lire `main` affirmait un check absent.
+    base = (_pr_base(args.pr) if args.pr else None) or "main"
+    required = _required_contexts(base=base)
     state = render(sha, legs, required)
+    state["base"] = base
     if args.as_json:
         print(json.dumps(state, ensure_ascii=False, indent=1))
     else:
         print(f"head {sha} -- {state['n_legs']} jambes / {state['n_names']} noms "
-              f"(source: commits/<head>/check-runs)")
+              f"(source: commits/<head>/check-runs ; base {base})")
         multi = {n: c for n, c in state["legs_per_name"].items() if c > 1}
         for name, leg in sorted(state["latest"].items()):
             mark = "RED" if leg["conclusion"] in RED else \

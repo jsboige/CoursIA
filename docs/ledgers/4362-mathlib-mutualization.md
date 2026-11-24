@@ -26,7 +26,7 @@ Sortie du scan lu-seul (2026-10-26, po-2023, clone `CoursIA-2`) :
 === Projets Lake avec dependance mathlib (34) ===
 
 --- Groupe leanprover_lean4_v4.33.0-db584cd6 [MUTUALISABLE -- revision partagee par 3 groupes] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
-  MyIA.AI.Notebooks/Compression/Compression_lean                         JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
+  MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean                         JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   MyIA.AI.Notebooks/GameTheory/assignment_lean                           checkout physique (0.51 GB)
   MyIA.AI.Notebooks/GameTheory/game_theory_lean                          JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   MyIA.AI.Notebooks/GameTheory/minimax_lean                              checkout physique (0.51 GB)
@@ -37,7 +37,7 @@ Sortie du scan lu-seul (2026-10-26, po-2023, clone `CoursIA-2`) :
   MyIA.AI.Notebooks/Search/search_lean                                   checkout physique (0.51 GB)
   MyIA.AI.Notebooks/Sudoku/sudoku_lean                                   JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean               JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
-  MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean                      JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
+  MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean                      JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean           pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean               pas de checkout local
   MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib

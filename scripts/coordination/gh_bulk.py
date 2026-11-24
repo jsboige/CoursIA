@@ -1,8 +1,8 @@
 """Lectures groupees de GitHub et de git pour le tapis rapide (#22983).
 
-Seul module de la voie legere qui lance un processus ; `run(argv, timeout)` est
-injecte, les tests en passent un faux. Le cache et le verrou sont dans
-`coordination.gh_cache` (#22630).
+Modules de la voie legere qui lancent un processus : celui-ci et
+`coordination.gh_selection` (selection leger) ; `run(argv, timeout)` est
+injecte. Le cache et le verrou sont dans `coordination.gh_cache` (#22630).
 """
 from __future__ import annotations
 
@@ -12,9 +12,11 @@ import re
 import subprocess
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
+    Lecture, LectureIncomplete, issue)
 
 Run = Callable[[list[str], int], str]
 
@@ -42,43 +44,17 @@ QUERY = """query($owner:String!,$name:String!,$n:Int!,$after:String){
     comments(last:12){totalCount nodes{createdAt author{login} body}}}}}}"""
 
 
-class LectureIncomplete(RuntimeError):
-    """Une lecture n'a pas abouti : rien ne doit etre servi."""
-
-    def __init__(self, lecture: str, page: object, cause: str) -> None:
-        super().__init__(f"lecture {lecture} incomplete (page {page}) : {cause}")
-        self.lecture, self.page, self.cause = lecture, page, cause
-
-
-@dataclass
-class Lecture:
-    """Les trois lectures d'un tirage, et ce qu'elles ont coute."""
-
-    issues: list[dict]
-    prs: list[dict]
-    citations: dict[int, list[dict]] = field(default_factory=dict)
-    lu_a: str = ""
-    appels: int = 0
-    secondes: float = 0.0
-    depuis_cache: bool = False
-    fetch_note: str | None = None  # fetch d'origin/main tente et echoue (sinon None)
-
-    @property
-    def origin_main_le(self) -> str | None:
-        """Dernier commit de la fenetre : chaque commit de squash cite sa PR."""
-        return max((c["date"] for cs in self.citations.values() for c in cs), default=None)
-
-
 def run_defaut(argv: list[str], timeout: int) -> str:
     """`subprocess.run` borne ; un code non nul leve `CalledProcessError`."""
     return subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
                           timeout=timeout, check=True).stdout
 
 
-def _appel(run: Run, argv: list[str], lecture: str, page: object) -> str | None:
+def _appel(run: Run, argv: list[str], lecture: str, page: object,
+           timeout: int | None = None) -> str | None:
     """Un appel ; None sur une panne transitoire (502/504, timeout)."""
     try:
-        return run(argv, TIMEOUT_S)
+        return run(argv, TIMEOUT_S if timeout is None else timeout)
     except subprocess.TimeoutExpired:
         return None
     except subprocess.CalledProcessError as exc:
@@ -106,26 +82,13 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
     raise LectureIncomplete("issues", page, f"502/504 ou timeout aux tailles {TAILLES_PAGE}")
 
 
-def _issue(node: dict) -> dict:
-    """Une issue GraphQL a plat, aux champs de `issues.json`."""
-    com = node.get("comments") or {}
-    return {"number": node["number"], "title": node.get("title") or "",
-            "body": node.get("body") or "", "created_at": node.get("createdAt") or "",
-            "updated_at": node.get("updatedAt") or "",
-            "labels": [lab["name"] for lab in (node.get("labels") or {}).get("nodes") or []],
-            "comments_total": com.get("totalCount") or 0,
-            "comments": [{"created_at": c.get("createdAt") or "",
-                          "author": (c.get("author") or {}).get("login") or "",
-                          "body": (c.get("body") or "")[:600]} for c in com.get("nodes") or []]}
-
-
 def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict]:
-    """Toutes les issues ouvertes (12 derniers commentaires), jamais une liste partielle."""
+    """Toutes les issues ouvertes (12 derniers commentaires), jamais partielle."""
     issues: list[dict] = []
     after, page = None, 1
     while True:
         data = _page_issues(run, depot, after, page)
-        issues.extend(_issue(node) for node in data["nodes"])
+        issues.extend(issue(node) for node in data["nodes"])
         if not data["pageInfo"]["hasNextPage"]:
             return issues
         after, page = data["pageInfo"]["endCursor"], page + 1
@@ -154,7 +117,6 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
 def lire_citations_mergees(depot: str | Path, jours: int = 45,
                            run: Run = run_defaut) -> dict[int, list[dict]]:
     """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
-
     Un seul `git log`, sans fetch : le body de la PR devient le message du squash."""
     argv = ["git", "-C", str(depot), "log", "origin/main", f"--since={jours}.days",
             "--format=%x1e%H%x1f%ct%x1f%s%x1f%b"]

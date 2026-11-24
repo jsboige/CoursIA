@@ -24,8 +24,9 @@ import RepeatedGames.Discounting_en
 
   The second building block is the incentive condition used by the classical
   one-shot deviation argument. By itself, it is not a formalization of a
-  subgame-perfect Nash equilibrium: that requires semantics for histories
-  and strategy profiles.
+  subgame-perfect Nash equilibrium: the quantification over histories and
+  strategy profiles, and the resulting SPE statement (`grim_isSPE_iff`),
+  live in `RepeatedGames.Perfect`.
 
   **Companion notebook**: `GameTheory-6c` (repeated games) derives this
   threshold by hand. Bridge `ICT-13` (#4879): the numerical verification of

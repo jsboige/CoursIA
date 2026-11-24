@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # Note de conception — palier 10 : famille ICT-15 (capstone Φ/F/K, obstruction et recollement)
 
 **Provenance** : issue [#20298](https://github.com/jsboige/CoursIA/issues/20298) — phase 2 de l'EPIC de consolidation ICT.

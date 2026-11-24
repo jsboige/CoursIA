@@ -6,118 +6,64 @@ pagetitle: "QuantConnect AI Trading - Série Éducative CoursIA"
 series: QuantConnect
 pedagogical_count: 125
 breakdown: Python=66, projects=49, kelly_lean=6, ML-Training-Pipeline=4
-maturity: BETA=86, DRAFT=32, ALPHA=6, TEMPLATE=1
+maturity: BETA=85, DRAFT=32, ALPHA=7, TEMPLATE=1
 -->
-
-> **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
-
-> - **`Python/` (parcours QC-Py-*)** : 54/54 = **Python** (mono-langage, QuantConnect Cloud + kernel local Jupyter) — *kernel Python majoritaire, aucun piège sémantique C#*. **Drift constaté c.744** (audit `git ls-files Python/`) : 55 .ipynb sur disque vs 53 déclarés hub → écart +2, attribué aux notebooks Cloud ajoutés 2026-05/06 (PCA-StatArb, TemporalCNN, ValueFactor-ZScore, OptionWheel). CATALOG-STATUS leaf ajouté en c.744. **Réconciliation §E c.S** (audit entier, `_output` exclus) : 54 exacts sur disque = 30 linéaires (QC-Py-01..28 + 12b + 23b) + 24 compléments ; le résiduel +1 du c.744 était `QC-Py-12b-Backtest-Validity`, jamais compté nulle part (corrigé dans les tables et décomptes ci-dessous).
-
-> - **`ML-Training-Pipeline/`** : 14/14 = **Python** (PyTorch / Stable-Baselines3 / Walk-Forward). **Drift constaté c.744** : 14 .ipynb sur disque vs 2 déclarés hub → écart +12, la sous-série a crû depuis la création du breakdown hub (ajouts RL/DL ladder). CATALOG-STATUS leaf ajouté en c.744.
-
-> - **`kelly_lean/`** : 7/7 = **Lean 4** (preuve formelle Kelly HMM-regime fee-aware) — *mono-paradigme Lean* : prouve les invariants algébriques du critère de Kelly pour le sizing position-aware des régimes HMM, complémentaire aux notebooks Python ML. **Note c.744** : « 7/7 » dans cette note désigne les **fichiers `.lean` du lake** (7 sources : `Kelly.lean` + lemmes), périmètre différent du marqueur hub (`kelly_lean=1` = le notebook Jupyter de référence). CATALOG-STATUS leaf (1 .ipynb) ajouté en c.744.
-
-> - **`research/`** : 17 .ipynb (standalone research, yfinance/sklearn, hors QC Cloud) — **non-référencé dans le breakdown hub** (4 sous-séries agrégées : Python/projects/ML-Training-Pipeline/kelly_lean). CATALOG-STATUS leaf ajouté en c.744. Ne pas confondre avec [`Python/research/`](Python/research/README.md) : les notebooks **companions** appariés aux notebooks de cours QC-Py-19/QC-Py-22 (catégorie (b) du README Python), détaillés dans leur [README feuille](Python/research/README.md).
-
-> - **`partner-course-quant-trading/`** : 7 .ipynb (cours partenaire sponsorisé QuantConnect Trading Firm) — **non-référencé dans le breakdown hub**. CATALOG-STATUS leaf ajouté en c.744.
-
-> Le hub QuantConnect a donc une **particularité intra-hub : parcours Python pur + sous-série Lean 4 isolée** (variante de la doctrine L392 « hub mixité kernel intra-sous-série » appliquée à un cas où Python domine largement, avec Lean isolé dans une sous-série distincte). La phrase L260 « périmètres différents, pas par erreur » documente précisément cette asymétrie.
-
-> **Régénération du marqueur** : ce bloc est régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (03:37 UTC daily sur `main`, commit `[skip ci]` par `github-actions[bot]`). Toute divergence ponctuelle entre les counts agrégés et la réalité disk est documentée dans `docs/qc/qc-strategies-status.md` (autoritatif pour `projects/`) ou dans la note ci-dessus (autoritative pour les kernels intra-sous-série). **Résiduel c.744** : le breakdown agrégé `Python=53, projects=49, ML-Training-Pipeline=2, kelly_lean=1` du marqueur est **drift** vs le filesystem (cf points ci-dessus + sous-séries `research`/`partner-course` absentes de l'agrégat). **Le marqueur hub reste byte-identique** (catalog-pr-hygiene R1 : régénération par catalog-cron uniquement, hors scope PR feuille) ; le **fix canonique** = mise à jour du générateur de breakdown côté `catalog-cron.yml` pour inclure les sous-séries `research`/`partner-course-quant-trading` + recalculer les counts kernels réels. **Sub-grains séparés** : un futur cycle pourra auditer `catalog-cron.yml` + script de comptage pour aligner l'agrégat sur le filesystem ; ce PR n'altère **que** les leafs + la prose hub, sans toucher au marqueur agrégé (R1 strict).
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)
 
-Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
+Le trading algorithmique transforme les marchés financiers : plus de 60 % des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (cycle de vie d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
 
-La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe sélection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
+Le parcours principal progresse par blocs : les **fondations** de l'écosystème QuantConnect (architecture LEAN, univers dynamiques, classes d'actifs), le **trading avancé et la gestion du risque**, l'**Algorithm Framework** modulaire, la **préparation ML** (données alternatives, feature engineering), puis le **machine learning** classique et profond appliqué aux séries temporelles financières, jusqu'à la **production** (RL, LLMs, déploiement). Chaque notebook du parcours s'exécute sur le cloud QuantConnect (offre gratuite) sans installation locale ; les compléments de recherche s'exécutent le plus souvent en local avec des données publiques.
 
-**À qui s'adresse cette série** : étudiants en finance quantitative, ingénieurs ML souhaitant appliquer leurs compétences aux marchés, et développeurs curieux de trading algorithmique. Les notebooks Python s'exécutent sur QuantConnect Cloud (gratuit) ou localement avec le LEAN engine. Le livre de référence est *"Hands-On AI Trading"* (Jared Broad, 2025). Aucun capital de départ nécessaire : tout se passe en backtest et paper trading.
+**À qui s'adresse cette série** : étudiants en finance quantitative, ingénieurs ML souhaitant appliquer leurs compétences aux marchés, et développeurs curieux de trading algorithmique. Le livre de référence est *"Hands-On AI Trading"* (Jared Broad, 2025) — le fichier [BOOK_MAPPING.md](BOOK_MAPPING.md) rattache chaque exemple du livre aux notebooks et projets de la série. Aucun capital de départ n'est nécessaire : tout se passe en backtest et en paper trading.
 
-> **Visiteur ?** Lire le [Quick Tour](QUICK_TOUR.md) (2 min) pour comprendre l'ampleur du travail.
+## Comment lire ce README
 
----
+- **Vous voulez apprendre** : suivez le [parcours principal](#parcours-principal) dans l'ordre, de 01 à 28. Les carnets sont des supports de cours, à lire sur GitHub ou en local ; les compléments numérotés au-delà de 28 approfondissent un palier ou ouvrent une voie de recherche.
+- **Vous voulez backtester une stratégie** : allez directement dans [`projects/`](projects/README.md), copiez un `main.py` dans votre projet QuantConnect Lab, cliquez Backtest.
+- **Vous voulez comprendre la rigueur méthodologique** : lisez [Pour aller plus loin](#pour-aller-plus-loin) — baselines vérifiées, échelle de complexité des modèles, formalisation Lean du critère de Kelly.
+- Les nombres d'inventaire (carnets par sous-série, maturité) vivent dans le [catalogue généré](../../COURSE_CATALOG.generated.md) et dans les README feuilles ; ce README ne les recopie pas.
 
-## Pour Commencer (4 étapes)
+## Parcours principal
 
-1. **Créer un compte gratuit** : [https://www.quantconnect.com/signup](https://www.quantconnect.com/signup)
-2. **Créer un projet Python** dans QC Lab (File > New Project)
-3. **Copier un `main.py`** depuis `projects/` (ex: `EMA-Cross-Stocks/`) dans votre projet
-4. **Cliquer Backtest** pour exécuter
+La séquence 01 à 28 se lit dans l'ordre : chaque palier suppose le précédent. Le livre de référence couvre les mêmes notions au fil des chapitres.
 
-**Temps estimé** : 5-10 minutes
+| # | Carnet | Durée | Ce qu'on y apprend | Pour approfondir |
+|---|--------|------|--------------------|------------------|
+| 01 | [QC-Py-01-Setup](Python/QC-Py-01-Setup.ipynb) | 45 min | Compte QC, premier backtest cloud, architecture LEAN | |
+| 02 | [QC-Py-02-Platform-Fundamentals](Python/QC-Py-02-Platform-Fundamentals.ipynb) | 60 min | Cycle de vie `QCAlgorithm`, `Initialize`/`OnData`, croisement de moyennes mobiles | |
+| 03 | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb) | 75 min | History API, normalisation des données, consolidators, multi-timeframe | |
+| 04 | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb) | 75 min | QuantBook, intégration pandas, transition notebook vers algorithme | |
+| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | 75 min | Sélection dynamique d'univers, coarse/fine, rebalancement | [05b — F-Score de Piotroski](Python/QC-Py-05b-FScore-Piotroski.ipynb) |
+| 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | 75 min | Chaînes d'options, grecques, covered calls, protective puts | [06b — valorisation from scratch](Python/QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) |
+| 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | 75 min | Contrats à terme, rollover, paires Forex, levier | |
+| 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | 75 min | Portefeuille Equity + Options + Futures, corrélations | |
+| 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | 75 min | Market, Limit, Stop, Stop-Limit, ordres combinés | |
+| 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit | |
+| 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, indicateurs custom, génération de signaux | |
+| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Métriques de performance (Sharpe, Sortino, max drawdown), courbe d'équité | [12b — validité statistique d'un backtest](Python/QC-Py-12b-Backtest-Validity.ipynb) |
+| 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | 75 min | Algorithm Framework, modèles Alpha, insights | |
+| 14 | [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) | 90 min | Modèles de construction de portefeuille, d'exécution, de risque | [14b — liquidité et coûts d'exécution](Python/QC-Py-14b-Liquidity-Execution-Costs.ipynb) |
+| 15 | [QC-Py-15-Parameter-Optimization](Python/QC-Py-15-Parameter-Optimization.ipynb) | 75 min | Grilles de paramètres, cibles d'optimisation, prévention de l'overfitting | |
+| 16 | [QC-Py-16-Alternative-Data](Python/QC-Py-16-Alternative-Data.ipynb) | 75 min | NewsAPI, fundamentals, sources de données custom | |
+| 17 | [QC-Py-17-Sentiment-Analysis](Python/QC-Py-17-Sentiment-Analysis.ipynb) | 75 min | Scoring de sentiment (TextBlob, VADER), agrégation de news | |
+| 18 | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | 90 min | Extraction de features, labellisation, train/test split, importance | |
+| 19 | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | 75 min | Random Forest, XGBoost, prédiction de direction, walk-forward | |
+| 20 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | 75 min | Régression linéaire, SVR, prédiction de cible de prix | |
+| 21 | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | 90 min | Markowitz augmenté ML, estimation de covariance par ML | |
+| 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM pour séries temporelles, TensorFlow/Keras, design CPU-first | |
+| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles | [23b — PatchTST et iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) |
+| 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencodeurs pour détection d'anomalies et changement de régime | |
+| 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | 90 min | Agents PPO/DQN, Stable-Baselines3, environnement Gym custom | |
+| 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | 90 min | APIs OpenAI/Anthropic, prompt engineering, signaux LLM + indicateurs | |
+| 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, passage en live, monitoring, déploiement | |
+| 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, détection de régime, allocation adaptative | |
 
-> **Note** : Les notebooks QC-Py-XX sont des supports de cours à lire sur GitHub, pas à uploader dans QC Lab.
+Temps de lecture du parcours principal : 36 h 15 au total — fondations 4 h 15, univers et classes d'actifs 5 h, trading avancé et gestion du risque 5 h 15, Algorithm Framework 4 h, données alternatives et préparation ML 4 h, machine learning classique 4 h, deep learning 4 h 15, IA avancée et production 5 h 30. Les compléments de la section [Approfondissements](#approfondissements) s'ajoutent selon la voie choisie.
 
----
+### L'Algorithm Framework (paliers 13 à 15)
 
-## Carte du matériel QC
-
-Le matériel QuantConnect se répartit en **5 zones** — un visiteur y navigue selon son objectif :
-
-| Zone | Contenu | Entrée |
-|------|---------|--------|
-| **`Python/`** | Parcours pédagogique QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
-| **`projects/`** | 112 entrées brutes (101 stratégies déployables `main.py` + 11 autres : 5 recherches, 2 stubs, 2 templates, 2 BROKEN pédagogiques), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
-| **`research/`** | Recherche autonome standalone (données locales, pas de QC Cloud requis) | [README research](research/README.md) |
-| **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire | [README cours partenaire](partner-course-quant-trading/README.md) |
-| **`ML-Training-Pipeline/`** | Pipeline ML training (Kelly HMM-regime fee-aware, RL, transformers) | [README ML pipeline](ML-Training-Pipeline/README.md) |
-
-Pour l'inventaire et le statut (alive / superseded / needs-improvement / à confirmer) des **112 entrées brutes** (= 111 stratégies effectives, `_docs/` exclus — `qc-strategies-status.md` L8), voir [`docs/qc/qc-strategies-status.md`](../../docs/qc/qc-strategies-status.md). Les baselines vérifiées (Sharpe/CAGR/MaxDD) sont dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md).
-
----
-
-## Structure de la Série
-
-### Phase 1 : Fondations LEAN (~4.5h)
-
-Maîtriser les bases de QuantConnect : architecture, lifecycle d'algorithme, gestion des données, workflow de recherche.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 01 | [QC-Py-01-Setup](Python/QC-Py-01-Setup.ipynb) | 45 min | Compte QC, premier backtest cloud, architecture LEAN |
-| 02 | [QC-Py-02-Platform-Fundamentals](Python/QC-Py-02-Platform-Fundamentals.ipynb) | 60 min | QCAlgorithm lifecycle, Initialize/OnData, Moving Average Crossover |
-| 03 | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb) | 75 min | History API, data normalization, consolidators, multi-timeframe |
-| 04 | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb) | 75 min | QuantBook, pandas integration, notebook→algorithm transition |
-
-**Objectifs** : Créer compte gratuit, maîtriser cycle de vie algorithme, gestion des données.
-
----
-
-### Phase 2 : Universe et Asset Classes (~5h)
-
-Sélection dynamique d'univers, comprendre les particularités de chaque classe d'actifs (Equities, Options, Futures, Forex).
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | 75 min | Manual universe, coarse/fine sélection, dynamic rebalancing |
-| 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | 75 min | Options chains, Greeks, covered calls, protective puts |
-| 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | 75 min | Futures contracts, rollover, Forex pairs, leverage |
-| 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | 75 min | Portfolio Equity + Options + Futures, corrélations |
-
-**Objectifs** : Maîtriser sélection dynamique d'univers, comprendre chaque classe d'actifs.
-
----
-
-<a id="phase-3"></a>
-
-### Phase 3 : Trading Avancé et Risk Management (~6.5h)
-
-Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie de backtests.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | 75 min | Market, Limit, Stop, Stop-Limit, combo orders |
-| 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit |
-| 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, custom indicators, signal generation |
-| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve — [approfondissement 12b](#approfondissement-du-palier-12) |
-
-**Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse de backtests.
-
----
-
-### Phase 4 : Algorithm Framework (~4h)
-
-Architecture modulaire QuantConnect pour stratégies scalables (Alpha, Portfolio Construction, Risk Management, Execution).
+Les paliers 13 à 15 portent sur l'architecture modulaire de QuantConnect pour des stratégies scalables :
 
 ```mermaid
 flowchart LR
@@ -126,385 +72,154 @@ flowchart LR
     PC --> RM["Risk Management<br/>quels filtres ?"]
     RM --> E["Execution<br/>quels ordres ?"]
     RM -. "ajustement temps reel" .-> U
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style A fill:#e1f5ff,color:#004085
     style PC fill:#e8f5e9,color:#1b5e20
     style RM fill:#fff3e0,color:#bf360c
 ```
 
-Le flux de données traverse cinq modules Découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, le **Risk Management** filtre/ajuste ces cibles en continu, et l'**Execution** route les ordres. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | 75 min | Algorithm Framework intro, Alpha models, insights |
-| 14 | [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) | 90 min | Portfolio construction models, execution models, risk models |
-| 15 | [QC-Py-15-Parameter-Optimization](Python/QC-Py-15-Parameter-Optimization.ipynb) | 75 min | Parameter sets, optimization targets, overfitting prevention |
-
-**Objectifs** : Maîtriser architecture modulaire, optimisation systématique.
-
----
-
-### Phase 5 : Alternative Data et Préparation ML (~4h)
-
-Intégrer données alternatives (news, sentiment, fundamentals), préparer datasets pour Machine Learning.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 16 | [QC-Py-16-Alternative-Data](Python/QC-Py-16-Alternative-Data.ipynb) | 75 min | NewsAPI (gratuit), fundamentals, custom data sources |
-| 17 | [QC-Py-17-Sentiment-Analysis](Python/QC-Py-17-Sentiment-Analysis.ipynb) | 75 min | Sentiment scoring (TextBlob, VADER), news aggregation |
-| 18 | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | 90 min | Feature extraction, labeling, train/test split, feature importance |
-
-**Objectifs** : Intégrer données alternatives, préparer datasets pour ML.
-
----
-
-### Phase 6 : Machine Learning Traditionnel (~4h)
-
-Appliquer ML classique au trading : classification directionnelle, régression pour prédiction de prix.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 19 | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | 75 min | Random Forest, XGBoost, direction prediction, walk-forward |
-| 20 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | 75 min | Linear regression, SVR, price target prediction |
-| 21 | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | 90 min | ML-enhanced Markowitz, covariance estimation via ML |
-
-**Objectifs** : Appliquer ML classique au trading, persistence modèles avec ObjectStore.
-
----
-
-<a id="phase-7"></a>
-
-### Phase 7 : Deep Learning (~6h)
-
-Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransformer, Autoencoders.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM time series, TensorFlow/Keras, CPU-first |
-| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles — [approfondissement 23b](#approfondissement-du-palier-23) |
-| 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencoders pour détection anomalies, regime change |
-
-**Objectifs** : Maîtriser deep learning pour séries temporelles, design CPU-optimized.
-
----
-
-### Phase 8 : IA Avancée et Production (~5.5h)
-
-État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production, détection de régime de marché.
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | 90 min | PPO/DQN agents, Stable-Baselines3, Gym environment custom |
-| 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | 90 min | OpenAI/Anthropic API, prompt engineering, LLM+indicators hybrid |
-| 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, live trading setup, monitoring, deployment |
-| 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, regime detection, allocation adaptative |
-
-**Objectifs** : IA state-of-the-art pour trading, déploiement production, détection régime.
-
----
+Le flux de données traverse cinq modules découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, le **Risk Management** filtre et ajuste ces cibles en continu, et l'**Execution** route les ordres. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
 
 ## Approfondissements
 
-Ces deux notebooks approfondissent un palier du parcours principal. Ils se lisent après le notebook numéroté auquel chacun renvoie ; ils ne constituent pas des étapes supplémentaires de la progression principale.
+Ces carnets approfondissent un palier du parcours principal. Ils se lisent après le palier auquel chacun se rattache ; ils ne sont pas des étapes supplémentaires de la progression principale.
 
-### Approfondissement du palier 12
+| Carnet | Rattaché à | Ce qu'on y apprend |
+|--------|------------|--------------------|
+| [05b — F-Score de Piotroski](Python/QC-Py-05b-FScore-Piotroski.ipynb) | Palier 05 | Les neuf sous-scores du F-Score sur données réelles, convention de datation, critique de liquidité, variance d'un petit univers |
+| [06b — Valorisation from scratch](Python/QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Palier 06 | Les trois moteurs de valorisation reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle |
+| [06b C# — Valorisation from scratch (jumeau .NET)](CSharp/QC-06b-Valorisation-Derives-CSharp.ipynb) | Palier 06 | Les mêmes trois moteurs de valorisation en C#/.NET — Black-Scholes à fonction normale implémentée depuis le bas, arbre CRR, Monte-Carlo — et les mêmes chiffres, en BCL pur sans package |
+| [12b — Backtest Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | Palier 12 | Erreur-type du Sharpe (Lo 2002), PSR (Bailey et López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest |
+| [14b — Liquidité et coûts d'exécution](Python/QC-Py-14b-Liquidity-Execution-Costs.ipynb) | Palier 14 | Impact de la liquidité sur l'exécution, modélisation des coûts |
+| [23b — PatchTST et iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) | Palier 23 | Patching de PatchTST, axes inversés d'iTransformer, prévision financière |
+| [23c — TimesFM foundation models](Python/QC-Py-23c-TimesFM-Foundation-Models.ipynb) | Palier 23 | Modèle de fondation zéro-shot (TimesFM), univarié/multivarié/covariables, quantiles |
+| [28b — Macro et cycles](Python/QC-Py-28b-Macro-Cycle-Regimes.ipynb) | Palier 28 | Diagnostic composite borné, des indicateurs macro vers un budget de risque |
+| [28c — Prétraitement de facteurs](Python/QC-Py-28c-Factor-Preprocessing-Regime.ipynb) | Palier 28 | Prétraitement FFD, standardisation, ACP pour la détection de régime, comparaison à la classe majoritaire |
+| [29 — Valorisation de dérivés](Python/QC-Py-29-Derivatives-Valuation.ipynb) | Paliers 06 et 10 | Black-Scholes, arbre binomial CRR et Monte-Carlo sur le même contrat : précision, convergence, flexibilité, coût, liquidité |
 
-Rattaché au [palier 12 de la phase 3](#phase-3), [QC-Py-12b — Backtest Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) (60 min) — Erreur-type du Sharpe (Lo 2002), PSR (Bailey & López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest.
+### Entraînement de modèles (checkpoints)
 
-### Approfondissement du palier 23
+| Carnet | Ce qu'on y apprend |
+|--------|--------------------|
+| [QC-Py-30-LSTM-Training](Python/QC-Py-30-LSTM-Training.ipynb) | Entraînement complet d'un LSTM avec checkpoints PyTorch |
+| [QC-Py-31-Transformer-Training](Python/QC-Py-31-Transformer-Training.ipynb) | Entraînement complet d'un Transformer avec checkpoints PyTorch |
+| [QC-Py-32-RL-DQN-Trading](Python/QC-Py-32-RL-DQN-Trading.ipynb) | Entraînement d'un agent DQN avec checkpoints PyTorch |
 
-Rattaché au [palier 23 de la phase 7](#phase-7), [QC-Py-23b — PatchTST-iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) (90 min) — PatchTST patching, iTransformer inverted axes, prévision financière.
+### Reinforcement Learning avancé
 
-### Compléments Reinforcement Learning Avancé (~4h)
+| Carnet | Ce qu'on y apprend |
+|--------|--------------------|
+| [QC-Py-33-RL-PPO-Trading](Python/QC-Py-33-RL-PPO-Trading.ipynb) | Proximal Policy Optimization, clipped surrogate, Stable-Baselines3 |
+| [QC-Py-34-RL-SAC-A2C-Trading](Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | Soft Actor-Critic et A2C, comparatif d'algorithmes RL |
+| [QC-Py-35-RL-Portfolio-Construction](Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | RL pour l'allocation multi-actifs sous contraintes de risque |
 
-Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et application portfolio construction.
+### Paper trading
 
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 33 | [QC-Py-33-RL-PPO-Trading](Python/QC-Py-33-RL-PPO-Trading.ipynb) | 90 min | Proximal Policy Optimization, clipped surrogate, Stable-Baselines3 |
-| 34 | [QC-Py-34-RL-SAC-A2C-Trading](Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | 75 min | Soft Actor-Critic + A2C, comparatif algorithmes RL |
-| 35 | [QC-Py-35-RL-Portfolio-Construction](Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | 75 min | RL pour allocation multi-asset, contraintes de risque |
+| Carnet | Ce qu'on y apprend |
+|--------|--------------------|
+| [QC-Py-40-PaperTrading-Binance](Python/QC-Py-40-PaperTrading-Binance.ipynb) | Paper trading crypto via Binance |
+| [QC-Py-41-PaperTrading-IBKR](Python/QC-Py-41-PaperTrading-IBKR.ipynb) | Paper trading via Interactive Brokers |
 
-**Objectifs** : Comparer les algorithmes RL modernes, appliquer au portfolio multi-asset.
+### Recherche
 
----
+Ces carnets portent chacun une question de recherche avec protocole complet (walk-forward, multi-seed, Diebold-Mariano, verdicts nets de frais). Le verdict mesure ce que le protocole a réellement établi — `BEATS`, `NO BEATS` ou `INCONCLUSIVE` — jamais une impression.
 
-## Configuration
+| Carnet | Question et verdict |
+|--------|---------------------|
+| [QC-Py-42-Alpha-Mining-Evolution](Python/QC-Py-42-Alpha-Mining-Evolution.ipynb) | Un moteur de recherche peut-il **produire** des alphas plausibles ? Évolution génétique d'expressions et bras LLM au même budget : l'évolution passe la conjonction (`BEATS` net de frais), le bras LLM, plus précis au quotidien mais plus dispersé entre seeds, reste `INCONCLUSIVE` |
+| [QC-Py-43-Diffusion-Series-Synthetiques](Python/QC-Py-43-Diffusion-Series-Synthetiques.ipynb) | La diffusion synthétise-t-elle mieux qu'un bootstrap i.i.d. ? Oui sur le vol-clustering, sans égaler le réel ; l'augmentation de données reste `INCONCLUSIF` |
+| [QC-Py-44-Agent-Trading-Multi-LLM](Python/QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | La délibération multi-agents bat-elle le single-shot ? Un cadre complet (débat bull/bear, mémoire) ne se décrète pas significatif : verdict `INCONCLUSIVE` — l'edge mesuré vient de la précision, pas du biais |
+| [QC-Py-45-Noyau-Risque-Deterministe](Python/QC-Py-45-Noyau-Risque-Deterministe.ipynb) | Un noyau de risque déterministe réduit-il le drawdown sans coûter de rendement ? Verdict `BEATS` sur le drawdown contre les deux témoins ; sur ces ETF, ce sont les stops qui font le travail |
+| [QC-Py-46-External-Etalon-FinanceBench](Python/QC-Py-46-External-Etalon-FinanceBench.ipynb) | Que mesure un étalon externe ? Le même modèle s'effondre de 92,1 % à 25,0 % sans le cadre — l'étalon mesure la compétence du pipeline, pas la question seule |
 
-### Variables d'environnement (.env)
+### Stratégies déployées sur QC Cloud
 
-Copiez `.env.example` vers `.env` et configurez :
+| Carnet | Ce qu'on y apprend |
+|--------|--------------------|
+| [QC-Py-Cloud-01-FinBERT-Sentiment](Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | Sentiment financier par FinBERT |
+| [QC-Py-Cloud-02-ML-Classification](Python/QC-Py-Cloud-02-ML-Classification.ipynb) | Classification ML de signaux |
+| [QC-Py-Cloud-03-Risk-Parity](Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | Parité des risques |
+| [QC-Py-Cloud-03b-RiskParity-Composite](Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | Parité des risques en composite |
+| [QC-Py-Cloud-04-MeanReversion](Python/QC-Py-Cloud-04-MeanReversion.ipynb) | Retour à la moyenne |
+| [QC-Py-Cloud-05-MLP-Forecasting](Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | Prévision par perceptron multicouche |
+| [QC-Py-Cloud-06-PCA-StatArb](Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | Arbitrage statistique par ACP |
+| [QC-Py-Cloud-07-TemporalCNN](Python/QC-Py-Cloud-07-TemporalCNN.ipynb) | CNN temporel |
+| [QC-Py-Cloud-08-ValueFactor-ZScore](Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Facteur value par z-scores |
+| [QC-Py-Cloud-09-OptionWheel](Python/QC-Py-Cloud-09-OptionWheel.ipynb) | Wheel d'options (pédagogie du risque) |
+| [QC-Py-Cloud-10-RL-DQN-Trading](Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | RL DQN avancé |
+| [QC-Py-Cloud-11-RegimeSwitching](Python/QC-Py-Cloud-11-RegimeSwitching.ipynb) | Changement de régime |
+| [QC-Py-Cloud-12-SectorRotation-Momentum](Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Rotation sectorielle et momentum multi-actifs |
+| [QC-Py-Cloud-13-VolTargeting](Python/QC-Py-Cloud-13-VolTargeting.ipynb) | Ciblage de volatilité |
+| [QC-Py-Cloud-14-DualMomentum](Python/QC-Py-Cloud-14-DualMomentum.ipynb) | Dual momentum |
+
+### Gestion des datasets
+
+| Carnet | Ce qu'on y apprend |
+|--------|--------------------|
+| [QC-Py-Dataset-Workflow](Python/QC-Py-Dataset-Workflow.ipynb) | Workflow de gestion des datasets QuantConnect |
+
+## Sous-séries du dossier
+
+Le matériel QuantConnect se répartit en zones, chacune avec son README feuille :
+
+| Zone | Contenu | Entrée |
+|------|---------|--------|
+| **`Python/`** | Le parcours pédagogique et ses compléments, détaillés ci-dessus — parcourus en Python (kernel Jupyter), exécutables sur QC Cloud ou en local selon le carnet | [README Python](Python/README.md) |
+| **`projects/`** | Les stratégies prêtes à backtester (`main.py`), classées par robustesse ; l'inventaire et le statut de chaque entrée vivent dans le doc canonique | [README projects](projects/README.md) · [statut des stratégies](../../docs/qc/qc-strategies-status.md) |
+| **`research/`** | Recherche autonome sur données locales (yfinance, sklearn) : effets calendaires, anomalie IVOL, composites, volatilité HAR-RV-J | [README research](research/README.md) |
+| **`ML-Training-Pipeline/`** | Campagnes d'entraînement systématiques (échelle de complexité des modèles, curriculum, registre des runs et checkpoints) | [README ML pipeline](ML-Training-Pipeline/README.md) |
+| **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire, kit de transition et templates de projets étudiants | [README cours partenaire](partner-course-quant-trading/README.md) |
+| **`examens/`** | Sujets de rattrapage 2024 et 2025 avec corrigés et sources LaTeX, rattachés notion par notion aux notebooks | [README examens](examens/README.md) |
+
+Une particularité de cette famille : le parcours et la recherche sont en **Python**, tandis que la preuve formelle du dimensionnement de position (critère de Kelly) vit dans le lake **Lean 4** [`kelly_lean/`](kelly_lean/README.md) — présenté sous [Pour aller plus loin](#pour-aller-plus-loin), car il formalise le parcours sans en être une étape.
+
+Les carnets de la famille relèvent de quatre modalités d'exécution : **(a)** quantbook exécuté sur QC Cloud, **(b)** recherche compagnon d'un quantbook, **(c)** recherche autonome locale, **(d)** support de cours à lire (code à copier dans un projet QC). La classification détaillée par carnet vit dans [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md).
+
+## Installation
+
+1. **Créer un compte gratuit** : [quantconnect.com/signup](https://www.quantconnect.com/signup) — le free tier suffit pour toute la série (backtests illimités dans un quota mensuel de calcul, données depuis 2010, paper trading inclus ; seuls le live trading, les données deep-learning payantes et le GPU cloud sont réservés aux offres payantes).
+2. **Créer un projet Python** dans QC Lab (File > New Project).
+3. **Copier un `main.py`** depuis `projects/` (par exemple `EMA-Cross-Stocks/`) dans votre projet, puis cliquer Backtest.
+
+Les notebooks QC-Py du parcours sont des supports de cours à lire, pas à uploader dans QC Lab. Pour le travail local (carnets de recherche, entraînement) :
 
 ```bash
-# Authentification QuantConnect Cloud
-QC_API_USER_ID=your_user_id_here
-QC_API_ACCESS_TOKEN=your_access_token_here
-
-# APIs IA/ML (optionnel, pour notebooks 17, 26)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-HUGGINGFACE_TOKEN=hf_...
-
-# NewsAPI (gratuit, pour notebook 17)
-NEWSAPI_KEY=your_newsapi_key_here
-```
-
-### Dépendances Python
-
-```bash
-# Créer environnement virtuel
 python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/macOS
-
-# Installer dépendances
+venv\Scripts\activate           # Windows
+source venv/bin/activate        # Linux/macOS
 pip install -r requirements.txt
-
-# Installer kernel Jupyter
 python -m ipykernel install --user --name=quantconnect --display-name "Python (QuantConnect)"
 ```
 
----
+Copiez `.env.example` vers `.env` et renseignez vos clés : `QC_API_USER_ID` et `QC_API_ACCESS_TOKEN` pour le cloud QuantConnect ; `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `HUGGINGFACE_TOKEN` (notebooks 17 et 26) et `NEWSAPI_KEY` (notebook 17) en option. Le dossier [`shared/`](shared/SHARED_LIBRARY.md) fournit les modules Python réutilisables de la série : feature engineering, indicateurs custom, utilitaires ML, visualisations, helpers de backtest.
 
-## Résumé de la Progression
+## Pour aller plus loin
 
-**Parcours principal** : la séquence QC-Py-01 à QC-Py-28 ; les approfondissements 12b et 23b ajoutent respectivement 60 min et 90 min aux paliers 12 et 23. Les compléments comprennent le RL avancé QC-Py-33..35, le paper trading QC-Py-40..41, les notebooks QC-Py-Cloud, le training QC-Py-30..32, les foundation models QC-Py-23c et le dataset workflow, ainsi que la recherche standalone (voir [research/README.md](research/README.md)). Pour les compteurs à jour des cours et des stratégies, consulter le [catalogue généré](../../COURSE_CATALOG.generated.md).
+### Formalisation Lean — le critère de Kelly
 
-**Répartition cours linéaire (Phases 1-8)** :
-- **Partie non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
-- **Partie ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~15h
+Le dépôt ne se limite pas aux notebooks Python : le lake Lean 4 [`kelly_lean/`](kelly_lean/README.md) (Mathlib, modules bilingues français/anglais `Bet`/`Growth`/`Kelly`) prouve l'**optimalité du critère de Kelly** pour le position sizing. Le théorème : pour un pari de Bernoulli (probabilité `p` de gain, cote nette `b`, `q = 1 − p`), la fraction optimale du capital à risquer est
 
-**Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
+> **f\* = (b·p − q) / b**
 
----
+qui maximise de façon unique le taux de croissance espéré du capital composé. Tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est strictement sous-optimal. Référence : J. L. Kelly Jr., *A New Interpretation of Information Rate*, BSTJ (1956).
 
-## Notebooks Progressifs
-
-**Recommandé pour débuter** :
-
-1. **Phase 1** : Fondations LEAN (4.5h)
-2. **Phase 2** : Universe et Asset Classes (5h)
-3. **Phase 3** : Trading Avancé et Risk (5.5h)
-4. **Notebooks 13-15** : Algorithm Framework (4h)
-5. Premier projet : Stratégie momentum avec risk management
-
-**Intermédiaire** (40h) : Phases 4-6 complètes + ML traditionnel
-
-**Expert** (60h) : Phases 6-8 complètes + Deep dive LSTMs, Transformers, RL + déploiement
-
----
-
-## Projets de Stratégies
-
-Le dossier [`projects/`](projects/) contient le catalogue complet des stratégies de trading prêtes à backtester, classées par robustesse (Robuste / Historique / Exploratoire / ML-DL-RL). Le compte exact et la classification à jour se trouvent dans le README canonique [`projects/README.md`](projects/README.md).
-
-### Comment utiliser les projets
-
-1. Choisir une stratégie dans [`projects/README.md`](projects/README.md)
-2. Copier le `main.py` dans votre projet QuantConnect Lab
-3. Lancer le backtest
-4. Analyser les résultats (Sharpe, Max Drawdown, CAGR)
-
-### Exemples de stratégies populaires
-
-| Stratégie | Description | Niveau |
-|-----------|-------------|--------|
-| [EMA-Cross-Stocks](projects/EMA-Cross-Stocks/) | EMA 20/50 multi-stock (AAPL/MSFT/GOOGL/AMZN/NVDA) | Débutant |
-| [TrendStocksLite](projects/TrendStocksLite/) | EMA20/50 + SMA200 trend 15 large-caps | Intermédiaire |
-| [SectorMomentum](projects/SectorMomentum/) | Dual Momentum SPY/TLT/GLD (Antonacci) | Intermédiaire |
-| [ML-RandomForest](projects/ML-RandomForest/) | Random Forest classification multi-asset | Avancé |
-| [Option-Wheel](projects/Option-Wheel/) | Wheel strategy SPY (sell puts/calls) | Avancé |
-
----
-
-## Classification des notebooks en quatre types
-
-Chaque notebook de l'**arbre QC complet** (Python, C#, partner-course, pipeline ML) relève d'un des quatre types d'exécution :
-
-| Type | Nature | Exécution | Compte |
-|------|--------|-----------|--------|
-| **(a)** | quantbook QC Cloud | QC Cloud uniquement | 59 |
-| **(b)** | recherche liée à un quantbook | QC Cloud + local | ~76 |
-| **(c)** | recherche autonome | Local (yfinance/sklearn) | 24 |
-| **(d)** | placeholder pédagogique | Lecture seule / copier-coller | 33 |
-
-Classification exhaustive : [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) (méthodologie + table 4-types + inventaire complet des 112 entrées brutes sous `projects/` en statut best-guess, dont 111 stratégies effectives alignées sur le doc canonique L8). Le [README Python](Python/README.md) donne la variante restreinte aux seuls notebooks Python — les comptes des deux tableaux diffèrent donc par construction (périmètres différents), pas par erreur.
-
-## Cours partenaire — Exemples de Recherche
-
-Le dossier **partner-course-quant-trading/** contient des exemples de recherche avancée utilisés dans le cours partenaire.
-
-### Structure
-
-```
-partner-course-quant-trading/
-├── BACKTEST_INSTRUCTIONS.md  # Instructions backtests des stratégies optimisées (URLs Cloud, noms de runs, Sharpe attendus)
-├── examples/           # Projets d'exemples du professeur
-├── kit-transitoire/    # 3 stratégies ML/Framework progressives (RandomForest, XGBoost, Framework Composite)
-├── scripts/            # Scripts utilitaires du cours
-├── templates/          # Templates pour projets étudiants
-│   ├── starter/        # Niveau débutant
-│   ├── intermediate/   # Niveau intermédiaire
-│   └── advanced/       # Niveau avancé
+```mermaid
+flowchart LR
+    QC["Strategie QuantConnect<br/>QC-Py-10 Risk Management<br/>Kelly fraction sizing"]
+    KELLY["kelly_lean lake<br/>kelly_optimal : g(f) <= g(f*)<br/>kelly_unique : f != f* => g(f) < g(f*)"]
+    ML["ML-Training-Pipeline<br/>dimensionnement Kelly<br/>HMM-regime + fee-aware"]
+    BACKTEST["Backtests QC Cloud<br/>Sharpe aligned 2018-2025<br/>walk-forward + multi-seed"]
+    QC -. "frequence risquee f" .-> KELLY
+    KELLY -. "theoreme-prouve f*" .-> ML
+    ML --> BACKTEST
+    style KELLY fill:#e8f5e9,color:#1b5e20
+    style BACKTEST fill:#e1f5ff,color:#004085
 ```
 
-Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples, du kit de transition et des templates.
+Sans la couche Lean, la pratique risquerait de s'appuyer sur une formule réputée « standard » mais jamais démontrée ; avec elle, la justification du fractionnement du capital est formellement garantie. Le détail des preuves : [`kelly_lean/README.md`](kelly_lean/README.md) et [`kelly_lean/Kelly.en.md`](kelly_lean/Kelly.en.md).
 
----
+### La rigueur méthodologique — baselines vérifiées
 
-## Répertoires transitoires
-
-| Répertoire | Statut | Description |
-|------------|--------|-------------|
-| `_pending_execution/` | Local-only | Transient QuantBook workspace (untracked local files); committed placeholder purged |
-| `projects/_archive/` | Purged | Dedup-archive removed; canonical strategies retained in `projects/` (commit `#1815`, `#1627`) |
-| `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
-| `_esgf_cours_5mai/` | Purged | Course 5 May 2026 backtest results archived to G drive (commit `#1626`) |
-
-## Documentation Complémentaire
-
-### Guides de démarrage
-
-- **[GETTING-STARTED.md](GETTING-STARTED.md)** : Guide de démarrage détaillé
-- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : inventaire des exemples du livre *Hands-On AI Trading*, rattachés aux notebooks et aux projets
-- **[docs/qc_strategies_catalog.md](docs/qc_strategies_catalog.md)** : Catalogue strategies QC Cloud
-- **[docs/HANDSON_DATA_REQUIREMENTS.md](docs/HANDSON_DATA_REQUIREMENTS.md)** : Datasets requis
-- **[docs/PAPER_TRADING_ARCHITECTURE.md](docs/PAPER_TRADING_ARCHITECTURE.md)** / **[docs/PAPER_TO_LIVE_TRANSITION.md](docs/PAPER_TO_LIVE_TRANSITION.md)** : Paper trading
-- **[docs/PROCEDURE_DEPLOIEMENT.md](docs/PROCEDURE_DEPLOIEMENT.md)** : Procédure de déploiement
-- **[docs/PROTOCOLE_VEILLE.md](docs/PROTOCOLE_VEILLE.md)** : Protocole de veille du socle RNCP41881 (typologie, grille qualité, registre traçable — #16239)
-- **[docs/GRILLE_PREUVES.md](docs/GRILLE_PREUVES.md)** : Grille de preuves du projet collectif RNCP41881 (mapping compétence→artefact, exigences minimales, vérification individuelle en soutenance — #16239)
-- **[docs/audits/](docs/audits/)** : Rapports d'audit historiques (AUDIT_QC_CLOUD, AUDIT_QC_ORG, VALIDATION-REPORT, AUDIT_RAPPORT)
-
-### Bibliothèques partagées
-
-Le dossier [`shared/`](shared/) contient des modules Python réutilisables :
-
-- **features.py** : Feature engineering ML
-- **indicators.py** : Custom indicators QuantConnect
-- **ml_utils.py** : ML training, persistence (ObjectStore)
-- **plotting.py** : Visualisations standardisées
-- **backtest_helpers.py** : Helpers configuration backtests
-
-Documentation détaillée : [`shared/SHARED_LIBRARY.md`](shared/SHARED_LIBRARY.md).
-
-### Scripts de validation
-
-| Script | Description |
-|--------|-------------|
-| `scripts/validate_qc_notebooks.py` | Validation structure notebooks |
-| `scripts/test_algorithms.py` | Automated backtest runner |
-
----
-
-## Ressources Externes
-
-### Documentation QuantConnect
-
-- [Documentation officielle](https://www.quantconnect.com/docs)
-- [LEAN Engine GitHub](https://github.com/QuantConnect/Lean)
-- [Algorithm Framework](https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview)
-
-### Livre de référence
-
-**"Hands-On AI Trading with Python, QuantConnect, and AWS"** (Janvier 2025, Wiley)
-
-- [Site officiel](https://www.hands-on-ai-trading.com)
-- [GitHub du livre](https://github.com/QuantConnect/HandsOnAITradingBook)
-- [Amazon (livre)](https://www.amazon.com/dp/1394268432)
-
-### Communauté
-
-- [QuantConnect Forum](https://www.quantconnect.com/forum)
-- [LEAN Discussions](https://github.com/QuantConnect/Lean/discussions)
-- [CoursIA Main README](../../README.md)
-
----
-
-## FAQ
-
-### Peut-on trade avec de l'argent réel directement ?
-
-Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette série**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live nécessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS).
-
-### Comment choisir une première stratégie ?
-
-Pour débuter : **EMA-Cross-Stocks** (Sharpe 0.872 catalogue, 0.891 sur fenêtre alignée 2018-2025 — cf. tableau Top 5 ci-dessous ; débutant) ou **AllWeather** (Sharpe 0.667, débutant). Ces stratégies sont simples, robustes, et pédagogiques. Les stratégies avancées (BTC-ML, Framework_Composite) ont des Sharpes plus élevés mais requièrent une compréhension plus profonde des risques.
-
-### Quelle est la différence entre Sharpe et CAGR ?
-
-Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualisé. Le **Sharpe ratio** mesure le rendement ajusté au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilité. Un CAGR élevé avec un Sharpe faible signifie une stratégie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considéré robuste dans cette série.
-
-### Les performances backtestées sont-elles réalistes en live ?
-
-Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact réels. Les Sharpes annoncés sont in-sample. La série inclut des notebooks sur le walk-forward et les coûts de transaction pour évaluer la robustesse hors-échantillon.
-
-### Peut-on exécuter les notebooks localement sans compte QuantConnect ?
-
-Non. Les notebooks Python de cette série utilisent `QuantBook()` qui nécessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) exécutent du code LEAN en local mais n'ont pas accès aux données de marché sans connexion QC. Créez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
-
-### Quelle est la différence entre un notebook Python et un projet C# ?
-
-Les **notebooks Python** (QC-Py-01 à QC-28) sont des explorations interactives avec `QuantBook()` : chargement de données, analyses, visualisations, prototypage rapide. Les **projets C#** sont des algorithmes complets (`QCAlgorithm`) destinés au backtesting production dans l'IDE QuantConnect. Le workflow standard est : explorer en notebook Python -> implémenter en C# ou Python projet.
-
-### Comment limiter le coût en heures de calcul ?
-
-- **Backtesting** : limiter la période historique (2-3 ans suffit pour un prototype) et la fréquence (Daily plutôt que Minute)
-- **Notebooks** : utiliser `qb.history()` avec des dates précises plutôt que charger l'historique complet
-- **Deep Learning** : les notebooks QC-22/23/24 sont CPU-optimized pour le free tier
-- **Rate limiting** : max 10 appels API/min entre tous les agents du cluster
-
-### Pourquoi utiliser LEAN plutôt qu'un framework comme Backtrader ?
-
-LEAN est le moteur de production de QuantConnect : il gère les données corporates (splits, dividends, spinoffs), le slippage, les frais réels, le margin, et le live trading. Backtrader et Zipline sont d'excellents outils pédagogiques mais ne gèrent pas ces aspects en production. Cette série enseigne LEAN pour que les compétences soient directement transférables au trading réel.
-
-### Qu'est-ce qu'un QuantBook et comment se différencie-t-il d'un algorithme ?
-
-`QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des données, calculer des indicateurs, et analyser des résultats sans écrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'exécution. Les notebooks de cette série utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
-
-## Free tier vs offre payante
-
-| Fonctionnalité | Free Tier | Paid (Team/Premium) |
-|----------------|-----------|---------------------|
-| **Backtesting** | ✅ Illimité (8h calcul/mois) | ✅ Illimité (plus d'heures) |
-| **Paper trading** | ✅ | ✅ |
-| **Données Equity/Crypto/Forex** | ✅ Depuis 2010 | ✅ Depuis 1998 |
-| **Alternative data** | ❌ (workaround : NewsAPI gratuit) | ✅ TiingoNews, etc. |
-| **GPU pour Deep Learning** | ❌ (CPU local) | ✅ GPU cloud |
-| **Live trading** | ❌ | ✅ |
-
-**Workarounds Free Tier** :
-- **QC-17 Sentiment** : NewsAPI gratuit au lieu de TiingoNews payant
-- **QC-22/23/24 Deep Learning** : CPU-optimized
-- **QC-27 Production** : Paper trading (simulation gratuite)
-
----
-
-## Résultats Attendus
-
-Après completion de cette série, vous maîtriserez :
-
-### Compétences Techniques
-
-- ✅ **QuantConnect LEAN** : Architecture, lifecycle, Universe sélection
-- ✅ **Risk Management** : Position sizing, stop-loss, take-profit
-- ✅ **Algorithm Framework** : Alpha, Portfolio Construction, Risk Management, Execution
-- ✅ **Machine Learning** : Supervised (RF, XGBoost), Deep Learning (LSTM), RL (PPO)
-- ✅ **LLM Integration** : Prompt engineering, LLM-augmented signals
-- ✅ **Production Deployment** : Paper trading, live trading, monitoring
-
-### Projets Réalisables
-
-- 🎯 Stratégie momentum multi-actifs avec risk management
-- 🤖 Bot ML directionnel avec Random Forest + XGBoost
-- 🧠 Stratégie LSTM pour prédiction prix court-terme
-- 💡 LLM-augmented strategy combinant GPT-5.6 + indicateurs
-- 🏭 Déploiement production en paper trading
-
----
-
-## Stratégies Vérifiées — Baselines Comparatives
-
-Les projets du dossier `projects/` (compte et classification à jour : [`projects/README.md`](projects/README.md)) ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc/qc-comparative-backtests.md).
+Les projets de `projects/` ont été backtestés sur des périodes standardisées via QC Cloud. Le fil rouge de la série : un Sharpe spectaculaire en backtest court est presque toujours un artefact.
 
 ```mermaid
 flowchart TD
@@ -517,7 +232,6 @@ flowchart TD
     FEES --> VERD{"Sharpe net<br/>survit aux frais ?"}
     VERD -->|"oui"| KEEP["Strategie robuste"]
     VERD -->|"non"| DROP["Edge evapore"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style PSR fill:#fff3e0,color:#bf360c
     style VERD fill:#fff3e0,color:#bf360c
     style KEEP fill:#e8f5e9,color:#1b5e20
@@ -525,112 +239,66 @@ flowchart TD
     style DROP fill:#ffebee,color:#721c24
 ```
 
-Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est presque toujours un artefact. La validation ci-dessus — walk-forward, OOS strict aligné, multi-seed, PSR > 50%, puis test des frais réels — est ce qui sépare une stratégie robuste d'une illusion statistique. Les stratégies du tableau Top 5 ci-dessous sont celles qui ont survécu à ce pipeline.
+Les meilleures performances vérifiées (fenêtre alignée 2018-2025) :
 
-### Top 5 stratégies (Sharpe aligned, 2018-2025)
+| Stratégie | Type | Sharpe | CAGR % | MaxDD % | PSR % |
+|-----------|------|--------|--------|---------|-------|
+| LeveragedETFMomentum\* | IND | **1.779** | 126.4 | 53.3 | 79.8 |
+| TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
+| Framework_Composite_TrendWeather | COMP | 0.948 | 24.6 | 27.5 | 56.6 |
+| EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
+| VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
 
-| # | Stratégie | Type | Sharpe | CAGR% | MaxDD% | PSR% |
-|---|-----------|------|--------|-------|--------|------|
-| 1 | LeveragedETFMomentum* | IND | **1.779** | 126.4 | 53.3 | 79.8 |
-| 2 | TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
-| 3 | Framework_Composite_TrendWeather | COMP | 0.948 | 24.6 | 27.5 | 56.6 |
-| 4 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
-| 5 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
+\* LeveragedETFMomentum utilise des ETF à levier 3x : profil de risque extrême (MaxDD 53 %), non comparable aux stratégies non leveragées. **TrendFollowing** : ce Sharpe vient d'un état du code cloud antérieur, non reproductible depuis le code versionné du dépôt (le clone du `main.py` du dépôt donne un Sharpe bien inférieur sur une fenêtre différente) — à citer avec ce caveat, pas comme leader incontesté.
 
-**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. *LeveragedETFMomentum utilise des ETF à levier 3x : profil de risque extrême (MaxDD 53%), non comparable aux stratégies non-leveragées. **TrendFollowing (1.072)** : caveat de reproductibilité — ce Sharpe vient d'un état du code cloud antérieur (backtest `7792ae0a`, 2018-2025) **non reproductible depuis le code versionné du dépôt**. Baseline-clone du `main.py` repo (2015-2024, IBKR margin) = **Sharpe 0.36 / PSR 6.3%** (backtest `486eb064`, #1630 item 8). À citer avec ce caveat, pas comme leader incontesté.
+Trois enseignements ressortent du comparatif complet : les stars du catalogue ne survivent pas toutes à l'alignement des fenêtres (un Sharpe publié sur une fenêtre glissante peut s'effondrer sur la fenêtre standardisée) ; les composites ne valent que par leur architecture (TrendWeather tient là où une combinaison mal conçue s'effondre) ; et le Sharpe net après frais, pas le Sharpe brut, juge une stratégie. Le catalogue complet des baselines, comparaisons et diagnostics : [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md).
 
-**Enseignements clés** :
-- **TrendFollowing** : Sharpe 1.072 publié (2018-2025, état cloud antérieur) — **non reproductible par le code repo actuel** qui donne 0.36 (2015-2024, PSR 6.3%). La tendance persiste conceptuellement, mais le chiffre exact dépend de la version du code et de la fenêtre (cf [diagnostic reproductibilité](../../docs/qc/qc-comparative-backtests.md), finding 18).
-- **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
-- **Composites : tout dépend de l'architecture** : Framework_Composite_TrendWeather tient (0.948, PSR 56.6%) là où MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185 ("double-defense").
-- **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) s'effondre sur 2018-2025 — son Sharpe catalogue venait d'une fenêtre glissante non standardisée. Pour HighBookToMarketFScore (2.09 → 0.411), les deux nombres ne portent pas sur la même fenêtre : 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, et sur les fenêtres de la fiche le code du dépôt retrouve l'ordre de grandeur publié (#25264).
-- **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
+### L'échelle de complexité des modèles
 
-> Voir [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
+La sous-série [`ML-Training-Pipeline/`](ML-Training-Pipeline/README.md) applique la même rigueur (walk-forward, multi-seed, Diebold-Mariano) à une question systématique : **quelle complexité de modèle apporte réellement un edge en trading ?**
 
----
+- **L'échelle de complexité** monte des baselines linéaires jusqu'au **Decision Transformer**, seul modèle à battre significativement les baselines sur le panel nets de frais. L'enseignement central : les modèles **action-based** (qui apprennent directement la politique de trading) surclassent les modèles **forecast-based** (qui prédisent le rendement puis en dérivent une action) — la prédiction de prix est le maillon faible, pas la décision.
+- **Le curriculum** balaye des familles de modèles sur des tâches de volatilité et de régime : seules quelques familles survivent aux coûts une fois la validation appliquée, le reste — y compris des architectures réputées — ne bat pas les baselines.
 
-## ML-Training-Pipeline — l'échelle de complexité des modèles
+Le détail (registre des runs, checkpoints, carnets de recherche, curriculum) vit dans [`ML-Training-Pipeline/README.md`](ML-Training-Pipeline/README.md), [`CURRICULUM.md`](ML-Training-Pipeline/CURRICULUM.md) et [`REGISTRY.md`](ML-Training-Pipeline/REGISTRY.md).
 
-Le sous-projet [`ML-Training-Pipeline/`](ML-Training-Pipeline/README.md) applique la même rigueur méthodologique (walk-forward, multi-seed, Diebold-Mariano) à une question systématique : **quelle complexité de modèle apporte réellement un edge en trading ?** Deux campagnes structurent la réponse :
+### Ponts vers les autres séries
 
-- **La « Ladder » (#1409, complète)** : une échelle de modèles de complexité croissante — baselines linéaires, arbres, LSTM, Transformers, jusqu'au **Decision Transformer**, seul modèle à battre significativement les baselines (**BEATS sur 24/26 seeds, panel @10bps** — non confirmé hors-échantillon en temps, OOT réel 04/09 NO-BEATS). L'enseignement central : les modèles **action-based** (qui apprennent directement la politique de trading) surclassent les modèles **forecast-based** (qui prédisent le rendement puis en dérivent une action) — la prédiction de prix est le maillon faible, pas la décision.
-- **Le « Curriculum V2 »** : un balayage de familles de modèles sur des tâches de volatilité et de régime, dont ne survivent que **4 KEEPERS** validés : S3 HMM régime (+0.669 Sharpe vs baseline), S4 Inverse-vol Ridge (+0.325), M12 HAR-RV-J (prévision de volatilité avec sauts) et M15 LSTM-RV. Tout le reste — y compris des architectures réputées (TFT, DLinear) — ne bat pas les baselines une fois les coûts appliqués.
+| Série | Lien |
+|-------|------|
+| [ML](../ML/README.md) | Les modèles de prédiction (régression, classification, XGBoost) s'appliquent directement aux stratégies (paliers 19 à 21) |
+| [GenAI](../GenAI/README.md) | L'analyse de sentiment (palier 17) et les signaux LLM (palier 26) utilisent les LLMs couverts dans GenAI/Texte |
+| [RL](../RL/README.md) | Les stratégies RL (palier 25, compléments 32 à 35) prolongent les fondamentaux RL de cette série |
+| [Probas](../Probas/README.md) | La modélisation bayésienne des rendements et la gestion du risque s'appuient sur les modèles probabilistes |
+| [Search](../Search/README.md) | L'optimisation d'hyperparamètres (grid search, bayésienne) rejoint les techniques de recherche |
+| [ML.NET](../ML/ML.Net/README.md) | L'analyse technique (palier 11) partage les fondements du forecasting par SSA |
 
-Le détail (registre des runs, checkpoints, notebooks de recherche `m*_research.ipynb`, curriculum) vit dans [`ML-Training-Pipeline/README.md`](ML-Training-Pipeline/README.md), [`CURRICULUM.md`](ML-Training-Pipeline/CURRICULUM.md) et [`REGISTRY.md`](ML-Training-Pipeline/REGISTRY.md). Ce pipeline alimente aussi le dimensionnement Kelly HMM-regime du pont Lean ci-dessous.
+### Guides et documentation du dossier
 
----
+- **[QUICK_TOUR.md](QUICK_TOUR.md)** : visite rapide de l'ensemble du matériel.
+- **[GETTING-STARTED.md](GETTING-STARTED.md)** : guide de démarrage détaillé.
+- **[BOOK_MAPPING.md](BOOK_MAPPING.md)** : inventaire des exemples de *Hands-On AI Trading*, rattachés aux notebooks et projets, avec leur statut de couverture.
+- **[LEAN_INVENTORY.md](LEAN_INVENTORY.md)** : inventaire du lake Lean de la famille.
+- **[docs/](docs/)** : guides spécialisés — [architecture du paper trading](docs/PAPER_TRADING_ARCHITECTURE.md), [transition paper vers live](docs/PAPER_TO_LIVE_TRANSITION.md), [procédure de déploiement](docs/PROCEDURE_DEPLOIEMENT.md), [catalogue des stratégies QC Cloud](docs/qc_strategies_catalog.md), [datasets requis](docs/HANDSON_DATA_REQUIREMENTS.md), protocole de veille et grille de preuves du socle RNCP41881, [rapports d'audit historiques](docs/audits/).
 
-## Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+## Ressources
 
-Le dépôt ne se limite pas aux notebooks Python : il embarque une **couche de preuves Lean 4** qui ancre mathématiquement les résultats phares des séries. Le bridge QuantConnect ↔ Lean est [`kelly_lean`](kelly_lean/) — un lake Lean 4 (Mathlib, toolchain `v4.31.0-rc1`), **intégralement bilingue** (modules `Bet`/`Growth`/`Kelly` en français + miroirs `_en`, cf. convention i18n Lean du dépôt), qui prouve l'**optimalité du critère de Kelly** pour le *position sizing*. Le théorème : pour un pari de Bernoulli (probabilité `p` de gain, cote nette `b`, `q = 1 − p`), la fraction optimale du capital à risquer est
+- [Documentation QuantConnect](https://www.quantconnect.com/docs) · [LEAN Engine sur GitHub](https://github.com/QuantConnect/Lean) · [Algorithm Framework](https://www.quantconnect.com/docs/v2/writing-algorithms/algorithm-framework/overview)
+- Livre de référence : **"Hands-On AI Trading with Python, QuantConnect, and AWS"** (Janvier 2025, Wiley) — [site officiel](https://www.hands-on-ai-trading.com), [GitHub du livre](https://github.com/QuantConnect/HandsOnAITradingBook), [Amazon](https://www.amazon.com/dp/1394268432)
+- [Forum QuantConnect](https://www.quantconnect.com/forum) · [Discussions LEAN](https://github.com/QuantConnect/Lean/discussions)
 
-> **f\* = (b·p − q) / b**
+### Questions fréquentes
 
-qui maximise de façon unique le taux de croissance espéré du capital composé. Tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est **strictement sous-optimal**. Référence : J. L. Kelly Jr., *A New Interpretation of Information Rate*, BSTJ (1956).
+**Sharpe ou CAGR ?** Le CAGR mesure le rendement annualisé ; le Sharpe mesure le rendement ajusté au risque : Sharpe = (rendement − taux sans risque) / volatilité. Un CAGR élevé avec un Sharpe faible signale une stratégie volatile. Un Sharpe supérieur à 0,5 est considéré robuste dans cette série.
 
-```mermaid
-flowchart LR
-    QC["Stratégie QuantConnect<br/>QC-Py-10 Risk Management<br/>Kelly fraction sizing"]
-    KELLY["kelly_lean lake<br/>kelly_optimal : g(f) ≤ g(f*)<br/>kelly_unique : f ≠ f* ⟹ g(f) < g(f*)"]
-    ML["ML-Training-Pipeline<br/>dimensionnement Kelly<br/>HMM-regime + fee-aware"]
-    BACKTEST["Backtests QC Cloud<br/>Sharpe aligned 2018-2025<br/>walk-forward + multi-seed"]
-    QC -. "fréquence risquée f" .-> KELLY
-    KELLY -. "théorème-prouve f*" .-> ML
-    ML --> BACKTEST
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    style KELLY fill:#e8f5e9,color:#1b5e20
-    style BACKTEST fill:#e1f5ff,color:#004085
-```
+**Les performances backtestées sont-elles réalistes en live ?** Non, ou avec une décote significative. Les backtests souffrent de biais connus (look-ahead, survivorship, overfitting) et ignorent le slippage et l'impact de marché réels. La série enseigne le walk-forward et les coûts de transaction précisément pour évaluer la robustesse hors échantillon.
 
-Le pipeline complet relie donc trois familles du dépôt : la **théorie** (Lean prouve `kelly_optimal` + `kelly_unique`), la **pratique** (ML-Training-Pipeline dimensionne Kelly HMM-regime, fee-aware, multi-asset, cap-relaxed — voir `ML-Training-Pipeline/docs/M11*`), et la **validation empirique** (backtests QC Cloud walk-forward + multi-seed, comparatif dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md)). Sans la couche Lean, la pratique risquerait de s'appuyer sur une formule réputée « standard » mais jamais démontrée. Avec elle, la justification du fractionnement du capital est formellement garantie — pas seulement empiriquement ajustée.
+**Peut-on tout exécuter localement sans compte QuantConnect ?** Non. Les carnets du parcours utilisent `QuantBook()`, qui nécessite une connexion au cloud QuantConnect ; les carnets de recherche marqués standalone s'exécutent en local sur données publiques. Créez un compte gratuit pour obtenir votre token API.
 
-Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [issue #4052](https://github.com/jsboige/CoursIA/issues/4052) (kelly_lean Tier 2), [`kelly_lean/README.md`](kelly_lean/README.md), [`kelly_lean/Kelly.en.md`](kelly_lean/Kelly.en.md).
+**QuantBook ou QCAlgorithm ?** `QuantBook` est l'API interactive de QuantConnect pour les notebooks : charger des données, calculer des indicateurs, analyser. `QCAlgorithm` est la version production : callbacks (`OnData`, `OnEndOfDay`), portefeuille, moteur d'exécution. Le workflow standard explore en notebook, puis implémente en projet.
 
----
+**Pourquoi LEAN plutôt que Backtrader ou Zipline ?** LEAN gère les données corporate (splits, dividendes, spinoffs), le slippage, les frais réels, la marge et le live trading. Backtrader et Zipline sont d'excellents outils pédagogiques mais ne gèrent pas ces aspects en production ; les compétences LEAN sont directement transférables au trading réel.
 
-## Cross-series Bridges
+**Comment limiter le coût en calcul ?** Limiter la période historique (deux à trois ans suffisent pour un prototype), préférer la fréquence Daily à Minute, utiliser `qb.history()` avec des dates précises plutôt que l'historique complet. Les carnets de deep learning du parcours sont optimisés CPU pour le free tier.
 
-### Examens — rattrapages Trading (5BD ALT1)
-
-Les sujets de rattrapage 2024 et 2025 (avec corrigés, sources LaTeX) vivent dans [`examens/`](examens/README.md) — publication autorisée, sujets hors rotation. Leur rattachement notion par notion aux notebooks de la série est donné dans [`examens/README.md`](examens/README.md).
-
-| Serie | Lien | Connection |
-|-------|------|------------|
-| [ML](../ML/README.md) | Machine Learning | Les modèles de prédiction ML (régression, classification, XGBoost) s'appliquent directement aux stratégies de trading (QC-Py-19 à QC-Py-21) |
-| [GenAI](../GenAI/README.md) | IA générative | L'analyse de sentiment (QC-Py-17) et les signaux de trading par LLM (QC-Py-26) utilisent les LLMs couverts dans GenAI/Texte |
-| [RL](../RL/README.md) | Apprentissage par renforcement | Les stratégies RL (QC-Py-25 DQN/PPO, QC-Py-33 PPO, QC-Py-34 SAC/A2C, QC-Py-35 portfolio) prolongent les fondamentaux RL de cette série |
-| [Probas](../Probas/README.md) | Programmation probabiliste | La modélisation bayésienne des rendements et la gestion du risque s'appuient sur les modèles probabilistes de la série Probas |
-| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparamètres de stratégies (grid search, bayésienne) rejoint les techniques de recherche |
-| [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-Py-11 Technical-Indicators) partage les mêmes fondements que le forecasting par SSA (ML-05) |
-| **Lean 4 (kelly_lean)** | **Preuves formelles** | **Le théorème de Kelly est prouvé formellement dans `kelly_lean/` (Mathlib, toolchain v4.31.0-rc1) — fondement du position sizing enseigné dans QC-Py-10** |
-
----
-
-## Conclusion / Prochaines étapes
-
-### Ce que vous avez appris
-
-Cette série vous a fait traverser **l'arc complet du trading algorithmique moderne** — de la gestion d'un événement de marché à la production d'un agent RL déployé en live. L'arc pédagogique :
-
-- **Les fondations LEAN** (phases 1-4) : maîtriser le `QCAlgorithm` lifecycle, l'univers sélection, les asset classes (equities, crypto, options, futures), le risk management (drawdown, exposure, stop-loss) et l'Algorithm Framework modulaire (Alpha + Portfolio Construction + Risk Management). On apprend à *écrire un algo propre*, pas à empiler des règles ad hoc.
-- **La préparation ML** (phase 5) : les données alternatives (sentiment, fundamentals, FRED) et le feature engineering. On apprend que **80% de la performance ML vient de la qualité des features**, pas du modèle.
-- **Le machine learning** (phases 6-7) : Random Forest et XGBoost classiques, puis deep learning (LSTM, Transformers, autoencoders pour l'anomaly detection). On apprend que les modèles de deep learning sont **fragiles aux coûts de transaction réels** et au changement de régime — un edge apparent en backtest peut s'évaporer une fois les frais appliqués (cf. les baselines vérifiées dans le tableau comparatif ci-dessus).
-- **La production** (phase 8 + compléments RL) : Reinforcement Learning (DQN, PPO, SAC/A2C), LLMs pour signaux de trading, et déploiement live (paper trading, brokers IBKR/Binance). On apprend que **la stratégie ne se juge pas sur le Sharpe brut mais sur le Sharpe net** après frais, slippage et impact de marché.
-
-Le fil rouge : **la rigueur méthodologique**. Le catalogue de 36 baselines vérifiées (PSR, walk-forward, fenêtres alignées) enseigne que la plupart des Sharpe spectaculaires ne survivent pas à un backtest honnête — un Lehmann pédagogique aussi important que les techniques elles-mêmes.
-
-### Prochaines étapes
-
-1. **Approfondir une voie** : choisir un domaine (RL, Transformers, factor investing) et creuser les notebooks avancés correspondants (QC-Py-30/31 pour le DL, QC-Py-32/33/34 pour le RL, QC-Py-21/24 pour l'optimisation de portefeuille).
-2. **Construire un composite** : combiner plusieurs Alpha Models via l'Algorithm Framework (cf. `Framework_Composite_TrendWeather`, le leader robuste du catalogue) — la diversification batte l'optimisation fine d'un signal unique.
-3. **Paper trading** : déployer une stratégie sur QuantConnect Paper Brokerage ou IBKR/Binance (cf. `docs/PAPER_TRADING_ARCHITECTURE.md`) pour valider en temps réel avant tout capital réel.
-4. **Suivre le livre** : *Hands-On AI Trading* (Jared Broad, 2025) — chaque exemple du livre est rattaché aux notebooks et aux projets de cette série dans [BOOK_MAPPING.md](BOOK_MAPPING.md), avec son statut (couvert, partiel, ébauche, absent).
-5. **Explorer les cross-series bridges** ci-dessus : les techniques ML, GenAI, Probas et Search se combinent toutes avec le trading algorithmique.
-6. **Consulter le catalogue** : [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, leurs diagnostics de robustesse et les caveats de reproductibilité.
-
-> **Rappel honnête** : le trading algorithmique est un domaine où l'overfitting est la règle, pas l'exception. Un Sharpe > 2 sur un backtest court est presque toujours un artefact. La discipline du walk-forward, du multi-seed et du out-of-sample strict — enseignée tout au long de cette série — est ce qui sépare une stratégie robuste d'une illusion statistique.
-
----
-
-*Version 1.2.0 — Juillet 2026*
+**Peut-on trader avec de l'argent réel ?** Techniquement oui (LEAN supporte les brokers live : IBKR, Binance…), mais pas dans le cadre de cette série : tout y est conçu pour le backtest et le paper trading. Le passage en live exige un compte broker, du capital, et la discipline de validation enseignée tout au long du parcours.

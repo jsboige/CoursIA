@@ -110,7 +110,9 @@ permissions:
   # pending) the script cancels ITS OWN run so the leg concludes CANCELLED
   # instead of FAILURE. The PR stays blocked (a cancelled required check is
   # not success) and pr-gate-stale-sweep re-drives cancelled gate legs
-  # exactly like supersession-cancels (#11862).
+  # exactly like supersession-cancels (#11862). The INCONCLUSIVE quota
+  # verdict (exit 3) takes the same rendering since #27768: unknown is not
+  # false, and a FAILED leg is not a sweep candidate.
   actions: write
 
 concurrency:
@@ -138,7 +140,7 @@ jobs:
     # for (false negative #11770). The third term dissolves the tension: a
     # dedicated waiter pool -- waiting costs no CPU.
     #   - Jambe A (po-2024, #14303 merged + deployed 2026-09-04): 24 waiter
-    #     slots (label coursia-waiter, 1 vCPU / 1 GiB / 128 pids) online via
+    #     slots (label coursia-waiter, 1 vCPU / 512 MiB / 128 pids) online via
     #     coursia-waiters.service -- supervise.sh waiters.
     #   - Jambe B (this PR): the pull_request leg leaves the shared GitHub-
     #     hosted queue AND the self-hosted work pool, and waits on the waiter
@@ -260,7 +262,7 @@ jobs:
       # aussi les fichiers de la racine, ce qui suffit au reste du job.
       #
       # Perimetre requis, mesure : pr_gate.py n importe que la stdlib plus
-      # yaml en import paresseux et scripts/gh_identity.py (#17418 Phase A,
+      # yaml en import paresseux et scripts/ci/gh_identity.py (#17418 Phase A,
       # epinglage du jeton machine — in-come par le cone), et son seul
       # chemin est DEFAULT_WORKFLOWS_DIR = <repo>/.github/workflows, que
       # derive_always_on_jobs et derive_advisory_jobs globent (canari regle 8).

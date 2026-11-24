@@ -1,0 +1,14 @@
+- name: "Metajeux-2 Casser-la-Composition"
+  family: GameTheory/Metajeux
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib (configuration SocialChoice-2) : contre-exemples a la compositionnalite (selection multivoque, paiements couples, frontiere de contraction vs borne de Banach) implantes idiomatiquement des deux cotes (stdlib Python numpy vs BCL/LINQ C#, 0 NuGet), aucun moteur externe contourne. Verification independante `critic` (glm-5.3) verdict approve le 2026-11-20, 6 constats mineurs 0 majeur : 27 cellules/27, memes indices et memes types (code en 3/6/8/11/14/19/21/23), rien de perdu ni ajoute au plan ; execution reelle kernel .net-csharp 8 cellules 0 erreur (execution_count sequentiel) ; gates coord-refs, foreign-script, secrets, language-info, machine-path, svg-display OK ; parite numerique verifiee valeur par valeur (br1(0)=1, br2(1)=1, profil (1,1), Nash=True, tolerance 1e-12 reprise) ; le stub de la cellule 23 ne revele plus la limite (correctif w2j vs w2i). parity_level: semantic (meme contenu mathematique, API idiomatique differente). Issue #27464, PR #27495."
+
+  known_differences:
+    - "Micro-editions de prose hors suffixe : 'plateau d'utilite plate' rendu 'flat' (cellule 17), 'garantise' corrige en 'garantit' (cellule 9) -- sens preserve, aucun impact sur les instances."
+    - "Note de provenance ajoutee en pied de carnet ('Carnet issu de l'EPIC #20250...') -- tracabilite vers #26070/#26534, aucune exigence violee."
+    - "Stubs d'exercices (cellules 19/21/23) : ligne d'echafaudage 'Resultat exN (a completer) : aucune valeur' au-dela du simple 'Exercice a completer' de la source -- rend le stub executable sans reveler la solution (resultats initiaux a null)."
+    - "Chaines de sortie francisees dans les cellules editees (3/6/8) : accents ajoutes ('compose', 'naive', 'exogene') vs sorties ASCII de la source ; parite numerique intacte verifiee valeur par valeur."
+    - "En-tete de tableau cellule 11 legerement desaligne ('deltL=' vs 'delt L=') ; les 8 lignes de valeurs strictement identiques."

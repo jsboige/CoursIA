@@ -56,7 +56,11 @@ concurrency:
 jobs:
   slides-composition-advisory:
     name: "Slidev composition advisory (#11923, non-blocking)"
-    runs-on: ubuntu-latest
+    # ubuntu-24.04 pinné le 18/11 (#27194) : le rollout d'Ubuntu 26.04 sur
+    # ubuntu-latest casse `playwright install chromium` (main rouge le 17/11,
+    # run 44079631856) — même famille que le retrait de Python 3.9
+    # (#27184/#27186).
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout (blobless, sparse slides)

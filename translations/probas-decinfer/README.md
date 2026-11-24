@@ -17,7 +17,7 @@ La série couvre la théorie de la décision avec Infer.NET :
 - **DecInfer-05-Value-Information** — valeur espérée de l'information (EVPI/EVSI), Infer.NET inference.
 - **DecInfer-06-Expert-Systems** — systèmes experts probabilistes, règles bayésiennes.
 - **DecInfer-07-Sequential** — décision séquentielle, équations de Bellman, horizon fini.
-- **DecInfer-10-Thompson-Sampling** — échantillonnage de Thompson, compromis exploration/exploitation.
+- **DecInfer-08-Thompson-Sampling** — échantillonnage de Thompson, compromis exploration/exploitation.
 
 **Schéma** : 21 colonnes (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cible (`text_en/es/ar/fa/zh/ru/pt`) vides pour le moteur T3 Argumentum (#1650 Phase 1).
 
@@ -33,7 +33,7 @@ python scripts/translation/extract_cells_to_csv.py \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb \
     -o translations/probas-decinfer/probas_decinfer.csv \
     --src-lang fr
 ```

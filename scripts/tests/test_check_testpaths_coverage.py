@@ -136,9 +136,9 @@ def test_les_cibles_du_job_adk_sont_reconnues_sur_le_workflow_reel() -> None:
     wf = (REPO_ROOT / ".github/workflows/scripts-tests.yml").read_text(encoding="utf-8")
     targets = extract_run_targets(wf)
     assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
-            "07-Agent-Orchestration/utils/test_adk_runtime_contracts.py") in targets
+            "07-Orchestration-d-Agents/utils/test_adk_runtime_contracts.py") in targets
     assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
-            "07-Agent-Orchestration/config/test_providers.py") in targets
+            "07-Orchestration-d-Agents/config/test_providers.py") in targets
 
 
 def test_is_covered_exact_and_ancestor() -> None:
@@ -607,10 +607,10 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
     triggers = workflow["on"]
     assert "paths" not in triggers["push"]
     pr_paths = triggers["pull_request"]["paths"]
-    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean" in pr_paths
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean" in pr_paths
     # Keep both the original ADK contracts tree and the #25201 refactor target.
     assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**" in pr_paths
-    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**" in pr_paths
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/**" in pr_paths
 
     job = workflow["jobs"]["scripts-tests"]
     assert job["name"] == "Scripts Tests (CPU)"
@@ -664,7 +664,7 @@ def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> Non
 
     steps = workflow["jobs"]["adk-contracts"]["steps"]
     runs = "\n".join(step.get("run", "") for step in steps)
-    root = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
+    root = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents"
     contract = f"{root}/utils/test_adk_runtime_contracts.py"
     providers = f"{root}/config/test_providers.py"
     assert runs.count(contract) == 2, "runtime contract run and collection floor must target the live tree"
@@ -752,20 +752,72 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
     assert duplicate_basenames(tmp_path) == {}
 
 
+def test_duplicate_basenames_tolerance_la_paire_entierement_exclue(
+    tmp_path: Path,
+) -> None:
+    """T1-finale #25366 : une paire dont TOUS les répertoires portent un
+    marqueur CI-EXCLUDED est tolérée — même symétrie que le tri des dossiers
+    (« les exclusions déclarées comptent comme triées »). Cas mesuré : la
+    paire test_utils.py des deux projets-exemple Vibe-Coding, décision
+    écrite au tri po-2023 (#27066) que ce sens n'implémentait pas."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    assert (
+        duplicate_basenames(
+            tmp_path,
+            {
+                "scripts/alpha/tests": "exemple pedagogique",
+                "scripts/beta/tests": "exemple pedagogique",
+            },
+        )
+        == {}
+    )
+    # Sans la population exclue, la même paire reste comptée : l'argument
+    # est un filtre, pas un déplacement du seuil.
+    assert duplicate_basenames(tmp_path) == {
+        "test_x.py": ["scripts/alpha/tests", "scripts/beta/tests"]
+    }
+
+
+def test_duplicate_basenames_compte_la_paire_mixte_exclue_vivante(
+    tmp_path: Path,
+) -> None:
+    """Une collision MIXTE — un répertoire CI-EXCLUDED, un répertoire vivant
+    — reste comptée : le répertoire vivant collisionne réellement en CI."""
+    from check_testpaths_coverage import duplicate_basenames
+
+    _make_suite(tmp_path, "scripts/alpha/tests")
+    _make_suite(tmp_path, "scripts/beta/tests")
+
+    assert duplicate_basenames(
+        tmp_path, {"scripts/alpha/tests": "exemple pedagogique"}
+    ) == {"test_x.py": ["scripts/alpha/tests", "scripts/beta/tests"]}
+
+
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
-    30 basenames après les tranches de dédoublonnage (#25366 ; T2 #26137 a
-    retiré `tests/test_batch_reexecute.py` racine). Le plafond est un
-    cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
-    T2 en supprime — jamais l'inverse.
+    1 basename restant sur cet arbre, mesuré après la fusion des deux tranches
+    (#25366 ; T2 #26137 a retiré `tests/test_batch_reexecute.py` racine ;
+    T2 #26541 a préfixé 10 basenames génériques ; T2-residu #27066 a renommé
+    les copies stratégiques, retire `test_check_cell_source_parses.py` et
+    `test_check_public_anchor.py` ; T2 ICT a préfixé les 16 paires du hub
+    série ICT). Chaque tranche abaisse le plafond de son propre côté ; le
+    survivant `test_utils.py` est porté par deux projets-exemples Vibe-Coding,
+    qui sont des données de démonstration et non des suites du dépôt. Le
+    plafond est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit
+    quand T2 en supprime — jamais l'inverse.
     """
     from check_testpaths_coverage import duplicate_basenames
 
     dupes = duplicate_basenames(REPO_ROOT)
-    assert len(dupes) <= 30, f"dette de doublons en hausse : {len(dupes)} > 30"
-    assert "test_check_cell_source_parses.py" in dupes
-    assert len(dupes["test_check_cell_source_parses.py"]) == 2
+    assert len(dupes) <= 1, f"dette de doublons en hausse : {len(dupes)} > 1"
+    assert "test_check_cell_source_parses.py" not in dupes
+    assert "test_utils.py" in dupes
+    assert len(dupes["test_utils.py"]) == 2
 
 
 def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
