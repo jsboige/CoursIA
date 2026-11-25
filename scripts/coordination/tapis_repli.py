@@ -63,6 +63,30 @@ def avancer(dossier: Path, lane: str, blocs: int) -> None:
         pass  # un curseur non ecrit ne change pas le tirage : l'echec est ignore
 
 
+def _publier(lane: str, graine: str, maintenant: datetime, metas: list[dict],
+             etats_: list, file: list, prs: list[dict], origami: dict,
+             fenetre: dict, occupation: dict, repli: dict, cap: dict) -> dict:
+    """Le RAPPORT du repli : la voie, la cause en tete, les exclusions publiees.
+
+    L'occupation publiee porte les exclusions **effectives** et la
+    **reintroduction** (fail-OPEN) : le rapport ne confond plus un grain
+    ecarte avec un grain revenu (review du coordinateur du 25/11 sur
+    #28435).
+    """
+    from coordination import tapis_leger
+    rapport = tapis_leger._rapport(lane, graine, maintenant, metas, 0.0, 0.0,
+                                   gh_selection.MUR_GLOBAL_S, etats_, file, prs,
+                                   origami, {"repli": True}, fenetre,
+                                   occupation=occupation)
+    rapport["voie"] = "repli"
+    rapport["repli"] = repli
+    # La cause en TETE du rapport : c'est ce qu'on cherche quand on lit un
+    # tirage degrade (le rapport est lu par un humain et par les organes).
+    rapport["cause_repli"] = repli.get("cause") or {}
+    rapport["cap_livraisons"] = cap
+    return rapport
+
+
 def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
            depot, cause: dict | None = None) -> tuple[dict, int]:
     """Le repli : (rapport, 0) -- ou l'echec de lecture, leve.
@@ -91,7 +115,9 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     grains_ = [e for e in etats_ if not e.conteneur]
     conteneurs = [e for e in etats_ if e.conteneur]
     # Le grain de HARNAIS ne se sert pas pour une lane worker (dispatch `c0035b`).
-    grains_, conteneurs = tapis_occupation.retirer_harnais(
+    # Les exclusions EFFECTIVES et la REINTRODUCTION (fail-OPEN) sont rendues :
+    # deux sorties differentes annoncees comme identiques (review du 25/11).
+    grains_, conteneurs, exclus_harnais, reintroduction = tapis_occupation.retirer_harnais(
         grains_, conteneurs, metas, lane)
     ancres = tapis_ancre.lire(lane)
     ages, exclus, _ = tapis_age.tour(grains_, ancres, maintenant, conteneurs)
@@ -106,20 +132,17 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     lec = gh_bulk.Lecture(issues=[], prs=prs, citations=citations,
                            lu_a=str(cache.get("lu_a") or ""), secondes=0.0, appels=0)
     _, origami = tapis_origami.mesurer(lec, reseau=False)
-    from coordination import tapis_cap_livraisons, tapis_leger
+    from coordination import tapis_cap_livraisons
     file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
         file, grains_ + conteneurs, lane, maintenant, prs,
         run=tapis_cap_livraisons.fetcher_hors_reseau)
-    rapport = tapis_leger._rapport(lane, graine, maintenant, metas, 0.0, 0.0,
-                                   gh_selection.MUR_GLOBAL_S, etats_, file, prs,
-                                   origami, {"repli": True}, fenetre)
-    rapport["voie"] = "repli"
-    rapport["repli"] = {"cache": str(tapis_repli_cache.chemin_cache(dossier, jours)),
-                        "avance": avance, "blocs": blocs, "servis": len(file),
-                        "curseur": servis, "cause": cause or {}}
-    # La cause en TETE du rapport : c'est ce qu'on cherche quand on lit un
-    # tirage degrade (le rapport est lu par un humain et par les organes).
-    rapport["cause_repli"] = cause or {}
-    rapport["cap_livraisons"] = {"mesure": cap_mesure, "ecartes": temoins_cap,
-                                 "fenetre_j": tapis_cap_livraisons.FENETRE_J}
-    return rapport, 0
+    occupation = tapis_occupation.occupation_harnais(metas, lane, exclus_harnais,
+                                                      reintroduction)
+    repli = {"cache": str(tapis_repli_cache.chemin_cache(dossier, jours)),
+             "avance": avance, "blocs": blocs, "servis": len(file),
+             "curseur": servis, "cause": cause or {},
+             "reintroduction": reintroduction}
+    cap = {"mesure": cap_mesure, "ecartes": temoins_cap,
+           "fenetre_j": tapis_cap_livraisons.FENETRE_J}
+    return _publier(lane, graine, maintenant, metas, etats_, file, prs, origami,
+                     fenetre, occupation, repli, cap), 0

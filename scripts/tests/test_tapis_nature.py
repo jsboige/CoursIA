@@ -139,7 +139,7 @@ def test_le_grain_de_harnais_n_est_pas_serve_a_une_lane_worker():
     """Le travail de harnais appartient aux lanes qui **gerent** l'urne : une
     lane worker rend la main (dispatch `c0035b`)."""
     metas = [_meta(7423, "Un grain de harnais", ["harnais"])]
-    restants, _ = tapis_occupation.retirer_harnais(
+    restants, _, _, _ = tapis_occupation.retirer_harnais(
         [_Etat(7423), _Etat(8)], [], metas, LANE)
     assert [e.numero for e in restants] == [8]
 
@@ -148,7 +148,7 @@ def test_les_lanes_gerantes_gardent_le_grain_de_harnais():
     """Pour elles, c'est une information, pas une exclusion."""
     metas = [_meta(7423, "Un grain de harnais", ["harnais"])]
     for gerante in (COORD, ADJOINT, SECRETAIRE):
-        restants, _ = tapis_occupation.retirer_harnais(
+        restants, _, _, _ = tapis_occupation.retirer_harnais(
             [_Etat(7423)], [], metas, gerante)
         assert [e.numero for e in restants] == [7423]
 
@@ -156,7 +156,7 @@ def test_les_lanes_gerantes_gardent_le_grain_de_harnais():
 def test_le_repli_garde_le_pool_si_l_exclusion_le_vide():
     """Fail-OPEN : un tirage qui ne sert rien ne sert a rien (I1)."""
     metas = [_meta(7423, "Le seul grain, et il est de harnais", ["harnais"])]
-    restants, _ = tapis_occupation.retirer_harnais(
+    restants, _, _, _ = tapis_occupation.retirer_harnais(
         [_Etat(7423)], [], metas, LANE)
     assert [e.numero for e in restants] == [7423]
 
@@ -259,6 +259,62 @@ def test_le_rapport_du_repli_publie_la_cause(monkeypatch):
     assert rapport["repli"]["cause"] == cause
 
 
+# --- LE REPLI PUBLIE SES EXCLUSIONS ET SA REINTRODUCTION --------------------
+
+
+def _repli(monkeypatch, cache: dict, grains: int = 2):
+    """Le rapport PUBLIC du repli, sur un cache local factice."""
+    monkeypatch.setattr(tapis_repli.tapis_repli_cache, "lire",
+                        lambda dossier, jours, ttl_s=None: cache)
+    monkeypatch.setattr(tapis_repli, "curseur", lambda dossier, lane: 0)
+    monkeypatch.setattr(tapis_repli, "avancer", lambda dossier, lane, blocs: None)
+    return tapis_repli.replir(LANE, grains, NOW, 45, "graine",
+                              Path(__file__).resolve().parents[2],
+                              cause={"code": "lecture-incomplete",
+                                     "motif": "reseau muet"})
+
+
+def test_le_repli_publie_les_exclusions_effectives(monkeypatch):
+    """Un grain de harnais ecarte du repli est publie AVEC son motif.
+
+    Review du coordinateur (25/11, #28435) : `retirer_harnais()` jetait
+    `_exclus` -- le grain de harnais disparaissait du tirage sans motif, et
+    le rapport ne distinguait pas « ecarte » de « jamais vu »."""
+    cache = {"issues": [_meta(9001, "Un grain ordinaire"),
+                        _meta(9002, "Un grain de harnais", ["harnais"])],
+             "citations": {}, "prs": [], "lu_a": "2026-01-01T00:00:00Z",
+             "_epoch": 0}
+    rapport, code = _repli(monkeypatch, cache)
+    assert code == 0
+    exclus = rapport["occupations"]["exclus"]
+    assert [e["numero"] for e in exclus] == [9002], "le harnais est ecarte"
+    assert exclus[0]["marque"] == "harnais"
+    assert exclus[0]["motif"], "l'exclusion porte son motif"
+    assert [g["numero"] for g in rapport["grains"]] == [9001]
+    assert not rapport["repli"]["reintroduction"], "pas de reintroduction ici"
+
+
+def test_le_repli_signale_la_reintroduction_fail_open(monkeypatch):
+    """Le fail-OPEN (l'exclusion vide le pool) est Dit, pas muet.
+
+    Review du coordinateur (25/11, #28435) : avec le SEUL grain de harnais
+    dans le cache, le pool revient (fail-OPEN, I1) -- mais le rapport
+    l'annoncait comme un tirage ordinaire. Le grain reintroduit doit etre
+    qualifie avant d'etre servi."""
+    cache = {"issues": [_meta(9002, "Le seul grain, et il est de harnais",
+                              ["harnais"])],
+             "citations": {}, "prs": [], "lu_a": "2026-01-01T00:00:00Z",
+             "_epoch": 0}
+    rapport, code = _repli(monkeypatch, cache)
+    assert code == 0
+    rein = rapport["repli"]["reintroduction"]
+    assert rein["numeros"] == [9002], "le pool est REINTRODUIT"
+    assert rein["qualification_requise"] is True
+    assert rein["motif"], "la reintroduction porte son motif"
+    assert rapport["occupations"]["reintroduction"] == rein
+    assert [g["numero"] for g in rapport["grains"]] == [9002]
+
+
 # --- les plafonds des organes de ce PR --------------------------------------
 
 # La liste des plafonds des organes du tapis vit dans `test_tapis_rapide.py`,
@@ -270,6 +326,8 @@ def test_le_rapport_du_repli_publie_la_cause(monkeypatch):
 
 @pytest.mark.parametrize(("nom", "plafond"), [("tapis_nature.py", 190),
                                               ("tapis_occupation_rapport.py", 80),
+                                              ("tapis_occupation_base.py", 80),
+                                              ("tapis_occupation_reintroduction.py", 35),
                                               ("tapis_repli_cause.py", 40),
                                               ("tapis_repli_cache.py", 80)])
 def test_plafond_de_lignes(nom, plafond):
