@@ -414,6 +414,49 @@ jobs:
           python-version: '3.11'
           cache: pip
 
+      - name: Isoler le kernelspec du job (#28501)
+        # Le kernelspec `python3` est enregistre dans le repertoire
+        # UTILISATEUR -- partage par tous les jobs d'un meme hote. Sur le
+        # parc auto-heberge, deux slots peuvent tourner deux jobs
+        # SIMULTANEMENT sur le meme hote : les deux enregistrent `python3`
+        # vers deux interpreteurs differents, dans le MEME fichier. Mesure
+        # (po-2026, 25/11, hors parc) : 33 changements d'argv et 5 echecs en
+        # 6 s.
+        #
+        # Deux variables decalent les DEUX operations vers un repertoire
+        # PROPRE au job :
+        #   - l'ECRITURE : `install_kernel_spec(user=True)` ecrit dans
+        #     `jupyter_data_dir()/kernels`, et `jupyter_data_dir()` lit
+        #     `JUPYTER_DATA_DIR` ;
+        #   - la LECTURE : `jupyter_path("kernels")` place `JUPYTER_PATH` EN
+        #     PREMIER, et `find_kernel_specs` ne retient que le PREMIER nom
+        #     trouve.
+        # Mesure (po-2026, 25/11, jupyter_client 8.x / jupyter_core 5.x) :
+        # `JUPYTER_DATA_DIR=B` -> l'ecriture part dans `B/kernels/python3` ;
+        # `JUPYTER_PATH=A` + `JUPYTER_DATA_DIR=B` -> la lecture rend l'argv
+        # de A, pas celui de B.
+        #
+        # L'unicite vient de l'identite du JOB (`RUNNER_NAME`,
+        # `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, `GITHUB_JOB`) : deux jobs
+        # concurrents ont des identites differentes, meme sur un hote
+        # partage. `RUNNER_TEMP` seul ne suffirait pas -- il est partage par
+        # hote sur le parc auto-heberge.
+        #
+        # L'enregistrement se fait ICI, dans le repertoire du job : le
+        # script d'installation partage (PR #28501) enregistrera le meme
+        # noyau au meme endroit -- operation idempotente, pas une course.
+        run: |
+          ks="${RUNNER_TEMP}/ks-$(printf '%s' "${RUNNER_NAME}" | tr -c 'A-Za-z0-9._-' '_')-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          mkdir -p "$ks"
+          echo "JUPYTER_DATA_DIR=$ks" >> "$GITHUB_ENV"
+          echo "JUPYTER_PATH=$ks" >> "$GITHUB_ENV"
+          echo "kernelspec du job : $ks"
+          if python -c "import ipykernel" 2>/dev/null; then
+            python -m ipykernel install --user --name python3 --display-name "python3"
+          else
+            echo "ipykernel absent de l'image -- l'enregistrement sera fait par le script d'installation"
+          fi
+
       - name: Install dependencies
         # L'environnement de cette suite est installe par un script PARTAGE :
         # `scripts/ci/install_scripts_tests_deps.sh`. Le lot quotidien en
