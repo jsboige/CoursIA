@@ -213,13 +213,30 @@ services:
     memswap_limit: 6g
     pids_limit: 512
 
+    # Entrypoint mounted from the repo so the versioned script is the one that runs
+    # (the image carries a baked copy as a fallback). See qwen/entrypoint.sh for the
+    # model-resolution fix of 2026-11-25.
+    entrypoint: ["/bin/bash", "/app/entrypoint.sh"]
+
     volumes:
       - type: bind
         source: ${MODELS_PATH:-./models}
         target: /app/models
+      - type: bind
+        source: ./qwen/entrypoint.sh
+        target: /app/entrypoint.sh
+        read_only: true
+      # The process runs as appuser (HOME=/home/appuser). The cache volume used to be
+      # mounted on /root/.cache, which appuser can neither read nor write: measured
+      # 2026-11-25, the downloaded model (4.3 GiB) lived in the container's ephemeral
+      # layer and was lost on every recreate, while the volume held only 25 MiB of
+      # root-owned build caches, never used by the service. HOME is the mount target
+      # because a fresh named volume inherits the image's ownership there (1000:1000,
+      # writable); /home/appuser/.cache does not exist in the image and is created
+      # root-owned (both cases measured on throwaway volumes).
       - type: volume
-        source: qwen-cache
-        target: /root/.cache
+        source: qwen-home
+        target: /home/appuser
 
     environment:
       # Same enumeration fix as tts-kokoro (see comment there, #11624) —
@@ -232,7 +249,9 @@ services:
       - CUDA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - NVIDIA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - PYTHONUNBUFFERED=1
-      - VLLM_USE_MODELSCOPE=false
+      # VLLM_USE_MODELSCOPE is deliberately NOT set: vllm_omni tests it for mere
+      # presence (a non-empty string is truthy, "false" included) and would route the
+      # model download through ModelScope. See qwen/entrypoint.sh.
       - MODEL_TYPE=${QWEN_MODEL_TYPE:-CustomVoice}
       - GPU_MEMORY_UTILIZATION=${QWEN_GPU_MEMORY_UTILIZATION:-0.3}
       - TZ=${TZ:-Europe/Paris}
@@ -262,5 +281,7 @@ volumes:
     name: tts-kokoro-cache
   tada-cache:
     name: tts-tada-cache
-  qwen-cache:
-    name: tts-qwen-cache
+  # tts-qwen-cache (25 MiB, root-owned build caches, inert since the service runs as
+  # appuser) is left on disk untouched; its removal belongs to the owner of the bench.
+  qwen-home:
+    name: tts-qwen-home
