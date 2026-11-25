@@ -744,6 +744,12 @@ def _parse_label_events(events: list[dict], label: str) -> list[dict]:
     return out
 
 
+#: Alias public du parseur d'evenements du label : le balayage de suspicion
+#: (`scripts/coordination/tapis_livraison.py`) consomme les memes evenements
+#: pour appliquer le veto humain sur la voie d'ecriture (#28454).
+parse_label_events = _parse_label_events
+
+
 def _with_pr_bodies(
     repo: str, refs: list[dict], cache: dict[int, tuple[str, str]],
 ) -> list[dict]:

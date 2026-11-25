@@ -13,7 +13,13 @@ Ce que fait cet organe, et rien de plus :
 3. quand un chemin cible a bouge sur `main` **apres** que l'issue s'est
    tuee, il pose le marqueur `[INFO] suspicion-livraison` dans le fil et le
    label `candidate-delivered` -- le grain part a l'URNE ;
-4. il ne clot **rien**, il ne retire **rien**, il ne decide de **rien**.
+4. il ne clot **rien**, il ne retire **rien**, il ne decide de **rien** ;
+5. la voie d'ecriture (`--apply`) applique le **VETO HUMAIN** : si une
+   personne a retire le label candidat, le balayage ne le repose pas (sa
+   pose deviendrait le dernier evenement humain, et effacerait le veto du
+   classificateur). Une LECTURE INCOMPLETE du fil ou des evenements vaut
+   veto aussi : rien n'est pose sur une lecture incomplete (reserve du
+   coordinateur du 25/11 sur #28454).
 
 La decision de cloture reste au coordinateur et a l'adjoint, qui lisent
 les criteres de l'issue (G.9). La marque de la suspicion est une **donnee**
@@ -44,7 +50,7 @@ if str(RACINE / "scripts") not in sys.path:
 
 import candidate_delivered_chemins as chemins  # noqa: E402
 import issue_containers  # noqa: E402
-from candidate_delivered import is_epic  # noqa: E402
+from candidate_delivered import human_retraction, is_epic, parse_label_events  # noqa: E402
 
 #: Le label de l'urne de cloture (la source unique est `tapis_labels`).
 LABEL = "candidate-delivered"
@@ -90,12 +96,46 @@ def prs_ouverts(repo: str, limit: int = 300) -> set[int]:
     return cites
 
 
-def fil(repo: str, number: int) -> list[dict]:
-    """Les commentaires de l'issue (dates + corps)."""
+def fil(repo: str, number: int) -> list[dict] | None:
+    """Les commentaires de l'issue (dates + corps).
+
+    `None` = la LECTURE est INCOMPLETE (appel rate) : le balayage ne pose
+    alors rien (fail-CLOSED, reserve du coordinateur du 25/11 sur #28454).
+    """
     data = _gh_json(["api", f"repos/{repo}/issues/{number}/comments",
                      "--paginate", "--jq",
                      "[.[] | {created_at: .created_at, body: .body}]"])
-    return data if isinstance(data, list) else []
+    return data if isinstance(data, list) else None
+
+
+def evenements(repo: str, number: int) -> list[dict] | None:
+    """Les evenements du LABEL candidat sur cette issue.
+
+    `None` = la LECTURE est INCOMPLETE (timeline illisible) : le balayage ne
+    pose alors rien. Un issue sans evenement rend une liste VIDE, pas `None`
+    (les deux se distinguent, et la distinction porte la decision).
+    """
+    data = _gh_json(["api", f"repos/{repo}/issues/{number}/timeline",
+                     "--paginate"])
+    if not isinstance(data, list):
+        return None
+    return parse_label_events(data, LABEL)
+
+
+def veto_humain(repo: str, number: int) -> str | None:
+    """Le veto humain sur le label candidat, ou `None` s'il n'y en a pas.
+
+    Une personne a retire le label : le balayage ne peut pas le reposer, sous
+    le login partage (reserve du coordinateur du 25/11 sur #28454). La
+    LECTURE INCOMPLETE des evenements vaut aussi veto : on ne pose rien sur
+    une lecture incomplete.
+    """
+    lus = evenements(repo, number)
+    if lus is None:
+        return "LECTURE INCOMPLETE des evenements"
+    if human_retraction(lus) is not None:
+        return "RETRAIT HUMAIN du label (veto)"
+    return None
 
 
 def corps_marqueur(suspects: list[dict]) -> str:
@@ -167,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
           f"{'apply' if args.apply else 'rapport'}")
 
     poses: list[int] = []
+    refuses: list[int] = []
     for issue in issues:
         numero = int(issue.get("number") or 0)
         labels = [l.get("name", "") for l in (issue.get("labels") or [])]
@@ -190,14 +231,30 @@ def main(argv: list[str] | None = None) -> int:
             continue
         # Le fil n'est lu que pour les candidats : le cout du balayage ne
         # depend pas du pool, mais du nombre de soupcons.
-        commentaires = fil(args.repo, numero)
+        lus = fil(args.repo, numero)
+        if lus is None:
+            # LECTURE INCOMPLETE : rien n'est pose (fail-CLOSED).
+            refuses.append(numero)
+            print(f"  #{numero:<6} LECTURE INCOMPLETE (fil) -- rien n'est pose")
+            continue
+        commentaires = lus
         if chemins.suspicion_dans_le_fil([c.get("body") or "" for c in commentaires]):
             continue  # la suspicion est deja posee
         suspects = suspecter(issue, touches, commentaires)
         if not suspects:
             continue
-        corps = corps_marqueur(suspects)
         if args.apply:
+            # Le VETO HUMAIN prime sur le balayage : une personne a retire le
+            # label candidat, le balayage ne le repose pas (il poserait sous
+            # le login partage, et sa pose deviendrait le dernier evenement
+            # humain, effacant le veto). Une lecture incomplete vaut veto
+            # aussi : on ne pose rien sur une lecture incomplete.
+            veto = veto_humain(args.repo, numero)
+            if veto is not None:
+                refuses.append(numero)
+                print(f"  #{numero:<6} {veto} -- rien n'est pose")
+                continue
+            corps = corps_marqueur(suspects)
             poster(args.repo, numero, corps)
             poser_label(args.repo, numero)
         poses.append(numero)
@@ -206,7 +263,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[tapis-livraison] {len(poses)} grain(s) doute(s) "
           f"{'poses' if args.apply else 'signales'} "
-          f"({'marqueur + label' if args.apply else 'rien n a ete pose'})")
+          f"({'marqueur + label' if args.apply else 'rien n a ete pose'})"
+          + (f" ; {len(refuses)} refuse(s) (veto humain ou lecture incomplete)"
+             if refuses else ""))
     return 0
 
 
