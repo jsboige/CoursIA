@@ -119,6 +119,25 @@ def test_prs_reponse_illisible():
     assert exc.value.lecture == "prs_ouvertes"
 
 
+def test_lecture_des_prs_porte_le_plafond_des_corps():
+    """La lecture des PRs ouvertes prend le plafond large, pas celui general.
+
+    Elle porte les CORPS de 100 PRs (2 Mo) : mesure du 24/11, 41 s pour la
+    page 1 sur ce siege. Coupee au plafond general (15 s), elle etait
+    TOUJOURS incomplete et l'organe de qualification echouait pour toutes
+    les lanes.
+    """
+    plafonds: list[int] = []
+
+    def run(argv, timeout):
+        plafonds.append(timeout)
+        return json.dumps([])
+
+    gh_bulk.lire_prs_ouvertes(run)
+    assert plafonds, "la lecture des PRs n'a pas appelle gh"
+    assert all(p >= gh_bulk.TIMEOUT_S_CORPS for p in plafonds), plafonds
+
+
 GIT_LOG = (
     "\x1eaaaaaaaaaaaa\x1f1762992000\x1fFix(x,#123): sujet (#2001)\x1fCloses #1234\nSee #123\n\n"
     "\x1ebbbbbbbbbbbb\x1f1762905600\x1fAdd(y): autre (#2002)\x1fPart of #77\n"
