@@ -33,24 +33,41 @@ from coordination import tapis_qualification as tq
 
 #: La qualification a son PROPRE mur : le mur global borne la LECTURE du
 #: pool, celui-ci borne la LECTURE DES FILS. Les deux sont sequentiels, jamais
-#: simultanes -- le total du tirage reste borne (2 x 60 s).
+#: simultanes.
 MUR_QUALIFICATION_S = 60
+
+#: Le TEMPS DU REPLI est RESERVE (reserve du coordinateur, I6 de #28114,
+#: 25/11) : le repli chronologique lit le cache local et publie le rapport --
+#: il doit avoir la place meme quand la qualification a consomme le budget.
+#: La qualification s'arrete donc a `echeance - RESERVE_REPLI_S`.
+RESERVE_REPLI_S = 5
 
 
 def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
-              prs: list[dict], run) -> tuple[list, dict, Exception | None]:
+              prs: list[dict], run,
+              echeance: float | None = None) -> tuple[list, dict, Exception | None]:
     """Qualifie la fenetre servie sur le FIL COMPLET de chaque grain.
 
     Rend `(file_confirmee, qualif, erreur)`. L'erreur n'est pas un verdict :
     elle rend la main au repli chronologique -- une qualification en panne ne
     sert **jamais** une file non qualifiee.
+
+    `echeance` est celle du **point d'entree** (monotone, I6 de #28114) : la
+    qualification ne repart pas d'une horloge neuve, elle partage le budget
+    de la commande, et le temps du REPLI y est reserve. Sans echeance (appel
+    direct), le mur propre de la qualification s'applique.
     """
     debut = time.monotonic()
     nums = [e.numero for e in file]
+    # L'ECHEANCE est celle du point d'entree, MOINS le temps du repli : un
+    # etage qui a consomme sa part voit l'etage suivant etre COUPE plutot
+    # qu'attendu (fail-CLOSED : une decision non prise ne sert rien).
+    fin = (echeance - RESERVE_REPLI_S if echeance is not None
+           else debut + MUR_QUALIFICATION_S)
     try:
         servis, ecartees, illisibles, arrete, appels, chrono = tq.qualifier(
             nums, lane, maintenant, jours, prs, run,
-            debut + MUR_QUALIFICATION_S, debut=debut)
+            fin, debut=debut)
     except Exception as exc:  # noqa: BLE001 - une qualification en panne ne sert rien
         return file, {}, exc
     confirmes = {e.numero for e in servis}
@@ -78,7 +95,8 @@ rapport = tapis_leger_rapport.rapport
 def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
            grains: int, maintenant: datetime, jours: int, graine: str,
            depot: Path, run, phases: dict, secondes: float,
-           budget_s: float) -> tuple[dict, int]:
+           budget_s: float,
+           echeance: float | None = None) -> tuple[dict, int]:
     """Le cap de livraisons, la qualification, puis le rapport de la fenetre.
 
     Trois temps dans l'ordre : le CAP ecarte les livraisons d'EPIC trop
@@ -93,7 +111,7 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     if rendu is not None:
         return rendu
     file, qualif, erreur = qualifier(file, lane, maintenant, jours,
-                                     classe["prs"], run)
+                                     classe["prs"], run, echeance=echeance)
     if erreur is not None:
         print(f"Qualification en echec ({erreur}) : repli chronologique.",
               file=sys.stderr)

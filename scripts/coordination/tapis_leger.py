@@ -137,8 +137,15 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     creation.
     """
     debut = time.monotonic()
+    # UNE echeance monotone pour TOUTE la commande (I6 de #28114) : la
+    # selection, la qualification et le repli se partagent le MEME budget.
+    # Avant, chaque etage repartait d'une horloge neuve (60 s la selection,
+    # 60 s la qualification) : une selection de 25 s suivie de 40 s de
+    # qualification depassait le contrat de la commande entiere.
+    echeance = debut + budget_s
     try:
-        classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+        classe = classer(lane, maintenant, jours, graine, depot, run, budget_s,
+                          echeance=echeance)
     except gh_bulk.LectureIncomplete:
         return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
     ancres = tapis_ancre.lire(lane)
@@ -167,7 +174,7 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     return lq.servir(classe=classe, file=file, fenetre=fenetre, origami=origami,
                      lane=lane, grains=grains, maintenant=maintenant, jours=jours,
                      graine=graine, depot=depot, run=run, phases=phases,
-                     secondes=secondes, budget_s=budget_s)
+                     secondes=secondes, budget_s=budget_s, echeance=echeance)
 
 
 # La sortie texte de la voie leger vit dans tapis_leger_texte (extraction

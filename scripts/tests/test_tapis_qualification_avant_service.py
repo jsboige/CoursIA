@@ -25,7 +25,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, tapis_leger
+from coordination import gh_bulk, tapis_ancre, tapis_leger
 from coordination import tapis_qualification as tq
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
@@ -188,3 +188,93 @@ def test_une_fenetre_entierement_refusee_bascule_sur_le_repli(monkeypatch,
     assert not (set(servis) & set(refuses)), \
         "aucun grain refuse n'est servi"
     assert rapport["qualification"]["repli"], "le motif du repli est dit"
+
+
+def test_le_budget_de_la_commande_borne_la_qualification(monkeypatch, tmp_path):
+    """I6 (#28114) : le budget est celui de la COMMANDE, pas celui de l'etage.
+
+    La reserve du coordinateur (25/11) : la qualification repartait d'une
+    horloge **neuve** (`debut + MUR_QUALIFICATION_S`, calculee apres la
+    lecture du pool), si bien qu'une selection de 25 s suivie de 40 s de
+    qualification depassait le contrat de 60 s de la commande entiere -- et le
+    repli n'avait plus de place.
+
+    Le test est au **point d'entree** (`tirage`), horloge controlee : la
+    selection consomme 28 s du budget de 30 s ; la qualification doit etre
+    **COUPEE** (fail-CLOSED : une decision non prise ne sert rien) et le repli
+    prendre le relais. Les **refus** et les candidats **non lus** restent
+    explicitement distingues.
+    """
+    import time as _time
+
+    from coordination import gh_selection, tapis_leger_fenetre
+
+    budget_s = 30.0
+    decalage = {"s": 0.0}
+    reel = _time.monotonic
+
+    def horloge_fausse() -> float:
+        """L'horloge simulee : le temps reel plus le temps SIMULE (`decalage`)."""
+        return reel() + decalage["s"]
+
+    monkeypatch.setattr(_time, "monotonic", horloge_fausse)
+
+    vue: dict = {}
+
+    def faux_lecture(run, depot=None, budget_s=30.0, horloge=None, echeance=None):
+        """La lecture du pool : elle consomme 28 s du budget de la commande."""
+        vue["echeance_lecture"] = echeance
+        vue["maintenant_lecture"] = horloge_fausse()
+        decalage["s"] += 28.0
+        noeuds = [_noeud(7 + k) for k in range(6)]
+        return [gh_selection.metadonnee(n) for n in noeuds], 28.0
+
+    monkeypatch.setattr(gh_selection, "lire_metadonnees_issues", faux_lecture)
+
+    def faux_qualification(candidats, lane, maintenant, jours, prs, run,
+                           echeance=None, **kw):
+        vue["echeance_qualif"] = echeance
+        vue["candidats"] = list(candidats)
+        arrete = horloge_fausse() > echeance
+        vue["arrete"] = arrete
+        refuses = {}
+        if candidats:
+            refuses[candidats[0]] = {"code": "HORSFLOTTE",
+                                     "motif": "hors flotte #17713"}
+        return [], refuses, [], arrete, 1, {"secondes": 0.0,
+                                            "premier_servable_s": None}
+
+    monkeypatch.setattr(tq, "qualifier", faux_qualification)
+    # L'ANCRE est ISOLÉE : le tirage ecrit l'etat de la lane dans le repertoire
+    # local de la machine -- un test qui lit l'ancre reelle faitdependre un
+    # test sans rapport de l'etat du poste (faux rouge mesure).
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    _cache_repli(tmp_path, monkeypatch, [9001, 9002, 9003])
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
+                                       _run_faux(nb=6), budget_s=budget_s)
+
+    assert code == 0
+    # L'ECHEANCE est MONOTONE : la selection et la qualification partagent la
+    # meme, et le temps du repli est reserve.
+    assert vue["echeance_lecture"] is not None
+    ecart = vue["echeance_lecture"] - vue["maintenant_lecture"]
+    assert ecart <= budget_s, \
+        "la selection ne repart pas sur une horloge neuve (60 s)"
+    assert ecart >= budget_s - 1.0, \
+        "l'echeance de la selection est celle du point d'entree"
+    assert vue["echeance_qualif"] == (vue["echeance_lecture"]
+                                      - tapis_leger_fenetre.RESERVE_REPLI_S), \
+        "la qualification partage l'echeance, moins le temps du repli"
+    # La selection a consomme sa part : la qualification est COUPEE.
+    assert vue["arrete"] is True, "la qualification est coupee, pas attendue"
+    assert rapport["qualification"]["budget_epuise"] is True
+    # Les REFUS et les candidats NON LUS restent distingues.
+    refus = {e["numero"] for e in rapport["qualification"]["ecartees"]}
+    non_qualifies = set(rapport["qualification"]["non_qualifies"])
+    assert refus, "le refus est declare (code + motif)"
+    assert refus.isdisjoint(non_qualifies), \
+        "un refus et un grain non lu sont deux choses distinctes"
+    assert non_qualifies, "les grains non decides sont declares"
+    assert rapport["qualification"]["repli"], "le motif du repli est dit"
+    assert rapport["voie"] == "repli", \
+        "la file confirmee vide bascule sur le repli chronologique"
