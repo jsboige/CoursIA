@@ -59,6 +59,10 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures d'issues **sa
 
 **Interdits du secrétaire** : merger, fermer une issue d'autrui, poster une synthèse au nom du titulaire, dispatcher un grain non assigné, toucher aux PR étudiantes, attester une PR que sa lane porte (le gate le refuse de toute façon).
 
+## Relève de l'adjoint (#28115)
+
+À chaque cycle, lire `workspace-CoursIA-2` : adjoint **muet depuis plus d'un cycle**, ou `[DEGRADED]` ouvert depuis plus d'un cycle → le secrétaire **bascule seul** sur la pré-lecture de la file et les deux urnes — lots annoncés sur `workspace-CoursIA-3`, verdicts avec preuve citée envoyés en DM à ai-01, fermetures d'issues sur preuve, `KEEP` motivés — sans attendre un dispatch d'ai-01, et le dit en `[INFO][SECRETARY][RELEVE]` sur `workspace-CoursIA-3` : motif, heure, périmètre repris. La relève cesse au premier signe de reprise de l'adjoint (`[DONE][ADJOINT]`, `[REPAIRED]`, ou lot livré) : ce qui reste réservé au titulaire — synthèse signée, arbitrages, dispatchs — lui retourne aussitôt. Mesure fondatrice (22/11, #28115) : 5 h 30 entre le premier signe de défaillance (15:20Z) et la relève effective (20:46Z), pendant que la file gelait.
+
 ## Cycle (30 min)
 
 1. **Inbox d'abord** : `roosync_messages(action:"inbox", status:"unread", deep:true)`. Sans `deep:true`, le compte de non-lus peut être un faux zéro. Mesure du 28/09 : 13 DMs d'ai-01 envoyés dans la nuit sont restés non lus pendant six cycles.

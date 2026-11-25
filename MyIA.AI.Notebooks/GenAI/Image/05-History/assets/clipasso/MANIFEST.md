@@ -1,6 +1,9 @@
 # Manifeste des figures — GenAI/Image/05-History/assets/clipasso
 
-Provenance des images cibles du notebook `05-2-CLIPasso-Semantic-Sketching.ipynb`.
+Provenance des images cibles et des esquisses du carnet **CLIPasso**.
+
+- **Pour refaire le parcours** : ouvrir le carnet depuis le [parcours principal de 05-History](../../README.md#parcours-principal), qui donne son nom courant.
+- **Pour retrouver les sorties citées ci-dessous** : consulter le [carnet CLIPasso au chemin utilisé pour ces figures](https://github.com/jsboige/CoursIA/blob/943d0754b4ac39efb15bcc01ac7234c4d4b944d4/MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb). Le numéro `05-2` désigne ce carnet dans les références d'exécution de septembre 2026.
 
 > **QA visuelle déléguée (merge-gate)** : ce MANIFEST est rédigé sur la lane `myia-po-2023:CoursIA` (GLM, sans vision). Les champs mécaniques (dimensions PIL, poids octets, provenance git/livre) sont vérifiés par outil ; les champs descriptifs (`Contenu réel vérifié`, alt-text) sont des descriptions de provenance — **la vérification visuelle firsthand est déléguée au merge-gate** (ai-01 ou lane CoursIA-2 MiniMax, doctrine vision des figures).
 

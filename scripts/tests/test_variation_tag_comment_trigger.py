@@ -177,3 +177,29 @@ def test_comment_job_entry_guard_requires_override_marker():
     assert "contains(github.event.comment.body, '[G-VAR-3 OVERRIDE]')" in cond, (
         "garde d'entree absent : tout commentaire de PR relance le job (#11782 -- 11 runs/edition mesures sur #11405)"
     )
+
+
+def test_every_adjacency_guard_call_passes_the_pr_number():
+    """#28234 : sans `--pr-number`, l'organe ne lit ni le diff de la PR ni
+    celui de son predecesseur, et l'exemption mecanique #14357 (MED/DEEP a
+    fichiers disjoints) reste fermee en CI, quel que soit le diff. Chaque job
+    qui invoque `variation_adjacency_guard.py` doit donc lui passer le numero,
+    et ce numero doit exister dans le job (env de step, env de job, ou
+    affectation dans le script).
+    """
+    wf = _load()
+    seen = []
+    for job_name, job in wf["jobs"].items():
+        for step in job.get("steps", []):
+            run = step.get("run", "") or ""
+            if "variation_adjacency_guard.py" not in run:
+                continue
+            seen.append(job_name)
+            assert '--pr-number "$PR_NUMBER"' in run, (
+                f"{job_name} : l'organe tourne sans --pr-number, l'exemption #14357 est fermee"
+            )
+            env = {**(job.get("env") or {}), **(step.get("env") or {})}
+            assert "PR_NUMBER" in env or "PR_NUMBER=" in run, (
+                f"{job_name} : --pr-number lit un PR_NUMBER que le job ne definit pas"
+            )
+    assert set(seen) >= {"check-variation-adjacency-required", COMMENT_JOB}, seen

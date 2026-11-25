@@ -1,0 +1,8 @@
+- name: "AgentSystems-02 Perception Active Valeur Information"
+  family: cross-series/AgentSystems
+  python: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb
+  csharp: MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27671) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (boucle percevoir-decider-agir, valeur d'information EVOI, perception active avec cout d'observation, exercices en stubs TODO) ; le code C# n'utilise que la BCL, aucune dependance externe. Correction pedagogique portee des deux cotes dans la meme PR (revue clusterManager + myia-ai-01) : (1) l'enonce de l'exercice 2 annoncait les attentes inversee par rapport au code de la cellule 3 (lancer si q < q* = 30/130, environ 0,23077) -- les deux attentes sont remises dans l'ordre du code ; (2) l'exercice 3 et la synthese presumait une chute de la valeur marginale du second capteur, alors que l'EVOI de l'analyse concurrentielle vaut 0 avant comme apres la lecture bonne (posterior 1/13) -- l'enonce demande desormais de comparer les deux valeurs et d'expliquer leur nullite, et la synthese limite l'arret a l'absence de valeur nette positive."
+    - "La serie cross-series/AgentSystems porte un README (cree avec le carnet 01) : la ligne 02 nomme les deux jumeaux Python et C# depuis cette PR ; l'insertion se fait aussi par la ligne **Navigation** croisee des deux jumeaux."

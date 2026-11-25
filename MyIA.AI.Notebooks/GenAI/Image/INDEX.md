@@ -145,10 +145,8 @@ MyIA.AI.Notebooks/GenAI/
     │   ├── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
     │   └── 04-5-MiniMax-Cloud-Image.ipynb
     │
-    ├── 05-History/                   # 📜 Racines pré-Stable-Diffusion
-    │   ├── 05-0-Generateurs-Symboliques.ipynb
-    │   ├── 05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb
-    │   └── 05-2-CLIPasso-Semantic-Sketching.ipynb
+    ├── 05-History/                   # Racines pré-Stable-Diffusion
+    │   └── README.md                 # Parcours principal et approfondissements
     │
     ├── examples/                     # 🎯 Exemples Sectoriels
     │   ├── science-diagrams.ipynb
@@ -161,6 +159,16 @@ MyIA.AI.Notebooks/GenAI/
 ```
 
 ---
+
+## Parcours historique
+
+Le [parcours 05-History](05-History/README.md#parcours-principal) compare trois façons de produire des images :
+
+- **Écrire la règle** : le programme fixe la construction, comme dans un L-système ou un motif de symétrie.
+- **Apprendre le générateur** : le GAN apprend à partir d’un corpus ; le carnet de portraits examine ensuite si le générateur copie des exemples d’entraînement.
+- **Guider avec CLIP** : DiscoDiffusion guide une diffusion en espace pixel, tandis que CLIPasso optimise les traits d’une esquisse. Le même type de signal sémantique intervient dans deux procédés distincts.
+
+Le guide indique aussi les [approfondissements](05-History/README.md#approfondissements) sur la démoscène, la description courte et la symétrie, ainsi que les [prérequis](05-History/README.md#prérequis) pour ouvrir chaque carnet.
 
 ## 📊 Notebooks par Niveau
 
