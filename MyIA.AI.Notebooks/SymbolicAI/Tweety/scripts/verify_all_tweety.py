@@ -58,8 +58,8 @@ TWEETY_NOTEBOOKS = [
     "Tweety-04-Belief-Revision-Python.ipynb",
     "Tweety-05-Abstract-Argumentation-Python.ipynb",
     "Tweety-06-Structured-Argumentation-Python.ipynb",
-    # Tweety-7 divided into 7a and 7b
-    "Tweety-07a-Extended-Frameworks-Python.ipynb",
+    # Palier 07 (ex-07a) et 07b
+    "Tweety-07-Extended-Frameworks-Python.ipynb",
     "Tweety-07b-Ranking-Probabilistic-Python.ipynb",
     "Tweety-08-Agent-Dialogues-Python.ipynb",
     "Tweety-09-Preferences-Python.ipynb",
@@ -113,7 +113,7 @@ KNOWN_ISSUES = {
         "AF Learning disabled - ClassCastException (Tautology cannot be cast to AssociativePlFormula)",
         "Limitation: Internal Tweety bug, section commented out"
     ],
-    "Tweety-07a-Extended-Frameworks-Python.ipynb": [
+    "Tweety-07-Extended-Frameworks-Python.ipynb": [
         "ADF section may fail - requires native SAT solver",
         "Other sections (Bipolar, WAF, SAF, SetAF, Extended) work correctly"
     ],
