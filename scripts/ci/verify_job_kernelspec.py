@@ -40,6 +40,11 @@ QUATRE CONTROLES, dont deux NEGATIFS
    controle compare donc l'IDENTITE de l'interpreteur : son binaire
    resolu ET le prefixe qu'il annonce lui-meme.
 
+   Un prefixe NON MESURABLE (timeout, sortie vide, code non nul) n'est pas
+   un prefixe identique : il dit qu'on ne sait pas. Le controle le rend
+   alors INCIDENT (code 2) -- un vert sur une mesure ABSENTE serait un
+   succes SILENCIEUX, precisement ce que ce script existe pour attraper.
+
 Le noyau absent est un ECHEC, pas un incident : un job sans noyau ne peut
 pas lancer la legende papermill.
 
@@ -79,6 +84,30 @@ class EnvironmentInconnu(Exception):
     """L'environnement de mesure n'est pas celui du job."""
 
 
+class IncidentViolation(str):
+    """Une violation ou l'ENVIRONNEMENT n'a pas pu etre MESURE.
+
+    Un prefixe non mesurable (timeout, sortie vide, code non nul) ne dit pas
+    que les deux environnements sont identiques : il dit qu'on ne le SAIT
+    pas. Rendre cela non vert est la seule lecture honnete -- un vert sur une
+    mesure ABSENTE est un succes SILENCIEUX, precisement le defaut que ce
+    script existe pour attraper.
+    """
+
+
+def verdict_de(violations: list[str]) -> tuple[str, int]:
+    """Le verdict et le code de sortie correspondants aux violations.
+
+    `INCIDENT` prime sur `VIOLATION` : un incident (environnement non mesure)
+    n'est pas un controle rate -- et le dit plus fort.
+    """
+    if any(isinstance(v, IncidentViolation) for v in violations):
+        return "INCIDENT", RC_INCIDENT
+    if violations:
+        return "VIOLATION", RC_VIOLATION
+    return "OK", RC_OK
+
+
 def _normalise(path: str) -> str:
     """Chemin comparable : resolu (symlinks inclus), casse et separateurs unis.
 
@@ -103,7 +132,8 @@ def prefixe_de(interpreteur: str) -> str | None:
     ne distinguent plus rien.
 
     Rend `None` quand l'interpreteur ne peut pas etre lance -- un prefixe
-    non mesurable n'est pas un prefixe different.
+    non mesurable n'est pas un prefixe different, et n'est pas non plus un
+    prefixe identique : le controleur en fait un INCIDENT.
     """
     try:
         fait = subprocess.run(
@@ -192,8 +222,21 @@ def controler(
             # est ce qui les distingue encore.
             prefixe_lanceur = prefixes(lanceur)
             prefixe_job = prefixes(interpreteur_attendu)
-            if (prefixe_lanceur is not None and prefixe_job is not None
-                    and prefixe_lanceur != prefixe_job):
+            if prefixe_lanceur is None:
+                violations.append(IncidentViolation(
+                    f"prefixe du noyau non mesurable : le lanceur "
+                    f"`{lanceur}` n'annonce aucun `sys.prefix` (timeout, "
+                    f"sortie vide ou code non nul) -- l'identite du noyau "
+                    f"n'est pas verifiee"
+                ))
+            elif prefixe_job is None:
+                violations.append(IncidentViolation(
+                    f"prefixe du job non mesurable : l'interpreteur "
+                    f"`{interpreteur_attendu}` n'annonce aucun `sys.prefix` "
+                    f"(timeout, sortie vide ou code non nul) -- l'identite "
+                    f"du noyau n'est pas verifiee"
+                ))
+            elif prefixe_lanceur != prefixe_job:
                 violations.append(
                     f"environnement different : le noyau lance `{lanceur}` "
                     f"(prefixe `{prefixe_lanceur}`), le job utilise "
@@ -300,7 +343,7 @@ def main(argv: list[str] | None = None) -> int:
     violations.extend(controler(
         argv_noyau, repertoire_du_spec, interpreteur, repertoire_du_job))
 
-    verdict = "OK" if not violations else "VIOLATION"
+    verdict, code = verdict_de(violations)
     if args.json:
         print(json.dumps({
             "verdict": verdict,
@@ -312,18 +355,22 @@ def main(argv: list[str] | None = None) -> int:
             "argv": argv_noyau,
             "violations": violations,
         }, indent=2, ensure_ascii=False))
-        return RC_OK if not violations else RC_VIOLATION
+        return code
 
     if not violations:
         print(f"OK : noyau `{KERNEL_NAME}` resolu dans `{repertoire_du_spec}`, "
               f"interpreteur `{argv_noyau[0]}` (job : `{repertoire_du_job}`)")
         return RC_OK
 
-    print(f"{len(violations)} violation(s) sur le kernelspec du job :",
-          file=sys.stderr)
+    if verdict == "INCIDENT":
+        print("INCIDENT : l'identite du noyau n'a pas pu etre verifiee :",
+              file=sys.stderr)
+    else:
+        print(f"{len(violations)} violation(s) sur le kernelspec du job :",
+              file=sys.stderr)
     for violation in violations:
         print(f"  - {violation}", file=sys.stderr)
-    return RC_VIOLATION
+    return code
 
 
 if __name__ == "__main__":

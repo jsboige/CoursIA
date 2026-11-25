@@ -119,6 +119,128 @@ def test_two_environments_sharing_a_binary_and_a_prefix_are_accepted(tmp_path):
     assert violations == [], f"un meme environnement ne doit rien signaler : {violations}"
 
 
+def _deux_lanceurs_meme_binaire(tmp_path):
+    """Deux chemins distincts qui designent le MEME binaire.
+
+    Le cas des virtualenvs distincts : les chemins ne distinguent plus rien,
+    seul le prefixe -- ou son absence de mesure -- le peut encore.
+    """
+    lanceur_job = tmp_path / "envA" / "bin" / "python"
+    lanceur_job.parent.mkdir(parents=True)
+    lanceur_job.write_text("", encoding="utf-8")
+    autre = tmp_path / "envB" / "bin" / ".." / ".." / "envA" / "bin" / "python"
+    assert os.path.realpath(autre) == os.path.realpath(lanceur_job)
+    return lanceur_job, autre
+
+
+def test_an_unmeasurable_kernel_prefix_is_not_a_green_result(tmp_path):
+    """CONTROLE NEGATIF : le prefixe du NOYAU n'a pas pu etre mesure.
+
+    Un prefixe non mesurable (timeout, sortie vide, code non nul) ne dit pas
+    que les deux environnements sont identiques : il dit qu'on ne le SAIT
+    pas. Le rendre vert serait un succes SILENCIEUX -- l'identite du noyau
+    n'a pas ete verifiee, et le controle ne l'a pas signale.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    lanceur_job, autre = _deux_lanceurs_meme_binaire(tmp_path)
+
+    violations = vks.controler(
+        [str(autre), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur_job),
+        str(job_dir),
+        prefixes=lambda executable: None if executable == str(autre) else "/job",
+    )
+
+    assert len(violations) == 1, violations
+    assert "prefixe du noyau non mesurable" in violations[0], violations[0]
+    verdict, code = vks.verdict_de(violations)
+    assert verdict == "INCIDENT", verdict
+    assert code == vks.RC_INCIDENT, code
+
+
+def test_an_unmeasurable_job_prefix_is_not_a_green_result(tmp_path):
+    """CONTROLE NEGATIF : le prefixe du JOB n'a pas pu etre mesure.
+
+    Le cas symetrique : c'est l'interpreteur DU JOB qui ne repond pas. Le
+    verdict doit rester non vert, pour la meme raison.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    lanceur_job, autre = _deux_lanceurs_meme_binaire(tmp_path)
+
+    violations = vks.controler(
+        [str(autre), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur_job),
+        str(job_dir),
+        prefixes=lambda executable: "/job" if executable == str(autre) else None,
+    )
+
+    assert len(violations) == 1, violations
+    assert "prefixe du job non mesurable" in violations[0], violations[0]
+    verdict, code = vks.verdict_de(violations)
+    assert verdict == "INCIDENT", verdict
+    assert code == vks.RC_INCIDENT, code
+
+
+def test_a_measured_difference_stays_a_violation_not_an_incident(tmp_path):
+    """TEMOIN : la DIFFERENCE mesuree reste une VIOLATION, pas un incident.
+
+    L'incident designe une MESURE ABSENTE ; une difference constatee reste
+    un controle rate, avec son propre code de sortie.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    lanceur_job, autre = _deux_lanceurs_meme_binaire(tmp_path)
+
+    violations = vks.controler(
+        [str(autre), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur_job),
+        str(job_dir),
+        prefixes=lambda executable: "/job" if executable == str(autre) else "/autre",
+    )
+
+    assert len(violations) == 1, violations
+    assert "environnement different" in violations[0], violations[0]
+    verdict, code = vks.verdict_de(violations)
+    assert verdict == "VIOLATION", verdict
+    assert code == vks.RC_VIOLATION, code
+
+
+def test_the_cli_does_not_print_ok_when_a_measurement_is_missing(monkeypatch,
+                                                                 tmp_path,
+                                                                 capsys):
+    """TEMOIN DE BOUT : le CLI ne dit pas OK quand une mesure manque.
+
+    La reserve du coordinateur portait sur ce point precis : la liste des
+    violations rendue vide, le CLI imprimait `OK`, et l'identite du noyau
+    n'avait ete verifiee par personne.
+    """
+    job_dir = tmp_path / "ks"
+    job_dir.mkdir()
+    monkeypatch.setenv(vks.JOB_DIR_VAR, str(job_dir))
+    monkeypatch.setattr(vks, "resoudre_le_noyau", _noyau_absent)
+    monkeypatch.setattr(
+        vks, "controler",
+        lambda *args, **kwargs: [
+            vks.IncidentViolation(
+                "prefixe du noyau non mesurable : le lanceur `x` n'annonce "
+                "aucun `sys.prefix`")])
+
+    rc = vks.main([])
+
+    sortie = capsys.readouterr()
+    assert rc == vks.RC_INCIDENT, rc
+    assert "OK" not in sortie.out, sortie.out
+    assert "INCIDENT" in sortie.err, sortie.err
+
+
 def test_a_spec_resolved_outside_the_job_directory_is_reported(tmp_path):
     """CONTROLE NEGATIF : le spec resolu est hors du repertoire du job.
 
