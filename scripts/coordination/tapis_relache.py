@@ -25,39 +25,26 @@ Deux lectures que la forme reelle des rendus impose :
 Le vocabulaire est **ferme** : un motif inconnu n'est jamais traite comme un
 echec d'outil (fail-CLOSED -- le grain reste gele pour tous), et un motif
 d'echec d'outil que personne ne connait ne gele que la lane qui l'a rendu.
+
+**Le motif courant, pas l'historique cite** (review du coordinateur du
+25/11 sur #28440) : un code d'echec lu n'importe ou dans le commentaire
+degelait le grain pour toute la flotte, meme quand la lane rendait le grain
+pour une barriere reelle et ne **rappellait** qu'un ancien `verify-reject`.
+La lecture du motif courant est dans `tapis_relache_motif`.
 """
 from __future__ import annotations
 
-import re
 from datetime import datetime
 
 from coordination.tapis_marqueurs import OUVRE
+from coordination.tapis_relache_motif import (MOTIFS_ECHEC_OUTIL,
+                                              codes, codes_historiques,
+                                              est_echec_outil)
 
-#: Les motifs d'echec d'OUTIL mesures (dispatch `c0035b`, 24/11) : l'echec est
-#: dans la chaine d'outillage de la lane, pas dans le grain. Un grain rendu
-#: pour l'un de ces motifs n'est pas gele pour la flotte -- seulement pour la
-#: lane qui l'a rendu.
-MOTIFS_ECHEC_OUTIL = frozenset({
-    "stage2-call-failed",
-    "verify-reject",
-    "refused-revise-trace-mismatch",
-    "built-structure-mismatch",
-    "stage2-unparsed",
-})
-
-#: Un motif est un CODE : il se reconnait a ses separateurs (`-`, `_`), pas a
-#: un sous-motif (`verify-reject` ne se lit pas dans `verify-rejected`).
-_TOKEN_RE = re.compile(r"[\w-]+")
-
-
-def est_echec_outil(corps: str) -> bool:
-    """Le rendu dit-il un echec d'OUTIL de la lane ?
-
-    Fail-CLOSED : un motif inconnu n'est **pas** un echec d'outil, donc le
-    grain reste gele pour toute la flotte (le comportement d'avant).
-    """
-    jetons = {t.lower() for t in _TOKEN_RE.findall(corps or "")}
-    return any(motif in jetons for motif in MOTIFS_ECHEC_OUTIL)
+#: Les motifs d'echec d'OUTIL et la lecture du **motif courant** vivent dans
+#: `tapis_relache_motif` (extraction du 25/11, review du coordinateur sur
+#: #28440) : un code d'echec cite au passe n'est pas le motif courant du
+#: rendu. Les alias gardent les appelants intacts.
 
 
 def portee(evts: list, evt) -> str | None:

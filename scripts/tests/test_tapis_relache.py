@@ -159,6 +159,52 @@ def test_le_relachee_ne_depend_plus_de_la_lane_pour_une_barriere():
     assert tapis_attente.relachee(evts, NOW, AUTRE) is not None
 
 
+# --- LE MOTIF COURANT, PAS L'HISTORIQUE CITE (review du 25/11, #28440) ----
+
+def test_un_code_historique_ne_degele_pas_le_grain():
+    """Barriere **courante** + code **historique** : le gel reste global.
+
+    La lane rend le grain parce que le GPU partage est indisponible, et elle
+    rappelle que son essai **precedent** a donne `verify-reject`. Le code
+    cite est un souvenir : le motif courant est une barriere reelle, qui
+    gele toute la flotte. Avant le correctif, le code d'echec etait lu
+    n'importe ou dans le commentaire : le grain etait degele pour les
+    autres lanes, sur un motif qui n'etait pas le sien."""
+    rendu = (f"[RELEASED] lane {AUTRE} -- le GPU partage est indisponible\n\n"
+             "Rappel : l'essai precedent a donne verify-reject "
+             "(fournee w3p, 22/11).\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "une barriere reelle gele toute la flotte"
+    assert "echec d'outil" not in e.motif, "le code cite n'est pas le motif"
+
+
+def test_un_melange_de_codes_reste_ambigu():
+    """Un code courant et un code historique dans le meme rendu : le motif
+    reste ambigu, donc le gel reste global (fail-CLOSED)."""
+    rendu = (f"[RELEASED] lane {AUTRE} -- echec d'outil sur l'essai courant\n\n"
+             "Essais : (1) verify-reject (fournee w3p, 22/11) ; "
+             "l'essai precedent avait donne stage2-call-failed.\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le melange ne degele rien"
+    assert "echec d'outil" not in e.motif
+
+
+def test_la_forme_rust_mesuree_reste_un_echec_d_outil():
+    """Le format Rust mesure (22/11) n'est pas un souvenir : les codes y
+    sont listes avec leur fournee et leur date, sans marqueur du passe. Le
+    correctif ne doit pas casser cette forme."""
+    from coordination import tapis_relache
+    rendu = ("[RELEASED] Coalitions-01-SMT (Rust) -- 2 essais contenu consommes\n"
+             "\n"
+             "Essais contenu : (1) verify-reject (fournee w3p, 22/11) ; "
+             "(2) built-structure-mismatch (fournee w3q, 22/11 11:37Z). "
+             "Interruptions non comptees : 1x stage2-call-failed (w3r2, 21/11).\n")
+    assert tapis_relache.est_echec_outil(rendu)
+    assert not tapis_relache.codes_historiques(rendu)
+
+
 # --- le plafond de l'organe -------------------------------------------------
 
 # La liste des plafonds des organes du tapis vit dans `test_tapis_rapide.py`,
@@ -168,7 +214,8 @@ def test_le_relachee_ne_depend_plus_de_la_lane_pour_une_barriere():
 # fait grossir. L'entree de cet organe vit donc dans SON module de test,
 # qui n'est pas epingle.
 
-@pytest.mark.parametrize(("nom", "plafond"), [("tapis_relache.py", 100)])
+@pytest.mark.parametrize(("nom", "plafond"), [("tapis_relache.py", 100),
+                                              ("tapis_relache_motif.py", 105)])
 def test_plafond_de_lignes(nom, plafond):
     """L'organe tient son plafond de lignes, et aucune de ses fonctions
     n'en depasse 60."""
