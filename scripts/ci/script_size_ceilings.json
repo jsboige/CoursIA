@@ -62,8 +62,8 @@
       "note": "Parite des jumeaux : cible T7 (`_main`, 1 088 lignes). Plafond pose sur la taille du 13/11. Le plafond DESCEND : la scission T7 du 16/11 (#26933) a tire `_main` dans trois modules freres (twin_parity_attest.py, twin_parity_census.py, twin_parity_cli.py) -- 3 321 -> 2 367 lignes. Releve au 22/11 dans cette PR (#28121) : le repli legacy limite aux fichiers .yaml ajoute 16 lignes de garde (2 367 -> 2 383) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici. Releve au 23/11 dans cette PR (fix #28122) : la discrimination d'orphelin A VENIR (blob enregistre absent de la base du squash) part dans un QUATRIEME module frere (twin_parity_base.py, 60 lignes) ; l'organe epingle ne porte que l'appel (+10 lignes : 2 383 -> 2 393)"
     },
     "scripts/notebook_tools/generate_catalog.py": {
-      "lines": 3089,
-      "note": "Generation du catalogue : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 171 lignes depuis la mesure du 13/11 (2918 -> 3089)"
+      "lines": 3099,
+      "note": "Generation du catalogue : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 171 lignes depuis la mesure du 13/11 (2918 -> 3089). Releve au 24/11 dans cette PR (#28127) : ajout du Kernel Summary et de son decompte par noyau (+10 lignes)."
     },
     "scripts/pick_idle_grain.py": {
       "lines": 16440,
