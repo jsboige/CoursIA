@@ -430,6 +430,9 @@ def test_la_part_mediane_est_rendue_sous_les_deux_populations(monkeypatch, capsy
     assert parts["jobs_avec_etape_checkout"]["part_du_temps_total"] == 0.5
     assert parts["jobs_avec_etape_checkout"]["ic95_mediane"] is None
     assert parts["jobs_avec_checkout_sans_duree_de_job"] == 0
+    assert parts["jobs_sans_duree_valide"] == 0
+    assert parts["jobs_sans_duree_par_etat"] == {}
+    assert parts["jobs_mesures_par_conclusion"] == {"?": 40}
     assert parts["parts_superieures_a_1"] == 0
     # Les sommes par workflow suivent : les runs A seuls ont un checkout.
     rows = {row["workflow"]: row for row in report["rows"]}
@@ -512,6 +515,8 @@ def test_un_job_avec_checkout_sans_duree_de_job_est_compte_a_part(monkeypatch, c
     assert parts["jobs_avec_etape_checkout"]["jobs"] == 0
     assert parts["jobs_avec_checkout_sans_duree_de_job"] == 1
     assert parts["jobs_sans_duree_valide"] == 1
+    assert parts["jobs_sans_duree_par_etat"] == {"?:?": 1}
+    assert parts["jobs_mesures_par_conclusion"] == {}
 
 
 def test_checkout_inacheve_n_est_pas_compte_comme_zero(monkeypatch, capsys):

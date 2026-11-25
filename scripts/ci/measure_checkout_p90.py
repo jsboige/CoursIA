@@ -74,7 +74,7 @@ import random
 import statistics
 import subprocess
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
@@ -379,6 +379,8 @@ def main() -> int:
     checkout_duree_inconnue = 0
     jobs_sans_duree = 0
     parts_superieures_a_1 = 0
+    etats_sans_duree: Counter = Counter()
+    conclusions_mesurees: Counter = Counter()
     for run in runs:
         jobs = collect_jobs(run["id"])
         parts_du_run: list[float] = []
@@ -429,11 +431,13 @@ def main() -> int:
             # et reste hors de la population « jobs avec checkout ».
             if total is None or total <= 0:
                 jobs_sans_duree += 1
+                etats_sans_duree[f"{job.get('status') or '?'}:{job.get('conclusion') or '?'}"] += 1
                 if checkout_present:
                     avec_checkout_sans_duree += 1
             elif checkout_present and found is None:
                 checkout_duree_inconnue += 1
             else:
+                conclusions_mesurees[job.get("conclusion") or "?"] += 1
                 part = (found or 0.0) / total
                 parts_du_run.append(part)
                 somme_tous[0] += found or 0.0
@@ -533,7 +537,12 @@ def main() -> int:
             somme_avec[1],
         ),
         "jobs_avec_checkout_sans_duree_de_job": avec_checkout_sans_duree,
+        # Un job sans duree mesurable (saute, en file, annule avant de
+        # demarrer) n'est dans aucune population : le rapport dit lesquels,
+        # pour que la taille des populations ne se devine pas.
         "jobs_sans_duree_valide": jobs_sans_duree,
+        "jobs_sans_duree_par_etat": dict(sorted(etats_sans_duree.items())),
+        "jobs_mesures_par_conclusion": dict(sorted(conclusions_mesurees.items())),
         "jobs_checkout_sans_duree_valide": checkout_duree_inconnue,
         "parts_superieures_a_1": parts_superieures_a_1,
     }
