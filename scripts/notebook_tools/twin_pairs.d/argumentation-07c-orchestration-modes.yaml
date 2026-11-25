@@ -1,0 +1,7 @@
+- name: "Argumentation-07c Orchestration Modes"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07c-Orchestration-Modes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07c-Orchestration-Modes-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Port C# BCL des calculs sur les 14 observations historiques ; aucun nouveau run fournisseur. conversation_real reste non mesuré."
