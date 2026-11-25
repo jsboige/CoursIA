@@ -244,8 +244,6 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Video/README.md"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/corpus/encrypted/README.md"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/corpus/README.md"
-    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/README.md"
-    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/README.md"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/README.md"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/README.md"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/README.md"

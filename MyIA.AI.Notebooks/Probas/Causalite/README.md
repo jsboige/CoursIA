@@ -91,4 +91,4 @@ Les carnets utilisent Python ; les paliers 04 à 07 déclarent le noyau `coursia
 
 ## Pour aller plus loin — recherche
 
-Comparer [l'intervention par graphe de facteurs](../Infer/Infer-05-Causal-Inference.ipynb), [l'opérateur `pm.do`](../PyMC/PyMC-05-Causal-Inference.ipynb) et [le contrefactuel logique](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb). L'[émergence causale](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) pose une question différente : à quelle échelle décrire le système pour rendre ses transitions plus informatives ?
+Comparer [l'intervention par graphe de facteurs](../Infer/Infer-05-Causal-Inference.ipynb), [l'opérateur `pm.do`](../PyMC/PyMC-05-Causal-Inference.ipynb) et [le contrefactuel logique](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb). L'[émergence causale](../../IIT/ICT-Series/ICT-04-CausalEmergence-Python.ipynb) pose une question différente : à quelle échelle décrire le système pour rendre ses transitions plus informatives ?

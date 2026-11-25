@@ -307,16 +307,16 @@ pour revenir à des calculs IIT stricts sur de petits systèmes.
 ```
 IIT/
 ├── ICT-0-Framing.md                       # ce document
-├── ICT-01-PhiTrajectories-Python.ipynb            # ✅ trajectoires de Φ (vrai PyPhi)
-├── ICT-02-SelfSortingMorphogenesis-Python.ipynb   # ✅ premier livrable (#4588)
-├── ICT-03-RobustnessDelayedGratification-Python.ipynb  # ✅ étude quantitative
-├── ICT-04-ChimericArraysKinAggregation-Python.ipynb  # ✅ jeu de règles riche : agrégation « kin » émergente
-├── ICT-05-CausalEmergence-Python.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
-├── ICT-06-SortingToTPM-CausalEmergence-Python.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
-├── ICT-07-ScaleFreeSignatures-Python.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
-├── ICT-08-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
-├── ICT-09-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
-├── ICT-10-CatastropheGrammar-Python.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
+├── ICT-02-PhiTrajectories-Python.ipynb            # ✅ trajectoires de Φ (vrai PyPhi)
+├── ICT-03-SelfSortingMorphogenesis-Python.ipynb   # ✅ premier livrable (#4588)
+├── ICT-03b-RobustnessDelayedGratification-Python.ipynb  # ✅ étude quantitative
+├── ICT-03c-ChimericArraysKinAggregation-Python.ipynb  # ✅ jeu de règles riche : agrégation « kin » émergente
+├── ICT-04-CausalEmergence-Python.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
+├── ICT-04b-SortingToTPM-CausalEmergence-Python.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
+├── ICT-04c-ScaleFreeSignatures-Python.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
+├── ICT-05-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
+├── ICT-05b-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
+├── ICT-06-CatastropheGrammar-Python.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
 ├── ICT-20-FeatureCatastrophes/ICT-22b-CausalInterventionEngine-Python.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
@@ -543,7 +543,7 @@ ICT mesure ce que les modèles font **vraiment**, pas ce qu'on espérait. ICT-2 
 le toy model minimal reproduit fidèlement la robustesse et le délai de gratification, mais
 **pas** l'agrégation « kin » positive du papier (ses règles uni-directionnelles produisent au
 contraire des impasses de coordination). Le notebook le dit honnêtement et renvoie l'agrégation
-à ICT-4. [ICT-4](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb) tient cette promesse avec un jeu de
+à ICT-4. [ICT-4](ICT-03c-ChimericArraysKinAggregation-Python.ipynb) tient cette promesse avec un jeu de
 règles plus riche — et la même discipline : l'agrégation émerge, mais **seulement** dans les
 degrés de liberté laissés par le tri (sans valeurs répétées, elle disparaît), ce que le notebook
 mesure au lieu de le proclamer. Cette discipline — exécuter, mesurer, narrer le résultat réel —
