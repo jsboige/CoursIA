@@ -1,0 +1,264 @@
+- name: "App-12 Connect Four"
+  family: Search / Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Rust.ipynb
+  measures:
+    - id: coups_legaux
+      description: "Coups legaux sur un plateau vide : les sept colonnes, dans l'ordre ascendant. Structurel, independant du langage"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'Coups legaux : (\[[^\]]*\])'
+          transform: text
+        rust:
+          cell: 6
+          pattern: 'Coups legaux : (\[[^\]]*\])'
+          transform: text
+        csharp:
+          cell: 5
+          pattern: 'Coups legaux : (\[[^\]]*\])'
+          transform: text
+    - id: jetons_poses
+      description: "Nombre de jetons poses apres la demonstration de trois coups"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'Jetons poses : (\d+)'
+          transform: int
+        rust:
+          cell: 6
+          pattern: 'Jetons poses : (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas ce compte : sa cellule de demonstration
+            remplace le tirage par un plateau ecrit a la main et affiche
+            seulement le rendu et les coups legaux. Le compte lui-meme n'est pas
+            une grandeur de reference cote C#.
+    - id: score_rouge
+      description: "Evaluation heuristique du joueur 1 (Rouge) sur la position de demonstration a 8 coups"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: 'Score joueur 1 \(Rouge\) : (-?\d+)'
+          transform: int
+        rust:
+          cell: 17
+          pattern: 'Score joueur 1 \(Rouge\) : (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le C# publie bien un score (9 pour Rouge, 5 pour Jaune, avantage
+            Rouge +4) mais sur SA PROPRE position de demonstration : un autre
+            enchainement de coups, un autre plateau. Meme fonction d'evaluation,
+            autre entree : la grandeur n'est pas comparable telle quelle, donc
+            declaree ABSENTE ici plutot que comparee a une valeur differente.
+    - id: score_jaune
+      description: "Evaluation heuristique du joueur 2 (Jaune) sur la meme position de demonstration"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: 'Score joueur 2 \(Jaune\) : (-?\d+)'
+          transform: int
+        rust:
+          cell: 17
+          pattern: 'Score joueur 2 \(Jaune\) : (-?\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Voir score_rouge : autre position de demonstration cote C#.
+    - id: avantage
+      description: "Camp qui mene et ecart absolu, tel qu'affiche par la cellule d'evaluation"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: 'Avantage : ([^\(]+\(\+\d+\))'
+          transform: text
+        rust:
+          cell: 17
+          pattern: 'Avantage : ([^\(]+\(\+\d+\))'
+          transform: text
+        csharp:
+          absent: >-
+            Voir score_rouge : autre position de demonstration cote C#.
+    - id: minimax_coups
+      description: "Longueur de la partie Minimax(d=4) contre l'IA aleatoire, graine 123. Le generateur Rust reproduit MT19937 de CPython, donc la suite de coups doit coincider"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: 'Minimax gagne en (\d+) coups'
+          transform: int
+        rust:
+          cell: 22
+          pattern: 'Minimax gagne en (\d+) coups'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne joue pas cette partie : sa cellule de duel utilise
+            son propre generateur de nombres aleatoires (les colonnes jouees
+            different des le premier coup) et une autre graine.
+    - id: profondeur_2_victoires
+      description: "Victoires de Minimax a profondeur 2 sur dix parties contre l'IA aleatoire, graines game_i*100"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: 'Minimax\(d=2\) : (\d+)/10'
+          transform: int
+        rust:
+          cell: 25
+          pattern: 'Minimax\(d=2\) : (\d+)/10'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas la comparaison des profondeurs : il
+            s'arrete au duel unique contre l'IA aleatoire.
+    - id: profondeur_4_victoires
+      description: "Victoires de Minimax a profondeur 4 sur dix parties contre l'IA aleatoire"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: 'Minimax\(d=4\) : (\d+)/10'
+          transform: int
+        rust:
+          cell: 25
+          pattern: 'Minimax\(d=4\) : (\d+)/10'
+          transform: int
+        csharp:
+          absent: >-
+            Voir profondeur_2_victoires : pas de comparaison des profondeurs
+            cote C#.
+    - id: profondeur_6_victoires
+      description: "Victoires de Minimax a profondeur 6 sur dix parties contre l'IA aleatoire"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: 'Minimax\(d=6\) : (\d+)/10'
+          transform: int
+        rust:
+          cell: 25
+          pattern: 'Minimax\(d=6\) : (\d+)/10'
+          transform: int
+        csharp:
+          absent: >-
+            Voir profondeur_2_victoires : pas de comparaison des profondeurs
+            cote C#.
+    - id: greedy_coups
+      description: "Longueur de la partie Greedy contre l'IA aleatoire, graine 42"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 36
+          pattern: 'Greedy gagne en (\d+) coups'
+          transform: int
+        rust:
+          cell: 33
+          pattern: 'Greedy gagne en (\d+) coups'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne porte pas d'IA gloutonne : ni la partie, ni sa
+            longueur.
+    - id: tournoi_victoires_minimax6
+      description: "Victoires de Minimax(d=6) dans le tournoi a cinq IA (six parties par paire, dix rencontres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 42
+          pattern: 'Minimax\(d=6\)\s+(\d+)'
+          transform: int
+        rust:
+          cell: 41
+          pattern: 'Minimax\(d=6\)\s+(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne comporte pas de tournoi : son carnet s'arrete apres
+            le duel contre l'IA aleatoire. Rien a comparer, et ce n'est pas une
+            sortie manquante.
+    - id: tournoi_victoires_random
+      description: "Victoires de l'IA aleatoire dans le meme tournoi : la borne basse du classement"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 42
+          pattern: '(?m)^Random\s+(\d+)\s+\d+\s+\d+\s+\d+'
+          transform: int
+        rust:
+          cell: 41
+          pattern: '(?m)^Random\s+(\d+)\s+\d+\s+\d+\s+\d+'
+          transform: int
+        csharp:
+          absent: >-
+            Voir tournoi_victoires_minimax6 : pas de tournoi cote C#.
+    - id: tournoi_matrice_mcts_minimax6
+      description: "Cellule de la matrice des confrontations : bilan de MCTS(500) contre Minimax(d=6), lu sur la ligne MCTS"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 42
+          pattern: 'MCTS\(500\)\s+6W-0D-0L\s+6W-0D-0L\s+0W-0D-6L\s+(2W-0D-4L)'
+          transform: text
+        rust:
+          cell: 41
+          pattern: 'MCTS\(500\)\s+6W-0D-0L\s+6W-0D-0L\s+0W-0D-6L\s+(2W-0D-4L)'
+          transform: text
+        csharp:
+          absent: >-
+            Voir tournoi_victoires_minimax6 : pas de tournoi, donc pas de
+            matrice des confrontations.
+    - id: benchmark_ab_classique
+      description: "Victoires de l'alpha-beta a profondeur fixe 4 contre l'IA aleatoire, sur trois parties"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 55
+          pattern: 'AB-classic \(d=4\): (\d+)/3'
+          transform: int
+        rust:
+          cell: 53
+          pattern: 'AB-classic \(d=4\): (\d+)/3'
+          transform: int
+        csharp:
+          absent: >-
+            Le benchmark des deux approches AIMA n'existe pas cote C# : le
+            carnet s'arrete avant le cadre etat/action/test terminal.
+    - id: benchmark_id_ab
+      description: "Victoires de l'alpha-beta a approfondissement iteratif (0,5 s par coup) contre l'IA aleatoire, sur trois parties"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 55
+          pattern: 'ID-AB \(0\.5s\):\s+(\d+)/3'
+          transform: int
+        rust:
+          cell: 53
+          pattern: 'ID-AB \(0\.5s\):\s+(\d+)/3'
+          transform: int
+        csharp:
+          absent: >-
+            Voir benchmark_ab_classique : pas de benchmark AIMA cote C#.

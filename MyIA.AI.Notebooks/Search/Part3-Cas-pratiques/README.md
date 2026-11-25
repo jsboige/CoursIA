@@ -67,11 +67,11 @@ flowchart LR
 
 ## Cas pratiques Search — Puissance 4
 
-Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS.
+Cinq notebooks autour du Puissance 4 — deux Python, deux C# et un Rust — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS ; le jumeau Rust reprend le premier pas à pas, sans aucune dépendance externe.
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-12-ConnectFour-Python](App-12-ConnectFour-Python.ipynb) — jumeau [C#](App-12-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
+| 1 | [App-12-ConnectFour-Python](App-12-ConnectFour-Python.ipynb) — jumeaux [C#](App-12-ConnectFour-CSharp.ipynb) et [Rust](App-12-ConnectFour-Rust.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956). Le jumeau Rust rejoue le carnet pas à pas en Rust standard : générateur MT19937 reproduit à l'identique, d'où les mêmes coups que le Python sur les parties imprimées coup par coup ; plateau rendu en texte au lieu de matplotlib ; framework AIMA porté en `trait Game` avec approfondissement itératif | Découverte | — |
 | 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeau [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956) | Licence | — |
 
 ---
@@ -173,12 +173,13 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 
 ### Puissance 4 (Search)
 
-| Notebook | Fondations requises |
-|----------|--------------------|
-| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
-| App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
+| Notebook | Fondations requises | Dépendances |
+|----------|--------------------|-------------|
+| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) | numpy, matplotlib |
+| App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) | numpy, matplotlib, pandas |
+| App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) | dotnet-interactive |
+| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) | dotnet-interactive |
+| App-12-Rust | Search-6 (AdversarialSearch), Search-7 (MCTS) | evcxr (noyau rust), sans dépendance externe |
 
 ### Cas pratiques CSP
 
