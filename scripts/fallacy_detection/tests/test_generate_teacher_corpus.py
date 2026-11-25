@@ -663,7 +663,7 @@ def test_hub_teacher_porte_le_dialecte_vllm_et_le_retire_du_niveau_racine(monkey
         def read(self):
             return json.dumps({
                 "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
-                "usage": {"completion_tokens": 3},
+                "usage": {"completion_tokens": 3, "prompt_tokens": 7},
             }).encode()
 
     def fake_urlopen(request, timeout=None):
@@ -678,6 +678,7 @@ def test_hub_teacher_porte_le_dialecte_vllm_et_le_retire_du_niveau_racine(monkey
     assert "enable_thinking" not in captured["body"]
     assert reply.text == "ok" and reply.completion_tokens == 3
     assert reply.finish_reason == "stop"
+    assert reply.prompt_tokens == 7
 
 
 # --------------------------------------------------------------------------
@@ -720,3 +721,115 @@ def test_module_invocable_en_ligne_de_commande():
         encoding="utf-8", errors="replace", timeout=120)
     assert result.returncode == 0, result.stderr
     assert "--distractors" in result.stdout
+
+
+# --------------------------------------------------------------------------
+# --report-only : le rapport se reconstruit depuis le checkpoint, sans maitre
+# --------------------------------------------------------------------------
+
+def _fake_run_dir(tmp_path, *, min_tokens: int = 25) -> Path:
+    """Ecrit un checkpoint de deux paires et le rapport que l'ancien code rendait.
+
+    Le second texte est **genere mais sous le plancher** : c'est le cas que
+    l'ancien rapport ne pouvait pas montrer (``n_empty`` ne le voit pas).
+    """
+    from dataclasses import asdict
+    records = [
+        G.Record(pair_id="p1", split="val", polarity="fallacy", node_pk=1,
+                 family="A", depth=1, is_leaf=True, scenario_path="s1",
+                 lang="fr", node_key="F1",
+                 text="Un texte assez long pour depasser le plancher de vingt-cinq.",
+                 completion_tokens=60, finish_reason="stop", attempts=1),
+        G.Record(pair_id="p2", split="val", polarity="fallacy", node_pk=2,
+                 family="A", depth=1, is_leaf=True, scenario_path="s1",
+                 lang="fr", node_key="F2",
+                 text="Court.", completion_tokens=8, finish_reason="stop", attempts=2),
+    ]
+    verdicts = [True, False]
+    lines = [json.dumps({**asdict(r), "roundtrip": v,
+                         "example_overlap": r.example_overlap()}, ensure_ascii=False)
+             for r, v in zip(records, verdicts)]
+    (tmp_path / "val_fr.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Rapport tel que l'ancien code le publiait : ni n_generated, ni
+    # n_below_floor, ni provenance -- c'est l'ecart que #20137 a nomme.
+    old = {
+        "model": "m", "hub_url": "http://hub/v1/chat/completions", "split": "val",
+        "lang": "fr", "seed": 0, "votes": 3, "distractors": 5,
+        "max_tokens": 300, "min_tokens": min_tokens, "retries": 2,
+        "checkpoint": "val_fr.jsonl", "seconds": 12.5,
+        "n_pairs": 2, "n_empty": 0, "n_regenerated": 2,
+        "mean_completion_tokens": 34.0, "example_overlap": 0,
+        "roundtrip_measured": 2, "roundtrip_hits": 1, "roundtrip_rate": 0.5,
+        "by_family": {"A": {"n": 2, "hit": 1, "measured": 2}},
+    }
+    (tmp_path / "report_val_fr.json").write_text(
+        json.dumps(old, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_rebuild_report_rejoue_summarise_sans_appeler_le_maitre(tmp_path, monkeypatch):
+    """Le correctif #20137 se rejoue sur le checkpoint, sans modele ni reseau."""
+    out = _fake_run_dir(tmp_path)
+
+    def _interdit(*_args, **_kwargs):
+        raise AssertionError("--report-only ne doit jamais construire de maitre")
+
+    monkeypatch.setattr(G, "HubTeacher", _interdit)
+    report, report_path, checkpoint = G.rebuild_report(
+        out=out, split="val", lang="fr")
+
+    # Ce que le correctif ajoute, et qui manquait au rapport d'origine.
+    assert report["n_generated"] == 2
+    assert report["n_below_floor"] == 1
+    assert report["below_floor_pairs"] == ["p2"]
+    # Ce qui etait deja juste est reproduit a l'identique.
+    assert report["n_pairs"] == 2
+    assert report["roundtrip_hits"] == 1
+    assert report["roundtrip_rate"] == 0.5
+    assert report["by_family"] == {"A": {"n": 2, "hit": 1, "measured": 2}}
+    # Les parametres du run sont conserves tels quels, jamais re-inventes.
+    assert report["min_tokens"] == 25
+    assert report["seconds"] == 12.5
+    assert report["model"] == "m"
+    # L'historique de reprise n'est pas derivable : absence nommee, pas un zero.
+    assert "resumed" not in report and "n_resumed" not in report
+    prov = report["report_provenance"]
+    assert prov["mode"] == "checkpoint-only"
+    assert prov["source_checkpoint_rows"] == 2
+    assert prov["absent_not_derivable"] == ["resumed", "n_resumed", "n_todo"]
+    assert prov["source_checkpoint_sha256"] == __import__("hashlib").sha256(
+        checkpoint.read_bytes()).hexdigest()
+    assert report_path.name == "report_val_fr.json"
+
+
+def test_report_only_ecrit_le_rapport_par_le_meme_chemin(tmp_path):
+    """Le drapeau CLI ecrit le rapport reconstruit et rend 0."""
+    out = _fake_run_dir(tmp_path)
+    assert G.main(["--out", str(out), "--split", "val", "--lang", "fr",
+                   "--report-only"]) == 0
+    written = json.loads((out / "report_val_fr.json").read_text(encoding="utf-8"))
+    assert written["n_below_floor"] == 1
+    assert written["report_provenance"]["mode"] == "checkpoint-only"
+
+
+def test_report_only_refuse_quand_le_checkpoint_manque(tmp_path):
+    """Sans checkpoint il n'y a rien a rejouer : refus explicite, pas un rapport vide."""
+    with pytest.raises(SystemExit) as exc:
+        G.rebuild_report(out=tmp_path, split="val", lang="fr")
+    assert "introuvable" in str(exc.value)
+
+
+def test_le_rapport_committe_porte_les_cles_de_fidelite():
+    """Le rapport committe est en accord avec son checkpoint (garde d'artefact).
+
+    Un run neuf reecrit les deux fichiers ensemble ; une retouche du code sans
+    regeneration du rapport -- l'ecart que #20137 a laisse -- echoue ici.
+    """
+    data = REPO / "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher"
+    report = json.loads((data / "report_val_fr.json").read_text(encoding="utf-8"))
+    rows = [ln for ln in (data / "val_fr.jsonl").read_text(encoding="utf-8")
+            .splitlines() if ln.strip()]
+    for key in ("n_generated", "n_below_floor", "below_floor_pairs"):
+        assert key in report, f"{key} absent : le rapport precede le correctif #20137"
+    assert report["n_pairs"] == len(rows)
+    assert report["report_provenance"]["source_checkpoint_rows"] == len(rows)

@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 24
-breakdown: PostTraining=24
-maturity: BETA=18, ALPHA=5, DRAFT=1
+pedagogical_count: 27
+breakdown: PostTraining=27
+maturity: BETA=21, ALPHA=5, DRAFT=1
 -->
 
 Comment adapter un modèle de langage préentraîné à une tâche, et comment savoir si cette adaptation l'améliore ? Ce parcours relie supervision, optimisation de préférences, apprentissage par récompense et vérification. Les expériences à petite échelle rendent les mécanismes inspectables ; les carnets sur modèles de langage montrent leurs conditions d'exécution et les difficultés d'évaluation.
@@ -37,8 +37,8 @@ Les variantes du palier 11 sont présentées sous [Approfondissements](#autour-d
 | 06 | [Comparaison des méthodes](PT_06_eval_comparative.ipynb) | Organiser un choix de méthode et un protocole comparatif à partir de scénarios de coût. | Après 02–05 ; CPU. | Les valeurs GSM8K de cette synthèse sont estimatives. |
 | 07 | [Détecter le détournement de récompense](PT_07_rewardspy_reward_hacking.ipynb) | Instrumenter une récompense, lire un journal et repérer des comportements de Goodhart. | Notion de récompense ; `rewardspy`. | Trajectoire synthétique et analyse hors ligne. |
 | 08 | [GRPO écrit à la main](PT_08_grpo_from_scratch_toy_env.ipynb) | Comparer REINFORCE, PPO et GRPO sur une tâche vérifiée par Z3. | PyTorch et probabilités ; CPU. | Taille du groupe et définition de la récompense. |
-| 09 | [Baseline leave-one-out](PT_09_rloo_from_scratch_toy_env.ipynb) | Comparer RLOO, REINFORCE et GRPO, puis discuter biais et variance. | Après 08 ; CPU. | Sensibilité au groupe et aux graines. |
-| 10 | [Modèle de valeur et GAE](PT_10_gae_from_scratch_toy_env.ipynb) | Construire un modèle de valeur (*critic*) qui estime le retour attendu, puis un avantage ; comprendre le rôle de lambda. | Après 08–09 ; CPU. | Le palier 12 traite le crédit réellement différé. |
+| 09 | [Baseline leave-one-out](PT_09_rloo_from_scratch_toy_env.ipynb) · [C#](PT_09_rloo_from_scratch_toy_env-CSharp.ipynb) | Comparer RLOO, REINFORCE et GRPO, puis discuter biais et variance. | Après 08 ; CPU. | Sensibilité au groupe et aux graines. |
+| 10 | [Modèle de valeur et GAE](PT_10_gae_from_scratch_toy_env.ipynb) · [C#](PT_10_gae_from_scratch_toy_env-CSharp.ipynb) | Construire un modèle de valeur (*critic*) qui estime le retour attendu, puis un avantage ; comprendre le rôle de lambda. | Après 08–09 ; CPU. | Le palier 12 traite le crédit réellement différé. |
 | 12 | [Crédit différé multi-étapes](PT_12_multistep_delayed_credit.ipynb) | Construire une récompense terminale causale et mesurer l'effet de GAE sur un horizon étendu. | Après 10 ; CPU. | Ablation du façonnage de récompense et variation de l'horizon. |
 | 13 | [Corrections DAPO et Dr.GRPO](PT_13_dapo_drgrpo_corrections.ipynb) | Isoler biais de longueur, normalisation par l'écart-type et clipping asymétrique. | Après 08 ; gradients PyTorch, CPU. | Distinguer effet sur le gradient et gain comportemental. |
 | 14 | [Thermodynamique de l'entraînement](PT_14_neural_thermodynamic_laws.ipynb) | Examiner des relations entre taux d'apprentissage, fluctuations et relaxation sur des modèles contrôlés. | Optimisation et statistiques ; CPU. | Résolution de la mesure et limites du mini-GPT. |
@@ -46,6 +46,9 @@ Les variantes du palier 11 sont présentées sous [Approfondissements](#autour-d
 | 16 | [Vérification formelle du code généré](PT_16_vericoding_formal_verification.ipynb) | Boucler spécification, génération, vérification et réparation ; éprouver la spécification elle-même. | Ollama, Dafny et Lean. | Gardes anti-contournement et spécifications incomplètes. |
 | 17 | [Récompenses propres et calibration](PT_17_laya_proper_rewards_toy.ipynb) | Comparer règles de score, calibration et optimisation directe ou par perturbation. | Probabilités et gradients ; CPU. | Comparer calibration et exactitude prédictive. |
 | 18 | [Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | Analyser des agrégats de distillation et éprouver un gain avec des comparaisons statistiques. | Après 17 ; analyse CPU de mesures enregistrées. | La grille d'entraînement vit dans les scripts associés. |
+| 19 | [Stratification inter-tailles](PT_19_stratification_inter_tailles.ipynb) | Comparer l'uptake de faille et l'effet d'une inoculation à travers les tailles du modèle, sur des mesures déjà enregistrées. | Lecture d'artefacts JSON produits par les runs GPU de la série ICT ; CPU. | Déplacé depuis ICT-25b (#20298, fournée F3) ; le Cohen's d change de signe entre tailles. |
+| 20 | [L'instrument change-t-il la géométrie ? (ICT-47b)](PT_20_instrument_axe_douleur.ipynb) | Mesurer si la quantification (int8, 4-bit NF4) déplace la géométrie des directions émotionnelles, et documenter la barrière d'échelle au lieu de la contourner. | Après 15b ; GPU local, chargement de modèles 2B/9B. | La question d'ICT-47 au-delà du 9B reste ouverte ; l'effet d'instrument est borné au centième. |
+| 21 | [Onset/SAE Qwen3.5-9B-Base, agrégat de quatre graines (ICT-48)](PT_21_onset_9b_agregat.ipynb) | Agréger quatre graines (W et S) et comparer 0.5B, 2B, 9B avec l'organe `ict.onset_compare` ; lire le verdict onset plutôt que de le supposer. | Après 20 ; CPU, artefacts committés dans l'organe ICT-Series. | Le seuil de significativité formel (5 graines) n'est pas atteint ; 27B et au-delà restent hors champ. |
 
 ### Du signal d'apprentissage à la preuve d'un gain
 
@@ -113,6 +116,7 @@ Partir d'un environnement isolé et des cellules de configuration du carnet choi
 - **Entraînement et interventions sur modèles** : prévoir CUDA et les dépendances de quantification indiquées dans les carnets concernés. Les pics mémoire enregistrés caractérisent leurs configurations ; ils ne garantissent pas la faisabilité de toute la série sur une carte donnée.
 - **Commutateurs** : `LOAD_MODEL_AND_TRAIN` existe dans 02–05. Vérifier chaque carnet avant de l'utiliser : il n'y a pas de commutateur CPU universel pour le dossier.
 - **Dépendances particulières** : `rewardspy` est utilisé par certains carnets et son installation depuis GitHub est précisée dans le fichier de dépendances ; sa ligne non publiée sur PyPI peut empêcher un simple `pip install -r requirements.txt` d'aboutir. Le carnet 15b utilise les modules et traces ICT ; 16 demande Ollama et les outils Dafny/Lean. La reproduction de la grille de 18 requiert les ressources de ses scripts, au-delà de la lecture des agrégats committés.
+- **Organe ICT-Series (carnet 21)** : `PT_21` lit les artefacts de la série ICT via l'ancre `ICT_ROOT`, résolue par le paquet `ict-series`. Si l'ancre échoue, installer l'organe : `pip install -e MyIA.AI.Notebooks/IIT/ICT-Series` (le message de garde du carnet le rappelle) ; les artefacts restent dans l'organe, jamais recopiés ici. `PT_20` ne dépend pas de l'organe : ses sorties gardent leur provenance d'origine, une exécution du 2026-10-08 sur GPU (`torch 2.8.0+cu126`, `cuda True`, 645 s), conservée telle quelle par le déplacement.
 
 En cas de mémoire CUDA insuffisante, examiner quantification, taille des lots, accumulation de gradients, longueur des séquences et nombre de réponses par groupe. Ces réglages modifient aussi le protocole : consigner leur effet avant de comparer les résultats. La [sonde mémoire](_measurements/vram_wall_probe.py) et ses [résultats archivés](_measurements/) donnent un autre point d’entrée pour examiner les configurations par modèle et par carte ; ils ne dispensent pas de vérifier l’environnement courant. Les cartes et checkpoints [Qwen](https://huggingface.co/Qwen/Qwen3.5-0.8B), la documentation [TRL](https://huggingface.co/docs/trl/index), [PEFT](https://huggingface.co/docs/peft/index) et les optimisations [Unsloth](https://github.com/unslothai/unsloth) complètent les instructions des carnets.
 
@@ -191,6 +195,8 @@ La série modern-llm de JohnEnev offre un retour d’expérience externe : [pré
 [Retour à GenAI](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md) · [Licence](../../../LICENSE)
 
 ### Compagnon C# de PT-08
+
+[PT-09 C#](PT_09_rloo_from_scratch_toy_env-CSharp.ipynb) et [PT-10 C#](PT_10_gae_from_scratch_toy_env-CSharp.ipynb) partagent la configuration .NET, TorchSharp CPU et Z3 ci-dessous. Le premier entraîne trois politiques sur 400 épisodes. Le second compare les estimateurs sur cinq graines et appelle directement Z3 aux réponses terminales de son diagnostic multi-étape.
 
 [PT-08 C#](PT_08_grpo_from_scratch_toy_env-CSharp.ipynb) reprend [PT-08 Python](PT_08_grpo_from_scratch_toy_env.ipynb) avec TorchSharp-cpu 0.107.0/libtorch CPU 2.10.0 pour les réseaux et Microsoft.Z3 4.12.2 pour les vérifications. La fast-path tensorielle d'entraînement est contrôlée contre 2400 vrais checks SMT ; elle ne lance pas Z3 à chaque action. Les générateurs et trajectoires diffèrent entre langages. Le jouet a 96 prompts sans jeu séparé et n'inclut ni séquence ni pénalité KL.
 

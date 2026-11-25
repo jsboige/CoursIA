@@ -127,7 +127,7 @@ sont nommés en **Angles morts** en fin de page.
     [`DecInfer/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/README.md) C#+Lean et
     [`DecPyMC/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/README.md) Python en miroir, la sous-série
     [`Actuariat/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/README.md), le capstone causal
-    [`Causal-Bridges/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/README.md) et le lake
+    [`Causalite/`](../../MyIA.AI.Notebooks/Probas/Causalite/README.md) et le lake
     [`decision_theory_lean/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/)) ; les deux
     entrées par lesquelles on aborde la série sont
     [`DecPyMC-01-Utility-Foundations`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) et
@@ -188,7 +188,7 @@ page ne traverse pas, nommément :
   est pliée dans le bloc logique/planification, pas traversée par un carnet.
 - **L'arc de décision ne traverse que ses deux entrées.** La Phase 8 cite le README de la
   série DecisionTheory (38 carnets) et ses deux entrées Python ; la sous-série Actuariat, le
-  capstone causal Causal-Bridges et la couche de certification Lean restent dans la série,
+  capstone causal Causalité et la couche de certification Lean restent dans la série,
   pas dans le parcours.
 - **L'écart 3e ↔ 4e que le parcours suit.** Le parcours suit la **4e** : en 4e la
   représentation des connaissances (ch. 10) précède la planification (ch. 11), et la décision

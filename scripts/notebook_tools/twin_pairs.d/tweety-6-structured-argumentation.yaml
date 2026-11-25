@@ -6,6 +6,53 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (argumentation structuree ASPIC+) : C# branche IKVM 8.15.0 + tweety-aspic.dll (tracked) + 8 refs `org.tweetyproject.arg.aspic.*` actifs (2 cellules avec using explicite + `AspicArgumentationTheory.asDungTheory()` invoquee). Python branche JPype + `from org.tweetyproject.arg.aspic.* import` + meme bibliotheque Java. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : la paire est deja documentee native-both (PR #10385, 2026-08-11) avec parite 3-voies PROUVEE (C# from-scratch <=> C# IKVM <=> Python JPype convergent sur le meme AAF). Verdict SOTA-OK : lib-vs-lib meme moteur, le C# preserve en plus la tranche from-scratch pedagogique (gabarit Tweety-05-CSharp)."
   known_differences:
+    - "2026-11-11 (Codex:hors-flotte) : apres fusion de main, navigation C# et introduction et provenance de la PR coexistent ; la theorie ASPIC+ commune reste b, c => a, b => d et a => !d, avec cinq arguments et deux attaques ; Python execute aussi DeLP, ABA, deductif et ASP, conceptuels cote C#. Aucun code ni sortie modifies par cette fusion. Jusque-la les deux moteurs utilisent Tweety par JPype et IKVM, outre la demonstration C# manuelle. Relecture des deux carnets et de leurs sorties."
     - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
     - "Parite native-both (PR #10385, 2026-08-11) : les deux cotes chargent la vraie lib Tweety (org.tweetyproject.arg.aspic.*) -- le Python via JPype (cell 4.2.1), le C# via le pont IKVM (tranche 2, #r org.tweetyproject.tweety-aspic.dll + AspicArgumentationTheory.asDungTheory()). Parite 3-voies PROUVEE firsthand : C# from-scratch (tranche 1) <=> C# IKVM (tranche 2) <=> Python JPype convergent sur le meme AAF (5 args, 2 attaques symetriques b=>d vs a=>!d, meme extension fondee). Le C# conserve sa tranche 1 from-scratch pedagogique EN PLUS de la tranche 2 lib (gabarit Tweety-05-CSharp) -> `native-both`."
+    - >-
+      Audit firsthand 2026-11-08 (claude-cloud-hors-flotte, commit 1fd293669) :
+      le drift C# ne touche qu’au Markdown de la cellule 0 et à l’ajout d’une
+      note de provenance en cellule finale ; aucun code, output, execution_count
+      ni metadata d’exécution ne change. Cellule 0 : le premier paragraphe
+      présente désormais l’implémentation ASPIC+ sous .NET Interactive ; la
+      note de parité conserve les différences et le pied porte EPIC #4956 et
+      issue #3801.
+      Parité pédagogique relue sur les deux carnets : ils partagent le sujet
+      ASPIC+, les mêmes faits b,c, règles b,c=>a, b=>d, a=>!d et le même
+      raisonnement vers l’AF de Dung ; l’extension grounded retient b, c et
+      l’argument pour a, tandis que d et !d se rebutent. Différence déjà
+      assumée : Python exécute par JPype TweetyProject pour ASPIC+, DeLP, ABA,
+      argumentation déductive et ASP, avec exemples et sorties pour les cinq.
+      C# enseigne d’abord la construction d’arguments et le rebut symétrique
+      from-scratch en BCL, puis rejoue l’exemple ASPIC+ par IKVM contre la vraie
+      bibliothèque Tweety. Le moteur manuel couvre le rebut sur conclusion
+      sommitale ; undermine/undercut ne font pas partie de cette implémentation
+      (undercut est proposé comme exercice). Les quatre autres formalismes
+      restent conceptuels côté C# faute d’équivalent BCL, et renvoient au jumeau
+      Python pour leur exécution. Cette complémentarité, déjà portée par
+      known_differences, reste intacte ; le nouvel opener et le déplacement de
+      provenance ne changent aucun contenu calculé.
+    - >-
+      Audit firsthand 2026-11-08 (claude-cloud-hors-flotte) : relecture des
+      deux carnets et de leurs sorties enregistrées. Python JPype et C# IKVM
+      retrouvent cinq arguments, deux attaques symétriques entre d et !d et
+      l'extension grounded des arguments pour b, c et a ; le moteur C# manuel
+      concorde sur cet exemple et reste limité au rebut de conclusion sommitale.
+      Python illustre aussi DeLP, ABA, déductif et ASP ; ces quatre formalismes
+      sont conceptuels côté C#. Le seul changement depuis l'audit précédent est
+      la conversion du séparateur Markdown de la note finale C# de --- en *** ;
+      sa provenance et ses liens restent intacts. Code et sorties inchangés,
+      aucune nouvelle exécution ni modification des formalismes ou valeurs.
+    - >-
+      Audit de la paire après intégration de main 077c5ef (2026-11-09) :
+      le Python a conservé ses 27 cellules ; son code ne diffère du head
+      de la PR que par le chemin Argument_Analysis devenu ArgumentAnalysis
+      pour le JDK et les JAR. Les sorties DeLP et ABA sont seulement
+      regroupées différemment ; la sortie ASP réordonne les règles affichées,
+      mais conserve le même answer set. Les métadonnées ont aussi changé.
+      La théorie ASPIC+ et ses sorties Python correspondent toujours au moteur
+      C# manuel et à la bibliothèque appelée par IKVM : cinq arguments,
+      deux attaques entre d et !d, extension fondée b, c et b,c => a.
+      Le C# garde les quatre autres formalismes conceptuels et renvoie au
+      Python pour leur exécution. Aucune nouvelle exécution n'est revendiquée.
     - "PR #25662 (2026-11-10, myia-ai-01:CoursIA-2) : re-audit firsthand de la paire apres l'ajout des barres de navigation de la famille Tweety. Cote C# : une barre de navigation ajoutee en cellule 0 ; cote Python : intact. Drift parite-preservant : l'axe semantique (IKVM vs JPype sur le meme moteur Java) est inchange -- aucune cellule de code touchee, aucune re-execution due (C.2/C.3) -- et les deux cotes se designent mutuellement. Attestation `0016-2026-11-10-myia-ai-01-CoursIA-2.yaml`."

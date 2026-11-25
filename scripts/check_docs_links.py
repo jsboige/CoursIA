@@ -2,8 +2,8 @@
 """Check for broken relative markdown links and orphan docs across the repository.
 
 Scans CLAUDE.md, index.md, PARCOURS.md, docs/, .claude/rules/, .claude/agents/,
-.claude/skills/, every ``slides/<deck>/slides.md`` deck, and all README.md files
-for relative links and verifies targets exist.
+.claude/skills/, every ``slides/<deck>/slides.md`` deck, all README.md files and
+Quarto ``.qmd`` pages for relative links and verifies targets exist.
 
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
@@ -15,6 +15,29 @@ Usage:
     python scripts/check_docs_links.py --quiet                # Minimal output (for CI)
     python scripts/check_docs_links.py --orphans              # Also report orphan docs
     python scripts/check_docs_links.py --expect-broken 1      # Positive control (see below)
+    python scripts/check_docs_links.py --scope repo          # Every tracked .md/.qmd (#26793)
+    python scripts/check_docs_links.py --scope repo --baseline   # Freeze the repo scope
+    python scripts/check_docs_links.py --scope repo --check --base origin/main
+
+Repo-wide scope (#26793)
+------------------------
+``--scope repo`` widens the markdown pass to EVERY tracked ``.md``/``.qmd`` page
+of the repository. The default scope watched 1 010 of the 1 955 tracked pages:
+the other 466 were invisible, so a series rename left dead citations behind
+and no organ said so.
+
+The scope change is the ONLY difference: the resolution (``check_link``), the
+frozen baseline, the ``--check --base`` differential and the ``--expect-broken``
+positive control are the same ones. The exclusions are named, one by one, in
+the code (``REPO_SCOPE_SKIP_COMPONENTS``, ``REPO_SCOPE_SKIP_FILES``,
+``REPO_SCOPE_EXTRACTED_DIRS``, ``DECK_DIR``, ``SKIP_DIRS``,
+``TEST_TREE_PARTS``): build artifacts, third-party checkouts, agent scratch,
+the non-deck pages under ``slides/``, the extraction artifacts, the test
+fixtures, the embedded-tool documentation trees and the generated catalogue.
+
+The repo scope has its OWN baseline (``baseline_docs_links_repo.json``): the
+three passes answer three different questions, and one shared file would let
+``--baseline`` in one mode silently rewrite another's frozen state.
 
 Code-comment citations (#24410)
 -------------------------------
@@ -75,6 +98,12 @@ SCAN_SCOPES = [
     # now link-checked like everything else.
     "index.md",
     "PARCOURS.md",
+    # Quarto root entry points (#26457): the portal and parcours pages also exist
+    # as .qmd sources the site is built from. They sit at the repo root, where the
+    # scope list names the file individually -- exactly as for the .md pair above
+    # -- so a move that breaks a relative link in one is read, not silently clean.
+    "index.qmd",
+    "parcours.qmd",
     "docs/",
     ".claude/rules/",
     ".claude/agents/",
@@ -83,6 +112,17 @@ SCAN_SCOPES = [
     # main. The two former inventories drifted apart because no organ watched
     # their links -- this one is now the single inventory, so it is checked.
     "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
+    # Series landing pages (#26457): the notebook-tree index.qmd (the notebooks
+    # portal) and the five series that ship one (GameTheory, Physique, Probas,
+    # Search, Sudoku) sit outside docs/, so the docs/ glob above never opened
+    # them -- the same blind spot as the root pair. Named individually, as the
+    # entry points above, so a move that breaks a link in one becomes a finding.
+    "MyIA.AI.Notebooks/index.qmd",
+    "MyIA.AI.Notebooks/GameTheory/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
+    "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Search/index.qmd",
+    "MyIA.AI.Notebooks/Sudoku/index.qmd",
 ]
 
 # Deck scope (#15867). `slides/<deck>/slides.md` was watched by NO organ: the
@@ -142,6 +182,42 @@ SKIP_DIRS = {
 
 # Baseline file location
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_links.json"
+
+# The repo-wide scope keeps its OWN baseline (#26793): the three passes answer
+# three different questions, and sharing one file would make `--baseline` in
+# one mode silently rewrite another's frozen state.
+REPO_BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_links_repo.json"
+
+# ---------------------------------------------------------------------------
+# Repo-wide scope (#26793)
+# ---------------------------------------------------------------------------
+#
+# The default scope watches 1 010 of the 1 955 tracked `.md`/`.qmd` files; the
+# other 466 were invisible to it -- a series rename left dead citations behind
+# and nothing said so. `--scope repo` opens them, reusing THIS organ's
+# resolution, its baseline and its positive control: no second oracle, no
+# second definition of "broken".
+#
+# The exclusions are NAMED, one by one (acceptance of #26793: "les exclusions
+# ... sont nommees dans le code et dans la documentation de l'organe, pas
+# cachees dans une regexp large"):
+#
+#   * `SKIP_DIRS` and the submodule paths (shared with the default scope):
+#     build artifacts, third-party checkouts, agent scratch.
+#   * `slides/**` except the decks: the DECK_DIR note above measured 119
+#     non-deck markdown files under `slides/` holding 734 broken links --
+#     working artifacts, not the delivered deck.
+#   * the `extracted/` directories: extraction artifacts.
+#   * the test trees (`TEST_TREE_PARTS`): a fixture is a value, not a claim.
+#   * the embedded-tool documentation trees (`Roo-Code`, `Claude-Code`,
+#     `Claw-Systems`): the documentation of a THIRD-PARTY tool that ships
+#     inside the repo -- its links are that tool's, not ours.
+#   * the generated catalogue (`COURSE_CATALOG.generated.md`): regenerated by
+#     the catalogue cron after the merge (#22651) and forbidden to hand-edit
+#     on a feature branch (catalog-pr-hygiene).
+REPO_SCOPE_SKIP_COMPONENTS = ("Roo-Code", "Claude-Code", "Claw-Systems")
+REPO_SCOPE_SKIP_FILES = ("COURSE_CATALOG.generated.md",)
+REPO_SCOPE_EXTRACTED_DIRS = ("extracted",)
 
 # The code-citation pass (#24410) keeps its own baseline: the two instruments
 # answer different questions, and sharing one file would make `--baseline` in
@@ -268,7 +344,16 @@ def find_scan_files() -> list[Path]:
         if p.is_file():
             files.append(p)
         elif p.is_dir():
-            for f in sorted(p.rglob("*.md")):
+            # Quarto ``.qmd`` pages in addition to ``.md`` (#26457): the site is
+            # built from .qmd sources, and globbing ``*.md`` alone never opened
+            # them -- a move that left 19 dead links in a .qmd read as a clean
+            # scan (#26281). This directory glob opens the .qmd under the scope
+            # directory (docs/index.qmd). The root pair (index.qmd, parcours.qmd)
+            # and the notebook-tree series index.qmd sit outside docs/, so they
+            # are named individually in SCAN_SCOPES, not reached by this glob.
+            # The union is de-duplicated, so a file matching neither pattern is
+            # simply absent, as before.
+            for f in sorted(set(p.rglob("*.md")) | set(p.rglob("*.qmd"))):
                 if not _should_skip(f):
                     files.append(f)
 
@@ -284,6 +369,90 @@ def find_scan_files() -> list[Path]:
             files.append(deck)
 
     return files
+
+
+def _git_tracked_doc_files() -> list[str] | None:
+    """Repo-relative `.md`/`.qmd` paths git tracks, or None when git is silent.
+
+    The scope of this organ is what the REPOSITORY ships, not what a machine
+    happens to have under its working tree: an unpruned walk of a developer
+    checkout enumerates thousands of markdown files against 1 955 tracked ones
+    (measured 2026-11-16), i.e. it spends its time on scratch and build
+    leftovers. ``None`` keeps a tmp-tree test working: it rebuilds the scope
+    over the pruned walk instead of reporting an empty scope.
+    """
+    proc = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return None
+    return [
+        path for path in proc.stdout.split("\0")
+        if path.endswith((".md", ".qmd")) and path
+    ]
+
+
+def _repo_scope_excluded(rel: str) -> bool:
+    """Whether ``rel`` (repo-relative posix) is out of the repo-wide scope.
+
+    Every exclusion is one of the NAMED rules above -- the point of the
+    acceptance is that a reader can enumerate them, not that a regexp hides
+    them.
+    """
+    parts = rel.split("/")
+    if rel in REPO_SCOPE_SKIP_FILES:
+        return True
+    if any(component in REPO_SCOPE_SKIP_COMPONENTS for component in parts):
+        return True
+    if any(directory in REPO_SCOPE_EXTRACTED_DIRS for directory in parts):
+        return True
+    if any(part.lower() in TEST_TREE_PARTS for part in parts[:-1]):
+        return True
+    if parts[0] == DECK_DIR:
+        # Only the decks (`slides/<deck>/slides.md`) are in scope; the other
+        # markdown under `slides/` is working material (see DECK_DIR).
+        return not (len(parts) == 3 and parts[2] == DECK_FILENAME)
+    return False
+
+
+def find_repo_scan_files() -> list[Path]:
+    """Every markdown/Quarto page of the repository, in path order.
+
+    The superset of the default scope: the tracked pages (plus the decks), the
+    named exclusions applied.
+    """
+    tracked = _git_tracked_doc_files()
+    if tracked is None:
+        files: list[Path] = []
+        for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
+            dirnames[:] = [
+                name for name in dirnames
+                if name not in SKIP_DIRS and name.lower() not in TEST_TREE_PARTS
+            ]
+            for name in filenames:
+                if not name.endswith((".md", ".qmd")):
+                    continue
+                path = Path(dirpath) / name
+                try:
+                    rel = path.relative_to(REPO_ROOT).as_posix()
+                except ValueError:
+                    continue
+                if _repo_scope_excluded(rel) or _should_skip(path):
+                    continue
+                files.append(path)
+        files.sort()
+        return files
+
+    pages: list[Path] = []
+    for rel in sorted(set(tracked)):
+        if _repo_scope_excluded(rel):
+            continue
+        path = REPO_ROOT / rel
+        if path.is_file() and not _should_skip(path):
+            pages.append(path)
+    return pages
 
 
 def scan_content(content: str, rel_source: str) -> list[LinkRef]:
@@ -858,7 +1027,8 @@ def find_orphan_docs(scanned_files: list[Path], all_refs: list[LinkRef]) -> list
     return orphans
 
 
-def run_scan(report_orphans: bool = False, code: bool = False) -> ScanResult:
+def run_scan(report_orphans: bool = False, code: bool = False,
+             scope: str = "default") -> ScanResult:
     """Run a full scan across the repository.
 
     ``code=True`` runs the code-comment citation pass (#24410) INSTEAD of the
@@ -867,9 +1037,18 @@ def run_scan(report_orphans: bool = False, code: bool = False) -> ScanResult:
     baseline does not excuse (measured 2026-11-03), so folding a new signal into
     the same count would make a code finding indistinguishable from that
     pre-existing red, which is exactly what #24410 warns against.
+
+    ``scope="repo"`` widens the markdown pass to the whole repository (#26793):
+    the same resolution, the same baseline machinery, the same positive
+    control -- only the set of pages changes.
     """
     result = ScanResult()
-    files = find_code_files() if code else find_scan_files()
+    if code:
+        files = find_code_files()
+    elif scope == "repo":
+        files = find_repo_scan_files()
+    else:
+        files = find_scan_files()
     result.scanned_files = len(files)
 
     all_refs = []
@@ -922,6 +1101,13 @@ def load_baseline(path: Path = BASELINE_PATH) -> dict | None:
         return None
 
 
+# Quarto front-matter (``---`` ... ``---``) precedes the body of a .qmd page,
+# so the production header is not the first bytes of the file (#28194).
+_FRONT_MATTER_RE = re.compile(r"\A---[ \t]*\r?\n.*?\r?\n---[ \t]*\r?\n", re.DOTALL)
+# Generators write the accented form ("FICHIER GÉNÉRÉ"); both spellings count.
+_GENERATED_HEADER_RE = re.compile(r"\bFICHIER\s+G[ÉE]N[ÉE]R[ÉE]\b", re.IGNORECASE)
+
+
 def _is_generated_source(source: Path) -> bool:
     """Detect a generated page by its header, not by a hardcoded path.
 
@@ -929,16 +1115,23 @@ def _is_generated_source(source: Path) -> bool:
     cron repairs their links after the merge (#22651). Only the explicit
     production header grants this excuse; prose mentioning generation later in
     a hand-written page does not.
+
+    Two shapes carry that header: a page whose body starts with the HTML
+    comment, and a Quarto page whose YAML front-matter precedes it
+    (``docs/curriculum/prerequis.qmd``). Only the FIRST comment after the
+    front-matter counts -- a comment placed after prose does not.
     """
     try:
         with source.open(encoding="utf-8") as handle:
             prefix = handle.read(4096)
     except (OSError, UnicodeDecodeError):
         return False
-    header = re.match(r"\s*<!--(.*?)-->", prefix, re.DOTALL)
+    front = _FRONT_MATTER_RE.match(prefix)
+    body = prefix[front.end():] if front else prefix
+    header = re.match(r"\s*<!--(.*?)-->", body, re.DOTALL)
     if header is None:
         return False
-    return re.search(r"\bFICHIER GENERE\b", header.group(1), re.IGNORECASE) is not None
+    return _GENERATED_HEADER_RE.search(header.group(1)) is not None
 
 
 def generated_source_excuses(result: ScanResult) -> list[LinkRef]:
@@ -1019,6 +1212,14 @@ def main():
                              "apply to the selected pass (#24410).")
     parser.add_argument("--quiet", action="store_true",
                         help="Minimal output")
+    parser.add_argument("--scope", choices=("default", "repo"), default="default",
+                        help="Which pages are watched. 'default' keeps the "
+                             "historical scope (root entry points, docs/, "
+                             ".claude/, the series landings, the decks, every "
+                             "README). 'repo' widens it to EVERY tracked "
+                             ".md/.qmd page of the repository, the named "
+                             "exclusions applied (#26793). Resolution, baseline "
+                             "and positive control are the same ones.")
     parser.add_argument("--expect-broken", metavar="N", type=int, default=None,
                         help="Positive control: require at least N broken links, "
                              "else exit 2. Without it, 'no broken link' is "
@@ -1031,10 +1232,22 @@ def main():
               file=sys.stderr)
         sys.exit(2)
 
-    baseline_path = CODE_BASELINE_PATH if args.code else BASELINE_PATH
+    if args.code and args.scope == "repo":
+        print("Error: --scope repo is meaningless with --code -- the code pass "
+              "walks .py/.lean/.cs files, not markdown pages. Choose one pass.",
+              file=sys.stderr)
+        sys.exit(2)
+
+    if args.scope == "repo":
+        baseline_path = REPO_BASELINE_PATH
+    elif args.code:
+        baseline_path = CODE_BASELINE_PATH
+    else:
+        baseline_path = BASELINE_PATH
 
     try:
-        result = run_scan(report_orphans=args.orphans, code=args.code)
+        result = run_scan(report_orphans=args.orphans, code=args.code,
+                          scope=args.scope)
 
         # The positive control is evaluated BEFORE any mode branch, so it is
         # never silently ignored by --check/--baseline.

@@ -2253,7 +2253,7 @@ class TestGenerateMarkdownReport:
         entries = [
             _catalog_entry("Search/Part1-Foundations/nb-a.ipynb"),
             _catalog_entry("Search/nb-root.ipynb"),
-            _catalog_entry("ML/nb-c.ipynb", status="NO_CODE", maturity="DRAFT"),
+            _catalog_entry("ML/nb-c.ipynb", status="NO_CODE", maturity="DRAFT", kernel="C#"),
             _catalog_entry("ML/nb-d.ipynb", status="BROKEN", maturity="ALPHA"),
         ]
         report = generate_markdown_report(entries, repo_root=tmp_path)
@@ -2264,6 +2264,20 @@ class TestGenerateMarkdownReport:
         assert rows, "aggregate table missing"
         assert sum(int(n) for _, _, n in rows) == len(entries) == 4
         assert "| **TOTAL** | | **4** |" in report
+        # Kernel Summary must partition the same complete catalog population.
+        kernel_section = report.split("## Kernel Summary")[1].split(
+            "## Maturity Summary"
+        )[0]
+        kernel_counts = _re.findall(
+            r"^- \*\*([^*]+)\*\*: (\d+)$", kernel_section, _re.M
+        )
+        assert {name: int(count) for name, count in kernel_counts if name != "TOTAL"} == {
+            "C#": 1, "Python 3": 3,
+        }
+        assert sum(
+            int(count) for name, count in kernel_counts if name != "TOTAL"
+        ) == len(entries)
+        assert "- **TOTAL**: 4" in kernel_section
         # Status Summary (first section only) sums to the same total.
         # The explicit `- **TOTAL**: 4` bullet is excluded (it is the
         # reconciliation line, not a status bucket).
@@ -2930,6 +2944,101 @@ class TestBuildGitMetadataRenameReconnection:
         # renommee : c'est le carnet d'aujourd'hui qui l'herite.
         assert meta["Serie/ancien-Python.ipynb"]["revisions"] == 2
         assert meta["Serie/ancien-Python.ipynb"]["first_commit"] == "2026-09-01"
+
+    def test_un_echange_de_noms_ne_transfere_pas_l_historique_du_mauvais_cote(
+        self, tmp_path, monkeypatch,
+    ):
+        """Deux carnets echangent leurs noms dans le MEME commit.
+
+        `App-17-VRP-Logistics` devient `...-Python` pendant que `...-Python`
+        devient `...-Metaheuristiques-Python`. Les deux aretes du registre
+        portent la MEME date : seule leur position dans le registre les
+        ordonne. Appliquees sans ordre, la chaine partait du primaire,
+        traversait `...-Python` et aboutissait au compagnon -- le primaire
+        perdait deux mois d'historique et le compagnon heritait d'un carnet
+        qu'il n'a jamais porte (#26198, point 5).
+        """
+        import generate_catalog as gc
+
+        primaire = "MyIA.AI.Notebooks/Search/Part3/App-17-VRP-Logistics.ipynb"
+        compagnon = "MyIA.AI.Notebooks/Search/Part3/App-17-VRP-Logistics-Python.ipynb"
+        compagnon_neuf = (
+            "MyIA.AI.Notebooks/Search/Part3/"
+            "App-17-VRP-Logistics-Metaheuristiques-Python.ipynb"
+        )
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|Rename(search,#25341): seconde passe (#25612)",
+            f"D\t{compagnon}",
+            f"A\t{compagnon_neuf}",
+            f"D\t{primaire}",
+            f"A\t{compagnon}",
+            "COMMIT:ccc333|2026-11-08 09:00:00 +0100|dev@example.org|Add(search,#25353): compagnon",
+            f"A\t{compagnon}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{primaire}",
+        )
+        # L'arete du compagnon est ecrite AVANT celle du primaire : c'est cet
+        # ordre qui dit que `...-Python` a ete vide avant d'accueillir le
+        # primaire, et non l'inverse.
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{compagnon}\t{compagnon_neuf}\t2026-11-10\tmyia-po-2023:CoursIA",
+            f"{primaire}\t{compagnon}\t2026-11-10\tmyia-po-2023:CoursIA",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        primaire_entry = meta["Search/Part3/App-17-VRP-Logistics-Python.ipynb"]
+        assert primaire_entry["revisions"] == 2
+        assert primaire_entry["first_commit"] == "2026-09-01", (
+            "le primaire garde l'historique de son nom d'origine"
+        )
+
+        compagnon_entry = meta[
+            "Search/Part3/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb"
+        ]
+        assert compagnon_entry["revisions"] == 2
+        assert compagnon_entry["first_commit"] == "2026-11-08", (
+            "le compagnon ne remonte pas avant sa propre creation"
+        )
+
+    def test_une_sortie_du_registre_ferme_l_incarnation_meme_sans_R(
+        self, tmp_path, monkeypatch,
+    ):
+        """Un nom reste en place et change de titulaire sans que git voie le
+        renommage : seuls `M <nom>` et `A <successeur>` paraissent.
+
+        Le registre, lui, declare que le nom a ete vide a cette date. Sans
+        cette ligne, l'historique du carnet parti restait sur le nom repris,
+        et l'incarnation nouvelle heritait d'un carnet qu'elle n'a jamais
+        porte (#26198, point 4).
+        """
+        import generate_catalog as gc
+
+        repris = "MyIA.AI.Notebooks/Serie/nom-repris.ipynb"
+        successeur = "MyIA.AI.Notebooks/Serie/nom-repris-Deplace.ipynb"
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-11 09:00:00 +0100|dev@example.org|feat: retouche du nouveau titulaire (#700)",
+            f"M\t{repris}",
+            "COMMIT:ccc333|2026-11-10 09:00:00 +0100|dev@example.org|feat: le contenu part ailleurs (#600)",
+            f"M\t{repris}",
+            f"A\t{successeur}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{repris}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{repris}\t{successeur}\t2026-11-10\tmyia-po-2023:CoursIA",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert meta["Serie/nom-repris-Deplace.ipynb"]["revisions"] == 2
+        assert meta["Serie/nom-repris-Deplace.ipynb"]["first_commit"] == "2026-09-01", (
+            "le carnet parti emporte l'historique de son ancien nom"
+        )
+        assert meta["Serie/nom-repris.ipynb"]["revisions"] == 2
+        assert meta["Serie/nom-repris.ipynb"]["first_commit"] == "2026-11-10", (
+            "le nom repris ne compte que sa nouvelle incarnation"
+        )
 
     def test_une_chaine_qui_continue_apres_le_nom_explique_le_renommage(
         self, tmp_path, monkeypatch,

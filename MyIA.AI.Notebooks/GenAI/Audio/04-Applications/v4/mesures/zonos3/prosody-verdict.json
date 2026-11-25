@@ -1,0 +1,37 @@
+{
+  "label": "A0C-zonos3-mini-chunked",
+  "path": "A0C-zonos3-mini-chunked.wav",
+  "duration_s": 146.75,
+  "gate": "REJECT",
+  "reasons": [
+    "MONOTONE",
+    "FADING"
+  ],
+  "reason_kinds": [
+    "finding",
+    "informational"
+  ],
+  "erratic_axes": [],
+  "melody_verdict": "DRONE",
+  "drone_reasons": [
+    "effective_notes 5.0 < 7.0",
+    "top3_note_pct 78.7% >= 65.0%",
+    "motif3_repeat_pct 82.8% >= 60.0%"
+  ],
+  "effective_notes": 5.0,
+  "top3_note_pct": 78.7,
+  "motif3_repeat_pct": 82.8,
+  "melodic_span_p5p95_st": 3.8,
+  "n_syllables": 305,
+  "melodic_span_st": 7.0,
+  "mean_abs_interval_st": 1.03,
+  "pct_flat_transitions": 58.6,
+  "global_range_st": 5.1,
+  "breath_verdict": "FADING",
+  "breath_verdict_effective": "FADING",
+  "decay_db": -2.77,
+  "decay_trusted": true,
+  "max_voiced_run_s": 3.3,
+  "voice_verdict": "CONSISTENT",
+  "n_voice_clusters": 1
+}

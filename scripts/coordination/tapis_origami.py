@@ -124,6 +124,14 @@ def _echec(cause: str, *, actif: bool = True) -> tuple[dict[int, str], dict]:
     return {}, {"active": actif, "measured": False, "parked": [], "reason": cause}
 
 
+def dire_panne(etat: dict) -> None:
+    """Fail-OPEN assume (arbitrage #26528) : une protection auxiliaire en panne
+    n'eteint pas le tirage de reference -- la panne se dit, la cause est nommee."""
+    print(f"Mesure Origami impossible : {etat.get('reason')}\n"
+          f"Le parcage Origami est indisponible : les EPICs Origami ne sont "
+          f"PAS ecartes du tirage pour cette lecture.", file=sys.stderr)
+
+
 def mesurer(lecture: gh_bulk.Lecture, *, op: Any = None, cache: bool = True,
             reseau: bool = True) -> tuple[dict[int, str], dict]:
     """Les EPICs Origami a parquer, et l'etat de la mesure.

@@ -116,6 +116,26 @@ Critères de retrait (cf issue #14195 acceptance) :
    et le donne a `git cherry` -- patch-id du patch de branche entiere,
    calcule par la machinerie git, sans scan `git log -p`. Elle n'est
    tentee que quand la jambe per-commit ne tranche pas deja.
+9. **Contenu deja preserve par la BRANCHE DISTANTE (#26805)** : le contenu
+   n'est pas forcement sur `main` -- il peut etre sur la **branche
+   distante**. Une branche entierement poussee, dont le tip distant est
+   exactement la tete locale, n'a plus rien a preserver dans le worktree :
+   `git worktree remove` ne supprime ni la branche locale ni la branche
+   distante. La classe `no_pr_match` confondait ce cas avec une branche
+   jamais poussee (la seule copie du travail) et le refusait a perpetuite
+   (mesure po-2024 : 33 refus `no_pr_match` sur 92 worktrees).
+   Les **cinq conditions** sont exigees toutes les cinq, sinon le refus
+   terminal est conserve : (a) la branche existe sur le distant, mesuree
+   **en direct** par la voie REST deja utilisee par l'organe (#23330) --
+   jamais sur la seule ref de tracking locale, qui peut etre perimee ;
+   (b) le tip distant est **egal** a la tete locale (ni en avance, ni en
+   retard, ni divergent) ; (c) la ref de tracking locale existe et
+   designe la tete locale (temoin d'un fetch effectif) ; (d) le worktree
+   est propre (les predicats 2a/2b ont deja rendu REFUSE en amont) ;
+   (e) aucune activite dans la fenetre « agent vivant » et le worktree
+   n'est pas le courant. Le champ jumeau `content_preserved_by` porte
+   `"origin_branch"` : le contenu n'est **pas** sur main dans ce cas, et
+   `content_on_main_by` reste donc intact.
 
 Ancre PR : REST `pulls?state=all&head=<owner>:<branche>` (seau `core`), avec
 repli `gh pr list --state all --search "head:<branch>"` (GraphQL) pour les
@@ -251,6 +271,7 @@ from __future__ import annotations
 import argparse
 import csv
 import dataclasses
+import errno
 import hashlib
 import json
 import os
@@ -350,6 +371,14 @@ class WorktreeStatus:
     # la classe `no_pr_match` indiscernable d'une garde qui n'aurait rien
     # franchi.
     content_on_main_by: Optional[str] = None
+    # Champ #26805 (additif) : *ou* le contenu est preserve quand la
+    # preservation ne vient PAS de main mais de la BRANCHE DISTANTE
+    # (predicat 7). "origin_branch" = la branche distante porte exactement
+    # la tete locale. Champ jumeau de `content_on_main_by`, et non alias :
+    # le contenu n'est PAS sur main dans ce cas, et le pretendre serait
+    # faux -- un lecteur qui confond les deux lit une branche distante
+    # comme une ascendance de main.
+    content_preserved_by: Optional[str] = None
     # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
@@ -782,10 +811,45 @@ def quarantine_root_refusal(root: Path, repo_root: Optional[str],
 
 
 def _submodule_gitdirs(modules_dir: Path) -> list[Path]:
-    """Les gitdirs de sous-modules contenus dans `modules/`."""
+    """Les gitdirs de sous-modules contenus dans `modules/`.
+
+    La disposition reelle est IMBRIQUEE : un worktree enregistre ses
+    sous-modules sous `modules/<chemin-du-sous-module>`, par exemple
+    `modules/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` (mesure,
+    #25838). Un seul niveau de profondeur ne voyait que
+    `MyIA.AI.Notebooks`, qui n'est pas un gitdir -- la preuve de
+    preservation concluait alors `objects-absent` sur la disposition
+    reelle, meme apres un deplacement reussi. On descend donc jusqu'aux
+    repertoires qui portent un magasin d'objets (et un `HEAD`).
+    """
     if not modules_dir.is_dir():
         return []
-    return sorted(p for p in modules_dir.iterdir() if p.is_dir())
+    found: list[Path] = []
+    stack: list[Path] = [modules_dir]
+    while stack:
+        current = stack.pop()
+        try:
+            children = sorted(p for p in current.iterdir() if p.is_dir())
+        except OSError:
+            continue
+        for child in children:
+            if child.name == "objects":
+                continue
+            if (child / "objects").is_dir() and (child / "HEAD").is_file():
+                found.append(child)
+                # Un gitdir peut en contenir un autre (sous-module
+                # imbrique) : on descend aussi, mais jamais dans son
+                # magasin d'objets.
+                try:
+                    stack.extend(
+                        p for p in child.iterdir()
+                        if p.is_dir() and p.name != "objects"
+                    )
+                except OSError:
+                    pass
+                continue
+            stack.append(child)
+    return sorted(found)
 
 
 def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
@@ -795,6 +859,14 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     directe de « les objets sont encore lisibles ». Un magasin vide (0
     objet) n'est pas une preservation : la deplacement aurait vide la
     copie, c'est exactement ce qu'on cherche a empecher.
+
+    `GIT_WORK_TREE` est impose au gitdir lui-meme : le `core.worktree`
+    d'un gitdir de sous-module est un chemin RELATIF vers l'arborescence
+    de travail d'origine, qui ne resout plus une fois le gitdir deplace
+    en quarantaine -- `count-objects` echouait alors sur `fatal: cannot
+    chdir` (mesure, #25838) et la preuve devenait impossible a produire.
+    On ne MODIFIE donc pas la charge utile : on neutralise le pointeur
+    par l'environnement.
     """
     if not (gitdir / "objects").is_dir():
         return False, "objects-absent"
@@ -802,9 +874,12 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     # deplacement : sa chaine de resolution pointe ailleurs. On refuse.
     if (gitdir / "objects" / "info" / "alternates").exists():
         return False, "objects-alternates"
+    env = dict(os.environ)
+    env["GIT_WORK_TREE"] = str(gitdir)
     proc = subprocess.run(
         ["git", "--git-dir", str(gitdir), "count-objects", "-v"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env=env,
     )
     if proc.returncode != 0:
         return False, f"count-objects-rc{proc.returncode}"
@@ -818,6 +893,106 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     if in_pack + loose == 0:
         return False, "objects-empty"
     return True, ""
+
+
+def _make_parent_writable(target) -> None:
+    """Rend ecrivant le repertoire qui contient `target` (best effort).
+
+    Sous POSIX, l'unlink d'un fichier en lecture seule (444) **reussit** :
+    c'est le mode du **repertoire parent** qui decide. La simulation
+    d'un depot git en lecture seule rend donc les deux, et une
+    correction qui rend ecrivant le seul fichier ne change rien sous
+    Linux : l'echec est `PermissionError [Errno 13]` sur l'entree, avec
+    le message du FICHIER alors que le bloqueur est son repertoire
+    (mesure : 4 tests en echec sur le runner Linux du 14/11, PR #26561).
+    Sous Windows, c'est l'inverse : l'attribut du fichier bloque, le
+    mode du repertoire ne compte pas.
+    """
+    parent = os.path.dirname(os.fspath(target))
+    if not parent:
+        return
+    try:
+        mode = os.stat(parent).st_mode
+        os.chmod(parent, mode | stat.S_IWRITE | stat.S_IXUSR)
+    except OSError:
+        # Le repertoire parent peut disparaitre entre-temps : ce n'est
+        # pas une raison d'abandonner, l'appelant reessaiera.
+        pass
+
+
+def _rmtree_readonly_tolerant(path: Path) -> None:
+    """Supprime un arbre en supportant les fichiers en lecture seule.
+
+    Les objets git sont ecrits en lecture seule (mode 444). Les
+    supprimer tels quels echoue en `[WinError 5] Acces refuse`
+    (mesure, #25838) : la charge utile de la quarantaine ne peut ni
+    etre remplie ni etre purgee. On rend l'attribut ecrivant, puis on
+    reessaye l'operation qui avait echoue.
+
+    Sous POSIX, il faut en outre rendre ecrivant le **repertoire**
+    qui contient l'entree (voir `_make_parent_writable`) : c'est lui,
+    et non le mode du fichier, qui bloque l'unlink.
+    """
+    def _repair(func, target, exc_info):
+        try:
+            # On AJOUTE le bit ecrivant au lieu de le poser seul : poser
+            # `S_IWRITE` seul retirerait le bit d'execution d'un
+            # repertoire, que rmtree doit pouvoir parcourir ensuite.
+            os.chmod(target, os.stat(target).st_mode | stat.S_IWRITE)
+        except OSError:
+            raise exc_info[1]
+        _make_parent_writable(target)
+        func(target)
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_repair)
+    else:
+        shutil.rmtree(path, onerror=_repair)
+
+
+def _unlink_readonly_tolerant(path: Path) -> None:
+    """Supprime un fichier, meme en lecture seule.
+
+    Le message d'erreur qui remonte alors Designne le FICHIER, mais le
+    bloqueur peut etre son repertoire parent (POSIX) : on traite les
+    deux, sinon la purge de la quarantaine echoue sur Linux la ou elle
+    reussit sous Windows.
+    """
+    try:
+        path.unlink()
+    except PermissionError:
+        os.chmod(path, os.stat(path).st_mode | stat.S_IWRITE)
+        try:
+            path.unlink()
+        except PermissionError:
+            _make_parent_writable(path)
+            path.unlink()
+
+
+def _move_tree_readonly_safe(src: Path, dst: Path) -> None:
+    """Deplace un repertoire, y compris entre deux volumes distincts.
+
+    `shutil.move` tente d'abord un renommage, puis retombe sur
+    `copytree` + `rmtree` quand les volumes different (`EXDEV`). Le
+    `rmtree` echoue alors sur les objets git en lecture seule
+    (`[WinError 5]`) : la copie aboutit, la source reste, et chaque
+    passe duplique la charge utile en quarantaine (4,8 Go mesures sur
+    deux passes, #25838). On fait donc le renommage nous-memes --
+    atomique si le volume est le meme -- et, entre volumes, une copie
+    suivie d'une suppression qui tolere le lecture-seule.
+    """
+    try:
+        os.replace(src, dst)
+        return
+    except OSError as exc:
+        cross_volume = (
+            exc.errno == errno.EXDEV
+            or getattr(exc, "winerror", None) == 17
+        )
+        if not cross_volume:
+            raise
+    shutil.copytree(src, dst, symlinks=True)
+    _rmtree_readonly_tolerant(src)
 
 
 def _restore_modules_from_quarantine(
@@ -839,7 +1014,7 @@ def _restore_modules_from_quarantine(
     if modules_dir.exists():
         return False, "restore-target-exists"
     try:
-        shutil.move(str(dest_modules), str(modules_dir))
+        _move_tree_readonly_safe(dest_modules, modules_dir)
     except (OSError, shutil.Error) as exc:
         return False, f"restore-move-failed:{exc}"
     # Deplacement inverse VERIFIE : le repertoire est de retour et rien ne
@@ -851,6 +1026,129 @@ def _restore_modules_from_quarantine(
     except OSError:
         pass  # la racine porte le marqueur ; le reste eventuel se purge par la voie nommee
     return True, ""
+
+
+class DecontaminationFailed(Exception):
+    """Le marqueur d'un sous-module n'a pas pu etre deplace en quarantaine.
+
+    Fail-closed : le retrait du worktree ne peut pas avoir lieu tant que le
+    marqueur y est encore present (git lit ce marqueur, et refuse de
+    supprimer un worktree dont il croit les sous-modules peuple). L'organe
+    signale un motif NOMME plutot que de laisser git echouer de facon
+    cryptique ("not a git repository", "working trees containing
+    submodules...").
+    """
+
+    def __init__(self, rel: Path, reason: str):
+        super().__init__(f"decontamination-failed:{rel}:{reason}")
+        self.rel = str(rel)
+        self.reason = reason
+
+
+def _decontaminate_marker(marker: Path, dest_root: Path, rel: Path) -> bool:
+    """Deplace le marqueur `.git` d'un sous-module hors du worktree.
+
+    Le marqueur est le FICHIER `.git` du sous-module (un *gitfile* : une
+    ligne `gitdir: <chemin>`) -- ou, si le sous-module a absorbe son
+    gitdir, le REPERTOIRE `.git` lui-meme. Il est DEPLACE en quarantaine,
+    jamais supprime : son contenu est conserve, et son chemin d'origine
+    se deduit du chemin relatif du sous-module (`gitfiles/<rel>/.git`).
+
+    La decontamination est la VOIE qui leve le garde de git : c'est la
+    presence de ce marqueur dans le worktree qui indique a git qu'un
+    sous-module y est POPULE, et c'est ce "popule" que git refuse de
+    supprimer ("working trees containing submodules cannot be moved or
+    removed"). Deplace, le retrait aboutit SANS `--force` (mesure : depot
+    scratch, etat de production replique -- marqueur repointe = refus,
+    marqueur pendant = "not a git repository", marqueur deplace = retrait
+    reussi).
+    """
+    if not marker.exists():
+        return False
+    dest = dest_root / "gitfiles" / rel / ".git"
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(marker), str(dest))
+    except (OSError, shutil.Error) as exc:
+        raise DecontaminationFailed(rel, str(exc))
+    return True
+
+
+def _decontaminate_submodule_gitfiles(wt_path: str, dest_root: Path) -> list[str]:
+    """Decontamine les sous-modules de ce worktree (marqueurs `.git`).
+
+    Apres le deplacement du `modules/` du gitdir en quarantaine, chaque
+    sous-module a un gitdir preserve (`<dest>/modules/<rel>`) et un
+    marqueur `.git` dans le worktree (`<wt>/<rel>/.git`). C'est ce
+    marqueur que git voit pour savoir que le sous-module est peuple, et
+    c'est lui qui fait refuser le retrait.
+
+    Mesure (depot scratch, etat de production replique) :
+      - marqueur REPOINTE vers un gitdir valide -> refus ;
+      - marqueur PENDANT (gitdir deja deplace)  -> "fatal: not a git
+        repository" ;
+      - marqueur DEPLACE hors du worktree      -> le retrait SANS `--force`
+        aboutit.
+    Le marqueur est donc deplace en quarantaine : rien n'est perdu.
+
+    Retourne la liste des chemins de sous-modules decontamines. Leve
+    `DecontaminationFailed` si un marqueur n'a pas pu etre deplace : le
+    retrait ne peut alors pas avoir lieu.
+    """
+    modules = dest_root / "modules"
+    decontaminated: list[str] = []
+    for sub in _submodule_gitdirs(modules):
+        try:
+            rel = sub.relative_to(modules)
+        except ValueError:
+            continue
+        marker = Path(wt_path) / rel / ".git"
+        if _decontaminate_marker(marker, dest_root, rel):
+            decontaminated.append(str(rel))
+    return decontaminated
+
+
+def _decontaminate_dangling_gitfiles(wt_path: str,
+                                     quarantine_root: Path) -> list[str]:
+    """Decontamine les marqueurs deja pendants (passe precedente).
+
+    Cas d'une passe precedente : les `modules/` ont deja ete deplaces en
+    quarantaine, le marqueur `.git` du sous-module pointe donc vers un
+    chemin disparu et `git worktree remove` echoue (`fatal: not a git
+    repository`). On retrouve le gitdir en quarantaine -- une entree par
+    worktree, nommee `<horodatage>-<pid>-<nom-du-worktree>` -- et on y
+    deplace le marqueur.
+
+    Meme geste que la voie directe : rien n'est supprime, le marqueur est
+    deplace, et le retrait peut alors avoir lieu SANS `--force`. Leve
+    `DecontaminationFailed` si un marqueur n'a pas pu etre deplace.
+    """
+    if not quarantine_root.is_dir():
+        return []
+    wt = Path(wt_path)
+    entries = sorted(
+        (d for d in quarantine_root.iterdir()
+         if d.is_dir() and d.name.endswith(f"-{wt.name}")),
+        key=lambda d: d.name, reverse=True,
+    )
+    if not entries:
+        return []
+    decontaminated: list[str] = []
+    for entry in entries:
+        modules = entry / "modules"
+        if not modules.is_dir():
+            continue
+        for sub in _submodule_gitdirs(modules):
+            try:
+                rel = sub.relative_to(modules)
+            except ValueError:
+                continue
+            marker = wt / rel / ".git"
+            if not marker.exists():
+                continue
+            if _decontaminate_marker(marker, entry, rel):
+                decontaminated.append(str(rel))
+    return decontaminated
 
 
 def quarantine_worktree_modules(
@@ -875,9 +1173,20 @@ def quarantine_worktree_modules(
         return False, "gitdir-unreadable", None
     modules_dir = gitdir / "modules"
     if not modules_dir.is_dir():
-        # Rien a decontaminer : le worktree n'a pas de sous-module
-        # enregistre. Rien de deplace.
-        return True, "", {"quarantine": None, "modules": [], "preserved": True}
+        # Les `modules/` ont deja ete deplaces par une passe precedente :
+        # les objets sont en quarantaine, il reste a decontaminer les
+        # marqueurs `.git` pendants qui resteraient dans le worktree --
+        # sans quoi `git worktree remove` echoue sur eux.
+        try:
+            decontaminated = _decontaminate_dangling_gitfiles(
+                wt_path, quarantine_root)
+        except DecontaminationFailed as exc:
+            # Le marqueur est reste dans le worktree : le retrait echouerait
+            # sur lui. On refuse avec un motif NOMME.
+            return False, str(exc), None
+        return True, "", {"quarantine": None, "modules": [],
+                          "decontaminated": decontaminated,
+                          "preserved": True}
 
     refusal = quarantine_root_refusal(quarantine_root, repo_root, wt_path)
     if refusal is not None:
@@ -899,10 +1208,11 @@ def quarantine_worktree_modules(
         return False, f"quarantine-create-failed:{exc}", None
 
     # Deplacement (pas de copie, pas de suppression) : c'est ce qui leve le
-    # garde de git ET preserve les objets.
+    # garde de git ET preserve les objets. Le deplacement tolere le
+    # lecture-seule ET le changement de volume (#25838).
     dest_modules = dest_root / "modules"
     try:
-        shutil.move(str(modules_dir), str(dest_modules))
+        _move_tree_readonly_safe(modules_dir, dest_modules)
     except (OSError, shutil.Error) as exc:
         # Un deplacement echoue peut laisser une copie partielle en
         # quarantaine : si le modules/ source n'est plus la, on rend ce qui
@@ -946,9 +1256,32 @@ def quarantine_worktree_modules(
                 "preserved": False,
                 "restored": True,
             }
+    # Les marqueurs `.git` des sous-modules pointaient vers le gitdir du
+    # worktree : deplace, il ne resolvent plus et `git worktree remove`
+    # echoue (`fatal: not a git repository`). ET, meme repointe, le marqueur
+    # fait dire a git que le sous-module est peuple -- et c'est ce que git
+    # refuse de supprimer ("working trees containing submodules cannot be
+    # moved or removed"). On decontamine donc : le marqueur est DEPLACE en
+    # quarantaine (rien n'est supprime) et le retrait peut alors avoir lieu
+    # SANS `--force`.
+    try:
+        decontaminated = _decontaminate_submodule_gitfiles(wt_path, dest_root)
+    except DecontaminationFailed as exc:
+        # Le marqueur est reste dans le worktree : `git worktree remove`
+        # echouerait sur lui. On refuse avec un motif NOMME -- et comme le
+        # `modules/` est deja en quarantaine, la passe suivante saura
+        # retrouver les objets (voie des marqueurs pendants).
+        return False, str(exc), {
+            "quarantine": str(dest_root),
+            "modules": proofs,
+            "decontaminated": [],
+            "preserved": True,
+        }
+
     return True, "", {
         "quarantine": str(dest_root),
         "modules": proofs,
+        "decontaminated": decontaminated,
         "preserved": True,
     }
 
@@ -975,9 +1308,9 @@ def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
             total += size
             removed.append(str(child))
             if child.is_dir():
-                shutil.rmtree(child)
+                _rmtree_readonly_tolerant(child)
             else:
-                child.unlink()
+                _unlink_readonly_tolerant(child)
     except OSError as exc:
         return False, f"quarantine-purge-failed:{exc}", {
             "root": str(root), "removed": removed, "bytes": total,
@@ -1422,6 +1755,71 @@ def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
     # compter contre lui, donc on ne peut pas non plus disculper le
     # local. Fail-CLOSED sur le compte local.
     return local_ahead
+
+
+def _local_head_sha(wt_path: str) -> Optional[str]:
+    """SHA de HEAD du worktree, ou None si la lecture echoue."""
+    proc = run_git(wt_path, "rev-parse", "HEAD", check=False)
+    if proc.returncode != 0:
+        return None
+    sha = proc.stdout.strip()
+    return sha or None
+
+
+def content_preserved_on_origin_branch(
+    wt_path: str,
+    branch: str,
+    head_sha: str,
+    gh_unavailable_reason: Optional[str] = None,
+) -> Optional[bool]:
+    """Le contenu du worktree est-il deja preserve par la BRANCHE DISTANTE ?
+
+    Trois etats, jamais deux :
+
+    - ``True``  -- la branche existe sur le distant ET le tip distant est
+      exactement la tete locale ;
+    - ``False`` -- la branche n'existe pas sur le distant, ou le tip
+      distant differe de la tete locale (en avance, en retard ou
+      divergent), ou la ref de tracking locale manque ;
+    - ``None``  -- indetermivable (mode degrade gh, API muette) :
+      fail-CLOSED, l'appelant REFUSE.
+
+    Pourquoi le DISTANT et pas la seule ref de tracking locale (#26805) :
+    une ref locale peut etre **perimee** -- elle dit ce que le distant
+    portait au dernier fetch, pas ce qu'il porte maintenant. La ref locale
+    n'est donc exigee que comme **temoin** d'un fetch effectif (une
+    branche jamais fetchee reste refusee), jamais comme preuve du
+    contenu.
+
+    La voie reseau est celle deja utilisee par l'organe (#23330) :
+    ``repos/{owner}/{repo}/branches/<b>`` en REST -- aucun second canal
+    introduit, et la degradation `gh` reste respectee (#21753).
+    """
+    if gh_unavailable_reason is not None:
+        # Mode degrade : aucun appel gh n'est tente, rien n'est mesure.
+        return None
+
+    # Temoin de fetch : la ref de tracking locale doit exister ET designer
+    # la tete locale. Une ref absente (branche jamais fetchee) ou perimee
+    # ne prouve rien sur le distant -- fail-CLOSED.
+    ref_proc = run_git(
+        wt_path, "rev-parse", "--verify",
+        f"refs/remotes/origin/{branch}", check=False,
+    )
+    if ref_proc.returncode != 0:
+        return False
+    local_ref_sha = ref_proc.stdout.strip()
+    if not local_ref_sha or local_ref_sha != head_sha:
+        return False
+
+    state, tip = _remote_branch_tip(branch)
+    if state == "unknown" or tip is None:
+        return None
+    if state == "absent":
+        # Le distant ne porte plus la branche : il ne peut rien preserver.
+        return False
+    # Egalite stricte : ni en avance, ni en retard, ni divergent.
+    return tip == head_sha
 
 
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
@@ -2633,6 +3031,72 @@ def diagnose_worktree(wt_path: str, current_path: str,
                 content_on_main_by=leg,
             )
 
+    # Predicat 7 (#26805) : contenu deja preserve par la BRANCHE DISTANTE.
+    #
+    # Une branche entierement poussee, dont le tip distant est exactement la
+    # tete locale, n'a plus rien a preserver dans ce worktree :
+    # `git worktree remove` ne supprime NI la branche locale NI la branche
+    # distante. La classe `no_pr_match` confondait ce cas avec une branche
+    # jamais poussee -- la seule copie du travail -- et refusait la
+    # premiere a perpetuite (mesure po-2024 : 33 refus `no_pr_match` sur
+    # 92 worktrees, dont beaucoup dans ce cas).
+    #
+    # Fail-CLOSED : les cinq conditions de l'issue (#26805) sont exigees
+    # toutes les cinq -- branche sur le distant, tip distant EQUAL a la tete
+    # locale, worktree propre (les predicats 2a/2b ont deja rendu REFUSE
+    # au-dessus), aucune activite dans la fenetre, et jamais le worktree
+    # courant (traite en SKIP_CURRENT plus haut). Une seule condition
+    # manquante -> le refus terminal est conserve.
+    if info["branch"] and gh_unavailable_reason is None:
+        local_head = _local_head_sha(wt_path)
+        if local_head:
+            preserved = content_preserved_on_origin_branch(
+                wt_path, info["branch"], local_head, gh_unavailable_reason,
+            )
+            if preserved is True:
+                age_h = recent_activity_age_hours(wt_path)
+                if age_h < activity_window_h:
+                    # Meme fenetre « agent vivant » que les predicats 5 et 6
+                    # (#18494) : le critere est un critere de CONTENU, pas
+                    # d'ACTIVITE, et un agent vivant traverse necessairement
+                    # l'etat « worktree propre, branche sans commit propre ».
+                    return WorktreeStatus(
+                        path=wt_path,
+                        branch=info["branch"],
+                        is_current=False,
+                        pr_state=None,
+                        pr_number=None,
+                        pr_url=None,
+                        ahead_count=info["ahead_count"],
+                        has_source_dirty=info["has_source_dirty"],
+                        untracked_paths=info["untracked"],
+                        decision="REFUSE",
+                        refusal_reason=f"recent_activity:{age_h:.1f}h",
+                        has_submodules=info["has_submodules"],
+                        blocking_untracked=info.get("blocking_untracked", []),
+                        ignored_extra=info.get("ignored_extra", []),
+                        lane_owner=info.get("lane_owner"),
+                        content_preserved_by="origin_branch",
+                    )
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=None,
+                    pr_number=None,
+                    pr_url=None,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REMOVE",
+                    refusal_reason=None,
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    content_preserved_by="origin_branch",
+                )
+
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
     # #21753 : en mode degrade, ce refus ne dit pas « pas de PR » (non
@@ -2882,6 +3346,12 @@ def render_text(
                 # confond lit un squash-merge comme une ascendance.
                 leg = s.content_on_main_by or "?"
                 pr_part = f"content_on_main({leg})"
+            if not pr_part and s.content_preserved_by:
+                # #26805 : la preservation ne vient pas de main mais de la
+                # branche distante. Le dire, c'est distinguer « retire parce
+                # que main contient deja le contenu » de « retire parce que
+                # origin contient deja le contenu ».
+                pr_part = f"preserved_on_origin({s.content_preserved_by})"
             # v1.3 : suffixe de visibilite quand le retrait passera par un
             # deverrouillage (lock d'agent a pid mort).
             lock_part = (
@@ -3283,10 +3753,15 @@ def main() -> int:
                     })
                     # Un refus de quarantaine (modules/ rendu au worktree,
                     # retrait annule) est une DECISION de l'organe : exit 0,
-                    # avec son decompte -- pas une panne. Seul l'echec de la
-                    # restauration, qui laisse un etat incoherent (objets
-                    # en quarantaine, worktree non decontamine), sort en 2.
-                    if q_msg.startswith("quarantine-restore-failed"):
+                    # avec son decompte -- pas une panne. Deux cas sortent
+                    # en 2 : l'echec de la restauration, qui laisse un etat
+                    # incoherent (objets en quarantaine, worktree non
+                    # decontamine) ; et l'echec de la DECONTAMINATION, ou
+                    # le marqueur n'a pas pu quitter le worktree -- l'objet
+                    # de l'organe a echoue en cours de route, il ne doit pas
+                    # se deguiser en decision.
+                    if q_msg.startswith(("quarantine-restore-failed",
+                                         "decontamination-failed")):
                         error_count += 1
                     else:
                         quarantine_refused_count += 1

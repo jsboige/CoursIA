@@ -93,6 +93,7 @@ elle est a rejouer.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import re
@@ -105,17 +106,37 @@ from datetime import datetime, timezone
 try:
     import gh_identity
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
-# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
-# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
-# porte les invariants ; `gh_json` ne fait que router les argv applicables.
+# #27881 — la grammaire des marqueurs (familles FORMELLE / PROSE, vocabulaire
+# des verdicts) et le predicate de signalement sont extraits dans
+# `scripts/ci/nit_markers.py` : l'organe ne doit pas grossir (cliquet de
+# taille `script_size_ceilings.json`).
 try:
-    import gh_etag
+    import nit_markers
 except ImportError:  # meme shim que gh_identity (tests hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import gh_etag
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import nit_markers
+
+# #27874 — le RAPPORT (verdict, bloc « A RELIRE », notes de preuve) est
+# extrait dans `scripts/ci/nit_rapport.py` : cible T5 du cliquet de taille
+# (separer la grammaire des marqueurs, l'evaluation et le rapport).
+try:
+    import nit_rapport
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import nit_rapport
+
+# #27012 point 3 — le funnel d'appel gh (routing ETag puis subprocess, avec
+# bascule UNIQUE vers le jeton App de la lane sur rate-limit 403/429) est
+# extrait dans `scripts/ci/gh_app_failover.py`.
+try:
+    import gh_app_failover
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import gh_app_failover
 
 REPO = "jsboige/CoursIA"
 
@@ -313,7 +334,19 @@ AGENT_PREFIXES = (
 # #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
 # donc dans cette constante, consommee uniquement par classify ; can_lift
 # reste sur AGENT_PREFIXES.
-CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+#
+# #26364 (tranche B.0, [ACTION] ai-01 du 2026-11-15) : `[BASE-INHERITED` rejoint
+# l'extension, meme mecanisme que [DIAG. Motif : un rouge herite de la base
+# n'avait pas de canal sur la PR -- l'ecrire (comme l'exige la regle worker
+# « ecrire en commentaire puis --ignore-red ») creait un nit B.0 qui bloquait
+# la PR qu'il documentait (7 occurrences mesurees par po-2028, cycles 86-89).
+# Le commentaire de signalement est un SIGNAL, pas une reserve : il sort de la
+# classification. Une reserve vivante reste un nit par la garde habituelle
+# (ligne 51xx), et le tag ne touche ni les levees (can_lift lit
+# AGENT_PREFIXES) ni la boucle DIAG (COMMENT_TAG_RE ne le lit pas).
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + (
+    "[ACTION", "[DIAG", "[BASE-INHERITED",
+)
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
 # ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
@@ -348,20 +381,26 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
-# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
-# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
-# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
-# fichier et forge le meme jeton. Une App par machine ne peut donc pas
-# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
-# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
-# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+# #17437 : la voix App PROPRE a la lane coordinateur rejoint la voix humaine
+# (Q187, 2026-11-14). L'App existe desormais (App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem``), DISTINCTE de la cle de
+# l'App de machine ``coursia-lane-ai-01`` que la lane worker sœur
+# ``myia-ai-01:CoursIA-2`` lit aussi : seul le coordinateur forge le jeton
+# de l'App propre. L'App de MACHINE ``coursia-lane-ai-01[bot]`` reste
+# EXCLUE pour la raison d'origine (arbitrage ai-01 du 2026-11-13) : sa cle
+# vivant dans le clone partage, un ``[OVERRIDE]`` de CoursIA-2 sous cette
+# App vaudrait celui du coordinateur, exactement ce que la borne
+# #12737/#12836 interdit.
 #
 # La preuve d'identite reste typee par ligne (``_author_login`` +
-# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
-# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
-# existe, son login REST rejoint cet ensemble par une edition consciente.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique. La forme
+# REST suffixee ``coursia-coord-ai01[bot]`` et la forme GraphQL typee
+# ``Bot`` (repliee par normalisation) levent ; une forme nue sans type ne
+# leve rien, et l'homonyme UTILISATEUR type ``User`` reste nu donc hors de
+# l'ensemble -- fail-closed.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-coord-ai01[bot]"}
 # Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
 # reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
 # identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
@@ -692,81 +731,14 @@ CONCERN_MARKERS = (
     "a changer",
 )
 
-# #12143 — Hermes severity glyphes (substance du premier PR #12148 fondateur).
-# Extrait en constante separee pour subordonner la levee par LIFT_MARKERS
-# (cf `classify` ci-dessous) : un glyphe est une EMISSION, et une emission
-# ne se laisse pas eteindre par un mot de levee pose ailleurs dans la meme
-# prose. Distribution scan 150 PRs mergees (35 reviews Hermes) :
-#   △ (U+25B3) : micro-nit non-bloquant, 23/35 (exclu de CONCERN_MARKERS).
-#   🟡 (U+1F7E1) : constat substantiel, 5/35. Promote car 4 leves par la suite,
-#     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
-#     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
-#   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
-# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
-# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
-# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
-# ne sont PAS des marqueurs de severite et ne le deviendront pas —
-# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
-# introduit un nouveau glyphe de severite doit le proposer ici avec une
-# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
-# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
-# mais le verdict litteral en narration de dissipation avec attribution
-# tell — cf `_MENTION_VERDICT_TELL` (Position K).
-# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
-# symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
-# ciblent l'ASCII formel et ignorent les glyphes ; la Position J
-# (`_strip_glyphe_mentions`, #14277) les neutralise en position de MENTION
-# (méta-nom sur la même ligne), l'émission en tête de ligne restant vive.
-SEVERITY_GLYPHS = (
-    "🟡",  # constat substantiel (fondateur #12059)
-    "🔴",  # bloquant strict
-)
-# Concatene pour que `live_concern` (has_live_marker sur CONCERN_MARKERS) capture
-# aussi les glyphes isoles — sans cette ligne, un body compose uniquement d'un
-# glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
+# Le vocabulaire des VERDICTS (glyphes de severite, verdicts de blocage, refus
+# d'approbation) est extrait dans `scripts/ci/nit_markers.py` : meme contrat
+# de vocabulaire, meme document de reference, un seul endroit a faire vivre.
+SEVERITY_GLYPHS = nit_markers.SEVERITY_GLYPHS
 CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
-
-# #12908 — le verdict de l'organe B.0 lui-même, en ses deux formes d'EMISSION :
-# le gras de revalidation (« classe encore cette PR **BLOCKED** », commentaire
-# fondateur 2026-08-25T04:45:30Z de #12798) et la sortie pastee de l'organe
-# (« BLOCKED  PR #N — ... », double espace). Ce commentaire fondateur
-# maintenait explicitement la reserve (« quatre réserves tierces actives »,
-# « réserve uniquement B.0/process ») tout en narrant le vocabulaire de levée
-# (« une levée explicite sur le head final ») : le LIFT_MARKER « levée » de la
-# narration absorbait la reserve vivante — le defaut exact que B.0 existe pour
-# traquer. Comme les glyphes : concatene pour que `live_concern` classe le
-# maintien BOT-CONCERN, ET subordonne la branche LIFT de `classify` via
-# `_formal_concern_precedes_lift` (un BLOCKED emis AVANT la narration de
-# levee garde la reserve vivante ; une levée suivie d'un BLOCKED narré au
-# passe reste une levée — la position decide, comme pour les verdicts
-# formels). Le mot NU « BLOCKED » n'est PAS matche : le tag de protocole
-# « [BLOCKED] lane ... » d'une lane et la negation « n'est plus BLOCKED »
-# restent hors du filet. Residuels assumes : un BLOCKED d'emission sans gras
-# ni paste d'organe ne matche pas ; une paste dans un bloc de code fence est
-# une mention (_strip_quoted), comme tout autre verdict backtinque.
-BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
+BLOCK_VERDICTS = nit_markers.BLOCK_VERDICTS
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
-
-# #14553 — le registre du REFUS d'approbation. Fondateur mesure : review
-# NanoClaw du 2026-09-03T23:50:16Z sur #14535 — trois demandes numerotees,
-# cloture « Donnees exactes, discipline de provenance en defaut — pas de
-# LGTM en l'etat » -> AUCUN des marqueurs existants ne vit -> classify None
-# -> gate vert. Un refus d'approbation est un verdict a part entiere (CLAUDE.md
-# B.0 : « un reviewer qui ecrit "je ne peux pas approuver seul sur ce
-# format" bloque ») ; aucun des 21 motifs ne couvrait cette famille. Casse
-# RELACHEE (defaut has_live_marker) : « Pas de LGTM » en tete de phrase doit
-# vivre. Garde-fou FP double : (1) la fenetre de citation (_is_cited) rend
-# morte l'occurrence d'un refus QUOTE dans une levee (« la reserve
-# « pas de LGTM » est adressee ») ; (2) « no LGTM » est word-bounded avec
-# lookahead anti-« no LGTM needed » (_WORD_BOUNDED_MARKERS). « sous reserve
-# de » est EXCLU : sa neutralite depend de la POSITION (verdict final vs
-# subordonnee conditionnelle), qu'un motif ne peut pas porter — residuel
-# documente sur l'issue.
-APPROVAL_REFUSALS = (
-    "pas de LGTM", "no LGTM",
-    "je ne peux pas approuver", "cannot approve", "not approving",
-    "ne pas merger en l'etat", "do not merge as is",
-)
+APPROVAL_REFUSALS = nit_markers.APPROVAL_REFUSALS
 CONCERN_MARKERS = CONCERN_MARKERS + APPROVAL_REFUSALS
 
 # La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
@@ -801,8 +773,12 @@ CONCERN_MARKERS = CONCERN_MARKERS + ("concerns about", "concerns remain")
 CONCERN_MARKERS = CONCERN_MARKERS + (_EN_CONCERN_LABEL,)
 CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
-# Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
-
+# #27881 — la famille FORMELLE des marqueurs de reserve (la famille de
+# PROSE et le predicat de signalement vivent dans
+# `scripts/ci/nit_signal_markers.py`, extrait pour ne pas grossir
+# l'organe). La liste formelle est DERIVEE du registre vivant : elle ne
+# se recopie pas.
+FORMAL_CONCERN_MARKERS = nit_markers.formal_concern_markers(CONCERN_MARKERS)
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 # la resolution. Sans ce filtre, chaque « CHANGES_REQUESTED levée » est compte
 # comme une reserve ouverte (faux positif massif, mesure sur 400 PRs).
@@ -3778,25 +3754,17 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
-    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
-    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
-    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
-    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
-    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
-    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
-    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
-    etag_path = gh_etag.etag_applicable(args)
-    if etag_path is not None:
-        body, served_by_304 = gh_etag.conditional_get(
-            etag_path, timeout=GH_CALL_TIMEOUT_S)
-        if served_by_304:
-            API_USAGE["rest_304"] += 1
-        return _project_gh_payload(args, body)
-    out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
-        timeout=GH_CALL_TIMEOUT_S,
-    ).stdout
-    return _project_gh_payload(args, json.loads(out))
+    # Le routing d'appel vit dans gh_app_failover (#27012 point 3) : lectures
+    # REST conditionnelles par l'ETag persiste partage par machine (#26260 --
+    # un 304 est une PREUVE SERVEUR que le chemin est inchange, aucun corps
+    # n'est jamais servi sans reponse du serveur), sinon `gh` en subprocess ;
+    # sur rate-limit 403/429, bascule UNIQUE vers le jeton App de la lane.
+    return _project_gh_payload(args, gh_app_failover.call(
+        args, timeout=GH_CALL_TIMEOUT_S, on_304=_count_rest_304))
+
+
+def _count_rest_304() -> None:
+    API_USAGE["rest_304"] += 1
 
 
 def _project_added_symbol_patch(patch: str) -> str:
@@ -3911,6 +3879,14 @@ def _project_gh_payload(args: list[str], payload: object) -> object:
         return {
             key: payload[key] for key in ("truncated", "tree") if key in payload
         } | {"tree": project_rows(payload.get("tree"), ("path", "sha", "type"))}
+
+    if endpoint.startswith(prefix + "git/blobs/"):
+        # #22757 : `_resolve_absent_sha_symbols.fetch` ne lit que `content`
+        # (base64 decode en dessous) -- sha/node_id/url sont du transport
+        # mort pour l'organe.
+        if not isinstance(payload, dict):
+            return payload
+        return {"content": payload["content"]} if "content" in payload else {}
 
     if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
         return project_rows(payload, ("id", "user"), {"user": ("login",)})
@@ -4712,7 +4688,14 @@ def _attach_absent_sha_context(data: dict) -> None:
                                  if v.get("files")}
     head_oid = _pr_head_oid(data)
     head_tree = ""
-    if head_oid:
+    # #22757 (tranche appels) : l'arbre de tete n'est lu que derriere les
+    # gates SHA d'`analyse` (#15556/#15973 -- comparaison d'arbres et carte
+    # chemin->blob), toutes inertes quand AUCUN SHA cite n'a ete resolu.
+    # Le fetch `commits/<head_oid>` etait pourtant inconditionnel : sur une
+    # PR sans SHA absent, il ne servait aucune decision. Conditionne a
+    # `state` non vide, le verdict est identique (les gates lisaient "" de
+    # toute facon dans ce cas) et le funnel economise un appel par PR.
+    if head_oid and state:
         try:
             commit = gh_json(["api", f"repos/{REPO}/commits/{head_oid}"])
             head_tree = ((commit.get("commit") or {}).get("tree")
@@ -5092,6 +5075,12 @@ def classify(author: str, body: str) -> str | None:
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
+        # #27881 — dans un commentaire de SIGNALEMENT, la PROSE seule ne fait
+        # pas une reserve : seule la famille FORMELLE reste un nit. Un VERDICT
+        # formel (CHANGES_REQUESTED, glyphe, refus d approbation) l emporte.
+        live_concern = nit_markers.signal_live_concern(
+            live_concern, stripped, _strip_mentioned_verdicts(_strip_quoted(body)),
+            FORMAL_CONCERN_MARKERS, has_live_marker)
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
     # une reserve claire (live_concern) OU une structure de plainte UI web
@@ -5109,117 +5098,40 @@ def classify(author: str, body: str) -> str | None:
     return None
 
 
-def review_threads(pr: int) -> list[dict]:
-    """Threads inline (3e surface, absente de `gh pr view --json`).
+# #27319 — funnel B.0 extrait dans `scripts/ci/b0_funnel.py` (propre plafond
+# de taille, modele nit_markers #27882) : l'organe ne doit pas grossir. Copie
+# PRIVEE du module, chargee par chemin et cablee a CE module-ci : les
+# collaborateurs (REPO, gh_json, _author_login, _typed_author_surfaces,
+# LIFT_OVERRIDE_LOGINS) restent resolus AU MOMENT DE L'APPEL a travers
+# l'organe — les monkeypatchs des tests (`mod.gh_json`, `mod.review_threads`)
+# passent dans le funnel, et deux instances chargees de l'organe dans un meme
+# processus pytest ne se croisent pas.
 
-    #17437 (relecture ai-01 2026-11-13, point non bloquant) : la connexion
-    PAGINE (`after` + `pageInfo`) comme les deux autres surfaces typees.
-    `first:100` seul rendait les 100 threads les PLUS ANCIENS et laissait
-    les suivants invisibles — un thread inline non resolu posterieur a la
-    100e position sortait de l'analyse. Meme plafond dur (50 pages = 5000
-    threads) ; un curseur fige arrete la boucle au lieu de boucler.
+
+class _FunnelHost:
+    """Proxy LIVE sur les globales de l'organe (relus a chaque acces).
+
+    Certains loaders de tests executent l'organe SANS l'inserer dans
+    sys.modules : le namespace de branchement ne peut pas venir de la.
     """
-    query = """
-    query($owner:String!,$repo:String!,$n:Int!,$tAfter:String){
-      repository(owner:$owner,name:$repo){
-        pullRequest(number:$n){
-          reviewThreads(first:100,after:$tAfter){
-            pageInfo{hasNextPage endCursor}
-            nodes{
-              isResolved isOutdated path line
-              comments(first:1){nodes{author{login __typename} body createdAt}}
-            }}
-        }
-      }
-    }"""
-    owner, name = REPO.split("/")
-    nodes: list[dict] = []
-    after: str | None = None
-    for _ in range(50):
-        args = [
-            "api", "graphql", "-f", f"query={query}",
-            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
-        ]
-        if after:
-            args += ["-F", f"tAfter={after}"]
-        data = gh_json(args)
-        conn = data["data"]["repository"]["pullRequest"]["reviewThreads"]
-        nodes.extend(n for n in (conn.get("nodes") or [])
-                     if isinstance(n, dict))
-        info = conn.get("pageInfo") or {}
-        if not info.get("hasNextPage"):
-            break
-        nxt = info.get("endCursor")
-        if not nxt or nxt == after:
-            print(f"  [!] PR #{pr}: curseur de pagination fige sur "
-                  "reviewThreads — threads suivants non analyses.",
-                  file=sys.stderr)
-            break
-        after = nxt
-    else:
-        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
-              "reviewThreads — threads suivants non analyses.", file=sys.stderr)
-    out = []
-    for t in nodes:
-        first = (t.get("comments") or {}).get("nodes") or [{}]
-        c = first[0]
-        out.append({
-            "resolved": bool(t.get("isResolved")),
-            "outdated": bool(t.get("isOutdated")),
-            "path": t.get("path"),
-            "line": t.get("line"),
-            "author": _author_login(c) or "?",
-            "body": c.get("body", ""),
-            "createdAt": c.get("createdAt"),
-        })
-    return out
+
+    def __init__(self, module_globals):
+        self.__dict__ = module_globals
 
 
-def improper_dismissals(pr: int) -> set[str]:
-    """Auteurs de review dont la reserve a ete dismissee par QUELQU'UN D'AUTRE.
-
-    `gh pr view --json reviews` ne dit ni qui a dismisse ni quand : il ne rend
-    que l'etat final `DISMISSED`. L'acteur vit dans la timeline REST
-    (`review_dismissed`), l'auteur de la review dans les reviews REST — les deux
-    se joignent par l'`id` NUMERIQUE (le champ `id` de `gh pr view` est un
-    node-id GraphQL, `PRR_kwDO...`, non comparable au `review_id` entier).
-
-    Retourne des LOGINS d'auteurs de review, pas des ids : la reserve est
-    reappariee par auteur dans `analyse`. Sur-approximation assumee quand un
-    meme auteur a deux reviews dismissees dont une legitimement — un gate se
-    trompe du cote qui bloque, jamais du cote qui laisse passer.
-
-    Non cable sur `audit()` : deux appels API par PR, pour un chemin retrospectif
-    ou l'enforcement n'a plus lieu. Le gate pre-merge est le point de controle.
-    """
-    try:
-        reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
-        events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
-    except subprocess.TimeoutExpired:
-        # #19643 (residu) : un ensemble vide lirait la reserve d'un tiers comme
-        # levee. Une expiration remonte jusqu'au verdict non-CLEAN de main().
-        raise
-    except Exception:
-        return set()  # timeline illisible : on retombe sur l'ancien comportement
-    if not isinstance(reviews, list) or not isinstance(events, list):
-        return set()
-    author_of = {
-        r.get("id"): _author_login(r, "user")
-        for r in reviews if isinstance(r, dict)
-    }
-    improper: set[str] = set()
-    for e in events:
-        if not isinstance(e, dict) or e.get("event") != "review_dismissed":
-            continue
-        actor = _author_login(e, "actor")
-        rid = (e.get("dismissed_review") or {}).get("review_id")
-        emitter = author_of.get(rid)
-        if not emitter:
-            continue
-        if actor == emitter or actor in LIFT_OVERRIDE_LOGINS:
-            continue
-        improper.add(emitter)
-    return improper
+_b0_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "ci", "b0_funnel.py")
+_b0_spec = importlib.util.spec_from_file_location(
+    f"b0_funnel_{__name__}", _b0_path)
+b0_funnel = importlib.util.module_from_spec(_b0_spec)
+sys.modules[_b0_spec.name] = b0_funnel
+_b0_spec.loader.exec_module(b0_funnel)
+b0_funnel.wire(_FunnelHost(globals()))
+review_threads = b0_funnel.review_threads
+_reviews_author_of_rest = b0_funnel._reviews_author_of_rest
+_pr_review_bundle = b0_funnel._pr_review_bundle
+improper_dismissals = b0_funnel.improper_dismissals
+ThreadsIncomplete = b0_funnel.ThreadsIncomplete
 
 
 def _names_author(body: str, author: str) -> bool:
@@ -5353,7 +5265,8 @@ def _scope_lifted_sentence(body: str, needle_re) -> bool:
     return False
 
 
-def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
+def _override_scopes_reserve(lift_body: str, nit_author: str,
+                              nit_body: str | None = None) -> bool:
     """#14216 — un OVERRIDE coordinateur nomme-t-il LA reserve qu'il leve ?
 
     La trappe #11639 agissait par PR, jamais par reserve : un seul
@@ -5380,6 +5293,21 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     (branche self de ``_lift_eligible``). Un nit d'auteur inconnu (compte
     supprime) reste levable : un scope ne peut pas nommer ce qui n'a pas
     de nom.
+
+    #27873 — la forme 2 discriminait sur le SEUL LOGIN : toute reserve
+    postee sous `jsboige` (login de poussee partage, cf #13316) etait
+    traitee comme une reserve de persona. C'est faux pour une reserve USER
+    (voix nue du mainteneur, meme login) : un override qui ne nomme qu'une
+    reserve de persona éteignait aussi le Concern du mainteneur. Mesure
+    sur PR #27153 : l'override `myia-ai-01` du 21/11 20:54Z (« Je leve la
+    reserve de clusterManager-Myia (review NanoClaw ...) … ; Le Concern du
+    mainteneur … attend son arbitrage ») rendait `rc=0` en eteignant le
+    `Concern:` du 17/11 18:53Z — contre l'intention explicite de l'override.
+    La discrimination passe donc par la NATURE de la reserve : la mention
+    de persona ne la scope que si la reserve ELLE-MEME porte le marqueur
+    de persona (le self-bot qui la porte). Une reserve user sans marqueur
+    n'est plus scopee par une mention « Hermes/NanoClaw » qui qualifie une
+    AUTRE reserve nommee dans la meme phrase.
     """
     if not nit_author:
         return True
@@ -5394,7 +5322,18 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
                            + r"(?![A-Za-z0-9_-])")
     if _scope_lifted_sentence(body, author_re):
         return True
-    if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
+    if nit_author in PERSONA_ALIAS_LOGINS:
+        return _scope_lifted_sentence(
+            body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
+    if nit_author == "jsboige":
+        # #27873 — la mention de persona ne vaut QUE pour une reserve de
+        # persona (self-bot qui la porte : marqueur dans le corps). Une
+        # reserve user (voix nue) sous le meme login n'est pas scopee par
+        # elle. `nit_body is None` = appelant historique sans le corps :
+        # comportement d'avant preserve (fail-open sur l'absence d'info).
+        if nit_body is not None and not _PERSONA_MARKERS_RE.search(
+                _strip_quoted(nit_body)):
+            return False
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
@@ -5847,7 +5786,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # nomination de la reserve d'autrui (login ou persona Hermes), il ne
         # leve que les siennes. La trappe reste fermee a l'auteur de la PR
         # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
-        return _override_scopes_reserve(lift_body or "", nit_author)
+        # #27873 — le corps de la reserve est transmis : la discrimination
+        # persona/user se fait sur sa NATURE, pas sur le seul login.
+        return _override_scopes_reserve(lift_body or "", nit_author, nit_body)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -6117,6 +6058,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                             f"review:{state}"))
 
     blocking = []
+    # #27873 — corps des réserves qui SURVIVENT (auteur -> corps). Sert à la
+    # discrimination persona/user du scope d'override : la nature de la
+    # réserve se lit dans son corps, pas dans son seul login.
+    surviving_reserve_bodies: dict[str, str] = {}
     for (when, kind, login, body, src) in signals:
         if when is None or when >= cutoff:
             continue
@@ -6215,6 +6160,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # deux nits de 11:07. Le push est reporté comme contexte, pas comme levée
         # — seule une réponse écrite (ou un thread résolu) lève une remarque.
         pushed_after = last_commit is not None and last_commit > when
+        surviving_reserve_bodies.setdefault(login, body)
         blocking.append({
             "kind": kind, "author": login, "src": src,
             "channel": "review" if src.startswith("review") else "comment",
@@ -6285,7 +6231,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for login in sorted({b.get("author") for b in blocking
                              if b.get("author") not in ("", author)
                              and not _override_scopes_reserve(
-                                 body or "", b.get("author") or "")})
+                                 body or "", b.get("author") or "",
+                                 surviving_reserve_bodies.get(
+                                     b.get("author") or ""))})
     ] + [
         # Q185 — meme exigence de nomination pour la voix adjointe : un
         # override adjoint qui laisse survivre une reserve est nomme avec sa
@@ -6419,121 +6367,23 @@ LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
 def _ok_line(pr: int, result: dict) -> str:
-    """La ligne de verdict, avec sa reserve DANS la ligne (#13512, #13779).
-
-    `OK -- aucun nit non leve` repond « aucune phrase de levee ne manque », et
-    RIEN D'AUTRE : un commentaire que `classify` n'a pas su lire n'est pas un
-    commentaire absent. `_print_unevaluated` le dit -- mais il le dit SOUS la
-    ligne, et c'est la LIGNE qui circule : un agent qui rapporte « organe OK sur
-    #N » cite le verdict, pas le bloc. Un `OK` cite sans sa reserve certifie
-    alors exactement le silence que cet organe refuse de certifier, et la
-    promesse de #13779 (« cesser de certifier le silence ») s'arrete a la
-    frontiere du stdout.
-
-    Mesure fondatrice (2026-09-21, arbitrage ai-01) : `check_unaddressed_nits.py`
-    rendait `rc=0` -- et sa ligne `OK` a ete citee -- sur deux PRs dont les
-    reserves vivaient dans le bloc « NON EVALUE(S) ». Un `rc=0` n'est pas une
-    dispense de lecture, mais rien ne le rappelait la ou le verdict se lit.
-
-    Le compte qui voyage est le TOTAL non evalue, jamais le sous-ensemble
-    affiche -- meme regle que l'en-tete de `_print_unevaluated`. Quand il n'y a
-    rien a relire, la ligne reste celle d'avant, octet pour octet.
-    """
-    total = result.get("unevaluated_total") or 0
-    if not total:
-        return f"OK  PR #{pr} — aucun nit non leve."
-    return (
-        f"OK  PR #{pr} — aucun nit non leve parmi les commentaires evalues ; "
-        f"{total} commentaire(s) NON EVALUE(S) — lire le bloc A RELIRE ci-dessous."
-    )
+    """Delegate a `scripts/ci/nit_rapport.py` (#27874, extraction T5)."""
+    return nit_rapport.ok_line(pr, result)
 
 
 def _print_unevaluated(result: dict) -> None:
-    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
-
-    La ligne de verdict porte desormais le compte (`_ok_line`) ; ce bloc reste
-    le detail -- le propos est le meme : ce que l'organe n'a pas su classer, il
-    l'imprime.
-    """
-    rows = result.get("unevaluated") or []
-    if not rows:
-        return
-    # #13779 : le compte imprime est celui du TOTAL non evalue, pas celui des
-    # lignes affichees -- un organe dont tout le propos est de ne pas certifier
-    # son propre silence ne peut pas sous-declarer ce qu'il n'a pas lu.
-    total = result.get("unevaluated_total") or len(rows)
-    omitted = total - len(rows)
-    after = sum(1 for r in rows if r["after_last_commit"])
-    tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
-    cut = f" — {len(rows)} affiche(s), {omitted} plus ancien(s) omis" if omitted > 0 else ""
-    print()
-    print(f"  --- A RELIRE : {total} commentaire(s) NON EVALUE(S) par cet organe{tail}{cut} ---")
-    print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
-    print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
-    for r in rows:
-        mark = " [APRES LE DERNIER COMMIT]" if r["after_last_commit"] else ""
-        print()
-        print(f"  * {r['author']} — {r['at']}{mark}")
-        lines = r["body"].split("\n")
-        for line in lines[:8]:
-            print(f"      {line[:160]}")
-        if len(lines) > 8:
-            print(f"      ... (+{len(lines) - 8} ligne(s))")
-    print()
+    """Delegate a `scripts/ci/nit_rapport.py` (#27874, extraction T5)."""
+    nit_rapport.print_unevaluated(result)
 
 
 def _print_sha_notes(result: dict) -> None:
-    """#13639 : nommer les levees dont la preuve citee manque de la PR.
+    """Delegate a `scripts/ci/nit_rapport.py` (#27874, extraction T5).
 
-    #15556 : distinguer l'ARTEFACT du vrai defaut -- un push muet
-    (wake-commit, amend de message) ne change pas l'arbre, la preuve citee
-    reste byte-pour-byte vraie ; seul le SHA a change. Les deux cas ne
-    demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
+    La constante `_BLOB_UNCOMPARABLE` reste propriete de l'organe : elle est
+    passee en argument, donc `mod._BLOB_UNCOMPARABLE` reste lisible par les
+    tests existants.
     """
-    for a in result.get("rewind_artifacts") or []:
-        if a["reason"] == "same_tree":
-            why = "arbre identique à la tête"
-        elif a["reason"] == "rebase_preserved":
-            why = "rebase sur base avancée, blobs identiques par chemin"
-        elif a["reason"] == "symbols_survive":
-            # #20066 piste 2 : le blob a bougé (la PR a continué de
-            # travailler), mais la SUBSTANCE de la levée est mesurée
-            # présente -- chaque def/class introduit par le commit cité
-            # existe encore à la tête.
-            why = ("blobs modifiés mais symboles introduits par la levée "
-                   "tous présents à la tête")
-        else:
-            why = "fichiers de la PR inchangés"
-        print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
-              f"rembobiné par un push muet ({why}) — preuve conservée, "
-              f"non bloquant")
-    for v in result.get("voided_lifts") or []:
-        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
-        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
-        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
-        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
-        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
-        if not v.get("tree_differs"):
-            detail = " — arbre non comparable, refus conservateur"
-        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
-            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
-                      "refus conservateur")
-        elif (v.get("symbols") or {}).get("verdict") == "missing":
-            # #20066 piste 2 : le fond a ÉTÉ mesuré, et il manque -- c'est
-            # la seule formule qui ait le droit de parler de réserve, car
-            # elle nomme ce qui a disparu.
-            absents = ", ".join((v["symbols"].get("missing") or [])[:5])
-            detail = (f" — l'arbre DIFFÈRE de la tête : blob modifié et "
-                      f"symbole(s) introduit(s) par la levée ABSENT(s) de "
-                      f"la tête ({absents})")
-        else:
-            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
-        print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
-              f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
-              f"mais rembobiné par un push ultérieur){detail}")
-    for w in result.get("absent_sha_warnings") or ():
-        print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
-              f"(absent des commits, non rattaché à cette PR) — non bloquant")
+    nit_rapport.print_sha_notes(result, _BLOB_UNCOMPARABLE)
 
 
 def analyse_pr(pr: int) -> dict:
@@ -6555,13 +6405,18 @@ def analyse_pr(pr: int) -> dict:
         # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
         # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
         # remplace quand il repond.
-        data.update(_typed_author_surfaces(pr))
+        # #22757 (tranche appels) : le bundle sert typed + threads + le join
+        # des dismissals en UNE requete GraphQL (-2 appels par PR evaluee,
+        # contrats par surface inchanges, cf `_pr_review_bundle`).
+        bundle = _pr_review_bundle(pr)
+        data.update(bundle["typed"])
         # #13639 + #15556 : resolution serveur du contexte SHA (messages,
         # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
         _attach_absent_sha_context(data)
-        return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+        return analyse(data, bundle["threads"], datetime.now(timezone.utc),
                        issue_info=gh_issue_info,
-                       dismissed_improperly=improper_dismissals(pr))
+                       dismissed_improperly=improper_dismissals(
+                           pr, author_of=bundle["author_of"]))
     except NitsBudgetExhausted:
         # #21882 (Option C) : budget de passe depasse. La PR est rendue ABSENTE
         # (non evaluee, #18829) : `blocked` faux, aucun point. Le picker la lit
@@ -6593,15 +6448,19 @@ def gate(pr: int, as_json: bool) -> int:
     # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
     # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
     # remplace quand il repond.
-    data.update(_typed_author_surfaces(pr))
+    # #22757 (tranche appels) : bundle unique typed + threads + join
+    # dismissals, cf `_pr_review_bundle` et `analyse_pr`.
+    bundle = _pr_review_bundle(pr)
+    data.update(bundle["typed"])
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
     _attach_absent_sha_context(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
-    result = analyse(data, review_threads(pr), cutoff,
+    result = analyse(data, bundle["threads"], cutoff,
                      issue_info=gh_issue_info,
-                     dismissed_improperly=improper_dismissals(pr))
+                     dismissed_improperly=improper_dismissals(
+                         pr, author_of=bundle["author_of"]))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:

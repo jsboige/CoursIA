@@ -1,5 +1,6 @@
 """Conftest : ajoute scripts/ au sys.path pour les imports des tests."""
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -15,7 +16,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
 # T3-c (#25366) : les outils internes reloges dans leur famille (audit,
 # bibliography, ci, coordination, notebook_tools, slides) restent importables
 # a nu par les tests de scripts/tests/, comme ils l etaient a la racine.
-for _fam in ("audit", "bibliography", "ci", "coordination", "notebook_tools", "slides"):
+# V3 #13737 tranche 1 : familles genai et quantconnect ajoutees (meme geste).
+for _fam in ("audit", "bibliography", "ci", "coordination", "notebook_tools", "slides", "genai", "quantconnect"):
     _fam_dir = _SCRIPTS_DIR / _fam
     if _fam_dir.is_dir() and str(_fam_dir) not in sys.path:
         sys.path.insert(0, str(_fam_dir))
@@ -31,6 +33,49 @@ class ShellEscape(BaseException):
     VIDE presente comme une mesure -- exactement le vert muet que la
     sentinelle existe pour empecher.
     """
+
+
+@pytest.fixture
+def bash() -> str:
+    """Bash capable d'exécuter les scripts du dépôt depuis un process natif.
+
+    Sous Windows, le ``bash`` du PATH peut être celui de WSL (System32), qui
+    ne monte pas les chemins ``D:/`` du worktree ; le bash de Git pour
+    Windows (``bin/bash.exe``) initialise son contexte msys seul. Ailleurs
+    (Linux, CI), ``bash`` du PATH suffit. Issue #27685.
+    """
+    if os.name != "nt":
+        return "bash"
+    for env_var, fallback in (("ProgramFiles", r"C:\Program Files"),
+                              ("ProgramFiles(x86)", r"C:\Program Files (x86)")):
+        candidate = Path(os.environ.get(env_var) or fallback) / "Git" / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which("bash") or "bash"
+
+
+@pytest.fixture
+def stub_as_function():
+    """Windows : expose les stubs bash comme fonctions via BASH_ENV.
+
+    msys place /usr/bin AVANT le PATH hérité : un stub portant le nom d'un
+    coreutil (mkdir, mv, uname, python3) est toujours masqué par le vrai.
+    BASH_ENV est sourcé par tout bash non interactif et une fonction gagne
+    sur la résolution PATH (issue #27685). Sans effet ailleurs.
+    """
+    def _install(commands: Path, names: tuple, env: dict) -> None:
+        if os.name != "nt":
+            return
+        lines = [
+            "# Généré par les tests : stubs prioritaires sur les coreutils",
+            "# msys, toujours premiers dans le PATH hérité (issue #27685).",
+        ]
+        for name in names:
+            lines.append(f'{name}() {{ "{(commands / name).as_posix()}" "$@"; }}')
+        env_file = commands / "stub_functions.sh"
+        env_file.write_text("\n".join(lines) + "\n", newline="\n")
+        env["BASH_ENV"] = env_file.as_posix()
+    return _install
 
 
 @pytest.fixture
@@ -156,4 +201,16 @@ def _gh_etag_desactive(monkeypatch):
     eux-memes re-activent explicitement dans leur fixture ``cache_isole``.
     """
     monkeypatch.setenv("COURSIA_GH_ETAG", "0")
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _tapis_lourd_en_diagnostic(monkeypatch):
+    """#26926 : les tests exercent le tapis lourd comme outil de diagnostic.
+
+    Hors diagnostic, ``pick_idle_grain.py --belt`` refuse et nomme le tapis
+    rapide. Les suites du tapis lourd testent ses mecanismes : elles le lancent
+    donc en diagnostic. Le test du refus retire la variable explicitement.
+    """
+    monkeypatch.setenv("COURSIA_HEAVY_BELT_DIAGNOSTIC", "1")
     yield

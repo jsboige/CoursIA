@@ -99,7 +99,14 @@ exactly as before.
    failure) still exits 1 but cancels its own run, so the leg concludes
    CANCELLED -- the PR stays BLOCKED (never passes on unknown), yet the log
    does not claim a failure that never happened and the stale-sweep re-drives
-   it like any other cancelled gate leg (#11862).
+   it like any other cancelled gate leg (#11862). The INCONCLUSIVE quota
+   verdict (exit 3, #26542) gets the same rendering (#27768): unknown is not
+   false. `neutral` is deliberately NOT used for either -- the job's own
+   check-run takes its conclusion from the step's exit status (the runner
+   maps any non-zero exit to FAILURE; `continue-on-error` renders SUCCESS, a
+   false green), and our own readers count `neutral` as GREEN
+   (`check_run_state.GREEN`), so a neutral gate leg would merge PRs whose
+   checks were never read.
 2. **Latest run per workflow wins.** GitHub's concurrency groups cancel
    superseded runs, and re-runs leave the old attempt visible. Without
    de-duplication, one benign `cancelled` from a superseded run would block a
@@ -165,7 +172,8 @@ import sys
 try:
     import gh_identity
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 import time
 import traceback
@@ -1250,14 +1258,25 @@ def _is_transient_api_error(exc: BaseException) -> bool:
 # changes is the SPACING: an escalating schedule that rides out a minutes-long
 # burst inside the SAME absolute deadline, never extending `--timeout-min`.
 # Rule 1 is untouched -- a state still unreadable at the bound still ends in
-# FAIL naming the quota family, so an infrastructure outage is never hunted
-# as a content defect (and never flips to a pass).
+# the replayable INCONCLUSIVE naming the quota family (#26542), so an
+# infrastructure outage is never hunted as a content defect (and never flips
+# to a pass).
 INSTALLATION_QUOTA_MARKERS = (
     # Verbatim production signature, #17262/#17681:
     #   gh: API rate limit exceeded for installation. (HTTP 403)
     "rate limit exceeded for installation",
 )
 INSTALLATION_QUOTA_BACKOFF_SEC = (30.0, 120.0, 300.0, 600.0, 900.0)
+# #26739 -- the far-reset bound. Sleeping to an ANNOUNCED reset only pays
+# when the reset is close: the sleep holds a runner, and the measured
+# incident (2026-11-15, jobs 132806296573/132806304780) burned 59 min of a
+# runner -- on a starved pool -- for 3 API calls, then rendered the very
+# INCONCLUSIVE it could have rendered at minute one. `pr-gate-stale-sweep`
+# replays that verdict on its own schedule, so the replay, not the sleep,
+# is the cheap path to a green leg. 300 s is the middle stage of the
+# escalating schedule above: a reset within it is a wait the gate already
+# accepts, anything farther is a runner held for a verdict already decided.
+INSTALLATION_QUOTA_MAX_WAIT_SEC = 300.0
 
 
 def _is_installation_quota_error(exc: BaseException) -> bool:
@@ -1269,6 +1288,23 @@ def _is_installation_quota_error(exc: BaseException) -> bool:
     """
     text = str(exc).lower()
     return any(marker in text for marker in INSTALLATION_QUOTA_MARKERS)
+
+
+def _quota_inconclusive_message(
+    exc: BaseException, transient_reads: int
+) -> str:
+    """The bound message of the installation-quota family -- ONE format.
+
+    Two exits render this message (#26739): the bound itself (retry cap or
+    deadline reached) and the far-reset early exit in the wait loop. A
+    single builder keeps them byte-identical, so the replay chain (`main`'s
+    INCONCLUSIVE, the stale sweep, the picker) never meets two formats for
+    one state.
+    """
+    return (
+        f"{exc} -- {transient_reads} installation-quota read failure(s) "
+        "in a row: the check state stayed unreadable (rule 1)"
+    )
 
 
 def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
@@ -1829,6 +1865,7 @@ def wait_and_decide(
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
+    epoch_now=time.time,
     detail: "dict | None" = None,
     fetch_job=None,
     all_queued_polls: int = 0,
@@ -1865,6 +1902,17 @@ def wait_and_decide(
     streak only accumulates under real starvation. The message starts with
     "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
     cancelled-leg remedy apply unchanged.
+
+    Two clocks, each for its own use (#26869). `now` is MONOTONIC (seconds
+    since an arbitrary origin): it measures the gate's own budget, the
+    absolute `deadline`. `epoch_now` is EPOCH (seconds since 1970): it is
+    the only scale on which GitHub's `x-ratelimit-reset` header lives, hence
+    the only scale on which the announced reset can be compared to "now".
+    The two are NEVER subtracted from one another -- doing so measured a
+    duration of ~1,79e9 s for every reset (job 133062303546,
+    2026-11-16T02:57:47Z : `announced reset 1794790081s away`) and made the
+    "wait for a near reset" branch unreachable: every installation-quota 403
+    rendered INCONCLUSIVE at once, even when the reset was seconds away.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -1898,39 +1946,63 @@ def wait_and_decide(
                 # #17681 -- name the family so a quota-exhaustion FAIL is
                 # legible as infrastructure, never read as a check verdict.
                 # The verdict direction is unchanged: rule 1, never a pass.
-                quota = _is_installation_quota_error(exc)
-                family = (
-                    "installation-quota read failure"
-                    if quota
-                    else "transient read failure"
-                )
-                message = (
-                    f"{exc} -- {transient_reads} {family}(s) in a row: "
-                    "the check state stayed unreadable (rule 1)"
-                )
-                if quota:
+                if _is_installation_quota_error(exc):
                     # An exhausted installation quota is not a content
                     # verdict: it is an unreadable state with a KNOWN
                     # replay gesture. `main` renders it INCONCLUSIVE.
-                    raise QuotaInconclusive(message) from exc
-                raise GateError(message) from exc
+                    raise QuotaInconclusive(
+                        _quota_inconclusive_message(exc, transient_reads)
+                    ) from exc
+                raise GateError(
+                    f"{exc} -- {transient_reads} transient read failure(s) "
+                    "in a row: the check state stayed unreadable (rule 1)"
+                ) from exc
             if _is_installation_quota_error(exc):
                 # #17681 -- a shared hourly quota is not crossed by 30 s
                 # retries: escalate the spacing, but never sleep past the
                 # absolute deadline. An unreadable state at the deadline
-                # still fails rather than becoming a check verdict.
+                # still ends INCONCLUSIVE (#26542), never a check verdict.
                 stage = min(
                     transient_reads - 1,
                     len(INSTALLATION_QUOTA_BACKOFF_SEC) - 1,
                 )
                 reset_at = getattr(exc, "reset_epoch", None)
-                if reset_at is not None and reset_at > now_ts:
+                # #26869 -- the announced reset is an EPOCH instant (the
+                # `x-ratelimit-reset` header, seconds since 1970). It is
+                # compared to the EPOCH clock, never to the monotonic one:
+                # subtracting a monotonic reading from an epoch instant
+                # measured ~1,79e9 s for every reset, which made the
+                # "wait for a near reset" branch below unreachable.
+                epoch_ts = epoch_now()
+                if reset_at is not None and reset_at > epoch_ts:
+                    reset_in = reset_at - epoch_ts
+                    if reset_in > INSTALLATION_QUOTA_MAX_WAIT_SEC:
+                        # #26739 -- the announced reset is too far to be
+                        # worth the wait: sleeping to it holds a runner for
+                        # a verdict that is already decided. The stale
+                        # sweep replays this leg on its own schedule, after
+                        # the hourly reset -- so render the INCONCLUSIVE
+                        # NOW, through the same exit as the deadline bound.
+                        print(
+                            f"[pr-gate] installation-quota 403 -- announced "
+                            f"reset {reset_in:.0f}s away "
+                            f"(> {INSTALLATION_QUOTA_MAX_WAIT_SEC:.0f}s): "
+                            "rendering INCONCLUSIVE now and releasing the "
+                            "runner; pr-gate-stale-sweep replays this leg "
+                            "after the hourly reset",
+                            flush=True,
+                        )
+                        raise QuotaInconclusive(
+                            _quota_inconclusive_message(exc, transient_reads)
+                        ) from exc
                     # The API told us when the quota resets: sleep until
                     # then (bounded by the absolute deadline) instead of
                     # spending the budget on short retries that cannot
-                    # cross an hourly reset.
+                    # cross an hourly reset. The duration comes from the
+                    # epoch difference; the remaining budget from the
+                    # monotonic clock -- two clocks, never mixed.
                     wait_sec = min(
-                        reset_at - now_ts,
+                        reset_in,
                         max(deadline - now_ts, 0.0),
                     )
                 else:
@@ -2374,7 +2446,8 @@ def main(argv: Iterable[str] | None = None) -> int:
         "--no-self-cancel",
         action="store_true",
         help=(
-            "On starvation, exit FAIL without cancelling the own run "
+            "On starvation or an INCONCLUSIVE quota verdict, exit non-zero "
+            "without cancelling the own run "
             "(escape hatch; also the implicit behaviour when no run id "
             "is resolvable, e.g. a local run)."
         ),
@@ -2531,38 +2604,58 @@ def main(argv: Iterable[str] | None = None) -> int:
             os.environ.get("GITHUB_RUN_ATTEMPT"),
         )
 
-    # #13510: render a starvation as CANCELLED, not FAILURE. The PR stays
+    # #13510 / #27768: render a verdict with NO ANSWER as CANCELLED, not
+    # FAILURE. Two verdicts land here: a starvation (nothing red, constituents
+    # still pending) and the INCONCLUSIVE quota verdict (#26542). The PR stays
     # BLOCKED (a cancelled required check is not success), but the leg no
     # longer claims a failure that never happened, and pr-gate-stale-sweep
     # already treats a cancelled gate leg as a re-run candidate (#11862) --
-    # the same recovery channel as a supersession-cancel. Workflow-run mode
-    # only: --post-check-run runs on the default branch as an operator
-    # harness whose own run is NOT the PR's gate leg, so it keeps POSTing
-    # the verdict instead of cancelling itself.
+    # the same recovery channel as a supersession-cancel. A FAILED leg, by
+    # contrast, is not a sweep candidate: it waits for its lane.
+    #
+    # `neutral` would be the natural conclusion for "unknown", but the job's
+    # own check-run cannot carry it: the runner maps every non-zero exit to
+    # FAILURE, and `continue-on-error` renders SUCCESS -- a false green
+    # (#27768). CANCELLED is the only reachable non-green, non-failure
+    # conclusion on the required leg.
+    #
+    # Workflow-run mode only: --post-check-run runs on the default branch as
+    # an operator harness whose own run is NOT the PR's gate leg, so it keeps
+    # POSTing (or skipping, on INCONCLUSIVE) instead of cancelling itself.
+    if code == QUOTA_INCONCLUSIVE_CODE:
+        self_cancel_kind = "INCONCLUSIVE"
+    elif code == 1 and message.startswith("STARVED"):
+        self_cancel_kind = "STARVED"
+    else:
+        self_cancel_kind = None
     if (
-        code == 1
-        and message.startswith("STARVED")
+        self_cancel_kind
         and not args.no_self_cancel
         and not args.post_check_run
     ):
         run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
         if run_id:
+            if self_cancel_kind == "INCONCLUSIVE":
+                why = ("installation quota exhausted, check state UNKNOWN -- "
+                       "not a defect of the PR")
+            else:
+                why = "constituents still pending, nothing red"
             print(
-                f"[pr-gate] STARVED -- constituents still pending, nothing "
-                f"red; cancelling own run {run_id} so the leg concludes "
-                "CANCELLED, not FAILURE (#13510). The PR stays blocked; "
+                f"[pr-gate] {self_cancel_kind} -- {why}; cancelling own run "
+                f"{run_id} so the leg concludes CANCELLED, not FAILURE "
+                "(#13510/#27768). The PR stays blocked; "
                 "pr-gate-stale-sweep will re-aggregate.",
                 flush=True,
             )
             if cancel_own_run(args.repo, run_id):
                 # Hold the step open so the cancel signal lands before we
-                # exit (see CANCEL_GRACE_SEC). Exit code stays 1: if the
-                # cancel lost the race, rule 1 still holds.
+                # exit (see CANCEL_GRACE_SEC). Exit code is unchanged: if
+                # the cancel lost the race, rule 1 still holds.
                 time.sleep(CANCEL_GRACE_SEC)
         else:
             print(
-                "[pr-gate] STARVED but no run id resolvable (local run) -- "
-                "FAIL per rule 1",
+                f"[pr-gate] {self_cancel_kind} but no run id resolvable "
+                "(local run) -- non-zero exit per rule 1",
                 flush=True,
             )
 

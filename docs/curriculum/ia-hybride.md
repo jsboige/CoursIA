@@ -119,15 +119,15 @@ contenu — et sa durée catalogue.
 
 ### Bloc 2 — Un théorème par SAT (série GameTheory/SocialChoice)
 
-6. **[SocialChoice 03 — Méthodes de vote et paradoxes](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb)**
-   (`03-Voting-Methods`, 45 min)
+6. **[SocialChoice 03 — Méthodes de vote et paradoxes](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb)**
+   (`ChoixSocial-03-Voting-Methods-Python`, 45 min)
    - **Apporte** : le vocabulaire du choix social — paradoxe de Condorcet, règles de vote
      (pluralité, Borda, Copeland) — implémenté from scratch ; c'est l'entrée qu'exige
      l'étape suivante.
    - **Suppose** : rien au-delà du Python de base (compagnon Python autonome de la série).
 
-7. **[SocialChoice 04 — Agrégation computationnelle par SAT-Z3](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb)**
-   (`04-Computational-Aggregation-SAT-Z3`, 45 min)
+7. **[SocialChoice 04 — Agrégation computationnelle par SAT-Z3](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb)**
+   (`ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python`, 45 min)
    - **Apporte** : un théorème d'impossibilité (Gibbard-Satterthwaite) **prouvé par la
      machine** — l'encodage booléen des conditions du théorème, Z3 cherche le
      contre-exemple, il n'existe pas. Le vérificateur sans LLM, à l'état pur.

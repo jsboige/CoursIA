@@ -69,7 +69,9 @@ from dataclasses import dataclass
 #                              1 x `.net-csharp` (le defaut, cf le garde)
 # `-FSharp` reste absent : aucun kernelspec F# n'existe dans l'arbre et
 # `.net-csharp` est partage par les langages .NET. Exclusion mesuree, pas oublie.
-KERNEL_LANG_SUFFIXES = ("-lean-python", "-csharp", "-python", "-lean")
+# -rust : parite Rust (Epic #26510) — suffixe simple, sans recouvrement avec les
+# autres (aucun n'est prefixe/suffixe de -rust) : pas de contrainte d'ordre.
+KERNEL_LANG_SUFFIXES = ("-lean-python", "-csharp", "-python", "-lean", "-rust")
 
 # Suffixes marquant un rendu ALTERNATIF du meme item, pas un item concurrent.
 # = les noyaux ci-dessus + les siblings i18n (#4980). Ceux-la servent a APPARIER

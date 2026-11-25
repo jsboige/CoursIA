@@ -2,15 +2,13 @@
 pagetitle: "SymbolicAI - Intelligence Artificielle Symbolique"
 ---
 
-# SymbolicAI - Intelligence Artificielle Symbolique
-
 [← Notebooks](../README.md) | [→ Sudoku](../Sudoku/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 407
-breakdown: Lean=164, SMT=51, Tweety=39, ArgumentAnalysis=38, SmartContracts=32, SemanticWeb=29, SymbolicLearning=27, Planners=26, root=1
-maturity: BETA=386, ALPHA=12, DRAFT=9
+pedagogical_count: 459
+breakdown: Lean=181, SMT=66, ArgumentAnalysis=50, Tweety=39, SmartContracts=37, SemanticWeb=31, SymbolicLearning=28, Planners=26, root=1
+maturity: BETA=438, ALPHA=11, DRAFT=10
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -195,14 +193,13 @@ Le dossier s'appelle encore `ArgumentAnalysis/`, mais la série s'appelle Argume
 
 Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, traverse des méthodes de plus en plus fortes.
 
-- **Parcours léger** — 01 à 03 :
+- **Parcours léger** — 01 à 04 :
   - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
   - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
   - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
   - [04](Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
-- **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
+- **Pour approfondir** — les accrétions : [02b](Lean/Geometry/Geometry-02b-Saturation-Nullstellensatz-Python.ipynb) (saturation $I{:}g^\infty$ et Nullstellensatz à cofacteurs vérifiés), [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) (le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux) et [04b](Lean/Geometry/Geometry-04b-IMO-AG-30-Python.ipynb) (IMO-AG-30, la revanche de la méthode de Wu — Sinha et al. 2024).
 - **Recherche** — [05](Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb) : le pont formel — le fil rouge prouvé au noyau Lean/Mathlib, confronté au même théorème décidé par Gröbner, et ce que chacune des deux méthodes garantit réellement.
-- **À venir** — 04b, l'accrétion de recherche de la série (Wu associé à DD+AR, proposeur neuronal — Sinha et al. 2024).
 - [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série

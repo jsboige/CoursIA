@@ -1080,16 +1080,16 @@ def test_persona_alias_lift_override_logins_unchanged():
     d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
     une troisieme voie pour le dialogue Hermes <-> Hermes self-bot.
 
-    #17437 : la voix du siege reste l'humain ``myia-ai-01`` SEUL (arbitrage
-    ai-01 du 2026-11-13). L'App ``coursia-lane-ai-01`` est nommee par
+    #17437/Q187 : la voix du siege est l'humain ``myia-ai-01`` PLUS l'App
+    PROPRE a la lane coordinatrice ``coursia-coord-ai01[bot]`` (App 5763709,
+    cle dediee, 2026-11-14). L'App ``coursia-lane-ai-01`` reste nommee par
     MACHINE, et ai-01 porte deux lanes : sa cle privee, dans le clone
     (``.secrets/github-apps/coursia-lane-ai-01.pem``), est lisible par la
     lane worker soeur ``myia-ai-01:CoursIA-2``, qui forge donc le meme
-    jeton. Une App de machine ne peut pas porter la voix du coordinateur ;
-    seul un login humain, ou une App propre a la lane coordinatrice, leve.
+    jeton. Une App de machine ne peut pas porter la voix du coordinateur.
     Aucun autre login ne s'ajoute : l'App d'une lane worker ne leve jamais."""
     assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
-    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01", "coursia-coord-ai01[bot]"}
     assert "coursia-lane-ai-01[bot]" not in mod.LIFT_OVERRIDE_LOGINS
 
 
@@ -6062,8 +6062,10 @@ def test_14216_ce1_mutation_scope_toujours_vrai_fp1_rougit(monkeypatch):
     """#14216 contrôle positif par mutation : désactiver le scope (retour
     inconditionnel True = sémantique par-PR d'avant le fix) rend la
     reproduction fp1 VERTE — la preuve que le test mord."""
+    # #27873 — la signature porte le corps de la reserve (discrimination
+    # persona/user) : le monkeypatch suit.
     monkeypatch.setattr(mod, "_override_scopes_reserve",
-                        lambda b, a: True)
+                        lambda b, a, nit_body=None: True)
     assert _pr_14216(UNSCOPED_OVERRIDE_14216)["blocked"] is False
 
 
@@ -6071,8 +6073,10 @@ def test_14216_ce2_mutation_scope_toujours_faux_vp1_rougit(monkeypatch):
     """#14216 contrôle négatif par mutation : un scope qui refuse tout
     (jamais de levée d'autrui, même nommée) fait rougir vp1 — la porte du
     scope explicite est bien portée par le détecteur testé."""
+    # #27873 — la signature porte le corps de la reserve (discrimination
+    # persona/user) : le monkeypatch suit.
     monkeypatch.setattr(mod, "_override_scopes_reserve",
-                        lambda b, a: False)
+                        lambda b, a, nit_body=None: False)
     assert _pr_14216(SCOPED_OVERRIDE_14216)["blocked"] is True
 
 
@@ -6735,8 +6739,10 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
     monkeypatch.setattr(mod, "_resolve_absent_sha_state",
                         lambda data, cap=5: {"abc123": {"message": "corps du message",
                                                          "tree": None}})
-    monkeypatch.setattr(mod, "review_threads", lambda pr: [])
-    monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
+    # strict kwarg : le bundle releve via review_threads(pr, strict=True)
+    monkeypatch.setattr(mod, "review_threads", lambda pr, strict=False: [])
+    # #22757 : analyse_pr joint le join dismissals via le parametre bundle.
+    monkeypatch.setattr(mod, "improper_dismissals", lambda pr, author_of=None: [])
 
     def fake_issue_info(n):
         return None

@@ -1,0 +1,735 @@
+# Conformite differentielle du triplet GameTheory-02d (Epistemique et
+# connaissance commune, issue #27795).
+#
+# Le portage Rust (kernel evcxr, `std` seul) reprend le carnet Python a
+# l'identique : memes instances, memes balayages, memes oracles. Les
+# `frozenset` Python deviennent des masques binaires `u32`, les priors des
+# `Vec<f64>`, et la comparaison des posteriors du monde a six etats passe par
+# des rationnels exacts (reduction par pgcd ecrite a la main).
+#
+# Les trois cotes ont la MEME structure de cellules (36 cellules, 12 code aux
+# memes index) : la correspondance des cellules est donc directe.
+#
+# Ecarts de forme DECLARES :
+#
+# - les ensembles : le Python et le Rust impriment `[0, 1]`, le C# imprime
+#   `{0,1}`. Les grandeurs porteuses d'ensembles sont donc comparees avec la
+#   transformation `digits` (les chiffres seuls), qui rend les trois formes
+#   comparables ;
+# - la ligne de version de la cellule 3 : le port Rust imprime son propre
+#   runtime, jamais la version Python ; elle n'est pas declaree ici (la
+#   comparaison de la sortie complete se fait hors registre) ;
+# - le jumeau C# n'affiche pas les memes libelles (exercices en francais sans
+#   nom de fonction, exemple de desaccord different, tours d'elimination
+#   decrits en texte) : ces cotes sont declares ABSENTS avec leur motif.
+- name: "GameTheory-02d Epistemique Connaissance Commune"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-Rust.ipynb
+  measures:
+    # --- cellule 3 : le modele temoin -------------------------------------
+    - id: modele_valide
+      description: "Le modele temoin est un modele a partitions valide"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "modele valide        : (True)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "modele valide        : (True)"
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "mod[eè]le valide : (True)"
+          transform: text
+    - id: k0_e
+      description: "Mondes ou le joueur 0 sait E (cellule {0, 1} incluse dans E)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "K_0\\(E\\)               : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 3
+          pattern: "K_0\\(E\\)               : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 3
+          pattern: "K0\\(E\\)=\\{([\\d,]+)\\}"
+          transform: digits
+    - id: k1_e
+      description: "Mondes ou le joueur 1 sait E (cellule {1, 2} incluse dans E)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "K_1\\(E\\)               : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 3
+          pattern: "K_1\\(E\\)               : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 3
+          pattern: "K1\\(E\\)=\\{([\\d,]+)\\}"
+          transform: digits
+    # --- cellule 8 : les six proprietes S5 --------------------------------
+    - id: s5_violations_joueur_0
+      description: "Violations de veracite pour le joueur 0 (16 evenements)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "joueur 0 : Veracite: (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "joueur 0 : Veracite: (\\d+)"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "Joueur 0, 16 [eé]v[eé]nements et 256 couples : (\\d+)"
+          transform: int
+    - id: s5_violations_joueur_1
+      description: "Violations de veracite pour le joueur 1 (16 evenements)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "joueur 1 : Veracite: (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "joueur 1 : Veracite: (\\d+)"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "Joueur 1, 16 [eé]v[eé]nements et 256 couples : (\\d+)"
+          transform: int
+    - id: s5_violations_total
+      description: "Total des violations S5 sur le monde temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "TOTAL violations sur le monde temoin : (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "TOTAL violations sur le monde temoin : (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# n'affiche pas de total agrege : il donne les six
+            compteurs par joueur (tous nuls), dont la somme vaut le meme zero.
+            Cote declare ABSENT, pas mesure.
+    # --- cellule 11 : mutuelle et commune ---------------------------------
+    - id: connaissance_mutuelle
+      description: "Connaissance mutuelle M(E) sur le modele temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "connaissance mutuelle M\\(E\\) : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 11
+          pattern: "connaissance mutuelle M\\(E\\) : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 11
+          pattern: "M\\(E\\)=\\{([\\d,]+)\\}"
+          transform: digits
+    - id: suite_iteres
+      description: "Suite des iteres de la connaissance commune (5 etats)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "suite des iteres          : \\[([^\\n]*)\\]"
+          transform: digits
+        rust:
+          cell: 11
+          pattern: "suite des iteres          : \\[([^\\n]*)\\]"
+          transform: digits
+        csharp:
+          cell: 11
+          pattern: "trace=(\\{[^\\n]*)"
+          transform: digits
+    - id: connaissance_commune
+      description: "Connaissance commune CK(E) sur le modele temoin (vide)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "connaissance commune CK\\(E\\): \\[([\\d, ]*)\\]"
+          transform: digits
+        rust:
+          cell: 11
+          pattern: "connaissance commune CK\\(E\\): \\[([\\d, ]*)\\]"
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# n'affiche pas CK(E) isolement ; sa trace des iteres
+            se termine sur l'ensemble vide, qui est la meme valeur.
+            Cote declare ABSENT, pas mesure.
+    - id: k0k1_e
+      description: "Mondes ou le joueur 0 sait que le joueur 1 sait E"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "K_0 K_1\\(E\\)                : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 11
+          pattern: "K_0 K_1\\(E\\)                : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 11
+          pattern: "K0 K1\\(E\\)=\\{([\\d,]+)\\}"
+          transform: digits
+    - id: k1k0_e
+      description: "Mondes ou le joueur 1 sait que le joueur 0 sait E"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "K_1 K_0\\(E\\)                : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 11
+          pattern: "K_1 K_0\\(E\\)                : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 11
+          pattern: "K1 K0\\(E\\)=\\{([\\d,]+)\\}"
+          transform: digits
+    # --- cellule 14 : le meet ----------------------------------------------
+    - id: meet_cellules
+      description: "Cellules du meet des partitions du modele temoin"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "cellules du meet : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 14
+          pattern: "cellules du meet : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 14
+          pattern: "Meet : \\{([\\d,]+)\\}"
+          transform: digits
+    - id: meet_contre_exemples
+      description: "Contre-exemples a l'equivalence iteration <-> meet (64 couples)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(\\d+) contre-exemple\\(s\\)"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "(\\d+) contre-exemple\\(s\\)"
+          transform: int
+        csharp:
+          cell: 14
+          pattern: "64 couples, (\\d+) contre-exemples"
+          transform: int
+    # --- cellule 19 : le balayage d'Aumann sur 4 mondes ---------------------
+    - id: partitions_4_mondes
+      description: "Nombre de partitions de 4 mondes (nombre de Bell B_4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "partitions de 4 mondes              : (\\d+)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "partitions de 4 mondes              : (\\d+)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "(\\d+) partitions, (\\d+) mod[eè]les-[eé]v[eé]nements"
+          transform: int
+    - id: evenements_non_triviaux
+      description: "Nombre d'evenements non triviaux du balayage"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "evenements non triviaux             : (\\d+)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "evenements non triviaux             : (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# n'affiche pas ce compte : il donne le produit
+            « 3150 modeles-evenements » et le nombre de couples (256) par
+            joueur, qui vaut la meme grandeur par un autre chemin.
+            Cote declare ABSENT, pas mesure.
+    - id: modeles_evenements
+      description: "Nombre de couples (partitions, evenement) balayes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "modeles-evenements balayes          : (\\d+)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "modeles-evenements balayes          : (\\d+)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "(\\d+) mod[eè]les-[eé]v[eé]nements"
+          transform: int
+    - id: paires_desaccord
+      description: "Paires de valeurs de posteriors en desaccord examinees"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "paires de valeurs en desaccord      : (\\d+)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "paires de valeurs en desaccord      : (\\d+)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "(\\d+) paires de valeurs"
+          transform: int
+    - id: violations_aumann
+      description: "Violations du theoreme d'Aumann mesurees (attendu : 0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "violations d'Aumann \\(attendu : 0\\)   : (\\d+)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "violations d'Aumann \\(attendu : 0\\)   : (\\d+)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "(\\d+) violations"
+          transform: int
+    - id: test_naif
+      description: "Cas de desaccord de connaissance commune reveles par le test naif"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "test naif sur D = \\{q1 != q2\\}        : (\\d+)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "test naif sur D = \\{q1 != q2\\}        : (\\d+)"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "test na[iï]f : (\\d+)"
+          transform: int
+    # --- cellule 21 : le controle negatif ---------------------------------
+    - id: prior_uniforme_q
+      description: "Posterior du joueur 0 sous prior uniforme"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "prior uniforme  -> q =  (\\d+\\.\\d+)"
+          transform: float
+        rust:
+          cell: 21
+          pattern: "prior uniforme  -> q =  (\\d+\\.\\d+)"
+          transform: float
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit les posteriors en rationnels (« q1=(1, 4) ») et
+            non en decimal : meme valeur, forme non comparable. Cote declare
+            ABSENT, pas mesure.
+    - id: prior_biaise_q
+      description: "Posterior du joueur 0 sous prior biaise"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "prior biaise    -> q =  (\\d+\\.\\d+)"
+          transform: float
+        rust:
+          cell: 21
+          pattern: "prior biaise    -> q =  (\\d+\\.\\d+)"
+          transform: float
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit les posteriors en rationnels (« q2=(7, 10) ») et
+            non en decimal : meme valeur, forme non comparable. Cote declare
+            ABSENT, pas mesure.
+    - id: evenement_desaccord
+      description: "Evenement des valeurs en desaccord (les quatre mondes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "desaccord             : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 21
+          pattern: "desaccord             : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# n'affiche que CK(desaccord) et non l'evenement
+            desaccord lui-meme ; son CK vaut l'ensemble des quatre mondes,
+            ce qui implique le meme evenement. Cote declare ABSENT, pas
+            mesure.
+    - id: ck_desaccord
+      description: "Connaissance commune du desaccord (les quatre mondes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "CK\\(desaccord\\)         : \\[([\\d, ]+)\\]"
+          transform: digits
+        rust:
+          cell: 21
+          pattern: "CK\\(desaccord\\)         : \\[([\\d, ]+)\\]"
+          transform: digits
+        csharp:
+          cell: 21
+          pattern: "CK\\(d[eé]saccord\\)=\\{([\\d,]+)\\}"
+          transform: digits
+    # --- cellule 24 : le monde a six etats, prior commun ------------------
+    - id: partitions_bell_6
+      description: "Nombre de partitions du monde a six etats (B_6)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Monde a 6 etats : (\\d+) partitions"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "Monde a 6 etats : (\\d+) partitions"
+          transform: int
+        csharp:
+          cell: 24
+          pattern: "(\\d+) partitions, (\\d+) couples, (\\d+) [eé]v[eé]nements"
+          transform: int
+    - id: couples_bell_6
+      description: "Nombre de couples de partitions du monde a six etats"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "partitions \\(nombre de Bell B_6\\), (\\d+) couples"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "partitions \\(nombre de Bell B_6\\), (\\d+) couples"
+          transform: int
+        csharp:
+          cell: 24
+          pattern: "partitions, (\\d+) couples"
+          transform: int
+    - id: evenements_6
+      description: "Nombre d'evenements du monde a six etats"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: ", (\\d+) evenements"
+          transform: int
+        rust:
+          cell: 24
+          pattern: ", (\\d+) evenements"
+          transform: int
+        csharp:
+          cell: 24
+          pattern: "couples, (\\d+) [eé]v[eé]nements"
+          transform: int
+    - id: cas_connaissance_commune_6
+      description: "Cas de posteriors de connaissance commune au monde a six etats"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "cas de posteriors connaissance commune : ([\\d,]+)"
+          transform: digits
+        rust:
+          cell: 24
+          pattern: "cas de posteriors connaissance commune : ([\\d,]+)"
+          transform: digits
+        csharp:
+          cell: 24
+          pattern: "Prior commun : (\\d+) cas"
+          transform: digits
+    - id: desaccords_6
+      description: "Desaccords de posteriors de connaissance commune (prior commun)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "desaccords \\(posteriors ck et differents\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 24
+          pattern: "desaccords \\(posteriors ck et differents\\) : (\\d+)"
+          transform: int
+        csharp:
+          cell: 24
+          pattern: "Prior commun : \\d+ cas, (\\d+) d[eé]saccords"
+          transform: int
+    - id: verdict_aumann_6
+      description: "Verdict du theoreme d'Aumann au monde a six etats"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Theoreme d'Aumann sur le monde a six etats : (VERIFIE \\(0 desaccord\\)|REFUTE)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "Theoreme d'Aumann sur le monde a six etats : (VERIFIE \\(0 desaccord\\)|REFUTE)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# affiche le decompte (« 0 desaccords ») sans la formule
+            de verdict : meme contenu, libelle non comparable. Cote declare
+            ABSENT, pas mesure.
+    # --- cellule 27 : le monde a six etats, priors distincts --------------
+    - id: cas_connaissance_commune_priors_distincts
+      description: "Cas de posteriors de connaissance commune sous priors distincts"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "cas de posteriors connaissance commune : ([\\d,]+)"
+          transform: digits
+        rust:
+          cell: 27
+          pattern: "cas de posteriors connaissance commune : ([\\d,]+)"
+          transform: digits
+        csharp:
+          cell: 27
+          pattern: "Priors distincts : (\\d+) cas"
+          transform: digits
+    - id: desaccords_priors_distincts
+      description: "Desaccords de connaissance commune sous priors distincts"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "desaccords \\(posteriors ck et differents\\) : ([\\d,]+)"
+          transform: digits
+        rust:
+          cell: 27
+          pattern: "desaccords \\(posteriors ck et differents\\) : ([\\d,]+)"
+          transform: digits
+        csharp:
+          cell: 27
+          pattern: "Priors distincts : \\d+ cas, (\\d+) d[eé]saccords"
+          transform: digits
+    - id: exemple_partition_1
+      description: "Partition du joueur 1 dans le premier desaccord de connaissance commune"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "partition joueur 1 : (\\{[^}]*\\}( \\| \\{[^}]*\\})*)"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "partition joueur 1 : (\\{[^}]*\\}( \\| \\{[^}]*\\})*)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# affiche un exemple de desaccord DIFFERENT
+            (« P1={0,1,2,3,4,5} », « E={0} ») : son ordre de balayage des
+            cellules du meet differe du triplet Python/Rust. Cote declare
+            ABSENT, pas mesure.
+    - id: exemple_posteriors
+      description: "Posteriors des deux joueurs dans le premier desaccord de connaissance commune"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "posterior joueur 1 : (\\d+/\\d+ = \\d+\\.\\d+)"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "posterior joueur 1 : (\\d+/\\d+ = \\d+\\.\\d+)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# affiche un exemple de desaccord DIFFERENT : ses
+            rationnels (1/6 et 1/9) ne correspondent pas au premier
+            desaccord du triplet Python/Rust (1/2 et 1/5). Cote declare
+            ABSENT, pas mesure.
+    # --- cellules d'exercice : les trois stubs restent des stubs -----------
+    - id: exercice_1_stub
+      description: "L'Exercice 1 reste un stub (bandeau « Exercice a completer : check_s5 »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Exercice a completer : (check_s5)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Exercice a completer : (check_s5)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit « Exercice a completer : check S5 » : meme
+            exercice, libelle different. Cote declare ABSENT, pas mesure.
+    - id: exercice_2_stub
+      description: "L'Exercice 2 reste un stub (bandeau « Exercice a completer : modele_a_connaissance_commune »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Exercice a completer : (modele_a_connaissance_commune)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "Exercice a completer : (modele_a_connaissance_commune)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit « Exercice a completer : construire le modele »
+            : meme exercice, libelle different. Cote declare ABSENT, pas
+            mesure.
+    - id: exercice_3_stub
+      description: "L'Exercice 3 reste un stub (bandeau « Exercice a completer : trois_agents_verification »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "Exercice a completer : (trois_agents_verification)"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "Exercice a completer : (trois_agents_verification)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit « Exercice a completer : trois agents » : meme
+            exercice, libelle different. Cote declare ABSENT, pas mesure.
+    # --- cellule 32 : l'elimination iteree --------------------------------
+    - id: tours_elimination
+      description: "Tours d'elimination des strategies strictement dominees"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "tours d'elimination : (\\[.*\\])"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "tours d'elimination : (\\[.*\\])"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# decrit les tours en texte (« Tour 1 : lignes B ;
+            colonnes ») et non au repr Python des tuples de listes : meme
+            sequence, forme non comparable. Cote declare ABSENT, pas mesure.
+    - id: ligne_survivante
+      description: "Ligne survivante a l'elimination"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "lignes survivantes  : \\['(\\w+)'\\]"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "lignes survivantes  : \\['(\\w+)'\\]"
+          transform: text
+        csharp:
+          cell: 32
+          pattern: "Survivants : (\\w+) / (\\w+)"
+          transform: text
+    - id: colonne_survivante
+      description: "Colonne survivante a l'elimination"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "colonnes survivantes: \\['(\\w+)'\\]"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "colonnes survivantes: \\['(\\w+)'\\]"
+          transform: text
+        csharp:
+          cell: 32
+          pattern: "Survivants : \\w+ / (\\w+)"
+          transform: text
+    - id: nombre_tours
+      description: "Nombre de tours d'elimination"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "nombre de tours     : (\\d+)"
+          transform: int
+        rust:
+          cell: 32
+          pattern: "nombre de tours     : (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# enonce les trois tours un par un sans en donner le
+            nombre ; le compte est le meme. Cote declare ABSENT, pas mesure.

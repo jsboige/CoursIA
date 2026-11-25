@@ -1,0 +1,1141 @@
+{
+  "artifacts": {
+    "annotations_jsonl": "annotations.jsonl",
+    "annotations_jsonl_in_repo": false
+  },
+  "corpora": {
+    "cc0": {
+      "dataset": "artemsnegirev/dialogs_from_jokes",
+      "language": "ru",
+      "licence": "CC0-1.0",
+      "local_copy": "dialogs_from_jokes.dataset.json",
+      "note": "corpus de dialogues-plaisanteries en russe : il exerce la chaine (trace, controle, augmentation) hors de la langue du banc ; il ne fournit aucune reference et n'entre pas dans le jeu d'evaluation",
+      "sha256": "50f6cf42959d592c1267f0f7dd516855b666d2a34453a8cef3abdabcf073f4ac",
+      "url": "https://huggingface.co/datasets/artemsnegirev/dialogs_from_jokes/resolve/main/dataset.json",
+      "vendored_in_repo": false
+    },
+    "humour_banc": {
+      "population": 120,
+      "population_mode": "stratified",
+      "reference": "annotation de reference commitee dans le depot",
+      "reference_nature": {
+        "heuristique-declaree": {
+          "ids": [
+            "arg-1.1.2",
+            "arg-1.1.6",
+            "arg-1.2.1",
+            "arg-1.2.2",
+            "arg-1.2.3",
+            "arg-1.2.5",
+            "arg-1.3.4",
+            "arg-2.1.10",
+            "arg-2.1.6",
+            "arg-2.1.7",
+            "arg-2.1.8",
+            "arg-2.2.11",
+            "arg-2.2.2",
+            "arg-2.2.7",
+            "arg-2.2.9",
+            "arg-2.3.2",
+            "arg-2.3.3",
+            "arg-3.1.3",
+            "arg-3.1.5",
+            "arg-3.1.7",
+            "arg-3.2.10",
+            "arg-3.2.16",
+            "arg-3.2.3",
+            "arg-3.2.4",
+            "arg-3.2.5",
+            "arg-3.2.6",
+            "arg-3.2.7",
+            "arg-3.3.11",
+            "arg-3.3.2",
+            "arg-3.3.3",
+            "arg-3.3.5",
+            "arg-3.3.9",
+            "arg-4.1.1",
+            "arg-4.1.12",
+            "arg-4.1.14",
+            "arg-4.1.7",
+            "arg-4.1.8",
+            "arg-4.1.9",
+            "arg-4.2.4",
+            "arg-4.3.2",
+            "arg-4.3.5",
+            "arg-4.3.6",
+            "arg-4.3.7",
+            "arg-4.3.9",
+            "arg-5.1.4",
+            "arg-5.2.3",
+            "arg-6.1.1",
+            "arg-6.3.1",
+            "arg-6.3.3",
+            "arg-7.1.1",
+            "arg-7.1.7",
+            "arg-7.2.10",
+            "arg-7.2.2",
+            "arg-7.2.3",
+            "arg-7.2.6",
+            "arg-7.2.7",
+            "arg-7.2.9",
+            "arg-7.3.2",
+            "arg-7.3.3",
+            "arg-7.3.5"
+          ],
+          "n": 60
+        },
+        "jugement-manuel": {
+          "ids": [
+            "edge-01",
+            "edge-02",
+            "edge-03",
+            "edge-04",
+            "edge-05",
+            "edge-06",
+            "edge-07",
+            "edge-08",
+            "edge-09",
+            "edge-10",
+            "joke-p01",
+            "joke-p02",
+            "joke-p03",
+            "joke-p04",
+            "joke-p05",
+            "joke-p06",
+            "joke-p07",
+            "joke-p08",
+            "joke-p09",
+            "joke-p10",
+            "joke-p11",
+            "joke-p12",
+            "joke-p13",
+            "joke-p14",
+            "joke-p15",
+            "joke-p16",
+            "joke-p17",
+            "joke-p18",
+            "joke-p19",
+            "joke-p20",
+            "joke-p21",
+            "joke-p22",
+            "joke-p23",
+            "joke-p24",
+            "joke-p25",
+            "joke-p26",
+            "joke-p27",
+            "joke-p28",
+            "joke-p29",
+            "joke-p30",
+            "neg-s01",
+            "neg-s02",
+            "neg-s03",
+            "neg-s04",
+            "neg-s05",
+            "neg-s06",
+            "neg-s07",
+            "neg-s08",
+            "neg-s09",
+            "neg-s10",
+            "neg-s11",
+            "neg-s12",
+            "neg-s13",
+            "neg-s14",
+            "neg-s15",
+            "neg-s16",
+            "neg-s17",
+            "neg-s18",
+            "neg-s19",
+            "neg-s20"
+          ],
+          "n": 60
+        }
+      },
+      "sample": 39,
+      "sample_composition": {
+        "heuristique-argumentum": 22,
+        "jugement-humain": 17
+      },
+      "source": "GameTheory/humour_banc/humour_corpus.json (commite dans le depot)"
+    }
+  },
+  "generated_at": "2026-11-16T07:51:59.793137+00:00",
+  "issue": "#26911",
+  "limits": [
+    "l'accord contre la reference est un accord modele/annotation de reference, pas un accord entre annotateurs humains ; il n'est interpretable que sur la population a etiquette humaine (blagues manuelles, declarations factuelles, edge cases)",
+    "la population arg-* porte une etiquette produite par une heuristique de categorie sur des scenarios tronques : son texte ne contient pas la blague, l'etiquette n'y est pas derivable ; l'accord mesure sur cette population decrit un decalage de methode, pas une performance",
+    "l'auto-accord mesure est intra-modele (relecture du meme modele avec un prompt different) : il ne remplace pas la campagne multi-annotateurs de #12756",
+    "le corpus CC0 est en russe : il exerce la chaine, il n'evalue rien",
+    "la taxonomie de reference est elle-meme un juggement de l'effet communicationnel, pas une verite de terrain : un.item sans marqueur d'effet comique peut rester un humour reussi pour un lecteur, et le kappa mesure une convergence de jugements, pas une justesse"
+  ],
+  "measures": {
+    "n_items": 59,
+    "n_records": 89,
+    "predicted_distribution": {
+      "offensif_compris_non_partage": 1,
+      "recadrage_sans_rire": 9,
+      "rien": 26,
+      "rire_sans_recadrage": 3
+    },
+    "reference_distribution": {
+      "humour_reussi": 8,
+      "offensif_compris_non_partage": 7,
+      "recadrage_sans_rire": 8,
+      "rien": 8,
+      "rire_sans_recadrage": 8
+    },
+    "self_agreement_banc": {
+      "above_chance_p95": true,
+      "categories": [
+        "humour_reussi",
+        "rire_sans_recadrage",
+        "recadrage_sans_rire",
+        "offensif_compris_non_partage",
+        "rien"
+      ],
+      "chance_band": {
+        "max": 0.5260663507109005,
+        "mean": 0.008056872037914749,
+        "n_draws": 200,
+        "p95": 0.3364928909952607,
+        "seed": 42
+      },
+      "confusion": {
+        "humour_reussi": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 0,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "offensif_compris_non_partage": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 0,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "recadrage_sans_rire": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 7,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "rien": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 1,
+          "rien": 11,
+          "rire_sans_recadrage": 0
+        },
+        "rire_sans_recadrage": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 0,
+          "rien": 0,
+          "rire_sans_recadrage": 1
+        }
+      },
+      "corpus": "humour_banc",
+      "expected_agreement": 0.4725,
+      "interpretation": "accord presque parfait",
+      "items": [
+        "arg-2.1.7",
+        "arg-2.2.7",
+        "arg-2.3.3",
+        "arg-3.1.7",
+        "arg-3.2.7",
+        "arg-4.3.2",
+        "arg-6.1.1",
+        "arg-7.2.2",
+        "arg-7.3.2",
+        "arg-7.3.3",
+        "edge-04",
+        "edge-05",
+        "edge-09",
+        "edge-10",
+        "joke-p07",
+        "joke-p09",
+        "joke-p17",
+        "joke-p26",
+        "joke-p28",
+        "neg-s08"
+      ],
+      "kappa": 0.9052132701421799,
+      "marginals": {
+        "a": {
+          "humour_reussi": 0.0,
+          "offensif_compris_non_partage": 0.0,
+          "recadrage_sans_rire": 0.35,
+          "rien": 0.6,
+          "rire_sans_recadrage": 0.05
+        },
+        "b": {
+          "humour_reussi": 0.0,
+          "offensif_compris_non_partage": 0.0,
+          "recadrage_sans_rire": 0.4,
+          "rien": 0.55,
+          "rire_sans_recadrage": 0.05
+        }
+      },
+      "n": 20,
+      "observed_agreement": 0.95,
+      "undefined_reason": null
+    },
+    "self_agreement_cc0": {
+      "above_chance_p95": false,
+      "categories": [
+        "humour_reussi",
+        "rire_sans_recadrage",
+        "recadrage_sans_rire",
+        "offensif_compris_non_partage",
+        "rien"
+      ],
+      "chance_band": {
+        "max": 0.0,
+        "mean": 0.0,
+        "n_draws": 200,
+        "p95": 0.0,
+        "seed": 42
+      },
+      "confusion": {
+        "humour_reussi": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 0,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "offensif_compris_non_partage": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 0,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "recadrage_sans_rire": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 9,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "rien": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 1,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        },
+        "rire_sans_recadrage": {
+          "humour_reussi": 0,
+          "offensif_compris_non_partage": 0,
+          "recadrage_sans_rire": 0,
+          "rien": 0,
+          "rire_sans_recadrage": 0
+        }
+      },
+      "corpus": "artemsnegirev/dialogs_from_jokes",
+      "expected_agreement": 0.9,
+      "interpretation": "accord faible",
+      "items": [
+        "cc0-000000",
+        "cc0-000001",
+        "cc0-000002",
+        "cc0-000003",
+        "cc0-000004",
+        "cc0-000005",
+        "cc0-000006",
+        "cc0-000007",
+        "cc0-000008",
+        "cc0-000009"
+      ],
+      "kappa": 0.0,
+      "marginals": {
+        "a": {
+          "humour_reussi": 0.0,
+          "offensif_compris_non_partage": 0.0,
+          "recadrage_sans_rire": 0.9,
+          "rien": 0.1,
+          "rire_sans_recadrage": 0.0
+        },
+        "b": {
+          "humour_reussi": 0.0,
+          "offensif_compris_non_partage": 0.0,
+          "recadrage_sans_rire": 1.0,
+          "rien": 0.0,
+          "rire_sans_recadrage": 0.0
+        }
+      },
+      "n": 10,
+      "observed_agreement": 0.9,
+      "undefined_reason": null
+    },
+    "token_cost": {
+      "mean_total_tokens_per_item": 1059.2696629213483,
+      "per_annotator": {
+        "vllm:qwen3.6-35b-a3b:p1": {
+          "completion_tokens": 41477,
+          "items": 59,
+          "mean_total_tokens_per_item": 1034.2711864406779,
+          "prompt_tokens": 19545,
+          "total_tokens": 61022
+        },
+        "vllm:qwen3.6-35b-a3b:p2": {
+          "completion_tokens": 22566,
+          "items": 30,
+          "mean_total_tokens_per_item": 1108.4333333333334,
+          "prompt_tokens": 10687,
+          "total_tokens": 33253
+        }
+      },
+      "total_items": 89,
+      "total_tokens": 94275
+    },
+    "vs_reference_banc": {
+      "vllm:qwen3.6-35b-a3b:p1 vs reference": {
+        "categories": [
+          "humour_reussi",
+          "rire_sans_recadrage",
+          "recadrage_sans_rire",
+          "offensif_compris_non_partage",
+          "rien"
+        ],
+        "confusion": {
+          "humour_reussi": {
+            "humour_reussi": 0,
+            "offensif_compris_non_partage": 0,
+            "recadrage_sans_rire": 0,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          },
+          "offensif_compris_non_partage": {
+            "humour_reussi": 0,
+            "offensif_compris_non_partage": 1,
+            "recadrage_sans_rire": 0,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          },
+          "recadrage_sans_rire": {
+            "humour_reussi": 6,
+            "offensif_compris_non_partage": 0,
+            "recadrage_sans_rire": 3,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          },
+          "rien": {
+            "humour_reussi": 2,
+            "offensif_compris_non_partage": 4,
+            "recadrage_sans_rire": 5,
+            "rien": 8,
+            "rire_sans_recadrage": 7
+          },
+          "rire_sans_recadrage": {
+            "humour_reussi": 0,
+            "offensif_compris_non_partage": 2,
+            "recadrage_sans_rire": 0,
+            "rien": 0,
+            "rire_sans_recadrage": 1
+          }
+        },
+        "expected_agreement": 0.20447074293228137,
+        "interpretation": "accord faible",
+        "items": [
+          "arg-1.1.2",
+          "arg-2.1.7",
+          "arg-2.2.2",
+          "arg-2.2.7",
+          "arg-2.3.2",
+          "arg-2.3.3",
+          "arg-3.1.7",
+          "arg-3.2.3",
+          "arg-3.2.7",
+          "arg-4.1.12",
+          "arg-4.1.8",
+          "arg-4.3.2",
+          "arg-6.1.1",
+          "arg-6.3.1",
+          "arg-6.3.3",
+          "arg-7.1.1",
+          "arg-7.2.10",
+          "arg-7.2.2",
+          "arg-7.2.3",
+          "arg-7.2.6",
+          "arg-7.3.2",
+          "arg-7.3.3",
+          "edge-03",
+          "edge-04",
+          "edge-05",
+          "edge-06",
+          "edge-07",
+          "edge-08",
+          "edge-09",
+          "edge-10",
+          "joke-p07",
+          "joke-p09",
+          "joke-p17",
+          "joke-p26",
+          "joke-p28",
+          "neg-s08",
+          "neg-s12",
+          "neg-s13",
+          "neg-s19"
+        ],
+        "kappa": 0.16198347107438016,
+        "marginals": {
+          "a": {
+            "humour_reussi": 0.0,
+            "offensif_compris_non_partage": 0.02564102564102564,
+            "recadrage_sans_rire": 0.23076923076923078,
+            "rien": 0.6666666666666666,
+            "rire_sans_recadrage": 0.07692307692307693
+          },
+          "b": {
+            "humour_reussi": 0.20512820512820512,
+            "offensif_compris_non_partage": 0.1794871794871795,
+            "recadrage_sans_rire": 0.20512820512820512,
+            "rien": 0.20512820512820512,
+            "rire_sans_recadrage": 0.20512820512820512
+          }
+        },
+        "n": 39,
+        "observed_agreement": 0.3333333333333333,
+        "undefined_reason": null
+      },
+      "vllm:qwen3.6-35b-a3b:p2 vs reference": {
+        "categories": [
+          "humour_reussi",
+          "rire_sans_recadrage",
+          "recadrage_sans_rire",
+          "offensif_compris_non_partage",
+          "rien"
+        ],
+        "confusion": {
+          "humour_reussi": {
+            "humour_reussi": 0,
+            "offensif_compris_non_partage": 0,
+            "recadrage_sans_rire": 0,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          },
+          "offensif_compris_non_partage": {
+            "humour_reussi": 0,
+            "offensif_compris_non_partage": 0,
+            "recadrage_sans_rire": 0,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          },
+          "recadrage_sans_rire": {
+            "humour_reussi": 6,
+            "offensif_compris_non_partage": 0,
+            "recadrage_sans_rire": 2,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          },
+          "rien": {
+            "humour_reussi": 1,
+            "offensif_compris_non_partage": 2,
+            "recadrage_sans_rire": 3,
+            "rien": 2,
+            "rire_sans_recadrage": 3
+          },
+          "rire_sans_recadrage": {
+            "humour_reussi": 0,
+            "offensif_compris_non_partage": 1,
+            "recadrage_sans_rire": 0,
+            "rien": 0,
+            "rire_sans_recadrage": 0
+          }
+        },
+        "expected_agreement": 0.1625,
+        "interpretation": "accord faible",
+        "items": [
+          "arg-2.1.7",
+          "arg-2.2.7",
+          "arg-2.3.3",
+          "arg-3.1.7",
+          "arg-3.2.7",
+          "arg-4.3.2",
+          "arg-6.1.1",
+          "arg-7.2.2",
+          "arg-7.3.2",
+          "arg-7.3.3",
+          "edge-04",
+          "edge-05",
+          "edge-09",
+          "edge-10",
+          "joke-p07",
+          "joke-p09",
+          "joke-p17",
+          "joke-p26",
+          "joke-p28",
+          "neg-s08"
+        ],
+        "kappa": 0.04477611940298508,
+        "marginals": {
+          "a": {
+            "humour_reussi": 0.0,
+            "offensif_compris_non_partage": 0.0,
+            "recadrage_sans_rire": 0.4,
+            "rien": 0.55,
+            "rire_sans_recadrage": 0.05
+          },
+          "b": {
+            "humour_reussi": 0.35,
+            "offensif_compris_non_partage": 0.15,
+            "recadrage_sans_rire": 0.25,
+            "rien": 0.1,
+            "rire_sans_recadrage": 0.15
+          }
+        },
+        "n": 20,
+        "observed_agreement": 0.2,
+        "undefined_reason": null
+      }
+    },
+    "vs_reference_by_source": {
+      "par_origine_du_label": {
+        "heuristique-argumentum": {
+          "categories": [
+            "humour_reussi",
+            "rire_sans_recadrage",
+            "recadrage_sans_rire",
+            "offensif_compris_non_partage",
+            "rien"
+          ],
+          "confusion": {
+            "humour_reussi": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "offensif_compris_non_partage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "recadrage_sans_rire": {
+              "humour_reussi": 1,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rien": {
+              "humour_reussi": 2,
+              "offensif_compris_non_partage": 3,
+              "recadrage_sans_rire": 5,
+              "rien": 4,
+              "rire_sans_recadrage": 7
+            },
+            "rire_sans_recadrage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            }
+          },
+          "expected_agreement": 0.18388429752066116,
+          "interpretation": "accord pauvre (kappa negatif : les annotateurs se desaccordent plus que le hasard)",
+          "items": [
+            "arg-1.1.2",
+            "arg-2.1.7",
+            "arg-2.2.2",
+            "arg-2.2.7",
+            "arg-2.3.2",
+            "arg-2.3.3",
+            "arg-3.1.7",
+            "arg-3.2.3",
+            "arg-3.2.7",
+            "arg-4.1.12",
+            "arg-4.1.8",
+            "arg-4.3.2",
+            "arg-6.1.1",
+            "arg-6.3.1",
+            "arg-6.3.3",
+            "arg-7.1.1",
+            "arg-7.2.10",
+            "arg-7.2.2",
+            "arg-7.2.3",
+            "arg-7.2.6",
+            "arg-7.3.2",
+            "arg-7.3.3"
+          ],
+          "kappa": -0.0025316455696202445,
+          "marginals": {
+            "a": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.0,
+              "recadrage_sans_rire": 0.045454545454545456,
+              "rien": 0.9545454545454546,
+              "rire_sans_recadrage": 0.0
+            },
+            "b": {
+              "humour_reussi": 0.13636363636363635,
+              "offensif_compris_non_partage": 0.13636363636363635,
+              "recadrage_sans_rire": 0.22727272727272727,
+              "rien": 0.18181818181818182,
+              "rire_sans_recadrage": 0.3181818181818182
+            }
+          },
+          "n": 22,
+          "observed_agreement": 0.18181818181818182,
+          "undefined_reason": null
+        },
+        "manuel": {
+          "categories": [
+            "humour_reussi",
+            "rire_sans_recadrage",
+            "recadrage_sans_rire",
+            "offensif_compris_non_partage",
+            "rien"
+          ],
+          "confusion": {
+            "humour_reussi": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "offensif_compris_non_partage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 1,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "recadrage_sans_rire": {
+              "humour_reussi": 5,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 3,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rien": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 1,
+              "recadrage_sans_rire": 0,
+              "rien": 4,
+              "rire_sans_recadrage": 0
+            },
+            "rire_sans_recadrage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 2,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 1
+            }
+          },
+          "expected_agreement": 0.17647058823529413,
+          "interpretation": "accord substantiel",
+          "items": [
+            "edge-03",
+            "edge-04",
+            "edge-05",
+            "edge-06",
+            "edge-07",
+            "edge-08",
+            "edge-09",
+            "edge-10",
+            "joke-p07",
+            "joke-p09",
+            "joke-p17",
+            "joke-p26",
+            "joke-p28",
+            "neg-s08",
+            "neg-s12",
+            "neg-s13",
+            "neg-s19"
+          ],
+          "kappa": 0.42857142857142855,
+          "marginals": {
+            "a": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.058823529411764705,
+              "recadrage_sans_rire": 0.47058823529411764,
+              "rien": 0.29411764705882354,
+              "rire_sans_recadrage": 0.17647058823529413
+            },
+            "b": {
+              "humour_reussi": 0.29411764705882354,
+              "offensif_compris_non_partage": 0.23529411764705882,
+              "recadrage_sans_rire": 0.17647058823529413,
+              "rien": 0.23529411764705882,
+              "rire_sans_recadrage": 0.058823529411764705
+            }
+          },
+          "n": 17,
+          "observed_agreement": 0.5294117647058824,
+          "undefined_reason": null
+        }
+      },
+      "par_source_de_corpus": {
+        "ArgumentumGames/Argumentum": {
+          "categories": [
+            "humour_reussi",
+            "rire_sans_recadrage",
+            "recadrage_sans_rire",
+            "offensif_compris_non_partage",
+            "rien"
+          ],
+          "confusion": {
+            "humour_reussi": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "offensif_compris_non_partage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "recadrage_sans_rire": {
+              "humour_reussi": 1,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rien": {
+              "humour_reussi": 2,
+              "offensif_compris_non_partage": 3,
+              "recadrage_sans_rire": 5,
+              "rien": 4,
+              "rire_sans_recadrage": 7
+            },
+            "rire_sans_recadrage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            }
+          },
+          "expected_agreement": 0.18388429752066116,
+          "interpretation": "accord pauvre (kappa negatif : les annotateurs se desaccordent plus que le hasard)",
+          "items": [
+            "arg-1.1.2",
+            "arg-2.1.7",
+            "arg-2.2.2",
+            "arg-2.2.7",
+            "arg-2.3.2",
+            "arg-2.3.3",
+            "arg-3.1.7",
+            "arg-3.2.3",
+            "arg-3.2.7",
+            "arg-4.1.12",
+            "arg-4.1.8",
+            "arg-4.3.2",
+            "arg-6.1.1",
+            "arg-6.3.1",
+            "arg-6.3.3",
+            "arg-7.1.1",
+            "arg-7.2.10",
+            "arg-7.2.2",
+            "arg-7.2.3",
+            "arg-7.2.6",
+            "arg-7.3.2",
+            "arg-7.3.3"
+          ],
+          "kappa": -0.0025316455696202445,
+          "marginals": {
+            "a": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.0,
+              "recadrage_sans_rire": 0.045454545454545456,
+              "rien": 0.9545454545454546,
+              "rire_sans_recadrage": 0.0
+            },
+            "b": {
+              "humour_reussi": 0.13636363636363635,
+              "offensif_compris_non_partage": 0.13636363636363635,
+              "recadrage_sans_rire": 0.22727272727272727,
+              "rien": 0.18181818181818182,
+              "rire_sans_recadrage": 0.3181818181818182
+            }
+          },
+          "n": 22,
+          "observed_agreement": 0.18181818181818182,
+          "undefined_reason": null
+        },
+        "blague-manuelle": {
+          "categories": [
+            "humour_reussi",
+            "rire_sans_recadrage",
+            "recadrage_sans_rire",
+            "offensif_compris_non_partage",
+            "rien"
+          ],
+          "confusion": {
+            "humour_reussi": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "offensif_compris_non_partage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "recadrage_sans_rire": {
+              "humour_reussi": 5,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rien": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rire_sans_recadrage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            }
+          },
+          "expected_agreement": 0.0,
+          "interpretation": "accord faible",
+          "items": [
+            "joke-p07",
+            "joke-p09",
+            "joke-p17",
+            "joke-p26",
+            "joke-p28"
+          ],
+          "kappa": 0.0,
+          "marginals": {
+            "a": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.0,
+              "recadrage_sans_rire": 1.0,
+              "rien": 0.0,
+              "rire_sans_recadrage": 0.0
+            },
+            "b": {
+              "humour_reussi": 1.0,
+              "offensif_compris_non_partage": 0.0,
+              "recadrage_sans_rire": 0.0,
+              "rien": 0.0,
+              "rire_sans_recadrage": 0.0
+            }
+          },
+          "n": 5,
+          "observed_agreement": 0.0,
+          "undefined_reason": null
+        },
+        "declaration-factuelle": {
+          "categories": [
+            "humour_reussi",
+            "rire_sans_recadrage",
+            "recadrage_sans_rire",
+            "offensif_compris_non_partage",
+            "rien"
+          ],
+          "confusion": {
+            "humour_reussi": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "offensif_compris_non_partage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "recadrage_sans_rire": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rien": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 4,
+              "rire_sans_recadrage": 0
+            },
+            "rire_sans_recadrage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            }
+          },
+          "expected_agreement": 1.0,
+          "interpretation": "indefini : l'accord attendu par le hasard est nul (marges degenerees)",
+          "items": [
+            "neg-s08",
+            "neg-s12",
+            "neg-s13",
+            "neg-s19"
+          ],
+          "kappa": null,
+          "marginals": {
+            "a": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.0,
+              "recadrage_sans_rire": 0.0,
+              "rien": 1.0,
+              "rire_sans_recadrage": 0.0
+            },
+            "b": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.0,
+              "recadrage_sans_rire": 0.0,
+              "rien": 1.0,
+              "rire_sans_recadrage": 0.0
+            }
+          },
+          "n": 4,
+          "observed_agreement": 1.0,
+          "undefined_reason": "accord attendu par le hasard nul (une seule categorie presente des deux cotes)"
+        },
+        "edge-case-curated": {
+          "categories": [
+            "humour_reussi",
+            "rire_sans_recadrage",
+            "recadrage_sans_rire",
+            "offensif_compris_non_partage",
+            "rien"
+          ],
+          "confusion": {
+            "humour_reussi": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "offensif_compris_non_partage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 1,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "recadrage_sans_rire": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 0,
+              "recadrage_sans_rire": 3,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rien": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 1,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 0
+            },
+            "rire_sans_recadrage": {
+              "humour_reussi": 0,
+              "offensif_compris_non_partage": 2,
+              "recadrage_sans_rire": 0,
+              "rien": 0,
+              "rire_sans_recadrage": 1
+            }
+          },
+          "expected_agreement": 0.25,
+          "interpretation": "accord substantiel",
+          "items": [
+            "edge-03",
+            "edge-04",
+            "edge-05",
+            "edge-06",
+            "edge-07",
+            "edge-08",
+            "edge-09",
+            "edge-10"
+          ],
+          "kappa": 0.5,
+          "marginals": {
+            "a": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.125,
+              "recadrage_sans_rire": 0.375,
+              "rien": 0.125,
+              "rire_sans_recadrage": 0.375
+            },
+            "b": {
+              "humour_reussi": 0.0,
+              "offensif_compris_non_partage": 0.5,
+              "recadrage_sans_rire": 0.375,
+              "rien": 0.0,
+              "rire_sans_recadrage": 0.125
+            }
+          },
+          "n": 8,
+          "observed_agreement": 0.625,
+          "undefined_reason": null
+        }
+      }
+    }
+  },
+  "provenance_invariant": {
+    "augmented_count": 10,
+    "evaluation_count": 39,
+    "holds": true,
+    "intersection": []
+  },
+  "step": "etape 2 -- chaine de preparation par le LLM local",
+  "trace": {
+    "annotators": [
+      "vllm:qwen3.6-35b-a3b:p1",
+      "vllm:qwen3.6-35b-a3b:p2",
+      "vllm:qwen3.6-35b-a3b:aug"
+    ],
+    "base_url": "http://127.0.0.1:5002/v1",
+    "control_trace": {
+      "base_url": "http://127.0.0.1:5002/v1",
+      "max_tokens": 2000,
+      "model_asked": "qwen3.6-35b-a3b",
+      "prompt_version": "humor-chain-v2",
+      "seed": 20261117,
+      "temperature": 0.0,
+      "timeout": 180.0,
+      "top_p": 1.0
+    },
+    "determinism": "temperature 0 : chaque passe est rejouable a l'identique ; la variabilite de la relecture vient du prompt et de la graine, pas du tirage",
+    "max_tokens": 2000,
+    "model_asked": "qwen3.6-35b-a3b",
+    "prompt_version": "humor-chain-v2",
+    "seed": 20261116,
+    "served_models": [
+      "qwen3.6-35b-a3b"
+    ],
+    "temperature": 0.0,
+    "timeout": 180.0,
+    "top_p": 1.0,
+    "variants": {
+      "controle": "rubric inverse + regle de departage reformulee (relecture)",
+      "principal": "rubric dans l'ordre canonique de la taxonomie"
+    }
+  }
+}

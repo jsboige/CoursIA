@@ -1052,13 +1052,19 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
-# --- #26102/#26405 : l'App de la machine ai-01 n'est PAS la voix du coordinateur
+# --- #26102/#26405 : l'App de MACHINE n'est PAS la voix ; l'App PROPRE l'est ----
+#
+# Q187 (2026-11-14) : l'App PROPRE a la lane coordinatrice ``coursia-coord-ai01``
+# (App 5763709, cle dediee distincte de la cle de machine) rejoint
+# COORDINATOR_IDENTITIES ; l'App de machine ``coursia-lane-ai-01`` reste
+# exclue pour la raison d'origine (cle lue par la lane soeur CoursIA-2).
 
 
 def test_coordinator_app_act_expires_the_dossier():
-    """#26102 (appliqué ici par #26405) : un acte de l'App EXPIRE le dossier.
+    """#26102 (appliqué ici par #26405) : un acte de l'App de MACHINE EXPIRE
+    le dossier -- et le fait TOUJOURS.
 
-    L'App ``coursia-lane-ai-01`` n'est plus une voix du coordinateur : sa clé
+    L'App ``coursia-lane-ai-01`` n'est pas une voix du coordinateur : sa clé
     privée vit sur la machine ai-01, que partagent les DEUX lanes
     ``myia-ai-01:CoursIA`` (coordinateur) et ``myia-ai-01:CoursIA-2``
     (worker soeur) -- la seconde forge le même jeton d'installation.
@@ -1066,11 +1072,8 @@ def test_coordinator_app_act_expires_the_dossier():
     coordinatrice peut écrire : le dossier ne périmait alors pas sur un
     commentaire post-dossier de CoursIA-2 sous l'App.
 
-    Inverse du comportement #17437 historique (l'acte de l'App était
-    neutralisé) : aligné sur ``merge_ready.COORDINATOR_VOICES`` et
-    ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute
-    forme App. Le coordinateur lève toujours sous ses logins humains
-    (``myia-ai-01`` / ``jsboige``, cf #16883).
+    L'arrivée de l'App PROPRE (Q187) ne change RIEN a ce refus : ce n'est
+    pas la même clé ni le même login.
     """
     base = _stamped_snapshot("")
     base["comments"].pop()
@@ -1083,14 +1086,53 @@ def test_coordinator_app_act_expires_the_dossier():
     assert any("discussion changed after dossier" in e for e in errors), errors
 
 
+def test_coordinator_lane_app_act_does_not_expire_the_dossier():
+    """#17437/Q187 : un acte de l'App PROPRE ne périmètre PAS le dossier.
+
+    L'App ``coursia-coord-ai01`` porte la voix du coordinateur (clé dédiée,
+    hors de portée de la lane soeur) : sa ligne post-dossier est neutralisée
+    comme celle de ``myia-ai-01``, avec la preuve de type PORTÉE PAR LA
+    LIGNE (``__typename: Bot``, replié en forme REST suffixée par
+    ``gh_identity``) -- le comportement historique de #17437 avant le
+    resserrement #26102, rétabli pour la seule App dont la clé n'est pas
+    partagée.
+    """
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.")
+    own["author"] = {"login": "coursia-coord-ai01", "__typename": "Bot"}
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, (verdict, errors)
+
+
+def test_coordinator_lane_app_homonyme_utilisateur_expire_le_dossier():
+    """Fail-closed sur la voix légitime : l'homonyme UTILISATEUR du slug
+    (``__typename: User``) reste nu après normalisation, il échoue la borne
+    suffixée -- son acte post-dossier périmètre le dossier. Le type de la
+    ligne, pas le nom, porte l'identité."""
+    base = _stamped_snapshot("")
+    base["comments"].pop()
+    snapshot = _stamped_snapshot(_dossier_for(base))
+    own = _comment("Lifting the stale PREFLIGHT_HOLD.")
+    own["author"] = {"login": "coursia-coord-ai01", "__typename": "User"}
+    own["createdAt"] = T1
+    snapshot["comments"].append(own)
+    errors = _errors(snapshot)
+    assert any("discussion changed after dossier" in e for e in errors), errors
+
+
 def test_worker_lane_app_still_expires_the_dossier():
-    """#26405 negative control: NO App spelling is neutralised anymore.
+    """#26405 negative control: NO worker App spelling is neutralised.
 
     Neutralising ``ACCEPTED_DOSSIER_AUTHORS`` wholesale would let any worker
     lane's App write a blocking row after the dossier without expiring it --
-    that is the gate's entire control. Since #26102 no App at all is
-    neutralised (the coordinator machine's App included, see
-    ``test_coordinator_app_act_expires_the_dossier``), so these must refuse.
+    that is the gate's entire control. No worker lane App is neutralised
+    (the coordinator machine's App included, see
+    ``test_coordinator_app_act_expires_the_dossier``); seule l'App PROPRE au
+    coordinateur l'est (Q187), car sa clé lui est dédiée.
     """
     for login in ("coursia-lane-po-2024[bot]", "coursia-lane-po-2026[bot]"):
         base = _stamped_snapshot("")
@@ -1110,10 +1152,23 @@ def test_coordinator_app_login_is_an_accepted_dossier_author():
     ``gh_identity``. If the App prefix or the lane list ever changes there,
     this fails instead of silently neutralising a login the dossier gate
     would reject as an author. The App stays an accepted dossier AUTHOR
-    (signing a dossier is not a post-dossier act) -- since #26102 it just no
-    longer neutralises anything written after the dossier.
+    (signing a dossier is not a post-dossier act) -- since #26102 it just
+    never neutralises anything written after the dossier.
     """
     assert mod.COORDINATOR_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
+
+
+def test_coordinator_lane_app_login_is_an_accepted_dossier_author():
+    """#17437/Q187 : l'App PROPRE au coordinateur signe aussi les dossiers.
+
+    Littéral explicite dans ``gh_identity`` (hors préfixe ``coursia-lane-``,
+    jamais dérivé par forme) : ce test épingle l'appartenance aux deux
+    ensembles -- auteurs de dossier acceptés, et voix du coordinateur -- pour
+    qu'une divergence future entre les deux rougisse ici plutôt qu'en
+    production.
+    """
+    assert mod.COORDINATOR_LANE_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
+    assert mod.COORDINATOR_LANE_APP_LOGIN in mod.COORDINATOR_IDENTITIES
 
 
 # --- #17818 : premiere pose d'un commentaire consultatif de bot marker-garde --
@@ -3422,17 +3477,46 @@ def test_queue_non_coordinator_approval_does_not_qualify():
 
 
 def test_queue_coordinator_app_approval_does_not_qualify():
-    """#26102 (appliqué ici par #26405) : la porte review refuse l'App aussi.
+    """#26102 (appliqué ici par #26405) : la porte review refuse l'App de
+    MACHINE aussi -- et la refuse TOUJOURS.
 
     La queue expose la porte à titre d'information ; l'autorité de merge est
-    le 2ter de ``merge_ready`` (``COORDINATOR_VOICES``), qui refuse toute
-    forme App depuis #26102 : la clé de l'App vit sur la machine ai-01
-    partagée par la lane worker soeur CoursIA-2, donc son APPROVE n'est pas
-    une preuve d'identité coordinateur. Inverse du comportement #17437
-    historique (la porte reconnaissait l'App).
+    le 2ter de ``merge_ready`` (``COORDINATOR_VOICES``) : la clé de l'App de
+    machine vit sur la machine ai-01 partagée par la lane worker soeur
+    CoursIA-2, donc son APPROVE n'est pas une preuve d'identité
+    coordinateur. L'arrivée de l'App PROPRE (Q187) ne change RIEN à ce
+    refus : ce n'est pas la même clé ni le même login.
     """
     snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
     entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is False
+
+
+def test_queue_coordinator_lane_app_approval_qualifies():
+    """#17437/Q187 : la porte review reconnaît l'App PROPRE au coordinateur.
+
+    ``coursia-coord-ai01`` (App 5763709, clé dédiée hors de portée de la
+    lane soeur) porte la voix du coordinateur : un APPROVED sur la tête
+    exacte qualifie, comme celui de ``myia-ai-01`` -- avec la preuve de type
+    PORTÉE PAR LA LIGNE (``type: Bot`` replié en forme REST suffixée).
+    """
+    review = _review(login="coursia-coord-ai01")
+    review["author"]["type"] = "Bot"
+    entry = _classified(_queue_snapshot([review]))
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_coordinator_lane_app_homonyme_utilisateur_ne_qualifie_pas():
+    """Fail-closed sur la voix légitime : l'homonyme UTILISATEUR du slug
+    (``type: User``) reste nu après normalisation, il échoue la borne
+    suffixée -- son APPROVE n'ouvre pas la porte review."""
+    review = _review(login="coursia-coord-ai01")
+    review["author"]["type"] = "User"
+    entry = _classified(_queue_snapshot([review]))
     assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
     assert entry.review_qualifying is False
@@ -3444,8 +3528,8 @@ def test_queue_coordinator_graphql_bot_approval_does_not_qualify():
     GraphQL fournit toujours le login de l'App sans son suffixe REST
     (``coursia-lane-ai-01``, ``type: Bot``) et ``normalize_author_login`` le
     replie toujours en ``coursia-lane-ai-01[bot]`` -- c'est la forme repliée
-    qui est comparée, et depuis #26102 elle n'est plus une voix du
-    coordinateur : la porte reste fermée.
+    qui est comparée, et elle n'est pas une voix du coordinateur : la porte
+    reste fermée (App de MACHINE, clé partagée avec la lane soeur).
     """
     review = _review(login="coursia-lane-ai-01")
     review["author"]["type"] = "Bot"
@@ -4799,6 +4883,92 @@ def test_stack_unmeasured_partner_still_blocks(monkeypatch):
         )
         assert verdict == mod.VERDICT_BLOCKED, (state, reasons)
         assert any("stack top" in r and "#19556" in r for r in reasons), (state, reasons)
+
+
+# --- #23100 (troisieme angle) : fourche soeur reciproque ------------------
+
+
+def _mutual_sibling_index():
+    """Topologie #26321 x #26323 : fourche d'un commit commun non merge.
+
+    Les deux PRs partent de `c2a6c7d` (SC-10 a l'organe), basees sur
+    `main`, MERGEABLE ; chacune porte ensuite un travail propre absent de
+    l'autre. Le predicat tirait dans les deux sens.
+    """
+    return _stack_index(
+        _stack_entry(
+            26321, {"c2a": "SC-10 a l'organe", "1b3": "SC-10 re-execute"},
+            head_name="fix/sc10-organ-web3tx", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+        _stack_entry(
+            26323, {"c2a": "SC-10 a l'organe", "b6e": "SC-11 a l'organe"},
+            head_name="fix/sc11-organ-web3tx", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+    )
+
+
+def _verdict_for(pr, index):
+    snapshot = _base_snapshot()
+    snapshot["number"] = pr
+    return mod.derive_verdict(
+        snapshot, lambda p: {"blocked": False, "blocking": []}, stack=index
+    )
+
+
+def test_stack_mutual_sibling_fork_lets_the_older_land(monkeypatch):
+    """#23100 (controle positif) -- la plus ancienne de la paire passe.
+
+    Pre-fix, #26321 et #26323 se designaient l'une l'autre comme sommet de
+    pile : aucune ne pouvait jamais atterrir. La plus ancienne passe.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    verdict, reasons = _verdict_for(26321, _mutual_sibling_index())
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_mutual_sibling_fork_keeps_the_younger_waiting(monkeypatch):
+    """#23100 (controle negatif) -- la plus recente attend la premiere.
+
+    Le tie-break ne leve qu'UN des deux sens : sans quoi les deux
+    atterriraient dans le meme passage, l'ordre perdu.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    verdict, reasons = _verdict_for(26323, _mutual_sibling_index())
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#26321" in r for r in reasons), reasons
+
+
+def test_stack_mutual_sibling_fork_frees_the_younger_once_the_older_landed(monkeypatch):
+    """#23100 -- la premiere atterrie sort de l'index : la seconde passe."""
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _mutual_sibling_index()
+    del index[26321]
+    verdict, reasons = _verdict_for(26323, index)
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_one_way_top_is_not_a_mutual_fork(monkeypatch):
+    """#23100 (controle negatif) -- le sens unique reste bloquant.
+
+    La cible ne porte AUCUN travail absent de la soeur : la soeur est la
+    version corrigee de la cible, pas une fourche. Le tie-break par
+    numero ne s'applique pas, meme quand la cible a le plus petit numero.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}, mergeable="MERGEABLE"),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            mergeable="MERGEABLE",
+        ),
+    )
+    verdict, reasons = _verdict_for(19548, index)
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------

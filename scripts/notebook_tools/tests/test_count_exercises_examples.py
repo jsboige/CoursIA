@@ -40,6 +40,7 @@ from check_split_reading_cells import (  # noqa: E402
     is_exercise_cell,
 )
 from count_exercises import (  # noqa: E402
+    _credited_example_code_indices,
     _is_stub_code,
     count_exercises_in_notebook,
 )
@@ -262,3 +263,69 @@ def test_prose_intermediaire_et_titre_non_credite(tmp_path):
     for idx, expected in ((1, False), (3, False), (5, True)):
         assert _reader_says_exercise(cells, idx) == expected
         assert (idx in _counter_exercised_code_indices(result, cells)) == expected
+
+
+@pytest.mark.parametrize("anchor", [
+    '<a id="exercice"></a>',
+    "<a name='exercice'></a>",
+    '<A ID="exercice" > </A>',
+])
+def test_ancre_avant_titre_exercice_ferme_section(tmp_path, anchor):
+    cells = [
+        _md("### Exemple guide (credite #1234)\n"),
+        _code(STUDENT_CODE),
+        _md(f"{anchor}\n### Exercice 3 : nouvelle tâche\n"),
+        _code("# Exercice 3\n# TODO etudiant\npass\n"),
+    ]
+    result = count_exercises_in_notebook(_write_nb(tmp_path / "ancre.ipynb", cells))
+    assert _credited_example_code_indices(cells) == {1}
+    assert not _reader_says_exercise(cells, 1)
+    assert _reader_says_exercise(cells, 3)
+    assert 3 in _counter_exercised_code_indices(result, cells)
+    assert result.count == 1
+
+
+@pytest.mark.parametrize("line", [
+    '<a id="ancre"></a>',
+    '<a name="ancre"></a>',
+    '<a href="https://example.org">lien</a>',
+    '<a id="ancre"></a> texte',
+])
+def test_ancre_seule_ou_non_ancre_ne_ferme_pas_section(tmp_path, line):
+    cells = [
+        _md("### Exemple guide (credite #1234)\n"),
+        _code(STUDENT_CODE),
+        _md(line + "\n"),
+        _code(STUDENT_CODE),
+    ]
+    result = count_exercises_in_notebook(_write_nb(tmp_path / "prose.ipynb", cells))
+    assert _credited_example_code_indices(cells) == {1, 3}
+    assert not _reader_says_exercise(cells, 3)
+    assert result.count == 0
+
+
+def test_ancre_avant_titre_credite_conserve_convention_attribution(tmp_path):
+    cells = [
+        _md('<a id="exemple"></a>\n### Exemple guide (credite #1234)\n'),
+        _code(STUDENT_CODE),
+    ]
+    result = count_exercises_in_notebook(_write_nb(tmp_path / "exemple.ipynb", cells))
+    # Le proprietaire de l'attribution ne reconnait pas ce titre precede
+    # d'une ancre ; le compteur et le lecteur conservent ce meme verdict.
+    assert not is_credited_example_header(cells[0])
+    assert _reader_says_exercise(cells, 1)
+    assert 1 in _counter_exercised_code_indices(result, cells)
+    assert result.count == 1
+
+
+def test_lien_html_non_ancre_ne_masque_pas_la_regle_existante(tmp_path):
+    cells = [
+        _md("### Exemple guide (credite #1234)\n"),
+        _code(STUDENT_CODE),
+        _md('<a href="https://example.org">lien</a>\n### Exercice 3\n'),
+        _code("# Exercice 3\n# TODO etudiant\npass\n"),
+    ]
+    result = count_exercises_in_notebook(_write_nb(tmp_path / "lien.ipynb", cells))
+    assert _credited_example_code_indices(cells) == {1, 3}
+    assert not _reader_says_exercise(cells, 3)
+    assert result.count == 0

@@ -1,6 +1,6 @@
 # DataScienceWithAgents - Data Science Python avec Agents IA
 
-[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [07-Agent-Orchestration (Google ADK) →](07-Agent-Orchestration/README.md)
+[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [07-Orchestration-d-Agents (Google ADK) →](07-Orchestration-d-Agents/README.md)
 
 Formation complète en Data Science Python avec intégration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complémentaires : LangChain (3 jours) et Google ADK (4 jours).
 
@@ -76,12 +76,12 @@ Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent
 DataScienceWithAgents/
 ├── 01-Python-For-Data-Science/    # Fondations Python
 │   └── notebooks/
-│       ├── 1.1-Python_pour_la_Data_Science.ipynb
-│       ├── 1.2-Manipulation_de_Donnees_avec_NumPy.ipynb
-│       ├── 1.3-Analyse_de_Donnees_avec_Pandas.ipynb
-│       ├── 1.4-Visualisation_Matplotlib_Seaborn.ipynb
-│       ├── 1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb
-│       └── 1.6-Statistiques_Descriptives.ipynb
+│       ├── PyDS-01-Python_pour_la_Data_Science-Python.ipynb
+│       ├── PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb
+│       ├── PyDS-03-Analyse_de_Donnees_avec_Pandas-Python.ipynb
+│       ├── PyDS-04-Visualisation_Matplotlib_Seaborn-Python.ipynb
+│       ├── PyDS-05-Exploration_Nettoyage_Donnees_Reelles-Python.ipynb
+│       └── PyDS-06-Statistiques_Descriptives-Python.ipynb
 │
 ├── 02-ML-Cours/                # Fondations ML canoniques
 │   ├── 2.1-Workflow-ML.ipynb
@@ -133,12 +133,12 @@ DataScienceWithAgents/
 │   ├── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │   └── WS-01-Denoising-SOTA.ipynb
 │
-├── 06-Data-Agents/ # Track LangChain
+├── 06-Agents-de-Donnees/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
 │   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
-└── 07-Agent-Orchestration/         # Track Google ADK
+└── 07-Orchestration-d-Agents/         # Track Google ADK
     ├── Day4-Foundations/       # Introduction ADK
     ├── Day5-DS-Star/           # Data Science autonome
     ├── Day6-MLE-Star/          # ML Engineering
@@ -151,12 +151,12 @@ La porte d'entrée de la série, en amont de NumPy et Pandas : le strict minimum
 
 | Notebook | Contenu | Durée |
 |----------|---------|-------|
-| [1.1-Python](01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb) | types et conversions (`float()` d'import), structures (`list`/`dict`/`tuple`/`set`), fonctions et docstring, compréhensions, fichiers en `with` + encodage explicite, traceback lu de bas en haut | 60-75 min |
-| [1.2-NumPy](01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, opérations, vectorisation | 45 min |
-| [1.3-Pandas](01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, groupby | 60 min |
-| [1.4-Visualisation](01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb) | matplotlib d'abord (figure/axes, une question → un graphique), erreurs classiques (axe tronqué, surcharge), puis seaborn (`hue`, `pairplot`, heatmap de corrélation) — manchots de Palmer | 60 min |
-| [1.5-Exploration](01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | audit (dimensions/types/manquants/doublons), journal des décisions de nettoyage, quasi-doublon instruit, référence auteur reproduite à zéro divergence — sur `penguins_raw.csv` | 75 min |
-| [1.6-Statistiques](01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb) | tendance centrale, dispersion et coefficient de variation, asymétrie par sous-groupe, corrélation de Pearson et paradoxe de Simpson mesuré — renvoi vers [`Probas/`](../../Probas/README.md) | 60 min |
+| [1.1-Python](01-Python-For-Data-Science/notebooks/PyDS-01-Python_pour_la_Data_Science-Python.ipynb) | types et conversions (`float()` d'import), structures (`list`/`dict`/`tuple`/`set`), fonctions et docstring, compréhensions, fichiers en `with` + encodage explicite, traceback lu de bas en haut | 60-75 min |
+| [1.2-NumPy](01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb) | Arrays, opérations, vectorisation | 45 min |
+| [1.3-Pandas](01-Python-For-Data-Science/notebooks/PyDS-03-Analyse_de_Donnees_avec_Pandas-Python.ipynb) | DataFrames, filtrage, groupby | 60 min |
+| [1.4-Visualisation](01-Python-For-Data-Science/notebooks/PyDS-04-Visualisation_Matplotlib_Seaborn-Python.ipynb) | matplotlib d'abord (figure/axes, une question → un graphique), erreurs classiques (axe tronqué, surcharge), puis seaborn (`hue`, `pairplot`, heatmap de corrélation) — manchots de Palmer | 60 min |
+| [1.5-Exploration](01-Python-For-Data-Science/notebooks/PyDS-05-Exploration_Nettoyage_Donnees_Reelles-Python.ipynb) | audit (dimensions/types/manquants/doublons), journal des décisions de nettoyage, quasi-doublon instruit, référence auteur reproduite à zéro divergence — sur `penguins_raw.csv` | 75 min |
+| [1.6-Statistiques](01-Python-For-Data-Science/notebooks/PyDS-06-Statistiques_Descriptives-Python.ipynb) | tendance centrale, dispersion et coefficient de variation, asymétrie par sous-groupe, corrélation de Pearson et paradoxe de Simpson mesuré — renvoi vers [`Probas/`](../../Probas/README.md) | 60 min |
 
 > **Numérotation (règle d'accrétion).** La série commence à `1.1` — les notebooks `1.2` et `1.3` d'origine sont inchangés, et les prérequis s'insèrent autour d'eux. Continuité : `1.1` (Python) → `1.2` (NumPy) → `1.3` (Pandas) → `1.4` (Visualisation) → `1.5` (Exploration) → `1.6` (Statistiques) → [02-ML-Cours](02-ML-Cours/README.md).
 
@@ -238,31 +238,31 @@ Série d'analyse multi-résolution dans la même discipline from scratch : la tr
 
 Documentation complète : [05-Wavelet-Scattering/README.md](05-Wavelet-Scattering/README.md)
 
-## Workshop 3 Jours (06-Data-Agents)
+## Workshop 3 Jours (06-Agents-de-Donnees)
 
 ### Day 1 - Révision Python
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 1 | [Lab1-PythonForDataScience](06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
+| 1 | [Lab1-PythonForDataScience](06-Agents-de-Donnees/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
 
 ### Day 2 - Agents Documentaires
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 2 | [Lab2-RFP-Analysis](06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
-| 3 | [Lab3-CV-Screening](06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
+| 2 | [Lab2-RFP-Analysis](06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
+| 3 | [Lab3-CV-Screening](06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
 
 ### Day 3 - Data + Agents
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 4 | [Lab4-DataWrangling](06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
-| 5 | [Lab5-Viz-ML](06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
-| 6 | [Lab6-First-Agent](06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
-| 7 | [Lab7-Data-Analysis-Agent](06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
+| 4 | [Lab4-DataWrangling](06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
+| 5 | [Lab5-Viz-ML](06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
+| 6 | [Lab6-First-Agent](06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
+| 7 | [Lab7-Data-Analysis-Agent](06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
-## Track 07-Agent-Orchestration (Days 4-7)
+## Track 07-Orchestration-d-Agents (Days 4-7)
 
 Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
 
@@ -270,16 +270,16 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 8 | [ADK-Introduction](07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+| 8 | [ADK-Introduction](07-Orchestration-d-Agents/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](07-Orchestration-d-Agents/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
 ### Day 5 - DS-STAR (Labs 10-12, puis approfondissements)
 
 | Lab | Notebook | Objectif | Pour approfondir |
 |-----|----------|----------|------------------|
-| 10 | [File-Analyzer](07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes | |
-| 11 | [Planner-Coder-Loop](07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents | |
-| 12 | [DS-Star-Workshop](07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète | [12b–12e](#approfondissements-autour-de-12) |
+| 10 | [File-Analyzer](07-Orchestration-d-Agents/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes | |
+| 11 | [Planner-Coder-Loop](07-Orchestration-d-Agents/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents | |
+| 12 | [DS-Star-Workshop](07-Orchestration-d-Agents/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète | [12b–12e](#approfondissements-autour-de-12) |
 
 #### Approfondissements autour de 12
 
@@ -287,27 +287,27 @@ Ces notebooks prolongent l'atelier DS-STAR par des contrats distincts. Le Lab 12
 
 | Lab | Notebook | Ce qu'il ajoute et provenance |
 |-----|----------|------------------------------|
-| 12e | [Session-Persistence](07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient. Contrat comportemental C1b du corpus EPITA (#14058). |
-| 12b | [Sequential-Orchestration](07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK. Portage livré par #14685, contrat du registre EPITA #14058. |
-| 12c | [Agent-Handoff](07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable. Câblage livré par #14686, contrat du registre EPITA #14058. |
-| 12d | [Token-Usage](07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM. Grain #14687, registre EPITA #14058. |
+| 12e | [Session-Persistence](07-Orchestration-d-Agents/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient. Contrat comportemental C1b du corpus EPITA (#14058). |
+| 12b | [Sequential-Orchestration](07-Orchestration-d-Agents/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK. Portage livré par #14685, contrat du registre EPITA #14058. |
+| 12c | [Agent-Handoff](07-Orchestration-d-Agents/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable. Câblage livré par #14686, contrat du registre EPITA #14058. |
+| 12d | [Token-Usage](07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM. Grain #14687, registre EPITA #14058. |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 13 | [Web-Search-SOTA](07-Agent-Orchestration/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
+| 13 | [Web-Search-SOTA](07-Orchestration-d-Agents/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](07-Orchestration-d-Agents/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](07-Orchestration-d-Agents/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
 
 ### Day 7 - Production (Labs 16-17)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 16 | [Data-Science-Agent](07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
-| 17 | [Final-Project](07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
+| 16 | [Data-Science-Agent](07-Orchestration-d-Agents/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](07-Orchestration-d-Agents/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
 
-### Technologies 07-Agent-Orchestration
+### Technologies 07-Orchestration-d-Agents
 
 | Catégorie | Technologies |
 |-----------|--------------|
@@ -316,7 +316,7 @@ Ces notebooks prolongent l'atelier DS-STAR par des contrats distincts. Le Lab 12
 | **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
 | **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
 
-Documentation complète : [07-Agent-Orchestration/README.md](07-Agent-Orchestration/README.md)
+Documentation complète : [07-Orchestration-d-Agents/README.md](07-Orchestration-d-Agents/README.md)
 
 ## Technologies
 
@@ -389,7 +389,7 @@ Le package `python-dotenv` charge automatiquement ce fichier. Ne JAMAIS committe
 
 ### Les agents ADK ne se connectent pas au provider (Labs 8+)
 
-Vérifier la configuration dans le fichier `.env` d'07-Agent-Orchestration :
+Vérifier la configuration dans le fichier `.env` d'07-Orchestration-d-Agents :
 
 ```bash
 # Provider recommandé (clé gratuite)
@@ -415,7 +415,7 @@ pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
 pip install langchain langchain-openai langchain-experimental python-dotenv
 
 # Labs 8-17 (ADK)
-pip install -r 07-Agent-Orchestration/requirements.txt
+pip install -r 07-Orchestration-d-Agents/requirements.txt
 ```
 
 ### Comment passer de LangChain a Google ADK ?

@@ -2,18 +2,16 @@
 pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 ---
 
-# Search - Algorithmes de Recherche et Programmation par Contraintes
-
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 169
-breakdown: Part3-Cas-pratiques=52, Part1-Foundations=51, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
-maturity: BETA=165, ALPHA=4
+pedagogical_count: 192
+breakdown: Part1-Foundations=61, Part3-Cas-pratiques=56, Part4-Metaheuristics=37, Part2-CSP=22, Part5-Frontieres=16
+maturity: BETA=189, ALPHA=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
 
-Tout problème d'IA, du plus simple jeu de plateau à la planification logistique industrielle, se réduit à un même défi : explorer un espace de solutions possibles pour trouver la meilleure. Cette série vous apprend à maîtriser cette exploration, depuis les algorithmes classiques (BFS, A*, Minimax) jusqu'aux techniques avancées (CSP, métaheuristiques, hybridation LLM). Le fil rouge est la **réduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle à une résolution intelligemment guidée.
+Tout problème d'IA, du plus simple jeu de plateau à la planification logistique industrielle, se réduit à un même défi : explorer un espace de solutions possibles pour trouver la meilleure. Cette série vous apprend à maîtriser cette exploration, depuis les algorithmes classiques (BFS, A\*, Minimax) jusqu'aux techniques avancées (CSP, métaheuristiques, hybridation LLM). Le fil rouge est la **réduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle à une résolution intelligemment guidée.
 
 Le parcours couvre quatre grands piliers. Les **fondements** formalisent les espaces d'états et couvrent les algorithmes de recherche non informée, informée, locale, génétique, adversariale et MCTS. La **programmation par contraintes** (CSP) introduit un changement de paradigme : au lieu d'explorer, on réduit les domaines par propagation. Les **applications** (20 cas réels, chacun décliné en binôme Python ⇄ C#) illustrent chaque concept sur des problèmes adaptés de projets étudiants. Enfin, les **métaheuristiques et l'hybridation** relient la recherche à l'optimisation continue et aux LLMs.
 
@@ -25,7 +23,7 @@ La recherche et l'optimisation sont au coeur de l'informatique : tout problème,
 
 Cette série repose sur une **double approche**, délibérément juxtaposée :
 
-- **Exploration systématique** (recherche classique) : BFS, DFS, A*, Minimax — des algorithmes qui garantissent de trouver une solution optimale si elle existe, mais dont le coût peut être exponentiel. C'est le domaine des espaces d'états, des heuristiques admissibles, de la complétude.
+- **Exploration systématique** (recherche classique) : BFS, DFS, A\*, Minimax — des algorithmes qui garantissent de trouver une solution optimale si elle existe, mais dont le coût peut être exponentiel. C'est le domaine des espaces d'états, des heuristiques admissibles, de la complétude.
 - **Réduction de l'espace** (programmation par contraintes) : au lieu d'explorer bêtement, on élague les domaines impossibles par propagation (AC-3, Forward Checking, CP-SAT). C'est un changement de paradigme : on ne cherche plus, on contraint. Avantage : résolution de problèmes industriels (ordonnancement, emploi du temps) en quelques millisecondes. Limite : la modélisation est un art.
 
 Avoir les deux approches permet de comprendre **quand explorer, quand contraindre, et quand les combiner** — une compétence cruciale pour tout ingénieur confronté à des problèmes combinatoires.
@@ -47,7 +45,7 @@ Au-delà de la méthodologie, cette série couvre des **applications réelles** 
 À l'issue de cette série, vous serez capable de :
 
 1. **Formaliser** un problème réel en espace d'états (S, s0, A, T, G) et choisir l'algorithme de recherche adapté
-2. **Comparer** recherche systématique (A*), contraintes (CSP) et métaheuristiques (GA, SA) sur un même problème
+2. **Comparer** recherche systématique (A\*), contraintes (CSP) et métaheuristiques (GA, SA) sur un même problème
 3. **Modéliser** un problème industriel en CSP (ordonnancement, routing, emploi du temps) avec OR-Tools CP-SAT
 4. **Évaluer** les compromis garantie vs performance vs généralisation pour choisir une stratégie algorithmique
 5. **Combiner** approches complémentaires (CP+SAT, LLM+CSP, MCTS+DQN) pour des problèmes complexes
@@ -56,7 +54,7 @@ Au-delà de la méthodologie, cette série couvre des **applications réelles** 
 
 ### Phase 1 : Fondements de la recherche (Part 1, notebooks 1-7, ~7h)
 
-Le parcours commence par Search-1 (StateSpace) qui formalise les problèmes sous forme (S, s0, A, T, G) et Search-2 (Uninformed) qui couvre BFS, DFS, UCS et IDDFS. Search-3 (Informed) introduit les heuristiques et A*, le cœur de la recherche guidée. Search-4 (LocalSearch) pivote vers l'optimisation locale (Hill Climbing, Simulated Annealing, Tabu Search), et Search-5 (GeneticAlgorithms) généralise avec les algorithmes évolutionnaires. Search-6 (AdversarialSearch) explore la recherche dans les jeux (Minimax, Alpha-Beta), et Search-7 (MCTS) va jusqu'à Monte Carlo Tree Search et les approches AlphaGo. À l'issue de cette phase, vous maîtrisez les trois grands paradigmes : exploration systématique, optimisation locale, et recherche dans les jeux.
+Le parcours commence par Search-1 (StateSpace) qui formalise les problèmes sous forme (S, s0, A, T, G) et Search-2 (Uninformed) qui couvre BFS, DFS, UCS et IDDFS. Search-3 (Informed) introduit les heuristiques et A\*, le cœur de la recherche guidée. Search-4 (LocalSearch) pivote vers l'optimisation locale (Hill Climbing, Simulated Annealing, Tabu Search), et Search-5 (GeneticAlgorithms) généralise avec les algorithmes évolutionnaires. Search-6 (AdversarialSearch) explore la recherche dans les jeux (Minimax, Alpha-Beta), et Search-7 (MCTS) va jusqu'à Monte Carlo Tree Search et les approches AlphaGo. À l'issue de cette phase, vous maîtrisez les trois grands paradigmes : exploration systématique, optimisation locale, et recherche dans les jeux.
 
 ### Phase 2 : Programmation par contraintes (Part 2, CSP 1-6, ~6h)
 
@@ -93,7 +91,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 |---|----------|-------------------|
 | 1 | StateSpace | Formaliser un problème en espace d'états (S, s0, A, T, G) |
 | 2 | Uninformed | BFS vs DFS : comment l'ordre d'exploration change la complexité |
-| 3 | Informed | Heuristiques admissibles et A* : guider la recherche vers la solution |
+| 3 | Informed | Heuristiques admissibles et A\* : guider la recherche vers la solution |
 | 4 | LocalSearch | Abandonner la garantie pour l'efficacité : paysages de fitness et optima locaux |
 | 5 | GeneticAlgorithms | Populations, crossover, mutation : l'évolution comme métaheuristique — **piège déceptif Goldberg k-trap (k=4, L=20) [#6849]** : hill-climber bloqué 17/20, AG 20/20 via croisement |
 | 6 | AdversarialSearch | Minimax, Alpha-Beta : chercher dans les jeux à deux joueurs |
@@ -128,27 +126,27 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12b-ConnectFour](Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12c-ConnectFour](Part3-Cas-pratiques/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 2 | [App-14-ConnectFour-Adversarial](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-12-ConnectFour-Python](Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-12-ConnectFour-CSharp](Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2 | [App-14-ConnectFour-Adversarial-Python](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 2b | [App-14-ConnectFour-Adversarial-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Cas pratiques CSP
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-1-NQueens](Part3-Cas-pratiques/App-1-NQueens.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](Part3-Cas-pratiques/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
-| 3 | [App-3-NurseScheduling](Part3-Cas-pratiques/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
-| 4 | [App-4-JobShopScheduling](Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
-| 5 | [App-5-Timetabling](Part3-Cas-pratiques/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
-| 6 | [App-6-Minesweeper](Part3-Cas-pratiques/App-6-Minesweeper.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
-| 7 | [App-7-Wordle](Part3-Cas-pratiques/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
-| 8 | [App-8-MiniZinc](Part3-Cas-pratiques/App-8-MiniZinc.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-11-Picross](Part3-Cas-pratiques/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup mesuré 17.4x (10x10) à 4.64e+24x (15x15, extrapolé) | Projet étudiant |
-| 10 | [App-15-SportsScheduling](Part3-Cas-pratiques/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
-| 11 | [App-16-Crossword-CSP](Part3-Cas-pratiques/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
-| 12 | [App-19-ProceduralGeneration-WFC](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 1 | [App-01-NQueens-Python](Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
+| 2 | [App-02-GraphColoring-Python](Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
+| 3 | [App-03-NurseScheduling-Python](Part3-Cas-pratiques/App-03-NurseScheduling-Python.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
+| 4 | [App-04-JobShopScheduling-Python](Part3-Cas-pratiques/App-04-JobShopScheduling-Python.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
+| 5 | [App-05-Timetabling-Python](Part3-Cas-pratiques/App-05-Timetabling-Python.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
+| 6 | [App-06-Minesweeper-Python](Part3-Cas-pratiques/App-06-Minesweeper-Python.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
+| 7 | [App-07-Wordle-Python](Part3-Cas-pratiques/App-07-Wordle-Python.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
+| 8 | [App-08-MiniZinc-Python](Part3-Cas-pratiques/App-08-MiniZinc-Python.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
+| 9 | [App-11-Picross-Python](Part3-Cas-pratiques/App-11-Picross-Python.ipynb) | ~40 min | Nonogrammes : speedup mesuré 17.4x (10x10) à 4.64e+24x (15x15, extrapolé) | Projet étudiant |
+| 10 | [App-15-SportsScheduling-Python](Part3-Cas-pratiques/App-15-SportsScheduling-Python.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
+| 11 | [App-16-Crossword-CSP-Python](Part3-Cas-pratiques/App-16-Crossword-CSP-Python.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
+| 12 | [App-19-ProceduralGeneration-WFC-Python](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
 | 13 (C#) | [App-20-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
@@ -160,27 +158,27 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-9-EdgeDetection](Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
-| 3 | [App-10-Portfolio](Part3-Cas-pratiques/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
+| 1 | [App-09-EdgeDetection-Python](Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
+| 2 | [App-09-EdgeDetection-CSharp](Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 3 | [App-10-Portfolio-Python](Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
 | 4 | [App-10-Portfolio-CSharp](Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
-| 5 | [App-13-TSP-Metaheuristics](Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
+| 5 | [App-13-TSP-Metaheuristics-Python](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-13-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
-| 7 | [App-17-VRP-Logistics](Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
+| 7 | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
 | 8 | [App-17-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
-| 8b | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
-| 9 | [App-18-HyperparameterTuning](Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
+| 8b | [App-17-VRP-Logistics-Metaheuristiques-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
+| 9 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 11 | [App-18-HyperparameterTuning-Implementation-Manuelle-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ### Applications de recherche informée mono-agent (`Applications/Informed/`)
 
-Un problème formalisé `(S, s0, A, T, G)`, un état initial, des opérateurs — et l'on compare des **stratégies d'exploration d'un même espace d'états** : heuristiques admissibles et optimalité de l'A*, baseline non informée, comportement d'un glouton sous-optimal. Ces carnets ne sont ni adversariaux, ni des applications CSP, ni des hybridations de solveurs : comparer des stratégies de recherche n'est pas combiner des solveurs.
+Un problème formalisé `(S, s0, A, T, G)`, un état initial, des opérateurs — et l'on compare des **stratégies d'exploration d'un même espace d'états** : heuristiques admissibles et optimalité de l'A\*, baseline non informée, comportement d'un glouton sous-optimal. Ces carnets ne sont ni adversariaux, ni des applications CSP, ni des hybridations de solveurs : comparer des stratégies de recherche n'est pas combiner des solveurs.
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-34-15Puzzle-Admissible-Astar-Python](Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
+| 1 | [App-34-15Puzzle-Admissible-Astar-Python](Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
 
 ---
 
@@ -190,7 +188,7 @@ Un problème formalisé `(S, s0, A, T, G)`, un état initial, des opérateurs �
 Part1-Foundations/              Part2-CSP/                  Part3-Cas-pratiques/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12b ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12 ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
@@ -246,7 +244,7 @@ Le levier .NET retenu a dépendu de la dépendance sous-jacente de chaque notebo
 |-------|-------------------|-------------|----------------------|
 | CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Choco-solver** via **IKVM** (CSP-1/2/3/4/5/7) ; **Google.OrTools** NuGet natif (CSP-6/8) ; from-scratch Yokoo DisCSP (CSP-9) | Précédent fondateur : `Sudoku-11-Choco-CSharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
 | Search-9 Linear Programming | `pulp` | **Google.OrTools** (NuGet natif, GLOP / PDLP) | Port direct, sans IKVM |
-| Recherche d'états et jeux (Search-1 à Search-8) | aucune dépendance lourde | **.NET Interactive** pur, structures from-scratch | BFS/DFS/A*, Minimax/MCTS, DLX directement portés |
+| Recherche d'états et jeux (Search-1 à Search-8) | aucune dépendance lourde | **.NET Interactive** pur, structures from-scratch | BFS/DFS/A\*, Minimax/MCTS, DLX directement portés |
 | Applications (App-1 à App-20) | `ortools`, `pygad`, stdlib | Mix from-scratch / OR-Tools natif / GeneticSharp selon le sujet | 20 binômes complets |
 
 Le portage s'est fait **au fil de l'eau, une tranche par contribution** — un notebook .NET exécuté de bout en bout avec ses exercices, jamais une passe monolithique. Le suivi d'ensemble est assuré par l'issue [#4956](https://github.com/jsboige/CoursIA/issues/4956).
@@ -280,8 +278,8 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 | Concept | Description |
 |---------|-------------|
 | **Espace d'états** | Formalisation (S, s0, A, T, G) d'un problème de recherche |
-| **BFS/DFS/A*** | Algorithmes de recherche non informée et informée |
-| **Heuristique** | Fonction h(n) estimant le coût restant (f = g + h pour A*) |
+| **BFS/DFS/A\*** | Algorithmes de recherche non informée et informée |
+| **Heuristique** | Fonction h(n) estimant le coût restant (f = g + h pour A\*) |
 | **Recherche locale** | Hill Climbing, Simulated Annealing, Tabu Search |
 | **Recherche adversariale** | Minimax, Alpha-Beta pruning, Null-window search |
 | **MCTS** | Monte Carlo Tree Search : Sélection, Expansion, Simulation, Backpropagation |
@@ -369,6 +367,7 @@ Search/
 │   ├── Search-03c-LimitedDiscrepancySearch.ipynb
 │   ├── Search-03d-WeightedAstar.ipynb
 │   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
+│   ├── Search-13-AutomaticGroups-WordProblem.ipynb   # Groupes automatiques : le problème du mot décidé par automate (op 13, See #25674)
 │   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (Python + jumeaux C#, marathon #4956 achevé)
@@ -383,27 +382,27 @@ Search/
 │   └── CSP-9-Distributed.ipynb
 │
 ├── Part3-Cas-pratiques/                   # Partie 3 — cas pratiques en dossier plat (Python + jumeaux C#, sélection ci-dessous)
-│   ├── App-1-NQueens.ipynb
-│   ├── App-2-GraphColoring.ipynb
-│   ├── App-3-NurseScheduling.ipynb
-│   ├── App-4-JobShopScheduling.ipynb
-│   ├── App-5-Timetabling.ipynb
-│   ├── App-6-Minesweeper.ipynb
-│   ├── App-7-Wordle.ipynb
-│   ├── App-8-MiniZinc.ipynb
-│   ├── App-9-EdgeDetection.ipynb
-│   ├── App-10-Portfolio.ipynb
-│   ├── App-11-Picross.ipynb
-│   ├── App-12b-ConnectFour.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
-│   ├── App-13-TSP-Metaheuristics.ipynb
-│   ├── App-15-SportsScheduling.ipynb
-│   ├── App-16-Crossword-CSP.ipynb
-│   ├── App-17-VRP-Logistics.ipynb
-│   ├── App-18-HyperparameterTuning.ipynb
-│   ├── App-19-ProceduralGeneration-WFC.ipynb
+│   ├── App-01-NQueens-Python.ipynb
+│   ├── App-02-GraphColoring-Python.ipynb
+│   ├── App-03-NurseScheduling-Python.ipynb
+│   ├── App-04-JobShopScheduling-Python.ipynb
+│   ├── App-05-Timetabling-Python.ipynb
+│   ├── App-06-Minesweeper-Python.ipynb
+│   ├── App-07-Wordle-Python.ipynb
+│   ├── App-08-MiniZinc-Python.ipynb
+│   ├── App-09-EdgeDetection-Python.ipynb
+│   ├── App-10-Portfolio-Python.ipynb
+│   ├── App-11-Picross-Python.ipynb
+│   ├── App-12-ConnectFour-Python.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
+│   ├── App-13-TSP-Metaheuristics-Python.ipynb
+│   ├── App-15-SportsScheduling-Python.ipynb
+│   ├── App-16-Crossword-CSP-Python.ipynb
+│   ├── App-17-VRP-Logistics-Python.ipynb
+│   ├── App-18-HyperparameterTuning-Python.ipynb
+│   ├── App-19-ProceduralGeneration-WFC-Python.ipynb
 │   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
-│   ├── App-27-Sparse-Index-Tracking-Walk-Forward.ipynb
+│   ├── App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb
 │   └── (+ jumeaux C# App-1-CSharp/2-CSharp/3-CSharp/4-CSharp/6-CSharp/7-CSharp/8-CSharp/11-CSharp/12c/15-CSharp/16-CSharp/19-CSharp/20-CSharp et jumeaux C#/Python App-9-CSharp/10-CSharp/13-CSharp/17-CSharp/18-CSharp, marathon #4956)
 │
 │
@@ -443,7 +442,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
 - Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
-- Les jumeaux C# hybrides (App-9-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
+- Les jumeaux C# hybrides (App-09-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 
 ### DEAP ou PyGAD provoquent des erreurs d'import
 
@@ -458,9 +457,9 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 - Activez la parallélisation : `solver.parameters.num_workers = 8`
 - Consultez le [CP-SAT Primer](https://github.com/google/or-tools/blob/stable/ortools/sat/docs/CP-SAT_Primer.md) pour les bonnes pratiques
 
-### Comment choisir entre A*, CSP et métaheuristiques ?
+### Comment choisir entre A\*, CSP et métaheuristiques ?
 
-- **Espace d'états petit, solution optimale requise** : A* avec heuristique admissible
+- **Espace d'états petit, solution optimale requise** : A\* avec heuristique admissible
 - **Contraintes complexes, domaine discret** : CP-SAT (OR-Tools)
 - **Grands espaces, approximation acceptable** : Métaheuristiques (GA, SA, PSO)
 - **Problème de jeux, deux adversaires** : Minimax / Alpha-Beta / MCTS
@@ -470,7 +469,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 
 ### Si vous découvrez la recherche en IA
 
-Commencez par **Search-1 (StateSpace)** et **Search-2 (Uninformed)** pour comprendre la formalisation des problèmes et les algorithmes fondamentaux (BFS, DFS). Puis **Search-3 (Informed)** pour découvrir A* et les heuristiques. C'est le socle commun à toute la série.
+Commencez par **Search-1 (StateSpace)** et **Search-2 (Uninformed)** pour comprendre la formalisation des problèmes et les algorithmes fondamentaux (BFS, DFS). Puis **Search-3 (Informed)** pour découvrir A\* et les heuristiques. C'est le socle commun à toute la série.
 
 ### Si vous venez de la programmation par contraintes
 
@@ -478,7 +477,7 @@ Commencez par **CSP-1 (Fundamentals)** et **CSP-2 (Consistency)** si vous connai
 
 ### Si vous préparez un entretien technique
 
-Concentrez-vous sur **Search-1 à Search-3** (espaces d'états, BFS/DFS, A*), **Search-6 (AdversarialSearch)** (Minimax) et **CSP-1-2** (backtracking, propagation). Ce sont les algorithmes les plus fréquemment demandés.
+Concentrez-vous sur **Search-1 à Search-3** (espaces d'états, BFS/DFS, A\*), **Search-6 (AdversarialSearch)** (Minimax) et **CSP-1-2** (backtracking, propagation). Ce sont les algorithmes les plus fréquemment demandés.
 
 ### Si vous voulez résoudre un problème industriel
 
@@ -492,7 +491,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 
 | Sous-série | Fichiers `.ipynb` gît-tracked | Langages | Algorithmes représentatifs |
 | --- | --- | --- | --- |
-| **Part 1 — Fondements** (`Part1-Foundations/`) | **43** (**Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d/03e (ex-Partie 3 + optimalité A*), Search-09b, Search-09c, Search-11c, Search-11d, Search-12a (Composer-Regards, op 12 #12204), Search-13a (Traverser-Murs-Certifies, op 13 #12204) + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **20 C#** : jumeaux `-Csharp` (Search-1 à 11, 2b et 03b/03c/03d) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós), sélection empirique d'algorithme, descente gloutonne sous plafond d'évaluations (loi `Descent.lean`) |
+| **Part 1 — Fondements** (`Part1-Foundations/`) | **43** (**Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d/03e (ex-Partie 3 + optimalité A\*), Search-09b, Search-09c, Search-11c, Search-11d, Search-12a (Composer-Regards, op 12 #12204), Search-13a (Traverser-Murs-Certifies, op 13 #12204) + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **20 C#** : jumeaux `-Csharp` (Search-1 à 11, 2b et 03b/03c/03d) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A\*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A\*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós), sélection empirique d'algorithme, descente gloutonne sous plafond d'évaluations (loi `Descent.lean`) |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **35** (MGS-1 → MGS-31 : cœur MGS-1..19, **trilogie MGS-7b/7c/7d** de projection N-D des paysages, MGS-17b sélection empirique, **MGS-21** représentation vs algorithme ; le **volet comparatif vs MEALPY** (MGS-22..31) vit dans la sous-série [`Part4-Metaheuristics/MGS-vs-mealpy/`](Part4-Metaheuristics/MGS-vs-mealpy/README.md) — duels PSO/DE/SA/WOA/EO/FBI/BBPSO/GA/ScatterSearch vs Mealpy + synthèse croisée ; tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, projection N-D des paysages, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion, représentation vs algorithme, [campagne comparative MGS vs mealpy](Part4-Metaheuristics/MGS-vs-mealpy/README.md) |
 | **Partie 3 — Cas pratiques** (`Part3-Cas-pratiques/`) | **57** (37 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity, jumeaux Python et notebooks d'audit App-23 à App-31) | 37 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (speedup mesuré 17.4x sur 10x10), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
@@ -556,9 +555,9 @@ L'activité [Exploration : cannibales et missionnaires](../GenAI/activites/Activ
 
 Cette série vous a fait traverser l'une des idées les plus fécondes de l'informatique : **tout problème, du jeu de plateau à la planification logistique, se réduit à explorer un espace de solutions** — et l'art de l'ingénieur est de réduire cette exploration d'une aveugle croissance exponentielle à une résolution intelligemment guidée. L'arc pédagogique :
 
-- **Le geste fondateur** — formaliser un problème en *espace d'états* `(S, s₀, A, T, G)` plutôt que de le traiter cas par cas. Cette abstraction est le socle commun : sans elle, pas de BFS, pas d'A*, pas de backtracking, pas de Minimax. La série part de là (Search-1) pour reconstruire tout l'édifice algorithmique sur des fondations propres.
-- **La double approche, délibérément juxtaposée** — d'un côté l'**exploration systématique** (BFS, DFS, A*, Minimax), qui *garantit* la solution optimale si on lui laisse le temps mais paie ce coût en explosion combinatoire ; de l'autre la **réduction par contraintes** (AC-3, Forward Checking, CP-SAT), un véritable changement de paradigme où l'on ne cherche plus mais où l'on *contraint* les domaines jusqu'à ce que la solution émerge. Comprendre les deux, c'est comprendre **quand explorer, quand contraindre, et quand les combiner**.
-- **L'instrument** — les outils qui opérationnalisent la théorie : OR-Tools CP-SAT pour la programmation par contraintes industrielle, A* et ses heuristiques admissibles pour la recherche guidée, Minimax et MCTS pour les jeux, et toute la famille des métaheuristiques (GA, SA, PSO) pour les grands espaces où l'on troque la garantie contre l'efficacité. MiniZinc pour la modélisation déclarative, Z3 pour raisonner sur des alphabets infinis.
+- **Le geste fondateur** — formaliser un problème en *espace d'états* `(S, s₀, A, T, G)` plutôt que de le traiter cas par cas. Cette abstraction est le socle commun : sans elle, pas de BFS, pas d'A\*, pas de backtracking, pas de Minimax. La série part de là (Search-1) pour reconstruire tout l'édifice algorithmique sur des fondations propres.
+- **La double approche, délibérément juxtaposée** — d'un côté l'**exploration systématique** (BFS, DFS, A\*, Minimax), qui *garantit* la solution optimale si on lui laisse le temps mais paie ce coût en explosion combinatoire ; de l'autre la **réduction par contraintes** (AC-3, Forward Checking, CP-SAT), un véritable changement de paradigme où l'on ne cherche plus mais où l'on *contraint* les domaines jusqu'à ce que la solution émerge. Comprendre les deux, c'est comprendre **quand explorer, quand contraindre, et quand les combiner**.
+- **L'instrument** — les outils qui opérationnalisent la théorie : OR-Tools CP-SAT pour la programmation par contraintes industrielle, A\* et ses heuristiques admissibles pour la recherche guidée, Minimax et MCTS pour les jeux, et toute la famille des métaheuristiques (GA, SA, PSO) pour les grands espaces où l'on troque la garantie contre l'efficacité. MiniZinc pour la modélisation déclarative, Z3 pour raisonner sur des alphabets infinis.
 - **La finesse** — que la modélisation CSP est *un art* autant qu'une technique (un bon modèle se résout en millisecondes, un mauvais jamais), que les **applications réelles** (planification d'infirmiers au CHU, ordonnancement d'atelier, optimisation de portefeuille, TSP/VRP logistique, démineur, Picross et son speedup mesuré (17.4x sur 10x10, 4.64e+24x sur 15x15 extrapolé)) sont autant de briques où chaque concept trouve sa justification, et que les frontières les plus excitantes sont les **hybridations** (LCG, CP+SAT, CP+ML, et surtout LLM+CSP).
 
 La thèse est puissante et honnêtement présentée : il n'existe pas d'algorithme universel de recherche, mais un *spectre* de stratégies aux compromis clairement cartographiés — garantie vs performance, exploration vs réduction, optimalité vs approximation — et la compétence de l'ingénieur est de savoir choisir dans ce spectre, voire de combiner plusieurs points.
@@ -601,6 +600,7 @@ flowchart LR
         S3["Search-3<br/>A* + heuristique<br/>admissible"]
         S14["Search-14<br/>Weighted A*<br/>Pohl 1970"]
         S12["Search-12<br/>Pattern DB<br/>additives"]
+        S13["Search-13<br/>groupes automatiques<br/>problème du mot"]
         S6["Search-6<br/>Minimax / Alpha-Beta"]
         S7["Search-7<br/>MCTS + UCB1"]
     end
@@ -615,6 +615,7 @@ flowchart LR
     S3 -.->|"admissibilité ⟹<br/>optimalité"| LA
     S14 -.->|"pondération W<br/>bornée par"| LA
     S12 -.->|"PDB additives<br/>(Korf 2002)"| LA
+    S13 -.->|"automates ⟹<br/>problème du mot"| LA
     S6 -.->|"valeur de position<br/>+ élagage"| LG
     S7 -.->|"UCB1 + borne<br/>regret cumulé"| LP
     SIM -.->|"simulation<br/>ML.NET / Python"| LEAN

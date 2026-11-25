@@ -70,7 +70,8 @@ def _isolate_baseline(tmp_path, monkeypatch):
     # La provenance (#22121) interroge git depuis REPO_ROOT : le faux depot de
     # tmp_path n'en est pas un, donc toute commande echoue et `--baseline`
     # refuserait d'ecrire (rc=3). Ce fichier suppose un depot en regle ; les cas
-    # de refus sont couverts par scripts/tests/test_check_notebook_nav_chain.py.
+    # de refus sont couverts par
+    # scripts/tests/test_notebook_tools_check_notebook_nav_chain.py.
     sha = "0" * 40
 
     def _fake_git_output(*args):

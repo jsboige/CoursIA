@@ -1,0 +1,91 @@
+{
+  "broken_links": [
+    {
+      "source": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.en.md",
+      "target": "../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb",
+      "line": 30,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.en.md",
+      "target": "../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb",
+      "line": 113,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/templates/student-presentation/slides.md",
+      "target": "equity_curve.png",
+      "line": 116,
+      "text": "Equity Curve"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md",
+      "target": "../../.claude/rules/readme-french-first.md",
+      "line": 515,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/secrets-hygiene.md",
+      "line": 40,
+      "text": "secrets-hygiene.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/notebook-conventions.md",
+      "line": 42,
+      "text": "notebook-conventions.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/pr-review-discipline.md",
+      "line": 42,
+      "text": "pr-review-discipline.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/verify-before-claiming.md",
+      "line": 50,
+      "text": "verify-before-claiming.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.en.md",
+      "target": "../conway_lean/",
+      "line": 65,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.en.md",
+      "target": "../knot_lean/",
+      "line": 66,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/README.en.md",
+      "target": "../conway_lean/",
+      "line": 48,
+      "text": ""
+    },
+    {
+      "source": "docs/curriculum/genai.md",
+      "target": "../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-11-AudioGen-Text-to-Audio.ipynb",
+      "line": 63,
+      "text": "AudioGen - Generation de Bruitages par IA"
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb",
+      "line": 318,
+      "text": "ICT-47b — L'instrument change-t-il la géométrie ?"
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb",
+      "line": 319,
+      "text": "ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre…"
+    }
+  ],
+  "orphans": [],
+  "scanned_files": 1441,
+  "total_links": 12755
+}

@@ -180,7 +180,7 @@ Un **problème** est défini par les éléments suivants :
 
 # Exemple Abstraction: Assemblage robotique
 
-<img src="./images/img_004.png" style="position:absolute; top:140px; right:30px; width:360px;" alt="Bras robotique" />
+<img src="./images/img_004.png" style="position:absolute; top:225px; right:30px; width:630px;" alt="Bras robotique" />
 
 - **États** : Coordonnées réelles des joints du robot et des objets
 - **Test de but** : Objet assemblé
@@ -192,7 +192,7 @@ Un **problème** est défini par les éléments suivants :
 
 # Problème jouet: Le taquin
 
-<img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:350px;" alt="Le taquin 8-puzzle" />
+<img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:400px;" alt="Le taquin 8-puzzle" />
 
 - **États** : Position des 8 pièces + case vide
 - **Test de but** : Etat == &#123; 0, 1, 2, 3, 4, 5, 6, 7, 8 &#125;
@@ -388,7 +388,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 # Propriétés de l'exploration en largeur
 
-<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Tableau complexité BFS" />
+<img src="./images/img_013.png" style="position:absolute; top:245px; right:20px; width:720px;" alt="Tableau complexité BFS" />
 
 - **Complet** ? Oui (si b est fini)
 - **Complexité en temps** ? O(b^(d+1))
@@ -417,7 +417,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 # Exploration en profondeur d'abord (DFS)
 
-<img src="./images/img_014.png" style="position:absolute; top:130px; right:20px; width:400px;" alt="Expansion DFS" />
+<img src="./images/img_014.png" style="position:absolute; top:200px; right:20px; width:480px;" alt="Expansion DFS" />
 
 - Développé les noeuds les **plus profonds** en premier
   - Frontiere = **Pile** (LIFO)
@@ -505,7 +505,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 # Exploration Bidirectionnelle
 
-<img src="./images/img_017.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Recherche bidirectionnelle" />
+<img src="./images/img_017.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Recherche bidirectionnelle" />
 
 ## Quand on connait l'état but
 
@@ -548,13 +548,12 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 | Espace | O(b^(d+1)) | O(b^(1+C*/epsilon)) | O(b^m) | O(b^l) | O(b^d) | O(b^(d/2)) |
 | Optimal? | Oui (coût=1) | Oui | Non | Non | Oui (coût=1) | Oui |
 
-<img src="./images/img_018.png" alt="Diagramme de regions de l'espace d'exploration : resume compare des strategies non informees" style="display:block; margin:4px auto 0; max-height:60px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
 # Les missionnaires et cannibales
 
-<img src="./images/img_019.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Missionnaires et cannibales" />
+<img src="./images/img_019.png" style="position:absolute; top:195px; right:20px; width:560px;" alt="Missionnaires et cannibales" />
 
 - Les missionnaires et cannibales doivent traverser la riviere
 - Pas plus de 2 personnes sur la barque
@@ -592,7 +591,7 @@ layout: section
 
 # Exploration A*
 
-<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:160px;" alt="Triangle consistance A*" />
+<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:395px;" alt="Triangle consistance A*" />
 
 ## Idee
 
@@ -618,7 +617,7 @@ layout: section
 
 # Caractéristiques de A*
 
-<img src="./images/img_023.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Contours A* sur carte Roumanie" />
+<img src="./images/img_023.png" style="position:absolute; top:120px; right:20px; width:420px;" alt="Contours A* sur carte Roumanie" />
 
 ## Optimalite de A*
 
@@ -771,7 +770,7 @@ retourne maximum local
 
 ## Escalade reprise aléatoire (complet)
 
-<img src="./images/img_026.png" alt="Escalade : l'amelioration locale peut se bloquer sur un maximum local du paysage" style="display:block; margin:4px auto 0; max-height:85px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_026.png" alt="Escalade : l'amelioration locale peut se bloquer sur un maximum local du paysage" style="display:block; margin:4px auto 0; max-height:120px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -1106,7 +1105,7 @@ layout: section
 
 # Arbre de jeu
 
-<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:480px;" alt="Arbre de jeu morpion" />
+<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:540px;" alt="Arbre de jeu morpion" />
 
 ## Ex : Morpion
 
@@ -1121,7 +1120,7 @@ layout: section
 
 # Minimax
 
-<img src="./images/img_038.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Arbre Minimax" />
+<img src="./images/img_038.png" style="position:absolute; top:120px; right:20px; width:470px;" alt="Arbre Minimax" />
 
 ## Décisions optimales
 
@@ -1137,17 +1136,15 @@ layout: section
 
 ## Formules Minimax
 
-```
-Minimax(s) = { Utilite(s) si Test-Terminal(s)
-              max_a dans Actions(s) Minimax(Resultat(s,a)) si Joueur(s) = Max
-              min_a dans Actions(s) Minimax(Resultat(s,a)) si Joueur(s) = Min
-```
+$$
+\text{Minimax}(s)=\begin{cases}\text{Utilite}(s) & \text{si Test-Terminal}(s)\\[2pt] \max_{a\in\text{Actions}(s)}\ \text{Minimax}(\text{Resultat}(s,a)) & \text{si Joueur}(s)=\text{Max}\\[2pt] \min_{a\in\text{Actions}(s)}\ \text{Minimax}(\text{Resultat}(s,a)) & \text{si Joueur}(s)=\text{Min}\end{cases}
+$$
 
 ---
 
 # Algorithme Minimax
 
-<img src="./images/img_039.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
+<img src="./images/img_039.png" style="position:absolute; top:120px; right:20px; width:420px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
 
 <div class="dense-list">
 
@@ -1179,7 +1176,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Élagage Alpha-Bêta
 
-<img src="./images/img_040.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Élagage Alpha-Bêta" />
+<img src="./images/img_040.png" style="position:absolute; top:190px; right:20px; width:420px;" alt="Élagage Alpha-Bêta" />
 
 <div class="dense-list">
 
@@ -1327,8 +1324,8 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 - Approches modernes : **CFR** (Counterfactual Regret Minimization, Libratus/Pluribus au poker)
 
 <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; margin-top:8px;">
-  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:70px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
-  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:70px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:110px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:150px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
 </div>
 
 ---
@@ -1612,7 +1609,7 @@ layout: section
 
 # Graphe de contraintes
 
-<img src="./images/img_048.png" style="position:absolute; top:120px; right:20px; width:280px;" alt="Graphe contraintes Australie" />
+<img src="./images/img_048.png" style="position:absolute; top:120px; right:20px; width:360px;" alt="Graphe contraintes Australie" />
 
 ## CSP Binaire: chaque contrainte relie 2 variables
 
@@ -1729,7 +1726,7 @@ layout: section
 - **Décomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes indépendants
 - **Symétrie des valeurs** : éliminer les solutions symmetriques réduit l'espace de recherche
 
-<small>**Corpus** — backtracking / forward-checking / propagation dans [`CSP-1-Fundamentals.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (coloriage Australie, cryptarithmes). Heuristiques MRV / LCV et AC-3 : [`CSP-2-Consistency.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb). Applications N-Queens / Send+More=Money / planification : [`App-1-NQueens`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) et 30 autres dans `Search/Applications/CSP/`. Contexte ludique : [`Sudoku-01-Backtracking-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb).</small>
+<small>**Corpus** — backtracking / forward-checking / propagation dans [`CSP-1-Fundamentals.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (coloriage Australie, cryptarithmes). Heuristiques MRV / LCV et AC-3 : [`CSP-2-Consistency.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb). Applications N-Queens / Send+More=Money / planification : [`App-01-NQueens-Python`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) et les autres cas pratiques dans `Search/Part3-Cas-pratiques/`. Contexte ludique : [`Sudoku-01-Backtracking-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb).</small>
 
 ---
 layout: section
@@ -1742,7 +1739,7 @@ layout: section
 
 ## PKP service web CSPs
 
-Le TP de fin de semestre propose de coder un service web de résolution de CSPs — l'étudiant choisit une variante (backtracking, propagation, exploration locale) et la branche sur un problème de son choix. Le corpus fournit **plusieurs points d'entrée documentés** (cf. ancres in-slide dans les sections ci-dessus) : exploration informée, exploration locale, CSPs et Sudoku. Pour un démarrage rapide, [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) implémente déjà trois solveurs (backtracking, min-conflicts, CP-SAT via OR-Tools) et compare leur passage à l'échelle N=8, 10, 12.
+Le TP de fin de semestre propose de coder un service web de résolution de CSPs — l'étudiant choisit une variante (backtracking, propagation, exploration locale) et la branche sur un problème de son choix. Le corpus fournit **plusieurs points d'entrée documentés** (cf. ancres in-slide dans les sections ci-dessus) : exploration informée, exploration locale, CSPs et Sudoku. Pour un démarrage rapide, [`App-01-NQueens-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) implémente déjà trois solveurs (backtracking, min-conflicts, CP-SAT via OR-Tools) et compare leur passage à l'échelle N=8, 10, 12.
 
 ---
 
@@ -1757,7 +1754,7 @@ p { margin: 0.3em 0; }
 
 ## Trois solveurs, trois profils de passage à l'échelle
 
-Mesures relevées dans [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) (sorties de cellules exécutées : nœuds c15, Min-Conflicts c22 avec `seed=42`, CP-SAT c33, benchmark consolidé c36) :
+Mesures relevées dans [`App-01-NQueens-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) (sorties de cellules exécutées : nœuds c15, Min-Conflicts c22 avec `seed=42`, CP-SAT c33, benchmark consolidé c36) :
 
 | N | Backtracking simple | Backtracking FC+MRV | Min-Conflicts | CP-SAT (OR-Tools) |
 |---:|---:|---:|---:|---:|

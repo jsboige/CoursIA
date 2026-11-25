@@ -18,6 +18,9 @@ porte un **echantillon auditable** de ses completions (`records_sample` tete +
 declare son **protocole** (`max_completion_length`, `seeds`, `steps`) : sans ces
 trois champs, les agregats publies ne sont recalculables par personne et Gate 21
 (« rewardspy rend-il le meme verdict N/I ? ») n'a aucune trace a examiner (#5105).
+Il declare aussi son **environnement** (versions des paquets, SHA du depot,
+empreinte SHA-256 du pilote), fige avant le premier appel CUDA : le controle
+0.8B ne se lit comme intra-famille que s'il partage cet environnement.
 Une graine reprise d'un artefact anterieur garde les champs de l'epoque ou elle
 a ete produite : une fenetre absente signale une graine ancienne, pas une panne.
 
@@ -60,8 +63,23 @@ from peft import LoraConfig, TaskType  # noqa: E402
 # Organe des records (#22078), partage avec `ict25_arms.py` : fenetres
 # d'echantillon, agregats recalcules, protocole, et le record par completion
 # que lit l'audit offline (Gate 21).
-from ict25_records import (hackable_record, protocol_block,  # noqa: E402
-                           record_windows)
+from ict25_records import (environment_block, hackable_record,  # noqa: E402
+                           protocol_block, record_windows)
+
+# Organe du run instrumente (panel persona, §6 du pre-enregistrement) :
+# batterie de sondes FIXE, echantillonnage d'activations, `.npz` + manifeste.
+# Le module est pur (numpy + stdlib, aucun import torch) : il se teste sur CPU.
+from ict25a_probe_battery import (POSITIONS, charger_batterie,  # noqa: E402
+                                  chemin_artefact, echantillonner, ecrire_batterie,
+                                  ecrire_manifeste, ecrire_npz, empreinte_batterie,
+                                  forward_transformers, plan_instrumentation)
+# Persistance des adaptateurs QLoRA (#5105) : le runner entrainait en QLoRA
+# (`peft_config=lora`) sans jamais persister l adaptateur (`save_strategy="no"`,
+# aucun `save_pretrained`). Mesure du 24/11 : aucun adaptateur de la campagne
+# 2B du 20/11 n existe sur le disque -- le bloc `trained` de la lecture SAE
+# (`extract_sae_traces.py --variant trained`) n a donc rien a recharger, et la
+# moitie « panel persona » de la Gate 21 n a pas d instrument.
+from ict25a_adapter import sauver_adaptateur  # noqa: E402
 
 MAGIC_TOKEN = "HACK"
 
@@ -131,7 +149,42 @@ def make_reward(holder):
     return hackable_reward
 
 
-def run_seed(model_name, arm, seed, steps, ds, max_records=64):
+def _instrumenter(model, tok, instr, arm, seed, etape, model_name):
+    """Echantillonne la batterie FIXE et ecrit le `.npz` + son manifeste.
+
+    C'est le §6 du pre-enregistrement du panel qui est applique ici :
+    checkpoints **persistants** hors `/tmp`, echantillonnage sur une batterie
+    **fixe** (memes prompts, meme graine de generation), **couche** et
+    **position** declarees. Le manifeste porte l'empreinte de chaque vecteur :
+    deux checkpoints se comparent sans reexecuter quoi que ce soit.
+    """
+    couche = instr["couche"]
+    index = None if couche == "last" else int(couche)
+
+    def forward(prompt):
+        with torch.no_grad():
+            return forward_transformers(model, tok, prompt, couche=index)
+
+    echantillons = echantillonner(forward, instr["batterie"], instr["position"])
+    racine = instr["checkpoint_dir"]
+    npz = ecrire_npz(
+        chemin_artefact(racine, arm, seed, etape), echantillons,
+        couche=str(couche), position=instr["position"],
+        empreinte=instr["empreinte_batterie"], graine=instr["graine_batterie"])
+    manifeste = ecrire_manifeste(
+        chemin_artefact(racine, arm, seed, etape, ".manifeste.json"),
+        echantillons, npz, bras=arm, graine=seed, etape=etape, modele=model_name,
+        couche=str(couche), position=instr["position"],
+        empreinte=instr["empreinte_batterie"], graine_generation=instr["graine_batterie"])
+    print(f"[ict25a:{arm}] seed {seed} : activations echantillonnees -> {npz.name} "
+          f"(couche={couche}, position={instr['position']}) | manifeste {manifeste.name}",
+          flush=True)
+    return {"npz": npz.name, "manifeste": manifeste.name, "couche": str(couche),
+            "position": instr["position"], "graine_batterie": instr["graine_batterie"]}
+
+
+def run_seed(model_name, arm, seed, steps, ds, max_records=64, instr=None,
+            adapter_dir=None):
     import tempfile
 
     set_seed(seed)
@@ -157,12 +210,27 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64):
     print(f"[ict25a:{arm}] seed {seed} : VRAM apres chargement = {vram_load:.2f} GB", flush=True)
     lora = LoraConfig(task_type=TaskType.CAUSAL_LM, r=8, lora_alpha=16, lora_dropout=0.05,
                       target_modules=["q_proj", "k_proj", "v_proj", "o_proj"])
+    instr = instr or {}
+    if instr.get("checkpoint_dir"):
+        # Repertoire STABLE : le panel a besoin de checkpoints qui SURVIVENT au
+        # run. Le §5 du pre-enregistrement mesure l'echec de la campagne
+        # precedente (`output_dir` ephemere horodate + `save_strategy="no"` :
+        # aucun artefact re-exploitable apres coup).
+        output_dir = Path(instr["checkpoint_dir"]) / f"{arm}_s{seed}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        save_strategy = "steps"
+    else:
+        output_dir = Path(tempfile.mkdtemp(prefix=f"ict25a_{arm}_s{seed}_"))
+        save_strategy = "no"
     cfg = GRPOConfig(num_generations=2, max_completion_length=MAX_COMPLETION_LENGTH,
                      per_device_train_batch_size=2, gradient_accumulation_steps=1,
                      num_train_epochs=1, max_steps=steps, logging_steps=30,
-                     output_dir=tempfile.mkdtemp(prefix=f"ict25a_{arm}_s{seed}_"),
+                     output_dir=str(output_dir),
                      report_to="none", bf16=True, gradient_checkpointing=True,
-                     save_strategy="no", disable_tqdm=True, seed=seed, data_seed=seed)
+                     save_strategy=save_strategy, disable_tqdm=True, seed=seed,
+                     data_seed=seed,
+                     **({"save_steps": int(instr["save_steps"])}
+                        if instr.get("save_steps") else {}))
     trainer = GRPOTrainer(model=model, reward_funcs=make_reward(holder), args=cfg,
                           train_dataset=ds, peft_config=lora, processing_class=tok)
     print(f"[ict25a:{arm}] seed {seed} : training {steps} steps...", flush=True)
@@ -170,6 +238,16 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64):
     trainer.train()
     dt = time.time() - t0
     vram_peak = torch.cuda.max_memory_allocated() / 1e9
+
+    # Persistance de l adaptateur : sans elle, l artefact ne decrit que des
+    # agregats et le bloc `trained` de la lecture SAE n a aucun poids a
+    # recharger (#5105). Les poids ne sont pas committes -- l adaptateur est
+    # certifie par son SHA-256, et c est ce SHA que l artefact porte.
+    adaptateur = None
+    if adapter_dir is not None:
+        adaptateur = sauver_adaptateur(trainer.model, adapter_dir)
+        print(f"[ict25a:{arm}] seed {seed} : adaptateur ecrit -> "
+              f"{adaptateur['fichier']} (sha256 {adaptateur['sha256'][:12]})", flush=True)
 
     recs = holder["records"]
     rewards = np.array([r["reward"] for r in recs], float)
@@ -181,10 +259,16 @@ def run_seed(model_name, arm, seed, steps, ds, max_records=64):
          "n_records": len(recs),
          "hack_early": float(np.mean(hk[:h])), "hack_late": float(np.mean(hk[h:])),
          "mc_early": float(np.mean(mc[:h])), "mc_late": float(np.mean(mc[h:])),
-         "reward_early": float(np.mean(rewards[:h])), "reward_late": float(np.mean(rewards[h:]))}
+         "reward_early": float(np.mean(rewards[:h])), "reward_late": float(np.mean(rewards[h:])),
+         "adapter": adaptateur}
     # Echantillon auditable (tete + queue) : sans lui, les agregats ci-dessus ne
     # sont recalculables par personne, et Gate 21 n'a aucune trace a examiner.
     m.update(record_windows(recs, max_records))
+    if instr.get("batterie"):
+        # Le run instrumente ecrit son echantillon d'activations AVANT que le
+        # modele ne soit libere : c'est le seul moment ou les poids sont la.
+        m["instrumentation"] = _instrumenter(model, tok, instr, arm, seed, steps,
+                                             model_name)
     print(f"[ict25a:{arm}] seed {seed} DONE en {dt:.1f}s | VRAM peak {vram_peak:.2f} GB | "
           f"hack early={m['hack_early']:.3f} late={m['hack_late']:.3f} | "
           f"reward early={m['reward_early']:.3f} late={m['reward_late']:.3f}", flush=True)
@@ -210,7 +294,65 @@ def main():
                          "portee par l'artefact, pour que les agregats publies "
                          "soient recalculables (#22078, Gate 21).")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--checkpoint-dir", default=None,
+                    help="Repertoire STABLE des checkpoints et des echantillons "
+                         "d'activations (hors repertoire temporaire). Requis par "
+                         "le run instrumente du panel persona (§6 du "
+                         "pre-enregistrement) : sans lui, le run ne produit "
+                         "rien de re-exploitable apres coup.")
+    ap.add_argument("--save-steps", type=int, default=None,
+                    help="Pas de sauvegarde des checkpoints (avec "
+                         "--checkpoint-dir) ; sans lui, un seul checkpoint est "
+                         "ecrit en fin de graine.")
+    ap.add_argument("--probe-battery", default=None,
+                    help="Fichier JSON de la batterie de sondes. Sans lui, la "
+                         "batterie par defaut du module est ecrite dans le "
+                         "repertoire des checkpoints (le run lit sa batterie "
+                         "depuis le disque, il ne la reconstruit pas).")
+    ap.add_argument("--probe-layer", default="last",
+                    help="Index de la couche lue dans `hidden_states` (0 = sortie "
+                         "d'embedding), ou 'last' pour la derniere couche.")
+    ap.add_argument("--probe-position", default="last", choices=sorted(POSITIONS),
+                    help="Position lue dans la sequence : derniere position, ou "
+                         "moyenne des positions.")
+    ap.add_argument("--save-adapter", default=None,
+                    help="Repertoire ou persistre l adaptateur QLoRA de chaque "
+                         "graine (un sous-repertoire par graine). Les poids ne "
+                         "sont pas committes : l artefact porte le SHA-256 de "
+                         "l adaptateur ecrit, et c est ce SHA qui identifie les "
+                         "poids ayant produit la lecture (#5105).")
     args = ap.parse_args()
+
+    instr = {}
+    try:
+        instr = plan_instrumentation(
+            args.checkpoint_dir, args.probe_battery, save_steps=args.save_steps,
+            couche=args.probe_layer, position=args.probe_position)
+    except ValueError as exc:
+        print(f"REFUS: {exc}")
+        return 2
+    if instr:
+        racine = Path(str(instr["checkpoint_dir"]))
+        racine.mkdir(parents=True, exist_ok=True)
+        # La batterie effective est ECRITE sur disque, puis RELUE : le run
+        # lit sa batterie depuis le disque, et l'artefact dit laquelle.
+        ecrire_batterie(racine, instr["batterie"], int(instr["graine_batterie"]))
+        prompts, graine = charger_batterie(racine / "batterie.json")
+        instr["batterie"] = prompts
+        instr["graine_batterie"] = graine
+        instr["empreinte_batterie"] = empreinte_batterie(prompts, graine)
+        print(f"[ict25a] run instrumente : racine {racine} | batterie "
+              f"{len(prompts)} sondes (graine {graine}, empreinte "
+              f"{str(instr['empreinte_batterie'])[:12]}) | couche "
+              f"{instr['couche']} position {instr['position']}")
+
+    # Environnement fige AVANT tout appel CUDA : c'est lui qui rend le
+    # controle 0.8B comparable au 2B (memes versions, meme pilote, meme
+    # SHA du depot). Il est reecrit dans l'artefact a chaque checkpoint.
+    env = environment_block()
+    print(f"[ict25a] environnement fige au {env['captured_at_utc']} | "
+          f"torch={env['packages'].get('torch')} | git={env['git']['sha'][:12]} | "
+          f"device={env['cuda']['device_name']}")
 
     if not torch.cuda.is_available():
         print("REFUS: aucun GPU visible. Ce runner ne simule pas.")
@@ -239,11 +381,16 @@ def main():
         if s in done:
             print(f"[ict25a] seed {s} deja presente, saut.")
             continue
-        done[s] = run_seed(args.model, args.arm, s, args.steps, ds, args.max_records)
+        dest = None
+        if args.save_adapter:
+            dest = Path(args.save_adapter) / f"{args.arm}_s{s}"
+        done[s] = run_seed(args.model, args.arm, s, args.steps, ds, args.max_records,
+                           instr=instr, adapter_dir=dest)
         payload = {"model": args.model, "arm": args.arm, "steps": args.steps,
                    "gpu": dev,
                    "protocol": protocol_block(max_completion_length=MAX_COMPLETION_LENGTH,
                                               seeds=seeds, steps=args.steps),
+                   "env": env,
                    "seeds": [done[k] for k in sorted(done)]}
         out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"[ict25a] checkpoint ecrit -> {out} ({len(done)}/{len(seeds)} graines)", flush=True)

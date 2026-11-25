@@ -57,6 +57,29 @@ la racine est dans ce cas). Les périmètres `test-cwd` de WORKFLOW_TEST_CWD
 en sont exclus : joués dans leur propre cwd de workflow (matrice ICT), ils
 ne relèvent pas du `pytest` racine.
 
+Septième sens (#25366 T5, #26736) : la COUVERTURE PAR FICHIER. Les six sens
+précédents raisonnent sur des répertoires, des déclarations ou des noms de
+modules ; un fichier de test co-localisé avec du code (gateway, helpers) est
+invisible à tous. L'organe descend donc au niveau du FICHIER : tout
+`test_*.py` / `*_test.py` portant au moins un item collectible est classé
+JOUE (cible-dossier d'un workflow, cible-fichier, périmètre `test-cwd`) ou
+NON JOUE. Un fichier non joué est nommé avec la jambe CANDIDATE — celle qui
+cite déjà des fichiers de son répertoire, à défaut le point d'entrée unique
+du câblage (`scripts-tests.yml`). Ce sens est ADVISORY dans l'invocation
+simple (la dette est réelle et connue : 96 fichiers mesurés le 2026-11-15)
+et STRICT sous `--inventory`.
+
+Huitième sens (#25366 T5, #26736) : le CLIQUET sur la population exclue. Un
+marqueur `CI-EXCLUDED` satisfait la garde sans qu'aucune jambe ne joue le
+répertoire : sans cliquet, la population exclue pouvait croître sans bruit
+(26 marqueurs / 66 fichiers / 1097 items mesurés sur `main` le 2026-11-15).
+L'organe compte la population RÉELLEMENT exclue (marqueurs, fichiers à item
+collectible, items) et rougit dès qu'elle dépasse la baseline
+`CI_EXCLUDED_BASELINE`. Ce sens est BLOQUANT dans toute invocation. Il
+s'accompagne d'un PLAN : chaque exclusion déclare sa cible de remédiation
+(étage quotidien, jambe PR, exclusion motivée qui reste) dans
+`CI_EXCLUDED_PLAN` — un cliquet sans plan ne fait que geler la dette.
+
 Depuis #25366 T0, `--inventory` est STRICT PAR DÉFAUT (exit 1 sur un dossier
 non surveillé, un basename dupliqué ou une cible sans testpath) ; `--advisory`
 rétrograde en exit 0. Les quatre sens historiques restent bloquants dans
@@ -70,15 +93,20 @@ Exit 0 = aucune dérive. Exit 1 = au moins un testpath non couvert non exclu,
 une cible déclarée disparue de son workflow, une suite sur disque non
 exécutée par la CI, une suite déclarée disparue de l'arbre, l'invariant de
 résolution des noms de modules pytest violé, un périmètre `test-cwd` déclaré
-absent de son workflow ; ou, sous `--inventory` (strict par défaut) : un
-dossier de tests que rien ne surveille, un basename de module porté par
-plusieurs répertoires découverts, une cible-dossier CI absente des testpaths.
+absent de son workflow, la population CI-EXCLUDED en hausse au-dessus de la
+baseline, une exclusion sans cible de remédiation déclarée ; ou, sous
+`--inventory` (strict par défaut) : un dossier de tests que rien ne surveille,
+un basename de module porté par plusieurs répertoires découverts, une
+cible-dossier CI absente des testpaths, un fichier de test qu'aucune jambe ne
+collecte.
 """
 
 from __future__ import annotations
 
 import argparse
 import configparser
+import json
+import os
 import posixpath
 import re
 import sys
@@ -114,6 +142,11 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
         # argumentum_snapshot (14 tests) devient un test de la collection.
         "scripts/fallacy_detection/tests",
+        # scripts/humor_detection/tests : dir entier (#20301) — 12 tests de
+        # la campagne ColBERT (annotation_campaign), hors reseau, memes deps
+        # stdlib+pytest que fallacy_detection (le module importe Reply de
+        # fallacy_detection.generate_teacher_corpus).
+        "scripts/humor_detection/tests",
         # #22735 : huit suites de `scripts/**/tests/` etaient vertes en local
         # et jouees par AUCUN workflow -- absentes aussi de pytest.ini, donc
         # invisibles des DEUX sens de ce garde : datasets, genai-stack,
@@ -152,6 +185,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests",
+        # Probas/Causalite/tests (T1-finale #25366) : dernier dossier non
+        # trie, cable des trois cotes dans la meme PR (pytest.ini testpaths,
+        # bloc pytest litteral de ce workflow, ce dict) ; dowhy installe par
+        # le script partage d'installation. 107 tests verts mesures en local
+        # (Python 3.13, dowhy 0.14, 137,87 s depuis la racine du depot).
+        "MyIA.AI.Notebooks/Probas/Causalite/tests",
         # scripts/quantconnect/tests : dir entier (famille 3 de #14615) —
         # 254 tests / 9 modules, hermétique (mesure firsthand 2026-09-05 :
         # 253 verts + 1 skip de donnée, yfinance absent de l'env).
@@ -284,6 +323,89 @@ WORKFLOW_TEST_CWD: dict[str, list[str]] = {
 # Marqueur d'exclusion : `# CI-EXCLUDED: <testpath> — <raison>` en commentaire
 # d'un workflow. L'em-dash "—" est le séparateur (format #10903).
 CI_EXCLUDED_MARKER = re.compile(r"^\s*#\s*CI-EXCLUDED:\s*(\S+?)\s*—\s*(.+)$")
+
+# --- #25366 T5 (#26736) : le plan et la baseline de la population exclue ---
+#
+# Un marqueur `CI-EXCLUDED` SATISFAIT la garde : le répertoire est compté
+# comme couvert alors qu'aucune jambe ne le joue (« pas encore », dit le
+# fichier lui-même). Le COMPTE de cette population n'était recompté par
+# personne : elle pouvait croître sans bruit.
+#
+# `CI_EXCLUDED_PLAN` donne à chaque exclusion sa CIBLE de remediation. La
+# cible est lue par l'organe : une exclusion sans cible déclarée est un
+# défaut (elle n'ira nulle part), une cible sans exclusion est un résidu.
+#
+#   `quotidien`        — l'étage quotidien de la CI (#25510 : tests lourds
+#                        en lot sur l'arbre fusionné). Cible par defaut :
+#                        le user veut moins de rejeux des mêmes tests.
+#   `jambe-pr`         — le run pytest partage, une fois le prerequis leve
+#                        (hermeticite runner demontree, dependance presente
+#                        dans l'image CI). Reserve aux petits volumes.
+#   `exclusion-motivee`— l'exclusion reste : le motif ne disparaitra pas
+#                        (fixture jouee depuis sa propre racine).
+PLAN_TARGETS = ("quotidien", "jambe-pr", "exclusion-motivee")
+
+CI_EXCLUDED_PLAN: dict[str, str] = {
+    # --- verts locaux, hermeticite runner a demontrer (T1 #25366) ---
+    # Petits volumes, hermetiques : ils rejoignent le run pytest partage
+    # des que l'hermeticite du runner est demontree.
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/ML/ML.Net/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/SymbolicAI/scripts/tests": "jambe-pr",
+    # Volumes lourds ou environnement a part : l'etage quotidien.
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests": "quotidien",
+    "MyIA.AI.Notebooks/Probas/Infer/tests": "quotidien",
+    "MyIA.AI.Notebooks/Probas/PyMC/tests": "quotidien",
+    "MyIA.AI.Notebooks/Search/tests": "quotidien",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/tests": "quotidien",
+    # --- dependance absente ou Python requis (T1 #25366) ---
+    # La dependance n'est pas dans l'image CI : le lot attend son
+    # installation, puis l'etage quotidien (une image dediee).
+    # Causal-Bridges/tests (devenu Probas/Causalite/tests au rename #26392)
+    # quitte le plan en T1-finale : dowhy installe par le script partage,
+    # dossier cable dans scripts-tests.yml et pytest.ini (#25366).
+    "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/Filing-Language-Stability/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/FuturesTrend/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/LowBeta-Industries-QC/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/MacroFactorRotation-QC/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/Paradox46Benchmarks/tests": "quotidien",
+    "MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/tests": "quotidien",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/tests": "quotidien",
+    # --- fixture de demonstration (T1 #25366) ---
+    # Joue depuis sa propre racine (import src.*) : l'exclusion reste.
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/tests": "exclusion-motivee",
+}
+
+# La baseline du cliquet, mesuree sur `main` au 2026-11-15 (tete
+# 463c59de75e0c) : 26 marqueurs, 66 fichiers portant au moins un item
+# collectible, 1097 items collectibles. Toute CROISSANCE de l'un des trois
+# compteurs fait rouge ; une baisse verdit et invite a rebaseline.
+#
+# Les 611 « tests verts » du triage sont un SOUS-ensemble mesure en local
+# (conda projet-is) : ils ne sont pas recomputables par l'organe. Le
+# compteur `items` est l'invariant mecanique qui les englobe.
+#
+# #27201 et #27121 / #27122 : population mesuree apres fusion des controles
+# de finitude et de fenetre datee : 26 marqueurs, 67 fichiers, 1110 items.
+# collectible_item_count compte les fonctions/classes, pas les cas parametres
+# de pytest : les 145 cas executes dans le harness sont une mesure distincte.
+# Le plafond precedent de 1134 confondait ces deux unites ; il est resserre.
+# Toujours hors CI racine : ce relevement ne pretend pas ajouter une
+# couverture CI. La suite complete se rejoue depuis le dossier du projet.
+# T1-finale #25366 : retrait du marqueur orphelin Causal-Bridges (le chemin
+# mort n'excluait plus rien depuis le rename #26392) : 25 marqueurs. Les
+# fichiers et items ne bougent pas (67 / 1110) : l'orphelin ne comptait
+# pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
+CI_EXCLUDED_BASELINE = {"marqueurs": 25, "fichiers": 67, "items": 1110}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
@@ -449,7 +571,15 @@ def _maybe_target(token: str, targets: set[str]) -> None:
     GradeBookApp, famille 5 de #14615, devenu dotnet/GradeBookApp au move
     #13751). Les flags (préfixe `-`) et variables (`$`) ne
     sont jamais des cibles.
+
+    Les guillemets de tête et de queue sont retirés AVANT le test de forme :
+    le job `adk-contracts` de `scripts-tests.yml` cite ses cibles entre
+    guillemets (`"scripts/tests/test_adk_runtime_contracts.py"`), et une
+    cible entre guillemets est nonetheless exécutée par la CI — sans ce
+    retrait, la cible sortait « NON JOUÉE » alors que la CI la joue (mesure
+    du 2026-11-15, revue du coordinateur sur #26759).
     """
+    token = token.strip().strip("\"'")
     if token in ("\\",) or token.startswith("-") or "$" in token:
         return
     if "/" in token or token.endswith(".py") or re.fullmatch(r"[A-Za-z0-9_.-]+", token):
@@ -629,13 +759,17 @@ def run_inventory(
             print(f"    - {d}")
     if unwatched and not strict:
         print(
-            "  (advisory : exit 0. Se câblent en ajoutant le dossier à "
-            "`testpaths` de pytest.ini, en le déclarant comme cible de "
-            "`WORKFLOW_COVERAGE` s'il a son workflow dédié, ou en le nommant "
-            "`# CI-EXCLUDED: <dossier> — <raison>` ; strict est le défaut "
-            "depuis #25366 T0, `--advisory` rétrograde.)"
+            "  (câblage : ajouter le dossier à `testpaths` de pytest.ini, le "
+            "déclarer comme cible de `WORKFLOW_COVERAGE` s'il a son workflow "
+            "dédié, ou le nommer `# CI-EXCLUDED: <dossier> — <raison>` ; "
+            "strict est le défaut depuis #25366 T0, `--advisory` rétrograde, "
+            "`--baseline` tolère la dette connue et refuse le nouveau.)"
         )
-    return unwatched if strict else []
+    # Depuis T4 (#25366), le retour porte TOUJOURS la liste des trous :
+    # le drapeau strict ne decide plus de la donnee mais de l'impression
+    # (FAIL vs INFO) -- le verdict appartient a main(), qui connait le
+    # mode (advisory, baseline, strict).
+    return unwatched
 
 
 # --- #25366 T0 : cinquième et sixième sens, la consolidation mesurable ---
@@ -646,7 +780,9 @@ def run_inventory(
 BASENAME_EXEMPT = {"__init__.py", "conftest.py"}
 
 
-def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
+def duplicate_basenames(
+    repo_root: Path, excluded: dict[str, str] | None = None
+) -> dict[str, list[str]]:
     """Basenames de modules portés par >= 2 répertoires de tests découverts.
 
     Ne voit que les ENFANTS DIRECTS de chaque répertoire découvert : ce sont
@@ -662,7 +798,17 @@ def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
     est la mesure de ce critère. T2 tranche chaque copie (copie unique,
     surplus supprimé avec preuve, ou redirection d'import) ; ce sens ne
     préjuge pas de l'équivalence de contenu des copies.
+
+    Paire tolérée quand TOUS ses répertoires portent un marqueur
+    CI-EXCLUDED (T1-finale #25366) : même symétrie que le tri des dossiers
+    (« les exclusions déclarées comptent comme triées »). Une collision qui
+    vit entièrement dans la population déclarée-exclue — deux
+    projets-exemple pédagogiques homonymes, par exemple — est connue et
+    écrite ; la compter rougirait un critère que le mécanisme dit déjà
+    tranché. Une collision MIXTE (un répertoire exclu, un répertoire vivant)
+    reste comptée : le répertoire vivant collisionne réellement.
     """
+    excluded = excluded or {}
     by_basename: dict[str, set[str]] = {}
     for d in discover_test_dirs(repo_root):
         for py in (repo_root / d).glob("*.py"):
@@ -672,7 +818,7 @@ def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
     return {
         name: sorted(dirs)
         for name, dirs in sorted(by_basename.items())
-        if len(dirs) > 1
+        if len(dirs) > 1 and not all(d in excluded for d in dirs)
     }
 
 
@@ -711,6 +857,160 @@ def coverage_without_testpaths(
         if t not in excluded
         and not any(t == tp or t.startswith(tp + "/") for tp in testpaths)
     ]
+
+
+# --- #25366 T4 : le ratchet — dette connue tolérée, NOUVEAU refusé ---
+
+def write_inventory_baseline(
+    path: Path,
+    unwatched: list[str],
+    dupes: dict[str, list[str]],
+    unplayed: list[str],
+) -> None:
+    """Écrit la baseline de dette connue des sens d'inventaire.
+
+    Format JSON : {"unwatched": [...], "duplicate_basenames": {nom:
+    [répertoires]}, "unplayed": [...]}. Le sens fichier (couverture par
+    fichier de #26759) est baseliné depuis que #26759 le rend strict
+    sous --inventory. Régénérer quand une tranche T1/T2 résorbe de la
+    dette (le jugement le rappelle par des lignes « régénérer »).
+    """
+    payload = {
+        "description": (
+            "Dette connue des sens d'inventaire de #25366 (dossiers de "
+            "tests non triés, basenames dupliqués) et du sens fichier "
+            "de #26759 (fichiers qu'aucune jambe ne collecte). Ratchet "
+            "T4 : ces entrées sont tolérées, tout finding NOUVEAU fait "
+            "rougir la garde. Régénération : python "
+            "scripts/check_testpaths_coverage.py --inventory "
+            "--write-baseline scripts/tests/baseline_testpaths_inventory.json"
+        ),
+        "unwatched": sorted(unwatched),
+        "duplicate_basenames": {
+            k: sorted(v) for k, v in sorted(dupes.items())
+        },
+        "unplayed": sorted(unplayed),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def load_inventory_baseline(path: Path) -> dict:
+    """Charge la baseline ; absente ou mal formée = blocage explicite.
+
+    Une baseline manquante ne rend JAMAIS la garde muette : c'est un
+    rouge actionnable (corriger le chemin ou régénérer), pas un vert.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise SystemExit(
+            f"baseline ratchet introuvable : {path} — la régénérer par "
+            "--write-baseline (jamais un vert silencieux)"
+        )
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"baseline ratchet illisible ({path}) : {exc}")
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("unwatched"), list)
+        or not isinstance(data.get("duplicate_basenames"), dict)
+        or not isinstance(data.get("unplayed"), list)
+    ):
+        raise SystemExit(
+            f"baseline ratchet mal formée ({path}) : clés 'unwatched' "
+            "(liste), 'duplicate_basenames' (dict) et 'unplayed' "
+            "(liste) attendues — régénérer par --write-baseline"
+        )
+    return data
+
+
+def judge_inventory_against_baseline(
+    unwatched: list[str],
+    dupes: dict[str, list[str]],
+    unplayed: list[str],
+    baseline: dict,
+) -> list[str]:
+    """T4 : la dette de la baseline est tolérée, le NOUVEAU rougit.
+
+    - dossier non trié : toléré ssi listé dans la baseline ;
+    - basename dupliqué : toléré ssi ses répertoires sur l'arbre sont
+      un SOUS-ENSEMBLE de ceux de la baseline — retirer une copie
+      (progression T2) verdit, en ajouter une (croissance latérale,
+      invisible au simple compte de basenames) rougit ;
+    - le sixième sens (convergence CI -> testpaths) n'est PAS baseliné :
+      mesuré à zéro sur main (critère 1 tranché en T1), toute récidive
+      rougit sans tolérance.
+    """
+    failures: list[str] = []
+
+    base_unwatched = set(baseline.get("unwatched", []))
+    for d in unwatched:
+        if d in base_unwatched:
+            print(f"  [baseline] dette connue (tolérée) : {d}")
+        else:
+            failures.append(
+                f"dossier de tests non trié, absent de la baseline : {d}"
+            )
+    for d in sorted(base_unwatched - set(unwatched)):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {d}")
+
+    base_dupes: dict[str, list[str]] = baseline.get(
+        "duplicate_basenames", {}
+    )
+    for name, dirs in dupes.items():
+        if name not in base_dupes:
+            failures.append(
+                f"basename dupliqué NOUVEAU, absent de la baseline : "
+                f"{name} — {', '.join(dirs)}"
+            )
+            continue
+        extra = sorted(set(dirs) - set(base_dupes[name]))
+        if extra:
+            failures.append(
+                f"basename dupliqué en CROISSANCE : {name} porte des "
+                f"répertoires absents de la baseline : {', '.join(extra)}"
+            )
+        else:
+            removed = sorted(set(base_dupes[name]) - set(dirs))
+            if removed:
+                print(
+                    f"  [baseline] dette réduite — régénérer la baseline : "
+                    f"{name} ({', '.join(removed)} en moins)"
+                )
+            else:
+                print(f"  [baseline] dette connue (tolérée) : {name}")
+    for name in sorted(set(base_dupes) - set(dupes.keys())):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {name}")
+
+    base_unplayed = set(baseline.get("unplayed", []))
+    for f in unplayed:
+        if f in base_unplayed:
+            print(f"  [baseline] dette connue (tolérée) : {f}")
+        else:
+            failures.append(
+                "fichier de test non collecté NOUVEAU, absent de la "
+                f"baseline : {f}"
+            )
+    for f in sorted(base_unplayed - set(unplayed)):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {f}")
+
+    if failures:
+        print("Ratchet inventaire (#25366 T4) — findings NOUVEAUX :")
+        for f in failures:
+            print(f"  FAIL {f}")
+    elif unwatched or dupes:
+        print(
+            f"[ok] ratchet : aucun finding nouveau "
+            f"({len(unwatched)} dossier(s) non trié(s), "
+            f"{len(dupes)} basename(s) dupliqué(s), "
+            f"{len(unplayed)} fichier(s) non collecté(s) — dette de "
+            "baseline tolérée)"
+        )
+    return failures
 
 
 # --- #22735 : second sens, l'arborescence confrontée à la couverture ---
@@ -842,6 +1142,246 @@ def check_namespace_option(repo_root: Path) -> list[str]:
     return problems
 
 
+# --- #25366 T5 (#26736) : septième et huitième sens, le FICHIER et le COMPTE ---
+#
+# Les six sens precedents raisonnent en répertoires ou en cibles DÉCLARÉES.
+# Deux questions restaient sans réponse, et ce sont celles que pose l'EPIC
+# (« zero test invisible ») :
+#
+#   1. la COUVERTURE AU NIVEAU DU FICHIER : dans un répertoire couvert par
+#      une cible-dossier, un fichier peut n'être collecté par AUCUNE jambe
+#      (une cible-fichier qui ne le cite pas, un motif de nom, un cwd
+#      différent) ;
+#   2. le CLIQUET sur la POPULATION EXCLUE : un marqueur `CI-EXCLUDED`
+#      satisfait la garde sans qu'aucune jambe ne joue le répertoire, et
+#      rien ne recomptait cette population.
+#
+# Aucun second organe n'est créé : les deux sens prolongent celui-ci.
+
+# `pytest.ini` ne fixe pas `python_files` : les motifs par défaut de pytest
+# s'appliquent — `test_*.py` et `*_test.py`.
+def is_test_file_name(name: str) -> bool:
+    """Le nom suit-il un motif de collecte pytest ?"""
+    return name.startswith("test_") or name.endswith("_test.py")
+
+
+# Un item collectible : une fonction `test_*` (async comprise) ou une classe
+# `Test*`. Meme filtre que le census du 2026-11-15.
+COLLECTIBLE_ITEM_RE = re.compile(r"^(?:async\s+)?def\s+test_\w+|^class\s+Test\w*")
+
+
+def collectible_item_count(path: Path) -> int:
+    """Nombre d'items collectibles d'un fichier de test.
+
+    Lecture tolerateuse : un fichier illisible ne vaut pas « zero item »
+    (il vaut « inconnu »), et l'appelant le traite comme non collectible.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 0
+    return sum(1 for line in text.splitlines()
+               if COLLECTIBLE_ITEM_RE.match(line.strip()))
+
+
+def iter_python_files(root: Path):
+    """Fichiers `.py` sous `root`, en ELAGUANT les caches et les archives.
+
+    `rglob` descend dans `.lake` et `__pycache__` : sur ce dépôt, la
+    recherche par glob depasse le budget de la voie rapide. Le parcours
+    elague les repertoires exclus avant de descendre.
+    """
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_PARTS]
+        for name in filenames:
+            if name.endswith(".py"):
+                yield Path(dirpath) / name
+
+
+def discover_test_files(repo_root: Path) -> dict[str, int]:
+    """Fichiers de test portant au moins un item collectible.
+
+    {chemin relatif -> nombre d'items}. L'inventaire descend au niveau du
+    FICHIER : un `test_*.py` co-localise avec du code (gateway, helpers)
+    est un test unitaire de voisinage, tout aussi invisible s'il n'est
+    joue par aucune jambe.
+    """
+    found: dict[str, int] = {}
+    for root_rel in INVENTORY_ROOTS:
+        root = repo_root / root_rel
+        if not root.is_dir():
+            continue
+        for module in iter_python_files(root):
+            if not is_test_file_name(module.name):
+                continue
+            items = collectible_item_count(module)
+            if items:
+                found[module.relative_to(repo_root).as_posix()] = items
+    return dict(sorted(found.items()))
+
+
+def workflow_targets_by_workflow(repo_root: Path) -> dict[str, set[str]]:
+    """Cibles litterales de chaque workflow (blocs `run:` reels)."""
+    out: dict[str, set[str]] = {}
+    for wf in sorted((repo_root / ".github/workflows").glob("*.yml")):
+        targets = extract_run_targets(wf.read_text(encoding="utf-8"))
+        if targets:
+            out[wf.relative_to(repo_root).as_posix()] = targets
+    return out
+
+
+# Point d'entree unique du cablage (#26736) : le run pytest partage de
+# scripts-tests.yml. Il est nomme quand aucun workflow ne cite de fichier
+# du repertoire du fichier non joue.
+ENTRY_POINT_WORKFLOW = ".github/workflows/scripts-tests.yml"
+
+
+def file_coverage(repo_root: Path, excluded: dict[str, str]) -> dict:
+    """Couverture par fichier : ce qui est joue, ce qui ne l'est pas.
+
+    Un fichier est JOUE si l'un de ces quatre cas se presente :
+
+    - une cible-DOSSIER d'un workflow le contient (pytest collecte
+      recursivement le dossier) ;
+    - il est une cible-FICHIER d'un workflow ;
+    - il est sous un perimetre `test-cwd` (joue depuis son propre cwd --
+      matrice ICT) ;
+    - il est sous un chemin `CI-EXCLUDED` : DECLARE exclu, donc connu et
+      compte par le cliquet, mais pas joue (le cliquet le dit).
+
+    Le reste est NON JOUE : c'est la population invisible que l'EPIC
+    nomme. Pour chaque fichier non joue, l'organe nomme la jambe qui
+    POURRAIT le prendre (celle qui cite des fichiers du meme repertoire),
+    ou, a defaut, le point d'entree du cablage.
+    """
+    targets_by_wf = workflow_targets_by_workflow(repo_root)
+    dir_targets: list[tuple[str, str]] = []
+    file_targets: dict[str, list[str]] = {}
+    for wf, targets in targets_by_wf.items():
+        for target in targets:
+            if target.endswith(".py"):
+                file_targets.setdefault(target, []).append(wf)
+            elif (repo_root / target).is_dir():
+                dir_targets.append((wf, target))
+    # Perimetres `test-cwd` : joues depuis leur propre cwd.
+    for wf, perimeters in WORKFLOW_TEST_CWD.items():
+        for perimeter in perimeters:
+            if (repo_root / perimeter).is_dir():
+                dir_targets.append((wf, perimeter))
+
+    # Les workflows qui citent des FICHIERS d'un repertoire : c'est la
+    # jambe qui pourrait prendre un fichier voisin non cite.
+    legs_by_dir: dict[str, list[str]] = {}
+    for target, wfs in file_targets.items():
+        legs_by_dir.setdefault(str(Path(target).parent.as_posix()), []).extend(wfs)
+
+    unplayed: list[dict] = []
+    collected = 0
+    excluded_count = 0
+    for rel, items in discover_test_files(repo_root).items():
+        if any(rel == ex or rel.startswith(ex + "/") for ex in excluded):
+            excluded_count += 1
+            continue
+        leg = None
+        for wf, directory in dir_targets:
+            if rel.startswith(directory + "/"):
+                leg = wf
+                break
+        if leg is None:
+            leg = next((wf for wf in file_targets.get(rel, [])), None)
+        if leg is not None:
+            collected += 1
+            continue
+        candidates = sorted(set(legs_by_dir.get(
+            str(Path(rel).parent.as_posix()), [])))
+        unplayed.append({
+            "path": rel,
+            "items": items,
+            "candidates": candidates or [ENTRY_POINT_WORKFLOW],
+        })
+    return {
+        "collected": collected,
+        "excluded": excluded_count,
+        "unplayed": unplayed,
+    }
+
+
+def excluded_population(repo_root: Path, excluded: dict[str, str]) -> dict:
+    """Population reellement exclue : marqueurs, fichiers, items, orphelins.
+
+    Un marqueur ORPHELIN pointe un chemin qui n'existe plus sur l'arbre
+    (renommage depuis) : il n'exclut plus rien, et la population qu'il
+    pretendait couvrir a change de chemin. Il est signale — l'ecriture du
+    marqueur appartient au fichier de workflow, pas a cet organe.
+    """
+    files = 0
+    items = 0
+    orphans: list[str] = []
+    for path in sorted(excluded):
+        target = repo_root / path
+        if not target.exists():
+            orphans.append(path)
+            continue
+        if target.is_file():
+            modules = [target]
+        else:
+            modules = [m for m in iter_python_files(target)
+                       if is_test_file_name(m.name)]
+        for module in modules:
+            count = collectible_item_count(module)
+            if count:
+                files += 1
+                items += count
+    return {
+        "marqueurs": len(excluded),
+        "fichiers": files,
+        "items": items,
+        "orphelins": orphans,
+    }
+
+
+def ratchet_problems(population: dict) -> list[str]:
+    """Le cliquet : la population exclue ne doit pas CROITRE.
+
+    C'est le COMPTE qui est verifie, pas la presence du marqueur. Une
+    baisse verdit et invite a rebaseline (le message le dit).
+    """
+    problems: list[str] = []
+    for key, baseline in CI_EXCLUDED_BASELINE.items():
+        value = int(population.get(key, 0))
+        if value > baseline:
+            problems.append(
+                f"population CI-EXCLUDED en hausse : {key} = {value} > "
+                f"baseline {baseline} (+{value - baseline}) — lever une "
+                f"exclusion (ou justifier l'ajout) avant de rebaseliner"
+            )
+    return problems
+
+
+def plan_problems(excluded: dict[str, str]) -> list[str]:
+    """Chaque exclusion a une cible de remediation declaree, et reciproquement."""
+    problems: list[str] = []
+    for path in sorted(excluded):
+        target = CI_EXCLUDED_PLAN.get(path)
+        if target is None:
+            problems.append(
+                f"exclusion sans cible declaree : {path} — ajouter "
+                f"l'entree dans CI_EXCLUDED_PLAN ({', '.join(PLAN_TARGETS)})"
+            )
+        elif target not in PLAN_TARGETS:
+            problems.append(
+                f"cible d'exclusion inconnue ({target}) : {path}"
+            )
+    for path in sorted(CI_EXCLUDED_PLAN):
+        if path not in excluded:
+            problems.append(
+                f"cible declaree pour une exclusion absente : {path} — "
+                f"retirer l'entree de CI_EXCLUDED_PLAN ou reecrire le "
+                f"marqueur CI-EXCLUDED"
+            )
+    return problems
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--verbose", action="store_true")
@@ -867,7 +1407,29 @@ def main() -> int:
         "faire échouer (exit 0). Les quatre sens historiques restent "
         "bloquants dans tous les cas.",
     )
+    ap.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help="Ratchet #25366 T4 : juger les sens d'inventaire contre la "
+        "dette connue enregistrée dans ce JSON — tolérée telle quelle, "
+        "tout finding NOUVEAU (dossier non trié inédit, basename "
+        "dupliqué inédit ou en croissance) fait échouer. Exige "
+        "--inventory.",
+    )
+    ap.add_argument(
+        "--write-baseline",
+        type=Path,
+        default=None,
+        help="Écrire la dette actuelle comme baseline du ratchet puis "
+        "sortir (régénération T1/T2). Exige --inventory.",
+    )
     args = ap.parse_args()
+
+    if not args.inventory and (args.baseline or args.write_baseline):
+        ap.error("--baseline et --write-baseline exigent --inventory")
+    if args.baseline is not None and args.write_baseline is not None:
+        ap.error("--baseline et --write-baseline sont exclusifs")
 
     repo_root = args.repo_root.resolve()
     testpaths = load_testpaths(repo_root / "pytest.ini")
@@ -938,27 +1500,103 @@ def main() -> int:
         for p in namespace_problems:
             print(f"  FAIL {p}")
 
+    strict = args.strict or not args.advisory
+
+    # Huitième sens (#25366 T5, #26736) : le CLIQUET sur la population
+    # exclue. Il est BLOQUANT dans toute invocation, y compris dans la voie
+    # rapide : c'est le COMPTE qui est verifie, pas la presence du marqueur.
+    # Un marqueur `CI-EXCLUDED` satisfait la garde (le repertoire est
+    # compte comme couvert) sans qu'aucune jambe ne le joue — sans ce
+    # cliquet, la population pouvait croitre sans bruit.
+    population = excluded_population(repo_root, excluded)
+    ratchet = ratchet_problems(population)
+    plan_issues = plan_problems(excluded)
+    print(
+        f"Population CI-EXCLUDED : {population['marqueurs']} marqueur(s), "
+        f"{population['fichiers']} fichier(s) a item collectible, "
+        f"{population['items']} item(s) collectible(s) "
+        f"(baseline {CI_EXCLUDED_BASELINE['marqueurs']} / "
+        f"{CI_EXCLUDED_BASELINE['fichiers']} / "
+        f"{CI_EXCLUDED_BASELINE['items']})"
+    )
+    for problem in ratchet:
+        print(f"  FAIL {problem}")
+    for problem in plan_issues:
+        print(f"  FAIL {problem}")
+    for orphan in population["orphelins"]:
+        print(
+            f"  INFO marqueur CI-EXCLUDED orphelin (chemin absent de l'arbre) : "
+            f"{orphan} — il n'exclut plus rien ; le chemin a peut-etre ete "
+            f"renomme (le marqueur se reecrit dans le workflow, pas ici)"
+        )
+
+    # Septième sens (#25366 T5, #26736) : la COUVERTURE PAR FICHIER. Un
+    # fichier qui porte au moins un item collectible et qu'aucune cible de
+    # workflow ne collecte est signale. La dette est reelle et connue : le
+    # sens est donc ADVISORY dans l'invocation simple (la voie rapide
+    # imprime le compte et les premiers noms) et STRICT sous `--inventory`,
+    # comme les sens de consolidation de #25366 T0.
+    coverage = file_coverage(repo_root, excluded)
+    unplayed = coverage["unplayed"]
+    # Le sens fichier est STRICT sous `--inventory` (comme les sens de
+    # consolidation) et ADVISORY dans l'invocation simple : la dette est
+    # reelle et connue, elle se vide par tranches, pas par un rouge bloque.
+    file_strict = bool(args.inventory) and strict
+    if unplayed:
+        print(
+            f"Fichiers de test a item collectible qu'aucune jambe ne "
+            f"collecte : {len(unplayed)}"
+        )
+        for finding in (unplayed if args.inventory else unplayed[:20]):
+            print(
+                f"  {'FAIL' if file_strict and args.baseline is None else 'INFO'}"
+                f" {finding['path']} "
+                f"({finding['items']} item(s)) — jambe candidate : "
+                f"{', '.join(finding['candidates'])}"
+            )
+        if not args.inventory and len(unplayed) > 20:
+            print(
+                f"  ... et {len(unplayed) - 20} autre(s) — liste complete : "
+                f"`python scripts/check_testpaths_coverage.py --inventory`"
+            )
+    elif args.verbose:
+        print(
+            f"[ok] les {coverage['collected']} fichiers de test a item "
+            f"collectible sont collectes par une jambe"
+        )
+
     # Inventaire (#23359) et sens de consolidation (#25366 T0). Depuis T0,
     # l'inventaire est STRICT PAR DÉFAUT (--advisory rétrograde) : le rouge
     # est le signal qui motive les tranches T1 (trier les répertoires) et
     # T2 (dédoubler les basenames), pas une régression à corriger d'urgence.
-    # La garde CI (fast lane) appelle ce script sans --inventory : les sens
-    # de consolidation y entrent en T4, une fois la dette triée.
-    strict = args.strict or not args.advisory
+    # Depuis T4 (#25366), la garde CI (fast lane) appelle ce script AVEC
+    # --inventory --baseline : la dette connue (baseline JSON committée)
+    # est tolérée, tout finding NOUVEAU rougit la PR — la classe ne peut
+    # plus revenir ni croître pendant que T2 épuise la dette.
+    write_mode = args.write_baseline is not None
     inventory: list[str] = []
     dupes: dict[str, list[str]] = {}
     convergence: list[str] = []
+    baseline_failures: list[str] = []
     if args.inventory:
-        inventory = run_inventory(repo_root, testpaths, excluded, strict)
+        # En mode baseline, l'impression des trous reste INFO (le verdict
+        # du ratchet est porté par judge_inventory_against_baseline) ; en
+        # mode écriture, strict=True pour lister la dette enregistrée.
+        inventory = run_inventory(
+            repo_root,
+            testpaths,
+            excluded,
+            (strict or write_mode) and args.baseline is None,
+        )
         # Cinquième sens (#25366 T0) : basenames dupliqués.
-        dupes = duplicate_basenames(repo_root)
+        dupes = duplicate_basenames(repo_root, excluded)
         if dupes:
             print(
                 f"Basenames de modules portés par >= 2 répertoires de tests "
                 f"découverts : {len(dupes)}"
             )
             for name, dirs in dupes.items():
-                print(f"  {'FAIL' if strict else 'INFO'} {name} — {', '.join(dirs)}")
+                print(f"  {'FAIL' if strict and args.baseline is None else 'INFO'} {name} — {', '.join(dirs)}")
         elif args.verbose:
             print("[ok] aucun basename dupliqué entre répertoires découverts")
         # Sixième sens (#25366 T0) : convergence CI -> testpaths.
@@ -969,20 +1607,53 @@ def main() -> int:
                 "(un pytest racine ne les voit pas) :"
             )
             for t in convergence:
-                print(f"  {'FAIL' if strict else 'INFO'} {t}")
+                print(f"  {'FAIL' if strict and args.baseline is None else 'INFO'} {t}")
         elif args.verbose:
             print("[ok] toutes les cibles-dossier CI sont dans les testpaths")
+        # T4 (#25366) : ratchet — dette connue tolérée, nouveau refusé.
+        if write_mode:
+            write_inventory_baseline(
+                args.write_baseline,
+                inventory,
+                dupes,
+                [f["path"] for f in unplayed],
+            )
+            print(f"[ok] baseline ratchet écrite : {args.write_baseline}")
+            return 0
+        if args.baseline is not None:
+            baseline_failures = judge_inventory_against_baseline(
+                inventory,
+                dupes,
+                [f["path"] for f in unplayed],
+                load_inventory_baseline(args.baseline),
+            )
 
-    # `run_inventory` ne rend des trous qu'en strict ; les deux sens de
-    # #25366 suivent la même règle : listés en advisory, rouges en strict.
+    # Verdict des sens d'inventaire : rouges en strict (T0), SAUF en mode
+    # baseline (T4) où seuls les findings NOUVEAUX rougissent — la dette
+    # enregistrée est tolérée jusqu'à résorption T1/T2. Le sens de
+    # convergence (critère 1) reste refusé sans tolérance dans tous les
+    # modes stricts : il est mesuré à zéro sur main.
+    if args.baseline is not None:
+        # Mode ratchet : seuls les findings NOUVEAUX rougissent (le
+        # juge couvre dossiers, dupes ET fichiers non collectés), la
+        # convergence reste refusée sans tolérance (zéro sur main).
+        inventory_red = bool(baseline_failures) or (
+            strict and bool(convergence)
+        )
+    else:
+        inventory_red = strict and bool(
+            inventory or dupes or convergence
+        ) or (file_strict and bool(unplayed))
+
     return 1 if (
         uncovered
         or problems
         or uncovered_disk
         or missing
         or namespace_problems
-        or inventory
-        or (strict and (dupes or convergence))
+        or inventory_red
+        or ratchet
+        or plan_issues
     ) else 0
 
 

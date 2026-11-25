@@ -14,7 +14,13 @@ from datetime import UTC, datetime
 
 OUVRE = frozenset({"CLAIMED", "CLAIMED-AMEND"})
 FERME = frozenset({"RELEASED", "DELIVERED", "CANCELLED", "ABANDONED", "DONE"})
-VISITE = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+#: Une **prise en charge** nominative : la lane a travaille sur l'issue.
+#: Une visite par lecture (`VISITE-INFO`) n'en est pas une -- une qualification
+#: est une lecture, pas une prise en charge (doctrine de `tapis_dernier_grain`).
+MARQUEUR_GRAIN = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+#: Une **visite** : une prise en charge, ou une lecture d'une lane (`VISITE-INFO`).
+#: Les deux ensembles sont distincts : une visite n'est pas un grain.
+VISITE = MARQUEUR_GRAIN | {"VISITE-INFO"}
 ROUVRE = frozenset({"NOT-DELIVERED", "RELEASED", "CLAIMED", "CLAIMED-AMEND"})
 
 # Un marqueur est en tete de N'IMPORTE QUELLE ligne (souvent apres `Grain:`),
@@ -32,6 +38,9 @@ _INFO_LIVRE_RE = re.compile(
     re.MULTILINE | re.IGNORECASE)
 _FENCE_RE = re.compile(r"```.*?(?:```|\Z)", re.DOTALL)  # du code cite un marqueur sans le poser
 _PATHS_RE = re.compile(r"(?<![`\"'\w])paths\s*:\s*(\S[^\n]*)", re.IGNORECASE)
+# La condition d'une pause explicite (#27726) : `attend: #N` (issue ou PR
+# citee) ou `attend: Q<id>` (question user). Le code cite ne la pose pas.
+_ATTEND_RE = re.compile(r"\battend\s*:\s*([#\w][^\n]*)", re.IGNORECASE)
 _KEEP_RE = re.compile(r"verdict\s*:\s*\**\s*KEEP\b", re.IGNORECASE)
 _LANE_RE = re.compile(r"\blane\s*:?\s+`?([\w.-]+:[\w.-]+)", re.IGNORECASE)
 _LANE_NUE_RE = re.compile(r"\b(myia-[\w.-]+:[\w.-]+)")
@@ -47,6 +56,8 @@ class Evt:
     lane: str | None
     paths: str | None
     reste: str
+    #: La condition d'une pause explicite (#27726) : `attend: #N`. None sinon.
+    attend: str | None = None
 
 
 def _dt(texte: str | None) -> datetime | None:
@@ -59,6 +70,12 @@ def _dt(texte: str | None) -> datetime | None:
 
 def _iso(d: datetime) -> str:
     return d.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _age(maintenant: datetime, quand: str | None, unite_s: int) -> float | None:
+    """L'age d'un instant ISO dans l'unite donnee (secondes), ou None."""
+    d = _dt(quand)
+    return round((maintenant - d).total_seconds() / unite_s, 1) if d else None
 
 
 def _lane(ligne: str, texte: str) -> str | None:
@@ -82,10 +99,12 @@ def evenements(comments: list[dict]) -> list[Evt]:
     for c in comments:
         texte = _FENCE_RE.sub("", c.get("body") or "")
         quand = _dt(c.get("created_at")) or _JAMAIS
+        a = _ATTEND_RE.search(texte)
         for m in _MARQUEUR_RE.finditer(texte):
             p = _PATHS_RE.search(m.group(2))
             evts.append(Evt(quand, m.group(1).upper(), _lane(m.group(0), texte),
-                            p.group(1).strip() if p else None, m.group(2)))
+                            p.group(1).strip() if p else None, m.group(2),
+                            a.group(1).strip() if a else None))
     return sorted(evts, key=lambda e: e.quand)
 
 

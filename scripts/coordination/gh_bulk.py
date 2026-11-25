@@ -1,8 +1,8 @@
 """Lectures groupees de GitHub et de git pour le tapis rapide (#22983).
 
-Seul module de la voie legere qui lance un processus ; `run(argv, timeout)` est
-injecte, les tests en passent un faux. Le cache et le verrou sont dans
-`coordination.gh_cache` (#22630).
+Modules de la voie legere qui lancent un processus : celui-ci et
+`coordination.gh_selection` (selection leger) ; `run(argv, timeout)` est
+injecte. Le cache et le verrou sont dans `coordination.gh_cache` (#22630).
 """
 from __future__ import annotations
 
@@ -12,14 +12,31 @@ import re
 import subprocess
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
+    Lecture, LectureIncomplete, issue)
 
 Run = Callable[[list[str], int], str]
 
 DEPOT_GH = "jsboige/CoursIA"
-TIMEOUT_S = 90
+#: Le plafond d'UN appel (`gh api`, `git log`) : un appel qui depasse est
+#: coupe, pas attendu. A ne pas confondre avec la duree d'un ETAGE : c'est
+#: l'echeance partagee qui borne l'etage (#28114, I6).
+TIMEOUT_S = 15
+#: Le `git fetch` est un aller-retour reseau (mesure du 22/11 : 18 a 20 s) :
+#: il a son propre plafond, plus large que celui d'un appel.
+FETCH_TIMEOUT_S = 90
+#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un lot,
+#: la page des PRs ouvertes) dure plus longtemps qu'un appel de metadonnees :
+#: mesures du 23/11 sur ce siege, 3,76 s pour la page du pool (50 issues, corps
+#: + 12 commentaires) et 2,05 s pour la qualification d'un lot de 50 ; et du
+#: 24/11, 41 s pour la page 1 des PRs ouvertes (100 corps de PR). Le plafond
+#: de 15 s les couperait sur un reseau lent : ils gardent le plafond large.
+TIMEOUT_S_CORPS = 90
+#: L'echeance UNIQUE d'un tirage de lane, partagee par ses etages.
+MUR_TIRAGE_S = 60
 # Un 502/504 se resorbe en relisant la meme page en plus petit.
 TAILLES_PAGE = (50, 25, 12)
 PAGES_PRS_MAX = 20  # au-dela : lecture incomplete plutot que tronquee
@@ -42,43 +59,33 @@ QUERY = """query($owner:String!,$name:String!,$n:Int!,$after:String){
     comments(last:12){totalCount nodes{createdAt author{login} body}}}}}}"""
 
 
-class LectureIncomplete(RuntimeError):
-    """Une lecture n'a pas abouti : rien ne doit etre servi."""
-
-    def __init__(self, lecture: str, page: object, cause: str) -> None:
-        super().__init__(f"lecture {lecture} incomplete (page {page}) : {cause}")
-        self.lecture, self.page, self.cause = lecture, page, cause
-
-
-@dataclass
-class Lecture:
-    """Les trois lectures d'un tirage, et ce qu'elles ont coute."""
-
-    issues: list[dict]
-    prs: list[dict]
-    citations: dict[int, list[dict]] = field(default_factory=dict)
-    lu_a: str = ""
-    appels: int = 0
-    secondes: float = 0.0
-    depuis_cache: bool = False
-    fetch_note: str | None = None  # fetch d'origin/main tente et echoue (sinon None)
-
-    @property
-    def origin_main_le(self) -> str | None:
-        """Dernier commit de la fenetre : chaque commit de squash cite sa PR."""
-        return max((c["date"] for cs in self.citations.values() for c in cs), default=None)
-
-
 def run_defaut(argv: list[str], timeout: int) -> str:
     """`subprocess.run` borne ; un code non nul leve `CalledProcessError`."""
     return subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
                           timeout=timeout, check=True).stdout
 
 
-def _appel(run: Run, argv: list[str], lecture: str, page: object) -> str | None:
+def _timeout(echeance: float | None, plafond: float = TIMEOUT_S,
+             horloge=time.monotonic) -> int:
+    """Le timeout d'un appel : le plus petit du plafond et du temps restant.
+
+    L'echeance est **monotone et unique** : elle est posee une fois pour tout
+    le tirage et partagee par ses etages. Le temps restant est recalcule
+    avant chaque appel, donc un etage qui a consomme sa part voit l'etage
+    suivant etre coupe plutot qu'attendu (#28114, I6).
+
+    Sans echeance (un appel isole), le plafond de l'appel s'applique seul.
+    """
+    if echeance is None:
+        return int(plafond)
+    return max(1, int(min(plafond, echeance - horloge())))
+
+
+def _appel(run: Run, argv: list[str], lecture: str, page: object,
+           timeout: int | None = None) -> str | None:
     """Un appel ; None sur une panne transitoire (502/504, timeout)."""
     try:
-        return run(argv, TIMEOUT_S)
+        return run(argv, TIMEOUT_S if timeout is None else timeout)
     except subprocess.TimeoutExpired:
         return None
     except subprocess.CalledProcessError as exc:
@@ -96,7 +103,8 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
     for taille in TAILLES_PAGE:
         argv = ["gh", "api", "graphql", "-f", f"query={QUERY}", "-f", f"owner={owner}",
                 "-f", f"name={name}", "-F", f"n={taille}"]
-        texte = _appel(run, argv + (["-f", f"after={after}"] if after else []), "issues", page)
+        texte = _appel(run, argv + (["-f", f"after={after}"] if after else []), "issues",
+                       page, timeout=TIMEOUT_S_CORPS)
         if texte is None:
             continue
         try:
@@ -106,37 +114,27 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
     raise LectureIncomplete("issues", page, f"502/504 ou timeout aux tailles {TAILLES_PAGE}")
 
 
-def _issue(node: dict) -> dict:
-    """Une issue GraphQL a plat, aux champs de `issues.json`."""
-    com = node.get("comments") or {}
-    return {"number": node["number"], "title": node.get("title") or "",
-            "body": node.get("body") or "", "created_at": node.get("createdAt") or "",
-            "updated_at": node.get("updatedAt") or "",
-            "labels": [lab["name"] for lab in (node.get("labels") or {}).get("nodes") or []],
-            "comments_total": com.get("totalCount") or 0,
-            "comments": [{"created_at": c.get("createdAt") or "",
-                          "author": (c.get("author") or {}).get("login") or "",
-                          "body": (c.get("body") or "")[:600]} for c in com.get("nodes") or []]}
-
-
 def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict]:
-    """Toutes les issues ouvertes (12 derniers commentaires), jamais une liste partielle."""
+    """Toutes les issues ouvertes (12 derniers commentaires), jamais partielle."""
     issues: list[dict] = []
     after, page = None, 1
     while True:
         data = _page_issues(run, depot, after, page)
-        issues.extend(_issue(node) for node in data["nodes"])
+        issues.extend(issue(node) for node in data["nodes"])
         if not data["pageInfo"]["hasNextPage"]:
             return issues
         after, page = data["pageInfo"]["endCursor"], page + 1
 
 
-def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict]:
+def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH,
+                      echeance: float | None = None) -> list[dict]:
     """Les PRs ouvertes, REST pagine par 100 (un rejeu sur panne transitoire)."""
     rows: list[dict] = []
     for page in range(1, PAGES_PRS_MAX + 1):
         argv = ["gh", "api", f"repos/{depot}/pulls?state=open&per_page=100&page={page}"]
-        texte = _appel(run, argv, "prs_ouvertes", page) or _appel(run, argv, "prs_ouvertes", page)
+        texte = _appel(run, argv, "prs_ouvertes", page,
+                       timeout=_timeout(echeance, TIMEOUT_S_CORPS)) or _appel(
+            run, argv, "prs_ouvertes", page, timeout=_timeout(echeance, TIMEOUT_S_CORPS))
         try:
             chunk = json.loads(texte or "")
             rows.extend({**{k: pr.get(k) or "" for k in _PR_TEXTE}, "number": pr["number"],
@@ -152,14 +150,14 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
 
 
 def lire_citations_mergees(depot: str | Path, jours: int = 45,
-                           run: Run = run_defaut) -> dict[int, list[dict]]:
+                           run: Run = run_defaut,
+                           echeance: float | None = None) -> dict[int, list[dict]]:
     """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
-
     Un seul `git log`, sans fetch : le body de la PR devient le message du squash."""
     argv = ["git", "-C", str(depot), "log", "origin/main", f"--since={jours}.days",
             "--format=%x1e%H%x1f%ct%x1f%s%x1f%b"]
     try:
-        texte = run(argv, TIMEOUT_S)
+        texte = run(argv, _timeout(echeance))
     except (subprocess.SubprocessError, OSError) as exc:
         raise LectureIncomplete("citations_mergees", "git log", str(exc)) from exc
     citations: dict[int, list[dict]] = {}
@@ -184,7 +182,8 @@ def dossier_cache_defaut() -> Path:
     return (Path(local) / "CoursIA" if local else Path.home() / ".cache/coursia") / "tapis_rapide"
 
 
-def _rafraichir_origin_main(run: Run, depot: str | Path) -> str | None:
+def _rafraichir_origin_main(run: Run, depot: str | Path,
+                            echeance: float | None = None) -> str | None:
     """`git fetch origin main` si la pointe locale d'origin/main a plus de
     `FETCH_AGE_MAX_H` h ou est illisible : une panne se NOMME, ne leve pas."""
     try:
@@ -195,7 +194,8 @@ def _rafraichir_origin_main(run: Run, depot: str | Path) -> str | None:
     except (ValueError, subprocess.SubprocessError, OSError):
         pass  # pointe illisible : le fetch se tente quand meme
     try:
-        run(["git", "-C", str(depot), "fetch", "-q", "origin", "main"], TIMEOUT_S)
+        run(["git", "-C", str(depot), "fetch", "-q", "origin", "main"],
+            _timeout(echeance, FETCH_TIMEOUT_S))
         return None
     except (subprocess.SubprocessError, OSError) as exc:
         return f"fetch origin/main impossible ({str(exc)[:100]}), pointe locale gardee"

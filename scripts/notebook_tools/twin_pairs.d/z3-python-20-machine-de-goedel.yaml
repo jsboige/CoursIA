@@ -1,0 +1,10 @@
+- name: Z3-Python-20 Machine de Goedel
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-20-Machine-de-Goedel-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-20-Machine-de-Goedel-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Les deux versions prouvent les mêmes théorèmes et exécutent les mêmes simulations avec les bindings natifs Z3, Python et Microsoft.Z3 .NET.
+  known_differences:
+    - Les générateurs aléatoires Python et .NET produisent des échantillons différents ; leurs tailles et distributions sont conservées.
+    - Les figures C# sont des SVG statiques ; les figures Python utilisent Matplotlib.

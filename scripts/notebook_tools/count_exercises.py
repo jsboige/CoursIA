@@ -1461,6 +1461,11 @@ def _governing_header(cells: list[dict], idx: int) -> dict | None:
 
 # Même reconnaissance des séparateurs initiaux que le lecteur de sections.
 _SECTION_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+# Comme dans le lecteur, une ancre seule ne masque pas le titre qui suit.
+_SECTION_HTML_ANCHOR_RE = re.compile(
+    r"^<a\s+(?:id|name)\s*=\s*[\"'][^\"']*[\"']\s*>\s*</a>\s*$",
+    re.IGNORECASE,
+)
 
 
 def _section_header(cells: list[dict], idx: int) -> dict | None:
@@ -1474,7 +1479,7 @@ def _section_header(cells: list[dict], idx: int) -> dict | None:
             continue
         for line in "".join(cell.get("source", [])).split("\n"):
             line = line.strip()
-            if not line or _SECTION_RULE_RE.match(line):
+            if not line or _SECTION_RULE_RE.match(line) or _SECTION_HTML_ANCHOR_RE.match(line):
                 continue
             if line.startswith("#"):
                 return cell

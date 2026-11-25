@@ -19,7 +19,7 @@ L'arc part du déplacement du RLHF (Christiano et al. 2017) : personne ne sait *
 
 | # | Carnet | Le geste | Kernel | Durée |
 |---|---|---|---|---|
-| pt-00 | [RLPT-00 — Reward model Bradley-Terry](RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | Reward model from scratch depuis des paires, plafond de Bayes, calibration (ECE), identification affine | python3 | 35-40 min |
+| pt-00 | [RLPT-00 — Reward model Bradley-Terry (Python)](RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) · [C# / TorchSharp](RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) | Reward model from scratch depuis des paires, plafond de Bayes, calibration (ECE), identification affine | python3 / .net-csharp | 35-40 min |
 | pt-00b | [RLPT-00b — Biais de dataset](RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Trois biais injectés à paramètres connus, dégât mesuré contre oracle, mitigations confrontées au seuil 2σ | python3 | 40-45 min |
 | pt-00c | [RLPT-00c — Anatomie d'un reward hacking](RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | Un hack **qui prend** : PPO from scratch sur proxy biaisé, bras de contrôle qui isolent la cause | coursia-ml-training | 35-40 min |
 | pt-00d | [RLPT-00d — RewardTrainer TRL](RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | Le monde de RLPT-00 sous `trl.RewardTrainer` : une seule variable, le harnais | python3 | 35-40 min |

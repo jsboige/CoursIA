@@ -1,0 +1,9 @@
+- name: "GameTheory-09c Stackelberg Security Game"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "La source énumère exactement sept allocations et calcule les meilleures réponses ; PuLP est un import optionnel non invoqué. Le C# applique la même énumération avec la BCL."
+  known_differences:
+    - "Les allocations sont représentées par des listes Python et des masques de bits C#."

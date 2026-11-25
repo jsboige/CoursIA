@@ -40,6 +40,17 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# #26932 : la tranche 51 est importee par une ligne a part, et non dans le
+# bloc ci-dessous : les tranches voisines sont modifiees par d'autres PRs en
+# vol, et un bloc reecrit fusionne moins bien qu'un ajout de ligne eloigne.
+from fast_lane_registry import TRANCHE51  # noqa: E402
+# #27141 : idem pour la garde des dossiers de premier niveau (liste nommee,
+# `TOPLEVEL_SERIES_GUARDS`) -- ligne isolee, comme la precedente, pour que deux
+# PRs voisines ne fusionnent pas le meme bloc d'import.
+from fast_lane_registry import TOPLEVEL_SERIES_GUARDS  # noqa: E402
+from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
+from fast_lane_registry import TRANCHE54  # noqa: E402  # #27611, meme motif
+
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
     TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12, TRANCHE13,
@@ -48,9 +59,21 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE27, TRANCHE28, TRANCHE29, TRANCHE30, TRANCHE31, TRANCHE32,
     TRANCHE33, TRANCHE34, TRANCHE35, TRANCHE36, TRANCHE37, TRANCHE38,
     TRANCHE39, TRANCHE40, TRANCHE41, TRANCHE42, TRANCHE43,
-    TRANCHE44, TRANCHE45, TRANCHE46, Guard,
+    TRANCHE44, TRANCHE45, TRANCHE46, TRANCHE47, TRANCHE48, TRANCHE49,
+    TRANCHE50, RISK_KERNEL_GUARDS, Guard,
 )
 import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
+
+# #27098 : la tranche 53 (contrat des carnets Rust) est importee par une ligne
+# a part, eloignee du bloc d'import et de la chaine d'agregation -- les
+# tranches voisines sont modifiees par d'autres PRs en vol, et une ligne
+# isolee fusionne sans conflit.
+from fast_lane_registry import TRANCHE53  # noqa: E402
+# #27544 : tranche 55 (fraicheur du manifeste des dependances), isolee comme
+# la 53 -- meme raison : les tranches voisines sont modifiees par d'autres PRs
+# en vol, et une ligne isolee fusionne sans conflit. Renumerotee le 22/11 :
+# TRANCHE54 est pris par #27611 sur origin/main.
+from fast_lane_registry import TRANCHE55  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -888,7 +911,19 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
+    guards = [g for g in PILOT + TRANCHE51 + TRANCHE52
+              # #27098 : tranche 53 ajoutee sur la meme ligne que la 51 (ligne
+              # isolee de la chaine ci-dessous, qui est modifiee par d'autres
+              # PRs en vol).
+              + TRANCHE53
+              # #27544 : tranche 55 (fraicheur du manifeste des dependances) --
+              # renumerotee le 22/11, TRANCHE54 etant pris par #27611 sur main.
+              # #27611 : tranche 54 ajoutee sur la meme ligne que la 51 (ligne
+              # isolee de la chaine ci-dessous, qui est modifiee par d'autres
+              # PRs en vol).
+              + TRANCHE55
+              + TRANCHE54
+              + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
               + TRANCHE15 + TRANCHE16 + TRANCHE17 + TRANCHE18 + TRANCHE19
@@ -896,7 +931,9 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE26 + TRANCHE27 + TRANCHE28 + TRANCHE29 + TRANCHE30
               + TRANCHE31 + TRANCHE32 + TRANCHE33 + TRANCHE34 + TRANCHE35
               + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40 + TRANCHE41
-              + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46
+              + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46 + TRANCHE47
+              + TRANCHE48 + TRANCHE49 + TRANCHE50 + TRANCHE52
+              + RISK_KERNEL_GUARDS + TOPLEVEL_SERIES_GUARDS
               if not args.only or g.name == args.only]
     if args.effects:
         guards = [g for g in guards if g.commenters]

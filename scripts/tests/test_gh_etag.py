@@ -21,8 +21,12 @@ HERE = Path(__file__).resolve().parent
 
 def _charger(nom: str):
     """Charge un module de scripts/ par son fichier (patron des tests B.0 :
-    scripts/ n'est pas un package depuis n'importe quel cwd)."""
-    spec = importlib.util.spec_from_file_location(nom, HERE.parent / f"{nom}.py")
+    scripts/ n'est pas un package depuis n'importe quel cwd). #13737 tranche 2 :
+    gh_etag vit dans scripts/ci/, les autres candidats restent a la racine."""
+    candidats = [HERE.parent / f"{nom}.py", HERE.parent / "ci" / f"{nom}.py"]
+    chemin = next((c for c in candidats if c.exists()), None)
+    assert chemin is not None, f"module introuvable pour les tests : {nom}"
+    spec = importlib.util.spec_from_file_location(nom, chemin)
     module = importlib.util.module_from_spec(spec)
     sys.modules[nom] = module
     spec.loader.exec_module(module)
@@ -30,6 +34,12 @@ def _charger(nom: str):
 
 
 gh_etag = _charger("gh_etag")
+
+# #28272 : le funnel d'appel a ete extrait dans `scripts/ci/gh_app_failover.py`
+# (#27012 point 3) et c'est LUI qui importe gh_etag ; `check_unaddressed_nits`
+# ne porte plus l'attribut. Le mock doit viser le module qui appelle, sinon il
+# ne couvre plus rien (mesure CI : AttributeError au head).
+gh_app_failover = _charger("gh_app_failover")
 
 
 class FauxGh:
@@ -241,8 +251,8 @@ def test_b0_gh_json_route_le_rest_conditionnable(monkeypatch):
     def _cond(path, timeout=None):
         return ({"number": 42, "title": "T", "body": "B", "state": "open"}, True)
 
-    monkeypatch.setattr(nits.gh_etag, "conditional_get", _cond)
-    monkeypatch.setattr(nits.gh_etag, "etag_applicable",
+    monkeypatch.setattr(gh_app_failover.gh_etag, "conditional_get", _cond)
+    monkeypatch.setattr(gh_app_failover.gh_etag, "etag_applicable",
                         lambda args: "repos/jsboige/CoursIA/issues/42"
                         if args[:2] == ["api", "repos/jsboige/CoursIA/issues/42"]
                         else None)
@@ -257,7 +267,7 @@ def test_b0_gh_json_route_le_rest_conditionnable(monkeypatch):
     def _boom(*a, **k):
         raise AssertionError("gh_etag ne doit pas etre appele")
 
-    monkeypatch.setattr(nits.gh_etag, "conditional_get", _boom)
+    monkeypatch.setattr(gh_app_failover.gh_etag, "conditional_get", _boom)
     monkeypatch.setattr(
         nits.subprocess, "run",
         lambda cmd, **k: subprocess.CompletedProcess(

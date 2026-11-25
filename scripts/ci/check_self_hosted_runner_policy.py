@@ -57,7 +57,7 @@ LINUX_RUNNER_LABELS = {
     "coursia-linux",
 }
 # Dedicated label set for the PR-gate waiter pool (#13363 jambe A, po-2024):
-# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 1 GiB / 128 pids,
+# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 512 MiB / 128 pids,
 # coursia-waiters.service). A waiter never carries coursia-linux -- the
 # distinct label is what lets the gate WAIT without holding a work slot
 # (arbitrage ai-01 2026-09-02: "attendre ne coute pas de CPU").
@@ -97,6 +97,36 @@ MAIN_PUSH_FALLBACK_LABELS = {
     "coursia-ephemeral",
     "coursia-linux",
 }
+# Dedicated label set for the HEAVY family of slots (#21978, routage par
+# label) : the `persist` slots of po-2024, deployed by
+# `scripts/ci/docker/linux-runner/persist/po-2024/create-persist-slots.sh`
+# with `--cpus 3 --memory 4g --pids-limit 512` and the DISJOINT label set
+# `self-hosted,coursia-persistent,coursia-linux` (l.64 du script).
+#
+# The family does NOT exist on the machine yet : measured on 2026-11-14
+# (`gh api repos/jsboige/CoursIA/actions/runners`), the 7 slots
+# `myia-po-2024-linux-persist-{1..7}` still carry BOTH `coursia-ephemeral`
+# and `coursia-persistent` -- the drift the versioned script detects. The
+# routing delivered here is therefore OFF by default (see
+# CI_HEAVY_PERSISTENT_VAR) and stays inert until the machine-side gesture
+# (`create-persist-slots.sh --apply` on po-2024) has been made.
+#
+# This set is deliberately NOT in DEDICATED_LABEL_SETS : a STATIC selection
+# of the heavy pool stays refused. The family is reachable only through the
+# audited ROUTING CHAIN (see _chain_runs_on), whose heavy leg is gated on
+# the operator switch and restricted to the workflows that may carry a
+# heavy job (HEAVY_WORKFLOW_ALLOWLIST).
+HEAVY_RUNNER_LABELS = {
+    "self-hosted",
+    "coursia-persistent",
+    "coursia-linux",
+}
+# Variable de depot du basculement, ABSENTE PAR DEFAUT : the heavy family
+# is reached only if an operator sets it
+# (`gh variable set CI_HEAVY_PERSISTENT --body true`). Same model as
+# CI_OVERFLOW_LOCAL (#22461) : the fleet's behaviour does not change before
+# the machine side is fixed, and the gesture is reversible.
+CI_HEAVY_PERSISTENT_VAR = "CI_HEAVY_PERSISTENT"
 # RETIRED label set -- the specialised Lean pool (#14337, po-2024): elan +
 # toolchain baked in a dedicated image (Dockerfile.lean), .lake kept warm in
 # the per-slot work volume. A lean slot never carries coursia-linux -- the
@@ -181,6 +211,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
     "prose-counts-guard.yml",
+    # prose-output-numbers-sweep.yml (#27231) : balayage cron hebdomadaire
+    #   (schedule + workflow_dispatch) pur-Python stdlib, exit 0 PAR
+    #   CONSTRUCTION, GITHUB_TOKEN absent (contents: read seul). Aucun
+    #   trigger pull_request -> aucune garde same-repo requise (tranche 4
+    #   #14283, meme profil que grain-orphans-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "prose-output-numbers-sweep.yml",
     "notebook-interp-positioning.yml",
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
@@ -446,9 +483,35 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   `permissions:` (une cle hors liste invalide le fichier entier).
     #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
     #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
-    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   etaient heberges). 2026-11-23 : runs-on passe sur le pool des waiters
+    #   ([self-hosted, coursia-waiter], jeu dedie WAITER_LABELS). Sur
+    #   coursia-linux, le job attendait derriere la file qu'il y avait
+    #   lui-meme routee (1 000 jobs locaux en file, 6 heberges sur 20).
+    #   Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
     "ci-overflow-controller.yml",
+    # #26939 (owner myia-po-2027:CoursIA) : sonde legere de debordement CI,
+    #   petite soeur du controleur ci-dessus -- elle REVEILLE le controleur
+    #   entre ses passages (episode du 16/11 : ~0 a 386 runs en ~40 min sans
+    #   intercalage), elle ne decide pas. Meme profil que le controleur :
+    #   `schedule` ('4-59/12', jamais :00/:30/:31) + `workflow_dispatch`
+    #   UNIQUEMENT (advisory par construction, doctrine #12817), runs-on
+    #   STATIQUE [self-hosted, coursia-ephemeral, coursia-linux],
+    #   timeout-minutes: 10, garde same-repo au niveau job
+    #   (`if: github.repository == 'jsboige/CoursIA'`) malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   seuils importes de l'organe (HOSTED_CONCURRENCY_CAP du controleur),
+    #   jamais reinventes ; 2 appels gh au repos (file + variable), un 3e
+    #   sur candidat dispatch, un 4e si elle dispatche -- c'est la seule
+    #   ecriture (dispatch du controleur, `permissions: actions: write`),
+    #   aucune ecriture dans le depot (`contents: read`) ; un exit 1
+    #   (mesure impossible) s'affiche en ::warning sans casser le passage.
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte
+    #   par `Scripts Tests (CPU)` (run 43895504161, 16/11) : la PR routait
+    #   le job self-hosted sans toucher cette allowlist fail-closed -- meme
+    #   classe que ci-overflow-controller.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "ci-overflow-probe.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
@@ -587,7 +650,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   lives inside the expression itself, forks and workflow_dispatch fall
     #   back to ubuntu-latest. Excluded until now because the polling
     #   aggregator must not hold the work slot it waits for (#11405); the
-    #   waiter pool (1 vCPU / 1 GiB, #14303) is exactly the third term that
+    #   waiter pool (1 vCPU / 512 MiB, #14303) is exactly the third term that
     #   removes the objection. Rollback = revert of the routing PR.
     "pr-gate.yml",
     # #14859 (owner myia-po-2026:CoursIA) : garde advisory pur-Python sur les
@@ -1123,10 +1186,6 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "job `prover-tests` heberge : offre GitHub d'abord (consigne user "
         "#17397 du 2026-10-25, note portee par le fichier)"
     ),
-    "notebook-execution-required.yml": (
-        "job `golden-set-execute` heberge : offre GitHub d'abord (consigne "
-        "user #17397 du 2026-10-25, note portee par le fichier)"
-    ),
     "perimeter-review-guard.yml": (
         "declencheur `pull_request_review` classe FORK_REACHABLE (#14201) : le "
         "runner local est interdit, le garde refuse la jambe self-hosted"
@@ -1142,6 +1201,17 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
         "jambe self-hosted voisine couvre les runs du depot"
     ),
+    "learning-image-ghcr.yml": (
+        "#27546 (pli 1.3) : le job `construire-temoins` BUILDE l'image "
+        "d'apprentissage (docker buildx, contexte `lean_scripts`) puis y "
+        "execute les 7 carnets temoins ; le job `publier` ne s'execute jamais "
+        "sur une PR (`if:` + `needs:`), mais le cliquet voit le workflow. Le "
+        "pool conteneur ne peut pas porter ces jobs : le socket Docker y "
+        "manque (uid 1001, no-new-privileges -- meme motif que "
+        "secret-scan.yml) et buildx n'y est pas disponible ; le runner "
+        "heberge est donc le seul porteur. Exception ajoutee sur decision de "
+        "review du coordinateur (20/11, revue #27628)"
+    ),
 }
 
 # Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
@@ -1152,15 +1222,25 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
 # entrees de lean-ci-matrix.yml (conversion #23059, merge 2026-10-31) et de
 # slides-build-advisory.yml (conversion de la vague (a), sur main) ne
 # couvraient plus aucun job nu -- verifie workflow par workflow sur
-# `origin/main` e2e736108c. Une exception perimee n'est pas neutre : elle
+# `origin/main` e2e736108c. Reduite a 5 le 2026-11-14 : le job
+# `golden-set-execute` de notebook-execution-required.yml passe en forme
+# hybride a jambe lourde (#21978) -- il ne porte plus de job fige sur
+# `ubuntu-latest` declenche par pull_request. Une exception perimee n'est pas
+# neutre : elle
 # dispense a l'aveugle le jour ou un job nu revient dans le workflow. La
 # liste NE S'ELARGIT PAS -- seule une decision de review peut le faire, et la
 # PR qui nomme une nouvelle exception retire au moins autant d'entrees dans le
 # meme commit.
+# Le 2026-11-20, une exception est ajoutee : `learning-image-ghcr.yml`
+# (#27546, pli 1.3), sur decision de review explicite du coordinateur
+# (revue #27628) -- le job construit l'image avec docker buildx et execute
+# les 7 carnets temoins dans le conteneur ; le pool conteneur local n'a ni
+# socket Docker ni buildx, le runner heberge est son seul porteur. La
+# baseline est etendue dans le meme commit, comme l'exige l'invariant 2.
 HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "codeql.yml",
+    "learning-image-ghcr.yml",
     "ml-tests.yml",
-    "notebook-execution-required.yml",
     "perimeter-review-guard.yml",
     "quarto-pages-deploy.yml",
     "secret-scan.yml",
@@ -1377,6 +1457,13 @@ HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
 HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
 HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+# #27184 (18/11) : le repli heberge audite accepte AUSSI l'image pinniee
+# ``ubuntu-24.04``. Le rollout d'Ubuntu 26.04 sur ``ubuntu-latest`` a retire
+# Python 3.9 de l'image ; les workflows qui l'installent (ict-tests.yml,
+# slow-lane.yml) pinnent leur repli/scale heberge sur 24.04. Les DEUX
+# litteraux restent heberges GitHub (GITHUB_HOSTED_LABELS) : aucun routage
+# nouveau vers le parc local, la chaine d'audit garde son sens.
+HYBRID_RUNS_ON_FALLBACKS = ("ubuntu-latest", "ubuntu-24.04")
 # Variable de depot de la seconde garde (phase A du debordement, #22461) :
 # nom et valeur ENUMERES -- cf. bloc de commentaire ci-dessus.
 CI_OVERFLOW_LOCAL_VAR = "CI_OVERFLOW_LOCAL"
@@ -1390,6 +1477,51 @@ HYBRID_RUNS_ON_GUARD_LABEL_SETS: dict[str, tuple[set[str], ...]] = {
     HYBRID_RUNS_ON_GUARD: HYBRID_RUNS_ON_LABEL_SETS,
     HYBRID_RUNS_ON_OVERFLOW_GUARD: (LINUX_RUNNER_LABELS,),
 }
+# #21978 (routage par label) : la famille LOURDE est atteinte par une garde
+# ENUMEREE, adossée à une variable de depot ABSENTE PAR DEFAUT. La garde
+# combine la garde meme-depot (une PR de fork n'atteint jamais un runner
+# local) et le basculement d'operateur (le comportement de la flotte ne
+# change pas tant que le geste machine-side n'est pas fait).
+HEAVY_RUNS_ON_GUARD = (
+    f"{SAME_REPO_GUARD} && vars.{CI_HEAVY_PERSISTENT_VAR} == 'true'"
+)
+# La forme HYBRIDE admet aussi la famille lourde : c'est la forme du job
+# dont le repli est heberge (le golden-set), qui n'a pas besoin de chaine.
+# L'autorisation des workflows qui la citent reste fermee
+# (HEAVY_WORKFLOW_ALLOWLIST).
+HYBRID_RUNS_ON_GUARD_LABEL_SETS[HEAVY_RUNS_ON_GUARD] = (HEAVY_RUNNER_LABELS,)
+# Jeux de labels admis par jambe de CHAINE DE ROUTAGE. Le push reserve de
+# `main` y figure (le job CPU l'atteint sur push), la garde de debordement
+# et la garde lourde. Toute autre jambe reste hors audit -> refus.
+CHAIN_LEG_LABEL_SETS: dict[str, tuple[set[str], ...]] = {
+    MAIN_PUSH_GUARD: (MAIN_RUNNER_LABELS,),
+    HYBRID_RUNS_ON_OVERFLOW_GUARD: (LINUX_RUNNER_LABELS,),
+    HEAVY_RUNS_ON_GUARD: (HEAVY_RUNNER_LABELS,),
+}
+# Gardes actionnees par un OPERATEUR : leur etat par defaut (variable
+# absente) laisse la jambe locale inatteignable. Une chaine dont TOUTES les
+# jambes locales sont de ce type, et dont le repli est heberge, est
+# exemptee de l'allowlist des workflows (cf. `operator_gated`).
+OPERATOR_GATED_GUARDS = frozenset({
+    HYBRID_RUNS_ON_OVERFLOW_GUARD,
+    HEAVY_RUNS_ON_GUARD,
+})
+# Repli d'une chaine : soit heberge, soit le pool PR auto-heberge ENUMERE.
+CHAIN_FALLBACK_LABEL_SETS: tuple[set[str], ...] = (MAIN_PUSH_FALLBACK_LABELS,)
+# Workflows autorises a porter la famille LOURDE. Liste close : un workflow
+# hors liste qui cite le jeu lourd est refuse (HEAVY_WORKFLOW_NOT_ALLOWED).
+HEAVY_WORKFLOW_ALLOWLIST = frozenset({
+    "ict-tests.yml",
+    "notebook-execution-required.yml",
+    "scripts-tests.yml",
+})
+# Message unique du refus : une famille lourde citee par un workflow qui
+# n'a pas le droit de porter un job lourd.
+HEAVY_WORKFLOW_REFUSAL = (
+    "the heavy label set {self-hosted, coursia-persistent, coursia-linux} "
+    "is reserved to the workflows that may carry a heavy job (see "
+    "HEAVY_WORKFLOW_ALLOWLIST); this workflow is not one of them (#21978)"
+)
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
     r"(?P<guard>[^()]+)"
@@ -1446,7 +1578,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
     if allowed_label_sets is None:
         return None
-    if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
+    if match.group("fallback") not in HYBRID_RUNS_ON_FALLBACKS:
         return None
     try:
         labels = {str(item) for item in json.loads(match.group("labels"))}
@@ -1463,6 +1595,162 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
         "guard": guard,
         "fallback_labels": fallback_labels,
         "fallback_self_hosted": False,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Chaine de routage (#21978)
+# ---------------------------------------------------------------------------
+#
+# La forme hybride auditee porte UNE jambe locale et UN repli. Le routage par
+# label en demande DEUX : la famille lourde quand l'operateur l'active, la
+# famille ordinaire sinon. L'expression devient une chaine :
+#
+#   ${{ (G1) && fromJSON('["..."]') || (G2) && fromJSON('["..."]') || 'ubuntu-latest' }}
+#
+# La chaine est auditee jambe par jambe : chaque garde doit figurer dans
+# CHAIN_LEG_LABEL_SETS et chaque jeu de labels doit etre celui admis pour
+# cette garde. Le repli final est soit heberge (`ubuntu-latest`), soit le
+# pool PR auto-heberge ENUMERE (CHAIN_FALLBACK_LABEL_SETS) -- un repli
+# auto-heberge impose la garde meme-depot au niveau du job, comme pour le
+# slot reserve de `main`.
+#
+# Toute forme non reconnue rend None : l'appelant conserve le refus
+# DYNAMIC_RUNS_ON. La chaine n'ouvre aucune porte nouvelle : elle rend
+# auditables deux formes qui etaient refusees jusqu'ici (un job qui cite
+# deux gardes), jamais une forme non enumerate.
+
+
+def _split_top_level(text: str, separator: str) -> list[str] | None:
+    """Decoupe `text` sur `separator` au niveau de parentheses nul et hors
+    guillemets. None si le texte est mal balance (guillemet ouvert,
+    parenthesis fermee en trop)."""
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    quote: str | None = None
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if quote is not None:
+            buf.append(char)
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            buf.append(char)
+            index += 1
+            continue
+        if char == "(":
+            depth += 1
+            buf.append(char)
+            index += 1
+            continue
+        if char == ")":
+            depth -= 1
+            if depth < 0:
+                return None
+            buf.append(char)
+            index += 1
+            continue
+        if depth == 0 and text.startswith(separator, index):
+            parts.append("".join(buf))
+            buf = []
+            index += len(separator)
+            continue
+        buf.append(char)
+        index += 1
+    if quote is not None or depth != 0:
+        return None
+    parts.append("".join(buf))
+    return parts
+
+
+_CHAIN_LEG_PATTERN = re.compile(
+    r"^\s*\((?P<guard>[^()]+)\)\s*&&\s*"
+    r"fromJSON\(\s*(?P<q>['\"])(?P<labels>.*?)(?P=q)\s*\)\s*$"
+)
+_CHAIN_FALLBACK_LABELS_PATTERN = re.compile(
+    r"^\s*fromJSON\(\s*(?P<q>['\"])(?P<labels>.*?)(?P=q)\s*\)\s*$"
+)
+
+
+def _chain_runs_on(runs_on: Any) -> dict[str, Any] | None:
+    """Return the audited routing CHAIN for ``runs_on``, or None.
+
+    Une chaine compte DEUX jambes locales au minimum et se termine par un
+    repli. Chaque jambe est validee contre CHAIN_LEG_LABEL_SETS : garde
+    enumeratee ET jeu de labels admis pour cette garde.
+    """
+    if not isinstance(runs_on, str):
+        return None
+    text = runs_on.strip()
+    if not (text.startswith("${{") and text.endswith("}}")):
+        return None
+    parts = _split_top_level(text[3:-2].strip(), "||")
+    if parts is None or len(parts) < 3:
+        # Moins de trois morceaux : ce n'est pas une chaine (la forme
+        # hybride a une jambe) -- le parseur de la forme hybride reste
+        # l'unique lecteur de ce cas.
+        return None
+    legs: list[dict[str, Any]] = []
+    fallback_labels: set[str] | None = None
+    fallback = None
+    for index, part in enumerate(parts):
+        is_last = index == len(parts) - 1
+        match = _CHAIN_LEG_PATTERN.match(part)
+        if match is not None:
+            if is_last:
+                # Une jambe locale ne peut pas etre le dernier morceau : le
+                # dernier est le repli.
+                return None
+            guard = " ".join(match.group("guard").split())
+            allowed = CHAIN_LEG_LABEL_SETS.get(guard)
+            if allowed is None:
+                return None
+            try:
+                labels = {str(item) for item in json.loads(match.group("labels"))}
+            except json.JSONDecodeError:
+                return None
+            if labels not in allowed:
+                return None
+            legs.append({"guard": guard, "labels": labels})
+            continue
+        if not is_last:
+            # Un repli au milieu de la chaine n'est pas une forme auditee.
+            return None
+        stripped = part.strip()
+        if stripped in {
+            f"'{label}'" for label in HYBRID_RUNS_ON_FALLBACKS
+        } | {
+            f'"{label}"' for label in HYBRID_RUNS_ON_FALLBACKS
+        }:
+            fallback = stripped.strip("'\"")
+            continue
+        fallback_match = _CHAIN_FALLBACK_LABELS_PATTERN.match(part)
+        if fallback_match is None:
+            return None
+        try:
+            labels = {str(item) for item in json.loads(fallback_match.group("labels"))}
+        except json.JSONDecodeError:
+            return None
+        if labels not in CHAIN_FALLBACK_LABEL_SETS:
+            return None
+        fallback_labels = labels
+    if len(legs) < 2 or (fallback is None and fallback_labels is None):
+        return None
+    return {
+        "legs": legs,
+        "fallback": fallback,
+        "fallback_labels": fallback_labels,
+        "fallback_self_hosted": fallback_labels is not None,
+        "operator_gated": (
+            all(leg["guard"] in OPERATOR_GATED_GUARDS for leg in legs)
+            and fallback_labels is None
+        ),
     }
 
 
@@ -1542,6 +1830,14 @@ def _job_can_reach_local_park(runs_on: Any) -> bool:
     hybrid = _hybrid_runs_on(runs_on)
     if hybrid is not None:
         return LOCAL_PARK_LABEL in hybrid["labels"]
+    chain = _chain_runs_on(runs_on)
+    if chain is not None:
+        # Une chaine atteint le parc local par l'une de ses jambes, ou par
+        # son repli auto-heberge.
+        if any(LOCAL_PARK_LABEL in leg["labels"] for leg in chain["legs"]):
+            return True
+        fallback_labels = chain.get("fallback_labels")
+        return bool(fallback_labels) and LOCAL_PARK_LABEL in fallback_labels
     if _contains_expression(runs_on):
         return True
     _is_self_hosted, _group, labels, _error = _runner_selection(runs_on)
@@ -1743,20 +2039,20 @@ def _guard_violation_message(condition: str) -> str:
 
 
 def _is_naked_hosted_runner(runs_on: Any) -> bool:
-    """Vrai si ``runs-on`` ne nomme QUE le label heberge par defaut.
+    """Vrai si ``runs-on`` ne nomme QU'un label heberge du ratchet.
 
-    ``ubuntu-latest`` seul (scalaire) ou une liste a un seul element
-    ``[ubuntu-latest]``. Une expression (forme hybride), un label self-hosted
-    ou une liste multi-labels ne sont PAS « nus » : ils sont deja routes, ou
-    le sont par construction.
+    ``ubuntu-latest`` ou l'image pinniee ``ubuntu-24.04`` (#27184), seuls
+    (scalaire) ou en liste a un seul element. Une expression (forme hybride),
+    un label self-hosted ou une liste multi-labels ne sont PAS « nus » : ils
+    sont deja routes, ou le sont par construction.
     """
     if isinstance(runs_on, str):
-        return runs_on.strip().lower() == HYBRID_RUNS_ON_FALLBACK
+        return runs_on.strip().lower() in HYBRID_RUNS_ON_FALLBACKS
     if isinstance(runs_on, list):
         return (
             len(runs_on) == 1
             and isinstance(runs_on[0], str)
-            and runs_on[0].strip().lower() == HYBRID_RUNS_ON_FALLBACK
+            and runs_on[0].strip().lower() in HYBRID_RUNS_ON_FALLBACKS
         )
     return False
 
@@ -1989,7 +2285,8 @@ def scan_workflows(
                 continue
 
             hybrid = _hybrid_runs_on(runs_on)
-            if _contains_expression(runs_on) and hybrid is None:
+            chain = None if hybrid is not None else _chain_runs_on(runs_on)
+            if _contains_expression(runs_on) and hybrid is None and chain is None:
                 if _mentions_main_labels(runs_on):
                     # Le jeu reserve a `main` apparait dans une expression qui
                     # n'est PAS la forme auditee : le refus nomme l'element
@@ -2008,8 +2305,8 @@ def scan_workflows(
                         "runs-on contains an expression other than the audited "
                         "hybrid forms (same-repo guard, optionally && "
                         "vars.CI_OVERFLOW_LOCAL == 'true', -> self-hosted pool, "
-                        "else ubuntu-latest; see #13363, #22461) and cannot be "
-                        "audited statically",
+                        "else ubuntu-latest; see #13363, #22461) or the audited "
+                        "routing chain (#21978), and cannot be audited statically",
                     ))
                 continue
 
@@ -2029,6 +2326,41 @@ def scan_workflows(
                 # que si un operateur a bascule vars.CI_OVERFLOW_LOCAL : son
                 # autorisation est ce geste, pas une entree d'allowlist.
                 operator_gated = hybrid["guard"] == HYBRID_RUNS_ON_OVERFLOW_GUARD
+                if (
+                    hybrid["labels"] == HEAVY_RUNNER_LABELS
+                    and path.name not in HEAVY_WORKFLOW_ALLOWLIST
+                ):
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "HEAVY_WORKFLOW_NOT_ALLOWED",
+                        HEAVY_WORKFLOW_REFUSAL,
+                    ))
+            elif chain is not None:
+                # Chaine de routage auditee (#21978) : chaque jambe porte sa
+                # propre garde (dont la garde meme-depot), donc les labels
+                # locaux sont inatteignables pour une PR de fork. Les
+                # invariants habituels s'appliquent : allowlist, declencheurs,
+                # jeu de labels exact, plafond de temps.
+                is_self_hosted = True
+                group = None
+                labels = chain["legs"][0]["labels"]
+                selection_error = None
+                hybrid_leg = True
+                operator_gated = chain["operator_gated"]
+                if any(
+                    leg["labels"] == HEAVY_RUNNER_LABELS for leg in chain["legs"]
+                ) and path.name not in HEAVY_WORKFLOW_ALLOWLIST:
+                    # La famille lourde est RESERVEE aux jobs dont la
+                    # consommation depasse le cap du pool ordinaire : un
+                    # workflow hors liste qui la cite est refuse, meme si la
+                    # variable de depot est posee.
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "HEAVY_WORKFLOW_NOT_ALLOWED",
+                        HEAVY_WORKFLOW_REFUSAL,
+                    ))
             else:
                 is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
                 hybrid_leg = False
@@ -2151,11 +2483,35 @@ def scan_workflows(
             # PR). Une selection statique, ou une expression qui n'est pas
             # cette forme, est refusee avec le nom de l'element manquant.
             main_set = set(labels) == MAIN_RUNNER_LABELS
+            # La famille LOURDE est admise dans les seules formes auditees :
+            # la forme hybride a garde lourde, ou une jambe de chaine qui la
+            # porte. Partout ailleurs (selection STATIQUE comprise), le jeu
+            # reste hors des ensembles dedies -> refus.
+            heavy_audited = (
+                hybrid is not None
+                and hybrid["guard"] == HEAVY_RUNS_ON_GUARD
+                and hybrid["labels"] == HEAVY_RUNNER_LABELS
+            ) or (
+                chain is not None
+                and any(
+                    leg["guard"] == HEAVY_RUNS_ON_GUARD
+                    and leg["labels"] == HEAVY_RUNNER_LABELS
+                    for leg in chain["legs"]
+                )
+            )
             main_audited = (
                 hybrid is not None
                 and hybrid["guard"] == MAIN_PUSH_GUARD
                 and hybrid["labels"] == MAIN_RUNNER_LABELS
                 and hybrid.get("fallback_labels") == MAIN_PUSH_FALLBACK_LABELS
+            ) or (
+                chain is not None
+                and any(
+                    leg["guard"] == MAIN_PUSH_GUARD
+                    and leg["labels"] == MAIN_RUNNER_LABELS
+                    for leg in chain["legs"]
+                )
+                and chain.get("fallback_labels") == MAIN_PUSH_FALLBACK_LABELS
             )
             if main_set:
                 missing: list[str] = []
@@ -2167,6 +2523,20 @@ def scan_workflows(
                         "MAIN_LABEL_SET_UNAUDITED",
                         _main_audit_defect(runs_on),
                     ))
+            elif chain is not None:
+                # Chaque jambe de la chaine a ete validee par le parseur
+                # (garde enumeratee ET jeu de labels admis pour cette garde) :
+                # il n'y a rien a confronter ici.
+                missing = []
+                unexpected = []
+            elif set(labels) == HEAVY_RUNNER_LABELS and heavy_audited:
+                # La forme HYBRIDE admet la famille lourde (le golden-set) ;
+                # le parseur a deja verifie la garde enumeree. Une
+                # selection STATIQUE du meme jeu tombe dans le cas general :
+                # elle est refusee (le jeu n'est dans aucun ensemble
+                # dedie).
+                missing = []
+                unexpected = []
             elif any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
                 missing = []
                 unexpected = []
@@ -2205,6 +2575,8 @@ def scan_workflows(
             # parc local par la branche de repli.
             fallback_self_hosted = bool(
                 hybrid is not None and hybrid.get("fallback_self_hosted")
+            ) or bool(
+                chain is not None and chain.get("fallback_self_hosted")
             )
             if "pull_request" in triggers and (not hybrid_leg or fallback_self_hosted):
                 # Hybrid legs carry the guard in their runs-on expression --

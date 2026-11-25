@@ -205,7 +205,7 @@ fait echouer **les jobs d'une seule famille**, en accusant leur contenu.
 | Binaire | Pourquoi il est requis | Symptome quand il manque | Etat au 2026-10-08 |
 |---|---|---|---|
 | `gh` | gardes de perimetre et suites de tests lisent `gh pr view --json files` | `FileNotFoundError: 'gh'`, `check_exit: 127` -> `BASELINE_FAILED` ; le garde de perimetre sort en fail-loud **sans citer de contradiction reelle** | installe dans `~/.local/bin` (2.99.0, aligne sur l'epingle image le 2026-10-08, SHA-256 du Dockerfile verifiee — cf. divergence corrigee ci-dessous) |
-| `python` | des workflows appellent `python script.py` en nom nu ; Ubuntu ne fournit que `python3` | `line 1: python: command not found`, `exit 127` (rendu Quarto : `python scripts/regen_quarto_render.py`) | lien `~/.local/bin/python -> /usr/bin/python3` (3.12.3) |
+| `python` | des workflows appellent `python script.py` en nom nu ; Ubuntu ne fournit que `python3` | `line 1: python: command not found`, `exit 127` (rendu Quarto : `python scripts/ci/regen_quarto_render.py`) | lien `~/.local/bin/python -> /usr/bin/python3` (3.12.3) |
 
 **Le piege de la sonde, mesure le 2026-09-22.** `command -v python` depuis un shell WSL ordinaire rend
 **ABSENT avant comme apres** la pose du lien -- parce que ce shell n'a pas `~/.local/bin` dans son PATH.

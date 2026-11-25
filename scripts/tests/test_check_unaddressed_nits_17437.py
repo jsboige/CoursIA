@@ -10,8 +10,11 @@ MACHINE, et ai-01 porte deux lanes. Sa clé privée vit dans le clone
 (``.secrets/github-apps/coursia-lane-ai-01.pem``) : la lane worker sœur
 ``myia-ai-01:CoursIA-2`` la lit et forge le même jeton. L'App ne peut donc
 pas porter la voix du coordinateur — les tests de levée par l'App sont
-inversés en conséquence ; une App propre à la lane coordinatrice est le
-préalable.
+inversés en conséquence. L'App PROPRE à la lane coordinatrice, préalable
+alors nommé, existe depuis le 2026-11-14 (Q187 : App 5763709, slug
+``coursia-coord-ai01``, clé dédiée ``.secrets/github-apps/
+coursia-coord-ai01.pem``, distincte de la clé de machine) : elle porte
+désormais la voix du coordinateur, et ses tests de levée sont positifs.
 
 Relecture ai-01 du 2026-11-12 : la preuve d'identité est le TYPE PORTÉ PAR
 LA LIGNE elle-même (REST ``user.type``, GraphQL ``author.__typename`` —
@@ -44,6 +47,8 @@ spec.loader.exec_module(mod)
 
 APP_LOGIN_BARE = "coursia-lane-ai-01"
 APP_LOGIN_REST = "coursia-lane-ai-01[bot]"
+COORD_APP_BARE = "coursia-coord-ai01"
+COORD_APP_REST = "coursia-coord-ai01[bot]"
 
 
 def at(hour: int) -> str:
@@ -97,7 +102,7 @@ def run_lift(lift_author: dict, comments=(), monkeypatch=None,
     return res
 
 
-# --- la voix App du coordinateur lève, dans ses orthographes réelles ----------
+# --- l'App PROPRE à la lane coordinatrice lève ; l'App de MACHINE jamais ------
 
 
 def test_17437_levee_app_machine_ne_leve_pas():
@@ -107,8 +112,8 @@ def test_17437_levee_app_machine_ne_leve_pas():
     sœur ``myia-ai-01:CoursIA-2`` lit le même fichier et forge le même jeton
     d'installation. L'App ne peut donc pas porter la voix du coordinateur —
     un ``[OVERRIDE]`` de CoursIA-2 vaudrait celui du coordinateur, ce que la
-    borne #12737/#12836 interdit. Une App PROPRE à la lane coordinateur est
-    le préalable."""
+    borne #12737/#12836 interdit. L'App PROPRE à la lane coordinateur
+    (Q187, 2026-11-14) existe désormais — mais ce n'est pas celle-ci."""
     res = run_lift({"login": APP_LOGIN_REST})
     assert res["blocked"] is True
     assert any("n'est pas un compte de levée" in o["why"]
@@ -120,6 +125,49 @@ def test_17437_levee_app_typbot_graphql_ne_leve_pas():
     du préfixe de machine ne suffit pas — une forme typée juste ne fait pas
     une voix coordinatrice."""
     res = run_lift({"login": APP_LOGIN_BARE, "__typename": "Bot"})
+    assert res["blocked"] is True
+
+
+def test_17437_levee_app_propre_typbot_graphql_leve():
+    """Q187 (2026-11-14) : l'App PROPRE à la lane coordinatrice
+    (``coursia-coord-ai01``, App 5763709, clé dédiée distincte de la clé de
+    machine) porte la voix du coordinateur. Orthographe GraphQL typée
+    ``Bot`` : la normalisation replie le suffixe REST, la ligne entre dans
+    ``LIFT_OVERRIDE_LOGINS`` — un ``[OVERRIDE]`` complet lève la réserve,
+    comme celui de l'humain."""
+    res = run_lift({"login": COORD_APP_BARE, "__typename": "Bot"})
+    assert res["blocked"] is False
+
+
+def test_17437_levee_app_propre_forme_rest_suffixee_leve():
+    """Même voix, orthographe REST suffixée (``user.login`` déjà porteur du
+    suffixe ``[bot]``, mesuré sur ``pulls/N/reviews``) : le suffixe résisté
+    par GitHub aux Apps est une preuve structurelle, la ligne lève."""
+    res = run_lift({"login": COORD_APP_REST})
+    assert res["blocked"] is False
+
+
+def test_17437_levee_app_propre_nue_sans_type_ne_leve_pas(monkeypatch):
+    """Fail-closed sur la voix légitime elle-même : une ligne
+    ``{"login": "coursia-coord-ai01"}`` SANS type n'est pas une preuve — le
+    compte UTILISATEUR homonyme du slug écrirait exactement cette ligne. La
+    sonde étant scriptée à ``Bot`` (l'App existe), elle ne doit NI lever NI
+    être consultée : la preuve est le type de la ligne, pas l'existence de
+    l'App."""
+    res = run_lift(
+        {"login": COORD_APP_BARE},
+        monkeypatch=monkeypatch,
+        gh_json_fake=lambda args: {"type": "Bot"},
+    )
+    assert res["blocked"] is True
+    assert res["_probe_calls"] == []
+
+
+def test_17437_levee_app_propre_homonyme_utilisateur_ne_leve_pas():
+    """L'homonyme UTILISATEUR du slug de l'App propre, typé ``User`` : la
+    normalisation laisse le login nu, il échoue la borne suffixée — le type
+    de la ligne, pas le nom, porte l'identité."""
+    res = run_lift({"login": COORD_APP_BARE, "__typename": "User"})
     assert res["blocked"] is True
 
 
@@ -193,12 +241,13 @@ def test_17437_bot_type_dans_payload_reste_du_bruit():
 
 
 def test_17437_litteral_app_epingle_au_retrait():
-    """La potence change de sens avec l'arbitrage du 2026-11-13 : le test
-    épingle désormais l'ABSENCE de l'App de machine dans la trappe. Si une
-    édition future y ajoute ``coursia-lane-ai-01[bot]`` sans App propre à la
-    lane coordinateur, ce rouge le dit au lieu de laisser la porte s'ouvrir
-    en silence."""
-    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    """La potence change de sens avec la Q187 (2026-11-14) : le test épingle
+    désormais l'ensemble EXACT — l'humain PLUS l'App propre à la lane
+    coordinatrice, et RIEN d'autre. Si une édition future y ajoute
+    ``coursia-lane-ai-01[bot]`` (App de MACHINE, clé lisible par la lane
+    sœur ``myia-ai-01:CoursIA-2``), ce rouge le dit au lieu de laisser la
+    porte s'ouvrir en silence."""
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01", COORD_APP_REST}
     assert mod.gh_identity.APP_LOGIN_PREFIX + "ai-01[bot]" not in (
         mod.LIFT_OVERRIDE_LOGINS
     )
@@ -416,3 +465,44 @@ def test_17437_review_threads_curseur_fige_rend_le_collecte(monkeypatch):
     out = mod.review_threads(1)
     assert len(out) == 2
     assert all(not t["resolved"] for t in out)
+
+
+def test_17437_review_threads_strict_refuse_le_prefixe_curseur_fige(monkeypatch):
+    """#22757 (relecture ai-01 2026-11-19) : en mode STRICT — celui du repli
+    du bundle — un curseur figé PROPAGE (ThreadsIncomplete) au lieu de
+    rendre le préfixe collecté : le préfixe n'est jamais un résultat
+    complet, l'appelant doit refuser de conclure."""
+    page = _threads_page([_thread(False, "x")], True, "t1")
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    with pytest.raises(mod.ThreadsIncomplete):
+        mod.review_threads(1, strict=True)
+
+
+def test_17437_review_threads_strict_refuse_pageinfo_sans_hasnextpage(monkeypatch):
+    """#22757 (relecture ai-01 2026-11-19) : une connexion avec `nodes`
+    valide mais `pageInfo` SANS booléen `hasNextPage` n'est pas acceptée
+    comme complète — en mode strict, refus explicite."""
+    page = {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"endCursor": "t1"},   # pas de hasNextPage
+        "nodes": [_thread(True, "leve")],
+    }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    with pytest.raises(mod.ThreadsIncomplete):
+        mod.review_threads(1, strict=True)
+
+
+def test_17437_review_threads_historique_tolerant_pageinfo_sans_hasnextpage(monkeypatch):
+    """Contre-témoin du strict : le mode historique (appels existants)
+    garde sa tolérance — même page incomplète, rendu du collecté, pas de
+    levée."""
+    page = {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"endCursor": "t1"},   # pas de hasNextPage
+        "nodes": [_thread(True, "leve")],
+    }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    out = mod.review_threads(1)
+    assert len(out) == 1
+    assert out[0]["resolved"] is True

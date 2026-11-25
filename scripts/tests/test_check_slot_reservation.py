@@ -1005,37 +1005,96 @@ class ScanMainCollisionTests(unittest.TestCase):
                         "le kernel en milieu de nom doit etre neutralise")
 
     def test_same_item_scan_does_not_match_different_topics(self):
-        # App-14-ConnectFour-Adversarial et App-14-ConnectFour-CSharp :
+        # App-14-ConnectFour-Adversarial-Python et App-14-ConnectFour-CSharp :
         # `Adversarial` n'est PAS un token noyau, le strip ne le touche
         # pas, et la collision reste un vrai conflit de sujet.
-        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb"
+        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-Python.ipynb"
         b = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb"
         self.assertFalse(csr._same_item_scan(a, b),
                          "deux sujets differents ne sont PAS un jumeau")
 
+    def test_same_item_scan_matches_renamed_app14_pair(self):
+        # #12933 : apres renommage du jumeau C# en -Adversarial-CSharp,
+        # le stem (suffixe -CSharp strippe) devient identique au Python :
+        # la paire est reconnue jumeau, pas collision de slot.
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb"
+        self.assertTrue(csr._same_item_scan(a, b),
+                        "la paire renommee doit etre reconnue comme jumeau")
+
+    def test_same_item_scan_matches_renamed_app12_pair(self):
+        # #12933 : App-12c -> App-12-ConnectFour-CSharp, meme slot 12b
+        # que le jumeau Python : paire reconnue, pas collision.
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb"
+        self.assertTrue(csr._same_item_scan(a, b),
+                        "la paire renommee doit etre reconnue comme jumeau")
+
+    # Les deux collisions documentees se rejouent sur un arbre FIGE, pas
+    # sur `origin/main` : une collision connue est faite pour etre reparee,
+    # et un test qui exige qu'elle reste sur `main` rougit le jour ou elle
+    # l'est (#27434 : ICT-48 reparee par #26757, `main` rouge, tous les
+    # merges retenus). Le contrat teste reste le meme : sur un arbre de
+    # cette forme, le balayage DOIT remonter la collision.
+    _ICT_DIR = "MyIA.AI.Notebooks/IIT/ICT-Series"
+    _SL_DIR = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
+    _FROZEN_TREE = "\n".join([
+        # Etat de `main` avant #26757 : deux sujets au slot ICT-48.
+        _ICT_DIR + "/ICT-47-PainAxisDistillation-Python.ipynb",
+        _ICT_DIR + "/ICT-48-Onset9B-Aggregate-Python.ipynb",
+        _ICT_DIR + "/ICT-48-WolframClasses-ThermoSignature-Python.ipynb",
+        # SL-12b : deux sujets, plus la sortie papermill de l'un d'eux.
+        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction-output.ipynb",
+        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb",
+        _SL_DIR + "/SL-12b-SpectralLogicSynthesis.ipynb",
+        # Un jumeau de noyau : meme item, jamais une collision.
+        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb",
+    ]) + "\n"
+
+    def _scan_frozen_tree(self):
+        seen = []
+
+        def fake_git(args):
+            seen.append(list(args))
+            return self._FROZEN_TREE
+
+        with mock.patch.object(csr, "_git", fake_git):
+            collisions = csr.scan_main_collisions("frozen-tree")
+        self.assertEqual(seen, [["ls-tree", "-r", "--name-only", "frozen-tree"]])
+        return collisions
+
     def test_scan_main_finds_known_collision_ict48(self):
         # ICT-48 est la collision documentee de la tranche 1. Si le
         # balayage la manque, la garde regresse.
-        try:
-            collisions = csr.scan_main_collisions("origin/main")
-        except RuntimeError:
-            self.skipTest("origin/main indisponible")
+        collisions = self._scan_frozen_tree()
         ict48 = [c for c in collisions
                  if c["slot"] == "ICT-48"
                  and c["dir"].endswith("IIT/ICT-Series")]
         self.assertEqual(len(ict48), 1, "ICT-48 doit remonter comme collision documentee")
-        self.assertGreaterEqual(len(ict48[0]["paths"]), 2)
+        self.assertEqual(ict48[0]["paths"], [
+            self._ICT_DIR + "/ICT-48-Onset9B-Aggregate-Python.ipynb",
+            self._ICT_DIR + "/ICT-48-WolframClasses-ThermoSignature-Python.ipynb",
+        ])
 
     def test_scan_main_finds_known_collision_sl12b(self):
-        # SL-12b : PavlovDLS-Reproduction vs SpectralLogicSynthesis.
-        try:
-            collisions = csr.scan_main_collisions("origin/main")
-        except RuntimeError:
-            self.skipTest("origin/main indisponible")
+        # SL-12b : PavlovDLS-Reproduction vs SpectralLogicSynthesis. La
+        # sortie papermill du premier n'est pas un occupant du slot.
+        collisions = self._scan_frozen_tree()
         sl12b = [c for c in collisions
                  if c["slot"] == "SL-12b"
                  and c["dir"].endswith("SymbolicAI/SymbolicLearning")]
         self.assertEqual(len(sl12b), 1, "SL-12b doit remonter comme collision documentee")
+        self.assertEqual(sl12b[0]["paths"], [
+            self._SL_DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb",
+            self._SL_DIR + "/SL-12b-SpectralLogicSynthesis.ipynb",
+        ])
+
+    def test_scan_frozen_tree_reports_only_real_collisions(self):
+        # Le jumeau de noyau (SW-10 CSharp / Python) et le carnet seul a
+        # son slot (ICT-47) ne remontent pas : deux constats, pas plus.
+        collisions = self._scan_frozen_tree()
+        self.assertEqual(sorted(c["slot"] for c in collisions), ["ICT-48", "SL-12b"])
 
     def test_scan_main_filters_papermill_outputs(self):
         # Aucune collision ne peut etre uniquement des sorties papermill
@@ -1071,6 +1130,383 @@ class ScanMainCollisionTests(unittest.TestCase):
             self.assertIn("slot", c)
             self.assertIn("paths", c)
             self.assertIn("ref", c)
+
+
+class TestSquashArtifact(unittest.TestCase):
+    """Fix (a) : un « ajout » byte-identique a la base est un artefact de squash.
+
+    Mesure fondatrice : #25027 -- branche empilee sur #25025 deja squash-mergee.
+    `added_notebooks` calcule depuis le merge-base, donc `Chaines-04` remontait
+    comme « ajout » alors que son blob exact vit deja sur origin/main : le garde
+    refusait une PR qui ne prend aucun numero, et bloquait toute la pile.
+    """
+
+    SAME = SERIES + "/04-2-Alpha.ipynb"
+
+    def _stacked_repo(self, repo: Path, diverge: bool) -> None:
+        """Base A ; branche topic ajoute 04-2 ; mainline pose le meme fichier
+        par un commit DISTINCT (squash de la mere) puis avance.
+
+        merge-base(mainline, topic) == A : le diff mainline...topic voit donc
+        04-2 comme un AJOUT alors qu'il vit aussi sur mainline. `diverge=True`
+        pose un contenu DIFFERENT sur mainline (temoin negatif : reecriture).
+        """
+        root = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+        _git(repo, "checkout", "-qb", "topic", root)
+        _write(repo, self.SAME)                      # contenu C1 sur topic
+        _commit(repo, "topic ajoute 04-2")
+        _git(repo, "checkout", "-qb", "mainline", root)
+        if diverge:
+            _write(repo, self.SAME, json.dumps(      # contenu C2 != C1
+                {"cells": [], "metadata": {"autre": True},
+                 "nbformat": 4, "nbformat_minor": 5}, indent=1) + "\n")
+        else:
+            _write(repo, self.SAME)                  # C1 aussi : blob identique
+        _commit(repo, "squash de la mere : pose 04-2 sur main")
+        _write(repo, "README.md", "# avance de mainline\n")
+        _commit(repo, "mainline avance")
+        _git(repo, "checkout", "-q", "topic")
+
+    def test_stacked_branch_with_identical_blob_is_an_artifact(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._stacked_repo(repo, diverge=False)
+
+            r = _run(repo, "mainline")
+            self.assertEqual(r.returncode, 0,
+                             "un ajout byte-identique a la base ne prend aucun slot\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("1 artefact(s) de squash ecarte(s)", r.stdout, r.stdout)
+            self.assertNotIn("taken_on_base", r.stdout)
+
+    def test_artifact_is_reported_in_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._stacked_repo(repo, diverge=False)
+
+            r = _run(repo, "mainline", "--json")
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["sources"]["revision"]["added"], 1)
+            self.assertEqual(doc["sources"]["revision"]["squash_artifacts"], 1)
+            self.assertEqual(doc["targets_examined"], 0,
+                             "l'artefact ne doit plus etre une cible examinee")
+            self.assertEqual(doc["conflicts"], 0)
+
+    def test_same_path_with_different_content_still_taken_on_base(self):
+        """Temoin negatif du dispatch : meme chemin, contenu DIFFERENT = reecriture."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._stacked_repo(repo, diverge=True)
+
+            r = _run(repo, "mainline")
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+            self.assertNotIn("artefact(s) de squash", r.stdout)
+
+    def test_target_mode_keeps_exact_name_on_base_taken(self):
+        """Le mode --target n'est pas touche : viser le nom exact d'un fichier
+        de la base reste une prise, meme byte-identique (preflight avant edition)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            root = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+            _commit(repo, "rev vide")      # HEAD n'apporte rien
+            r = _run(repo, root, "--target", SERIES + "/04-1-Previous.ipynb")
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+
+
+class TestOpenPrAgeRule(unittest.TestCase):
+    """Fix (b) : une PR ouverte ne reserve un numero que contre une PR plus jeune.
+
+    Mesure fondatrice : #26585 (ouverte le 14/11, approuvee) et #26710 (ouverte
+    le 15/11) revendiquaient toutes deux `02-Advanced/02-11` -- chaque examen
+    voyait l'autre comme occupant, aucune ne pouvait merger. Cle d'anciennete :
+    le NUMERO de PR (allocation sequentielle a la creation = ordre d'ouverture).
+    """
+
+    SLOT = "MyIA.AI.Notebooks/ML/02-Advanced/02-11-Comparaisons-Python.ipynb"
+    OCC = "MyIA.AI.Notebooks/ML/02-Advanced/02-11-Autre-Sujet-Python.ipynb"
+
+    def _claims(self, prs, examined):
+        slot = csr._scan_slot(self.SLOT)
+        self.assertIsNotNone(slot, "le temoin doit porter un slot lisible")
+        return csr.pr_claims(prs, None, examined_pr=examined).get(slot, [])
+
+    @staticmethod
+    def _pr(num, path, additions=10, deletions=0):
+        return {"number": num, "files": [
+            {"path": path, "additions": additions, "deletions": deletions}]}
+
+    def test_younger_claimant_does_not_block_the_older_pr(self):
+        """Examiner l'ainnee (#26585) : la plus jeune (#26710) ne reserve pas."""
+        claims = self._claims([self._pr(26710, self.OCC)], 26585)
+        self.assertEqual(claims, [],
+                         "#26710 est plus jeune que #26585 : elle ne bloque pas l'ainnee")
+
+    def test_older_claimant_still_blocks_the_younger_pr(self):
+        """Examiner la plus jeune (#26710) : l'ainnee (#26585) garde la main."""
+        claims = self._claims([self._pr(26585, self.OCC)], 26710)
+        self.assertEqual(len(claims), 1,
+                         "#26585 est plus ancienne : la plus jeune cede")
+
+    def test_without_examined_pr_every_claimant_reserves(self):
+        """Sans reference d'age (preflight hors PR), tout claimant reserve."""
+        claims = self._claims([self._pr(26710, self.OCC)], None)
+        self.assertEqual(len(claims), 1)
+
+    def test_examined_pr_never_reserves_against_itself(self):
+        """L'egalite est l'examinee elle-meme : jamais d'auto-blocage."""
+        claims = self._claims([self._pr(26585, self.OCC)], 26585)
+        self.assertEqual(claims, [])
+
+    def test_malformed_number_stays_fail_closed(self):
+        """Un claimant sans numero lisible ne saute pas la regle : il reserve."""
+        claims = self._claims([{"files": [
+            {"path": self.OCC, "additions": 10, "deletions": 0}]}], 26585)
+        self.assertEqual(len(claims), 1,
+                         "numero illisible = pas d'age connu = reserve (fail-closed)")
+
+
+# ------------------------------------------- collision preexistante de la base (#27576)
+
+APP = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+SL = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
+
+
+class TestPreexistingBaseCollision(unittest.TestCase):
+    """#27576 -- le jumeau d'un item deja assis ne HERITE pas la collision.
+
+    Mesure fondatrice : #26603 ajoute le jumeau C# de
+    `App-02-GraphColoring-Statistical-Validity-Python.ipynb` (deja sur main)
+    et se voyait imputer `App-02-GraphColoring-CSharp` / `-Python`, occupants
+    d'AUTRES sujets du meme slot -- une double occupation LIVREE sur main,
+    AVANT la PR. Idem #26617 sur SL-12b (`SL-12b-PavlovDLS-Reproduction`).
+    Le passeur `merge_ready` ecartait deux PRs approuvees en
+    `slot-collision-on-merge:taken_on_base`.
+
+    Le contrat : quand le jumeau de la cible siege deja dans le slot sur la
+    base, les autres occupants de la base forment une collision PREEXISTANTE
+    -- etat distinct `preexisting_on_base`, NON bloquant, imprime avec ses
+    chemins. Les autres sources restent bloquantes, et un item NEUF sur un
+    slot occupe reste `taken_on_base`.
+    """
+
+    def test_app02_twin_joins_its_sibling_without_inheriting_the_collision(self):
+        """Cas reel #26603 : jumeau C# d'un item assis, deux autres sujets herites."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                APP + "/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+                APP + "/App-02-GraphColoring-CSharp.ipynb",
+                APP + "/App-02-GraphColoring-Python.ipynb",
+            ])
+            _write(repo, APP + "/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0,
+                             "une PR de jumeau n'herite pas la collision preexistante\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("preexisting_on_base", r.stdout)
+            # Signalement : la collision heritee est imprimee AVEC ses chemins.
+            self.assertIn("App-02-GraphColoring-CSharp.ipynb", r.stdout)
+            self.assertIn("App-02-GraphColoring-Python.ipynb", r.stdout)
+            self.assertNotIn("TAKEN_ON_BASE", r.stdout)
+
+    def test_sl12b_twin_joins_its_sibling_without_inheriting_the_collision(self):
+        """Cas reel #26617 : jumeau C# de SL-12b-SpectralLogicSynthesis, PavlovDLS herite."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                SL + "/SL-12b-PavlovDLS-Reproduction.ipynb",
+                SL + "/SL-12b-PavlovDLS-Reproduction-output.ipynb",
+                SL + "/SL-12b-SpectralLogicSynthesis.ipynb",
+            ])
+            _write(repo, SL + "/SL-12b-SpectralLogicSynthesis-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0,
+                             "une PR de jumeau n'herite pas la collision preexistante\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("preexisting_on_base", r.stdout)
+            self.assertIn("SL-12b-PavlovDLS-Reproduction.ipynb", r.stdout)
+            self.assertNotIn("TAKEN_ON_BASE", r.stdout)
+
+    def test_new_item_on_an_occupied_slot_stays_taken_on_base(self):
+        """Temoin negatif : sans jumeau dans la base, la collision est imputee.
+
+        C'est exactement la forme du controle positif historique
+        (`test_addition_on_a_slot_taken_on_base_reddens`), rejoue sur la
+        forme App-02 : le slot porte d'autres sujets, la cible n'y a AUCUN
+        jumeau -- l'etat doit rester `taken_on_base` et rougir."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                APP + "/App-02-GraphColoring-CSharp.ipynb",
+                APP + "/App-02-GraphColoring-Python.ipynb",
+            ])
+            _write(repo, APP + "/App-02-NouveauSujet-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+            self.assertNotIn("preexisting_on_base", r.stdout)
+
+    def test_twin_of_base_item_with_open_pr_claim_stays_blocking(self):
+        """Temoin negatif : une PR OUVERTE sur le slot reste bloquante, jumeau ou pas.
+
+        Le jumeau Python siege deja sur la base (condition #27576 remplie),
+        mais une PR ouverte ecrit un autre sujet du slot : le conflit
+        `reserved_by_open_pr` doit tenir -- le statut non bloquant ne vaut
+        que pour les occupants de la BASE."""
+        target = APP + "/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb"
+        twin = APP + "/App-02-GraphColoring-Statistical-Validity-Python.ipynb"
+        other = APP + "/App-02-GraphColoring-CSharp.ipynb"
+        claims = csr.pr_claims([{"number": 27000, "files": [
+            {"path": other, "additions": 8, "deletions": 0}]}])
+        occ = csr.merge(csr.group_by_slot([twin], csr.SOURCE_BASE), claims)
+
+        v = csr.verdict_for(target, occ, set())
+        self.assertEqual(v["verdict"], "conflict")
+        self.assertEqual(v["state"], "reserved_by_open_pr")
+        # merge_ready nomme la cause par conflicts[0] : ce doit etre le
+        # bloquant, jamais le rappel informatif.
+        self.assertEqual(v["conflicts"][0]["state"], "reserved_by_open_pr")
+
+    def test_preexisting_state_is_carried_in_json_without_conflict_count(self):
+        """Le payload machine : etat distinct present, compteur de conflits a zero.
+
+        merge_ready ecarte sur `verdict == "conflict"` et nomme par
+        `conflicts[0]["state"]` : la collision heritee ne doit alimenter ni
+        l'un ni l'autre, tout en restant lisible dans `verdicts`."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                APP + "/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+                APP + "/App-02-GraphColoring-CSharp.ipynb",
+            ])
+            _write(repo, APP + "/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["conflicts"], 0)
+            self.assertEqual(doc["states"].get("preexisting_on_base"), 1)
+            self.assertEqual(doc["verdicts"][0]["verdict"], "ok")
+            self.assertEqual(doc["verdicts"][0]["state"], "preexisting_on_base")
+            self.assertEqual(
+                len(doc["verdicts"][0]["conflicts"]), 1,
+                "la collision heritee reste rappelee avec ses chemins")
+
+
+class TestPapermillOutputIsNotAnItem(unittest.TestCase):
+    """#28410 : la sortie papermill ne prend aucun slot en mode revision.
+
+    Cas reel : la PR #28392 renomme `SL-12b-PavlovDLS-Reproduction.ipynb` en
+    `SL-12c-PavlovDLS-Reproduction.ipynb` ET sa sortie `-output.ipynb` avec
+    lui. En mode revision, `added_notebooks()` retenait les DEUX ajouts, et
+    `_scan_slot()` leur donnait la meme cle (`SL-12c`) : le carnet et sa
+    propre sortie se signalaient l'un l'autre en `duplicate_within_revision`,
+    et la porte de merge retenait une PR qui ne prend aucun numero.
+
+    Le filtre `_is_source_ipynb` existe deja pour le balayage `--scan-main` ;
+    il est ici applique au mode revision (cibles, occupants, base). Une seule
+    definition d'item : un carnet source.
+    """
+
+    DIR = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
+    OLD = DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb"
+    OLD_OUT = DIR + "/SL-12b-PavlovDLS-Reproduction-output.ipynb"
+    NEW = DIR + "/SL-12c-PavlovDLS-Reproduction.ipynb"
+    NEW_OUT = DIR + "/SL-12c-PavlovDLS-Reproduction-output.ipynb"
+
+    def _moved_repo(self, repo: Path) -> str:
+        base = _init_repo(repo, [self.OLD, self.OLD_OUT])
+        _git(repo, "mv", self.OLD, self.NEW)
+        _git(repo, "mv", self.OLD_OUT, self.NEW_OUT)
+        _commit(repo, "renomme le carnet et sa sortie papermill")
+        return base
+
+    def test_rename_of_notebook_and_its_output_is_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._moved_repo(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertNotIn("duplicate_within_revision", r.stdout)
+
+    def test_output_is_not_examined_as_a_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = self._moved_repo(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["targets_examined"], 1,
+                             "seule la SOURCE est une cible : %s" % r.stdout)
+            self.assertEqual(doc["conflicts"], 0, r.stdout)
+            examined = [v.get("target") or v.get("path")
+                        for v in doc.get("verdicts", [])]
+            self.assertNotIn(self.NEW_OUT, examined, r.stdout)
+
+    def test_output_alone_is_not_a_target(self):
+        """Un `-output.ipynb` ajoute seul ne prend aucun slot non plus."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [self.OLD])
+            _write(repo, self.NEW_OUT)
+            _commit(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["targets_examined"], 0, r.stdout)
+            self.assertEqual(doc["conflicts"], 0, r.stdout)
+
+    def test_output_with_kernel_suffix_is_not_a_target(self):
+        """`-output-Python.ipynb` (sweep de nomenclature) reste une sortie.
+
+        Variante reprise de #27309 : la marque `-output` n'est plus terminale
+        quand un suffixe de noyau la suit. Le mode revision doit l'ecarter
+        comme le balayage `--scan-main`, sans quoi la definition unique de
+        l'item ne tient plus.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [self.OLD])
+            _write(repo, self.DIR + "/SL-12c-PavlovDLS-Reproduction-output-Python.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["targets_examined"], 0, r.stdout)
+            self.assertEqual(doc["conflicts"], 0, r.stdout)
+
+    def test_source_is_still_a_target(self):
+        """Temoin negatif du dispatch : le SOURCE garde toute sa vigilance.
+
+        Deux sources distinctes du meme slot (pas deux rendus du meme item)
+        doivent toujours rougir : le filtre porte sur la NATURE du fichier,
+        pas sur le slot.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [self.OLD])
+            _write(repo, self.NEW)
+            _write(repo, self.DIR + "/SL-12c-Other.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1,
+                             "deux sources du meme slot doivent toujours rougir\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("duplicate_within_revision", r.stdout)
 
 
 if __name__ == "__main__":

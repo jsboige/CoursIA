@@ -339,3 +339,5 @@ Pour reprendre: lire l'issue, le notebook, les backtests -> identifier ou on en 
 ## Prochaines etapes
 {next_steps pour la prochaine iteration si IN_PROGRESS}
 ```
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../docs/qc/qc-pieges-mesures.md).

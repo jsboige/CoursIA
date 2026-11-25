@@ -107,6 +107,16 @@ jobs:
             print(f'FAIL {path}: invalid JSON - {e}')
             sys.exit(1)
         except nbformat.ValidationError as e:
+            # Criteres 4 de #25136 : la classe des identifiants de cellule
+            # n'est plus toleree depuis que le compte de base est a 0
+            # (recensement du body de l'issue). Un id vide ou hors motif
+            # leve ici pattern sur la propriete id.
+            # Les autres classes gardent leur WARN : elles ont leur propre
+            # compte de base (14 carnets en additionalProperties au
+            # 2026-11-16, cf #24090) et ne relevent pas de cette bascule.
+            if getattr(e, 'validator', None) == 'pattern' and 'id' in [str(p) for p in getattr(e, 'path', [])]:
+                print(f'FAIL {path}: invalid cell id - {e.message[:100]}')
+                sys.exit(1)
             print(f'WARN {path}: nbformat warning - {e.message[:100]}')
         except Exception as e:
             print(f'FAIL {path}: {e}')
