@@ -234,3 +234,48 @@ def test_approved_without_dossier_passe_l_env_de_lecture(monkeypatch):
     monkeypatch.setattr(awd.subprocess, "run", _fake_run)
     awd._gh_json("repos/jsboige/CoursIA/pulls/1")
     assert vu["env"] == {"GH_TOKEN": "ghs_app"}
+
+
+# --- 6. l'absence de coffre ne tue pas l'organe ----------------------------
+
+def test_le_coffre_absent_retombe_sur_le_jeton_normal(monkeypatch):
+    """`open_vault` leve `SystemExit` quand `pykeepass` est absent.
+
+    `SystemExit` herite de `BaseException`, pas d'`Exception` : un
+    `except Exception` seul ne le rattrape pas, et l'organe meurt au lieu de
+    retomber sur le jeton normal. Mesure sur le runner (PR #28462) : deux
+    tests de `test_belt_queues.py` en echec, `SystemExit: 2`, la lecture de
+    masse qui appelle `gh_open_prs` ne rend plus jamais son tableau.
+    """
+    import types
+
+    faux = types.ModuleType("agent_keyring")
+
+    def _open_vault(quiet: bool = False):
+        raise SystemExit(2)
+
+    faux.open_vault = _open_vault
+    faux.DEFAULT_GROUP = "MyIA"
+    monkeypatch.setitem(sys.modules, "agent_keyring", faux)
+
+    assert gh_identity._app_id_coffre("coursia-lane-ai-01") is None
+
+
+def test_le_jeton_de_lecture_tombe_sur_l_env_de_base(monkeypatch):
+    """Sans App lisible, `read_env` rend l'environnement de base intact."""
+    import types
+
+    faux = types.ModuleType("agent_keyring")
+
+    def _open_vault(quiet: bool = False):
+        raise SystemExit(2)
+
+    faux.open_vault = _open_vault
+    faux.DEFAULT_GROUP = "MyIA"
+    monkeypatch.setitem(sys.modules, "agent_keyring", faux)
+    monkeypatch.setattr(gh_identity, "app_slug", lambda hostname=None: "coursia-lane-ai-01")
+    monkeypatch.setattr(gh_identity, "app_key_dir",
+                        lambda base=None: Path("X") / "absent")
+
+    env = gh_identity.read_env({"GH_TOKEN": "ghp_normal"})
+    assert env["GH_TOKEN"] == "ghp_normal"

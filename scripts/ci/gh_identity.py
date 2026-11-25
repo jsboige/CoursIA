@@ -382,7 +382,11 @@ def _app_id_coffre(slug: str) -> str | None:
         kp = agent_keyring.open_vault(quiet=True)
         entree = agent_keyring.find_entry(
             kp, f"{APP_VAULT_ENTRY}{slug}", agent_keyring.DEFAULT_GROUP)
-    except Exception as exc:  # pragma: no cover - coffre absent, passphrase absente
+    except (Exception, SystemExit) as exc:  # pragma: no cover - coffre absent, module absent
+        # `SystemExit` inclus : `open_vault` leve `SystemExit(EXIT_UNKNOWN)`
+        # quand le module `pykeepass` est absent, et `SystemExit` herite de
+        # `BaseException` -- un `except Exception` seul laisse l'exception
+        # remonter et tue l'organe au lieu de retomber sur le jeton normal.
         print(f"GH-IDENTITY (INFO): coffre illisible pour l'App {slug} : "
               f"{type(exc).__name__}", file=sys.stderr)
         return None
