@@ -423,15 +423,14 @@ Pour comparer : dans un dilemme répété, une punition perpétuelle ou un « œ
 layout: dense
 ---
 
-# Preuve formelle : jeux repetes en Lean
+# Jeux répétés : du seuil au théorème folk
 
-## Grim trigger certifie
+## Ce que Lean établit pour le dilemme du prisonnier
 
-- [Dynamics-02-Jeux-Repetes-Lean-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) : compagnon formel du 06c
-  - Jeu de stage, flux actualises, `grim_trigger_is_NE`
-  - Seuil de credibilite $\delta\geq\frac{T-R}{T-P}$ dans le modèle de punition permanente.
+- [`grim_trigger_sustains_iff`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/GrimTrigger.lean) compare le flux coopératif au flux après défection.
+- [`grim_isSPE_iff`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Perfect.lean) établit l’équivalence entre le même seuil et l’équilibre parfait en sous-jeux du profil grim trigger.
 
-## Ce qui reste ouvert
+## Au-delà du dilemme : le résultat général
 
 > **Théorème folk (version à surveillance parfaite).** Dans un jeu fini répété, sous l’hypothèse de pleine dimension des gains réalisables, tout gain réalisable strictement au-dessus des niveaux minimax individuels peut être soutenu en équilibre parfait en sous-jeux pour des joueurs suffisamment patients.
 
@@ -441,13 +440,17 @@ layout: dense
 layout: default
 ---
 
-# Punition permanente
+# Punition permanente : un équilibre dans chaque sous-jeu
 
-> **Énoncé.** Avec $T>R>P>S$ et un facteur d’actualisation $0<\delta<1$, la coopération sous punition permanente résiste à une déviation si $\delta\geq(T-R)/(T-P)$.
+> **Énoncé.** Dans le dilemme du prisonnier infiniment répété ($T>R>P>S$, $0\leq\delta<1$), le profil grim trigger — coopérer tant que personne n’a fait défection, puis faire défection pour toujours — est un équilibre parfait en sous-jeux **si et seulement si** $\delta\geq\frac{T-R}{T-P}$.
 
 ## Stratégie de preuve
 
-Comparer $R/(1-\delta)$ à $T+\delta P/(1-\delta)$. Une fois la punition engagée, la défection mutuelle est un équilibre du jeu de base. Le théorème folk général demande une construction distincte.
+1. **Avant toute défection**, comparer $R/(1-\delta)$ à $T+\delta P/(1-\delta)$ : sous le seuil, dévier rapporte dès le départ.
+2. **Après une défection**, la punition est irréversible et, face à une défection, faire défection rapporte plus que coopérer ($P>S$).
+3. **À tout historique**, avec des gains bornés et $\delta<1$, le principe de déviation en un coup étend la vérification locale aux déviations de stratégie entières : l’effet de la fin du flux tend vers zéro.
+
+*Notebook : [Dynamics-02 — Jeux répétés en Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb).*
 
 ---
 layout: dense
