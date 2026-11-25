@@ -191,8 +191,10 @@ DOMAIN_COVERAGE_PAIR_RE = re.compile(
 # « 3 lignes/colonnes ». Le nombre est RELATIONNEL : il est suivi d'une
 # seconde dimension sur la meme enumeration. Un « 140 lignes » seul, un
 # « 9 lignes de code » ou un « 64 lignes » sans colonnes restent des
-# compteurs d'artefacts -- et le prefixe « le carnet contient N lignes, ... »
-# reste signale par le garde de prefixe de _is_domain_model_quantity.
+# compteurs d'artefacts -- et un inventaire d'artefact a deux dimensions
+# (« le carnet contient N lignes, N colonnes », « le CSV compte N lignes,
+# N colonnes ») reste signale par le garde de prefixe de
+# _is_domain_model_quantity.
 DOMAIN_GRID_ENUMERATION_RE = re.compile(
     r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
     r"\s*(?:[,+/]\s*|[x×]\s*|\bet\s+)"
@@ -215,14 +217,25 @@ def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
     for pattern in patterns:
         for match in pattern.finditer(line):
             # Un inventaire attribué à un artefact reste signalé ; une simple
-            # mention du carnet présentant un modèle ne suffit pas.
-            prefix = line[line.rfind(";", 0, span[0]) + 1:span[0]]
+            # mention du carnet présentant un modèle ne suffit pas. Le préfixe
+            # est « nom de l'artefact + verbe de dénombrement », immédiatement
+            # avant le compte ; ses chiffres et espaces de fin sont retirés,
+            # sinon « le CSV compte 51 561 lignes » le laisse finir par « 51 ».
+            # Un fichier de données nommé est aussi un artefact : ses
+            # « N lignes × M colonnes » décrivent le fichier, pas un modèle.
+            prefix = re.sub(
+                r"[\d\s]*$", "", line[line.rfind(";", 0, span[0]) + 1:span[0]]
+            )
             if re.search(
-                r"\b(?:notebook|carnet|fichier\s+source|source\s+file)\s+"
-                r"(?:contient|compte|comprend|possède|possede|a|fait|has|contains|counts)"
+                r"\b(?:notebook|carnet|fichier|source\s+file|sortie|output|"
+                r"registre|ledger|csv|readme|d[ée]p[ôo]t|repo)\s+"
+                r"(?:contient|compte|comprend|poss[èe]de|a|fait|affiche|"
+                r"documente|annonce|has|contains|counts|lists)"
                 r"(?:\s+(?:aussi|également|egalement|also))?\s*$"
                 r"|\b(?:matrice|matrix)\s+de\s+donn[ée]es\s+du\s+"
-                r"fichier\s+source\s+a\s*$",
+                r"fichier\s+source\s+a\s*$"
+                r"|`?[\w./\\-]+\.(?:csv|tsv|json|parquet|dat|txt|xlsx?)`?"
+                r"\s*\|?\s*$",
                 prefix, re.IGNORECASE,
             ):
                 continue

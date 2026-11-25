@@ -157,6 +157,33 @@ def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
             "Le fichier source a 140 lignes, et 9 colonnes.",
             ["140 lignes"],
         ),
+        # Autres noms d'artefacts et verbes de denombrement : l'inventaire a
+        # deux dimensions reste signale quel que soit le support cite.
+        (
+            "Le fichier fait 1900 lignes, 2 colonnes.",
+            ["1900 lignes"],
+        ),
+        (
+            "La sortie affiche 730 lignes, 4 colonnes.",
+            ["730 lignes"],
+        ),
+        (
+            "Le registre a 1041 lignes, 2 colonnes.",
+            ["1041 lignes"],
+        ),
+        (
+            "Le CSV compte 51 561 lignes, 29 colonnes.",
+            ["561 lignes"],
+        ),
+        (
+            "Le README documente 245 lignes, 3 colonnes.",
+            ["245 lignes"],
+        ),
+        # Un fichier de donnees nomme : ses dimensions decrivent le fichier.
+        (
+            "| `diving_results.csv` | 25 lignes × 7 colonnes : seed, kA/k, nA/nB |",
+            ["25 lignes"],
+        ),
     ],
 )
 def test_domain_context_does_not_hide_artifact_inventory_counts(line, expected):
