@@ -1162,7 +1162,9 @@ des conoyaux `0 → coker dⁿ_{X₁} → coker dⁿ_{X₂} → coker dⁿ_{X₃
 suivants —, et (b) la monicité des flèches de conoyaux, qui passe par
 `mono_cokernel_map_of_isPullback` : le carré des unités doit être un pullback.
 `hsep` ne porte que sur le terme **droit** ; la séparéité du terme gauche est
-une hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1`. -/
+une hypothèse à établir (ou à ajouter à l'énoncé) avant même le cran `1`.
+**Réfutée par la Partie 102 ci-dessous** : la séparéité du terme gauche n'est
+pas requise. -/
 theorem shortExact_godementCanonicalObj_zero
     {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) :
     (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f 0)
@@ -1271,7 +1273,6 @@ theorem godementUnits_pullback {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (h : godementHomApp S.f U z = (toGodement S.X₂).app (op U) y) :
     ∃ x : ↥(S.X₁.obj (op U)),
       S.f.app (op U) x = y ∧ (toGodement S.X₁).app (op U) x = z := by
-  have hmono : Mono S.f := hS.mono_f
   -- L'unité de `X₃` est injective sur l'ouvert `U` : c'est la séparéité du
   -- terme droit, et la seule séparéité employée.
   have hinj : Function.Injective ((toGodement S.X₃).app (op U)) :=
@@ -1315,7 +1316,6 @@ theorem godementUnits_pullback {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
   have hgzero : S.g.app (op U) y = 0 := hinj hunit
   -- L'exactitude de la suite donne `x₀ ∈ X₁(U)` avec `f(x₀) = y`.
   have hx0 : ∃ x : ↥(S.X₁.obj (op U)), S.f.app (op U) x = y := by
-    have hHasHom : S.HasHomology := hS.exact.hasHomology
     have hU : (ShortComplex.mk (S.f.app (op U)) (S.g.app (op U))
         (shortComplex_app_zero U)).Exact :=
       (shortComplex_exact_iff_app (S := S)).mp hS.exact U
