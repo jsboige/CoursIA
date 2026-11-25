@@ -24,10 +24,12 @@ from server import (
     _extract_stats,
     _get_credentials,
     _rate_limit,
+    attach_library,
     create_backtest,
     create_compile,
     create_file,
     create_project,
+    delete_file,
     list_backtests,
     list_projects,
     read_backtest,
@@ -684,9 +686,104 @@ class TestReadProject:
             result = read_project(42)
         assert result["projectId"] == 42
         assert result["organizationId"] == "org1"
-        assert result["files"] == [{"name": "main.py", "size": 500},
-                                   {"name": "util.py", "size": 0}]
+        # `isLibrary` distinguishes a shared library from a local file: it is
+        # the proof that the attachment happened (#28076).
+        assert result["files"] == [{"name": "main.py", "size": 500, "isLibrary": False},
+                                   {"name": "util.py", "size": 0, "isLibrary": False}]
         assert mock_post.call_args_list[1].args[0].endswith("/files/read")
+
+    def test_surfaces_the_attached_libraries_and_their_flag(self):
+        """The attached libraries are listed, and their files carry
+        `isLibrary: true` — a green compile proves nothing, the listing does."""
+        project = _mock_api_response({
+            "projects": [{
+                "projectId": 42,
+                "name": "Consumer",
+                "organizationId": "org-consumer",
+                "libraries": [
+                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
+                ],
+            }]
+        })
+        files = _mock_api_response({
+            "files": [
+                {"name": "main.py", "content": "x" * 10},
+                {"name": "pouches_pcm.py", "content": "y" * 20, "isLibrary": True},
+            ]
+        })
+        with patch("requests.post", side_effect=[project, files]):
+            result = read_project(42)
+        assert result["libraries"] == [
+            {"projectId": 37966475, "libraryName": "SharedPCM", "access": True}
+        ]
+        library_files = [f for f in result["files"] if f["isLibrary"]]
+        assert library_files == [{"name": "pouches_pcm.py", "size": 20, "isLibrary": True}]
+
+
+@patch.dict("os.environ", _DUMMY_ENV)
+class TestAttachLibrary:
+    def test_attaches_by_numeric_id_and_returns_the_proof(self):
+        """The library is designated by its NUMERIC id — QC rejects the name
+        ("Given library ID is not valid")."""
+        update = _mock_api_response({"success": True})
+        project = _mock_api_response({
+            "projects": [{
+                "projectId": 42,
+                "libraries": [
+                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
+                ],
+            }]
+        })
+        files = _mock_api_response({
+            "files": [
+                {"name": "main.py", "content": "x" * 10},
+                {"name": "pouches_pcm.py", "content": "y" * 20, "isLibrary": True},
+            ]
+        })
+        with patch("requests.post", side_effect=[update, project, files]) as mock_post:
+            result = attach_library(42, 37966475)
+
+        assert mock_post.call_args_list[0].args[0].endswith("/projects/update")
+        assert mock_post.call_args_list[0].kwargs["json"] == {
+            "projectId": 42,
+            "libraries": [37966475],
+        }
+        assert result["libraries"] == [
+            {"projectId": 37966475, "libraryName": "SharedPCM", "access": True}
+        ]
+        assert result["libraryFiles"] == ["pouches_pcm.py"]
+
+    def test_cross_organization_attachment_is_accepted(self):
+        """The library may live in another organization than the consumer."""
+        update = _mock_api_response({"success": True})
+        project = _mock_api_response({
+            "projects": [{
+                "projectId": 42,
+                "libraries": [
+                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
+                ],
+            }]
+        })
+        files = _mock_api_response({"files": []})
+        with patch("requests.post", side_effect=[update, project, files]):
+            result = attach_library(42, 37966475)
+        assert result["libraries"][0]["access"] is True
+
+
+@patch.dict("os.environ", _DUMMY_ENV)
+class TestDeleteFile:
+    def test_deletes_the_named_file(self):
+        """The old local copy of a shared module is dropped once the library
+        is attached — the consumer then reads the single source."""
+        mock_resp = _mock_api_response({"success": True})
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            result = delete_file(42, "pouches_pcm.py")
+        assert mock_post.call_args.kwargs["json"] == {
+            "projectId": 42,
+            "name": "pouches_pcm.py",
+        }
+        assert mock_post.call_args.args[0].endswith("/files/delete")
+        assert result == {"success": True, "name": "pouches_pcm.py"}
 
 
 @patch.dict("os.environ", _DUMMY_ENV)
