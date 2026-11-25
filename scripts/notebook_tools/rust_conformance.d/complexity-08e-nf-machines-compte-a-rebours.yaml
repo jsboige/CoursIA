@@ -1,0 +1,127 @@
+# Conformité différentielle de Complexity-08e-NF-MachinesCompteARebours (portage Rust, kernel evcxr, std seule).
+#
+# Écrite à la livraison par myia-ai-01:CoursIA-2 à partir des sorties COMMITÉES
+# des deux carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python), une mesure par cellule qui imprime
+# côté Python, égalité stricte du texte.
+#
+# Deux points meritent d'etre notes pour le lecteur :
+#   - la campagne de 200 tirages rejoue le flux MT19937 de CPython a l'identique
+#     (init_by_array de CPython : init_genrand(19650218) puis les deux passes non
+#     lineaires, graine 20261120) ; les 200 bases sont donc les memes que celles
+#     du jumeau Python, et le pas maximal pour une refutation (140) coincide ;
+#   - le SHA-256 du jumeau Rust est une implementation ecrite pour ce carnet
+#     (std seule, aucune crate) : elle reproduit l'empreinte de reference du
+#     jumeau Python sur la formule-jouet.
+#
+# Le cote C# n'existe pas pour ce carnet (pas de jumeau C# dans la famille 08e) :
+# aucune mesure C# n'est declaree, conformement aux entrees sans troisieme cote.
+- name: "Complexity-08e-NF-MachinesCompteARebours"
+  family: "InformationCalcul/Complexity"
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08e-NF-MachinesCompteARebours-Python.ipynb
+  rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08e-NF-MachinesCompteARebours-Rust.ipynb
+  measures:
+    - id: c4_text
+      description: "Sortie de la cellule 4 (fermeture K1/K2/K3), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c5_text
+      description: "Sortie de la cellule 5 (machine a compte a rebours), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c6_text
+      description: "Sortie de la cellule 6 (campagne de 200 tirages a graine fixee), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c9_text
+      description: "Sortie de la cellule 9 (chaine de compression 210 -> 184), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c11_text
+      description: "Sortie de la cellule 11 (empreinte SHA-256 de la formule-jouet), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c16_text
+      description: "Sortie de la cellule 16 (exercice 1, stub executable), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c18_text
+      description: "Sortie de la cellule 18 (exercice 2, stub executable), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c20_text
+      description: "Sortie de la cellule 20 (exercice 3, stub executable), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
