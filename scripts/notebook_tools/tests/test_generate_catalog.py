@@ -2253,7 +2253,7 @@ class TestGenerateMarkdownReport:
         entries = [
             _catalog_entry("Search/Part1-Foundations/nb-a.ipynb"),
             _catalog_entry("Search/nb-root.ipynb"),
-            _catalog_entry("ML/nb-c.ipynb", status="NO_CODE", maturity="DRAFT"),
+            _catalog_entry("ML/nb-c.ipynb", status="NO_CODE", maturity="DRAFT", kernel="C#"),
             _catalog_entry("ML/nb-d.ipynb", status="BROKEN", maturity="ALPHA"),
         ]
         report = generate_markdown_report(entries, repo_root=tmp_path)
@@ -2264,6 +2264,20 @@ class TestGenerateMarkdownReport:
         assert rows, "aggregate table missing"
         assert sum(int(n) for _, _, n in rows) == len(entries) == 4
         assert "| **TOTAL** | | **4** |" in report
+        # Kernel Summary must partition the same complete catalog population.
+        kernel_section = report.split("## Kernel Summary")[1].split(
+            "## Maturity Summary"
+        )[0]
+        kernel_counts = _re.findall(
+            r"^- \*\*([^*]+)\*\*: (\d+)$", kernel_section, _re.M
+        )
+        assert {name: int(count) for name, count in kernel_counts if name != "TOTAL"} == {
+            "C#": 1, "Python 3": 3,
+        }
+        assert sum(
+            int(count) for name, count in kernel_counts if name != "TOTAL"
+        ) == len(entries)
+        assert "- **TOTAL**: 4" in kernel_section
         # Status Summary (first section only) sums to the same total.
         # The explicit `- **TOTAL**: 4` bullet is excluded (it is the
         # reconciliation line, not a status bucket).

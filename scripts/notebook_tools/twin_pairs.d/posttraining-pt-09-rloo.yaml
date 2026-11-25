@@ -1,0 +1,10 @@
+- name: PostTraining PT 09 RLOO
+  family: GenAI/PostTraining
+  python: MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "TorchSharp entraîne les trois MLP et Microsoft.Z3 vérifie le prédicat des récompenses sur 2 400 cas. Les deux versions comparent les mêmes méthodes et budgets."
+  known_differences:
+  - "Les générateurs managés et PyTorch produisent des échantillons différents. Les résultats sont ceux de chaque exécution."
+  - "La figure de la trajectoire est intégrée en SVG dans le jumeau C#."
