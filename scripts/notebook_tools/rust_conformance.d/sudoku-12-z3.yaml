@@ -1,0 +1,518 @@
+- name: "Sudoku-12 Z3"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Rust.ipynb
+  measures:
+    - id: import_banner
+      description: >-
+        Bandeau d'import du solveur : les cotes Python et Rust chargent Z3 et
+        publient le meme message. Prouve que le port Rust ne contourne pas le
+        solveur (crate `z3` 0.24.0, moteur libz3 embarque).
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: '(Z3 importe avec succes)'
+          transform: text
+        rust:
+          cell: 1
+          pattern: '(Z3 importe avec succes)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# charge le moteur par `#r` vers la DLL `Microsoft.Z3`
+            du sous-module `SymbolicAI/SMT/Z3.Linq` et n'imprime aucun bandeau :
+            sa cellule 1 n'a pas de sortie. Declare ABSENT, pas mesure.
+    - id: corpus_anchor_easy51
+      description: >-
+        Ancre de presence du fichier canonique `Sudoku_Easy51.txt` dans le
+        listing du dossier `Puzzles/` publie par la cellule de chargement.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "'(Sudoku_Easy51\\.txt)'"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "'(Sudoku_Easy51\\.txt)'"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ne lit pas le dossier `Puzzles/` : ses puzzles sont
+            codes en dur dans le carnet. La grandeur n'y est pas publiee.
+    - id: corpus_anchor_hardest
+      description: >-
+        Ancre de presence du fichier canonique `Sudoku_hardest.txt` dans le
+        listing du dossier `Puzzles/` publie par la cellule de chargement.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "'(Sudoku_hardest\\.txt)'"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "'(Sudoku_hardest\\.txt)'"
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `corpus_anchor_easy51` : le jumeau C# ne lit pas
+            le dossier `Puzzles/`.
+    - id: corpus_anchor_top95
+      description: >-
+        Ancre de presence du fichier canonique `Sudoku_top95.txt` dans le
+        listing du dossier `Puzzles/` publie par la cellule de chargement.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "'(Sudoku_top95\\.txt)'"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "'(Sudoku_top95\\.txt)'"
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `corpus_anchor_easy51` : le jumeau C# ne lit pas
+            le dossier `Puzzles/`.
+    - id: corpus_listing_current
+      description: >-
+        Listing courant du dossier `Puzzles/`. Le cote Rust publie la liste
+        d'aujourd'hui (six fichiers) ; la sortie committée du jumeau Python
+        date d'une execution anterieure a l'ajout de trois fichiers generes
+        (`Sudoku_gen_facile.txt`, `Sudoku_gen_moyen.txt`,
+        `Sudoku_gen_difficile.txt`) : c'est un instantane perime du meme
+        dossier, pas une divergence de portage. La grandeur — le listing
+        courant — n'est donc declaree que du cote Rust ; les trois ancres
+        ci-dessus prouvent l'accord sur les fichiers canoniques.
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: >-
+            La sortie committée du jumeau Python (cellule 6) date d'avant
+            l'ajout de `Sudoku_gen_facile.txt`, `Sudoku_gen_moyen.txt` et
+            `Sudoku_gen_difficile.txt` dans `MyIA.AI.Notebooks/Sudoku/Puzzles/`
+            : elle liste trois fichiers la ou le dossier en contient six
+            aujourd'hui. La grandeur — le listing courant — n'est pas publiee
+            par ce cote. Declare ABSENT, pas mesure (le listing stale est
+            nomme ici pour qu'aucune information ne soit dissimulee).
+        rust:
+          cell: 6
+          pattern: '(Fichiers disponibles: \[.*\])'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `corpus_anchor_easy51` : le jumeau C# ne publie
+            aucun listing du dossier `Puzzles/`.
+    - id: puzzles_easy_count
+      description: >-
+        Nombre de puzzles faciles charges depuis le corpus (10) — entree du
+        probleme, independante du langage et du solveur.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: 'Puzzles chargés: (\d+) faciles'
+          transform: int
+        rust:
+          cell: 9
+          pattern: 'Puzzles chargés: (\d+) faciles'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne charge aucun corpus de puzzles : sa grille de
+            reference est codee en dur. La grandeur n'y est pas publiee.
+    - id: puzzles_hard_count
+      description: >-
+        Nombre de puzzles difficiles charges depuis le corpus (11) — entree du
+        probleme, independante du langage et du solveur.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: '(\d+) difficiles'
+          transform: int
+        rust:
+          cell: 9
+          pattern: '(\d+) difficiles'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `puzzles_easy_count` : le jumeau C# ne charge
+            aucun corpus de puzzles.
+    - id: puzzle_digits_before_resolution
+      description: >-
+        Chiffres du puzzle difficile publie avant resolution (81 cases, les
+        vides en `.`). Meme instance des deux cotes : le solveur est mis sur la
+        meme entree.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Puzzle difficile:(.*?)R.solu'
+          transform: digits
+        rust:
+          cell: 12
+          pattern: 'Puzzle difficile:(.*?)R.solu'
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# imprime sa grille au format tableau .NET (`| 9     2 |
+            ...`) sur un puzzle different de celui des cotes Python et Rust
+            (9 2 _ 5 4 3 ... contre 8 5 _ ... ). La grandeur n'y est pas
+            comparable : Declare ABSENT, pas mesure.
+    - id: solution_digits_unique_puzzle
+      description: >-
+        Chiffres de la solution du puzzle difficile. Le puzzle est mesure
+        comme unique (une seule solution), donc la grille publiee par les
+        deux cotes doit etre identique, solveur Z3 et ordonnancement des
+        variables mis a part.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Solution:(.*)'
+          transform: digits
+        rust:
+          cell: 12
+          pattern: 'Solution:(.*)'
+          transform: digits
+        csharp:
+          absent: >-
+            Meme raison que `puzzle_digits_before_resolution` : autre puzzle,
+            autre format de grille. Declare ABSENT, pas mesure.
+    - id: resolved_true
+      description: >-
+        Le puzzle difficile est declare resolu par le solveur des deux cotes
+        (`Resolu: True`).
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'R.solu: (True)'
+          transform: text
+        rust:
+          cell: 12
+          pattern: 'R.solu: (True)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# publie un statut de solveur different
+            (`SATISFIABLE`) et sur son propre puzzle. Declare ABSENT, pas
+            mesure.
+    - id: bench_header
+      description: >-
+        En-tete de la section de comparaison des deux encodages (Z3 Int contre
+        Z3 BitVector) : meme intitule des deux cotes.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: '(=== Comparaison Z3 Int vs BitVector ===)'
+          transform: text
+        rust:
+          cell: 17
+          pattern: '(=== Comparaison Z3 Int vs BitVector ===)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# publie un tableau de benchmark (`Encodage |
+            Difficulte | Temps (ms) | Resolus | Statut`) sur cinq puzzles de
+            son propre jeu, pas une comparaison Z3 Int / Z3 BitVector sur les
+            memes puzzles. Declare ABSENT, pas mesure.
+    - id: bench_last_puzzle_anchor
+      description: >-
+        Ancre de presence du dernier puzzle du benchmark (`Puzzle 5:`) : les
+        deux cotes publient le meme nombre de puzzles compares.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: '(Puzzle 5:)'
+          transform: text
+        rust:
+          cell: 17
+          pattern: '(Puzzle 5:)'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `bench_header` : le jumeau C# ne publie pas cette
+            comparaison. Declare ABSENT, pas mesure.
+    - id: bench_label_int
+      description: >-
+        Etiquette de la mesure Z3 Int dans le benchmark (`Z3 Int:`). Les
+        durees, elles, dependent de la machine : seule l'etiquette est
+        comparee.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: '(Z3 Int:)'
+          transform: text
+        rust:
+          cell: 17
+          pattern: '(Z3 Int:)'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `bench_header` : le jumeau C# ne publie pas cette
+            comparaison. Declare ABSENT, pas mesure.
+    - id: bench_label_bitvec
+      description: >-
+        Etiquette de la mesure Z3 BitVector dans le benchmark
+        (`Z3 BitVec:`). Les durees dependent de la machine : seule l'etiquette
+        est comparee.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: '(Z3 BitVec:)'
+          transform: text
+        rust:
+          cell: 17
+          pattern: '(Z3 BitVec:)'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `bench_header` : le jumeau C# ne publie pas cette
+            comparaison. Declare ABSENT, pas mesure.
+    - id: grid_before_diagonal
+      description: >-
+        Chiffres de la grille Sudoku-X publiee avant resolution (27 cases
+        vides). Meme instance des deux cotes.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: 'Grille avant r.solution :(.*?)Solution trouv'
+          transform: digits
+        rust:
+          cell: 24
+          pattern: 'Grille avant r.solution :(.*?)Solution trouv'
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# reserve le Sudoku-X a un exercice non implemente
+            (cellule 35 : `TODO : Implementez SudokuXZ3Solver avec les
+            contraintes de diagonale`) : aucune grille diagonale n'y est
+            publiee. Declare ABSENT, pas mesure.
+    - id: diagonal_main_distinct
+      description: >-
+        La diagonale principale du Sudoku-X contient nine valeurs distinctes
+        (`tous distincts : True`) des deux cotes. C'est l'invariant robuste :
+        la grille solutionnee, elle, depend du modele (le puzzle admet
+        plusieurs solutions, donc Z3 peut en renvoyer une differente).
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: 'Diagonale principale : .*?tous distincts : (True)'
+          transform: text
+        rust:
+          cell: 24
+          pattern: 'Diagonale principale : .*?tous distincts : (True)'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `grid_before_diagonal` : le jumeau C# n'implemente
+            pas le Sudoku-X. Declare ABSENT, pas mesure.
+    - id: diagonal_secondary_distinct
+      description: >-
+        La diagonale secondaire du Sudoku-X contient nine valeurs distinctes
+        (`tous distincts : True`) des deux cotes. Meme invariant que
+        `diagonal_main_distinct`, sur l'autre diagonale.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: 'Diagonale secondaire : .*?tous distincts : (True)'
+          transform: text
+        rust:
+          cell: 24
+          pattern: 'Diagonale secondaire : .*?tous distincts : (True)'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `grid_before_diagonal` : le jumeau C# n'implemente
+            pas le Sudoku-X. Declare ABSENT, pas mesure.
+    - id: stub_exercice_somme_bloc
+      description: >-
+        Message de l'exercice a completer (contrainte de somme sur bloc) :
+        identique des deux cotes, et sans erreur volontaire.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: '(Exercice a completer : contrainte de somme sur bloc)'
+          transform: text
+        rust:
+          cell: 15
+          pattern: '(Exercice a completer : contrainte de somme sur bloc)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# publie un message different (`Exercice a completer`,
+            sans la precision sur la contrainte de somme) et n'a pas de
+            cellule a cette position. Declare ABSENT, pas mesure.
+    - id: stub_implementation_cell22
+      description: >-
+        Message du stub d'implementation en cellule 22 : identique des deux
+        cotes, et sans erreur volontaire.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: '(Implementation a completer pour voir le resultat)'
+          transform: text
+        rust:
+          cell: 22
+          pattern: '(Implementation a completer pour voir le resultat)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# publie `Implementation a completer pour voir le
+            resultat (non implemente).` en cellule 30 : le message n'est pas
+            le meme et la cellule n'est pas a la meme position. Declare
+            ABSENT, pas mesure.
+    - id: stub_implementation_cell33
+      description: >-
+        Message du stub d'implementation en cellule 33 : identique des deux
+        cotes, et sans erreur volontaire.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: '(Implementation a completer pour voir le resultat)'
+          transform: text
+        rust:
+          cell: 33
+          pattern: '(Implementation a completer pour voir le resultat)'
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que `stub_implementation_cell22` : message et
+            position differents. Declare ABSENT, pas mesure.
+    - id: unsat_message
+      description: >-
+        Message du cas infaisable (`Pas de solution trouvee`) : identique des
+        deux cotes — le solveur refuse la meme instance.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: '(Pas de solution trouvee)'
+          transform: text
+        rust:
+          cell: 27
+          pattern: '(Pas de solution trouvee)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas ce cas (sa grille de reference est
+            resolue). Declare ABSENT, pas mesure.
+    - id: optimize_status
+      description: >-
+        Statut de l'optimisation du carre latin pondere (`sat`) des deux
+        cotes.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: 'Statut Z3 Optimize : (sat)'
+          transform: text
+        rust:
+          cell: 30
+          pattern: 'Statut Z3 Optimize : (sat)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# publie `Statut : SATISFIABLE (optimum)` et maximise
+            sa propre matrice de recompense (192 contre 178) : meme forme de
+            probleme, autre instance. Declare ABSENT, pas mesure.
+    - id: max_reward
+      description: >-
+        Recompense maximale du carre latin pondere (178) des deux cotes. La
+        matrice de recompense est figee a l'identique des deux cotes
+        (`random.Random(42)` côté Python, literals côté Rust), donc l'optimum
+        est le meme nombre.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: 'Reward maximal     : (\d+)'
+          transform: int
+        rust:
+          cell: 30
+          pattern: 'Reward maximal     : (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# maximise une autre matrice de recompense et publie
+            `Reward total maximal : 192` : la valeur mesure une autre
+            instance. Declare ABSENT, pas mesure (la valeur publiee est
+            nommee ici pour qu'aucune mesure ne soit dissimulee).
+    - id: latin_square_valid
+      description: >-
+        Le carre latin produit par l'optimisation est valide (`Carre latin
+        valide : True`) des deux cotes.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: 'Carre latin valide : (True)'
+          transform: text
+        rust:
+          cell: 30
+          pattern: 'Carre latin valide : (True)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas ce controle de validite pour son carre
+            latin optimal. Declare ABSENT, pas mesure.
+    - id: latin_square_digits
+      description: >-
+        Chiffres du carre latin optimal : la matrice de recompense figee et
+        l'optimum unique donnent le meme carre des deux cotes.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: 'Carre latin optimal \(max reward\) :\n(.*)'
+          transform: digits
+        rust:
+          cell: 30
+          pattern: 'Carre latin optimal \(max reward\) :\n(.*)'
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# maximise une autre matrice de recompense : son carre
+            latin optimal (3 4 2 5 1 ...) n'est pas le meme carre. Declare
+            ABSENT, pas mesure.
