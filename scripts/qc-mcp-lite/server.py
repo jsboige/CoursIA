@@ -4,8 +4,8 @@ QuantConnect MCP Lite — lightweight MCP server for CoursIA workflows.
 Exposes only the QC REST endpoints used in backtesting workflows:
 - compile: create_compile, read_compile
 - backtest: create_backtest, read_backtest, list_backtests
-- project: list_projects, read_project
-- file: read_file, update_file_contents, create_file
+- project: list_projects, read_project, attach_library
+- file: read_file, update_file_contents, create_file, delete_file
 - charts: read_backtest_chart (writes to disk, returns series point counts)
 
 Auth: QC_API_USER_ID + QC_API_ACCESS_TOKEN env vars.
@@ -331,7 +331,13 @@ def list_projects(name_contains: str = "") -> dict:
 
 @mcp.tool()
 def read_project(project_id: int) -> dict:
-    """Read a single project's details and list its files (name, size)."""
+    """Read a single project's details and list its files (name, size).
+
+    The libraries attached to the project are listed too, and each file
+    carries its `isLibrary` flag: those two fields are the proof that a
+    shared library is attached (a green compile proves nothing — the
+    compilation does not resolve library imports).
+    """
     data = _api_post(
         "/projects/read",
         {"projectId": project_id},
@@ -346,9 +352,56 @@ def read_project(project_id: int) -> dict:
         "description": proj.get("description", ""),
         "language": proj.get("language", ""),
         "organizationId": proj.get("organizationId", ""),
+        "libraries": [
+            {
+                "projectId": lib.get("projectId", 0),
+                "libraryName": lib.get("libraryName", ""),
+                "access": lib.get("access", False),
+            }
+            for lib in (proj.get("libraries") or [])
+        ],
         "files": [
-            {"name": f.get("name", ""), "size": len(f.get("content", ""))}
+            {
+                "name": f.get("name", ""),
+                "size": len(f.get("content", "")),
+                "isLibrary": bool(f.get("isLibrary")),
+            }
             for f in files
+        ],
+    }
+
+
+@mcp.tool()
+def attach_library(project_id: int, library_project_id: int) -> dict:
+    """Attach a project as a library of another project (QC shared library).
+
+    The library is designated by its numeric project id: QC rejects the
+    library name ("Given library ID is not valid"). Cross-organization
+    attachment works — the library may live in another organization than the
+    consumer, and `access` then comes back true.
+
+    Returns the libraries now attached, and the files the consumer sees with
+    `isLibrary: true` — the proof of attachment.
+    """
+    _api_post(
+        "/projects/update",
+        {"projectId": project_id, "libraries": [library_project_id]},
+    )
+    data = _api_post("/projects/read", {"projectId": project_id})
+    proj = data.get("projects", [{}])[0] if data.get("projects") else data
+    files = _api_post("/files/read", {"projectId": project_id}).get("files", [])
+    return {
+        "projectId": project_id,
+        "libraries": [
+            {
+                "projectId": lib.get("projectId", 0),
+                "libraryName": lib.get("libraryName", ""),
+                "access": lib.get("access", False),
+            }
+            for lib in (proj.get("libraries") or [])
+        ],
+        "libraryFiles": [
+            f.get("name", "") for f in files if f.get("isLibrary")
         ],
     }
 
@@ -394,6 +447,22 @@ def create_file(project_id: int, name: str, content: str = "") -> dict:
     data = _api_post(
         "/files/create",
         {"projectId": project_id, "name": name, "content": content},
+    )
+    return {"success": data.get("success", True), "name": name}
+
+
+@mcp.tool()
+def delete_file(project_id: int, name: str) -> dict:
+    """Delete a file from a project.
+
+    Used to drop a local copy of a shared module once the library is
+    attached — the consumer then reads the single source. `name` is the path
+    as listed by `read_file`: a file in a subfolder keeps its `folder/name`
+    form.
+    """
+    data = _api_post(
+        "/files/delete",
+        {"projectId": project_id, "name": name},
     )
     return {"success": data.get("success", True), "name": name}
 
