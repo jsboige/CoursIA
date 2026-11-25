@@ -12,7 +12,7 @@
 
 **Note CJK upstream** : 11 caractères Han (U+51E0 U+767E U+5909 U+6570 `几百変数` « quelques centaines de variables » cellule L16721 DisCSP benchmarks ABT/AWC + U+5206 U+5E03 U+5F0F U+7EA6 U+675F U+4F18 U+5316 `分布式约束优化` « optimisation distribuée de contraintes » cellule L17057 ADOPT/DPOP DisCSP confidentiels) — terminologie recherche internationale préservée verbatim par l'extracteur déterministe (le hash sha256-16 doit sinon drifter si on altérait la cellule). cf L327 « pas de scrub ».
 
-**Note cross-language** : la série Search/Part2-CSP est cross-language (Python 3.10+ natif via Choco + jumeaux C# co-localisés sur 8 notebooks via `-Csharp.ipynb` suffix + IKVM 8.15 pour Choco 4.10.17 .NET). Le script d'extraction prend **les deux familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles.
+**Note cross-language** : la série Search/Part2-CSP est cross-language (Python 3.10+ natif via Choco + jumeaux C# co-localisés via le suffixe `-Csharp.ipynb` + IKVM 8.15 pour Choco 4.10.17 .NET). Le script d'extraction prend **les deux familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles.
 
 ## Régénération
 

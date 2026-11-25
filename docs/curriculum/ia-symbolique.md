@@ -452,7 +452,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 4 | [SL-10 --- Apprentissage Actif d'Automates (L*…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb) | BETA | Oui |
 | 5 | [SL-11 --- Capstone : un pipeline neuro-symbolique de…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb) | BETA | Non |
 | 6 | [SL-12 : Differentiable Logic Gate Networks](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb) | BETA | Non |
-| 7 | [SL-12b-PavlovDLS-Reproduction — artefact Pavlov (DLS…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb) | BETA | Oui |
+| 7 | [SL-12c-PavlovDLS-Reproduction — artefact Pavlov (DLS…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb) | BETA | Oui |
 | 8 | [SL-12b — Synthèse logique spectrale en C#](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb) | BETA | Oui |
 | 9 | [SL-12b : Synthèse logique spectrale — Fourier booléen…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb) | BETA | Oui |
 | 10 | [SL-13 : DISCOVER léger — diagnostic de structure TPR…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb) | BETA | Non |
@@ -504,8 +504,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 23 | [Tweety-5e — Laboratoire propositionnel : validité,…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05e-Propositional-Lab-Lean-Python.ipynb) | BETA | Non |
 | 24 | [Tweety-6 — Argumentation structuree (twin C# / .NET…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb) | BETA | Oui |
 | 25 | [Argumentation Structuree](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | BETA | Oui |
-| 26 | [Tweety-7a : Frameworks d'Argumentation Etendus (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-CSharp.ipynb) | BETA | Oui |
-| 27 | [Frameworks d'Argumentation Étendus](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | BETA | Oui |
+| 26 | [Tweety-7 : Frameworks d'Argumentation Etendus (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb) | BETA | Oui |
+| 27 | [Frameworks d'Argumentation Étendus](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-Python.ipynb) | BETA | Oui |
 | 28 | [Tweety-7b - Ranking Probabilistic Conditional Logic en…](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-CSharp.ipynb) | BETA | Oui |
 | 29 | [Sémantiques de Classement et Argumentation Probabiliste](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | BETA | Oui |
 | 30 | [Dialogues Multi-Agents Argumentatifs (twin C#)](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb) | BETA | Oui |
