@@ -287,6 +287,39 @@ def test_the_installing_job_declares_the_isolation():
     )
 
 
+def test_the_registration_happens_after_the_installation():
+    """L'enregistrement se fait APRES l'installation de `ipykernel`.
+
+    Declarer l'isolation avant l'installation est necessaire (le script
+    d'installation partage doit ecrire dans le repertoire du job), mais
+    enregistrer le noyau AVANT que `ipykernel` soit installe echoue
+    silencieusement : le noyau est absent, et le job perd son interpreteur
+    au lieu de le gagner.
+
+    Temoin ROUGE sur `main` : aucune etape d'enregistrement n'y existe.
+    """
+    name, job = _installing_job()
+    steps = job["steps"]
+
+    install_index = next(
+        index for index, step in enumerate(steps) if INSTALL_SCRIPT in _dump(step)
+    )
+    registration = [
+        index
+        for index, step in enumerate(steps)
+        if "ipykernel install" in _dump(step)
+    ]
+    assert registration, (
+        f"{name} n'enregistre aucun noyau `python3` -- sans kernelspec, la "
+        f"legende papermill ne peut pas demarrer"
+    )
+    for index in registration:
+        assert index > install_index, (
+            f"{name} enregistre le noyau avant l'etape d'installation -- "
+            f"`ipykernel` peut ne pas etre encore installe"
+        )
+
+
 def test_the_isolated_job_is_the_one_that_launches_the_kernel():
     """Le noyau papermill est lance DANS le job isole.
 
@@ -307,6 +340,7 @@ if __name__ == "__main__":
         test_two_jobs_with_isolated_dirs_do_not_cross_talk,
         test_an_isolated_job_does_not_write_the_shared_directory,
         test_the_installing_job_declares_the_isolation,
+        test_the_registration_happens_after_the_installation,
         test_the_isolated_job_is_the_one_that_launches_the_kernel,
     ):
         fn()

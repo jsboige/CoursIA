@@ -442,20 +442,18 @@ jobs:
         # partage. `RUNNER_TEMP` seul ne suffirait pas -- il est partage par
         # hote sur le parc auto-heberge.
         #
-        # L'enregistrement se fait ICI, dans le repertoire du job : le
-        # script d'installation partage (PR #28501) enregistrera le meme
-        # noyau au meme endroit -- operation idempotente, pas une course.
+        # Cette etape ne fait QUE declarer l'isolation : elle est placee
+        # AVANT l'installation, pour que le script d'installation partage
+        # (PR #28501) enregistre son noyau DANS le repertoire du job. La
+        # declaration seule ne suffit pas a mettre un noyau a disposition :
+        # l'enregistrement se fait dans l'etape suivante, apres que
+        # `ipykernel` est installe.
         run: |
           ks="${RUNNER_TEMP}/ks-$(printf '%s' "${RUNNER_NAME}" | tr -c 'A-Za-z0-9._-' '_')-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
           mkdir -p "$ks"
           echo "JUPYTER_DATA_DIR=$ks" >> "$GITHUB_ENV"
           echo "JUPYTER_PATH=$ks" >> "$GITHUB_ENV"
           echo "kernelspec du job : $ks"
-          if python -c "import ipykernel" 2>/dev/null; then
-            python -m ipykernel install --user --name python3 --display-name "python3"
-          else
-            echo "ipykernel absent de l'image -- l'enregistrement sera fait par le script d'installation"
-          fi
 
       - name: Install dependencies
         # L'environnement de cette suite est installe par un script PARTAGE :
@@ -466,6 +464,23 @@ jobs:
         # VERBATIM de cette etape le 2026-11-09 (PR #25521) : toute
         # modification de l'un doit etre portee dans l'autre.
         run: bash scripts/ci/install_scripts_tests_deps.sh
+      - name: Enregistrer le noyau du job (#28501)
+        # L'enregistrement se fait ICI, apres l'installation : `ipykernel`
+        # est alors present, et les variables d'isolation declarees plus
+        # haut sont en vigueur -- le noyau atterrit dans le repertoire DU
+        # JOB, pas dans celui de l'hote partage.
+        #
+        # L'argv du noyau est celui de l'interpreteur que `pip` remplit :
+        # c'est exactement le defaut corrige par #28501 (#28500). Les deux
+        # gestes sont idempotents : si #28501 est fusionnee, le script
+        # d'installation a deja ecrit ce meme noyau au meme endroit.
+        run: |
+          if python -c "import ipykernel" 2>/dev/null; then
+            python -m ipykernel install --user --name python3 --display-name "python3"
+            echo "noyau python3 enregistre dans ${JUPYTER_DATA_DIR:-<non isole>}"
+          else
+            echo "ipykernel absent apres l'installation -- l'enregistrement est laisse au script d'installation"
+          fi
       - name: Epingler les pools de threads BLAS/OpenMP du job (#24696)
         # Le runner est un pool auto-heberge PARTAGE : quand plusieurs jobs se
         # partagent la machine, la creation de threads echoue et les
