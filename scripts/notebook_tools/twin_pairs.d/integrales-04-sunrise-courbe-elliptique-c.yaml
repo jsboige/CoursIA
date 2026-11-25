@@ -2,6 +2,7 @@
   family: Physique/Integrales
   python: MyIA.AI.Notebooks/Physique/Integrales/Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb
   csharp: MyIA.AI.Notebooks/Physique/Integrales/Integrales-04-Sunrise-Courbe-Elliptique-CSharp.ipynb
-  parity_level: native-both
+  parity_level: semantic
   known_differences:
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb. Execution reelle sur kernel .net-csharp : 9 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Parite semantique, PAS native-both (test par cote, 2026-11-25, myia-po-2027:CoursIA-2, #28616) : cote Python natif sur mpmath (quad + ellipk produisent l'integrale elliptique), cote C# reimplante le calcul a la main sur BCL (System.Math, 0 lib tierce) ; un cote qui reimplemente le sujet a la main n'est pas natif (cf _schema.yaml), donc la paire n'est pas native-both."
