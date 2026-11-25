@@ -722,3 +722,46 @@ def test_rc0_without_rows_is_a_measured_absence(fake_run):
     assert result["guard_leg"] is None
     assert result["would_refresh"] is False
 
+
+
+# --- #28234 : le balayage lit les memes diffs que la CI ---------------------
+# La CI passe `--pr-number` a l'organe G-VAR-3, qui lit alors les fichiers de
+# la PR et de son predecesseur. Le balayeur doit rendre le meme verdict : un
+# grain MED a fichiers disjoints est exempte (#14357), un grain a fichiers
+# partages reste bloque, une lecture en echec reste fail-CLOSED.
+
+_ADJ_BODY = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n"
+_ADJ_WINDOW = [
+    {"number": 998,
+     "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/tooling #997\n",
+     "mergedAt": "2026-09-01T05:00:00Z"},
+]
+
+
+def _files_by_pr(mapping):
+    def _fake(pr_number):
+        return mapping.get(int(pr_number))
+    return _fake
+
+
+def test_simulate_adjacency_exempts_disjoint_med_grain(monkeypatch):
+    monkeypatch.setattr(rsa, "_gh_pr_files", _files_by_pr({
+        4001: {"scripts/ci/a.py"}, 998: {"scripts/ci/b.py"}}))
+    verdict = rsa.simulate_adjacency(4001, _ADJ_BODY, _ADJ_WINDOW)
+    assert verdict["guard_pass"] is True
+    assert verdict.get("exempted") is True
+
+
+def test_simulate_adjacency_keeps_overlapping_grain_blocked(monkeypatch):
+    monkeypatch.setattr(rsa, "_gh_pr_files", _files_by_pr({
+        4002: {"scripts/ci/a.py"}, 998: {"scripts/ci/a.py"}}))
+    verdict = rsa.simulate_adjacency(4002, _ADJ_BODY, _ADJ_WINDOW)
+    assert verdict["guard_pass"] is False
+    assert not verdict.get("exempted")
+
+
+def test_simulate_adjacency_unreadable_files_fail_closed(monkeypatch):
+    monkeypatch.setattr(rsa, "_gh_pr_files", _files_by_pr({}))
+    verdict = rsa.simulate_adjacency(4003, _ADJ_BODY, _ADJ_WINDOW)
+    assert verdict["guard_pass"] is False
+    assert not verdict.get("exempted")

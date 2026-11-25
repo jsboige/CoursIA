@@ -1,0 +1,159 @@
+# Conformité différentielle de ANALYSE-08-Ramsey-VdW (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "ANALYSE-08-Ramsey-VdW"
+  family: "SymbolicAI/Lean/Analyse"
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-08-Ramsey-VdW.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-08-Ramsey-VdW-Rust.ipynb
+  measures:
+    - id: c3_text
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c12_text
+      description: "Sortie de la cellule 12, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c15_text
+      description: "Sortie de la cellule 15, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c17_text
+      description: "Sortie de la cellule 17, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c20_text
+      description: "Sortie de la cellule 20, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c24_text
+      description: "Sortie de la cellule 24, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c26_text
+      description: "Sortie de la cellule 26, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c28_text
+      description: "Sortie de la cellule 28, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 28
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text

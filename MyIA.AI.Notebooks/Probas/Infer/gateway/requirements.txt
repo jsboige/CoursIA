@@ -1,0 +1,2 @@
+jupyter_kernel_gateway>=3.0,<4
+trueskill>=0.4.5,<1

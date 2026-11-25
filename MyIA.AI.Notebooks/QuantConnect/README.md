@@ -4,9 +4,9 @@ pagetitle: "QuantConnect AI Trading - Série Éducative CoursIA"
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 125
-breakdown: Python=66, projects=49, kelly_lean=6, ML-Training-Pipeline=4
-maturity: BETA=85, DRAFT=32, ALPHA=7, TEMPLATE=1
+pedagogical_count: 126
+breakdown: Python=66, projects=49, kelly_lean=6, ML-Training-Pipeline=4, CSharp=1
+maturity: BETA=84, DRAFT=33, ALPHA=8, TEMPLATE=1
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)
@@ -87,6 +87,7 @@ Ces carnets approfondissent un palier du parcours principal. Ils se lisent aprè
 |--------|------------|--------------------|
 | [05b — F-Score de Piotroski](Python/QC-Py-05b-FScore-Piotroski.ipynb) | Palier 05 | Les neuf sous-scores du F-Score sur données réelles, convention de datation, critique de liquidité, variance d'un petit univers |
 | [06b — Valorisation from scratch](Python/QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Palier 06 | Les trois moteurs de valorisation reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle |
+| [06b C# — Valorisation from scratch (jumeau .NET)](CSharp/QC-06b-Valorisation-Derives-CSharp.ipynb) | Palier 06 | Les mêmes trois moteurs de valorisation en C#/.NET — Black-Scholes à fonction normale implémentée depuis le bas, arbre CRR, Monte-Carlo — et les mêmes chiffres, en BCL pur sans package |
 | [12b — Backtest Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | Palier 12 | Erreur-type du Sharpe (Lo 2002), PSR (Bailey et López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest |
 | [14b — Liquidité et coûts d'exécution](Python/QC-Py-14b-Liquidity-Execution-Costs.ipynb) | Palier 14 | Impact de la liquidité sur l'exécution, modélisation des coûts |
 | [23b — PatchTST et iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) | Palier 23 | Patching de PatchTST, axes inversés d'iTransformer, prévision financière |
