@@ -46,7 +46,7 @@ class _Grain:
 
     def __init__(self, numero: int, age_j: float = 30.0, visites: int = 0,
                  conteneur: bool = False, consolidation: bool = False,
-                 famille: int = 0):
+                 famille: int = 0, cle_service: str = ""):
         self.numero = numero
         self.titre = f"issue {numero}"
         self.cree_le = (MAINTENANT - timedelta(days=age_j)).isoformat()
@@ -55,6 +55,10 @@ class _Grain:
         self.conteneur = conteneur
         self.consolidation = consolidation
         self.famille = famille
+        #: La CLE DE SERVICE (19/11) : la date de la derniere PR qui couvre le
+        #: grain. Vide = aucune PR ne le couvre, l'anciennete tombe alors sur
+        #: la creation.
+        self.cle_service = cle_service
         self.notes: list[str] = []
 
 
@@ -278,3 +282,163 @@ def test_le_tirage_sert_le_vieux_stock():
     assert not (servis & frais_n), (
         "les issues fraiches attendent la fin de file")
     assert rapport["ordre"] == "age"
+
+
+# --- LE TEMOIN CONTROLE DE L'ORDRE (#28114) ---------------------------------
+#
+# Mission du coordinateur (25/11 08:15Z, DM `ai01-0815-picker-contrat`) :
+# « une consolidation ADMISSIBLE passe avant un grain ordinaire plus ancien,
+# puis la rotation visite le reste SANS AFFAMER LA FILE ».
+#
+# Les deux moities sont verifiees ici, sur un pool SYNTHETIQUE et un etat de
+# lane dans un `tmp_path` : aucun reseau, aucune horloge machine. Le temoin
+# est **contrrole** : il pose lui-meme les dates, les labels et l'etat de
+# l'ancre, et il mesure ce que le picker rend -- il ne se contente pas de
+# relire un ordre theorique.
+#
+# Ce fichier est le **foyer de l'ordre** (`coordination.tapis_age`) : c'est
+# aussi la PR qui porte cet ordre (#27393, la cle de service) qui accueille
+# le temoin -- pas un chantier a cote.
+
+#: La consolidation ADMISSIBLE (label `consolidation` seul).
+CONSO = 7101
+#: La consolidation NON admissible (label `pause`) : elle doit disparaitre.
+CONSO_PAUSE = 7102
+#: Six grains ordinaires ages : de 200 a 100 jours.
+VIEUX = tuple(range(7200, 7206))
+#: Deux grains ordinaires frais : ils attendent la fin de file.
+FRAIS = (7300, 7301)
+#: Le format de date des metadonnees.
+_JOUR = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def _meta(n: int, titre: str, cree: str, labels: tuple[str, ...] = ()) -> dict:
+    """Une issue en metadonnees : la forme que rend `gh_selection.metadonnee`."""
+    return {"number": n, "title": titre, "created_at": cree, "updated_at": cree,
+            "labels": list(labels)}
+
+
+def _run_pool(metas: list[dict]):
+    """Le faux `run` : le pool en metadonnees, aucune PR, aucune citation."""
+    nodes = [{"number": m["number"], "title": m["title"],
+              "createdAt": m["created_at"], "updatedAt": m["updated_at"],
+              "labels": {"nodes": [{"name": lab} for lab in m["labels"]]}}
+             for m in metas]
+    page = json.dumps({"data": {"repository": {"issues": {
+        "pageInfo": {"hasNextPage": False, "endCursor": "c"},
+        "nodes": nodes}}}})
+
+    def run(argv, timeout):
+        requete = " ".join(argv)
+        if "issue(number:" in requete:
+            return json.dumps({"data": {"repository": {}}})
+        if "graphql" in requete:
+            return page
+        if argv[0] == "git":
+            return ""
+        return "[]"  # aucune PR ouverte
+    return run
+
+
+def _pool_temoin() -> list[dict]:
+    """Le pool du temoin : une consolidation admissible, une consolidation en
+    PAUSE (non admissible), six grains ordinaires ages, deux frais."""
+    pool = [
+        _meta(CONSO, "Consolidation admissible",
+              (MAINTENANT - timedelta(days=1)).strftime(_JOUR),
+              labels=("consolidation",)),
+        _meta(CONSO_PAUSE, "Consolidation en pause",
+              (MAINTENANT - timedelta(days=1)).strftime(_JOUR),
+              labels=("consolidation", "pause")),
+    ]
+    for k, n in enumerate(VIEUX):
+        pool.append(_meta(n, f"Grain ordinaire {n}",
+                          (MAINTENANT - timedelta(days=200 - 20 * k)).strftime(_JOUR)))
+    for n in FRAIS:
+        pool.append(_meta(n, f"Grain frais {n}",
+                          (MAINTENANT - timedelta(days=1)).strftime(_JOUR)))
+    return pool
+
+
+def _tirer(lane: str, pool: list[dict], monkeypatch, tmp_path,
+           grains: int = 1) -> list[int]:
+    """Un tirage sur le pool donne, l'ancre de la lane dans `tmp_path`.
+
+    L'etat de lane est **persistant** d'un tirage a l'autre : c'est lui qui
+    fait tourner la rotation (un numero servi attend son verdict, il n'est
+    donc pas re-servi au tirage suivant).
+    """
+    monkeypatch.setenv(tapis_etat.ENV_ETAT, str(tmp_path))
+    rapport, code = tapis_leger.tirage(lane, grains, MAINTENANT, 45, "graine",
+                                       Path("."), _run_pool(pool))
+    assert code == 0, "le tirage rend un rapport, pas un echec"
+    return [g["numero"] for g in rapport["grains"]]
+
+
+def test_le_temoin_controle_la_consolidation_admissible_passe_devant_le_grain_ordinaire_plus_ancien(tmp_path, monkeypatch):
+    """Le temoin, premiere moitie : une consolidation **admissible** passe
+    devant un grain ordinaire **plus ancien** (200 j).
+
+    L'admissibilite est **discriminee**, pas supposee : la meme pool porte
+    une consolidation en PAUSE (label `pause`), qui n'est **jamais** servie.
+    Le grain servi en tete est donc admissible par ses DONNEES, et non par
+    hasard.
+    """
+    pool = _pool_temoin()
+    servis = _tirer(LANE, pool, monkeypatch, tmp_path)
+    assert servis, "le tirage rend une file non vide"
+    assert servis[0] == CONSO, (
+        "la consolidation admissible passe devant le grain ordinaire de 200 j")
+    assert VIEUX[0] in servis, \
+        "le grain ordinaire le plus ancien est servi lui aussi"
+    assert CONSO_PAUSE not in servis, \
+        "la consolidation en pause n'est pas admissible : elle n'est pas servie"
+
+
+def test_le_temoin_controle_la_rotation_visite_le_reste_du_pool_sans_affamer_la_file(tmp_path, monkeypatch):
+    """Le temoin, seconde moitie : la rotation VISITE LE RESTE du pool, et
+    la file ne s'AFFAME jamais.
+
+    La fenetre vaut 3 grains : trois tirages successifs couvrent les 9
+    grains servables. Un numero servi attend son verdict, il n'est donc pas
+    re-servi au tirage suivant -- c'est cette exclusion qui fait tourner la
+    rotation. Le tirage suivant, une fois le pool couvert, **rend la file** et
+    recommence : la lane n'est jamais laissee sans grain.
+    """
+    pool = _pool_temoin()
+    servables = {m["number"] for m in pool if "pause" not in m["labels"]}
+    assert len(servables) == 9, "le pool servable compte 9 grains"
+    tours = []
+    for _ in range(4):
+        servis = _tirer(LANE, pool, monkeypatch, tmp_path)
+        assert servis, "la file ne s'affame pas : chaque tirage rend des grains"
+        tours.append(set(servis))
+    assert tours[0] == {CONSO, VIEUX[0], VIEUX[1]}, \
+        "la consolidation d'abord, puis les plus anciens"
+    vus = set().union(*tours[:3])
+    assert vus == servables, \
+        "la rotation visite le reste du pool, sans en laisser de cote"
+    assert not (tours[0] & tours[1]) and not (tours[1] & tours[2]), \
+        "un numero servi attend son verdict : il n'est pas re-servi"
+    assert tours[3] == tours[0], \
+        "le tour recommence : la file est rendue, la lane n'est pas laissee vide"
+
+
+def test_la_cle_de_service_ne_casse_pas_la_priorite_de_consolidation():
+    """La CLE DE SERVICE (#27393) remplace la creation dans la cle de l'ordre.
+
+    Un grain **recemment servi** n'est plus un grain ancien : il part en fin
+    de file, meme s'il est vieux. Mais la **consolidation** garde la tete :
+    elle echappe a la bande des frais, meme servie recemment.
+    """
+    service = (MAINTENANT - timedelta(days=2)).isoformat()
+    conso = _Grain(1, age_j=200.0, consolidation=True, cle_service=service)
+    ancien = _Grain(2, age_j=200.0)
+    servi = _Grain(3, age_j=200.0, cle_service=service)
+    ages = _ages([servi, ancien, conso])
+    assert ages[0] is conso, \
+        "la consolidation reste en tete, meme servie recemment"
+    assert ages[-1] is servi, \
+        "un grain recemment servi part en fin de file"
+    assert tapis_age.cle(conso, MAINTENANT)[3] == service, \
+        "la cle de service est le departage a classe egale"
