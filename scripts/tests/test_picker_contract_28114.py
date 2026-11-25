@@ -299,9 +299,12 @@ def test_I2_un_filtre_qui_vide_la_file_bascule_sur_le_repli(tmp_path, monkeypatc
     monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
     gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
 
-    def charge_saturee(lane, maintenant, prs_ouvertes, run=None):
+    def charge_saturee(lane, maintenant, prs_ouvertes, run=None, **kw):
         """En ligne la mesure aboutit (tout est ecarte) ; hors reseau elle
-        echoue, et le cap laisse la file intacte (fail-OPEN)."""
+        echoue, et le cap laisse la file intacte (fail-OPEN).
+
+        `**kw` : la mesure porte maintenant l'`echeance` partagee et le `run`
+        de la commande -- le cap n'a plus son propre budget (#28114, I6)."""
         if run is tapis_cap_livraisons.fetcher_hors_reseau:
             return None
         return {m["number"]: 99 for m in pool}

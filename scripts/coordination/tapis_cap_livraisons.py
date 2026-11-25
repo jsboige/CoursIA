@@ -22,7 +22,10 @@ charge qu'on n'a pas pu lire.
 """
 from __future__ import annotations
 
+import subprocess
 import sys
+import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -36,6 +39,7 @@ from pick_idle_grain import (  # noqa: E402
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+import fetch_merged_prs_since  # noqa: E402
 from fetch_merged_prs_since import fetch as fetch_mergees  # noqa: E402
 
 #: Meme fenetre que l'ardoise de lane de l'organe (LANE_RECORD_WINDOW_DAYS).
@@ -56,9 +60,66 @@ def fetcher_hors_reseau(since: str, until: str) -> list[dict]:
     raise RuntimeError("hors reseau : le cap de livraisons n'est pas evalue")
 
 
+def _fetteur_cap(run_commande=None, echeance: float | None = None):
+    """Le fetteur du cap : le contrat ``(since, until) -> list[dict]``.
+
+    Deux contrats cohabitent dans la commande : celui de la COMMANDE
+    (`gh_bulk.run_defaut` : ``(argv, timeout) -> str``) et celui du FETTEUR
+    (``(since, until) -> list[dict]``). Ils sont adaptes ici, au point de
+    contact, et l'adaptation passe par l'ARGUMENT du fetteur
+    (`fetch_merged_prs_since.run_gh`) : ni le fetteur ni son argv ne sont
+    reimplementes.
+
+    Chaque tranche est bornee par le TEMPS RESTANT : le cap consomme le
+    budget de la commande, il ne s'en donne pas un neuf (#28114, I6).
+    """
+    def slice_run(since: str, until: str) -> list[dict]:
+        restant = None if echeance is None else echeance - time.monotonic()
+        if restant is not None and restant <= 0:
+            raise subprocess.TimeoutExpired(cmd="gh pr list", timeout=restant)
+        return fetch_merged_prs_since.run_gh(
+            since, until, fetch_merged_prs_since.DEFAULT_FIELDS,
+            timeout=restant, run=run_commande)
+    return slice_run
+
+
+def _sous_echeance(lecture, echeance: float | None):
+    """La lecture sous l'echeance : sa valeur, ou `None` si le delai passe.
+
+    La borne est **structurelle** : elle ne suppose pas que l'appel respecte
+    le timeout qu'il recoit. Un appel lent (reseau lent, runner lent) est
+    abandonne au passage de l'echeance, et la mesure vaut `None` -- le cap
+    n'ecarte rien (fail-OPEN). Le fil de lecture est un daemon : il ne retarde
+    pas la fin du processus.
+    """
+    if echeance is None:
+        return lecture()
+    restant = echeance - time.monotonic()
+    if restant <= 0:
+        return None
+    boite: list = []
+
+    def cible() -> None:
+        try:
+            boite.append(("ok", lecture()))
+        except BaseException as exc:  # noqa: BLE001 - propage au demandeur
+            boite.append(("err", exc))
+
+    fil = threading.Thread(target=cible, name="cap-livraisons", daemon=True)
+    fil.start()
+    fil.join(restant)
+    if not boite:
+        return None  # echeance passee : la mesure est perdue
+    genre, valeur = boite[0]
+    if genre == "err":
+        raise valeur
+    return valeur
+
+
 def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
                      prs_ouvertes: list[dict] | None, run=None,
-                     repli=None, pool_ouvert: bool = False):
+                     repli=None, pool_ouvert: bool = False,
+                     echeance: float | None = None, run_commande=None):
     """Le cap, puis -- s'il a VIDE la file -- le repli qui rend la main.
 
     Le cap de livraisons est la derniere etape de la selection : quand il
@@ -71,11 +132,16 @@ def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
     celui-ci : l'injection evite l'import circulaire). `pool_ouvert` : le
     pool porte-t-il des candidats ? Sans candidat, il n'y a rien a servir.
 
+    `run` : le FETTEUR du cap, au contrat `(since, until) -> list[dict]`.
+    `None` : le cap lit le reseau par son propre organe, avec le `run` de la
+    commande (`run_commande`) comme lanceur, sous l'`echeance` partagee.
+
     Rend `(file, temoins, mesure, rendu)` : `rendu` est le `(rapport, code)`
     du repli quand il a rendu la main, `None` sinon.
     """
     file, temoins, mesure = passer(file, ordre, lane, maintenant, prs_ouvertes,
-                                   run=run)
+                                   run=run, echeance=echeance,
+                                   run_commande=run_commande)
     if file or not pool_ouvert or repli is None:
         return file, temoins, mesure, None
     try:
@@ -85,7 +151,8 @@ def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
 
 
 def charge_en_vol(lane: str, maintenant: datetime, prs_ouvertes: list[dict] | None,
-                  run=None) -> dict[int, int] | None:
+                  run=None, echeance: float | None = None,
+                  run_commande=None) -> dict[int, int] | None:
     """``{issue: charge en vol de `lane`}``, ou ``None`` si la mesure echoue.
 
     La charge = PRs ouvertes de la lane (deja lues par le tirage, passees en
@@ -93,10 +160,20 @@ def charge_en_vol(lane: str, maintenant: datetime, prs_ouvertes: list[dict] | No
     par le fetcher anti-troncature de ``ci/`` (une seule passe groupee par
     tranches de dates). Le compte suit le TAG de lane des corps, jamais
     ``--author`` : le compte GitHub est partage sur ce depot.
+
+    La lecture est **sous l'echeance** de la commande : elle partage le
+    budget de la selection et de la qualification au lieu d'en obtenir un
+    neuf, et une lecture trop lente est abandonnee (fail-OPEN : la mesure
+    vaut `None`, le cap n'ecarte rien) -- #28114, I6.
     """
     try:
         depuis = (maintenant - timedelta(days=FENETRE_J)).date().isoformat()
-        mergees = fetch_mergees(depuis, run=run, today=maintenant.date())
+        fetteur = run if run is not None else _fetteur_cap(run_commande, echeance)
+        mergees = _sous_echeance(
+            lambda: fetch_mergees(depuis, run=fetteur, today=maintenant.date()),
+            echeance)
+        if mergees is None:
+            return None
         return epic_lane_load_counts(mergees, lane, open_prs=prs_ouvertes,
                                      now=maintenant)
     except Exception:  # noqa: BLE001 - une mesure qui rate n'ecarte rien
@@ -116,7 +193,8 @@ def _adapte(e) -> dict:
 def passer(file: list, ordre: list, lane: str, maintenant: datetime,
            prs_ouvertes: list[dict] | None, run=None,
            cap: int = EPIC_LANE_DELIVERY_CAP_DEFAULT,
-           family_cap: int = EPIC_FAMILY_DELIVERY_CAP_DEFAULT
+           family_cap: int = EPIC_FAMILY_DELIVERY_CAP_DEFAULT,
+           echeance: float | None = None, run_commande=None
            ) -> tuple[list, list[dict], bool]:
     """Ecarte de la FILE les items plafonnes pour CETTE lane, complete par les
     suivants de l'ORDRE complet (grains puis conteneurs), meme longueur rendue.
@@ -127,7 +205,8 @@ def passer(file: list, ordre: list, lane: str, maintenant: datetime,
     remplacant potentiel est re-verifie contre le meme cap : un item de la
     meme famille plafonnee ne remplace pas un ecarte par son propre motif.
     """
-    charge = charge_en_vol(lane, maintenant, prs_ouvertes, run=run)
+    charge = charge_en_vol(lane, maintenant, prs_ouvertes, run=run,
+                           echeance=echeance, run_commande=run_commande)
     if charge is None:
         return file, [], False
 

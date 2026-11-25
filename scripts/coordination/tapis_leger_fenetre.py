@@ -104,9 +104,18 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     complet, et le RAPPORT publie les refus -- une exclusion n'est jamais
     silencieuse.
     """
+    # Le CAP lit le reseau par son PROPRE organe : son contrat de fetteur
+    # (`(since, until) -> list[dict]`) n'est pas celui de la commande
+    # (`(argv, timeout) -> str`) ; l'adaptation se fait dans le module du cap,
+    # au point de contact, en passant par l'argument du fetteur. Et il est
+    # BORNE par la meme echeance que la qualification, moins la reserve du
+    # repli : le cap consomme le budget de la commande, il ne s'en donne pas
+    # un neuf (#28114, I6).
+    fin_cap = (echeance - RESERVE_REPLI_S) if echeance is not None else None
     file, temoins_cap, cap_mesure, rendu = tapis_cap_livraisons.passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
-        classe["prs"], run=run, pool_ouvert=bool(classe["grains"]),
+        classe["prs"], run=None, run_commande=run, echeance=fin_cap,
+        pool_ouvert=bool(classe["grains"]),
         repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine, depot))
     if rendu is not None:
         return rendu
