@@ -110,6 +110,24 @@ def _comparable(dt: datetime | None) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+_ANCRE_CACHE: dict[int, re.Pattern[str]] = {}
+
+
+def _ancre_re(numero: int) -> re.Pattern[str]:
+    """La reference **entiere** a l'issue : `#7` ne vaut pas pour `#70`.
+
+    Le test par sous-chaine faisait soupconner l'issue 7 sur un commit qui ne
+    citait que `#70` (defaut mesure le 25/11, revue du coordinateur sur
+    #28454). On exige un numero entier : pas de chiffre avant le `#`, pas de
+    chiffre apres.
+    """
+    motif = _ANCRE_CACHE.get(numero)
+    if motif is None:
+        motif = re.compile(r"(?<!\d)#%d(?!\d)" % numero)
+        _ANCRE_CACHE[numero] = motif
+    return motif
+
+
 def touches_main(depot: str | None = None,
                  jours: int = FENETRE_J) -> dict[str, tuple[str, str, str]]:
     """`origin/main` : chemin -> (date ISO, added/modified, sujet du commit).
@@ -148,9 +166,15 @@ def touches_main(depot: str | None = None,
             statut, chemin = parts[0][0], parts[-1].strip()
             if not chemin:
                 continue
-            # Le dernier commit gagne : l'historique est parcouru du plus
-            # recent au plus ancien, donc on ecrase.
-            out[chemin] = (date, statut, sujet)
+            # Le commit **le plus recent** gagne. L'historique est parcouru du
+            # plus recent au plus ancien : ecraser garderait l'ANCIEN (defaut
+            # mesure le 25/11, revue du coordinateur sur #28454). On compare
+            # donc les dates -- et sur date egale, le premier lu (le plus
+            # recent dans l'ordre de `git log`) reste.
+            precedent = out.get(chemin)
+            if precedent is None or (_comparable(instant(date))
+                                      > _comparable(instant(precedent[0]))):
+                out[chemin] = (date, statut, sujet)
     return out
 
 
@@ -165,7 +189,8 @@ def suspects(chemins: list[str], touches: dict[str, tuple[str, str, str]],
     - le depot a bouge sur le chemin cible *apres* que l'issue s'est tuee
       (une issue commenter apres le mouvement n'est pas suspecte :
       quelqu'un travaille encore) ;
-    - et le commit qui l'a bouge **cite l'issue** (`#N` dans son sujet).
+    - et le commit qui l'a bouge **cite l'issue** (`#N` dans son sujet, comme
+      une reference **entiere** : `#7` ne vaut pas pour `#70`).
       Sans cette seconde condition, un commit de masse suffirait a
       soupçonner n'importe quelle issue ancienne qui nomme un fichier
       touche par ce commit -- mesure du premier balayage : 21 soupcons
@@ -181,7 +206,7 @@ def suspects(chemins: list[str], touches: dict[str, tuple[str, str, str]],
         # suspicion (le signal ne s'applique pas, il ne devine pas).
         return []
     seuil = _comparable(max(moments))
-    ancre = f"#{numero}" if numero else None
+    ancre = _ancre_re(numero) if numero else None
     out: list[dict] = []
     for chemin in chemins:
         info = touches.get(chemin)
@@ -191,7 +216,7 @@ def suspects(chemins: list[str], touches: dict[str, tuple[str, str, str]],
         moment = instant(date)
         if moment is None or _comparable(moment) <= seuil:
             continue
-        if ancre and ancre not in (sujet or ""):
+        if ancre and not ancre.search(sujet or ""):
             continue
         out.append({"chemin": chemin, "date": date, "statut": statut,
                     "sujet": sujet})

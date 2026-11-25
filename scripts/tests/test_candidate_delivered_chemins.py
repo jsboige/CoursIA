@@ -89,11 +89,83 @@ def test_touches_main_lit_ce_que_main_a_touche(tmp_path: Path):
     assert "scripts/a.py" in sujet
 
 
+def test_touches_main_garde_le_commit_le_plus_recent_quand_un_fichier_est_touche_deux_fois(tmp_path: Path):
+    """Un fichier touche deux fois : c'est le commit LE PLUS RECENT qui parle.
+
+    `git log` parcourt du plus recent au plus ancien ; ecraser a chaque
+    occurrence gardait donc l'**ancien** commit (defaut mesure le 25/11, revue
+    du coordinateur sur #28454). Ici, seul le commit le plus recent cite
+    l'issue 7 : c'est lui qui doit commander la suspicion.
+    """
+    depot = tmp_path / "depot"
+    depot.mkdir()
+
+    def git(*args: str, date: str | None = None) -> None:
+        env = None
+        if date:
+            env = {**os.environ, "GIT_AUTHOR_DATE": date,
+                   "GIT_COMMITTER_DATE": date}
+        subprocess.run(["git", "-C", str(depot), *args], check=True,
+                       capture_output=True, env=env)
+
+    git("init", "-q")
+    git("config", "user.email", "test@example.invalid")
+    git("config", "user.name", "test")
+    (depot / "scripts").mkdir()
+    chemin = depot / "scripts" / "a.py"
+    chemin.write_text("x = 1\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-qm", "Refactor(depot): touche scripts/a.py (#70)",
+        date="2026-11-20T10:00:00+00:00")
+    chemin.write_text("x = 2\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-qm", "Fix(notebook,#7): corrige scripts/a.py",
+        date="2026-11-21T10:00:00+00:00")
+    git("branch", "-M", "main")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    touches = chemins.touches_main(str(depot))
+    date, statut, sujet = touches["scripts/a.py"]
+    assert "#7" in sujet, f"le commit le plus recent doit commander : {sujet!r}"
+    assert "#70" not in sujet
+    assert date.startswith("2026-11-21")
+
+    # Et la suspicion suit : le commit le plus recent cite l'issue 7.
+    out = chemins.suspects(["scripts/a.py"], touches,
+                           cree_le="2026-11-01T00:00:00Z", numero=7)
+    assert [s["chemin"] for s in out] == ["scripts/a.py"]
+
+
 # --- la regle : un mouvement posterieur au silence de l'issue ----------------
 
 def _touches(path: str = "scripts/a.py", date: str = "2026-11-20T10:00:00+00:00",
              sujet: str = "Fix(notebook,#7): ajoute scripts/a.py"):
     return {path: (date, "M", sujet)}
+
+
+def test_une_reference_entiere_est_requise_pour_soupconner():
+    """`#70` ne cite pas l'issue 7 : la reference doit etre ENTIERE.
+
+    Le test par sous-chaine faisait soupconner l'issue 7 sur un commit qui ne
+    citait que `#70` (defaut mesure le 25/11, revue du coordinateur sur
+    #28454).
+    """
+    out = chemins.suspects(["scripts/a.py"],
+                           _touches(sujet="Fix(notebook,#70): corrige scripts/a.py"),
+                           cree_le="2026-11-01T00:00:00Z", numero=7)
+    assert out == [], "un commit qui cite #70 ne cite pas l'issue 7"
+
+    # Témoin négatif symétrique : `#7` ne cite pas l'issue 70.
+    out70 = chemins.suspects(["scripts/a.py"],
+                             _touches(sujet="Fix(notebook,#7): corrige scripts/a.py"),
+                             cree_le="2026-11-01T00:00:00Z", numero=70)
+    assert out70 == [], "un commit qui cite #7 ne cite pas l'issue 70"
+
+    # Témoin positif : la reference exacte, elle, soupconne.
+    out7 = chemins.suspects(["scripts/a.py"],
+                            _touches(sujet="Fix(notebook,#7): corrige scripts/a.py"),
+                            cree_le="2026-11-01T00:00:00Z", numero=7)
+    assert [s["chemin"] for s in out7] == ["scripts/a.py"]
 
 
 def test_un_chemin_touche_apres_la_creation_est_un_soupcon():
