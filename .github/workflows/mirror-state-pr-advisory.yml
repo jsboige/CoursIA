@@ -112,8 +112,25 @@ jobs:
           rc=$?
           set -e
           cat mirror.json
-          fails=$(jq -r '.mirror.fails // "inconnu"' mirror.json)
-          seuil=$(jq -r '.mirror.threshold // "?"' mirror.json)
+          # Lecture SANS jq (#28504) : jq n'est pas installe sur tous les slots
+          # auto-heberges, et sous `set -e` son absence tuait l'etape en 127 alors
+          # que l'organe avait conclu "etat non lisible". python3 est deja requis
+          # par la ligne precedente. Un mirror.json illisible retombe sur les
+          # memes defauts qu'avant : ce passage ne conclut rien, il en fait une NOTE.
+          resume=$(python3 - <<'PY' 2>/dev/null || printf 'inconnu|?'
+          import json
+
+          try:
+              miroir = json.load(open("mirror.json")).get("mirror") or {}
+          except Exception:
+              raise SystemExit(1)
+          fails = miroir.get("fails")
+          seuil = miroir.get("threshold")
+          print("{}|{}".format("inconnu" if fails is None else fails, "?" if seuil is None else seuil))
+          PY
+          )
+          fails=${resume%%|*}
+          seuil=${resume#*|}
           if [ "$rc" -eq 1 ]; then
             echo "::error::MIROIR FIGE -- le miroir d'objets du pool ne se rafraichit plus ($fails echec(s) consecutifs, seuil $seuil). Chaque checkout retelecharge l'historique complet depuis le serveur : les CI ralentissent d'un ordre de grandeur."
             exit 1
