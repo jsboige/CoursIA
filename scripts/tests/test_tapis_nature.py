@@ -25,6 +25,8 @@ Ce que ces tests verrouillent :
 Aucun test ne touche le reseau : `run` est un faux, le cache est un fake.
 """
 import ast
+import json
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,8 +35,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import (tapis_nature, tapis_occupation, tapis_rapide, tapis_repli,
-                          tapis_repli_cause, tapis_universel)
+from coordination import (tapis_ancre, tapis_leger, tapis_nature, tapis_occupation,
+                          tapis_rapide, tapis_repli, tapis_repli_cause,
+                          tapis_universel)
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -313,6 +316,82 @@ def test_le_repli_signale_la_reintroduction_fail_open(monkeypatch):
     assert rein["motif"], "la reintroduction porte son motif"
     assert rapport["occupations"]["reintroduction"] == rein
     assert [g["numero"] for g in rapport["grains"]] == [9002]
+
+
+# --- LE TEMOIN AU POINT D'ENTREE PUBLIC (contre-epreuve du 25/11) -----------
+#
+# Les temoins de #27393 etablissent l'ordre dans l'**etage fin** et la
+# rotation sur fixture -- pas la priorite de la file **effectivement servie**
+# par le point d'entree public. Ce temoin va jusqu'a la liste servie : une
+# consolidation **admissible** (personne ne la declare racine) passe devant
+# un grain ordinaire **plus ancien**, et les exclusions restent intactes.
+
+
+def _noeud(n: int, titre: str, cree: str, labels=()) -> dict:
+    return {"number": n, "title": titre, "createdAt": cree, "updatedAt": cree,
+            "labels": {"nodes": [{"name": lab} for lab in labels]}}
+
+
+def _page_metas(nodes: list[dict]) -> str:
+    return json.dumps({"data": {"repository": {"issues": {
+        "pageInfo": {"hasNextPage": False, "endCursor": "c"},
+        "nodes": nodes}}}})
+
+
+def _page_issues_multiples(requete: str) -> str:
+    """La reponse au lot : un alias par issue demandee."""
+    alias: dict[str, dict] = {}
+    for k, n in re.findall(r"i(\d+):\s*issue\(number:(\d+)\)", requete):
+        alias[f"i{k}"] = {"number": int(n), "title": f"Grain {n}", "body": "",
+                         "createdAt": "2026-01-01T00:00:00Z",
+                         "updatedAt": "2026-01-01T00:00:00Z",
+                         "labels": {"nodes": []},
+                         "comments": {"totalCount": 0, "nodes": []}}
+    return json.dumps({"data": {"repository": alias}})
+
+
+def test_le_point_d_entree_public_sert_la_consolidation_admissible(
+        tmp_path, monkeypatch):
+    """La liste **effectivement servie** par le point d'entree public.
+
+    Deux choses, sur la meme lecture :
+
+    - une consolidation **admissible** (personne ne la declare racine : elle
+      reste une feuille) passe devant un grain ordinaire **plus ancien** --
+      l'invariant I7, mesure jusqu'a la liste servie ;
+    - les exclusions restent **intactes** : le grain de harnais n'est pas
+      servi, et son exclusion est publiee avec son motif.
+    """
+    nodes = [_noeud(101, "Un grain ordinaire", "2025-01-01T00:00:00Z"),
+             _noeud(102, "Une consolidation admissible", "2026-06-01T00:00:00Z",
+                    ["consolidation"]),
+             _noeud(103, "Un grain de harnais", "2025-01-01T00:00:00Z",
+                    ["harnais"])]
+
+    def run(argv, timeout):
+        requete = " ".join(argv)
+        if "issue(number:" in requete:
+            return _page_issues_multiples(requete)
+        if "graphql" in requete:
+            return _page_metas(nodes)
+        if argv[0] == "git":
+            return ""
+        return "[]"
+
+    # L'etat de l'ancre est isole : le temoin ne touche pas la rotation
+    # reelle de la lane.
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "graine", Path("."),
+                                       run)
+    assert code == 0
+    servis = [g["numero"] for g in rapport["grains"]]
+    assert 102 in servis and 101 in servis, "les deux grains sont servis"
+    assert servis.index(102) < servis.index(101), \
+        "la consolidation admissible passe devant le grain plus ancien"
+    assert 103 not in servis, "le grain de harnais n'est pas servi"
+    exclus = rapport["occupations"]["exclus"]
+    assert [e["numero"] for e in exclus] == [103], "l'exclusion est publiee"
+    assert exclus[0]["motif"], "elle porte son motif"
 
 
 # --- les plafonds des organes de ce PR --------------------------------------
