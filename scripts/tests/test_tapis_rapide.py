@@ -417,12 +417,15 @@ def test_une_seule_famille_garde_ses_invariants():
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
-    assert set(ordre[:2]) == {2, 3}
-    # les deux grains visites une fois forment le niveau 1, decale par lane
-    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
-    # en dernier : il demande une lecture et un --paths (#26926)
-    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
+    # les issues jamais visitees d'abord (niveau 0), les deja visitees ensuite :
+    # #5 a ete visitee il y a 300 h, hors fenetre de 7 j -- elle est donc
+    # jamais visitee au meme titre que #1, #2 et #3 ; seul #4 l'a ete.
+    assert set(ordre[:4]) == {1, 2, 3, 5} and set(ordre[4:]) == {4}
+    # le conteneur, meme jamais visite, passe apres les grains jamais visites
+    # (#26926) mais **avant** un grain deja visite : l'invariant de couverture
+    # (#27590, mandat du 16/11) prime sur l'ordre de service. Mesure du 25/11 :
+    # six issues en violation, toutes au dernier tour.
+    assert ordre.index(1) < ordre.index(4)
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -544,6 +547,40 @@ def test_conteneur_servi_apres_les_grains_avec_sa_procedure_paths():
     assert "--paths" not in r["grains"][0]["avant_d_editer"]  # un grain : la commande nue
     sortie = tr.texte(r, "test")
     assert "[CONTENEUR]" in sortie and "Sudoku-12-Long-Chemin-De-Fichier.ipynb" in sortie
+
+
+def _etat(numero: int, titre: str, *, conteneur: bool = False, visites: int = 0,
+          famille: int = 1) -> tr.Etat:
+    return tr.Etat(numero=numero, titre=titre, labels=["epic"] if conteneur else [],
+                   cree_le="2026-10-01T00:00:00Z", parent=None, famille=famille,
+                   conteneur=conteneur, consolidation=False, visites=visites)
+
+
+def test_une_issue_jamais_visitee_passe_avant_une_issue_deja_visitee():
+    """Invariant de couverture (#27590) : dans le tour servi, une issue jamais
+    visitée passe devant une issue deja visitée -- **conteneur compris**.
+
+    Le conteneur passe apres les grains (#26926), mais apres les grains JAMAIS
+    VISITES : sinon le mandat du 16/11 (« toute issue doit etre visitée au
+    moins une fois avant qu'une autre le soit deux fois ») se mesure violé
+    (mesure du 25/11 : six issues en violation, toutes au dernier tour).
+    """
+    grain = _etat(1, "grain deja visite", visites=3)
+    conteneur = _etat(2, "[EPIC] conteneur jamais visite", conteneur=True, famille=2)
+    file = tr.ordonner([grain, conteneur], LANE, NOW, 8)
+    assert [e.numero for e in file] == [2, 1]
+
+
+def test_le_conteneur_deja_visite_passe_apres_le_grain():
+    """Le cas voisin qui n'ecarte pas : les deux issues deja visitees, le
+    conteneur reste apres le grain (#26926). La regle #26926 n'est pas
+    relachee -- elle est seulement prioritisee face a l'invariant de couverture
+    quand le conteneur n'a jamais ete servi."""
+    grain = _etat(1, "grain deja visite", visites=3)
+    conteneur = _etat(2, "[EPIC] conteneur deja visite", conteneur=True,
+                      visites=2, famille=2)
+    file = tr.ordonner([grain, conteneur], LANE, NOW, 8)
+    assert [e.numero for e in file] == [1, 2]
 
 
 def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinary):

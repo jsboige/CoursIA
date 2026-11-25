@@ -127,6 +127,16 @@ tranche ; il ne passe donc jamais devant un grain (vos claims restent en tête).
 - les **chemins occupés**, en entier, lane par lane (`chemins_occupes` en JSON), et les PRs ouvertes qui le
   citent (`prs_ouvertes`).
 
+**L'exception de couverture** (#27590, mandat du 16/11). Un conteneur **jamais visité** passe avant un grain
+**déjà visité** : « toute issue doit être visitée au moins une fois avant qu'une autre le soit deux fois »
+prime sur l'ordre de service des conteneurs, qui reste inchangé entre deux issues jamais visitées (le
+conteneur y passe après les grains). Mesure du 2026-11-25 sur le pool vivant : six issues en violation du
+mandat, toutes au dernier tour — le conteneur jamais visité était servi **après** des grains déjà visités.
+Après correction, l'organe `visit_coverage.py` rend `atteignable.equite = []`, à tours et débit constants
+(3 tours, 17 issues servies, 8 grains par tour). L'autre option mesurée — ne servir aucune issue déjà visitée
+dans un tour qui sert une issue jamais visitée — tient les deux règles mais rend 19 grains au lieu de 24 sur
+le même pool (−21 %) : elle est écartée, le débit du tapis primant.
+
 ## La pause explicite — `attend: #N` (#27726)
 
 Un `[RELEASED]` peut porter une **condition** : une ligne `attend: #N` (issue ou PR visée) ou
