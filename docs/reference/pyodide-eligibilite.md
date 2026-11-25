@@ -311,15 +311,15 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb` | Fondations | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb` | Fondations | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/HumorDetection/01_humor_intro.ipynb` | HumorDetection | python3 | - | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb` | ICT-Series | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03-SelfSortingMorphogenesis-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03b-RobustnessDelayedGratification-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-03c-ChimericArraysKinAggregation-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04b-SortingToTPM-CausalEmergence-Python.ipynb` | ICT-Series | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-04c-ScaleFreeSignatures-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-AttractorLandscapesEWS-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05b-AgencyRegeneration-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06-CatastropheGrammar-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-07-CausalAgencyProfiles-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -369,7 +369,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36b-RuzsaOnFactorGeometry-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05c-AnalogCognitionWaves-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42c-InoculationHysteresis-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
@@ -384,7 +384,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb` | ICT-Series | python3 | - | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb` | ICT-Series | python3 | - | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-06b-Dissociation-PhatSelfReference-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb` | ICT-Series | python3 | - | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb` | ICT-Series | python3 | - | - |

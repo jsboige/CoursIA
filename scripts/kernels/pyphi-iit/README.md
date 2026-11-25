@@ -14,8 +14,8 @@ L'env conda `pyphi` (Python 3.9) est l'env canonique pour les 4 carnets de la st
 
 | Carnet | Outputs venus de |
 |---|---|
-| `ICT-01-PhiTrajectories-Python` | Python 3.9.25 (PyPhi) |
-| `ICT-05-CausalEmergence-Python` | Python 3.9.25 (PyPhi) |
+| `ICT-02-PhiTrajectories-Python` | Python 3.9.25 (PyPhi) |
+| `ICT-04-CausalEmergence-Python` | Python 3.9.25 (PyPhi) |
 | `ICT-18-ArrowOfTimeReversibilization-Python` | Python 3.9.25 (PyPhi) |
 | `ICT-Synthese-CrossSubstrat-Python` | Python 3.9.25 (PyPhi) |
 
@@ -45,7 +45,7 @@ jupyter kernelspec list --json   # verifie que argv[0] == "python" (herite du PA
 ```bash
 jupyter nbconvert --execute --inplace \
   --ExecutePreprocessor.kernel_name=pyphi-iit \
-  MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb
+  MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-PhiTrajectories-Python.ipynb
 ```
 
 Note (cf kernels-runtime.md § "MCP jupyter-papermill HANG") : Papermill/MCP async ignore `kernel_name` et lit le `kernelspec.name` stocke dans le notebook -- c'est le kernelspec stocke qui determine l'env d'execution. Les 4 carnets strate Φ portent deja `kernelspec.name = "pyphi-iit"` (commit a venir), donc le MCP async executera bien sous Python 3.9.
