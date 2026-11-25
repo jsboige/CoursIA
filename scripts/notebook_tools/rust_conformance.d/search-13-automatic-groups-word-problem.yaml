@@ -1,0 +1,107 @@
+# Conformité différentielle de Search-13-AutomaticGroups-WordProblem (portage Rust, lot Search).
+#
+# Le carnet source n'a aucun tirage, aucune horloge murale et aucune dépendance
+# hors de `collections` : les sorties sont déterministes, et la comparaison est
+# une **égalité stricte du texte**, cellule par cellule — la correspondance est
+# par INDEX DE CELLULE (le portage conserve la structure de cellules du jumeau
+# Python), et la tolérance est 0.
+#
+# Le côté C# est DÉCLARÉ ABSENT : il n'existe aucun jumeau C# pour ce carnet
+# (mesuré : `Search-13-AutomaticGroups-WordProblem-CSharp.ipynb` est absent de
+# `MyIA.AI.Notebooks/Search/Part1-Foundations/`). Le côté C# n'est donc pas
+# déclaré comme chemin dans l'entrée — un chemin déclaré dont le fichier
+# manque est une anomalie pour l'organe.
+#
+# Les cellules d'exercice (18, 19, 20) ne produisent AUCUNE sortie des deux
+# côtés : elles ne sont pas déclarées en mesures, l'organe traitant une
+# cellule sans sortie comme une extraction échouée. Leur absence de sortie
+# est attestée par la comparaison intégrale des deux carnets (sorties vides
+# des deux côtés, zéro octet).
+- name: "Search-13-AutomaticGroups-WordProblem"
+  family: "Search/Part1-Foundations"
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13-AutomaticGroups-WordProblem-Rust.ipynb
+  measures:
+    - id: c3_repr
+      description: "Cellule 3 — image de Z^2 (couple au format Python) et réduction libre dans F_2 (liste au format Python) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Aucun jumeau C# pour ce carnet : le fichier
+            Search-13-AutomaticGroups-WordProblem-CSharp.ipynb est absent de
+            MyIA.AI.Notebooks/Search/Part1-Foundations/ (mesuré sur origin/main).
+            Le côté C# est déclaré absent, pas un échec.
+    - id: c6_accepteur
+      description: "Cellule 6 — l'accepteur Z^2 (6 états, 5 acceptants) et le verdict des assertions de propriétés : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Aucun jumeau C# pour ce carnet (voir c3_repr).
+    - id: c9_table_transitions
+      description: "Cellule 9 — table de transition finie de l'accepteur (alignements et marqueurs compris) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Aucun jumeau C# pour ce carnet (voir c3_repr).
+    - id: c11_rapport_bfs
+      description: "Cellule 11 — rapport BFS/accepteur sur les rayons croissants (largeurs de colonnes, arrondi à la décimale) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Aucun jumeau C# pour ce carnet (voir c3_repr).
+    - id: c14_croissance
+      description: "Cellule 14 — croissance comparée Z^2 (sphères et boules) contre F_2 (sphères et boules) : texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: >-
+            Aucun jumeau C# pour ce carnet (voir c3_repr).
