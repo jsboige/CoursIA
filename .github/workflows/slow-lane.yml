@@ -186,11 +186,13 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #   rouge apres le merge de PRs vertes a leur propre tete). Si l'arbre est
 #   rouge, `git bisect run` isole la PR fautive et la nomme.
 #
-#   RUNNER : `ubuntu-latest`, et c'est un choix, pas une defaut. Une jambe
+#   RUNNER : heberge GitHub, et c'est un choix, pas une defaut. Une jambe
 #   self-hosted exige une entree dans `SELF_HOSTED_WORKFLOW_ALLOWLIST`
 #   (`scripts/ci/check_self_hosted_runner_policy.py`) -- c'est une politique
 #   d'owner, et l'ajouter releve du coordinateur. Le lot execute du code de
 #   PR : l'heberger hors du parc de la flotte est la position prudente.
+#   `ubuntu-24.04` pinné le 18/11 (#27184) : le rollout d'Ubuntu 26.04 sur
+#   ubuntu-latest a retiré Python 3.9 de l'image, que le lot installe.
 #
 #   ROLLBACK : retirer le job `lot` et les quatre crons. Aucun autre fichier
 #   du depot n'en depend.
@@ -282,11 +284,14 @@ jobs:
           set +e
           # DEUX invocations, DEUX rootdirs -- exactement ce que fait
           # `ict-tests.yml` (voie rapide). Une session unique
-          # (`pytest tests ict/tests`) melange deux arbres qui partagent
+          # (`pytest tests ict/tests`) melange deux arbres qui partageaient
           # 16 basenames de modules (`test_time_arrow.py`, `test_workspace.py`,
           # `test_catastrophe.py`, ...) SANS `__init__.py` : pytest les importe
           # par nom de fichier et refuse (`import file mismatch`) -> 16 erreurs
-          # de COLLECTE, pas un defaut ICT. La suite ne collectait donc qu'UN
+          # de COLLECTE, pas un defaut ICT. (Partage LEVE par #25366 T2 ICT :
+          # les copies du hub `tests/` portent maintenant le prefixe
+          # `test_ict_*` ; les deux invocations restent necessaires pour les
+          # deux rootdirs et modes d'import.) La suite ne collectait donc qu'UN
           # item et n'executait rien -- et le job, lui, restait `success`
           # (cf. le bloc "code de sortie" plus bas, et docs/ci/slow-lane.md,
           # section "faux vert du pilote").
@@ -349,7 +354,7 @@ jobs:
     # Le lot ne tourne que sur SES crons (ceux du lot et leurs secours) et sur
     # un declencheur manuel. Le cron du mardi 02:30 appartient au pilote.
     if: github.event_name != 'schedule' || github.event.schedule != '30 2 * * 2'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       actions: read
@@ -420,7 +425,7 @@ jobs:
     # deja ecarte le cron du pilote).
     needs: lot-gate
     if: needs.lot-gate.outputs.run_lot == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Fenetre du lot : le creneau le plus long est de 150 min (21:30 -> 00:00).
     timeout-minutes: 160
     # `checks: write` est ajoute **par ce job** : la tranche 2 de P3 publie un

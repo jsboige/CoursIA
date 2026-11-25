@@ -116,10 +116,10 @@ def _conway_file_names() -> list[str]:
     return parse_allow("@scripts/lean/allow_axioms_conway.txt", REPO)
 
 
-def test_conway_file_parses_to_79_unique_names():
+def test_conway_file_parses_to_83_unique_names():
     names = _conway_file_names()
-    assert len(names) == 79
-    assert len(set(names)) == 79
+    assert len(names) == 83
+    assert len(set(names)) == 83
     assert all(n for n in names)
 
 

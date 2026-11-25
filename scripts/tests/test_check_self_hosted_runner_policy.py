@@ -685,13 +685,51 @@ def test_hybrid_runs_on_wrong_labels_is_rejected(tmp_path):
     assert result.self_hosted_jobs == 0
 
 
-def test_hybrid_runs_on_wrong_fallback_is_rejected(tmp_path):
+def test_hybrid_runs_on_pinned_fallback_is_audited(tmp_path):
+    # #27184 : ubuntu-24.04 est un repli heberge audite au meme titre que
+    # ubuntu-latest (rollout 26.04 -> py3.9 absent de l'image latest).
     write_workflow(tmp_path, "pr-gate", """
         name: PR gate
         on: workflow_dispatch
         jobs:
           gate:
             runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-24.04' }}
+            steps:
+              - run: echo aggregate
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_chain_runs_on_pinned_fallback_is_audited(tmp_path):
+    # #27184 : la chaine de routage complete (jambe lourde -> debordement ->
+    # repli heberge pinné), forme d'ict-tests.yml.
+    write_workflow(tmp_path, "ict-tests", """
+        name: ICT tests
+        on:
+          pull_request:
+            branches: [main]
+        jobs:
+          ict-tests:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_HEAVY_PERSISTENT == 'true') && fromJSON('["self-hosted","coursia-persistent","coursia-linux"]') || (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-24.04' }}
+            steps:
+              - run: echo ict
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_hybrid_runs_on_wrong_fallback_is_rejected(tmp_path):
+    write_workflow(tmp_path, "pr-gate", """
+        name: PR gate
+        on: workflow_dispatch
+        jobs:
+          gate:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-22.04' }}
             steps:
               - run: echo aggregate
         """)
@@ -879,7 +917,7 @@ def test_hybrid_runs_on_linux_wrong_fallback_is_rejected(tmp_path):
         on: workflow_dispatch
         jobs:
           guard:
-            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-24.04' }}
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-22.04' }}
             steps:
               - run: echo bad-fallback
         """)

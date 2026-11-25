@@ -1,6 +1,6 @@
 # Cluster CoursIA — machines, lanes, capacités
 
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Référence durable sur la structure du cluster qui porte les grains CoursIA : les machines, les lanes et leurs rôles, les GPU, et les barrières de capacité qui contraignent un dispatch. Les **règles de coordination** vivent dans [CLAUDE.md](../../CLAUDE.md) §A et dans [tricephale-circulation.md](tricephale-circulation.md) ; le **calendrier d'enseignement** dans [teaching-context.md](teaching-context.md).
 
@@ -49,7 +49,7 @@ Une lane est un couple `machine:workspace`, animé par un seul agent actif à la
 
 Le trio coordinateur, titulaire et secrétaire est décrit, avec la circulation entre ses têtes, dans [tricephale-circulation.md](tricephale-circulation.md).
 
-**Les deux relecteurs du cluster MyIA.** Hermes (`po-2026`, ordonnanceur `hermes-agent`, cycles horaires) et NanoClaw (`ai-01`, workspace `cluster-coordination`, cadence de 30 minutes) relisent les PRs et tiennent une coordination à l'échelle du cluster MyIA, au-delà de CoursIA. Ils signent sous le même compte GitHub, `clusterManager-Myia`, et se distinguent par le préfixe du corps de leur review (`[Hermes]`, `[NanoClaw]`). Ce ne sont pas des lanes au sens du protocole de claim ; leurs réserves se lèvent comme toute réserve (CLAUDE.md §B.0). Harnais et annuaire : [bot-review-harness.md](bot-review-harness.md).
+**Les deux relecteurs du cluster MyIA.** Hermes (`ai-01` depuis le 2026-10-09, ordonnanceur `hermes-agent`, cycles horaires ; siège historique `po-2026`, hors service le 2026-10-09) et NanoClaw (`ai-01`, workspace `cluster-coordination`, cadence de 30 minutes) relisent les PRs et tiennent une coordination à l'échelle du cluster MyIA, au-delà de CoursIA. Ils signent sous le même compte GitHub, `clusterManager-Myia`, et se distinguent par le préfixe du corps de leur review (`[Hermes]`, `[NanoClaw]`). Ce ne sont pas des lanes au sens du protocole de claim ; leurs réserves se lèvent comme toute réserve (CLAUDE.md §B.0). Harnais et annuaire : [bot-review-harness.md](bot-review-harness.md).
 
 **Workspaces d'école.** Les workspaces des cours (EPITA, EPF, etc.) ont leur propre dashboard. Exception user du 2026-05-16 : le coordinateur peut y envoyer `[INFO]`, `[ASK]` ou `[DIRECTIVE]` par message direct ; il n'y merge pas, n'y committe pas et n'écrit pas sur leur dashboard. Scope par école : [teaching-context.md](teaching-context.md).
 

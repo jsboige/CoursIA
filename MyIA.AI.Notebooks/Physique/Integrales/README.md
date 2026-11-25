@@ -1,127 +1,97 @@
-# Intégrales de Feynman : du triangle scalaire au sunrise
+# Intégrales — calculer une intégrale de Feynman, et dire ce qu'on a certifié
 
-[← Racine des carnets](../../README.md) · [← Applications (Probas)](../../Probas/Applications/README.md)
+[↑ Physique](../README.md)
 
-Le **triangle scalaire** à une boucle — trois propagateurs sans masse, un moment
-externe par sommet — en dimension 4 euclidienne, le **diagramme sunrise** à
-masses égales en dimension 2, puis la **bulle** — deux propagateurs en $d = 4$,
-la première divergence de la série — et le **rung elliptique** du sunrise, sa
-courbe exhibée par le calcul : quatre briques des corrections radiatives, issues de
-la famille « 30 intégrales de Feynman » du harnais
-[BootLoops](https://github.com/BootLoops-ai) (MIT), rapportée par M. Schwartz dans
-*Claude-shaped science* (2026). Ce dossier en est la **veine V3** de la
-distillation [issue #20428](https://github.com/jsboige/CoursIA/issues/20428),
-après la veine V1 (marches aléatoires).
+Les corrections radiatives de la physique des particules se ramènent à des intégrales à boucles. Cette sous-série en calcule plusieurs, des plus simples aux premières qui résistent : le triangle scalaire à une boucle, le diagramme « sunrise » à deux boucles, la bulle qui diverge, puis la courbe elliptique cachée dans le sunrise. Chaque intégrale est calculée par plusieurs voies, en haute précision, et chaque voie est contrôlée contre les autres.
 
-| Composant | Notebook | Stack | Ce qu'il apporte |
-|-----------|----------|-------|------------------|
-| [Integrales-01-Triangle-Scalaire](Integrales-01-Triangle-Scalaire-Python.ipynb) | 1 (Python) | Python 3 + `mpmath` + `numpy` + `matplotlib` | Représentation de Feynman du triangle ($\Delta = \alpha x_1x_2 + \gamma x_1x_3 + \beta x_2x_3$, $C_0 = J/16\pi^2$) dérivée au §1 ; **trois voies** de calcul de $J$ (quadrature 2D imbriquée, substitution homogène $(u,v)$, intégrale exacte en $v$) accordées à plus de 20 chiffres sur quatre cinématiques, dont un point de stress et un point non isocèle ; forme fermée $J(1,1,2-2\cos\psi) = 2\,\mathrm{Cl}_2(\psi)/\sin\psi$ certifiée à ~38 chiffres sur six angles, avec les cas exacts $2G$ (Catalan) et $\frac{4}{\sqrt{3}}\,\mathrm{Cl}_2(\pi/3)$ |
-| [Integrales-02-Sunrise-Masses-Egales](Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | 2 (Python) | Python 3 + `mpmath` | Le sunrise à masses égales en $d = 2$ — même polynôme $U$ que le triangle, deux boucles : **quatre voies** (simplexe, rectangle $(u,v)$, Cheng–Wu, hyperbolique) accordées (A = B exact, CW à $10^{-20}$, hyperbolique à $10^{-15}$) ; ancre exacte $I(0) = J(1,1,1) = \frac{4}{\sqrt 3}\mathrm{Cl}_2(\pi/3)$ contre le carnet 01 ; structure elliptique localisée dans l'intégration sur $r$ (l'intégrale en $\theta$ se rationalise par $u = \tanh(\theta/2)$) ; piège du facteur 2 attrapé en direct ; deux identifications fermées **refusées** sur mesure (anneau déclaré avant recherche) |
-| [Integrales-03-Bulle-Premiere-Divergence](Integrales-03-Bulle-Premiere-Divergence-Python.ipynb) | 3 (Python) | Python 3 + `mpmath` | La première divergence de la série : $B(\Lambda) = \pi^2(\ln\Lambda^2 + 1) + o(1)$, **coefficient $\pi^2$ mesuré à $7\times10^{-14}$** (différence $B(10\Lambda)-B(\Lambda)$, planted truth n° 1) et **constante finie $F = \pi^2$ ancrée dans $\int_0^1\ln\frac{1}{x(1-x)}dx = 2$** — calculable à la main, mesurée à $3\times10^{-25}$ (n° 2) et à $3\times10^{-29}$ par la **voie directe stabilisée**, laquelle n'a **aucun résidu** ; mesure de $S^3$ vérifiée avant usage (une première écriture rendait la moitié de l'intégrale) ; écart $\bar\Delta/\Lambda^2$ boule dure vs décalage **mesuré, pas masqué** (3,3 % à $\Lambda = 2$), de coefficient $\pi^2/3$ relevé ; **quadrature appliquée sur le coin $k = p$** diagnostiquée par un contrôle à quatre cases — artefact **constant** de $2\times10^{-4}$ en $\Lambda$, distinct du résidu réel en $1/\Lambda^2$ ; régularisation soustractive $B_R(\mu^2) = \pi^2(1+\ln\mu^2)$, premier « running » de la série ; refus documentés (pas de $\gamma_E$ ni $\ln 4\pi$ dans la boule dure — différence de schème, pas contradiction) |
-| [Integrales-04-Sunrise-Courbe-Elliptique](Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb) | 4 (Python) | Python 3 + `mpmath` | Le rung elliptique du sunrise — **la courbe sort du calcul** : l'intégrale interne en $x$ est élémentaire (un `artanh`, coefficient $4$ et jacobien $(1-\chi)$ qui s'annule — deux erreurs de facteur attrapées par planted truth avant commit), il reste $y^2 = b(\chi)c(\chi)$, quartique de genre 1 aux racines $\{1, -1/s, r_\pm\}$ explicites, et $I(s) = \int 4\,\mathrm{artanh}\sqrt{b/c}\;d\chi/y$ — un dilogarithme elliptique en formation ; **périodes mesurées** sous $\chi = m + h\sin\theta$ (la substitution tue la singularité $1/\sqrt{\ }$ : de $10^{-9}$ à $10^{-18}$–$10^{-30}$) et **réduction de Legendre** $\psi_1/\psi_2 = K(1-k^2)/K(k^2)$ vérifiée sur trois points, module $k^2$ par birapport des racines ; $\tau(s)$ **court** — non constant, contrairement aux carnets 01-02 ; dégénérescences bornantes : $s\to0$ (une racine s'échappe, ancre $I(0)$ retrouvée à $O(s)$) et $s\to\infty$ (collision de racines, $k^2 \sim 16/s^3$ mesuré) ; module « naïf » du carnet 02 **mesuré comme différent** du module de la quartique (familles isogènes) ; ABW cité sans reproduction |
+L'enjeu est autant la méthode que le résultat. Les carnets pratiquent trois règles. Un outil se valide contre une valeur connue avant de servir : c'est la « vérité plantée ». Une constante ne se cherche que dans un ensemble déclaré à l'avance, et un échec s'écrit « pas de forme fermée identifiée ». Un contrôle doit prouver qu'il sait échouer. Aucun bagage en théorie quantique des champs n'est requis : la représentation paramétrique est dérivée dans le premier carnet. Il faut être à l'aise avec les intégrales multiples et les changements de variables.
 
-Trois protocoles du harnais BootLoops y sont pratiqués sur un cas où ils
-mordent : **planted-truth** (l'outil d'identification de constantes est validé
-contre des valeurs connues *avant* usage — le piège `clsin(1,·)`/`clcos(2,·)` de
-`mpmath` est montré et attrapé) ; **constant-recognition** (l'anneau de recherche
-est *déclaré avant* la recherche, et un échec se conclut « pas de forme fermée
-identifiée », jamais une constante inventée) ; **acceptance-gate** (un contrôle
-négatif *mord* — écarts relatifs $1/3$ et $1/2$ — et son point aveugle est nommé :
-à l'angle autodual $\psi = 90°$ les deux appariements coïncident, un contrôle à un
-seul point serait passé). Le carnet porte aussi son **périmètre honnête** (§7) :
-précision ≠ bornes certifiées, identifiée ≠ dérivée.
+## Comment lire ce README — Découverte
 
-## Feuille de route
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue le parcours principal, les approfondissements et les prolongements de recherche.
 
-La série n'est pas née d'un carnet isolé : elle est la **veine V3** de la
-distillation [#20428](https://github.com/jsboige/CoursIA/issues/20428), son aînée
-V1 ([Marches](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb)) est déjà fusionnée, et son fil directeur est
-la classification du harnais BootLoops — polylogarithmes → elliptique → K3 →
-Calabi-Yau. Les carnets de la série ont été livrés comme des **candidats
-bornés**, arbitrés à l'usage — aucun n'était promis :
+- **Vous découvrez** : suivez le parcours principal dans l'ordre des numéros. Intégrales-01 pose le vocabulaire et les trois règles de méthode.
+- **Vous creusez un palier** : la section « Approfondissements » décrit, carnet par carnet, les contrôles, les refus documentés et les exercices.
+- **Vous cherchez la recherche en cours** : « Pour aller plus loin » dit ce qui est identifié sans être dérivé, ce qui est cité sans être reproduit, et où la série s'arrête.
 
-- **Integrales-02 — Le diagramme sunrise à masses égales : la sortie des
-  polylogarithmes** (livré — [carnet 02](Integrales-02-Sunrise-Masses-Egales-Python.ipynb)) :
-  un tour de boucle de plus que le triangle, le
-  même polynôme de Symanzik $U = x_1x_2 + x_1x_3 + x_2x_3$ — et en $d = 2$
-  l'objet devient elliptique. (Le triangle *massif* à une boucle, lui, reste
-  dilogarithmique — 't Hooft–Veltman : le saut de classe se produit ici, pas
-  là.) À $q^2 = 0$ le sunrise retombe exactement sur $J(1,1,1)$ du carnet 01 :
-  l'ancre entre les deux carnets est mathématiquement exacte.
-- **Integrales-03 — La bulle et la première divergence** (livré —
-  [carnet 03](Integrales-03-Bulle-Premiere-Divergence-Python.ipynb)) : deux
-  propagateurs en $d = 4$, la divergence logarithmique UV, et la régularisation
-  introduite comme le carnet 01 traite ses limites — un paramètre, une échelle,
-  une limite finie exhibée. La constante finie $F = \pi^2$ y est ancrée dans une
-  intégrale calculable à la main, et trois leçons de méthode (la mesure $S^3$
-  vérifiée avant usage ; l'écart $\bar\Delta/\Lambda^2$ mesuré, pas masqué ; la
-  quadrature appliquée sur le coin $k = p$, diagnostiquée par un contrôle à
-  quatre cases plutôt que rafistolée) restent exposées dans le carnet.
-- **Integrales-04 — Le rung elliptique du sunrise** (livré —
-  [carnet 04](Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb)) : la courbe
-  elliptique **exhibée par le calcul** plutôt que recopiée d'une référence —
-  l'intégrale interne se fait en fonctions élémentaires et le reste vit sur la
-  quartique $y^2 = bc$, dont les racines sont explicites. Périodes mesurées puis
-  réduites à $K$ (module par birapport des racines, deux voies indépendantes),
-  $\tau(s)$ non constant, et les deux dégénérescences qui bornent la famille
-  ($s \to 0$ : une racine s'échappe, retour au monde $\mathrm{Cl}_2$ ; $s \to
-  \infty$ : collision, pointe). La comparaison à la forme fermée d'Adams–Bogner–
-  Weinzierl reste **citée sans être reproduite**, et le module « naïf » testé au
-  carnet 02 y est mesuré comme n'étant pas celui de la quartique — une mesure,
-  pas une correction. L'étage suivant du classement (K3, Calabi–Yau) demanderait
-  des graphes à trois boucles, hors du périmètre arbitré de la série.
+## Parcours principal — Licence avancée et Master
 
-**Le toit `Physique/` se monte par tranches, et cette sous-série en est la
-première.** Cette veine est la tranche **T1** de l'EPIC
-[#23161](https://github.com/jsboige/CoursIA/issues/23161) ; les tranches
-voisines sont **T2** [`Jauge/`](../Jauge/README.md) (théorème de Noether en
-sympy, [PR #23169](https://github.com/jsboige/CoursIA/pull/23169)) et **T3**
-[`Numerique/`](../Numerique/README.md) (Burgers, volumes finis, solveur de
-Riemann, [PR #23172](https://github.com/jsboige/CoursIA/pull/23172)) — toutes
-deux **livrées**, au même titre que cette sous-série. Le **T0** (README de
-série `Physique/README.md`, `Physique/index.qmd`, les listes codées en dur du
-catalogue) appartient à l'EPIC et n'est **pas** dans cette tranche : l'ordre
-prévu est **T1 → T0**, et le T0 devra donc énumérer les trois sous-séries
-(`Integrales/`, `Jauge/`, `Numerique/`) pour que le toit ne reste pas dispersé.
-En attendant, les liens de voisinage pointent vers les deux sous-séries
-livrées, et les carnets voisins de `Integrales/` sont listés ci-dessus.
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 01 | [Intégrales-01 — L'intégrale triangle scalaire à une boucle](Integrales-01-Triangle-Scalaire-Python.ipynb) | La représentation de Feynman du triangle, dérivée pas à pas. Trois voies de calcul du même nombre : quadrature sur le simplexe, substitution qui change le simplexe en rectangle, intégration exacte d'une variable. Elles rendent toutes `1.3427652838373602509494` pour $J(1, 2, 2{,}5)$. Sur la famille isocèle, une forme fermée est identifiée, $J(1,1,2-2\cos\psi) = 2\,\mathrm{Cl}_2(\psi)/\sin\psi$, puis vérifiée sur six angles à la précision de travail. Deux cas sont exacts : $2G$ (constante de Catalan) à 90° et $\frac{4}{\sqrt 3}\mathrm{Cl}_2(\pi/3)$ à 60°. | Licence avancée : intégrales multiples, changements de variables. Outils : mpmath, numpy, matplotlib. | Les contrôles qui mordent et la portée du mot « certifié » (voir « Autour de 01 »). |
+| 02 | [Intégrales-02 — Le diagramme sunrise à masses égales : la sortie des polylogarithmes](Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | Le sunrise à masses égales en dimension 2 : deux boucles, et le même polynôme que le triangle. Quatre voies de calcul s'accordent : deux coïncident chiffre à chiffre, la voie de Cheng–Wu suit à `1.37e-20`, la voie hyperbolique à `8.94e-16`. À moment nul, l'intégrale vaut `2.343907238689458890602`, exactement la valeur $J(1,1,1)$ du carnet 01 : cette ancre contrôle toute la paramétrisation. La voie hyperbolique montre où se loge la structure elliptique. | Master : le carnet 01. Outil : mpmath. | Le facteur 2 attrapé par l'ancre et le refus d'identifier une forme fermée (voir « Autour de 02 »). |
+| 03 | [Intégrales-03 — La bulle et la première divergence](Integrales-03-Bulle-Premiere-Divergence-Python.ipynb) | Deux propagateurs en dimension 4 : la plus petite intégrale qui diverge. Coupée à une échelle $\Lambda$, elle croît comme $\pi^2 \ln \Lambda^2$. Le coefficient $\pi^2$ est mesuré avec un écart relatif de l'ordre de $7 \times 10^{-14}$. La constante finie vaut aussi $\pi^2$ ; elle est rattachée à une intégrale calculable à la main, $\int_0^1 \ln\frac{1}{x(1-x)}\,dx = 2$, et mesurée à $3 \times 10^{-25}$. Une soustraction donne enfin une quantité finie qui dépend d'une échelle, $B_R(\mu^2) = \pi^2(1 + \ln \mu^2)$. | Master : coordonnées sphériques en dimension 4. Outils : mpmath, pandas. | Deux écarts de nature différente, à ne pas confondre (voir « Autour de 03 »). |
+| 04 | [Intégrales-04 — Le rung elliptique du sunrise](Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb) · [jumeau C#](Integrales-04-Sunrise-Courbe-Elliptique-CSharp.ipynb) | Retour au sunrise, pour faire sortir sa courbe elliptique du calcul. L'intégrale interne se fait en fonctions élémentaires. Il reste une intégrale sur la quartique $y^2 = b(\chi)\,c(\chi)$, dont les racines sont explicites. Les périodes de la courbe sont mesurées par quadrature, puis ramenées à l'intégrale elliptique complète $K$ : pour $s = 9$, le module vaut `0.00806504495005` et le rapport des périodes est retrouvé avec un écart relatif de `6.61e-18`. Ce rapport varie avec $s$ : la courbe dépend de l'échelle. | Master : les carnets 01 et 02, notions sur les intégrales elliptiques. Outil : mpmath. | Les deux dégénérescences de la courbe et le module « naïf » (voir « Autour de 04 »). |
 
-Le carnet habite désormais la série `Physique/` (EPIC
-[#23161](https://github.com/jsboige/CoursIA/issues/23161)) : les intégrales de
-Feynman ne sont pas des objets probabilistes, et `MyIA.AI.Notebooks/Physique/`
-est le toit commun des distillations de physique numérique
-([#19741](https://github.com/jsboige/CoursIA/issues/19741),
-[#20428](https://github.com/jsboige/CoursIA/issues/20428)). L'aînée V1 reste dans
-`Probas/Applications/` — la récurrence de Pólya est probabiliste native
-— mais les deux séries se touchent par les fonctions de Green.
+## Approfondissements — Master et Recherche
 
-## Ponts vers le reste du dépôt
+La sous-série n'a pas de palier lettré. Ses approfondissements sont des sections des carnets.
 
-- **Marches** ([../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb)) : les deux séries calculent
-  des fonctions de Green — sur $\mathbb{Z}^d$ discret chez Marches, sur des
-  boucles continues ici — et les mêmes protocoles les traversent.
-- **Distillation Schwartz** ([issue #20428](https://github.com/jsboige/CoursIA/issues/20428)) :
-  cette série est la veine V3 ; les veines V2 (protocoles `bootloops/skills`) et V4
-  (reproductibilité NBER) restent ouvertes sur la même issue.
+### Autour de 01 : des contrôles qui mordent
 
-## Sources
+Les trois voies du carnet partent de la même représentation de Feynman. Leur accord détecte une erreur de mise en œuvre, comme un jacobien faux, et non une erreur commune de paramétrisation. Le carnet l'écrit, puis ajoute des contrôles qui portent sur l'objet lui-même.
 
-- G. 't Hooft, M. Veltman, *Scalar one-loop integrals*, Nucl. Phys. B **153**,
-  365 (1979).
-- G. Passarino, M. Veltman, *One-loop corrections for $e^+e^-$ annihilation into
-  $\mu^+\mu^-$ in the Weinberg model*, Nucl. Phys. B **160**, 151 (1979).
-- L. Lewin, *Polylogarithms and Associated Functions*, North-Holland (1981) —
-  fonction de Clausen $\mathrm{Cl}_2$.
-- L. Adams, C. Bogner, S. Weinzierl, *The two-loop sunrise graph with arbitrary
-  masses*, arXiv:1302.7004 (v1 seule) ; *The two-loop sunrise graph in two
-  space-time dimensions with arbitrary masses in terms of elliptic dilogarithms*,
-  arXiv:1405.5640 — la forme fermée du sunrise en intégrales elliptiques multiples
-  (citée sans être reproduite aux carnets 02 et 04).
-- M. D. Schwartz, *Vibe physics* (Anthropic, 2026) — le livrable de la
-  collaboration qu'il raconte est arXiv:2601.02484 (2026), *Resummation of the
-  C-Parameter Sudakov Shoulder Using Effective Field Theory* ; *Claude-shaped
-  science* (Anthropic, 2026) — la thèse des problèmes « claude-formes », d'où sort
-  le harnais BootLoops. Les trois pièces sont archivées au gisement
-  `G:\Mon Drive\MyIA\IA\Bibliographie IA\Physics\`.
-- *BootLoops* (MIT / CC-BY-4.0) — harnais d'intégrales certifiées et protocoles ;
-  `kira` (GPL-3.0) cité sans réutilisation.
+Le premier valide l'outil avant de s'en servir. La fonction de Clausen s'obtient dans mpmath par `clsin(2, z)`, et deux appels voisins rendent autre chose. La cellule la vérifie contre des valeurs connues avant toute identification. Le second est un contrôle négatif : un mauvais appariement doit échouer, et il échoue avec un écart relatif de `0.3333`. Son point aveugle est nommé : à l'angle de 90°, les deux appariements coïncident, et un contrôle en ce seul point serait passé.
+
+La section 7 du carnet fixe la portée du mot « certifié ». La précision arbitraire n'est pas une arithmétique à bornes d'erreur garanties. La forme fermée est identifiée numériquement, sa dérivation analytique n'est pas donnée.
+
+### Autour de 02 : le facteur 2 et le refus d'identification
+
+En coordonnées hyperboliques, le domaine naturel ne couvre que la moitié de l'intégrale. Le facteur 2 manquant est attrapé parce que l'ancre à moment nul fournit une valeur de référence indépendante.
+
+Le carnet tente ensuite d'identifier une forme fermée, dans deux familles déclarées avant la recherche. Aucune ne tient : le coefficient attendu dérive dans la première, la limite ne converge pas dans la seconde. Le carnet conclut « pas de forme fermée identifiée » plutôt que d'arranger une coïncidence à trois chiffres. La nature elliptique de l'objet est établie, sa valeur fermée ne l'est pas.
+
+### Autour de 03 : un artefact constant, un écart qui décroît
+
+Deux écarts apparaissent dans le calcul de la bulle, et ils n'ont pas la même cause. Le premier vient de la quadrature : une règle qui enjambe le point anguleux $k = p$ laisse une erreur de `0.0002077`, identique à toutes les coupures. Un contrôle à quatre cases montre que changer de variable n'y change rien, et que séparer le point anguleux suffit. Le second est physique : la forme fermée s'écarte de la voie directe d'environ 3,3 % à $\Lambda = 2$, puis de 0,10 % à $\Lambda = 8$, en décroissant comme $1/\Lambda^2$.
+
+Le carnet vérifie aussi la mesure de la sphère avant de s'en servir, et documente un refus : la constante finie ne contient ni la constante d'Euler ni $\ln 4\pi$, qui appartiennent à un autre schéma de régularisation.
+
+### Autour de 04 : dégénérescences et module « naïf »
+
+Deux limites bornent la famille de courbes. Quand $s$ tend vers 0, une racine s'échappe à l'infini et l'intégrale rejoint la valeur d'ancrage du carnet 01. Quand $s$ tend vers l'infini, deux racines se rejoignent, et le module suit la loi $k^2 \sim 16/s^3$, contrôlée jusqu'à $s = 10^8$.
+
+Le module testé au carnet 02 est mesuré comme différent de celui de la quartique. Le carnet le présente comme une mesure sur deux courbes apparentées, pas comme une correction. La forme fermée de la littérature, en dilogarithmes elliptiques, est citée sans être reproduite.
+
+### Exercices des carnets
+
+- **Intégrales-01** : l'inégalité de Cauchy–Schwarz et les cinématiques réalisables, les deux limites dégénérées de la famille isocèle, le protocole complet d'identification sur la constante 2.
+- **Intégrales-02** : les exposants paramétriques en dimension 4, la monotonie de $I(s)$, le facteur 2 de la voie hyperbolique.
+- **Intégrales-03** : la dépendance en $p^2$, la bulle en dimension 3, la forme radiale retrouvée par différences finies.
+- **Intégrales-04** : la formule interne sur d'autres paramètres, la réduction à $K$ pour $s = 36$, les racines pour $s = 10^8$.
+
+Les cellules d'exercice s'exécutent sans erreur tant qu'elles ne sont pas complétées.
+
+## Installation — pratique, tous niveaux
+
+Les carnets tournent sur le noyau `python3`, sans GPU. Le calcul repose sur `mpmath`, en précision arbitraire. `numpy` et `matplotlib` servent au carnet 01, `pandas` au carnet 03.
+
+```bash
+python -m pip install jupyterlab ipykernel mpmath numpy matplotlib pandas
+jupyter lab MyIA.AI.Notebooks/Physique/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb
+```
+
+Les carnets sont déterministes : aucun tirage aléatoire. L'environnement commun aux sous-séries est décrit dans la section « Installation » de [Physique](../README.md).
+
+## Pour aller plus loin — Recherche
+
+**Identifié, pas dérivé.** La forme fermée du triangle isocèle est certifiée numériquement. Sa dérivation analytique reste ouverte : le carnet 01 consigne une tentative par substitution trigonométrique, qui réussit à 60° et échoue ailleurs.
+
+**Cité, pas reproduit.** La forme fermée du sunrise existe dans la littérature (Adams, Bogner et Weinzierl). Les carnets 02 et 04 la citent et s'arrêtent avant : ils établissent la courbe, ses périodes et ses limites, pas la valeur fermée de l'intégrale.
+
+**Sans bornes garanties.** Les accords affichés sont des accords en précision arbitraire. Une arithmétique à bornes d'erreur certifiées est un prolongement, comme l'étude du régime de type temps, avec ses seuils.
+
+**L'étage suivant.** Le classement que suit la série va des polylogarithmes aux courbes elliptiques, puis aux surfaces K3 et aux variétés de Calabi–Yau. Ces deux derniers étages demandent des graphes à trois boucles ; la série s'arrête à l'étage elliptique.
+
+**Ponts.** [Marches-01](../../Probas/Applications/Marches-01-Retour-Polya-Watson-Python.ipynb) calcule aussi une fonction de Green, sur un réseau discret, avec les mêmes règles de méthode. [Numérique](../Numerique/README.md) applique la même discipline à des schémas numériques. [Jauge-01](../Jauge/Jauge-01-Theoreme-Noether-Python.ipynb) ouvre l'arc des symétries et des champs de jauge.
+
+## Ressources — tous niveaux
+
+- G. 't Hooft, M. Veltman, *Scalar one-loop integrals*, Nucl. Phys. B **153**, 365 (1979).
+- G. Passarino, M. Veltman, *One-loop corrections for $e^+e^-$ annihilation into $\mu^+\mu^-$ in the Weinberg model*, Nucl. Phys. B **160**, 151 (1979).
+- L. Lewin, *Polylogarithms and Associated Functions*, North-Holland (1981) : la fonction de Clausen.
+- L. Adams, C. Bogner, S. Weinzierl, *The two-loop sunrise graph with arbitrary masses*, [arXiv:1302.7004](https://arxiv.org/abs/1302.7004), et *The two-loop sunrise graph in two space-time dimensions with arbitrary masses in terms of elliptic dilogarithms*, [arXiv:1405.5640](https://arxiv.org/abs/1405.5640).
+- M. D. Schwartz, *Claude-shaped science* (2026) : l'essai qui rapporte la famille d'intégrales dont ces objets sont tirés ; article associé [arXiv:2601.02484](https://arxiv.org/abs/2601.02484).
+- [BootLoops](https://github.com/BootLoops-ai) (MIT / CC-BY-4.0) : l'outillage d'intégrales certifiées d'où viennent les trois règles de méthode. Les carnets re-dérivent leurs calculs et n'en importent aucun code.
+
+[↑ Physique](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md)

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # Feuille de route des notebooks ICT
 
 > **Provenance.** Détail déporté du cadrage [ICT-0-Framing.md](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md) (§ *Feuille de route des notebooks*),

@@ -114,10 +114,20 @@ def test_http_gateway(generated_graph, tmp_path):
     finally:
         import signal
         try:
-            os.killpg(process.pid, signal.SIGTERM)
+            if hasattr(os, "killpg"):
+                os.killpg(process.pid, signal.SIGTERM)
+            else:
+                # Windows n'a pas de groupes de processus POSIX : taskkill
+                # termine l'arbre complet (issue #27685).
+                subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                               capture_output=True, check=False)
         except ProcessLookupError:
             pass
-        process.wait(timeout=10)
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=10)
         log.close()
 
 

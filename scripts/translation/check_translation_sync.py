@@ -104,6 +104,18 @@ def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
 
 
+def _scrub_machine_paths(text: str) -> str:
+    """Meme scrub que ``extract_cells_to_csv.py`` (T1) — doivent rester
+    byte-identiques (``/home/<user>`` -> ``<USER_HOME>``, markdown seulement).
+
+    Sans cette symétrie, le hash pivot (scrubbé par T1 au dépôt) ne coïnciderait
+    plus avec le hash courant (T2) sur une cellule prose porteuse d'un chemin
+    machine, et chaque telle cellule rendrait un faux SRC_DRIFT /
+    PIVOT_HASH_MISMATCH.
+    """
+    return re.sub(r"/home/[\w.-]+", "<USER_HOME>", text)
+
+
 def _has_expected_script(lang: str, text: str) -> bool:
     """True si text contient au moins un caractere du script attendu pour lang.
 
@@ -156,7 +168,10 @@ def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
         cid = cell.get("id")
         if not cid or cell.get("cell_type") not in ("markdown", "code"):
             continue
-        cells[cid] = cell_hash("".join(cell.get("source", [])))
+        src = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "markdown":
+            src = _scrub_machine_paths(src)
+        cells[cid] = cell_hash(src)
     return cells
 
 
@@ -178,7 +193,10 @@ def load_notebook_cell_texts(nb_path: Path) -> dict[str, str] | None:
         cid = cell.get("id")
         if not cid or cell.get("cell_type") not in ("markdown", "code"):
             continue
-        texts[cid] = "".join(cell.get("source", []))
+        src = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "markdown":
+            src = _scrub_machine_paths(src)
+        texts[cid] = src
     return texts
 
 

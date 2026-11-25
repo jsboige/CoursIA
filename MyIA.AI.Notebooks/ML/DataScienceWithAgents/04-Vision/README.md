@@ -1,6 +1,6 @@
 # 04-Vision — Vision par ordinateur : du neurone convolutif au transfer learning
 
-[← DataScienceWithAgents (série parente)](../README.md) | [03-Deep-Learning (prérequis)](../03-Deep-Learning/README.md) | [07-Agent-Orchestration (autre série)](../07-Agent-Orchestration/README.md)
+[← DataScienceWithAgents (série parente)](../README.md) | [03-Deep-Learning (prérequis)](../03-Deep-Learning/README.md) | [07-Orchestration-d-Agents (autre série)](../07-Orchestration-d-Agents/README.md)
 
 **Kernel** : Python 3 (`coursia-ml-training` compatible) · **Bibliothèques** : NumPy (implémentations from scratch), PyTorch (parité), matplotlib, Pillow · **Niveau** : intermédiaire (post 03-Deep-Learning) · **CPU** : oui
 
@@ -46,7 +46,7 @@ Cette série suit la **même discipline que 03** : *from scratch PUIS framework,
 ## Prérequis
 
 - [`03-Deep-Learning`](../03-Deep-Learning/README.md) en entier — en particulier [3.4 (Attention-Transformer from scratch)](../03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) qui partage le mécanisme résiduel.
-- NumPy niveau [`01-Python-For-Data-Science/1.2`](../01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) (broadcast, produits matriciels).
+- NumPy niveau [`01-Python-For-Data-Science/1.2`](../01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb) (broadcast, produits matriciels).
 - PyTorch CPU (installé via `pip install torch torchvision`).
 
 ## Environnement
@@ -64,7 +64,7 @@ Mesure sur 4.6b : exécution complète en 4 min 36 s sur GPU CUDA (dont 182 s de
 ## Lien avec les autres séries
 
 - **`03-Deep-Learning` ↔ 04-Vision** : la résiduelle du 4.2 est exactement le bloc pré-norme du mini-GPT du 3.4. C'est cette convergence qui justifie le titre de la série parente *DataScienceWithAgents* : du MLP tabulaire au Transformer en passant par le CNN, **les mêmes primitives** (forward, backward, résiduelle) se réécrivent sans surprise.
-- **`07-Agent-Orchestration` ↔ 04-Vision** : les notebooks de Track2 chargent des modèles pré-entraînés via des outils ADK ; le 4.3 est la version *from scratch* de la même idée (ResNet18 pré-entraîné, sans orchestration agentique).
+- **`07-Orchestration-d-Agents` ↔ 04-Vision** : les notebooks de Track2 chargent des modèles pré-entraînés via des outils ADK ; le 4.3 est la version *from scratch* de la même idée (ResNet18 pré-entraîné, sans orchestration agentique).
 
 ## Feuille de route
 

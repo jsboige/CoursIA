@@ -5,13 +5,11 @@ import numpy as np
 from collections import deque
 from datetime import date
 
-# Noyau de risque deterministe (#24698), parametre `kernel` : (plafond, stop, coupe-circuit).
-# `off` (defaut) laisse le code inchange.
-KERNEL_MODES = {"off": (False, False, False), "cap90": (True, False, False),
-                "kernel_nocb": (True, True, False), "kernel": (True, True, True)}
-KERNEL_EXPOSURE_CAP = 0.90    # exposition brute maximale, sans levier
-KERNEL_STOP_ATR = 2.0         # stop a 2 ATR(14) sous le prix de l'ordre, ligne par ligne
-KERNEL_CB_THRESHOLD = -0.03   # coupe-circuit apres une seance a -3 % ou pire
+from risk_kernel import RiskKernel, check_mode
+
+# Noyau de risque deterministe (#24698), parametre `kernel` : off (defaut, code
+# inchange) | cap90 | kernel_nocb | kernel. Le noyau vit dans risk_kernel.py,
+# copie identique de projects/RiskKernel/risk_kernel.py.
 
 # Mesure ligue (#26329, protocole #21594) : parametre `mode`.
 # `strategy` (defaut) = code inchange (chemin d'origine, ordre pour ordre) ;
@@ -120,43 +118,22 @@ class HarrvKellyAlgorithm(QCAlgorithm):
 
         # --- Noyau de risque deterministe (#24698) ---------------------------
         self.kernel = self.get_parameter("kernel", "off")
-        if self.kernel not in KERNEL_MODES:
-            raise ValueError(f"unknown kernel {self.kernel}")
+        check_mode(self.kernel)
         # Un noyau de risque n'a de sens que sur la strategie. Sur un mode de
-        # reference, le coupe-circuit `_kernel_close` liquiderait le
-        # portefeuille de reference et la re-entree lirait des `k_targets`
-        # vides : la reference resterait a plat jusqu'au lundi suivant. On
-        # refuse la combinaison des que les deux sont actives.
+        # reference, le coupe-circuit liquiderait le portefeuille de reference et
+        # la re-entree lirait des cibles vides : la reference resterait a plat
+        # jusqu'au lundi suivant. On refuse la combinaison des que les deux sont
+        # actives.
         if self.mode != "strategy" and self.kernel != "off":
             raise ValueError(
                 f"mode={self.mode!r} est un portefeuille de reference : le "
                 f"noyau de risque (kernel={self.kernel!r}) le liquiderait et "
                 "le laisserait a plat. Mettre kernel='off' (ou mode='strategy')."
             )
-        self.use_cap, self.use_stop, self.use_cb = KERNEL_MODES[self.kernel]
-        self.k_targets = {}
-        self.k_stopped = {t: False for t in self.tickers}
-        self.k_stop_ticket = {t: None for t in self.tickers}
-        self.k_stop_level = {t: None for t in self.tickers}
-        self.k_cb_pending = False
-        self.k_reentry = False
-        self.k_prev_value = None
-        self.k_stops = 0
-        self.k_cuts = 0
-        self.k_invalid = 0
-        self.k_exposure_max = 0.0
-        self.k_sessions = 0
-        self.k_flat_sessions = 0
-        if self.use_stop:
-            self.k_atr = {t: self.atr(self.symbols[t], 14, MovingAverageType.SIMPLE,
-                                      Resolution.DAILY) for t in self.tickers}
-        if self.use_cb:
-            # Enregistre apres `rebalance` : le lundi, le rebalancement passe d'abord.
-            self.schedule.on(
-                self.date_rules.every_day(self.symbols["SPY"]),
-                self.time_rules.after_market_open(self.symbols["SPY"], 30),
-                self._kernel_daily,
-            )
+        # Construit apres `rebalance` : le lundi, le rebalancement passe d'abord.
+        self.risk = RiskKernel(self, self.kernel,
+                               {t: self.symbols[t] for t in self.tickers},
+                               self.symbols["SPY"])
 
     def on_data(self, data: Slice):
         for ticker, sym in self.symbols.items():
@@ -187,7 +164,7 @@ class HarrvKellyAlgorithm(QCAlgorithm):
                 self.plot("shadow2", f"e{self.shadow2_bars % 5}",
                           self.portfolio.total_portfolio_value)
                 self.shadow2_bars += 1
-            self._kernel_close()
+            self.risk.on_close()
 
     def rebalance(self):
         # --- References detenues (#26329) : reequilibrees le meme lundi, ------
@@ -260,18 +237,9 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         if total > 1.0:
             weights = {t: w / total for t, w in weights.items()}
 
-        if self.use_cap:
-            gross = sum(weights.values())
-            if gross > KERNEL_EXPOSURE_CAP:
-                weights = {t: w * KERNEL_EXPOSURE_CAP / gross for t, w in weights.items()}
-
-        if self.use_stop or self.use_cb:
+        weights = self.risk.cap(weights)
+        if self.risk.rebalance(weights):
             # Le lundi rouvre les lignes stoppees la semaine precedente.
-            self.k_stopped = {t: False for t in self.tickers}
-            self.k_targets = weights
-            if self.k_cb_pending or self.k_reentry:
-                return
-            self._kernel_enter(weights)
             return
 
         for ticker in self.tickers:
@@ -346,91 +314,6 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         except Exception:
             return None
 
-    # --- Noyau de risque deterministe (#24698) -------------------------------
-
-    def _kernel_close(self):
-        """Cloture de la seance : exposition relevee, puis coupe-circuit a -3 %."""
-        value = self.portfolio.total_portfolio_value
-        held = sum(abs(self.portfolio[s].holdings_value) for s in self.symbols.values())
-        self.k_sessions += 1
-        if held <= 0:
-            self.k_flat_sessions += 1
-        if value > 0:
-            self.k_exposure_max = max(self.k_exposure_max, held / value)
-        if (self.use_cb and held > 0 and not self.k_cb_pending
-                and self.k_prev_value is not None
-                and value / self.k_prev_value - 1 <= KERNEL_CB_THRESHOLD):
-            for ticker, sym in self.symbols.items():
-                self._kernel_cancel_stop(ticker)
-                quantity = self.portfolio[sym].quantity
-                if quantity != 0:
-                    self.market_on_open_order(sym, -quantity, tag="coupe-circuit")
-            self.k_cb_pending = True
-            self.k_cuts += 1
-        self.k_prev_value = value
-
-    def _kernel_daily(self):
-        """30 min apres l'ouverture : seance a plat apres une coupure, puis re-entree."""
-        if self.is_warming_up:
-            return
-        if self.k_cb_pending:
-            self.k_cb_pending = False
-            self.k_reentry = True
-            return
-        if self.k_reentry:
-            self.k_reentry = False
-            if self.k_targets:
-                self._kernel_enter(self.k_targets)
-
-    def _kernel_enter(self, weights):
-        for ticker in self.tickers:
-            sym = self.symbols[ticker]
-            w = 0.0 if self.k_stopped[ticker] else weights.get(ticker, 0.0)
-            if w > 0.001:
-                if self.use_stop:
-                    self._kernel_cancel_stop(ticker)
-                    atr = self.k_atr[ticker]
-                    self.k_stop_level[ticker] = (
-                        self.securities[sym].price - KERNEL_STOP_ATR * atr.current.value
-                        if atr.is_ready else None)
-                self.set_holdings(sym, w, tag="rebalancement")
-                self._kernel_place_stop(ticker)
-            else:
-                self._kernel_cancel_stop(ticker)
-                self.liquidate(sym)
-
-    def _kernel_live_stop(self, ticker):
-        ticket = self.k_stop_ticket[ticker]
-        if ticket is None:
-            return None
-        if ticket.status in (OrderStatus.FILLED, OrderStatus.CANCELED, OrderStatus.INVALID):
-            self.k_stop_ticket[ticker] = None
-            return None
-        return ticket
-
-    def _kernel_place_stop(self, ticker):
-        """Stop de la ligne a sa quantite courante (cree, ou mis a jour)."""
-        sym = self.symbols[ticker]
-        quantity = self.portfolio[sym].quantity
-        level = self.k_stop_level[ticker]
-        if not self.use_stop or quantity <= 0 or level is None or level <= 0:
-            self._kernel_cancel_stop(ticker)
-            return
-        ticket = self._kernel_live_stop(ticker)
-        if ticket is not None:
-            if ticket.quantity != -quantity:
-                fields = UpdateOrderFields()
-                fields.quantity = -quantity
-                ticket.update(fields)
-            return
-        self.k_stop_ticket[ticker] = self.stop_market_order(sym, -quantity, level, tag="stop")
-
-    def _kernel_cancel_stop(self, ticker):
-        ticket = self._kernel_live_stop(ticker)
-        if ticket is not None:
-            ticket.cancel()
-        self.k_stop_ticket[ticker] = None
-
     def on_order_event(self, order_event):
         # Propriete #20264 : delai envoye -> remplacement (observation pure,
         # gardee : un attribut absent de l'API n'arrete jamais le run).
@@ -443,33 +326,12 @@ class HarrvKellyAlgorithm(QCAlgorithm):
                     self.fill_lag_sum += lag
             except AttributeError:
                 pass
-        if self.kernel == "off":
-            return
-        if order_event.status == OrderStatus.INVALID:
-            self.k_invalid += 1
-            return
-        if order_event.status != OrderStatus.FILLED:
-            return
-        ticker = order_event.symbol.value
-        if ticker not in self.k_stopped:
-            return
-        order = self.transactions.get_order_by_id(order_event.order_id)
-        if order.type == OrderType.STOP_MARKET:
-            self.k_stopped[ticker] = True
-            self.k_stops += 1
-            self.k_stop_ticket[ticker] = None
-        elif order.tag == "rebalancement":
-            self._kernel_place_stop(ticker)
+        self.risk.on_order_event(order_event)
 
     def on_end_of_algorithm(self):
         self.set_runtime_statistic("Mode", self.mode)
-        self.set_runtime_statistic("Noyau", self.kernel)
-        self.set_runtime_statistic("Stops", str(self.k_stops))
-        self.set_runtime_statistic("Coupures", str(self.k_cuts))
-        self.set_runtime_statistic("Ordres invalides", str(self.k_invalid))
-        self.set_runtime_statistic("Exposition max", f"{self.k_exposure_max:.4f}")
-        self.set_runtime_statistic(
-            "Seances a plat", f"{self.k_flat_sessions}/{self.k_sessions}")
+        for name, value in self.risk.statistics().items():
+            self.set_runtime_statistic(name, value)
         if self.n_rebalances:
             self.set_runtime_statistic(
                 "Poids bornes 0,30", f"{self.n_capped}/{self.n_weights}")

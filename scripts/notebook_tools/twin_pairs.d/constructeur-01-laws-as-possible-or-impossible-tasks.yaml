@@ -1,0 +1,12 @@
+- name: "Constructeur-01 Laws as possible or impossible tasks"
+  family: Physique/Constructeur
+  python: MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design des deux cotes : le contenu est conceptuel (theorie du constructeur, Deutsch 2013 / Deutsch-Marletto 2015) et les trois premieres illustrations sont des definitions executable, pas des calculs. Le seul calcul numerique est le temoin de non-classicite de l'illustration 4 : negativite par transposee partielle d'une matrice 4x4. Python l'obtient par numpy (kron, outer, reshape/transpose, eigvalsh) ; C# le derive en BCL seule (kron, produit exterieur, transposee partielle indexee, valeurs propres par rotations de Jacobi). Aucun moteur externe canonique ne produit ces valeurs : les deux cotes derivent les memes nombres."
+  known_differences:
+    - "C# calcule tout en BCL (System, System.Globalization) la ou la source Python emploie numpy : produit tensoriel, produit exterieur, transposee partielle B et valeurs propres d'une symetrique reelle sont ecrits a la main (rotations de Jacobi, 100 balayages, seuil 1e-14). Les valeurs rendues coincident a l'affichage : negativite 0.500 (mediateur quantique), 0.000 (mediateur classique), puis 0.318 / 0.155 / 0.038 pour la part classique p = 0.25 / 0.50 / 0.75."
+    - "Les trois exercices sont des stubs compilables a TODO etudiant cote C# (delegues `Func<...>` a null, `Console.WriteLine(\"Exercice a completer\")`), des cellules d'exercice a completer cote Python (fonctions retournant None). Aucune solution n'est revelee d'un cote ni de l'autre ; les deux carnets s'executent de bout en bout sans erreur volontaire."
+    - "La culture est fixee a InvariantCulture cote C# pour que le format F3 rende `0.500` (point decimal) exactement comme la source Python ; sans cela le separateur suivrait la locale de la machine."
+    - "Aucune figure, aucune donnee externe, aucun paquet NuGet d'un cote ni de l'autre. Les quatre illustrations sont des systemes jouets : les trois premieres suivent directement des definitions codees, la quatrieme est le seul calcul numerique, et son etiquette de non-classicite est deduite du seuil (negativite strictement positive), non ecrite d'avance."

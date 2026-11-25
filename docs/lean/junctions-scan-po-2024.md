@@ -1,4 +1,190 @@
-# Junctions Mathlib — scan po-2024 (V2, worktree principal) : 22 jonctions vivantes vers un store VIDE
+# Junctions Mathlib — scan po-2024 (V3, arbre principal D:\Dev) : store restauré, 24 lacs chauds, 0 jonction pendante
+
+**Date** : 2026-11-19
+**Lane** : `myia-po-2024:CoursIA`
+**Issue parente** : #4362 — couverture flotte (« Restent hors couverture… po-2024, po-2026. Chacune devrait un jour passer le meme Scan lecture seule (~2 min) pour fermer la carte », c62)
+**Mode** : `Scan` (lecture seule, aucune modification) + organe dédié `check_mathlib_cache.py`
+**Commandes exécutées** :
+
+- `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` depuis `D:\Dev\CoursIA` (arbre **principal**, post-migration du 2026-09-17), exit 0
+- `python scripts/lean/check_mathlib_cache.py`, exit 0
+
+## Résumé V3
+
+Le V2 (2026-09-13, conservé intégralement ci-dessous) mesurait **22 jonctions vivantes vers un store VIDE** et **11 lacs en dérive de toolchain**. Entretemps : migration du dépôt `C:\dev` → `D:\Dev` (2026-09-17), puis **mission #13962 exécutée par cette lane le 2026-11-17** (GO ai-01, DM 21:01Z) — `Apply` en 2 passes, **27/27 junctionnés**, `lake build Sensitivity.Fourier` SUCCESS 1671 jobs via la jonction (preuve c.6928398769 sur #13962). Le V3 mesure l'état **après** :
+
+| Métrique | V2 (2026-09-13, `C:\dev`) | V3 (2026-11-19, `D:\Dev`) |
+|---|---:|---:|
+| Projets Lake portant `mathlib` (manifest scanné) | 28 | **36** |
+| Lacs `JUNCTIONED` (tous groupes) | 22 | **24** (23 lacs + 1 junction doc `build-evidence-2026-10-31`) |
+| Oleans Mathlib **atteignables** (organe dédié) | **0 / 22** (tous froids) | **24 ok à 8 322 oleans (23 lacs + 1 doc)** |
+| Jonctions **pendantes** | non mesuré (store vide ⇒ tout froid) | **0** |
+| Lacs froids (checkout physique, 0 olean) | 22 | **4** (`discrepancy`, `formal_logic`, `conway`, `mimo`) |
+| Groupes (scan) | 8 (2 + 6) | **10** (1 mutualisable + 9 isolés) |
+| Économie « potentielle » | 0 GB | **0 GB** (déjà mutualisé — métrique terminale, cf V2 §4) |
+
+**Verdict** : l'état « inversé » du V2 est **résorbé**. Le store `D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6` est **peuplé et chaud** (8 322 oleans par membre), les 24 jonctions du groupe mutualisable (23 lacs + 1 doc) pointent dessus, et l'organe ne rapporte **aucune jonction pendante** (contrairement à po-2025 au 2026-10-08 : 14 pendantes). La carte de couverture #4362 peut porter po-2024 comme **couvert(e) et sain(e)**.
+
+## Résiduels mesurés (aucun geste dans ce scan — lecture seule)
+
+| Résiduel | Mesure | Lecture |
+|---|---|---|
+| `GOL/conway_lean` (aujourd'hui `JeuDeLaVie/conway_lean`) | checkout **physique 0,98 GB, froid** (0 olean) | checkout reconstruit hors jonction pour les builds de #25262 (jamais purgé) — candidat purge **après** merge #25262, un `lake build` réel d'abord (prescription de l'organe) |
+| `formal_logic_lean` | checkout **physique 1,06 GB, froid** (groupe isolé `v4.33.1-0df444a3`) | physique car isolé ; les builds R4 de #25236 (po-2023) l'utilisent — ne pas toucher tant que #25236 est ouverte |
+| `discrepancy_lean`, `mimo_lean` | checkouts **physiques 0 GB** (coquilles vides) | répertoires vides hérités du V2 (poses manuelles d'opérateur) — purge triviale, non urgente |
+| `Compression_lean` | « pas de checkout local » dans le groupe mutualisable | jamais checkouté sur cette machine ; jonctionnable à la première demande de build |
+| `torchlean_lean` | groupe isolé `v4.35.0-56a00585`, « pas de checkout local » | confirme **mesuré** la ligne d'arbitrage de la carte (c55/c61 : groupe isolé sans place déclarée) — décision coordinateur, 0 checkout donc 0 urgence disque |
+
+## Sortie verbatim du Scan V3 (rejeu intégral du 2026-11-20, arbre principal `D:\Dev\CoursIA`)
+
+> **Note de lecture (22/11, #26056).** La sortie ci-dessous est **verbatim** : elle reproduit les chemins tels que l'organe les a lus au scan du 19/11, et elle n'est pas réécrite. Depuis, les sous-répertoires de `MyIA.AI.Notebooks/SymbolicAI/Lean/` ont été renommés (`GROTH` → `Grothendieck`, `GOL` → `JeuDeLaVie`, `KNOTS` → `Noeuds`, `ANALYSE` → `Analyse`, `GALOIS` → `Galois`) : les chemins de ce relevé se lisent donc avec cette correspondance. Les **comptes** (24 jonctions, 8 322 oleans, 0 jonction pendante) ne sont pas affectés par le renommage.
+
+Sortie complète du listing (le bloc diagnostic « revision mathlib partagee » qui suit l'économie dans la sortie réelle n'est pas repris ici — il ne porte aucun compteur de jonction). La version initiale de ce rapport condensait ces lignes en une élision à la main ; elle est remplacée par la sortie intégrale, qui est la seule source des comptes.
+
+```text
+=== Projets Lake avec dependance mathlib (36) ===
+
+--- Groupe leanprover_lean4_v4.33.0-db584cd6 [MUTUALISABLE -- revision partagee par 3 groupes] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
+  MyIA.AI.Notebooks/Compression/Compression_lean                         pas de checkout local
+  MyIA.AI.Notebooks/GameTheory/assignment_lean                           JUNCTIONED
+  MyIA.AI.Notebooks/GameTheory/game_theory_lean                          JUNCTIONED
+  MyIA.AI.Notebooks/GameTheory/minimax_lean                              JUNCTIONED
+  MyIA.AI.Notebooks/ML/learning_theory_lean                              JUNCTIONED
+  MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean     JUNCTIONED
+  MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean           JUNCTIONED
+  MyIA.AI.Notebooks/QuantConnect/kelly_lean                              JUNCTIONED
+  MyIA.AI.Notebooks/Search/search_lean                                   JUNCTIONED
+  MyIA.AI.Notebooks/Sudoku/sudoku_lean                                   JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean                   JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean                      checkout physique (0.98 GB)
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean             JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean              JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean               JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean                      pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean                 JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean           JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean               JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean                     JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean                     JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples                     JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean                     JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean                    JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean                 JUNCTIONED
+  MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean                 JUNCTIONED
+  docs/lean/darksnail/build-evidence-2026-10-31                          JUNCTIONED
+
+--- Groupe leanprover_lean4_v4.25.0-1ccd71f8 [isole] : toolchain=leanprover/lean4:v4.25.0 mathlib=1ccd71f8 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream pas de checkout local
+
+--- Groupe leanprover_lean4_v4.32.1-520045ab [isole -- revision partagee par 2 groupes] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean                     pas de checkout local
+
+--- Groupe leanprover_lean4_v4.32.1-520045ab [isole -- revision partagee par 2 groupes] : toolchain=leanprover/lean4:v4.32.1 mathlib=520045ab ---
+  MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters    pas de checkout local
+
+--- Groupe leanprover_lean4_v4.33.0-rc1-5eec30bc [isole] : toolchain=leanprover/lean4:v4.33.0-rc1 mathlib=5eec30bc ---
+  MyIA.AI.Notebooks/GameTheory/conway_cgt_lean                           pas de checkout local
+
+--- Groupe leanprover_lean4_v4.33.0-db584cd6 [isole -- revision partagee par 3 groupes] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
+  MyIA.AI.Notebooks/Search/discrepancy_lean                              checkout physique (0 GB)
+
+--- Groupe leanprover_lean4_v4.33.0-db584cd6 [isole -- revision partagee par 3 groupes] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean                            checkout physique (0 GB)
+
+--- Groupe leanprover_lean4_v4.33.1-0df444a3 [isole -- revision partagee par 2 groupes] : toolchain=leanprover/lean4:v4.33.1 mathlib=0df444a3 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean                    checkout physique (1.06 GB)
+
+--- Groupe leanprover_lean4_v4.33.1-0df444a3 [isole -- revision partagee par 2 groupes] : toolchain=leanprover/lean4:v4.33.1 mathlib=0df444a3 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean                    pas de checkout local
+
+--- Groupe leanprover_lean4_v4.35.0-56a00585 [isole] : toolchain=leanprover/lean4:v4.35.0 mathlib=56a00585 ---
+  MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean                       pas de checkout local
+
+=== Economie totale potentielle (groupes en l'etat) : 0 GB ===
+```
+
+## Sortie verbatim de l'organe cache V3 (rejeu intégral du 2026-11-20)
+
+```text
+Store partage : D:\Dev\CoursIA\.mathlib-cache
+  toolchain leanprover_lean4_v4.31.0-rc1-d568c8c0
+  toolchain leanprover_lean4_v4.32.1-520045ab
+  toolchain leanprover_lean4_v4.33.0-db584cd6
+
+  ok        build-evidence-2026-10-31      8322 olean  junction
+  absent    Compression_lean                  0 olean  reel
+  ok        assignment_lean                8322 olean  junction
+  absent    conway_cgt_lean                   0 olean  reel
+  ok        game_theory_lean               8322 olean  junction
+  ok        minimax_lean                   8322 olean  junction
+  absent    social_choice_lean_peters         0 olean  reel
+  absent    iit_lean                          0 olean  reel
+  ok        learning_theory_lean           8322 olean  junction
+  ok        percolation_lean               8322 olean  junction
+  ok        decision_theory_lean           8322 olean  junction
+  ok        kelly_lean                     8322 olean  junction
+  cold      discrepancy_lean                  0 olean  reel
+  ok        search_lean                    8322 olean  junction
+  ok        sudoku_lean                    8322 olean  junction
+  absent    upstream                          0 olean  reel
+  absent    kls_lean                          0 olean  reel
+  ok        calibration_lean               8322 olean  junction
+  ok        combinators_lean               8322 olean  junction
+  absent    finiteness_lean                   0 olean  reel
+  cold      formal_logic_lean                 0 olean  reel
+  ok        galois_lean                     8322 olean  junction
+  ok        geometry_lean                   8322 olean  junction
+  cold      conway_lean                       0 olean  reel
+  ok        formal_groups_lean             8322 olean  junction
+  ok        grothendieck_lean              8322 olean  junction
+  absent    knot_lean                         0 olean  reel
+  ok        hecke_lean                     8322 olean  junction
+  ok        mathlib_examples               8322 olean  junction
+  cold      mimo_lean                         0 olean  reel
+  ok        riemann200_lean                8322 olean  junction
+  ok        sensitivity_lean               8322 olean  junction
+  ok        serre100_lean                  8322 olean  junction
+  absent    tegmark_muh_lean                  0 olean  reel
+  ok        planning_lean                  8322 olean  junction
+  ok        erc20_lean                     8322 olean  junction
+  ok        argumentation_lean             8322 olean  junction
+
+Lakes: 42 | mathlib ok: 24 | froid: 4 | partiel: 0 | non installe: 9 | jonctions pendantes: 0 | illisibles: 0 | caches physiques distincts: 5
+
+Avant de conclure 'cache purge', relancer un `lake build` reel :
+  un comptage a 0 via `find` ou `islink` ne prouve rien sur une junction.
+```
+
+### Rapprochement des comptes (scan ↔ organe, rejeu 2026-11-20)
+
+Les deux outils ne lisent **pas la même source** : le scan classe par **manifeste** (`lake-manifest.json`), l'organe par **lakefile** (`declares_mathlib`). Chaque compte se recoupe une fois cette lecture croisée nommée :
+
+- **36 (scan) = 27 membres du groupe mutualisable + 9 groupes isolés.** Exact, aucun écart.
+- **L'organe affiche 37 entrées = 36 (scan) − 2 + 3.** Il affiche `iit_lean`, `finiteness_lean`, `tegmark_muh_lean` (lakefile déclare mathlib, manifeste non — vérifié : 0 occurrence de mathlib dans leurs trois manifestes) et **saute** `differential_lean` et `torchlean_lean` (manifeste cite mathlib — le scan les groupe en v4.33.1-0df444a3 et v4.35.0-56a00585 — lakefile non).
+- **`build-evidence-2026-10-31` est DANS les 27 membres** du groupe mutualisable, pas un 37ᵉ projet : c'est la « junction doc ». Le JUNCTIONED du scan et le `ok` de l'organe le comptent tous deux.
+- **Junctionnés : 24 (23 lacs + 1 doc) = les 24 `ok` de l'organe, membre à membre** — les deux ensembles sont identiques, aucun lac manquant. Les 3 membres du groupe mutualisable non junctionnés : `Compression_lean` (pas de checkout local), `conway_lean` (physique 0,98 GB, reconstruit hors jonction pour les builds de #25262), `knot_lean` (pas de checkout local).
+- La version condensée initiale comptait **26 jonctions à la main — décompte d'auteur erroné** ; la sortie intégrale ci-dessus fait foi. La mission #13962 du 2026-11-17 rapportait « 27/27 junctionnés » pour ses passes `Apply` : l'état mesuré ici (24 des 27 membres) reflète conway reconstruit physique depuis, et deux membres sans checkout local jamais junctionnables.
+
+**Les 5 lacs non classés de la ligne `Lakes` (42 − 37)** — que l'organe compte dans le total mais n'affiche pas un à un (statut `no_mathlib_dep`, exclu du détail — source de l'organe, ligne du saut d'affichage) — ne sont **pas cinq lacs sans dépendance Mathlib**. Ils se partagent en deux classes, mesurées sur les lakefiles ET les manifestes :
+
+- **3 lacs sans dépendance Mathlib nulle part** (lakefile et manifeste d'accord) : `asymmetric_information_lean`, `lean_game_defs`, `lean_game_defs_ext` (GameTheory).
+- **2 lacs dont le `lake-manifest.json` cite mathlib mais dont le lakefile ne la déclare pas** : `differential_lean` et `torchlean_lean` (SymbolicAI/Lean) — le scan les groupe respectivement en v4.33.1-0df444a3 et v4.35.0-56a00585. L'organe ne lit que le lakefile (`declares_mathlib`) : c'est un **angle mort sur les dépendances transitives du manifeste**, signalé sur #4362, non corrigé dans ce rapport.
+
+## Ligne po-2024 pour la carte multi-machine
+
+| Mesure | V2 (2026-09-13) | V3 (ce rapport) |
+|---|---:|---:|
+| Checkouts Mathlib réels | 0 vus + 2 réels hors découverte | **4 physiques** (conway 0,98 GB · formal_logic 1,06 GB · discrepancy 0 · mimo 0) |
+| Jonctions actives | 22 (vers store vide) | **24 chaudes (23 lacs + 1 doc)** |
+| Oleans atteignables | 0 | **8 322 × 24 (23 lacs + 1 doc)** |
+| Groupes mutualisables | 2 (13 + 9) | **1 (27 membres déclarés, 24 junctionnés)** |
+| Économie jonction-cluster | 0 GB | 0 GB — **déjà réalisée** |
+
+---
+
+## Rapport V2 (2026-09-13 — conservé intégralement)
+
+### Junctions Mathlib — scan po-2024 (V2, worktree principal) : 22 jonctions vivantes vers un store VIDE
 
 **Date** : 2026-09-13
 **Lane** : `myia-po-2024:CoursIA`

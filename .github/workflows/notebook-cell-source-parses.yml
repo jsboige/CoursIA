@@ -94,4 +94,4 @@ jobs:
 
     - name: Run unit tests
       run: |
-        python -m unittest scripts.tests.test_check_cell_source_parses -v
+        python -m unittest scripts.tests.test_notebook_tools_check_cell_source_parses -v

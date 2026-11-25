@@ -1,6 +1,6 @@
 # Coordination proactive — detail
 
-> REFERENCE — vivante — dernière révision 2026-11-13
+> REFERENCE — vivante — dernière révision 2026-11-19
 
 Detail de [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md). Voir aussi [subagents-reference.md](subagents-reference.md), [scripts-reference.md](scripts-reference.md).
 
@@ -191,6 +191,17 @@ La pondération du tirage porte **deux axes indépendants** (mesurés non redond
 
 Mesure du 2026-08-20 sur les 140 ouvertes : **91 avaient bougé dans les 24 h**, et sur les 12 les plus inactives, **9 étaient des EPICs**. C'est cette asymétrie qui a fait du tirage systématique le premier geste de chaque cycle (mandat user 2026-08-20) : tant que la sélection par défaut restait « ce que je vois », elle restait « ce qui est récent » — les sujets menés à leur terme étaient toujours ceux du moment, et les EPICs de fond ne l'étaient jamais.
 
+## Tapis et urnes — cadence des visites de l'urne umbrella
+
+Déporté depuis la règle (tranche 3 du compactage #11554, 2026-11-19 ; source : ligne 34 de `.claude/rules/proactive-coordination.md` à la base `243c178019`). La règle garde le filtre à trois urnes et l'obligation « piocher un sous-grain ouvert ou en créer un seul par visite, jamais claimer l'EPIC entier » ; la cadence complète des visites vit ici.
+
+Deux barèmes encadrent l'urne **umbrella** (un EPIC), verbatim de la règle d'origine :
+
+- « une lane n'enchaîne pas un second sous-grain du même EPIC **avant la visite suivante** » ;
+- « un EPIC **hors consolidation** se visite **au plus une fois par semaine** ».
+
+Sur l'urne **delivered** (`candidate-delivered`) : **réservée au coordinateur et à l'adjoint** (mandat user 2026-09-07, #15069) — une lane worker qui en rencontre une poste `[INFO] candidate-delivered` avec sa preuve et rend la main (mécanique complète du label : section suivante).
+
 ## Filtre `candidate-delivered` (#10466) — mécanique du label
 
 Déporté depuis la règle (tranche l.3 de #11554, 2026-11-13) ; la règle garde l'interdiction worker (« ne pas re-piocher sans vérification firsthand ») et le pointeur.
@@ -252,6 +263,19 @@ Pourquoi la reprise est assignée et pas négociable : **une PR rouge ne peut ê
 
 La mesure qui a fondé le mandat (2026-08-22) : débit de merge sain — 65 mergées dans la journée — et pourtant **16 PRs bloquées de plus de 24 h réparties sur 7 lanes**, une au moins par lane. Les PRs du jour mergent vite pendant que les vieilles s'accumulent : c'est le résidu que seule la reprise par la lane absorbe.
 
+### Les quatre causes de « à reprendre en première action » (déportées de la règle, tranche 3 de #11554, 2026-11-19 ; source : lignes 51-52 à la base `243c178019`)
+
+Ce qui compte comme à reprendre est ce qui **empêche vraiment le merge** — exactement quatre causes :
+
+1. un check **requis** en échec — le champ GraphQL `isRequired` fait foi, **pas un motif de nom** ;
+2. un conflit avec `main` ;
+3. un `CHANGES_REQUESTED` non levé ;
+4. un **point de review non levé** — **en tête des trois autres**.
+
+Pourquoi la quatrième domine : aveugles aux trois surfaces de `CLAUDE.md` §B.0 (nits du user en issue comments, préfixes de verdict dans les bodies de review, threads inline `isResolved`), une PR peut être verte, sans conflit, sans `CHANGES_REQUESTED` — et rester non mergeable. Le picker délègue cette détection à `check_unaddressed_nits.analyse`, **le même organe que le merge-gate**.
+
+Nuances qui bornent la file, verbatim de la règle d'origine : « une telle PR **sort du champ de la lane jusqu'à ce qu'un geste de lane redevienne possible** » ; la proposition de reprise revient à chaque cycle et **n'interdit jamais le grain suivant**.
+
 ## Veine plafonnée — historique et anti-pattern (R8, #11343 tranche 2)
 
 Avant que le tirage ne devienne systématique (R5), le plafond de veine portait une « condition d'appel » du picker. Depuis, il ne reste de lui que l'**interdit ciblé** : la PR suivante de la lane ne peut pas re-claimer l'umbrella qui vient de saturer (`vein_cap=2` PRs citant la même umbrella par jour de lane), quel que soit ce que le tirage propose — la commande `picker_command` exposée par `variation_light_cap.py` sert à écarter l'umbrella saturée.
@@ -274,6 +298,18 @@ Tranche 1 du slimming du harnais (#15204, parent #12051) : le détail déplacé 
 | L44 | ce que mesure l'organe `check_umbrella_freshness.py` | § « L44 » ci-dessous (et § « Umbrella #11900 ») |
 | L60 | pourquoi l'autorité est un test de résultat | § « L60 » ci-dessous (et § « Vocabulaire d'idle-honnête ») |
 | L76 | pourquoi le collision guard passe avant d'écrire | § « L76 » ci-dessous |
+
+### Traçabilité — tranche 3 du compactage (#11554, 2026-11-19, lane `myia-po-2028:CoursIA`)
+
+Déporté depuis la règle à la base `243c178019` — chaque bloc déplacé, sa ligne d'origine et sa cible :
+
+| Ligne d'origine (base `243c178019`) | Bloc déplacé | Porté par |
+|---|---|---|
+| L34 | cadence des visites de l'urne umbrella (second sous-grain, hebdo hors consolidation) + mandat daté de l'urne delivered | § « Tapis et urnes » ci-dessus |
+| L38 | énumération des trois organes du geste umbrella + la forme du bloc de réparation de body | [verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md) règle 5 et § « Umbrella #11900 » ci-dessus (déjà porteurs) |
+| L51 | développement des quatre causes (`isRequired`, sortie du champ de lane) | § « Les quatre causes » sous « Réparer son propre rouge » ci-dessus |
+| L52 | aveuglement aux trois surfaces §B.0 + délégation à l'organe merge-gate | § « Les quatre causes » sous « Réparer son propre rouge » ci-dessus |
+| L66 | parenthèse du mécanisme never-empty (redondante avec la ligne 28 de la même règle) | ligne 28 de la règle (non déplacée — retrait d'une redondance interne) |
 
 ### L26 — pourquoi le pool se tire au lieu de se scanner
 

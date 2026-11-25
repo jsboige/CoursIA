@@ -2152,7 +2152,7 @@ Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâch
 <img src="./images/img_130.png" class="max-h-[190px] w-full object-contain" alt="Traduction par interlingua : sémantique commune puis syntaxe et mots anglais/français (John loves Mary / Jean aime Marie)" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb">01-2-OpenAI-Whisper-STT.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb">01-5-Kokoro-TTS-Local.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb">01-2-OpenAI-Whisper-STT.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb">01-5-TTS-Local-ONNX.ipynb</a>.</p>
 ---
 
 

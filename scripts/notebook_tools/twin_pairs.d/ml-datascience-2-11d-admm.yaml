@@ -1,0 +1,10 @@
+- name: ML DataScience 2.11d ADMM
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: ADMM et la descente de coordonnées sont calculés en C# avec MathNet ; NumPy fournit le même tirage et scikit-learn ainsi que CVXPY CLARABEL ou SCS sont appelés via Python.NET.
+  known_differences:
+    - Les figures sont des SVG statiques ; Python.NET requiert CPython avec NumPy, scikit-learn et CVXPY.
+    - Les tolérances d'arrêt sont conservées ; les temps dépendent de l'environnement et les trajectoires ne sont pas des certificats exacts.

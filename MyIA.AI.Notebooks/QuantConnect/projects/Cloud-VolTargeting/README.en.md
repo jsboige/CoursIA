@@ -77,6 +77,7 @@ The v2 (multi-asset diversification + equal risk contribution) and v3 (+ momentu
 | File | Description |
 |------|-------------|
 | `main.py` | Volatility targeting with 3 variants (v1 SPY only, v2 multi-asset equal-risk, v3 +momentum +IEF defensive) |
+| `risk_kernel.py` | Deterministic risk kernel, identical copy of [`RiskKernel/risk_kernel.py`](../RiskKernel/README.md) |
 
 ## References
 

@@ -1,5 +1,18 @@
 /* CoursIA custom styles */
 
+/* Vignettes de listing : pas de cadre vide.
+   Quarto insere pour toute carte sans image de vignette un
+   `<div class="listing-item-img-placeholder card-img-top" style="height: 150px;">`
+   (fond `rgba(52,58,64,0.25)`) : la carte affiche alors un rectangle gris
+   vide. Mesure sur la page deployee du 21/11 : 32 cartes sur 56 sans
+   vignette, 0 image cassee sur les 24 qui en ont une -- le vide est un
+   defaut de rendu, pas une image manquante.
+   Le placeholder est retire (la CARTE reste) ; la vignette, elle, viendra
+   d'une fournie homogene d'extraction depuis les sorties existantes. */
+.listing-item-img-placeholder {
+  display: none;
+}
+
 /* Navbar */
 .navbar-brand {
   font-weight: 600;
@@ -162,4 +175,26 @@
     width: 100%;
     text-align: center;
   }
+}
+
+/* Boutons de lancement des pages de carnet (#27551, pli 2.3 de l'Epic #27543).
+   Le bloc est insere dans le HTML rendu par la passe post-rendu
+   scripts/notebook_tools/launch_buttons.py ; la classe sert d'ancre de
+   style et le marqueur data-coursia-launch-buttons rend la passe idempotente. */
+.coursia-launch-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem 0;
+}
+
+.coursia-launch-label {
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.coursia-launch-button {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
 }
