@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 # ICT — 4e fil de lecture : le problème de la représentation interne (généalogie de `p̂`, ICT-10 → ICT-17)
 

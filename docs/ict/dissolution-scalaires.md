@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 # ICT — 5e fil de lecture : la dissolution des scalaires (Φ / F / K → faisceau de proxys, ICT-1 → ICT-22)
 
