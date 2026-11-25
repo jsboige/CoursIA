@@ -23,7 +23,9 @@ celle d'un grain nu, plus la note qui dit la livraison.**
 5. les regles qui suivaient LIVREE sont rejouees, pas seulement l'occupation :
    le claim vivant d'une tierce lane reprend son ecart ;
 6. une pause posterieure au marqueur n'a jamais dependu de la reprise (le fil
-   est rouvert, elle est decidee avant) : la reprise ne la casse pas.
+   est rouvert, elle est decidee avant) : la reprise ne la casse pas ;
+7. le cas `[INFO] candidate-delivered`, autre entree de LIVREE, reprend la
+   meme decision ; seul, il reste dans la rotation avec sa note d'urne.
 
 Aucun test ne touche le reseau : `run` et la preuve sont des faux.
 """
@@ -180,6 +182,39 @@ def test_une_pause_posterieure_au_marqueur_garde_son_ecart(monkeypatch):
     assert servis == [], "un grain en pause n'est pas servi"
     assert ecartees[7]["code"] == "PAUSE"
     assert "Q42" in ecartees[7]["motif"], "l'ecart dit ce que le grain attend"
+
+# --- 7 : l'autre entree de LIVREE, le [INFO] candidate-delivered -------------
+
+INFO = "[INFO] candidate-delivered lane myia-po-2028:CoursIA -- PR #55 fusionnee"
+
+
+@VOIES
+def test_un_info_candidate_delivered_ne_masque_pas_l_occupation(monkeypatch, fil_complet):
+    """Le meme defaut, par l'autre entree de LIVREE.
+
+    Un dernier commentaire `[INFO] candidate-delivered` pose aussi l'ecart
+    (`_livree`, premiere branche). Sans la reprise, la preuve le retirait et
+    le grain tenu par une PR ouverte d'une autre lane etait servi.
+    """
+    servis, ecartees, *_ = _qualifier(monkeypatch, _fil([INFO]),
+                                      [_pr_ouverte(99, AUTRE)], fil_complet)
+    assert servis == [], "un grain tenu par une PR ouverte d'une autre lane n'est pas servi"
+    assert ecartees[7]["code"] == "OCCUPEE"
+    assert "#99" in ecartees[7]["motif"], "l'exclusion nomme la PR qui tient le grain"
+
+
+@VOIES
+def test_un_info_candidate_delivered_seul_reste_dans_la_rotation(monkeypatch, fil_complet):
+    """Controle : l'[INFO] n'est pas une preuve, le grain reste dans la rotation.
+
+    Comportement de la base, conserve : sans PR ouverte, rien n'ecarte le
+    grain, et la note dit que c'est le diff de la PR qui decide.
+    """
+    servis, ecartees, *_ = _qualifier(monkeypatch, _fil([INFO]), [], fil_complet)
+    assert [e.numero for e in servis] == [7]
+    assert 7 not in ecartees
+    assert any("candidate-delivered" in n for n in servis[0].notes), "la note de l'urne reste dite"
+
 
 # --- le module reste borne ---------------------------------------------------
 
