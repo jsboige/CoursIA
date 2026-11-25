@@ -1,0 +1,10 @@
+- name: "ICT-36h FLens RFNestedCV"
+  family: ICT-Series
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36h-FLens-RFNestedCV-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36h-FLens-RFNestedCV-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-25 (myia-po-2023:CoursIA) : jumeau C# ecrit en BCL pure -- ni scikit-learn ni NumPy. Le terrain synthetique (AR(1) par region, gradient anterieur-posterieur, dimension de Higuchi, complexite de Lempel-Ziv binarisee a la mediane) est reimplemente a la main, avec un generateur SplitMix64 + Box-Muller a la place du PCG64 de NumPy : les valeurs ne sont pas comparables chiffre a chiffre, et le carnet le declare dans son en-tete."
+    - "Foret aleatoire ecrite a la main : seize quantiles par descripteur et par noeud comme candidats de coupure, mtry = racine carree du nombre de descripteurs, importance d'impurete cumulee sur les arbres. Ce n'est pas l'implementation de scikit-learn ; les precisions different de quelques points (LZC 0,811 en C# contre 0,770 en Python sur la meme graine)."
+    - "Decoupage groupe glouton (le plus gros sujet restant va au pli le plus leger) au lieu du StratifiedGroupKFold de scikit-learn : aucun sujet ne franchit la frontiere dans les deux implementations, mais la repartition des sujets n'est pas identique. Les deux variantes du carnet C# partagent le meme decoupage, donc leur comparaison (Q3) reste valable."
+    - "Parite de STRUCTURE verifiee, pas de nombre : Q1 decodable et au-dessus de la nulle (p au plancher de 0,032 dans les deux), Q2 non mesurable dans les deux (biais -0,002 a -0,008 en C#, +0,006 a -0,000 en Python, signe instable entre graines), Q3 positif sur les huit graines (+0,143 en C#, +0,082 en Python), Q4 retombe au hasard a eta = 0 (0,468 contre 0,498) et croit avec l'amplitude. Le motif d'importance d'impurete reproduit aussi la region 0 au-dessus du hasard (0,102 contre 0,09 en Python) : c'est une propriete de l'estimateur, pas un accident de tirage."
