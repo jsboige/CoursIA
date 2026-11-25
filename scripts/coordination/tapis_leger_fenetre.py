@@ -92,6 +92,45 @@ def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
 rapport = tapis_leger_rapport.rapport
 
 
+def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
+                     prs_ouvertes: list[dict] | None, run=None,
+                     repli=None, pool_ouvert: bool = False,
+                     echeance: float | None = None, run_commande=None):
+    """Le cap, puis -- s'il a VIDE la file -- le repli qui rend la main.
+
+    Le cap de livraisons est la derniere etape de la selection : quand il
+    ecarte tous les items, la file sort VIDE et la lane ne recoit RIEN --
+    l'invariant I1 ("une file sans fin") est rompu par les filtres eux-memes.
+    La voie chronologique prend alors le relais : le cache local rend une
+    file, servie par date de creation.
+
+    `repli` : l'appelable de repli, **injecte** (le module du repli importe
+    celui-ci : l'injection evite l'import circulaire). `pool_ouvert` : le
+    pool porte-t-il des candidats ? Sans candidat, il n'y a rien a servir.
+
+    `run` : le FETTEUR du cap, au contrat `(since, until) -> list[dict]`.
+    `None` : le cap lit le reseau par son propre organe, avec le `run` de la
+    commande (`run_commande`) comme lanceur, sous l'`echeance` partagee.
+
+    Rend `(file, temoins, mesure, rendu)` : `rendu` est le `(rapport, code)`
+    du repli quand il a rendu la main, `None` sinon.
+
+    Le module `tapis_cap_livraisons` porte le CAP ; la glue cap-puis-repli
+    vit ici, avec la fenetre servie -- meme geste que l'extraction du
+    RAPPORT (`tapis_leger_rapport`) : le plafond de lignes du module du cap
+    ne bouge pas.
+    """
+    file, temoins, mesure = tapis_cap_livraisons.passer(
+        file, ordre, lane, maintenant, prs_ouvertes, run=run,
+        echeance=echeance, run_commande=run_commande)
+    if file or not pool_ouvert or repli is None:
+        return file, temoins, mesure, None
+    try:
+        return file, temoins, mesure, repli()
+    except gh_bulk.LectureIncomplete:
+        return file, temoins, mesure, None  # pas de cache local : file vide
+
+
 def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
            grains: int, maintenant: datetime, jours: int, graine: str,
            depot: Path, run, phases: dict, secondes: float,
@@ -112,11 +151,12 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
     # repli : le cap consomme le budget de la commande, il ne s'en donne pas
     # un neuf (#28114, I6).
     fin_cap = (echeance - RESERVE_REPLI_S) if echeance is not None else None
-    file, temoins_cap, cap_mesure, rendu = tapis_cap_livraisons.passer_et_replir(
+    file, temoins_cap, cap_mesure, rendu = passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
         classe["prs"], run=None, run_commande=run, echeance=fin_cap,
         pool_ouvert=bool(classe["grains"]),
-        repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine, depot))
+        repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine,
+                                         depot, echeance=echeance))
     if rendu is not None:
         return rendu
     file, qualif, erreur = qualifier(file, lane, maintenant, jours,
@@ -135,7 +175,7 @@ def servir(classe: dict, file: list, fenetre: dict, origami: dict, lane: str,
         # QUALIFIES restent DECLARES dans le rapport, jamais servis en
         # silence (fail-CLOSED).
         r, code = tapis_repli.replir(lane, grains, maintenant, jours, graine,
-                                     depot)
+                                     depot, echeance=echeance)
         q = dict(r.get("qualification") or {})
         q.update(qualif or {})
         q["repli"] = ("file confirmee vide : repli chronologique")

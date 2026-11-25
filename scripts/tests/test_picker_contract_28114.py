@@ -410,10 +410,11 @@ def test_I4_un_main_perime_degrade_le_tirage_il_ne_le_refuse_pas(monkeypatch,
     """
     monkeypatch.setenv("MAIN_FRESHNESS_FORCE", "1")
     monkeypatch.setattr(main_freshness, "mesurer",
-                        lambda depot, organes=None, run=None: {
+                        lambda depot, organes=None, run=None, echeance=None: {
                             "depot": str(depot), "branche": "main",
                             "ref_mesure": "refs/heads/main", "ecart": 2,
-                            "organes_divergents": [], "cause": None})
+                            "organes_divergents": [], "cause": None,
+                            "borne": False})
     pool = [_meta(4000 + k) for k in range(12)]
     code = tapis_rapide.main(["--lane", LANE, "--grains", "8", "--json"],
                               run=_run(pool))

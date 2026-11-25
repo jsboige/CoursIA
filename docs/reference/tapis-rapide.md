@@ -543,9 +543,23 @@ curseur passe par-dessus lui, faute de quoi il serait perdu pour la rotation ; e
 pas le curseur : une primaire étrangère déjà parquée ne fait pas avancer une tranche que le lot ne touche
 pas.
 
-**Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
-`LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
-a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
+**Le mur global** (`--budget-s`, 30 s par défaut — `gh_selection.MUR_GLOBAL_S`) couvre la lecture de
+sélection ; son dépassement lève `LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une
+liste à moitié. La qualification a son propre mur : dépassée, elle rend ce qu'elle a et le dit
+(`budget_epuise`).
+
+**L'échéance de commande** (invariant I6 de #28114). Le point d'entrée `tapis_rapide.main` pose **une
+seule** échéance, partagée par tous les étages : la garde de fraîcheur, la sélection, la qualification, le
+cap de livraisons et le repli. Aucun étage ne s'attribue un budget neuf : chacun reçoit le **temps
+restant**, et une lecture qui ignore son timeout est **abandonnée** au passage de l'échéance. Le budget
+total est la somme des parts — 30 s pour le tirage (`gh_selection.MUR_GLOBAL_S`) et 45 s pour la garde de
+fraîcheur (`tapis_borne.FRAICHEUR_S`, mesuré sur ce dépôt le 25/11 : `git fetch origin main` 12,4 s +
+`git diff --name-only origin/main` 20,1 s + `git rev-list` 1,7 s) — de sorte qu'aucun étage n'affame le
+suivant. Deux conséquences en découlent : une fraîcheur **coupée** par la borne est une **dégradation**
+(`FRAICHEUR_BORNEE` : le tirage rend sa file avec l'avertissement), pas un refus — seule une mesure
+impossible reste un refus ; et un **repli** lancé après l'échéance ne sert **rien** (fail-CLOSED), il
+rendrait la main hors contrat. Les primitives vivent dans `scripts/coordination/tapis_borne.py`, sans
+réseau.
 
 **Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
 désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,

@@ -2,16 +2,13 @@
 """Le REPLI CHRONOLOGIQUE du tirage : hors reseau, le cache local fait foi.
 
 L'invariant I2 du contrat du picker (#28114) : « un repli chronologique ».
-Hors reseau, la voie legere (`tapis_leger`) ne rend **rien** -- la lecture de
-selection echoue et le point d'entree sort en 3. Ce module rend la main : il
-lit le **cache** local (meme fichier que le tirage rapide, `lecture-<N>j.json`,
-ecrit par `gh_cache_fichier.ecrire`) et sert le pool dans l'**ordre de creation**.
+Hors reseau, la voie legere (`tapis_leger`) ne rend **rien** -- la lecture echoue
+et le point d'entree sort en 3. Ce module rend la main : il lit le **cache** local
+(meme fichier que le tirage rapide, `lecture-<N>j.json`), dans l'**ordre de creation**.
 
 Le cache du repli peut etre **perime** : la panne du reseau le rend seul
-disponible, et un pool d'il y a quelques heures vaut mieux qu'un tirage vide.
-
-Le **curseur** est persiste dans le dossier du cache : sans lui, chaque tour
-rendrait les memes grains et le pool ne serait jamais couvert.
+disponible. Le **curseur** est persiste dans le dossier du cache : sans lui,
+chaque tour rendrait les memes grains.
 """
 from __future__ import annotations
 
@@ -27,6 +24,7 @@ from coordination import (
     gh_selection,
     tapis_age,
     tapis_ancre,
+    tapis_borne,
     tapis_origami,
     tapis_rotation,
     tapis_universel,
@@ -98,21 +96,21 @@ def avancer(dossier: Path, lane: str, blocs: int) -> None:
 
 
 def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
-           depot) -> tuple[dict, int]:
+           depot, echeance: float | None = None) -> tuple[dict, int]:
     """Le repli : (rapport, 0) -- ou l'echec de lecture, leve.
 
-    Cache absent, illisible ou trop vieux : le repli est IMPOSSIBLE.
-
-    Le repli ne lit **jamais** le reseau : il n'a pas de `run`. Le cap de
-    livraisons y est donc INERTE (`fetcher_hors_reseau`), temoin `mesure: false`.
+    Cache absent, illisible ou trop vieux : le repli est IMPOSSIBLE. Il ne lit
+    **jamais** le reseau : pas de `run`, et le cap de livraisons y est INERTE
+    (`fetcher_hors_reseau`), temoin `mesure: false`.
 
     Le service est **chronologique** : la plus ancienne d'abord, le curseur
-    defile le pool de bloc en bloc (des tirages successifs couvrent le pool).
-
-    Les grains servis ici sont des **CANDIDATS DU CACHE** : le fil n'a pas ete
-    lu. L'action publique le dit (provenance `cache`) : lire le fil avant le
-    claim.
+    defile le pool de bloc en bloc. Les grains servis sont des **CANDIDATS DU
+    CACHE** : le fil n'a pas ete lu -- les lire avant le claim.
     """
+    # BORNE de commande (#28114, I6) : apres l'echeance, le repli ne sert RIEN.
+    if tapis_borne.expire(echeance):
+        raise gh_bulk.LectureIncomplete("selection", "repli",
+                                        "budget de commande epuise")
     dossier = gh_bulk.dossier_cache_defaut()
     cache = lire(dossier, jours)
     if not cache:

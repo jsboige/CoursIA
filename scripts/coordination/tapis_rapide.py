@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_sature, tapis_service,
+                         tapis_attente, tapis_borne, tapis_sature, tapis_service,
                          tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
@@ -440,8 +440,6 @@ def _parser() -> argparse.ArgumentParser:
 
 
 
-
-
 def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
                  fraicheur: dict | None, lire_fils: object) -> int:
     """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
@@ -489,16 +487,19 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
 
 
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None, lire_fils: object = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None,
+         echeance: float | None = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 (sans
-    # repli picker) est le REFUS -- mesure impossible ; retard ou module
-    # divergent DEGRADENT (sortie 0). Un rejeu --lecture est hors ligne.
+    # La BORNE de commande (#28114, I6) : une echeance unique, prise ICI.
+    echeance = echeance or tapis_borne.echeance()
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 est le
+    # REFUS (mesure impossible) ; retard ou module divergent DEGRADENT (0).
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
-        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale,
+                                                 echeance=echeance)
         if fraicheur["refuse"]:
             return 4  # pas le repli picker : il fait rejouer le meme incident
     # Bascule (#27225) : le tirage par defaut est leger -- classement sur
@@ -511,7 +512,7 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         maintenant = maintenant or datetime.now(UTC)
         graine = args.graine or graine_defaut(args.lane, maintenant)
         return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
-                                       fraicheur)
+                                       fraicheur, echeance=echeance)
     return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 

@@ -33,7 +33,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_equilibre
+from coordination import gh_bulk, gh_selection, tapis_borne, tapis_equilibre
 from coordination import (tapis_age, tapis_ancre, tapis_labels, tapis_origami,
                           tapis_public, tapis_rapide, tapis_repli,
                           tapis_rotation)
@@ -88,8 +88,7 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     """
     debut = time.monotonic()
     # UNE echeance monotone pour les trois etages (#28114, I6) : le temps
-    # restant borne chaque appel, donc un etage qui a consomme sa part voit
-    # l'etage suivant etre COUPE plutot qu'attendu.
+    # restant borne chaque appel, donc l'etage suivant est COUPE, pas attendu.
     echeance = echeance if echeance is not None else debut + gh_bulk.MUR_TIRAGE_S
     metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s,
                                                          echeance=echeance)
@@ -124,7 +123,8 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
 
 def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
            depot, run=gh_bulk.run_defaut,
-           budget_s: float = gh_selection.MUR_GLOBAL_S) -> tuple[dict, int]:
+           budget_s: float = gh_selection.MUR_GLOBAL_S,
+           echeance: float | None = None) -> tuple[dict, int]:
     """Le tirage leger complet : le rapport et le code de sortie.
 
     Sortie 3 : la lecture de selection est incomplete (rien n'est servi) --
@@ -132,9 +132,8 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     equivalente : la selection paginee est complete ou elle echoue.
 
     I2 (#28114) : le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la main -- hors
-    reseau, ou quand les filtres vident la file alors que le pool porte des
-    candidats. Le cache local fait foi, et le pool est servi dans l'ordre de
-    creation.
+    reseau, ou quand les filtres vident la file. Le cache local fait foi, et
+    le pool est servi dans l'ordre de creation.
     """
     debut = time.monotonic()
     # UNE echeance monotone pour TOUTE la commande (I6 de #28114) : la
@@ -142,12 +141,15 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     # Avant, chaque etage repartait d'une horloge neuve (60 s la selection,
     # 60 s la qualification) : une selection de 25 s suivie de 40 s de
     # qualification depassait le contrat de la commande entiere.
-    echeance = debut + budget_s
+    # Le tirage garde SON budget, plafonne par l'echeance de la commande.
+    echeance = (tapis_borne.part(echeance, budget_s) if echeance is not None
+                else debut + budget_s)
     try:
         classe = classer(lane, maintenant, jours, graine, depot, run, budget_s,
                           echeance=echeance)
     except gh_bulk.LectureIncomplete:
-        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
+        return tapis_repli.replir(lane, grains, maintenant, jours, graine,
+                                   depot, echeance=echeance)
     ancres = tapis_ancre.lire(lane)
     # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord ; les
     # CONTENEURS passent avec : leurs racines labellisees `consolidation`.
