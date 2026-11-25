@@ -231,7 +231,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: ecart_label(e.labels)),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
         ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
-        ("LIVREE", lambda: _livree(it, e, evts)),
+        # LIVREE se tait pendant la REPRISE : la preuve a retire l'ecart, les
+        # regles suivantes sont rejouees (`tapis_reprise_livree`, #28114).
+        ("LIVREE", lambda: None if ctx.get("livree_muette") else _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
         # La pause passe AVANT les ecarts de recul (COUVERTE, RELACHEE) : une
@@ -434,12 +436,6 @@ def _parser() -> argparse.ArgumentParser:
                         "lourd : l'ancienne lecture du pool entier (rejeu "
                         "--lecture inclus)")
     return p
-
-
-
-
-
-
 
 
 def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
