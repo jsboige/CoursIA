@@ -1,0 +1,240 @@
+# Conformité différentielle de Z3-18-Sudoku-Modes (triplet Python + C# + Rust).
+#
+# Les trois carnets ont la MÊME structure de cellules — 22 cellules, dont 7
+# de code aux mêmes index 1, 6, 9, 12, 16, 18, 20. La correspondance est donc
+# directe par index ; elle n'a pas besoin d'être écrite à la main comme dans
+# les triplets dont les structures divergent (Sudoku, CSP).
+#
+# Écarts de rendu MESURÉS entre les trois côtés (aucun n'est supposé) — relevés
+# sur les sorties COMMITÉES des carnets existants, pas sur une exécution
+# locale :
+#   - cellule 6 et 9 : le jumeau C# rend le verdict « SATISFIABLE » (l'énumération
+#     `Status` de Microsoft.Z3) là où Python et Rust rendent « sat » (la même
+#     énumération côté pyz3 et côté crate `z3`). Les deux mesures de verdict
+#     déclarent donc le côté C# absent, avec leur motif ;
+#   - cellule 12 : le jumeau Python écrit « Les deux solutions coïncident : True »
+#     (avec tréma) et le jumeau C# « Les deux solutions coincident : True »
+#     (SANS tréma). Le jumeau Rust suit le jumeau Python, côté de référence : la
+#     mesure de cette ligne déclare donc le côté C# absent, avec son motif ;
+#   - le jumeau C# écrit ses sorties avec des fins de ligne CRLF (\r\n) là où
+#     Python et Rust écrivent LF (\n). Le contenu est identique au caractère
+#     près, la comparaison de texte brut ne l'est donc pas. Les mesures
+#     multi-lignes passent donc par `transform: digits`, qui ignore les fins de
+#     ligne, et les motifs des lignes uniques se terminent par `\r?$` ;
+#   - INDENTATION : le jumeau C# indente ses lignes de grille de DEUX espaces
+#     ("  [1, 3, 4, 2]") là où Python et Rust en indentent TROIS
+#     ("   [1, 3, 4, 2]"). Écart de rendu, pas de sémantique : les motifs du
+#     côté C# portent ses deux espaces, et la transformation `text` (qui
+#     rogne les espaces de bord) rend les trois côtés comparables. Le jumeau
+#     Rust suit le jumeau Python, côté de référence.
+#
+# Le jumeau Rust porte en outre une différence de moteur, DÉCLARÉE et non
+# comparable : la crate `z3` 0.23.0 lie la bibliothèque native Z3 5.3.3 du
+# poste, alors que le jumeau Python utilise le paquet PyPI `z3-solver` 4.16.0
+# et le jumeau C# le paquet NuGet `Microsoft.Z3` 4.12.2. La ligne de version
+# (cellule 1) n'est donc pas mesurée : aucun des trois côtés n'est comparable
+# aux deux autres.
+- name: "Z3-18-Sudoku-Modes"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Rust.ipynb
+  measures:
+    - id: c6_statut_constants
+      description: "Cellule 6 — verdict du solveur en mode Constants (ligne ancrée ; le jumeau C# rend « SATISFIABLE », il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(Mode Constants - statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# rend l'enumeration Microsoft.Z3 « SATISFIABLE » là où Python et Rust rendent « sat » — meme verdict, rendu different"
+        rust:
+          cell: 6
+          pattern: "(?m:^(Mode Constants - statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c6_grille_ligne1
+      description: "Cellule 6 — première ligne de la grille Constants (ligne ancrée, trois espaces d'indentation compris)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\])\\r?$)"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "(?m:^(  \\[1, 3, 4, 2\\])\\r?$)"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\])\\r?$)"
+          transform: text
+    - id: c6_grille
+      description: "Cellule 6 — les quatre lignes de la grille Constants (bloc ; les fins de ligne CRLF du jumeau C# sont ignorees par la transformation « digits »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\]\\n   \\[4, 2, 1, 3\\]\\n   \\[3, 1, 2, 4\\]\\n   \\[2, 4, 3, 1\\]))"
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: "(?m:^(  \\[1, 3, 4, 2\\][\\r\\n]+  \\[4, 2, 1, 3\\][\\r\\n]+  \\[3, 1, 2, 4\\][\\r\\n]+  \\[2, 4, 3, 1\\]))"
+          transform: digits
+        rust:
+          cell: 6
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\]\\n   \\[4, 2, 1, 3\\]\\n   \\[3, 1, 2, 4\\]\\n   \\[2, 4, 3, 1\\]))"
+          transform: digits
+    - id: c9_statut_array
+      description: "Cellule 9 — verdict du solveur en mode Array (ligne ancrée ; le jumeau C# rend « SATISFIABLE », il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(?m:^(Mode Array - statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# rend l'enumeration Microsoft.Z3 « SATISFIABLE » là où Python et Rust rendent « sat » — meme verdict, rendu different"
+        rust:
+          cell: 9
+          pattern: "(?m:^(Mode Array - statut : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c9_grille_ligne1
+      description: "Cellule 9 — première ligne de la grille Array (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\])\\r?$)"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "(?m:^(  \\[1, 3, 4, 2\\])\\r?$)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\])\\r?$)"
+          transform: text
+    - id: c9_grille
+      description: "Cellule 9 — les quatre lignes de la grille Array (bloc ; fins de ligne ignorees par la transformation « digits »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\]\\n   \\[4, 2, 1, 3\\]\\n   \\[3, 1, 2, 4\\]\\n   \\[2, 4, 3, 1\\]))"
+          transform: digits
+        csharp:
+          cell: 9
+          pattern: "(?m:^(  \\[1, 3, 4, 2\\][\\r\\n]+  \\[4, 2, 1, 3\\][\\r\\n]+  \\[3, 1, 2, 4\\][\\r\\n]+  \\[2, 4, 3, 1\\]))"
+          transform: digits
+        rust:
+          cell: 9
+          pattern: "(?m:^(   \\[1, 3, 4, 2\\]\\n   \\[4, 2, 1, 3\\]\\n   \\[3, 1, 2, 4\\]\\n   \\[2, 4, 3, 1\\]))"
+          transform: digits
+    - id: c12_valide_constants
+      description: "Cellule 12 — validité de la solution Constants (ligne ancrée)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(?m:^(Solution Constants valide : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "(?m:^(Solution Constants valide : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "(?m:^(Solution Constants valide : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c12_valide_array
+      description: "Cellule 12 — validité de la solution Array (ligne ancrée, espaces d'alignement compris)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(?m:^(Solution Array valide      : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "(?m:^(Solution Array valide      : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "(?m:^(Solution Array valide      : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: c12_coincidence
+      description: "Cellule 12 — coïncidence des deux solutions (ligne ancrée ; le jumeau C# écrit « coincident » sans tréma, il est donc déclaré absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(?m:^(Les deux solutions coïncident : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          absent: "le jumeau C# ecrit « Les deux solutions coincident » sans le trema, la ligne n'est donc pas identique au caractere pres aux deux autres cotes"
+        rust:
+          cell: 12
+          pattern: "(?m:^(Les deux solutions coïncident : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: e16_message
+      description: "Cellule 16 — message de l'exercice 1 (stub C.1, libellé exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^(Exercice 1 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^(Exercice 1 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^(Exercice 1 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: e18_message
+      description: "Cellule 18 — message de l'exercice 2 (stub C.1, libellé exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^(Exercice 2 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^(Exercice 2 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^(Exercice 2 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+    - id: e20_message
+      description: "Cellule 20 — message de l'exercice 3 (stub C.1, libellé exact de la source)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "(?m:^(Exercice 3 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        csharp:
+          cell: 20
+          pattern: "(?m:^(Exercice 3 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "(?m:^(Exercice 3 a completer : [^\\r\\n]*)\\r?$)"
+          transform: text
