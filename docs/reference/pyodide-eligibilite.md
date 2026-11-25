@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1468** carnets Python, **572** eligibles, **896** refuses.
+Census : **1472** carnets Python, **574** eligibles, **898** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -90,14 +90,14 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | FineTuning | 11 | 0 | 11 | 11 | 0 | 0 | 4 | 8 |
 | Fondations | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | HumorDetection | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
-| ICT-Series | 101 | 81 | 20 | 9 | 1 | 3 | 0 | 15 |
+| ICT-Series | 102 | 81 | 21 | 9 | 1 | 3 | 0 | 16 |
 | Image | 33 | 5 | 28 | 7 | 21 | 22 | 4 | 24 |
 | Infer | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | InformationQuantique | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | InformationTheory | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
-| Lean | 131 | 104 | 27 | 1 | 5 | 4 | 11 | 18 |
+| Lean | 133 | 106 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 15 | 12 | 3 | 1 | 0 | 0 | 2 | 2 |
 | Metajeux | 7 | 5 | 2 | 1 | 0 | 0 | 1 | 0 |
@@ -136,10 +136,10 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Video | 23 | 3 | 20 | 16 | 11 | 14 | 6 | 19 |
 | _research | 1 | 0 | 1 | 1 | 1 | 1 | 0 | 1 |
 | docker-configurations/notebook-runner | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
-| gateway | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 |
+| gateway | 2 | 0 | 2 | 0 | 0 | 0 | 1 | 1 |
 | kelly_lean | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | partner-course-quant-trading | 7 | 0 | 7 | 0 | 0 | 0 | 5 | 4 |
-| projects | 113 | 5 | 108 | 10 | 0 | 2 | 65 | 53 |
+| projects | 113 | 5 | 108 | 10 | 0 | 3 | 65 | 54 |
 | research | 26 | 5 | 21 | 4 | 0 | 0 | 4 | 17 |
 | scripts/notebook_tools | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 
@@ -155,7 +155,7 @@ par classe :
 |---|---|---:|
 | `dependance_locale` | un module de la serie a une dependance absente de la distribution | 18 |
 | `hors_serie` | le carnet importe un module d'une autre serie, non livre par le bundle | 23 |
-| `absent_distribution` | l'import est une roue pure que le carnet n'installe pas lui-meme | 173 |
+| `absent_distribution` | l'import est une roue pure que le carnet n'installe pas lui-meme | 174 |
 
 Ces trois classes sont mesurees sur la population que le critere acceptait
 **avant** l'alignement -- un carnet deja refuse pour un GPU ou une cle n'y
@@ -164,7 +164,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 778 | 572 |
+| Carnets eligibles | 781 | 574 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -257,10 +257,10 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb` | Compression | python3 | lxml==6.1.3 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb` | Compression | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb` | Constructeur | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb` | DataScienceWithAgents | python3 | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb` | DataScienceWithAgents | python3 | pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-01-Python_pour_la_Data_Science-Python.ipynb` | DataScienceWithAgents | python3 | - | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-03-Analyse_de_Donnees_avec_Pandas-Python.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-05-Exploration_Nettoyage_Donnees_Reelles-Python.ipynb` | DataScienceWithAgents | python3 | pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11c-Lasso-SOTA-Comparison.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
@@ -479,8 +479,10 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/10-ondes-riemann.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/11-riemann-roch.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/12-zeros-simples-ligne-critique.ipynb` | Lean | python3 | mpmath==1.4.1 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/12b-grh-ce-quon-peut-calculer.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/13-bernoulli-zeta-negatifs-todd.ipynb` | Lean | python3 | matplotlib==3.10.8, mpmath==1.4.1 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/14-deux-annonces-grh-meme-jour.ipynb` | Lean | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/15-espace-tangent-par-les-courbes.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/01-corps-finis-borne-hasse.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/01b-chevalley-warning-divisibilite-solutions.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/02-valeurs-zeta-multiples-finies.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
@@ -806,7 +808,7 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | Vibe-Coding | suffisance | - |
 | Video | cle, gpu, import_absent, reseau, suffisance | basicsr.archs.rrdbnet_arch (2), bitsandbytes (2), decord (2), ffmpeg (1), imageio_ffmpeg (1) |
 | _research | cle, gpu, reseau, suffisance | - |
-| gateway | suffisance | - |
+| gateway | import_absent, suffisance | kernel_gateway (1) |
 | partner-course-quant-trading | import_absent, suffisance | AlgorithmImports (5) |
 | projects | gpu, import_absent, reseau, suffisance | AlgorithmImports (65) |
 | research | gpu, import_absent, suffisance | AlgorithmImports (4) |
