@@ -310,14 +310,20 @@ def test_le_budget_borne_les_lectures_et_les_prend_du_plus_vieux(monkeypatch):
 
 
 def test_l_echantillon_in_progress_borne_les_lectures(monkeypatch):
+    """Borne d'echantillon. Depuis #28552 elle ne mord que tant que la garde
+    anti-faux-positif n'est pas satisfaite : les jobs de ce temoin portent un
+    AUTRE label, donc aucune preuve n'est faite et la sonde va au bout de
+    l'echantillon (le cas « preuve faite » est couvert en 2ter)."""
     api = _patch(monkeypatch, FakeApi(
         in_progress=[_run(1000 + i, 1 + i) for i in range(40)],
-        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(40)},
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1, label="autre-label")]
+              for i in range(40)},
     ))
     st = _fetch(api, in_progress_sample=5)
     assert len(api.job_reads) == 5
     assert st.in_progress_unread == 35
-    assert len(st.in_progress) == 5
+    assert st.in_progress_satisfied_exit == 0
+    assert len(st.in_progress) == 0
 
 
 def test_le_budget_global_couvre_aussi_l_echantillon_in_progress(monkeypatch):
@@ -331,6 +337,82 @@ def test_le_budget_global_couvre_aussi_l_echantillon_in_progress(monkeypatch):
     st = _fetch(api, job_read_budget=2, in_progress_sample=20)
     assert st.job_reads == 2
     assert len(api.job_reads) == 2
+
+
+# --- 2ter. Sortie anticipee de la passe in_progress (#28552) ----------------
+#
+# La passe in_progress ne sert qu'a PROUVER qu'un slot du label sert (garde
+# anti-faux-positif) : une fois cette preuve faite, lire les runs suivants ne
+# change plus le verdict et coute un appel REST par run, a chaque passage. La
+# sortie est comptee separement du budget (`in_progress_satisfied_exit`) et le
+# compte de jobs en cours devient une borne inferieure, dite « au moins N ».
+
+def test_la_preuve_d_un_job_du_label_arrete_la_passe_in_progress(monkeypatch):
+    """Un seul run lu suffit : le verdict est deja complet, les 4 suivants non."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(5)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(5)},
+    ))
+    st = _fetch(api, in_progress_sample=5)
+    assert api.job_reads == [1000], api.job_reads
+    assert st.job_reads == 1
+    assert st.in_progress_satisfied_exit == 4
+    # Ces runs ne sont PAS « non lus faute de budget » : rien n'a manque.
+    assert st.in_progress_unread == 0
+    assert len(st.in_progress) == 1
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert any(n.startswith("au moins 1 job(s) in_progress")
+               for n in v.notes), v.notes
+    assert not v.errors
+
+
+def test_un_etat_connu_rend_la_meme_sortie_qu_avant(monkeypatch):
+    """Temoin de semantique inchangee : quand la preuve n'arrive qu'au dernier
+    run eligible, la sonde lit tout l'echantillon et rend le compte EXACT,
+    identique a ce que rendait la sonde avant #28552."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(3)],
+        jobs={1000: [_job(9000, "completed", 1)],
+              1001: [_job(9001, "in_progress", 1, label="autre-label")],
+              1002: [_job(9002, "in_progress", 1)]},
+    ))
+    st = _fetch(api, in_progress_sample=3)
+    assert sorted(api.job_reads) == [1000, 1001, 1002], api.job_reads
+    assert st.in_progress_satisfied_exit == 0
+    assert len(st.in_progress) == 1
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert "1 job(s) in_progress, rien d'affame -- OK" in v.notes, v.notes
+    assert not v.errors
+
+
+def test_aucun_job_du_label_en_cours_lit_tout_l_echantillon(monkeypatch):
+    """Sans preuve, pas de sortie : la garde ne se satisfait pas d'un silence,
+    et les runs restants restent des non-lus faute de budget/echantillon."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(4)],
+        jobs={1000 + i: [_job(9000 + i, "queued", 1)] for i in range(4)},
+    ))
+    st = _fetch(api, in_progress_sample=2)
+    assert len(api.job_reads) == 2
+    assert st.in_progress_satisfied_exit == 0
+    assert st.in_progress_unread == 2
+    assert st.in_progress == []
+
+
+def test_une_lecture_jobs_en_echec_ne_satisfait_pas_la_garde(monkeypatch):
+    """Un appel `jobs` en panne ne prouve rien : aucune sortie anticipee, et le
+    passage ne conclut pas OK sur ce silence (#22215/#22234)."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(3)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(3)},
+        fail_on=("jobs",),
+    ))
+    st = _fetch(api, in_progress_sample=3)
+    assert st.in_progress_satisfied_exit == 0
+    assert len(api.job_reads) == 3
+    assert st.in_progress == []
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert not any(n.endswith("rien d'affame -- OK") for n in v.notes), v.notes
 
 
 # --- 2bis. Budget epuise / listing illisible : jamais de conclusion

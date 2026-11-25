@@ -594,6 +594,12 @@ class Starvation:
     skipped_young: int = 0
     budget_unread: list[tuple[str, int, float]] = field(default_factory=list)
     in_progress_unread: int = 0
+    # #28552 : runs in_progress NON lus parce que la garde anti-faux-positif
+    # etait deja satisfaite (un job du label tournait). Distinct de
+    # `in_progress_unread` (budget epuise) : ici rien n'a manque au verdict,
+    # mais le nombre de jobs en cours rendu est une BORNE INFERIEURE
+    # (« au moins N »), jamais une absence.
+    in_progress_satisfied_exit: int = 0
     listing_failed: set[str] = field(default_factory=set)
     # Runs ecartes PAR LE FILTRE DE CHEMIN (jamais lus, jamais comptes) :
     # ils ne peuvent pas porter un job du label mesure. Le compte est une
@@ -926,6 +932,17 @@ def fetch_starvation(
             result.in_progress_unread += 1
             continue
         absorb(run, "in_progress", created)
+        # #28552 : la passe in_progress ne sert qu'a PROUVER qu'un slot du
+        # label sert (garde anti-faux-positif : sans elle, une file qui
+        # drainne passerait pour une file morte). Des qu'un job du label est
+        # vu en cours, lire les runs suivants de l'echantillon ne change plus
+        # le verdict -- or c'est la le cout paye par passage. La sortie est
+        # comptee separement du budget epuise, et le nombre de jobs en cours
+        # rendu devient une borne inferieure.
+        if result.in_progress:
+            eligible = min(len(scoped_in_progress), sample)
+            result.in_progress_satisfied_exit = max(eligible - (idx + 1), 0)
+            break
 
     # Residuel adjoint (po-2025:CoursIA-2, 2026-09-02 14:24Z) : un run observe
     # au tour queued qui transite vers un etat terminal ENTRE les deux listing
@@ -1182,6 +1199,19 @@ def _live_queue_depth(repo: str) -> tuple[int | None, int | None, str, int]:
     return report["live_depth"], None, "", calls
 
 
+def _count_in_progress(st: Starvation) -> str:
+    """Compte rendu des jobs en cours (#28552).
+
+    La passe in_progress peut s'arreter des que la garde anti-faux-positif est
+    satisfaite : le nombre lu n'est alors qu'une BORNE INFERIEURE, et le dire
+    « au moins N » est exact. Un echantillon lu en entier rend le compte
+    exact, comme avant.
+    """
+    if st.in_progress_satisfied_exit:
+        return f"au moins {len(st.in_progress)}"
+    return str(len(st.in_progress))
+
+
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
              label: str = DEFAULT_LABEL,
              declared: DeclaredHosts | None = None,
@@ -1245,6 +1275,12 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
         v.notes.append(
             f"{st.in_progress_unread} run(s) in_progress hors echantillon -- "
             f"non lus : le predicat ne demande que l'existence d'un job en cours."
+        )
+    if st.in_progress_satisfied_exit:
+        v.notes.append(
+            f"{st.in_progress_satisfied_exit} run(s) in_progress non lus apres "
+            f"la preuve qu'un job du label tourne (#28552) : le compte de jobs "
+            f"en cours est une borne inferieure, le verdict est complet."
         )
     if st.budget_unread:
         oldest_unread = max(a for _, _, a in st.budget_unread)
@@ -1364,10 +1400,10 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
     elif st.starved:
         v.notes.append(
             f"file profonde mais saine: {len(st.starved)} job(s) queued > seuil, "
-            f"{len(st.in_progress)} job(s) in_progress -- capacite en train de drainer"
+            f"{_count_in_progress(st)} job(s) in_progress -- capacite en train de drainer"
         )
     elif st.in_progress:
-        v.notes.append(f"{len(st.in_progress)} job(s) in_progress, rien d'affame -- OK")
+        v.notes.append(f"{_count_in_progress(st)} job(s) in_progress, rien d'affame -- OK")
     else:
         v.notes.append("ni queue affamee ni job en cours -- OK")
 
@@ -1696,6 +1732,12 @@ def main() -> int:
         "skipped_young_runs": st.skipped_young if st is not None else None,
         "budget_unread_runs": len(st.budget_unread) if st is not None else None,
         "in_progress_unread_runs": st.in_progress_unread if st is not None else None,
+        # #28552 : runs non lus parce que la garde anti-faux-positif etait deja
+        # satisfaite. Distinct des `in_progress_unread_runs` (budget) : ici le
+        # verdict ne perd rien, seul le COMPTE de jobs en cours devient une
+        # borne inferieure (rendu « au moins N » dans le rapport texte).
+        "in_progress_satisfied_exit_runs": (
+            st.in_progress_satisfied_exit if st is not None else None),
         "listing_failed": sorted(st.listing_failed) if st is not None else [],
         # L'etat du miroir d'objets (#26453) : la ligne `[WARN][mirror]` doit
         # etre lisible par une machine, pas seulement par un oeil sur le
