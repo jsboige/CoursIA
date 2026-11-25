@@ -5,6 +5,13 @@ suppression/deplacement, et confronte le verdict de l'organe. Les scenarios
 sont les formes mesurees sur l'incident fondateur (#27119) : lien same-dir
 pendouillant, cle de baseline repo-relative, lien relatif ../, deplacement
 solidaire exempt de faux positif, artefact derive exclu.
+
+Limite connue (mesuree, non traitee ici) : un lien URL-encode dans le corps
+markdown, `[x](My%20Notebook.ipynb)`, n'est PAS detecte quand le carnet
+`serie/My Notebook.ipynb` est deplace -- la preselection `git grep -F` cherche
+le basename litteral (`My Notebook.ipynb`), absent du blob, donc le fichier
+n'entre jamais dans les candidats. Le scope reel est faible (0 lien
+`%20.ipynb` au head du 25/11) ; consigne ici plutot que d'etendre l'organe.
 """
 
 from __future__ import annotations
