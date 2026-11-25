@@ -2,7 +2,7 @@
 
 **Statut** : protocole bloquant pour l'EPIC #13303 (Observatoire des formes relationnelles — témoins externes pour humour, désir, attachement). Ce grain **ne mesure rien**. Il écrit le contrat que toute mesure ultérieure sous #13303 doit respecter pour être réfutable.
 
-**Outillage de référence** (livré, ne pas reconstruire) : [`CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) — différence-en-différences, contrôle synthétique, régression sur discontinuité, variables instrumentales.
+**Outillage de référence** (livré, ne pas reconstruire) : [`Causalite-07-Quasi-Experimentales-Python.ipynb`](../../Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb) — différence-en-différences, contrôle synthétique, régression sur discontinuité, variables instrumentales (série renommée Causal-Bridges -> Causalite, #26392).
 
 **Sister issues** : #13303 (EPIC parent), #12680 (humour), #12682 (désir), #12683 (attachement).
 
@@ -104,7 +104,7 @@ Sans pré-inscription, **toute mesure post hoc peut être racontée**. Le cas su
 
 L'outillage méthodologique est déjà livré dans :
 
-[`../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb)
+[`Causalite-07-Quasi-Experimentales-Python.ipynb`](../../Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb)
 
 Ce notebook porte : différence-en-différences, contrôle synthétique (SyntheticDiD), régression sur discontinuité (RDD), variables instrumentales (IV/2SLS). **Le protocole y renvoie ; il ne réimplémente rien.** Si une méthode manque pour un cas ultérieur, c'est une issue sur ce notebook, pas ici.
 

@@ -143,7 +143,7 @@ Les références des sous-séries conduisent à Noether et aux théories de jaug
 
 ### Formalisations Lean
 
-Les carnets de cette famille sont en Python ; les énoncés formels vivent ailleurs dans le dépôt. La violation d'une inégalité de Bell est le témoin opérationnel de l'intrication : sa borne quantique, celle de Tsirelson, est prouvée dans [Lean-13b](../SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb), et sa saturation dans [Lean-13c](../SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb). Les polynômes de Jones que Jauge-03 tire d'une R-matrice sont recalculés par une voie indépendante dans [KNOTS-02](../SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb). L'énoncé d'existence Yang–Mills cité par Jauge-03 a sa [cartographie sourcée](../../docs/research/yang-mills-openai-20261028-analyse.md), qui dit ce qui y est prouvé et ce qui reste hors périmètre.
+Les carnets de cette famille sont en Python ; les énoncés formels vivent ailleurs dans le dépôt. La violation d'une inégalité de Bell est le témoin opérationnel de l'intrication : sa borne quantique, celle de Tsirelson, est prouvée dans [Lean-13b](../SymbolicAI/Lean/Lean-13b-CHSH-Tsirelson-Native.ipynb), et sa saturation dans [Lean-13c](../SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb). Les polynômes de Jones que Jauge-03 tire d'une R-matrice sont recalculés par une voie indépendante dans [KNOTS-02](../SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb). L'énoncé d'existence Yang–Mills cité par Jauge-03 a sa [cartographie sourcée](../../docs/research/yang-mills-openai-20261028-analyse.md), qui dit ce qui y est prouvé et ce qui reste hors périmètre.
 
 ### Fonctions de Green et probabilités
 
