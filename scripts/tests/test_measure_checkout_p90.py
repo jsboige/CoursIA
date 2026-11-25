@@ -509,7 +509,10 @@ def test_un_job_avec_checkout_sans_duree_de_job_est_compte_a_part(monkeypatch, c
     monkeypatch.setattr(mcp, "gh", api)
     monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--runs", "5"])
     assert mcp.main() == 0
-    parts = json.loads(capsys.readouterr().out)["part_du_checkout"]
+    report = json.loads(capsys.readouterr().out)
+    parts = report["part_du_checkout"]
+    assert report["rows"][0]["checkout_min_somme"] == 2.0
+    assert report["rows"][0]["checkout_share_du_temps"] is None
     assert parts["tous_les_jobs"]["jobs"] == 0
     assert parts["tous_les_jobs"]["mediane"] is None
     assert parts["jobs_avec_etape_checkout"]["jobs"] == 0
@@ -598,3 +601,15 @@ def test_une_erreur_serveur_isolee_est_rejouee_pas_un_quota_epuise(monkeypatch):
         mcp.gh("/x")
     assert pauses == []
     assert len(appels) == 1
+
+    appels.clear()
+
+    def interdit(*a, **k):
+        appels.append(1)
+        return SimpleNamespace(returncode=1, stdout="", stderr="gh: Forbidden (HTTP 403)")
+
+    monkeypatch.setattr(mcp.subprocess, "run", interdit)
+    with pytest.raises(RuntimeError, match="403"):
+        mcp.gh("/x")
+    assert len(appels) == 1
+    assert pauses == []

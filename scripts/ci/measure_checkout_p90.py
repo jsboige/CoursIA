@@ -71,6 +71,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import statistics
 import subprocess
 import time
@@ -108,7 +109,7 @@ def gh(path: str) -> dict:
         )
         if out.returncode == 0:
             break
-        if "rate limit" in out.stderr.lower():
+        if "rate limit" in out.stderr.lower() or not re.search(r"\bHTTP 5\d\d\b", out.stderr):
             break
         if essai < ESSAIS:
             time.sleep(PAUSE_S * essai)
@@ -304,6 +305,8 @@ def _bucket() -> dict:
         "job": [],
         "checkout_min_somme": 0.0,
         "job_min_somme": 0.0,
+        "checkout_part_somme": 0.0,
+        "job_part_somme": 0.0,
     }
 
 
@@ -442,6 +445,8 @@ def main() -> int:
                 parts_du_run.append(part)
                 somme_tous[0] += found or 0.0
                 somme_tous[1] += total
+                bucket["checkout_part_somme"] += found or 0.0
+                bucket["job_part_somme"] += total
                 if part > 1.0:
                     parts_superieures_a_1 += 1
                 if found is not None:
@@ -479,9 +484,11 @@ def main() -> int:
                 # classent par cout par job.
                 "checkout_min_somme": round(bucket["checkout_min_somme"], 2),
                 "job_min_somme": round(bucket["job_min_somme"], 2),
+                # Ratio sur les seuls jobs admissibles, contrairement aux
+                # sommes brutes ci-dessus qui couvrent chaque duree connue.
                 "checkout_share_du_temps": (
-                    round(bucket["checkout_min_somme"] / bucket["job_min_somme"], 3)
-                    if bucket["job_min_somme"] > 0
+                    round(bucket["checkout_part_somme"] / bucket["job_part_somme"], 3)
+                    if bucket["job_part_somme"] > 0
                     else None
                 ),
                 # Part du checkout dans le p90 du job : c'est le nombre qui
