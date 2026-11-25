@@ -518,6 +518,44 @@ Chaque run vise est **journalise** dans le rapport JSON (`reorientation.reorient
 `reorientation.failed` avec le motif) et dans le resume du job : un echec partiel est
 nomme, jamais masque.
 
+## Census des consommateurs du quota d'installation (#26739)
+
+Le quota d'installation du depot est de **1 000 appels/h** sur le seau partage de
+`GITHUB_TOKEN`. Le controleur de debordement est l'un de ses consommateurs (il
+paye ~300 appels par passage), et son cout a change de seau le 2026-11-16 :
+l'action `.github/actions/gh-app-token` le fait passer sur le **jeton de l'App**,
+de seau distinct (mesure du 2026-11-25 : `api-quota: source=app` dans le
+journal du controller). Le seau d'installation ne paye donc plus ce passage.
+
+Ce qui reste a mesurer, c'est **qui paie quoi** sur le seau d'installation.
+L'organe `scripts/ci/census_installation_quota.py` rend cette mesure
+reproductible :
+
+```
+python scripts/ci/census_installation_quota.py --hours 24 --sample 3
+```
+
+Trois colonnes, trois instruments :
+
+| colonne | instrument | ce qu'elle dit |
+|---|---|---|
+| runs/24 h | `total_count` par workflow | le nombre de passages (mesure exacte) |
+| appels payes/passage | lignes `api-quota:` des journaux | les appels **payes** -- les 304 sont gratuits pour GitHub |
+| appels visibles/passage | lignes `##[command]gh api` des journaux | borne inferieure : les appels faits par un script Python (sortie capturee) n'apparaissent pas |
+
+Un passage dont l'organe ne publie pas de ligne `api-quota:` est rendu `n.m.` :
+une valeur inventee serait pire qu'un trou.
+
+**Deux pieges de mesure, deja payes.** Le listing global
+`GET /repos/{owner}/{repo}/actions/runs` est **plafonne a 1 000 resultats**
+(mesure du 2026-11-25 : la page 11 rend `total_count: 0` sur une fenetre de 24 h
+qui en produit plusieurs milliers) : le census compte donc workflow par
+workflow, ou `total_count` ne depend pas de la pagination. Et le census
+consomme **le seau du jeton utilisateur** (~120 appels : la liste des workflows,
+puis un compte par workflow, puis un journal par passage echantillonne), pas le
+seau d'installation : il peut donc tourner pendant que la CI souffre, mais il
+n'est pas gratuit pour la machine qui le lance.
+
 ## Voir aussi
 
 - [#22921](https://github.com/jsboige/CoursIA/pull/22921) — phase A, la forme hybride des 25 workflows ;
@@ -525,4 +563,5 @@ nomme, jamais masque.
 - `scripts/ci/check_scheduler_liveness.py` — le registre de cadence, ou le controleur est desormais inscrit : son extinction se mesure ;
 - `scripts/coordination/install_merge_ready_task.py` — la tache `CoursIA\merge_ready`, siege ou la bascule locale a vocation a tourner ;
 - `scripts/ci/check_runner_starvation.py` — l'organe de sante du parc, dont le controleur reutilise la mesure de file et l'inventaire des slots ;
+- `scripts/ci/census_installation_quota.py` — le census des consommateurs du quota d'installation (volet B de #26739) : volumes de passages, appels payes par passage, bornes de mesure ;
 - [volet 5 — debit DNS vers api.github.com](https://github.com/jsboige/CoursIA/pull/22948) — l'autre moitie du cout de la CI. Renvoi vers la PR et non vers le fichier : le document `docs/transients/2026-10-31-dns-rate-measurement.md` est livre par cette PR encore ouverte, et un lien fichier casserait `check-links` sur toute branche ne la contenant pas.
