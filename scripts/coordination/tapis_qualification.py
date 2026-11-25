@@ -64,7 +64,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_diff, tapis_fenetre, tapis_lot, tapis_preuves
+from coordination import tapis_diff, tapis_fenetre, tapis_lot, tapis_occupation
+from coordination import tapis_preuves
 from coordination import tapis_fil_complet, tapis_rapide, tapis_verdict
 
 #: Candidats par lot de lecture (une requete GraphQL pour le lot).
@@ -105,10 +106,10 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         tranche = candidats[i:i + lot]
         i += lot
         appels += tapis_lot.fenetre(tranche, run, issues, echecs, ecartees)
-        notes_urne.update(tapis_preuves.urne_en_note(issues))
+        notes_urne.update(tapis_preuves.urne_en_note(issues, lane))
         lec = tapis_lot.lec(list(issues.values()), maintenant, appels)
         etats = tapis_preuves.etats_de_tranche(lec, notes_urne, prs_par_issue,
-                                               lane, maintenant, jours)
+                                               lane, maintenant, jours, issues)
         tapis_diff.appliquer(etats, lec, preuve)
         for e in etats:
             if e.ecart and e.numero not in ecartees:
