@@ -1058,6 +1058,58 @@ def test_verify_recorded_sha_mismatch_on_python_sha(tmp_path, monkeypatch):
     assert ("a" * 12) in r["mismatches"][0]
 
 
+@pytest.mark.parametrize("cote", ["python", "csharp"])
+@pytest.mark.parametrize("etat", ["retire", "illisible"])
+def test_verify_recorded_sha_empreinte_courante_indisponible(tmp_path, monkeypatch, cote, etat):
+    """Carnet retire de git, ou present mais illisible -> MISMATCH qui dit sa raison.
+
+    Occurrences soeurs du defaut releve par la review ai-01 du 2026-11-25 sur la
+    PR #28276 (cote rust) : les quatre diagnostics py/cs de `verify_recorded_sha`
+    formataient l'empreinte courante sans accepter None. Un carnet retire
+    levait TypeError -- et le mode entier, qui evalue toutes les paires d'une
+    liste en comprehension, tombait au lieu de rendre le mismatch.
+    """
+    chemin = "X.ipynb" if cote == "python" else "Y.ipynb"
+    fake_pair = {
+        "name": "Test-Indisponible",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "last_audit": {
+            "date": "2026-11-25",
+            "by": "test",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            "content_python_sha": "c" * 64,
+            "content_csharp_sha": "d" * 64,
+        },
+    }
+    import check_twin_parity as ct
+    blob = {"X.ipynb": "a" * 40, "Y.ipynb": "b" * 40}
+    contenu = {"X.ipynb": "c" * 64, "Y.ipynb": "d" * 64}
+    if etat == "retire":
+        blob[chemin] = None
+    contenu[chemin] = None
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": blob[p])
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": contenu[p])
+
+    r = verify_recorded_sha(tmp_path, fake_pair)
+    assert r["status"] == "MISMATCH", r["mismatches"]
+    lignes = {m.split(":", 1)[0]: m for m in r["mismatches"]}
+    # Seul le cote touche est mis en cause. Un carnet retire laisse DEUX
+    # empreintes indisponibles (blob et contenu) ; un carnet illisible une
+    # seule (le blob est present et inchange, seul le contenu manque).
+    attendus = ({f"{cote}_sha", f"content_{cote}_sha"} if etat == "retire"
+                else {f"content_{cote}_sha"})
+    assert set(lignes) == attendus, r["mismatches"]
+    if etat == "retire":
+        assert "absent de git" in lignes[f"{cote}_sha"], lignes
+    attendu = "absent de git" if etat == "retire" else "illisible"
+    assert attendu in lignes[f"content_{cote}_sha"], lignes
+    assert "indisponible" in lignes[f"content_{cote}_sha"], lignes
+
+
 def test_verify_recorded_sha_mismatch_on_both_sides(tmp_path, monkeypatch):
     """Recorded python_sha ET csharp_sha divergent -> MISMATCH sur les 2."""
     fake_pair = {

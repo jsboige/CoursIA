@@ -1251,20 +1251,35 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
 
     mismatches = []
     metadata_only_sha = []
+    # Empreinte COURANTE indisponible : carnet retire de git (blob None), ou
+    # present mais illisible (contenu None). Le mismatch la DIT avec sa raison.
+    # Formater un None levait TypeError, et `run_verify_recorded_sha` evalue
+    # toutes les paires d'une liste en comprehension : un seul carnet retire
+    # faisait tomber le mode entier au lieu de dire QUEL jumeau manque (review
+    # ai-01 du 2026-11-25 sur la PR #28276, triplet prive de son carnet Rust).
+    absent = "<indisponible : absent de git>"
+    illisible = "<indisponible : fichier present, contenu illisible>"
+
+    def _calc(sha: str | None, raison: str = absent) -> str:
+        return sha[:12] if sha is not None else raison
+
+    def _calc_contenu(contenu: str | None, blob: str | None) -> str:
+        return _calc(contenu, absent if blob is None else illisible)
+
     # Comparaison sur les blob SHA : compares stricte, sauf drift metadata-only.
     if rec_py is not None and rec_py != cur_py:
         if py_meta_only:
             metadata_only_sha.append("python_sha")
         else:
             mismatches.append(
-                f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
+                f"python_sha: recorded={rec_py[:12]} calculated={_calc(cur_py)}"
             )
     if rec_cs is not None and rec_cs != cur_cs:
         if cs_meta_only:
             metadata_only_sha.append("csharp_sha")
         else:
             mismatches.append(
-                f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
+                f"csharp_sha: recorded={rec_cs[:12]} calculated={_calc(cur_cs)}"
             )
     # Comparaison sur les content_sha : on SKIP si recorded=None (migration
     # progressive post-volet-(c) ; les paires legacy n'ont pas encore ces
@@ -1273,11 +1288,13 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
     # transitoires sur les champs ajoutes apres coup).
     if rec_cpy is not None and rec_cpy != cur_cpy:
         mismatches.append(
-            f"content_python_sha: recorded={rec_cpy[:12]} calculated={cur_cpy[:12]}"
+            f"content_python_sha: recorded={rec_cpy[:12]} "
+            f"calculated={_calc_contenu(cur_cpy, cur_py)}"
         )
     if rec_ccs is not None and rec_ccs != cur_ccs:
         mismatches.append(
-            f"content_csharp_sha: recorded={rec_ccs[:12]} calculated={cur_ccs[:12]}"
+            f"content_csharp_sha: recorded={rec_ccs[:12]} "
+            f"calculated={_calc_contenu(cur_ccs, cur_cs)}"
         )
     # Cote rust optionnel (#27098 organe 1) : memes comparaisons, seulement si
     # la paire declare le troisieme jumeau ET que l'audit l'a attesté (rec non
@@ -1288,11 +1305,12 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
             metadata_only_sha.append("rust_sha")
         else:
             mismatches.append(
-                f"rust_sha: recorded={rec_ru[:12]} calculated={cur_ru[:12]}"
+                f"rust_sha: recorded={rec_ru[:12]} calculated={_calc(cur_ru)}"
             )
     if ru and rec_cru is not None and rec_cru != cur_cru:
         mismatches.append(
-            f"content_rust_sha: recorded={rec_cru[:12]} calculated={cur_cru[:12]}"
+            f"content_rust_sha: recorded={rec_cru[:12]} "
+            f"calculated={_calc_contenu(cur_cru, cur_ru)}"
         )
 
     return {

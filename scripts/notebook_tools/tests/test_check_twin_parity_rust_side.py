@@ -29,6 +29,8 @@ REEL vit dans le body de la PR -- ces tests unitaires couvrent la mecanique) :
   (design-gate #9399 critere 2). Chaque versant est eprouve SEUL -- la
   mesure par mutation est dans le message du commit qui les a posés ;
 - verify_recorded_sha : empreinte rust enregistree divergente = MISMATCH ;
+  empreinte COURANTE indisponible (carnet retire de git, ou present mais
+  illisible) = MISMATCH qui dit sa raison, jamais une exception ;
 - documentation : `_schema.yaml` decrit la cle `rust:`, ses empreintes d'audit
   et la discipline d'attestation ;
 - _pair_paths_diverge / _classify_per_pair : le cote rust participe aux
@@ -508,6 +510,71 @@ def test_verify_recorded_sha_triplet_ok(tmp_path):
     pair["last_audit"] = audit
     r = verify_recorded_sha(repo, pair)
     assert r["status"] == "OK", r["mismatches"]
+
+
+def _attested_by_update(repo: Path, name: str, ru: str | None) -> dict:
+    """Paire attestee par `update_pair` lui-meme : son audit porte les empreintes
+    courantes, contenu compris (ce que `_attested_triplet` ne pose pas)."""
+    pair = _triplet(repo, name, "nb/py-10.ipynb", "nb/cs-10.ipynb", ru)
+    audit, _, _ = update_pair(repo, pair, by="t")
+    pair["last_audit"] = audit
+    return pair
+
+
+def test_verify_recorded_sha_triplet_rust_retire_dit_le_mismatch(tmp_path):
+    """Un triplet atteste dont le carnet Rust est retire de git : MISMATCH, pas d'exception.
+
+    Reserve ai-01 du 2026-11-25 sur la PR #28276 : le diagnostic formatait
+    `cur_ru[:12]` et `cur_cru[:12]` alors que l'empreinte courante vaut None.
+    Comme `run_verify_recorded_sha` evalue toutes les paires d'une liste en
+    comprehension, un seul carnet retire faisait tomber le mode entier au lieu
+    de dire QUEL jumeau manque.
+    """
+    repo = _make_repo(tmp_path, {
+        "nb/py-10.ipynb": _MINIMAL_NB,
+        "nb/cs-10.ipynb": _MINIMAL_NB,
+        "nb/ru-10.ipynb": _MINIMAL_NB,
+    })
+    pair = _attested_by_update(repo, "T-retire", "nb/ru-10.ipynb")
+    assert verify_recorded_sha(repo, pair)["status"] == "OK"
+
+    _git(repo, "rm", "-q", "nb/ru-10.ipynb")
+    _commit_all(repo, "retrait du carnet rust")
+
+    r = verify_recorded_sha(repo, pair)
+    assert r["status"] == "MISMATCH", r["mismatches"]
+    assert r["current_rust_sha"] is None
+    assert r["current_content_rust_sha"] is None
+    lignes = {m.split(":", 1)[0]: m for m in r["mismatches"]}
+    assert set(lignes) == {"rust_sha", "content_rust_sha"}, r["mismatches"]
+    for ligne in lignes.values():
+        assert "indisponible" in ligne and "absent de git" in ligne, ligne
+
+
+def test_verify_recorded_sha_triplet_rust_illisible_dit_pourquoi(tmp_path):
+    """Carnet Rust present dans git mais qui n'est plus un notebook : c'est
+    l'empreinte de CONTENU qui manque, pas celle de blob -- le diagnostic ne dit
+    donc pas « absent de git » (les deux indisponibilites n'appellent pas le meme
+    geste : restaurer un chemin, ou re-executer le carnet)."""
+    repo = _make_repo(tmp_path, {
+        "nb/py-10.ipynb": _MINIMAL_NB,
+        "nb/cs-10.ipynb": _MINIMAL_NB,
+        "nb/ru-10.ipynb": _MINIMAL_NB,
+    })
+    pair = _attested_by_update(repo, "T-illisible", "nb/ru-10.ipynb")
+    (repo / "nb/ru-10.ipynb").write_text("ceci n est pas un notebook", encoding="utf-8")
+    _commit_all(repo, "carnet rust illisible")
+
+    r = verify_recorded_sha(repo, pair)
+    assert r["status"] == "MISMATCH", r["mismatches"]
+    lignes = {m.split(":", 1)[0]: m for m in r["mismatches"]}
+    assert set(lignes) == {"rust_sha", "content_rust_sha"}, r["mismatches"]
+    assert "indisponible" not in lignes["rust_sha"], lignes["rust_sha"]
+    champs = dict(p.split("=", 1)
+                  for p in lignes["rust_sha"].split(": ", 1)[1].split(" "))
+    assert len(champs["calculated"]) == 12, champs
+    assert "illisible" in lignes["content_rust_sha"], lignes["content_rust_sha"]
+    assert "absent de git" not in lignes["content_rust_sha"], lignes["content_rust_sha"]
 
 
 # --- verdicts per-pair : le cote rust participe --------------------------------
