@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-24
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -13,7 +13,13 @@ commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/c
 (les séances de marqueurs : une livraison en ouvre une neuve, #27338),
 `scripts/coordination/tapis_citations.py` (les citations des PRs ouvertes : le travail en cours compte
 comme une visite, #27338), `scripts/coordination/belt_equite.py` (l'équité du dispatch : un grain déjà
-servi ne passe pas devant les premières visites, #27338)
+servi ne passe pas devant les premières visites, #27338),
+`scripts/coordination/tapis_ecarts_fond.py` (les deux écarteurs de fond : la
+re-décision sur fil complet #27179 et la saturation des conteneurs éteints
+#26973, extrait le 2026-11-21), `scripts/coordination/tapis_voie_leger.py`
+(le service de la voie légère, extrait le 2026-11-21),
+`scripts/coordination/tapis_citations_merges.py` (la lecture des citations des
+commits mergers : le lien canonique qui couvre un grain, extrait le 2026-11-25)
 et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
 
 Le lot public livré par #27368 est porté par des modules dédiés, extraits pour que les tests visent le
