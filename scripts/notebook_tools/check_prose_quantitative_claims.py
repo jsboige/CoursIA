@@ -871,14 +871,6 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "d'une ligne de la grille Sudoku demontree. Cellules de grille."
         ),
     ),
-    ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md",
-        motif=re.compile(r"une rangée de 4 cellules"),
-        raison=(
-            "« une rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
-            "du carnet 02, decrit en miroir ici. Cellules du probleme."
-        ),
-    ),
     # --- Tranche GenAI/Audio (#17636 volet 2, lane myia-po-2023:CoursIA) ---
     # Le stock Audio comptait 38 compteurs sur 9 fichiers. 17 ont ete RETIRES
     # par edition de prose (doctrine #9377 : supprimer la mesure, garder le
