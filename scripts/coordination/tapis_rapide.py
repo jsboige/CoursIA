@@ -231,7 +231,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: ecart_label(e.labels)),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
         ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
-        ("LIVREE", lambda: _livree(it, e, evts)),
+        # LIVREE se tait pendant la REPRISE : la preuve a retire l'ecart, les
+        # regles suivantes sont rejouees (`tapis_reprise_livree`, #28114).
+        ("LIVREE", lambda: None if ctx.get("livree_muette") else _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
         # La pause passe AVANT les ecarts de recul (COUVERTE, RELACHEE) : une
@@ -436,12 +438,6 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-
-
-
-
-
-
 def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
                  fraicheur: dict | None, lire_fils: object) -> int:
     """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
@@ -492,9 +488,9 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
          maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
-    # repli picker) sur un main local en retard ou un organe du tirage divergent
-    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 (sans
+    # repli picker) est le REFUS -- mesure impossible ; retard ou module
+    # divergent DEGRADENT (sortie 0). Un rejeu --lecture est hors ligne.
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness

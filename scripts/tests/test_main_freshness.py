@@ -354,3 +354,52 @@ def test_rejeu_lecture_ne_passe_pas_la_garde(tmp_path, monkeypatch, capsys):
     rc = tr.main(["--lane", "L", "--lecture", str(dossier), "--json"])
     assert rc == 0
     assert "fraicheur" not in json.loads(capsys.readouterr().out)
+
+
+def test_sous_organe_divergent_l_avertissement_dit_que_le_code_n_est_pas_identique(
+        monkeypatch, capsys):
+    """I4 : sous `ORGANE_DIVERGENT`, la degradation n'est PAS sure.
+
+    La degradation est annoncee et le tirage se fait -- mais un module du
+    tirage differe d'`origin/main`, donc **le code execute n'est pas identique
+    a `origin/main`** : c'est la version locale qui sert. L'avertissement
+    stderr doit le dire (revue de #28137, 23/11 04:20Z) ; sans cette phrase,
+    la lane lit « la file est servie sur un etat perime » et croit que seule la
+    donnee est en retard -- c'est faux.
+
+    Controle NEGATIF : sous `MAIN_PERIME` seule, la phrase n'est PAS affichee
+    -- cette degradation-la EST sure (le tirage ne lit que `origin/main`, et
+    aucun module ne diverge).
+    """
+    motifs = {
+        "ORGANE_DIVERGENT": ("module(s) du tirage differents d'origin/main : "
+                             "tapis_leger.py",
+                             "remettre ces fichiers a leur version d'origin/main "
+                             "puis rejouer le tirage"),
+        "MAIN_PERIME": ("le main local est en retard de 2 commit(s) sur origin/main",
+                        "git pull --ff-only"),
+    }
+
+    def _verdict(code):
+        motif, remede = motifs[code]
+        raison = {"code": code, "motif": motif, "remede": remede}
+        return {"ok": False, "refuse": False, "degrade": True, "outre_passe": False,
+                "raisons_dures": [], "raisons_degradees": [raison],
+                "raisons": [raison]}
+
+    monkeypatch.setattr(mf, "garder",
+                        lambda depot, allow_stale=False: _verdict("ORGANE_DIVERGENT"))
+    mf.garder_et_dire(".")
+    err = capsys.readouterr().err
+    assert "TIRAGE DEGRADE [ORGANE_DIVERGENT]" in err
+    assert "n'est PAS identique a origin/main" in err, (
+        "sous ORGANE_DIVERGENT, l'avertissement doit dire que le code execute "
+        "n'est pas identique a origin/main")
+
+    monkeypatch.setattr(mf, "garder",
+                        lambda depot, allow_stale=False: _verdict("MAIN_PERIME"))
+    mf.garder_et_dire(".")
+    err = capsys.readouterr().err
+    assert "TIRAGE DEGRADE [MAIN_PERIME]" in err
+    assert "n'est PAS identique a origin/main" not in err, (
+        "sans divergence d'organe, la degradation est sure : pas d'alarme")
