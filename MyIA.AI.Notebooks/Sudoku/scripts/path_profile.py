@@ -26,8 +26,9 @@ le pilote, et ne changent plus ensuite :
   cases : les cases portant la valeur sont recomptees sur l'etat qui precede le
   pas, dans les unites que citent les premisses (le bloc de ``pointing_pair``,
   la ligne ou la colonne de ``locked_claiming``, les lignes de ``x_wing``).
-- a3 -- ``tangle`` : union-find sur le graphe d'exclusion du protocole §4.3 ;
-  un etat sans candidat n'en a pas et rend ``None``.
+- a3 -- ``tangle`` : nombre cyclomatique du graphe d'exclusion (protocole
+  §4.3, revision v2), sur un graphe simple -- deux candidats partagent au
+  plus un lien ; un etat sans candidat n'en a pas et rend ``None``.
 - a4 -- une regle inconnue de ce module n'arrete pas le profil : le pas est
   profile (rang, eliminations, etats) et seul son support vaut ``None``.
 
@@ -47,7 +48,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import median
-from typing import Dict, FrozenSet, List, Optional, Sequence, Tuple
+from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple
 
 _SCRIPTS = Path(__file__).resolve().parent
 _SUDOKU = _SCRIPTS.parent
@@ -89,15 +90,20 @@ UNITS = _units()
 # ---------------------------------------------------------------------------
 
 
-def tangle(state: State) -> Optional[float]:
-    """Part des candidats de la plus grande composante connexe du graphe
-    d'exclusion. ``None`` si l'etat n'a aucun candidat (grille complete).
+Node = Tuple[int, int, int]
 
-    Le graphe a pour noeuds les candidats ``(case, chiffre)`` et pour aretes
+
+def exclusion_graph(state: State) -> Optional[Tuple[int, int, int]]:
+    """``(N, E, C)`` du graphe d'exclusion d'un etat : noeuds, liens distincts,
+    composantes connexes. ``None`` si l'etat n'a aucun candidat.
+
+    Le graphe a pour noeuds les candidats ``(case, chiffre)`` et pour liens
     les couples qui s'excluent : deux chiffres d'une meme case, ou un meme
-    chiffre en deux cases d'une meme unite.
+    chiffre en deux cases d'une meme unite. Il est simple : deux cases d'une
+    meme ligne et d'un meme bloc, par exemple, ont un seul lien pour un
+    chiffre donne, bien qu'elles partagent deux unites.
     """
-    nodes: List[Tuple[int, int, int]] = []
+    nodes: List[Node] = []
     for idx, cands in enumerate(state):
         r, c = divmod(idx, 9)
         for v in sorted(cands):
@@ -105,9 +111,30 @@ def tangle(state: State) -> Optional[float]:
     if not nodes:
         return None
 
+    links: Set[Tuple[Node, Node]] = set()
+
+    def link(a: Node, b: Node) -> None:
+        links.add((a, b) if a < b else (b, a))
+
+    # Cas : deux chiffres d'une meme case.
+    for idx, cands in enumerate(state):
+        r, c = divmod(idx, 9)
+        vs = sorted(cands)
+        for i in range(len(vs)):
+            for v in vs[i + 1:]:
+                link((r, c, vs[i]), (r, c, v))
+
+    # Unites : un meme chiffre en deux cases d'une meme unite.
+    for unit in UNITS:
+        for v in range(1, 10):
+            spots = [(r, c, v) for (r, c) in unit if v in state[r * 9 + c]]
+            for i in range(len(spots)):
+                for node in spots[i + 1:]:
+                    link(spots[i], node)
+
     parent = {n: n for n in nodes}
 
-    def find(x):
+    def find(x: Node) -> Node:
         root = x
         while parent[root] != root:
             root = parent[root]
@@ -115,27 +142,28 @@ def tangle(state: State) -> Optional[float]:
             parent[x], x = root, parent[x]
         return root
 
-    def union(a, b) -> None:
+    for a, b in links:
         ra, rb = find(a), find(b)
         if ra != rb:
             parent[rb] = ra
 
-    # Cas : deux chiffres d'une meme case.
-    for idx, cands in enumerate(state):
-        r, c = divmod(idx, 9)
-        vs = sorted(cands)
-        for v in vs[1:]:
-            union((r, c, vs[0]), (r, c, v))
+    return len(nodes), len(links), len({find(n) for n in nodes})
 
-    # Unites : un meme chiffre en deux cases d'une meme unite.
-    for unit in UNITS:
-        for v in range(1, 10):
-            spots = [(r, c) for (r, c) in unit if v in state[r * 9 + c]]
-            for cell in spots[1:]:
-                union((spots[0][0], spots[0][1], v), (cell[0], cell[1], v))
 
-    sizes = Counter(find(n) for n in nodes)
-    return max(sizes.values()) / len(nodes)
+def tangle(state: State) -> Optional[float]:
+    """Nombre cyclomatique du graphe d'exclusion, ``E - N + C``, divise par
+    ``N`` (protocole §4.3, revision v2). ``None`` si l'etat n'a aucun candidat.
+
+    Le nombre cyclomatique compte les cycles lineairement independants du
+    graphe : il vaut 0 sur une foret et croit avec l'enchevetrement des
+    exclusions. La revision v1 mesurait la part de la plus grande composante
+    connexe ; elle valait 1 sur chaque etat du pilote (protocole §10.7).
+    """
+    counts = exclusion_graph(state)
+    if counts is None:
+        return None
+    n_nodes, n_links, n_components = counts
+    return (n_links - n_nodes + n_components) / n_nodes
 
 
 # ---------------------------------------------------------------------------

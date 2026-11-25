@@ -8,9 +8,9 @@ mesure.
 
   1. Le rejou reproduit exactement le chemin de ``InferenceSolver.solve`` ;
      une divergence leve, elle ne rend pas un profil faux.
-  2. ``tangle`` (protocole §4.3) : composantes du graphe d'exclusion, ou le
-     chiffre compte -- deux candidats d'unites communes mais de chiffres
-     differents ne sont pas lies.
+  2. ``tangle`` (protocole §4.3, revision v2) : nombre cyclomatique du graphe
+     d'exclusion, ou le chiffre compte -- deux candidats d'unites communes
+     mais de chiffres differents ne sont pas lies, et le graphe est simple.
   3. ``support`` (protocole §4.1) : une regle inconnue rend ``None``.
   4. Les variables se recalculent independamment depuis la trace officielle.
   5. Les comptes d'exclusion du protocole §7.5 se separent : lignes ignorees,
@@ -37,6 +37,7 @@ from inference_trace import InferenceSolver  # noqa: E402
 from path_profile import (  # noqa: E402
     CorpusReport,
     ReplayDivergence,
+    exclusion_graph,
     format_report,
     main,
     profile_corpus,
@@ -123,50 +124,66 @@ def test_une_divergence_du_rejou_leve(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2. tangle (protocole §4.3)
+# 2. tangle (protocole §4.3, revision v2 : nombre cyclomatique normalise)
 # ---------------------------------------------------------------------------
 
 
 def test_tangle_d_un_etat_sans_candidat_n_est_pas_defini() -> None:
     assert tangle(_state({})) is None
+    assert exclusion_graph(_state({})) is None
 
 
 @pytest.mark.parametrize("cells", [
     {(0, 0): {1}},                                  # un seul candidat
+    {(0, 0): {1, 2}},                               # deux chiffres d'une case
     {(0, 0): {1}, (0, 1): {1}},                     # meme chiffre, meme ligne
     {(0, 0): {1}, (8, 0): {1}},                     # meme chiffre, meme colonne
     {(0, 0): {1}, (1, 1): {1}},                     # meme chiffre, meme bloc
-    {(0, 0): {1, 2}},                               # deux chiffres d'une case
-    {(0, 0): {1, 2}, (0, 1): {1}, (4, 0): {2}},     # tout relie par la case
+    {(0, 0): {1}, (8, 8): {2}},                     # deux candidats isoles
+    {(0, 0): {1}, (0, 1): {2}},                     # meme ligne, chiffres differents
 ])
-def test_tangle_vaut_1_quand_tous_les_candidats_forment_un_seul_bloc(
-        cells: dict[tuple[int, int], set[int]]) -> None:
-    assert tangle(_state(cells)) == 1.0
+def test_tangle_vaut_0_sans_cycle(cells: dict[tuple[int, int], set[int]]) -> None:
+    # Aucun lien, ou des liens qui ne ferment aucune boucle.
+    assert tangle(_state(cells)) == 0.0
 
 
-def test_tangle_est_la_part_de_la_plus_grande_composante() -> None:
-    # Deux candidats lies, un troisieme isole : 2 noeuds sur 3.
-    cells = {(0, 0): {1}, (0, 1): {1}, (8, 8): {2}}
-    assert tangle(_state(cells)) == pytest.approx(2 / 3)
+def test_tangle_d_une_case_de_trois_candidats() -> None:
+    # Trois noeuds, trois liens : un cycle, soit 1 / 3.
+    cells = {(0, 0): {1, 2, 3}}
+    assert exclusion_graph(_state(cells)) == (3, 3, 1)
+    assert tangle(_state(cells)) == pytest.approx(1 / 3)
 
 
-def test_tangle_compte_les_candidats_et_pas_les_cases() -> None:
-    # Une case de trois candidats (composante de 3) et une case d'un seul.
-    cells = {(0, 0): {1, 2, 3}, (8, 8): {4}}
-    assert tangle(_state(cells)) == pytest.approx(3 / 4)
+def test_tangle_d_un_cycle_de_deux_cases() -> None:
+    # Deux cases d'une ligne, chacune {1, 2} : 4 noeuds, 4 liens, 1 cycle.
+    cells = {(0, 0): {1, 2}, (0, 1): {1, 2}}
+    assert exclusion_graph(_state(cells)) == (4, 4, 1)
+    assert tangle(_state(cells)) == pytest.approx(0.25)
 
 
-def test_tangle_ne_lie_pas_deux_chiffres_differents_d_unites_communes() -> None:
-    # Meme ligne, chiffres differents, cases differentes : ils ne s'excluent pas.
-    cells = {(0, 0): {1}, (0, 1): {2}}
-    assert tangle(_state(cells)) == 0.5
+def test_deux_unites_partagees_ne_font_qu_un_lien() -> None:
+    # (0,0) et (0,1) partagent la ligne 0 et le bloc (0,0) ; (0,0) et (0,5),
+    # la ligne 0 seule. Le graphe est simple : 4 liens dans les deux cas.
+    deux_unites = {(0, 0): {1, 2}, (0, 1): {1, 2}}
+    une_unite = {(0, 0): {1, 2}, (0, 5): {1, 2}}
+    assert exclusion_graph(_state(deux_unites)) == (4, 4, 1)
+    assert exclusion_graph(_state(une_unite)) == (4, 4, 1)
 
 
 def test_tangle_depend_du_chiffre_et_pas_seulement_des_cases() -> None:
-    # Trois cases en chaine d'unites, deux chiffres : deux composantes.
-    cells = {(0, 0): {1}, (0, 1): {2}, (0, 2): {1}}
-    # (0,0)-1 et (0,2)-1 sont lies ; (0,1)-2 reste seule.
-    assert tangle(_state(cells)) == pytest.approx(2 / 3)
+    # Memes cases, meme nombre de candidats : seuls les chiffres changent.
+    memes_chiffres = {(0, 0): {1, 2}, (0, 1): {1, 2}}
+    chiffres_disjoints = {(0, 0): {1, 2}, (0, 1): {3, 4}}
+    assert tangle(_state(memes_chiffres)) == pytest.approx(0.25)
+    assert tangle(_state(chiffres_disjoints)) == 0.0
+
+
+def test_tangle_est_ramene_au_nombre_de_candidats() -> None:
+    # Deux cases isolees de trois candidats : 2 cycles pour 6 noeuds, soit la
+    # meme valeur qu'une seule case de trois candidats.
+    cells = {(0, 0): {1, 2, 3}, (8, 8): {4, 5, 6}}
+    assert exclusion_graph(_state(cells)) == (6, 6, 2)
+    assert tangle(_state(cells)) == pytest.approx(1 / 3)
 
 
 # ---------------------------------------------------------------------------
@@ -278,7 +295,7 @@ def test_profil_d_une_grille_resolue_avec_geste() -> None:
     assert prof.collapse == len(ranks) - 1 - idx_last
     assert all(rk <= 2 for rk in ranks[idx_last + 1:])
     assert prof.support_last is not None and prof.support_last >= 1
-    assert prof.tangle_last is not None and 0 < prof.tangle_last <= 1
+    assert prof.tangle_last is not None and prof.tangle_last >= 0
     # Les variables d'arret ne sont pas definies pour une grille resolue.
     assert prof.steps_stall is None and prof.rank_hist is None
     assert prof.empty_stall is None and prof.cands_stall is None
@@ -326,7 +343,7 @@ def test_profil_d_un_arret() -> None:
     assert sum(prof.rank_hist.values()) == prof.steps_stall
     assert prof.empty_stall == trace.steps[-1].grid_after.count("0")
     assert prof.cands_stall >= prof.empty_stall > 0
-    assert prof.tangle_stall is not None and 0 < prof.tangle_stall <= 1
+    assert prof.tangle_stall is not None and prof.tangle_stall >= 0
     # Les variables d'une grille resolue ne sont pas definies.
     for name in ("r_max", "pos_r_max", "rank_last", "support_last", "elim_last",
                  "collapse", "tangle_last"):

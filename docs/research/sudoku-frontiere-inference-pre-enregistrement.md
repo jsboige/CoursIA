@@ -95,13 +95,15 @@ Toutes sont calculées par grille, par le même module, sans paramètre laissé 
 
 ### 4.3 Enchevêtrement d'un état (`tangle`)
 
-C'est la variable par laquelle la « topologie de l'espace des états » reçoit une définition calculable. **Cette définition est une lecture de la lane, soumise à arbitrage : le mainteneur a nommé la topologie sans la définir, et une autre définition est possible.**
+C'est la variable par laquelle la « topologie de l'espace des états » reçoit une définition calculable. **Cette définition est une lecture de la lane, soumise à arbitrage : le mainteneur a nommé la topologie sans la définir, et une autre définition est possible.** Elle a été révisée une fois, après le pilote et avant toute exécution sur `S_haut` : la v1, son motif de révision et le choix de la v2 sont en §11.1.
 
 - **Nœuds** : chaque candidat `(case, chiffre)` de l'état.
 - **Lien** : entre deux candidats qui s'excluent — deux chiffres d'une même case, ou un même chiffre en deux cases d'une même unité. C'est le graphe dans lequel se déplace une chaîne d'inférence : d'un candidat vers un candidat qu'il exclut.
-- **`tangle`** : taille de la plus grande composante connexe du graphe, divisée par le nombre de nœuds. Il vaut 1 quand tous les candidats forment un seul bloc ; il décroît quand l'état se fragmente en sous-ensembles qui ne s'excluent plus entre eux. Un état sans candidat (grille complète) n'en a pas : la variable vaut alors `None`.
+- **`tangle`** : nombre cyclomatique du graphe, `E - N + C` (`E` liens distincts, `N` nœuds, `C` composantes connexes), divisé par `N`. Il vaut 0 quand le graphe est une forêt — aucun cycle, donc aucun enchevêtrement — et croît avec le nombre de cycles indépendants par candidat. Un état sans candidat (grille complète) n'en a pas : la variable vaut alors `None`.
 
-Le lien fort (deux candidats d'une même unité portant le même chiffre, les deux seuls à le porter) est un cas particulier du lien ci-dessus et n'en change pas la connexité. La variable mesure donc la **connexité du graphe d'exclusion**, et non la densité des liens forts : compter ces liens serait une autre lecture de « topologie », non retenue ici.
+Le graphe est **simple** : deux candidats ne portent qu'un lien, même lorsque leurs deux cases partagent deux unités (une ligne et un bloc, par exemple). Le lien fort (deux candidats d'une même unité portant le même chiffre, les deux seuls à le porter) est un cas particulier du lien ci-dessus : il ne crée aucun nœud ni aucun lien nouveau, et n'est donc pas compté à part.
+
+**Limite nommée.** Le nombre cyclomatique croît avec la densité de candidats par case, que le protocole publie à côté (`cands_stall`, `empty_stall`). Une différence de `tangle` entre deux strates se lit donc avec ces deux comptes : la variable mesure l'enchevêtrement du graphe d'exclusion, elle n'en est pas une mesure indépendante.
 
 ## 5. Hypothèses
 
@@ -334,9 +336,36 @@ Nombre de pas de chaque rang (`rank_hist`, §4.2), cumulé sur les grilles en ar
 - Rien sur les hypothèses de §5 : les lignes des tableaux sont des corpus d'origines différentes, pas des strates. Une médiane plus élevée sur `Sudoku_hardest.txt` que sur `Sudoku_top95.txt` n'est pas une comparaison de niveaux.
 - Rien sur la puissance d'une technique absente de `R` : un arrêt est la mesure de l'endroit où `R` s'arrête, pas la preuve qu'aucune technique ne le franchit.
 
+### 10.9 Valeurs de `tangle` après la révision v2
+
+Mesurées sur les mêmes états que §10.3 et §10.4, avec l'instrument de ce commit (§4.3 en sa définition révisée). Seules les valeurs de `tangle` changent : toutes les autres médianes reproduisent celles de §10.3 et §10.4.
+
+| Corpus | `tangle_last` : médiane (n) | `tangle_last` : min / max | `tangle_stall` : médiane (n) | `tangle_stall` : min / max |
+|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | — | — | — | — |
+| `Sudoku_gen_moyen.txt` | 2,8 (5) | 1,69 / 3 | 1,62 (5) | 1,019 / 2,234 |
+| `Sudoku_gen_difficile.txt` | 3,035 (1) | 3,035 / 3,035 | 2,309 (9) | 1,464 / 3,073 |
+| `Sudoku_Easy51.txt` | 3,141 (10) | 1,966 / 4,485 | — | — |
+| `Sudoku_hardest.txt` | 3,131 (2) | 3,034 / 3,227 | 3,745 (8) | 1,615 / 4,431 |
+| `Sudoku_top95.txt` | 3,806 (29) | 1,289 / 5,325 | 4,162 (66) | 1,125 / 5 |
+
+Sur les 135 mêmes états, la v2 va de 1,019 à 5,325 et prend 132 valeurs distinctes : la variable sépare désormais les états, là où la v1 valait 1,0 partout. Ces valeurs n'entrent dans aucun verdict de §7 ; elles établissent seulement que la variable révisée n'est pas constante.
+
 ## 11. Révision
 
 **Une seule révision v2 est permise**, en un commit séparé, qui nomme les valeurs de la v1 et son motif. Le seul motif admis est un **défaut de comparabilité** (une variable non calculable sur une strate, une définition ambiguë). Un résultat déplu n'est jamais un motif : changer la règle après avoir vu le résultat, c'est le travers même que le pré-enregistrement existe pour empêcher. La v2 est écrite **avant** toute exécution sur `S_haut`.
+
+### 11.1 Révision v2 — `tangle`
+
+**Valeurs de la v1.** La définition scellée initiale de `tangle` était la part de la plus grande composante connexe du graphe d'exclusion. Sur le pilote, elle vaut **1,0 sur chacun des 135 états mesurés** (§10.7) : 47 états qui précèdent un geste final et 88 états d'arrêt, sur les six corpus, minimum comme maximum. Le graphe d'exclusion y est toujours connexe, et la variable ne sépare rien.
+
+**Motif.** C'est un défaut de comparabilité au sens de §9 : une variable constante ne compare ni deux grilles, ni deux strates, et la lecture topologique de §5.2 serait vide par construction, quelle que soit la donnée de `S_haut`. Le motif n'est pas un résultat déplu : le pilote ne contient aucun résultat de §7, aucune grille étiquetée, aucun verdict.
+
+**Choix de la v2.** Le graphe et ses liens restent ceux de la v1 ; seule la statistique change. La v2 mesure le **nombre cyclomatique** `E - N + C`, normalisé par `N` — l'invariant qui suit la connexité dans la hiérarchie des invariants de graphe : une composante unique est le degré zéro de l'enchevêtrement, le nombre de cycles indépendants en est la mesure suivante. Il vaut 0 sur une forêt et croît avec les cycles. Une seule définition candidate a été calculée avant l'écriture de cette section, pour vérifier qu'elle n'est pas constante à son tour sur les mêmes états : c'est une condition de recevabilité de la révision, pas un choix parmi plusieurs définitions — aucune autre n'a été calculée, et le critère de recevabilité ne fait aucune référence à un écart entre strates.
+
+**Portée.** La révision ne touche ni la politique de `R`, ni les hypothèses H-W1, H-W2, H-pos et H-collapse, ni la règle de décision de §7. T (§5.2) reste exploratoire et reste une lecture de la lane : un verdict sur T n'est pas un verdict sur la prédiction du mainteneur.
+
+**Date et ordre.** Rédigée le 2026-11-25, après le pilote et avant toute exécution sur `S_haut` (L0 n'est pas satisfaite, §6). C'est la seule révision v2 que ce document s'autorise.
 
 ## 12. Ce qui est publié quoi qu'il arrive
 
