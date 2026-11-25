@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 from dataclasses import dataclass
 from uuid import uuid4
 
@@ -32,6 +33,60 @@ class AdkRuntimeUnavailable(RuntimeError):
     """The configured real ADK/LLM runtime cannot currently be reached."""
 
     verdict = "RECOVERABLE-LOCAL"
+
+
+class AdkReasoningLeak(RuntimeError):
+    """The ADK answer carries the model's reasoning instead of its final answer.
+
+    Mesure (#28606) : le provider OpenRouter renvoie parfois le resume de
+    raisonnement du modele de raisonnement DANS le champ ``content``. La
+    reponse finale commence alors par un titre de raisonnement en anglais
+    suivi du monologue, et le verdict pedagogique attendu est absent ou
+    tronque. Un tour contamine n'est jamais publie : il est rejoue, puis
+    refuse si la contamination survit aux rejeux.
+    """
+
+    verdict = "RECOVERABLE-LOCAL"
+
+
+def _reasoning_control() -> dict[str, object]:
+    """Provider payload asking the provider not to return the reasoning.
+
+    Mesure (2026-11-25) : OpenRouter accepte ``reasoning.enabled=false`` et
+    ``include_reasoning=false`` sans erreur. Ces deux champs sont les leviers
+    documentes par le provider pour empecher le raisonnement de remonter dans
+    la reponse.
+
+    La prevention n'est PAS la garantie : la fuite est intermittente, donc
+    demontrable seulement par un long run. La garantie inconditionnelle est le
+    REFUS (voir :func:`detect_reasoning_preamble`).
+    """
+    return {"reasoning": {"enabled": False}, "include_reasoning": False}
+
+
+#: Signature mesuree d'un preambule de raisonnement (#28606) : la premiere
+#: ligne non vide de la reponse est un titre en gras contenant un gerondif
+#: anglais -- "**Clarifying dataset execution**", "**Identifying discrepancies
+#: in profiling**". La serie est francophone : un titre de cette forme ne
+#: vient pas de la consigne pedagogique, il vient du monologue du modele.
+_REASONING_PREAMBLE_RE = re.compile(
+    r"^\s*\*\*[^*\n]*\b[A-Za-z]+ing\b[^*\n]*\*\*\s*$"
+)
+
+
+def detect_reasoning_preamble(text: str) -> str | None:
+    """Return the reasoning title when ``text`` opens on a reasoning preamble.
+
+    ``None`` means the answer opens on an ordinary response. The detection is
+    deliberately a REFUSAL and never a cleaning: a contaminated answer is not
+    patched, it is re-run.
+    """
+    for line in (text or "").splitlines():
+        if not line.strip():
+            continue
+        match = _REASONING_PREAMBLE_RE.match(line)
+        return match.group(0).strip() if match else None
+    return None
 
 
 @dataclass(frozen=True)
@@ -115,7 +170,7 @@ def dataset_profile(rows: int, columns: int) -> dict[str, int | float]:
 
 def build_adk_model(config: ProviderConfig) -> LiteLlm:
     """Map a track provider configuration to ADK's public LiteLLM model."""
-    kwargs: dict[str, str | bool | int] = {"drop_params": True}
+    kwargs: dict[str, object] = {"drop_params": True}
     if config.base_url:
         kwargs["api_base"] = config.base_url
     if config.api_key:
@@ -126,6 +181,11 @@ def build_adk_model(config: ProviderConfig) -> LiteLlm:
         kwargs["api_key"] = "local-endpoint-no-auth"
     if config.max_tokens is not None:
         kwargs["max_tokens"] = config.max_tokens
+    if config.provider == ProviderType.OPENROUTER:
+        # Seul provider ou la fuite du raisonnement a ete measuree (#28606) :
+        # le lever n'est pose que la ou le defaut a ete observe, jamais par
+        # extrapolation a un provider qui ne l'a pas ete.
+        kwargs["extra_body"] = _reasoning_control()
 
     return LiteLlm(model=get_litellm_model(config), **kwargs)
 
@@ -207,9 +267,47 @@ async def run_agent_turn(
     user_id: str = "track2-user",
     session_id: str | None = None,
     timeout_seconds: float = 120.0,
+    max_reasoning_retries: int = 2,
 ) -> AdkRunResult:
-    """Run one real ADK agent turn and return its observable evidence."""
+    """Run one real ADK agent turn and return its observable evidence.
+
+    A turn whose final answer opens on a reasoning preamble (#28606) is
+    RE-RUN rather than published: the contaminated answer is discarded, the
+    turn is replayed on a fresh session, and the refusal is raised only when
+    the contamination survives every replay.
+    """
     session_id = session_id or f"session-{uuid4().hex}"
+    leaked_title = ""
+    for _attempt in range(max_reasoning_retries + 1):
+        result = await _run_agent_turn_once(
+            agent,
+            prompt,
+            app_name=app_name,
+            user_id=user_id,
+            session_id=session_id,
+            timeout_seconds=timeout_seconds,
+        )
+        leaked_title = detect_reasoning_preamble(result.response_text) or ""
+        if not leaked_title:
+            return result
+
+    raise AdkReasoningLeak(
+        "RECOVERABLE-LOCAL: la reponse ADK expose le raisonnement du modele "
+        f"({leaked_title!r}) apres {max_reasoning_retries + 1} executions ; "
+        "relancer le tour pour obtenir une reponse finale"
+    )
+
+
+async def _run_agent_turn_once(
+    agent: Agent,
+    prompt: str,
+    *,
+    app_name: str,
+    user_id: str,
+    session_id: str,
+    timeout_seconds: float,
+) -> AdkRunResult:
+    """Run one ADK turn on a fresh session and return its observable evidence."""
     session_service = InMemorySessionService()
     runner = Runner(
         agent=agent,

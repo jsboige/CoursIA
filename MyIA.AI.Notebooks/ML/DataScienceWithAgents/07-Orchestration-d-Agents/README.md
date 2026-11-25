@@ -21,7 +21,7 @@ La particularité de cette série : le support **multi-provider** (Gemini, vLLM,
 
 | Statistique | Valeur |
 |-------------|--------|
-| Kernel | Python 3.11+ |
+| Kernel | Python 3.13 |
 | Durée totale | ~4 jours |
 | Prérequis | Days 1-3 ou équivalent |
 
@@ -158,7 +158,7 @@ Intégration GCP et projet final.
 ### Environnement
 
 ```bash
-# Python 3.11+
+# Python 3.13
 python -m venv venv
 venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
@@ -166,6 +166,28 @@ source venv/bin/activate  # Linux/Mac
 # Toutes les dépendances (depuis la racine du repo)
 pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/requirements.txt
 ```
+
+### Exigence de runtime (Python 3.13)
+
+La série **exige Python 3.13 ou plus récent**. Cette exigence est déclarée de
+façon lisible par la machine dans `pyproject.toml` (`requires-python`), que le
+`Kernel drift guard` lit pour vérifier que l'environnement qui rejoue un
+carnet est bien capable d'héberger l'interpréteur attesté par les sorties
+commitées.
+
+Ce n'est pas une préférence de version. Les sorties commitées de la série ont
+été produites sous 3.13, et la cellule de budget du `Lab12d` échoue sous
+3.11 avec `Failed to detach context` (`GeneratorExit`) — la cause est la
+version de l'interpréteur, pas le modèle de raisonnement.
+
+Le nom de kernelspec committé reste `python3`, le nom canonique du dépôt : il
+ne doit jamais être remplacé par un nom de poste (`ml313-cuda` et consorts
+sont des ponts d'exécution locaux, jamais committés). La garantie que
+`python3` désigne bien 3.13 est un fait de poste : sur les sièges de la
+flotte, `python3` pointe vers 3.13 (cf. `docs/reference/kernels-runtime.md`).
+Sur un poste dont `python3` désigne un interpréteur plus ancien, la
+réparation se fait **au niveau du kernelspec du poste**, pas dans le carnet :
+réenregistrer `python3` vers l'interpréteur 3.13, puis rejouer.
 
 ### Configuration
 
@@ -229,7 +251,7 @@ Définir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`
 
 ### Technique
 
-- Python 3.11+ et environnements virtuels
+- Python 3.13 et environnements virtuels
 - Connaissances Pandas/NumPy (niveau intermédiaire)
 - Notions de Machine Learning
 
@@ -268,6 +290,28 @@ Tous les labs (8-17) en séquence, avec les approfondissements 12b, 12c, 12e et 
 Labs 8 + 11 + 15. Architecture ADK, boucle planner-coder, et Kaggle. Les trois labs les plus représentatifs.
 
 ## FAQ / Troubleshooting
+
+### La réponse ADK commence par un titre en anglais et le verdict disparaît
+
+Provider `openrouter`, modèles de raisonnement : le provider peut renvoyer le
+**résumé de raisonnement** du modèle dans le champ `content` de la réponse.
+La réponse finale commence alors par un titre de raisonnement en anglais
+(`**Clarifying dataset execution**`) suivi du monologue, et le verdict
+pédagogique attendu (`VERDICT : ...`) est absent ou tronqué. Ce comportement
+est **intermittent** : il frappe certains tours et pas d'autres.
+
+Ce que la série fait de ce défaut :
+
+- **prévention** — `build_adk_model` porte, pour OpenRouter, le levier
+  provider documenté (`reasoning.enabled=false`, `include_reasoning=false`) ;
+- **refus** — `run_agent_turn` détecte un préambule de raisonnement en tête
+  de réponse, **rejoue** le tour sur une session fraîche et, si la
+  contamination survit aux rejeux, lève `AdkReasoningLeak` (verdict
+  `RECOVERABLE-LOCAL`).
+
+Une réponse contaminée n'est donc jamais publiée dans une sortie committée :
+elle est rejouée, ou le tour échoue visiblement. Si vous voyez ce message dans
+un carnet, relancez l'exécution — et ne modifiez jamais la sortie à la main.
 
 ### Le provider Gemini renvoie une erreur 429 (rate limit)
 

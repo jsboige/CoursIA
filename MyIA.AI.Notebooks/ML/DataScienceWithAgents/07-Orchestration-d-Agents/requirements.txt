@@ -1,5 +1,13 @@
 # 07-Orchestration-d-Agents - Dépendances Multi-Provider
 
+# EXIGENCE D'INTERPRETEUR -- Python >= 3.13 (#28606). La declaration
+# machine-lisible est dans `pyproject.toml` (table `[tool.coursia.pinned_env]`),
+# que le `Kernel drift guard` lit pour verifier que l'environnement de rejeu
+# peut heberger l'interpreteur atteste par les sorties commitees. Les sorties
+# de la serie ont ete produites sous 3.13, et la cellule de budget du Lab12d
+# echoue sous 3.11 avec `Failed to detach context` (GeneratorExit) -- la cause
+# est la version de l'interpreteur, pas le modele de raisonnement.
+
 # NOTE -- politique de pin (cf #13948, post-merge #13933)
 # Ce fichier melange deux regimes : `==` (pin exact) et `>=` (plancher). Les
 # quatre pins forment une CHAINE DE COMPATIBILITE verifiee le 2026-09-03 :
