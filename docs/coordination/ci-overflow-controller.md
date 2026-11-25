@@ -1,6 +1,6 @@
 # Controleur de debordement CI (phase B) — `CI_OVERFLOW_LOCAL`
 
-> REFERENCE — vivante — dernière révision 2026-11-23
+> REFERENCE — vivante — dernière révision 2026-11-25
 
 Volet 1 de [#22937](https://github.com/jsboige/CoursIA/issues/22937) : la **phase B** de la repartition hebergee / local.
 
