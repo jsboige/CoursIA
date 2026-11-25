@@ -21,6 +21,23 @@
           cell: 5
           pattern: 'Coups legaux : (\[[^\]]*\])'
           transform: text
+    - id: plateau_entete
+      description: "En-tete de chargement : les dimensions du plateau et la longueur de l'alignement, les deux invariants dont dependent toutes les IA"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'Puissance 4 : (plateau \d+x\d+, alignement de \d+)'
+          transform: text
+        rust:
+          cell: 3
+          pattern: 'Puissance 4 : (plateau \d+x\d+, alignement de \d+)'
+          transform: text
+        csharp:
+          cell: 3
+          pattern: 'Puissance 4 : (plateau \d+x\d+, alignement de \d+)'
+          transform: text
     - id: jetons_poses
       description: "Nombre de jetons poses apres la demonstration de trois coups"
       tolerance: 0
@@ -92,6 +109,25 @@
         csharp:
           absent: >-
             Voir score_rouge : autre position de demonstration cote C#.
+    - id: random_coups
+      description: "Longueur de la partie IA aleatoire contre elle-meme, graine 42 : la suite de coups du generateur MT19937 doit mener a la meme duree"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'Jaune gagne en (\d+) coups'
+          transform: int
+        rust:
+          cell: 14
+          pattern: 'Jaune gagne en (\d+) coups'
+          transform: int
+        csharp:
+          absent: >-
+            Le C# joue bien Random contre Random, mais avec `new Random(123)`,
+            le generateur soustractif de .NET : 26 coups, contre 20 cote Python
+            (MT19937, graine 42). Autre generateur, autre graine, autre duree —
+            rien a comparer.
     - id: minimax_coups
       description: "Longueur de la partie Minimax(d=4) contre l'IA aleatoire, graine 123. Le generateur Rust reproduit MT19937 de CPython, donc la suite de coups doit coincider"
       tolerance: 0
@@ -107,9 +143,10 @@
           transform: int
         csharp:
           absent: >-
-            Le jumeau C# ne joue pas cette partie : sa cellule de duel utilise
-            son propre generateur de nombres aleatoires (les colonnes jouees
-            different des le premier coup) et une autre graine.
+            Le duel existe cote C#, avec la meme graine affichee (123), mais
+            `new Random(123)` n'est pas MT19937 : le flux de tirages differe des
+            le premier coup et la partie dure 7 coups au lieu de 9. Meme graine,
+            autre algorithme.
     - id: profondeur_2_victoires
       description: "Victoires de Minimax a profondeur 2 sur dix parties contre l'IA aleatoire, graines game_i*100"
       tolerance: 0
@@ -125,8 +162,12 @@
           transform: int
         csharp:
           absent: >-
-            Le jumeau C# ne publie pas la comparaison des profondeurs : il
-            s'arrete au duel unique contre l'IA aleatoire.
+            Le C# publie la meme comparaison, dix parties par profondeur contre
+            l'IA aleatoire, et obtient aussi 10/10 ; mais chaque partie est tiree
+            par `new Random(100 + g)`, autre generateur et autres graines. La
+            valeur concorde, le calcul n'est pas le meme : declaree absente
+            plutot que comparee, pour qu'un ecart de flux aleatoire ne fasse pas
+            rougir une mesure qui ne parle pas du portage.
     - id: profondeur_4_victoires
       description: "Victoires de Minimax a profondeur 4 sur dix parties contre l'IA aleatoire"
       tolerance: 0
@@ -142,8 +183,9 @@
           transform: int
         csharp:
           absent: >-
-            Voir profondeur_2_victoires : pas de comparaison des profondeurs
-            cote C#.
+            Voir profondeur_2_victoires : meme comparaison presente cote C#, mais
+            sur un autre flux aleatoire. La valeur concorde (10/10), le calcul
+            differe.
     - id: profondeur_6_victoires
       description: "Victoires de Minimax a profondeur 6 sur dix parties contre l'IA aleatoire"
       tolerance: 0
@@ -159,8 +201,29 @@
           transform: int
         csharp:
           absent: >-
-            Voir profondeur_2_victoires : pas de comparaison des profondeurs
-            cote C#.
+            Voir profondeur_2_victoires : meme comparaison presente cote C#, mais
+            sur un autre flux aleatoire. La valeur concorde (10/10), le calcul
+            differe.
+    - id: mcts_coups
+      description: "Longueur de la partie MCTS(1000) contre Minimax(d=4), graine 42"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: 'MCTS\(1000\) gagne en (\d+) coups'
+          transform: int
+        rust:
+          cell: 30
+          pattern: 'MCTS\(1000\) gagne en (\d+) coups'
+          transform: int
+        csharp:
+          absent: >-
+            Le C# a un MCTS, mais il oppose MCTS(500) a Minimax(3) avec
+            `new Random(42)` et obtient 35 coups ; le jumeau Python joue
+            MCTS(1000) contre Minimax(4) et obtient 29 coups. Ni le budget
+            d'iterations, ni la profondeur adverse, ni le generateur ne
+            coincident.
     - id: greedy_coups
       description: "Longueur de la partie Greedy contre l'IA aleatoire, graine 42"
       tolerance: 0
@@ -176,8 +239,10 @@
           transform: int
         csharp:
           absent: >-
-            Le jumeau C# ne porte pas d'IA gloutonne : ni la partie, ni sa
-            longueur.
+            Le C# porte bien un glouton et joue la partie, avec la graine 7 et
+            `new Random` : il obtient aussi 7 coups. Valeur identique, flux
+            aleatoire different — declaree absente pour la meme raison que
+            profondeur_2_victoires.
     - id: tournoi_victoires_minimax6
       description: "Victoires de Minimax(d=6) dans le tournoi a cinq IA (six parties par paire, dix rencontres)"
       tolerance: 0
@@ -193,9 +258,10 @@
           transform: int
         csharp:
           absent: >-
-            Le jumeau C# ne comporte pas de tournoi : son carnet s'arrete apres
-            le duel contre l'IA aleatoire. Rien a comparer, et ce n'est pas une
-            sortie manquante.
+            Le C# a bien un round-robin, mais a quatre parties par paire et vingt
+            rencontres, entre Random, Greedy, Minimax(2), Minimax(4) et
+            MCTS(300) : pas de Minimax(d=6), pas de MCTS(500), un autre format.
+            Rien a comparer.
     - id: tournoi_victoires_random
       description: "Victoires de l'IA aleatoire dans le meme tournoi : la borne basse du classement"
       tolerance: 0
@@ -211,7 +277,9 @@
           transform: int
         csharp:
           absent: >-
-            Voir tournoi_victoires_minimax6 : pas de tournoi cote C#.
+            Voir tournoi_victoires_minimax6 : le tournoi C# existe, mais sur un
+            autre plateau d'IA, un autre nombre de parties par paire et une autre
+            mise en page du classement.
     - id: tournoi_matrice_mcts_minimax6
       description: "Cellule de la matrice des confrontations : bilan de MCTS(500) contre Minimax(d=6), lu sur la ligne MCTS"
       tolerance: 0
@@ -227,8 +295,45 @@
           transform: text
         csharp:
           absent: >-
-            Voir tournoi_victoires_minimax6 : pas de tournoi, donc pas de
-            matrice des confrontations.
+            Voir tournoi_victoires_minimax6 : le C# n'a ni MCTS(500) ni
+            Minimax(d=6) dans son tournoi, donc cette cellule de matrice n'y a
+            pas d'equivalent.
+    - id: tournoi_match9
+      description: "Neuvieme rencontre du tournoi, Minimax(d=4) contre MCTS(500) : le premier bilan non nul, donc le seul ou la profondeur se voit"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 39
+          pattern: 'Match 9/10: Minimax\(d=4\) vs MCTS\(500\)\.\.\. (\d+W-\d+D-\d+L)'
+          transform: text
+        rust:
+          cell: 38
+          pattern: 'Match 9/10: Minimax\(d=4\) vs MCTS\(500\)\.\.\. (\d+W-\d+D-\d+L)'
+          transform: text
+        csharp:
+          absent: >-
+            Voir tournoi_victoires_minimax6 : le tournoi C# compte vingt
+            rencontres sur un autre plateau d'IA, donc pas de match 9 sur 10
+            comparable.
+    - id: tournoi_match10
+      description: "Dixieme rencontre du tournoi, Minimax(d=6) contre MCTS(500) : le seul match ou la profondeur 6 perd deux parties"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 39
+          pattern: 'Match 10/10: Minimax\(d=6\) vs MCTS\(500\)\.\.\. (\d+W-\d+D-\d+L)'
+          transform: text
+        rust:
+          cell: 38
+          pattern: 'Match 10/10: Minimax\(d=6\) vs MCTS\(500\)\.\.\. (\d+W-\d+D-\d+L)'
+          transform: text
+        csharp:
+          absent: >-
+            Voir tournoi_victoires_minimax6 : ni Minimax(d=6) ni MCTS(500) ne
+            figurent dans le tournoi C#, donc cette rencontre n'existe pas chez
+            lui.
     - id: benchmark_ab_classique
       description: "Victoires de l'alpha-beta a profondeur fixe 4 contre l'IA aleatoire, sur trois parties"
       tolerance: 0
@@ -244,8 +349,10 @@
           transform: int
         csharp:
           absent: >-
-            Le benchmark des deux approches AIMA n'existe pas cote C# : le
-            carnet s'arrete avant le cadre etat/action/test terminal.
+            Le C# ne mesure pas le couple AB-classique / ID-AB sur trois parties :
+            il mesure l'approfondissement iteratif seul (budget 0,3 s, cinq
+            parties contre l'IA aleatoire, 5/5). Autre protocole, pas une sortie
+            manquante.
     - id: benchmark_id_ab
       description: "Victoires de l'alpha-beta a approfondissement iteratif (0,5 s par coup) contre l'IA aleatoire, sur trois parties"
       tolerance: 0
@@ -261,4 +368,7 @@
           transform: int
         csharp:
           absent: >-
-            Voir benchmark_ab_classique : pas de benchmark AIMA cote C#.
+            Voir benchmark_ab_classique : le C# a un approfondissement iteratif a
+            0,3 s sur cinq parties, le jumeau Python un ID-AB a 0,5 s sur trois
+            parties. Ni le budget, ni le nombre de parties, ni la mise en page ne
+            coincident.
