@@ -1,0 +1,201 @@
+# Paire ML 2.3b : jumeau Python + portage Rust (issue #27134, lot 6 de l'Epic
+# Origami Rust). Les deux carnets ont la meme structure -- 26 cellules, cellules
+# de code aux memes indices -- donc les cotes se correspondent par index.
+# Cote Rust : evcxr + smartcore 0.7.0. Cote Python : scikit-learn + numpy.
+#
+# Ce qui se compare, et ce qui ne se compare pas
+# ----------------------------------------------
+# Les deux carnets tirent leurs donnees de generateurs DIFFERENTS (numpy
+# default_rng cote Python, xorshift64 + Box-Muller cote Rust). Les NIVEAUX
+# absolus ne sont donc pas comparables, et le registre ne les compare pas :
+#  - l'accuracy de la cellule 4 se compare malgre tout a 0,05 pres, parce que
+#    les deux modeles y sont entraines et testes sur le MEME echantillon de leur
+#    propre cote (mesure : 0.965 cote Rust contre 0.925 cote Python, ecart 0.04) ;
+#  - les regimes des cellules 11 et 13 se comparent par le SIGNE de l'ecart
+#    NB - LR au meme budget : c'est la seule grandeur commune a deux generateurs
+#    distincts, et c'est celle que porte la these du carnet.
+#
+# Le signe n'est PAS mesure partout, et c'est delibere :
+#  - scenario A : le croisement des deux courbes tombe vers n = 480 cote Rust
+#    (l'ecart passe de +0.0070 a -0.0009) et n'existe pas cote Python (l'ecart se
+#    resserre sans changer de signe, +0.0014 a n = 1920). Sont donc mesures les
+#    budgets ou les deux cotes sont du meme cote du zero -- n = 30 (+ dans les
+#    deux carnets) et n = 240 (+ dans les deux) -- jamais n = 480 ni au-dela ;
+#  - scenario B : les deux cotes sont negatifs des n = 15 et le restent. Sont
+#    mesures n = 30 et n = 1920, qui portent la these du carnet : l'ecart ne se
+#    referme pas quand n grandit.
+#
+# Hors registre, avec leur motif :
+#  - les cartes ASCII des cellules 11 et 13 sont des RENDUS, pas des grandeurs ;
+#    elles se lisent qualitativement dans la prose du carnet ;
+#  - les moyennes empiriques de la cellule 4 appartiennent au GENERATEUR, pas au
+#    modele : elles different legitimement d'un cote a l'autre (1.080 / 1.181 /
+#    1.237 cote Rust, 1.262 / 0.913 / 1.160 cote Python), et les comparer
+#    mesurerait l'ecart des generateurs en le presentant comme celui des modeles ;
+#  - les bannieres de la cellule 1 n'ont aucune grandeur commune (version de
+#    NumPy et graine d'un cote, configuration smartcore de l'autre) : l'absence
+#    est declaree cote Python plutot que passee sous silence.
+- name: "ML 2.3b Naive Bayes generatif contre regression logistique"
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb
+  rust: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif-Rust.ipynb
+  measures:
+    - id: pret_from_scratch
+      description: "Ligne de disponibilite du Naive Bayes ecrit a la main (identique des deux cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(Naive Bayes gaussien from scratch pr[^\\n]*)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(Naive Bayes gaussien from scratch pr[^\\n]*)"
+          transform: text
+    - id: accuracy_from_scratch
+      description: "Precision du modele ecrit a la main sur son propre echantillon (Python 0.925)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "accuracy from scratch : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "accuracy from scratch : ([0-9.]+)"
+          transform: float
+    - id: accuracy_bibliotheque
+      description: "Precision du modele de la bibliotheque sur les memes donnees (sklearn / smartcore)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "accuracy (?:sklearn|smartcore)\\s+: ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "accuracy (?:sklearn|smartcore)\\s+: ([0-9.]+)"
+          transform: float
+    - id: predictions_identiques
+      description: "Le modele maison et celui de la bibliotheque rendent les memes predictions (True cote Python, true cote Rust)"
+      tolerance: 0
+      case_insensitive: true
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "identiques \\(0/1\\) : (\\w+)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "identiques \\(0/1\\) : (\\w+)"
+          transform: text
+    - id: regime_a_30
+      description: "Scenario A (correlations homogenes) a n = 30 : Naive Bayes devant (signe de NB - LR)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+    - id: regime_a_240
+      description: "Scenario A a n = 240 : l'ecart fond mais Naive Bayes est encore devant"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\n\\s*240\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\n\\s*240\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+    - id: regime_b_30
+      description: "Scenario B (correlations en bloc) a n = 30 : la logistique passe devant"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+    - id: regime_b_1920
+      description: "Scenario B a n = 1920 : l'ecart ne se referme pas (la logistique reste devant)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\n\\s*1920\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\n\\s*1920\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          transform: text
+    - id: exercice_1
+      description: "Ligne d'exercice 1 (stub des deux cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(Exercice 1 [^\\n]*)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "(Exercice 1 [^\\n]*)"
+          transform: text
+    - id: exercice_2
+      description: "Ligne d'exercice 2 (stub des deux cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(Exercice 2 [^\\n]*)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(Exercice 2 [^\\n]*)"
+          transform: text
+    - id: exercice_3
+      description: "Ligne d'exercice 3 (stub des deux cotes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "(Exercice 3 [^\\n]*)"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "(Exercice 3 [^\\n]*)"
+          transform: text
+    - id: banniere_configuration
+      description: "Banniere du carnet Rust (cote Python : aucune grandeur commune)"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: >-
+            Le jumeau Python affiche la version de NumPy et sa graine (« NumPy
+            2.3.5 pret ; graine 7 ») ; le portage Rust affiche sa configuration
+            smartcore. Les deux bannieres n'ont aucune grandeur commune : rien a
+            comparer, et le fait est declare plutot que passe sous silence.
+        rust:
+          cell: 1
+          pattern: "(Configuration OK : 2\\.3b [^\\n]*)"
+          transform: text
