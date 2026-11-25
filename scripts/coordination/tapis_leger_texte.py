@@ -33,7 +33,11 @@ def texte(r: dict) -> str:
     lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits :")
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {p['titre'][:90]}"
                for p in r["vos_prs"]]
-    lignes.append("\nGrains -- deja qualifies sur leur fil complet, a claimer puis servir :")
+    if r.get("fil_lu", True):
+        lignes.append("\nGrains -- deja qualifies sur leur fil complet, a claimer puis servir :")
+    else:
+        lignes.append("\nGrains -- CANDIDATS DU CACHE (fil NON lu) : "
+                      "lire le fil avant de claimer, puis servir :")
     for g in r["grains"]:
         lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
         lignes.append(f"      {g['action']}")

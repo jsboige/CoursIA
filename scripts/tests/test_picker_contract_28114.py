@@ -240,6 +240,43 @@ def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
         "des tirages successifs doivent couvrir toutes les issues ouvertes"
 
 
+def test_I2_le_repli_annonce_des_candidats_du_cache_pas_des_grains_confirmes(
+        tmp_path, monkeypatch):
+    """I2 -- l'ACTION PUBLIQUE du repli distingue le cache du grain confirme.
+
+    Le repli chronologique sert des metadonnees locales : il ne lit JAMAIS le
+    fil. Presenter ces candidats comme « deja qualifies sur fil complet »
+    donnerait a la lane une consigne de claim qui repose sur une lecture de
+    fil qui n'a pas eu lieu (reserve du coordinateur du 25/11 sur #28345).
+
+    Temoin : l'action publique d'un grain du repli impose la lecture du fil
+    avant le claim, et ne contient pas la consigne des grains confirmes.
+    """
+    pool = [_meta(5000 + k,
+                  cree=(NOW - timedelta(days=15 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+            for k in range(6)]
+    lecture = gh_bulk.Lecture(issues=[_issue(m["number"], m["title"], m["created_at"])
+                                      for m in pool],
+                               prs=[], citations={}, lu_a="2026-11-22T20:00:00Z",
+                               secondes=0.1, appels=1)
+    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
+
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "graine", Path("."),
+                                       _run_casse())
+    assert code == 0, "le repli rend une file, pas un echec"
+    assert rapport["voie"] == "repli", "la voie rendue est le repli"
+    assert rapport["grains"], "le repli doit rendre une file non vide"
+    assert rapport["fil_lu"] is False, "le repli n'a pas lu le fil"
+    for g in rapport["grains"]:
+        assert "candidat du cache" in g["action"], \
+            "l'action publique doit nommer le grain comme candidat du cache"
+        assert "lire le fil avant de claimer" in g["action"], \
+            "l'action publique doit imposer la lecture du fil avant le claim"
+        assert "deja qualifie sur fil complet" not in g["action"], \
+            "un candidat du cache ne doit pas etre presente comme qualifie"
+
+
 def test_I2_un_filtre_qui_vide_la_file_bascule_sur_le_repli(tmp_path, monkeypatch):
     """I2 -- une lecture REUSSIE dont la file sort vide bascule sur le repli.
 

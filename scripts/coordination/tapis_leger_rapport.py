@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from coordination import tapis_labels, tapis_universel
+from coordination import tapis_labels, tapis_universel, tapis_universel_rapport
 from coordination.tapis_marqueurs import _age, lane_de_pr
 
 
@@ -19,16 +19,20 @@ def rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
             file: list, prs: list[dict], origami: dict,
             phases: dict | None = None, fenetre: dict | None = None,
             occupation: dict | None = None,
-            qualif: dict | None = None) -> dict:
+            qualif: dict | None = None, fil_lu: bool = True) -> dict:
     """Le rapport du tirage leger : l'etat de chaque grain et l'action a faire.
+
     Il porte ce que la **sortie texte** rend (`tapis_leger_texte`).
+    `fil_lu` distingue la voie legere qualifiee (fil complet lu) du repli
+    chronologique (candidats du cache, fil NON lu).
     """
     vos = sorted((pr for pr in prs if lane_de_pr(pr) == lane),
                  key=lambda pr: pr.get("created_at") or "")
     rapport_ = tapis_universel.rapport(etats_=etats_, file=file,
                                         lane=lane, maintenant=maintenant,
                                         lecture={},
-                                        ecartees=tapis_labels.ecartees(metas))
+                                        ecartees=tapis_labels.ecartees(metas),
+                                        fil_lu=fil_lu)
     rapport_.update({
         "graine": graine, "voie": "leger", "pool": len(metas),
         "fenetre": fenetre or {},
@@ -37,13 +41,7 @@ def rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
                     "phases": phases or {}, "budget_epuise": False},
         "vos_prs": [{"numero": pr["number"], "titre": pr.get("title") or "",
                      "age_j": _age(maintenant, pr.get("created_at"), 86400)} for pr in vos],
-        "qualification": {
-            "organe": "scripts/coordination/tapis_prise_en_charge.py",
-            "vagues": "scripts/coordination/tapis_vagues.py : la file se remplit",
-            "quand": "avant le service, sur la fenetre servie",
-            "ecarts": "les neuf regles se decident sur le fil complet",
-            **(qualif or {}),
-        },
+        "qualification": tapis_universel_rapport.bloc_qualification(qualif),
         "origami_parking": origami,
         "occupations": occupation or {"marques": {}, "exclus": []},
     })
