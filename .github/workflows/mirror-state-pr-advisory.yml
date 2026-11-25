@@ -112,8 +112,13 @@ jobs:
           rc=$?
           set -e
           cat mirror.json
-          fails=$(jq -r '.mirror.fails // "inconnu"' mirror.json)
-          seuil=$(jq -r '.mirror.threshold // "?"' mirror.json)
+          # Extraction via python3 (present: l'organe s'execute via python3 a
+          # la ligne precedente). jq manque sur certains slots (exit 127) et,
+          # sous `set -e`, abrogeait le script AVANT la lecture de `rc`,
+          # transformant un etat non lisible -- NOTE par contrat, en-tete L68 --
+          # en rouge. La decision `MIROIR FIGE` (`rc` = 1) est inchangee. (#28504)
+          fails=$(python3 -c "import json; d=json.load(open('mirror.json')); v=d.get('mirror',{}).get('fails'); print(v if v is not None else 'inconnu')")
+          seuil=$(python3 -c "import json; d=json.load(open('mirror.json')); v=d.get('mirror',{}).get('threshold'); print(v if v is not None else '?')")
           if [ "$rc" -eq 1 ]; then
             echo "::error::MIROIR FIGE -- le miroir d'objets du pool ne se rafraichit plus ($fails echec(s) consecutifs, seuil $seuil). Chaque checkout retelecharge l'historique complet depuis le serveur : les CI ralentissent d'un ordre de grandeur."
             exit 1
