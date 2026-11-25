@@ -29586,7 +29586,7 @@ Avant ce notebook, le lake `finiteness_lean` était **invisible** depuis les not
 **Transition** : le notebook jumeau Python [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) (celui que ce compagnon etend) présente la même sémantique en Python pur, sans kernel Lean. Pour un lecteur qui veut voir les deux implémentations face-à-face, l'invariant `accepts` sert de spécification partagée.",,,,,,,,56b5c84a7dd318fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-04-Companion-Lean.ipynb,33ac164f,markdown,fr,cd864445162ebc11,"# GROTH-04 : le lake Grothendieck par ses énoncés (companion formel natif)
 
-**Navigation** : [<< GROTH-03 Atelier](GROTH-03-Atelier-Python.ipynb) | [Lean-15d Visite guidee visuelle >>](../Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) | [Index](../README.md)
+**Navigation** : [<< GROTH-03 Atelier](GROTH-03-Atelier-Python.ipynb) | [Lean-15 Visite guidee visuelle >>](../Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) | [Index](../README.md)
 
 Ce notebook est le **companion formel natif** du lake [`grothendieck_lean/`](grothendieck_lean/), en kernel `lean4-wsl`.
 Il complète le notebook Python [`GROTH-03`](GROTH-03-Atelier-Python.ipynb) : là où GROTH-03 *charge et explique* les sources,
@@ -37321,7 +37321,7 @@ print(r.stdout)",,,,,,,,c5c474af1045ca5f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb,df185aef,code,fr,b641257829f423fb,"# Verification formelle depuis le lac : signatures + axiomes (lake env lean Check.lean)
 # Delai interne calibre par mesure : 240 s expiraient sur lac froid (sortie vide,
 # kill parti dans stderr jamais imprime) ; 600 s couvrent le typecheck a froid
-# sur IO 9p (cf. Lean-15e : 298 s mesurees pour un seul jeu de #check).
+# sur IO 9p (cf. Lean-15b : 298 s mesurees pour un seul jeu de #check).
 r = subprocess.run(WSL + [""-e"", ""bash"", ""-lc"",
                     ""cd "" + LAKE_DIR + "" && timeout 600 lake env lean Check.lean 2>&1""],
                    capture_output=True, text=True, encoding=""utf-8"", errors=""replace"", timeout=620)
@@ -48181,9 +48181,9 @@ partie facile de la suite exacte longue, celle qui vit dans Γ et non dans
 Ext. Le seul maillon manquant pour un énoncé inconditionnel ∀n,
 `injectif => flasque` (Godement II.4), exige l'extension par zéro `j_!` —
 frontière nommée dans le module pour la Partie 95.",,,,,,,,23bcc3db1b38433c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c00,markdown,fr,6f2132334cfb50f0,"# Lean-15d : Grothendieck en images
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c00,markdown,fr,6f2132334cfb50f0,"# Lean-15 : Grothendieck en images
 
-**Navigation** : [<< Lean-15c Companion formel](Lean-15c-Lean-Grothendieck-Companion.ipynb) | [Index](README.md) | [Lean-15e Monodromie >>](Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb)
+**Navigation** : [<< Lean-15c Companion formel](Lean-15c-Lean-Grothendieck-Companion.ipynb) | [Index](README.md) | [Lean-15b Monodromie >>](Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb)
 
 **Une visite guidee visuelle des abstractions grothendieckiennes.**
 
@@ -49418,10 +49418,10 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,
 
 Le cinquieme mouvement attend le lecteur : les memes outils que ce carnet dessine, mais *executes*. La cohomologie de Cech et le lemme de Yoneda, calcules sur des objets finis, dans [Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb) et [04](Serre100/04-lemme-yoneda-categories-finies.ipynb) ; les lakes `grothendieck_lean` et `hecke_lean`, qui portent les enonces en Lean ; enfin le rite de sortie, [Lean-37](Lean-37-Capstone-Serre100.ipynb). La maree avait construit le langage ; le pont le rend calculable -- et le capstone serre la main des deux styles.
 
-**Navigation** : [Index de la serie](README.md) | [Lean-15b Atelier](Lean-15b-Lean-Grothendieck.ipynb) | [Lean-15e Monodromie >>](Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | [Lean-37 Capstone](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,5723bf8b6ee84318,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,nav,markdown,fr,f86bd9453c380295,"# Lean-15e : Monodromie et groupe fondamental — le plan épointé à l'œuvre
+**Navigation** : [Index de la serie](README.md) | [Lean-15b Atelier](Lean-15b-Lean-Grothendieck.ipynb) | [Lean-15b Monodromie >>](Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | [Lean-37 Capstone](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,5723bf8b6ee84318,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,nav,markdown,fr,f86bd9453c380295,"# Lean-15b : Monodromie et groupe fondamental — le plan épointé à l'œuvre
 
-**Navigation** : [<< Lean-15d Grothendieck en images](Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) · [Lean-16 Conway >>](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb)
+**Navigation** : [<< Lean-15 Grothendieck en images](Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) · [Lean-16 Conway >>](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb)
 
 Volet preuve de la fenêtre « 7-bis » greffée dans [GROTH-02](Grothendieck/GROTH-02-Tribut-Python.ipynb) (distillation #19333-G.beta, issues #21307/#21308). La monodromie y était nommée mais jamais définie ; ce carnet la définit, la calcule et la prouve sur l'exemple le plus simple qui la porte : la couverture `z ↦ z²` du plan complexe épointé. Le module `Grothendieck/Monodromie.lean` du lac `grothendieck_lean` porte les preuves formelles ; ce carnet les met en scène.",,,,,,,,f86bd9453c380295,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,intro,markdown,fr,1df12ae3fab4e742,"## L'idée en une phrase
@@ -58210,8 +58210,8 @@ que l'autre — il dit **ce que chacune autorise à affirmer**, et où elle s'ar
 
 Suite naturelle :
 
-- [→ Lean-40 — Capstone Langlands](Lean-29-Capstone-Langlands-Python.ipynb) — l'escalier Langlands : de la forme modulaire calculée au lac qui la démontre ;
-- [→ Lean-41 — Capstone MIMO](Lean-21-Capstone-MIMO-Python.ipynb) — l'escalier MIMO : la détection par flips de coordonnées, le budget de descente et sa digestion ;
+- [→ Lean-29 — Capstone Langlands](Lean-29-Capstone-Langlands-Python.ipynb) — l'escalier Langlands : de la forme modulaire calculée au lac qui la démontre ;
+- [→ Lean-21 — Capstone MIMO](Lean-21-Capstone-MIMO-Python.ipynb) — l'escalier MIMO : la détection par flips de coordonnées, le budget de descente et sa digestion ;
 - [Geometry-02](https://github.com/jsboige/CoursIA/issues/17544) — la certitude par
   l'algèbre : l'idéal des hypothèses, l'appartenance décidée par Gröbner ;
 - [Geometry-03](Geometry/Geometry-03-Wu-Method-Python.ipynb) et
@@ -58802,15 +58802,15 @@ sous-série — il dit **par où y entrer** :
 - pour la direction orthogonale — la marée de Grothendieck contre les voies
   surprenantes : [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), section « Les
   limites de la marée ».",,,,,,,,d36368cdd1dd1fea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,49bb51d9,markdown,fr,f333a2bec65c6085,"# Lean-41 : Capstone — escalier vers la sous-série MIMO (détection par flips, budget de descente et digestion)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,49bb51d9,markdown,fr,f333a2bec65c6085,"# Lean-21 : Capstone — escalier vers la sous-série MIMO (détection par flips, budget de descente et digestion)
 
 **Série** : [SymbolicAI/Lean](README.md) — entrée/sortie de la sous-série [MIMO](MIMO/README.md).
 
-**Navigation** : [<< Lean-40 Capstone Langlands](Lean-29-Capstone-Langlands-Python.ipynb) | [Index](README.md)
+**Navigation** : [<< Lean-29 Capstone Langlands](Lean-29-Capstone-Langlands-Python.ipynb) | [Index](README.md)
 
 **Carnets visés** : `MIMO-01-Descente-Budget-Lean-Python` → `MIMO-04-Capstone-Digestion-Python` (quatre carnets), avec leur lac compagnon [`mimo_lean/`](mimo_lean/README.md) (0 sorry, kernel `lean4-wsl`).
 
-**Pourquoi un escalier** : la sous-série MIMO déplace 21c/21/21b dans un dossier `MIMO/` ([PR #20371](https://github.com/jsboige/CoursIA/pull/20371), EPIC #17545). Sans carnet d'entrée, la descente est inatteignable depuis la série principale. Ce capstone suit la convention tenue par Lean-20 (vers `Analyse/`), Lean-37 (vers `Serre100/`), Lean-38 (vers `Geometry/`), Lean-39 (vers `JeuDeLaVie/`) et Lean-40 (vers `Langlands/`) : table de routage, prérequis, surface mesurée, et exercices qui confrontent la promesse à l'exécution.
+**Pourquoi un escalier** : la sous-série MIMO déplace 21c/21/21b dans un dossier `MIMO/` ([PR #20371](https://github.com/jsboige/CoursIA/pull/20371), EPIC #17545). Sans carnet d'entrée, la descente est inatteignable depuis la série principale. Ce capstone suit la convention tenue par Lean-20 (vers `Analyse/`), Lean-37 (vers `Serre100/`), Lean-38 (vers `Geometry/`), Lean-39 (vers `JeuDeLaVie/`) et Lean-29 (vers `Langlands/`) : table de routage, prérequis, surface mesurée, et exercices qui confrontent la promesse à l'exécution.
 ",,,,,,,,f333a2bec65c6085,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,53eefd26,markdown,fr,781efc33a873001f,"## 1. Le geste : la détection MIMO par flips de coordonnées
 
