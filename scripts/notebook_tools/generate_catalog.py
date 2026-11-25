@@ -2790,6 +2790,16 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
         lines.append(f"- **{status}**: {status_counts[status]}")
     lines.append(f"- **TOTAL**: {len(ordered)}")
 
+    kernel_counts: dict[str, int] = {}
+    for entry in ordered:
+        kernel = entry.get("kernel") or "unknown"
+        kernel_counts[kernel] = kernel_counts.get(kernel, 0) + 1
+
+    lines.extend(["", "## Kernel Summary", ""])
+    for kernel in sorted(kernel_counts, key=lambda value: (value.casefold(), value)):
+        lines.append(f"- **{_md_escape_cell(kernel)}**: {kernel_counts[kernel]}")
+    lines.append(f"- **TOTAL**: {len(ordered)}")
+
     lines.extend(["", "## Maturity Summary", ""])
     for maturity in sorted(maturity_counts):
         lines.append(f"- **{maturity}**: {maturity_counts[maturity]}")
