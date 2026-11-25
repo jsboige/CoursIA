@@ -2622,3 +2622,49 @@ class TestFpFamilies24289Residual:
         assert result["verdict"] == "FABRICATION_DETECTED", result
         assert any(f["normalized"] == "0.455" for f in result["findings"])
 
+    # --- famille D : la source nommee dans une phrase voisine ----------
+
+    def test_familleD_source_nommee_dans_la_phrase_voisine(self, tmp_path):
+        """FP donne (ICT-19 c.31, mesure le 25/11) : le paragraphe « A
+        retenir » etale la source d'un claim sur la phrase SUIVANTE --
+        « (voir cell[0]) » -- tandis que la phrase qui porte la valeur ne
+        cite qu'une ancre qui ne resout vers aucune cellule (« section
+        5.1 »). La valeur est IMPRIMEE (cellule 0, hors fenetre) : la
+        decoupe en phrase ne doit pas la rendre introuvable."""
+        cells = [
+            _code_cell("eval()", [_stream_output(
+                "repair_gain (S4 - diffusion)        = +0.8217 +/- 0.2722\n"
+                "recovery_score diffusion pure       ~ +0.0018\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _md_cell(
+                "Là où le témoin seul échouait, la séparation tient en espace "
+                "de champ : `repair_gain(S4) = +0.8217 ± 0.2722` contre le "
+                "témoin diffusion pure apparié en `I_thermo` (+0.0018) — "
+                "gate ENJEU-1 OK (section 5.1). La paire scalaire reste "
+                "affichée avec son FAIL (voir cell[0])."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["derived_claims"]
+
+    def test_familleD_valeur_absente_des_sorties_reste_detectee(self, tmp_path):
+        """Faux negatif donne : meme forme, mais la cellule nommee
+        n'imprime PAS la valeur -- le claim reste detecte."""
+        cells = [
+            _code_cell("eval()", [_stream_output("bruit\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _md_cell(
+                "Là où le témoin seul échouait, la séparation tient en espace "
+                "de champ : `repair_gain(S4) = +0.8217 ± 0.2722` contre le "
+                "témoin diffusion pure apparié en `I_thermo` (+0.0018) — "
+                "gate ENJEU-1 OK (section 5.1). La paire scalaire reste "
+                "affichée avec son FAIL (voir cell[0])."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert any(f["normalized"] == "0.8217" for f in result["findings"])
+

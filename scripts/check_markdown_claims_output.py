@@ -1634,8 +1634,16 @@ def check_notebook(path: Path) -> dict:
             # #24289 famille C: an anchor governs the SENTENCE that cites
             # it, not every claim of the line.
             claim_scope = _sentence_around(prose, match_pos, match_end)
+            # The PROOF sources keep the paragraph scope (the line): a
+            # paragraph may name the source of a claim in a NEIGHBOURING
+            # sentence -- measured on ICT-19 (25/11) : the values
+            # `repair_gain(S4) = +0.8217` are printed by cell 23, named by
+            # "(ICT-19b §8, §13)" in the sentence that FOLLOWS the one that
+            # states them, while "(section 5.1)" of that first sentence
+            # resolves to no cell at all.
+            claim_line = _line_around(prose, match_pos, match_end)
             anchored_outputs = [
-                item for item in _anchored_output_cells(claim_scope, cells, idx)
+                item for item in _anchored_output_cells(claim_line, cells, idx)
                 if item[0] not in prev_code_idxs
             ]
             # Keep the historical local window. A more distant output is
