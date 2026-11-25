@@ -126,27 +126,26 @@ layout: dense
 
 
 # Principes de l’apprentissage inductif
-<div class="dense-list">
+Six observations suffisent-elles à déterminer la fonction entre deux points ?
 
-- h est choisie dans un espace d’hypothèses
-  - E.g. types de fonctions (polynômes)
-  - De manière à égaler f sur l’ensemble d’apprentissage
-- h est consistante / cohérente si elle concorde avec f sur tous les exemples
-- Mesure de performances
-  - Biais : déviation par rapport à f en moyenne  espace d’hypothèses: Ex: underfitting
-  - Variance  déviations dues aux Données: Ex: Overfitting
-  - Dilemme biais-variance
-- Rasoir d’Occam
-  - On choisit l’hypothèse la plus simple consistante avec les données
-
-<div class="img-grid cols3">
-<img src="./images/img_001.png" alt="img_001.png">
-<img src="./images/img_002.png" alt="img_002.png">
-<img src="./images/img_003.png" alt="img_003.png">
+<div v-click="1" class="induction-step">
+<div><h2>Observer</h2><p>Chaque croix donne une paire entrée–sortie. Entre les croix, la valeur de la fonction reste inconnue.</p></div>
+<LearningFigure file="img_001.png" alt="Six observations, sans courbe ajustée" />
+</div>
+<div v-click="2" class="induction-step">
+<div><h2>Choisir une famille</h2><p>Une droite et un polynôme ne font pas les mêmes prédictions. Une hypothèse est <strong>cohérente</strong> si elle retrouve la valeur de chaque observation. Une famille trop rigide peut sous-ajuster les données : c’est une source de biais.</p></div>
+<LearningFigure file="img_002.png" alt="Une droite et deux courbes ajustées aux mêmes observations" />
+</div>
+<div v-click="3" class="induction-step">
+<div><h2>Départager les hypothèses</h2><p>La courbe orange passe par les observations, mais oscille entre elles. Un ajustement très flexible peut changer fortement si l’on change d’échantillon : sa variance est élevée.</p><p>À accord égal avec les données, le rasoir d’Occam invite à préférer l’hypothèse simple. On vérifie sa généralisation sur d’autres exemples.</p></div>
+<LearningFigure file="img_003.png" alt="Une quatrième hypothèse oscille fortement entre les observations" />
 </div>
 
-
-</div>
+<style>
+.induction-step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 39%); align-items: center; gap: 24px; margin-bottom: 6px; font-size: 17px; line-height: 1.2; }
+.induction-step h2, .induction-step p { margin: 3px 0; }
+.induction-step img { width: auto; max-width: 100%; max-height: 106px; margin: auto; object-fit: contain; }
+</style>
 ---
 layout: dense
 ---
@@ -998,39 +997,40 @@ img.img-fit { max-height: 60px !important; }
 
 # Réseaux résiduels (ResNets)
 
-<div class="dense-list xl-dense">
+Pourquoi ajouter des couches peut-il rendre un réseau plus difficile à entraîner ?
 
-- Problème:
-- Augmentation de la profondeur
--  Dégradation des performances
-- Vanishing /Exploding gradient
-- Intuition
-- Surface de perte découpée
-- F(x) = x difficile à faire converger
-- Solution:
-- Courts-circuits F(x) = x
-- Avec ou sans convolution
--  Architectures très profondes
-- Plus récemment
-- DenseNets:
-- Addition  Concaténation
-- RoR = Resnets of Resnets
-- U-Nets
-- Down+Upsampling (autoencodeur)
--  Segmentation d’image
-- Ajout de connexions résiduelles
--  Amélioration de la précision
-- V-Nets, U-Nets++ etc.
+<div v-click="1" class="resnet-frame"><div><h2>Apprendre une correction</h2><p>Une couche supplémentaire pourrait en principe recopier son entrée. Rien ne garantit que l’optimisation trouvera cette identité. Sur le schéma de droite, les classes de fonctions sont emboîtées : ajouter un bloc capable de recopier son entrée permet de conserver les solutions déjà représentables. Cela ne garantit pas que l’entraînement les trouvera.</p></div><LearningFigure file="img_048.png" alt="À gauche, classes de fonctions décalées ; à droite, classes emboîtées face à une cible étoilée" /></div>
+
+<div v-click="2" class="resnet-frame"><div><h2>Suivre les deux chemins</h2><p>À l’addition, on obtient <strong>x + F(x)</strong>. Si la correction F est nulle, l’entrée est transmise intacte. Quand les dimensions changent, une convolution 1 × 1 adapte le raccourci.</p></div><LearningFigure file="img_049.png" alt="Blocs résiduels avec raccourci identité ou projection 1 × 1" /></div>
+
+<style scoped>
+.resnet-frame { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 46%); align-items:center; gap:24px; margin-bottom:12px; font-size:17px; line-height:1.25; }
+.resnet-frame h2, .resnet-frame p { margin:3px 0; }
+.resnet-frame img { width:auto; max-width:100%; max-height:135px; margin:auto; object-fit:contain; }
+</style>
+
+---
+layout: default
+---
+
+# Connexions courtes : additionner ou concaténer ?
+
+<div class="architecture-pair">
+  <figure><LearningFigure file="img_050.png" alt="Comparaison d’un réseau simple et de ResNet" /><figcaption><strong>ResNet.</strong> Un arc court contourne un bloc ; on additionne les deux chemins.</figcaption></figure>
+  <figure><LearningFigure file="img_051.png" alt="Raccourcis imbriqués dans RoR" /><figcaption><strong>RoR.</strong> Des arcs plus longs contournent aussi des groupes de blocs.</figcaption></figure>
 </div>
 
-<div class="img-grid onerow">
-<img src="./images/img_048.png" alt="img_048.png">
-<img src="./images/img_049.png" alt="img_049.png">
-<img src="./images/img_050.png" alt="img_050.png">
-<img src="./images/img_051.png" alt="img_051.png">
-<img src="./images/img_052.png" alt="img_052.png">
-<img src="./images/img_053.png" alt="img_053.png">
+<div v-click="1" class="architecture-pair">
+  <figure><LearningFigure file="img_052.png" alt="Connexions entre les couches successives de DenseNet" /><figcaption><strong>DenseNet.</strong> Une couche concatène les caractéristiques des couches précédentes.</figcaption></figure>
+  <figure><LearningFigure file="img_053.png" alt="Encodeur et décodeur de U-Net reliés à plusieurs résolutions" /><figcaption><strong>U-Net.</strong> Le décodeur récupère les détails de même résolution, sans addition résiduelle. Variantes : V-Net et U-Net++.</figcaption></figure>
 </div>
+
+<style scoped>
+.architecture-pair { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:28px; margin:12px 0 18px; }
+.architecture-pair figure { margin:0; }
+.architecture-pair img { display:block; width:100%; height:135px; object-fit:contain; }
+.architecture-pair figcaption { margin-top:4px; font-size:17px; line-height:1.25; }
+</style>
 
 
 ---
@@ -1139,56 +1139,49 @@ img.img-fit { max-height: 60px !important; }
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
+# Mécanisme d’attention
 
-# Mécanisme d'attention
+De quelle information a-t-on besoin pour produire **ce mot-ci** ?
 
+<div v-click="1" class="attn-pair"><section><h2>Décrire une image</h2><LearningFigure file="img_062.png" alt="Zone du frisbee mise en évidence dans la photo" /><p>Pour écrire « frisbee », la région du disque est plus utile que le reste du parc.</p></section><section><h2>Traduire une phrase</h2><LearningFigure file="img_063.jpg" alt="Poids des mots anglais pour chaque mot français" /><p>Pour chaque mot français, le décodeur peut pondérer différemment les mots anglais. L’alignement n’a pas à suivre l’ordre de la phrase.</p></section></div>
 
-<div class="dense-list xl-dense">
+<div v-click="2" class="attn-pair"><section><h2>Encoder la source</h2><LearningFigure file="img_066.png" alt="Chaîne récurrente encodeur-décodeur pour la traduction" /><p>Dans le modèle récurrent de base, un état final doit résumer toute la source.</p></section><section><h2>Relire à chaque sortie</h2><LearningFigure file="img_067.png" alt="Le décodeur reçoit un contexte à chaque pas" /><p>Avec attention, le décodeur reçoit aussi un contexte propre au mot en cours. Il n’est plus limité au seul résumé final.</p></section></div>
 
-- Inspiration naturelle
-- Focalisation  économie de ressources
-- Principe algorithmique
-- Filtrage contextuel en sortie
-- Seq2Seq
-- Encodeur/décodeur
-- Délocalisation
-- Implémentation RNN
-- Problème: Expressivité
-- Création d’un contexte
-- Filtrage de proximité
-- Transformers
-- Construits sur le MA
-- Encodage positionnel
-- Auto-attention multi-tête
-- Produit scalaire
-- Transfer learning
-- Modèles agnostiques pré-entraînés
-- Exemples NLP
-- Bert (Google)
-- GPT-2 (Open AI)
-- Vulgarisation
-- 3Blue1Brown
-- Attention
-- Tranformers
-- LLM VIzualisation
+<style scoped>
+.attn-pair { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:24px; margin-bottom:10px; }
+.attn-pair h2, .attn-pair p { margin:3px 0; font-size:16px; line-height:1.2; }
+.attn-pair img { width:auto; max-width:100%; max-height:110px; margin:auto; }
+</style>
 
+---
+layout: default
+---
+
+# Attention : des poids au Transformer
+
+<div class="attn-pair attn-calculation">
+  <section><h2>Calculer les poids</h2><LearningFigure file="img_065.png" alt="Produits scalaires requête-clés et poids après softmax" /><p>Le softmax transforme les scores en poids qui totalisent 1. Exemple : les scores <strong>0 et ln(3)</strong> donnent les poids <strong>¼ et ¾</strong>.</p></section>
+  <section><h2>Construire le contexte</h2><LearningFigure file="img_068.png" alt="Somme pondérée des états de l’encodeur" /><p>Avec les valeurs <var>v</var><sub>1</sub> et <var>v</var><sub>2</sub>, le contexte de cet exemple est <strong>¼ <var>v</var><sub>1</sub> + ¾ <var>v</var><sub>2</sub></strong>. Changer la requête peut changer ces poids.</p></section>
 </div>
 
+<div v-click="1" class="attn-pair"><section><h2>Lire une tête d’attention</h2><LearningFigure file="img_064.jpg" alt="Liens d’attention entre positions d’une phrase" /><p>Un trait relie deux positions. Plusieurs têtes apprennent plusieurs pondérations, pas nécessairement la même relation.</p></section><section><h2>Lire le Transformer</h2><LearningFigure file="img_069.png" alt="Encodeur et décodeur du Transformer" /><p>Repérez l’information de position et les blocs multi-têtes. BERT reprend le côté encodeur ; GPT-2, le principe du décodeur causal. Tous deux se prêtent au transfert après préentraînement.</p></section></div>
 
-::right::
+<style scoped>
+.attn-pair { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:24px; margin-bottom:8px; }
+.attn-pair section { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 43%); column-gap:10px; align-items:center; }
+.attn-pair h2 { grid-column:1 / -1; font-size:17px; margin:3px 0; }
+.attn-pair img { grid-column:2; grid-row:2; width:auto; max-width:100%; max-height:83px; margin:auto; object-fit:contain; }
+.attn-pair p { grid-column:1; grid-row:2; margin:0; font-size:15px; line-height:1.2; }
+</style>
 
+<p class="attn-references">Pour approfondir : 3Blue1Brown (Attention, Transformers) et LLM Visualization.</p>
 
-<img src="./images/img_062.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_063.jpg" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_064.jpg" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_065.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_066.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_067.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_068.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
-<img src="./images/img_069.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<style scoped>
+.attn-references { margin-top:8px; font-size:13px; }
+</style>
 
 
 ---
@@ -2342,40 +2335,33 @@ layout: dense
 
 # Q-learning
 
-- = Apprentissage d’utilité action
-- Possibilité : ADP actif  TD actif
-- Variante: utilité action Q(s,a)
-- « model-free » (ADP   TD)
-- Même fonction d’exploration f
--  convergence plus lente mais plus flexible
-- Variante: Sarsa
-- = State-action-reward-state-action
-- Règle de MAJ similaire à Q-Learning
-- Différence pour l’exploration:
-- Q-learning: « off-policy » (plus flexible)
-- Sarsa: « on-policy » (plus réaliste)
-- Résultats:
-- plus lent que ADP actif ( pas de modèle)
--  débat sur l’utilité des connaissances
--  Transition actuelle
+<div v-click="1" class="q-step"><section><h2>Valeur d’une action</h2><p>Q(s, a) estime le gain futur associé à l’action a dans l’état s. La meilleure valeur d’état prend le maximum sur les actions.</p><p>Avec un modèle des transitions, on peut calculer une espérance sur les états suivants.</p></section><div><LearningFigure file="img_110.png" alt="Valeur d’état et maximum des valeurs d’action" /><LearningFigure file="img_111.png" alt="Équation de valeur d’action avec modèle de transition" /></div></div>
 
-<div class="img-grid cols3">
-<img src="./images/img_109.png" alt="img_109.png">
-<img src="./images/img_110.png" alt="img_110.png">
-<img src="./images/img_111.png" alt="img_111.png">
-<img src="./images/img_112.png" alt="img_112.png">
-<img src="./images/img_113.png" alt="img_113.png">
+<div v-click="2" class="q-step">
+
+<section>
+
+## Apprendre sans modèle
+
+Observer $(s,a,r,s')$, calculer la cible, puis corriger **la seule entrée** $Q(s,a)$ :
+
+$Q(s,a) \gets Q(s,a) + \alpha\,[r + \gamma\max_b Q(s',b) - Q(s,a)]$.
+
+Si $s'$ est terminal, la cible est $r$. L’exploration guide le choix de la prochaine action, pas le maximum de la cible.
+
+</section>
+
+<div><LearningFigure file="img_112.png" alt="Mise à jour temporelle de Q" /><LearningFigure file="img_109.png" alt="Pseudo-code de référence de l’agent Q-learning" /></div>
 </div>
 
+<div v-click="3" class="q-step"><section><h2>Sarsa : une autre cible</h2><p>Q-learning prend le maximum (hors politique). Sarsa évalue l’action réellement choisie (sur politique).</p><p>Le nombre d’échantillons requis dépend du problème et de l’exploration.</p></section><div><LearningFigure file="img_113.png" alt="Mise à jour Sarsa avec l’action suivante choisie" /></div></div>
+
 <style scoped>
-/* #24171 (point 3) : cette diapo sortait de 176 px sous le canvas 980x552
-   (mesure scan_slidev_composition, 2026-11-11, deck 06). La grille gardait
-   le budget fixe de 300 px du theme (deux rangees de figures sous une
-   liste de dix-sept lignes) et la liste ne comprimeait rien. Grille en
-   hauteur auto, figures a 76 px, liste resserree. */
-:deep(.img-grid) { height: auto !important; }
-:deep(.img-grid.cols3 img) { max-height: 76px; }
-:deep(ul) { font-size: 0.78em; line-height: 1.2; }
+.q-step { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 38%); align-items:center; gap:18px; margin-bottom:8px; font-size:17px; line-height:1.25; }
+.q-step h2, .q-step p { margin:3px 0; }
+.q-step section p + p { margin-top:6px; }
+.q-step > div { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr); align-items:center; justify-items:center; gap:10px; }
+.q-step img { display:block; width:auto; max-width:100%; height:92px; object-fit:contain; }
 </style>
 
 
@@ -2451,35 +2437,27 @@ layout: dense
 ---
 
 
-# Deep Q learning
+# Deep Q-learning : apprendre une valeur d’action
 
-<div class="dense-list">
+Le réseau reçoit l’état $s$ (par exemple, une pile d’images Atari) et prédit une valeur $Q_\theta(s,a)$ pour chaque action. Un encodeur convolutionnel peut traiter les images ; une tête dense produit les valeurs d’action.
 
-- Réseaux de neurones
-- = excellent espace d’hypothèses
-- Inputs génériques:
-- ex Atari: état = pixels + actions
-- Outputs = Q-valeurs pour chaque action
-- Architecture: Convolué + outputs denses
-- pas de pooling (pas d’invariance)
-- Regression: perte quadratique L:
-- Procédure:
-- Feed-forward  Q pour chaque action
-- Même chose pour état suivant  max a’ Q(s’, a’)
-- Target  r + γmax a’ Q(s’, a’) pour a, 0 pour les autres
-- Mise à jour des poids par backpropagation
-- Mais convergence très lente
--  tricks pour l’accélérer
-- Ex: Expérience replay: des scénarios sont gardés en mémoire et rejoués en batchs
--  moins de similarité dans les échantillons  échappe aux minima locaux
-- Problème de l’exploration
-- (cf. bandits manchot)
-- Début: aléatoire  exploration
-- Mais exploration « gloutonne »  Exploration ε-greedy : ε de 1 à 0.1
-- Algorithme final
-- Autres « tricks »: target network, error clipping, reward clipping etc.
-- Finit par converger
-</div>
+<v-click>
+
+**Sur quelle erreur s’entraîner ?** Pour une transition $(s,a,r,s')$, la cible vaut $r+\gamma\max_{a'}Q_{\bar\theta}(s',a')$, ou $r$ à la fin d’un épisode. La perte compare cette cible à $Q_\theta(s,a)$ : les autres sorties ne reçoivent pas de cible de zéro.
+
+</v-click>
+
+<v-click>
+
+**Comment stabiliser les mises à jour ?** Échantillonner dans une mémoire de transitions réduit la corrélation entre exemples consécutifs. Un réseau cible, de paramètres $\bar\theta$ maintenus fixes entre deux synchronisations, évite que la cible suive chaque mise à jour du réseau entraîné.
+
+</v-click>
+
+<v-click>
+
+**Comment explorer ?** Une politique $\varepsilon$-gloutonne choisit parfois une action au hasard, plus souvent au début. Le replay et le réseau cible stabilisent l’entraînement, mais ne garantissent pas sa convergence.
+
+</v-click>
 
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb">RL-06-DQN-Policy-Gradient-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb">RL-03-Experience-Replay-HER-Python.ipynb</a> (replay).</p>
 
