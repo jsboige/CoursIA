@@ -112,7 +112,7 @@ LEAN_EXEC = LEAN_DIR / "lean_exec.py"
 # --------------------------------------------------------------------------
 # #26630 -- le cache chaud se RESOUT par toolchain, il n'est plus fige.
 #
-# Un seul pivot (`GOL/conway_lean`, toolchain v4.33.0) rendait trois lakes
+# Un seul pivot (`JeuDeLaVie/conway_lean`, toolchain v4.33.0) rendait trois lakes
 # INMERGEABLES PAR CONSTRUCTION : `formal_logic` (v4.33.1),
 # `socialchoicepeters` (v4.32.1) et `conwaycgt` (v4.33.0-rc1) ne peuvent pas
 # emprunter le cache d'une autre toolchain -- le build est produit par la
@@ -780,11 +780,24 @@ def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
             ),
             "rejects": rejects,
         }
+    # Parmi les pivots chauds de la meme toolchain, celui de MEME GRAPHE
+    # passe en tete. Retenir le premier chaud dans l'ordre du manifeste
+    # faisait echouer un lake des qu'un pivot plus haut dans la liste
+    # portait un paquet de plus : mesure du 22/11 sur ai-01, `knot` resolu
+    # sur `discrepancy_lean` (qui sert `learning_theory_lean`) alors que
+    # `game_theory_lean` et `hecke_lean`, chauds et de meme graphe, etaient
+    # la -- deux PRs Knots refusees. Le verdict reste celui de
+    # `check_cache_compatibility` : sans pivot compatible, l'ordre ne change
+    # pas, et le motif d'incompatibilite du premier est rendu comme avant.
+    compatibles = [
+        p for p in warm if check_cache_compatibility(lake_dir, p).get("ok")
+    ]
+    ordered = compatibles + [p for p in warm if p not in compatibles]
     return {
         "ok": True,
-        "pivot": str(warm[0]),
+        "pivot": str(ordered[0]),
         "toolchain": toolchain,
-        "pivots": [str(p) for p in warm],
+        "pivots": [str(p) for p in ordered],
         "rejects": rejects,
     }
 

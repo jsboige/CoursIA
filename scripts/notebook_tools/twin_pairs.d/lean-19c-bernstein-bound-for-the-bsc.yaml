@@ -1,0 +1,13 @@
+- name: "Lean-19c Bernstein bound for the BSC"
+  family: SymbolicAI/Lean
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Formules close deterministes des deux cotes (Hoeffding sqrt(L/2N), Chernoff sqrt(2Lp(1-p)/N), Bernstein par resolution quadratique, Poisson t_B) : aucune library statistique, aucun moteur externe, aucun tirage aleatoire -- les deux carnets derivent les memes bornes en arithmetique IEEE 754 double. La parite est prouvee par execution differentielle : les sorties de flux commitees sont identiques ligne a ligne (45/45 lignes : tableau BSC 20 instances, agregats MOYENNE/MEDIANE, bilans 12/20 et 20/20, tableau Poisson 5 instances)."
+  known_differences:
+    - "C# formate les tableaux via string.Format (pas de guillemet imbrique dans un trou d'interpolation) la ou Python emploie des f-strings ; les colonnes produites sont identiques apres normalisation CRLF."
+    - "C# pose CultureInfo.InvariantCulture (DefaultThreadCurrentCulture + CurrentCulture) dans la cellule de setup pour garantir le point decimal sur machine fr-FR ; Python n'a pas d'equivalent a poser."
+    - "C# declare new Random(42) en miroir de random.seed(42), declenche mais jamais consomme -- toutes les bornes sont en formule fermee, identiquement a la source."
+    - "Les trois exercices sont des stubs C.1 compilables a TODO etudiant des deux cotes ; aucune solution n'est revelee."
+    - "BCL seulement cote C# (System, System.Collections.Generic, System.Globalization, System.Linq) ; aucun NuGet, aucun appel externe, aucune figure, aucun package Python."

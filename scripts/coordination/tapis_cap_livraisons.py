@@ -27,6 +27,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from coordination import gh_bulk  # noqa: E402
 from pick_idle_grain import (  # noqa: E402
     EPIC_FAMILY_DELIVERY_CAP_DEFAULT,
     EPIC_LANE_DELIVERY_CAP_DEFAULT,
@@ -41,6 +42,46 @@ from fetch_merged_prs_since import fetch as fetch_mergees  # noqa: E402
 FENETRE_J = 7
 #: Le code d'ecart porte par l'Etat ; le motif conserve celui de l'organe.
 CODE = "PLAFOND_LIVRAISONS"
+
+
+def fetcher_hors_reseau(since: str, until: str) -> list[dict]:
+    """Le fetteur **INERTE** : le cap ne lit jamais le reseau quand on le demande.
+
+    Le contrat de `fetch_merged_prs_since.fetch` est
+    ``(since, until) -> list[dict]``. Ce fetteur leve : `charge_en_vol` rattrape
+    l'echec et rend `None`, le cap n'est donc **pas evalue** -- temoin
+    `mesure: false` dans le rapport. Fail-OPEN, comme le veut le module : on
+    ne refuse jamais un item sur une charge qu'on n'a pas su lire.
+    """
+    raise RuntimeError("hors reseau : le cap de livraisons n'est pas evalue")
+
+
+def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
+                     prs_ouvertes: list[dict] | None, run=None,
+                     repli=None, pool_ouvert: bool = False):
+    """Le cap, puis -- s'il a VIDE la file -- le repli qui rend la main.
+
+    Le cap de livraisons est la derniere etape de la selection : quand il
+    ecarte tous les items, la file sort VIDE et la lane ne recoit RIEN --
+    l'invariant I1 ("une file sans fin") est rompu par les filtres eux-memes.
+    La voie chronologique prend alors le relais : le cache local rend une
+    file, servie par date de creation.
+
+    `repli` : l'appelable de repli, **injecte** (le module du repli importe
+    celui-ci : l'injection evite l'import circulaire). `pool_ouvert` : le
+    pool porte-t-il des candidats ? Sans candidat, il n'y a rien a servir.
+
+    Rend `(file, temoins, mesure, rendu)` : `rendu` est le `(rapport, code)`
+    du repli quand il a rendu la main, `None` sinon.
+    """
+    file, temoins, mesure = passer(file, ordre, lane, maintenant, prs_ouvertes,
+                                   run=run)
+    if file or not pool_ouvert or repli is None:
+        return file, temoins, mesure, None
+    try:
+        return file, temoins, mesure, repli()
+    except gh_bulk.LectureIncomplete:
+        return file, temoins, mesure, None  # pas de cache local : file vide
 
 
 def charge_en_vol(lane: str, maintenant: datetime, prs_ouvertes: list[dict] | None,

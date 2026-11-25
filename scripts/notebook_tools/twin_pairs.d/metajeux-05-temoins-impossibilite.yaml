@@ -1,0 +1,8 @@
+- name: "Metajeux-05 Temoins Impossibilite"
+  family: GameTheory/Metajeux
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27704) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (structure produit 576 chambres, d = d_row + d_col, table 24x24, BFS tronque par convolution de Mahonian sur S4, inventaire des paires d_min > k_max, cas A/B/C et certificats analytiques) ; le code C# n'utilise que la BCL, aucune dependance externe. Les douze compteurs de la cellule 19 sont identiques des deux cotes (576 chambres, 0 ecart d'exhaustion, 0 asymetrie, 0 violation d'inegalite triangulaire sur 13 824 triplets, tailles BFS 235/68/7)."
+    - "Tirage seed 42 : System.Random n'est pas un Mersenne Twister ; le port fige les indices tires en litteraux et le consigne dans le code, les compteurs de parite restent affiches."

@@ -91,3 +91,34 @@ toutes fixent le cap à 80.
 La lecture des résultats doit donc rester ce qu'elle est dans le corps de la PR :
 un **verdict de tracking**, pas une comparaison de performance entre bras ou entre
 modèles sous des caps différents.
+
+## Campagne instrumentée du 2026-11-24 — les activations réelles
+
+| Artefact | Bras | Graines | Pas | `max_completion_length` déclaré | Nature |
+|---|---|---|---|---|---|
+| `ict25a_N_2B_instrum.json` | N | 0, 1, 7, 42 | 120 | 80 (`protocol`) | métriques du run instrumenté |
+| `ict25a_N_s0_step120.npz` + `.manifeste.json` | N | 0 | 120 | 80 | activations échantillonnées (5 sondes, couche 18, position `last`) |
+| `ict25a_N_s1_step120.npz` + `.manifeste.json` | N | 1 | 120 | 80 | idem |
+| `ict25a_N_s7_step120.npz` + `.manifeste.json` | N | 7 | 120 | 80 | idem |
+| `ict25a_N_s42_step120.npz` + `.manifeste.json` | N | 42 | 120 | 80 | idem |
+
+Ces **neuf fichiers d'artefact** ont été produits par le **run instrumenté** du
+2026-11-24 (device 2 de `myia-ai-01`, `Qwen/Qwen3.5-2B-Base`, `--think-close`,
+graine de génération `20261124`, batterie de 5 sondes d'empreinte
+`6c7c26792636…`). C'est la **première fois** que les activations sont
+échantillonnées *pendant* l'entraînement : les runs antérieurs ne sont pas
+ré-exploitables (le §5 du document du run — `docs/ict/ict25a-run-instrumente.md`,
+PR [#28377](https://github.com/jsboige/CoursIA/pull/28377) — le mesure :
+`save_strategy="no"`, sortie `mkdtemp` éphémère, aucune série par pas dans les
+artefacts).
+
+Le JSON porte le **même nom de campagne** que celui du 2026-11-20 : il est donc
+renommé `ict25a_N_2B_instrum.json` pour **ne pas écraser** l'artefact 2B déjà
+publié dans ce dossier. Les `.npz` et leurs manifestes sont écrits **côte à
+côte**, comme le contrat du run l'exige ; chaque manifeste porte l'empreinte
+SHA-256 du `.npz` **et de chaque vecteur d'activation** : deux graines se
+comparent alors sans rien ré-exécuter.
+
+Les **poids** ne sont pas dans le dépôt (contrainte de l'issue #5105) : seuls le
+`.npz` d'activations, son manifeste et les métriques le sont.
+
