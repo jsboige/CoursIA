@@ -5,25 +5,43 @@
 #
 # Ce qui se compare, et ce qui ne se compare pas
 # ----------------------------------------------
-# Les deux carnets tirent leurs donnees de generateurs DIFFERENTS (numpy
-# default_rng cote Python, xorshift64 + Box-Muller cote Rust). Les NIVEAUX
-# absolus ne sont donc pas comparables, et le registre ne les compare pas :
-#  - l'accuracy de la cellule 4 se compare malgre tout a 0,05 pres, parce que
-#    les deux modeles y sont entraines et testes sur le MEME echantillon de leur
-#    propre cote (mesure : 0.965 cote Rust contre 0.925 cote Python, ecart 0.04) ;
-#  - les regimes des cellules 11 et 13 se comparent par le SIGNE de l'ecart
-#    NB - LR au meme budget : c'est la seule grandeur commune a deux generateurs
-#    distincts, et c'est celle que porte la these du carnet.
+# Deux differences separent les deux carnets, et la seconde decide du signe :
+#  - le GENERATEUR differe (numpy default_rng cote Python, xorshift64 +
+#    Box-Muller cote Rust) ;
+#  - la REGLE D'ETIQUETTE differe. Cote Python, l'etiquette est tiree a pile ou
+#    face, independante de x, puis la classe 1 est translatee uniformement
+#    (0.9/sqrt(12) en A, 0.7/sqrt(12) en B), et le jeu de test est fixe (2 000
+#    lignes, tirees une fois par scenario). Cote Rust, l'etiquette depend de x
+#    avant tout decalage (moyenne des six premieres dimensions en A, difference
+#    des deux facteurs en B), et le jeu de test est le reste du tirage de
+#    2*n_max lignes : 3 825 points a n = 15, 1 920 a n = 1 920.
 #
-# Le signe n'est PAS mesure partout, et c'est delibere :
-#  - scenario A : le croisement des deux courbes tombe vers n = 480 cote Rust
-#    (l'ecart passe de +0.0070 a -0.0009) et n'existe pas cote Python (l'ecart se
-#    resserre sans changer de signe, +0.0014 a n = 1920). Sont donc mesures les
-#    budgets ou les deux cotes sont du meme cote du zero -- n = 30 (+ dans les
-#    deux carnets) et n = 240 (+ dans les deux) -- jamais n = 480 ni au-dela ;
-#  - scenario B : les deux cotes sont negatifs des n = 15 et le restent. Sont
-#    mesures n = 30 et n = 1920, qui portent la these du carnet : l'ecart ne se
-#    referme pas quand n grandit.
+# Consequence mesuree (40 000 lignes d'entrainement, 200 000 de test, MEME
+# generateur numpy, seule la regle d'etiquette change) : NB - LR vaut +0.0000 /
+# +0.0002 / -0.0001 avec la regle Python et -0.0067 / -0.0076 / -0.0069 avec la
+# regle Rust. L'ordre a grand n suit la regle d'etiquette, pas le generateur :
+# c'est pour cela que le scenario A bascule cote Rust et pas cote Python, et
+# aucun signe n'est mesure a grand n pour ce scenario.
+#
+# Les NIVEAUX absolus ne sont donc pas comparables non plus, et le registre ne
+# les compare pas :
+#  - l'accuracy de la cellule 4 se compare a 0,05 pres, et cette tolerance est
+#    une MARGE DECLAREE, pas une conformite fine : ce sont deux tirages d'une
+#    meme construction (200 lignes, d = 6, etiquette a pile ou face, decalage
+#    1.2), dont la precision de resubstitution vaut 0.933 +- 0.018 sur 5 000
+#    tirages mesures ; 0,05 vaut donc deux ecarts-types de la difference de
+#    deux tirages (mesure : 0.965 cote Rust contre 0.925 cote Python, soit
+#    0,040, ou 1,6 ecart-type de cette difference). La conformite fine, cote
+#    Rust, est portee par predictions_identiques ;
+#  - les regimes des cellules 11 et 13 se comparent par le SIGNE de l'ecart
+#    NB - LR au meme budget, et seulement la ou le signe est STABLE de part et
+#    d'autre. Stabilite mesuree (moyenne de 40 tirages ; graines de scenario 1
+#    a 10 cote Rust, 3 a 12 cote Python ; le tirage de chaque carnet est du
+#    signe attendu) : A a n = 30 positif 10/10 et 5/5 ; A a n = 240 positif
+#    10/10 et 5/5 ; B a n = 120 negatif 10/10 et 10/10. B a n = 30 n'est PAS
+#    mesure : il y compare un signe de bruit -- la moyenne y est positive sur
+#    9/10 graines cote Rust (la graine 2 du carnet est la seule negative) et
+#    sur 6/10 cote Python.
 #
 # Hors registre, avec leur motif :
 #  - les cartes ASCII des cellules 11 et 13 sont des RENDUS, pas des grandeurs ;
@@ -54,7 +72,7 @@
           pattern: "(Naive Bayes gaussien from scratch pr[^\\n]*)"
           transform: text
     - id: accuracy_from_scratch
-      description: "Precision du modele ecrit a la main sur son propre echantillon (Python 0.925)"
+      description: "Precision du modele ecrit a la main sur son propre echantillon (Python 0.925) ; la tolerance est une marge declaree entre deux tirages d'une meme construction, voir l'en-tete"
       tolerance: 0.05
       reference: python
       sides:
@@ -94,7 +112,7 @@
           pattern: "identiques \\(0/1\\) : (\\w+)"
           transform: text
     - id: regime_a_30
-      description: "Scenario A (correlations homogenes) a n = 30 : Naive Bayes devant (signe de NB - LR)"
+      description: "Scenario A (correlations homogenes) a n = 30 : Naive Bayes devant (signe de NB - LR, stable sur 10/10 graines cote Rust et 5/5 cote Python)"
       tolerance: 0
       reference: python
       sides:
@@ -107,7 +125,7 @@
           pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
           transform: text
     - id: regime_a_240
-      description: "Scenario A a n = 240 : l'ecart fond mais Naive Bayes est encore devant"
+      description: "Scenario A a n = 240 : l'ecart fond mais Naive Bayes est encore devant (signe stable sur 10/10 graines cote Rust et 5/5 cote Python)"
       tolerance: 0
       reference: python
       sides:
@@ -119,18 +137,18 @@
           cell: 11
           pattern: "\\n\\s*240\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
           transform: text
-    - id: regime_b_30
-      description: "Scenario B (correlations en bloc) a n = 30 : la logistique passe devant"
+    - id: regime_b_120
+      description: "Scenario B (correlations en bloc) a n = 120 : la logistique passe devant (signe stable sur 10/10 graines de chaque cote)"
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 13
-          pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          pattern: "\\n\\s*120\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
           transform: text
         rust:
           cell: 13
-          pattern: "\\n\\s*30\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
+          pattern: "\\n\\s*120\\s+0\\.\\d+\\s+0\\.\\d+\\s+([+-])"
           transform: text
     - id: regime_b_1920
       description: "Scenario B a n = 1920 : l'ecart ne se referme pas (la logistique reste devant)"
