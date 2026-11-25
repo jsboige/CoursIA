@@ -58,6 +58,11 @@ JOB_IDENTITY_TOKENS = ("GITHUB_RUN_ID", "github.run_id")
 # Le script d'installation partage.
 INSTALL_SCRIPT = "install_scripts_tests_deps.sh"
 
+# Le script qui ENREGISTRE et VERIFIE le noyau du job. L'enregistrement est
+# porte par ce script, pas par une ligne de shell : le shell rendait SUCCES
+# quand `ipykernel` etait absent.
+VERIFY_SCRIPT = "scripts/ci/verify_job_kernelspec.py"
+
 # Le nom de noyau que papermill demande dans ce job.
 KERNEL_ARG = "-k python3"
 
@@ -307,7 +312,7 @@ def test_the_registration_happens_after_the_installation():
     registration = [
         index
         for index, step in enumerate(steps)
-        if "ipykernel install" in _dump(step)
+        if VERIFY_SCRIPT in _dump(step)
     ]
     assert registration, (
         f"{name} n'enregistre aucun noyau `python3` -- sans kernelspec, la "
@@ -317,6 +322,51 @@ def test_the_registration_happens_after_the_installation():
         assert index > install_index, (
             f"{name} enregistre le noyau avant l'etape d'installation -- "
             f"`ipykernel` peut ne pas etre encore installe"
+        )
+
+
+def test_the_registration_cannot_swallow_a_failure():
+    """L'enregistrement passe par le script, qui rend l'echec FATAL.
+
+    Le geste precedent etait un shell :
+
+        if python -c "import ipykernel" 2>/dev/null; then
+            python -m ipykernel install --user --name python3 ...
+        else
+            echo "ipykernel absent apres l'installation -- l'enregistrement
+                   est laisse au script d'installation"
+        fi
+
+    L'import manquant imprimait un message et rendait SUCCES : le job
+    continuait sans noyau enregistre, et l'echec n'apparaitrait que plus
+    loin -- sur un noyau que Jupyter resout ailleurs. Le script rend
+    l'echec fatal, puis controle que le noyau EFFECTIVEMENT RESOLU est
+    celui du job.
+
+    Temoin ROUGE sur `main` : aucune etape d'enregistrement n'y existe.
+    """
+    name, job = _installing_job()
+    steps = job["steps"]
+
+    registration = [
+        step for step in steps if VERIFY_SCRIPT in _dump(step)
+    ]
+    assert len(registration) == 1, (
+        f"{name} doit appeler {VERIFY_SCRIPT} une seule fois, "
+        f"{len(registration)} etape(s) trouvee(s)"
+    )
+    run = registration[0].get("run", "")
+    assert "--register" in run, (
+        f"{name} appelle {VERIFY_SCRIPT} sans `--register` -- le noyau ne "
+        f"serait pas enregistre"
+    )
+
+    # Aucun shell dans cette etape : pas de condition, pas de `||`, pas de
+    # redirection qui masquerait la sortie de l'import.
+    for interdit in ("||", "if ", "2>/dev/null", "set +e", ";"):
+        assert interdit not in run, (
+            f"{name} : `{interdit}` dans l'etape d'enregistrement -- un shell "
+            f"peut y absorber l'echec de l'import `ipykernel`"
         )
 
 
@@ -341,6 +391,7 @@ if __name__ == "__main__":
         test_an_isolated_job_does_not_write_the_shared_directory,
         test_the_installing_job_declares_the_isolation,
         test_the_registration_happens_after_the_installation,
+        test_the_registration_cannot_swallow_a_failure,
         test_the_isolated_job_is_the_one_that_launches_the_kernel,
     ):
         fn()

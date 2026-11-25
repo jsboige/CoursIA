@@ -464,7 +464,7 @@ jobs:
         # VERBATIM de cette etape le 2026-11-09 (PR #25521) : toute
         # modification de l'un doit etre portee dans l'autre.
         run: bash scripts/ci/install_scripts_tests_deps.sh
-      - name: Enregistrer le noyau du job (#28501)
+      - name: Enregistrer et verifier le noyau du job (#28501)
         # L'enregistrement se fait ICI, apres l'installation : `ipykernel`
         # est alors present, et les variables d'isolation declarees plus
         # haut sont en vigueur -- le noyau atterrit dans le repertoire DU
@@ -474,13 +474,18 @@ jobs:
         # c'est exactement le defaut corrige par #28501 (#28500). Les deux
         # gestes sont idempotents : si #28501 est fusionnee, le script
         # d'installation a deja ecrit ce meme noyau au meme endroit.
-        run: |
-          if python -c "import ipykernel" 2>/dev/null; then
-            python -m ipykernel install --user --name python3 --display-name "python3"
-            echo "noyau python3 enregistre dans ${JUPYTER_DATA_DIR:-<non isole>}"
-          else
-            echo "ipykernel absent apres l'installation -- l'enregistrement est laisse au script d'installation"
-          fi
+        #
+        # Le geste est porte par un SCRIPT, pas par une ligne de shell :
+        # l'ancien `if python -c "import ipykernel" ; then ... ; else echo
+        # "ipykernel absent" ; fi` imprimait un message et rendait SUCCES
+        # quand l'import echouait -- le job continuait sans noyau enregistre,
+        # et l'echec n'apparaitrait que plus loin, sur un noyau que Jupyter
+        # resout ailleurs. Le script rend l'echec FATAL et controle ensuite
+        # que le kernelspec EFFECTIVEMENT RESOLU est celui du job (repertoire
+        # de ressources sous le repertoire du job, `argv[0]` = l'interpreteur
+        # du job). Declarer l'isolation ne prouve pas que la lecture la
+        # respecte : c'est ce controle qui le prouve.
+        run: python scripts/ci/verify_job_kernelspec.py --register
       - name: Epingler les pools de threads BLAS/OpenMP du job (#24696)
         # Le runner est un pool auto-heberge PARTAGE : quand plusieurs jobs se
         # partagent la machine, la creation de threads echoue et les
