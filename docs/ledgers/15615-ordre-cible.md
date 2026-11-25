@@ -10,7 +10,7 @@ Demande user fondatrice (commentaire #15586, 2026-09-11T13:43Z) : « la séquenc
 
 ## 1. La base de mesure — et ce qu'elle ne couvre pas
 
-Les sept ledgers totalisent **142 lignes** pour **129 noms de carnets distincts**, sur une échelle en **mots** et non en chiffres romains (`I`/`II`/`III` n'apparaît dans aucun) : **Basse 6, Moyenne 29, Haute 73, Très haute 34**.
+Les sept ledgers totalisent **142 entrées de gradation** pour **129 noms de carnets distincts**, sur une échelle en **mots** et non en chiffres romains (`I`/`II`/`III` n'apparaît dans aucun) : **Basse 6, Moyenne 29, Haute 73, Très haute 34**.
 
 **Re-mesure du 2026-11-25** — le tableau a vieilli de deux façons, toutes deux mesurées :
 
@@ -152,7 +152,7 @@ Un tri de chaque bloc par difficulté mesurée (sujets puis variantes) rend **7 
 
 | Acceptation | État après ce ledger |
 |---|---|
-| 1 — tableau de gradation publié | **couvert** par les sept ledgers de fournée (142 lignes) ; couverture 79/144 carnets de la racine, réserve du §1 |
+| 1 — tableau de gradation publié | **couvert** par les sept ledgers de fournée (142 entrées de gradation) ; couverture 79/144 carnets de la racine, réserve du §1 |
 | 2 — ordre cible validé avant exécution | **devient décidable** : les règles R1-R5 et les onze descentes sont posées ci-dessus ; la validation revient au user ou au coordinateur |
 | 3 — tranches exécutées, preuve octet-à-octet | **dépend de 2** ; non commencée, et rien à exécuter tant que 2 n'est pas tranchée |
 | 4 — liens croisés, labels, curriculum, READMEs réconciliés | **dépend de 3** |
