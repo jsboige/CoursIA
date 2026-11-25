@@ -503,10 +503,20 @@ def build_patterns(forms_list: list[RefForms]) -> list[tuple[RefForms, re.Patter
         old_tail = _tail_of(f.stem)
         pairs = [
             (f.full, f.new_rel),
-            (f.filename, new_stem + ".ipynb"),
-            (f.stem, new_stem),
-            (f.urlencoded, new_stem.replace(" ", "%20")),
         ]
+        # #28490 (defaut 1) : les formes filename/stem/urlencoded ne sont
+        # portantes QUE si l'ancien basename porte l'identifiant de serie
+        # (Prefixe-NN). Pour un basename generique (README.md, les feuilles
+        # des sous-series dissoutes), elles reconnaissent le mot nu dans tout
+        # le corpus : 1 038 fichiers planifies et 1 394 liens refuses par la
+        # garde path_refused (#19154) -- plan inexploitable. On ne garde alors
+        # que la forme complete, inambigue (le referent par chemin).
+        if STEM_RE.match(f.stem):
+            pairs += [
+                (f.filename, new_stem + ".ipynb"),
+                (f.stem, new_stem),
+                (f.urlencoded, new_stem.replace(" ", "%20")),
+            ]
         if old_tail:
             pairs.append((f.abbrev + old_tail,
                           _new_abbrev(f) + _tail_of(new_stem)))
@@ -1103,7 +1113,14 @@ def run_organs(base_sha: str, repo: Path | None = None) -> int:
         r = subprocess.run(cmd, cwd=repo, capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
         tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:]
-        print(f"[organe] {Path(cmd[1]).name} -> rc={r.returncode} {' '.join(tail)}")
+        try:
+            print(f"[organe] {Path(cmd[1]).name} -> rc={r.returncode} {' '.join(tail)}")
+        except UnicodeEncodeError:
+            # #28490 (defaut 2) : un caractere non encodable dans la sortie
+            # d'un organe (U+FFFD issu de errors="replace" sur console cp1252)
+            # ne doit pas interrompre la boucle -- les gardes restantes et le
+            # verdict final doivent toujours tourner.
+            print(f"[organe] {Path(cmd[1]).name} -> rc={r.returncode} <sortie non affichable>")
         worst = max(worst, r.returncode)
     return worst
 
@@ -1208,6 +1225,15 @@ def rebase_helper(apply: bool, repo: Path | None = None) -> int:
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
+    # #28490 (defaut 2) : sous Windows, la sortie standard est cp1252 sans
+    # PYTHONIOENCODING ; une sortie d'organe lue avec errors="replace" porte
+    # alors U+FFFD et son affichage leve UnicodeEncodeError. Reconfigurer la
+    # sortie du module en UTF-8 (replace) supprime l'erreur a la source.
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
     ap = argparse.ArgumentParser(
         description="Renommage canonique d'une serie : proposition, application "
                     "en 2 commits, reecriture des referents au texte.")
