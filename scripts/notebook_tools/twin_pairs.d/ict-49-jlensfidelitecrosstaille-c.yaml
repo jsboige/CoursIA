@@ -5,3 +5,4 @@
   parity_level: native-both
   known_differences:
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de ICT-49-JLensFideliteCrossTaille-Python.ipynb. Execution reelle sur kernel .net-csharp : 9 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Ecart de prose assume (25/11, revue #28344) : cell-011 point 1 et cell-020 3e puce du jumeau C# relues sur le tableau execute -- prose_fr y est 4e, 5e, 3e, 4e, puis 2e a 27B (la prose disait 4e) ; le sens de tri lit le classement, pas l'indice (inversion uniforme : +0.720 -> +0.720). Le jumeau Python porte encore la formulation anterieure dans les memes cellules ; code, sorties et mesures inchanges des deux cotes (les assertions cell-005 et cell-007 du carnet C# retrouvent les tables Python citees)."
