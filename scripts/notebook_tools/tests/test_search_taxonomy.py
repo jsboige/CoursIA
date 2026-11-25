@@ -16,8 +16,11 @@ def test_search_spine_is_valid_and_covers_its_notebooks():
     # cell_id is checked for real and every declared notebook must be cited.
     data = load_taxonomy(SEARCH_DATA)
     assert data["series"] == "Search"
-    assert len(data["notebooks"]) == 6
-    assert len(data["concepts"]) >= 20
+    # Floors, not pins: the taxonomy covers the six foundation notebooks and the
+    # twenty notebooks of the constraint sub-series (C# twins included), and must
+    # not shrink back to the six-notebook spine.
+    assert len(data["notebooks"]) >= 26
+    assert len(data["concepts"]) >= 100
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])
 

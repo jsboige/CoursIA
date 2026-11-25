@@ -6,7 +6,10 @@ Couvre le cache de build du PROJET :
 - `restore_project_build` : il y revient dans un worktree neuf ;
 - un contexte different (toolchain, manifeste) **ecrase** le cache au lieu
   de le reutiliser (fail-closed) ;
-- un cache absent ne fait rien.
+- un cache absent ne fait rien ;
+- `seed_project_build_from_pivot` (#27516) : premier essai d'une PR, le
+  `.lake/build` du pivot prechauffe est **copie** dans le worktree -- copie,
+  pas deplacement : le pivot garde son build pour les PRs suivantes.
 
 Fixtures synthetiques sous ``tmp_path``. Aucun lake, aucun reseau.
 """
@@ -24,6 +27,7 @@ from attest_local_build import (  # noqa: E402
     build_cache_root,
     preserve_project_build,
     restore_project_build,
+    seed_project_build_from_pivot,
 )
 
 
@@ -129,6 +133,47 @@ def test_preserve_sans_build_ne_fait_rien(tmp_path):
     cache = build_cache_dir(build_cache_root(tmp_path / "cache"), 25585, "demo")
     kept = preserve_project_build(cache, lake)
     assert not kept["preserved"]
+
+
+def test_le_seed_depuis_le_pivot_copie_sans_le_vider(tmp_path):
+    # #27516 : pivot prechauffe (build du projet present), worktree de
+    # premiere attestation (cache par-PR vide).
+    pivot = _make_lake(tmp_path / "pivot")
+    _fake_build(pivot)
+    lake = _make_lake(tmp_path / "wt1")
+
+    seeded = seed_project_build_from_pivot(pivot, lake)
+    assert seeded["seeded"], seeded
+    # Le build est dans le worktree...
+    assert (lake / ".lake" / "build" / "lib" / "lean" / "Demo" / "Alpha.olean").is_file()
+    # ... et le pivot le garde aussi : COPIE, pas deplacement -- le pivot
+    # doit resservir les PRs suivantes, et preserve_project_build (qui
+    # DEPLACE le .lake/build du worktree) ne doit rien lui arracher.
+    assert (pivot / ".lake" / "build" / "lib" / "lean" / "Demo" / "Alpha.olean").is_file()
+
+    # Le seed parti du pivot finit conserve dans le cache par-PR : au
+    # deuxieme essai, restore reprend la main (le seed ne re-copie pas).
+    cache = build_cache_dir(build_cache_root(tmp_path / "cache"), 25585, "demo")
+    kept = preserve_project_build(cache, lake)
+    assert kept["preserved"], kept
+    lake2 = _make_lake(tmp_path / "wt2")
+    back = restore_project_build(cache, lake2)
+    assert back["restored"], back
+    again = seed_project_build_from_pivot(pivot, lake2)
+    assert not again["seeded"]
+    assert "deja present" in again["reason"]
+
+
+def test_le_seed_sans_build_au_pivot_ne_fait_rien(tmp_path):
+    # Un pivot jamais prechauffe sur son build propre (cache_get seul) ne
+    # fournit rien : le seed est un non-evenement explicite.
+    pivot = _make_lake(tmp_path / "pivot")
+    lake = _make_lake(tmp_path / "wt1")
+    seeded = seed_project_build_from_pivot(pivot, lake)
+    assert not seeded["seeded"]
+    assert "pivot" in seeded["reason"]
+    assert not (lake / ".lake" / "build").exists()
+    assert not (pivot / ".lake").exists()
 
 
 if __name__ == "__main__":  # pragma: no cover

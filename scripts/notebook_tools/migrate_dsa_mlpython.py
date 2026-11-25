@@ -46,14 +46,17 @@ HUB_NEW = "MyIA.AI.Notebooks/ML/ML.Python"
 # ENSEIGNE, jamais l'outil qui y est utilise (LangChain, Google ADK). Les
 # exemples 06/07 viennent de l'arbitrage ; 01/03/05 suivent la meme regle ;
 # 02-ML-Cours et 04-Vision restent tels quels (deja lisibles en francais).
+# T2-06/07 : renommes sur main le 2026-11-13 en avance de phase (Q171 tranche
+# ML, acceptance 3 de #25327) -- les cles suivent le nom reel du hub, entrees
+# identites au meme titre que 02-ML-Cours (cf. T2-01 ci-dessus).
 DIR_MAP = {
     "01-Python-For-Data-Science": "01-Python-pour-la-Data-Science",
     "02-ML-Cours": "02-ML-Cours",
     "03-Deep-Learning": "03-Apprentissage-Profond",
     "04-Vision": "04-Vision",
     "05-Wavelet-Scattering": "05-Scattering-par-Ondelettes",
-    "06-Data-Agents": "06-Agents-de-Donnees",
-    "07-Agent-Orchestration": "07-Orchestration-d-Agents",
+    "06-Agents-de-Donnees": "06-Agents-de-Donnees",
+    "07-Orchestration-d-Agents": "07-Orchestration-d-Agents",
 }
 
 # Niveau a aplatir : ces prefixes voient leur segment "notebooks/" retire.
@@ -62,17 +65,17 @@ FLATTEN_PREFIX = "01-Python-For-Data-Science/notebooks/"
 # T3 -- notebooks mappes (chemin relatif au hub -> chemin relatif a ML.Python).
 # Suffixe noyau d'apres kernelspec LU dans chaque notebook (mesure c.5786704244).
 NOTEBOOK_MAP: dict[str, str] = {
-    "01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb":
+    "01-Python-For-Data-Science/notebooks/PyDS-01-Python_pour_la_Data_Science-Python.ipynb":
         "01-Python-pour-la-Data-Science/PyDS-01-Python-pour-la-Data-Science-Python.ipynb",
-    "01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb":
+    "01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb":
         "01-Python-pour-la-Data-Science/PyDS-02-Manipulation-de-Donnees-avec-NumPy-Python.ipynb",
-    "01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb":
+    "01-Python-For-Data-Science/notebooks/PyDS-03-Analyse_de_Donnees_avec_Pandas-Python.ipynb":
         "01-Python-pour-la-Data-Science/PyDS-03-Analyse-de-Donnees-avec-Pandas-Python.ipynb",
-    "01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb":
+    "01-Python-For-Data-Science/notebooks/PyDS-04-Visualisation_Matplotlib_Seaborn-Python.ipynb":
         "01-Python-pour-la-Data-Science/PyDS-04-Visualisation-Matplotlib-Seaborn-Python.ipynb",
-    "01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb":
+    "01-Python-For-Data-Science/notebooks/PyDS-05-Exploration_Nettoyage_Donnees_Reelles-Python.ipynb":
         "01-Python-pour-la-Data-Science/PyDS-05-Exploration-Nettoyage-Donnees-Reelles-Python.ipynb",
-    "01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb":
+    "01-Python-For-Data-Science/notebooks/PyDS-06-Statistiques_Descriptives-Python.ipynb":
         "01-Python-pour-la-Data-Science/PyDS-06-Statistiques-Descriptives-Python.ipynb",
     "02-ML-Cours/2.1-Workflow-ML.ipynb": "02-ML-Cours/MLPy-01-Workflow-ML-Python.ipynb",
     "02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb": "02-ML-Cours/MLPy-10-Optimisation-Hyperparametres-Python.ipynb",
@@ -270,7 +273,7 @@ def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str
                 # fichier a la racine du hub (README.md etc.) : suit la racine
                 pass
             if (rel.endswith(".ipynb")
-                    and not rel.startswith(("06-Data-Agents/", "07-Agent-Orchestration/"))
+                    and not rel.startswith(("06-Agents-de-Donnees/", "07-Orchestration-d-Agents/"))
                     and not est_archive(rel)):
                 # Les Labs des Tracks suivent T4 (option retenue : deplacement de
                 # repertoire seulement, notebooks intacts -- table c.5786704244) :

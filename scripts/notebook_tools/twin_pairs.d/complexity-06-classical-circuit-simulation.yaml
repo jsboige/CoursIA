@@ -1,7 +1,7 @@
 - name: "Complexity-06 Classical circuit simulation"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Le source construit explicitement le vecteur uniforme avec NumPy puis compare un tirage direct de bits ; il n'appelle aucun simulateur quantique ni moteur stabilisateur. System.Numerics.Complex, les tableaux et un tirage CDF avec System.Random reproduisent ces opérations et leurs budgets. Le coût du vecteur explicite n'est pas présenté comme une borne inférieure générale. Aucun prétendu Gottesman-Knill ne remplace le tirage direct connu."

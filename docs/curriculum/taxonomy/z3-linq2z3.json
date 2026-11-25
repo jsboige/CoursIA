@@ -15,7 +15,7 @@
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb",
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb",
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb",
-  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb",
+  "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb",
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb",
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb",
   "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb",
@@ -92,7 +92,7 @@
    "decimal_path": "1.7",
    "depth": 1,
    "label_fr": "Planificateur de repas : données externes",
-   "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb"
+   "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb"
   },
   {
    "level": "notebook",
@@ -398,19 +398,19 @@
    "definition_en": "The meal-planner data layer: fuzzy lexical matching between RecipeML recipes and the Ciqual reference, quantity normalization to grams, mass-weighted nutritional aggregation.",
    "citations": [
     {
-     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb",
+     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb",
      "cell_id": "9fc8a97c"
     },
     {
-     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb",
+     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb",
      "cell_id": "6b6e6a56"
     },
     {
-     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb",
+     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb",
      "cell_id": "5e4bdd44"
     },
     {
-     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb",
+     "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.ipynb",
      "cell_id": "1fcfd65f"
     }
    ],

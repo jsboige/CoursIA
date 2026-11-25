@@ -57,7 +57,7 @@ LINUX_RUNNER_LABELS = {
     "coursia-linux",
 }
 # Dedicated label set for the PR-gate waiter pool (#13363 jambe A, po-2024):
-# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 1 GiB / 128 pids,
+# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 512 MiB / 128 pids,
 # coursia-waiters.service). A waiter never carries coursia-linux -- the
 # distinct label is what lets the gate WAIT without holding a work slot
 # (arbitrage ai-01 2026-09-02: "attendre ne coute pas de CPU").
@@ -483,7 +483,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   `permissions:` (une cle hors liste invalide le fichier entier).
     #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
     #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
-    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   etaient heberges). 2026-11-23 : runs-on passe sur le pool des waiters
+    #   ([self-hosted, coursia-waiter], jeu dedie WAITER_LABELS). Sur
+    #   coursia-linux, le job attendait derriere la file qu'il y avait
+    #   lui-meme routee (1 000 jobs locaux en file, 6 heberges sur 20).
+    #   Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
     "ci-overflow-controller.yml",
     # #26939 (owner myia-po-2027:CoursIA) : sonde legere de debordement CI,
@@ -646,7 +650,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   lives inside the expression itself, forks and workflow_dispatch fall
     #   back to ubuntu-latest. Excluded until now because the polling
     #   aggregator must not hold the work slot it waits for (#11405); the
-    #   waiter pool (1 vCPU / 1 GiB, #14303) is exactly the third term that
+    #   waiter pool (1 vCPU / 512 MiB, #14303) is exactly the third term that
     #   removes the objection. Rollback = revert of the routing PR.
     "pr-gate.yml",
     # #14859 (owner myia-po-2026:CoursIA) : garde advisory pur-Python sur les
@@ -1197,6 +1201,17 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
         "jambe self-hosted voisine couvre les runs du depot"
     ),
+    "learning-image-ghcr.yml": (
+        "#27546 (pli 1.3) : le job `construire-temoins` BUILDE l'image "
+        "d'apprentissage (docker buildx, contexte `lean_scripts`) puis y "
+        "execute les 7 carnets temoins ; le job `publier` ne s'execute jamais "
+        "sur une PR (`if:` + `needs:`), mais le cliquet voit le workflow. Le "
+        "pool conteneur ne peut pas porter ces jobs : le socket Docker y "
+        "manque (uid 1001, no-new-privileges -- meme motif que "
+        "secret-scan.yml) et buildx n'y est pas disponible ; le runner "
+        "heberge est donc le seul porteur. Exception ajoutee sur decision de "
+        "review du coordinateur (20/11, revue #27628)"
+    ),
 }
 
 # Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
@@ -1216,8 +1231,15 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
 # liste NE S'ELARGIT PAS -- seule une decision de review peut le faire, et la
 # PR qui nomme une nouvelle exception retire au moins autant d'entrees dans le
 # meme commit.
+# Le 2026-11-20, une exception est ajoutee : `learning-image-ghcr.yml`
+# (#27546, pli 1.3), sur decision de review explicite du coordinateur
+# (revue #27628) -- le job construit l'image avec docker buildx et execute
+# les 7 carnets temoins dans le conteneur ; le pool conteneur local n'a ni
+# socket Docker ni buildx, le runner heberge est son seul porteur. La
+# baseline est etendue dans le meme commit, comme l'exige l'invariant 2.
 HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "codeql.yml",
+    "learning-image-ghcr.yml",
     "ml-tests.yml",
     "perimeter-review-guard.yml",
     "quarto-pages-deploy.yml",

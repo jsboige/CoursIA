@@ -28,31 +28,43 @@
 
   ## Style de preuve
 
-  Ce module importe `Mathlib.Tactic.NormNum` (tactic de calcul
-  numérique) pour fermer les 32 égalités numériques par preuve
-  kernel effective, sans recours à `native_decide` (réduction par
-  le noyau natif **sans preuve** — classe d'axiomes interdite cf
-  `pr-review-discipline.md` §B). Le pattern retenu est :
-  preuves par `norm_num` sur des valeurs concrètes en rationnels —
-  `norm_num` réduit l'égalité numérique par calcul kernel sans
-  hypothèse non prouvée. La forme générale de l'identité
-  algébrique (paramétrique en `(a, cL, cF)`) reste hors périmètre
-  de ce grain et requerrait `ring`/`linarith`/`omega` qui
-  appartiennent à Mathlib core ; ce module n'utilise que la
-  tactic `norm_num` (sous-ensemble léger de Mathlib).
+  Ce module importe les tactics de calcul de Mathlib — `norm_num`
+  (calcul numérique), `ring` (identités d'anneau/field),
+  `field_simp` + `linarith` (inégalités ordonnées avec divisions) —
+  pour fermer toutes les égalités et inégalités par preuve kernel
+  effective, sans recours à `native_decide` (réduction par le noyau
+  natif **sans preuve** — classe d'axiomes interdite cf
+  `pr-review-discipline.md` §B). Deux familles :
+
+  - **formes générales** (grain #24183, réponse au constat ai-01 du
+    2026-11-11) : les cinq résultats-phare promis au commentaire du
+    `lakefile.lean` (c.1548) sont prouvés **paramétriques en
+    `(a, cL, cF)`** sous hypothèses de régularité minimales —
+    `ring` pour les identités algébriques pures,
+    `field_simp`/`linarith` pour les inégalités ;
+  - **valeurs-pytest** : preuves par `norm_num` sur des valeurs
+    concrètes en rationnels (ratchet d'invariants), dont quatre
+    désormais **corollaires par instanciation directe** des formes
+    générales.
 
   Note machine : la compilation de Mathlib4 sur des machines <16 GB
   RAM est OOM-killée (cf lakefile R2 — Lake build RECOVERABLE-MACHINE
-  gated par ≥ 16 GB RAM). La tactic `norm_num` est l'unique
-  dépendance Mathlib de ce module ; le build reste RECOVERABLE sur
-  les machines conformes.
+  gated par ≥ 16 GB RAM). Les tactics `norm_num`/`ring`/`field_simp`/
+  `linarith` sont les seules dépendances Mathlib de ce module ; le
+  build reste RECOVERABLE sur les machines conformes.
 
   - 0 sorry ;
-  - 32 preuves par `norm_num` (Mathlib), aucune occurrence de `native_decide` ;
+  - 24 preuves par `norm_num` (Mathlib), aucune occurrence de `native_decide` ;
+  - 5 formes générales par `ring`/`field_simp`/`linarith` ;
+  - 4 corollaires par instanciation des formes générales ;
   - 1 invariant opérationnel `qF = BR(qL)` par `rfl`.
 -/
 
 import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.FieldSimp
+import Mathlib.Order.MinMax
 
 namespace StackelbergBilevel
 
@@ -100,6 +112,79 @@ def stackelbergFollower (a : DemandIntercept) (cL cF : MarginalCost) :
     Quantity :=
   (a - cF - stackelbergLeader a cL cF) / 2
 
+/-! ## Formes générales (grain #24183)
+
+Les cinq résultats-phare promis au commentaire du `lakefile.lean`
+(c.1548, #21221) — `cournotSymmetric_eq_is_fixed_point`,
+`stackelberg_follower_eq_reaction_clamped`,
+`stackelberg_closed_form_expansion`, `first_mover_advantage_symmetric`,
+`welfare_above_cournot_symmetric` — sont prouvés ici en formes
+**générales** : quantifiées sur `(a, cL, cF : Rat)` sous hypothèses de
+régularité minimales (`0 ≤ a - c` pour le point fixe intérieur,
+`c < a` pour les invariants stricts, `0 ≤ a + 2·cL - 3·cF` pour la
+non-négativité du follower). Les formes instanciées existantes
+(`*_at_default`, `*_at_p1..p5`) deviennent corollaires. Réponse au
+constat ai-01 du 2026-11-11 sur #24183 : le commentaire du lakefile
+annonçait ces noms, le module ne les portait pas. -/
+
+/-- **Forme générale du point fixe de Cournot** : dès que l'intercept
+domine le coût marginal (`0 ≤ a - c`, l'intérieur économique), la
+quantité symétrique `q* = (a - c) / 3` est point fixe de la meilleure
+réponse clampée. Généralise `cournot_reaction_fixed_point` (cas
+`(30, 100, 10)`) et `cournot_reaction_monopoly` (cas `q_j = 0`). -/
+theorem cournotSymmetric_eq_is_fixed_point (a c : Rat) (h : 0 ≤ a - c) :
+    cournotReaction (cournotEquilibriumSym a c) a c = cournotEquilibriumSym a c := by
+  have hkey : 0 ≤ (a - c - (a - c) / 3) / 2 := by
+    field_simp
+    linarith
+  simp only [cournotReaction, cournotEquilibriumSym, max_eq_right hkey]
+  ring
+
+/-- **Forme clampée de la meilleure réponse du follower** : sous la
+condition de non-négativité économique `0 ≤ a + 2·cL - 3·cF` (le
+follower produit `qF = (a + 2·cL - 3·cF) / 4 ≥ 0`), la meilleure
+réponse clampée de Cournot au leader coïncide avec la forme compacte
+du follower. C'est l'invariant `qF = BR(qL)` en présence du clamp
+à 0 — l'hypothèse est exactement ce qui distingue cette forme de
+`stackelberg_follower_eq_reaction` (forme non-clampée, `rfl`). -/
+theorem stackelberg_follower_eq_reaction_clamped (a cL cF : Rat)
+    (h : 0 ≤ a + 2 * cL - 3 * cF) :
+    cournotReaction (stackelbergLeader a cL cF) a cF = stackelbergFollower a cL cF := by
+  have hkey : 0 ≤ (a - cF - stackelbergLeader a cL cF) / 2 := by
+    simp only [stackelbergLeader]
+    field_simp
+    linarith
+  simp only [cournotReaction, stackelbergFollower, max_eq_right hkey]
+
+/-- **Développement de la forme close du follower** (identité purement
+algébrique, sans hypothèse) : `qF = (a - cF - qL) / 2 = (a + 2·cL -
+3·cF) / 4`, la forme étendue (eq. 1 de la distillation D4). Généralise
+`stackelberg_closed_form_at_default` et `_at_p1..p5`. -/
+theorem stackelberg_closed_form_expansion (a cL cF : Rat) :
+    (a + 2 * cL - 3 * cF) / 4 = stackelbergFollower a cL cF := by
+  simp only [stackelbergFollower, stackelbergLeader]
+  ring
+
+/-- **Avantage du premier mover, forme générale symétrique** : dès que
+l'intercept domine strictement le coût marginal (`c < a`), le leader
+produit strictement plus que le follower (`(a - c)/2 > (a - c)/4`).
+Généralise `first_mover_advantage_at_default`. -/
+theorem first_mover_advantage_symmetric (a c : Rat) (h : c < a) :
+    stackelbergFollower a c c < stackelbergLeader a c c := by
+  simp only [stackelbergFollower, stackelbergLeader]
+  field_simp
+  linarith
+
+/-- **Bien-être au-dessus de Cournot, forme générale symétrique** :
+dès que `c < a`, la quantité totale de Stackelberg dépasse celle du
+duopole de Cournot (`3·(a - c)/4 > 2·(a - c)/3`). Généralise
+`welfare_above_cournot_at_default`. -/
+theorem welfare_above_cournot_symmetric (a c : Rat) (h : c < a) :
+    2 * cournotEquilibriumSym a c < stackelbergLeader a c c + stackelbergFollower a c c := by
+  simp only [cournotEquilibriumSym, stackelbergLeader, stackelbergFollower]
+  field_simp
+  linarith
+
 /-! ## Identité algébrique (compacte ↔ étendue)
 
 L'invariant central : la forme étendue `(a + 2·cL - 3·cF) / 4`
@@ -121,19 +206,20 @@ les valeurs-pytest** (les rationnels sont décidables, on close
 donc directement), (2) **invariant opérationnel** `qF = BR(qL)`
 ci-dessous, qui matche la courbe de réaction de Cournot par `rfl`
 — c'est précisément ce que la régression #7385 avait cassé via la
-forme erronée `(a + cL - 2cF) / 4`. La preuve générale de
-l'égalité des deux expressions sera ajoutée en grain séparé sur
-une machine avec Mathlib chargé. -/
+forme erronée `(a + cL - 2cF) / 4`. **SOLDÉ (grain #24183,
+2026-11-21)** : la preuve générale paramétrique vit dans la section
+« Formes générales » ci-dessus — `ring`/`field_simp`/`linarith`,
+preuves kernel effectives ; les formes instanciées ci-dessous en
+sont des corollaires. -/
 
 /-- L'identité algébrique `(a + 2·cL - 3·cF) / 4 = (a - cF - qL) / 2`
-est close par `norm_num` (Mathlib) sur les valeurs-pytest symétriques
-(par défaut `(100, 10, 10) → 45 = 45` et asymétriques `(100, 10, 20) → 50 = 50`).
-C'est la traduction concrète de l'identité algébrique générale, prouvée
-numériquement par le kernel Lean (les rationnels sont décidables). -/
+au couple pytest symétrique par défaut `(100, 10, 10) → 45 = 45` —
+corollaire de la forme générale `stackelberg_closed_form_expansion`
+(grain #24183), la forme étendue est la forme close dépliée. -/
 theorem stackelberg_closed_form_at_default :
     (100 + 2 * 10 - 3 * 10 : Rat) / 4 =
-      (100 - 10 - stackelbergLeader (100 : Rat) 10 10) / 2 := by
-  norm_num [stackelbergLeader]
+      (100 - 10 - stackelbergLeader (100 : Rat) 10 10) / 2 :=
+  stackelberg_closed_form_expansion 100 10 10
 
 theorem stackelberg_closed_form_at_p1 :
     (100 + 2 * 10 - 3 * 20 : Rat) / 4 =
@@ -225,10 +311,14 @@ theorem cournot_reaction_monopoly :
   norm_num [cournotReaction]
 
 /-- `cournot_reaction_curve(30, 100, 10) = 30` (point fixe de
-Cournot). -/
+Cournot) — corollaire de la forme générale
+`cournotSymmetric_eq_is_fixed_point` au couple `(100, 10)`. -/
 theorem cournot_reaction_fixed_point :
     cournotReaction 30 (100 : Rat) 10 = 30 := by
-  norm_num [cournotReaction]
+  have hq : cournotEquilibriumSym (100 : Rat) 10 = 30 := by
+    norm_num [cournotEquilibriumSym]
+  rw [← hq]
+  exact cournotSymmetric_eq_is_fixed_point 100 10 (by norm_num)
 
 /-- `cournot_reaction_curve(90, 100, 10) = 0` (clamp à la frontière). -/
 theorem cournot_reaction_clamp_boundary :
@@ -238,17 +328,19 @@ theorem cournot_reaction_clamp_boundary :
 /-! ## Invariants économiques (valeurs concrètes) -/
 
 /-- **Avantage du premier mover** (symétrique, valeurs concrètes) :
-à `(a, c, c) = (100, 10, 10)`, `qL = 45 > 22.5 = qF`. -/
+à `(a, c, c) = (100, 10, 10)`, `qL = 45 > 22.5 = qF` — corollaire
+de la forme générale `first_mover_advantage_symmetric`. -/
 theorem first_mover_advantage_at_default :
-    stackelbergLeader (100 : Rat) 10 10 > stackelbergFollower (100 : Rat) 10 10 := by
-  norm_num [stackelbergLeader, stackelbergFollower, cournotEquilibriumSym]
+    stackelbergLeader (100 : Rat) 10 10 > stackelbergFollower (100 : Rat) 10 10 :=
+  first_mover_advantage_symmetric 100 10 (by norm_num)
 
 /-- **Bien-être au-dessus de Cournot** (symétrique, valeurs
-concrètes) : à `(a, c, c) = (100, 10, 10)`, `qL + qF = 67.5 > 60 = 2·q*`. -/
+concrètes) : à `(a, c, c) = (100, 10, 10)`, `qL + qF = 67.5 > 60 = 2·q*`
+— corollaire de la forme générale `welfare_above_cournot_symmetric`. -/
 theorem welfare_above_cournot_at_default :
     stackelbergLeader (100 : Rat) 10 10 + stackelbergFollower (100 : Rat) 10 10 >
-      2 * cournotEquilibriumSym (100 : Rat) 10 := by
-  norm_num [stackelbergLeader, stackelbergFollower, cournotEquilibriumSym]
+      2 * cournotEquilibriumSym (100 : Rat) 10 :=
+  welfare_above_cournot_symmetric 100 10 (by norm_num)
 
 /-- Le leader Stackelberg produit strictement plus que la quantité
 de Cournot symétrique (symétrique, valeurs concrètes) :

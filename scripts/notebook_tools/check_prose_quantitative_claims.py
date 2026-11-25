@@ -255,7 +255,18 @@ class ArtifactExemption(NamedTuple):
 
 ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="translations/README.md",
+        motif=re.compile(r"24 470 cellules au 2026-08-06"),
+        raison=(
+            "Mesure HISTORIQUE datee, conservée par arbitrage #17636 volet 2 "
+            "(option a, coord 19/11) : total d'epoque produit par l'audit c.1252 "
+            "au 2026-08-06, pas un etat courant -- les comptes courants vivent "
+            "dans les CSV, la prose y renvoie. Le motif est etroit (nombre ET "
+            "date) : une reecriture re-signale l'occurrence."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -264,7 +275,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -272,7 +283,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -370,7 +381,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md",
         motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
         raison=(
             "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
@@ -860,14 +871,6 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "d'une ligne de la grille Sudoku demontree. Cellules de grille."
         ),
     ),
-    ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md",
-        motif=re.compile(r"une rangée de 4 cellules"),
-        raison=(
-            "« une rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
-            "du carnet 02, decrit en miroir ici. Cellules du probleme."
-        ),
-    ),
     # --- Tranche GenAI/Audio (#17636 volet 2, lane myia-po-2023:CoursIA) ---
     # Le stock Audio comptait 38 compteurs sur 9 fichiers. 17 ont ete RETIRES
     # par edition de prose (doctrine #9377 : supprimer la mesure, garder le
@@ -1228,6 +1231,31 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "Fait passe figure."
         ),
     ),
+    # Parametre DEFINITOIRE de l'enonce de l'exercice exact-cover de
+    # Search-08 (review Hermes #28088, 22/11) : la grille de l'exercice EST
+    # 3x5 par construction -- le pavage par trominos se definit sur ces
+    # dimensions. Meme classe que le canon de Gosper ci-dessus : propriete
+    # du probleme enonce, pas un compteur d'etat du depot qui derive.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-08-DancingLinks.ipynb"
+        ),
+        motif=re.compile(r"grille de 3 lignes par 5 colonnes"),
+        raison=(
+            "« 3 lignes par 5 colonnes » = dimensions de la grille de "
+            "l'exercice de couverture exacte (enonce) : parametre du probleme, "
+            "pas une mesure qui derive avec le depot. Les dimensions vivent "
+            "dans l'enonce ET dans la cellule de code de l'exercice."
+        ),
+    ),
+    # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux exemptions posees
+    # initialement couvraient des ELISIONS ecrites a la main, pas des sorties
+    # d'outil (review ai-01 du 2026-11-20 : ni le script de scan ni l'organe
+    # de cache n'impriment une elision). Elles sont RETIREES depuis que le
+    # rapport cite les sorties INTEGRALES des deux outils en blocs verbatim :
+    # un bloc verbatim complet ne porte plus de compte fait a la main, et les
+    # compteurs d'etat du depot restent surveilles.
 )
 
 # ----------------------------------------------------------------------------

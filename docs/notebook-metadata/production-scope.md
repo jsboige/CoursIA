@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-17
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -73,14 +73,14 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/01-Foundation -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-Comprehension-Video-API.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb`
@@ -313,13 +313,13 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-02-Tribut-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-02-Tribut-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-01-Conway-Proofs-Lean-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-01-Sendov-Lean-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-02-Tao-Lean-Python.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-03-PFR-Lean.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
 

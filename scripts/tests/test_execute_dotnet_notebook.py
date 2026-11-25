@@ -53,21 +53,30 @@ def _load_module(monkeypatch):
         def __init__(self, mode: str):
             self.mode = mode
             self._n = 0
+            self.executed: list[str] = []
 
         def execute(self, code):
-            pass
+            self.executed.append(code)
+            self._n = 0  # each submission replays the scripted scenario
 
         def get_shell_msg(self, timeout=10):
             return {"content": {"status": "ok"}}
 
         def get_iopub_msg(self, timeout=300):
             self._n += 1
-            # First message per the scripted scenario; thereafter idle so the
-            # loop terminates cleanly (the real kernel sends idle after any
-            # terminal state -- error or success).
+            # The real kernel announces each submission with `execute_input`,
+            # carrying its OWN execution_count; the target notebook is expected
+            # to persist that value. Emitted first, except in the timeout
+            # scenario where nothing ever arrives.
             if self._n == 1:
                 if self.mode == "timeout":
                     raise QueueEmpty()
+                return {"msg_type": "execute_input",
+                        "content": {"execution_count": len(self.executed)}}
+            # Second message per the scripted scenario; thereafter idle so the
+            # loop terminates cleanly (the real kernel sends idle after any
+            # terminal state -- error or success).
+            if self._n == 2:
                 if self.mode == "success":
                     return {"msg_type": "status",
                             "content": {"execution_state": "idle"}}
@@ -76,7 +85,7 @@ def _load_module(monkeypatch):
                             "content": {"ename": "Error",
                                         "evalue": "boom",
                                         "traceback": ["tb"]}}
-            # After the scripted first message, emit idle (clean exit) or
+            # After the scripted messages, emit idle (clean exit) or
             # keep raising Empty (for the timeout mode, never reached because
             # the loop already broke).
             if self.mode == "timeout":
@@ -88,11 +97,24 @@ def _load_module(monkeypatch):
             pass
 
     class _FakeKernelManager:
-        def __init__(self, kernel_name=None):
-            self._client = _FakeClient(_MODE[0])
+        # Every manager constructed during one test, so tests can assert the
+        # cwd it was started with and how many submissions the fake client saw.
+        instances: list = []
 
-        def start_kernel(self):
-            pass
+        # Mirrors the real jupyter_client signature: `KernelManager` carries no
+        # `cwd` parameter, so the value is swallowed by `**kwargs` and has NO
+        # effect (measured 2026-11-21: no `cwd` attribute is left at all).
+        # Keeping the same shape here means the tests fail if the module ever
+        # passes cwd to the constructor instead of to `start_kernel`.
+        def __init__(self, kernel_name=None, **kwargs):
+            self.kernel_name = kernel_name
+            self.ctor_kwargs = kwargs
+            self.cwd = None
+            self._client = _FakeClient(_MODE[0])
+            _FakeKernelManager.instances.append(self)
+
+        def start_kernel(self, cwd=None, **kwargs):
+            self.cwd = cwd
 
         def client(self):
             return self._client
@@ -112,6 +134,9 @@ def _load_module(monkeypatch):
     # module import time only if it captured globals -- it reads _MODE lazily
     # via the module's globals at call time, so we set it on the module after).
     spec.loader.exec_module(mod)
+    # Expose the fake manager class so tests can read the cwd it was given and
+    # the submissions its client saw.
+    mod._fake_km_class = _FakeKernelManager
     # Make _MODE reachable from the fake client's closure. The closure was
     # built in this test function's scope, so _MODE here IS the one it reads.
     return mod, g
@@ -226,3 +251,68 @@ class TestBookkeeping:
         assert res["code_cells"] == 2
         assert res["executed"] == 2
         assert res["successful"] == 2
+
+
+# ── Execution evidence: count persisted, cwd given, no setup submission ───
+
+class TestExecutionEvidence:
+    """The organ used to leave `execution_count` null on every cell (the
+    kernel's own count was never persisted, so check_exec_sequence reported
+    PARTIAL) and consumed count 1 with a `SetCurrentDirectory` setup
+    submission. Both are fixed here: the count is stored from the kernel's
+    `execute_input` message, and the cwd is given to the kernel process
+    instead of being set by an extra execution."""
+
+    def _run_and_keep(self, monkeypatch, mode="success"):
+        global _MODE
+        _MODE[0] = mode
+        mod, _ = _load_module(monkeypatch)
+        nb = {
+            "cells": [
+                {"cell_type": "markdown", "source": "# hi", "metadata": {}},
+                {"cell_type": "code", "source": "var a = 1;", "outputs": [],
+                 "execution_count": None},
+                {"cell_type": "code", "source": "var b = 2;", "outputs": [],
+                 "execution_count": None},
+            ],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }
+        import io, contextlib, tempfile, os
+        f = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ipynb", delete=False, encoding="utf-8")
+        json.dump(nb, f)
+        f.close()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                mod.execute_dotnet_notebook(f.name, timeout=1)
+            saved = json.loads(Path(f.name).read_text(encoding="utf-8"))
+        finally:
+            os.unlink(f.name)
+        return mod, saved, Path(f.name).resolve()
+
+    def test_execution_count_is_persisted(self, monkeypatch):
+        _, saved, _ = self._run_and_keep(monkeypatch)
+        counts = [c["execution_count"] for c in saved["cells"]
+                  if c["cell_type"] == "code"]
+        assert counts == [1, 2], f"counts persistes attendus [1, 2], lu {counts}"
+
+    def test_kernel_started_in_notebook_directory(self, monkeypatch):
+        mod, _, path = self._run_and_keep(monkeypatch)
+        km = mod._fake_km_class.instances[-1]
+        assert km.cwd == str(path.parent), (
+            "le noyau doit demarrer dans le dossier du carnet (cwd passe a "
+            "start_kernel), pas via une execution de setup")
+        # Guard the exact regression measured on 2026-11-21: `KernelManager(...,
+        # cwd=...)` is swallowed by **kwargs, so passing cwd there silently
+        # leaves the kernel in the launcher's directory and every
+        # `#load "file.cs"` fails with CS1504.
+        assert "cwd" not in km.ctor_kwargs, (
+            "cwd ne doit PAS etre passe au constructeur (ignore par "
+            f"jupyter_client) : {km.ctor_kwargs}")
+
+    def test_no_setup_submission_consumes_a_count(self, monkeypatch):
+        mod, _, _ = self._run_and_keep(monkeypatch)
+        client = mod._fake_km_class.instances[-1]._client
+        assert len(client.executed) == 2, (
+            "seules les cellules de code doivent etre soumises ; une "
+            f"soumission de setup decalerait les comptes : {client.executed}")

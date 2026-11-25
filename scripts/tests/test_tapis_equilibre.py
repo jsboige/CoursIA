@@ -16,6 +16,8 @@ from pathlib import Path
 import pytest
 from coordination import tapis_equilibre as te
 from coordination import tapis_rapide as tr
+from coordination import tapis_seance
+from coordination.tapis_marqueurs import Evt
 
 # Les fabriques de test_tapis_rapide.py, chargees par chemin : sous
 # `--import-mode importlib`, `tests.` designe le premier paquet `tests` collecte
@@ -57,13 +59,39 @@ def test_une_seance_par_lane_et_par_jour():
     assert (e4.visites, e4.derniere_visite) == (0, None)
 
 
+def _evt(marque: str, heures: float, lane: str = AUTRE) -> Evt:
+    """Un marqueur pose a NOW - `heures` heures."""
+    return Evt(NOW - timedelta(hours=heures), marque, lane, None, "")
+
+
+def test_la_voie_legere_compte_comme_le_classement():
+    """UNE SEULE REGLE DE SEANCE (#27338) : la voie legere appelle l'organe
+    natif (`tapis_seance.par_lane`), elle ne le reimplemente pas. Sept
+    livraisons dans la journee : sept visites, dans les deux voies."""
+    evts = []
+    for h in (100, 90, 80, 70, 60, 50, 40):
+        evts += [_evt("CLAIMED", h), _evt("DELIVERED", h - 1)]
+    _d, total, _v = te.compter(evts, [], NOW)
+    assert total == 7, "sept livraisons dans la journee : sept visites"
+
+
 def test_les_commits_ne_doublent_pas_la_seance_de_leur_claim():
+    """Une citation Git n'est PAS une visite : le classement ne la compte
+    plus (c3274). Le compte HISTORIQUE -- marqueurs et citations -- reste
+    disponible pour la voie legere, qui ne lit pas le fil."""
     # un claim, puis le merge de sa PR le lendemain : une visite, pas deux
     lec = lecture([issue(1, comments=[claim(40)])], citations={1: [commit("a" * 12, 20)]})
     assert etat(lec, 1).visites == 1
-    # des commits sans marqueur comptent : trois jours distincts, trois visites
+    # des commits SANS marqueur : un PASSAGE (activite autour de l'issue),
+    # pas des visites de l'issue
     lec = lecture([issue(2)], citations={2: [commit("b" * 12, h) for h in (10, 80, 150)]})
-    assert etat(lec, 2).visites == 3
+    e2 = etat(lec, 2)
+    assert e2.visites == 0, "une citation Git n'est pas une visite"
+    assert e2.etat_grain == "passage_seul"
+    # le compte historique garde l'ancien comportement
+    cites = [commit("b" * 12, h) for h in (10, 80, 150)]
+    _d, total, _v = te.compter([], cites, NOW)
+    assert total == 3, "le compte historique compte les citations"
 
 
 # --- le niveau strict et l'anciennete ---------------------------------------
@@ -137,11 +165,12 @@ def test_la_consolidation_recoit_une_priorite_legere_a_tout_age():
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     assert te.raisons(etat(lec, 1), conso, NOW) == [
-        "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.4 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "2 visite(s) en 7 j (2 au total)",
+        "priorite d age : -0.3 visite (plafonnee : la consolidation passe devant)",
+        "priorite de consolidation : -0.6 visite"]
     assert te.raisons(etat(lec, 2), conso, NOW) == [
         "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.1 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "priorite de consolidation : -0.6 visite"]
 
 
 def test_la_fille_d_une_racine_de_consolidation_herite_la_priorite():
@@ -153,10 +182,32 @@ def test_la_fille_d_une_racine_de_consolidation_herite_la_priorite():
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     # la fille herite la priorite de consolidation de sa racine
-    assert "priorite de consolidation : -0.4 visite" in te.raisons(
+    assert "priorite de consolidation : -0.6 visite" in te.raisons(
         etat(lec, 11), conso, NOW)
-    assert "priorite de consolidation : -0.4 visite" not in te.raisons(
+    assert "priorite de consolidation : -0.6 visite" not in te.raisons(
         etat(lec, 12), conso, NOW)
+
+
+def test_la_consolidation_passe_devant_l_anciennete_dans_l_etage_rapide():
+    """Invariant I7 du contrat du picker (#28114, 22/11) : l'ordre des etages
+    fins est « consolidation, puis anciennete ».
+
+    AVANT, les deux bonus s'additionnaient : l'age plein (0,5) l'emportait sur
+    la consolidation (0,4), et l'invariant etait viole dans l'etage rapide.
+    Mesure sur `main` au 23/11 : une issue ordinaire de 170 j et une
+    consolidation recente tombaient au meme niveau (-0,4), et l'anciennete
+    l'emportait -- l'ordre rendu etait [6001, 6002].
+
+    AUJOURD'HUI, la consolidation est posee EN PREMIER : son bonus depasse le
+    bonus d'age plein, donc elle passe devant a visites egales ; l'age
+    n'arbitre plus qu'entre issues de meme statut."""
+    issues = [issue(6001, cree="2026-05-27T00:00:00Z"),          # 170 j, ordinaire
+              issue(6002, labels=["consolidation"], cree="2026-11-01T00:00:00Z")]
+    lec = lecture(issues)
+    conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
+    assert te.niveau(etat(lec, 6002), conso, NOW) < te.niveau(etat(lec, 6001), conso, NOW), \
+        "la consolidation a un niveau plus bas que l'ordinary la plus agee"
+    assert _servis(issues) == [6002, 6001], "la consolidation passe devant l'anciennete"
 
 
 def test_les_marathons_passent_apres_le_pool_equilibre():
@@ -205,16 +256,21 @@ def test_le_bonus_total_reste_sous_une_visite():
 
 
 def test_les_deux_avantages_sont_distincts_et_cumulables():
-    """Une vieille consolidation cumule l'age ET la consolidation : le bonus
-    de consolidation n'est jamais efface par celui de l'age (le plafonnement
-    porte sur la somme, pas sur la contribution)."""
+    """Une vieille consolidation cumule l'age ET la consolidation : les deux
+    motifs restent nommes, et ils somment au bonus effectif.
+
+    La part de l'age est PLAFONNEE (0,3 visite) quand la consolidation est
+    presente : la consolidation passe devant l'anciennete (I7), donc l'age ne
+    peut pas manger le budget de la premiere. Le rapport le dit -- un motif
+    plafonne ne se presente pas comme le bonus plein."""
     issues = [issue(1, labels=["consolidation"], cree="2026-01-01T00:00:00Z")]
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     e = etat(lec, 1)
     assert te.raisons(e, conso, NOW) == [
-        "0 visite(s) en 7 j (0 au total)", "priorite d age : -0.5 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "0 visite(s) en 7 j (0 au total)",
+        "priorite d age : -0.3 visite (plafonnee : la consolidation passe devant)",
+        "priorite de consolidation : -0.6 visite"]
     assert te.niveau(e, conso, NOW) == -0.9
 
 
@@ -237,8 +293,12 @@ def test_l_age_est_compte_en_jours_pleins():
 def test_module_pur_et_borne():
     """Fonctions pures : aucun import de processus ni de reseau. Plafond releve
     a la livraison ; un depassement se paie en extrayant, pas en relevant."""
+    for module, plafond in ((te, 160), (tapis_seance, 60)):
+        texte = (Path(module.__file__)).read_text(encoding="utf-8")
+        assert len(texte.splitlines()) <= plafond
+    # La purete et la taille des fonctions se verifient sur le module du
+    # classement : le dernier lu par la boucle n'est pas ce module.
     texte = (Path(te.__file__)).read_text(encoding="utf-8")
-    assert len(texte.splitlines()) <= 160
     arbre = ast.parse(texte)
     importes = {a.name for n in ast.walk(arbre) if isinstance(n, ast.Import) for a in n.names}
     importes |= {n.module or "" for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom)}

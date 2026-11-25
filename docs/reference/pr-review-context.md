@@ -1,6 +1,6 @@
 # PR Review Discipline — Contexte, incident, anti-patterns
 
-> REFERENCE — vivante — dernière révision 2026-11-19
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
@@ -197,6 +197,49 @@ Ces bannières ne déclenchent ni `execution_count` nul ni le grep d'erreurs vol
 
 **#16097** — `ANALYSE-01-Sendov-Lean-Python.ipynb`, cellule `40cb37d5` : **1132 → 1728** caractères (la cellule **grossit** — la même écriture qui a retiré le code a ajouté une note de récupération) et `ast.parse(...).body` **10 → 0** : tout le code replié en un seul commentaire. Le ratchet de volume ne pouvait pas le voir (le gate s'arrête avant tout plancher quand la tête est plus longue) et `notebook-cell-source-parses` non plus (une cellule intégralement commentée se **parse** proprement). D'où le second mécanisme `STRUCTURE` (#16110) : `emptied` et `orphan-output` ne consultent que la cellule, aucune exemption ne les blanchit — restaurer la source ou retirer la sortie. Définitions (déplacées de la règle, tranche 2) : `emptied` = la cellule avait des instructions, elle n'en a plus ; `orphan-output` = elle porte une sortie qu'aucune instruction ne peut avoir produite — le code est parti, la preuve d'exécution est restée.
 
+## Prescription B.0 détaillée (déportée de CLAUDE.md, tranche #11554)
+
+**Lire l'ÉTAT d'une review n'est pas lire la review.** Le champ `reviews[].state` est **structurellement aveugle** aux deux canaux qui portent le plus de substance sur ce dépôt :
+
+| Canal | Ce que `reviews[].state` en dit | Où le contenu vit réellement |
+|---|---|---|
+| **Nits du user** | *rien* — postés en issue comments, aucune entrée dans `reviews[]` | `comments[].body` |
+| **Réserves d'Hermes** | `COMMENTED` — le verdict est un **préfixe de body** (`[Hermes] COMMENT_WITH_CONCERNS`) | `reviews[].body` |
+| **Commentaires inline** | *rien* — absents de `gh pr view --json comments,reviews` | `reviewThreads` (GraphQL), champ `isResolved` |
+
+Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que chaque remarque postée après le dernier commit est **levée** par l'une de ces trois choses, et rien d'autre :
+
+1. une **réponse écrite** sur la PR qui nomme la remarque (traitée en code — en citant le commit — traitée en argument, ou refusée en le disant) ;
+2. un **thread inline résolu** (`isResolved: true`) ;
+3. une **issue de suivi ouverte et nommée AVANT le merge** (reportée sciemment) — le commentaire de merge peut la rappeler, il ne peut pas la créer.
+
+**Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
+
+- **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus. Exception Q185 (user, 2026-11-13) : l'adjoint `myia-po-2025:CoursIA-2`, sous son App `coursia-lane-po-2025[bot]`, lève aussi par phrase les réserves de bot (Hermes, `clusterManager-Myia`, bots), `[OVERRIDE] lane myia-po-2025:CoursIA-2` en tête — jamais celles du coordinateur, du user ou d'une autre lane.
+- **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
+
+**Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
+
+L'écoulement du temps n'est **pas** une levée. `mergeStateStatus: CLEAN` n'est **pas** une levée. `state: COMMENTED` n'est **pas** une absence de réserve. Un reviewer qui écrit « je ne peux pas approuver seul sur ce format » **bloque** — c'est un refus d'approbation, pas un avis.
+
+**Organe** (la règle ne tient pas par la vigilance) :
+
+```bash
+python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
+python scripts/check_unaddressed_nits.py --audit --limit 400
+```
+
+**`exit 0` répond « aucune phrase de levée ne manque » — et rien d'autre.** Il ne dit ni **qui** l'a écrite, ni **avant ou après le merge**, ni si la **substance** est traitée. Ces trois-là se lisent à la main, et la troisième exige d'**ouvrir les corps de review** : un `state: COMMENTED` de `jsboige` est un verdict Hermes dont le sens vit dans le préfixe du body. L'organe ne lit aussi que ses **marqueurs** : une réserve bloquante posée **sans** marqueur, en prose libre, rend `rc=0` — le contrat est côté **émission**, et les marqueurs ne s'élargissent pas à la prose ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md)).
+
+### Les 5 points du merge — détail des preuves (déporté de CLAUDE.md, tranche #11554)
+
+**Preuves vérifiables, pas mots-clés** : « Papermill SUCCESS » / « tests passed » / « sorry count -1 » / « BEATS » / « FALSE POSITIVE » sans log/lien CI / `lake build SUCCESS` post-modif / multi-seed ≥4 + edge ≥2σ / 3 cellules-types vérifiées = **invalide**.
+
+**Honnêteté des rapports** : pas de « DONE »/« fixed »/« validated » sans validation post-fix relancée. Rapporter « 5/7, 2 restantes », pas « DONE ». Pas de markdown « RAPPORT »/« AUDIT » comme preuve sans code valide.
+
+**Reviewers (humains ET bots)** : critères CHANGES_REQUESTED par domaine → [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §A-H. **APPROVED malgré violation = complicité.**
+
 ## Incident fondateur B.0 — PR #10761 (récit déporté de CLAUDE.md, 2026-08-21)
 
 **Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook a été mergé en attribuant à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
@@ -288,7 +331,9 @@ Deuxième passe sur la même règle (#11554) : entre la tranche 1 et le 2026-11-
 
 ### L17 — le seuil `DIAG-LOOP` et sa mesure fondatrice (#14821)
 
-PR #14821 : 31 commentaires et 68 101 caractères d'infra-diagnostic sur 5 jours (25/28 sans action attachée), pour un livrable qui n'avait pas bougé depuis le commit du premier jour. Le commentaire de diagnostic pur coûte une lecture à chaque lane et ne fait pas avancer la PR : c'est une pompe, pas un apport. D'où le seuil porté par la règle : **plus de 3 `[DIAG]` consécutifs sans `[ACTION]` intercalé** = `DIAG-LOOP`.
+Sur cinq jours, la PR #14821 a reçu 31 commentaires totalisant 68 101 caractères d'infra-diagnostic ; 25 des 28 commentaires de diagnostic n'étaient rattachés à aucune action. Le livrable n'avait pas bougé depuis le commit du premier jour. Cette répétition imposait une lecture aux lanes sans faire avancer la PR : c'est le coût que la règle évite en interdisant le commentaire de diagnostic sans action concrète dans le même cycle.
+
+Le détecteur B.0 applique un seuil complémentaire : plus de trois `[DIAG]` consécutifs sans `[ACTION]` intercalé produisent `DIAG-LOOP`. Le seuil repère une boucle de commentaires déjà émis ; il ne remplace pas l'obligation préventive de la règle.
 
 ### `[BASE-INHERITED]` — un rouge hérité de la base n'est pas un nit (#26364)
 

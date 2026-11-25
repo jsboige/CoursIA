@@ -1,0 +1,13 @@
+- name: "Metajeux-1 Open-Games-Lentilles"
+  family: GameTheory/Metajeux
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib (configuration SocialChoice-2) : lentilles et open games de Hedges implantes idiomatiquement des deux cotes (stdlib Python typing/numpy vs BCL/LINQ C#, 0 NuGet), aucune bibliotheque canonique d'open games n'existe ni dans la stdlib Python ni dans la BCL .NET. Verification independante `critic` (glm-5.3) verdict approve le 2026-11-20, 5 constats mineurs 0 majeur : 29 cellules/29, 11 cellules code aux memes indices, aucune cellule perdue ni ajoutee ; execution reelle kernel .net-csharp 11 cellules 0 erreur (execution_count sequentiel) ; gates coord-refs, foreign-script, secrets, language-info, machine-path, svg-display OK ; les cellules d'exercices (3/10/13/18/20) livrees en stubs compilables TODO etudiant SANS solution revelee. parity_level: semantic (meme contenu mathematique, API idiomatique differente). Issue #27463, PR #27493."
+
+  known_differences:
+    - "Format d'affichage cellule 10 : la source utilise '{x:+.1f}' (signe force, 'x=+0.0') ; le port affiche 'x=0.0' sans signe force -- valeurs numeriques rigoureusement identiques, divergence cosmétique."
+    - "Le port ajoute un membre ChainedBestResponse (BR composee) reellement calcule mais non appele ensuite (la cellule 13 recalcule br_chain directement) ; cote Python br_compose etait un placeholder sans evaluation -- raffinement acceptable, code mort documente."
+    - "Scaffold de l'exercice cellule 16 : le port introduit une classe ParallelGame (forward de frontiere paire) car OpenGame.Forward est Func<double,double> -- l'indice 'reutiliser la classe OpenGame' de l'enonce devient indicatif pour l'etudiant C# ; l'exercice reste completable et compilable."
+    - "Warnings compilateur CS8632 (annotations nullable hors contexte '#nullable') dans les sorties des cellules 8/10/16/23 -- warnings sans effet sur l'execution integrale sans erreur."
