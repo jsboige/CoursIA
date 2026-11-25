@@ -64,7 +64,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_diff, tapis_fenetre, tapis_lot, tapis_occupation
+from coordination import tapis_fenetre, tapis_lot, tapis_reprise_livree
 from coordination import tapis_preuves
 from coordination import tapis_fil_complet, tapis_rapide, tapis_verdict
 
@@ -72,15 +72,13 @@ from coordination import tapis_fil_complet, tapis_rapide, tapis_verdict
 LOT = 50
 
 #: Les codes de REFUS ne sont pas des verdicts TERMINAUX : le grain n'a pas
-#: ete decide, il n'a pas etre lu. L'ancre de rotation ne passe pas un
-#: numero dont la lecture a echoue (peer, 19/11) : la coverage ne sacrifie
-#: pas la qualite.
+#: ete decide, il n'a pas etre lu. L'ancre de rotation ne passe pas un numero
+#: dont la lecture a echoue (peer, 19/11) : la coverage ne sacrifie pas la qualite.
 CODES_NON_TERMINAUX = tuple(tapis_fil_complet.CODES_REFUS) + (tapis_lot.ABSENT,)
 
 
 def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
-              prs: list[dict], run,
-              echeance: float | None = None, lot: int = LOT,
+              prs: list[dict], run, echeance: float | None = None, lot: int = LOT,
               horloge=time.monotonic, debut: float | None = None, preuve=None
               ) -> tuple[list, dict, list[int], bool, int, dict]:
     """Qualifie les candidats PRIS EN CHARGE, dans l'ordre donne.
@@ -110,7 +108,7 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         lec = tapis_lot.lec(list(issues.values()), maintenant, appels)
         etats = tapis_preuves.etats_de_tranche(lec, notes_urne, prs_par_issue,
                                                lane, maintenant, jours, issues)
-        tapis_diff.appliquer(etats, lec, preuve)
+        tapis_reprise_livree.appliquer(etats, lec, preuve, lane, maintenant, jours, prs_par_issue)
         for e in etats:
             if e.ecart and e.numero not in ecartees:
                 ecartees[e.numero] = {"numero": e.numero, "code": e.ecart,
@@ -122,7 +120,8 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         if not retenus:
             continue
         conf, rejet, rates, n = tapis_fil_complet.confirmer(
-            retenus, lec, lane, maintenant, jours, echeance, horloge, preuve=preuve)
+            retenus, lec, lane, maintenant, jours, echeance, horloge,
+            preuve=preuve, prs_par_issue=prs_par_issue)
         appels += n
         echecs.extend(rates)
         for e in conf:

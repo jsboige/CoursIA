@@ -219,10 +219,10 @@ Chaque tentative génère un nouveau projet temporaire aléatoire :
 ## 🔗 **RÉFÉRENCES TECHNIQUES**
 
 ### **Notebooks de Debug Créés**
-- [`debug-nuget-path1-minimal.ipynb`](../debug-nuget-path1-minimal.ipynb) - Reproduction minimale erreur
-- [`debug-nuget-path1-minimal-direct.ipynb`](../debug-nuget-path1-minimal-direct.ipynb) - Preuve exécution directe fonctionne
-- [`debug-nuget-version-explicite.ipynb`](../debug-nuget-version-explicite.ipynb) - Test versions explicites
-- [`debug-nuget-paths-absolus.ipynb`](../debug-nuget-paths-absolus.ipynb) - Test chemins absolus
+- `debug-nuget-path1-minimal.ipynb` - Reproduction minimale erreur (scratchpad de session, non tracké)
+- `debug-nuget-path1-minimal-direct.ipynb` - Preuve exécution directe fonctionne (scratchpad, non tracké)
+- `debug-nuget-version-explicite.ipynb` - Test versions explicites (scratchpad, non tracké)
+- `debug-nuget-paths-absolus.ipynb` - Test chemins absolus (scratchpad, non tracké)
 
 ### **Configuration MCP Testée**
 - Configuration complète dans `mcp_settings.json` avec toutes variables MSBuild

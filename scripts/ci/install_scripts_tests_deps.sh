@@ -45,6 +45,27 @@ pip install requests bcrypt jupyter_client
 # Le test de visibilite ajoute dans le meme commit rougit si ce
 # kernelspec disparait a nouveau.
 pip install ipykernel
+# kernelspec `python3` aligne sur l'interpreteur du job (#28500).
+# `pip install ipykernel` installe le MODULE ; il n'ECRIT aucun
+# kernelspec. Le job.countait donc sur un `python3` deja present dans
+# l'image -- dont l'interpreteur n'est pas forcement celui que `pip`
+# remplit. Mesure du 2026-11-25 (PR #28485) : sur le parc auto-heberge
+# `CoursIA-runners-p0`, le noyau papermill `-k python3` part d'un autre
+# interpreteur que le toolcache -- `pip install "axelrod>=4.0.0"` y
+# reussit ("Requirement already satisfied"), et `import axelrod` echoue
+# en cellule 56 de GameTheory-06 ; la jambe `Scripts Tests (CPU)`
+# tombe. Deux slots differents (6 et 5), meme echec ; le runner
+# heberge passe (job 139001135192) : c'est bien l'image du parc qui
+# decide.
+#
+# Le remede : ENREGISTRER l'interpreteur du job comme kernelspec
+# `python3`. `ipykernel install` ecrit un `argv` ABSOLU
+# (`sys.executable`) -- le noyau est alors exactement l'interpreteur
+# que `pip` remplit, quel que soit le `python3` de l'image. Le
+# repertoire utilisateur passe avant le prefixe systeme ET avant
+# `/usr/share/jupyter` dans l'ordre de recherche de Jupyter : c'est
+# donc celui-ci qui gagne.
+python -m ipykernel install --user --name python3 --display-name "python3"
 pip install pyyaml tomli
 # python-dotenv: scripts/notebook_tools/whisper_int8_comparison.py (and several
 # genai-stack modules) import `dotenv` at top level.
