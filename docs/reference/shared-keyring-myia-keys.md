@@ -1,6 +1,6 @@
 # Trousseau partagé `MyIA-Keys` — organe d'accès, bootstrap par machine, empreinte de preuve
 
-> REFERENCE — vivante — dernière révision 2026-11-14
+> REFERENCE — vivante — dernière révision 2026-11-23
 
 Détail durable de l'organe `scripts/secrets/agent_keyring.py`. La règle qui le gouverne reste
 [.claude/rules/secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — ce fichier ne pose
@@ -135,6 +135,10 @@ les premières tentatives.
 donné son feu vert à la suppression le 2026-09-22 — il détient la passphrase dans son propre
 KeePass, le risque de perte est donc levé — **conditionné à ce que toutes les machines soient
 enregistrées**.
+
+**Ne jamais recopier la passphrase sur un chemin partagé** (GDrive, dashboard, repo, message) :
+le PDF d'urgence est une voie de rattrapage, pas un lieu de stockage — prescription portée par la
+rule `secrets-hygiene.md` et reposée ici lors du déport (tranche #11554, 2026-11-23).
 
 Critère de retrait, mesurable : **7/7 empreintes concordantes**.
 

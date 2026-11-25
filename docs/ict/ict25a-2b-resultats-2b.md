@@ -173,6 +173,30 @@ n'ouvrait aucune porte GPU **nouvelle** ; le controle 0,8B n'en etait pas une :
 il etait scelle d'avance, il est execute, et il n'ouvre donc aucune porte de
 plus.
 
+## 6. Addendum du 24/11 — la cause mesuree de la moitie « panel persona »
+
+La section 4 attribue l'absence de la moitie « panel persona » a un
+environnement de lecture bf16 non monte sur le device de la campagne, et
+declare le verdict `RECOVERABLE-MACHINE`. Une lecture plus profonde du runner
+corrige la cause : **le runner n'a jamais persiste l'adaptateur**. Il entraine
+en QLoRA (`peft_config=lora`), mais sa strategie de sauvegarde est desactivee
+et il n'ecrit aucun adaptateur : aucun adaptateur de la campagne n'existe
+donc sur le disque, et le bloc `trained` de la lecture SAE n'a rien a
+recharger. Ce n'est pas l'environnement de lecture qui manque, c'est
+l'artefact de poids.
+
+Un module de persistance est desormais livre, avec une option explicite du
+runner : il ecrit l'adaptateur de chaque graine et le certifie par son
+empreinte, que l'artefact de campagne porte. Les poids ne sont pas committes ;
+c'est leur empreinte qui identifie la lecture.
+
+La campagne doit donc etre **rejouee** pour produire ces adaptateurs, avant
+que la lecture bf16 a adaptateurs fusionnes soit atteignable. Ce rejeu
+demande un device libre et une charge de commit sous la barre d'admission : il
+est demande au coordinateur, il n'est pas presume. Les criteres scelles et
+les mesures des sections precedentes restent inchanges : cet addendum ne
+change aucune valeur, il nomme la cause du reliquat.
+
 ## 5. Reproduction
 
 ```bash

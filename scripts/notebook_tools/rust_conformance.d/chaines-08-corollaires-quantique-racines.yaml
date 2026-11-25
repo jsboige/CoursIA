@@ -1,0 +1,138 @@
+# Conformité différentielle de Chaines-08-Corollaires-Quantique-Racines
+# (portage Rust std seul, issue #27930).
+#
+# Écrite à la livraison depuis les sorties COMMITÉES des carnets :
+# correspondance par index de cellule (le portage garde la structure de
+# cellules du jumeau Python, 36 cellules / 14 code, scellée par twin-parity),
+# une mesure par cellule qui imprime côté Python, égalité stricte du texte.
+# Le côté C# est déclaré absent à chaque mesure : son carnet ajoute une ligne
+# « ... : CONFORME ... » propre au portage C# (bannière de verdict) et/ou
+# reformule des lignes (7 : « #maps » sans accolades ; 15 : « Especes :
+# derivee=6... » au lieu du dict Python ; 18 : « Les cinq : a, b, ... » sans
+# crochets ni apostrophes ; 3 : bannière rationnel absente du Python) — la
+# comparaison stricte porte donc sur Python et Rust uniquement. À corriger À
+# LA MAIN si une divergence est un écart d'API documenté : le fichier n'est
+# jamais réécrit par l'outil une fois présent.
+- name: "Chaines-08-Corollaires-Quantique-Racines"
+  family: "Physique/Chaines"
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-08-Corollaires-Quantique-Racines-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-08-Corollaires-Quantique-Racines-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Physique/Chaines/Chaines-08-Corollaires-Quantique-Racines-Rust.ipynb
+  measures:
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python (appariement de Born, rationnel exact)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 5, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 5, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 5 ajoute la ligne « Appariements de Born : CONFORME aux trois lectures (1, 0, 1/2), en rationnel exact. » absente du Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c6_text
+      description: "Sortie de la cellule 6, texte identique au jumeau Python (48 cartes, 24 propres / 24 impropres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 6, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 6, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 6 ajoute la ligne « Classement par determinant : CONFORME (24 propres, 24 impropres)... » absente du Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python (équation 73, 1728/1728 paires)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 7, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 7, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 7 reformule la première ligne (« #maps = 48 ... #Born pairs preserved = 1728 among 1728 » sans les accolades du Python « #{maps} » / « #{Born pairs preserved} ») et ajoute une ligne CONFORME : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python (matrice M entiers purs, M^2 == 2I - 2 sy(x)sy)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 10, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 10, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 10 ajoute la ligne « M : 4x4 entiers purs ; M^2 = 2I - 2 sy(x)sy : CONFORME... » absente du Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c11_text
+      description: "Sortie de la cellule 11, texte identique au jumeau Python (spectre M, CHSH (2 sqrt(2))^2 == 8)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 11, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 11, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 11 ajoute la ligne « Check CHSH : CONFORME — spectre {0, 0, +2, -2}... » absente du Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c14_text
+      description: "Sortie de la cellule 14, texte identique au jumeau Python (21 entrées de la table)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 14, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 14, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 14 imprime le même texte que le Python mais porte la bannière #nullable enable du portage C# dans sa source : côté déclaré absent par convention (mesures C# jamais comparées sur ce carnet, voir en-tête) ; la comparaison stricte porte sur Python et Rust."
+    - id: c15_text
+      description: "Sortie de la cellule 15, texte identique au jumeau Python (comptes du census, dict par première rencontre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 15, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 15, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 15 reformule les lignes (« Especes : derivee=6, glose=12, gatee=3 » au lieu du dict Python « {'derivee': 6, ...} », « Tally imprime (CITE) » au lieu de « Tally imprime ») et ajoute une ligne CONFORME : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c18_text
+      description: "Sortie de la cellule 18, texte identique au jumeau Python (contre-test, cinq entrées vers open)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 18, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 18, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 18 reformule « Les cinq : ... » (sans crochets ni apostrophes du Python), ajoute « Liste des cinq comparee... » et une ligne CONFORME : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c21_text
+      description: "Sortie de la cellule 21, texte identique au jumeau Python (carrefour Chaines-07, valeurs citées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 21, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 21, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 21 ajoute la ligne « Carrefour Chaines-07 : CONFORME — cinq valeurs citees... » absente du Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_text
+      description: "Sortie de la cellule 23, texte identique au jumeau Python (chaîne de prémices, ch. 45 absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 23, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 23, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 23 ajoute la ligne « Chaine de premises : CONFORME — cinq premisses distillees... » absente du Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c27_text
+      description: "Sortie de la cellule 27, texte identique au jumeau Python (exercice 1, stub neutre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 27, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 27, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 27 imprime le même texte que le Python mais porte la bannière #nullable enable du portage C# dans sa source : côté déclaré absent par convention (mesures C# jamais comparées sur ce carnet, voir en-tête) ; la comparaison stricte porte sur Python et Rust."
+    - id: c29_text
+      description: "Sortie de la cellule 29, texte identique au jumeau Python (exercice 2, stub neutre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 29, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 29, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 29 imprime le même texte que le Python mais porte la bannière #nullable enable du portage C# dans sa source : côté déclaré absent par convention (mesures C# jamais comparées sur ce carnet, voir en-tête) ; la comparaison stricte porte sur Python et Rust."
+    - id: c31_text
+      description: "Sortie de la cellule 31, texte identique au jumeau Python (exercice 3, stub neutre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python: {cell: 31, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        rust: {cell: 31, pattern: "\\A\\s*(.*?)\\s*\\Z", transform: text}
+        csharp:
+          absent: "La cellule C# 31 imprime le même texte que le Python mais porte la bannière #nullable enable du portage C# dans sa source : côté déclaré absent par convention (mesures C# jamais comparées sur ce carnet, voir en-tête) ; la comparaison stricte porte sur Python et Rust."

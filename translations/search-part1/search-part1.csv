@@ -34055,7 +34055,7 @@ c'est choisir son budget d'erreur — un compromis honnête, quantitatif, et qui
 ",,,,,,,,6867613e04b7ad98,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb,153addc9,markdown,fr,bf65ec6998ea23e5,"# Search-03e : A* et l'optimalité sous heuristique admissible — visite formelle de `search_lean`
 
-**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
+**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
 
 **Kernel** : Python 3 (extraits Mathlib/search_lean exhibés via `subprocess` -> WSL `lean`)
 
@@ -34705,7 +34705,7 @@ l'algorithme complet.
 - **Série** : les autres lakes #4038 (`sensitivity_lean`, `finiteness_lean`…) et
   leurs compagnons Lean-N.
 
-**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
+**Navigation** : [<< Lean-17b Knots Invariants](../../SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb) | [Index](README.md) | [Search-03f — réparer localement →](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)
 
 
 ***

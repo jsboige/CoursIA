@@ -112,7 +112,7 @@ LEAN_EXEC = LEAN_DIR / "lean_exec.py"
 # --------------------------------------------------------------------------
 # #26630 -- le cache chaud se RESOUT par toolchain, il n'est plus fige.
 #
-# Un seul pivot (`GOL/conway_lean`, toolchain v4.33.0) rendait trois lakes
+# Un seul pivot (`JeuDeLaVie/conway_lean`, toolchain v4.33.0) rendait trois lakes
 # INMERGEABLES PAR CONSTRUCTION : `formal_logic` (v4.33.1),
 # `socialchoicepeters` (v4.32.1) et `conwaycgt` (v4.33.0-rc1) ne peuvent pas
 # emprunter le cache d'une autre toolchain -- le build est produit par la
@@ -304,6 +304,31 @@ def build_failure_reason(payload: dict, violation: str | None = None) -> str:
     if (payload.get("status") or "").lower() == "timeout":
         return "timeout du lake build (exit_code={})".format(exit_code)
     return "lake build a echoue (exit_code={})".format(exit_code)
+
+
+def is_pure_timeout(build: dict) -> bool:
+    """Vrai si un build est un **timeout pur**.
+
+    Un timeout pur est un build **tue au minuteur** (`status == "timeout"`),
+    **sans** violation du budget de concurrence et **sans** erreur de
+    compilation nommee : c'est un depassement du **budget de temps**, pas une
+    faute de code. La CI compile le meme lac en vert (cache Lake chaud), donc
+    un timeout pur ne refuse pas la PR : il est atteste comme deferral CI
+    (#27516 volet 3).
+
+    Les deux exclusions sont portees par des champs DISTINCTS du status :
+    une violation de budget de concurrence (`budget_violation`) est une
+    cause de depassement qui se re-essaye (pas un timeout pur), et une
+    erreur de compilation nommee (`errors`) est une faute de code, jamais un
+    timeout. Fonction **pure** : elle se teste sans Windows ni Lake.
+    """
+    if (build.get("status") or "").lower() != "timeout":
+        return False
+    if build.get("budget_violation"):
+        return False
+    if build.get("errors"):
+        return False
+    return True
 
 
 def gh_json(repo: str, path: str) -> object:
@@ -525,8 +550,24 @@ def _pivot_candidates(base_manifest: dict, head_manifest: dict | None) -> list[P
     return out
 
 
-def _declared_packages(lake_dir: Path) -> list[str]:
-    """Noms des paquets declares par le `lake-manifest.json` d'un lake.
+#: Type de paquet lake qui vit a SON `dir` : il ne se materialise jamais
+#: sous `.lake/packages/<nom>`, donc l'exiger la rendra toujours absent.
+#:
+#: Mesure du 22/11 sur ai-01, lac `busybeaver_lean` : le manifeste declare
+#: `Foundation` en `type: path`, `dir: .lake/packages/pa196/PA196/vendor/Foundation`
+#: (paquet herite du `git` `pa196`). Le repertoire EXISTE dans le pivot
+#: prechauffe, mais `_packages_absent` le cherchait sous
+#: `.lake/packages/Foundation` -- absent -- et le lac entier etait ecarte avec
+#: le motif `packages incomplets : Foundation absent`. Instance : issue
+#: #27923 (bloque #27658 puis #27587).
+PATH_PACKAGE_TYPE = "path"
+
+
+def _declared_packages(lake_dir: Path) -> list[dict]:
+    """Paquets declares par le `lake-manifest.json` d'un lake.
+
+    Chaque entree porte `name`, `type` et `dir` (`dir` vaut `None` pour un
+    paquet de type `git`).
 
     Manifeste absent, illisible ou sans tableau `packages` : la liste est
     VIDE. L'exigence porte alors sur le critere general (`.lake/packages`
@@ -542,14 +583,21 @@ def _declared_packages(lake_dir: Path) -> list[str]:
     packages = payload.get("packages")
     if not isinstance(packages, list):
         return []
-    names: list[str] = []
+    entries: list[dict] = []
     for entry in packages:
         if not isinstance(entry, dict):
             continue
         name = entry.get("name")
-        if isinstance(name, str) and name:
-            names.append(name)
-    return names
+        if not isinstance(name, str) or not name:
+            continue
+        ptype = entry.get("type")
+        pdir = entry.get("dir")
+        entries.append({
+            "name": name,
+            "type": ptype if isinstance(ptype, str) and ptype else "git",
+            "dir": pdir if isinstance(pdir, str) and pdir else None,
+        })
+    return entries
 
 
 #: Lake ecrit un nom de paquet entre guillemets quand le nom nu n'est pas
@@ -607,6 +655,27 @@ def _package_is_resolved(package_dir: Path, name: str) -> bool:
     return any(package_dir.glob("lakefile.*"))
 
 
+def _path_package_served(owner: Path, packages_dir: Path, dir_rel: str) -> Path:
+    """Repertoire EFFECTIVEMENT servi pour un paquet de type `path`.
+
+    Un paquet `path` vit a son `dir`, relatif au lake qui le declare -- il
+    ne se materialise JAMAIS sous `.lake/packages/<nom>`. Deux cas :
+
+    - `dir` SOUS `.lake/packages` : le contenu servi est celui du cache
+      chaud, parce que la jonction `<lake>/.lake/packages` ->
+      `<pivot>/.lake/packages` sert exactement ce repertoire -> on regarde
+      dans `packages_dir` ;
+    - `dir` AILLEURS (paquet frere dans l'arbre du depot) : le contenu
+      servi est celui du proprietaire lui-meme -> on regarde dans `owner`.
+    """
+    rel = Path(dir_rel.replace("\\", "/"))
+    try:
+        under = rel.relative_to(WARM_PACKAGES)
+    except ValueError:
+        return owner / rel
+    return packages_dir / under
+
+
 def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     """Paquets declares par `manifest_owner` et NON materialises dans
     `packages_dir`.
@@ -614,9 +683,20 @@ def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     Le manifeste peut venir d'un lake et le dossier de paquets d'un autre :
     c'est la question qui compte -- « le pivot sait-il servir les paquets
     que le lake demande ? ». Liste VIDE = rien ne manque.
+
+    Un paquet de type `path` se verifie a SON `dir` (relatif au lake qui le
+    declare), pas sous `.lake/packages/<nom>` : exiger la materialisation
+    d'un paquet `path` la declare TOUJOURS absent, quel que soit son
+    prechauffage (#27923).
     """
     missing: list[str] = []
-    for name in _declared_packages(manifest_owner):
+    for entry in _declared_packages(manifest_owner):
+        name = entry["name"]
+        if entry["type"] == PATH_PACKAGE_TYPE and entry["dir"]:
+            served = _path_package_served(manifest_owner, packages_dir, entry["dir"])
+            if not served.is_dir():
+                missing.append("{} absent (dir {})".format(name, entry["dir"]))
+            continue
         dir_name = _package_dir_name(name)
         package_dir = packages_dir / dir_name
         if not package_dir.is_dir():
@@ -700,11 +780,24 @@ def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
             ),
             "rejects": rejects,
         }
+    # Parmi les pivots chauds de la meme toolchain, celui de MEME GRAPHE
+    # passe en tete. Retenir le premier chaud dans l'ordre du manifeste
+    # faisait echouer un lake des qu'un pivot plus haut dans la liste
+    # portait un paquet de plus : mesure du 22/11 sur ai-01, `knot` resolu
+    # sur `discrepancy_lean` (qui sert `learning_theory_lean`) alors que
+    # `game_theory_lean` et `hecke_lean`, chauds et de meme graphe, etaient
+    # la -- deux PRs Knots refusees. Le verdict reste celui de
+    # `check_cache_compatibility` : sans pivot compatible, l'ordre ne change
+    # pas, et le motif d'incompatibilite du premier est rendu comme avant.
+    compatibles = [
+        p for p in warm if check_cache_compatibility(lake_dir, p).get("ok")
+    ]
+    ordered = compatibles + [p for p in warm if p not in compatibles]
     return {
         "ok": True,
-        "pivot": str(warm[0]),
+        "pivot": str(ordered[0]),
         "toolchain": toolchain,
-        "pivots": [str(p) for p in warm],
+        "pivots": [str(p) for p in ordered],
         "rejects": rejects,
     }
 
@@ -777,20 +870,10 @@ def manifest_at_head(repo: str, head: str) -> dict | None:
         repo,
         "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
     )
-    if not isinstance(payload, dict):
-        return None
-    content = payload.get("content")
-    if not isinstance(content, str):
-        return None
-    try:
-        raw = base64.b64decode(content).decode("utf-8")
-    except (ValueError, UnicodeDecodeError):
-        return None
-    try:
-        manifest = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    return manifest if isinstance(manifest, dict) else None
+    # Le decodage de la payload REST est PORTÉ par le module partage
+    # (`lean_build_attestation`) : la garde lit le meme manifeste par le meme
+    # decodeur -- une seule definition du "contenu illisible".
+    return attestation.manifest_from_api_payload(payload)
 
 
 def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
@@ -1427,20 +1510,46 @@ def cleanup_worktree(worktree: Path) -> None:
             )
 
 
-def _attestation_extra(builds: list[dict], modules_mode: str) -> str:
+def _attestation_extra(
+    builds: list[dict], modules_mode: str, pure_timeouts: list[dict] | None = None
+) -> str:
     """La partie libre du corps d'attestation : ce qui a ete CONSTRUIT.
 
     Un build cible n'atteste que ce qu'il a construit : les cibles sont donc
     nommees, et les agregateurs ecartes aussi (une borne invisible est une
     attestation quiSUR-declare sa portee).
+
+    Quand un ou plusieurs builds sont des **timeouts purs** (#27516 volet 3),
+    le texte est honnete : le build local n'a PAS acheve (budget de temps),
+    ce n'est ni un echec de compilation ni une preuve de vert local ;
+    l'autorite de compilation est la CI (cache chaud). Le texte ne dit plus
+    alors « reussi ».
     """
-    lines = [
-        "`lake build` local reussi sur le worktree detache a la tete citee "
-        "(cache Mathlib chaud par jonction). "
-        "Preuve : sortie de `scripts/lean/lean_exec.py`."
-    ]
+    timed_lakes = {b.get("lake") for b in (pure_timeouts or [])}
+    if timed_lakes:
+        lines = [
+            "`lake build` local **non acheve** sur le worktree detache a la "
+            "tete citee : timeout du budget local pour {} -- ce n'est ni un "
+            "echec de compilation ni une preuve de vert local. L'autorite de "
+            "compilation est la CI (cache Lake chaud), qui compile le meme lac "
+            "(#27516).".format(
+                ", ".join("`{}`".format(l) for l in sorted(timed_lakes))
+            )
+        ]
+    else:
+        lines = [
+            "`lake build` local reussi sur le worktree detache a la tete citee "
+            "(cache Mathlib chaud par jonction). "
+            "Preuve : sortie de `scripts/lean/lean_exec.py`."
+        ]
     for build in builds:
         lake = build.get("lake")
+        if lake in timed_lakes:
+            lines.append(
+                "Lake `{}` : **timeout du budget local** (exit 124) -- "
+                "deferral CI.".format(lake)
+            )
+            continue
         targets = build.get("targets") or []
         scope = build.get("scope") or {}
         if not targets:
@@ -1560,9 +1669,26 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         },
     }
     if not lakes:
+        # #27875 : le cas frequent est un lake INTRODUIT par la PR et non
+        # declare au manifeste (l'entree arrive dans une PR empilee). Le
+        # message nomme le lake et le geste : sans cela, le blocage rendu
+        # par la garde est muet.
+        undeclared = attestation.undeclared_lakes(files, head_manifest)
+        if undeclared:
+            raise OrganError(
+                "le diff de #{} INTRODUIT le lake {} mais le manifeste "
+                "`scripts/lean/ci_lakes.json` ne le declare pas a la tete : "
+                "declarez-le (dans cette PR, ou dans une PR empilee mergee "
+                "d'abord), puis relancez l'attestation -- aucune attestation "
+                "ne peut couvrir un lake non declare.".format(
+                    pr, ", ".join(undeclared)
+                )
+            )
         raise OrganError(
             "aucun lake connu n'est touche par le diff de #{} -- rien a "
-            "construire (la garde ne bloquera pas cette PR)".format(pr)
+            "construire ; la garde Lean attend une attestation, qui ne peut "
+            "pas etre produite tant qu'aucun lake declare ne porte le "
+            "diff".format(pr)
         )
     if dry_run:
         result["dry_run"] = True
@@ -1754,8 +1880,16 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         # qui a echoue, hors de la queue de 4000 caracteres.
         result["errors"] = [e for b in builds for e in (b.get("errors") or [])]
         failed = [b for b in builds if not b.get("ok")]
-        if failed:
+        # #27516 volet 3 : un timeout pur (tue au minuteur, sans violation du
+        # budget de concurrence ni erreur de compilation) n'est PAS un echec
+        # de build : la CI compile le meme lac en vert (cache chaud). Il ne
+        # refuse pas la PR ; il est atteste comme deferral CI. Seuls les
+        # echecs qui ne sont PAS des timeouts purs bloquent le merge.
+        pure_timeouts = [b for b in failed if is_pure_timeout(b)]
+        blocking = [b for b in failed if not is_pure_timeout(b)]
+        if blocking:
             result["ok"] = False
+            failed = blocking
             sans_cache = [
                 b for b in failed
                 if b.get("reason") in (NO_WARM_CACHE, LAKE_NOT_IN_CLONE)
@@ -1799,13 +1933,18 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
                 jobs += int(build.get("jobs") or 0)
             except (TypeError, ValueError):
                 pass
+        # Aucun echec bloquant : attestation. Les timeouts purs (le cas
+        # knot_lean, #27516) y sont marques `timeout: defer` -- l'attestation
+        # est honnete (build local non acheve) mais ne bloque pas la PR : la
+        # garde merge_ready la lit par la tete, comme toute attestation.
         body = attestation.render_attestation(
             sha=head,
             lakes=[lake["lake"] for lake in lakes],
             jobs=jobs or None,
             pr=pr,
             duration_s=time.time() - started,
-            extra=_attestation_extra(builds, modules_mode),
+            extra=_attestation_extra(builds, modules_mode, pure_timeouts),
+            timeout=bool(pure_timeouts),
         )
         comment_id = post_attestation(repo, pr, body)
         result["ok"] = True
