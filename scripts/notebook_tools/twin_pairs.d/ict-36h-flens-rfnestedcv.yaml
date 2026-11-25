@@ -1,0 +1,12 @@
+- name: "ICT-36h F-Lens RF Nested CV"
+  family: IIT/ICT-Series
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36h-FLens-RFNestedCV-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36h-FLens-RFNestedCV-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "BCL-only par conception : le jumeau C# ne charge ni NuGet, ni reseau, ni scikit-learn. Les deux descripteurs fractaux (HFD = formulation mne-features, LZC = Lempel-Ziv de Naereen) sont des copies declarees d'antropy 0.1.6, la meme reference des deux cotes. La foret aleatoire, les plis groupés et la validation croisee imbriquee sont des reimplantations BCL de la meme procedure que le jumeau Python."
+  known_differences:
+    - "Les precisions CV different d'un jumeau a l'autre : le tirage System.Random (C#) n'est pas identique a numpy.default_rng (Python). La zone d'egalite exacte porte la structure et les verdicts qualitatifs (Q1, Q3, Q4), PAS les valeurs aleatoires."
+    - "Zone d'egalite reproduite par le jumeau : 204 echantillons, 17 sujets, sujets communs 0 (plis groupés) / 16-17 (plis non groupés), somme des importances = 1, plancher de p = 1/(1+30) = 0.032."
+    - "Le jumeau C# remplace les figures matplotlib du jumeau Python par des tableaux imprimés (BCL sans pyplot)."
+    - "Q1/Q3/Q4 sont des assertions natives (levée sur violation = un trouve, pas un silence) ; Q2 n'a pas d'assertion (la source l'a trouvee INFIRMEE, resultat nul). Le jumeau Python n'a pas de lever correspondant."
