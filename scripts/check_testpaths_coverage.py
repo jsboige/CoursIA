@@ -142,6 +142,11 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
         # argumentum_snapshot (14 tests) devient un test de la collection.
         "scripts/fallacy_detection/tests",
+        # scripts/humor_detection/tests : dir entier (#20301) — 12 tests de
+        # la campagne ColBERT (annotation_campaign), hors reseau, memes deps
+        # stdlib+pytest que fallacy_detection (le module importe Reply de
+        # fallacy_detection.generate_teacher_corpus).
+        "scripts/humor_detection/tests",
         # #22735 : huit suites de `scripts/**/tests/` etaient vertes en local
         # et jouees par AUCUN workflow -- absentes aussi de pytest.ini, donc
         # invisibles des DEUX sens de ce garde : datasets, genai-stack,

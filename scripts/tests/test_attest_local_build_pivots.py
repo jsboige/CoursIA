@@ -723,3 +723,52 @@ def test_un_paquet_git_absent_reste_refuse(tmp_path):
     assert verdict["ok"] is False
     assert any("axiom-audit" in r for r in verdict["rejects"])
     assert alb._package_dir_name("  batteries  ") == "batteries"
+
+
+# --- le pivot de meme graphe passe en tete (22/11) --------------------------
+
+
+def test_le_pivot_de_meme_graphe_passe_devant_un_pivot_plus_large(tmp_path):
+    """POSITIF : deux pivots chauds de la meme toolchain ; le premier dans
+    l'ordre du manifeste sert un paquet de plus que le lake n'en declare,
+    le second decrit le meme graphe. Le second est retenu -- mesure du
+    22/11 : `knot` etait resolu sur `discrepancy_lean` (qui porte
+    `learning_theory_lean`) alors que deux pivots compatibles existaient."""
+    lake = _lake(tmp_path / "lakes", "knot", V4331)
+    _manifest_de_paquets(lake, ["batteries"])
+    large = _lake(tmp_path / "pivots", "discrepancy", V4331, warm=True,
+                  packages=["batteries", "learning_theory_lean"])
+    _manifest_de_paquets(large, ["batteries", "learning_theory_lean"])
+    meme = _lake(tmp_path / "pivots", "game_theory", V4331, warm=True,
+                 packages=["batteries"])
+    _manifest_de_paquets(meme, ["batteries"])
+
+    verdict = alb.resolve_cache_pivot(lake, [large, meme])
+
+    assert verdict["ok"] is True
+    assert Path(verdict["pivot"]) == meme
+    assert [Path(p) for p in verdict["pivots"]] == [meme, large]
+    assert alb.check_cache_compatibility(lake, Path(verdict["pivot"]))["ok"]
+
+
+def test_sans_pivot_de_meme_graphe_l_ordre_est_inchange(tmp_path):
+    """NEGATIF : aucun pivot chaud ne decrit le graphe du lake. L'ordre du
+    manifeste est garde, et le verdict d'incompatibilite du premier reste
+    celui que `check_cache_compatibility` rend -- la correction ne blanchit
+    aucun cache."""
+    lake = _lake(tmp_path / "lakes", "knot", V4331)
+    _manifest_de_paquets(lake, ["batteries"])
+    premier = _lake(tmp_path / "pivots", "a", V4331, warm=True,
+                    packages=["batteries", "extra_a"])
+    _manifest_de_paquets(premier, ["batteries", "extra_a"])
+    second = _lake(tmp_path / "pivots", "b", V4331, warm=True,
+                   packages=["batteries", "extra_b"])
+    _manifest_de_paquets(second, ["batteries", "extra_b"])
+
+    verdict = alb.resolve_cache_pivot(lake, [premier, second])
+
+    assert verdict["ok"] is True
+    assert Path(verdict["pivot"]) == premier
+    compat = alb.check_cache_compatibility(lake, Path(verdict["pivot"]))
+    assert compat["ok"] is False
+    assert "extra_a" in compat["reason"]
