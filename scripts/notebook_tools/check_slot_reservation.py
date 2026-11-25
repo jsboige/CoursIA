@@ -220,7 +220,7 @@ TROISIEME FAUX REFUS MESURE (#27576, 2026-11-20)
    d'un carnet deja sur `main` se voyait imputer les AUTRES occupants du slot
    sur la base : App-02 porte `App-02-GraphColoring-CSharp` ET
    `App-02-GraphColoring-Python` en plus du jumeau Python, SL-12b porte
-   `SL-12b-PavlovDLS-Reproduction-Python` -- des doubles occupations LIVREES sur
+   `SL-12b-PavlovDLS-Reproduction` -- des doubles occupations LIVREES sur
    `main`, AVANT la PR (mesure : #26603 et #26617 approuvees, ecartees en
    `slot-collision-on-merge:taken_on_base`). Quand le jumeau de la cible
    siege deja dans ce slot sur la base (relation `_twin_in_base`, §7), les
@@ -231,7 +231,7 @@ TROISIEME FAUX REFUS MESURE (#27576, 2026-11-20)
    sources (revision, PR ouverte, table declaree) restent bloquants, et un
    item NEUF pose sur un slot occupe reste `taken_on_base`. Resoudre la
    collision heritee (renumeroter `App-02-GraphColoring-*` et
-   `SL-12b-PavlovDLS-Reproduction-Python`) est un grain de contenu separe, qui
+   `SL-12b-PavlovDLS-Reproduction`) est un grain de contenu separe, qui
    demande un argument pedagogique ecrit.
 
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
@@ -342,6 +342,35 @@ def _git(args):
 
 def _ipynb(lines):
     return [l.strip() for l in lines if l.strip().lower().endswith(".ipynb")]
+
+
+_KERNEL_SUFFIX_RE = re.compile(r"-(?:python|csharp|lean)$")
+
+
+def _is_source_ipynb(p: str) -> bool:
+    """Le chemin est-il un carnet SOURCE, et non une sortie papermill ?
+
+    Une sortie papermill (`X-output.ipynb`, `X_output.ipynb`) n'est pas un ITEM
+    de la serie : c'est le rendu execute d'un carnet source. La definition est
+    UNIQUE -- elle sert au balayage `--scan-main` comme au mode revision
+    (cibles, occupants de la revision, occupants de la base, PRs ouvertes).
+    Sans elle, un `git mv` du carnet ET de sa sortie se lit comme deux prises
+    du meme slot -- le faux positif mesure sur #28392 (#28410).
+
+    Le suffixe de noyau peut suivre la marque (`...-output-Python.ipynb`,
+    sweep de nomenclature) : la marque n'est alors plus terminale, on retire
+    donc le suffixe avant de tester. Variante reprise de #27309 (PR ouverte de
+    la lane `myia-po-2023`) : la definition devient ici la definition UNIQUE
+    de l'item, et sans elle le mode revision reconnaitrait comme source une
+    sortie que `--scan-main` ecarte deja.
+    """
+    low = p.lower()
+    if not low.endswith(".ipynb"):
+        return False
+    stem = _KERNEL_SUFFIX_RE.sub("", low[: -len(".ipynb")])
+    if stem.endswith("_output") or stem.endswith("-output"):
+        return False
+    return True
 
 
 def added_notebooks(base, head):
@@ -502,8 +531,8 @@ def pr_claims(prs, removed=None, examined_pr=None):
         gone = (removed or {}).get(num) or set()
         for f in pr.get("files") or []:
             path = f.get("path") or ""
-            if not path.lower().endswith(".ipynb"):
-                continue
+            if not _is_source_ipynb(path):
+                continue          # une sortie papermill ne reserve pas de slot
             if path in gone:
                 continue          # suppression PURE : ce slot est libere
             slot = _scan_slot(path)
@@ -1049,19 +1078,9 @@ def scan_main_collisions(ref: str = "origin/main") -> list[dict]:
     # ET `-output.ipynb` (variante par defaut de papermill, tiret). Les
     # deux formes apparaissent dans le depot -- les ignorer toutes les
     # deux sinon le slot de la source parait occupe par sa propre
-    # sortie executee. Le suffixe de noyau peut suivre la marque
-    # (`...-output-Python.ipynb`, sweep de nomenclature) : la marque n'est
-    # alors plus terminale, on retire donc le suffixe avant de tester.
-    _KERNEL_SUFFIX_RE = re.compile(r"-(?:python|csharp|lean)$")
-
-    def _is_source_ipynb(p: str) -> bool:
-        low = p.lower()
-        if not low.endswith(".ipynb"):
-            return False
-        stem = _KERNEL_SUFFIX_RE.sub("", low[: -len(".ipynb")])
-        if stem.endswith("_output") or stem.endswith("-output"):
-            return False
-        return True
+    # sortie executee. La definition est celle de `_is_source_ipynb`,
+    # partagee avec le mode revision (#28410) : une seule definition
+    # d'item.
     notebooks = [p.strip() for p in raw if _is_source_ipynb(p)]
     # Bucket par (repertoire, position) : on elimine tout ce qui ne porte
     # pas de position lisible. La cle est `_scan_slot`, pas `slot_of` :
@@ -1380,7 +1399,7 @@ def self_test():
          set(), [STATE_PREEXISTING_ON_BASE]),
         ("VRAI POSITIF  SL-12b : jumeau C# d'un item assis, autre sujet herite",
          ["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb"],
-         merge(group_by_slot(["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
+         merge(group_by_slot(["MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
                               "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb"],
                              SOURCE_BASE)),
          set(), [STATE_PREEXISTING_ON_BASE]),
@@ -1534,10 +1553,14 @@ def main(argv=None):
         # exact d'un fichier de la base reste une prise (preflight avant
         # edition), byte-identique ou non.
         artifacts = sorted(squash_artifacts(a.base, a.head, raw_added))
-        rev_added = [p for p in raw_added if p not in set(artifacts)]
+        # Une sortie papermill n'est pas un ITEM : elle ne prend aucun slot,
+        # ni comme cible, ni comme occupant (#28410). Le filtre est celui du
+        # balayage `--scan-main` -- une seule definition d'item.
+        rev_added = [p for p in raw_added
+                     if p not in set(artifacts) and _is_source_ipynb(p)]
         targets = list(a.target) if a.target else rev_added
         releases = set(removed_notebooks(a.base, a.head))
-        base_files = notebooks_at(a.base)
+        base_files = [p for p in notebooks_at(a.base) if _is_source_ipynb(p)]
     except RuntimeError as e:
         print("ERREUR git : %s" % e, file=sys.stderr)
         return 2

@@ -78,8 +78,8 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
-          "title": "SL-12b-PavlovDLS-Reproduction-Python — artefact Pavlov (DLS Sinkhorn)",
+          "path": "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb",
+          "title": "SL-12c-PavlovDLS-Reproduction-Python — artefact Pavlov (DLS Sinkhorn)",
           "duration_minutes": 30,
           "kernel": "Python 3",
           "execution_constraints": {
@@ -601,7 +601,7 @@
         {
           "path": "RL/RL-04-Bandits-Manchots-Python.ipynb",
           "title": "RL-04 : Bandits Manchots et le Compromis Exploration-Exploitation",
-          "duration_minutes": 45,
+          "duration_minutes": 60,
           "kernel": "Python 3",
           "execution_constraints": {
             "requires_api": false,
@@ -723,6 +723,6 @@
       ]
     }
   ],
-  "duration_minutes": 1860,
-  "known_duration_minutes": 1860
+  "duration_minutes": 1875,
+  "known_duration_minutes": 1875
 }

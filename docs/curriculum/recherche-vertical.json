@@ -20,7 +20,7 @@
       "description": "Extraire une loi d'une masse d'exemples : differentiable logic gates (DiffLogNet), reproduction de PavlovDLS, decouverte de tenseurs produit (TPR) par autoencodeurs creux, equations physiques retrouvees par AI Feynman, conjectures proposees par un solveur appris. La serie SymbolicLearning dans sa version recherche : non pas utiliser un modele, mais lui faire cracher la structure qu'il a trouvee.",
       "notebooks": [
         "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks-Python.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb",
         "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR-Python.ipynb",
         "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE-Python.ipynb",
         "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb",
