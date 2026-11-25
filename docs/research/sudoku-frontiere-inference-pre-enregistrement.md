@@ -37,7 +37,7 @@ Mesuré sur `main` au commit `edbdbb0d44`.
 
 **Catalogue.** La carte du lot 1 (#27533, commentaire du 2026-11-21T07:42Z) recense 19 instances de techniques dans les 12 familles du dépôt amont. Onze sont instrumentées. **Huit manquent** : `swordfish`, `jellyfish`, `xy_wing`, `xyz_wing`, `xy_chain`, `unique_rectangle`, `hidden_rectangle`, `avoidable_rectangle`. Les PR #27898 (poissons d'ordre 3 et 4) et #27903 (`xy_wing`, `xyz_wing`) sont ouvertes au scellement et en couvrent quatre.
 
-**Au-delà des 12 familles.** La même carte liste 28 lignes supplémentaires. Trois sont des méthodes exactes et non des techniques humaines (retour arrière, liens dansants, SAT). Trois relèvent du raisonnement hypothétique et sont à étudier à part, comme le demande l'Epic (chaînes de forçage, nishio, réseaux de forçage). Restent **22 lignes non hypothétiques non embarquées**, dont deux sont des variantes de l'unicité sans puissance ajoutée (`full_house`, `law_of_leftover`) : **20 techniques peuvent encore déplacer la frontière** sans sortir de l'inférence pure.
+**Au-delà des 12 familles.** La même carte liste 28 entrées supplémentaires. Trois sont des méthodes exactes et non des techniques humaines (retour arrière, liens dansants, SAT). Trois relèvent du raisonnement hypothétique et sont à étudier à part, comme le demande l'Epic (chaînes de forçage, nishio, réseaux de forçage). Restent **22 entrées non hypothétiques non embarquées**, dont deux sont des variantes de l'unicité sans puissance ajoutée (`full_house`, `law_of_leftover`) : **20 techniques peuvent encore déplacer la frontière** sans sortir de l'inférence pure.
 
 **Couverture mesurée par `R`.** D'après le corps de la PR #27754, fusionnée le 2026-11-25T20:27:08Z, sur dix grilles de chaque strate du corpus généré : facile 10/10, moyen 5/10, difficile 1/10, avec 30 traces sur 30 acceptées par l'oracle. Ce sont les strates du corpus généré, définies par le nombre de décisions d'un retour arrière, **pas** des niveaux d'une échelle publiée.
 
@@ -48,8 +48,8 @@ Mesuré sur `main` au commit `edbdbb0d44`.
 | Nature du manque | Contenu | Ce qui le comble |
 |---|---|---|
 | Instances Kermalis non embarquées | 8 (§2.1) | lots 3 à 5 de #27533 |
-| Techniques hors Kermalis, inférence pure | 20 lignes (§2.1) | strates suivantes, ordre à arbitrer sur la mesure |
-| Raisonnement hypothétique | 3 lignes | étude séparée, hors du périmètre « sans recherche » de cet Epic |
+| Techniques hors Kermalis, inférence pure | 20 techniques (§2.1) | strates suivantes, ordre à arbitrer sur la mesure |
+| Raisonnement hypothétique | 3 méthodes | étude séparée, hors du périmètre « sans recherche » de cet Epic |
 | Bibliographie de définition | les définitions de référence citées par le catalogue ne sont pas archivées au gisement bibliographique, qui ne détient sur le sujet que l'article de Norvig | dépôt au gisement avant toute rédaction qui en dépend |
 | Licence | un dépôt sous GPL-3.0 (définition seulement), un dépôt sans licence (rien n'en part) | rédaction depuis la définition, pas depuis le code |
 
