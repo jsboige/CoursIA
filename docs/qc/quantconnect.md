@@ -269,7 +269,7 @@ Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 
 - `main.py` : `QCAlgorithm` avec `set_alpha(CompositeAlphaModel(...))` + `set_portfolio_construction(MultiStrategyPouchesPCM(...))`
 - `alpha_models.py` : une classe par alpha, chaque avec `self.name` et `source_model=self.name`
-- `SharedPCM/pouches_pcm.py` : `MultiStrategyPouchesPCM`, le PCM par poches canonique avec `determine_target_percent` (PAS `create_targets`) — une seule copie importee par tous les composites (extraction #19821 brique 1). Sur QC Cloud : attacher le projet `SharedPCM` en bibliotheque du consommateur (geste "Add Library"), puis `from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM`
+- `SharedPCM/pouches_pcm.py` : `MultiStrategyPouchesPCM`, le PCM par poches canonique avec `determine_target_percent` (PAS `create_targets`) — une seule copie importee par tous les composites (extraction #19821 brique 1). Sur QC Cloud : attacher le projet `SharedPCM` en bibliotheque du consommateur, puis `from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM`. L'attachement se fait par l'API — `POST /projects/update` avec `libraries: [<projectId de la bibliotheque>]` (identifiant numerique ; le nom est refuse) — comme par le geste "Add Library" de l'interface (#28076)
 
 ### MultiStrategyPouchesPCM — design
 

@@ -270,9 +270,9 @@ Cette page sert aux agents qui backtestent, corrigent ou mesurent des stratégie
 ### Une compilation verte ne prouve pas qu'une bibliothèque est attachée
 
 - **Symptôme :** `create_compile` rend `BuildSuccess` avec une liste d'erreurs vide ; `create_backtest` plante en `Runtime Error` dans `Initialize()` avec `No module named ...`, 0 ordre.
-- **Cause :** la compilation Python de QC ne résout pas les imports de bibliothèque ; l'attachement d'une bibliothèque à un projet ne se fait que dans l'interface QC (« Add Library »), pas par l'API.
-- **Geste :** prouver la consommation par `read_project` (le fichier de la bibliothèque doit être listé dans le projet) ou par un backtest court qui passe `Initialize()`.
-- **Source :** #20188.
+- **Cause :** la compilation Python de QC ne résout pas les imports de bibliothèque. L'attachement, lui, **se fait par l'API** : `POST /projects/update` accepte un champ `libraries` qui liste les identifiants **numériques** des bibliothèques à attacher ; le nom est refusé (« Given library ID is not valid »). La cause « l'attachement ne se fait que dans l'interface » est **devenue fausse** (mesurée le 2026-11-25, #28076).
+- **Geste :** attacher par `POST /projects/update` (`libraries: [<projectId de la bibliothèque>]`), puis prouver la consommation par `read_project` (la bibliothèque doit y être listée) ou par le `/files/read` du consommateur, où le fichier de la bibliothèque apparaît avec `isLibrary: true` ; un backtest court qui passe `Initialize()` vaut confirmation.
+- **Source :** #20188, cause corrigée par #28076.
 
 ### Le lean du PATH peut être le prouveur Lean 4
 

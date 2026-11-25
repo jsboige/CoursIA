@@ -36,7 +36,7 @@ comportement changerait si le défaut change).
 ## Câblage sur QC Cloud — bibliothèque de projet
 
 Ce dossier est un projet QC comme les autres. Pour qu'un projet consommateur
-compile sur QC Cloud, il faut l'attacher une fois comme **bibliothèque de
+tourne sur QC Cloud, il faut l'attacher une fois comme **bibliothèque de
 projet** (fonctionnalité « Add Library » du panneau Projet —
 [docs](https://www.quantconnect.com/docs/v2/cloud-platform/projects/shared-libraries)),
 puis importer dans le `main.py` du consommateur :
@@ -45,17 +45,29 @@ puis importer dans le `main.py` du consommateur :
 from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 ```
 
-L'attachement est un geste d'interface (ni l'API REST ni le MCP ne l'exposent).
-Tant qu'il n'est pas fait, la compilation du consommateur échoue sur
-l'`ImportError` ci-dessus — échec fermé et explicite, jamais une replique
-silencieuse du module.
+**L'attachement est automatisable par l'API (mesuré le 2026-11-25).** Le
+geste n'est pas réservé à l'interface : `POST /projects/update` accepte un
+champ `libraries` qui liste les identifiants **numériques** des bibliothèques
+à attacher. Le nom de la bibliothèque est refusé (« Given library ID is not
+valid ») ; l'identifiant passe. L'attachement cross-org fonctionne : la
+bibliothèque peut vivre dans une autre organisation que le consommateur, et
+`read_project` renvoie alors `access: true`.
+
+La preuve d'attachement est un `read_project` qui liste la bibliothèque, et un
+`/files/read` du consommateur où `pouches_pcm.py` apparaît avec
+`isLibrary: true`. **Une compilation verte ne prouve rien** : la compilation ne
+résout pas les imports de bibliothèque.
+
+Tant que l'attachement n'est pas fait, **le lancement du backtest** échoue
+dans `initialize()` sur l'`ImportError` ci-dessus — échec fermé et explicite,
+jamais une replique silencieuse du module.
 
 **Contrainte de nommage (mesurée au 2026-10-17) :** QC Cloud refuse les
 underscores dans les noms de bibliothèque (« Only letters, numbers and '/' are
 supported in library names ») — le dossier s'appelle donc `SharedPCM`, sans
 underscore, et le chemin d'import suit. Une bibliothèque cloud homonyme
-`Library/SharedPCM` porte ce module ; la compile du consommateur et le backtest
-d'équivalence sont cités dans la PR d'extraction.
+`Library/SharedPCM` porte ce module ; son déploiement sur les huit
+consommateurs et les backtests d'équivalence sont cités dans [#28076](https://github.com/jsboige/CoursIA/issues/28076).
 
 ## Consommateurs
 
