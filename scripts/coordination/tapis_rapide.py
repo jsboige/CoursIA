@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_sature, tapis_service,
+                         tapis_attente, tapis_relache, tapis_sature, tapis_service,
                          tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
@@ -240,7 +240,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PAUSE", lambda: tapis_attente.pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
-        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"])),
+        ("RELACHEE", lambda: tapis_relache.relachee(evts, ctx)),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]

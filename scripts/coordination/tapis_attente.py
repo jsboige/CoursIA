@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""Les ecarts d'attente d'un grain : remise de main et pause explicite.
+"""Les ecarts d'attente d'un grain : la pause explicite.
 
-Deux regles qui mesurent la meme chose -- le fil dit que le grain attend --
-et qui se distinguent par la seule presence d'une **condition** :
+La regle **RELACHEE** (la remise de main de moins de trois jours) vit dans
+`coordination/tapis_relache.py` : depuis #28440, sa **portee** depend du motif
+-- un echec d'outillage ne gele que la lane qui l'a subi, une barriere reelle
+gele toute la flotte. Elle en a ete extraite pour que ce module tienne son
+plafond.
 
-1. **RELACHEE** -- le dernier marqueur du fil est un `[RELEASED]` de moins de
-   `RELACHE_J` jours, quelle que soit la lane : son motif (barriere, siege)
-   vaut encore. La fenetre est courte (3 jours) : au-dela, le grain revient
-   dans le pool.
+La regle qui reste ici :
 
-2. **PAUSE** (#27726) -- ce meme `[RELEASED]` porte une condition
-   (`attend: #N` ou `attend: Q<id>`). L'ecart ne porte **aucun delai** : il
-   tient jusqu'a la levee de la condition -- l'issue ou la PR citee fermee --
-   ou jusqu'a un marqueur posterieur, qui rend le grain de nouveau servable.
-   Une condition sans numero (une question user) n'est pas mesurable par la
-   lecture : elle tient jusqu'a un marqueur posterieur.
-
-Les deux regles vivent ensemble parce qu'elles se contredisent sur le meme
-marqueur : une remise de main qui porte une condition n'est pas une remise de
-main de trois jours, c'est une pause.
+**PAUSE** (#27726) -- un `[RELEASED]` qui porte une condition (`attend: #N`
+ou `attend: Q<id>`). L'ecart ne porte **aucun delai** : il tient jusqu'a la
+levee de la condition -- l'issue ou la PR citee fermee -- ou jusqu'a un
+marqueur posterieur, qui rend le grain de nouveau servable. Une condition
+sans numero (une question user) n'est pas mesurable par la lecture : elle
+tient jusqu'a un marqueur posterieur.
 """
 from __future__ import annotations
 
@@ -29,18 +25,6 @@ from datetime import datetime
 RELACHE_J = 3
 
 _CITE_RE = re.compile(r"#(\d+)\b")
-
-
-def relachee(evts: list, maintenant: datetime) -> str | None:
-    """Le dernier marqueur du fil est un [RELEASED] de moins de RELACHE_J jours,
-    quelle que soit la lane : son motif (barriere, siege) vaut encore."""
-    if not evts or evts[-1].marque != "RELEASED" or evts[-1].attend:
-        return None  # un [RELEASED] qui porte une condition est une PAUSE
-    ev = evts[-1]
-    age = round((maintenant - ev.quand).total_seconds() / 86400, 1)
-    if age >= RELACHE_J:
-        return None
-    return f"rendue par {ev.lane or '?'} il y a {age} j (< {RELACHE_J} j) : lire son motif"
 
 
 def pause(evts: list, ctx: dict) -> str | None:

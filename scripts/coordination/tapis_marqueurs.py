@@ -3,8 +3,7 @@
 
 Fonctions pures, sans reseau : un commentaire d'issue devient une suite
 d'evenements (`Evt`) lus en tete de ligne, avec la decoration que tolere
-`check_lane_claim.py`. Extrait de `tapis_rapide.py` pour tenir son plafond de
-lignes ; `tapis_rapide.py` reexporte ce qu'il utilise.
+`check_lane_claim.py`. Extrait de `tapis_rapide.py` pour tenir son plafond.
 """
 from __future__ import annotations
 
@@ -31,15 +30,13 @@ _MARQUEUR_RE = re.compile(
     _DECOR + r"\[\s*(CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE|CANCELLED|ABANDONED"
     r"|DONE|NOT-DELIVERED|UNFROZEN|FROZEN|CLOSURE REVIEW)\s*\](.*)$",
     re.MULTILINE | re.IGNORECASE)
-# `[INFO] candidate-delivered`, ou `[INFO] lane X -- candidate-delivered` (forme mesuree
-# sur #20603, 13/11) : le mot sur la ligne du tag, sauf nie juste avant.
+# `[INFO] candidate-delivered` (forme mesuree sur #20603, 13/11) : le mot sur la ligne du tag, sauf nie juste avant.
 _INFO_LIVRE_RE = re.compile(
     _DECOR + r"\[INFO\][^\n]{0,120}?(?<!not )(?<!non )(?<!pas )\bcandidate-delivered\b",
     re.MULTILINE | re.IGNORECASE)
 _FENCE_RE = re.compile(r"```.*?(?:```|\Z)", re.DOTALL)  # du code cite un marqueur sans le poser
 _PATHS_RE = re.compile(r"(?<![`\"'\w])paths\s*:\s*(\S[^\n]*)", re.IGNORECASE)
-# La condition d'une pause explicite (#27726) : `attend: #N` (issue ou PR
-# citee) ou `attend: Q<id>` (question user). Le code cite ne la pose pas.
+# La condition d'une pause explicite (#27726) : `attend: #N` ou `attend: Q<id>`.
 _ATTEND_RE = re.compile(r"\battend\s*:\s*([#\w][^\n]*)", re.IGNORECASE)
 _KEEP_RE = re.compile(r"verdict\s*:\s*\**\s*KEEP\b", re.IGNORECASE)
 _LANE_RE = re.compile(r"\blane\s*:?\s+`?([\w.-]+:[\w.-]+)", re.IGNORECASE)
@@ -58,6 +55,9 @@ class Evt:
     reste: str
     #: La condition d'une pause explicite (#27726) : `attend: #N`. None sinon.
     attend: str | None = None
+    #: Le corps du commentaire qui porte le marqueur (hors blocs de code) : un
+    #: motif d'echec d'outillage est ecrit plus loin que la ligne (#28440).
+    corps: str = ""
 
 
 def _dt(texte: str | None) -> datetime | None:
@@ -104,7 +104,7 @@ def evenements(comments: list[dict]) -> list[Evt]:
             p = _PATHS_RE.search(m.group(2))
             evts.append(Evt(quand, m.group(1).upper(), _lane(m.group(0), texte),
                             p.group(1).strip() if p else None, m.group(2),
-                            a.group(1).strip() if a else None))
+                            a.group(1).strip() if a else None, texte))
     return sorted(evts, key=lambda e: e.quand)
 
 
