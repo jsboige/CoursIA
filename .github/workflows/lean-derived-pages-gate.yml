@@ -28,6 +28,12 @@ name: Lean derived pages gate
 #   - scripts/lean/lean_*.py      (les generateurs, proprietaires des pages)
 #   - scripts/lean/check_lean_derived_pages.py (ce garde)
 #   - docs/reference/lean-*.md    (les pages derivees)
+#   - MyIA.AI.Notebooks/SymbolicAI/Lean/README.md (table « Statut de maturite »,
+#                                  image generee de la table de description --
+#                                  #17545)
+#   - MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb (les carnets de la serie :
+#                                  leurs cellules code et leurs headings
+#                                  d'exercice sont les mesures de la table)
 #   - .github/workflows/**         (la carte du materiel lit la couverture CI)
 #   - scripts/lean/ci_lakes.json, scripts/lean/lean_births.json,
 #     scripts/lean/check_axiom_gate_coverage.py, scripts/lean/count_code_sorry.py
@@ -48,6 +54,8 @@ on:
       - 'scripts/lean/lean_*.py'
       - 'scripts/lean/check_lean_derived_pages.py'
       - 'docs/reference/lean-*.md'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/README.md'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/**/*.ipynb'
       - '.github/workflows/**'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lean_births.json'

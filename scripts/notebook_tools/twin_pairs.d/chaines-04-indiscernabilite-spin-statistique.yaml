@@ -1,0 +1,12 @@
+- name: "Chaines-04 Indiscernabilite spin statistique"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-04-Indiscernabilite-Spin-Statistique-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-04-Indiscernabilite-Spin-Statistique-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le chapitre 43 porte sur le signe de l'echange lu a trois faces (amplitude, permutation, cycle impair) en arithmetique exacte. Python calcule en numpy flottant ; C# en rationnel exact local sur System.Numerics.BigInteger (BCL seule, aucun NuGet). Aucun moteur externe canonique : les deux cotes rejouent les memes machines elementaires et les memes valeurs."
+  known_differences:
+    - "C# porte les amplitudes en entiers avec denominateur partage explicite (|Phi+> : denominateur 2) reduites en Rationnel exact ; Python emploie numpy flottant. Les valeurs de la ligne (61) (r=2, D=4, dim R=16, rang de Schmidt 4 a travers les sites doubles et 1 a travers les copies), les lectures (62) (1/16, 1/16, 3/16), la coexistence (63) et les cinq paires doublees du porteur (amplitude +1) coincident, le C# par egalite exacte la ou le Python testait a tolerance 1e-12."
+    - "Le rang de Schmidt est mesure par elimination de Gauss sur Rationnel en C#, par SVD flottante a tolerance 1e-12 en Python : meme rang, methode exacte contre approchee."
+    - "Le carnet C# ouvre par une cellule d'echauffement du type Rationnel local (2/16 -> 1/8, egalite 1/2 == 2/4) que le Python n'a pas ; la serie de calcul qui suit rejoue les memes cellules que la source (archetypes calcul / donnees citees / exercice)."
+    - "Chaque valeur mesuree du C# est portee par une assertion executable qui leve sur divergence (renforcement explicite du port) ; la source Python imprimait les valeurs avec quelques assert seulement."

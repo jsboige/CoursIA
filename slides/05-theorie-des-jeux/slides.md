@@ -201,7 +201,7 @@ layout: dense
 <img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
 </div>
 
-*Notebooks : [GameTheory-03-Topology2x2-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) (dominance faible, regle impaire) · [GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) · [GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb).*
+*Notebooks : [GameTheory-03-Topology2x2-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) (dominance faible, regle impaire) · [Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) · [Metajeux-05-Temoins-Impossibilite-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb).*
 
 ---
 layout: dense
@@ -450,7 +450,7 @@ layout: default
 
 <img src="./images/img_031.png" alt="Loi de Hotelling : les deux vendeurs se placent au milieu" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
-*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
 
 ---
 layout: section
@@ -567,7 +567,7 @@ layout: dense
   - Convergence vers l'équilibre de Nash -- la famille qui a révolutionné la résolution du poker
   - Safe subgame solving : recoller une sous-partie sans supposer les croyances (le mauvais recollement produit un témoin adversarial)
 
-*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13c-Safe-Subgame-Solving-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
+*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13b-Safe-Subgame-Solving-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
 
 ---
 layout: section
@@ -611,7 +611,7 @@ layout: dense
 - Structures de coalition optimales: NP-Hard
   - Bons résultats avec exploration du graphe de structure
 
-*Notebooks : [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [SocialChoice/06b-Mobius-Coalitions-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb).*
+*Notebooks : [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) (Shapley, noyau) · [GameTheory-15b-Lean-CooperativeGames-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) (axiomes de Shapley prouves en Lean) · [SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb).*
 
 ---
 layout: section
@@ -699,7 +699,7 @@ layout: dense
 - **Theoreme de Arrow**: Impossible de satisfaire 1, 2 et 3 simultanement (>= 3 options)
 - **Theoreme de Gibbard-Satterthwaite**: Toute FCS déterministe avec Pareto et >2 choix est manipulable ou dictatoriale
 
-*Notebooks : [SocialChoice/01-Arrow-Impossibility-Theorem](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) (Arrow) · [SocialChoice/05-Gibbard-Satterthwaite](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) · [SocialChoice/04-Computational-Aggregation-SAT-Z3](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) (verification SAT/Z3) ; `arrow` prouve en Lean (game_theory_lean), Gibbard-Satterthwaite dans social_choice_lean_peters.*
+*Notebooks : [SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) (Arrow) · [SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) · [SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) (verification SAT/Z3) ; `arrow` prouve en Lean (game_theory_lean), Gibbard-Satterthwaite dans social_choice_lean_peters.*
 
 ---
 layout: dense
@@ -723,7 +723,7 @@ layout: dense
 
 <img src="./images/img_040.png" alt="Theoremes de l'electeur median : resultats de vote" style="display:block; margin:4px auto; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, electeur median).*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, electeur median).*
 
 ---
 layout: dense
@@ -739,7 +739,7 @@ layout: dense
 
 <img src="./images/img_041.png" alt="Methodes Minimax et Schulze en l'absence de vainqueur de Condorcet" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
-*Notebooks : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
+*Notebooks : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
 
 ---
 layout: dense
@@ -767,7 +767,7 @@ layout: dense
 <img src="./images/img_044.png" alt="Scrutin au jugement majoritaire : mediane des scores" style="width:100%; height:90px; object-fit:contain;">
 </div>
 
-*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Borda, assentiment, jugement majoritaire).*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire).*
 
 ---
 layout: dense
@@ -787,7 +787,7 @@ layout: dense
 <img src="./images/img_047.png" alt="Condorcet randomisee : loterie ponderee dans le peloton de tete" style="width:100%; height:80px; object-fit:contain;">
 </div>
 
-*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Borda, assentiment, jugement majoritaire). Scrutins stochastiques : pas de notebook dedie.*
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire). Scrutins stochastiques : pas de notebook dedie.*
 
 ---
 layout: default
@@ -1010,7 +1010,7 @@ layout: dense
 - Casser la composition : deux surfaces d'attaque ou la meilleure reponse composee cesse d'etre l'equilibre du jeu compose
 - Abstraction a dette mesurable (Kroer & Sandholm) : resoudre le jeu abstrait puis retransporter la strategie -- avec une borne sur ce que le detour coute au pire cas
 
-*Notebooks : [GameTheory-18-Open-Games-et-Lentilles-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) (lentilles, Hedges) · [GameTheory-18b-Casser-la-Composition-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb) (attaques) · [GameTheory-19-Abstraction-a-Dette-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb) (bornes d'abstraction).*
+*Notebooks : [Metajeux-01-Open-Games-Lentilles-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) (lentilles, Hedges) · [Metajeux-02-Casser-la-Composition-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb) (attaques) · [Metajeux-03-Abstraction-a-Dette-Python](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) (bornes d'abstraction).*
 
 ---
 layout: section

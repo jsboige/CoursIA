@@ -17,7 +17,7 @@ Löb's theorem.
 
 namespace ProgramGames_en
 
-open RepeatedGames PDAction
+open RepeatedGames_en PDAction
 
 /-- Public code of a program agent in the explicit-budget model. -/
 inductive ProgramCode where

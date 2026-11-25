@@ -101,10 +101,15 @@ source "$VENV_PATH/bin/activate"
 # fork lance le REPL directement avec le LEAN_PATH du lake, ce qui permet
 # d'importer ses modules. Source de verite de l'URL et du tag :
 # FORK_URL / FORK_TAG dans scripts/lean/setup_native_lean4_import.py.
-LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.1-native-import"
+LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.3-launch-errors"
 log_info "Installation de lean4_jupyter (fork du depot) et dependances..."
 pip install --upgrade pip
 pip install ipykernel pyyaml "$LEAN4_JUPYTER_SPEC"
+# pip remplace un fork deja installe quand sa version change, mais pas quand
+# seul le tag change a version egale : il le tient alors pour satisfait
+# (mesure, pip 24). --force-reinstall couvre ce cas ; --no-deps laisse en
+# place les dependances que la ligne precedente a installees.
+pip install --force-reinstall --no-deps "$LEAN4_JUPYTER_SPEC"
 
 # 6. Install REPL (required by lean4_jupyter)
 log_info "Installation du REPL Lean..."

@@ -104,6 +104,15 @@ EXEMPT_DOCUMENTED: dict[str, str] = {
     # workflow a ete retire en #22937 vague 2 -- son verdict s'attachait a
     # `main` ; le declencheur `pull_request` couvre la meme surface.)
     "local-path-waiver-guard.yml": "#16780",
+    # advisory de l'etat du MIROIR D'OBJETS (#26459/#26465) : la garde porte
+    # sur l'ETAT DU POOL LOCAL, pas sur le diff. Le miroir et son compteur
+    # d'echecs vivent sur l'hote du parc ; seul un runner auto-heberge les
+    # voit. Un filtre `paths:` rendrait la garde aveugle sur exactement les
+    # PRs ou le miroir se gele -- le filtre ne dit rien de l'etat du miroir,
+    # et une PR qui ne touche que son body (ou rien du tout) est precisement
+    # celle ou le gel doit etre vu. Le job est declenche par
+    # `pull_request` SANS filtre, et l'exemption est la decision ecrite.
+    "mirror-state-pr-advisory.yml": "#26459/#26465",
 }
 
 

@@ -2,15 +2,13 @@
 pagetitle: "SymbolicAI - Intelligence Artificielle Symbolique"
 ---
 
-# SymbolicAI - Intelligence Artificielle Symbolique
-
 [← Notebooks](../README.md) | [→ Sudoku](../Sudoku/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 405
-breakdown: Lean=162, SMT=52, Tweety=39, ArgumentAnalysis=38, SmartContracts=32, SemanticWeb=28, SymbolicLearning=27, Planners=26, root=1
-maturity: BETA=373, DRAFT=20, ALPHA=12
+pedagogical_count: 459
+breakdown: Lean=181, SMT=66, ArgumentAnalysis=50, Tweety=39, SmartContracts=37, SemanticWeb=31, SymbolicLearning=28, Planners=26, root=1
+maturity: BETA=438, ALPHA=11, DRAFT=10
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -31,7 +29,7 @@ Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme p
 
 À l'issue d'un parcours sur la famille **SymbolicAI**, le lecteur est capable de :
 
-1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-02b-RDFBasics-Python.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [ArgumentAnalysis](ArgumentAnalysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
+1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-02-RDFBasics-Python.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [ArgumentAnalysis](ArgumentAnalysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
 2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
 3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-00-Setup-Python.ipynb`).
 4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
@@ -117,7 +115,7 @@ L'ordre proposé ci-dessous n'est pas une obligation : chaque série se suit seu
 | Étape | Série | Ce qu'on y apprend | Porte d'entrée | Public | Noyau |
 |---|---|---|---|---|---|
 | 1 | [Tweety](Tweety/README.md) | Logiques formelles, révision de croyances, argumentation abstraite et structurée, raisonnement incertain et causal | [Tweety-01-Setup-Python](Tweety/Tweety-01-Setup-Python.ipynb) | Licence | Python (JPype) · C# |
-| 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-02b-RDFBasics-Python](SemanticWeb/SW-02b-RDFBasics-Python.ipynb) · [SW-01-Setup-CSharp](SemanticWeb/SW-01-Setup-CSharp.ipynb) | Découverte → Licence | Python · C# |
+| 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-02-RDFBasics-Python](SemanticWeb/SW-02-RDFBasics-Python.ipynb) · [SW-01-Setup-CSharp](SemanticWeb/SW-01-Setup-CSharp.ipynb) | Découverte → Licence | Python · C# |
 | 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-01-Setup-Lean-Python](Lean/Lean-01-Setup-Lean-Python.ipynb) | Licence → Recherche | Lean (WSL) · Python |
 | 4 | [SMT / Z3](SMT/README.md) | Satisfiabilité modulo théories, du premier `solve()` aux preuves par `unsat` | [Z3-01-Introduction-Python](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Découverte → Licence | Python · C# |
 | 5 | [Planners](Planners/README.md) | PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique | [Planners-00-Setup-Python](Planners/00-Environment/Planners-00-Setup-Python.ipynb) | Licence | Python · C# |
@@ -145,7 +143,7 @@ Chaque série se présente en trois temps : ce qu'elle apprend, son **parcours l
 
 ### SemanticWeb — le web de données
 
-- **Parcours léger** — SW-1 à SW-12 : RDF, opérations sur les graphes, SPARQL, données liées, RDFS, OWL, puis SHACL, JSON-LD, RDF-Star, graphes de connaissances et GraphRAG. Les paliers 1 à 7 sont en C# (dotNetRDF) ; les lettres `b` de 2b à 7b en sont les **jumeaux Python** (rdflib, owlready2). Un lecteur Python-only prend donc SW-2b à SW-7b, puis SW-8 et la suite. Cette série est la seule de la famille où la lettre désigne un jumeau et non un approfondissement : la normalisation (#16231) résorbera l'exception.
+- **Parcours léger** — SW-1 à SW-12 : RDF, opérations sur les graphes, SPARQL, données liées, RDFS, OWL, puis SHACL, JSON-LD, RDF-Star, graphes de connaissances et GraphRAG. Les paliers 1 à 7 sont en C# (dotNetRDF) ; leurs **jumeaux Python** (rdflib, owlready2) sont les notebooks SW-02-Python à SW-07-Python. Un lecteur Python-only prend donc cette plage, puis SW-8 et la suite. Cette série était la seule de la famille où une lettre désignait un jumeau et non un approfondissement — exception résorbée par la normalisation (#16231).
 - **Pour approfondir** — SW-13 (comparatif de raisonneurs), SW-14 et SW-15 (le coup ontologique, la greffe argumentative AIF/Dung), SW-16 (ontologies porteuses de preuve).
 - [README de la série SemanticWeb](SemanticWeb/README.md)
 
@@ -195,14 +193,13 @@ Le dossier s'appelle encore `ArgumentAnalysis/`, mais la série s'appelle Argume
 
 Un même théorème, le milieu de l'hypoténuse équidistant des trois sommets, traverse des méthodes de plus en plus fortes.
 
-- **Parcours léger** — 01 à 03 :
+- **Parcours léger** — 01 à 04 :
   - [01](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) (Découverte) : on vérifie le théorème numériquement (Schwartz–Zippel) ;
   - [02](Lean/Geometry/Geometry-02-From-Equation-To-Proof.ipynb) (Licence) : on le démontre exactement par bases de Gröbner, en traitant les non-dégénérescences par saturation ;
   - [03](Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb) (Licence) : on le redémontre par la méthode de Wu, qui fait apparaître ces conditions explicitement ;
   - [04](Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) (Licence) : on le prouve par règles (DD) puis par l'algèbre (AR), le duo symbolique d'AlphaGeometry — et un énoncé faux y est réfuté deux fois.
-- **Pour approfondir** — [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) : le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux.
+- **Pour approfondir** — les accrétions : [02b](Lean/Geometry/Geometry-02b-Saturation-Nullstellensatz-Python.ipynb) (saturation $I{:}g^\infty$ et Nullstellensatz à cofacteurs vérifiés), [03b](Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb) (le théorème du papillon et la décomposition de Ritt, avec le bord dégénéré où l'énoncé est muet et non faux) et [04b](Lean/Geometry/Geometry-04b-IMO-AG-30-Python.ipynb) (IMO-AG-30, la revanche de la méthode de Wu — Sinha et al. 2024).
 - **Recherche** — [05](Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb) : le pont formel — le fil rouge prouvé au noyau Lean/Mathlib, confronté au même théorème décidé par Gröbner, et ce que chacune des deux méthodes garantit réellement.
-- **À venir** — 04b, l'accrétion de recherche de la série (Wu associé à DD+AR, proposeur neuronal — Sinha et al. 2024).
 - [README de la série Geometry](Lean/Geometry/README.md) : programme gradué (Epic #17544) et état.
 
 ### Hors série

@@ -110,11 +110,11 @@ committée (pattern #4711). Les cinq DLLs couvrent les modules argumentation
 
 | Module | Version | Notebook consommateur | Statut |
 |--------|---------|----------------------|--------|
-| `bipolar` | 1.21 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 30+, ADF + Bipolar) | SOTA-OK |
-| `social` | 1.21 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 28-29) | SOTA-OK |
-| `setaf` | 1.21 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 30+, SetAF) | SOTA-OK |
-| `extended` | 1.30 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (EAF = Extended Argumentation Framework) | SOTA-OK |
-| `weighted` | 1.30 | `Tweety-07a-Extended-Frameworks-CSharp.ipynb` (cell 26-27) | SOTA-OK |
+| `bipolar` | 1.21 | `Tweety-07-Extended-Frameworks-CSharp.ipynb` (cell 30+, ADF + Bipolar) | SOTA-OK |
+| `social` | 1.21 | `Tweety-07-Extended-Frameworks-CSharp.ipynb` (cell 28-29) | SOTA-OK |
+| `setaf` | 1.21 | `Tweety-07-Extended-Frameworks-CSharp.ipynb` (cell 30+, SetAF) | SOTA-OK |
+| `extended` | 1.30 | `Tweety-07-Extended-Frameworks-CSharp.ipynb` (EAF = Extended Argumentation Framework) | SOTA-OK |
+| `weighted` | 1.30 | `Tweety-07-Extended-Frameworks-CSharp.ipynb` (cell 26-27) | SOTA-OK |
 
 ### Pipeline de rebuild — `rebuild-5shades.sh`
 
@@ -178,3 +178,22 @@ recompilation source `--release 8` (le pattern causal.sh de c.210). Le pipeline
 générique `rebuild-5shades.sh` couvre désormais les cinq modules restants des
 frameworks d'argumentation étendus — **sans dépendance Maven locale** (téléchargement
 direct Maven Central + GitHub).
+
+### Reconstruction PowerShell de preferences
+
+`rebuild-preferences.ps1` reconstruit le JAR Java 8 de preferences sans Bash.
+Il demande PowerShell 7, un JDK 11 ou plus (`javac`, `jar`), `tar` et un
+accès à Maven Central, au dépôt Maven Tweety et à GitHub. Depuis ce dossier :
+
+```powershell
+./rebuild-preferences.ps1
+```
+
+Le script extrait à neuf les sources, applique les mêmes adaptations Java 8 que
+la recette Bash et utilise le séparateur de classpath du système. Il refuse une
+commande en échec, une source inattendue ou un JAR sans classes ou contenant du
+bytecode supérieur à 52, avant de copier le résultat vers `../libs/`. Les
+archives déjà présentes sont réutilisées ; pour les retélécharger, supprimer
+les fichiers concernés dans `jars/` ou `sources-jar/`. La construction de la
+DLL reste une étape distincte : `dotnet build build-TweetyPreferencesShade.csproj -c Release`.
+Les cinq autres recettes `rebuild-*.sh` n'ont pas encore de port PowerShell natif.

@@ -3,7 +3,7 @@
 # Hands-On AI Trading — Book-to-Curriculum Mapping
 
 **Book**: Hands-On AI Trading with Python, QuantConnect, and AWS (Pik, Chan, Broad, Sun, Singh — Wiley 2025)
-**PDF**: `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2025 - Hands_On_AI_Trading_with_Python_QuantCon.pdf`
+**PDF**: `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\LLM Agents and AI-Assisted Trading\2025 - Hands_On_AI_Trading_with_Python_QuantCon.pdf`
 **Context**: Issue #143, ML SOTA Curriculum (Issue #754)
 **Date**: 2026-05-07
 

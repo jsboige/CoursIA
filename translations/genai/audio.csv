@@ -704,7 +704,7 @@ print(f""\nPROCHAINES ETAPES"")
 print(f""1. Explorer la reconnaissance vocale (01-2-OpenAI-Whisper-STT)"")
 print(f""2. Decouvrir les operations audio de base (01-3-Basic-Audio-Operations)"")
 print(f""3. Tester Whisper en local avec GPU (01-4-Whisper-Local)"")
-print(f""4. Essayer le TTS local avec Kokoro (01-5-Kokoro-TTS-Local)"")
+print(f""4. Essayer le TTS local avec Kokoro (01-5-TTS-Local-ONNX)"")
 
 print(f""\nNotebook TTS termine - {datetime.now().strftime('%H:%M:%S')}"")
 ",,,,,,,,bb4a34a9c2b7599b,,,,,,,,,,,,,,,
@@ -827,7 +827,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,0ff94c06
 1. **Reconnaissance vocale** (01-2-OpenAI-Whisper-STT) : Comprendre le chemin inverse
 2. **Opérations audio** (01-3-Basic-Audio-Opérations) : Manipuler les fichiers audio
 3. **Whisper local** (01-4-Whisper-Local) : Deporter le traitement
-4. **Kokoro TTS** (01-5-Kokoro-TTS-Local) : Alternative open-source",,,,,,,,6776b58027ab09a9,,,,,,,,,,,,,,,
+4. **Kokoro TTS** (01-5-TTS-Local-ONNX) : Alternative open-source",,,,,,,,6776b58027ab09a9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-header,markdown,fr,6158d7ea7a6dabe9,"# OpenAI Whisper STT - Reconnaissance Vocale par API
 
 **Module :** 01-Audio-Foundation  
@@ -1628,7 +1628,7 @@ if save_results:
 print(f""\nPROCHAINES ETAPES"")
 print(f""1. Decouvrir les operations audio de base (01-3-Basic-Audio-Operations)"")
 print(f""2. Tester Whisper en local avec GPU (01-4-Whisper-Local)"")
-print(f""3. Essayer le TTS local avec Kokoro (01-5-Kokoro-TTS-Local)"")
+print(f""3. Essayer le TTS local avec Kokoro (01-5-TTS-Local-ONNX)"")
 print(f""4. Explorer la comparaison multi-modeles (03-1)"")
 
 print(f""\nNotebook Whisper STT termine - {datetime.now().strftime('%H:%M:%S')}"")
@@ -1755,7 +1755,7 @@ Ce notebook a explore l'API OpenAI Whisper pour la reconnaissance vocale, de la 
 **Prochaines étapes** :
 - Explorer les opérations audio de base (01-3-Basic-Audio-Opérations)
 - Tester Whisper en local avec GPU (01-4-Whisper-Local)
-- Decouvrir le TTS local avec Kokoro (01-5-Kokoro-TTS-Local)
+- Decouvrir le TTS local avec Kokoro (01-5-TTS-Local-ONNX)
 - Comparer les modèles STT/LLM multi-fournisseurs (03-1)
 
 **Ressources** :
@@ -2645,7 +2645,7 @@ print(f""  5. Extraction de caracteristiques (tempo, centroid, etc.)"")
 
 print(f""\nPROCHAINES ETAPES"")
 print(f""1. Tester Whisper en local avec GPU (01-4-Whisper-Local)"")
-print(f""2. Essayer le TTS local avec Kokoro (01-5-Kokoro-TTS-Local)"")
+print(f""2. Essayer le TTS local avec Kokoro (01-5-TTS-Local-ONNX)"")
 print(f""3. Explorer le voice cloning (02-2-XTTS-Voice-Cloning)"")
 print(f""4. Decouvrir la separation de sources (02-4-Demucs)"")
 
@@ -2791,7 +2791,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-header
 - `pip install faster-whisper`
 - Echantillons audio (generes dans les notebooks précédents ou fournis)
 
-**Navigation :** [Index](../README.md) | [<< Précédent](01-3-Basic-Audio-Operations.ipynb) | [Suivant >>](01-5-Kokoro-TTS-Local.ipynb)",,,,,,,,0f70e57924698f50,,,,,,,,,,,,,,,
+**Navigation :** [Index](../README.md) | [<< Précédent](01-3-Basic-Audio-Operations.ipynb) | [Suivant >>](01-5-TTS-Local-ONNX.ipynb)",,,,,,,,0f70e57924698f50,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-params,code,fr,dac842acbbeb28c2,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -3563,7 +3563,7 @@ if gpu_available:
 print(f""Memoire liberee"")
 
 print(f""\nPROCHAINES ETAPES"")
-print(f""1. Essayer le TTS local avec Kokoro (01-5-Kokoro-TTS-Local)"")
+print(f""1. Essayer le TTS local avec Kokoro (01-5-TTS-Local-ONNX)"")
 print(f""2. Decouvrir le voice cloning avec XTTS (02-2)"")
 print(f""3. Comparer tous les modeles STT (03-1)"")
 print(f""4. Construire un pipeline STT->LLM->TTS (03-2)"")
@@ -3630,7 +3630,7 @@ Dans ce notebook, vous avez appris a :
 
 ### Prochaine étape
 
-Le notebook suivant (01-5-Kokoro-TTS-Local) vous montrera comment faire l'inverse : generer de l'audio depuis du texte avec un modèle TTS local.
+Le notebook suivant (01-5-TTS-Local-ONNX) vous montrera comment faire l'inverse : generer de l'audio depuis du texte avec un modèle TTS local.
 
 ***",,,,,,,,2809cbb5edc03196,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,4ne6kymvsh,code,fr,529768d2878ccb31,"import librosa
@@ -3745,7 +3745,7 @@ Ce notebook a permis d explorer les aspects essentiels de 01 4 whisper local. Le
 - Les résultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,,,7007b3380aad064b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-header,markdown,fr,947582a0eb544096,"# Kokoro TTS Local - Synthèse vocale légère
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-header,markdown,fr,947582a0eb544096,"# Kokoro TTS Local - Synthèse vocale légère
 
 **Module :** 01-Audio-Foundation
 **Niveau :** Intermédiaire
@@ -3777,7 +3777,7 @@ Kokoro v1.0 couvre neuf langues : anglais américain et britannique, français, 
 
 **Navigation :** [Index](../README.md) | [<< Précédent](01-4-Whisper-Local.ipynb)
 ",,,,,,,,947582a0eb544096,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-params,code,fr,120f0e55d910c942,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-params,code,fr,120f0e55d910c942,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""batch""              # ""interactive"" ou ""batch""
@@ -3800,7 +3800,7 @@ run_inflect_nano = True              # Section 6 facultative (telechargement Hug
 run_export = False                   # Derniere cellule : export du rendu (a activer en fin de TP)
 save_results = True                  # Sauvegarder les resultats
 ",,,,,,,,120f0e55d910c942,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d03aa336,markdown,fr,200bee2354b04c6f,"## Introduction technique
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,d03aa336,markdown,fr,200bee2354b04c6f,"## Introduction technique
 
 Ce notebook explore **Kokoro TTS**, un modèle de synthese vocale open-source alternatif aux solutions cloud comme OpenAI TTS.
 
@@ -3832,7 +3832,7 @@ Le modèle d'origine est publié sur Hugging Face. Les fichiers ONNX utilisés d
 3. Exploration de différentes voix et langues
 4. Comparaison avec OpenAI TTS (facultative : latence, coût, écoute)
 5. Mode interactif pour experimentation libre",,,,,,,,200bee2354b04c6f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,h6ct9syh1ic,markdown,fr,0fd7ed61254fd0b8,"### Installation et provenance des résultats
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,h6ct9syh1ic,markdown,fr,0fd7ed61254fd0b8,"### Installation et provenance des résultats
 
 La cellule précédente installe les versions validées pour cette V4 (Google Colab, Python 3.13, octobre 2026). La cellule « Vérification des prérequis », plus bas, compare les versions installées à ces versions et vérifie qu'espeak-ng phonémise bien le français et l'anglais.
 
@@ -3840,7 +3840,7 @@ Les modèles sont téléchargés au premier lancement puis mis en cache dans `.c
 
 **Valider le parcours dans un environnement neuf** : dans Colab, *Exécution > Déconnecter et supprimer l'environnement d'exécution*, puis *Exécution > Tout exécuter*. Hors Colab : créer un environnement Python 3.13, ouvrir le notebook dans Jupyter et tout exécuter (les lignes `%pip` fonctionnent aussi dans Jupyter), ou installer `requirements.txt` produit par l'export.
 ",,,,,,,,0fd7ed61254fd0b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-setup,code,fr,bb1ba51b98fba5ff,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-setup,code,fr,bb1ba51b98fba5ff,"# Setup environnement et imports
 import os
 import sys
 import json
@@ -3913,11 +3913,11 @@ print(f""Modele : {kokoro_model}"")
 print(f""Voix : {voice}"")
 print(f""Backend ONNX : {use_onnx}"")
 print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT).as_posix()}"")",,,,,,,,bb1ba51b98fba5ff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,95207e3b,markdown,fr,b9030c7d93bf21da,"### Environnement
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,95207e3b,markdown,fr,b9030c7d93bf21da,"### Environnement
 Les informations affichées ci-dessus font foi : aucun GPU ni helper ne doit être annoncé sans détection. Le backend ONNX réellement utilisé est indiqué au chargement.",,,,,,,,b9030c7d93bf21da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,17jue2u0o9a,markdown,fr,1218745c1984541d,"La cellule suivante détecte si une clé OpenAI est disponible (Secrets Colab, variable d'environnement ou fichier `.env`). Cette détection est **informative** : elle ne lance aucun appel et ne modifie aucun paramètre. Seul `run_cloud_comparison` décide si la section 4 interroge l'API.
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,17jue2u0o9a,markdown,fr,1218745c1984541d,"La cellule suivante détecte si une clé OpenAI est disponible (Secrets Colab, variable d'environnement ou fichier `.env`). Cette détection est **informative** : elle ne lance aucun appel et ne modifie aucun paramètre. Seul `run_cloud_comparison` décide si la section 4 interroge l'API.
 ",,,,,,,,1218745c1984541d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,05088306,code,fr,5696cf3edc4e7d89,"# Chargement robuste de la configuration .env (Pattern A - Papermill-safe)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,05088306,code,fr,5696cf3edc4e7d89,"# Chargement robuste de la configuration .env (Pattern A - Papermill-safe)
 from dotenv import load_dotenv
 import os
 from pathlib import Path
@@ -3941,7 +3941,7 @@ if genai_path:
         print(""WARNING: .env non trouve dans GenAI"")
 else:
     print(""WARNING: Dossier GenAI non trouve"")",,,,,,,,5696cf3edc4e7d89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ed5c403d,markdown,fr,719f742b00944591,"## Dépendances et sections facultatives
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ed5c403d,markdown,fr,719f742b00944591,"## Dépendances et sections facultatives
 
 Le parcours principal (sections 1 à 3, exemples guidés, exercices 1 à 3) n'utilise que Kokoro ONNX et faster-whisper sur CPU, sans clé d'API.
 
@@ -3955,7 +3955,7 @@ Le parcours principal (sections 1 à 3, exemples guidés, exercices 1 à 3) n'ut
 
 L'ancien chemin OpenRouter a été retiré : il n'appelait pas l'API et remplissait le tableau comparatif avec des valeurs fixes.
 ",,,,,,,,719f742b00944591,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section1-intro,markdown,fr,0ec0b7905967c140,"## Section 1 : Presentation de Kokoro
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-section1-intro,markdown,fr,0ec0b7905967c140,"## Section 1 : Presentation de Kokoro
 
 Kokoro-82M est un modèle de synthèse vocale open-weight de 82 millions de paramètres, distribué sous licence Apache-2.0. Dans ce TP, il est exécuté à l'aide de la bibliothèque kokoro-onnx, publiée sous licence MIT.
 
@@ -3981,7 +3981,7 @@ Kokoro-82M est un modèle de synthèse vocale open-weight de 82 millions de para
 | Données sensibles | Kokoro | Exécution locale |
 | Volume eleve | Kokoro | Pas de cout par caractère |
 | Meilleure qualite | OpenAI TTS-HD | Voix les plus naturelles |",,,,,,,,0ec0b7905967c140,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,e297e41d,markdown,fr,281f1bb4ea960c52,"### Introduction : Chargement de Kokoro
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,e297e41d,markdown,fr,281f1bb4ea960c52,"### Introduction : Chargement de Kokoro
 
 Cette section initialise le modèle Kokoro TTS pour la generation audio.
 
@@ -3996,7 +3996,7 @@ Cette section initialise le modèle Kokoro TTS pour la generation audio.
 4. Initialisation du moteur de synthese
 
 Le modèle est charge une seule fois en memoire, puis reutilise pour toutes les generations ulterieures, ce qui optimise les performances.",,,,,,,,281f1bb4ea960c52,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-load-model,code,fr,5211e8cfe1cdae42,"# Configuration forcée de use_onnx
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-load-model,code,fr,5211e8cfe1cdae42,"# Configuration forcée de use_onnx
 use_onnx = True
 
 # Chargement du modele Kokoro
@@ -4079,16 +4079,16 @@ if kokoro_loaded:
         print(f""VRAM utilisee : {vram_used:.2f} GB"")
 assert kokoro_loaded and use_onnx, ""Les exercices nécessitent le backend kokoro-onnx.""
 print(""Providers ONNX :"", kokoro.sess.get_providers())",,,,,,,,5211e8cfe1cdae42,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,e1ce110e,markdown,fr,f34c6d7aa85625c2,"### Chargement
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,e1ce110e,markdown,fr,f34c6d7aa85625c2,"### Chargement
 Le modèle ONNX est téléchargé depuis les releases du projet kokoro-onnx et mis en cache. 82M désigne un nombre de paramètres, pas une taille de fichier en Mo. Le temps affiché exclut le téléchargement. Le nombre de voix et les providers sont ceux observés à cette exécution.",,,,,,,,f34c6d7aa85625c2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section2-intro,markdown,fr,3499029d51d73527,"## Section 2 : Première generation
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-section2-intro,markdown,fr,3499029d51d73527,"## Section 2 : Première generation
 
 La generation avec Kokoro suit un pipeline simple :
 1. Charger le modèle (fait une seule fois)
 2. Specifier le texte et la voix
 3. Appeler la méthode de generation
 4. Recevoir un array numpy + sample rate",,,,,,,,3499029d51d73527,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,0611f2fe,markdown,fr,98a04bd29325b0f5,"### Introduction : Première generation TTS
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,0611f2fe,markdown,fr,98a04bd29325b0f5,"### Introduction : Première generation TTS
 
 Cette section realise la première synthese vocale avec Kokoro, depuis le texte jusqu'a l'audio.
 
@@ -4104,7 +4104,7 @@ Cette section realise la première synthese vocale avec Kokoro, depuis le texte 
 - `lang_code` : Code langue ('a' = anglais américain (KPipeline))
 
 Le résultat est un audio qu'on peut ecouter directement dans le notebook ou sauvegarder en fichier WAV.",,,,,,,,98a04bd29325b0f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-first-gen,code,fr,4fc95dc89210c6c7,"# Premiere generation TTS avec Kokoro
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-first-gen,code,fr,4fc95dc89210c6c7,"# Premiere generation TTS avec Kokoro
 print(""PREMIERE GENERATION KOKORO"")
 print(""="" * 45)
 
@@ -4164,9 +4164,9 @@ if kokoro_loaded:
         print(f""Fichier sauvegarde : {filepath.name}"")
 else:
     print(""Modele Kokoro non charge"")",,,,,,,,4fc95dc89210c6c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,49a95f2c,markdown,fr,824b5e4748b59698,"### Interprétation de la première génération
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,49a95f2c,markdown,fr,824b5e4748b59698,"### Interprétation de la première génération
 Utiliser les mesures affichées ci-dessus. Le facteur temps réel vaut durée audio / temps de génération : supérieur à 1 signifie plus rapide que la lecture. Le RTF est son inverse. La taille float32 représente le tableau en mémoire ; le WAV enregistré peut utiliser un autre format. Un premier appel ne suffit pas à caractériser les performances en régime établi.",,,,,,,,824b5e4748b59698,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section2-interpretation,markdown,fr,2811c86d5d298470,"### Interpretation : Première generation
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-section2-interpretation,markdown,fr,2811c86d5d298470,"### Interpretation : Première generation
 
 | Aspect | Valeur typique | Signification |
 |--------|---------------|---------------|
@@ -4175,7 +4175,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-sec
 | Qualite | Bonne | Moins naturelle qu'OpenAI TTS mais acceptable |
 
 > **Note technique** : Le premier appel est plus lent (compilation JIT). Les appels suivants beneficient du cache.",,,,,,,,2811c86d5d298470,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6297a58c,markdown,fr,898c3fa5d80265b0,"### Exemple guidé 1 : Impact du paramètre `speed` sur la génération
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,6297a58c,markdown,fr,898c3fa5d80265b0,"### Exemple guidé 1 : Impact du paramètre `speed` sur la génération
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20681), intégrée comme exemple guidé.*
 
@@ -4193,7 +4193,7 @@ Cet exemple synthétise la même phrase à cinq vitesses (0.5, 0.75, 1.0, 1.25, 
 - `speed` agit sur la durée de l'audio, à peu près en raison inverse : à 0.5, la phrase dure environ deux fois plus longtemps qu'à 1.0
 - le temps de génération suit la durée produite, si bien que le rapport temps réel varie peu d'une vitesse à l'autre : il mesure le coût de calcul, pas la qualité de la parole
 - le critère « rapport le plus élevé » désigne donc une vitesse au gré de petites fluctuations de mesure ; l'exercice 1 propose un critère qui tient compte de ce que l'auditeur comprend",,,,,,,,898c3fa5d80265b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6b39cba1,code,fr,8c26197e21d406b2,"# Recuperation de la variable kokoro globale si besoin
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,6b39cba1,code,fr,8c26197e21d406b2,"# Recuperation de la variable kokoro globale si besoin
 if 'kokoro' not in globals() and 'kokoro_loaded' in globals() and kokoro_loaded:
     pass
 
@@ -4241,7 +4241,7 @@ print(f""{'Vitesse':<10} {'Duree (s)':<12} {'Temps gen (s)':<15} {'Ratio':<8}"")
 for speed, r in speed_result[""results""].items():
     print(f""{speed:<10} {r['duration']:<12.2f} {r['gen_time']:<15.2f} {r['ratio']:<8.1f}"")
 print(f""Meilleure vitesse (ratio le plus eleve) : {speed_result['best_speed']}"")",,,,,,,,8c26197e21d406b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section3-intro,markdown,fr,1f0e8c16411665fb,"## Section 3 : Voix et langues
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-section3-intro,markdown,fr,1f0e8c16411665fb,"## Section 3 : Voix et langues
 
 Kokoro propose plusieurs voix organisees par langue :
 
@@ -4253,7 +4253,7 @@ Kokoro propose plusieurs voix organisees par langue :
 | `bm_` | Anglais britannique (m) | `bm_george`, `bm_lewis` |
 | `ff_` | Francais (f) | `ff_siwis` |
 | `fm_` | Francais (m) | (a venir) |",,,,,,,,1f0e8c16411665fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,80dd4385,markdown,fr,8329c5e89158ff16,"### Introduction : Exploration des voix
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,80dd4385,markdown,fr,8329c5e89158ff16,"### Introduction : Exploration des voix
 
 Kokoro propose une bibliotheque de voix pre-entraines couvrant plusieurs langues et profils vocaux.
 
@@ -4264,7 +4264,7 @@ Kokoro propose une bibliotheque de voix pre-entraines couvrant plusieurs langues
 4. Comparer les qualites perceptuelles
 
 Cette experimentation permet de sélectionner la voix adequate pour chaque scénario : narration, assistant virtuel, personnages, accessibilite.",,,,,,,,8329c5e89158ff16,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-voices,code,fr,932ac435a89e0d1b,"# Test de differentes voix
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-voices,code,fr,932ac435a89e0d1b,"# Test de differentes voix
 print(""TEST DES VOIX"")
 print(""="" * 45)
 
@@ -4323,13 +4323,13 @@ if kokoro_loaded and test_multiple_voices:
             print(f""{v:<15} {data['duration']:<10.1f} {data['gen_time']:<12.2f} {ratio:<8.1f}"")
 else:
     print(""Test des voix desactive ou modele non charge"")",,,,,,,,932ac435a89e0d1b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,473a17d7,markdown,fr,700acc2094f451e2,"### Interprétation du test des voix
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,473a17d7,markdown,fr,700acc2094f451e2,"### Interprétation du test des voix
 
 Les quatre voix ont produit des fichiers audio. Les rapports durée audio / temps de génération sont affichés dans le récapitulatif ci-dessus. Sur le CPU de cette exécution, ils se situent entre 3.0 et 3.3 : la génération est environ trois fois plus rapide que la lecture.
 
 Les textes diffèrent entre les voix et chaque mesure ne comporte qu'un appel. Ces résultats ne permettent donc ni d'attribuer les écarts à la seule voix, ni de conclure que leur qualité est identique. Le timbre, la naturalité et la prosodie sont appréciés dans la grille d'écoute en fin de notebook (ligne « Timbre et naturel »).
 ",,,,,,,,700acc2094f451e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section4-intro,markdown,fr,91d0ec0a4d61c9c9,"## Section 4 : Comparaison avec OpenAI TTS
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-section4-intro,markdown,fr,91d0ec0a4d61c9c9,"## Section 4 : Comparaison avec OpenAI TTS
 
 Comparaison entre Kokoro (local) et OpenAI TTS (cloud, payant) sur **le même texte**, dans la même session. Cette section est facultative : sans appel réel, les lignes OpenAI affichent « non mesuré ».
 
@@ -4343,7 +4343,7 @@ Comparaison entre Kokoro (local) et OpenAI TTS (cloud, payant) sur **le même te
 | Coût estimé | Nombre de caractères × tarif public par caractère |
 | Naturalité, prosodie | Écoute des fichiers de `comparaison_cloud/`, dans la grille finale |
 ",,,,,,,,91d0ec0a4d61c9c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-comparison,code,fr,13dc388451cf363c,"# Section 4 : comparaison Kokoro / OpenAI TTS sur le même texte, mesures réelles uniquement
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-comparison,code,fr,13dc388451cf363c,"# Section 4 : comparaison Kokoro / OpenAI TTS sur le même texte, mesures réelles uniquement
 import statistics, csv
 print(""COMPARAISON KOKORO VS OPENAI TTS"")
 print(""="" * 45)
@@ -4444,7 +4444,7 @@ print(""  Kokoro          : pas de facturation par requête (coût du matériel 
 for modele, tarif in TARIFS_PAR_MILLION_CARACTERES.items():
     print(f""  OpenAI {modele:<9}: {chars_1h * tarif / 1e6:.2f} $"")
 ",,,,,,,,13dc388451cf363c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,92855a9d,markdown,fr,d069b3348616c37c,"### Exemple guidé 3 : Pipeline de synthèse par lot
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,92855a9d,markdown,fr,d069b3348616c37c,"### Exemple guidé 3 : Pipeline de synthèse par lot
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20681), intégrée comme exemple guidé.*
 
@@ -4462,7 +4462,7 @@ Cet exemple convertit une petite liste d'articles (titre et résumé) en fichier
 **Points clés du code** :
 - l'isolement des erreurs par article rend le lot robuste : un texte vide ou un caractère non géré ne coûte qu'un fichier, pas le lot entier
 - les articles sont en français, mais la voix `af_heart` est anglaise et `kokoro.create()` phonémise par défaut selon les règles de l'anglais (`lang=""en-us""`) : l'audio est produit sans erreur, avec une prononciation anglaise. L'exercice 2 mesure cet effet",,,,,,,,d069b3348616c37c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ef4ce5c7,code,fr,632ede64681eccb5,"def batch_tts_pipeline(articles, voice=""af_heart"", output_dir=None):
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ef4ce5c7,code,fr,632ede64681eccb5,"def batch_tts_pipeline(articles, voice=""af_heart"", output_dir=None):
     """"""Synthetise un batch d'articles en fichiers audio.""""""
     total_duration = 0
     total_gen_time = 0
@@ -4513,7 +4513,7 @@ output_dir = OUTPUT_DIR
 result = batch_tts_pipeline(test_articles, voice=""af_heart"", output_dir=OUTPUT_DIR)
 print(f""\nResume : {result['nb_articles']} articles, {result['total_duration']:.1f}s d'audio, ""
       f""{result['total_gen_time']:.2f}s de generation, {len(result['errors'])} erreur(s)"")",,,,,,,,632ede64681eccb5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section4-interpretation,markdown,fr,e9adee1979b0ba41,"### Comparaison : statut et limites
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-section4-interpretation,markdown,fr,e9adee1979b0ba41,"### Comparaison : statut et limites
 
 - **Mesures réelles uniquement.** Les lignes OpenAI ne contiennent que des valeurs mesurées dans cette session. Sans appel (paramètre désactivé, clé absente, modèle retiré), elles affichent « non mesuré » avec la raison, et ne doivent recevoir ni interprétation ni note d'écoute.
 - **Même texte.** Le texte est accentué (leçon de l'exercice 2) et identique pour tous les services. Kokoro utilise `ff_siwis` et `fr-fr` ; OpenAI utilise la voix `alloy`.
@@ -4521,7 +4521,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-sec
 - **Coûts.** Les tarifs publics (tts-1 : 15 $, tts-1-hd : 30 $ par million de caractères) ont été consultés le 15/10/2026. OpenAI signale ces modèles comme dépréciés. Pour tester un autre modèle, l'ajouter à `cloud_models` ; son coût n'est alors pas estimé.
 - **Écoute.** Les fichiers de `comparaison_cloud/` permettent de noter la naturalité et la prosodie dans la grille finale, uniquement pour les services effectivement mesurés.
 ",,,,,,,,e9adee1979b0ba41,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-interactive,code,fr,3a367222bf7fcfdf,"# Mode interactif
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-interactive,code,fr,3a367222bf7fcfdf,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""MODE INTERACTIF"")
     print(""="" * 50)
@@ -4570,7 +4570,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""Mode batch - Interface interactive desactivee"")
 ",,,,,,,,3a367222bf7fcfdf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,3a945046,markdown,fr,3bdf565b0aac2961,"## Section 5 : Mode interactif
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,3a945046,markdown,fr,3bdf565b0aac2961,"## Section 5 : Mode interactif
 
 Cette section offre une interface interactive pour experimenter avec Kokoro TTS en temps reel.
 
@@ -4591,7 +4591,7 @@ En mode interactif, vous pouvez :
 | **MCP/Papermill** | Desactive (stdin non disponible) |
 
 > **Note** : En mode batch, cette section est automatiquement sautee pour ne pas bloquer l'exécution.",,,,,,,,3bdf565b0aac2961,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-practices,markdown,fr,922eeffc14f4d0c3,"## Bonnes pratiques et guide de decision
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-practices,markdown,fr,922eeffc14f4d0c3,"## Bonnes pratiques et guide de decision
 
 ### Arbre de decision : local vs cloud
 
@@ -4610,9 +4610,9 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-pra
 | Backend ONNX | Non mesuré ici | Inference optimisee sans PyTorch |
 | Batch generation | Non mesuré ici | Regrouper les textes courts |
 | GPU | Non mesuré ici (pas de comparaison CPU / GPU dans ce carnet) | Recommande pour la production |",,,,,,,,922eeffc14f4d0c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,da1cd8d2,markdown,fr,87c6306f15a9c7fe,"### Statistiques
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,da1cd8d2,markdown,fr,87c6306f15a9c7fe,"### Statistiques
 Les mesures de cette exécution sont affichées ci-dessus. Les performances dépendent du matériel, du backend et du texte. Le modèle sera rechargé pour le dialogue guidé.",,,,,,,,87c6306f15a9c7fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-stats,code,fr,102e8427db6c16fe,"# Statistiques de session et prochaines etapes
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,cell-stats,code,fr,102e8427db6c16fe,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
 
@@ -4653,7 +4653,7 @@ print(f""4. Construire un pipeline vocal complet (03-2)"")
 
 print(f""\nNotebook Kokoro TTS termine - {datetime.now().strftime('%H:%M:%S')}"")
 ",,,,,,,,102e8427db6c16fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,m94fgnro0cm,markdown,fr,178006f91cdefe3c,"### Exemple guidé 5 : Dialogue synthétique à deux voix
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,m94fgnro0cm,markdown,fr,178006f91cdefe3c,"### Exemple guidé 5 : Dialogue synthétique à deux voix
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20681), intégrée comme exemple guidé.*
 
@@ -4671,7 +4671,7 @@ Les voix testées en section 3 servent ici à construire un dialogue : deux inte
 - la cellule de statistiques plus haut libère le modèle (`del kokoro`) : l'exemple le recharge depuis le cache local avant de synthétiser
 - toutes les voix Kokoro produisent du 24 000 Hz, ce qui permet de concaténer les segments sans rééchantillonnage
 - la liste `audio_segments` alterne répliques et silences : sa structure garde la trace de qui parle à quel moment, ce que l'exercice 3 exploite",,,,,,,,178006f91cdefe3c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,94541c05,markdown,fr,12608b401181e5ce,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,94541c05,markdown,fr,12608b401181e5ce,"## Conclusion
 
 **Exercice 1.** Après correction du rééchantillonnage à 16 kHz, et sur les deux textes de l'exercice, 1,25 est la vitesse la plus rapide **parmi celles testées** dont le WER reste sous 10 % ; le premier dépassement arrive à 1,5 pour les deux textes. Le texte difficile ne se dégrade pas plus tôt, mais ses erreurs touchent l'information (noms propres, montant). Le protocole élargi précise la zone entre 1,25 et 1,5 sur un corpus de 123 mots, avec deux décodages : sa vitesse retenue est affichée par sa cellule et dans la synthèse automatique ci-dessous.
 
@@ -4687,7 +4687,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,94541c05
 - Decouvrir le voice cloning avec XTTS (02-2)
 - Construire un pipeline vocal complet (03-2)
 ",,,,,,,,12608b401181e5ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,000a4282,markdown,fr,4fb3556ee519eba6,"## Section 6 : Pour aller plus loin - la limite du TTS ultra-leger (Inflect-Nano)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,000a4282,markdown,fr,4fb3556ee519eba6,"## Section 6 : Pour aller plus loin - la limite du TTS ultra-leger (Inflect-Nano)
 
 Kokoro (82 millions de paramètres) est déjà considere comme un modèle TTS ""leger"". Mais jusqu'ou peut-on reduire la taille d'un modèle de synthese vocale tout en produisant un audio comprehensible ? **Inflect-Nano-v1** (owensong, licence Apache-2.0) pousse l'exercice a l'extreme : **4,63 millions de paramètres au total**, soit ~18x plus petit que Kokoro et ~100x plus petit qu'un XTTS v2 (~466M).
 
@@ -4722,7 +4722,7 @@ Ce modèle n'est **pas SOTA** - l'auteur le dit explicitement (qualite voice ""r
 | **Cas d'usage** | Production leger, multi-langue | Recherche, enseignement, embarque |
 
 > **A retenir** : la taille n'est pas l'unique dimension. Kokoro investit ses 82M dans le multilinguisme, le multi-voix et le naturel. Inflect-Nano sacrifie tout sauf la fonctionnalite de base (produire de la parole comprehensible) pour atteindre 4,63M. Les deux sont ""petits"" mais pour des objectifs opposes.",,,,,,,,4fb3556ee519eba6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,f82ed24e,code,fr,2f3e86c17eb0380f,"# Section 6 facultative : exécutée seulement si run_inflect_nano = True
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,f82ed24e,code,fr,2f3e86c17eb0380f,"# Section 6 facultative : exécutée seulement si run_inflect_nano = True
 inflect_loaded = False
 if not run_inflect_nano:
     print(""Section facultative désactivée (run_inflect_nano = False) : non exécutée."")
@@ -4842,11 +4842,11 @@ else:
         print(f""Inflect-Nano indisponible sur cette machine : {str(e)[:120]}"")
         print(""Demonstration non executee : l'indiquer comme « non exécutée » dans l'interpretation."")
 ",,,,,,,,2f3e86c17eb0380f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d1419666,markdown,fr,28b7e724ca2cd55b,"### Extension facultative : interprétation
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,d1419666,markdown,fr,28b7e724ca2cd55b,"### Extension facultative : interprétation
 
 Cette démonstration ne constitue une mesure que si la cellule précédente aboutit (`inflect_loaded = True`). Sinon, elle est « non exécutée », et la synthèse automatique ci-dessous l'indique. Si elle aboutit : comparer la durée et le temps de calcul à ceux de Kokoro, et écouter le résultat. La taille seule ne permet pas de déduire un seuil universel de qualité.
 ",,,,,,,,28b7e724ca2cd55b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,c989hb1iv4,code,fr,f17fd53c598d40d3,"import numpy as np
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,c989hb1iv4,code,fr,f17fd53c598d40d3,"import numpy as np
 import soundfile as sf
 from kokoro_onnx import Kokoro
 
@@ -4909,7 +4909,7 @@ else:
     # Ecouter le resultat
     from IPython.display import Audio
     display_audio_array(full_dialogue_audio, sample_rate)",,,,,,,,f17fd53c598d40d3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,3amkq7mw2xp,markdown,fr,2da6d25f3e8ee79e,"### Exemple guidé 6 (crédité #21036) : Sous-titres exacts et troisième voix
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,3amkq7mw2xp,markdown,fr,2da6d25f3e8ee79e,"### Exemple guidé 6 (crédité #21036) : Sous-titres exacts et troisième voix
 
 Pour produire des sous-titres, le carnet 01-2 devait **estimer** les instants de parole à partir d'une transcription Whisper. Ici, le dialogue est synthétisé réplique par réplique : la durée de chaque segment est connue **exactement**, à l'échantillon près. Les sous-titres se calculent, ils ne s'estiment pas.
 
@@ -4950,7 +4950,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-header,
 - `pip install chatterbox-tts`
 - Notebook 01-5 recommande (pour la comparaison avec Kokoro)
 
-**Navigation :** [<< 01-5](../01-Foundation/01-5-Kokoro-TTS-Local.ipynb) | [Index](../README.md) | [Suivant >>](02-2-XTTS-Voice-Cloning.ipynb)",,,,,,,,38bc1b73a1134ac0,,,,,,,,,,,,,,,
+**Navigation :** [<< 01-5](../01-Foundation/01-5-TTS-Local-ONNX.ipynb) | [Index](../README.md) | [Suivant >>](02-2-XTTS-Voice-Cloning.ipynb)",,,,,,,,38bc1b73a1134ac0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-params,code,fr,249344918bcbee5c,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -6511,12 +6511,17 @@ Pour evaluer objectivement la qualite du clonage vocal, on peut utiliser des met
 | Cosine similarity (embeddings) | Distance entre embeddings de speaker | 0-1 (1 = identique) |
 | MOS (Mean Opinion Score) | Evaluation perceptuelle humaine | 1-5 (5 = excellent) |
 | Speaker Error Rate (SER) | Taux d'erreur d'identification | 0-100% (0 = parfait) |",,,,,,,,9e5f584d14a881ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-similarity,code,fr,557f65a77b94814f,"# Analyse de similarite vocale
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-similarity,code,fr,8ee73381866ca6b1,"# Analyse de similarite vocale
 print(""ANALYSE DE SIMILARITE VOCALE"")
 print(""="" * 45)
 
 if xtts_loaded and generate_audio and analyze_similarity:
     similarity_available = False
+
+    # webrtcvad (dependance de resemblyzer) emet un DeprecationWarning a l'import,
+    # dont le texte embarque le chemin site-packages de la machine
+    import warnings
+    warnings.filterwarnings(""ignore"", message=""pkg_resources is deprecated as an API"")
 
     try:
         from resemblyzer import VoiceEncoder, preprocess_wav
@@ -6581,8 +6586,7 @@ if xtts_loaded and generate_audio and analyze_similarity:
     else:
         print(""Fichiers audio non disponibles pour l'analyse"")
 else:
-    print(""Analyse de similarite desactivee ou modele non charge"")
-",,,,,,,,557f65a77b94814f,,,,,,,,,,,,,,,
+    print(""Analyse de similarite desactivee ou modele non charge"")",,,,,,,,8ee73381866ca6b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-section4-interpretation,markdown,fr,dd3c99a2b63bc109,"### Interpretation : Qualite du clonage
 
 | Metrique | Valeur typique XTTS | Signification |
@@ -13384,7 +13388,7 @@ Ce notebook presente l'evolution du TTS vers l'expressivite et le controle granu
 2. **Qualite percu** : non machine-verifiable -- ce notebook rapporte des mesures objectives (duree, RTF, generation multilingue, voice cloning)
 3. **Langues Tier 3** : qualite variable pour les langues peu representees (non mesure)
 ",,,,,,,,973a91020a9e8a87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ad29238d,markdown,fr,8f53f628cdec49b1,"# Ace-Step v1.5 - Generation Musicale avec Paroles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ad29238d,markdown,fr,152f0501dedc796f,"# Ace-Step v1.5 - Generation Musicale avec Paroles
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Intermediaire  
@@ -13405,7 +13409,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ad
 - `pip install git+https://github.com/ace-step/ACE-Step.git`
 - Connaissances de base en generation audio (voir [02-3-MusicGen](02-3-MusicGen-Generation.ipynb))
 
-**Navigation :** [<< 02-8](02-8-Expressive-TTS.ipynb) | [Index](README.md) | [Suivant >>](../03-Orchestration/README.md)",,,,,,,,8f53f628cdec49b1,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-8](02-8-Expressive-TTS.ipynb) | [Index](../README.md) | [Suivant >>](../03-Orchestration/README.md)",,,,,,,,152f0501dedc796f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,5dc5d9a2,code,fr,41bf6bb07659ed94,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -13488,7 +13492,7 @@ Tags de genre + Paroles structurees → LM Encoder → DiT Diffusion → VAE Dec
 | **Musique de fond** | Pistes instrumentales avec ou sans paroles | Jingle, podcast |
 | **Prototypage musical** | Idees melodieques avec structure | Demo rapide d'un concept |
 | **Education** | Demonstration de styles multilingues | Comparaison jazz/francais vs rock/anglais |",,,,,,,,fa8b17e135466023,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,296c7320,code,fr,b18c6530bcb18156,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,296c7320,code,fr,1563c14de5780966,"# Setup environnement et imports
 import warnings
 # Bruit de warnings tiers (prefixes = chemins site-packages) : filtrage cible
 warnings.filterwarnings(""ignore"", message=""Failed to find CUDA.*"")
@@ -13563,7 +13567,7 @@ except ImportError:
         import subprocess
         result = subprocess.run(
             [sys.executable, ""-m"", ""pip"", ""install"", ""git+https://github.com/ace-step/ACE-Step.git""],
-            capture_output=True, text=True, timeout=300
+            capture_output=True, text=True, encoding=""utf-8"", timeout=300
         )
         if result.returncode == 0:
             print(""ACE-Step installe avec succes"")
@@ -13582,7 +13586,7 @@ print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Duree : {audio_duration}s, Infer steps : {infer_step}"")
 print(f""Guidance scale : {guidance_scale}, CFG type : {cfg_type}"")
 print(f""CPU offload : {cpu_offload}, Seed : {seed}"")
-print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT).as_posix()}"")",,,,,,,,b18c6530bcb18156,,,,,,,,,,,,,,,
+print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT).as_posix()}"")",,,,,,,,1563c14de5780966,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,52e15f65,markdown,fr,891062b760665531,"### Interpretation : Configuration de l'environnement
 
 L'environnement est maintenant configure pour ACE-Step.
@@ -19643,11 +19647,11 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipy
 - [ ] Créer des sous-titres synchronises
 - [ ] Ajouter une musique de fond discrete
 - [ ] Generer un PDF du cours avec transcription",,,,,,,,131728730a4e1888,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,182567ea,markdown,fr,a3780beb2b757b43,"# P3 - Annotation Prosodique pour TTS Agentique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,182567ea,markdown,fr,982074b8050112c9,"# P3 - Annotation Prosodique pour TTS Agentique
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Voix/04-9-Voice-Casting.ipynb) | [Suivant >>](04-11-Generation-TTS.ipynb)
 
-**Epic #1028** | Pipeline 5-pass : Lecture analytique > Voice casting > **Annotation prosodique** > Generation TTS > Compilation audio
+**Pipeline en cinq passes** : lecture analytique, voice casting, annotation prosodique, génération TTS et compilation audio. Ce carnet se concentre sur l’annotation des répliques avant leur synthèse vocale.
 
 Ce notebook enrichit les repliques identifiees en P1 avec des tags expressifs FishAudio S2-Pro. FishAudio supporte 15000+ tags expressifs (joie, colere, chuchotement, soupir, etc.) qui permettent un contrôle fin de la prosodie pour chaque personnage.
 
@@ -19661,7 +19665,7 @@ Ce notebook enrichit les repliques identifiees en P1 avec des tags expressifs Fi
 **Duree estimee** : 8-10 minutes
 
 ***
-",,,,,,,,a3780beb2b757b43,,,,,,,,,,,,,,,
+",,,,,,,,982074b8050112c9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,2be00eeb,markdown,fr,9a434f7c22517d88,"## 1. Configuration et imports
 
 Le notebook **P3 — Annotation prosodique** prend les **résultats combinés de P1 (analyse textuelle) et P2 (voice casting)** et produit un **livre enrichi SSML** prêt à être synthétisé par P4 (TTS). C'est la passe qui transforme un texte brut en **partition d'acteur audio** : pour chaque réplique, le moteur choisit les tags expressifs FishAudio S2-Pro qui correspondent au contexte émotionnel.
@@ -20940,11 +20944,11 @@ La synthèse a été exécutée avec le modèle **gratuit** `fish-audio/s2.1-pro
 - La section 10 mesure la mélodie sur des signaux synthétiques : elle ne mesure pas encore l'effet des annotations sur une voix TTS réelle.
 - La validation par synthèse porte sur 6 extraits (3 segments × 2 syntaxes) au modèle gratuit, sans référence de voix : elle prouve que les balises ne sont pas prononcées, pas que chaque personnage est distingué.
 - Les mesures de la section 10 dépendent de la version de librosa : la 0.11.0 reproduit exactement les valeurs commentées, la 1.0.0 donne 17,4 notes effectives au lieu de 17,8 pour la mélodie (verdicts inchangés).",,,,,,,,26b7f0285422eadd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,ab3609d0,markdown,fr,6f7c9c8bbdae19a1,"# P4 — Generation TTS pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,ab3609d0,markdown,fr,87b1b6de8c3bbd6e,"# P4 — Generation TTS pour Audiobook
 
 **Navigation** : [Index](../README.md) | [<< Précédent](04-10-Annotation-Prosodique.ipynb) | [Suivant >>](04-12-Compilation-Audio.ipynb)
 
-**Epic #1028** | Pass 4 : Generation audio via Kokoro TTS (demo) / FishAudio S2-Pro (production)
+Ce carnet transforme les annotations prosodiques P3 et la configuration vocale P2 en fichiers audio pour le texte, puis exporte les métadonnées de génération. Kokoro TTS sert à la démonstration et FishAudio S2-Pro à la production.
 
 ## Objectifs
 
@@ -20952,7 +20956,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.
 2. Mapper chaque segment au bon modèle/voix TTS
 3. Generer les fichiers audio pour les 342 segments du texte
 4. Exporter les metadonnees de generation (durees, tailles, paths)
-",,,,,,,,6f7c9c8bbdae19a1,,,,,,,,,,,,,,,
+",,,,,,,,87b1b6de8c3bbd6e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,c84ee935,code,fr,dcf1852d92adec3c,"# Import guards - availability flags for external dependencies
 
 try:
@@ -21746,7 +21750,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.
 Les segments longs (>55 mots) doivent etre decoupes pour FishAudio. Un decoupage naif par comptage de mots coupe au milieu d'une phrase ou d'une scene. Cette étape utilise un LLM pour decouper aux **frontieres naturelles** du texte : fins de phrase, changements de scene, transitions narratif/dialogue.
 
 La fonction `llm_split_segment()` envoie le texte a `gpt-5.6-luna` qui identifie les points de coupure optimaux, avec un fallback sur le decoupage par phrase si le LLM est indisponible.",,,,,,,,1e736a94abdf3f1b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,5bd5cead,code,fr,4e2cccffa63dcca7,"from openai import OpenAI
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,5bd5cead,code,fr,2b2a043d24da36a2,"from openai import OpenAI
 
 # Cle optionnelle : sans OPENAI_API_KEY le client reste absent et le decoupage
 # deterministe de repli s'applique (le carnet reste executable de bout en bout).
@@ -21784,8 +21788,16 @@ def llm_split_segment(text, max_words=55):
             # docs/genai/model-mapping-openai.md (tranche 1 de #14755).
             model=""gpt-5.6-luna"",
             messages=[{""role"": ""user"", ""content"": prompt}],
-            temperature=0.1,
-            max_tokens=1000,
+            # La famille gpt-5 refuse deux parametres que les familles 4.x acceptent
+            # (mesure live du 2026-11-07, table de reference
+            # docs/genai/parametres-par-modele.md) :
+            #   - `max_tokens` : 400 ""Unsupported parameter ... Use 'max_completion_tokens'""
+            #   - `temperature` : 400 ""Unsupported value ... Only the default (1) value is
+            #     supported"" -- le parametre est donc retire, la valeur par defaut s'applique
+            # Sans ce correctif, l'appel echoue, la cellule bascule sur le decoupage de
+            # repli, et la sortie affiche une erreur que l'etudiant ne peut pas resoudre
+            # en lisant le cours (#24114).
+            max_completion_tokens=1000,
         )
         parts = resp.choices[0].message.content.strip().split(""|||"")
         parts = [p.strip() for p in parts if p.strip()]
@@ -21802,7 +21814,7 @@ def llm_split_segment(text, max_words=55):
 test_long = ""La diligence partit dans la neige. Dans la voiture, neuf passagers se tenaient serres : le marchand de vins Loiseau et sa femme, le republican Cornudet, la comtesse de Breville, le manufacturier Carre-Lamadon et son epouse, le comte Hubert de Breville, les bonnes soeurs, et Elisabeth Rousset, dite Boule de Suif, une prostituee de grand renom.""
 parts = llm_split_segment(test_long)
 for i, p in enumerate(parts):
-    print(f""  Part {i+1} ({len(p.split())} mots): {p[:60]}..."")",,,,,,,,4e2cccffa63dcca7,,,,,,,,,,,,,,,
+    print(f""  Part {i+1} ({len(p.split())} mots): {p[:60]}..."")",,,,,,,,2b2a043d24da36a2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,63be896a,markdown,fr,f944c13149591892,"Le decoupage par LLM vise a respecter les frontieres narratives naturelles du texte (fins de phrase, changements de scene) plutot que de couper mecaniquement après N mots. Au moment de cette exécution, le LLM etait indisponible (erreur d'authentification du proxy, code 401) : la generation FishAudio qui suit a donc utilise le **decoupage déterministe de repli**, coupe sur la ponctuation et la longueur, sans interpretation narrative. Le mécanisme de cache evite de regenerer les segments déjà produits. Avec la cle proxy retablie, la même cellule bascule sur le decoupage LLM sans autre changement de code.
 ",,,,,,,,f944c13149591892,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,40b77d53,code,fr,54cf40af68816c03,"FISH_OUTPUT_DIR = BASE_DIR / ""tts_output_fishaudio""
@@ -22278,11 +22290,11 @@ def generate_comparison_report(kokoro_segs, fish_segs):
     return """"  # TODO etudiant
 
 print(""Exercice a completer"")",,,,,,,,84dbf3a5ad2da324,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,6534c65c,markdown,fr,60f0718b27d9ce99,"# P5 — Compilation Audio pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,6534c65c,markdown,fr,547df5573cebc4f4,"# P5 — Compilation Audio pour Audiobook
 
 **Navigation** : [Index](../README.md) | [<< Précédent](04-11-Generation-TTS.ipynb) | [Suivant >>](../04-Voix/04-19-Evaluation-MOS.ipynb)
 
-**Epic #1028** | Pass 5 : Assemblage final des segments TTS en audiobook
+Ce carnet assemble les segments MP3 produits en P4, applique des transitions et normalise le volume, puis exporte l’audiobook et son manifest JSON. Les contrôles portent sur la durée, le clipping et les niveaux audio.
 
 ## Objectifs
 
@@ -22291,7 +22303,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Aud
 3. Normaliser le volume global
 4. Exporter l'audiobook final + manifest JSON
 5. Verifier la qualite audio (duree, clipping, niveaux)
-",,,,,,,,60f0718b27d9ce99,,,,,,,,,,,,,,,
+",,,,,,,,547df5573cebc4f4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,c3bee5ce,code,fr,7e1fc70bca3304c3,"import json
 import os
 import struct
@@ -23340,7 +23352,7 @@ simulated_wers = None  # TODO etudiant : liste de WER en decimal
 pass_rates = None  # TODO etudiant : liste de pass rates
 
 print(""Exercice a completer"")",,,,,,,,70859caa2190530c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,436d6b0b,markdown,fr,1407d2fb84623419,"### Interpretation : Validation WER
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,436d6b0b,markdown,fr,0896a3ecd6488b31,"### Interpretation : Validation WER
 
 | Aspect | Observation | Remarque |
 |--------|------------|----------|
@@ -23349,37 +23361,40 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishA
 | Whisper model | large-v3-turbo | Rapide et precis en francais |
 | Cause d'echec typique | Tags/directions vocalises | Le texte libre entre crochets est prononce, pas interprete |
 
-**Lecture du resultat live (cellule P7 ci-dessus)** : sur l'echantillon demo (3
-segments, execution fraiche), la validation donne un WER moyen de **38.07%** et un
-taux de conformite de **0%** (0/3 au seuil de 15%). Ce chiffre eleve n'est ni un
-symptome d'audio cassee ni une erreur de reconnaissance : Whisper transcrit
-correctement le francais -- la mesure etendue (cellule suivante) atteint 20.45% de
-WER moyen et les meilleurs segments sont a ~0%. Il s'explique directement par la
-**vocalisation des balises libres**.
+**Lecture du resultat live (cellule P7 ci-dessus)** : la sortie commitee mesure
+trois segments, avec un WER moyen de **36.90%** et **0%** de conformite (0/3 au
+seuil de 15%). Ces valeurs decrivent cet echantillon et cette execution ; elles ne
+suffisent pas a conclure sur l'ensemble du livre ni sur la qualite de Whisper.
 
-**Pourquoi le WER depasse parfois 100%** : le WER est le nombre d'insertions +
+La sortie P4 montre des directions de jeu libres, et l'apercu P5 les inclut dans le
+texte soumis a FishAudio. Leur vocalisation est un mecanisme plausible d'insertions
+dans la transcription. Toutefois, la sortie P7 ne contient pas les transcriptions
+ni les erreurs mot a mot : elle ne permet donc pas d'attribuer quantitativement le
+WER observe a ces directions.
+
+**Pourquoi le WER peut depasser 100%** : le WER est le nombre d'insertions +
 substitutions + deletions rapporte au nombre de mots de reference. L'annotation P4
-produit ici des directions de jeu en texte libre (visibles dans l'aperçu TTS ci-dessus :
+produit ici des directions de jeu en texte libre (visibles dans l'apercu TTS ci-dessus :
 « [composed and neutral, even pace] », « [ironic and dry, with a smirk] ») que
 FishAudio **vocalise litteralement** au lieu de les interpreter comme des commandes.
-La transcription Whisper contient alors tous ces mots en insertion, et le rapport
-explose -- c'est exactement le mecanisme qui poussait le WER au-dela de 100% dans
-l'etude offline citee precedemment. Seules les 29 balises officielles (`pause`,
-`sigh`, `whispering`, ...) sont traitees comme des commandes de prosodie ; tout
-texte libre est prononce mot a mot (incident #1277/#1485).
+La transcription Whisper peut alors contenir ces mots en insertion, et le rapport
+peut depasser 100%. Les sorties de ce carnet montrent le texte libre dans
+les apercus, mais pas la transcription correspondante permettant de mesurer cet effet.
+Seules les 29 balises officielles (`pause`, `sigh`, `whispering`, ...) sont traitees
+comme des commandes de prosodie ; tout texte libre est prononce mot a mot (incident #1277/#1485).
 
-> **Lecon critique (WER #1277/#1485)** : les balises libres (non officielles) sont
-> vocalisees litteralement et font grimper le WER par insertion, parfois au-dela de
-> 100%. Le pipeline v4 doit n'injecter que les 29 tags officiels pour ramener la
-> narration a un WER qualitatif (mesure etendue dans la cellule suivante).
+> **Lecon critique (WER #1277/#1485)** : les directions libres peuvent etre
+> vocalisees comme du texte et ajouter des insertions au WER. Comparer les sorties
+> P4/P5 avec les transcriptions et les erreurs detaillees permettrait de verifier
+> ce mecanisme ; les mesures presentees ici ne suffisent pas a en chiffrer l'effet.
 
 ***
 
 ## Section 6 : Resultats de la validation WER
 
-La validation etendue du pipeline a ete executee en dehors de ce notebook via les
-scripts dedies du pipeline v4. La cellule suivante presente les mesures reelles
-(artifact du pipeline + execution fraiche P7).",,,,,,,,1407d2fb84623419,,,,,,,,,,,,,,,
+La cellule suivante affiche l'etat de l'artifact et la mesure live commitee ; les
+resultats etendus ne sont pas disponibles dans ce carnet.
+",,,,,,,,0896a3ecd6488b31,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,61193934,code,fr,3f3cbacc822f391a,"# Resultats de la validation WER (mesures reelles : artifact + execution fraiche)
 print(""RESULTATS VALIDATION WER"")
 print(""="" * 50)
@@ -23419,21 +23434,20 @@ print(""non reproduit. Le mecanisme -- les tags/texte libres sont vocalises par 
 print(""et font exploser le WER via des insertions -- est visible dans les segments"")
 print(""WER>100% : la transcription contient la direction de jeu pronouncee mot a mot."")
 ",,,,,,,,3f3cbacc822f391a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,ab24087a,markdown,fr,26fc079918b24aa1,"### Interpretation : Resultats complets
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,ab24087a,markdown,fr,546d2509a985ca7f,"### Interpretation : Resultats complets
 
-La mesure etendue (22 segments en tags officiels, artifact `verification_transcript.json`)
-atteint un WER moyen de **20.45%** (pass-rate 54.5% au seuil de 15%) : un niveau modere
-qui confirme que FishAudio S2-Pro traite les 29 balises officielles comme des commandes
-de prosodie et retranscrit une narration francaise claire avec une bonne fidelite
-(meilleurs segments a ~0% de WER). La mesure live P7 (38.07% sur l'echantillon demo)
-est plus elevee parce que l'annotation P4 y a laisse passer des directions de jeu en
-texte libre, vocalisees mot a mot : c'est la signature du mecanisme #1277/#1485, et la
-raison pour laquelle le pipeline doit n'injecter que des balises officielles.
+La cellule de resultats indique que l'artifact `verification_transcript.json` est
+absent ; aucune mesure etendue n'est donc disponible dans ce carnet.
+La seule mesure chiffree ancree est la sortie live P7 : trois segments,
+WER moyen **36.90%** et pass-rate **0%** au seuil configure de 15%. Cet echantillon
+ne permet pas de conclure sur la performance globale de FishAudio S2-Pro ni sur
+l'effet des balises officielles. Les apercus P4/P5 montrent des directions libres
+dans le texte ; leur impact sur le WER reste a mesurer avec les transcriptions.
 
-**Limites identifiees** :
-1. **Segments longs (>400 chars)** : FishAudio peut omettre ou condenser des passages, causant un WER eleve
-2. **Dialogues multi-voix** : le WER est plus eleve que pour la narration seule (transitions speaker)
-3. **WER != qualite percue** : un WER de 10% peut correspondre a des erreurs mineures (article manquant) ou a des omissions significatives
+**Limites et pistes d'evaluation** :
+1. **Longueur des segments** : les omissions ou condensations peuvent faire varier le WER ; cette relation reste a mesurer sur des segments de longueurs comparees
+2. **Dialogues multi-voix** : les transitions entre locuteurs peuvent affecter le WER ; le carnet ne fournit pas ici de comparaison chiffree avec la narration seule
+3. **WER != qualite percue** : un WER peut correspondre a des erreurs mineures (article manquant) ou a des omissions significatives ; une evaluation humaine complete la mesure automatique
 
 ***
 
@@ -23448,7 +23462,7 @@ raison pour laquelle le pipeline doit n'injecter que des balises officielles.
 | Section 3 | P4 | Annotation prosodique par LLM sur extrait demo |
 | Section 4 | P5 | Generation TTS avec clonage vocal FishAudio |
 | Section 5 | P7 | Validation WER avec Whisper STT |
-| Section 6 | Resultats | Mesures reelles (artifact + execution fraiche) |
+| Section 6 | Resultats | Etat des resultats (artifact indisponible, mesure live commitee) |
 
 ### Lecons critiques
 
@@ -23462,7 +23476,7 @@ raison pour laquelle le pipeline doit n'injecter que des balises officielles.
 - Integrer le contrôle du debit (vitesse de parole) dans les tags
 - Paralleliser la generation TTS avec `asyncio` pour accelerer le pipeline
 - Ajouter une passe de normalisation audio (loudness, EQ) avant compilation
-- Explorer les modèles de musique Ace-Step pour generer des jingles entre les chapitres",,,,,,,,26fc079918b24aa1,,,,,,,,,,,,,,,
+- Explorer les modèles de musique Ace-Step pour generer des jingles entre les chapitres",,,,,,,,546d2509a985ca7f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,2c637c37,markdown,fr,cf967e6ea540392a,"***
 
 ## Exercice : Explorer l'impact des balises de prosodie sur la qualite TTS
@@ -29517,11 +29531,11 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-6-Audiobook-Pipeli
 - [ ] Generer les sous-titres synchronises via Whisper
 - [ ] Comparer différentes voix pour un même personnage
 - [ ] Paralleliser la synthese TTS avec asyncio",,,,,,,,7b42a6ca78974cc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,f888a10f,markdown,fr,e4566b22439a25f4,"# Benchmark TTS : Comparaison des Modèles Vocaux pour l'Audiobook Agentique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,f888a10f,markdown,fr,6c5cb1af936c65a8,"# Benchmark TTS : Comparaison des Modèles Vocaux pour l'Audiobook Agentique
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | [Suivant >>](../04-Audiobook/04-8-Lecture-Analytique.ipynb)
 
-**Epic #1028 — P0 : Benchmark systématique des modèles TTS disponibles**
+Ce benchmark compare des services Text-to-Speech pour éclairer le choix d’un modèle dans un pipeline d’audiobook agentique. Il mesure la latence, la qualité audio, l’expressivité, le français et les ressources utilisées.
 
 Ce notebook compare les modèles Text-to-Speech accessibles sur l'infrastructure po-2023 pour evaluer leur pertinence dans le pipeline audiobook agentique :
 
@@ -29550,7 +29564,7 @@ Extrait de *Boule de Suif* de Guy de Maupassant — dataset demo pour l'epic #10
 
 **Comment lire ce notebook** : chaque section suit le même triptyque *protocole -> mesure -> lecture*. Les mesures (latences, tailles de fichiers, status) sont celles du run committe ; les cellules `Lecture` les interpretent une par une. Un troisieme service, Qwen3 TTS, est present dans le protocole mais repond en erreur 401 (*bearer* exige) durant tout le run -- ce fait est lui-même un résultat (section 4), pas un echec du notebook : un benchmark honnete documente les chutes, il ne les efface pas.
 
-**Position dans la serie Audio** : après les notebooks de synthese vocale mono-modèle, ce notebook est le premier a croiser *plusieurs* services sur un même corpus. Le comparatif porte sur trois axes complémentaires : la **latence** (temps de reponse end-to-end), le **cout de sortie** (taille du fichier produit, proxy du bitrate), et la **qualite subjective** (grille MOS, section 10). Le fil conducteur reste l'application cible : un audiobook agentique ou le routeur devra choisir un modèle par segment de texte.",,,,,,,,e4566b22439a25f4,,,,,,,,,,,,,,,
+**Position dans la serie Audio** : après les notebooks de synthese vocale mono-modèle, ce notebook est le premier a croiser *plusieurs* services sur un même corpus. Le comparatif porte sur trois axes complémentaires : la **latence** (temps de reponse end-to-end), le **cout de sortie** (taille du fichier produit, proxy du bitrate), et la **qualite subjective** (grille MOS, section 10). Le fil conducteur reste l'application cible : un audiobook agentique ou le routeur devra choisir un modèle par segment de texte.",,,,,,,,6c5cb1af936c65a8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,317c8936,markdown,fr,a8e297fa86a474b7,"## 1. Configuration et imports
 
 **Pourquoi ce notebook compare trois services TTS hétérogènes plutôt qu'un seul** : l'audiobook agentique doit choisir, par segment de texte, la voix la plus adaptée (narration descriptive, dialogue, monologue intérieur). Chaque service a un profil distinct — **Kokoro** (modèle local 82M, auto-hébergé sur le stack GenAI), **Qwen3 TTS** (modèle local via gateway multi-TTS), **OpenAI tts-1** (API cloud payante). Les comparer sur les **mêmes extraits** (Boule de Suif, Maupassant 1880) révèle les compromis latence/qualité/coût qui détermineront le routage production. Les *import guards* rendent chaque dépendance optionnelle : le notebook s'exécute en mode dégradé si un service est indisponible (cas réel ci-dessous avec Qwen3), ce qui est la robustesse attendue d'un benchmark reproductible.
@@ -30913,7 +30927,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,ecea079a,co
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,3e4ebee39c2b49ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,c36c04e3,code,fr,31551d3d5eac99e1,"# Exécution reproductible : aucun input() en mode batch.
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,c36c04e3,code,fr,31551d3d5eac99e1,"# Exécution reproductible : aucun input() en mode batch.
 # Les appels cloud n'ont lieu que si run_cloud_comparison = True (cellule précédente).
 # La présence d'une clé OpenAI ne déclenche jamais d'appel à elle seule.
 ",,,,,,,,31551d3d5eac99e1,,,,,,,,,,,,,,,
@@ -31784,7 +31798,7 @@ temps_deux_etapes = None  # TODO etudiant : duree totale des deux appels
 elements_perdus = None  # TODO etudiant : {""directe"": [...], ""deux_etapes"": [...]}
 
 print(""Exercice a completer"")",,,,,,,,8b33b8fd7bca42a4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex1-intelligibilite-md,markdown,fr,41f6208a166a76c9,"### Exemple guidé 2 (crédité #21036) : Vitesse et intelligibilité
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex1-intelligibilite-md,markdown,fr,41f6208a166a76c9,"### Exemple guidé 2 (crédité #21036) : Vitesse et intelligibilité
 
 L'exemple guidé 1 a choisi une vitesse d'après le coût de calcul. Pour l'auditeur, la question est autre : la parole accélérée reste-t-elle compréhensible ? Une mesure objective consiste à faire transcrire chaque version par un moteur de reconnaissance vocale (Whisper, vu dans le carnet 01-2) et à compter les mots perdus avec le **taux d'erreur par mot** (WER, *Word Error Rate*) : le nombre minimal de substitutions, de suppressions et d'insertions de mots qui transforment la référence en transcription, divisé par le nombre de mots de la référence.
 
@@ -31804,7 +31818,7 @@ L'exemple guidé 1 a choisi une vitesse d'après le coût de calcul. Pour l'audi
 
 > **Exemple guidé (crédité #21036).** La résolution ci-dessous est celle du groupe de la PR #21036, conservée telle quelle : `normaliser` + `wer` par programmation dynamique, transcription réelle de chaque fichier `speed_*.wav` par faster-whisper local (16 kHz, `resample_poly`), balayage des vitesses jusqu'à la borne 2.0 et second texte difficile. Le nouveau **Exercice 1** qui suit mesure, lui, ce que la vitesse fait à la **durée** des sorties — l'autre moitié du compromis.
 ",,,,,,,,41f6208a166a76c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex1-intelligibilite-code,code,fr,0f5541d0394891b9,"# Exemple guidé 2 : vraies transcriptions Whisper locales, sans simulation
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex1-intelligibilite-code,code,fr,0f5541d0394891b9,"# Exemple guidé 2 : vraies transcriptions Whisper locales, sans simulation
 import re, unicodedata, csv, time
 from math import gcd
 import soundfile as sf
@@ -31933,7 +31947,7 @@ else:
 print('Limites : le WER combine erreurs de synthèse et de reconnaissance. Examiner les transcriptions '
       'et écouter les WAV ; un dépassement ne prouve pas une dégradation monotone avec la vitesse.')
 ",,,,,,,,0f5541d0394891b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex2-phonemes-md,markdown,fr,596e119e44a1d0c6,"### Exemple guidé 4 (crédité #21036) : Phonémisation — la bonne langue et les accents
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex2-phonemes-md,markdown,fr,596e119e44a1d0c6,"### Exemple guidé 4 (crédité #21036) : Phonémisation — la bonne langue et les accents
 
 Avant de générer un son, Kokoro convertit le texte en **phonèmes** avec espeak-ng, selon la langue passée dans le paramètre `lang` de `kokoro.create()` (par défaut `""en-us""`). L'exemple guidé 3 a donc fait lire des résumés français avec des règles de prononciation anglaises. Le défaut ne lève aucune erreur : il s'entend à l'écoute, et il se lit dans les phonèmes.
 
@@ -31955,7 +31969,7 @@ Avant de générer un son, Kokoro convertit le texte en **phonèmes** avec espea
 
 > **Exemple guidé (crédité #21036).** La résolution ci-dessous est celle du groupe de la PR #21036, conservée telle quelle : comptage des bascules `(en)` dans les phonèmes `fr-fr` de textes sans accents, réécriture accentuée, et comparaison phonème par phonème. Le nouveau **Exercice 2** qui suit utilise le même moteur de phonémisation dans l'autre sens : le nombre de phonèmes prédit-il la durée de parole ?
 ",,,,,,,,596e119e44a1d0c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex2-phonemes-code,code,fr,7016f14347284b55,"# Exemple guidé 4 : phonèmes complets, accents réels, langue explicite et manifeste
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex2-phonemes-code,code,fr,7016f14347284b55,"# Exemple guidé 4 : phonèmes complets, accents réels, langue explicite et manifeste
 def compter_bascules(phonemes):
     return phonemes.count('(en)')
 
@@ -32009,7 +32023,7 @@ sf.write(str(OUTPUT_DIR / manifeste['file']), full_podcast, episode_sr)
 (OUTPUT_DIR / 'phonemes.json').write_text(json.dumps(analyses, ensure_ascii=False, indent=2), encoding='utf-8')
 print(json.dumps(manifeste, ensure_ascii=False, indent=2))
 display_audio_array(full_podcast, episode_sr)",,,,,,,,7016f14347284b55,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex3-srt-code,code,fr,d92783e73ff8e120,"# Exemple guidé 6 : version initiale puis ajout de deux répliques britanniques
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex3-srt-code,code,fr,d92783e73ff8e120,"# Exemple guidé 6 : version initiale puis ajout de deux répliques britanniques
 def instant_srt(secondes):
     millis = round(secondes * 1000)
     heures, reste = divmod(millis, 3600000)
@@ -32136,7 +32150,7 @@ else:
 
 # 3. L'échantillon réel : à comparer aux 3.0 dB de la sinusoïde pure
 print(f""  Échantillon de test : {crest_factor_db(audio_data):.1f} dB"")",,,,,,,,5f4552290c395eab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,01a49b2b,markdown,fr,3b209ae2309e569d,"> **Version V4, exécutée avec Kokoro ONNX et faster-whisper sur CPU.** Les sorties enregistrées viennent d'une seule exécution complète du notebook, dans l'ordre. Le statut de chaque partie est résumé par la cellule « Synthèse automatique de l'exécution », en fin de notebook :
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,01a49b2b,markdown,fr,3b209ae2309e569d,"> **Version V4, exécutée avec Kokoro ONNX et faster-whisper sur CPU.** Les sorties enregistrées viennent d'une seule exécution complète du notebook, dans l'ordre. Le statut de chaque partie est résumé par la cellule « Synthèse automatique de l'exécution », en fin de notebook :
 >
 > | Partie | Statut |
 > |---|---|
@@ -32146,7 +32160,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,01a49b2b
 > | Inflect-Nano (section 6) | facultatif (`run_inflect_nano`) |
 > | Écoute | avis individuel de l'auteur, voir la grille en fin de notebook |
 ",,,,,,,,3b209ae2309e569d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,75d7292e,code,fr,082c3c72f7ec80fe,"# Installation du parcours principal, aux versions validées pour la V4
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,75d7292e,code,fr,082c3c72f7ec80fe,"# Installation du parcours principal, aux versions validées pour la V4
 # (Google Colab, Python 3.13, octobre 2026). L'installation ne s'exécute que si
 # l'environnement n'est pas déjà provisionné : un environnement complet (local ou
 # Colab pré-installé) ne déclenche aucun appel pip. Si pip demande un redémarrage,
@@ -32176,7 +32190,7 @@ if run_inflect_nano:
     except ImportError:
         subprocess.check_call([sys.executable, ""-m"", ""pip"", ""install"", ""-q"", ""g2p-en==2.1.0""])
 ",,,,,,,,082c3c72f7ec80fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,06f5903f,code,fr,a70780072099cf32,"# Vérification des prérequis du parcours principal
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,06f5903f,code,fr,a70780072099cf32,"# Vérification des prérequis du parcours principal
 import platform
 from importlib.metadata import version, PackageNotFoundError
 
@@ -32209,7 +32223,7 @@ if ecarts:
 else:
     print(""Toutes les versions correspondent à celles validées pour la V4."")
 ",,,,,,,,a70780072099cf32,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,89a6b36f,code,fr,e844b0652161aad6,"# Détection de la clé OpenAI : informative, ne modifie jamais run_cloud_comparison
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,89a6b36f,code,fr,e844b0652161aad6,"# Détection de la clé OpenAI : informative, ne modifie jamais run_cloud_comparison
 import os
 
 openai_key_source = None
@@ -32238,18 +32252,18 @@ elif not openai_key_available:
 else:
     print(""-> La section 4 appellera l'API OpenAI (appels facturés)."")
 ",,,,,,,,e844b0652161aad6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,lecture-vitesse,markdown,fr,5cb586dd2a3acfd9,"### Interprétation : vitesse et rapport temps réel
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,lecture-vitesse,markdown,fr,5cb586dd2a3acfd9,"### Interprétation : vitesse et rapport temps réel
 
 Dans l'exécution committée, la durée audio passe de 12.25 s à la vitesse 0.5 à 3.61 s à la vitesse 1.5. Le rapport temps réel reste entre 3.4 et 4.2 pour les cinq vitesses (4.2, 3.4, 3.8, 4.2, 3.9) : il varie peu, et le temps de génération suit la durée produite.
 
 À la vitesse 0.5, la phrase dure 2.1 fois plus longtemps qu'à 1.0 (12.25 / 5.93 = 2.07). La meilleure vitesse désignée par le critère est 0.5, avec un écart de 0.4 sur le rapport (4.2 contre 3.8 à la vitesse 1.0) mesuré en une seule exécution : cet écart ne permet pas de conclure qu'une vitesse est meilleure que l'autre.",,,,,,,,5cb586dd2a3acfd9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ae6a6534,markdown,fr,7fafeb970a938cc9,"### Effet de la correction du rééchantillonnage (cellule reproductible)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ae6a6534,markdown,fr,7fafeb970a938cc9,"### Effet de la correction du rééchantillonnage (cellule reproductible)
 
 La V2 donnait à Whisper l'audio à 24 kHz comme s'il était à 16 kHz : Whisper entendait chaque fichier 1,5 fois plus lent et plus grave. La cellule suivante **rejoue volontairement cette erreur** (`reechantillonner=False`) sur les mêmes fichiers, avec le même moteur, le même décodage et la même normalisation que l'exercice, puis la compare aux mesures corrigées.
 
 Elle remplace la contre-vérification de la V3, qui avait été faite hors du notebook avec un autre moteur (sherpa-onnx, décodage glouton) et n'était donc pas reproductible ici. Résultats : `effet_reechantillonnage.csv`.
 ",,,,,,,,7fafeb970a938cc9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,2a85852a,code,fr,19558d5b4902f2da,"# Condition « avant correction » (V2) rejouée, puis comparée aux mesures corrigées de l'exercice 1
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,2a85852a,code,fr,19558d5b4902f2da,"# Condition « avant correction » (V2) rejouée, puis comparée aux mesures corrigées de l'exercice 1
 lignes_effet = []
 for m in mesures:
     chemin = OUTPUT_DIR / m['fichier']
@@ -32272,7 +32286,7 @@ with open(OUTPUT_DIR / 'effet_reechantillonnage.csv', 'w', newline='', encoding=
 trop_longs = [f""{l['texte']} {l['vitesse']}"" for l in lignes_effet if l['duree_entendue_par_whisper_s'] > 30]
 print(""Fichiers entendus comme plus longs que la fenêtre de 30 s de Whisper :"", "", "".join(trop_longs) or ""aucun"")
 ",,,,,,,,19558d5b4902f2da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,EJfny0XZeTds,markdown,fr,2c9c5e4eff82ef08,"### Analyse de l'exemple guidé 2
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,EJfny0XZeTds,markdown,fr,2c9c5e4eff82ef08,"### Analyse de l'exemple guidé 2
 
 *Valeurs de l'exécution de référence : faster-whisper 1.2.1, Whisper small int8, `beam_size=5`, température 0. La synthèse Kokoro et ce décodage sont déterministes sur CPU : une réexécution doit redonner les mêmes valeurs. En cas d'écart, ce sont les sorties des cellules qui font foi.*
 
@@ -32304,7 +32318,7 @@ Le protocole élargi teste une partie de ces hypothèses en comparant deux déco
 
 **Limites.** Le WER mesure une transcription automatique, pas la compréhension humaine. Whisper peut reconstituer une phrase très connue comme « The quick brown fox… » malgré une articulation dégradée. Il se complète par l'écoute : voir la grille en fin de notebook.
 ",,,,,,,,2c9c5e4eff82ef08,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,749c5200,markdown,fr,039f9795e5d9de92,"### Exemple guidé 2 (prolongement) : protocole élargi
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,749c5200,markdown,fr,039f9795e5d9de92,"### Exemple guidé 2 (prolongement) : protocole élargi
 
 Objectif : rendre la conclusion moins dépendante de deux phrases courtes et d'un seul décodage.
 
@@ -32316,7 +32330,7 @@ Objectif : rendre la conclusion moins dépendante de deux phrases courtes et d'u
 
 Résultats : `protocole_elargi.csv` (une ligne par phrase, vitesse et décodage) et `protocole_elargi_synthese.csv`. Les audios sont dans `protocole_elargi/`.
 ",,,,,,,,039f9795e5d9de92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,08bab334,code,fr,66d4d9dee8ddc97e,"# Exemple guidé 2 (prolongement) : corpus élargi, grille fine, deux décodages
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,08bab334,code,fr,66d4d9dee8ddc97e,"# Exemple guidé 2 (prolongement) : corpus élargi, grille fine, deux décodages
 CORPUS = {
     'consigne': ""Please remember to water the plants on the balcony before you leave for the weekend, ""
                 ""and do not forget to lock the back door."",
@@ -32387,7 +32401,7 @@ else:
         if l['erreurs'] and l['decodage'].startswith('faisceau'):
             print(f""  {l['phrase']:13} {l['vitesse']:4.2f} | {l['erreurs']} err. | {l['transcription']}"")
 ",,,,,,,,66d4d9dee8ddc97e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex1-loi-md,markdown,fr,8afbf4e0c94c38a9,"### Exercice 1 : La loi de durée — la vitesse tient-elle sa promesse ?
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex1-loi-md,markdown,fr,8afbf4e0c94c38a9,"### Exercice 1 : La loi de durée — la vitesse tient-elle sa promesse ?
 
 L'exemple guidé 2 a mesuré ce que l'accélération fait à l'**intelligibilité**. L'autre moitié du compromis est mécanique : `speed` promet une parole `speed` fois plus rapide. La promesse est-elle tenue à l'échantillon près, ou le moteur ajoute-t-il un plancher (silence initial, confort de fin) qui fausse la loi aux hautes vitesses ?
 
@@ -32399,7 +32413,7 @@ L'exemple guidé 2 a mesuré ce que l'accélération fait à l'**intelligibilit�
 **Indices** :
 - `# Indice` : triez les vitesses avant d'afficher — l'écart croissant (ou plat) en fin de balayage signe le plancher
 - `# Indice` : si un rapport dépasse nettement 1 à vitesse élevée, cherchez un silence fixe incompressible : `int(duree * sample_rate) - int(duree_ideale * sample_rate)` échantillons de plus que promis",,,,,,,,8afbf4e0c94c38a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex1-loi-code,code,fr,a773b1d0ae12e71e,"# Exercice 1 : la loi de duree -- la vitesse tient-elle sa promesse ?
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex1-loi-code,code,fr,a773b1d0ae12e71e,"# Exercice 1 : la loi de duree -- la vitesse tient-elle sa promesse ?
 # TODO etudiant : mesurer la duree des sorties speed_*.wav et tester la loi duree x speed = constante
 # Etape 1 : duree de chaque speed_<v>_af_heart.wav -> durees_mesurees (dict vitesse -> secondes)
 # Etape 2 : rapport duree(v) * v / duree(1.0) -> rapports_vs_reference (dict vitesse -> float)
@@ -32409,7 +32423,7 @@ durees_mesurees = None  # TODO etudiant
 rapports_vs_reference = None  # TODO etudiant
 deviation_maximale = None  # TODO etudiant
 print(""Exercice 1 a completer : la loi de duree"")",,,,,,,,a773b1d0ae12e71e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,4f2854aa,markdown,fr,25da97ccfc6455bc,"### Lecture du protocole élargi
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,4f2854aa,markdown,fr,25da97ccfc6455bc,"### Lecture du protocole élargi
 
 Les valeurs se lisent dans la sortie ci-dessus et dans `protocole_elargi_synthese.csv`. Trois questions guident la lecture :
 
@@ -32419,7 +32433,7 @@ Les valeurs se lisent dans la sortie ci-dessus et dans `protocole_elargi_synthes
 
 Limites : un seul moteur (Whisper small), une seule voix (`af_heart`), une seule transcription par audio et par décodage. Le WER reste une mesure de transcription automatique, à compléter par l'écoute.
 ",,,,,,,,25da97ccfc6455bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6a4131ae,markdown,fr,0866766c1ca04e71,"### Exemple guidé 4 (prolongement) : vérifications reproductibles et plan factoriel
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,6a4131ae,markdown,fr,0866766c1ca04e71,"### Exemple guidé 4 (prolongement) : vérifications reproductibles et plan factoriel
 
 **1. Le sigle à la synthèse.** La cellule synthétise « IA et santé. » avec quatre écritures du sigle et mesure, pour chacune, la durée et le plus long silence interne. Cela vérifie que les points de « I.A. » ne créent pas de pause gênante. Résultats : `sigle_ia.csv`.
 
@@ -32427,7 +32441,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,6a4131ae
 
 Chaque audio est transcrit par Whisper en français (`language=""fr""`, `beam_size=5`). Le WER est calculé contre le texte accentué, sans tenir compte des accents ni de l'écriture du sigle (« I.A. » et « IA » sont équivalents). Pour chaque facteur, la cellule compare les quatre paires de conditions qui ne diffèrent **que par ce facteur**. Résultats : `plan_factoriel.csv` ; audios dans `plan_factoriel/`.
 ",,,,,,,,0866766c1ca04e71,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,a10cc01f,code,fr,fc085f012a27846e,"# Exemple guidé 4 (prolongement) : sigle à la synthèse, puis plan factoriel voix x langue x orthographe
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,a10cc01f,code,fr,fc085f012a27846e,"# Exemple guidé 4 (prolongement) : sigle à la synthèse, puis plan factoriel voix x langue x orthographe
 import itertools, statistics
 
 def normaliser_fr(texte):
@@ -32514,7 +32528,7 @@ else:
         effets_factoriel[facteur] = statistics.mean(ecarts_facteur)
         print(f""  => écart moyen dû à « {facteur} » : {effets_factoriel[facteur]:+.1%}\n"")
 ",,,,,,,,fc085f012a27846e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,A24_8WkgeTdy,markdown,fr,5f0974a39cc0e24a,"### Analyse de l'exemple guidé 4
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,A24_8WkgeTdy,markdown,fr,5f0974a39cc0e24a,"### Analyse de l'exemple guidé 4
 
 **1. Règles anglaises contre règles françaises.** Avec `en-us`, espeak-ng applique l'orthographe anglaise à des mots français : « Les » → `lˈɛs` (le *s* final se prononce), « routes » → `ɹˈaʊts` (comme l'anglais *routes*), « en » → `ˈɛn`, « medical » → `mˈɛdɪkəl`, « promettent » → `pɹˈoʊmtənt`. Le *r* est anglais (`ɹ`) et aucune voyelle nasale française (`ɑ̃`, `ɔ̃`) n'apparaît. Seul le sigle est épelé (`ˌaɪˈeɪ`), mais avec les noms anglais des lettres. Avec `fr-fr`, on retrouve le `ʁ` français, les nasales (`sˈɑ̃t`, `ʁapidmˈɑ̃`) et les finales muettes (`le`, `ʁˈut`).
 
@@ -32546,7 +32560,7 @@ Ce que mesure ce WER, et ce qu'il ne mesure pas : il indique si Whisper retrouve
 
 Le détail des phonèmes est enregistré dans `phonemes.json`.
 ",,,,,,,,5f0974a39cc0e24a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex2-debit-md,markdown,fr,91b978c089bab9dd,"### Exercice 2 : Phonèmes et durée — le comptage prédit-il le temps de parole ?
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex2-debit-md,markdown,fr,91b978c089bab9dd,"### Exercice 2 : Phonèmes et durée — le comptage prédit-il le temps de parole ?
 
 L'exemple guidé 4 a lu les phonèmes comme un **diagnostic** de langue. Un moteur de synthèse les consomme aussi comme du **carburant** : plus une réplique porte de phonèmes, plus l'audio est long — à condition que le débit (phonèmes par seconde) reste à peu près stable d'une voix à l'autre.
 
@@ -32558,7 +32572,7 @@ L'exemple guidé 4 a lu les phonèmes comme un **diagnostic** de langue. Un mote
 **Indices** :
 - `# Indice` : la langue de phonémisation suit la voix (`af_heart` → `""en-us""`, voix françaises → `""fr-fr""`) ; une mauvaise langue gonfle ou dégonfle le compte
 - `# Indice` : le débit se compare en rapport (max/min), pas en différence absolue — un rapport ≤ 1,2 dira « comparable »",,,,,,,,91b978c089bab9dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex2-debit-code,code,fr,84bb80f5747947c3,"# Exercice 2 : phonemes et duree -- le comptage predit-il le temps de parole ?
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex2-debit-code,code,fr,84bb80f5747947c3,"# Exercice 2 : phonemes et duree -- le comptage predit-il le temps de parole ?
 # TODO etudiant : compter les phonemes de chaque replique et comparer aux durees des segments
 # Etape 1 : len(phonemize(texte, langue)) par replique -> phonemes_par_replica (liste d'entiers)
 # Etape 2 : duree des segments pairs d'audio_segments -> durees_par_replica (liste de secondes)
@@ -32568,7 +32582,7 @@ phonemes_par_replica = None  # TODO etudiant
 durees_par_replica = None  # TODO etudiant
 debit_phonemes_par_voix = None  # TODO etudiant
 print(""Exercice 2 a completer : phonemes et duree"")",,,,,,,,84bb80f5747947c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,1uq211DGeTd4,markdown,fr,59b914956fd05c3d,"### Analyse de l’exemple guidé 6
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,1uq211DGeTd4,markdown,fr,59b914956fd05c3d,"### Analyse de l’exemple guidé 6
 
 Le dialogue initial contient **6 répliques** et dure **15,897333 s**. La version à trois voix contient **8 répliques**, dont deux pour C avec `bf_emma` et la langue `en-gb`, et dure **21,228 s**. Les pauses intermédiaires durent 0,5 s ; aucune pause n’est ajoutée après la dernière réplique.
 
@@ -32576,7 +32590,7 @@ Les questions utilisent `speed=0.9`, les exclamations `speed=1.1` et les autres 
 
 Les fins SRT sont 15,897 s et 21,228 s. L’écart avec les WAV est respectivement d’environ **0,333 ms et 0 ms**, compatible avec l’arrondi du format SRT. Les horaires décrivent les limites des segments synthétisés, qui peuvent inclure un peu de silence interne ; ils ne constituent pas un alignement mot à mot.
 ",,,,,,,,59b914956fd05c3d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex3-largeur-md,markdown,fr,819e93aaff667732,"### Exercice 3 : Sous-titres à largeur bornée — le SRT lisible
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex3-largeur-md,markdown,fr,819e93aaff667732,"### Exercice 3 : Sous-titres à largeur bornée — le SRT lisible
 
 L'exemple guidé 6 produit un SRT **juste** : les horaires collent à l'échantillon près. Un sous-titre diffusé doit aussi être **lisible** : les praticiens bornent la ligne à ~42 caractères (la largeur d'un écran de télévision analogique, restée la norme). Découper une réplique en lignes courtes sans couper un mot, sans dépasser la borne — et sans décaler les horaires.
 
@@ -32588,7 +32602,7 @@ L'exemple guidé 6 produit un SRT **juste** : les horaires collent à l'échanti
 **Indices** :
 - `# Indice` : préfixe `A : ` et ligne de texte partagent la même ligne SRT — la borne s'applique au total
 - `# Indice` : découpez glouton (mot suivant tant qu'il tient) ; un `"""".join` de contrôle par ligne évite de recompter deux fois",,,,,,,,819e93aaff667732,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ex3-largeur-code,code,fr,ece71bd4a8a61f78,"# Exercice 3 : sous-titres a largeur bornee -- le SRT lisible
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,ex3-largeur-code,code,fr,ece71bd4a8a61f78,"# Exercice 3 : sous-titres a largeur bornee -- le SRT lisible
 # TODO etudiant : decouper les entrees du SRT en lignes <= 42 caracteres sans couper un mot
 # Etape 1 : decouper(texte, borne=42) glouton aux espaces -> lignes
 # Etape 2 : entrees reformatees avec prefixe interlocuteur -> entrees_reformatees (liste de listes)
@@ -32598,11 +32612,11 @@ entrees_reformatees = None  # TODO etudiant
 largeur_maximale = None  # TODO etudiant
 lignes_par_entree = None  # TODO etudiant
 print(""Exercice 3 a completer : SRT a largeur bornee"")",,,,,,,,ece71bd4a8a61f78,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,validation-locale,markdown,fr,7e8f8b82c49355df,"## Synthèse automatique de l'exécution
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,validation-locale,markdown,fr,7e8f8b82c49355df,"## Synthèse automatique de l'exécution
 
 La cellule suivante résume les résultats **calculés pendant cette exécution** : les valeurs et les statuts (« mesuré », « non mesuré », « non exécutée ») viennent des variables du notebook, pas d'un texte rédigé à l'avance.
 ",,,,,,,,7e8f8b82c49355df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,f43e7571,code,fr,729782f4e0af4bba,"# Synthèse automatique : résumé calculé à partir des résultats de CETTE exécution
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,f43e7571,code,fr,729782f4e0af4bba,"# Synthèse automatique : résumé calculé à partir des résultats de CETTE exécution
 print(""SYNTHÈSE AUTOMATIQUE DE L'EXÉCUTION"")
 print(""="" * 45)
 
@@ -32638,7 +32652,7 @@ for l in comparaison:
 
 print(""\nSection 6 (Inflect-Nano) :"", ""exécutée"" if globals().get('inflect_loaded') else ""non exécutée"")
 ",,,,,,,,729782f4e0af4bba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,pFCXco0teTd6,markdown,fr,9f257093f86c6351,"## Évaluation auditive personnelle
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,pFCXco0teTd6,markdown,fr,9f257093f86c6351,"## Évaluation auditive personnelle
 
 **Statut : réalisée.** Il s'agit d'un avis individuel, pas d'un MOS calculé sur un panel d'auditeurs.
 
@@ -32659,7 +32673,7 @@ Chaque critère est noté de 1 à 5 (1 = très mauvais ; 2 = insuffisant ; 3 = m
 
 Pour attribuer une différence de prononciation française à un seul facteur, écouter deux fichiers de `plan_factoriel/` qui ne diffèrent que par ce facteur (voir l'analyse de l'exercice 2).
 ",,,,,,,,9f257093f86c6351,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,JIDMB0FFZ6UF,code,fr,6dbb0dd96f5adaeb,"# Export du rendu : notebook désigné explicitement + résultats ; fonctionne dans Colab et en local
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb,JIDMB0FFZ6UF,code,fr,6dbb0dd96f5adaeb,"# Export du rendu : notebook désigné explicitement + résultats ; fonctionne dans Colab et en local
 # Avant d'exécuter : enregistrer le notebook (Ctrl+S), puis passer run_export à True.
 NOTEBOOK_A_EXPORTER = ""01-5-Kokoro_TTS_Local_V4.ipynb""  # nom exact, ou chemin complet du fichier
 DOSSIER_EXPORT = Path.cwd() / ""TP_Kokoro_TTS_Complet""
@@ -32962,7 +32976,7 @@ fixee a 42 pour que la comparaison same-prompt same-seed de la Section 8 soit
 reproductible), le mode chain-of-thought (`cot_mode`) et la force de guidance
 (`cfg_scale`). Le `output_dir` concentre les artefacts generes (audio FLAC, partition
 ABC, tokens, latents) — ils ne sont pas commits dans le depot.",,,,,,,,277cdf29096b775a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,e83297b9,code,fr,4c351a4fb71f23a4,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,e83297b9,code,fr,c47b4b1316e2efb4,"# Setup environnement et imports
 import os
 import sys
 import time
@@ -32970,11 +32984,18 @@ import gc
 import json
 import shutil
 import subprocess
+import warnings
 from pathlib import Path
 
 os.environ.setdefault(""HF_HUB_DISABLE_SYMLINKS_WARNING"", ""1"")
 
 import platform
+
+# Pattern 02-3 (MusicGen-Generation) : audiocraft appelle torch.nn.utils.weight_norm,
+# dont le FutureWarning embarque un chemin machine dans les sorties du carnet.
+# Sous torch 2.6 le message reel commence par un backtick (mesure) : le motif 02-3
+# sans backticks ne matche pas (filterwarnings fait un re.match ancre au debut).
+warnings.filterwarnings(""ignore"", message=r""`torch\.nn\.utils\.weight_norm` is deprecated"")
 
 print(""IMPORTS ET ENVIRONNEMENT"")
 print(""="" * 45)
@@ -32984,7 +33005,7 @@ print(f""Repertoire    {Path.cwd().name}"")
 
 # Repertoires de sortie (artefacts non commites)
 Path(output_dir).mkdir(parents=True, exist_ok=True)
-print(f""Sorties       {output_dir}/ pret"")",,,,,,,,4c351a4fb71f23a4,,,,,,,,,,,,,,,
+print(f""Sorties       {output_dir}/ pret"")",,,,,,,,c47b4b1316e2efb4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,81ece569,markdown,fr,2756d8f98ab8d874,"L'environnement Python est pret et le repertoire d'artefacts est cree. Les sorties
 (audio, ABC, tokens) vivent sous `output/yue2-songs/` et sont **exclues du depot**
 (regenerables par re-execution).",,,,,,,,2756d8f98ab8d874,,,,,,,,,,,,,,,
@@ -36051,11 +36072,11 @@ print(""Exercice a completer"")",,,,,,,,1f2006e070c12631,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,cfb4c4ed,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,0a9a55a6,markdown,fr,f1bd40f9971fe40e,"# Voice Casting : Attribution de voix TTS par personnage
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,0a9a55a6,markdown,fr,5e2472fc240faae8,"# Voice Casting : Attribution de voix TTS par personnage
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Audiobook/04-8-Lecture-Analytique.ipynb) | [Suivant >>](../04-Audiobook/04-10-Annotation-Prosodique.ipynb)
 
-**Epic #1028 — P2 : Generation d'echantillons audio pour chaque personnage detecte en P1.**
+Attribuer une voix TTS à chaque personnage aide à différencier les voix d’un audiobook. Ce carnet montre comment passer des résultats de l’analyse des personnages à des échantillons vocaux à écouter et à valider.
 
 Ce notebook prend les résultats de la lecture analytique (P1) et attribue une voix TTS concrete a chaque personnage en generant une tirade de casting par personnage (165-214 syllabes ecrites ; 8 personnages sur 9 ont une tirade dediee, le 9e retombe sur sa replique la plus longue).
 
@@ -36074,7 +36095,7 @@ Ce notebook prend les résultats de la lecture analytique (P1) et attribue une v
 - **FishAudio S2-Pro** (prevu production) : voice cloning, tags expressifs — non deploye en Docker
 
 **Note** : En production, FishAudio S2-Pro sera le modèle principal avec voice cloning zero-shot et tags expressifs natifs. Ce notebook utilise Kokoro + OpenAI comme substituts demo.
-",,,,,,,,f1bd40f9971fe40e,,,,,,,,,,,,,,,
+",,,,,,,,5e2472fc240faae8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,426f5cf1,markdown,fr,cb590f399cf432da,## 1. Configuration et imports,,,,,,,,cb590f399cf432da,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,63ce1acb,code,fr,2a39899b48c43e4c,"# Import guards - availability flags for external dependencies
 
@@ -37270,3 +37291,14 @@ Le bloc final recapitule la date d'exécution, le modèle LLM utilise, et le nom
 
 **Point cle** : la date d'exécution est generee par `datetime.now()` (horloge locale naive, sans marqueur de fuseau). Si la convention stricte du depot exige un timestamp UTC, c'est une migration a faire separement dans le code (cf. veine #1453/#11449 sur l'horodatage UTC explicite) - cette cellule ne pretend pas l'avoir faite.
 ",,,,,,,,756621f89202082e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,eaac6d4a,code,fr,f6f29e5533aed33f,"# Parameters
+BATCH_MODE = ""true""
+skip_widgets = ""true""
+",,,,,,,,f6f29e5533aed33f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,production-note-20250-audio-4,markdown,fr,0986cd83ca1b3ba2,"> *Repère de production —* Epic #1028, troisième passe du pipeline audiobook : annotation prosodique.",,,,,,,,0986cd83ca1b3ba2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,production-note-20250-audio-3,markdown,fr,a488e3568636e89b,"> *Repère de production —* Epic #1028, Pass 4 du pipeline audiobook.",,,,,,,,a488e3568636e89b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,production-note-20250-audio-2,markdown,fr,a60891f5bdab8ede,"## Provenance de production
+
+> *Repère de production —* Epic #1028, Pass 5 du pipeline : assemblage final des segments TTS en audiobook.",,,,,,,,a60891f5bdab8ede,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,production-note-20250-audio-5,markdown,fr,f0c925547e88f80f,"> *Repère de production —* Epic #1028, P0 : benchmark systématique des modèles TTS disponibles.",,,,,,,,f0c925547e88f80f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,production-note-20250-audio-6,markdown,fr,e9de978c97b5f814,"> *Repère de production —* Epic #1028, P2 : génération d’échantillons audio pour les personnages détectés en P1.",,,,,,,,e9de978c97b5f814,,,,,,,,,,,,,,,

@@ -1,0 +1,9 @@
+- name: "GameTheory-04d Marchandage Asymetrique"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les familles de poids et la simulation pédagogique sont calculées explicitement ; NumPy et la BCL .NET exécutent les mêmes expériences et budgets."
+  known_differences:
+    - "Tirages normaux NumPy et Box-Muller avec Random .NET : mêmes paramètres et 200 instances, valeurs et comptes pseudo-aléatoires distincts."

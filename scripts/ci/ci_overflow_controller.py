@@ -841,6 +841,69 @@ def last_run_age_minutes(
     return None, "aucun passage anterieur du controleur"
 
 
+def read_local_marker(path: Path) -> tuple[datetime | None, str]:
+    """Date du dernier passage MESURE, lue dans le MARQUEUR LOCAL.
+
+    Le marqueur est l'etat VIVANT du declencheur local : c'est lui que la
+    garde de cadence lit quand le passage est local (forme (b) de #25510,
+    arbitree le 2026-11-12). La variante historique lisait l'API des runs
+    du controleur -- etat MORT pour un passage local : aucun run n'est
+    cree, le listing ne bouge pas, et une garde qui lit un etat mort ne
+    garde rien.
+
+    Rend `(date, motif)`. `date` a `None` quand le marqueur est absent ou
+    illisible : le garde-fou ne peut alors rien interdire, et l'absence
+    d'interdiction est la direction qui laisse la soupape fonctionner.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None, "marqueur absent (premier passage)"
+    except OSError as exc:
+        return None, f"marqueur illisible ({exc})"
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return None, "marqueur illisible (JSON invalide)"
+    stamp = payload.get("measured_at") if isinstance(payload, dict) else None
+    if not isinstance(stamp, str):
+        return None, "marqueur sans horodatage"
+    try:
+        return datetime.fromisoformat(stamp.replace("Z", "+00:00")), ""
+    except ValueError:
+        return None, "marqueur illisible (horodatage invalide)"
+
+
+def write_local_marker(
+    path: Path, now: datetime, report: dict
+) -> tuple[bool, str]:
+    """Ecrit le marqueur du passage mesure.
+
+    Le marqueur bouge AU PASSAGE MESURE, jamais sur un passage ecarte par
+    la garde : sinon la garde se verrouillerait elle-meme -- un passage
+    ecarte repousserait le suivant, qui serait ecarte a son tour, et la
+    mesure n'arriverait plus jamais.
+
+    Rend `(succes, motif)`.
+    """
+    payload = {
+        "measured_at": now.astimezone(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "verdict": report.get("verdict"),
+        "written": report.get("written"),
+        "mode": report.get("mode"),
+    }
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except OSError as exc:
+        return False, f"marqueur non ecrit ({exc})"
+    return True, ""
+
+
 def read_variable(
     repo: str, name: str, token: str
 ) -> tuple[str | None, datetime | None, str]:
@@ -1676,6 +1739,21 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--local-marker",
+        type=Path,
+        default=None,
+        metavar="CHEMIN",
+        help=(
+            "marqueur local du dernier passage MESURE : c'est lui qui porte "
+            "l'ecart lu par la garde de cadence quand le passage est "
+            "LOCAL (forme (b) de #25510). Un passage local ne cree aucun "
+            "run : l'API des runs du controleur y decrit un etat MORT, et "
+            "une garde qui lit un etat mort ne garde rien. Le marqueur est "
+            "ecrit SEULEMENT apres un passage mesure -- jamais apres un "
+            "passage ecarte, sinon la garde se verrouillerait elle-meme."
+        ),
+    )
+    parser.add_argument(
         "--reorient-min-age",
         type=float,
         default=DEFAULT_REORIENT_MIN_AGE,
@@ -1751,13 +1829,26 @@ def main(argv: list[str] | None = None) -> int:
     # TOUS les cas : c'est l'instrument qui rend visible la mort du
     # declencheur local (un ecart qui grandit) au lieu de la laisser
     # silencieuse. Il coute UN appel, dans un passage qui en compte 313.
-    age, age_reason = last_run_age_minutes(
-        args.repo,
-        CONTROLLER_WORKFLOW_FILE,
-        now,
-        token,
-        current_run_id=os.environ.get("GITHUB_RUN_ID"),
-    )
+    if args.local_marker is not None:
+        # Passage LOCAL (forme (b) de #25510, arbitree le 2026-11-12) :
+        # l'ecart se lit dans le MARQUEUR LOCAL, etat vivant du
+        # declencheur. L'API des runs du controleur y decrit un etat MORT
+        # -- aucun run n'est cree, le listing ne bouge pas -- et la garde
+        # y interdirait donc jamais rien, pour un appel API.
+        stamp, age_reason = read_local_marker(args.local_marker)
+        age = (
+            (now - stamp).total_seconds() / 60.0 if stamp is not None else None
+        )
+        age_source = "marqueur local"
+    else:
+        age, age_reason = last_run_age_minutes(
+            args.repo,
+            CONTROLLER_WORKFLOW_FILE,
+            now,
+            token,
+            current_run_id=os.environ.get("GITHUB_RUN_ID"),
+        )
+        age_source = "runs GitHub du controleur"
     if args.min_interval > 0:
         if age is not None and age < args.min_interval:
             report = {
@@ -1769,6 +1860,7 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 "skipped": True,
                 "last_run_age_min": age,
+                "last_run_age_source": age_source,
                 "min_interval_min": args.min_interval,
                 "current": None,
                 "target": None,
@@ -1796,11 +1888,18 @@ def main(argv: list[str] | None = None) -> int:
             # L'ecart n'a pas pu etre etabli : le garde-fou ne peut rien
             # interdire. On continue (mesurer vaut mieux que ne rien
             # faire), et le motif est dit dans le rapport.
-            print(
-                f"[ci-overflow] garde de cadence inoperante ({age_reason}) -- "
-                f"le passage continue",
-                file=sys.stderr,
-            )
+            if args.local_marker is not None:
+                print(
+                    f"[ci-overflow] marqueur de cadence absent "
+                    f"({age_reason}) -- premier passage mesure",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"[ci-overflow] garde de cadence inoperante ({age_reason}) -- "
+                    f"le passage continue",
+                    file=sys.stderr,
+                )
 
     # Lecture de la variable : le jeton d'ecriture d'abord (il porte le droit
     # `Variables: read-write`), le jeton de mesure en repli LECTURE SEULE
@@ -2014,6 +2113,7 @@ def main(argv: list[str] | None = None) -> int:
         "write_blocked": write_blocked,
         "last_run_age_min": round(age, 1) if age is not None else None,
         "last_run_age_reason": age_reason,
+        "last_run_age_source": age_source,
         "state_known": not state_unknown,
         "state_reason": state_reason,
         "hosted": {
@@ -2106,6 +2206,23 @@ def main(argv: list[str] | None = None) -> int:
     }
     if write_error:
         report["write_error"] = write_error
+
+    # MARQUEUR LOCAL : ecrit SEULEMENT apres un passage MESURE (le passage
+    # ecarte par la garde est sorti plus haut, avant toute mesure). Le
+    # marqueur porte l'ecart que la garde lira au passage suivant : c'est
+    # l'etat VIVANT du declencheur local.
+    if args.local_marker is not None:
+        marker_ok, marker_error = write_local_marker(
+            args.local_marker, now, report
+        )
+        report["local_marker"] = str(args.local_marker)
+        report["local_marker_written"] = marker_ok
+        if not marker_ok:
+            report["local_marker_error"] = marker_error
+            print(
+                f"[ci-overflow] marqueur de cadence NON ecrit ({marker_error})",
+                file=sys.stderr,
+            )
 
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))

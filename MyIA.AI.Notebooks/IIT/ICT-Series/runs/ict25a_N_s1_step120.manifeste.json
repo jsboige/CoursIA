@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "cree_le_utc": "2026-11-24T11:02:47Z",
+  "bras": "N",
+  "graine": 1,
+  "etape": 120,
+  "modele": "Qwen/Qwen3.5-2B-Base",
+  "couche": "18",
+  "position": "last",
+  "graine_generation": 20261124,
+  "empreinte_batterie": "6c7c2679263626d22763ec938507512f9a8830650ebde4317badd47b4728ac32",
+  "npz": {
+    "chemin": "ict25a_N_s1_step120.npz",
+    "sha256": "d85cf085385756b8c286da126c86129a5b69d03380ca5e0022ea1f8973965b67"
+  },
+  "prompts": {
+    "p01": {
+      "sha256": "45d69036b39ce0be7bb611ceea8e9b55be3bc614b6a6ae917d7f64d20669edcd",
+      "norme": 16.026880609560134
+    },
+    "p02": {
+      "sha256": "c5fe837e3f89b994d8459e8f152cb25cf10674996bd9af6b8c675cf6e31914af",
+      "norme": 15.98970436850029
+    },
+    "p03": {
+      "sha256": "198989cc46b2b64970b8f482c10fd2b5a30d7d85e04d8c56a1ffc4876006484d",
+      "norme": 15.997677800674266
+    },
+    "p04": {
+      "sha256": "52a419773273f67828576a8e6704ed9acdf47c257b5c2a15433fe7f6239d2c9c",
+      "norme": 15.821401383314601
+    },
+    "p05": {
+      "sha256": "e07674bdf3297eb8847742f379fa0ca726970a83afaa770a7ab9c84875c5214b",
+      "norme": 15.827278601181268
+    }
+  }
+}

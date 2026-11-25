@@ -411,6 +411,13 @@ LSTM h=1 (Sharpe 0.53) semble mediocre. Mais en allongeant l'horizon de predicti
 layout: compact
 ---
 
+<style scoped>
+/* Les deux schemas sont en position absolue a droite (x >= 726 px) : sans
+   borne, le texte passait dessous (« M15 LSTM » repeint par rnn_unrolled,
+   EPIC #11508, L2). La colonne de texte s'arrete avant eux. */
+ul, ol { max-width: 660px; }
+</style>
+
 # Lecon M15 : l'horizon de prediction est un hyperparametre critique
 
 - **L'hypothese de base** : "LSTM ne marche pas en finance" est **fausse** -- c'est l'horizon h=1 qui ne marche pas

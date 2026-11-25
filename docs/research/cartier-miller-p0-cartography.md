@@ -217,7 +217,7 @@ le parcours par date de ce périodique passe par un accès BnF, et les
 images de page ne sont servies qu'en session authentifiée.
 
 Les trois pages (p. 426-428) ont été **extraites et déposées au
-gisement** : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\1957 - Cartier - Une nouvelle operation sur les formes differentielles (C. R. Acad. Sci., t. 244, p. 426-428).pdf`
+gisement** : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Category Theory and Semiphysics\1957 - Cartier - Une nouvelle operation sur les formes differentielles (C. R. Acad. Sci., t. 244, p. 426-428).pdf`
 (496 320 octets, sha256 `195953e928bdf6d52b0e1f3a4f495ddb5807bf5ae151b75a57d2da4b07e3994f`).
 
 **Identité vérifiée sur la première page** : « ALGEBRE. — Une nouvelle

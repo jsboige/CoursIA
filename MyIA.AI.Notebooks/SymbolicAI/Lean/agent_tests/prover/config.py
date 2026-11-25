@@ -280,7 +280,7 @@ import Mathlib.Tactic
 # ── Conway calibration (Epic #1453) ──
 # Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
 _CONWAY_CANDIDATES = [
-    _workspace_relative("SymbolicAI/Lean/GOL/conway_lean"),
+    _workspace_relative("SymbolicAI/Lean/JeuDeLaVie/conway_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
@@ -314,10 +314,10 @@ CONWAY_HASHLIFE_FILE = (
 )
 # ── Knots terrain (Epic #1453 « Ce qui reste » n.1 — first knot_lean DEMO) ──
 _KNOT_CANDIDATES = [
-    _workspace_relative("SymbolicAI/Lean/KNOTS/knot_lean"),
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
-    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
+    _workspace_relative("SymbolicAI/Lean/Noeuds/knot_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\Noeuds\knot_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\Noeuds\knot_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\Noeuds\knot_lean"),
 ]
 KNOT_DIR = next(
     (p for p in _KNOT_CANDIDATES if p is not None and p.exists()),
@@ -571,7 +571,7 @@ DEMOS = {
         "file": str(VOTING_FILE),
         "line": 355,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem_strict (case peaks_j < median)",
+        "theorem_name": "median_voter_theorem_strict",  # cas peaks_j < median
         "theorem": "median_voter_theorem_strict",
         "imports": VOTING_IMPORTS,
         "goal": (
@@ -682,7 +682,7 @@ DEMOS = {
         "file": str(VOTING_FILE),
         "line": 385,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem_strict (case peaks_j > median)",
+        "theorem_name": "median_voter_theorem_strict",  # cas peaks_j > median
         "theorem": "median_voter_theorem_strict",
         "imports": VOTING_IMPORTS,
         "goal": (
@@ -1744,7 +1744,7 @@ DEMOS = {
         "file": str(BASIC_FILE) if BASIC_FILE else "",
         "line": 312,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "bondareva_shapley_backward (hb_witness existence)",
+        "theorem_name": "bondareva_shapley_backward",  # cas hb_witness existence
         "theorem": "bondareva_shapley_backward",
         "imports": (
             "import Mathlib.Data.Finset.Basic\n"

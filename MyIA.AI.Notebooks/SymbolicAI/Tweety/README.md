@@ -177,7 +177,7 @@ Numéros nus uniquement, lisibles de haut en bas. Le compte et la maturité exac
 | 4  | [Tweety-04-Belief-Revision-Python](Tweety-04-Belief-Revision-Python.ipynb) | MUS, MaxSAT, Mesures d'incohérence, AGM | Python |
 | 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques grounded/stable/CF2, frameworks aléatoires | Python |
 | 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP — quel cadre selon le domaine | Python |
-| 7  | [Tweety-07a-Extended-Frameworks-Python](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
+| 7  | [Tweety-07-Extended-Frameworks-Python](Tweety-07-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
 | 8  | [Tweety-08-Agent-Dialogues-Python](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, dialogues argumentatifs, loteries | Python |
 | 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.ipynb) | Préférences, théorie du vote (Borda, Condorcet) | Python |
 | 10 | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) | Markov Logic Networks : FOL pondérée, marginales, exceptions (le pingouin) | Python |
@@ -236,11 +236,11 @@ Une section par palier qui ouvre des lettres. Chaque lettre est **facultative** 
 
 #### Autour de 07 — cadres étendus et probabilistes
 
-Le palier 07 est porté par le **07a** (Python) et son jumeau **07ac** (C#) ; le **07b** (probabiliste) en est l'approfondissement.
+Le palier 07 est porté par le **07** (Python) et son jumeau **07c** (C#) ; le **07b** (probabiliste) en est l'approfondissement.
 
 | Lettre | Notebook | Ce que cette lettre ajoute |
 |---|---|---|
-| 07ac | [Tweety-07a-Extended-Frameworks-CSharp](Tweety-07a-Extended-Frameworks-CSharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety réelle via IKVM (DLL shade 7a versionnée à la racine, rebuildable via `dotnet-build/rebuild-7a.sh` ; #4956) |
+| 07c | [Tweety-07-Extended-Frameworks-CSharp](Tweety-07-Extended-Frameworks-CSharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety réelle via IKVM (DLL shade 7a versionnée à la racine, rebuildable via `dotnet-build/rebuild-7a.sh` ; #4956) |
 | 07b  | [Tweety-07b-Ranking-Probabilistic-Python](Tweety-07b-Ranking-Probabilistic-Python.ipynb) | Sémantiques de classement (ranking) et argumentation probabiliste |
 | 07bc | [Tweety-07b-Ranking-Probabilistic-CSharp](Tweety-07b-Ranking-Probabilistic-CSharp.ipynb) | Jumeau C# du 07b (IKVM, c.179 PR #5231) — `Ranking`, `SubgraphProbability` réels |
 
@@ -300,7 +300,7 @@ Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y e
 
 - [Infer-05-Causal-Inference](../../Probas/Infer/Infer-05-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
 - [PyMC-05-Causal-Inference](../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
-- [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
+- [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
 Vue d'ensemble des quatre paradigmes : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
@@ -461,8 +461,8 @@ Tweety/
 ├── Tweety-05e-Propositional-Lab-Lean-Python.ipynb         # Laboratoire propositionnel Tweety/Lean (tranche A #15066)
 ├── Tweety-06-Structured-Argumentation-Python.ipynb        # ASPIC+, DeLP, ABA, ASP
 ├── Tweety-06-Structured-Argumentation-CSharp.ipynb # Twin C# ASPIC+ from-scratch (BCL, PROD)
-├── Tweety-07a-Extended-Frameworks-Python.ipynb            # ADF, Bipolar, WAF, SAF
-├── Tweety-07a-Extended-Frameworks-CSharp.ipynb     # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, PROD)
+├── Tweety-07-Extended-Frameworks-Python.ipynb            # ADF, Bipolar, WAF, SAF
+├── Tweety-07-Extended-Frameworks-CSharp.ipynb     # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, PROD)
 ├── Tweety-07b-Ranking-Probabilistic-Python.ipynb          # Ranking Semantics
 ├── Tweety-07b-Ranking-Probabilistic-CSharp.ipynb   # Ranking/Probabiliste .NET (IKVM, PROD)
 ├── Tweety-08-Agent-Dialogues-Python.ipynb                 # Agents, dialogues, loteries
@@ -505,7 +505,7 @@ Les carnets listés ci-dessous importent le module d'initialisation `tweety_init
 | `Tweety-02d-FOL-Lab-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
 | `Tweety-02e-Preuves-Hilbert-Gentzen-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
 | `Tweety-03b-Modal-Lab-Lean-Python.ipynb` | 2 | `from tweety_init import init_tweety` |
-| `Tweety-07a-Extended-Frameworks-Python.ipynb` | 1 | `from tweety_init import init_tweety, EXTERNAL_TOOLS, get_tool_path, print_tools_summary` |
+| `Tweety-07-Extended-Frameworks-Python.ipynb` | 1 | `from tweety_init import init_tweety, EXTERNAL_TOOLS, get_tool_path, print_tools_summary` |
 | `Tweety-10-MLN-Python.ipynb` | 1 | `from tweety_init import init_tweety` |
 | `Tweety-11-Causal-Python.ipynb` | 4 | `from tweety_init import init_tweety` |
 
@@ -826,7 +826,7 @@ Détails paradigmes/stacks :
 - **C#/.NET (IKVM 8.14, 18 nb)** : bytecode Java→.NET downgrade Java 15→8 (post-C190 `JvmDowngrader`), sans JVM. PROD=12, BETA=5 (`Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-04-Belief-Revision-CSharp`, `Tweety-04-Aspic-CSharp`, `Tweety-05-Abstract-Argumentation-CSharp`), DRAFT=1 = BROKEN (`Tweety-03-Advanced-Logics-CSharp`, conflits de noms sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés dans la même DLL).
 - **Probe (`_probes/Tweety-IKVM-Init-Probe`, 1 nb)** : IKVM init smoke-test BETA.
 
-**Matrice de versions IKVM (mesurée le 2026-10-07)** — la chaîne de build repose sur trois artefacts qui ne sont pas entièrement alignés entre eux, et l'écart est **déclaré ici** plutôt que masqué : les **recettes** (`dotnet-build/*.csproj`) sont 18 sur 19 en IKVM 8.14.0 (la 19ᵉ, `build-TweetyPreferencesShade.csproj`, en 8.15.0) et ciblent toutes `net8.0` ; les **DLL livrées** référencent `IKVM.Runtime` 8.14.0 pour 14 d'entre elles et 8.15.0 pour cinq (`pl`, `aspic`, `beliefdynamics`, `dung`, `preferences`) ; les **carnets** (`#r "nuget: IKVM, X"`) en pinnent 8.15.0 pour 12 et 8.14.0 pour 6. Les six carnets en 8.14.0 sont **précisément ceux dont la DLL a été rebâtie par le correctif C190** (`JvmDowngrader`, bytecode Java 15→8) : leur pin suit leur DLL. Le résiduel — quatre recettes (`build-TweetyShade` → `pl`, `build-TweetyAspicShade`, `build-TweetyBeliefDynamicsShade`, `build-TweetyDungShade`) qui déclarent 8.14.0 et produisent pourtant un binaire référençant 8.15.0, et trois carnets (`07a-Extended-Frameworks`, `08-Agent-Dialogues`, `11-Causal`) qui pinnent un runtime plus récent que la DLL qu'ils chargent — est suivi dans [#19673](https://github.com/jsboige/CoursIA/issues/19673). Sa résolution exige une décision de version et, pour tout carnet dont une cellule de code change, une ré-exécution (C.2) : ce n'est pas une correction de prose.
+**Matrice de versions IKVM (mesurée le 2026-10-07)** — la chaîne de build repose sur trois artefacts qui ne sont pas entièrement alignés entre eux, et l'écart est **déclaré ici** plutôt que masqué : les **recettes** (`dotnet-build/*.csproj`) sont 18 sur 19 en IKVM 8.14.0 (la 19ᵉ, `build-TweetyPreferencesShade.csproj`, en 8.15.0) et ciblent toutes `net8.0` ; les **DLL livrées** référencent `IKVM.Runtime` 8.14.0 pour 14 d'entre elles et 8.15.0 pour cinq (`pl`, `aspic`, `beliefdynamics`, `dung`, `preferences`) ; les **carnets** (`#r "nuget: IKVM, X"`) en pinnent 8.15.0 pour 12 et 8.14.0 pour 6. Les six carnets en 8.14.0 sont **précisément ceux dont la DLL a été rebâtie par le correctif C190** (`JvmDowngrader`, bytecode Java 15→8) : leur pin suit leur DLL. Le résiduel — quatre recettes (`build-TweetyShade` → `pl`, `build-TweetyAspicShade`, `build-TweetyBeliefDynamicsShade`, `build-TweetyDungShade`) qui déclarent 8.14.0 et produisent pourtant un binaire référençant 8.15.0, et trois carnets (`07-Extended-Frameworks`, `08-Agent-Dialogues`, `11-Causal`) qui pinnent un runtime plus récent que la DLL qu'ils chargent — est suivi dans [#19673](https://github.com/jsboige/CoursIA/issues/19673). Sa résolution exige une décision de version et, pour tout carnet dont une cellule de code change, une ré-exécution (C.2) : ce n'est pas une correction de prose.
 
 **Conformité C.1** : les notebooks exposent des stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Les dépendances sont gérées par `requirements.txt` racine (JPype1, tweety-translate, pandas, numpy, jdk-pywrap). Le port C#/.NET (EPIC #4667) cible `net8.0` + IKVM 8.14.0 (post-C190 JvmDowngrader Java 15→8) ; les recettes de build vivent dans `dotnet-build/` (un `*.csproj` à `<IkvmReference>` + son POM shade par module, documentés par le README du dossier) et l'inventaire détaillé dans la [Section Tweety](https://github.com/jsboige/CoursIA/issues/4667). Le seul notebook C# à maturité DRAFT est `Tweety-03-Advanced-Logics-CSharp` (statut BROKEN : héritage des conflits de noms de classes IKVM 8.14 sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés).
 

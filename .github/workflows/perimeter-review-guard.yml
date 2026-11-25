@@ -70,32 +70,15 @@ name: perimeter-review-guard
 
 # SURFACES (#14283, puis #21922) : ce fichier porte les DEUX surfaces du
 # garde -- `pull_request` (restaure par #21922) et `pull_request_review`
-# (#14283) -- et always-on-guards.yml conserve sa jambe `perimeter` sur
-# `pull_request`.
+# (#14283). Depuis #24231, il est l'unique porteur de l'organe `perimeter` :
+# always-on-guards.yml n'en porte plus de copie.
 #
-#   pull_request         -> ce fichier                          (ubuntu-latest)
-#                           + always-on-guards.yml :: perimeter (self-hosted)
+#   pull_request         -> ce fichier (ubuntu-latest)
 #   pull_request_review  -> ce fichier                          (ubuntu-latest)
 #
-# La jambe de l'umbrella n'est PAS redondante : elle couvre les PRs que CE
-# fichier saute par construction (le job est `if:`-gate sur
-# `head.repo.full_name == github.repository`, donc une PR de fork n'y passe
-# pas). Sur une PR same-repo, l'organe est donc mesure deux fois -- memes
-# arguments, meme tete, meme verdict : la mesure est idempotente, elle ne
-# peut pas diverger. Ce que la seconde mesURE achete n'est pas une regle de
-# plus, c'est le RAFRAICHISSEMENT du nom de check-run "perimeter review guard
-# (#11268)" : seul le run de ce fichier le publie, et c'est ce nom que
-# l'agrégat du PR gate replie (latest-wins par nom). Sans lui, une
-# correction de body laissait le rouge de la surface review en place.
-#
-# Residu assume (#21990, voie b -- decision documentee) : la jambe umbrella
-# `perimeter` d'always-on-guards.yml ne porte que `pull_request`, et CE
-# fichier est gate hors fork (`if:` du job, `head.repo.full_name`) -- sur
-# une PR de fork, une REVIEW tierce posterieure ne declenche donc AUCUNE
-# re-mesure du perimetre, ni ici ni dans l'umbrella : le run du
-# `pull_request` initial reste la seule mesure. Le residu ne couvre que
-# les PRs de fork ; la voie (a) de #21990 -- surface de re-mesure dediee
-# sur pool GitHub-hosted -- reste ouverte si le mainteneur la demande.
+# Le job est gate hors fork (`if:` sur `head.repo.full_name`) ; les PRs de
+# fork sont donc ignorées ici, comme elles l'étaient avant #24231. Leur couverture
+# après une review tierce reste limitée au déclenchement d'ouverture initial.
 #
 # Pourquoi ce fichier vit sur ubuntu-latest : `pull_request_review` est un
 # declencheur fork-reachable (FORK_REACHABLE_TRIGGERS, #14201 tranche 2),
@@ -104,9 +87,8 @@ name: perimeter-review-guard
 # evalue les declencheurs au niveau WORKFLOW, pas par job. always-on-guards
 # etant le premier consommateur GitHub-hosted du depot (2650 runs same-repo
 # en 5 jours, timeout 25 min), c'est lui qu'il fallait pouvoir router.
-# Cout du trigger `pull_request` ajoute ici : un job GitHub-hosted par
-# evenement de PR (mesure #21922 : 93 evenements sur le 2026-10-21, 228 par
-# jour sur les trois derniers jours) -- le meme organe, en plus.
+# Ce porteur GitHub-hosted traite aussi chaque événement `pull_request`, ce
+# qui conserve le coût mesuré lors du rétablissement de #21922.
 #
 # Ce job reste sur ubuntu-latest POUR LA MEME RAISON : un declencheur
 # fork-reachable ne doit jamais atteindre un runner auto-heberge (volume de
@@ -159,7 +141,7 @@ on:
 # `workflow_dispatch` : pas d'objet pull_request dans le contexte, un groupe
 # unique par run signifie "jamais d'annulation" pour la re-mesure manuelle.
 concurrency:
-  group: perimeter-review-guard-${{ github.event.pull_request.head.sha || github.run_id }}
+  group: perimeter-review-guard-${{ github.event.pull_request.head.sha || github.run_id }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.event.changes.body == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 # Moindre privilege (#16185, CodeQL `actions/missing-workflow-permissions`) :
@@ -189,7 +171,7 @@ jobs:
     # alors. Le ravivage de la surface le rend inadmissible -- et
     # check_self_hosted_runner_policy.py le refuse (FORK_REACHABLE_TRIGGER).
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     timeout-minutes: 10
 
     steps:

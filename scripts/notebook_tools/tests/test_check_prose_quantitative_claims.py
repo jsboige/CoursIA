@@ -37,6 +37,15 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import check_prose_quantitative_claims as cqc  # noqa: E402
 
+# Ancre des tests d'audit : l'exemption Gosper, selectionnee par son MOTIF.
+# ARTIFACT_EXEMPTIONS n'a pas de semantique d'ordre -- une exemption ajoutee
+# en tete de la liste ne doit pas detourner les tests d'audit.
+GOL_EXEMPTION = next(
+    e
+    for e in cqc.ARTIFACT_EXEMPTIONS
+    if e.motif.search("Gosper Glider Gun (36 cellules vivantes")
+)
+
 
 # --------------------------------------------------------------------------- #
 #  Classe artifact (COUNT_RE) : mesure d'artefact vivant = flag ; pedagogie = non
@@ -66,6 +75,76 @@ def test_count_re_requires_number_before_noun():
     le nombre doit PRECEDER immediatement le nom. Jamais flag."""
     assert cqc.COUNT_RE.search("module 5") is None
     assert cqc.COUNT_RE.search("le module numero 5") is None
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Sommets : 81 cellules de la grille (9x9)",
+        "Ce notebook présente 81 cellules de la grille Sudoku.",
+        "Ce notebook présente une grille Sudoku de 81 cellules.",
+        "Dans ce carnet, la matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
+        "This notebook presents 81 cells of the grid.",
+        "The graph has 81 cells of the 9x9 grid as vertices.",
+        "**729 lignes** = 9 lignes x 9 colonnes x 9 valeurs",
+        "La matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
+        "La matrice contient 324 colonnes x 729 lignes maximum.",
+        "The exact-cover matrix has 729 lines, one for each cell-value pair.",
+    ],
+)
+def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
+    """Les dimensions explicites d'un modele Sudoku ne sont pas des inventaires.
+
+    81 cellules décrit les cases de la grille ; 729 lignes décrit les candidats
+    de la matrice de couverture exacte. Ces quantités mathématiques stables ne
+    doivent pas bloquer une PR pédagogique en mode ``--diff --strict``.
+    """
+    assert cqc._findings_in_text(line, "cours/sudoku.ipynb", {"artifact"}) == []
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        (
+            "The notebook has 81 cells of the grid.",
+            ["81 cells"],
+        ),
+        (
+            "La matrice de données du fichier source a 120 lignes, une par couple cellule-valeur.",
+            ["120 lignes"],
+        ),
+        (
+            "Le notebook contient 81 cellules de code pour expliquer la grille Sudoku.",
+            ["81 cellules"],
+        ),
+        (
+            "Le fichier source compte 729 lignes de code pour construire la matrice.",
+            ["729 lignes"],
+        ),
+        (
+            "Le fichier source contient 729 lignes, une par couple cellule-valeur.",
+            ["729 lignes"],
+        ),
+        (
+            "Le fichier source fait 324 colonnes x 729 lignes.",
+            ["729 lignes"],
+        ),
+        (
+            "Matrice de couverture exacte : 729 lignes, une par couple cellule-valeur ; "
+            "le notebook contient aussi 81 cellules de code.",
+            ["81 cellules"],
+        ),
+        (
+            "Matrice de couverture exacte : le code fait 80 lignes de code ; "
+            "729 lignes, une par couple cellule-valeur.",
+            ["80 lignes"],
+        ),
+    ],
+)
+def test_domain_context_does_not_hide_artifact_inventory_counts(line, expected):
+    """Le contexte mathématique ne doit masquer aucun compte d'inventaire."""
+    findings = cqc._findings_in_text(line, "cours/sudoku.ipynb", {"artifact"})
+    assert [snippet for _location, _klass, snippet in findings] == expected
 
 
 # --------------------------------------------------------------------------- #
@@ -101,15 +180,15 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
     "path, line",
     [
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
             "  - Gosper Glider Gun (36 cellules vivantes, période 30) parsé et vérifié",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
             "- Pulsar (48 cellules) et pentadecathlon (p15) sont à la limite",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.en.md",
             "- Pulsar (48 cells) and pentadecathlon (p15) are borderline but pass `native_decide`",
         ),
         (
@@ -118,7 +197,7 @@ def test_artifact_exemptions_are_motivated_and_point_at_real_files():
             "compilées en 1154 s, 0 sorry/0 axiom)",
         ),
         (
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md",
             "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;",
         ),
     ],
@@ -178,7 +257,7 @@ def test_artifact_exemption_is_a_span_not_a_file_blanket():
     Un vrai compteur de carnet sur la MEME ligne reste flague : c'est ce qui
     distingue une exemption motivee d'un couperet par fichier, qui avalerait en
     silence un compte ajoute plus tard."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md"
     out = cqc._findings_in_text(
         "- Pulsar (48 cellules) et le carnet fait 87 cellules de code", path, {"artifact"}
     )
@@ -195,7 +274,7 @@ def test_artifact_exemption_on_incident_narrative_is_a_span_not_a_blanket():
 
     Sans ce temoin, l'exemption pourrait se transformer en couperet par fichier
     sans qu'aucun test ne rougisse."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md"
     exempte = "fabriquée : la v1 du gun, 36 cellules fausses, passait le check de règle) ;"
     assert cqc._findings_in_text(exempte, path, {"artifact"}) == []
     out = cqc._findings_in_text(
@@ -219,7 +298,7 @@ def test_artifact_exemption_uses_the_file_part_of_a_notebook_location():
     """Une cellule de carnet porte une location « <fichier> MD[<i>] » : la
     partie fichier suffit a apparier l'exemption, et le finding restitution
     garde la location complete."""
-    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md"
+    path = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md"
     out = cqc._findings_in_text("Pulsar (48 cellules)", f"{path} MD[3]", {"artifact"})
     assert out == []
     out = cqc._findings_in_text("Le carnet fait 87 cellules", f"{path} MD[3]", {"artifact"})
@@ -229,7 +308,7 @@ def test_artifact_exemption_uses_the_file_part_of_a_notebook_location():
 def test_exemption_audit_separates_live_from_stale(tmp_path):
     """Une entree qui ne couvre plus rien est PERIMEE, pas silencieuse : elle ne
     protege aucun compteur et se lit pourtant comme une decision vivante."""
-    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    first = GOL_EXEMPTION
     target = tmp_path / first.path
     target.parent.mkdir(parents=True)
     target.write_text(
@@ -261,7 +340,7 @@ def test_exemption_audit_under_a_subtree_root_judges_the_named_file(tmp_path):
     designait un fichier existant et **les 12** se lisaient perimees, avec pour
     consigne de les retirer -- 100 % de faux positifs sur un dispositif vivant.
     """
-    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    first = GOL_EXEMPTION
     target = tmp_path / first.path
     target.parent.mkdir(parents=True)
     target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")
@@ -285,7 +364,7 @@ def test_scan_all_under_a_subtree_root_still_applies_live_exemptions(tmp_path):
     arbitrage humain avait deja tranche (les compteurs Conway sont des cellules
     de l'automate, pas des totaux de carnets).
     """
-    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    first = GOL_EXEMPTION
     target = tmp_path / first.path
     target.parent.mkdir(parents=True)
     target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")
@@ -850,6 +929,44 @@ def test_scan_diff_skips_code_cell_comments_but_flags_markdown_counts(tmp_path, 
         "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
     found = cqc.scan_diff("HEAD", {"artifact"})
     assert [snippet for _loc, _klass, snippet in found] == ["1 ligne"]
+
+
+def test_scan_diff_strict_accepts_domain_dimensions_but_keeps_inventory(
+    tmp_path, monkeypatch, capsys
+):
+    """La porte diff/strict accepte la geometrie, mais refuse l'inventaire."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "core.autocrlf", "false")
+    nb_path = repo / "sudoku.ipynb"
+    metadata = {"metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    _dump_nb(
+        nb_path,
+        {
+            **metadata,
+            "cells": [{"cell_type": "markdown", "source": ["Introduction.\n"]}],
+        },
+    )
+    _commit_all(repo, "base")
+    monkeypatch.chdir(repo)
+
+    domain_cells = [
+        {"cell_type": "markdown", "source": ["Sommets : 81 cellules de la grille (9x9)\n"]},
+        {"cell_type": "markdown", "source": ["**729 lignes** = 9 lignes x 9 colonnes x 9 valeurs\n"]},
+    ]
+    _dump_nb(nb_path, {**metadata, "cells": domain_cells})
+    findings = cqc.scan_diff("HEAD", {"artifact"})
+    assert findings == []
+    assert cqc._emit_grouped(findings, strict=True, structural_only=False) == 0
+    capsys.readouterr()
+
+    inventory = {"cell_type": "markdown", "source": ["Le carnet contient 81 cellules de code.\n"]}
+    _dump_nb(nb_path, {**metadata, "cells": [*domain_cells, inventory]})
+    findings = cqc.scan_diff("HEAD", {"artifact"})
+    assert [snippet for _loc, _klass, snippet in findings] == ["81 cellules"]
+    assert cqc._emit_grouped(findings, strict=True, structural_only=False) == 1
+    assert "[REFUS]" in capsys.readouterr().out
 
 
 # --------------------------------------------------------------------------- #

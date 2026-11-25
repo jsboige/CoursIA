@@ -1,0 +1,9 @@
+- name: "App-21 VoiceLeading"
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "L'affectation exacte est résolue par SciPy Jonker–Volgenant côté Python et par le vrai moteur OR-Tools LinearSumAssignment côté C# ; les deux utilisent CP-SAT OR-Tools pour les contraintes de Fux. Aucun des moteurs n'est remplacé par un solveur jouet."
+  known_differences:
+    - "Les moteurs d'affectation diffèrent ; les deux appliquent ensuite un départage pédagogique par énumération des permutations ex æquo, de coût factoriel. Les figures C# sont des SVG autonomes ; les temps dépendent du runtime. La ligne des quintes emploie des représentants signés, non une distance circulaire."

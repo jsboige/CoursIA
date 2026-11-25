@@ -708,14 +708,14 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-10-05 (#1650 tranche FT-02, QLoRA-Quantization): +1 paire T4 --
 # FineTuning/FT-02-QLoRA-Quantization. Total apres fusion : 8.
 # 2026-10-09 (PR #19996, pli 5 Origami famille 155, #19993): +1 paire --
-# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/Analyse/ANALYSE-09-Tuilage-Aperiodique_en.
 # Ce n'est PAS une paire rendue par T4 : la declaration compte le perimetre
 # decouvert par discover_pairs(), pas une famille de rendu. La paire est arrivee
 # sur main avec son carnet et sans mettre a jour cette ligne, ce qui a rougi
 # `test_full_repo_state_passes_parity` (found 9, declared 8) sur toute PR
 # path-filtree scripts/**. Total apres fusion : 9.
 # 2026-10-12 (PR #20392, #20184 pli ANALYSE-06 Sensibilite): +1 paire --
-# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/Analyse/ANALYSE-06-Sensibilite-2026-Lean-Python_en.
 # Meme classe que l'entree #19996 ci-dessus : la paire arrive avec son carnet,
 # la declaration l'enregistre dans la meme PR (rouge mesure a tete constante,
 # 1 failed / 34 passed, avant cet enregistrement). Total apres fusion : 10.
@@ -737,13 +737,13 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 0 orphelin, 0 fallback ; serie non jugee par le nav-chain, aucune entree
 # baseline requise -- sortie guard byte-identique a main). Total : 13 + 1 = 14.
 # 2026-10-19 (PR #19943, #19898 pli 3 Origami tranches A+B): +1 paire --
-# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/Analyse/ANALYSE-07-Percolation-Critique_en.
 # Meme classe que #19996/#20392 : la paire est arrivee sur main avec son carnet
 # sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
 # (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
 # 2026-10-20 (#1650 tranche Complexity-03 TimeHierarchy, serie Complexity axe E,
-# T3+T4) : +1 paire T4 -- Complexity/Complexity-03-TimeHierarchy_en (9 cellules
+# T3+T4) : +1 paire T4 -- Complexity/Complexity-03-HierarchieTemporelle-Python_en (9 cellules
 # md EN remplies dans le CSV puis rendues --require-translated, 6 cellules code
 # copiees verbatim, 0 orphelin). Premiere paire de la serie Complexity.
 # 2026-10-20 (fusion de origin/main dans feature/1650-ft04-en, PR #20711) : les
@@ -752,12 +752,12 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 1 (ANALYSE-07) = 15. Une fusion qui n'aurait garde qu'un cote aurait rendu 14.
 # 2026-10-24 (resolution du conflit sur ce fichier, PR #21509, merge main post-#20711) :
 # les deux recits ci-dessus declaraient chacun 17 mais ne comptaient pas le meme
-# arbre -- main 17 SANS Complexity-03-TimeHierarchy_en, la branche 17 AVEC. La
-# paire Complexity/Complexity-03-TimeHierarchy_en (#21509) n'est pas sur main :
+# arbre -- main 17 SANS Complexity-03-HierarchieTemporelle-Python_en, la branche 17 AVEC. La
+# paire Complexity/Complexity-03-HierarchieTemporelle-Python_en (#21509) n'est pas sur main :
 # l'arbre fusionne porte 17 + 1 = 18. Compte MESURE par
 # discover_pairs(repo_root, ["en","ru"]) sur l'arbre fusionne, la constante suit.
 # 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
-# carnet Lean natif : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.
+# carnet Lean natif : SymbolicAI/Lean/Analyse/ANALYSE-06-Sensibilite-2026-Lean_en.
 # Meme classe que #19996/#20392/#19943 : la PR ne touchait pas scripts/**, le
 # Scripts Tests path-filtre n'a pas tourne, et la garde PR-time #21397
 # (check_pair_count_declared.py) n'est cablee dans aucun workflow. Rouge sur main
@@ -770,7 +770,7 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # pas du meme arbre : origin/main declare 16 paires -- les 15 de #21296 plus
 # research_archive_en (QuantConnect, Crypto-MultiCanal), arrive sur main
 # entre-temps -- et cette branche en apporte une de plus,
-# Complexity/Complexity-03-TimeHierarchy_en. Compte MESURE par
+# Complexity/Complexity-03-HierarchieTemporelle-Python_en. Compte MESURE par
 # discover_pairs(repo_root, ["en","ru"]) sur l'arbre fusionne : 17 (rouge
 # constate a tete constante : found 17, declared 16, avant cet enregistrement).
 # Le jumeau Lean natif ANALYSE-06-Sensibilite-2026-Lean_en ajoute par #19916
@@ -824,7 +824,17 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-11-09 : +1 paire -- tranche FT-00b de l'axe E de #1650 :
 #   FT-00b-LoRA-Hyperparams-from-scratch-Python_en (deuxieme des trois carnets
 #   encore sans jumeau ; reste FT-00d). 24 + 1 = 25.
-EXPECTED_PAIR_COUNT = 25
+# 2026-11-15 : +2 paires -- tranches CaseStudies de l'axe E de #1650 :
+#   barbie-schreck_en et receipe_maker_en (les deux seuls carnets CaseStudies
+#   encore sans jumeau ; fort-boyard-python et medical_chatbot l'avaient deja).
+#   25 + 2 = 27.
+# 2026-11-20 (PR #27587, #27477 jalon 2) : +1 paire -- le carnet Lean-42 de la
+#   Greffe A arrive avec son jumeau : Lean-42-Independance-Arithmetique
+#   -BusyBeaver-Lean_en. 25 + 1 = 26.
+# 2026-11-23 (PR #26765, resolution du merge) : les deux increments avaient
+#   ete ecrits contre un arbre a 25 paires ; l'arbre fusionne porte
+#   25 + 2 + 1 = 28 (mesure discover_pairs post-merge), comme le 2026-11-04.
+EXPECTED_PAIR_COUNT = 28
 
 
 def _collect_parity_failures(repo_root: Path,

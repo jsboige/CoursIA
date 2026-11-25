@@ -23,7 +23,7 @@
 //
 // Forme « app mono-fichier » (.NET 10) : `dotnet run csharp_coverage_probe.cs`.
 // Aucun .csproj n'est livre, donc aucun impact sur les solutions du depot
-// (`MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln`) ni sur les workflows .NET, qui sont
+// (`dotnet/MyIA.CoursIA.sln`, `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln`) ni sur les workflows .NET, qui sont
 // tous filtres par chemin. Les versions des trois paquets sont epinglees par les
 // directives `#:package ...@<version>` ci-dessus, qui sont la forme de pin de
 // l'app mono-fichier : c'est ce qui rend la sonde rejouable depuis le depot seul

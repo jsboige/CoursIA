@@ -20,7 +20,7 @@ baseRefName, ...}`, produced by:
 `baseRefName` est **obligatoire** depuis #18940 : sans lui, les PRs empilees
 sur une branche de feature seraient comptées dans le budget G-VAR-2 de la
 lane. Les producteurs anterieurs au fix restent charges tels quels (filtre
-retrocompatible) ; le contrat d'entrée est en `scripts/variation_base_main.py`.
+retrocompatible) ; le contrat d'entrée est en `scripts/ci/variation_base_main.py`.
 
 Modes
 -----
@@ -71,7 +71,7 @@ from __future__ import annotations
 import argparse
 
 # Filtre ``--base main`` partage (#18940) : elimine les PRs empilees sur
-# une branche de feature du comptage G-VAR-2. Voir scripts/variation_base_main.py
+# une branche de feature du comptage G-VAR-2. Voir scripts/ci/variation_base_main.py
 # pour la justification et le controle positif (#18910).
 try:
     from variation_base_main import filter_base_main as _filter_base_main
@@ -1576,7 +1576,7 @@ def _load(path: str) -> list[dict]:
             f"--replay/--check-pr expects a JSON array, got {type(data).__name__}"
         )
     # Filtre --base main (#18940) : elimine les PRs empilees du comptage
-    # G-VAR-2. Voir scripts/variation_base_main.py pour le contrat et
+    # G-VAR-2. Voir scripts/ci/variation_base_main.py pour le contrat et
     # le controle positif #18910 (PR empilee sur test/18775-...).
     data = _filter_base_main(data, warn=lambda m: print(m, file=sys.stderr))
     if len(data) == _GH_DEFAULT_PAGE:

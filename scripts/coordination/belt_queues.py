@@ -26,10 +26,24 @@ prepare ce que le coordinateur regarde, et il mesure apres coup.
 ``record`` -- enregistre la repartition decidee par le coordinateur (horodatee),
 pour que le ``board`` suivant mesure les assiettes.
 
-    python scripts/pick_idle_grain.py --belt --lane myia-ai-01:CoursIA --json --grains 50 > belt.json
+    python scripts/coordination/tapis_rapide.py --lane myia-ai-01:CoursIA --grains 60 --json > belt.json
     python scripts/coordination/belt_queues.py board --belt-json belt.json --previous latest \\
         --lanes myia-po-2023:CoursIA,myia-po-2027:CoursIA-2
     python scripts/coordination/belt_queues.py record --assignment files.json --belt-json belt.json
+
+**L'equite du dispatch est MESUREE** (19/11, ``equite_dispatch``) : la
+repartition est un jugement, mais l'organe nomme les grains **deja servis**
+qu'une file place devant des issues **jamais servies** -- le cas reel #27338
+(huit PRs dans la journee sur une issue creee le matin, pendant que des issues
+anciennes n'attendaient aucune PR). Deux exceptions, nommees : le mandat
+explicite d'une lane et le grain deja dans sa file (correction en cours).
+
+**Deux sources de tirage sont lues** (mesure du 2026-11-14) : le tapis lourd
+(``pick_idle_grain.py --belt --json``, cle ``picks``) et le tapis rapide
+(``tapis_rapide.py --json``, cle ``grains``). Le second ecarte les grains deja
+livres -- le premier non : 34 des 40 grains du tirage coordinateur etaient
+livres, et une partie est partie dans les files des workers. ``record``
+refuse donc un grain ``delivered`` dans la file d'une lane worker.
 
 ``files.json`` (ecrit par le coordinateur) :
 ``{"lanes": {"myia-po-2023:CoursIA": {"arc": "Search, du diagnostic au correctif",
@@ -49,7 +63,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
+import belt_equite as be  # noqa: E402
 import check_lane_claim as clc  # noqa: E402
 import grain_tag as gt  # noqa: E402
 import recette_due as rd  # noqa: E402
@@ -64,14 +81,74 @@ _VLLM_RE = re.compile(r"(192\.168\.0\.47|:5002\b|vLLM local|inf[ée]rence locale
 #: traite, pas un renvoi de PR (celles-ci sont citees en toutes lettres).
 _TITLE_ISSUE_RE = re.compile(r"#(\d+)")
 
+#: Lanes qui peuvent porter un grain ``delivered`` (label ``candidate-delivered``) :
+#: le coordinateur, son adjoint et le secretaire. Toute autre lane est un worker :
+#: elle rend la main au lieu de servir le grain (mandat user 2026-09-07, #15069).
+LANES_URNE_DELIVERED = frozenset({
+    "myia-ai-01:CoursIA",      # coordinateur
+    "myia-po-2025:CoursIA-2",  # adjoint du coordinateur
+    "myia-po-2028:CoursIA-3",  # secretaire
+})
+
 
 def store_dir() -> Path:
     base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
     return Path(base) / "CoursIA" / "belt_queues"
 
 
+def normaliser_grains_tapis(belt: dict) -> list[dict]:
+    """Les grains du tapis rapide, mis dans la forme que le tableau consomme.
+
+    ``tapis_rapide.py --json`` rend ses grains sous la cle ``grains``, avec des
+    noms de champs differents (``numero``, ``titre``, ``famille``) et **sans** le
+    corps de l'issue. Ce que le tableau lit de chaque grain -- numero, titre,
+    famille, date de derniere visite -- y est entier.
+
+    Ce qui n'y est pas : le corps. La detection des contraintes (``vision``,
+    ``vllm-local``) ne lit donc que le titre sur cette source : elle est plus
+    aveugle ici que sur le tapis lourd, ou elle lisait titre + corps.
+    """
+    grains = []
+    for g in belt.get("grains") or []:
+        famille = g.get("famille")
+        grains.append({
+            "number": int(g["numero"]),
+            "title": g.get("titre") or "",
+            "body": "",
+            "labels": [],
+            "created_at": "",
+            "tapis_famille": f"#{famille}" if famille else None,
+            "derniere_visite": g.get("derniere_visite"),
+            "visites": g.get("visites"),
+            "visites_total": g.get("visites_total"),
+            "consolidation": bool(g.get("consolidation")),
+            "conteneur": bool(g.get("conteneur")),
+            "klass": g.get("klass"),
+        })
+    return grains
+
+
+def grains_du_belt(belt: dict | None) -> list[dict]:
+    """Les grains lus dans le JSON du tirage, quelle que soit sa source.
+
+    Deux sources existent : le tapis lourd (``pick_idle_grain.py --belt --json``,
+    cle ``picks``) et le tapis rapide (``tapis_rapide.py --json``, cle
+    ``grains``). Elles ne se ressemblent pas : la seconde ne porte ni le corps
+    de l'issue ni le champ ``klass``.
+    """
+    belt = belt or {}
+    if "picks" in belt:
+        return list(belt.get("picks") or [])
+    if "grains" in belt:
+        return normaliser_grains_tapis(belt)
+    return []
+
+
 def family_of(pick: dict) -> str:
-    """Cle de regroupement : serie de notebooks > etiquette de titre > label > genre."""
+    """Cle de regroupement : famille du tapis > serie de notebooks > etiquette > label > genre."""
+    famille = pick.get("tapis_famille")
+    if famille:
+        return famille
     text = f"{pick.get('title') or ''}\n{pick.get('body') or ''}"
     m = _SERIES_RE.search(text)
     if m:
@@ -101,7 +178,8 @@ def visit_age_days(pick: dict, now: datetime) -> float | None:
     Le champ ``idle`` du picker mesure l'activite quelconque (``updated_at``) : un commentaire
     de bot le remet a zero sans que personne ait servi l'issue. Ce n'est pas la cle du tapis.
     """
-    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp")) if s]
+    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp"),
+                          pick.get("derniere_visite")) if s]
     ref = max(stamps) if stamps else pick.get("created_at")
     if not ref:
         return None
@@ -409,7 +487,8 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
     fetch_issue = fetch_issue or gh_issue_state
     plates = measure_plates(previous, fetch_issue) if previous else {}
     on_plate = {it["number"] for p in plates.values() for it in p["remaining"]}
-    picks = [p for p in belt.get("picks", []) if p["number"] not in on_plate]
+    grains = grains_du_belt(belt)
+    picks = [p for p in grains if int(p["number"]) not in on_plate]
     incidents: list[dict] = []
     out_lanes = {}
     all_lanes = list(dict.fromkeys(lanes + list(plates)))
@@ -441,7 +520,12 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
     # #24373 : les EPICs Origami dont le pli suivant n'est pas deplie ne sont
     # pas servis aux lanes. Le tableau les montre : c'est la que le
     # coordinateur voit ce qui attend SON geste.
-    origami = belt.get("origami_parking") or {}
+    origami = belt.get("origami_parking")
+    if origami is None:
+        # Le tapis rapide ne porte pas d'etat origami : le dire plutot que
+        # laisser croire qu'aucun EPIC n'est parque (mesure nulle != mesure).
+        origami = {"measured": False,
+                   "reason": "le tirage ne porte pas d'etat origami"}
     parked = []
     for item in origami.get("details") or []:
         if item.get("parked"):
@@ -449,9 +533,10 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
                            "title": item.get("title"),
                            "next_pli": item.get("next_pli"),
                            "reason": item.get("reason")})
-    return {"drawn": len(belt.get("picks", [])), "families": group_picks(picks, now), "lanes": out_lanes,
+    return {"drawn": len(grains), "families": group_picks(picks, now), "lanes": out_lanes,
             "previous_at": previous["assigned_at"] if previous else None,
             "adherence": adherence,
+            "equite_pool": be.etat_du_pool(grains),
             "origami_parked": parked,
             "origami_parking": {"measured": bool(origami.get("measured")),
                                 "reason": origami.get("reason"),
@@ -498,6 +583,19 @@ def render_board(b: dict) -> str:
                 f"(= {pct_txt} sur {adh.get('total')} PR(s))")
         elif adh and not adh.get("measured"):
             lines.append("      adherence : NON MESUREE")
+    # L'equite du pool : les issues jamais servies d'abord (19/11).
+    equite = b.get("equite_pool") or {}
+    if equite.get("mesure") == "visites":
+        jamais, servies = equite.get("jamais") or [], equite.get("servies") or []
+        lines += ["", "# Equite du pool -- les jamais servies d'abord"]
+        lines.append(f"  {len(jamais)} issue(s) jamais servie(s) sur {equite.get('total', 0)}")
+        if servies:
+            tete = ", ".join(f"#{i['number']} ({i['visites']}x)"
+                              for i in servies[:8])
+            lines.append(f"  deja servies : {tete}"
+                         + (" ..." if len(servies) > 8 else ""))
+    elif equite:
+        lines += ["", "# Equite du pool -- NON MESUREE"]
     # #24373 : ce qui attend le geste du coordinateur (depliage d'un pli).
     parked = b.get("origami_parked") or []
     origami = b.get("origami_parking") or {}
@@ -519,9 +617,38 @@ def render_board(b: dict) -> str:
     return "\n".join(lines)
 
 
-def record(assignment: dict, belt: dict | None, now: datetime) -> dict:
-    """Valide et horodate la repartition decidee par le coordinateur."""
-    titles = {p["number"]: p for p in (belt or {}).get("picks", [])}
+def etat_de_visite(p: dict) -> str:
+    """L'etat de visite d'un grain : `servie`, `jamais`, `inconnu`.
+
+    Delegué a `belt_equite` (extraction du 19/11).
+    """
+    return be.etat_de_visite(p)
+
+
+def equite_dispatch(assignment: dict, belt: dict | None,
+                    previous: dict | None = None) -> dict:
+    """L'equite du DISPATCH : une racine deja servie ne passe pas devant les
+    premieres visites. Voir `belt_equite` (extraction du 19/11).
+    """
+    return be.equite_dispatch(assignment, grains_du_belt(belt), previous)
+
+
+def record(assignment: dict, belt: dict | None, now: datetime,
+           previous: dict | None = None) -> dict:
+    """Valide et horodate la repartition decidee par le coordinateur.
+
+    **Un grain ``delivered`` (label ``candidate-delivered``) n'entre pas dans la
+    file d'une lane worker** (mesure du 2026-11-14 : 34 des 40 grains du tirage
+    coordinateur etaient livres, et une partie etait partie dans les files des
+    workers le 13/11). L'urne de cloture appartient au coordinateur, a son
+    adjoint et au secretaire (``LANES_URNE_DELIVERED``) ; une worker qui la
+    rencontre rend la main au lieu de la servir.
+
+    Le refus porte sur les grains **visibles dans le tirage** : une issue que le
+    tirage ne porte pas passe (le coordinateur compose ses files a partir du
+    tirage ; une composition hors tirage n'est pas verifiable ici).
+    """
+    titles = {int(p["number"]): p for p in grains_du_belt(belt)}
     seen: dict[int, str] = {}
     lanes = {}
     for lane, info in assignment["lanes"].items():
@@ -532,9 +659,15 @@ def record(assignment: dict, belt: dict | None, now: datetime) -> dict:
                 raise ValueError(f"#{n} attribuee deux fois ({seen[n]} et {lane})")
             seen[n] = lane
             p = titles.get(n, {})
+            if p.get("klass") == "delivered" and lane not in LANES_URNE_DELIVERED:
+                raise ValueError(
+                    f"#{n} est un grain `delivered` (label `candidate-delivered`) : "
+                    f"l'urne de cloture n'appartient pas a la lane worker {lane} "
+                    f"({', '.join(sorted(LANES_URNE_DELIVERED))})")
             queue.append({"number": n, "title": p.get("title"), "family": family_of(p) if p else None})
         lanes[lane] = {"arc": info.get("arc"), "queue": queue}
-    return {"assigned_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "lanes": lanes}
+    return {"assigned_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "lanes": lanes,
+            "equite": equite_dispatch(assignment, belt, previous)}
 
 
 def _load_previous(arg: str | None) -> dict | None:
@@ -565,12 +698,15 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("record")
     r.add_argument("--assignment", required=True)
     r.add_argument("--belt-json")
+    r.add_argument("--previous", help="repartition precedente ('latest') : la file "
+                                         "en cours n'est pas penalisee")
     args = ap.parse_args(argv)
     now = datetime.now(timezone.utc)
 
     if args.cmd == "record":
         try:
-            result = record(_read_json(args.assignment), _read_json(args.belt_json), now)
+            result = record(_read_json(args.assignment), _read_json(args.belt_json),
+                            now, _load_previous(args.previous))
         except (ValueError, KeyError) as exc:
             print(f"REFUS: {exc}")
             return 1

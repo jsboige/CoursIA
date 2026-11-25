@@ -1,5 +1,7 @@
 # Cluster CoursIA — machines, lanes, capacités
 
+> REFERENCE — vivante — dernière révision 2026-11-24
+
 Référence durable sur la structure du cluster qui porte les grains CoursIA : les machines, les lanes et leurs rôles, les GPU, et les barrières de capacité qui contraignent un dispatch. Les **règles de coordination** vivent dans [CLAUDE.md](../../CLAUDE.md) §A et dans [tricephale-circulation.md](tricephale-circulation.md) ; le **calendrier d'enseignement** dans [teaching-context.md](teaching-context.md).
 
 Ce document décrit ce qui change peu. **Il ne porte pas l'état vivant** : qui tient un GPU, quelle lane tourne, quel modèle anime une lane, quel service est éveillé. Cet état se lit à sa source, jamais ici. Une copie de l'état vivant dans une page de référence se périme en silence, et c'est ce qui était arrivé à la version précédente de cette page.
@@ -47,7 +49,7 @@ Une lane est un couple `machine:workspace`, animé par un seul agent actif à la
 
 Le trio coordinateur, titulaire et secrétaire est décrit, avec la circulation entre ses têtes, dans [tricephale-circulation.md](tricephale-circulation.md).
 
-**Les deux relecteurs du cluster MyIA.** Hermes (`po-2026`, ordonnanceur `hermes-agent`, cycles horaires) et NanoClaw (`ai-01`, workspace `cluster-coordination`, cadence de 30 minutes) relisent les PRs et tiennent une coordination à l'échelle du cluster MyIA, au-delà de CoursIA. Ils signent sous le même compte GitHub, `clusterManager-Myia`, et se distinguent par le préfixe du corps de leur review (`[Hermes]`, `[NanoClaw]`). Ce ne sont pas des lanes au sens du protocole de claim ; leurs réserves se lèvent comme toute réserve (CLAUDE.md §B.0). Harnais et annuaire : [bot-review-harness.md](bot-review-harness.md).
+**Les deux relecteurs du cluster MyIA.** Hermes (`ai-01` depuis le 2026-10-09, ordonnanceur `hermes-agent`, cycles horaires ; siège historique `po-2026`, hors service le 2026-10-09) et NanoClaw (`ai-01`, workspace `cluster-coordination`, cadence de 30 minutes) relisent les PRs et tiennent une coordination à l'échelle du cluster MyIA, au-delà de CoursIA. Ils signent sous le même compte GitHub, `clusterManager-Myia`, et se distinguent par le préfixe du corps de leur review (`[Hermes]`, `[NanoClaw]`). Ce ne sont pas des lanes au sens du protocole de claim ; leurs réserves se lèvent comme toute réserve (CLAUDE.md §B.0). Harnais et annuaire : [bot-review-harness.md](bot-review-harness.md).
 
 **Workspaces d'école.** Les workspaces des cours (EPITA, EPF, etc.) ont leur propre dashboard. Exception user du 2026-05-16 : le coordinateur peut y envoyer `[INFO]`, `[ASK]` ou `[DIRECTIVE]` par message direct ; il n'y merge pas, n'y committe pas et n'écrit pas sur leur dashboard. Scope par école : [teaching-context.md](teaching-context.md).
 
@@ -75,7 +77,7 @@ Deux garde-fous, l'un et l'autre mesurés à l'usage :
 
 Il n'y a **aucune table de spécialités** dans cette page, et c'est délibéré. Une table « tel sujet va à telle lane » contredit le tirage sur le pool entier ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), R5), et la dernière qui figurait ici n'était plus appliquée par aucune lane.
 
-Le grain d'une lane vient du **tapis** (`python scripts/pick_idle_grain.py --belt --lane <machine:workspace>`) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
+Le grain d'une lane vient du **tapis** (`python scripts/coordination/tapis_rapide.py --lane <machine:workspace>`, [tapis-rapide.md](tapis-rapide.md)) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
 
 - **GPU** : la VRAM requise, et la disponibilité au ledger ;
 - **vision** : la capacité du modèle qui anime la lane (section suivante) ;

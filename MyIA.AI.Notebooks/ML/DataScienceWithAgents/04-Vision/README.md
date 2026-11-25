@@ -1,6 +1,6 @@
 # 04-Vision — Vision par ordinateur : du neurone convolutif au transfer learning
 
-[← DataScienceWithAgents (série parente)](../README.md) | [03-Deep-Learning (prérequis)](../03-Deep-Learning/README.md) | [07-Agent-Orchestration (autre série)](../07-Agent-Orchestration/README.md)
+[← DataScienceWithAgents (série parente)](../README.md) | [03-Deep-Learning (prérequis)](../03-Deep-Learning/README.md) | [07-Orchestration-d-Agents (autre série)](../07-Orchestration-d-Agents/README.md)
 
 **Kernel** : Python 3 (`coursia-ml-training` compatible) · **Bibliothèques** : NumPy (implémentations from scratch), PyTorch (parité), matplotlib, Pillow · **Niveau** : intermédiaire (post 03-Deep-Learning) · **CPU** : oui
 
@@ -14,7 +14,7 @@ Cette série suit la **même discipline que 03** : *from scratch PUIS framework,
 
 | Notebook | Sujet | Concept-phare | Validation |
 |----------|-------|---------------|------------|
-| [4.1 — Le neurone convolutif from scratch](4.1-Conv-NumPy-Torch-Allclose.ipynb) | Conv2d NumPy pur (single + multi-canal), gradient vérifié par différence finie, parité epsilon machine avec `torch.nn.Conv2d`, pooling et invariance par translation | **La convolution n'est pas magique** : un produit scalaire local, partagé spatialement, parité NumPy/torch à epsilon machine | gradient analytique vs numérique : écart max 1e-10 ; multi-canal (3 in, 4 out) float64 : 5,33e-15 ; float32 : 1,91e-06 (précision BLAS CPU) ; invariance par translation mesurée pixel-à-pixel sur image réelle |
+| [4.1 — Le neurone convolutif from scratch](4.1-Conv-NumPy-Torch-Allclose.ipynb) · [C#](4.1-Conv-NumPy-Torch-Allclose-CSharp.ipynb) | Corrélation manuelle, gradient, comparaison Conv2d f32/f64, équivariance et pooling sensible à la phase | Mêmes poids et données comparés avec des tolérances explicites ; Pillow prépare l’image figée dans les deux versions | Écarts de gradient et Conv2d mesurés, positions et cartes distinguées pour les translations |
 | [4.2 — ConvNet profonde : pourquoi les résiduelles](4.2-ConvNet-Profonde-Residuelles.ipynb) | 20 conv2d empilées nues (effondrement du gradient), skip naïf (gradient réparé mais passe avant qui dérive), bloc pré-norme (les deux réparés), même protocole transposé à 20 blocs d'attention, puis accuracy CIFAR-10 sur 3 graines | **Le skip-connection n'est pas un détail architectural** : c'est le mécanisme qui rend les réseaux profonds entraînables. **C'est le même bloc que l'attention pré-norme dans [3.4](../03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb)** | rapport de gradients `g_0/g_19` : `plain` 2,16e-08 contre `prenorm` 1,01 ; effondrement exponentiel en la profondeur (D = 4 → 28 : 1,47e-01 → 2,02e-12) ; `res_naif` répare le gradient mais `\\|h\\|` dérive d'un facteur 88 et la perte initiale monte à 17,4 au lieu de `ln 5` ; attention nue : rapport **plat** (0,92) alors que `\\|h\\|` est divisé par 2,1e+07 ; CIFAR-10 (5 classes, 3 graines) : `prenorm` 62,0 % ± 2,8 contre `plain` 34,0 % ± 10,0, soit +28,0 points pour un bruit de ±10,4 (rapport 2,7) |
 | [4.2b — Lean : le gradient qui meurt, le gradient qui survit](4.2b-Lean-GradientFlow-Vanishing.ipynb) | Companion kernel `lean4-wsl` du lake `learning_theory_lean` : la paire plafond/plancher `c ^ n` (pile plain) vs `(1-c) ^ n` (pile résiduelle) `#check`ée depuis le lake, anti-triangulaire au pire cas `t = ±2/5`, ancres numériques `norm_num`, balayage en profondeur rejoué en `Float`, 3 exercices | **La mesure du 4.2 devient un théorème** : `abs_deriv_plainStack_le` majore, `abs_deriv_residualStack_ge` minore — le raccourci identité garantit un plancher géométrique là où la pile nue a un plafond qui s'effondre | table `boundTable 0.4 [5,10,15,20]` : `c^n` 0,010240 → 0,000000 contre `(1-c)^n` 0,077760 → 0,000037 ; à n = 24 le plancher résiduel tient encore à 5e-06 ; exécution kernel lean4-wsl, 0 erreur (See #13106) |
 | [4.4 — Détection d'objets from scratch : la grille d'anchors](4.4-Detection-Anchor-From-Scratch.ipynb) | Terrain synthétique contrôlé (1-3 objets, largeurs 14-44 px, ratios 0,35-2,9, bruit gaussien + blobs de fond), grille d'anchors 5 184 (3 tailles × 3 ratios, stride 4), IoU vectorisée + garde-fous, assignation 0,5/0,35 + zone d'ombre + meilleur anchor par GT forcé, échantillonnage 1:3, encode/decode (dx, dy, dw, dh), loss BCE + 2×SmoothL1, NMS gloutonne, mAP VOC07/VOC10 calculé à la main, ablation grille carrée, 3 exercices | **Le réseau ne devine pas des boîtes, il corrige des hypothèses** : la détection anchor-based réduit la localisation à une régression de petits décalages contre des priors géométriques — et l'ablation mesure que la diversité des ratios y est absorbée par l'assignation forcée et la plage log ±3 | aller-retour encode/decode à 7,63e-06 px près ; 1,2 % des anchors ≥ 0,5 (le déséquilibre que le 1:3 compense) ; AnchorNet 74 717 paramètres ; 12 époques en 79 s GPU, loss 13,1 → 1,12 ; mAP@0.5 (400 images / 817 GT) : VOC07 0,853 / VOC10 0,914 ; ablation : grille carrée 0,864/0,926 contre complète 0,853/0,914 — écart de l'ordre du point (See #16057) |
@@ -46,7 +46,7 @@ Cette série suit la **même discipline que 03** : *from scratch PUIS framework,
 ## Prérequis
 
 - [`03-Deep-Learning`](../03-Deep-Learning/README.md) en entier — en particulier [3.4 (Attention-Transformer from scratch)](../03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) qui partage le mécanisme résiduel.
-- NumPy niveau [`01-Python-For-Data-Science/1.2`](../01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) (broadcast, produits matriciels).
+- NumPy niveau [`01-Python-For-Data-Science/1.2`](../01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb) (broadcast, produits matriciels).
 - PyTorch CPU (installé via `pip install torch torchvision`).
 
 ## Environnement
@@ -64,7 +64,7 @@ Mesure sur 4.6b : exécution complète en 4 min 36 s sur GPU CUDA (dont 182 s de
 ## Lien avec les autres séries
 
 - **`03-Deep-Learning` ↔ 04-Vision** : la résiduelle du 4.2 est exactement le bloc pré-norme du mini-GPT du 3.4. C'est cette convergence qui justifie le titre de la série parente *DataScienceWithAgents* : du MLP tabulaire au Transformer en passant par le CNN, **les mêmes primitives** (forward, backward, résiduelle) se réécrivent sans surprise.
-- **`07-Agent-Orchestration` ↔ 04-Vision** : les notebooks de Track2 chargent des modèles pré-entraînés via des outils ADK ; le 4.3 est la version *from scratch* de la même idée (ResNet18 pré-entraîné, sans orchestration agentique).
+- **`07-Orchestration-d-Agents` ↔ 04-Vision** : les notebooks de Track2 chargent des modèles pré-entraînés via des outils ADK ; le 4.3 est la version *from scratch* de la même idée (ResNet18 pré-entraîné, sans orchestration agentique).
 
 ## Feuille de route
 

@@ -45,10 +45,12 @@ from manage_self_hosted_runner import (  # noqa: E402
     ACCOUNT_PASSWORD_ENV,
     EXIT_BROKEN,
     EXIT_OK,
+    EXIT_REFUSED,
     PROFILE_PATH,
     RUNNER_PRIVATE_FILES,
     Broken,
     Profile,
+    Refused,
     apply_register,
     apply_verify,
     load_profile,
@@ -112,9 +114,22 @@ def plan_for(profile: Profile, run: CommandRunner) -> dict:
 def apply_ensure(profile: Profile, run: CommandRunner) -> dict:
     if runner_online(profile, run):
         return {"action": "noop", "reason": "runner already online"}
+    # Fail-closed AVANT le moindre geste de mutation : le retrait du residu
+    # ci-dessous demoli l'inscription locale, il ne doit jamais partir sans
+    # les moyens de la reconstruire dans le meme cycle.
     password = os.environ.get(ACCOUNT_PASSWORD_ENV)
     if not password:
         raise Broken(f"{ACCOUNT_PASSWORD_ENV} is required to re-register the runner")
+    if any((profile.root / name).exists() for name in RUNNER_PRIVATE_FILES):
+        # Residu d'inscription ephemere : le runner s'est deregistre cote
+        # GitHub (inscription consommee par un job, ou service mort) mais ses
+        # fichiers locaux (.runner/.credentials) subsistent, et apply_register
+        # refuse alors cet etat A CHAQUE tick -- mesure 2026-11-19 sur
+        # po-2024 : 6 804 refus consecutifs, 0 re-enregistrement, exit 1
+        # chaque minute. Le retrait propre du gestionnaire ramene l'etat a
+        # « prepare, pas active » (doc self-hosted-runners.md), sur lequel le
+        # register qui suit rejoue.
+        apply_deregister(profile, run=run)
     os.environ[REGISTRATION_TOKEN_ENV] = _fetch_token(profile, "registration-token", run)
     try:
         apply_register(profile, run=run)
@@ -421,6 +436,14 @@ def main(argv: list[str] | None = None) -> int:
                 plan["result"] = apply_deregister(profile, subprocess.run)
         print(json.dumps(plan, indent=2, sort_keys=True, ensure_ascii=False))
         return EXIT_OK
+    except Refused as exc:
+        # Une precondition de securite refusee est un verdict PREVU du
+        # gestionnaire, pas un crash : sans cette clause, elle remontait en
+        # traceback Python (exit 1, ~7 lignes de stack par tick dans
+        # controller.log -- 3 401 tracebacks mesures le 2026-11-19).
+        print(json.dumps({"ok": False, "error": str(exc), "kind": "refused"},
+                         ensure_ascii=False), file=sys.stderr)
+        return EXIT_REFUSED
     except Broken as exc:
         print(json.dumps({"ok": False, "error": str(exc), "kind": "broken"},
                          ensure_ascii=False), file=sys.stderr)

@@ -19,19 +19,19 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 > **Ré-alignement #24395 (2026-11-07, myia-po-2023:CoursIA)** : `vid3-workflow1.webp` et `vid3-workflow2.webp` remplacées par les **sorties actuellement committées** du notebook 03-2 (cellule 8). Le backend image du notebook est passé de SDXL à **gpt-image-1** après les régénérations c.184/c.10155 (exécutions GPU externes dont les PNG sources ne sont pas committés) : les figures README avaient divergé des sorties du notebook qu'elles prétendaient montrer. Doctrine #24395 : une figure README n'existe qu'avec une **provenance committée** (extraction d'outputs de notebooks, EPIC #5654 source 1). Nouvelles sources (pérennes, ancrées par titre de sortie plutôt que par indice d'output) :
 > - `vid3-workflow1.webp` = sortie titrée « Image source (gpt-image-1) generee en 49.4s » (génération 49.4 s en 1024×576, sortie committée 819×490, WebP q82 method 6, 26 Ko).
-> - `vid3-workflow2.webp` = planche-contact « Pipeline Text -> Image -> Video » (panneau « Source (gpt-image-1) » + frames 1/9/17/25 de l'animation SVD sur les 25 frames committées, sortie 1200×201, WebP 21 Ko).
+> - `vid3-workflow2.webp` = planche-contact « Pipeline Text -> Image -> Video » (panneau « Source (gpt-image-1) » + frames 1/9/17/25 de l'animation SVD sur les 25 frames committées, sortie PNG 1790×300, WebP 1200×201 de 21 Ko).
 >
 > Les régénérations c.184 et c.10155 restent documentées ci-dessous comme **historique** — leurs pixels ne sont plus ceux du dépôt. Les sections détaillées de l'audit c.476 et de la migration c.765 décrivent les assets d'époque et restent valables en tant qu'historique git.
 
 | Figure | Fichier | Dimensions | Poids | Source (notebook · cellule · output) | Source native |
 |--------|---------|------------|-------|--------------------------------------|---------------|
 | Image source gpt-image-1 (pipeline text→image→vidéo) | `vid3-workflow1.webp` | 819×490 | 26 Ko (réalign. #24395) | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 8 · sortie titrée « Image source (gpt-image-1) generee en 49.4s » | 819×490, sortie committée |
-| Pipeline text→image→vidéo — planche-contact (source + frames 1-25) | `vid3-workflow2.webp` | 1200×201 | 21 Ko (réalign. #24395) | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 8 · planche « Pipeline Text -> Image -> Video » | 1200×201, sortie committée |
-| Comparatif brut vs upscale + interpolation (LTX-Video, marguerite) | `vid3-frame1.webp` | 1200×531 | 40 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 10 · output 9 | 1589×704, 984 Ko |
+| Pipeline text→image→vidéo — planche-contact (source + frames 1-25) | `vid3-workflow2.webp` | 1200×201 | 21 Ko (réalign. #24395) | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 8 · planche « Pipeline Text -> Image -> Video » | 1790×300, sortie PNG committée |
+| Comparatif brut vs upscale + interpolation (LTX-Video, marguerite) | `vid3-frame1.webp` | 1200×531 | 40 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 10 · output 12 | 1589×705, environ 939 Kio |
 | Batch multi-prompts LTX-Video (océan / torche / montagnes, 3×4 frames) | `vid3-frame2.webp` | 1200×723 | 46 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 12 · output 14 | 1389×837, 913 Ko |
-| ComfyUI AnimateDiff — frames 1-8/16 (lac au couchant) | `vid3-comfyui.webp` | 1200×606 | 82 Ko | `03-3-ComfyUI-Video-Workflows.ipynb` · cellule 9 · output 4 | 1560×788, 1697 Ko |
+| ComfyUI AnimateDiff — frames 1-8/16 (lac au couchant) | `vid3-comfyui.webp` | 1200×606 | 82 Ko | `03-3-ComfyUI-Video-Workflows.ipynb` · cellule 10 · output 5 | 1560×788, 1697 Ko |
 
-**Total** : 5 figures, 215 Ko (après ré-alignement #24395 : workflow1 26 Ko, workflow2 21 Ko). **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Les frames vidéo GenAI sont des images photographiques denses (sources 913–1697 Ko) : WebP q82 à 1200 px bat massivement le PNG (ex. frame 1 : 984 Ko → WebP 1200 px 40 Ko vs PNG 600 px 162 Ko — 2× la résolution pour 4× moins de poids). C'est la recommandation WebP P2 « quand le gain est net ».
+**Total** : 5 figures, 215 Ko (après ré-alignement #24395 : workflow1 26 Ko, workflow2 21 Ko). **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Les frames vidéo GenAI sont des images photographiques denses (sources 913–1697 Ko) : WebP q82 à 1200 px bat massivement le PNG (ex. frame 1 : environ 939 Kio → WebP 1200 px 40 Ko vs PNG 600 px 162 Ko — 2× la résolution pour 4× moins de poids). C'est la recommandation WebP P2 « quand le gain est net ».
 
 ---
 

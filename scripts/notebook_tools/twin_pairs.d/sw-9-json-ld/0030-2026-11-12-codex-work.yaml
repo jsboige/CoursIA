@@ -1,0 +1,12 @@
+# Audit #25880 : Python construit les six triplets de son exemple Turing avec
+# RDFLib, depuis les champs du dictionnaire ; ce n'est pas un parseur JSON-LD.
+# C# conserve dotNetRDF et un parse JSON-LD de son propre exemple Alice.
+# Les deux illustrent des graphes RDF de six triplets, mais pas les mêmes
+# instances ou IRIs ; aucune équivalence octet ou sémantique exacte n'est
+# prétendue. Le strip du jumeau C# de #25037 exige une nouvelle réconciliation.
+date: '2026-11-12'
+by: codex:work
+python_sha: 743f100bfe70ccc8e93729ff3f58697172645f15
+csharp_sha: adb13e32fcdecee1144916f395d61901fe030fbc
+content_python_sha: d8e2c733ed18bea340ba950100b5865c0c677c06333d74347e9f50789850e67e
+content_csharp_sha: fdeba0eb2159b69c6e0008cf58fa78e41c63b5e52f437df821ac5cc6f5c104a3

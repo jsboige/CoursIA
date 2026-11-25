@@ -152,7 +152,7 @@ def test_no_h1_at_all_is_its_own_bucket(tmp_path):
 
 
 def test_notebook_without_series_identity_is_out_of_scope(tmp_path):
-    p = _write(tmp_path, "Diagnostic-Medical.ipynb", _notebook("# CC1 - IA Exploratoire"))
+    p = _write(tmp_path, "Diagnostic-Medical-Python.ipynb", _notebook("# CC1 - IA Exploratoire"))
     assert organ.classify(p, json.loads(p.read_text(encoding="utf-8"))) is None
 
 

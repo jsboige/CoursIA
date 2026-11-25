@@ -52,10 +52,10 @@ La première étape est un simple appel d'API : on décrit l'image en langage na
 | Notebook | Contenu | Service |
 |----------|---------|---------|
 | [01-1-OpenAI-DALL-E-3](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API |
-| [01-2-GPT-5-Image-Generation](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API |
+| [01-2-Generation-Image-API](01-Foundation/01-2-Generation-Image-API.ipynb) | Génération et analyse d'images via API (GPT-5) | OpenAI API |
 | [01-3-Basic-Image-Operations](01-Foundation/01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV |
 | [01-4-Forge-SD-XL-Turbo](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | ComfyUI |
-| [01-5-Qwen-Image-Edit](01-Foundation/01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI |
+| [01-5-Edition-Image-Prompt](01-Foundation/01-5-Edition-Image-Prompt.ipynb) | Édition d'images par prompt (Qwen Image Edit) | ComfyUI |
 
 [README 01-Foundation](01-Foundation/README.md)
 
@@ -66,11 +66,11 @@ Une fois le cloud maîtrisé, la génération **locale** via ComfyUI ouvre le co
   <em>Sortie du notebook <a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb">01-4</a> : chalet hivernal produit localement par SD XL Turbo, sans appel d'API.</em>
 </p>
 
-L'autre apport du niveau foundation est l'**édition** : plutôt que de régénérer une image entière, Qwen Image Edit ([01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb)) ne recalcule que la zone masquée — moins coûteux et plus contrôlable. Le panneau ci-dessous montre un **rendu réel** d'inpainting Qwen : à gauche, le portrait original d'un pêcheur au coucher de soleil sur le port ; à droite, la même scène avec un prompt d'édition (denoise=0.5) qui augmente le contraste et révèle des reflets chauds en arrière-plan — le sujet reste préservé tout en intégrant la modification :
+L'autre apport du niveau foundation est l'**édition** : plutôt que de régénérer une image entière, Qwen Image Edit ([01-5](01-Foundation/01-5-Edition-Image-Prompt.ipynb)) ne recalcule que la zone masquée — moins coûteux et plus contrôlable. Le panneau ci-dessous montre un **rendu réel** d'inpainting Qwen : à gauche, le portrait original d'un pêcheur au coucher de soleil sur le port ; à droite, la même scène avec un prompt d'édition (denoise=0.5) qui augmente le contraste et révèle des reflets chauds en arrière-plan — le sujet reste préservé tout en intégrant la modification :
 
 <p align="center">
-  <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/qwen-edit-panel.png" width="420" alt="Panneau avant/après Qwen Image Edit — rendu réel : portrait Originale (pêcheur au coucher de soleil sur le port) et Image Editée denoise=0.5 (même sujet, contraste renforcé, reflets chauds en arrière-plan), sujet préservé par Qwen Phase 29."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5</a> : panneau Originale/Editée — vrai inpainting Qwen, sujet préservé, modification contrôlée par denoise=0.5 (figure régénérée post-#7003 sur stack ComfyUI-Qwen Phase 29).</em>
+  <a href="01-Foundation/01-5-Edition-Image-Prompt.ipynb"><img src="assets/readme/qwen-edit-panel.png" width="420" alt="Panneau avant/après Qwen Image Edit — rendu réel : portrait Originale (pêcheur au coucher de soleil sur le port) et Image Editée denoise=0.5 (même sujet, contraste renforcé, reflets chauds en arrière-plan), sujet préservé par Qwen Phase 29."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-5-Edition-Image-Prompt.ipynb">01-5</a> : panneau Originale/Editée — vrai inpainting Qwen, sujet préservé, modification contrôlée par denoise=0.5 (figure régénérée post-#7003 sur stack ComfyUI-Qwen Phase 29).</em>
 </p>
 
 ### 02-Advanced - Modèles avancés
@@ -86,7 +86,7 @@ Le porte-drapeau de ce niveau pour la **qualité** est FLUX.1 ([02-2](02-Advance
 
 | Notebook | Contenu | Service |
 |----------|---------|---------|
-| [01-5b-Qwen-Image-Edit-2509](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen | ComfyUI |
+| [01-5b-Edition-Image-Prompt-Iterations](01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) | Édition itérative par prompt (Qwen Image Edit 2509) | ComfyUI |
 | [02-2-FLUX-1-Advanced-Generation](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) | Génération FLUX | ComfyUI |
 | [02-3-Stable-Diffusion-3-5](02-Advanced/02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI |
 | [02-4-Z-Image-Lumina2](02-Advanced/02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI |
@@ -219,9 +219,9 @@ Accès : http://localhost:8188
 
 Le fil rouge de cette série est la création d'un système de visuels pédagogiques. Voici comment les niveaux s'articulent :
 
-1. **01-Foundation** (génération de base) : [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) couvrent la génération via API cloud. [01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) introduisent les modèles locaux. À la fin, vous savez générer une image à partir d'un texte.
+1. **01-Foundation** (génération de base) : [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-Foundation/01-2-Generation-Image-API.ipynb) couvrent la génération via API cloud. [01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-Foundation/01-5-Edition-Image-Prompt.ipynb) introduisent les modèles locaux. À la fin, vous savez générer une image à partir d'un texte.
 
-2. **02-Advanced** (édition et qualité) : [01-5b](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM. [02-6](02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) prend l'autre côté de la contrainte : non plus réduire la précision, mais le nombre d'évaluations du réseau — il **mesure** le compromis qualité / latence d'IMM et TVM sur la machine, avec le code et les poids officiels.
+2. **02-Advanced** (édition et qualité) : [01-5b](01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM. [02-6](02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) prend l'autre côté de la contrainte : non plus réduire la précision, mais le nombre d'évaluations du réseau — il **mesure** le compromis qualité / latence d'IMM et TVM sur la machine, avec le code et les poids officiels.
 
 3. **03-Orchestration** (comparaison et pipelines) : [03-1](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur rapport qualité/coût. [03-2](03-Orchestration/03-2-Workflow-Orchestration.ipynb) assemble un pipeline de génération complet.
 
@@ -264,7 +264,7 @@ gpt-image-1 (notebook [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb)) offre un
 
 - Structurer le prompt : `style [photographiste/illustration/3D render], sujet [précis], contexte [arrière-plan], éclairage [type]`.
 - Utiliser `size="1536x1024"` pour les compositions larges (gpt-image-1 accepte `1024x1024` / `1024x1536` / `1536x1024` / `auto`), `1024x1024` pour les portraits.
-- GPT-5 Image (notebook [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb)) offre un meilleur suivi des instructions détaillées que gpt-image-1.
+- GPT-5 Image (notebook [01-2](01-Foundation/01-2-Generation-Image-API.ipynb)) offre un meilleur suivi des instructions détaillées que gpt-image-1.
 - Pour un contrôle total, passer en ComfyUI local (niveau 02+).
 
 ### ComfyUI retourne une erreur 401 ou 502
@@ -287,7 +287,7 @@ Les notebooks ont une graceful degradation : sans token, ils basculent vers les 
 
 ### Qwen Image Edit ne modifie pas l'image correctement
 
-Le modèle Qwen Image Edit (notebooks [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) et [01-5b](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb)) est sensible au format du prompt d'édition. Points critiques :
+Le modèle Qwen Image Edit (notebooks [01-5](01-Foundation/01-5-Edition-Image-Prompt.ipynb) et [01-5b](01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb)) est sensible au format du prompt d'édition. Points critiques :
 
 - L'image source doit être en PNG ou JPEG, résolution <= 1024x1024 pour des résultats optimaux.
 - Le prompt d'édition doit être spécifique : "remplacer le texte 'X' par 'Y'" plutôt que "changer le texte".

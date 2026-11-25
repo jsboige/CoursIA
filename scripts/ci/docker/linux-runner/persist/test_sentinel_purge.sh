@@ -133,8 +133,8 @@ bad()  { echo "  FAIL: $1"; echo x >>"$TMP/fail"; }
 fake_proc_reset
 fake_proc_add "$(sup_path "$REPO_ROOT")" start 4
 HELPER="$REPO_ROOT/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
-# Le predicat est appele par `bash`, comme les SEPT wrappers de production
-# (coursia-runner-start.sh et les six variantes) : dans l'index git le helper
+# Le predicat est appele par `bash`, comme les HUIT wrappers de production
+# (coursia-runner-start.sh et les sept variantes) : dans l'index git le helper
 # est en mode 100644, donc le noyau ne le rend pas executable sur un checkout
 # Linux natif -- un exec direct echouerait en "Permission denied" et le
 # controle d'instrument passerait A TORT (le predicat ne serait jamais
@@ -178,7 +178,7 @@ else
   echo x >>"$TMP/fail"
 fi
 
-# Controle STATIQUE : les sept wrappers cables lancent le superviseur par un
+# Controle STATIQUE : les huit wrappers cables lancent le superviseur par un
 # CHEMIN ABSOLU. C'est l'invariant de production qui tient le predicat exact :
 # le predicat ne matche que "$REPO_DIR/scripts/ci/docker/linux-runner/
 # supervise.sh <mode>", donc un argv relatif produirait un faux negatif (le
@@ -189,15 +189,15 @@ PERSIST_DIR="$REPO_ROOT/scripts/ci/docker/linux-runner/persist"
 rel_wrappers=""
 for w in ai-01/coursia-runner-start.sh coursia-lean-start.sh \
          coursia-waiters-start.sh coursia-runner-start.sh \
-         po-2025/coursia-runner-start.sh po-2027/coursia-runner-start.sh \
-         po-2028/coursia-runner-start.sh; do
+         po-2023/coursia-runner-start.sh po-2025/coursia-runner-start.sh \
+         po-2027/coursia-runner-start.sh po-2028/coursia-runner-start.sh; do
   if grep -nE '^[[:space:]]*exec[[:space:]]+(\./)?scripts/ci/docker/linux-runner/supervise\.sh' \
        "$PERSIST_DIR/$w" >/dev/null 2>&1; then
     rel_wrappers="$rel_wrappers $w"
   fi
 done
 if [ -z "$rel_wrappers" ]; then
-  echo "  PASS: les sept wrappers lancent le superviseur par un chemin absolu (invariant de production)"
+  echo "  PASS: les huit wrappers lancent le superviseur par un chemin absolu (invariant de production)"
   echo x >>"$TMP/pass"
 else
   echo "  FAIL: argv relatif du superviseur dans :$rel_wrappers"
@@ -249,15 +249,18 @@ run_case() {  # $1 = script de purge ; $2 = STATE_DIR ; $3 = REPO_DIR (defaut : 
 # predicat PER-CHECKOUT (`supervisor_live_for.sh ... start`) ; ils divergent par
 # leur arret, et c'est ce qui rend la jambe po2024 non redondante -- sa purge
 # est gardee sur la forme `start`, parce que `stop` retombe sur le meme bloc.
-# `po2025` / `po2027` / `po2028` = les memes jambes sur leurs machines ; elles
-# portaient le predicat PER-MACHINE comme la racine, et relèvent du meme
-# defaut (#21527).
-for LEG in runner waiters lean po2024 po2025 po2027 po2028; do
+# `po2023` / `po2025` / `po2027` / `po2028` = les memes jambes sur leurs
+# machines ; elles portaient le predicat PER-MACHINE comme la racine, et
+# relèvent du meme defaut (#21527). `po2023` etait la DERNIERE a le porter :
+# elle n'etait couverte par aucune jambe, alors que c'est precisement un
+# wrapper non teste qui conserve un predicat qu'on a corrige partout ailleurs.
+for LEG in runner waiters lean po2024 po2023 po2025 po2027 po2028; do
   case "$LEG" in
     runner)  SRC="$HERE/ai-01/coursia-runner-start.sh"; OTHER=waiters ;;
     waiters) SRC="$HERE/coursia-waiters-start.sh";      OTHER=start   ;;
     lean)    SRC="$HERE/coursia-lean-start.sh";         OTHER=start   ;;
     po2024)  SRC="$HERE/coursia-runner-start.sh";       OTHER=waiters ;;
+    po2023)  SRC="$HERE/po-2023/coursia-runner-start.sh"; OTHER=waiters ;;
     po2025)  SRC="$HERE/po-2025/coursia-runner-start.sh"; OTHER=waiters ;;
     po2027)  SRC="$HERE/po-2027/coursia-runner-start.sh"; OTHER=waiters ;;
     po2028)  SRC="$HERE/po-2028/coursia-runner-start.sh"; OTHER=waiters ;;
@@ -278,6 +281,7 @@ for LEG in runner waiters lean po2024 po2025 po2027 po2028; do
     waiters) MODE=waiters ;;
     lean)    MODE=lean    ;;
     po2024)  MODE=start   ;;
+    po2023)  MODE=start   ;;
     po2025)  MODE=start   ;;
     po2027)  MODE=start   ;;
     po2028)  MODE=start   ;;

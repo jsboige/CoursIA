@@ -1,193 +1,70 @@
-# OncoPlan - Le Protocole Oncologique Adaptatif
+# Planification Oncologique — OncoPlan, le protocole adaptatif
 
-## Vue d'ensemble
+[← CaseStudies](../README.md) | [↑ Études de cas](../README.md)
 
-Ce devoir de contrôle continu combine **IA symbolique** et **programmation probabiliste** à travers un cas d'usage médical : l'aide à la décision en oncologie.
+Cette étude de cas répartit un problème d'oncologie le long d'une
+**frontière** entre ce qui *doit être respecté* (déterministe) et ce qui
+*doit être estimé* (probabiliste) : une **ontologie RDF** vérifie la
+prescription, un **solveur CP-SAT** planifie les cures et l'occupation des
+lits, un **modèle bayésien Pyro** estime le profil latent du patient
+(Résistant / Normal / Sensible), et un **contrat haché** (SHA-256, deux
+signatures) garantit l'audit. Le « jumeau numérique » du patient simule les
+scénarios de dose avant la décision.
 
-Les deux familles d'IA ne s'opposent pas : elles se répartissent le long d'une **frontière** — ce qui *doit être respecté* (déterministe) et ce qui *doit être estimé* (probabiliste) — pour produire un **jumeau numérique** du patient capable de simuler des scénarios :
+**Public** : étudiants EPF (CC2 « OncoPlan », cours IA101) ; prérequis :
+Python — le glossaire Pyro du carnet rend l'inférence accessible sans
+préparation en programmation probabiliste.
 
-```mermaid
-flowchart LR
-    subgraph DET["Déterministe — doit être respecté"]
-        O["Ontologie<br/>des chimiothérapies"] --> CSP["Planification<br/>CSP des cures"]
-    end
-    subgraph PROB["Probabiliste — doit être estimé"]
-        T["Toxicité cumulée<br/>(variable latente)"] --> PYRO["Inférence Pyro<br/>profil patient"]
-    end
-    CSP -->|"calendrier valide"| JN["Jumeau numérique<br/>du patient"]
-    PYRO -->|"incertitude"| JN
-    Q{"« Et si ? »<br/>dose / report"} --> JN
-    JN --> DEC["Décision médicale<br/>éclairée par scénarios"]
-```
+## Comment lire ce README
 
-### Structure du dossier
+Les parcours se lisent à plusieurs vitesses — voir
+[« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture)
+à la racine du dépôt :
 
-```
-Planification-Oncologie/
-├── README.md                           # Ce fichier
-├── subject.md                          # Sujet complet
-├── student/
-│   └── Oncology-Planning.ipynb         # Notebook à compléter
-├── solution/
-│   └── Oncology-Planning.ipynb         # Solution de référence
-└── data/
-    └── patients_oncology.csv           # Données patients
-```
+- **Vous découvrez** : lisez le parcours principal ci-dessous, puis le
+  carnet `student/` de bout en bout.
+- **Vous creusez un palier** : passez au corrigé type `solution/` et aux
+  exercices d'extension ci-dessous.
+- **Vous cherchez la recherche en cours** : section « Pour aller plus loin ».
 
----
+## Parcours principal
 
-## Objectifs pédagogiques
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|--------------------|--------|------------------|
+| 01 | [Squelette étudiant](student/Planification-Oncologie-Python.ipynb) | Ontologie RDF de 4 molécules (`toxicite_renale`, `incompatible_avec`) avec vérification de prescription, planification CP-SAT de 4 cycles de 21 jours (pas de dimanche, capacité 3 lits), modèle Pyro (profil latent 3 valeurs, toxicité cumulée, likelihood sur globules blancs), prédiction sur 2 scénarios de dose, contrat `OncoContract` — en squelette, 3 exercices d'extension nommés | Étudiant (CC2) | [Corrigé type](solution/Planification-Oncologie-Python.ipynb) |
+| 02 | [Corrigé type](solution/Planification-Oncologie-Python.ipynb) | L'ontologie peuplée (14 triplets), 4 protocoles réels (AC sein 4×21 j, FOLFOX 6×14 j, BEP 3×21 j, CHOP 6×21 j) avec makespan optimal 107 jours, posterior SVI « Résistant 0,92 / Normal 0,04 / Sensible 0,04 » menant à « réduction de dose impérative », contrat qui autorise l'administration et refuse un plan modifié | Enseignant / relecture | 3 exercices d'extension + la simulation `Predictive` restent en stub |
 
-1. **Modéliser des connaissances métier** (Ontologie des chimiothérapies)
-2. **Résoudre un problème de planification sous contraintes** (Générer un calendrier de cures valide)
-3. **Gérer l'incertitude** (Estimer la probabilité de devoir adapter le traitement)
-4. **Intégrer ces briques** dans un système décisionnel cohérent
+## Approfondissements
 
----
+Les trois exercices d'extension, présents en stub dans les deux carnets :
 
-## Guide Pyro pour les étudiants
+1. **Ontologie étendue** — ajouter Paclitaxel et Carboplatine.
+2. **Sensibilité au prior** — le profil patient face au prior du modèle.
+3. **Journal d'audit** — auditer le contrat intelligent.
 
-La partie probabiliste utilise **Pyro**, une bibliothèque de programmation probabiliste moderne en Python. Voici les concepts clés à maîtriser.
+## Sous-séries
 
-### Glossaire Pyro
+Aucune : le cas est plat — `student/`, `solution/` et `data/`
+(patients_oncology.csv). L'énoncé complet du sujet vit dans
+[subject.md](subject.md).
 
-#### A. `pyro.sample("nom", distribution)`
-- **En Python classique** : `random.choice([1, 2, 3])` renvoie une valeur (ex: 2).
-- **En Pyro** : Cela définit une **Variable Aléatoire**. Lors de l'exécution, cela renvoie une valeur, mais Pyro enregistre en arrière-plan que cette variable existe, s'appelle "nom", et suit telle distribution.
+## Installation
 
-```python
-n = pyro.sample("state", dist.Categorical(probs=[0.1, 0.9]))
-```
+Noyau Python ; les dépendances sont pré-provisionnées par
+[`CaseStudies/requirements.txt`](../requirements.txt) : rdflib, ortools,
+pyro-ppl, torch, pandas, matplotlib, seaborn. L'inférence est reproductible
+: `pyro.set_rng_seed(101)` dans le carnet.
 
-#### B. `pyro.factor("nom", log_prob)`
-C'est une instruction pour dire "Ce scénario est plus ou moins probable".
-- `0` (log(1)) : "Tout va bien, probabilité normale"
-- `-infini` (log(0)) : "Impossible ! Ce scénario est interdit"
-- `-10` : "Très peu probable, mais pas impossible"
+## Pour aller plus loin
 
-```python
-pyro.factor("contrainte", 0. if x > 0 else -9999.)  # force x > 0
-```
+Niveau Recherche : la programmation probabiliste (SVI / Trace_ELBO) comme
+estimateur de profil latent, et CP-SAT comme planificateur dur à horizon
+borné — le contraste avec le cas
+[Diagnostic Médical](../Diagnostic-Medical/README.md), où tout est
+déterministe et validé par contraintes.
 
-#### C. `obs=...` (Observation)
-C'est le cœur de l'inférence bayésienne. On dit au modèle "J'ai vu ça".
+## Ressources
 
-```python
-pyro.sample("mesure", dist.Normal(mu, sigma), obs=valeur_observee)
-```
-
-#### D. `poutine.scale(scale=alpha)`
-Un amplificateur qui multiplie les log-probs par `alpha`.
-- Si `alpha > 1` : les événements probables deviennent *très* probables (modèle confiant)
-- Si `alpha < 1` : tout s'aplatit (modèle incertain)
-
-### Structure recommandée du code
-
-```python
-class OncoModel:
-    def __init__(self):
-        # Priors
-        pass
-
-    def model(self, doses, observations=None):
-        # Définition Pyro du modèle génératif
-        pass
-
-    def guide(self, doses, observations=None):
-        # Guide variationnel (si SVI)
-        pass
-
-    def infer_profil(self, historique_doses, historique_prises_sang):
-        # Retourne la probabilité du profil patient
-        pass
-```
-
-### Indice technique important
-
-Lors de l'inférence SVI, assurez-vous que les données d'entrée (doses) sont alignées avec les observations.
-
-Si vous passez au modèle des doses futures pour lesquelles vous n'avez pas encore d'observation (ex: dose prévue à J21 mais observation seulement jusqu'à J8), Pyro va considérer les observations manquantes comme des variables latentes à inférer.
-
-**Solution** : Tronquez le tenseur des doses pour ne garder que l'historique correspondant aux observations réelles lors de l'étape `svi.step`.
-
----
-
-## Le modèle probabiliste en détail
-
-### Variables du modèle
-
-- **Variables Latentes (Cachées)** :
-  - `ProfilToxicite` : Catégorielle (0: Résistant, 1: Normal, 2: Sensible)
-  - `ToxiciteCumulee(t)` : Continue, augmente avec la dose, diminue avec le repos
-
-- **Variables Observées (Mesurées)** :
-  - `TauxGlobulesBlancs(t)` : Dépend de la toxicité cumulée
-
-### Approche "Jumeau Numérique"
-
-Le modèle permet de simuler des scénarios :
-- "Et si je maintiens la dose prévue ?"
-- "Et si je réduis de 25% ?"
-- "Et si je reporte d'une semaine ?"
-
-C'est la conception d'un **Jumeau Numérique** du patient, capable d'éclairer la décision médicale.
-
----
-
-## Ressources de référence
-
-### Notebooks utiles dans le cours
-- `Probas/Applications/Pyro_RSA_Hyperbole.ipynb` : Exemple d'inférence sur variables latentes
-- `SymbolicAI/OR-tools-Stiegler.ipynb` : Contraintes et planification avec OR-Tools
-
-### Bibliographie
-- Documentation Pyro : https://pyro.ai/
-- OR-Tools : https://developers.google.com/optimization
-- Concepts PK/PD (Pharmacocinétique/Pharmacodynamique) pour le contexte médical
-
----
-
-## Exercices d'extension
-
-Trois exercices d'extension, laissés en squelette dans le notebook étudiant, prolongent le jumeau numérique au-delà du barème principal :
-
-- **étendre l'ontologie médicamenteuse** (RDFLib) avec de nouveaux traitements et interactions, puis re-vérifier la prescription ;
-- **sensibilité au prior du profil patient** — faire varier le prior de l'inférence Pyro et observer comment évolue la probabilité d'adaptation du traitement ;
-- **journal d'audit du contrat intelligent** — tracer les décisions du smart contract (partie Bonus optionnelle) pour rendre le calendrier de cures auditable.
-
-Les squelettes correspondants figurent dans la version étudiante du notebook.
-
----
-
-## Conclusion
-
-Ce cas d'étude réunit deux familles d'IA que l'on oppose souvent, pour montrer qu'elles sont en réalité **complémentaires** dans une chaîne décisionnelle :
-
-- l'**IA symbolique** (ontologie des chimiothérapies, vérification de contraintes, planification CSP des cures) garantit qu'un calendrier de traitement est *valide* — conforme aux règles métier, sans violation de protocole ;
-- la **programmation probabiliste** (Pyro) prend en charge ce que le symbolique ne sait pas exprimer : l'*incertitude* sur le profil de toxicité du patient et la probabilité de devoir adapter le traitement.
-
-Leur intégration produit un **jumeau numérique** du patient, capable de simuler « et si ? » (maintenir la dose prévue, réduire de 25 %, reporter d'une semaine) et d'éclairer la décision médicale par des scénarios chiffrés plutôt que par une règle rigide.
-
-La leçon à retenir dépasse l'oncologie : un système décisionnel mûr combine le **déterministe** (ce qui doit être respecté) et le **probabiliste** (ce qui doit être estimé). Savoir où placer cette frontière — et brancher la bonne brique de chaque côté — est au cœur de la conception des systèmes d'aide à la décision sous incertitude.
-
----
-
-## Notes pour les enseignants
-
-### Genèse du sujet
-Ce sujet a été conçu pour combiner :
-1. **Symbolique avancé** : Ontologies, vérification de contraintes médicales
-2. **Planification** : OR-Tools/Z3 pour le calendrier des cures
-3. **Probabiliste** : Pyro pour l'adaptation personnalisée
-
-### Points d'attention
-- Le squelette fournit une structure robuste pour Pyro (souvent difficile à démarrer)
-- Les contraintes CSP sont pré-formalisées en langage naturel
-- La partie Bonus (Smart Contract) est optionnelle
-
-### Barème indicatif
-- Ontologie & Vérification : 4 pts
-- Planification CSP : 6 pts
-- Modèle Pyro (Définition) : 4 pts
-- Inférence & Décision : 4 pts
-- Qualité du code & Bonus : 2 pts
+- [Études de cas interdisciplinaires](../README.md) — la série parent
+- [Énoncé du sujet](subject.md)
+- `data/patients_oncology.csv`

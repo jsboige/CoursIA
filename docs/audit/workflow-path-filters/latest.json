@@ -370,7 +370,7 @@
       "paths_list": [
         "MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**",
         ".github/workflows/dotnet-AgentSafetyAnalyzer.yml",
-        "MyIA.CoursIA.sln"
+        "dotnet/MyIA.CoursIA.sln"
       ],
       "pr_target_filter_excludes_main": false
     },
@@ -389,7 +389,7 @@
       "paths_list": [
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**",
         ".github/workflows/dotnet-ArgumentAnalysis.yml",
-        "MyIA.CoursIA.sln"
+        "dotnet/MyIA.CoursIA.sln"
       ],
       "pr_target_filter_excludes_main": false
     },
@@ -423,7 +423,7 @@
         "MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**",
         "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**",
         ".github/workflows/dotnet-OrphanApps.yml",
-        "MyIA.CoursIA.sln"
+        "dotnet/MyIA.CoursIA.sln"
       ],
       "pr_target_filter_excludes_main": false
     },
@@ -440,8 +440,8 @@
       "name": "dotnet-Shared.Tests.yml",
       "paths_count": 3,
       "paths_list": [
-        "MyIA.AI.Shared/**",
-        "MyIA.AI.Shared.Tests/**",
+        "dotnet/MyIA.AI.Shared/**",
+        "dotnet/MyIA.AI.Shared.Tests/**",
         ".github/workflows/dotnet-Shared.Tests.yml"
       ],
       "pr_target_filter_excludes_main": false
@@ -890,10 +890,10 @@
       "name": "lean-conway.yml",
       "paths_count": 7,
       "paths_list": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain",
         ".github/workflows/lean-conway.yml",
         ".github/workflows/lean-axiom.yml",
         "scripts/lean/check_target_coverage.py"
@@ -1102,11 +1102,11 @@
       "name": "lean-grothendieck.yml",
       "paths_count": 10,
       "paths_list": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lake-manifest.json",
         ".github/workflows/lean-grothendieck.yml",
         ".github/workflows/lean-axiom.yml",
         ".github/workflows/lean-build.yml",
@@ -2316,10 +2316,10 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/run_prover_bg.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain",
         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py",
         ".github/workflows/pr-gate-rerun.yml",
         ".github/workflows/**",

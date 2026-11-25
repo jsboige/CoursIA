@@ -67,12 +67,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: gametheory-tests-${{ github.ref }}
+  group: gametheory-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   gametheory-tests:
     name: GameTheory pytest (600 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
@@ -90,7 +91,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11.18'
           cache: pip
 
       # Deps minimales : numpy est l'import dominant du corpus

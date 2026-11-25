@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-17
 
 # GenAI Services - ComfyUI Image Generation
 
@@ -70,7 +70,7 @@ SaveImage
 
 **Statut : INTRINSIC pour l'UE (Tâche 2 #10244).** Le modele est open-weights et techniquement auto-hebergeable (ComfyUI workflows publies sur `ai-models-lab/minimax-h3`), mais la licence *MiniMax H3 Community License* (datee 2 aout 2026, deposee sur HuggingFace `MiniMaxAI/MiniMax-H3`) **exclut explicitement l'usage, l'hebergement et l'affichage des Outputs sur le territoire de l'Union Europeenne** (cf. Art. I.3 *Applicable Territory* et Art. I.5 *Excluded Territories*). Ce bloc documente donc l'architecture **a titre de reference** — pour informer la decision de deploiement — et **non** pour inviter au deploiement local.
 
-> **Verdict SOTA pour notre contexte (France / UE, depot public, ecoles partenaires) : INTRINSIC.** La voie pedagogiquement equivalente pour « video + audio natif synchronise » en UE est **LTX-2** (`02-5-LTX2-Audiovisual`, licence permissive, executable). Le notebook `02-6-MiniMax-H3-Architecture-Licensing` de la serie Video enseigne l'architecture et le raisonnement de conformite (verificateur de juridiction, matrice de decision avec Sora et LTX-2).
+> **Verdict SOTA pour notre contexte (France / UE, depot public, ecoles partenaires) : INTRINSIC.** La voie pedagogiquement equivalente pour « video + audio natif synchronise » en UE est **LTX-2** (`02-5-Video-Audio-Conjoint`, licence permissive, executable). Le notebook `02-6-Video-Architecture-Licensing` de la serie Video enseigne l'architecture et le raisonnement de conformite (verificateur de juridiction, matrice de decision avec Sora et LTX-2).
 
 ### Specifications du modele (verifiees firsthand, source officielle minimax.io + GitHub `MiniMax-AI/MiniMax-H3` + HuggingFace)
 

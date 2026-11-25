@@ -1463,3 +1463,108 @@ def test_les_fantomes_sont_exclus_et_ne_consomment_pas_la_borne():
     assert ghosts == 45
     assert len(targets) == 2
     assert all(row["age_min"] <= 360.0 for row in targets)
+
+
+# --- #25510 (E2/2) : la garde de cadence lit le MARQUEUR LOCAL -----------
+#
+# Forme (b) du declencheur (arbitree le 2026-11-12) : le passage est
+# LOCAL, donc aucun run n'est cree, donc l'API des runs du controleur
+# decrit un etat MORT pour ce passage -- et une garde qui lit un etat
+# mort ne garde rien. Le marqueur local est l'etat VIVANT du declencheur.
+
+
+def test_le_marqueur_local_est_ecrit_et_relu(tmp_path):
+    marker = tmp_path / "cadence.json"
+    ok, reason = ctl.write_local_marker(
+        marker, NOW, {"verdict": "HOLD", "written": True, "mode": "apply"}
+    )
+    assert ok and reason == ""
+    stamp, motif = ctl.read_local_marker(marker)
+    assert motif == ""
+    assert stamp == NOW
+
+
+def test_un_marqueur_absent_ou_illisible_ne_bloque_jamais(tmp_path):
+    """Un marqueur absent (premier passage) ou illisible ne doit pas
+    eteindre la soupape : le passage continue, et le motif est dit."""
+    stamp, motif = ctl.read_local_marker(tmp_path / "absent.json")
+    assert stamp is None
+    assert "absent" in motif
+    casse = tmp_path / "casse.json"
+    casse.write_text("{pas du json", encoding="utf-8")
+    stamp, motif = ctl.read_local_marker(casse)
+    assert stamp is None
+    assert "illisible" in motif
+
+
+def test_la_garde_de_cadence_lit_le_marqueur_et_n_interroge_pas_github(
+    monkeypatch, capsys, tmp_path
+):
+    """Le marqueur local est la source de l'ecart, et l'appel API des runs
+    du controleur n'a plus lieu : il decrit un etat mort pour un passage
+    local, et il coute un appel."""
+    marker = tmp_path / "cadence.json"
+    ctl.write_local_marker(marker, NOW - timedelta(minutes=5), {"verdict": "HOLD"})
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (
+        _ for _ in ()).throw(
+            AssertionError("l'API des runs ne doit pas etre lue quand le "
+                           "marqueur local est pose")))
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: (
+        _ for _ in ()).throw(
+            AssertionError("aucune lecture de variable quand la cadence n'est "
+                           "pas ecoulee")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--now", NOW_ISO,
+                    "--min-interval", "15", "--local-marker", str(marker)])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SKIPPED"
+    assert report["last_run_age_source"] == "marqueur local"
+    assert report["last_run_age_min"] == pytest.approx(5.0, abs=0.2)
+
+
+def test_un_passage_ecarte_n_ecrit_pas_le_marqueur(monkeypatch, capsys, tmp_path):
+    """Le marqueur bouge au passage MESURE, jamais sur un passage ecarte.
+
+    Sinon la garde se verrouillerait elle-meme : un passage ecarte
+    repousserait le suivant, qui serait ecarte a son tour, et la mesure
+    n'arriverait plus jamais.
+    """
+    marker = tmp_path / "cadence.json"
+    ctl.write_local_marker(marker, NOW - timedelta(minutes=5), {"verdict": "HOLD"})
+    avant = marker.read_bytes()
+    monkeypatch.setenv("GH_TOKEN", "t")
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--now", NOW_ISO,
+                    "--min-interval", "15", "--local-marker", str(marker)])
+    assert rc == ctl.EXIT_OK
+    assert json.loads(capsys.readouterr().out)["verdict"] == "SKIPPED"
+    assert marker.read_bytes() == avant
+
+
+def test_un_passage_mesure_ecrit_le_marqueur(monkeypatch, capsys, tmp_path):
+    marker = tmp_path / "cadence.json"
+    monkeypatch.setenv("GH_TOKEN", "t")
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--now", NOW_ISO,
+                    "--min-interval", "15", "--local-marker", str(marker)])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+    assert report["local_marker_written"] is True
+    assert marker.exists()
+    stamp, motif = ctl.read_local_marker(marker)
+    assert motif == ""
+    assert stamp is not None

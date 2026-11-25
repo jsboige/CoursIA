@@ -1,0 +1,10 @@
+- name: "Frontieres-09 RCPSP Max Feasibility Bounds"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le modèle CP-SAT natif résout les arcs de décalage, les contraintes cumulatives par ressource et la minimisation du makespan. Le C# vérifie indépendamment chaque solution à partir de ses dates. Les deux langages codent la relaxation des dates et l'ordonnancement sériel en dehors du solveur."
+  known_differences:
+    - "La génération C# restitue les tirages MT19937 du Python pour les graines d'origine. Les observations PSPLIB archivées sont lues en données et leurs écarts sont recalculés. Les expériences synthétiques invoquent le solveur à chaque exécution."
+    - "Le C# produit ses tableaux et un SVG autonome. Les temps sont mesurés dans chaque environnement. À budget identique, un solveur peut rendre FEASIBLE avec incumbent et borne sans certificat OPTIMAL."

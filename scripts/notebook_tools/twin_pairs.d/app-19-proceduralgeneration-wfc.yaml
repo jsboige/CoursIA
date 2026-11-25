@@ -1,6 +1,6 @@
 - name: App-19 ProceduralGeneration WFC
   family: Search/Part3-Cas-pratiques
-  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

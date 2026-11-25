@@ -105,7 +105,7 @@ echo "Test 2 : refs cassees -- le canal est STDERR, le rc est 0"
     ko "2 refs cassees attendues, obtenu: [$broken]"
   fi
   out="$(wch_integrity_pass "$R" 2>&1)"
-  if echo "$out" | grep -q "reparation" && echo "$out" | grep -q "retire(s)"; then
+  if grep -q "reparation" <<<"$out" && grep -q "retire(s)" <<<"$out"; then
     ok "passe integrite journalise la reparation"
   else
     ko "journal de reparation attendu, obtenu: $out"
@@ -173,7 +173,7 @@ echo "Test 4 : depot muet (0 refs lisibles) -- purge, jamais un « sain » non p
   else
     ko "un depot muet a ete conserve comme sain -- le faux negatif est DE"
   fi
-  if echo "$out" | grep -q "IRRECUPERABLE"; then
+  if grep -q "IRRECUPERABLE" <<<"$out"; then
     ok "la purge est NOMMEE dans le journal"
   else
     ko "journal de purge attendu, obtenu: $out"
@@ -203,7 +203,7 @@ echo "Test 5 : compte de packs borne -- mesure avant/apres journalisee"
   # Le journal nomme les drapeaux (#18225) : `-ad` ici, puisque ce depot
   # n'emprunte aucun objet. C'est cette trace qui distingue un repack qui
   # consolide d'un repack qui rapatrie les objets d'un miroir.
-  if echo "$out" | grep -q "repack -ad $n_packs -> $after"; then
+  if grep -q "repack -ad $n_packs -> $after" <<<"$out"; then
     ok "la mesure avant/apres est dans le journal (acceptance #15105)"
   else
     ko "journal de mesure attendu, obtenu: $out"
@@ -275,7 +275,7 @@ echo "Test 6b : 0 pack MAIS objets en vrac -- etat anormal, consolide (#21557)"
   else
     ko "aucun pack apres passage -- le cycle resterait a ~600 s de scan"
   fi
-  if echo "$out" | grep -q "repack -ad 0 ->"; then
+  if grep -q "repack -ad 0 ->" <<<"$out"; then
     ok "la cause est journalisee (repack -ad 0 -> N, #21557)"
   else
     ko "journal de la cause attendu, obtenu: [$out]"
@@ -413,13 +413,13 @@ echo "Test 8 : shell de PRODUCTION -- le garde ne tue pas l'appelant (#16938)"
 
   # --- Controle NEGATIF : l'instrument peut rougir ---------------------------
   out="$(pre_fix_broken_refs "$W_ILL/CoursIA/CoursIA")"; rc=$?
-  if ! echo "$out" | grep -q "SENTINELLE-ATTEINTE" && [ "$rc" != "0" ]; then
+  if ! grep -q "SENTINELLE-ATTEINTE" <<<"$out" && [ "$rc" != "0" ]; then
     ok "controle negatif : la ligne AVANT correctif tue l'appelant (rc=$rc) -- l'instrument sait rougir"
   else
     ko "la forme non gardee n'a pas tue l'appelant (rc=$rc) -- l'instrument est aveugle"
   fi
   out="$(pre_fix_pack_count "$W_HP/CoursIA/CoursIA")"; rc=$?
-  if ! echo "$out" | grep -q "SENTINELLE-ATTEINTE" && [ "$rc" != "0" ]; then
+  if ! grep -q "SENTINELLE-ATTEINTE" <<<"$out" && [ "$rc" != "0" ]; then
     ok "controle negatif : le compte de packs non garde tue l'appelant sur un depot SAIN (rc=$rc)"
   else
     ko "le compte de packs non garde n'a pas tue l'appelant (rc=$rc)"
@@ -427,7 +427,7 @@ echo "Test 8 : shell de PRODUCTION -- le garde ne tue pas l'appelant (#16938)"
 
   # --- Controle POSITIF 1 : depot illisible -> la branche de purge est ATTEINTE
   out="$(replay_production "$W_ILL" 16)"; rc=$?
-  if echo "$out" | grep -q "SENTINELLE-ATTEINTE"; then
+  if grep -q "SENTINELLE-ATTEINTE" <<<"$out"; then
     ok "depot illisible : l'appelant CONTINUE (sentinelle atteinte sous set -euo pipefail)"
   else
     ko "depot illisible : l'appelant est mort avant la sentinelle (rc=$rc) -- le garde tue le slot"
@@ -437,7 +437,7 @@ echo "Test 8 : shell de PRODUCTION -- le garde ne tue pas l'appelant (#16938)"
   else
     ko "depot illisible : purge jamais atteinte -- le cache empoisonne survit"
   fi
-  if echo "$out" | grep -q "IRRECUPERABLE"; then
+  if grep -q "IRRECUPERABLE" <<<"$out"; then
     ok "depot illisible : la purge est NOMMEE dans le journal"
   else
     ko "journal de purge attendu, obtenu: $out"
@@ -445,7 +445,7 @@ echo "Test 8 : shell de PRODUCTION -- le garde ne tue pas l'appelant (#16938)"
 
   # --- Controle POSITIF 2 : depot sain sans pack -> conserve, et appelant vivant
   out="$(replay_production "$W_HP" 16)"; rc=$?
-  if echo "$out" | grep -q "SENTINELLE-ATTEINTE"; then
+  if grep -q "SENTINELLE-ATTEINTE" <<<"$out"; then
     ok "depot sain sans pack : l'appelant CONTINUE sous set -euo pipefail"
   else
     ko "depot sain sans pack : l'appelant est mort avant la sentinelle (rc=$rc)"
@@ -473,12 +473,12 @@ echo "Test 8 : shell de PRODUCTION -- le garde ne tue pas l'appelant (#16938)"
     fi
     echo SENTINELLE-ATTEINTE
   ' 2>&1)"; rc=$?
-  if echo "$out" | grep -q "SENTINELLE-ATTEINTE"; then
+  if grep -q "SENTINELLE-ATTEINTE" <<<"$out"; then
     ok "la forme du point d'appel absorbe un rc qui fuit (sentinelle tenue, rc=$rc)"
   else
     ko "la forme du point d'appel ne suffit pas a absorber un rc qui fuit (rc=$rc)"
   fi
-  if echo "$out" | grep -q "BARRIERE-A-JOURNALISE"; then
+  if grep -q "BARRIERE-A-JOURNALISE" <<<"$out"; then
     ok "l'echec est JOURNALISE par la barriere (jamais avale en silence -- la cause reste diagnosticable)"
   else
     ko "la barriere avale l'echec sans le journaliser, obtenu: $out"
@@ -527,7 +527,7 @@ run_under_entrypoint_shell() {
   mkdir -p "$R/.git"
   printf '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0' > "$R/.git/HEAD"
   out="$(run_under_entrypoint_shell "$D" < /dev/null)"
-  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+  if grep -q "$SENTINEL" <<<"$out"; then
     ok "set -euo pipefail : depot illisible -- l'appelant SURVIT a la passe"
   else
     ko "set -euo pipefail : depot illisible -- l'appelant est MORT [$out]"
@@ -548,7 +548,7 @@ run_under_entrypoint_shell() {
   git -c init.defaultBranch=main init -q "$R"
   git -C "$R" -c user.email=t@t -c user.name=t commit -q --allow-empty -m seed
   out="$(run_under_entrypoint_shell "$D" < /dev/null)"
-  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+  if grep -q "$SENTINEL" <<<"$out"; then
     ok "set -euo pipefail : depot sans pack -- l'appelant SURVIT"
   else
     ko "set -euo pipefail : depot sans pack -- l'appelant est MORT [$out]"
@@ -576,7 +576,7 @@ wch_broken_refs() {
 }
 UNGUARDED
 )"
-  if printf '%s' "$out" | grep -q "$SENTINEL"; then
+  if grep -q "$SENTINEL" <<<"$out"; then
     ko "controle NEGATIF CREUX : la forme non gardee survit -- le banc ne prouve rien"
   else
     ok "controle NEGATIF : la forme non gardee TUE l'appelant (le banc a des dents)"
@@ -611,7 +611,7 @@ echo "Test 10 : echecs consecutifs de repack -> escalade en quarantaine (#21745 
   ck="$(wch_repack_streak_read "$RQ")"
   if [ "$ck" = "1" ]; then ok "echec 1/3 : compteur = 1"; else ko "compteur apres 1 echec = [$ck], attendu 1"; fi
   if [ -d "$RQ" ]; then ok "echec 1/3 : clone conserve (pas d'escalade avant le seuil)"; else ko "clone renomme des le 1er echec"; fi
-  if echo "$out1" | grep -q "echec consecutif 1/3"; then ok "echec 1/3 : le seuil est journalise"; else ko "seuil absent du journal: $out1"; fi
+  if grep -q "echec consecutif 1/3" <<<"$out1"; then ok "echec 1/3 : le seuil est journalise"; else ko "seuil absent du journal: $out1"; fi
 
   wch_maintenance_pass "$RQ" 1 >/dev/null 2>&1
   ck="$(wch_repack_streak_read "$RQ")"
@@ -705,7 +705,7 @@ echo "Test : repack -- un depot a alternates ne copie pas les objets empruntes (
 
   out="$(wch_maintenance_pass "$S" 1 2>&1)"
   echo "$out" >> "$LOG"
-  if echo "$out" | grep -q -- "-adl"; then
+  if grep -q -- "-adl" <<<"$out"; then
     ok "maintenance : le journal nomme les drapeaux -adl"
   else
     ko "maintenance : drapeaux -adl absents du journal ($out)"
@@ -778,7 +778,7 @@ echo ""
   else
     ko "temoin : le filtre par forme n'a pas joue (notes.stale-manuel retire)"
   fi
-  if echo "$out" | grep -q "retention des quarantaines -- 2 retiree"; then
+  if grep -q "retention des quarantaines -- 2 retiree" <<<"$out"; then
     ok "retention : le journal nomme le compte retire"
   else
     ko "retention : le journal ne porte pas le compte retire ($out)"
@@ -900,7 +900,7 @@ echo "Test : quarantaines empilees -- maintenance exclue, retention par generati
   else
     ko "empilement : le contenu n'a pas suivi le renommage -- la preuve de preservation manque"
   fi
-  if echo "$out" | grep -q "ramenee a CoursIA.stale-20260102T000000Z.stale-20260103T000000Z"; then
+  if grep -q "ramenee a CoursIA.stale-20260102T000000Z.stale-20260103T000000Z" <<<"$out"; then
     ok "empilement : le journal nomme la chaine ramenee"
   else
     ko "empilement : le journal ne nomme pas le resultat ($out)"
@@ -967,7 +967,7 @@ echo "Test : borne d'age des quarantaines (fenetre d'inspection)"
   else
     ko "temoin : le clone VIVANT a ete retire -- le motif est trop large"
   fi
-  if echo "$out" | grep -q "hors fenetre d'age"; then
+  if grep -q "hors fenetre d'age" <<<"$out"; then
     ok "borne d'age : le journal nomme la cause du retrait"
   else
     ko "borne d'age : le journal ne nomme pas la cause ($out)"
@@ -1037,7 +1037,7 @@ echo "Test : borne de taille des quarantaines (occupation par slot)"
   else
     ko "temoin : le clone VIVANT a ete retire par la borne de taille"
   fi
-  if echo "$out" | grep -q "borne de taille"; then
+  if grep -q "borne de taille" <<<"$out"; then
     ok "borne de taille : le journal nomme la cause du retrait"
   else
     ko "borne de taille : le journal ne nomme pas la cause ($out)"

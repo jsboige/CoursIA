@@ -1,5 +1,7 @@
 # Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **Provenance** : issue #21823, suite de la revue [NanoClaw] du 2026-10-21 sur la PR #21771
 (« pas de cache Fashion-MNIST ici ; chiffres cités comme mesure de l'auteur »).
 

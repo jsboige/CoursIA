@@ -19,6 +19,7 @@ def _item(
     age: int = 10,
     idle: int = 5,
     klass: str = "grain",
+    body: str = "",
 ) -> dict:
     return {
         "number": number,
@@ -27,6 +28,7 @@ def _item(
         "age": age,
         "idle": idle,
         "klass": klass,
+        "body": body,
     }
 
 
@@ -57,6 +59,21 @@ def test_exclude_labels_uses_any_match_case_insensitively():
     )
     assert [item["number"] for item in kept] == [3]
     assert funnel["excluded"] == {"exclude_label": 2}
+
+
+def test_hors_flotte_body_excluded_with_named_reason():
+    """#26893 : une issue qui DECLARE l'exemption hors flotte (#17713) est
+    ecartee avec la raison nommee ; la prose qui la mentionne reste servie."""
+    items = [
+        _item(1, body="Hors flotte — Marathon II. Part of #26078 ; See #26070."),
+        _item(2, body="**Travail hors flotte déjà en cours par root.**"),
+        _item(3, body="Deux PRs ont fermé la même issue : une session hors "
+                      "flotte ouverte le 14/11, et une lane."),
+    ]
+    kept, funnel = pig.filter_candidates(items)
+    assert [item["number"] for item in kept] == [3]
+    assert funnel["excluded"] == {"hors_flotte": 2}
+    assert funnel["examples"]["hors_flotte"] == [1, 2]
 
 
 def test_age_and_idle_bounds_are_inclusive():

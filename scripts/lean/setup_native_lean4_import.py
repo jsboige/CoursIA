@@ -59,9 +59,11 @@ WSL_DISTRO = "Ubuntu"
 # Canonical matched-REPL install paths (one per toolchain tag).
 REPL_TOOLCHAIN_TAGS = {
     "v4.30.0-rc2": "repl-4.30.0-rc2",
+    "v4.30.0": "repl-4.30.0",
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
     "v4.32.1": "repl-4.32.1",
+    "v4.33.0-rc1": "repl-4.33.0-rc1",
     "v4.33.0": "repl-4.33.0",
     "v4.33.1": "repl-4.33.1",
     "v4.34.0-rc1": "repl-4.34.0-rc1",
@@ -79,14 +81,25 @@ REPL_TOOLCHAIN_TAGS = {
 # in-place ``patch``). The fork repl.py is the single runtime source of the patch; the
 # ``REPL_PY_PATCH`` constant below mirrors it verbatim for the legacy offline fallback.
 # See issue #4394.
+# Depuis ``v0.0.2-paired-repl``, le ``repl.py`` du fork est exactement le ``repl.py``
+# amont auquel ``patch`` applique ``REPL_PY_PATCH`` : couple REPL/toolchain (#18511),
+# reordonnancement DrvFS (#12061), binaire apparie par le wrapper (#24913). Toute
+# evolution du gabarit se reporte dans le fork sous un nouveau tag, puis ici.
+# ``v0.0.3-launch-errors`` : ``launch()`` ne retombe plus sur ``lake env repl``
+# dans un lake, il leve ``ReplLaunchError`` (review de #25360).
 FORK_URL = "git+https://github.com/jsboige/lean4_jupyter.git"
-FORK_TAG = "v0.0.1-native-import"
+FORK_TAG = "v0.0.3-launch-errors"
 # Marker present in repl.py once patched (idempotency check).
 # Note: as of v0.0.1-native-import the durably-installed fork already bakes
 # `_find_lake_root` + `_repl_for_toolchain` into repl.py — so the marker matches
 # the upstream fork, not the legacy in-place patch. The in-place patcher is kept
 # as an offline fallback for users who cannot install the fork (e.g. no network).
 PATCH_MARKER = "_find_lake_root"
+# Marqueurs du lancement apparie (#24913) et de son echec nomme. Un ``repl.py``
+# qui porte ``PATCH_MARKER`` sans eux vient d'une fourche anterieure a
+# ``FORK_TAG`` : elle peut encore lancer ``lake env repl``, donc le REPL d'une
+# autre version. ``install`` ne la declare pas installee.
+PAIRED_LAUNCH_MARKERS = ("_repl_from_caller", "ReplLaunchError")
 # Drift marker for the DrvFS wedge fix (c.1331p319 #12061): the upstream fork
 # at v0.0.1-native-import does NOT contain this string; presence in repl.py means
 # a host-side re-patch (or a newer fork tag) has applied the sysroot-first
@@ -107,11 +120,34 @@ REPL_PY_PATCH = '''    @staticmethod
             d = p
         return None
 
+    @staticmethod
+    def _repl_from_caller():
+        """Binaire REPL que le wrapper du noyau a apparie a la toolchain.
+
+        Le wrapper (``lean4-kernel-wrapper.py``) choisit ce binaire, verifie
+        que la version de Lean qu'il embarque est celle de la toolchain
+        epinglee, et l'exporte dans ``LEAN4_JUPYTER_REPL``. Le lancer
+        directement est la seule facon de garantir que c'est lui qui tourne :
+        ``lake env repl`` resout ``repl`` par un PATH que ``lake env`` prefixe
+        par ``~/.elan/bin``, donc par le REPL par defaut, d'une autre version
+        sur une machine qui en porte plusieurs (#24913).
+        """
+        path = os.environ.get('LEAN4_JUPYTER_REPL', '')
+        return path if path and os.path.isfile(path) else None
+
     class ReplPairingError(RuntimeError):
         """Aucune correspondance REPL/toolchain prouvee.
 
         Le kernel doit ECHOUER : un REPL construit pour une autre version rend
         chaque cellule en erreur de parse sous un exit 0 (#18511).
+        """
+
+    class ReplLaunchError(RuntimeError):
+        """Le lancement du REPL apparie a echoue, et il n'y a pas de repli.
+
+        Dans un lake, ou des que le wrapper a exporte un binaire apparie, le
+        repli sur ``lake env repl`` ferait tourner le REPL par defaut, d'une
+        autre version sur une machine qui en porte plusieurs (#24913).
         """
 
     @staticmethod
@@ -124,7 +160,9 @@ REPL_PY_PATCH = '''    @staticmethod
         (le binaire fait ~200 Mo) avec recouvrement.
         """
         import re as _re
-        pattern = _re.compile(rb"lean-lang\\.org/doc/reference/(\\d+\\.\\d+\\.\\d+)")
+        # Le suffixe `-rcN` fait partie de la version (#24913).
+        pattern = _re.compile(
+            rb"lean-lang\\.org/doc/reference/(\\d+\\.\\d+\\.\\d+(?:-rc\\d+)?)/")
         try:
             with open(repl_path, 'rb') as fh:
                 tail = b''
@@ -157,23 +195,36 @@ REPL_PY_PATCH = '''    @staticmethod
         # toolchain tag -> canonical matched-REPL name (inlined; keep in sync
         # with REPL_TOOLCHAIN_TAGS in setup_native_lean4_import.py).
         mapping = {'v4.30.0-rc2': 'repl-4.30.0-rc2',
+                   'v4.30.0': 'repl-4.30.0',
                    'v4.31.0-rc1': 'repl-4.31.0-rc1',
                    'v4.32.0': 'repl-4.32.0',
                    'v4.32.1': 'repl-4.32.1',
+                   'v4.33.0-rc1': 'repl-4.33.0-rc1',
                    'v4.33.0': 'repl-4.33.0',
                    'v4.33.1': 'repl-4.33.1',
-                   'v4.34.0-rc1': 'repl-4.34.0-rc1'}
+                   'v4.34.0-rc1': 'repl-4.34.0-rc1',
+                   'v4.34.0-rc2': 'repl-4.34.0-rc2',
+                   'v4.34.0': 'repl-4.34.0',
+                   'v4.35.0-rc1': 'repl-4.35.0-rc1',
+                   'v4.35.0-rc2': 'repl-4.35.0-rc2',
+                   'v4.35.0-rc3': 'repl-4.35.0-rc3',
+                   'v4.35.0-rc4': 'repl-4.35.0-rc4',
+                   'v4.35.0': 'repl-4.35.0',
+                   'v4.36.0-rc1': 'repl-4.36.0-rc1'}
         try:
             tc_file = os.path.join(lake_root, 'lean-toolchain')
             tc = open(tc_file).read().strip() if os.path.isfile(tc_file) else ''
         except OSError:
             tc = ''
         elan_bin = os.path.expanduser('~/.elan/bin')
-        for tag, name in mapping.items():
-            if tag in tc:
-                p = os.path.join(elan_bin, name)
-                if os.path.isfile(p):
-                    return p
+        # Comparaison EXACTE du tag : une sous-chaine faisait servir
+        # `repl-4.33.0` a un lake en `v4.33.0-rc1` (#24913).
+        tc_tag = tc.split(':')[-1].strip() if tc else ''
+        name = mapping.get(tc_tag)
+        if name:
+            p = os.path.join(elan_bin, name)
+            if os.path.isfile(p):
+                return p
         # Toolchain inconnue du lake : l'epinglage du wrapper prime
         # (ELAN_TOOLCHAIN), et c'est lui qui fait foi.
         tag = tc.split(':')[-1].strip().lstrip('v') if tc else ''
@@ -188,7 +239,7 @@ REPL_PY_PATCH = '''    @staticmethod
                 "Lean 4 kernel: no REPL binary matched the toolchain "
                 f"{tag} (the default REPL embeds Lean "
                 f"{version or 'an unknown version'}). Build a matched REPL with: "
-                "setup_native_lean4_import.py build-repl " + tag)
+                "setup_native_lean4_import.py build-repl v" + tag)
         return default
 
     @classmethod
@@ -196,56 +247,76 @@ REPL_PY_PATCH = '''    @staticmethod
         """Native-import path: launch the REPL binary DIRECT (not via ``lake env``)
         with the lake's LEAN_PATH when running inside a lake workspace. ``lake env
         repl`` clobbers the REPL sysroot (loses Init); direct launch with
-        LEAN_PATH=sysroot+deps+Mathlib restores native Mathlib-lake import."""
-        try:
-            lake_root = cls._find_lake_root(os.getcwd())
-            if lake_root:
-                import subprocess as _sp
-                out = _sp.run(
+        LEAN_PATH=sysroot+deps+Mathlib restores native Mathlib-lake import.
+
+        Le binaire apparie par le wrapper (``_repl_from_caller``) est lance
+        directement, dans un lake comme hors lake : c'est lui qui fait foi
+        (#24913). Sans lui, le choix revient a ``_repl_for_toolchain`` dans un
+        lake, et a ``lake env repl`` hors lake.
+
+        Aucun repli silencieux : dans un lake, un ``lake env`` qui echoue ou ne
+        rend aucun LEAN_PATH, ou un binaire introuvable, leve
+        ``ReplLaunchError``. ``lake env repl`` ne sert plus que hors lake, sans
+        binaire apparie : un lancement hors wrapper, ou rien n'est apparie."""
+        caller_repl = cls._repl_from_caller()
+        clean_path = (os.path.expanduser('~/.elan/bin')
+                      + ':/usr/local/bin:/usr/bin:/bin')
+        lake_root = cls._find_lake_root(os.getcwd())
+        if lake_root:
+            import subprocess as _sp
+            try:
+                done = _sp.run(
                     ['lake', 'env', 'python3', '-c',
                      'import os; print(os.environ.get("LEAN_PATH",""))'],
                     # timeout=240 (not 60): on rc1 lakes whose Mathlib is an NTFS
                     # junction, `lake env` re-verifies the junction ("has local
                     # changes") and takes ~111-125s (measured c.129). timeout=60
-                    # tripped RC1-TIMEOUT -> empty LEAN_PATH -> broken `lake env
-                    # repl` fallback -> silent kernel failure. 240s = ~2x margin.
+                    # tripped RC1-TIMEOUT -> empty LEAN_PATH. 240s = ~2x margin.
                     capture_output=True, text=True, timeout=240, cwd=lake_root,
-                    env={**os.environ,
-                         'PATH': os.path.expanduser('~/.elan/bin') + ':/usr/local/bin:/usr/bin:/bin'}
-                ).stdout
-                lean_path = '\\n'.join(
-                    l for l in out.splitlines() if 'local changes' not in l).strip()
-                # DrvFS wedge mitigation (c.1331p319 #12061): on NTFS-Dr vFS
-                # (e.g. /mnt/d), `lake env` returns LEAN_PATH with the elan
-                # sysroot LAST, forcing the REPL to scan every package directory
-                # on the slow DrvFS mount BEFORE finding `Init` in the sysroot
-                # -> hang >16 min on `#check`. Reorder puts sysroot FIRST.
-                # Pure-function counterpart: _reorder_lean_path_drvfs_first in
-                # setup_native_lean4_import.py (same logic, no WSL deps).
-                # Marker: sysroot_first_reorder (PATCH_MARKER_DRVFS).
-                if lean_path:
-                    _elan_root = os.path.expanduser('~/.elan/toolchains')
-                    _entries = [e for e in lean_path.split(':') if e]
-                    _sysroot_entries = [e for e in _entries
-                                        if e.startswith(_elan_root)]
-                    if _sysroot_entries and _entries[0] != _sysroot_entries[0]:
-                        _non_sysroot = [e for e in _entries
-                                        if e not in _sysroot_entries]
-                        lean_path = ':'.join(_sysroot_entries + _non_sysroot)
-                # sysroot_first_reorder (DrvFS marker)
-                repl_bin = cls._repl_for_toolchain(lake_root)
-                if lean_path and os.path.isfile(repl_bin):
-                    env = {**os.environ, 'LEAN_PATH': lean_path,
-                           'PATH': os.path.expanduser('~/.elan/bin') + ':/usr/local/bin:/usr/bin:/bin'}
-                    return pexpect.spawn(repl_bin, echo=False, encoding='utf-8',
-                                         codec_errors='replace', env=env)
-        except Lean4ReplWrapper.ReplPairingError:
-            # Une divergence REPL/toolchain ne doit JAMAIS etre rattrapee par le
-            # repli silencieux ci-dessous : c'est lui qui rendait chaque
-            # cellule en erreur de parse sous un exit 0 (#18511).
-            raise
-        except Exception:
-            pass
+                    env={**os.environ, 'PATH': clean_path})
+            except (OSError, _sp.SubprocessError) as exc:
+                raise Lean4ReplWrapper.ReplLaunchError(
+                    f"cannot read the LEAN_PATH of the lake {lake_root}: "
+                    f"`lake env` failed ({exc!r}). Run `lake env printenv "
+                    "LEAN_PATH` in that directory to see why.") from exc
+            lean_path = '\\n'.join(
+                l for l in done.stdout.splitlines()
+                if 'local changes' not in l).strip()
+            if not lean_path:
+                raise Lean4ReplWrapper.ReplLaunchError(
+                    f"`lake env` returned no LEAN_PATH in the lake {lake_root} "
+                    f"(exit {done.returncode}): {done.stderr.strip()[-400:]}")
+            # DrvFS wedge mitigation (c.1331p319 #12061): on NTFS-Dr vFS
+            # (e.g. /mnt/d), `lake env` returns LEAN_PATH with the elan
+            # sysroot LAST, forcing the REPL to scan every package directory
+            # on the slow DrvFS mount BEFORE finding `Init` in the sysroot
+            # -> hang >16 min on `#check`. Reorder puts sysroot FIRST.
+            # Pure-function counterpart: _reorder_lean_path_drvfs_first in
+            # setup_native_lean4_import.py (same logic, no WSL deps).
+            # Marker: sysroot_first_reorder (PATCH_MARKER_DRVFS).
+            _elan_root = os.path.expanduser('~/.elan/toolchains')
+            _entries = [e for e in lean_path.split(':') if e]
+            _sysroot_entries = [e for e in _entries
+                                if e.startswith(_elan_root)]
+            if _sysroot_entries and _entries[0] != _sysroot_entries[0]:
+                _non_sysroot = [e for e in _entries
+                                if e not in _sysroot_entries]
+                lean_path = ':'.join(_sysroot_entries + _non_sysroot)
+            # sysroot_first_reorder (DrvFS marker)
+            repl_bin = caller_repl or cls._repl_for_toolchain(lake_root)
+            if not os.path.isfile(repl_bin):
+                raise Lean4ReplWrapper.ReplLaunchError(
+                    f"the REPL binary {repl_bin} chosen for the lake {lake_root} "
+                    "does not exist.")
+            env = {**os.environ, 'LEAN_PATH': lean_path, 'PATH': clean_path}
+            return pexpect.spawn(repl_bin, echo=False, encoding='utf-8',
+                                 codec_errors='replace', env=env)
+        if caller_repl:
+            # Hors lake, le REPL trouve son sysroot par le `lean` du PATH,
+            # que ELAN_TOOLCHAIN (pose par le wrapper) epingle.
+            return pexpect.spawn(caller_repl, echo=False, encoding='utf-8',
+                                 codec_errors='replace',
+                                 env={**os.environ, 'PATH': clean_path})
         return pexpect.spawn("lake env repl",
                              echo=False, encoding='utf-8', codec_errors='replace')
 '''
@@ -284,7 +355,9 @@ def _reorder_lean_path_drvfs_first(lean_path, elan_root):
 
 
 def _wsl(cmd, timeout=120):
-    """Run a command inside WSL, return CompletedProcess.
+    """Run a command inside WSL (Windows host) or a native bash (Linux, macOS).
+
+    Returns the CompletedProcess.
 
     cwd is forced to a neutral directory, and the GIT_* repo-redirection vars are
     dropped. wsl.exe already puts the WSL process in the *Windows* cwd, and every
@@ -299,7 +372,13 @@ def _wsl(cmd, timeout=120):
     resolution returned None from a worktree, and the same silent empty-stdout
     path is why the ``repl-4.33.1`` key was advertised but never built).
     """
-    full = ["wsl.exe", "-d", WSL_DISTRO, "--", "bash", "-lc", cmd]
+    # Hors Windows (Linux, macOS), Lean et elan vivent dans le systeme hote :
+    # la meme commande passe par un bash natif. `build-repl`, `status` et
+    # `install` ne passaient que par wsl.exe, absent sous Linux (#24913).
+    if os.name == "nt":
+        full = ["wsl.exe", "-d", WSL_DISTRO, "--", "bash", "-lc", cmd]
+    else:
+        full = ["bash", "-lc", cmd]
     env = {k: v for k, v in os.environ.items()
            if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR")}
     # encoding explicite : la sortie WSL porte de l'unicode Lean (forall, mapsto).
@@ -307,6 +386,17 @@ def _wsl(cmd, timeout=120):
     return subprocess.run(full, capture_output=True, text=True, timeout=timeout,
                           encoding="utf-8", errors="replace",
                           cwd=os.path.expanduser("~"), env=env)
+
+
+def _shell_path(host_path):
+    """Chemin d'un fichier de l'hote, vu du shell que lance ``_wsl``.
+
+    Sous Windows, ``C:\\Users\\...`` devient ``/mnt/c/Users/...`` ; ailleurs, le
+    shell est natif et le chemin reste tel quel.
+    """
+    if os.name != "nt":
+        return host_path
+    return "/mnt/" + host_path[0].lower() + host_path[2:].replace("\\", "/")
 
 
 def _venv_python():
@@ -340,8 +430,21 @@ def _find_repl_py():
     return path or None
 
 
+def _patch_state(rp):
+    """Etat du ``repl.py`` installe : ``PATCHED``, ``STALE`` ou ``UNPATCHED``.
+
+    ``STALE`` : le fichier porte ``PATCH_MARKER`` mais pas tous les
+    ``PAIRED_LAUNCH_MARKERS``. C'est une fourche anterieure a ``FORK_TAG``,
+    qui peut encore lancer le REPL d'une autre version.
+    """
+    paired = " && ".join(f"grep -q '{m}' {rp}" for m in PAIRED_LAUNCH_MARKERS)
+    r = _wsl(f"if ! grep -q '{PATCH_MARKER}' {rp}; then echo UNPATCHED; "
+             f"elif {paired}; then echo PATCHED; else echo STALE; fi", timeout=20)
+    return r.stdout.strip() or "UNKNOWN"
+
+
 def cmd_install():
-    """Install the durable fork ``jsboige/lean4_jupyter@v0.0.1-native-import`` into the
+    """Install the durable fork ``jsboige/lean4_jupyter@<FORK_TAG>`` into the
     WSL lean4 venv. The fork bakes the direct-launch patch into ``lean4_jupyter/repl.py``
     itself, so native Mathlib-lake import survives a clean reinstall — this replaces the
     in-place ``patch`` (which was lost on every ``pip install``)."""
@@ -352,16 +455,27 @@ def cmd_install():
     print(f"installing durable fork {spec} ...")
     r = _wsl(cmd, timeout=300)
     print((r.stdout or r.stderr or "").strip()[-1200:])
+    # Un pip en echec laisse en place la fourche precedente, qui porte deja
+    # PATCH_MARKER : sans ce test, l'installation ratee se declarait PATCHED.
+    if r.returncode != 0:
+        print((r.stderr or "").strip()[-1200:], file=sys.stderr)
+        print(f"ERROR: pip install of {spec} failed (exit {r.returncode})",
+              file=sys.stderr)
+        return 1
     rp = _find_repl_py()
     if not rp:
         print("ERROR: lean4_jupyter/repl.py not found after install", file=sys.stderr)
         return 1
-    chk = _wsl(f"grep -q '{PATCH_MARKER}' {rp} && echo PATCHED || echo UNPATCHED", timeout=20)
-    state = chk.stdout.strip()
+    state = _patch_state(rp)
     print("post-install patch state:", state)
+    if state == "STALE":
+        print(f"ERROR: the installed lean4_jupyter predates {FORK_TAG}: "
+              f"{' / '.join(PAIRED_LAUNCH_MARKERS)} not found in {rp}",
+              file=sys.stderr)
     rc = _wsl(f"{_venv_python()} -m py_compile {rp} && echo OK", timeout=30)
+    compiled = (rc.stdout or "").strip() == "OK"
     print("py_compile:", (rc.stdout or rc.stderr or "").strip())
-    return 0 if state == "PATCHED" else 1
+    return 0 if state == "PATCHED" and compiled else 1
 
 
 def cmd_status():
@@ -371,8 +485,7 @@ def cmd_status():
         print("lean4_jupyter/repl.py: NOT FOUND (lean4 venv missing?)")
         return 1
     print("repl.py:", rp)
-    r = _wsl(f"grep -q '{PATCH_MARKER}' {rp} && echo PATCHED || echo UNPATCHED", timeout=20)
-    print("patch state:", r.stdout.strip())
+    print("patch state:", _patch_state(rp))
     print("matched REPL binaries:")
     for tag, name in REPL_TOOLCHAIN_TAGS.items():
         rr = _wsl(f"test -f ~/.elan/bin/{name} && echo '  {name}: present' "
@@ -450,9 +563,8 @@ def cmd_patch():
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8") as f:
         f.write(patcher)
         tmp_win = f.name
-    # Convert Windows temp path -> WSL path and copy into /tmp.
-    win_drive = tmp_win[0].lower()
-    tmp_unix_src = "/mnt/" + win_drive + tmp_win[2:].replace("\\", "/")
+    # Host temp path, as the shell sees it, copied into /tmp.
+    tmp_unix_src = _shell_path(tmp_win)
     tmp_wsl = "/tmp/_lean4_native_patcher.py"
     _wsl(f"cp '{tmp_unix_src}' {tmp_wsl}", timeout=20)
     os.unlink(tmp_win)
@@ -509,13 +621,13 @@ def cmd_sync_repl_table():
     with tempfile.NamedTemporaryFile("wb", suffix=".py", delete=False) as f:
         f.write(new_src.encode("utf-8"))
         tmp_win = f.name
-    tmp_unix_src = "/mnt/" + tmp_win[0].lower() + tmp_win[2:].replace("\\", "/")
+    tmp_unix_src = _shell_path(tmp_win)
     tmp_wsl = "/tmp/_lean4_repl_table_sync.py"
     _wsl(f"cp '{tmp_unix_src}' {tmp_wsl}", timeout=20)
     os.unlink(tmp_win)
     _wsl(f"cp {tmp_wsl} {rp}", timeout=20)
     _wsl(f"rm -f {tmp_wsl}", timeout=10)
-    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    rc = _wsl(f"{_venv_python()} -m py_compile {rp} && echo OK", timeout=30)
     compile_out = (rc.stdout or rc.stderr or "").strip()
     print("py_compile:", compile_out)
     # Verify by re-reading — a write is never trusted silent (#18120).

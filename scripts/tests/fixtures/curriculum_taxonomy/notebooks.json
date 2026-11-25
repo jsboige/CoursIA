@@ -1,0 +1,29 @@
+{
+  "MyIA.AI.Notebooks/Alpha/Alpha-01.ipynb": [
+    "a1-c1",
+    "a1-c2"
+  ],
+  "MyIA.AI.Notebooks/Alpha/Alpha-02.ipynb": [
+    "a2-c1",
+    "a2-c2",
+    "a2-c3"
+  ],
+  "MyIA.AI.Notebooks/Alpha/Alpha-03.ipynb": [
+    "a3-c1",
+    "a3-c2"
+  ],
+  "MyIA.AI.Notebooks/Beta/Beta-01.ipynb": [
+    "b1-c1",
+    "b1-c2",
+    "b1-c3"
+  ],
+  "MyIA.AI.Notebooks/Beta/Beta-02.ipynb": [
+    "b2-c1",
+    "b2-c2",
+    "b2-c3"
+  ],
+  "MyIA.AI.Notebooks/Gamma/Gamma-01.ipynb": [
+    "g1-c1",
+    "g1-c2"
+  ]
+}

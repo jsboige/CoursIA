@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1622
-breakdown: SymbolicAI=405, GenAI=308, Search=165, GameTheory=141, ML=137, QuantConnect=124, IIT=113, Probas=93, Sudoku=39, RL=38, Complexity=22, NLP=11, Physique=10, Compression=8, CaseStudies=6, cross-series=2
-maturity: BETA=1417, DRAFT=115, ALPHA=86, TEMPLATE=4
+total: 1951
+breakdown: SymbolicAI=459, GenAI=343, GameTheory=209, Search=192, ML=160, QuantConnect=126, IIT=117, Probas=99, InformationCalcul=83, Sudoku=48, RL=47, Physique=37, NLP=20, CaseStudies=6, cross-series=5
+maturity: BETA=1817, DRAFT=76, ALPHA=54, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -33,7 +33,9 @@ Dernière mise à jour : 2026-08-05
 
 **[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
 
-**[Complexity](Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
+**[Complexity](InformationCalcul/Complexity/README.md)** — Série d'hommage aux fondateurs et aux moments fondateurs de la théorie de la complexité : chaque notebook prend un texte fondateur et le **fait tourner** — machines de Turing construites pas à pas avec comptage exact des pas, algorithme online implémenté, permanente confrontée au déterminant en opérations comptées et chronos encadrés (le BosonSampling d'Aaronson–Arkhipov, avec la formule de Ryser réemployée du Sudoku) — puis sonde l'état de Mathlib : ce qui y existe, ce qui manque, et pourquoi.
+
+**[Information et calcul](InformationCalcul/README.md)** — Le hub qui rassemble les séries sœurs qui nourrissent les séries d'IA : théorie de l'information et codage, compression, traitement du signal, cryptographie — et les séries Complexity et Compression, désormais rattachées au hub. C'est le socle théorique « mesurer, coder, compresser, protéger l'information » sur lequel repose le calcul. Modèle : [SymbolicAI](SymbolicAI/README.md).
 
 **[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
 
@@ -90,7 +92,7 @@ Search
 Probas
 ├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
-└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
+└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causalité (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
 
 Sudoku
 └── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM
@@ -115,7 +117,7 @@ RL
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis
 ├── Planification-Oncologie/ - Planification oncologique
-└── SmartGrid-Energy/ - Optimisation énergétique
+└── Reseau-Electrique-Intelligent/ - Optimisation énergétique
 
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (5 substrats : tri, Gray-Scott, Axelrod, transformer+SAE, Jeu de la Vie certifié Lean)
@@ -216,7 +218,7 @@ python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 
 # C#
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 ```
 
 ### Services Docker
@@ -297,7 +299,7 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
 | **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + ArgumentAnalysis |
-| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
+| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16 (Conway) + KNOTS-01/02 (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-3 (A*) + Search-03d, Part1-Foundations |
 | **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-07b (Gittins) |

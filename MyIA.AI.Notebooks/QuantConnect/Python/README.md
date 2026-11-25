@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 65
-breakdown: Python=65
-maturity: BETA=36, DRAFT=27, ALPHA=2
+pedagogical_count: 66
+breakdown: Python=66
+maturity: BETA=35, DRAFT=27, ALPHA=4
 -->
 
 # QuantConnect Python Notebooks
@@ -103,8 +103,9 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | |
 | QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
-| QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | 295 appels LLM réels (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot — verdict §C `INCONCLUSIVE` |
+| QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | campagne journalisée de 288 appels LLM (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot, rejeu strict et mixte depuis le journal, noyau de risque de QC-Py-45 greffé sur les décisions — verdicts §C `INCONCLUSIVE` |
 | QC-Py-45-Noyau-Risque-Deterministe | EXÉCUTÉ | ablation du noyau de risque déterministe de Steward sur des ETF (yfinance, 2015-2026), sans LLM — verdict `BEATS` sur le drawdown |
+| QC-Py-46-External-Etalon-FinanceBench | EXÉCUTÉ | étalon externe FinanceBench (50 items numériques, strate intégrale sans échantillonnage) pour l'organ LLM de la série — 3 bras × 50 items (150 appels) : `luna-plein` 92,1 % / `luna-naif` 25,0 % / `sonnet-plein` 47,7 %, tolérance 1 % déclarée |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -162,7 +163,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
 | [QC-Py-05b-FScore-Piotroski](QC-Py-05b-FScore-Piotroski.ipynb) | F-Score de Piotroski : les 9 sous-scores sur données réelles, convention de datation article vs papier 2000, critique de liquidité, variance small-univers mesurée (#17770) |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
-| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239) |
+| [QC-Py-06b-Derivatives-Valuation-From-Scratch](QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) | Complément from-scratch de QC-Py-29 : les trois moteurs reconstruits à la main, put américain, asiatique arithmétique, variables de contrôle (#16239). Jumeau C# : [QC-06b-Valorisation-Derives-CSharp](../CSharp/QC-06b-Valorisation-Derives-CSharp.ipynb) |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |
@@ -298,13 +299,15 @@ contre le rendement réalisé, et réinjecte une réflexion d'une phrase au poin
 
 | Notebook | Méthode | Ce qu'il démontre |
 |----------|---------|-------------------|
-| [QC-Py-44-Agent-Trading-Multi-LLM](QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | 2 bras sur les mêmes contextes (BTC-USD, 8 points espacés de 120 j ≈ 2,3 ans) : cadre complet vs single-shot, 4 graines (0, 1, 7, 42), pertes appariées, Diebold-Mariano Newey-West lag 1, frais 10 bps/côté, 295 appels LLM réels | La délibération **ne se décrète pas significative** : le cadre bat la baseline en perte appariée sur 3 graines sur 4 (edge +0,165 pt de %) sans atteindre la conjonction §C (ratio +0,45σ, DM p = 0,34) → verdict `INCONCLUSIVE`. Témoins : mémoire structurellement vide au premier point (0 → 7 entrées par graine), accord entre analystes 40,6 %, les deux bras surestiment (+0,80 / +0,75 pt) — l'edge mesuré vient de la précision, pas du biais |
+| [QC-Py-44-Agent-Trading-Multi-LLM](QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | 2 bras sur les mêmes contextes (BTC-USD, 8 points espacés de 120 j ≈ 2,3 ans) : cadre complet vs single-shot, 4 graines (0, 1, 7, 42), pertes appariées, Diebold-Mariano Newey-West lag 1, frais 10 bps/côté, 288 appels LLM inscrits dans un journal JSONL ; rejeu strict (aucun appel) et mixte (une consigne modifiée) depuis ce journal ; noyau de risque déterministe de QC-Py-45 greffé sur les décisions du PM (5 bras, contrôle positif) | La délibération **ne se décrète pas significative** : edge −0,085 pt de %, ratio −0,45σ, DM p = 0,45 → verdict `INCONCLUSIVE`. Quatre exécutions du même code ont rendu des ratios de −0,45 à +2,41 : le rejeu strict refait la campagne sans appel, à l'identique, et rend l'exécution publiée vérifiable ; une phrase de consigne du Bear déplace 10 décisions sur 32 pour 154 appels, dans les deux sens. Greffé, le noyau améliore la pnl surtout en retirant la vente à découvert, sans preuve (ratio +0,11, DM p = 0,87, `INCONCLUSIVE`). Témoins : mémoire vide au premier point (0 → 7 entrées par graine), accord entre analystes 34,4 %, les deux bras surestiment (+0,92 / +0,76 pt) |
 
-La conclusion transférable est méthodologique : un cadre multi-agents avec mémoire **peut**
-améliorer la précision appariée d'un LLM isolé — ici il le fait en tendance, sur un petit
-échantillon de 32 paires — mais la barre §C (≥ 2σ ET p < 0,05) existe précisément pour
-empêcher de déclarer victoire sur cette taille d'effet. Le carnet requiert `OPENAI_API_KEY`
-à l'exécution (lue depuis `.secrets/master.env`, hors dépôt).
+La conclusion transférable est méthodologique : dans une expérience qui appelle un LLM, la
+variance entre exécutions s'ajoute à la variance entre graines, et quatre graines ne la
+mesurent pas. La barre §C (≥ 2σ ET p < 0,05) empêche de déclarer victoire sur une exécution
+favorable ; le journal des appels rend chaque exécution rejouable à coût nul, et permet de
+tester après coup une règle de taille de position sans rappeler le modèle. Le carnet requiert
+`OPENAI_API_KEY` à l'exécution (lue depuis `.secrets/master.env`, hors dépôt) ; le journal est
+écrit hors dépôt.
 
 ## Recherche — noyau de risque déterministe (QC-Py-45)
 
@@ -322,6 +325,26 @@ d'ETF en quatre groupes : actions US, actions hors US, obligations, matières et
 La conclusion transférable : une règle de risque se juge par une ablation sur des entrées
 **sans mérite**, à tirages identiques, et contre un témoin qui sépare son effet de la simple
 réduction d'exposition. Le carnet requiert un accès réseau (yfinance) à l'exécution.
+
+## Recherche — étalon externe de compétence numérique (QC-Py-46)
+
+L'organ LLM des carnets de la série (`gpt-5.6-luna`) est jugé ici contre un
+**étalon indépendant** : la strate numérique intégrale de **FinanceBench**
+(50 items, sans échantillonnation), chargée hors dépôt (licence CC BY-NC 4.0 —
+ni le dataset ni les réponses brutes n'entrent dans le dépôt). Trois bras,
+150 appels, même endpoint que QC-Py-26/44 : `luna-plein` (rôle + contexte 10-K
++ consigne), `luna-naif` (le même modèle, question nue — témoin négatif),
+`sonnet-plein` (comparaison cross-LLM).
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-46-External-Etalon-FinanceBench](QC-Py-46-External-Etalon-FinanceBench.ipynb) | Extraction du nombre avec tolérance relative de 1 % (déclarée, pas implicite), scoring sur la strate numérique intégrale. Trois bras : `luna-plein` / `luna-naif` / `sonnet-plein` | Le témoin négatif porte le sens de la mesure : le même modèle, question nue, s'effondre de 92,1 % à 25,0 % (67,1 pts, 46 réponses sur 50 sans nombre) — l'étalon mesure la compétence du pipeline (rôle, contexte, format), pas la question seule. Cross-LLM, à protocole identique, luna (92,1 %) est deux fois plus efficace que sonnet (47,7 %) sur l'extraction numérique de 10-K |
+
+La conclusion transférable : la compétence de raisonnement financier numérique
+d'un organ LLM se jauge par un étalon externe indépendant, avec un témoin
+négatif qui sépare l'effet du pipeline de l'effet de la question. Le carnet
+requiert `OPENAI_API_KEY` à l'exécution (lue depuis `.secrets/master.env`,
+hors dépôt).
 
 ## Utilitaires
 

@@ -415,10 +415,10 @@ def test_prefetch_pr_activity_ne_remplit_pas_le_cache_en_cas_d_echec(monkeypatch
 
 
 def test_lane_open_pr_numbers_lit_le_cache_seulement(tmp_path):
-    """La liste des PRs de la lane vient du cache v2 complet, sans reseau."""
+    """La liste des PRs de la lane vient du cache complet, sans reseau."""
     cache = tmp_path / "open-prs.json"
     cache.write_text(json.dumps({
-        "format": "open-prs-v2", "complete": True,
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True,
         "prs": [
             {"number": 11, "body": "-- lane myia-po-2023:CoursIA-2"},
             {"number": 12, "body": "-- lane myia-ai-01:CoursIA-2"},
@@ -436,7 +436,7 @@ def test_lane_open_pr_numbers_refuse_un_cache_incomplet(tmp_path):
     et le lecteur garde son chemin historique."""
     cache = tmp_path / "open-prs.json"
     cache.write_text(json.dumps({
-        "format": "open-prs-v2", "complete": False, "reason": "reseau",
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": False, "reason": "reseau",
         "prs": [{"number": 11, "body": "-- lane myia-po-2023:CoursIA-2"}],
     }), encoding="utf-8")
 

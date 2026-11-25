@@ -1,5 +1,7 @@
 # Lean axiom coverage — proof-integrity gate triage (per #8738 step 3)
 
+> REFERENCE — vivante — dernière révision 2026-11-23
+
 **Issue de référence** : [#8738](https://github.com/jsboige/CoursIA/issues/8738) (proof-integrity gate multiline parse, parser fix livré via PR #8740 c.947 MERGED 2026-07-28).
 **Cycle-id de production** : c.948 (worker po-2023, lane `myia-po-2023:CoursIA-2`).
 **Mesure** : `git grep -E` sur le commit `35e1258df` (origin/main HEAD), 2026-07-29.
@@ -29,6 +31,32 @@ Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laiss�
 **Où le verdict se lit — et l'endroit où on le cherche en vain.** Sur un lake **matriciel**, la passe d'axiomes n'est pas un check-run : c'est une **étape** du job `lean-matrix / Lean CI (<lake>)` (`lean-build.yml`, composite `lean-axiom`, gardée par `if: matrix.axiom-target-modules != ''`). Chercher un check-run nommé `Proof integrity` ne rend rien et laisse croire à un gate absent. Le dernier workflow mono-lake restant (`lean-conway.yml` après les migrations #13751 — knot était le dernier autre, migré depuis) a lui un vrai job `proof-integrity` ; les deux formes coexistent, et c'est le nom du lake dans le manifeste qui décide laquelle s'applique.
 
 Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
+
+### 0.2 Le census complémentaire — les modules compilés que le gate ne regarde pas (#8782)
+
+`axiom_coverage.py` mesure **un bord** : un module *nommé* par le manifeste qui n'existe pas sur disque (`WIRED-DEAD`). L'autre bord — un module *compilé* par le lake que le manifeste ne nomme pas — n'était mesuré par aucun organe : c'est la classe « un vert qui ne mesure rien » (un gate vert sur une fraction du lake qui s'amincit, sans que rien ne rougisse).
+
+```bash
+python scripts/lean/check_manifest_target_gap.py            # table par lake
+python scripts/lean/check_manifest_target_gap.py --json     # sortie machine
+```
+
+L'organe lit les **globs du lakefile** (la seule source de vérité sur ce que le lake compile — un `.lean` sur disque hors glob n'est pas un module), en déduit les modules réellement compilés, et les compare à `axiom-target-modules`. Il distingue trois états de sens opposés, jamais confondus dans un chiffre : liste bornée (écart mesuré), `"*"` (liste dérivée à l'exécution — couverture totale), liste vide (aucun gate : ce n'est pas un écart de liste mais une absence de gate, que `axiom_coverage.py` classe `NOT-APPLICABLE`). Pour chaque module hors liste il donne le compte de `sorry` canonique (`count_code_sorry.scan_file`) et un prescreen des trois classes `forbidden` (`native_decide`, `sorryAx`, `Classical.choice`) — le prescreen signale, il ne dispense pas : le verdict reste au job.
+
+**La sémantique des globs est celle de Lake, lue dans sa source** (`Lake/Config/Glob.lean`) : `X.*` est un `Glob.andSubmodules` et **inclut** la racine `X.lean` (« including itself »), seul `X.+` — ou la forme `.submodules `X`` — l'exclut. Un census qui traiterait `X.*` comme `X.+` compterait comme non compilées des racines que le lake compile : l'écart affiché serait faux dans les deux sens. Cette sémantique est verrouillée par deux cas de test (un glob `X.*`, un glob `X.+`) dans `scripts/lean/tests/test_check_manifest_target_gap.py`.
+
+**Les racines de lib sont des cibles, pas des angles morts.** Une racine `X.lean` est un agrégateur d'imports : l'instrument du gate (`agent_tests/lean_server.py`) la classe `declaration_free_module`, donc NOTE non fatale — elle ne peut ni faire rougir la jambe ni masquer un `sorry` (un fichier porteur de `sorry` est routé vers `sorry_without_declaration`, qui est fatal). Les racines sont donc des cibles explicites de `axiom-target-modules`, comme les trois qui y étaient déjà (`Abstraction`, `RepeatedGames_en`, `StableMarriage_en`) : les laisser hors liste faisait paraître l'écart du recensement comme un manque de couverture alors qu'il n'y avait rien à auditer.
+
+État mesuré au 2026-11-11 sur `origin/main` : les lakes à liste bornée sont `gametheory` et `formal_logic` — les autres portent `"*"` (couverture totale par dérivation), et `conway_cgt_lean` est sans gate par décision écrite (§4.1). Mesure sur le lake à liste bornée qui suit `main`, avant et après la tranche :
+
+| | compilés par le lake | cibles du gate | compilés hors liste |
+|---|---|---|---|
+| `main` | 66 | 23 | 43 |
+| après la tranche | 66 | 61 | 5 |
+
+Les cinq qui restent hors liste sont les seuls qui portent quelque chose à auditer : `RepeatedGames.Folk`, `RepeatedGames.Folk_en`, `RepeatedGames.Panel` et `RepeatedGames.Panel_en` portent un `sorry` de code réel, `StackelbergBilevel.StackelbergBilevel` porte quatre `native_decide`. Aucun n'entre dans la liste sans faire rougir la jambe (`axiom-fail-on-sorry: true`, et `native_decide` est une classe `forbidden`).
+
+**Ces nombres sont une mesure datée, pas un état du dépôt** : l'organe les recalcule à chaque invocation, et c'est sa sortie qui fait foi.
 
 ## 1. Portée et méthode
 
@@ -62,14 +90,14 @@ Tous les verdicts de la table ci-dessous sont **GREEN-par-grep** / **RED-par-gre
 
 | Lake | Lean files | native_decide (raw) | native_decide (tactic) | Classical.choice | sorryAx | Verdict |
 |---|---:|---:|---:|---:|---:|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 28 | 153 | **113** | 0 | 0 | **RED** (à traiter) |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean` | 8 | 4 | 0 | 1 | 0 | **GREEN** (post-#8725) |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` | 28 | 153 | **113** | 0 | 0 | **RED** (à traiter) |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 8 | 4 | 0 | 1 | 0 | **GREEN** (post-#8725) |
 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean` | 5 | 0 | 0 | 4 | 0 | borderline (acceptable : sudoku_lean `Classical.choice` = lemmes de complétude sur les colourings finis, classique assumé) |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 19 | 0 | 0 | 2 | 0 | borderline (2 occurrences : VC-dim classiques) |
 | `MyIA.AI.Notebooks/Probas/decision_theory_lean` | 13 | 0 | 0 | 1 | 0 | borderline (1 occurrence : lottery axioms) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 6 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 3 | 0 | 0 | 0 | 0 | GREEN |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 33 | 0 | 0 | 0† | 0 | **GREEN-par-grep** (⚠️ mesuré : `Classical.choice` PRÉSENT en clôture — cf §1.1, §3.5) |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` | 33 | 0 | 0 | 0† | 0 | **GREEN-par-grep** (⚠️ mesuré : `Classical.choice` PRÉSENT en clôture — cf §1.1, §3.5) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 5 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/Search/search_lean` | 6 | 0 | 0 | 0 | 0 | GREEN |
@@ -223,7 +251,7 @@ forbidden union : []
 | `mimo_lean` | matrice `ci_lakes.json` (`mimo.axiom-target-modules`, migré depuis `lean-mimo.yml` **supprimé** — #13751) | OUI (tranche 1, PR #11699 c.367 ; **porté par la matrice depuis #13751**) | GREEN par défaut (2 `noncomputable def` ⇒ `Classical.choice`, whitelist par défaut du composite ; `native_decide`/`sorryAx` absents — mesurés firsthand 2026-08-19 sur commit `1ac8a40e6`). **Paramètre reporté au manifeste** : `axiom-include-i18n-siblings: "true"` (le wrapper le portait ; les jumelles `_en` restent dans la cible) |
 | `conway_lean` | `lean-conway.yml` | OUI (c.951, post-#8746) | GREEN (19 noms `native_decide` whitelistés, `target-modules: "*"` runtime derivation #10889, `fail-on-sorry: false` audit job pour les 8 sorries p4) |
 | `galois_lean` | matrice `ci_lakes.json` (`galois.axiom-target-modules`, migré depuis `lean-galois.yml` **supprimé** — #13751, 28ᵉ lake #23011) | OUI (c.1039 ; **porté par la matrice depuis #13751**) | GREEN (footprint mesuré = whitelist par défaut : `[propext, Classical.choice, Quot.sound]`) |
-| `grothendieck_lean` | matrice `ci_lakes.json` (`grothendieck.axiom-target-modules`, migré depuis `lean-grothendieck.yml` **supprimé** — #13751) | OUI (post-#8941 ; **porté par la matrice depuis #13751**) | GREEN avec `Classical.choice` whitelisté explicitement (théorie intrinsèquement non-constructive, §3.5) — la matrice préserve le profil exact du wrapper : `axiom-target-modules: "*"` (dérivation runtime #10889) et `allow-axioms` vide = ensemble standard de l'action composite (`propext`, `funext`, `Classical.choice`, `Quot.*`) ; `distinct_code_sorry = 0` re-mesuré au commit de migration (`count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean --json`, `naive_sorry = 156` tous en prose) : la baseline 0 du manifeste est vraie |
+| `grothendieck_lean` | matrice `ci_lakes.json` (`grothendieck.axiom-target-modules`, migré depuis `lean-grothendieck.yml` **supprimé** — #13751) | OUI (post-#8941 ; **porté par la matrice depuis #13751**) | GREEN avec `Classical.choice` whitelisté explicitement (théorie intrinsèquement non-constructive, §3.5) — la matrice préserve le profil exact du wrapper : `axiom-target-modules: "*"` (dérivation runtime #10889) et `allow-axioms` vide = ensemble standard de l'action composite (`propext`, `funext`, `Classical.choice`, `Quot.*`) ; `distinct_code_sorry = 0` re-mesuré au commit de migration (`count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean --json`, `naive_sorry = 156` tous en prose) : la baseline 0 du manifeste est vraie |
 | `sensitivity_lean` | matrice `ci_lakes.json` (`sensitivity.axiom-target-modules`, migré depuis `lean-sensitivity.yml` **supprimé** — #13751) | OUI (c.101 ; **porté par la matrice depuis #13751**) | GREEN (0 `native_decide`, `Classical.choice` whitelist par défaut) |
 | `asymmetric_information_lean` | matrice `ci_lakes.json` (`asymmetricinformation.axiom-target-modules`, migré depuis `lean-asymmetric-information.yml` **supprimé** — #13751) | OUI (#13139, 2026-08-26 ; **porté par la matrice depuis #13751**, 2026-10-30) | **GREEN mesuré** (exécution locale du step exact du gate, 2026-08-26 : clôture axiomatique = `propext` + `Quot.sound` seulement, 0 `sorryAx`, 0 `native_decide`, 0 `Classical.choice`) ; `target-modules: "*"` + `fail-on-sorry: true` cohérent avec baseline 0 — paramètres reportés à l'identique dans l'entrée du manifeste. **Premier lake du dépôt avec un `[[require]]` cross-lake par chemin** (`../lean_game_defs_ext`) — le caller déclenchait aussi sur les sources de la dépendance ; watch retiré par le trancher #17374 (double build avec la jambe matricielle de gamedefsext : la matrice est le dispatcheur unique, le coût documenté est que les PR ne touchant QUE la dépendance ne rejouent plus ces preuves). `lake build` local WSL SUCCESS (28 jobs, toolchain v4.32.1). `distinct_code_sorry = 0` re-mesuré au commit de migration (`count_code_sorry.py --json`) : la baseline 0 du manifeste est vraie |
 | `percolation_lean` | matrice `ci_lakes.json` (`percolation.axiom-target-modules`, migré depuis `lean-percolation.yml` **supprimé** — #13751/#18996) | OUI (#14904, 2026-09-06 ; **porté par la matrice depuis #18996**, 2026-10-04) | **GREEN re-mesuré 2026-10-09 sur le chemin matriciel** — `distinct_code_sorry = 0` (`count_code_sorry.py --json`), 0 `native_decide` (grep FR). Exécution locale du step exact du gate (`scripts/lean/axiom_check_step.py`, paramètres du manifeste : `target-modules: "*"`, `allow-axioms` vide, `fail-on-sorry: true`) : les modules FR du lake sont énumérés (`Percolation`, agrégateur déclaration-free, puis `Basic`, `Boundary`, `Components`, `Connectivity`, `Examples`), clôture `[propext, Classical.choice, Quot.sound]` (défauts — aucune entrée `allow-axioms` requise), 0 `sorryAx`, **RC=0**. `_en` exclus par défaut (défaut matriciel #10889 ; les paires FR/EN du lake sont des miroirs). **Contrôle négatif exécuté sur le chemin matriciel (2026-10-09)** : `sorry` injecté dans un module cible puis lake reconstruit → `axioms: [propext, sorryAx, Classical.choice, Quot.sound]`, `has_sorry: True`, **RC=1** ; source restaurée (md5 identique, `git status` vide) → **RC=0**. **Piège mesuré** : l'organe **ne reconstruit pas** le lake (il lit les oleans) — une mutation de source **seule** rougit par `build_failed_returncode` (`Unknown constant`), **pas** par `sorryAx` ; un contrôle fidèle exige un `lake build` entre la mutation et le run |

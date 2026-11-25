@@ -38,6 +38,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -94,6 +95,27 @@ def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
 
 
+def _scrub_machine_paths(text: str) -> str:
+    """Neutralise un chemin machine absolu ``/home/<user>`` dans le texte.
+
+    Un carnet de ``main`` peut porter, dans une cellule **prose**, un chemin
+    d'accueil local concret (ex. ``/home/jesse/...``) recopie lors d'une
+    re-execution ; le déposé verbatim du pivot ``text_fr`` propagerait
+    l'identité machine dans le CSV committé. On masque l'identifiant
+    (``/home/<user>`` -> ``<USER_HOME>``) en préservant le reste du chemin.
+
+    Scope borné : ne réécrit QUE les segments littéraux ``[\\w.-]+`` — un
+    placeholder déjà en place (``/home/<user>``, ``/home/{var}``) n'est PAS
+    touché (``<`` et ``{`` sont hors classe), et l'appelant n'applique ce
+    scrub qu'aux cellules **markdown** : une cellule **code** qui construit un
+    chemin (f-string ``f"/home/{user}"/...``) est du code légitime, pas une
+    fuite. Doit rester byte-identique au scrub de ``check_translation_sync.py``
+    (T2) pour que le hash pivot et le hash courant coïncident (SRC_DRIFT /
+    PIVOT_HASH_MISMATCH).
+    """
+    return re.sub(r"/home/[\w.-]+", "<USER_HOME>", text)
+
+
 def _read_translate_policy(cell: dict) -> str:
     """Lit la politique de traduction déclarée dans ``cell.metadata``.
 
@@ -146,6 +168,12 @@ def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict
         if cell_type not in ("markdown", "code"):
             continue
         text = "".join(cell.get("source", []))
+        if cell_type == "markdown":
+            # Un chemin machine absolu (/home/<user>) peut s'être glisse dans une
+            # cellule prose lors d'une re-exec locale ; on le masque avant de
+            # déposer le pivot (hash ET texte) pour ne pas propager l'identité
+            # machine dans le CSV committé. Cellules code : jamais scrubbé.
+            text = _scrub_machine_paths(text)
         row = {col: "" for col in COLUMNS}
         row["notebook"] = rel
         row["cell_id"] = cell_id

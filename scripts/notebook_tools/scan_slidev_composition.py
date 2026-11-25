@@ -39,13 +39,13 @@ Mesure rendue (Playwright headless) sur un deck Slidev servi en dev mode
   5. ENVIRONNEMENT DE POLICES (diagnostic, #24171) — le rendu Slidev ne
      dépend que des polices SYSTÈME (aucune @font-face dans slides/) : la
      hauteur des blocs de texte, donc le compteur HORS_CANVAS, dépend de la
-     machine qui rend. La sonde mesure les polices EFFECTIVEMENT résolues
-     au rendu (largeur de référence comparée à la police par défaut du
-     navigateur) et la hauteur de ligne intrinsèque ; le rapport en porte la
-     signature (`font_signature`). Deux rapports ne sont comparables que si
-     leurs signatures sont égales — sans cela, opposer deux compteurs nus
-     n'a pas de sens. Ce signal est un DIAGNOSTIC : il n'entre dans aucun
-     compteur et ne modifie pas le code retour.
+     machine qui rend. La sonde historique `font_signature` ne porte que
+     sur la première slide et ne prouve pas la comparabilité. Le relevé
+     `rendering_conditions` utilise CDP pour identifier les polices des
+     glyphes effectivement rendus par slide, avec version navigateur et
+     canvas. Son empreinte est indicative : les noms ne garantissent pas
+     l’identité des fichiers de polices. Diagnostic sans effet sur les
+     compteurs ni sur le code retour.
 
 Le rendu est ADVISORY — il ne remplace pas le QA visuel humain pour la
 composition esthétique. Cette borne est imprimée à chaque invocation.
@@ -96,8 +96,8 @@ FONT_DEPENDENCY = (
     "Les compteurs de ce rapport dependent des polices SYSTEME de la machine "
     "qui a rendu le deck (aucune @font-face dans slides/) : la hauteur des "
     "blocs de texte, donc HORS_CANVAS, varie d'une machine a l'autre. "
-    "Comparer deux compteurs sans comparer d'abord 'font_signature' n'a pas "
-    "de sens — la signature est l'empreinte de l'environnement de polices."
+    "La signature historique ne couvre que la premiere slide. Consulter "
+    "rendering_conditions ; une empreinte egale ne prouve pas la comparabilite."
 )
 
 
@@ -369,7 +369,7 @@ _FONT_ENV_JS = """() => {
 
 
 def probe_font_environment(page) -> dict:
-    """Sonde l'environnement de polices RÉELLEMENT résolu au rendu.
+    """Estime l'environnement de polices de la première slide.
 
     ADVISORY : n'entre dans aucun compteur, ne modifie pas le code retour.
     Retourne un dict `{"error": ...}` si la sonde n'a pas pu aboutir — l'ignorance
@@ -409,8 +409,8 @@ def _channel_signature_part(env: dict) -> dict:
 def font_signature(font_env: dict) -> str:
     """Empreinte courte de l'environnement de polices d'un rendu.
 
-    Deux rapports ne sont comparables (compteurs HORS_CANVAS) que si leurs
-    signatures sont égales. La signature couvre ce qui décide de la hauteur
+    Cette estimation se limite à la première slide ; son égalité ne prouve
+    pas la comparabilité des rapports. La signature résume partiellement
     des blocs, pour le canal TEXTE et le canal MONOSPACE (code/pre) : les
     familles effectivement résolues et la hauteur de ligne intrinsèque
     mesurée. Elle inclut la pile déclarée et la taille de police : deux decks
@@ -430,6 +430,71 @@ def font_signature(font_env: dict) -> str:
     }
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+def rendered_fonts(cdp) -> dict:
+    """Releve les polices utilisees par les noeuds texte du contenu courant.
+
+    CDP donne les noms et le nombre de glyphes, pas les octets des fichiers :
+    deux releves identiques ne prouvent donc pas l'identite des polices.
+    """
+    try:
+        root = cdp.send("DOM.getDocument", {"depth": -1})["root"]
+        content_id = cdp.send("DOM.querySelector", {
+            "nodeId": root["nodeId"], "selector": "#slide-content"
+        })["nodeId"]
+        if not content_id:
+            return {"error": "contenu de slide absent"}
+
+        def find(node):
+            if node.get("nodeId") == content_id:
+                return node
+            for child in node.get("children", []):
+                found = find(child)
+                if found:
+                    return found
+            return None
+
+        content = find(root)
+        if content is None:
+            return {"error": "arbre DOM incomplet"}
+        text_nodes = []
+
+        def visit(node):
+            if node.get("nodeType") == 3 and node.get("nodeValue", "").strip():
+                text_nodes.append(node["nodeId"])
+            for child in node.get("children", []):
+                visit(child)
+
+        visit(content)
+        fonts = {}
+        for node_id in text_nodes:
+            for font in cdp.send("CSS.getPlatformFontsForNode", {"nodeId": node_id})["fonts"]:
+                key = (font["familyName"], font.get("postScriptName", ""),
+                       font["isCustomFont"])
+                fonts[key] = fonts.get(key, 0) + font["glyphCount"]
+        return {"fonts": [
+            {"family": family, "postscript": postscript, "custom": custom,
+             "glyphs": count}
+            for (family, postscript, custom), count in sorted(fonts.items())
+        ]}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+def rendering_conditions(browser_version: str, canvas: list, fonts_by_slide: list) -> dict:
+    """Empreinte indicative ; l'egalite ne garantit pas les fichiers de police."""
+    payload = {"browser": browser_version, "canvas": canvas, "slides": fonts_by_slide}
+    if not fonts_by_slide or any("error" in slide for slide in fonts_by_slide):
+        signature = "indisponible"
+    else:
+        signature = hashlib.sha256(json.dumps(
+            payload, ensure_ascii=False, sort_keys=True
+        ).encode("utf-8")).hexdigest()
+    return {**payload, "signature": signature,
+            "borne": "Des signatures differentes interdisent la comparaison directe ; "
+                     "leur egalite ne prouve pas l'identite des fichiers de polices "
+                     "ni des autres conditions de rendu."}
 
 
 def wait_slide_stable(page, target: int, timeout_ms: int = 6000, poll_ms: int = 250) -> dict:
@@ -822,7 +887,7 @@ CONTENT_TAGS = {
     # `container_only: true`. These inherit the bbox of their parent block in
     # normal flow, so adding them does NOT inflate `n_elem` for slides
     # already counted via their parent P/LI/EM — the counter-test in
-    # `tests/test_scan_slidev_composition.py` covers the regression risk.
+    # `tests/test_slidev_canvas_contract.py` covers the regression risk.
     # `ABBR` is included because the deck-rendering layer uses it for
     # underlined glossary hits; without it, an inline abbreviation edge
     # cut would slip through.
@@ -941,8 +1006,7 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
                 f"::warning file={rel},line={line}::[OCCUPATION] slide {r['slide']} ({head}) — "
                 f"gap_left={occ['gap_left_pct']}% gap_right={occ['gap_right_pct']}% bottom={occ.get('content_bottom')}/{report['canvas'][1]}"
             )
-    # #24171 — empreinte de l'environnement de polices : deux rapports de
-    # compteurs ne sont comparables que si cette signature est la même. La
+    # #24171 — estimation historique sur la premiere slide seulement. La
     # notice est non bloquante et nomme ce qui a été mesuré, y compris
     # l'absence de mesure (une ignorance nommée vaut mieux qu'un silence).
     fe = report.get("font_environment") or {}
@@ -967,7 +1031,7 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
         ]
         out.append(
             f"::notice file={rel}::[ENVIRONNEMENT-POLICES] signature={sig} — "
-            f"polices système résolues : {', '.join(resolved) or 'aucune (repli sur une police générique)'} ; "
+            f"familles détectées sur la première slide : {', '.join(resolved) or 'aucune (repli sur une police générique)'} ; "
             f"hauteur de ligne intrinsèque {fe.get('line_height_normal_stack_px')}px "
             f"(delta vs police générique {fe.get('line_height_delta_px')}px) — "
             "les compteurs de ce deck ne sont pas comparables à un rendu fait sur une autre machine"
@@ -1030,6 +1094,14 @@ def main():
         # telle qu'elle est rendue au chargement. Advisory : elle n'entre dans
         # aucun compteur et ne modifie pas le code retour.
         font_env = probe_font_environment(page)
+        try:
+            cdp = ctx.new_cdp_session(page)
+            cdp.send("DOM.enable")
+            cdp.send("CSS.enable")
+        except Exception:
+            cdp = None
+        rendered_font_slides = []
+        browser_version = browser.version
 
         if slide_lines and total and len(slide_lines) != total:
             stale_streaks.append(
@@ -1051,6 +1123,7 @@ def main():
             if prev_head is not None and r["text_head"] == prev_head:
                 stale_streaks.append(f"slides {i-1}-{i}: text_head identique {r['text_head'][:40]!r} — mesure possiblement figée")
             prev_head = r["text_head"]
+            rendered_font_slides.append({"slide": i, **rendered_fonts(cdp)})
             results.append(r)
             i += 1
 
@@ -1120,9 +1193,11 @@ def main():
         "_slide_lines": {str(k): v for k, v in slide_lines.items()},
     }
 
+    report["rendering_conditions"] = rendering_conditions(
+        browser_version, [canvas_w, canvas_h], rendered_font_slides)
     out_str = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
-        args.out.write_text(out_str, encoding="utf-8")
+        args.out.write_text(out_str, encoding="utf-8", newline="")
     print(out_str)
 
     if args.github_annotations:

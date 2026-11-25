@@ -409,7 +409,8 @@ def test_wip_guard_survives_a_fetch_failure(monkeypatch, capsys):
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
     _patch_draw(monkeypatch)
     rc = pig.main(["--lane", LANE, "--wip-cap", str(CAP)])
-    out = capsys.readouterr().out
+    captured = capsys.readouterr()
+    out = captured.out
     assert rc == 0
     assert "FILE DE REPARATION" not in out
-    assert "indisponible" in out
+    assert "indisponible" in captured.err

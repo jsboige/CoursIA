@@ -1,3 +1,7 @@
+---
+paths: .gitmodules, MyIA.AI.Notebooks/Search/MetaGeneticSharp/**, MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq/**, MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/**, MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum/**, MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/**
+---
+
 # Sous-modules — maintenance active, jamais un dépôt dormant
 
 S'applique au **coordinateur ai-01** et à toute lane qui touche un sous-module. Source : mandat user 2026-09-02 (verbatim : [detail, en-tête](../../docs/reference/submodule-maintenance-detail.md)).

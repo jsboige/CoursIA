@@ -169,6 +169,30 @@ lean_lib StackelbergBilevel where
 lean_lib CongestionGames where
   globs := #[`CongestionGames.*]
 
+-- Grain #25686 (po-2024, distillation Lexifina) : ajout `lean_lib
+-- LegalLoophole` — modele jouet « regles fiscales comme jeu formel » :
+-- 3 comptes (cash, traditionnel ventile pre-tax/basis, Roth), 4 coups
+-- (contribution Roth directe interdite aux hauts revenus, contributions
+-- deductible et non deductible partageant un budget annuel `maxContrib`,
+-- conversion taxee au pro-rata de la part pre-tax). Semantique
+-- executable (`step`/`run` sur `Option`, zero dependance hors core —
+-- compilable en quelques secondes, pas de Mathlib), deux familles de
+-- theoremes : `wealth_conservation` + `cash_floor` -> `roth_ceiling`
+-- (a toute profondeur, le Roth final est plafonne par l'etat initial et
+-- le budget annuel) et `backdoor_exists` + `backdoor_optimal` (la
+-- sequence non-deductible + conversion atteint exactement le plafond
+-- sans taxe : le temoin est optimal). Copie pedagogique declaree de
+-- l'echelle du modele CC0 lexifina/global-law (reduit, v4.33.0), citee
+-- dans le module. Compagnon Lean du carnet
+-- GameTheory-23-Loopholes-Fiscaux-Python-Lean. 10e cohorte `lean_lib`
+-- du meme package. 0 sorry, 0 axiome ad hoc.
+-- c.Hermes-26022 : `@[default_target]` requis comme pour les 9 autres libs --
+-- sans lui, `lake -R build` (la jambe CI) ne construit pas la cible et le
+-- module peut casser sans faire rougir aucun job.
+@[default_target]
+lean_lib LegalLoophole where
+  globs := #[`LegalLoophole.*]
+
 -- Tranche L2 (po-2025) : `ProgramGames/FairBot.lean` (+ sibling `_en`) —
 -- EPIC #15062, FairBot par le théorème de Löb. Interface
 -- `ModalProvability box` (D1 nécessitation, D2 distribution, D3

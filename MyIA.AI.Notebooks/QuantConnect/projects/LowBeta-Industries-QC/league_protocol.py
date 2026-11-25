@@ -15,8 +15,8 @@ Trois etapes, separees pour que la mesure soit rejouable sans acces QC :
 
   control  compare deux executions d'un meme bras (reference et controle d'innocuite)
            sur les statistiques QC et sur la serie mesuree -- la trace journaliere
-           `shadow` quand les deux executions la portent, sinon la serie mensuelle
-           `Monthly`, serie par serie.
+           `shadow` quand les deux executions la portent ; si une seule la
+           porte, refuse le controle ; sinon compare `Monthly` serie par serie.
 
 Les tests ne sont PAS reimplementes ici : l'organe de la ligue est appele tel quel.
 Les identifiants QC viennent de variables d'environnement (jamais dans le code).
@@ -320,8 +320,9 @@ def cmd_control(args) -> int:
 
       1. les statistiques de la plateforme, cle par cle ;
       2. la serie **mesuree** -- la trace journaliere `shadow` quand les deux
-         executions la portent (c'est elle que le protocole consomme), sinon la
-         serie mensuelle `Monthly`, **serie par serie**.
+         executions la portent (c'est elle que le protocole consomme). Si une
+         seule execution la porte, le controle est refuse ; si aucune ne la
+         porte, la serie mensuelle `Monthly` est comparee serie par serie.
 
     Une serie exposee d'un seul cote est RAPPORTEE, pas comptee comme
     divergence : un graphique peut n'exposer qu'une partie de ses series.
@@ -347,10 +348,17 @@ def cmd_control(args) -> int:
 
     if ref_shadow is not None and ctl_shadow is not None:
         out.update(_compare_shadow(ref_shadow, ctl_shadow))
+    elif (ref_shadow is None) != (ctl_shadow is None):
+        missing = "reference" if ref_shadow is None else "controle"
+        out.update({"compared": "shadow", "divergence": [],
+                    "refus": f"trace journaliere absente du cote {missing}"})
     else:
         out.update(_compare_monthly(_chart(args.project, args.ref, "Monthly"),
                                     _chart(args.project, args.ctl, "Monthly")))
-    out["verdict"] = "OK" if not diffs and not out["divergence"] else "DIVERGENCE"
+    if "refus" in out:
+        out["verdict"] = "REFUS"
+    else:
+        out["verdict"] = "OK" if not diffs and not out["divergence"] else "DIVERGENCE"
     print(json.dumps(out, indent=1, ensure_ascii=False))
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
