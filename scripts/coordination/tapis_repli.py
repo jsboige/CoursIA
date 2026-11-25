@@ -110,7 +110,8 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     defile le pool de bloc en bloc (des tirages successifs couvrent le pool).
 
     Les grains servis ici sont des **CANDIDATS DU CACHE** : le fil n'a pas ete
-    lu. L'action publique le dit (`fil_lu=False`) : lire le fil avant le claim.
+    lu. L'action publique le dit (provenance `cache`) : lire le fil avant le
+    claim.
     """
     dossier = gh_bulk.dossier_cache_defaut()
     cache = lire(dossier, jours)

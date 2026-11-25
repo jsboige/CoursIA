@@ -14,6 +14,7 @@ Les blocs de la **fenetre** et de la **qualification** vivent dans
 """
 from coordination import tapis_leger_fenetre as lq
 from coordination import tapis_leger_texte_occupation
+from coordination import tapis_universel_rapport
 
 
 def texte(r: dict) -> str:
@@ -33,11 +34,8 @@ def texte(r: dict) -> str:
     lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits :")
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {p['titre'][:90]}"
                for p in r["vos_prs"]]
-    if r.get("fil_lu", True):
-        lignes.append("\nGrains -- deja qualifies sur leur fil complet, a claimer puis servir :")
-    else:
-        lignes.append("\nGrains -- CANDIDATS DU CACHE (fil NON lu) : "
-                      "lire le fil avant de claimer, puis servir :")
+    lignes.append(tapis_universel_rapport.bandeau(
+        r.get("provenance", r.get("fil_lu", True))))
     for g in r["grains"]:
         lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
         lignes.append(f"      {g['action']}")

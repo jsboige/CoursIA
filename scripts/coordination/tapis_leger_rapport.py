@@ -32,7 +32,7 @@ def rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
                                         lane=lane, maintenant=maintenant,
                                         lecture={},
                                         ecartees=tapis_labels.ecartees(metas),
-                                        fil_lu=fil_lu)
+                                        provenance=tapis_universel_rapport.provenance_de(fil_lu))
     rapport_.update({
         "graine": graine, "voie": "leger", "pool": len(metas),
         "fenetre": fenetre or {},
