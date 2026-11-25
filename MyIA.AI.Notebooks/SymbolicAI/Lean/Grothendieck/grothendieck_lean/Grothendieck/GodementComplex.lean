@@ -155,7 +155,15 @@ theorem toGodement_comp_godementCanonicalD (F : X.Presheaf AddCommGrpCat.{u}) :
 /-- **Le complexe de Godement canonique** : la résolution canonique assemblée
 en objet `CochainComplex` indexé par `ℕ` — termes `C⁰` des conoyaux
 successifs, différentielles données par la récursion
-`d^{n+1} = godementStep dⁿ`, null-composition à tout degré. -/
+`d^{n+1} = godementStep dⁿ`, null-composition à tout degré.
+
+Rapport à Stacks : c'est le complexe `F[0] ⟶ f_* f^* F ⟶ f_* f^* f_* f^* F ⟶ ⋯`
+du tag [Stacks 0FKS], formalisé dans `AxiomMath/Stacks` comme le complexe de
+Moore de l'objet cosimplicial de Godement
+(`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/Stalk.lean`).
+Notre version l'assemble au niveau **préfaisceau** de groupes abéliens, sans
+espace annelé ni faisceau de modules : c'est la forme que les Parties
+suivantes consomment (tiges, flascuité) sans faisceification. -/
 noncomputable def godementCanonicalComplex (F : X.Presheaf AddCommGrpCat.{u}) :
     CochainComplex (X.Presheaf AddCommGrpCat.{u}) ℕ :=
   CochainComplex.of (godementCanonicalObj F) (godementCanonicalD F)
@@ -237,7 +245,19 @@ faisceaux) est le front suivant.
 Le degré `n = 0` est exclu : `H⁰(C⁰F) = ker d⁰` n'a aucune raison d'être
 nul — l'exactitude en `C⁰F` est celle du complexe augmenté
 `F ⟶ C⁰F ⟶ ⋯` (flèche entrante `μ`), déjà établie en chaque tige par
-`stalk_exact_toGodement_godementCanonicalDZero` (Partie 93(a)). -/
+`stalk_exact_toGodement_godementCanonicalDZero` (Partie 93(a)).
+
+Rapport à Stacks : `AxiomMath/Stacks` couvre cet énoncé, dans une forme plus
+forte, par la clause (5) du tag [Stacks 0FKS]
+(`homotopyEquivalences_stalk_godementAugmentation`, `StalkHomotopy.lean:520`)
+et la clause (3) (`quasiIso_godementAugmentation`, `StalkHomotopy.lean:558`) :
+équivalence d'homotopie des tiges du complexe augmenté, puis exactitude de
+celui-ci et caractère résolution flasque, dans `SheafOfModules`. Les cadres
+diffèrent (faisceau de modules sur un espace annelé là-bas, préfaisceau de
+groupes abéliens quelconque ici) : notre énoncé n'est pas une spécialisation
+du leur, et rien n'est reprouvé ici qu'ils établissent déjà. Ce que notre
+version ajoute est la lecture isolée `Hⁿ = 0` degré par degré, dans la forme
+inconditionnelle que les Parties suivantes réutilisent. -/
 theorem isZero_stalk_homology_godementCanonicalComplex
     (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) {n : ℕ} (hn : 1 ≤ n) :
     IsZero ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj
@@ -303,6 +323,15 @@ définition du chaînon `godementDChain` en 1), degré `n+2`
 (`godementCanonicalObj_succ` : l'étage est `godementPresheaf (coker dⁿ)`).
 L'assemblage est un tri-cas `exact` — aucune récurrence à écrire, la
 flascuité de chaque étage est celle du préfaisceau de Godement qu'il est.
+
+Rapport à Stacks : la clause (3) du tag [Stacks 0FKS]
+(`quasiIso_godementAugmentation`, `StalkHomotopy.lean:558`) énonce, dans
+`SheafOfModules` sur un espace annelé, que le complexe de Godement est une
+résolution flasque de `F` — la flascuité y est portée par le cadre des
+faisceaux de modules. Notre énoncé est celui du niveau préfaisceau
+(`TopCat.Presheaf.IsFlasque`), étage par étage et sans faisceification :
+c'est ce qui le rend disponible au pin Mathlib actuel (voir la note
+ci-dessous).
 
 Note de cadrage (2026-10-18) : `TopCat.Presheaf.IsFlasque` existe bien dans
 Mathlib (Topology/Sheaves/Flasque.lean) — l'addendum c.6242821964 sur #2159
@@ -1212,7 +1241,13 @@ des préfaisceaux. La Partie 98 l'avait établi ouvert par ouvert ; les
 foncteurs d'évaluation — qui préservent limites et colimites finies et
 reflètent conjointement les isomorphismes — transportent l'énoncé évalué en
 énoncé catégorique. Forme catégorique de la tranche 1 de la brique 3 de la
-Partie 95. -/
+Partie 95.
+
+Rapport à Stacks : la clause (3) du tag [Stacks 0FKS]
+(`quasiIso_godementAugmentation`, `StalkHomotopy.lean:558`) établit
+l'exactitude du complexe augmenté d'un bloc ; notre énoncé isole la rangée
+de degré 0 en suite courte exacte au niveau préfaisceau — la forme dont la
+tranche degreewise a besoin, et que Stacks n'énonce pas séparément. -/
 theorem shortExact_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (hS : S.ShortExact) :
     (ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
@@ -1223,7 +1258,13 @@ theorem shortExact_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u
 /-- **La SES des images `C⁰` en chaque tige** : le foncteur tige est exact
 (`stalkFunctor_preservesHomology`), il transporte la SES catégorique
 précédente en une SES de groupes abéliens en chaque point. C'est la rangée
-de base, « degré zéro », de la SES degreewise des complexes canoniques. -/
+de base, « degré zéro », de la SES degreewise des complexes canoniques.
+
+Rapport à Stacks : couvert plus fort par la clause (5) du tag [Stacks 0FKS]
+(`homotopyEquivalences_stalk_godementAugmentation`, `StalkHomotopy.lean:520`) —
+une équivalence d'homotopie des tiges du complexe augmenté implique la suite
+courte exacte des images `C⁰` en tige. Nous rendons cette SES explicite,
+forme consommée par la lecture degré par degré. -/
 theorem shortExact_stalk_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (hS : S.ShortExact) (x₀ : X) :
     ((ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
@@ -1236,7 +1277,14 @@ theorem shortExact_stalk_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrp
 degré `0` des complexes canoniques, lue en chaque tige, est courte exacte.
 C'est le cas de base `n = 0` de la SES degreewise nommée par la Partie 98 ;
 les degrés suivants exigent le lemme du serpent aux tiges (tranche
-suivante). -/
+suivante).
+
+Ancre Stacks du degré 0 : `singleConstantHomotopyEquiv` (`Stalk.lean:156`,
+tag [Stacks 0FKS]) établit que le complexe de Moore d'un objet cosimplicial
+constant est homotopiquement équivalent au complexe concentré en degré 0 —
+c'est le calcul qui dégénère l'augmentation en degré 0. Ici, la rangée de
+degré 0 se lit directement : `godementCanonicalMap … 0` est la rangée des
+images `C⁰`. Nous ne reprouvons pas ce calcul, nous l'utilisons. -/
 theorem shortExact_stalk_godementCanonicalMap_zero
     {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) (x₀ : X) :
     (ShortComplex.mk
