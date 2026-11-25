@@ -906,9 +906,13 @@ jobs:
           # 1 (block on LIGHT adjacency). The &&/|| list captures RC on BOTH
           # branches and is exempt from errexit (same fix as
           # check-variation-tag-required).
+          # --pr-number : sans lui l'organe ne lit ni le diff de la PR ni celui du
+          # predecesseur, et l'exemption mecanique #14357 (MED/DEEP a fichiers
+          # disjoints) restait fermee en CI -- mesure du secretaire sur #28234.
           # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
           python3 scripts/ci/variation_adjacency_guard.py \
             --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG \
+            --pr-number "$PR_NUMBER" \
             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
@@ -1107,7 +1111,7 @@ jobs:
           fi
 
           # shellcheck disable=SC2086  # deliberate 0-or-2 token splits
-          python3 scripts/ci/variation_adjacency_guard.py             --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+          python3 scripts/ci/variation_adjacency_guard.py             --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG             --pr-number "$PR_NUMBER"             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
           if [ -s /tmp/verdict.err ]; then echo "--- helper stderr ---"; cat /tmp/verdict.err; fi
           echo "--- verdict ---"; cat /tmp/verdict.json 2>/dev/null || echo "(vide)"
 
