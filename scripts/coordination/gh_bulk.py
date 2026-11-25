@@ -28,12 +28,12 @@ TIMEOUT_S = 15
 #: Le `git fetch` est un aller-retour reseau (mesure du 22/11 : 18 a 20 s) :
 #: il a son propre plafond, plus large que celui d'un appel.
 FETCH_TIMEOUT_S = 90
-#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un
-#: lot) dure plus longtemps qu'un appel de metadonnees : mesure du 23/11 sur
-#: ce siege, 3,76 s pour la page du pool (50 issues, corps + 12 commentaires)
-#: et 2,05 s pour la qualification d'un lot de 50. Le plafond de 15 s les
-#: couperait sur un reseau lent, sans mesure derriere : ils gardent le
-#: plafond large, mesure a l'appui.
+#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un lot,
+#: la page des PRs ouvertes) dure plus longtemps qu'un appel de metadonnees :
+#: mesures du 23/11 sur ce siege, 3,76 s pour la page du pool (50 issues, corps
+#: + 12 commentaires) et 2,05 s pour la qualification d'un lot de 50 ; et du
+#: 24/11, 41 s pour la page 1 des PRs ouvertes (100 corps de PR). Le plafond
+#: de 15 s les couperait sur un reseau lent : ils gardent le plafond large.
 TIMEOUT_S_CORPS = 90
 #: L'echeance UNIQUE d'un tirage de lane, partagee par ses etages.
 MUR_TIRAGE_S = 60
@@ -128,16 +128,7 @@ def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[d
 
 def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH,
                       echeance: float | None = None) -> list[dict]:
-    """Les PRs ouvertes, REST pagine par 100 (un rejeu sur panne transitoire).
-
-    Cette lecture porte des CORPS (les corps de PR complets : 2 Mo pour 100
-    PRs ouvertes) : elle prend donc le plafond `TIMEOUT_S_CORPS`, comme la
-    page du pool et la qualification d'un lot. Avec le plafond general
-    (`TIMEOUT_S` = 15 s), la lecture etait TOUJOURS incomplete -- mesure du
-    24/11 sur ce siege : 41 s pour la page 1 des PRs ouvertes -- et
-    l'organe de qualification (`tapis_prise_en_charge`) echouait donc pour
-    toutes les lanes avec `lecture prs_ouvertes incomplete`.
-    """
+    """Les PRs ouvertes, REST pagine par 100 (un rejeu sur panne transitoire)."""
     rows: list[dict] = []
     for page in range(1, PAGES_PRS_MAX + 1):
         argv = ["gh", "api", f"repos/{depot}/pulls?state=open&per_page=100&page={page}"]
