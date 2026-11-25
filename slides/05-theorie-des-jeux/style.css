@@ -94,18 +94,37 @@
   padding: 0.4rem 0.75rem;
 }
 
+/* Les blocs masqués par Slidev gardent leur place dans le flux. */
 .gt-projection-step {
-  position: absolute;
-  inset: 90px 42px 83px;
-  display: flex;
+  display: grid;
   align-items: center;
-  gap: 26px;
-  font-size: 19px;
+  column-gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  margin-block: 0 10px;
+  font-size: 17px;
+  line-height: 1.25;
 }
-.gt-projection-step > div { flex: 1; min-width: 0; }
-.gt-projection-step > img { width: 53%; height: 100%; object-fit: contain; }
-.gt-projection-links { position: absolute; inset: auto 40px 32px; font-size: 12px; line-height: 1.2; }
-.gt-projection-step:only-of-type { visibility: visible; }
+.gt-projection-step:has(> :nth-child(2)) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 42%);
+}
+.gt-projection-step h2 { margin: 0 0 4px; font-size: 1.16em; line-height: 1.18; }
+.gt-projection-step > img,
+.gt-projection-figures img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: var(--gt-image-height, 150px);
+  margin: auto;
+  object-fit: contain;
+}
+.gt-projection-figures { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.gt-projection-figures img { min-width: 0; }
+.slidev-layout:has(.gt-projection-step ~ .gt-projection-step ~ .gt-projection-step) {
+  --gt-image-height: 110px;
+}
+.gt-projection-links { margin-top: 8px; font-size: 12px; line-height: 1.2; }
+.gt-payoff { width: 100%; }
+.gt-payoff :is(th, td) { padding: 4px 8px; text-align: center; white-space: nowrap; }
 
 .slidev-layout blockquote {
   border: 2px solid #527591;

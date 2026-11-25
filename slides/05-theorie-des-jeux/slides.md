@@ -184,20 +184,18 @@ layout: dense
 
 Au penalty, annoncer son côté favori aide le gardien. Comment choisir des probabilités plutôt qu’une direction fixe ?
 
-<div v-click="[1, 2]" style="position:absolute; inset:145px 52px 95px; display:grid; grid-template-columns: 32% 1fr; gap:24px; align-items:center;">
-  <div><h2>1 · Mélanger</h2><p>Une stratégie mixte attribue une probabilité à chaque action pure. Comme à pile ou face, le tirage reste imprévisible même si sa loi est connue.</p><p>Tout jeu fini possède un équilibre de Nash en stratégies mixtes, éventuellement pures.</p></div>
-  <img src="./images/img_006.png" alt="Exemple du penalty : actions pures et mélange" style="width:100%; height:280px; object-fit:contain;">
+<div v-click="1" class="gt-projection-step">
+  <div><h2>1 · Mélanger</h2><p>Une stratégie mixte est une loi sur les actions pures. À pile ou face, on connaît la loi, pas le résultat du tirage.</p><p>Tout jeu fini possède un équilibre de Nash en stratégies mixtes, éventuellement pures.</p></div>
+  <img src="./images/img_006.png" alt="Pile ou face : les deux joueurs mélangent à parts égales">
 </div>
-<div v-click="[2, 3]" style="position:absolute; inset:145px 52px 95px; display:grid; grid-template-columns: 40% 1fr; gap:24px; align-items:center;">
+<div v-click="2" class="gt-projection-step">
   <div><h2>2 · Rendre indifférent</h2><p>Si les deux actions sont jouées à l’équilibre, elles doivent rapporter autant. On cherche la probabilité de l’<em>autre</em> joueur qui égalise leurs gains.</p><p>Colonne : 1 − 4u = 2u, donc u = 1/6.<br>Ligne : 5ℓ − 2 = −ℓ, donc ℓ = 1/3.</p></div>
-  <img src="./images/img_007.png" alt="Matrice utilisée pour égaliser les gains espérés" style="width:100%; height:280px; object-fit:contain;">
+  <img src="./images/img_007.png" alt="Matrice utilisée pour égaliser les gains espérés">
 </div>
-<div v-click="3" style="position:absolute; inset:145px 52px 95px; display:grid; grid-template-columns: 32% 1fr; gap:24px; align-items:center;">
+<div v-click="3" class="gt-projection-step">
   <div><h2>3 · Calculer le gain</h2><p>Dans la bataille des sexes, boxe et ballet donnent deux équilibres purs. Au mélange (1/3, 2/3), pondérer chaque case par sa probabilité donne un gain espéré de 2/3 à chacun.</p></div>
-  <img src="./images/img_008.png" alt="Bataille des sexes : gains associés aux choix boxe ou ballet" style="width:100%; height:280px; object-fit:contain;">
+  <img src="./images/img_008.png" alt="Bataille des sexes : gains associés aux choix boxe ou ballet">
 </div>
-
-<div style="height:390px"></div>
 
 *Notebooks : [GameTheory-05-ZeroSum-Minimax-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (support mixte, somme nulle) · [GameTheory-04c-NashExistence-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) (existence calculee).*
 
@@ -227,7 +225,7 @@ layout: dense
 
 # Equilibres de stratégie mixte
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Stratégie mixte dominant strictement une pure
@@ -238,7 +236,7 @@ layout: dense
 <img src="./images/img_009.png" alt="Strategie mixte dominant strictement une strategie pure : calcul des probabilites">
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Dominance faible
@@ -250,7 +248,19 @@ layout: dense
 <img src="./images/img_010.png" alt="Dominance faible : elimination iterative">
 </div>
 
-<div v-click="[2, 3]" class="gt-projection-step">
+<div class="gt-projection-links">
+
+*Notebooks : [GameTheory-03-Topology2x2-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) (dominance faible, regle impaire) · [Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) · [Metajeux-05-Temoins-Impossibilite-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb).*
+
+</div>
+
+---
+layout: dense
+---
+
+# Équilibres mixtes — multiplicité et parité
+
+<div class="gt-projection-step">
 <div>
 
 ## Equilibres infinis
@@ -261,7 +271,7 @@ layout: dense
 <img src="./images/img_011.png" alt="Equilibres infinis : equilibres partiellement mixtes">
 </div>
 
-<div v-click="3" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Règle impaire
@@ -289,12 +299,12 @@ layout: dense
 
 Une menace de guerre des prix suffit-elle à décourager un concurrent d’entrer sur le marché ?
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div><h2>1 · Suivre les décisions</h2><p>L’entrant choisit entre rester dehors et entrer. Ce n’est qu’après une entrée que la firme en place décide d’accepter la concurrence ou de livrer une guerre des prix.</p></div>
 <img src="./images/img_013.png" alt="Arbre de décision de l’entrant et de la firme en place">
 </div>
 
-<div v-click="[2, 3]" class="gt-projection-step">
+<div v-click="2" class="gt-projection-step">
 <div><h2>2 · Remonter depuis les feuilles</h2><p>Dans cet arbre d’escalade, partez de la dernière décision. Comparez les gains du joueur qui décide, retenez sa meilleure réponse, puis remontez d’un nœud.</p></div>
 <img src="./images/img_014.png" alt="Arbre du jeu d’escalade à lire des feuilles vers la racine">
 </div>
@@ -333,7 +343,7 @@ layout: dense
 
 # Menaces credibles -- punition et engagement
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Que change la destruction du pont ?
@@ -367,7 +377,7 @@ layout: dense
 
 # Jeux a étapes -- induction arriere et repetition
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## La fouille : anticiper la réponse
@@ -378,7 +388,7 @@ Le garde préfère une fouille complète (3 plutôt que 2). En l’anticipant, l
 <img src="./images/img_018.png" alt="Arbre de la fouille : attendre le chien ou laisser le garde choisir la fouille">
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Récompenser ou punir à la seconde manche
@@ -389,7 +399,19 @@ Dans la matrice de droite, récompenser ensemble rapporte (3, 3). Punir ensemble
 <img src="./images/img_019.png" alt="Deux matrices : dilemme du prisonnier puis choix de récompense ou punition">
 </div>
 
-<div v-click="[2, 3]" class="gt-projection-step">
+<div class="gt-projection-links">
+
+*Notebooks : [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) (folk theorem) · [GameTheory-06-EvolutionTrust-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) (evolution de la confiance).*
+
+</div>
+
+---
+layout: dense
+---
+
+# Jeux à étapes — du pub au mille-pattes
+
+<div class="gt-projection-step">
 <div>
 
 ## Induction vers l’avant : pourquoi renoncer au pub ?
@@ -400,7 +422,7 @@ Le pub garantit 2,5 au premier joueur. Le lapin ne lui rapporte jamais plus de 2
 <img src="./images/img_020.png" alt="Pub Hunt : option certaine à 2,5 ou chasse au cerf et au lapin">
 </div>
 
-<div v-click="3" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Le mille-pattes : remonter jusqu’au début
@@ -483,62 +505,39 @@ Calculer chaque nimber par le plus petit entier absent des valeurs accessibles. 
 layout: dense
 ---
 
-# Formes stratégiques avancees
+# Formes stratégiques avancées
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
-## Raisonner avec des variables
+## Bataille des sexes : faire varier les gains
 
-- Ex: bataille des sexes, A>B>C, algorithme de stratégie mixte
-  - $\sigma_u=\frac{b-c}{a+b-2c}$ et $0<\sigma_u<1$
-- Ex: Topologie complete 2x2
+Pour $A>B>C$, l’indifférence de la colonne détermine la probabilité de jouer Ballet en ligne : $\sigma_u=(b-c)/(a+b-2c)$. Elle est strictement entre 0 et 1 si $a>b>c$.
 
 </div>
-<img src="./images/img_022.png" alt="Bataille des sexes : gains A, B et C en ordre décroissant">
+<table class="gt-payoff" aria-label="Matrice de la bataille des sexes">
+<thead><tr><th scope="col">Ligne / Colonne</th><th scope="col">Ballet</th><th scope="col">Boxe</th></tr></thead>
+<tbody><tr><th scope="row">Ballet</th><td>(B, a)</td><td>(C, c)</td></tr><tr><th scope="row">Boxe</th><td>(C, c)</td><td>(A, b)</td></tr></tbody>
+</table>
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
-## Raisonner avec des variables
+## Équilibre de lame de couteau
 
-- Ex: bataille des sexes, A>B>C, algorithme de stratégie mixte
-  - $\sigma_u=\frac{b-c}{a+b-2c}$ et $0<\sigma_u<1$
-- Ex: Topologie complete 2x2
+Si $X>0$, (Haut, Gauche) est l’unique équilibre ; si $X<0$, c’est (Bas, Droite). À $X=0$, tous les profils sont des équilibres : un écart aussi petit soit-il suffit à changer le résultat.
 
 </div>
-<img src="./images/img_023.png" alt="Topologie complete des jeux 2x2">
-</div>
-
-<div v-click="[2, 3]" class="gt-projection-step">
-<div>
-
-## Raisonner avec des variables
-
-- Ex: bataille des sexes, A>B>C, algorithme de stratégie mixte
-  - $\sigma_u=\frac{b-c}{a+b-2c}$ et $0<\sigma_u<1$
-- Ex: Topologie complete 2x2
-
-</div>
-<img src="./images/img_024.png" alt="Algorithme de strategie mixte avec variables">
-</div>
-
-<div v-click="3" class="gt-projection-step">
-<div>
-
-## Equilibre de lame de couteau
-
-- X>0 -> Up, Left vs x<0 -> down, right, x=0 -> tous
-- Instable autour de x=0, probabilité faible -> ignore
-
-</div>
-<img src="./images/img_025.png" alt="Equilibre de lame de couteau : instabilite autour de x=0">
+<table class="gt-payoff" aria-label="Matrice de l’équilibre de lame de couteau">
+<thead><tr><th scope="col">Ligne / Colonne</th><th scope="col">Gauche</th><th scope="col">Droite</th></tr></thead>
+<tbody><tr><th scope="row">Haut</th><td>(X, X)</td><td>(0, 0)</td></tr><tr><th scope="row">Bas</th><td>(0, 0)</td><td>(−X, −X)</td></tr></tbody>
+</table>
 </div>
 
 <div class="gt-projection-links">
 
-*Notebook : [GameTheory-03-Topology2x2-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) — topologie complete des jeux 2x2, cf slide suivante.*
+*Notebook : [GameTheory-03-Topology2x2-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) — topologie des jeux 2×2.*
 
 </div>
 
@@ -546,53 +545,75 @@ layout: dense
 layout: dense
 ---
 
-# Formes stratégiques avancees -- causalite et cycles
+# Formes stratégiques avancées — statique comparée
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
-## Modèles causaux
+## Changer une entrée du modèle
 
-- Proprietes causales des inputs -> Statiques comparees
-  - Calcul des gradients aux equilibres
-- Ex: Football penalty: $\sigma_{KL}(x)=\frac1{1+x}$, $\sigma'_{KL}(x)=-\frac1{(1+x)^2}<0$
-  - -> il tire davantage son cote faible (compense)
+On fixe les joueurs, l’information et les actions, puis on fait varier un gain. Le modèle prédit comment les stratégies d’équilibre et les issues changent.
 
 </div>
-<img src="./images/img_026.png" alt="Modele causal du penalty au football : gradients aux equilibres">
+<img src="./images/img_025.png" alt="Du modèle (joueurs, information, actions, gains) aux stratégies et aux issues">
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
-## Pierre, papier, ciseaux
+## Au penalty : compenser un côté faible
 
-- Pas de stratégie pure -> cycle
-- Support des stratégies mixtes, EU egales dans le support
-- Theoreme: 2 joueurs, symetrique a somme nulle -> EU = 0
-- Resolution: indifference $\sigma_L=\tfrac14$ (ciseaux pour compenser)
+Pour $X>0$, l’indifférence du gardien donne $\sigma_{KL}(X)=1/(1+X)$ et $\sigma'_{KL}(X)=-1/(1+X)^2$. Quand le tir à gauche devient plus efficace s’il surprend le gardien, le tireur l’utilise moins souvent à l’équilibre.
 
 </div>
-<img src="./images/img_027.png" alt="Pierre-papier-ciseaux : matrice de gains a somme nulle">
+<table class="gt-payoff" aria-label="Gains du tireur et du gardien au penalty">
+<thead><tr><th scope="col">Tir / Plongeon</th><th scope="col">Gauche</th><th scope="col">Droite</th></tr></thead>
+<tbody><tr><th scope="row">Gauche</th><td>(0, 0)</td><td>(X, −X)</td></tr><tr><th scope="row">Droite</th><td>(1, −1)</td><td>(0, 0)</td></tr></tbody>
+</table>
 </div>
 
 <div v-click="2" class="gt-projection-step">
 <div>
 
-## Pierre, papier, ciseaux
+## Un changement peut être discontinu
 
-- Pas de stratégie pure -> cycle
-- Support des stratégies mixtes, EU egales dans le support
-- Theoreme: 2 joueurs, symetrique a somme nulle -> EU = 0
-- Resolution: indifference $\sigma_L=\tfrac14$ (ciseaux pour compenser)
+Dans le schéma, un coût élevé conduit à la paix, un coût faible à la guerre. Contrairement aux probabilités du penalty pour $X>0$, l’issue représentée bascule plutôt qu’elle ne varie graduellement.
 
 </div>
-<img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes">
+<img src="./images/img_026.png" alt="Coût élevé : paix ; coût faible : guerre">
+</div>
+
+---
+layout: dense
+---
+
+# Pierre, papier, ciseaux — cycles et mélange
+
+<div class="gt-projection-step">
+<div>
+
+## Le cycle empêche un équilibre pur
+
+Chaque choix a une meilleure réponse adverse. Dans le jeu usuel, le mélange uniforme rend toutes les actions de l’adversaire indifférentes. Le gain d’équilibre est nul : le jeu est symétrique et à somme nulle.
+
+</div>
+<img src="./images/img_027.png" alt="Pierre, papier, ciseaux : trois probabilités égales à un tiers">
+</div>
+
+<div v-click="1" class="gt-projection-step">
+<div>
+
+## Doubler l’enjeu d’un duel déforme le mélange
+
+Si papier contre pierre rapporte 2 au lieu de 1, l’indifférence impose des poids de $1/4$ pour pierre et papier et $1/2$ pour ciseaux. La symétrie du jeu entre les joueurs et la somme nulle sont préservées.
+
+</div>
+<img src="./images/img_028.png" alt="Pierre et papier à un quart chacun, ciseaux à une moitié">
 </div>
 
 <div class="gt-projection-links">
 
-*Notebooks : [Dynamics-09-Biens-Publics-N-Personnes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) (déformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle, EU = 0).*
+*Notebooks : [Dynamics-09-Biens-Publics-N-Personnes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) (déformation, pierre-papier-ciseaux) · [GameTheory-05-ZeroSum-Minimax-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) (somme nulle).*
 
 </div>
 
@@ -634,7 +655,7 @@ layout: default
 
 # Espaces de stratégies infinis
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Jeux sans equilibre
@@ -644,7 +665,6 @@ layout: default
   - Pas de matrice, pas forcement d'equilibre de Nash
 
 </div>
-<img src="./images/img_029.png" alt="Jeu sans equilibre de Nash en strategies pures">
 </div>
 
 <div v-click="1" class="gt-projection-step">
@@ -657,7 +677,6 @@ layout: default
 - Ex: date de sortie de produits concurrents
 
 </div>
-<img src="./images/img_030.png" alt="Duel : equilibre a meme distance">
 </div>
 
 <div class="gt-projection-links">
@@ -672,17 +691,11 @@ layout: default
 
 # Loi de Hotelling et électeur médian
 
-<style scoped>
-.slidev-vclick-hidden { display: none; }
-</style>
-
 Deux vendeurs de glaces choisissent où s’installer. À prix égal, chaque client va au plus proche.
 
-<div v-click="[1, 3]" style="text-align:center; margin:22px auto 12px"><img src="./images/img_031.png" alt="Plage graduée de 0 à 100 : la flèche rouge est à gauche de la bleue" style="width:72%; margin:auto"></div>
-
-<div v-click="[1, 2]"><h2>1 · Où passe la frontière ?</h2><p>Elle est à mi-distance des deux flèches. Si le vendeur rouge se rapproche du bleu sans le dépasser, la frontière se déplace vers la droite : le rouge gagne des clients.</p></div>
-<div v-click="[2, 3]"><h2>2 · Pourquoi au milieu ?</h2><p>Si les clients sont uniformément répartis et les deux stands au centre, chacun sert la moitié de la plage. S’écarter seul laisse plus de la moitié des clients à son rival.</p></div>
-<div v-click="3"><h2>3 · Du client à l’électeur</h2><p>Sur un axe politique, supposons des préférences à sommet unique et un nombre impair de votants. Face à toute proposition située à droite du sommet médian, au moins la moitié plus un préfèrent ce sommet. Le raisonnement est symétrique à gauche : le sommet médian est vainqueur de Condorcet.</p></div>
+<div v-click="1" class="gt-projection-step"><div><h2>1 · Où passe la frontière ?</h2><p>La frontière est à mi-distance des stands. Si le rouge se rapproche du bleu sans le dépasser, la frontière avance vers la droite : le rouge gagne des clients.</p></div><img src="./images/img_029.png" alt="Deux vendeurs sur la plage et frontière à mi-distance"></div>
+<div v-click="2" class="gt-projection-step"><div><h2>2 · Pourquoi au milieu ?</h2><p>Les positions distinctes du schéma ne sont pas stables. Avec des clients uniformément répartis, deux stands au centre servent chacun la moitié de la plage. S’écarter seul laisse plus de la moitié des clients à son rival.</p></div><img src="./images/img_031.png" alt="Axe gradué de 0 à 100 : les deux vendeurs occupent ici des positions distinctes"></div>
+<div v-click="3" class="gt-projection-step"><div><h2>3 · Du client à l’électeur</h2><p>Avec un nombre impair de votants aux préférences strictes à sommet unique, le sommet médian bat toute autre proposition : les votants de son côté, médiane comprise, forment une majorité.</p></div><img src="./images/img_030.png" alt="Deux positions voisines sur un axe politique, de libéral à conservateur"></div>
 
 *Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
 
@@ -710,7 +723,7 @@ layout: dense
 
 # Jeux Bayesiens
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Information incomplete
@@ -750,7 +763,7 @@ layout: dense
 
 # Jeux Bayesiens -- equilibres et dilemme du Sheriff
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Equilibres de Nash Bayesien
@@ -800,7 +813,7 @@ layout: dense
 
 # Equilibres Bayesiens parfaits (PBE)
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Jeux séquentiels
@@ -837,7 +850,7 @@ layout: dense
 
 # Jeux de signalisation -- pooling, separating, semi-separation
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Trois categories de PBE
@@ -1020,7 +1033,7 @@ layout: dense
 
 # Allocation de ressources par les encheres
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Encheres individuelles
@@ -1036,7 +1049,7 @@ layout: dense
 
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Bien commun
@@ -1120,7 +1133,7 @@ layout: dense
 
 # Critere de Condorcet
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Condition du vainqueur de Condorcet
@@ -1158,13 +1171,9 @@ layout: dense
 
 # En l’absence de vainqueur de Condorcet
 
-<style scoped>
-p:has(> em:only-child) { position:absolute; bottom:34px; left:42px; right:42px; }
-</style>
+<div class="gt-projection-step"><div><h2>Un axe peut éviter les cycles</h2><p>La figure place les options sur une ligne : c’est le cas structuré du théorème de l’électeur médian. Sans préférences à sommet unique sur un axe commun, la majorité peut préférer A à B, B à C et C à A.</p></div><img src="./images/img_041.png" alt="Positions des options M, H, B, S et L sur un axe"></div>
 
-<div v-click.hide="1" class="gt-projection-step"><div><h2>Un axe peut éviter les cycles</h2><p>La figure place les options sur une ligne : c’est le cas structuré du théorème de l’électeur médian. Sans préférences à sommet unique sur un axe commun, la majorité peut préférer A à B, B à C et C à A.</p></div><img src="./images/img_041.png" alt="Positions des options M, H, B, S et L sur un axe"></div>
-
-<div v-click="[1, 2]" class="gt-projection-step"><div><h2>Minimax : limiter sa pire défaite</h2><p>Supposons que A batte B de 3 voix, B batte C de 5 voix et C batte A d’une voix. Les pires défaites de A, B et C ont pour marges 1, 3 et 5. Minimax, dans sa version par marges, choisit A.</p></div></div>
+<div v-click="1" class="gt-projection-step"><div><h2>Minimax : limiter sa pire défaite</h2><p>Supposons que A batte B de 3 voix, B batte C de 5 voix et C batte A d’une voix. Les pires défaites de A, B et C ont pour marges 1, 3 et 5. Minimax, dans sa version par marges, choisit A.</p></div></div>
 
 <div v-click="2" class="gt-projection-step"><div><h2>Schulze : comparer les chemins</h2><p>La force d’un chemin est celle de son duel le plus faible. En prenant les marges positives, A → B → C a pour force 3, contre 1 pour C → A. Le duel direct ne suffit donc pas à classer C devant A.</p></div></div>
 
@@ -1176,17 +1185,21 @@ layout: dense
 
 # Procédures de vote : que mesure le dépouillement ?
 
-<style scoped>
-p:has(> em:only-child) { position:absolute; bottom:34px; left:42px; right:42px; }
-</style>
+<div class="gt-projection-step"><div><h2>Une voix ou un classement ?</h2><p>Avec deux options, un référendum compare directement les voix. Avec plusieurs candidats, le scrutin uninominal ne compte que les premiers choix : c’est une incitation au vote utile.</p><p>Un classement permet soit d’éliminer le dernier et de transférer les voix (vote alternatif), soit d’attribuer des points à chaque rang (Borda). Ni l’un ni l’autre ne garantit le choix du vainqueur de Condorcet.</p></div></div>
 
-<div v-click.hide="1" class="gt-projection-step"><div><h2>Une voix ou un classement ?</h2><p>Avec deux options, un référendum compare directement les voix. Avec plusieurs candidats, le scrutin uninominal ne compte que les premiers choix : c’est une incitation au vote utile.</p><p>Un classement permet soit d’éliminer le dernier et de transférer les voix (vote alternatif), soit d’attribuer des points à chaque rang (Borda). Ni l’un ni l’autre ne garantit le choix du vainqueur de Condorcet.</p></div></div>
+<div v-click="1" class="gt-projection-step"><div><h2>Compter les approbations</h2><p>Chaque personne peut soutenir plusieurs options. Comptez les traits, pas les rangs : TRUC est en tête avec neuf approbations sur quinze. La règle retient le plus grand total, sans exiger de majorité absolue.</p></div><img src="./images/img_042.png" alt="Dépouillement par assentiment : neuf voix pour TRUC"></div>
 
-<div v-click="[1, 2]" class="gt-projection-step"><div><h2>Compter les approbations</h2><p>Chaque personne peut soutenir plusieurs options. Comptez les traits, pas les rangs : TRUC est en tête avec neuf approbations sur quinze. La règle retient le plus grand total, sans exiger de majorité absolue.</p></div><img src="./images/img_042.png" alt="Dépouillement par assentiment : neuf voix pour TRUC"></div>
+*Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire).*
 
-<div v-click="[2, 3]" class="gt-projection-step"><div><h2>Prendre la médiane</h2><p>Chaque personne évalue chaque option sur la même échelle. Ici, les notes sont rangées : c’est la note du milieu qui compte, pas la moyenne. BIDULE arrive en tête avec une médiane de 11.</p></div><img src="./images/img_043.png" alt="Notes ordonnées et médiane de chaque option"></div>
+---
+layout: dense
+---
 
-<div v-click="3" class="gt-projection-step"><div><h2>Comparer deux options à la fois</h2><p>Chaque colonne correspond à un adversaire. SCHMILBLICK bat chacun des autres en duel : c’est le vainqueur de Condorcet. En l’absence d’un tel vainqueur, une méthode comme celle de Schulze départage les options.</p></div><img src="./images/img_044.png" alt="Table des duels majoritaires remportés par SCHMILBLICK"></div>
+# Procédures de vote — notes et duels
+
+<div class="gt-projection-step"><div><h2>Prendre la médiane</h2><p>Chaque personne évalue chaque option sur la même échelle. Ici, les notes sont rangées : c’est la note du milieu qui compte, pas la moyenne. BIDULE arrive en tête avec une médiane de 11.</p></div><img src="./images/img_043.png" alt="Notes ordonnées et médiane de chaque option"></div>
+
+<div v-click="1" class="gt-projection-step"><div><h2>Comparer deux options à la fois</h2><p>Chaque colonne correspond à un adversaire. SCHMILBLICK bat chacun des autres en duel : c’est le vainqueur de Condorcet. En l’absence d’un tel vainqueur, une méthode comme celle de Schulze départage les options.</p></div><img src="./images/img_044.png" alt="Table des duels majoritaires remportés par SCHMILBLICK"></div>
 
 *Notebook : [SocialChoice/ChoixSocial-03-Voting-Methods-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) (Borda, assentiment, jugement majoritaire).*
 
@@ -1196,15 +1209,11 @@ layout: dense
 
 # Du bulletin à la loterie
 
-<style scoped>
-p:has(> em:only-child) { position:absolute; bottom:34px; left:42px; right:42px; }
-</style>
+<div class="gt-projection-step"><div><h2>Trois bulletins, trois informations</h2><p>On peut approuver, noter ou classer. Que devient le résultat si, au lieu de compter les voix, on tire un bulletin au hasard ? Le bulletin ne détermine pas à lui seul la règle de dépouillement.</p></div></div>
 
-<div v-click.hide="1" class="gt-projection-step"><div><h2>Trois bulletins, trois informations</h2><p>On peut approuver, noter ou classer. Que devient le résultat si, au lieu de compter les voix, on tire un bulletin au hasard ? Le bulletin ne détermine pas à lui seul la règle de dépouillement.</p></div></div>
+<div v-click="1" class="gt-projection-step"><div><h2>Approuver ou noter</h2><p>Ce bulletin approuve à la fois BIDULE et CHOSE ; les notes les distinguent, 14 contre 18. Ne pas confondre le nombre d’approbations et la médiane des notes.</p></div><div class="gt-projection-figures"><img src="./images/img_045.png" alt="Bulletin pour ou contre"><img src="./images/img_046.png" alt="Bulletin noté sur vingt"></div></div>
 
-<div v-click="[1, 2]" class="gt-projection-step"><div><h2>Approuver ou noter</h2><p>Ce bulletin approuve à la fois BIDULE et CHOSE ; les notes les distinguent, 14 contre 18. Ne pas confondre le nombre d’approbations et la médiane des notes.</p></div><div><img src="./images/img_045.png" alt="Bulletin pour ou contre" style="height:155px;margin:auto"><img src="./images/img_046.png" alt="Bulletin noté sur vingt" style="height:155px;margin:auto"></div></div>
-
-<div v-click="[2, 3]" class="gt-projection-step"><div><h2>Tirer un bulletin au hasard</h2><p>Si ce bulletin est tiré, son premier choix, CHOSE, gagne. Chaque option a donc pour probabilité de victoire sa part de premières places. Dans cette règle, placer son véritable favori en tête est optimal.</p></div><img src="./images/img_047.png" alt="Bulletin classé : CHOSE première, BIDULE deuxième"></div>
+<div v-click="2" class="gt-projection-step"><div><h2>Tirer un bulletin au hasard</h2><p>Si ce bulletin est tiré, son premier choix, CHOSE, gagne. Chaque option a donc pour probabilité de victoire sa part de premières places. Dans cette règle, placer son véritable favori en tête est optimal.</p></div><img src="./images/img_047.png" alt="Bulletin classé : CHOSE première, BIDULE deuxième"></div>
 
 <div v-click="3" class="gt-projection-step"><div><h2>Randomiser à partir des duels</h2><p>Une loterie maximale utilise plutôt les marges de majorité : on cherche une stratégie mixte d’équilibre du jeu à somme nulle entre options. Si un vainqueur strict de Condorcet existe, il reçoit toute la probabilité.</p></div></div>
 
@@ -1216,7 +1225,7 @@ layout: default
 
 # Allocation par la negociation
 
-<div v-click="0" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Modèle des offres alternees
@@ -1321,7 +1330,7 @@ layout: dense
 
 # Equilibres differentiels
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Equilibres de Nash pour jeux a somme nulle
@@ -1333,7 +1342,7 @@ layout: dense
 <img src="./images/img_049.png" alt="Point de selle d'un jeu differentiel a somme nulle">
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Equilibres de Stackelberg
@@ -1369,7 +1378,7 @@ layout: dense
 
 # Equilibres differentiels -- boucle ouverte et Markoviens
 
-<div v-click.hide="1" class="gt-projection-step">
+<div class="gt-projection-step">
 <div>
 
 ## Equilibres en boucle ouverte
@@ -1381,7 +1390,7 @@ layout: dense
 <img src="./images/img_050.png" alt="Equilibres en boucle ouverte : conditions necessaires">
 </div>
 
-<div v-click="[1, 2]" class="gt-projection-step">
+<div v-click="1" class="gt-projection-step">
 <div>
 
 ## Equilibres Markoviens
@@ -1411,17 +1420,13 @@ layout: default
 
 # Méthodes calculatoires
 
-<p v-click.hide="1">Comment chercher une trajectoire lorsque la cible se déplace elle aussi ?</p>
+<p>Comment poursuivre une cible qui se déplace ?</p>
 
-<div v-click="[1, 2]" class="gt-projection-step"><div><h2>Modéliser les mouvements</h2><p>Chaque équation décrit une vitesse : l’indice e désigne le fuyard, p le poursuivant. Chaque joueur agit sur sa trajectoire par sa commande u.</p></div><img src="./images/img_053.png" alt="Équations du mouvement du fuyard et du poursuivant"></div>
+<div v-click="1" class="gt-projection-step"><div><h2>Modéliser les mouvements</h2><p>Chaque équation décrit une vitesse : l’indice e désigne le fuyard, p le poursuivant. Chaque joueur agit sur sa trajectoire par sa commande u.</p></div><img src="./images/img_053.png" alt="Équations du mouvement du fuyard et du poursuivant"></div>
 
-<div v-click="[2, 3]" class="gt-projection-step"><div><h2>Calculer une trajectoire ou une politique</h2><p>Une méthode directe discrétise les commandes et optimise sous les contraintes du mouvement. Une approche par programmation dynamique cherche plutôt la valeur du jeu en chaque état, en résolvant une équation aux dérivées partielles.</p></div></div>
+<div v-click="2" class="gt-projection-step"><div><h2>Calculer une trajectoire ou une politique</h2><p>Une méthode directe discrétise et optimise les commandes sous les contraintes du mouvement. La programmation dynamique cherche plutôt la valeur en chaque état, via une équation aux dérivées partielles.</p></div></div>
 
 <div v-click="3" class="gt-projection-step"><div><h2>Explorer par échantillonnage</h2><p>Comparez les quatre cartes : les obstacles ne bougent pas, mais l’arbre RRT s’étend au fil des tirages. Les branches sont des mouvements réalisables, pas des particules qui estiment une position cachée.</p><p>Davantage d’échantillons enrichit l’exploration ; ces images ne prouvent pas l’optimalité du trajet.</p></div><img src="./images/img_054.png" alt="Quatre cartes du même terrain avec un arbre de trajectoires de plus en plus développé"></div>
-
-<style scoped>
-p:has(> em:only-child) { position:absolute; bottom:34px; left:42px; right:42px; }
-</style>
 
 *Notebooks : [GameTheory-14-DifferentialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) (equilibres, LQ) · [GameTheory-09c-Stackelberg-SecurityGame-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) (Stackelberg). Poursuite-evasion par RRT : pas de notebook dedie.*
 
