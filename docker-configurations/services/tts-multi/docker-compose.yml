@@ -61,8 +61,10 @@ services:
         condition: service_healthy
       tts-tada:
         condition: service_healthy
-      tts-qwen:
-        condition: service_started  # Qwen takes 3-5min to load, don't block gateway
+      # tts-qwen is deliberately NOT a dependency: it sits behind the `qwen-tts` profile
+      # (see the service) because it cannot load on this VM while the memory arbitration
+      # is open, and a `depends_on` entry would select it on every default `up -d`. The
+      # gateway routes per request and answers for a stopped upstream.
 
   # Kokoro TTS - Existing model, backward compatible
   tts-kokoro:
@@ -214,11 +216,38 @@ services:
               device_ids: ['${QWEN_GPU_ID:-1}']
               capabilities: [gpu]
 
-    # Maintenance#303 bounds: vLLM-Omni engine, measured 3.34 GiB / 267 PIDs;
-    # 6g + 512 PIDs keep ~2x headroom for compilation and request bursts.
-    mem_limit: 6g
-    memswap_limit: 6g
-    pids_limit: 512
+    # Bounds measured 2026-11-25 on this service, not estimated. 6g is BELOW what the
+    # two-stage engine needs, which is why this service sits behind the `qwen-tts` profile.
+    # - With `mem_limit: 6g` (both runs also set `VLLM_ENABLE_V1_MULTIPROCESSING=0`; see the
+    #   environment block) the cgroup reaches `memory.peak` == `memory.max` (6 GiB) and
+    #   OOM-kills one stage worker (`memory.events: oom 2 / oom_kill 1`, log `Worker proc
+    #   VllmWorker-0 died unexpectedly`). What survives that kill still sums to 6.17 GiB of
+    #   RSS over five processes (1.25 serve, 1.02 + 1.02 + 0.01 multiprocessing children,
+    #   0.95 EngineCore, 2.22 Worker), so 6g cannot hold the engine with both stages alive.
+    # - With `mem_limit: 8g` (same flag) the engine loads further, but the Docker VM starves
+    #   before startup completes: `MemAvailable` fell to 721 MiB (min 637 MiB) at t+345 s
+    #   against the ~460 s the second stage needs, and the outside guard stopped the service.
+    # - The VM has 23.5 GiB because its cap was lowered to 24 GB on 2026-11-17, after a host
+    #   memory famine; the other 18 containers hold 16.1 GiB, so 6.98 GiB is available with
+    #   this service stopped, against a survivor tree of 6.17 GiB with a stage already dead.
+    #   The complete engine's footprint has never been measured here -- it never finished
+    #   loading. The shortfall is roughly 1 to 2 GiB; which service yields it, or whether the
+    #   VM cap itself moves, is an owner-level arbitration, not a compose value.
+    # - PID pressure was not the binding constraint: 394 of 1024 measured at load. That run
+    #   also set `VLLM_ENABLE_V1_MULTIPROCESSING=0`, to try to drop one process per stage;
+    #   a separate `VLLM::EngineCore` process was still there, so the flag did not shrink
+    #   the topology. The 507/512 incident counted 221 stuck probes plus the engine's
+    #   threads -- `nlwp`, not process count, is what `pids_limit` limits.
+    mem_limit: 8g
+    memswap_limit: 8g
+    pids_limit: 1024
+
+    # Opt-in on purpose: this engine needs more host memory than the VM has free while its
+    # other services run (measurements above). Start it deliberately, once the memory
+    # arbitration recorded on the workspace dashboard has landed:
+    #   docker compose --profile qwen-tts up -d tts-qwen
+    # The container's own mem_limit does not protect the VM: it is above what is free.
+    profiles: ["qwen-tts"]
 
     # tini as PID 1: vLLM forks worker processes, and an init reaps orphaned children
     # instead of letting them count against pids_limit. Suggested by po-2023:vllm after
@@ -237,6 +266,10 @@ services:
       - type: bind
         source: ./qwen/entrypoint.sh
         target: /app/entrypoint.sh
+        read_only: true
+      - type: bind
+        source: ./qwen/healthcheck.py
+        target: /app/healthcheck.py
         read_only: true
       # The process runs as appuser (HOME=/home/appuser). The cache volume used to be
       # mounted on /root/.cache, which appuser can neither read nor write: measured
@@ -261,6 +294,10 @@ services:
       - CUDA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - NVIDIA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - PYTHONUNBUFFERED=1
+      # VLLM_ENABLE_V1_MULTIPROCESSING is deliberately NOT set here. The 6g run set it to
+      # 0, to try to remove one process per stage, and a separate `VLLM::EngineCore`
+      # process was still in the tree, so it did not buy the reduction it was set for; and
+      # no run reached a working engine, so the two modes were never compared.
       # VLLM_USE_MODELSCOPE is deliberately NOT set: vllm_omni tests it for mere
       # presence (a non-empty string is truthy, "false" included) and would route the
       # model download through ModelScope. See qwen/entrypoint.sh.
@@ -269,11 +306,15 @@ services:
       - TZ=${TZ:-Europe/Paris}
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf --connect-timeout 3 --max-time 8 http://localhost:8000/health || exit 1"]
+      # Honest probe: `GET /health` answers 200 in 1 ms with a stage worker dead (measured
+      # 2026-11-25, twice), so the probe also requires one live `VLLM::Worker` per stage of
+      # `stage_configs/qwen3_tts.yaml` (2). Bounded inside the script: the Docker
+      # healthcheck timeout does not kill a probe.
+      test: ["CMD", "python3", "/app/healthcheck.py"]
       interval: 60s
       timeout: 30s
       retries: 5
-      start_period: 300s
+      start_period: 600s
 
     restart: unless-stopped
 
