@@ -1,0 +1,9 @@
+- name: "FT-00a LoRA from scratch"
+  family: GenAI/FineTuning
+  python: MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python utilise PyTorch ; C# utilise TorchSharp-cpu et libtorch pour les convolutions, gradients et Adam sur les mêmes archives Fashion-MNIST."
+  known_differences:
+    - "Le replay C# tourne sur CPU et lit les archives IDX vérifiées via GZipStream ; les initialisations et ordres de lots peuvent différer du replay Python CUDA, donc les scores sont remesurés."

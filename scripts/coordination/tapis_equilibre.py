@@ -15,11 +15,10 @@ du mandat : les anciennes en ont plus parce qu'elles vivent plus longtemps.
 Dans un niveau, l'issue jamais visitee passe d'abord, puis la plus ancienne.
 
 Les priorites LEGERES du mandat du 2026-11-18 (age, consolidation) sont dans
-`coordination/tapis_avantages.py` ; leur somme reste sous une visite, donc
-l'equite du 16/11 tient : 0 visite avant 1 visite. La division par 3 des
-consolidations anciennes, plus forte qu'une priorite legere, disparait.
-Une exception reste : les marathons de parite C# (#26070) et Rust (#26510)
-sortent de l'equilibrage : c'est le harnais sk-agent qui les servira.
+`coordination/tapis_avantages.py` ; leur total reste sous une visite (l'equite
+du 16/11 tient : 0 visite avant 1 visite) et la consolidation passe DEVANT
+l'anciennete (invariant I7, #28114) ; les marathons de parite C# (#26070) et
+Rust (#26510) sortent de l'equilibrage : le harnais sk-agent les servira.
 
 Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
 DELIVERED) d'une meme lane a moins de `SEANCE_H` heures n'en font qu'une --
@@ -89,12 +88,13 @@ def familles_consolidation(etats_) -> set[int]:
 
 
 def bonus(e, conso: set[int], maintenant: datetime) -> tuple[float, list[str]]:
-    """Le bonus leger du mandat du 18/11 : l'age, puis la consolidation.
+    """Le bonus leger du mandat du 18/11 : la consolidation, puis l'age.
 
     Deux contributions PETITES et DISTINCTES, comptees en dixiemes de visite :
     le niveau reste un multiple de 0,1, les issues se regroupent par niveau
     (c'est ce qui fait tourner la tete d'une lane a l'autre), et l'equite du
-    16/11 tient : 0 visite avant 1 visite."""
+    16/11 tient : 0 visite avant 1 visite. La consolidation est posee EN
+    PREMIER (I7) : elle passe devant l'anciennete."""
     dix, motifs = tapis_avantages.bonus_dixiemes(
         tapis_avantages.age_jours(e.cree_le, maintenant),
         tapis_avantages.est_consolidation(e.consolidation, e.famille, conso))
@@ -105,7 +105,7 @@ def niveau(e, conso: set[int], maintenant: datetime) -> float:
     """Le niveau de service : les visites du tour moins le bonus leger.
 
     Plus petit niveau d'abord : 0 visite passe devant 1 visite (le bonus total
-    est borne a 0,9), et l'age puis la consolidation font les departages."""
+    est borne a 0,9), et la consolidation puis l'age font les departages."""
     if est_marathon(e):
         return math.inf
     return e.visites - bonus(e, conso, maintenant)[0]
