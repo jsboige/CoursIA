@@ -11,19 +11,12 @@ import os
 import re
 import subprocess
 import time
-from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
     Lecture, LectureIncomplete, issue)
-
-try:  # `gh_identity` vit dans scripts/ci/ : il est importe par plusieurs organes
-    import gh_identity  # noqa: PLC0415
-except ImportError:  # pragma: no cover - environnement de test isole
-    gh_identity = None
-
-Run = Callable[[list[str], int], str]
+from coordination.gh_run import Run, run_defaut
 
 DEPOT_GH = "jsboige/CoursIA"
 #: Le plafond d'UN appel (`gh api`, `git log`) : un appel qui depasse est
@@ -62,19 +55,6 @@ QUERY = """query($owner:String!,$name:String!,$n:Int!,$after:String){
    pageInfo{hasNextPage endCursor}
    nodes{number title body createdAt updatedAt labels(first:20){nodes{name}}
     comments(last:12){totalCount nodes{createdAt author{login} body}}}}}}"""
-
-
-def run_defaut(argv: list[str], timeout: int) -> str:
-    """`subprocess.run` borne ; un code non nul leve `CalledProcessError`.
-
-    La LECTURE part sous le jeton App de la lane quand il existe (#17437 P1) :
-    le seau GraphQL est par UTILISATEUR, et toutes les lanes sortant sous
-    `jsboige` vident le meme. L'ecriture n'est pas concernee : elle resout
-    son jeton explicitement (`post_dossier.resolve_write_token`).
-    """
-    env = gh_identity.read_env() if gh_identity is not None else None
-    return subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
-                          timeout=timeout, check=True, env=env).stdout
 
 
 def _timeout(echeance: float | None, plafond: float = TIMEOUT_S,
