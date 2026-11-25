@@ -1233,6 +1233,23 @@ def _count_in_progress(st: Starvation) -> str:
     return str(len(st.in_progress))
 
 
+def _sample_only(st: Starvation) -> str:
+    """Portee du decompte d'affames (review ai-01 du 25/11, #28552).
+
+    Le decompte ne vaut que pour les runs LUS. Tant qu'il reste des runs non
+    lus -- hors echantillon in_progress, ou faute de budget sur la passe
+    queued -- un job queued au-dela du seuil peut s'y cacher : la conclusion
+    « rien d'affame » se dit alors dans l'echantillon, jamais dans l'absolu.
+    Rendre la chaine vide quand tout est lu garde la formulation d'avant mot
+    pour mot (aucun consommateur ne lit un nota bene qui n'existe pas).
+    """
+    unread = st.in_progress_unread + len(st.budget_unread)
+    if not unread:
+        return ""
+    return (f" (decompte etabli dans l'echantillon seulement : {unread} run(s) "
+            f"non lu(s) peuvent encore porter un job affame)")
+
+
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
              label: str = DEFAULT_LABEL,
              declared: DeclaredHosts | None = None,
@@ -1426,11 +1443,16 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
         v.notes.append(
             f"file profonde mais saine: {len(st.starved)} job(s) queued > seuil, "
             f"{_count_in_progress(st)} job(s) in_progress -- capacite en train de drainer"
+            f"{_sample_only(st)}"
         )
     elif st.in_progress:
-        v.notes.append(f"{_count_in_progress(st)} job(s) in_progress, rien d'affame -- OK")
+        tail = _sample_only(st)
+        v.notes.append(
+            f"{_count_in_progress(st)} job(s) in_progress, "
+            + (f"aucun job affame{tail}" if tail else "rien d'affame -- OK"))
     else:
-        v.notes.append("ni queue affamee ni job en cours -- OK")
+        v.notes.append("ni queue affamee ni job en cours"
+                       + (_sample_only(st) or " -- OK"))
 
     # Alertes de perte de pool par hote (#20697 point 4) -- disjointes de
     # EXTINCTION globale : un hote peut perdre tous ses online pendant que le

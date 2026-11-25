@@ -413,6 +413,28 @@ def test_la_preuve_distingue_les_sauts_des_hors_echantillon(monkeypatch):
                for n in v.notes), v.notes
 
 
+def test_les_runs_non_lus_interdisent_la_conclusion_absolue(monkeypatch):
+    """Seconde moitie de la review ai-01 (25/11) : quand des runs restent non
+    lus, le decompte d'affames ne vaut que pour l'echantillon. Le verdict ne
+    doit donc pas dire « rien d'affame -- OK » dans l'absolu -- la formulation
+    exacte est conservee quand tout est lu (temoin precedent), et qualifiee
+    des qu'un run echappe a la lecture."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(40)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(40)},
+    ))
+    st = _fetch(api, in_progress_sample=5,
+                skip_young_in_progress_after_proof=True)
+    assert st.in_progress_unread == 35, st.in_progress_unread
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    note = next(n for n in v.notes if "job(s) in_progress," in n)
+    assert "-- OK" not in note, note
+    assert "35 run(s) non lu(s)" in note, note
+    # Le rouge n'est PAS demande ici : l'echantillon reste le contrat d'avant,
+    # seule la conclusion cesse de se dire complete.
+    assert not v.errors
+
+
 def test_defaut_lecture_complete_meme_apres_la_preuve(monkeypatch):
     """Sans l'option (defaut), rien ne change pour les consommateurs existants
     -- dont `ci_overflow_controller`, qui lit `in_progress` comme une CHARGE :
