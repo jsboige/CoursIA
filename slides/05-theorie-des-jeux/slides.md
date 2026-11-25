@@ -456,7 +456,13 @@ layout: dense
 
 > **Théorème folk (version à surveillance parfaite).** Dans un jeu fini répété, sous l’hypothèse de pleine dimension des gains réalisables, tout gain réalisable strictement au-dessus des niveaux minimax individuels peut être soutenu en équilibre parfait en sous-jeux pour des joueurs suffisamment patients.
 
-**Stratégie.** Programmer un chemin qui réalise le gain, puis construire des sanctions crédibles. Le seuil de grim trigger ne formalise pas ce résultat général.
+**Exemple.** Avec $(T,R,P,S)=(5,3,1,0)$, la moyenne de $(3,3)$ et $(5,0)$ est $(4,\,1{,}5)$ : même la part la plus faible dépasse le minimax de 1.
+
+**Stratégie.** Réaliser le gain sur le chemin d’équilibre, puis rendre les sanctions crédibles pour ceux qui les appliquent.
+
+<!--
+La moyenne illustre la faisabilité, pas la preuve qu’une alternance réalise exactement cette cible pour tout facteur d’actualisation. Dans RepeatedGames/Folk.lean, folk_theorem_discounted a encore un sorry pour la réalisation d’une cible par une trajectoire du dilemme à deux joueurs. Ce n’est pas une formalisation du résultat général, qui exige aussi les incitations après tout historique.
+-->
 
 ---
 layout: default
@@ -468,9 +474,11 @@ layout: default
 
 ## Stratégie de preuve
 
-1. **Avant toute défection**, comparer $R/(1-\delta)$ à $T+\delta P/(1-\delta)$ : sous le seuil, dévier rapporte dès le départ.
-2. **Après une défection**, la punition est irréversible et, face à une défection, faire défection rapporte plus que coopérer ($P>S$).
-3. **À tout historique**, avec des gains bornés et $\delta<1$, le principe de déviation en un coup étend la vérification locale aux déviations de stratégie entières : l’effet de la fin du flux tend vers zéro.
+1. **Avant une défection**, trahir rapporte $T-R$ aujourd’hui, mais coûte $\delta(R-P)/(1-\delta)$ sur les tours futurs.
+2. **Après une défection**, la punition est crédible : face à une défection, trahir rapporte $P$ et coopérer seulement $S$.
+3. **À tout historique**, le principe de déviation en un coup suffit : avec des gains bornés, le poids de la fin du flux tend vers zéro.
+
+**Au seuil.** Avec $(T,R,P,S)=(5,3,1,0)$ et $\delta=1/2$, le gain immédiat de 2 est exactement compensé par $2(1/2+1/4+\cdots)=2$.
 
 *Notebook : [Dynamics-02 — Jeux répétés en Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb).*
 
@@ -482,10 +490,9 @@ layout: dense
 
 ## Sprague-Grundy
 
-- Classe : information parfaite, sans hasard, somme nulle, fini (Nim)
-  - Théorème de Sprague-Grundy : chaque position vaut un nimber, la somme disjointe vaut le XOR
-  - Position perdante (P-position) ssi Grundy = 0 -- l'induction arrière devient un calcul
-- Compagnons formels du corpus : port Lean « from scratch », puis lake natif dédié
+- **Jeu impartial fini sans cycle** : mêmes coups pour les deux joueurs ; sans coup disponible, on perd (convention normale).
+- **P ou N ?** Une feuille est perdante (P). En remontant, une position est gagnante (N) dès qu’un coup mène à P.
+- **Pourquoi un entier ?** Un tas de 1 et un tas de 2 sont tous deux gagnants seuls. En leur ajoutant le même tas de 1, $(1,1)$ perd mais $(2,1)$ gagne. Le verdict P/N ne suffit pas pour composer les jeux.
 
 *Notebooks : [GameTheory-08-CombinatorialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) (Nim, Grundy) · [GameTheory-08b-Lean-CombinatorialGames-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) (port Lean from scratch) · [GameTheory-08c-CombinatorialGames-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) · [GameTheory-08d-Lean-CGT-Lean](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) (lake `conway_cgt_lean`).*
 
@@ -499,7 +506,13 @@ layout: default
 
 ## Stratégie de preuve
 
-Calculer chaque nimber par le plus petit entier absent des valeurs accessibles. Une induction montre que depuis un XOR nul tout coup le rend non nul, et que depuis un XOR non nul un coup peut le ramener à zéro.
+**Calcul local.** En retirant 1 ou 2 jetons, les tailles 0 à 4 valent $0,1,2,0,1$. Depuis 4, on atteint les valeurs 2 et 0 : leur plus petit entier absent (*mex*) est 1.
+
+**Somme.** Un coup change un seul nimber : le XOR $X$ ne peut donc pas rester identique. On peut en revanche atteindre tout $k<X$ ; le mex de la somme est donc exactement $X$. Viser $k=0$ donne un coup gagnant si $X\ne 0$.
+
+<!--
+Au bit de poids fort qui distingue X et k, X porte un 1 et k un 0. Au moins une composante g porte ce bit. La remplacer par g′ = g XOR X XOR k donne un nimber plus petit, donc accessible par définition du mex. Le XOR de la somme devient k. L’induction s’applique aux sommes accessibles en un coup.
+-->
 
 ---
 layout: dense
@@ -647,7 +660,17 @@ layout: default
 
 ## Stratégie de preuve
 
-Pour inverser deux issues, la différence de leurs gains doit passer par zéro. Ce passage est un mur ; il ne signifie pas que les joueurs ont choisi de modifier le jeu.
+Un point représente une **matrice entière**. Pour chaque joueur et chaque paire d’issues, suivre la différence de gains : changer son signe oblige à passer par zéro, sur un mur. On peut aussi toucher le mur et repartir du même côté.
+
+**Exemple.** Avec une prime $b$ à la coopération mutuelle, $R=3+b$ et $T=5$. De $b=0$ à $b=1$, aucun classement ne change, mais le seuil de grim trigger passe de $1/2$ à $1/4$.
+
+**Compter les chambres.** $576$ jeux étiquetés, $144$ à renommage des actions près, $78$ si l’on peut aussi échanger les joueurs. La distance avant quotient compte les inversions de rang des deux joueurs.
+
+<!--
+À b = 2, les deux joueurs ont simultanément R = T ; au-delà, coopérer mutuellement est un équilibre strict. Deux comparaisons de rangs voisins s’inversent : distance 2 entre les chambres de part et d’autre, même si les deux murs sont franchis au même instant. La distance minimale est la somme des nombres d’inversions pour les deux classements.
+
+Pour le quotient : (4!)² = 576 couples de classements stricts étiquetés. Les quatre renommages de lignes et colonnes agissent librement, d’où 144 classes. L’échange des joueurs fixe 12 de ces classes ; les 132 autres s’apparient, d’où 78. Voir la dérivation dans le notebook de topologie, §9.
+-->
 
 ---
 layout: default
@@ -805,7 +828,9 @@ layout: default
 
 ## Stratégie de preuve
 
-Décomposer le gain total d’une déviation selon les types. Une amélioration pour un type suffit ; sans amélioration conditionnelle, aucune déviation globale ne rapporte.
+Le gain d’une déviation est la moyenne des gains conditionnels, pondérée par la probabilité de chaque type. Sans amélioration locale, cette moyenne ne peut pas être positive.
+
+**Exemple.** Si un type de probabilité $1/5$ peut gagner 3 en changeant seul son action, ne modifier que cette ligne du plan rapporte $3/5$ avant de connaître son type.
 
 ---
 layout: dense
@@ -894,7 +919,13 @@ layout: default
 
 ## Stratégie de preuve
 
-Tester les déviations type par type. Ces inégalités sont nécessaires, pas suffisantes : il faut aussi vérifier les croyances et la rationalité séquentielle.
+**Exemple.** Le diplôme donne accès à une prime de 4. Son coût vaut 2 pour le premier type et 6 pour le second : le premier gagne $4-2=2$ à se diplômer, le second perdrait $6-4=2$ en l’imitant.
+
+**Vérification.** Ces deux incitations ne suffisent pas : il faut que l’employeur tire les bonnes conclusions du signal et que sa décision soit optimale compte tenu de ses croyances.
+
+<!--
+Si les deux types ont une probabilité positive et choisissent chacun un signal différent, Bayes identifie le type après chacun de ces signaux. Le salaire supposé dans le calcul doit alors être justifié par les gains de l’employeur. S’il existe d’autres signaux hors du chemin, il faut aussi préciser les croyances et les réponses correspondantes, puis vérifier les déviations vers ces signaux.
+-->
 
 ---
 layout: dense
@@ -922,7 +953,9 @@ layout: default
 
 ## Stratégie de preuve
 
-Conditionner le plan tiré sur les décisions antérieures du joueur. Dans l’autre sens, tirer à l’avance une action à chaque ensemble d’information.
+**Du plan aux tirages locaux.** À chaque ensemble d’information, conditionner le plan tiré sur les actions passées du joueur. Le rappel parfait garantit que ce passé est le même partout dans cet ensemble.
+
+**Des tirages locaux au plan.** Tirer à l’avance, indépendamment, une action pour chaque ensemble d’information. Contre toute stratégie adverse, les deux constructions reproduisent les probabilités des issues.
 
 ---
 layout: section
@@ -978,7 +1011,9 @@ layout: default
 
 ## Stratégie de preuve
 
-Sur chaque jeu d’unanimité, les joueurs nécessaires se partagent également le gain. Ces jeux forment une base ; l’additivité détermine le partage pour tout jeu.
+**Exemple.** Une coalition gagne 12 si et seulement si elle réunit trois membres indispensables. Les autres sont des joueurs nuls ; la symétrie et l’efficacité donnent $12/3=4$ à chacun des trois.
+
+**Pourquoi cela suffit.** Les jeux d’unanimité forment une base : décomposer le jeu en tels jeux, puis additionner les partages. La moyenne des contributions marginales satisfait les quatre axiomes ; elle donne donc la valeur cherchée.
 
 ---
 layout: section
@@ -1025,7 +1060,9 @@ layout: default
 
 ## Stratégie de preuve
 
-Simuler la stratégie du type annoncé. Mentir correspond alors à une déviation dans le mécanisme initial. La certification Lean du mécanisme AMD particulier n’est pas une preuve de ce principe général.
+**Construction.** Le mécanisme direct exécute, pour chaque type annoncé, la stratégie prévue par l’équilibre initial. Se déclarer de type $t'$ revient à imiter sa stratégie : c’était déjà une déviation possible dans le jeu initial.
+
+**Portée.** Le principe construit un mécanisme à partir d’un équilibre donné. Le certificat Lean du mécanisme AMD démontre les incitations et la participation pour ce mécanisme particulier.
 
 ---
 layout: dense
@@ -1091,7 +1128,9 @@ layout: default
 
 ## Stratégie de preuve
 
-Fixer la meilleure offre adverse. Gagner est préférable si sa propre valeur dépasse ce seuil ; sinon perdre est préférable. Enchérir sa valeur effectue exactement cette sélection.
+Fixer la meilleure offre adverse : c’est le prix payé si l’on gagne. Enchérir sa valeur fait gagner quand le gain est positif, et perdre quand il serait négatif. À égalité, les deux issues rapportent zéro.
+
+**Exemple.** Pour un objet qui vaut 70 €, gagner à 60 € rapporte 10 €. Face à une offre de 80 €, gagner ferait perdre 10 € : mieux vaut ne pas emporter l’objet.
 
 ---
 layout: dense
@@ -1119,13 +1158,21 @@ layout: dense
 layout: default
 ---
 
-# Deux impossibilités différentes
+# Arrow : produire un classement
 
-> **Énoncé.** Arrow : sur tous les classements stricts d’au moins trois options, un classement social transitif, unanime et indépendant des options non pertinentes est dictatorial. Gibbard–Satterthwaite : sur ce domaine, une règle déterministe surjective qui choisit un vainqueur est manipulable ou dictatoriale.
+> **Énoncé.** Sur le domaine de tous les classements stricts d’au moins trois options, une règle donnant un classement social strict et transitif, respectant l’unanimité et l’indépendance des options non pertinentes, est dictatoriale.
 
-## Stratégie de preuve
+**Stratégie.** Partir des électeurs tous ensemble, puis chercher une coalition décisive minimale. Une troisième option permet, par transitivité, de transférer le pouvoir de trancher d’une paire à l’autre et de réduire la coalition à un seul électeur.
 
-Pour Arrow, réduire une coalition décisive jusqu’à un électeur. Pour Gibbard–Satterthwaite, partir de la monotonie imposée par la non-manipulabilité. Le premier résultat porte sur un classement, le second sur un choix.
+---
+layout: default
+---
+
+# Gibbard–Satterthwaite : choisir un vainqueur
+
+> **Énoncé.** Sur le même domaine, une règle déterministe qui choisit un vainqueur et permet à chaque option de gagner est manipulable ou dictatoriale.
+
+**Stratégie.** Si mentir ne paie jamais, remonter un vainqueur dans les bulletins ne peut pas le faire perdre. En modifiant les bulletins un par un, isoler un électeur pivot ; utiliser la liberté des classements et une troisième option pour étendre son pouvoir à tous les choix.
 
 ---
 layout: dense
@@ -1475,7 +1522,9 @@ layout: default
 
 ## Stratégie de preuve
 
-La coopération est déclenchée par sa propre démontrabilité contre la copie. Le théorème de Löb permet de conclure ; en version bornée, la taille des preuves doit aussi être contrôlée.
+Notons $C$ la proposition « FairBot coopère face à sa copie » et $\Box C$ « la théorie peut démontrer $C$ ». Par définition du programme idéalisé, la théorie établit $\Box C\Rightarrow C$. Le théorème de Löb permet alors de démontrer $C$.
+
+**Limite.** Trouver la preuve dans un budget donné est une autre question. Deux agents qui s’arrêtent trop tôt peuvent tous deux faire défection.
 
 ---
 layout: dense
@@ -1589,7 +1638,13 @@ layout: default
 
 ## Stratégie de preuve
 
-Modifier toutes les valeurs de continuation d’au plus une unité change chaque gain actualisé d’au plus le facteur d’actualisation. La contraction donne unicité et convergence. Un témoin Lean pour un jeu de règles, lui, certifie un chemin particulier, pas cette convergence.
+**Stratégie.** Si deux vecteurs de continuation diffèrent d’au plus $\varepsilon$ dans chaque état, chaque gain de la matrice change d’au plus $\delta\varepsilon$. Prendre le minimax conserve cette borne. Comme $\delta<1$, l’itération converge vers un unique point fixe.
+
+**Exemple.** Avec $\delta=0{,}9$ et une erreur initiale d’au plus 10, l’erreur après $n$ itérations est au plus $10(0{,}9)^n$.
+
+<!--
+La borne vaut pour deux vecteurs arbitraires : une moyenne selon les probabilités de transition ne peut pas amplifier l’écart maximal. Dans le carnet sur les failles légales, le certificat Lean porte au contraire sur les étapes d’un chemin donné ; il ne prouve pas une contraction.
+-->
 
 ---
 layout: section
