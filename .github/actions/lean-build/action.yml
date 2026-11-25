@@ -242,6 +242,11 @@ runs:
            && [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
            && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ] \
            && [ "$(git -C "${RUNNER_TEMP}/mathlib-src" rev-parse HEAD 2>/dev/null)" = "$WANT_REV" ]; then
+          # Le cache `lake-*` de ce lac peut avoir manque : `lake` n'a alors
+          # pas encore cree `.lake/packages`, et `ln` echouerait faute de
+          # parent (30 jambes rouges le 2026-11-25, #27727). Le parent se
+          # cree donc ici, dans le meme step que le lien.
+          mkdir -p .lake/packages
           rm -rf .lake/packages/mathlib
           ln -sfn "$RUNNER_TEMP/mathlib-src" .lake/packages/mathlib
           echo "Mathlib source: shared cache (symlinked into .lake/packages, rev $WANT_REV verified)."
