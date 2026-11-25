@@ -711,9 +711,9 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb` | SymbolicLearning | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-output.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb` | SymbolicLearning | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb` | SymbolicLearning | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb` | Texte | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
