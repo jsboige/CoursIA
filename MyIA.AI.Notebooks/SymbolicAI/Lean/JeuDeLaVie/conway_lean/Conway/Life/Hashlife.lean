@@ -381,11 +381,11 @@ def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
 /-! ### N3 : tramage conscient de n pour `evolveHashlifeFast` (issue #3846)
 
 La refonte P5 introduit `gridToMacroCellWithOffsetN` (analogue conscient
-de n de `gridToMacroCellWithOffset`, voir `MacroCell.lean` L736) : il
+de n de `gridToMacroCellWithOffset`, dans `MacroCell.lean`) : il
 construit la `MacroCell` a partir de `gridFrameN n g` (rembourrage
 `max 2 n`) au lieu de `gridFrame` a rembourrage fixe (rembourrage `2`).
 Pour `n ≤ 2`, les deux constructeurs coincident
-(`gridToMacroCellWithOffsetN_le_two_eq`, L746), donc le tramage conscient
+(`gridToMacroCellWithOffsetN_le_two_eq`), donc le tramage conscient
 de n est **definitionnellement identique** au `evolveHashlifeFast`
 existant dans le regime des petits `n` (chaque temoin de correction
 existant dans `Computation.lean` utilise `n ∈ {2, 4, 8, 12, 16}`, tous
@@ -399,9 +399,8 @@ Cette section **ajoute** la variante consciente de n sans toucher a
   constructeur conscient de n `gridToMacroCellWithOffsetN` : l'appel
   recursif `evolveHashlifeFastAuxN fuel (n - js) g'` re-entre dans
   `gridToMacroCellWithOffsetN (n - js) g'` sur la grille sautee. (Le
-  commentaire de conception N1 a MacroCell L634 decrivait un tramage
-  "sans re-cadrer" ; le code, lui, re-cadre a chaque iteration — c'est
-  le code qui fait foi, la doc a ete alignee.)
+  commentaire de conception, section « Cadrage conscient de n » de
+  `MacroCell.lean`, decrit le meme re-cadrage a chaque iteration.)
 - `evolveHashlifeFastN_zero` — verification triviale : `n = 0` renvoie `g`.
 - `evolveHashlifeFastAuxN_eq_evolve` / `evolveHashlifeFastN_eq_evolve` —
   **#6724 : le garde de saut N3 est mort.** Le rembourrage

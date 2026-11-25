@@ -81,8 +81,8 @@ set_option maxHeartbeats 1000000 in
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
-    subsumed by the closed lemmas `evolve_add` (L2353) + `evolve_half_step`
-    (L2370). This function produces the
+    subsumed by the closed lemmas `evolve_add` + `evolve_half_step`. This
+    function produces the
     `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes.
 
     **Pointwise-proof balisage (c.147 — all three pieces now closed)** —
@@ -306,14 +306,14 @@ noncomputable def p4_succ_membership
       -- Factorization (c.NNNN — defensive extraction): the SW arm is the
       -- NW-SE reflection of the NE arm (c.8122) — same opaque-binder pattern.
       -- Sub-cells are n4/n5/n7/n8 (the SW wave-1 children of the outer
-      -- 16-grandkid layout per `p4_double_nine_shape` L2109 + `p4_wave2_ih`
-      -- L2629-2633). Build the 4 SW wave-1 sub-cells + wave-0 results
-      -- R4/R5/R7/R8, then apply the opaque-binder `p4_sw_membership_arm`.
+      -- 16-grandkid layout per `p4_double_nine_shape` + `p4_wave2_ih`).
+      -- Build the 4 SW wave-1 sub-cells + wave-0 results R4/R5/R7/R8, then
+      -- apply the opaque-binder `p4_sw_membership_arm`.
       -- The whnf-hard step is encapsulated in the arm over opaque `R_j`
       -- (fresh heartbeat budget, set_option at the arm).
       --
       -- IMPORTANT (c.8122 cascade-fix L831): all `hcc_j` and `R_j` literals
-      -- must be sourced from `p4_wave2_ih`'s canonical reference (L2629-2633),
+      -- must be sourced from `p4_wave2_ih`'s canonical reference,
       -- NOT copy-pasted across branches. The 16-grid positions for SW sub-cells
       -- are {4,5,7,8} (NE was {2,3,5,6}; symmetric flip of row-axis):
       --   n4 = node nw_sw nw_se sw_nw sw_ne
@@ -405,12 +405,12 @@ noncomputable def p4_succ_membership
       -- Factorization (c.90 — SE-arm port): the SE arm is the DIAGONAL mirror
       -- of the NW arm — same opaque-binder pattern as NE (c.8122) / SW (c.8123).
       -- Sub-cells are n5/n6/n8/n9 (the SE wave-1 children of the outer
-      -- 16-grandkid layout per `p4_double_nine_shape` L2109 + `p4_wave2_ih`
-      -- L2629-2633). Build the 4 SE wave-1 sub-cells + wave-0 results
-      -- R5/R6/R8/R9, then apply the opaque-binder `p4_se_membership_arm`.
+      -- 16-grandkid layout per `p4_double_nine_shape` + `p4_wave2_ih`).
+      -- Build the 4 SE wave-1 sub-cells + wave-0 results R5/R6/R8/R9, then
+      -- apply the opaque-binder `p4_se_membership_arm`.
       --
       -- IMPORTANT (c.8122 cascade-fix L831): all `hcc_j` and `R_j` literals
-      -- must be sourced from `p4_wave2_ih`'s canonical reference (L2629-2633),
+      -- must be sourced from `p4_wave2_ih`'s canonical reference,
       -- NOT copy-pasted across branches. The 16-grid positions for SE sub-cells
       -- are {5,6,8,9} (diagonal complement of NW's {1,2,4,5}):
       --   n5 = node nw_se ne_sw sw_ne se_nw
@@ -516,8 +516,8 @@ noncomputable def p4_succ_membership
       ⟨hb1, by omega, hb3, by omega⟩
     -- Shared towers, built ONCE for the four branches (the mp branches each
     -- rebuilt their own subset; here the router owns them): the 32 grandchild
-    -- facts, the 9 wave-1 results r1..r9 (canonical reference `p4_wave2_ih`
-    -- L2629-2633), and the outer-NW supercell level anchor.
+    -- facts, the 9 wave-1 results r1..r9 (canonical reference
+    -- `p4_wave2_ih`), and the outer-NW supercell level anchor.
     obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
             hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
             hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
@@ -6796,13 +6796,13 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     content (capture persistence) is carried by the hypothesis.
 
     **Note (c.1035).** The non-vacuity witnesses
-    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` (around L1140) are now
+    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` are now
     orphaned relative to this theorem, since the hypothesis they satisfied is
     gone. They still typecheck standalone and are kept for traceability of
     the c.95 / c.1035 evolution; their substantive role is superseded by
     `jumpCaptured_block` / `jumpCaptured_glider` in `JumpCapture.lean`. The
     `BoxAssezGrandN` predicate itself remains consumed by
-    `hashlife_correctN_le_two` (around L1270), which keeps the witnesses honest.
+    `hashlife_correctN_le_two`, which keeps the witnesses honest.
 
     **Note (c.8207).** Both witnesses are now proved via `boxAssezGrandN_trivial`
     (relocated c.8206 from `JumpCapture.lean` to `Foundation.lean` to break the

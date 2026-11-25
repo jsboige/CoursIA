@@ -377,10 +377,10 @@ def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
 /-! ### N3: n-aware threading of `evolveHashlifeFast` (issue #3846)
 
 The P5 redesign introduces `gridToMacroCellWithOffsetN` (n-aware analog of
-`gridToMacroCellWithOffset`, see `MacroCell.lean` L736): it builds the
+`gridToMacroCellWithOffset`, in `MacroCell.lean`): it builds the
 `MacroCell` from `gridFrameN n g` (padding `max 2 n`) instead of the
 fixed-padding `gridFrame` (padding `2`). For `n ≤ 2`, both builders coincide
-(`gridToMacroCellWithOffsetN_le_two_eq`, L746), so the n-aware threading is
+(`gridToMacroCellWithOffsetN_le_two_eq`), so the n-aware threading is
 **definitionally identical** to the existing `evolveHashlifeFast` on the
 small-`n` regime (every existing correctness witness in `Computation.lean`
 uses `n ∈ {2, 4, 8, 12, 16}`, all `≤ 16` but with most `≤ 4`).
@@ -392,10 +392,9 @@ or any of its 50+ call-sites / proofs:
   `evolveHashlifeFastAux`, but every iteration re-frames via the n-aware
   builder `gridToMacroCellWithOffsetN`: the recursive call
   `evolveHashlifeFastAuxN fuel (n - js) g'` re-enters
-  `gridToMacroCellWithOffsetN (n - js) g'` on the jumped grid. (The N1
-  design comment at MacroCell L634 described a "thread without re-frame"
-  scheme; the code, however, re-frames on every iteration — the code is
-  authoritative, the docs have been aligned.)
+  `gridToMacroCellWithOffsetN (n - js) g'` on the jumped grid. (The
+  design comment, in the "Cadrage conscient de n" section of
+  `MacroCell.lean`, describes the same re-framing on every iteration.)
 - `evolveHashlifeFastN_zero` — trivial sanity: `n = 0` returns `g`.
 - `evolveHashlifeFastAuxN_eq_evolve` / `evolveHashlifeFastN_eq_evolve` —
   **#6724: the N3 jump guard is dead.** The `max 2 n`
