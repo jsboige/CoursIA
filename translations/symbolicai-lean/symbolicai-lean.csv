@@ -29586,7 +29586,7 @@ Avant ce notebook, le lake `finiteness_lean` était **invisible** depuis les not
 **Transition** : le notebook jumeau Python [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) (celui que ce compagnon etend) présente la même sémantique en Python pur, sans kernel Lean. Pour un lecteur qui veut voir les deux implémentations face-à-face, l'invariant `accepts` sert de spécification partagée.",,,,,,,,56b5c84a7dd318fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-04-Companion-Lean.ipynb,33ac164f,markdown,fr,cd864445162ebc11,"# GROTH-04 : le lake Grothendieck par ses énoncés (companion formel natif)
 
-**Navigation** : [<< GROTH-03 Atelier](GROTH-03-Atelier-Python.ipynb) | [Lean-15d Visite guidee visuelle >>](../Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | [Index](../README.md)
+**Navigation** : [<< GROTH-03 Atelier](GROTH-03-Atelier-Python.ipynb) | [Lean-15d Visite guidee visuelle >>](../Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) | [Index](../README.md)
 
 Ce notebook est le **companion formel natif** du lake [`grothendieck_lean/`](grothendieck_lean/), en kernel `lean4-wsl`.
 Il complète le notebook Python [`GROTH-03`](GROTH-03-Atelier-Python.ipynb) : là où GROTH-03 *charge et explique* les sources,
@@ -48181,9 +48181,9 @@ partie facile de la suite exacte longue, celle qui vit dans Γ et non dans
 Ext. Le seul maillon manquant pour un énoncé inconditionnel ∀n,
 `injectif => flasque` (Godement II.4), exige l'extension par zéro `j_!` —
 frontière nommée dans le module pour la Partie 95.",,,,,,,,23bcc3db1b38433c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c00,markdown,fr,6f2132334cfb50f0,"# Lean-15d : Grothendieck en images
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c00,markdown,fr,6f2132334cfb50f0,"# Lean-15d : Grothendieck en images
 
-**Navigation** : [<< Lean-15c Companion formel](Lean-15c-Lean-Grothendieck-Companion.ipynb) | [Index](README.md) | [Lean-15e Monodromie >>](Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb)
+**Navigation** : [<< Lean-15c Companion formel](Lean-15c-Lean-Grothendieck-Companion.ipynb) | [Index](README.md) | [Lean-15e Monodromie >>](Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb)
 
 **Une visite guidee visuelle des abstractions grothendieckiennes.**
 
@@ -48223,7 +48223,7 @@ Chaque section suit le meme rythme : une figure, puis sa lecture.
 ***
 
 **Prerequis** : Python (numpy, matplotlib). Aucun lacet, aucun acces reseau.",,,,,,,,6f2132334cfb50f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c01,markdown,fr,076be692db6bee73,"## Mise en place
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c01,markdown,fr,076be692db6bee73,"## Mise en place
 
 Deux conventions valent pour toutes les figures du carnet.
 
@@ -48232,7 +48232,7 @@ Deux conventions valent pour toutes les figures du carnet.
 **Une fleche composee n'est pas dessinee deux fois.** Quand $g \circ f$ et la chaine $A \xrightarrow{f} B \xrightarrow{g} C$ coexistent, on dessine la chaine et on etiquete la fleche directe en pointille : c'est la meme donnee, vue de deux facons.
 
 Les figures utilisent `matplotlib` seul, avec une palette stable pour que deux sections differentes restent comparables.",,,,,,,,076be692db6bee73,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c02,code,fr,856d735fa76e71f3,"import numpy as np
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c02,code,fr,856d735fa76e71f3,"import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, Circle, FancyBboxPatch, Rectangle
 
@@ -48299,7 +48299,7 @@ def plan(ax, titre=""""):
 
 
 print(""Outils de dessin prets : objet, fleche, cadre, plan."")",,,,,,,,856d735fa76e71f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c03,markdown,fr,b3a55956e5623d63,"## 1. Categories et foncteurs : le vocabulaire, en images
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c03,markdown,fr,b3a55956e5623d63,"## 1. Categories et foncteurs : le vocabulaire, en images
 
 Une **categorie** $\mathcal{C}$ est un graphe oriente muni de deux regles : on peut composer deux fleches qui se suivent, et chaque objet porte une fleche identite. Tout le reste -- foncteurs, transformations naturelles, limites -- se construit sur ces deux regles.
 
@@ -48310,7 +48310,7 @@ $$F(g \circ f) = F(g) \circ F(f).$$
 C'est cette derniere egalite qui distingue un foncteur d'une application quelconque entre graphes. La figure ci-dessous la rend visible : la fleche diagonale de gauche (la composee $g \circ f$) a pour image la fleche diagonale de droite, et non un chemin qui passerait a cote.
 
 Dans le corpus du depot, ces deux mots sont exactement ceux que `Mathlib.CategoryTheory.Functor` implante et que `Lean-15` affiche sous forme de code. Ici, on les dessine.",,,,,,,,b3a55956e5623d63,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c04,code,fr,ca1f6521afff3dc0,"fig, (g, d) = plt.subplots(1, 2, figsize=(12.4, 5.4))
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c04,code,fr,ca1f6521afff3dc0,"fig, (g, d) = plt.subplots(1, 2, figsize=(12.4, 5.4))
 plan(g, r""Categorie $\mathcal{C}$   (le domaine)"")
 plan(d, r""Categorie $\mathcal{D}$   (le codomaine)"")
 
@@ -48361,7 +48361,7 @@ fig.suptitle(r""Un foncteur transporte les objets et respecte la composition"",
              fontsize=12.5, fontweight=""bold"", y=1.00)
 plt.tight_layout()
 plt.show()",,,,,,,,ca1f6521afff3dc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c05,markdown,fr,c00acdacbb230a3b,"### Lecture de la figure 1
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c05,markdown,fr,c00acdacbb230a3b,"### Lecture de la figure 1
 
 Trois choses a lire sur ce dessin, du plus evident au plus utile.
 
@@ -48372,7 +48372,7 @@ Trois choses a lire sur ce dessin, du plus evident au plus utile.
 3. **La contrainte est portee par les fleches, pas par les objets.** Les deux fleches courbes de droite ont la meme source $F(A)$ et le meme but $F(B)=F(C)$ : l'une est l'image du chemin, l'autre l'image du raccourci. L'axiome $F(g \circ f) = F(g) \circ F(f)$ dit qu'elles **coincident** -- le dessin les separe pour les rendre lisibles, l'enonce les identifie.
 
 C'est cette troisieme ligne qui separe un foncteur d'une simple application entre graphes. Une application qui enverrait le chemin sur une fleche et le raccourci sur une autre, du meme objet vers le meme objet mais *different* en tant que morphisme, ne serait pas un foncteur.",,,,,,,,c00acdacbb230a3b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c06,markdown,fr,dbf370a035002687,"## 2. Cribles : un paquet de fleches, ferme vers le bas
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c06,markdown,fr,dbf370a035002687,"## 2. Cribles : un paquet de fleches, ferme vers le bas
 
 Un **crible** (en anglais *sieve*) sur un objet $X$ est une famille $S$ de fleches arrivant sur $X$ qui, des qu'elle contient $f : Y \to X$, contient aussi toutes les composees $f \circ h$ pour $h : Z \to Y$. Autrement dit : **si tu as le droit de venir par $f$, tu as le droit de venir par n'importe quel chemin qui passe par $f$.**
 
@@ -48385,7 +48385,7 @@ C'est la seule regle. Un crible n'est donc pas un ensemble quelconque de fleches
 Le crible est abstrait ; le cas topologique le rend palpable. Dans la categorie des ouverts d'un espace topologique, une fleche $V \to U$ est une inclusion $V \subseteq U$. Un crible sur $U$ est alors une famille d'ouverts de $U$ **fermee par passage au sous-ouvert** : si $V$ est dans le crible, tout ouvert plus petit l'est aussi.
 
 La figure montre les deux cotes : a gauche le crible comme paquet de fleches, a droite le meme crible comme zone d'ouverts.",,,,,,,,dbf370a035002687,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c07,code,fr,06ee05f8590afcf8,"from matplotlib.patches import Ellipse, Polygon
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c07,code,fr,06ee05f8590afcf8,"from matplotlib.patches import Ellipse, Polygon
 
 fig, (g, d) = plt.subplots(1, 2, figsize=(12.4, 5.6))
 plan(g, r""Le crible comme paquet de fleches"")
@@ -48455,14 +48455,14 @@ fig.suptitle(""Un crible : les fleches retenues, et leur fermeture vers le bas""
              fontsize=12.5, fontweight=""bold"", y=1.00)
 plt.tight_layout()
 plt.show()",,,,,,,,06ee05f8590afcf8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c08,markdown,fr,0ed8df4aa9d8657b,"### Lecture de la figure 2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c08,markdown,fr,0ed8df4aa9d8657b,"### Lecture de la figure 2
 
 **A gauche, la regle de fermeture est dessinee.** Trois fleches rouges arrivent sur $X$ : celles du crible. Deux fleches grises arrivent aussi sur $X$ mais restent dehors. Ce qui compte est la fleche rouge en pointille : elle vient de $Z$, passe par $Y$ -- qui est deja dans le crible -- et sa presence n'est pas un choix, c'est une **consequence**. Des que $Y \to X$ est retenue, tout chemin qui atteint $Y$ est retenu.
 
 **A droite, le meme objet vu dans un treillis.** $U$ est un ouvert ; le crible est l'ensemble des ouverts qu'il contient. $V_1$ a $V_4$ sont dedans, $V_5$ est dehors -- non pas parce qu'on l'a rejete, mais parce qu'il n'est pas inclus dans $U$. La forme fermee-vers-le-bas est ici evidente : un sous-ouvert d'un ouvert de $U$ est encore un ouvert de $U$.
 
 **Ce qu'il faut retenir pour la suite.** Un crible encode une **maniere de couvrir** un objet, pas un recouvrement effectif. Dire « le crible $S$ couvre $X$ » sera le geste de la section suivante : c'est la topologie de Grothendieck qui selectionne, parmi tous les cribles, ceux qui ont le droit de s'appeler couvrants. Tous les cribles ne couvrent pas -- sur un espace topologique, le crible vide ne couvre rien.",,,,,,,,0ed8df4aa9d8657b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c09,markdown,fr,66ac65f59f24c2cf,"## 3. Topologie de Grothendieck : trois axiomes, trois images
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c09,markdown,fr,66ac65f59f24c2cf,"## 3. Topologie de Grothendieck : trois axiomes, trois images
 
 Une **topologie de Grothendieck** sur une categorie $\mathcal{C}$ est la donnee, pour chaque objet $X$, d'une famille $J(X)$ de cribles dits **couvrants**, soumise a trois axiomes.
 
@@ -48475,7 +48475,7 @@ Une **topologie de Grothendieck** sur une categorie $\mathcal{C}$ est la donnee,
 Ces trois enonces paraissent arides. Ils disent pourtant une chose simple : **couvrir est une notion locale et coherente**. L'axiome 1 dit qu'on a le droit de tout prendre. L'axiome 2 dit qu'on peut restreindre un recouvrement a un morceau. L'axiome 3 dit qu'un recouvrement de recouvrements est un recouvrement -- on peut raffiner sans rien perdre.
 
 La figure traduit chacun d'eux dans le cas topologique, ou les cribles sont des familles d'ouverts. C'est le cas ou l'intuition fonctionne le mieux, et celui que `Mathlib.CategoryTheory.Sites` generalise.",,,,,,,,66ac65f59f24c2cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c10,code,fr,76759f62a5057c59,"fig, axes = plt.subplots(1, 3, figsize=(13.6, 4.9))
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c10,code,fr,76759f62a5057c59,"fig, axes = plt.subplots(1, 3, figsize=(13.6, 4.9))
 for a in axes:
     plan(a)
 
@@ -48552,7 +48552,7 @@ fig.suptitle(""Les trois axiomes d'une topologie de Grothendieck, ""
              ""traduits en ouverts"", fontsize=12.5, fontweight=""bold"", y=1.02)
 plt.tight_layout()
 plt.show()",,,,,,,,76759f62a5057c59,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c11,markdown,fr,d10a1a34b5b4e218,"### Lecture de la figure 3
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c11,markdown,fr,d10a1a34b5b4e218,"### Lecture de la figure 3
 
 Les trois panneaux se lisent comme trois operations permises sur un recouvrement.
 
@@ -48563,7 +48563,7 @@ Les trois panneaux se lisent comme trois operations permises sur un recouvrement
 **Panneau 3 -- transitivite.** $V_1$ et $V_2$ couvrent $X$. $V_1$ est lui-meme couvert par $W_1$ et $W_2$. Alors $W_1, W_2, V_2$ couvrent $X$ : raffiner un morceau d'un recouvrement donne encore un recouvrement. C'est l'axiome qui fait que « etre localement vrai » est une notion stable -- sans lui, un faisceau ne pourrait pas etre defini par recollement.
 
 **Pourquoi ces trois-la.** Le trio est exactement ce qu'il faut pour que la **condition de faisceau** (section suivante) ait un sens. La maximalite donne un recouvrement ; la stabilite permet de comparer deux sections sur leur intersection ; la transitivite permet de recoller en plusieurs etapes. `Mathlib.CategoryTheory.GrothendieckTopology` enonce les trois sous les noms `top_mem`, `pullback` et `transitive`.",,,,,,,,d10a1a34b5b4e218,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c12,markdown,fr,4b0d74e4d149b70a,"## 4. Faisceaux : la condition de recollement
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c12,markdown,fr,4b0d74e4d149b70a,"## 4. Faisceaux : la condition de recollement
 
 Une topologie de Grothendieck ne sert a rien tant qu'on ne dit pas ce qu'on veut y **coller**. Un **faisceau** est un foncteur qui transforme un recouvrement en une donnee recollable. La regle tient en deux lignes.
 
@@ -48579,7 +48579,7 @@ Dire qu'une famille doit **coincider sur les intersections** puis se recoller en
 La figure prend l'exemple le plus simple qui montre tout : le faisceau des **fonctions continues** sur un intervalle, avec un recouvrement a trois ouverts. Chaque $s_i$ est une fonction sur $U_i$ ; sur les intersections, deux fonctions doivent avoir exactement les memes valeurs. Le recollement consiste alors a recopier les morceaux bout a bout.
 
 Le panneau de droite montre le point sensible : si une paire **ne** coincidait pas sur une intersection, il n'y aurait **aucun** recollement possible. C'est le contre-exemple que l'on met souvent en exercice -- il est ici dessine.",,,,,,,,4b0d74e4d149b70a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c13,code,fr,673b8209b218f665,"# Le faisceau des fonctions continues sur U = [0, 3], recouvert par trois ouverts.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c13,code,fr,673b8209b218f665,"# Le faisceau des fonctions continues sur U = [0, 3], recouvert par trois ouverts.
 def section_globale(x):
     """"""La section que l'on cherche a reconstituer : une fonction continue de U.""""""
     return 1.0 + 0.6 * np.sin(x)
@@ -48645,7 +48645,7 @@ fig.suptitle(""La condition de faisceau : coïncider sur les intersections, ""
              ""puis recoller"", fontsize=12.5, fontweight=""bold"", y=1.00)
 plt.tight_layout()
 plt.show()",,,,,,,,673b8209b218f665,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c14,markdown,fr,e4bea0356fe1f11f,"### Lecture de la figure 4
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c14,markdown,fr,e4bea0356fe1f11f,"### Lecture de la figure 4
 
 Les deux panneaux ont exactement la meme structure -- trois ouverts, trois sections, deux intersections -- et ne different que par **une constante ajoutee a la section du milieu**.
 
@@ -48658,7 +48658,7 @@ Les deux panneaux ont exactement la meme structure -- trois ouverts, trois secti
 C'est aussi la raison pour laquelle `Sheaf.lean` de Mathlib definit un faisceau comme un prefaisceau muni d'une **preuve** de cette condition, et non comme un objet supplementaire.
 
 **Pour aller plus loin -- Serre100.** La meme condition de recollement, portee sur des **espaces finis** plutot que sur des ouverts topologiques, prend une forme explicite ou les intersections $U_i \cap U_j$ sont des produits cartesiens. C'est le sujet de `Serre100/03-cohomologie-cech-espaces-finis` : on y voit la condition de cocycle (compatibilite sur les intersections doubles) commander l'integrale du produit cup, et la nullite de la cohomologie $\check{H}^1$ etre exactement la condition de recollement de la figure 4. La figure Python que l'on dessine ici, c'est, informellement, le cas continu de ce que le Cech discrete code en algebre.",,,,,,,,e4bea0356fe1f11f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c15,markdown,fr,11eea131bad00423,"## 5. Yoneda : un objet est ce que ses fleches disent de lui
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c15,markdown,fr,11eea131bad00423,"## 5. Yoneda : un objet est ce que ses fleches disent de lui
 
 Le lemme de Yoneda est souvent enonce comme une formule :
 
@@ -48671,7 +48671,7 @@ L'enonce est court ; ce qu'il dit l'est moins. A gauche, une famille de transfor
 Une transformation naturelle $\alpha : \operatorname{Hom}(A, -) \Rightarrow F$ est une famille d'applications $\alpha_X : \operatorname{Hom}(A, X) \to F(X)$, une par objet $X$, qui commute avec toutes les fleches $f : X \to Y$. Le lemme dit que $\alpha$ est **entierement determinee** par une seule valeur : $\alpha_A(\mathrm{id}_A) \in F(A)$.
 
 C'est le sens du mot « point generalise » : un element de $F(A)$ n'est pas seulement un point de l'ensemble $F(A)$, c'est un point qui sait se transporter sur tous les objets $X$ arrivant sur $A$. La figure montre le carre qui porte cette commutation, et le retour qui reconstruit $\alpha$ a partir du seul element.",,,,,,,,11eea131bad00423,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c16,code,fr,447d79f5874cb7dd,"fig, (g, d) = plt.subplots(1, 2, figsize=(13.0, 5.4))
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c16,code,fr,447d79f5874cb7dd,"fig, (g, d) = plt.subplots(1, 2, figsize=(13.0, 5.4))
 plan(g, ""Le carre de naturalite"")
 plan(d, ""La correspondance du lemme"")
 
@@ -48760,7 +48760,7 @@ fig.suptitle(""Yoneda : une transformation naturelle entiere, reconstituee ""
              ""par un seul element"", fontsize=12.5, fontweight=""bold"", y=1.00)
 plt.tight_layout()
 plt.show()",,,,,,,,447d79f5874cb7dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c17,markdown,fr,fbffe7e87e9310bc,"### Lecture de la figure 5
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c17,markdown,fr,fbffe7e87e9310bc,"### Lecture de la figure 5
 
 **A gauche, le carre dit ce qu'est la naturalite.** Quatre ensembles, six fleches, et une egalite : $\alpha_Y \circ (-\circ f) = F(f) \circ \alpha_X$. Lire ce carre de deux facons donne deux chemins qui doivent mener au meme point. Partir d'un morphisme $A \to X$, le composer avec $f$ pour obtenir $A \to Y$, puis appliquer $\alpha_Y$ ; ou bien appliquer d'abord $\alpha_X$ pour tomber dans $F(X)$, puis transporter par $F(f)$. Meme resultat.
 
@@ -48771,7 +48771,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb
 **Yoneda en une phrase.** Un objet $A$ n'est pas connu par une description interne, mais par l'ensemble de ses relations avec tous les autres. Le lemme rend cette phrase exacte : le foncteur $\operatorname{Hom}(A, -)$ contient toute l'information sur $A$. C'est ce principe que la theorie des topos exploite -- dont le site de la section suivante fournit le premier exemple.
 
 **Pour aller plus loin -- Serre100.** Le lemme de Yoneda admet un cas particulier **sur les categories finies** qui se laisse enumerer a la main : si $\mathcal{C}$ est une categorie finie et $F$ un foncteur, les transformations naturelles $\operatorname{Hom}(A,-) \Rightarrow F$ sont determinees par la seule evaluation en $A$, et leur nombre est exactement $|F(A)|$. C'est le contenu de `Serre100/04-lemme-yoneda-categories-finies` : une preuve constructive qui donne, en passant, un algorithme pour enumerer ces transformations. Le dessin de la figure 5 capture la meme idee -- la bijection entre une famille indexee par $\operatorname{Ob}(\mathcal{C})$ et un element de $F(A)$ -- mais sans la discretude qui rend l'enumeration faisable a la main.",,,,,,,,fbffe7e87e9310bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c18,markdown,fr,08310d6911639d4c,"## 6. Site de Zariski : le treillis des ouverts de $\operatorname{Spec} \mathbb{Z}$
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c18,markdown,fr,08310d6911639d4c,"## 6. Site de Zariski : le treillis des ouverts de $\operatorname{Spec} \mathbb{Z}$
 
 Un **site** est une categorie munie d'une topologie de Grothendieck. Le premier exemple geometrique est le **site de Zariski** : on prend un schema $X$, la categorie des ouverts de $X$, et on declare couvrantes les familles d'ouverts qui recouvrent au sens usuel.
 
@@ -48792,7 +48792,7 @@ La figure en montre deux proprietes que le cas topologique ordinaire laisse habi
 **Les ouverts sont gigantesques.** $U_p$ ne retire qu'un point d'une infinite ; $U_2 \cap U_3$ n'en retire que deux. Un ouvert n'est pas « petit » -- c'est le complement d'un ferme fini.
 
 **Un recouvrement par des $U_p$ n'a rien d'evident.** Pour couvrir $\operatorname{Spec} \mathbb{Z}$ entier, il faut retirer **tous** les premiers, donc prendre une famille infinie. Une famille finie de $U_p$ laisse toujours des points derriere elle. C'est le phenomene de compacite qui disparait : $\operatorname{Spec} \mathbb{Z}$ est quasi-compact, mais ses ouverts ne le sont pas.",,,,,,,,08310d6911639d4c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c19,code,fr,64aacb9d149e130f,"premiers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c19,code,fr,64aacb9d149e130f,"premiers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
 xs = np.linspace(2.0, 9.4, len(premiers))
 
 fig, (g, d) = plt.subplots(2, 1, figsize=(12.6, 9.0),
@@ -48880,7 +48880,7 @@ d.text(5.0, 0.55,
 
 plt.tight_layout()
 plt.show()",,,,,,,,64aacb9d149e130f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c20,markdown,fr,3d555ff08e2601a2,"### Lecture de la figure 6
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c20,markdown,fr,3d555ff08e2601a2,"### Lecture de la figure 6
 
 **Le panneau du haut fixe le vocabulaire.** $\operatorname{Spec} \mathbb{Z}$ a un point par ideal premier de $\mathbb{Z}$ : un point pour chaque nombre premier, plus un point special $(0)$ -- le point generique, dont l'adherence contient tous les autres. Le ferme $V(p)$ associe au premier $p$ est reduit a un point ; c'est pourquoi un ouvert de Zariski est le complement d'un **ensemble fini de points**.
 
@@ -48893,7 +48893,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb
 **Le fait qui surprend.** $\operatorname{Spec} \mathbb{Z}$ a une infinite de points, et il se couvre avec **deux** ouverts. La famille de tous les $U_p$ est un recouvrement dont on peut extraire un sous-recouvrement de deux elements : c'est la quasi-compacite, et elle n'a rien d'intuitif sur un espace aussi peu separe. Corollaire immediat de la meme observation : le nombre d'ouverts d'un recouvrement ne dit rien de sa finesse.
 
 **Ce que cela change pour les faisceaux.** La section 4 recollait des fonctions sur trois intervalles. Ici, un recouvrement peut etre enorme, ou minimal (deux ouverts), et surtout : il peut etre fait de **morphismes qui ne sont pas des inclusions**. Un revetement etale, un revetement galoisien, une famille plate ne sont pas des ouverts d'un espace -- il n'y a pas d'« union » a prendre. C'est la raison du detour par les cribles : un crible couvrant est une famille de fleches **fermee par precomposition**, et cette definition ne suppose ni inclusion, ni reunion, ni finitude. Elle dit seulement quelles fleches au-dessus de $X$ comptent comme un recouvrement -- et c'est ce qui permet de recoller sur tout ce qui ressemble de pres a un recouvrement.",,,,,,,,3d555ff08e2601a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c21,markdown,fr,a512e240c090fd07,"## 7. Synthese : la mer qui monte
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c21,markdown,fr,a512e240c090fd07,"## 7. Synthese : la mer qui monte
 
 Il reste a dire ce que ces six figures ont en commun, car c'est la que reside l'apport de Grothendieck -- et le titre donne a son oeuvre, *Recoltes et Semailles*, parle precisement de recollement.
 
@@ -48909,7 +48909,7 @@ Il reste a dire ce que ces six figures ont en commun, car c'est la que reside l'
 **Le changement de nature est au temps 2.** Avant Grothendieck, « recouvrir » voulait dire « recouvrir un espace topologique par des ouverts ». Apres, cela veut dire « exhiber un crible couvrant dans une categorie quelconque ». Le gain n'est pas de generaliser pour generaliser : c'est de rendre **recoltable** tout ce qui ressemble de pres ou de loin a un recouvrement -- ouverts, mais aussi extensions galoisiennes, revetements etales, familles plates.
 
 **La mer qui monte** designe la montee progressive du niveau d'abstraction. Chaque etage contient le precedent comme cas particulier, et chacun ajoute un recollement qui n'etait pas possible a l'etage du dessous. La figure de synthese reprend le fil sur un seul dessin.",,,,,,,,a512e240c090fd07,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c22,code,fr,9abf08ed199a71af,"fig, ax = plt.subplots(figsize=(12.4, 6.4))
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c22,code,fr,9abf08ed199a71af,"fig, ax = plt.subplots(figsize=(12.4, 6.4))
 plan(ax)
 ax.set_xlim(0, 10)
 ax.set_ylim(0, 10)
@@ -48962,7 +48962,7 @@ ax.text(5.0, 0.28, ""la montee n'est pas une fuite en avant : c'est ce qui rend 
 
 plt.tight_layout()
 plt.show()",,,,,,,,9abf08ed199a71af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c23,markdown,fr,7297c4ad932ce18a,"### Lecture de la figure 7
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c23,markdown,fr,7297c4ad932ce18a,"### Lecture de la figure 7
 
 Les quatre etages ne sont pas quatre theories differentes : c'est **la meme** construction, repetee a chaque fois avec un ingredient de plus.
 
@@ -48976,7 +48976,7 @@ Les quatre etages ne sont pas quatre theories differentes : c'est **la meme** co
 **Le premier etage est le seul que l'on voit.** Les trois suivants remplacent tour a tour « ouvert » par « fleche », puis « union » par « crible », puis « espace » par « categorie ». A chaque remplacement, un theoreme de recollement reste au meme endroit -- mais il s'applique desormais a des objets qui n'ont aucun sens geometrique naif.
 
 **Le mot de la fin.** Ce carnet a dessine six figures. Aucune n'est une preuve : ce sont des **cartes**. La carte ne remplace pas le territoire -- `Lean-15c` compile les enonces, `Lean-15` les catalogue, `Lean-15b` les met en exercice. Ce que la carte apporte est different : elle permet de savoir ou l'on est avant d'ouvrir un fichier.",,,,,,,,7297c4ad932ce18a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c24,markdown,fr,4e739cd11f96b9c6,"## 8. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c24,markdown,fr,4e739cd11f96b9c6,"## 8. Exercices
 
 Les trois exercices reprennent une figure chacun, mais cette fois avec des donnees a manipuler. Ils sont ecrits en Python pur : aucune installation supplementaire, aucun acces reseau.
 
@@ -48989,7 +48989,7 @@ On represente une petite categorie par son dictionnaire de fleches -- chaque fle
 Completez `fermer_crible` pour qu'elle retourne la **fermeture par precomposition** : si `(Y, X)` est dans le crible, alors `(Z, X)` doit y entrer pour toute fleche `(Z, Y)` de la categorie.
 
 La fonction doit aussi signaler les fleches **ajoutees** par la fermeture -- c'est la difference entre le crible donne et le crible obtenu.",,,,,,,,4e739cd11f96b9c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c25,code,fr,3be58871b7619a5b,"# Exercice 1 : fermeture par precomposition d'un crible
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c25,code,fr,3be58871b7619a5b,"# Exercice 1 : fermeture par precomposition d'un crible
 #
 # La categorie : quatre objets A, B, C, D et les fleches ci-dessous.
 # On lit ""fleche (Z, Y)"" comme ""Z -> Y"".
@@ -49025,7 +49025,7 @@ if crible_ferme is not None:
     print(""ajoutees      :"", ajoutees)
     print(""attendu       : 3 fleches vers A : (B,A), (C,A), (D,A) -- les deux ""
           ""dernieres sont ajoutees par la fermeture"")",,,,,,,,3be58871b7619a5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c26,markdown,fr,3a6107195e54f1b7,"### Exercice 2 : tester la compatibilite d'une famille de sections
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c26,markdown,fr,3a6107195e54f1b7,"### Exercice 2 : tester la compatibilite d'une famille de sections
 
 On se place dans le faisceau des fonctions continues sur $U = [0, 3]$, avec le recouvrement de la figure 4 : $U_1 = [0, 1{,}3]$, $U_2 = [1{,}0, 2{,}2]$, $U_3 = [1{,}9, 3{,}0]$.
 
@@ -49034,7 +49034,7 @@ Chaque section locale est donnee comme un tableau `(xs, ys)` echantillonne sur s
 Indice : deux sections sont echantillonnees sur des grilles differentes. Il faut donc **interpoler** l'une sur les abscisses de l'autre avant de comparer -- comparer terme a terme deux tableaux de tailles differentes n'a pas de sens.
 
 Un mot sur la tolerance, qui est le vrai sujet de cet exercice. Deux echantillonnages differents de la **meme** fonction continue ne coincident pas exactement : l'interpolation lineaire entre deux points d'une grille laisse un residu. Sur les donnees ci-dessous, ce residu vaut environ $10^{-6}$. Le seuil de compatibilite doit donc etre choisi **au-dessus** de l'erreur d'echantillonnage et **bien en dessous** du decalage qu'on veut detecter ($0{,}55$) -- c'est le meme arbitrage que dans tout test numerique de faisceau.",,,,,,,,3a6107195e54f1b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c27,code,fr,ef859d88aa9c5b10,"# Exercice 2 : la famille est-elle compatible sur les intersections ?
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c27,code,fr,ef859d88aa9c5b10,"# Exercice 2 : la famille est-elle compatible sur les intersections ?
 U1b, U2b, U3b = (0.0, 1.3), (1.0, 2.2), (1.9, 3.0)
 
 
@@ -49076,7 +49076,7 @@ for nom, famille in ((""FAMILLE_OK"", FAMILLE_OK), (""FAMILLE_KO"", FAMILLE_KO))
         print(""%s : compatible=%-5s  pire ecart=%.4f"" % (nom, ok, ecart))
 print(""attendu       : FAMILLE_OK compatible (ecart ~0), FAMILLE_KO non ""
       ""(ecart 0.55)"")",,,,,,,,ef859d88aa9c5b10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c28,markdown,fr,288c3343b50f18a5,"### Exercice 3 : le critere de recouvrement du site de Zariski
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c28,markdown,fr,288c3343b50f18a5,"### Exercice 3 : le critere de recouvrement du site de Zariski
 
 Reprenons le site de Zariski de la figure 6, en passant des $U_p = D(p)$ aux ouverts de base **generaux** $D(f)$, pour $f$ un entier non nul quelconque :
 
@@ -49091,7 +49091,7 @@ Completez `points_decouverts` pour qu'elle retourne les points **non couverts** 
 $$D(f_1) \cup \cdots \cup D(f_n) = \operatorname{Spec} \mathbb{Z} \quad\Longleftrightarrow\quad \gcd(f_1, \ldots, f_n) = 1 \quad\Longleftrightarrow\quad (f_1, \ldots, f_n) = \mathbb{Z}.$$
 
 La derniere forme est celle qui compte : les $f_i$ engendrent l'ideal unite. C'est **exactement** la condition de recouvrement d'un site de Zariski sur un anneau quelconque -- $\mathbb{Z}$ n'y joue aucun role particulier.",,,,,,,,288c3343b50f18a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c29,code,fr,c4531f29b9b37f24,"# Exercice 3 : quels points survivent a une famille d'ouverts D(f) ?
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c29,code,fr,c4531f29b9b37f24,"# Exercice 3 : quels points survivent a une famille d'ouverts D(f) ?
 def points_decouverts(famille, premiers_connus):
     """"""Retourne la liste triee des points de Spec Z non couverts par les D(f).
 
@@ -49115,7 +49115,7 @@ for famille in familles:
 
 print(""Question : quelle est la plus petite famille qui couvre Spec Z entier ?"")
 print(""Reponse (a completer) : ..."")",,,,,,,,c4531f29b9b37f24,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c30,markdown,fr,cec5b6c675e7a73e,"### Solution de l'exercice 1 -- fermer un crible
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c30,markdown,fr,cec5b6c675e7a73e,"### Solution de l'exercice 1 -- fermer un crible
 
 La fermeture se calcule par un point fixe : on repete l'operation tant qu'elle ajoute quelque chose. Partir d'un crible donne et le **saturer** est exactement ce que fait la definition -- l'enonce par « si $f \in S$ alors $f \circ h \in S$ » est une regle de saturation, pas une enumeration.
 
@@ -49126,7 +49126,7 @@ Sur la categorie de l'exercice, le crible engendre par $\{B \to A\}$ contient **
 - $D \to A$, obtenue en composant $D \to C$ avec $C \to A$.
 
 Les deux dernieres sont **ajoutees** par la fermeture : elles ne figuraient pas dans le crible donne. Noter que $D \to A$ existe aussi comme fleche directe de la categorie -- la fermeture la retrouve par composition, et le resultat est le meme ensemble. C'est exactement la propriete de saturation qui fait qu'un crible est determine par ses elements maximaux.",,,,,,,,cec5b6c675e7a73e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c31,code,fr,49c4499e41fab1a2,"def fermer_crible_solution(categorie, crible):
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c31,code,fr,49c4499e41fab1a2,"def fermer_crible_solution(categorie, crible):
     """"""Fermeture par precomposition, par point fixe.""""""
     ferme = set(crible)
     while True:
@@ -49150,7 +49150,7 @@ print(""nombre final :"", len(ferme), ""fleches vers A"")
 assert ferme == {(""B"", ""A""), (""C"", ""A""), (""D"", ""A"")}, ferme
 assert ajoutees == [(""C"", ""A""), (""D"", ""A"")], ajoutees
 print(""OK : la fermeture ajoute exactement les deux compositions"")",,,,,,,,49c4499e41fab1a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c32,markdown,fr,0c860abc5199413e,"### Solution de l'exercice 2 -- compatibilite d'une famille
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c32,markdown,fr,0c860abc5199413e,"### Solution de l'exercice 2 -- compatibilite d'une famille
 
 Le piege de cet exercice n'est pas la condition de faisceau, c'est l'**echantillonnage**. Deux sections locales sont echantillonnees sur des grilles differentes : comparer leurs tableaux terme a terme comparerait des valeurs prises en des points differents, ce qui n'a aucun sens. Il faut interpoler.
 
@@ -49159,7 +49159,7 @@ Une fois l'interpolation faite, la condition est immediate : sur chaque intersec
 Le resultat fait apparaitre la difference entre les deux familles de la figure 4 : la premiere donne un ecart de l'ordre de $10^{-6}$, la seconde un ecart de $0{,}55$ -- exactement le decalage introduit.
 
 **Les deux ordres de grandeur sont le vrai enseignement.** L'ecart de la famille compatible n'est pas nul, et il ne peut pas l'etre : deux echantillonnages distincts d'une meme fonction continue ne se superposent qu'a l'erreur d'interpolation pres. Un test de compatibilite qui exigerait l'egalite exacte declarerait incompatible une famille parfaitement recollable. La tolerance est donc une piece du raisonnement, pas un confort : elle se place entre le bruit d'echantillonnage ($\sim 10^{-6}$) et le defaut cherche ($0{,}55$) -- cinq ordres de grandeur de marge.",,,,,,,,0c860abc5199413e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c33,code,fr,4f44e9de2c254db1,"def famille_compatible_solution(sections, ouverts, tolerance=1e-3):
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c33,code,fr,4f44e9de2c254db1,"def famille_compatible_solution(sections, ouverts, tolerance=1e-3):
     """"""Compatibilite deux a deux sur les intersections, apres interpolation.""""""
     pire = 0.0
     for i in range(len(ouverts)):
@@ -49184,7 +49184,7 @@ ok2, e2 = famille_compatible_solution(FAMILLE_KO, [U1b, U2b, U3b])
 assert ok1 and e1 < 1e-4, (ok1, e1)          # residu d'interpolation, pas 0
 assert (not ok2) and abs(e2 - 0.55) < 1e-4, (ok2, e2)
 print(""OK : compatible (residu %.1e) / incompatible (ecart 0.55)"" % e1)",,,,,,,,4f44e9de2c254db1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c34,markdown,fr,5607b831f4579dad,"### Solution de l'exercice 3 -- le critere par le pgcd
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c34,markdown,fr,5607b831f4579dad,"### Solution de l'exercice 3 -- le critere par le pgcd
 
 La fonction tient en trois lignes : on calcule le pgcd de la famille, puis on garde les premiers connus qui le divisent. Toute la geometrie est dans le pgcd.
 
@@ -49203,7 +49203,7 @@ Deux consequences meritent d'etre nommees.
 **Le critere se transporte tel quel.** $D(f_1) \cup \cdots \cup D(f_n)$ couvre si et seulement si $\gcd = 1$, c'est-a-dire si les $f_i$ **engendrent l'ideal unite**. Ecrit ainsi, l'enonce ne mentionne plus $\mathbb{Z}$ : sur $\operatorname{Spec} A$ pour un anneau $A$ quelconque, la famille des $D(f_i)$ couvre si et seulement si $(f_1, \ldots, f_n) = A$. Le cas de $\mathbb{Z}$ etait un cas particulier d'une condition qui n'a rien d'arithmetique.
 
 **Ce que l'exercice fait mesurer** : « recouvrir » n'est pas une question de cardinalite ni de reunion d'ensembles -- c'est une condition **algebrique** sur les generateurs (engendrer l'ideal unite), ou sur les fleches (former un crible couvrant) quand il n'y a plus d'ideal unite a invoquer.",,,,,,,,5607b831f4579dad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c35,code,fr,8d7bbe9216764ff1,"from math import gcd
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c35,code,fr,8d7bbe9216764ff1,"from math import gcd
 
 
 def points_decouverts_solution(famille, premiers_connus):
@@ -49227,7 +49227,7 @@ print(""Deux ouverts suffisent : D(2) union D(3) couvre Spec Z entier."")
 print(""Critere general : la famille couvre si et seulement si le pgcd vaut 1,"")
 print(""c'est-a-dire si les f engendrent l'ideal unite (f_1, ..., f_n) = Z."")
 print(""Sur un anneau A quelconque, le meme critere s'ecrit (f_1, ..., f_n) = A."")",,,,,,,,8d7bbe9216764ff1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c36,markdown,fr,def7d6f9f9352424,"## 9. Le fil : le charme et la maree
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c36,markdown,fr,def7d6f9f9352424,"## 9. Le fil : le charme et la maree
 
 Les huit sections qui precedent sont la visite en images d'un seul geste : la maree montante. Le corpus Grothendieck du depot se lit aussi comme un recit en cinq mouvements, guide par le dialogue des deux styles que Serre lui-meme met en scene (distille dans [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), section Le dialogue des deux styles) : la **maree** de Grothendieck -- la generalite qui dissout les problemes -- contre le **charme** des correspondances -- ces ponts que rien ne laissait attendre.
 
@@ -49240,7 +49240,7 @@ Les huit sections qui precedent sont la visite en images d'un seul geste : la ma
 | 5 | **Le pont** -- les deux styles se serrent la main | [Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb), [04](Serre100/04-lemme-yoneda-categories-finies.ipynb), lakes `grothendieck_lean` et `hecke_lean`, [Lean-37](Lean-37-Capstone-Serre100.ipynb) | Cech et Yoneda *calcules* : le pont rendu calculable |
 
 Trois visuels ferment la visite, un par temps fort du recit : **V1** les deux styles face a face, **V2** le point unique qui ferme une conjecture, **V3** neuf nombres et quatre carres -- le charme, calcule.",,,,,,,,def7d6f9f9352424,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c37,code,fr,984e07b50eb81789,"fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 6.4))
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c37,code,fr,984e07b50eb81789,"fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 6.4))
 
 # --- Panneau gauche : la maree montante (le style de Grothendieck) ---
 # La mer est dessinee en bandes cumulees : plus on descend, plus l'eau est
@@ -49296,10 +49296,10 @@ ax2.set_title(""Le pont : la correspondance qui relie"", fontsize=10.5)
 fig.suptitle(""V1 -- Les deux styles"", fontsize=12, fontweight=""bold"")
 fig.tight_layout(rect=(0, 0, 1, 0.965))
 plt.show()",,,,,,,,984e07b50eb81789,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c38,markdown,fr,69a881dd3e59e1b9,"**Les deux panneaux ne rivalisent pas : ils decrivent deux economies de la decouverte.** A gauche, on ne resout pas le probleme -- on monte le niveau (choisir les morceaux, dire ce qui couvre, recoller) jusqu'a ce que le pic devienne une vague : c'est la demarche en quatre temps de la section 7. A droite, rien ne monte : deux mondes sans passage au niveau de la mer se trouvent relies par une arche unique et rigide -- le geste Langlands, courbe elliptique contre forme modulaire, celui que Serre defend sous le nom de *charme*.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c38,markdown,fr,69a881dd3e59e1b9,"**Les deux panneaux ne rivalisent pas : ils decrivent deux economies de la decouverte.** A gauche, on ne resout pas le probleme -- on monte le niveau (choisir les morceaux, dire ce qui couvre, recoller) jusqu'a ce que le pic devienne une vague : c'est la demarche en quatre temps de la section 7. A droite, rien ne monte : deux mondes sans passage au niveau de la mer se trouvent relies par une arche unique et rigide -- le geste Langlands, courbe elliptique contre forme modulaire, celui que Serre defend sous le nom de *charme*.
 
 **Ce que la figure ne montre pas, c'est le cout.** La maree demande de construire tout l'ocean ; l'arche demande de trouver la seule pierre qui porte. Les mouvements 3 a 5 du fil racontent exactement ce troc : ou la maree s'arrete (V2), ce que l'arche rapporte (V3), et le moment ou les deux styles se serrent la main.",,,,,,,,69a881dd3e59e1b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c39,code,fr,236dab3eae0177f5,"# La conjecture d'Artin (recitee par Serre, Serre100/07, citation 11:05) :
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c39,code,fr,236dab3eae0177f5,"# La conjecture d'Artin (recitee par Serre, Serre100/07, citation 11:05) :
 # sur un corps p-adique, une forme homogene de degre d en n variables avec
 # n > d^2 devait avoir un zero non trivial. Tout le bleu de la figure etait
 # promis. Un seul point y manquait -- et il a ferme la conjecture.
@@ -49326,10 +49326,10 @@ ax.set_ylabel(""nombre de variables n"")
 ax.set_title(""V2 -- Le contre-exemple : un point ferme une conjecture"")
 fig.tight_layout()
 plt.show()",,,,,,,,236dab3eae0177f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c40,markdown,fr,0d16191378721df5,"**Un point suffit.** La conjecture d'Artin n'etait pas publiee ; c'est le contre-exemple qui a tranche, glisse a l'oreille de Serre pendant l'expose de Bombieri -- le recit et la citation sont distilles dans [Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb). Le point rouge ne contredit pas un detail : il ferme une conjecture entiere, et il verifie la regle 18 > 4^2 -- c'est bien dans le bleu qu'il est plante.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c40,markdown,fr,0d16191378721df5,"**Un point suffit.** La conjecture d'Artin n'etait pas publiee ; c'est le contre-exemple qui a tranche, glisse a l'oreille de Serre pendant l'expose de Bombieri -- le recit et la citation sont distilles dans [Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb). Le point rouge ne contredit pas un detail : il ferme une conjecture entiere, et il verifie la regle 18 > 4^2 -- c'est bien dans le bleu qu'il est plante.
 
 La lecon que le corpus en distille est double. *Un temoin se verifie, il ne se croit pas* -- le carnet Serre100/07 derive ses zeros par deux methodes plus un comptage avant d'en croire un seul. Et *un contre-exemple est un theoreme* -- il se concoit, se lance et se demontre comme tel. C'est le tournant dramatique du fil (mouvement 3) : la maree de la section 7 avait laisse penser que generalite et existence marchaient de pair ; le point rouge marque ou elle s'arrete -- et ou recommence le travail : les fragilites assumees de [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), les frontieres de Mathlib relevees dans [Serre100/08](Serre100/08-serre-dans-mathlib-Lean.ipynb).",,,,,,,,0d16191378721df5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c41,code,fr,dbccac932e09d0b0,"from decimal import Decimal, getcontext
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c41,code,fr,dbccac932e09d0b0,"from decimal import Decimal, getcontext
 from math import isqrt
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 6.4))
@@ -49411,20 +49411,20 @@ fig.suptitle(""V3 -- Neuf nombres, quatre carres : le charme, calcule"",
              fontsize=12, fontweight=""bold"")
 fig.tight_layout(rect=(0, 0, 1, 0.955))
 plt.show()",,,,,,,,dbccac932e09d0b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c42,markdown,fr,2ac177e87ca530b9,"**Le charme, ce sont des nombres qui ne pouvaient pas ne pas etre lies -- et Python les calcule.** Les neuf discriminants de Heegner (nombre de classes 1, demontre par Heegner puis Stark ; briques [Serre100/11](Serre100/11-corps-quadratiques-reciprocite-quadratique.ipynb) a [14](Serre100/14-formes-quadratiques-composition-gauss.ipynb)) portent une signature calculable : pour -163, $e^{\pi\sqrt{163}}$ s'approche de l'entier 262537412640768744 a douze decimales pres -- le fameux nombre de Ramanujan, affiche par la cellule ci-dessus avec 50 chiffres. A droite, le theoreme des quatre carres (Lagrange, 1770 ; brique [Serre100/15](Serre100/15-quatre-carres-lagrange.ipynb)) : chaque barre atteint sa hauteur n en empilant quatre carres -- les nombres affiches dans les barres sont les racines -- et la cellule verifie les cent premiers entiers, pas seulement les seize dessines.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c42,markdown,fr,2ac177e87ca530b9,"**Le charme, ce sont des nombres qui ne pouvaient pas ne pas etre lies -- et Python les calcule.** Les neuf discriminants de Heegner (nombre de classes 1, demontre par Heegner puis Stark ; briques [Serre100/11](Serre100/11-corps-quadratiques-reciprocite-quadratique.ipynb) a [14](Serre100/14-formes-quadratiques-composition-gauss.ipynb)) portent une signature calculable : pour -163, $e^{\pi\sqrt{163}}$ s'approche de l'entier 262537412640768744 a douze decimales pres -- le fameux nombre de Ramanujan, affiche par la cellule ci-dessus avec 50 chiffres. A droite, le theoreme des quatre carres (Lagrange, 1770 ; brique [Serre100/15](Serre100/15-quatre-carres-lagrange.ipynb)) : chaque barre atteint sa hauteur n en empilant quatre carres -- les nombres affiches dans les barres sont les racines -- et la cellule verifie les cent premiers entiers, pas seulement les seize dessines.
 
 C'est la definition operative du mouvement 4 : **la liberte Python, calculer ce que Lean enonce.** Les q-expansions exactes de [Langlands 01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb), l'invariant j du [Moonshine](Langlands/02-monstrous-moonshine-invariant-j.ipynb), les tables de caracteres -- le depot les fait executer, jamais recopier. Un temoin se verifie ; une table se derive.",,,,,,,,2ac177e87ca530b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb,c43,markdown,fr,5723bf8b6ee84318,"### Sortie du fil
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb,c43,markdown,fr,5723bf8b6ee84318,"### Sortie du fil
 
 Le cinquieme mouvement attend le lecteur : les memes outils que ce carnet dessine, mais *executes*. La cohomologie de Cech et le lemme de Yoneda, calcules sur des objets finis, dans [Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb) et [04](Serre100/04-lemme-yoneda-categories-finies.ipynb) ; les lakes `grothendieck_lean` et `hecke_lean`, qui portent les enonces en Lean ; enfin le rite de sortie, [Lean-37](Lean-37-Capstone-Serre100.ipynb). La maree avait construit le langage ; le pont le rend calculable -- et le capstone serre la main des deux styles.
 
-**Navigation** : [Index de la serie](README.md) | [Lean-15b Atelier](Lean-15b-Lean-Grothendieck.ipynb) | [Lean-15e Monodromie >>](Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | [Lean-37 Capstone](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,5723bf8b6ee84318,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,nav,markdown,fr,f86bd9453c380295,"# Lean-15e : Monodromie et groupe fondamental — le plan épointé à l'œuvre
+**Navigation** : [Index de la serie](README.md) | [Lean-15b Atelier](Lean-15b-Lean-Grothendieck.ipynb) | [Lean-15e Monodromie >>](Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | [Lean-37 Capstone](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,5723bf8b6ee84318,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,nav,markdown,fr,f86bd9453c380295,"# Lean-15e : Monodromie et groupe fondamental — le plan épointé à l'œuvre
 
-**Navigation** : [<< Lean-15d Grothendieck en images](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) · [Lean-16 Conway >>](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb)
+**Navigation** : [<< Lean-15d Grothendieck en images](Lean-15-Lean-Grothendieck-Visuel-Python.ipynb) · [Lean-16 Conway >>](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb)
 
 Volet preuve de la fenêtre « 7-bis » greffée dans [GROTH-02](Grothendieck/GROTH-02-Tribut-Python.ipynb) (distillation #19333-G.beta, issues #21307/#21308). La monodromie y était nommée mais jamais définie ; ce carnet la définit, la calcule et la prouve sur l'exemple le plus simple qui la porte : la couverture `z ↦ z²` du plan complexe épointé. Le module `Grothendieck/Monodromie.lean` du lac `grothendieck_lean` porte les preuves formelles ; ce carnet les met en scène.",,,,,,,,f86bd9453c380295,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,intro,markdown,fr,1df12ae3fab4e742,"## L'idée en une phrase
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,intro,markdown,fr,1df12ae3fab4e742,"## L'idée en une phrase
 
 Quand on fait tourner une boucle autour d'un point singulier, l'objet algébrique transporté le long de la boucle revient **transformé** : cette transformation est la **monodromie**, et elle ne dépend que de la classe d'homotopie de la boucle — c'est-à-dire de son élément dans le **groupe fondamental**.
 
@@ -49436,7 +49436,7 @@ Le fil conducteur du carnet tient en trois gestes, chacun vérifié deux fois (n
 
 À l'arrivée, vous saurez dire pourquoi la racine carrée « ne revient pas » après un tour, pourquoi deux tours suffisent, et ce que le théorème de quasi-unipotence de Grothendieck garantit dans le cadre général.
 ",,,,,,,,1df12ae3fab4e742,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,mise-en-place,markdown,fr,0a93305d4e0975f0,"## Mise en place
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,mise-en-place,markdown,fr,0a93305d4e0975f0,"## Mise en place
 
 Le carnet pilote le lac `grothendieck_lean` (module `Grothendieck.Monodromie`, issue #21308) via les utilitaires de la série. Sous Windows, le lac vit dans la distribution WSL : les utilitaires traduisent chaque commande `lake` et chaque snippet Lean vers le bon chemin sans que le code Python ci-dessous ait à s'en soucier.
 
@@ -49444,7 +49444,7 @@ Le carnet pilote le lac `grothendieck_lean` (module `Grothendieck.Monodromie`, i
 
 **La division du travail.** Chaque notion est prise deux fois : d'abord avec NumPy et Matplotlib — pour la *voir* et la manipuler — puis avec un snippet Lean exécuté dans le lac — pour l'énoncer avec les types et les preuves du module. Les cellules numériques précèdent toujours les cellules formelles qui portent le même nom de théorème.
 ",,,,,,,,0a93305d4e0975f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,setup,code,fr,f50ca5e60c6be95f,"import sys
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,setup,code,fr,f50ca5e60c6be95f,"import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path.cwd()))
@@ -49463,18 +49463,18 @@ _rel = _rel.relative_to(_rel.parents[3]).as_posix()
 print(f'Projet Lean (relatif au depot) : {_rel}')
 print(f'Plateforme                     : {plat}')
 ",,,,,,,,f50ca5e60c6be95f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-build,markdown,fr,1307c1ed0ac0c845,"Le module doit compiler sans aucun `sorry` avant toute lecture — c'est la vérification que les preuves ci-dessous sont bien dans le noyau.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-build,markdown,fr,1307c1ed0ac0c845,"Le module doit compiler sans aucun `sorry` avant toute lecture — c'est la vérification que les preuves ci-dessous sont bien dans le noyau.
 
 Cette exigence n'est pas décorative. Un `sorry` dans un théorème cité rendrait chaque `#check` muet sur la question qui compte : « est-ce *prouvé* ? ». Lean distingue soigneusement « le noyau a vérifié ce terme » d'« on a promis de le vérifier plus tard » ; le compteur ci-dessous tranche entre les deux, et la section 5 montrera l'instrument fin (`#print axioms`) qui détecte même le `sorry` hérité *transitivement* d'un lemme auxiliaire qu'on n'a jamais ouvert.
 ",,,,,,,,1307c1ed0ac0c845,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,build,code,fr,11a15cfd1b5b2325,"build_timeout_s = 900  # premier build apres cache : long
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,build,code,fr,11a15cfd1b5b2325,"build_timeout_s = 900  # premier build apres cache : long
 rc, out, err = run_lake(lean_path, 'build Grothendieck.Monodromie', timeout=build_timeout_s)
 print(f'lake build Grothendieck.Monodromie -> rc={rc}')
 texte = (out or '') + (err or '')
 print(texte[-800:] if texte else '(sortie vide : build deja chaud)')
 assert rc == 0, 'le module doit compiler'
 ",,,,,,,,11a15cfd1b5b2325,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,snippet-helper,code,fr,d731818e85aa3eeb,"# Helper : executer un snippet Lean dans le lac (import Grothendieck.Monodromie inclus).
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,snippet-helper,code,fr,d731818e85aa3eeb,"# Helper : executer un snippet Lean dans le lac (import Grothendieck.Monodromie inclus).
 _snip = proj_win / '.lake' / '_snippet_21308.lean'  # .lake est gitignore : jamais commite
 
 # 600 s : mesure po-2028 (lac sur /mnt/c, IO 9p) -- 298,43 s pour ce
@@ -49486,7 +49486,7 @@ def lean_snippet(src, timeout=600):
     print(texte[-3000:] if texte else '(sortie vide)')
     return rc
 ",,,,,,,,d731818e85aa3eeb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-fiber,markdown,fr,32cdf81fb700c7b6,"## 1. La fibre au-dessus de 1 : l'objet transporté
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-fiber,markdown,fr,32cdf81fb700c7b6,"## 1. La fibre au-dessus de 1 : l'objet transporté
 
 La couverture `p : z ↦ z²` envoie `ℂ*` sur `ℂ*`. La **fibre** de `p` au-dessus de `1` est l'ensemble des antécédents de `1`, autrement dit les solutions de `z² = 1`.
 
@@ -49494,7 +49494,7 @@ L'image à garder en tête est celle d'une **projection** : la base `ℂ*` est l
 
 Numériquement, la fibre de `z² = 1` se calcule comme les racines d'un polynôme — ici `z² − 1`, factorisé en `(z−1)(z+1)` :
 ",,,,,,,,32cdf81fb700c7b6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,fiber-py,code,fr,abe597c0fa2278cd,"import numpy as np
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,fiber-py,code,fr,abe597c0fa2278cd,"import numpy as np
 import matplotlib.pyplot as plt
 
 fibre = np.roots([1, 0, -1])  # racines de z^2 - 1
@@ -49509,13 +49509,13 @@ ax.set_aspect('equal'); ax.axhline(0, color='0.9', lw=0.5); ax.axvline(0, color=
 ax.set_title('La fibre de z → z² au-dessus de 1 : deux points')
 plt.show()
 ",,,,,,,,abe597c0fa2278cd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-fiber,markdown,fr,c0cd6a2dc8208758,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-fiber,markdown,fr,c0cd6a2dc8208758,"### Lecture du résultat
 
 Deux points, pas un : la fibre compte le degré de la couverture (ici 2). Le module formalise exactement ce fait.
 
 Ce dénombrement a une conséquence structurelle : il n'existe **aucune fonction continue** `s : ℂ* → ℂ*` telle que `p ∘ s = id` (une *section globale* de la couverture). Une telle section devrait choisir, continûment et partout, l'une des deux racines carrées — impossible, et l'impossibilité est déjà latente dans le fait que la fibre a deux points « indiscernables » vus de la base. C'est précisément en forçant ce choix, puis en le suivant le long d'un lacet, que la section suivante fabrique le phénomène de monodromie.
 ",,,,,,,,c0cd6a2dc8208758,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,fiber-lean,code,fr,5dd1ee8bd615873c,"# La fibre, formellement : exactement {1, -1}, par factorisation (x-1)(x+1) = 0.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,fiber-lean,code,fr,5dd1ee8bd615873c,"# La fibre, formellement : exactement {1, -1}, par factorisation (x-1)(x+1) = 0.
 rc = lean_snippet(
     '#check @Grothendieck.fiber_sq_one\n'
     '#print axioms Grothendieck.fiber_sq_one\n'
@@ -49523,7 +49523,7 @@ rc = lean_snippet(
 )
 assert rc == 0
 ",,,,,,,,5dd1ee8bd615873c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-loop,markdown,fr,8e54a53446bf2ef5,"## 2. La boucle générateur et son relèvement
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-loop,markdown,fr,8e54a53446bf2ef5,"## 2. La boucle générateur et son relèvement
 
 La boucle `γ : t ↦ exp(2πi·t)` fait un tour complet du cercle. Son **relèvement** par la racine carrée part de `1` et suit, à chaque instant, l'unique point de la fibre qui se projette sur `γ(t)` **et** dépend continûment du point de départ choisi.
 
@@ -49531,7 +49531,7 @@ Le bon réflexe visuel est celui de **l'hélice au-dessus du cercle** : l'expone
 
 C'est la première apparition du phénomène central : le transport le long d'un chemin **fermé** de la base ne rend pas nécessairement l'objet transporté à son point de départ.
 ",,,,,,,,8e54a53446bf2ef5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,loop-py,code,fr,b080e4be842a3ccc,"t = np.linspace(0, 1, 200)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,loop-py,code,fr,b080e4be842a3ccc,"t = np.linspace(0, 1, 200)
 gamma = np.exp(2j * np.pi * t)   # la boucle : un tour complet
 gamma_tilde = np.exp(1j * np.pi * t)  # le relevement : un demi-tour
 
@@ -49547,13 +49547,13 @@ plt.suptitle('La boucle et son relevement : depart vert, arrivee rouge')
 plt.show()
 print('Arrivee du relevement :', np.round(gamma_tilde[-1], 10))
 ",,,,,,,,b080e4be842a3ccc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-loop,markdown,fr,482b5c2339198f5b,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-loop,markdown,fr,482b5c2339198f5b,"### Lecture du résultat
 
 À gauche, la boucle revient à son départ (c'est un lacet). À droite, le relèvement **part de 1 et arrive en -1** : la racine carrée doit « partager » chaque tour en deux demi-tours, et un seul tour ne suffit pas à refermer.
 
 Deux tours, eux, referment : le relèvement de `t ↦ exp(4πi·t)` est `t ↦ exp(2πi·t)`, un cercle complet — l'exercice 2 le fera mesurer. L'écart entre « un tour » et « deux tours » est exactement l'ordre de la permutation subie par la fibre : c'est le premier nombre que la monodromie met sur la table, et le lien avec l'indice de ramification du point exclu `0` (ici 2) n'est pas une coïncidence — la section suivante l'explique comme une action de groupe.
 ",,,,,,,,482b5c2339198f5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,loop-lean,code,fr,34a951fa518d3962,"# Le relevement, formellement : il couvre la boucle et finit en -1.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,loop-lean,code,fr,34a951fa518d3962,"# Le relevement, formellement : il couvre la boucle et finit en -1.
 rc = lean_snippet(
     '#check @Grothendieck.generatorLoop\n'
     '#check @Grothendieck.generatorLift\n'
@@ -49563,24 +49563,24 @@ rc = lean_snippet(
 )
 assert rc == 0
 ",,,,,,,,34a951fa518d3962,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-action,markdown,fr,d2b0e31012fd5944,"## 3. La monodromie comme action sur la fibre
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-action,markdown,fr,d2b0e31012fd5944,"## 3. La monodromie comme action sur la fibre
 
 Transporter la fibre le long de la boucle = permuter ses deux points. Le relèvement envoie `1 ↦ -1`, donc la permutation est la transposition des deux points de la fibre.
 
 Sur la base `(1, -1)` de la fibre, cette transposition s'écrit comme la matrice d'échange — la matrice qui lit « où arrive chaque point ». C'est volontairement le langage le plus concret possible : une **matrice de permutation**, celle qui échange les deux vecteurs de base. La théorie des représentations dirait que la monodromie est une représentation de dimension 2 du groupe fondamental ; pour les besoins du carnet, il suffit de vérifier que cette matrice fait bien ce que le relèvement a montré, et que son carré est l'identité — l'ordre 2 mesuré à la section 2, maintenant écrit dans une matrice :
 ",,,,,,,,d2b0e31012fd5944,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,action-py,code,fr,df24fc41fe913438,"# La transposition sur la base (1, -1) de la fibre.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,action-py,code,fr,df24fc41fe913438,"# La transposition sur la base (1, -1) de la fibre.
 M = np.array([[0, 1], [1, 0]])  # e1 (=1) et e2 (=-1) s'echangent
 print('M @ (1, 0) =', M @ np.array([1, 0]), ' : le point 1 va en -1')
 print('M @ M      ='); print(M @ M, ' : involution, ordre 2')
 ",,,,,,,,df24fc41fe913438,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-action,markdown,fr,8da5957602b09928,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-action,markdown,fr,8da5957602b09928,"### Lecture du résultat
 
 La matrice échange les deux points et son carré est l'identité. Le module formalise la même action comme fonction `x ↦ -x` préservant la fibre — deux langages (permutation, fonction) pour le même objet, et la correspondance est le pont entre la donnée géométrique (le relèvement de la section 2) et l'énoncé formel.
 
 Notons ce que le langage matriciel ajoute : les **valeurs propres** de l'action deviennent des invariants numériques de la monodromie. Ici `+1` (les objets fixés) et `−1` (les objets échangés) ; pour une couverture de degré `n`, les valeurs propres de la monodromie seront des racines `n`-ièmes de l'unité. Cette remarque prépare la section 4, où les valeurs propres deviennent l'objet du théorème de quasi-unipotence.
 ",,,,,,,,8da5957602b09928,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,action-lean,code,fr,7a6e83543f9d0e7d,"rc = lean_snippet(
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,action-lean,code,fr,7a6e83543f9d0e7d,"rc = lean_snippet(
     '#check @Grothendieck.monodromySq\n'
     '#check @Grothendieck.monodromySq_mem_fiber\n'
     '#check @Grothendieck.monodromySq_sq\n'
@@ -49589,36 +49589,36 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Py
 )
 assert rc == 0
 ",,,,,,,,7a6e83543f9d0e7d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-quasi,markdown,fr,8a87ffc9f0de89ac,"## 4. Quasi-unipotence : le calcul, puis la frontière
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-quasi,markdown,fr,8a87ffc9f0de89ac,"## 4. Quasi-unipotence : le calcul, puis la frontière
 
 Le théorème de quasi-unipotence de Grothendieck (SGA 7, XII) porte sur une famille lisse au-dessus d'un disque épointé : une certaine **puissance** de sa monodromie est unipotente. **Mathlib ne le formalise pas** (aucune théorie des familles lisses paramétrées ni de monodromie ℓ-adique), et ce carnet ne le remplace pas : notre monodromie est d'ordre fini (2), cas d'école de l'implication algébrique élémentaire — opérateur d'ordre fini ⇒ valeurs propres racines de l'unité — que le module consigne comme `Prop` documentaire (`finiteOrderEigenvaluesRootsOfUnity`) et que l'exemple vérifie.
 
 Pour situer l'enjeu du théorème réel : dans une famille géométrique, la monodromie n'est **pas** d'ordre fini en général — elle est seulement quasi-unipotente : il existe un entier `N ≥ 1` tel que la `N`-ième puissance de la monodromie soit unipotente, c'est-à-dire que ses valeurs propres sont **exactement** des racines `N`-ièmes de l'unité. Dans la décomposition de Jordan multiplicative `T = T_s · T_u`, la partie semi-simple `T_s` porte ces racines de l'unité, tandis que la partie unipotente `T_u` a **toutes** ses valeurs propres égales à `1` : elle ne déplace **aucune** valeur propre, elle ajoute des blocs de Jordan non triviaux (le nilpotent `log T_u`) — une monodromie d'ordre infini au spectre pourtant fini. C'est ce mélange qui rend le théorème profond : il contraint le spectre d'un opérateur qui, a priori, pourrait être quelconque.
 ",,,,,,,,8a87ffc9f0de89ac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,quasi-py,code,fr,44b3a02e54424339,"print('Valeurs propres de la transposition :', np.linalg.eigvals(M))
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,quasi-py,code,fr,44b3a02e54424339,"print('Valeurs propres de la transposition :', np.linalg.eigvals(M))
 print('1 et -1 sont racines de l unites : (1)^2 =', 1**2, ', (-1)^2 =', (-1)**2)
 print('M^2 = I : la puissance deux est unipotente (trivialement)')
 ",,,,,,,,44b3a02e54424339,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-quasi,markdown,fr,c3a930af26faaeb3,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-quasi,markdown,fr,c3a930af26faaeb3,"### Lecture du résultat
 
 Sur cet exemple : ordre 2, valeurs propres `{1, -1}` toutes racines de l'unité, `M² = I` unipotent (trivialement : identité). La conclusion générale visée est seulement qu'une puissance de la monodromie est unipotente ; elle n'impose ni l'ordre 2 ni une puissance égale à l'identité.
 
 En termes de spectre : l'exemple réalise le cas **purement semi-simple** de la quasi-unipotence (valeurs propres racines de l'unité, aucune partie unipotente non triviale). La partie unipotente — celle qui, dans une famille générale, ne change pas le spectre mais rend l'opérateur non diagonalisable (des blocs de Jordan non triviaux au-dessus des racines de l'unité) — n'a aucun analogue ici, et c'est précisément ce que « cas d'école » veut dire : une instance où la conclusion est triviale, choisie pour isoler le mécanisme du transport.
 ",,,,,,,,c3a930af26faaeb3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,quasi-lean,code,fr,ee26c51ae103d40d,"rc = lean_snippet(
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,quasi-lean,code,fr,ee26c51ae103d40d,"rc = lean_snippet(
     '#check @Grothendieck.eigenvalue_neg_one_sq\n'
     '#check @Grothendieck.monodromySq_pow_two_eq_id\n'
     '#check @Grothendieck.finiteOrderEigenvaluesRootsOfUnity\n'
 )
 assert rc == 0
 ",,,,,,,,ee26c51ae103d40d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-integrity,markdown,fr,0409cbcadfd35082,"## 5. Intégrité formelle
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,sec-integrity,markdown,fr,0409cbcadfd35082,"## 5. Intégrité formelle
 
 Le module ne doit contenir aucun `sorry`, et aucun théorème cité ne peut en dépendre transitivement (`sorryAx`).
 
 Les deux instruments du contrôle répondent à deux questions différentes. Le **compteur** `count_sorry` balaie les sources du lac et répond « y a-t-il un `sorry` *écrit* dans `Grothendieck/` ? » — il verrait un trou avoué. Le **`#print axioms`** répond à la question plus fine : « ce théorème *particulier* dépend-il, par l'intermédiaire de quelque lemme auxiliaire que ce soit, de l'axiome `sorryAx` ? » — il verrait un trou **hérité** d'une preuve qu'on n'a jamais ouverte. Un module peut afficher zéro `sorry` écrit tout en citant, depuis un autre module du lac, un théorème lui-même appuyé sur `sorryAx` : seul le second instrument détecte ce cas. La règle de la série exige les deux verts.
 ",,,,,,,,0409cbcadfd35082,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,integrity,code,fr,1c4acf64c56a6fab,"n_sorry = count_sorry(str(proj_win), 'Grothendieck/')
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,integrity,code,fr,1c4acf64c56a6fab,"n_sorry = count_sorry(str(proj_win), 'Grothendieck/')
 print(f'sorry (code reel) dans Grothendieck/ du lac : {n_sorry}')
 rc = lean_snippet(
     '#print axioms Grothendieck.fiber_sq_one\n'
@@ -49627,13 +49627,13 @@ rc = lean_snippet(
 )
 assert rc == 0
 ",,,,,,,,1c4acf64c56a6fab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-integrity,markdown,fr,543c0fa25d7255bb,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,lecture-integrity,markdown,fr,543c0fa25d7255bb,"### Lecture du résultat
 
 Chaque `#print axioms` ne doit citer que les axiomes standard de Lean (`propext`, `Classical.choice`, `Quot.sound`) — jamais `sorryAx`. La frontière est nette : `finiteOrderEigenvaluesRootsOfUnity` est l'**implication algébrique** élémentaire (opérateur d'ordre fini ⇒ valeurs propres racines de l'unité), consignée et non prouvée ici ; le **théorème géométrique** de SGA 7 — familles lisses sur disque épointé, conclusion unipotente — reste hors Mathlib et hors du module.
 
 Pourquoi ces trois axiomes-là sont acceptés sans discussion : ce sont les axiomes **fondateurs** de Lean lui-même (extensionnalité des propositions, choix classique — l'axiome du choix de la théorie des types de Lean —, fonctionnement des quotients), omniprésents dans Mathlib — les interdire reviendrait à réinventer les mathématiques constructives. Le contrat de la série est plus fin : il n'interdit pas ces axiomes, il exige qu'aucun **autre** ne s'invite — `sorryAx` en tête, mais aussi `native_decide`, qui ferait reposer une preuve formelle sur une réduction numérique non vérifiée par le noyau.
 ",,,,,,,,543c0fa25d7255bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,synthese,markdown,fr,22d0184ecb7b0698,"## 6. Ce que ce carnet a établi
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,synthese,markdown,fr,22d0184ecb7b0698,"## 6. Ce que ce carnet a établi
 
 1. La fibre de `z ↦ z²` au-dessus de 1 est `{1, -1}` (formel : `fiber_sq_one`).
 2. Le relèvement de la boucle générateur part de 1 et **arrive en -1** (`lift_one`) — la monodromie visible.
@@ -49642,49 +49642,49 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Py
 
 Relisons le parcours dans le langage de la section 2 bis : tout ce carnet est l'explicitation d'un unique homomorphisme `π₁(ℂ*, 1) ≅ ℤ → S₂`. La fibre (section 1) est l'ensemble où l'action vit ; le relèvement (section 2) calcule l'image du générateur ; l'involution (section 3) est cette image ; l'ordre 2 (section 4) est sa signification arithmétique. Généraliser à `z ↦ zⁿ` remplace `S₂` par le groupe cyclique engendré par un n-cycle — c'est exactement ce que les exercices font mesurer.
 ",,,,,,,,22d0184ecb7b0698,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,suite,markdown,fr,540d365e7dace2f1,"## 7. Pour aller plus loin
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,suite,markdown,fr,540d365e7dace2f1,"## 7. Pour aller plus loin
 
 - **Le pont trèfle** : la même monodromie tord le tore au-dessus de la cubique cuspidale `y² = x³` et fabrique le nœud trèfle — déroulé côté preuves dans [knot_lean](Noeuds/) via la greffe #19356.
 - **La fenêtre 7-bis** de [GROTH-02](Grothendieck/GROTH-02-Tribut-Python.ipynb) situe la monodromie dans le paysage Grothendieck (Weil II, polynôme d'Alexander).
 - **SGA 7, XII** : l'énoncé original de la quasi-unipotence, et *Weil II* (Deligne 1980) pour son rôle central.
 ",,,,,,,,540d365e7dace2f1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exercices,markdown,fr,97394c27719ad301,"## 8. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exercices,markdown,fr,97394c27719ad301,"## 8. Exercices
 
 Trois exercices prolongent le carnet sur la couverture `z ↦ z³` puis sur la lecture générale.
 
 Le fil est volontairement le même que celui du corps du carnet — fibre, relèvement, valeurs propres — mais sur des couvertures de degré plus grand, où les réponses cessent d'être « évidentes » et obligent à vraiment utiliser les définitions. Chaque exercice se résout avec les seules cellules du carnet comme boîte à outils (`np.roots`, `np.linalg.eigvals`, le tracé du relèvement) ; aucun ne demande de nouveau concept.
 ",,,,,,,,97394c27719ad301,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo1,markdown,fr,884c4038eb4be52f,"### Exercice 1 — la fibre de z ↦ z³
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo1,markdown,fr,884c4038eb4be52f,"### Exercice 1 — la fibre de z ↦ z³
 
 Construire la fibre de `z ↦ z³` au-dessus de 1 (trois racines de l'unité), afficher ses points, et dire quelle permutation la monodromie du générateur induit (le relèvement `t ↦ exp(2πi·t/3)` envoie 1 sur `exp(2πi/3)` : un 3-cycle).
 
 **Étapes suggérées.** (1) `np.roots([1, 0, 0, -1])` donne les trois racines de `z³ = 1` — les afficher sur le cercle unité comme à la section 1. (2) Écrire la matrice de permutation `P` du 3-cycle `1 ↦ j ↦ j² ↦ 1` sur la base des trois points. (3) Vérifier `P³ = I` — l'ordre 3 de l'image du générateur de `π₁` dans `S₃` : un 3-cycle.
 ",,,,,,,,884c4038eb4be52f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo1-code,code,fr,c3aaf342090d2da6,"# Exercice 1 : fibre de z^3 = 1 et monodromie d'ordre 3
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo1-code,code,fr,c3aaf342090d2da6,"# Exercice 1 : fibre de z^3 = 1 et monodromie d'ordre 3
 # TODO etudiant : calculer les racines, tracer la fibre, identifier le 3-cycle
 # Indice : np.roots([1, 0, 0, -1]) ; le relevement t -> exp(2j*pi*t/3)
 resultat = None  # TODO etudiant
 print('Exercice a completer')
 ",,,,,,,,c3aaf342090d2da6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo2,markdown,fr,0e3ef6beab03b24c,"### Exercice 2 — le relèvement de la boucle double
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo2,markdown,fr,0e3ef6beab03b24c,"### Exercice 2 — le relèvement de la boucle double
 
 Que devient le relèvement de la boucle parcourue **deux fois** (`t ↦ exp(4πi·t)`), toujours pour `z ↦ z²` ? Partant de 1, où arrive-t-on ? (C'est la question de l'itération de la monodromie — et la raison de son ordre exact.)
 
 **Étapes suggérées.** (1) Tracer `γ₂(t) = exp(4πi·t)` et son relèvement candidat `exp(2πi·t)` côte à côte, comme à la section 2. (2) Lire l'arrivée du relèvement — elle doit être `1`, contrairement au cas d'un seul tour. (3) Relier au langage de la section 2 bis : la boucle double représente `2 ∈ π₁ ≅ ℤ`, son image par la monodromie est `σ² = id` — c'est la définition même de « la monodromie est d'ordre 2 ».
 ",,,,,,,,0e3ef6beab03b24c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo2-code,code,fr,dede6180a111b66f,"# Exercice 2 : relevement de la boucle double
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo2-code,code,fr,dede6180a111b66f,"# Exercice 2 : relevement de la boucle double
 # TODO etudiant : tracer gamma_2(t) = exp(4j*pi*t) et son relevement exp(2j*pi*t)
 # Indice : l'arrivee du relevement repond a la question de l'ordre
 resultat = None  # TODO etudiant
 print('Exercice a completer')
 ",,,,,,,,dede6180a111b66f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo3,markdown,fr,1785e44e791d4a10,"### Exercice 3 — valeurs propres et racines de l'unité
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo3,markdown,fr,1785e44e791d4a10,"### Exercice 3 — valeurs propres et racines de l'unité
 
 Pour `z ↦ zⁿ` (fibre à n points), la monodromie est un n-cycle — d'ordre fini. Calculer numériquement ses valeurs propres pour n = 3, 4, 5 et vérifier que ce sont toutes des racines de l'unité — la conclusion de l'implication consignée (`finiteOrderEigenvaluesRootsOfUnity`) sur cette famille d'exemples.
 
 **Étapes suggérées.** (1) Construire la matrice du n-cycle (permutation circulaire des vecteurs de base). (2) `np.linalg.eigvals` pour n = 3, 4, 5 ; afficher le module de chaque valeur propre — il doit valoir 1 à précision machine. (3) Comparer au prédit théorique : les valeurs propres d'un n-cycle sont exactement `exp(2πik/n)`, `k = 0..n−1` — l'angle de chaque valeur propre mesurée doit tomber sur un multiple de `2π/n`.
 ",,,,,,,,1785e44e791d4a10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo3-code,code,fr,6dd15f39a5576275,"# Exercice 3 : valeurs propres des monodromies d'ordre n = 3, 4, 5
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,exo3-code,code,fr,6dd15f39a5576275,"# Exercice 3 : valeurs propres des monodromies d'ordre n = 3, 4, 5
 # TODO etudiant : matrice du n-cycle, np.linalg.eigvals, verifier |lambda|^n = 1
 # Indice : les valeurs propres d'un n-cycle sont exp(2j*pi*k/n), k = 0..n-1
 resultat = None  # TODO etudiant
@@ -58210,8 +58210,8 @@ que l'autre — il dit **ce que chacune autorise à affirmer**, et où elle s'ar
 
 Suite naturelle :
 
-- [→ Lean-40 — Capstone Langlands](Lean-40-Capstone-Langlands-Python.ipynb) — l'escalier Langlands : de la forme modulaire calculée au lac qui la démontre ;
-- [→ Lean-41 — Capstone MIMO](Lean-41-Capstone-MIMO-Python.ipynb) — l'escalier MIMO : la détection par flips de coordonnées, le budget de descente et sa digestion ;
+- [→ Lean-40 — Capstone Langlands](Lean-29-Capstone-Langlands-Python.ipynb) — l'escalier Langlands : de la forme modulaire calculée au lac qui la démontre ;
+- [→ Lean-41 — Capstone MIMO](Lean-21-Capstone-MIMO-Python.ipynb) — l'escalier MIMO : la détection par flips de coordonnées, le budget de descente et sa digestion ;
 - [Geometry-02](https://github.com/jsboige/CoursIA/issues/17544) — la certitude par
   l'algèbre : l'idéal des hypothèses, l'appartenance décidée par Gröbner ;
 - [Geometry-03](Geometry/Geometry-03-Wu-Method-Python.ipynb) et
@@ -58452,7 +58452,7 @@ Où continuer :
 - **[Lean-17](Lean-17-Conway-Bridge-to-Knots-Python.ipynb)** puis la sous-série KNOTS — le pont de Conway vers la théorie des nœuds.
 
 Le moteur `conway_lean/scripts/hashlife.py` reste le point d'appui pour toute exploration : c'est lui qui a servi de témoin d'exécution ici, et lui que les exercices mobilisent.",,,,,,,,0c37c15972dfcba5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,d3345d50,markdown,fr,b7b1a186b6c697f6,"# Capstone Langlands — l'escalier : de la forme calculée au lac qui la démontre
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,d3345d50,markdown,fr,b7b1a186b6c697f6,"# Capstone Langlands — l'escalier : de la forme calculée au lac qui la démontre
 
 **Navigation** : [01 — Formes modulaires SL2Z et Hecke](Langlands/01-formes-modulaires-sl2z-hecke.ipynb) · [02 — Monstrous Moonshine et l'invariant j](Langlands/02-monstrous-moonshine-invariant-j.ipynb) · [README de la sous-série](Langlands/README.md) · [lac `hecke_lean`](Langlands/hecke_lean/README.md) · [Langlands 06 — compagnon natif Hecke](Langlands/06-operateurs-de-hecke-natif.ipynb)
 
@@ -58472,7 +58472,7 @@ le fichier réel, sa définition `coeffHeckeT`, la preuve et son audit. La derni
 marche traverse le pont Moonshine. Aucune étape ne demande un kernel Lean : tout
 est calculable en Python stdlib, et chaque identité est **calculée dans une sortie**,
 comme le README de la sous-série s'y engage.",,,,,,,,b7b1a186b6c697f6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,ea1fc064,markdown,fr,772697e7a4e65d2c,"## 0. Le problème : une identité arithmétique, quatre garanties
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,ea1fc064,markdown,fr,772697e7a4e65d2c,"## 0. Le problème : une identité arithmétique, quatre garanties
 
 Le fil rouge de cet escalier est **une seule identité** — la relation de Hecke sur
 les coefficients de Fourier d'une forme modulaire propre :
@@ -58490,14 +58490,14 @@ définition `coeffHeckeT` qui formalise le membre de gauche, (4) la preuve Lean
 et son audit d'axiomes. La sous-série ajoute le pont final : Moonshine, où les
 coefficients d'une autre forme modulaire (l'invariant $j$) encodent les dimensions
 des représentations du groupe Monstre.",,,,,,,,772697e7a4e65d2c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,69631d96,markdown,fr,51f521b06e1aef9a,"## 1. Marche 1 — Δ calculée, coefficient par coefficient
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,69631d96,markdown,fr,51f521b06e1aef9a,"## 1. Marche 1 — Δ calculée, coefficient par coefficient
 
 *(double [Langlands-01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb), section produit d'Euler)*
 
 Le produit d'Euler $\prod_{m}(1-q^m)^{24}$ se développe par convolution entière :
 aucun flottant, aucune bibliothèque — la série tronquée à l'ordre $N$ est un
 polynôme en $q$ à coefficients entiers, et $\tau(n)$ est son coefficient de $q^n$.",,,,,,,,51f521b06e1aef9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,116f5cb5,code,fr,3a66900cfada47d5,"# Marche 1 : la fonction tau de Ramanujan par convolution entiere du produit d'Euler.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,116f5cb5,code,fr,3a66900cfada47d5,"# Marche 1 : la fonction tau de Ramanujan par convolution entiere du produit d'Euler.
 def tau_table(N):
     """"""Coefficients tau(1..N) via prod_{m>=1} (1-q^m)^24, arithmetique entiere exacte.""""""
     poly = [1] + [0] * N          # poly[i] = coeff de q^i
@@ -58530,14 +58530,14 @@ for n in range(1, 15):
 print()
 print(""Concordance avec les 13 valeurs publiees de Ramanujan :"",
       sum(1 for n in valeurs_connues if tau[n - 1] == valeurs_connues[n]), ""/"", len(valeurs_connues))",,,,,,,,3a66900cfada47d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,f9ab47b2,markdown,fr,68270e380d2bd07e,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,f9ab47b2,markdown,fr,68270e380d2bd07e,"### Lecture du résultat
 
 Les treize premières valeurs calculées coïncident **exactement** avec les valeurs
 publiées par Ramanujan en 1916 — y compris les signes (τ(7) = −16744). C'est la
 garantie du niveau 1 : un exemple calculé, en arithmétique entière, sans arrondi.
 Ce que ce niveau ne dit pas : si la suite obéit à une **structure**. C'est la
 marche 2.",,,,,,,,68270e380d2bd07e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,5d517991,markdown,fr,e068d5b7c93667e1,"## 2. Marche 2 — la relation de Hecke, vérifiée sur la table
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,5d517991,markdown,fr,e068d5b7c93667e1,"## 2. Marche 2 — la relation de Hecke, vérifiée sur la table
 
 *(double [Langlands-01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb), section valeurs propres de Hecke ; formalisée par `coeffHeckeT` dans le lac)*
 
@@ -58549,7 +58549,7 @@ $$\tau(p\,n) + p^{11}\,\tau(n/p) = \tau(p)\,\tau(n) \quad (n/p = 0 \text{ si } p
 
 Cas particuliers : $\tau(p^2) = \tau(p)^2 - p^{11}$, puis la récurrence
 $\tau(p^{r+1}) = \tau(p)\,\tau(p^r) - p^{11}\,\tau(p^{r-1})$. Vérifions sur la table.",,,,,,,,e068d5b7c93667e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,f7c73e36,code,fr,59d9b056499adddb,"# Marche 2 : la relation de Hecke verifiee sur la table calculee.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,f7c73e36,code,fr,59d9b056499adddb,"# Marche 2 : la relation de Hecke verifiee sur la table calculee.
 def t(n):
     return tau[n - 1] if 1 <= n <= N else None
 
@@ -58567,19 +58567,19 @@ for p, rmax in ((2, 4), (3, 3), (5, 2)):
         print(f""p={p:<2} r={r}         | {gauche:<28} | {droite:<23} | {ecart}"")
 print()
 print(f""Relation de Hecke verifiee sur {ok}/{total} cas (p=2 r1-4, p=3 r1-3, p=5 r1-2)"")",,,,,,,,59d9b056499adddb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,7c5e39f9,markdown,fr,05f8176caed3aa8f,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,7c5e39f9,markdown,fr,05f8176caed3aa8f,"### Lecture du résultat
 
 Neuf cas, neuf égalités **exactes** — et τ(16) = 987136 ou τ(27) = −73279080
 émergent de la table sans avoir été saisis : c'est la récurrence de Hecke qui les
 prédit. Niveau 2 atteint : l'identité est vérifiée là où elle est **discriminante**
 (les grandes puissances de petits premiers). La question de la marche 3 : cette
 relation caractérise-t-elle τ, ou n'importe quelle suite la satisfait-elle ?",,,,,,,,05f8176caed3aa8f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,a12f41a4,markdown,fr,f43abc65e8846505,"## 3. Marche 3 — un témoin modifié viole la relation
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,a12f41a4,markdown,fr,f43abc65e8846505,"## 3. Marche 3 — un témoin modifié viole la relation
 
 Si la relation de Hecke était vide (satisfaite par toute suite), la vérifier ne
 dirait rien. Prenons la suite perturbée la plus simple, $\tau'(n) = \tau(n) + n$,
 et soumettons-la à la même épreuve.",,,,,,,,f43abc65e8846505,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,a73d7270,code,fr,42275a24423bf3a2,"# Marche 3 : la suite perturbee tau'(n) = tau(n) + n casse la relation de Hecke.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,a73d7270,code,fr,42275a24423bf3a2,"# Marche 3 : la suite perturbee tau'(n) = tau(n) + n casse la relation de Hecke.
 p, r = 2, 1
 tp = lambda n: tau[n - 1] + n
 gauche = tp(p ** (r + 1)) + p ** 11 * tp(p ** (r - 1))
@@ -58589,21 +58589,21 @@ print()
 viol = sum(1 for p2, rmax2 in ((2, 4), (3, 3), (5, 2)) for r2 in range(1, rmax2 + 1)
            if tp(p2 ** (r2 + 1)) + p2 ** 11 * tp(p2 ** (r2 - 1)) != tp(p2) * tp(p2 ** r2))
 print(f""Sur les 9 cas de la marche 2, la suite perturbee en viole {viol}."")",,,,,,,,42275a24423bf3a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,e5ce1b37,markdown,fr,3aca29d6c3bfd290,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,e5ce1b37,markdown,fr,3aca29d6c3bfd290,"### Lecture du résultat
 
 La suite perturbée viole la relation dès le premier cas — la relation de Hecke
 **caractérise** : elle distingue τ de ses voisines arithmétiques. C'est ce qui
 rend sa formalisation intéressante, et c'est exactement la sémantique que le lac
 `hecke_lean` donne à `coeffHeckeT` : la définition du membre de gauche, pour une
 suite quelconque — à charge pour le théorème de dire quand l'égalité tient.",,,,,,,,3aca29d6c3bfd290,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,c0874527,markdown,fr,9b5868f04f4a1d91,"## 4. Marche 4 — l'énoncé dans le lac, lu depuis le fichier réel
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,c0874527,markdown,fr,9b5868f04f4a1d91,"## 4. Marche 4 — l'énoncé dans le lac, lu depuis le fichier réel
 
 *(consomme [`hecke_lean/Hecke/HeckeOperator.lean`](Langlands/hecke_lean/Hecke/HeckeOperator.lean) — port pédagogique de `anthropics/fermats-last-theorem`)*
 
 Le lac ne se cite pas de mémoire : la cellule lit le fichier `.lean` réel du dépôt,
 en extrait la définition `coeffHeckeT` — le membre de gauche de la relation — et
 l'inventorie comme un consommateur le ferait.",,,,,,,,9b5868f04f4a1d91,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,da97a55f,code,fr,e5116c99d28a7def,"# Marche 4 : lire les enonces du lac (le fichier reel, pas une copie).
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,da97a55f,code,fr,e5116c99d28a7def,"# Marche 4 : lire les enonces du lac (le fichier reel, pas une copie).
 import os
 import re
 
@@ -58640,7 +58640,7 @@ for f in sorted(os.listdir(racine_lac)):
         total_thm += nthm
         print(f""  {f:<22} {nthm:>3} enonces"")
 print(f""  {'TOTAL (FR)':<22} {total_thm:>3} enonces, miroirs _en non comptes"")",,,,,,,,e5116c99d28a7def,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,c000ae30,markdown,fr,854a6d79f14fec53,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,c000ae30,markdown,fr,854a6d79f14fec53,"### Lecture du résultat
 
 La définition `coeffHeckeT k p a n := a (n * p) + if p ∣ n then (p : ℂ) ^ (k - 1) * a (n / p) else 0`
 est **mot pour mot** le membre de gauche de la marche 2 — avec la suite $a$
@@ -58648,14 +58648,14 @@ quelconque et le poids $k$ paramétrique : le lac formalise la formule, pas
 seulement l'exemple. L'inventaire mesure la surface réelle : six modules français
 (DeltaTau, ElevenPid, FltRoute, HeckeOperator, SevenPid, ThirteenPid) et leurs
 miroirs `_en`, hors de ce décompte.",,,,,,,,854a6d79f14fec53,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,aa13fab8,markdown,fr,0161c155a4e536ad,"## 5. Marche 5 — la preuve, et ce qu'elle garantit
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,aa13fab8,markdown,fr,0161c155a4e536ad,"## 5. Marche 5 — la preuve, et ce qu'elle garantit
 
 Un énoncé n'est pas une preuve. La cellule extrait le théorème de lecture
 `coeffHeckeT_of_dvd` (le cas $p \mid n$) avec sa preuve, puis audite le module
 sur les marqueurs interdits (`sorry`, `native_decide`) — le même audit que le
 capstone [Lean-38](Lean-38-Capstone-Geometry-Lean-Python.ipynb) fait sur
 `geometry_lean`.",,,,,,,,0161c155a4e536ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,73784ebf,code,fr,0b8213df57d5fe83,"# Marche 5 : la preuve du theoreme de lecture, et l'audit des marqueurs interdits.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,73784ebf,code,fr,0b8213df57d5fe83,"# Marche 5 : la preuve du theoreme de lecture, et l'audit des marqueurs interdits.
 i = texte.index(""theorem coeffHeckeT_of_dvd"")
 extrait = texte[i: i + 320]
 print(""=== theoreme coeffHeckeT_of_dvd (fichier reel) ==="")
@@ -58664,14 +58664,14 @@ print()
 for marqueur in (""sorry"", ""native_decide""):
     n = len(re.findall(r""\b"" + marqueur + r""\b"", texte))
     print(f""audit HeckeOperator.lean : marqueur '{marqueur}' -> {n} occurrence(s)"")",,,,,,,,0b8213df57d5fe83,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,2909ee57,markdown,fr,92a0ce23112c12f0,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,2909ee57,markdown,fr,92a0ce23112c12f0,"### Lecture du résultat
 
 La preuve tient en une réécriture (`rw [coeffHeckeT, if_pos h]`) : déplier la
 définition puis résoudre l'alternative — la démonstration la plus courte possible
 du fait que la définition et le théorème disent la même chose. L'audit compte
 **zéro** `sorry` et **zéro** `native_decide` : l'énoncé lu est bien prouvé au
 noyau. Niveau 4 atteint — et le pont final reste à traverser.",,,,,,,,92a0ce23112c12f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,d58185b0,markdown,fr,708311cc3a022a97,"## 6. Marche 6 — Moonshine : les coefficients de j encodent le Monstre
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,d58185b0,markdown,fr,708311cc3a022a97,"## 6. Marche 6 — Moonshine : les coefficients de j encodent le Monstre
 
 *(double [Langlands-02](Langlands/02-monstrous-moonshine-invariant-j.ipynb))*
 
@@ -58681,7 +58681,7 @@ Mais ses coefficients font quelque chose d'étrange : ils se décomposent en
 **sommes de dimensions de représentations irréductibles du groupe Monstre**
 (l'ordre ~8·10⁵³ de Fischer–Griess). C'est la conjecture *Monstrous Moonshine*
 (Conway–Norton 1979, démontrée par Borcherds 1992).",,,,,,,,708311cc3a022a97,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,fc652369,code,fr,6ed662dd5508952a,"# Marche 6 : j = E4^3 / Delta par recursion entiere, puis les decompositions Monstre.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,fc652369,code,fr,6ed662dd5508952a,"# Marche 6 : j = E4^3 / Delta par recursion entiere, puis les decompositions Monstre.
 def sigma(n, k):
     return sum(d ** k for d in range(1, n + 1) if n % d == 0)
 
@@ -58714,7 +58714,7 @@ print(f""coefficient c2 = {c2}  -> 1 + 196883 + 21296876 = {1 + 196883 + 2129687
 print()
 print(""Les deux premiers coefficients de j sont des sommes de dimensions de"")
 print(""representations irreductibles du groupe Monstre (Moonshine, Conway-Norton 1979)."")",,,,,,,,6ed662dd5508952a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,229a704a,markdown,fr,14b86d4d440d532b,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,229a704a,markdown,fr,14b86d4d440d532b,"### Lecture du résultat
 
 $196884 = 1 + 196883$ et $21493760 = 1 + 196883 + 21296876$ : les dimensions des
 plus petites représentations du Monstre, additionnées, redonnent exactement les
@@ -58722,7 +58722,7 @@ coefficients de $j$ — recalculés ici depuis le produit $E_4^3/\Delta$, pas re
 La « coïncidence monstrueuse » de McKay est une **sortie calculée**. Le pont de la
 sous-série est franchi : analyse (Δ), arithmétique (Hecke), algèbre (Monstre) —
 les trois volets du README.",,,,,,,,14b86d4d440d532b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,c239288f,markdown,fr,4799cd38b147caa8,"## 7. Les garanties, côte à côte
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,c239288f,markdown,fr,4799cd38b147caa8,"## 7. Les garanties, côte à côte
 
 | Marche | Geste | Ce qui est gagné | Ce qui reste hors de portée |
 |---|---|---|---|
@@ -58732,7 +58732,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,c23928
 | 4 — lac | `coeffHeckeT` lu au fichier | la formule est formalisée, suite quelconque | la preuve |
 | 5 — preuve | `coeffHeckeT_of_dvd` + audit | démontrée au noyau, 0 `sorry` | les formes elles-mêmes (hors périmètre du lac) |
 | 6 — Monstre | $E_4^3/\Delta$ et les dimensions | Moonshine recalculé, pas recopié | la correspondance complète (Borcherds) |",,,,,,,,4799cd38b147caa8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,c494a11c,markdown,fr,3dfb3d192855bfd6,"## 8. La sous-série et ses voisins
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,c494a11c,markdown,fr,3dfb3d192855bfd6,"## 8. La sous-série et ses voisins
 
 | Où | Quoi | Rôle dans l'escalier |
 |---|---|---|
@@ -58742,16 +58742,16 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,c494a1
 | [lac `hecke_lean`](Langlands/hecke_lean/README.md) | opérateurs de Hecke, courbe de Frey — port de `anthropics/fermats-last-theorem` | les marches 4–5 |
 | [Langlands 06](Langlands/06-operateurs-de-hecke-natif.ipynb) | compagnon **natif** du lac (kernel `lean4-wsl`) | le lac *exécuté*, pour qui veut monter plus haut |
 | [Lean-37](Lean-37-Capstone-Serre100.ipynb) | capstone de la sous-série sœur Serre100 | le même geste escalier, autre famille |",,,,,,,,3dfb3d192855bfd6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,82639258,markdown,fr,7d3a7b7bd86aa3c0,"## 9. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,82639258,markdown,fr,7d3a7b7bd86aa3c0,"## 9. Exercices
 
 Trois marches à refaire soi-même. Les cellules s'exécutent telles quelles (C.1) ;
 à vous de remplacer les `result = None` par la comparaison demandée.",,,,,,,,7d3a7b7bd86aa3c0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,344e8b42,markdown,fr,41009cdda7d03dfd,"### Exercice 1 — la relation de Hecke aux premiers 11 et 13
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,344e8b42,markdown,fr,41009cdda7d03dfd,"### Exercice 1 — la relation de Hecke aux premiers 11 et 13
 
 La table `tau` va jusqu'à N = 130 : elle couvre τ(121) mais pas τ(13²) = τ(169). Recalculez
 la table à N = 180 (une ligne), puis vérifiez `tau(p^2) == tau(p)^2 - p^11` pour
 p = 11 et p = 13 — les deux premiers après la marche 2.",,,,,,,,41009cdda7d03dfd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,6c5e30f1,code,fr,d4b607e3aad99966,"# Exercice 1 : Hecke aux premiers 11 et 13 (table etendue a N = 180).
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,6c5e30f1,code,fr,d4b607e3aad99966,"# Exercice 1 : Hecke aux premiers 11 et 13 (table etendue a N = 180).
 # Etape 1 : recalculer la table.
 tau_ext = tau_table(180)
 # Etape 2 : pour p = 11 et p = 13, comparer tau_ext[p^2 - 1] et tau_ext[p - 1]**2 - p**11.
@@ -58759,13 +58759,13 @@ resultat_11 = None  # TODO etudiant : resultat_11 = (tau_ext[121-1], tau_ext[11-
 resultat_13 = None  # TODO etudiant : idem pour p = 13
 print(""tau(11) ="", tau_ext[10], ""| tau(13) ="", tau_ext[12])
 print(""Exercice a completer : poser resultat_11 et resultat_13 (paires attendu vs recursif)."")",,,,,,,,d4b607e3aad99966,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,49dea3c2,markdown,fr,f56bf6646fd7396f,"### Exercice 2 — le deuxième coefficient et le Monstre
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,49dea3c2,markdown,fr,f56bf6646fd7396f,"### Exercice 2 — le deuxième coefficient et le Monstre
 
 Le coefficient $c_2$ de $j$ vaut $21493760$. Avec les quatre premières dimensions
 de représentations du Monstre — `[1, 196883, 21296876, 842603213]` — cherchez une
 combinaison à petits multiplicateurs (chacun ≤ 3) qui redonne $c_3$. *Indice : la
 décomposition existe et est unique avec ces bornes.*",,,,,,,,f56bf6646fd7396f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,dc1f8934,code,fr,691bed8fb5114bd8,"# Exercice 2 : decomposer 21493760 en somme a petits multiplicateurs des dims Monstre.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,dc1f8934,code,fr,691bed8fb5114bd8,"# Exercice 2 : decomposer 21493760 en somme a petits multiplicateurs des dims Monstre.
 from itertools import product
 
 dims = [1, 196883, 21296876, 842603213]
@@ -58773,12 +58773,12 @@ cible = 21493760
 # Etape : parcourir les multiplicateurs (m0, m1, m2, m3) dans {0..3}^4 et garder la somme egale.
 decomposition = None  # TODO etudiant : la boucle product(range(4), repeat=4) et le test
 print(""Exercice a completer : chercher (m0..m3) tel que sum(m*d) == cible."")",,,,,,,,691bed8fb5114bd8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,775ac3ac,markdown,fr,280a8c97f8408671,"### Exercice 3 — auditer tout le lac
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,775ac3ac,markdown,fr,280a8c97f8408671,"### Exercice 3 — auditer tout le lac
 
 La marche 5 audite un module. Étendez l'audit aux six modules français du lac :
 pour chacun, compter `sorry` et `native_decide`. *Le résultat attendu : zéro
 partout — c'est ce que « socle formel » veut dire.*",,,,,,,,280a8c97f8408671,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,3ca869f2,code,fr,7eee80c9166bb600,"# Exercice 3 : audit des six modules FR du lac hecke_lean.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,3ca869f2,code,fr,7eee80c9166bb600,"# Exercice 3 : audit des six modules FR du lac hecke_lean.
 import re
 
 def audit_module(chemin):
@@ -58789,7 +58789,7 @@ def audit_module(chemin):
     return counts
 
 print(""Exercice a completer : boucle sur les fichiers FR de hecke_lean/Hecke/ et bilan."")",,,,,,,,7eee80c9166bb600,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb,5b6e3701,markdown,fr,d36368cdd1dd1fea,"## 10. Conclusion — ce que l'escalier laisse au lecteur
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb,5b6e3701,markdown,fr,d36368cdd1dd1fea,"## 10. Conclusion — ce que l'escalier laisse au lecteur
 
 Une identité, six garanties : une table exacte, une relation vérifiée là où elle
 discrimine, un témoin qui prouve qu'elle caractérise, une définition formalisée,
@@ -58802,17 +58802,17 @@ sous-série — il dit **par où y entrer** :
 - pour la direction orthogonale — la marée de Grothendieck contre les voies
   surprenantes : [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), section « Les
   limites de la marée ».",,,,,,,,d36368cdd1dd1fea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,49bb51d9,markdown,fr,f333a2bec65c6085,"# Lean-41 : Capstone — escalier vers la sous-série MIMO (détection par flips, budget de descente et digestion)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,49bb51d9,markdown,fr,f333a2bec65c6085,"# Lean-41 : Capstone — escalier vers la sous-série MIMO (détection par flips, budget de descente et digestion)
 
 **Série** : [SymbolicAI/Lean](README.md) — entrée/sortie de la sous-série [MIMO](MIMO/README.md).
 
-**Navigation** : [<< Lean-40 Capstone Langlands](Lean-40-Capstone-Langlands-Python.ipynb) | [Index](README.md)
+**Navigation** : [<< Lean-40 Capstone Langlands](Lean-29-Capstone-Langlands-Python.ipynb) | [Index](README.md)
 
 **Carnets visés** : `MIMO-01-Descente-Budget-Lean-Python` → `MIMO-04-Capstone-Digestion-Python` (quatre carnets), avec leur lac compagnon [`mimo_lean/`](mimo_lean/README.md) (0 sorry, kernel `lean4-wsl`).
 
 **Pourquoi un escalier** : la sous-série MIMO déplace 21c/21/21b dans un dossier `MIMO/` ([PR #20371](https://github.com/jsboige/CoursIA/pull/20371), EPIC #17545). Sans carnet d'entrée, la descente est inatteignable depuis la série principale. Ce capstone suit la convention tenue par Lean-20 (vers `Analyse/`), Lean-37 (vers `Serre100/`), Lean-38 (vers `Geometry/`), Lean-39 (vers `JeuDeLaVie/`) et Lean-40 (vers `Langlands/`) : table de routage, prérequis, surface mesurée, et exercices qui confrontent la promesse à l'exécution.
 ",,,,,,,,f333a2bec65c6085,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,53eefd26,markdown,fr,781efc33a873001f,"## 1. Le geste : la détection MIMO par flips de coordonnées
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,53eefd26,markdown,fr,781efc33a873001f,"## 1. Le geste : la détection MIMO par flips de coordonnées
 
 Papailiopoulos (2026) pose la détection MIMO comme une **descente sur un paysage de coût** : à chaque pas, on flippe la coordonnée la plus prometteuse, on mesure la décroissance du coût, et on s'arrête quand la décroissance n'est plus garantie par le budget restant. Le seuil `2·log N` (en bits) provient de l'union bound sur la queue gaussienne de l'estimateur LMMSE.
 
@@ -58824,7 +58824,7 @@ Trois usages de Lean/IA cohabitent ici, comme dans Lean-20 :
 
 Ce capstone pose la question d'entrée : *par où commencer, et que faut-il savoir pour ne pas se perdre ?*
 ",,,,,,,,781efc33a873001f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,bcbca5ba,markdown,fr,86cab03d2feeb191,"## 2. Table de routage : quatre carnets, un lac
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,bcbca5ba,markdown,fr,86cab03d2feeb191,"## 2. Table de routage : quatre carnets, un lac
 
 | Carnet | Noyau | Thème | Prérequis | Sortie |
 |---|---|---|---|---|
@@ -58835,7 +58835,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,bcbca5ba,ma
 
 **Itinéraire recommandé** : `MIMO-01` (lire l'algorithme nu) → `MIMO-02` (le seuil et la simulation) → `MIMO-03` (le lac formel) → `MIMO-04` (la digestion). Les flèches de retour depuis `MIMO-04` : ce que Lean prouve, ce que Python mesure, et où le pont s'établit (ou pas).
 ",,,,,,,,86cab03d2feeb191,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,30be0c78,markdown,fr,6dd01c969c710365,"## 3. Le versant formel : `mimo_lean`, un lac sorry-free
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,30be0c78,markdown,fr,6dd01c969c710365,"## 3. Le versant formel : `mimo_lean`, un lac sorry-free
 
 Le lac [`mimo_lean/`](mimo_lean/README.md) (baseline 0 sorry en code-only) est entièrement **own** sauf la concentration de Lipschitz et Hanson–Wright, empruntées au fork [`jsboige/lean-stat-learning-theory`](https://github.com/jsboige/lean-stat-learning-theory) (lui-même un fork de `YuanheZ/lean-stat-learning-theory`). Les déclarations empruntées sont marquées par leur chemin d'import ; tout le reste — l'instanciation MIMO, le converse chi-carré, le pont vers l'erreur ML — est prouvé ici.
 
@@ -58846,7 +58846,7 @@ Cibles du lac par carnet :
 - `MIMO-03` couvre le lac : `#check` sur ses déclarations, et `#print axioms` sur **six** d'entre elles seulement — pas sur chaque module.
 - `MIMO-04` **recompte** la surface du lac depuis les sources — c'est le test de cohérence (l'organe canonique rend 56, là où les sources en portent 57 — voir §5).
 ",,,,,,,,6dd01c969c710365,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,efcbd03d,code,fr,9343a2d7dc42368b,"# Prérequis minimaux : aucun pour ce capstone d'entrée.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,efcbd03d,code,fr,9343a2d7dc42368b,"# Prérequis minimaux : aucun pour ce capstone d'entrée.
 import sys, platform
 import numpy as np
 
@@ -58869,11 +58869,11 @@ assert lac.exists(), f""Le lac {lac} doit etre sibling du dossier Lean/""
 lean_files = sorted(lac.rglob('*.lean'))
 print(f""\nLac mimo_lean: {len(lean_files)} fichiers .lean"")
 ",,,,,,,,9343a2d7dc42368b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,b5ce039a,markdown,fr,9e43efb0f15a82af,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,b5ce039a,markdown,fr,9e43efb0f15a82af,"### Lecture du résultat
 
 Les quatre carnets de la sous-série `MIMO/` sont présents, ainsi que leur lac `mimo_lean/`. Aucune autre dépendance n'est requise pour le présent carnet d'entrée — un kernel `python3` standard suffit.
 ",,,,,,,,9e43efb0f15a82af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,f4f13a5d,markdown,fr,6effce258f97d3c1,"## 4. Surface de la sous-série : on mesure, on ne suppose rien
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,f4f13a5d,markdown,fr,6effce258f97d3c1,"## 4. Surface de la sous-série : on mesure, on ne suppose rien
 
 Un capstone sert à **décider si l'on entre**, et cette décision se prend sur des mesures, pas sur des promesses. La surface de la sous-série MIMO est ici recomptée depuis les sources du dépôt :
 
@@ -58881,7 +58881,7 @@ Un capstone sert à **décider si l'on entre**, et cette décision se prend sur 
 - taille du lac, modules, énoncés `theorem` / `lemma` ;
 - écart entre promesse (énoncés dans le README du lac) et un comptage direct (un `grep` sur `mimo_lean/` rend 57 là où l'**organe** `scripts/lean/scan_lake_notebook_visibility.py` en rend 56 — voir §5).
 ",,,,,,,,6effce258f97d3c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,48ab04ec,code,fr,01f29c4751763d87,"# Surface de la sous-serie : on lit les sources, on ne declare rien.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,48ab04ec,code,fr,01f29c4751763d87,"# Surface de la sous-serie : on lit les sources, on ne declare rien.
 from pathlib import Path
 import re
 
@@ -58909,7 +58909,7 @@ for p in carnets:
 print(f""\nSous-serie MIMO : {len(carnets)} carnets, {total_cells} cellules ""
       f""({total_code} code, {total_md} markdown), {total_exos} exercices"")
 ",,,,,,,,01f29c4751763d87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,38459cf4,code,fr,14c7f41c600a4397,"# Surface du lac mimo_lean : on invoque l'organe canonique
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,38459cf4,code,fr,14c7f41c600a4397,"# Surface du lac mimo_lean : on invoque l'organe canonique
 # `scripts/lean/count_code_sorry.py` (le seul validant le compte global
 # du lake). On n'en reimplemente pas la regex ici : l'instrument tient
 # deja compte du dedoublonnage i18n FR/EN (siblings #4980) et de la
@@ -58966,11 +58966,11 @@ assert n_distinct == 0, (
 print()
 print(""Baseline mimo_lean OK : 0 sorry code-only, 0 vacuous -- le lac est la base formelle de la sous-serie."")
 ",,,,,,,,14c7f41c600a4397,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,1008adf1,markdown,fr,7aa31dbff7a3afab,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,1008adf1,markdown,fr,7aa31dbff7a3afab,"### Lecture du résultat
 
 La sous-série `MIMO/` porte un carnet par marche de l'escalier (le minimum conventionnel de la série) ; le lac `mimo_lean/` est **sorry-free** (baseline 0, vérifiée par la matrice CI — job `Lean CI (mimo_lean)`, entrée `mimo` de `scripts/lean/ci_lakes.json`). Les chiffres exacts varieront au fil des PRs — c'est l'**écart** entre ce que cet organe compte et ce que les autres (README du lac, scripts/lean) comptent qui fait foi (cf. §5).
 ",,,,,,,,7aa31dbff7a3afab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,1372b9e1,markdown,fr,a5a11b923e9d2fdf,"## 5. L'écart promesse / organe : `56` vs `57`
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,1372b9e1,markdown,fr,a5a11b923e9d2fdf,"## 5. L'écart promesse / organe : `56` vs `57`
 
 L'écart 56 / 57 est **réel**, et il est instrumenté : l'organe canonique `scripts/lean/scan_lake_notebook_visibility.py --lake mimo_lean` rend `56` là où un comptage direct des sources en rend `57`. La cause est dans son motif de nom : `DECL_RE` capture `([A-Za-z_][A-Za-z0-9_']*)`, donc la capture s'arrête au **premier caractère non ASCII**. (Le script `scripts/lean/extract_decls.py` que citait un premier récit n'existe pas dans l'arbre : `git ls-tree -r origin/main --name-only | grep extract_decls` rend 0 hit.)
 
@@ -58980,7 +58980,7 @@ L'écart 56 / 57 est **réel**, et il est instrumenté : l'organe canonique `scr
 
 La leçon tient : **ne pas se fier au seul chiffre d'un organe**. Croiser avec un `grep` direct sur `mimo_lean/` pour la mesure brute, citer l'instrument **réellement présent dans l'arbre** pour la mesure reproductible. L'écart 56 / 57 est documenté dans la PR de digestion de MIMO-04.
 ",,,,,,,,a5a11b923e9d2fdf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,0e81eb67,markdown,fr,e6d11597cb29e76d,"## 6. Itinéraire de lecture : trois parcours au choix
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,0e81eb67,markdown,fr,e6d11597cb29e76d,"## 6. Itinéraire de lecture : trois parcours au choix
 
 Trois parcours sont possibles, selon le temps et la curiosité :
 
@@ -58990,7 +58990,7 @@ Trois parcours sont possibles, selon le temps et la curiosité :
 
 Le parcours principal reprend ensuite à [Lean-22 — Galois](Galois/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) (sous-série Galois) ou à [Langlands 06 — opérateurs de Hecke](Langlands/06-operateurs-de-hecke-natif.ipynb) (sous-série Langlands).
 ",,,,,,,,e6d11597cb29e76d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb,64eca5b6,markdown,fr,8349dda7175a8f6c,"## 7. Trois exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb,64eca5b6,markdown,fr,8349dda7175a8f6c,"## 7. Trois exercices
 
 **Exercice 1 — reproduire le seuil `2·log N`** : reprendre la cellule Monte-Carlo de MIMO-02 et vérifier que la probabilité d'échappement du bruit suit `e^{−n·p}` à `n` croissant pour `p = 0.05`, `0.1`, `0.2`. Tracer la courbe et citer le seuil en bits.
 
@@ -74433,7 +74433,7 @@ La sortie se conclut par `--% env 0` et `{""env"": 0}` : le lake a compilé puis
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb,cell13c-04b,markdown,fr,8aad84bbcdc9b012,"### Lecture du résultat — le contrôle positif
 
 Le REPL répond `─────▶  4` à `#eval 2 + 2`, et la sortie se termine par `--% env 1`. La chaîne WSL → lake → noyau est donc vivante : si cette cellule échouait, tous les `#check` suivants resteraient muets et l'on confondrait un kernel en panne avec une preuve fausse.",,,,,,,,8aad84bbcdc9b012,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,a65e6f6a,markdown,fr,2c07a86f9317e305,"## 2 bis. Le groupe fondamental : pourquoi « deux tours ≠ un tour » est une phrase de groupe
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb,a65e6f6a,markdown,fr,2c07a86f9317e305,"## 2 bis. Le groupe fondamental : pourquoi « deux tours ≠ un tour » est une phrase de groupe
 
 Le titre du carnet promet un groupe fondamental ; construisons-le. Deux lacets de `ℂ*` basés en `1` sont **homotopes** si l'un se déforme continûment en l'autre, extrémités fixées. Les classes d'homotopie forment un groupe : le produit est « parcourir le premier lacet, puis le second », l'élément neutre est le lacet constant, l'inverse est le lacet parcouru à l'envers. Ce groupe, noté `π₁(ℂ*, 1)`, est le **groupe fondamental**.
 

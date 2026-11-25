@@ -445,8 +445,8 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb` | Lean | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Lean-Grothendieck-Visuel-Python.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Monodromie-Groupe-Fondamental-Lean-Python.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-Python.ipynb` | Lean | python3 | - | - |
@@ -455,8 +455,8 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb` | Lean | python3-lean | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb` | Lean | python3 | numpy==2.4.6, sympy==1.14.0 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb` | Lean | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb` | Lean | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-04-Capstone-Digestion-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |

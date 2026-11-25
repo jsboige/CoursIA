@@ -1,4 +1,4 @@
-# Triplet Lean-40 : jumeau Python + portage Rust (issue #27966, spec Rust portage
+# Triplet Lean-29 : jumeau Python + portage Rust (issue #27966, spec Rust portage
 # lot Rust std · Lean ANALYSE). Les deux carnets ont exactement la meme structure
 # 30 cellules (memes indices de cellules code : 3, 6, 9, 12, 15, 18, 24, 26, 28) :
 # les cotes se correspondent par index. Cote Rust = evcxr, std seul (aucune crate
@@ -25,10 +25,10 @@
 # Timeout d'execution (spec #27966) : min(15 x duree du bloc commite, 300 s) --
 # duree mesuree 14.30906 s -> timeout 214 s, kernel rust a cwd = dossier du
 # carnet (les cellules 12 et 15 trouvent le lac par la boucle de racines).
-- name: "Lean-40 Capstone Langlands"
+- name: "Lean-29 Capstone Langlands"
   family: "Lean (capstones, analyse)"
-  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb
-  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Rust.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Rust.ipynb
   measures:
     - id: tau_2
       description: "tau(2) = -24 (table Ramanujan, ligne 2)"
