@@ -34,18 +34,18 @@ POST {base_url}/chat/completions
  "<parametre>": "<valeur>"}
 ```
 
-| Paramètre | `gpt-5-mini`<br>api.openai.com | `gpt-4o-mini`<br>api.openai.com | `openai/gpt-5-mini`<br>openrouter.ai | `meta-llama/llama-3.3-70b-instruct`<br>openrouter.ai | `qwen3.6-35b-a3b`<br>vLLM medium (façade) |
-|---|---|---|---|---|---|
-| `temperature` | **REFUSE** ¹ | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE |
-| `top_p` | **REFUSE** ² | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE |
-| `top_k` | **REFUSE** ³ | **REFUSE** ⁷ | **IGNORE** ⁵ | ACCEPTE | ACCEPTE |
-| `frequency_penalty` | **REFUSE** ² | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE |
-| `presence_penalty` | **REFUSE** ² | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE |
-| `logprobs` | NON_CONCLUABLE ⁴ | ACCEPTE | **REFUSE** ⁶ | ACCEPTE | ACCEPTE |
-| `seed` | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE |
-| `max_tokens` | **REFUSE** ⁸ | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE |
-| `max_completion_tokens` | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE |
-| `reasoning_effort` | ACCEPTE | **REFUSE** ⁹ | ACCEPTE | ACCEPTE | ACCEPTE |
+| Paramètre | `gpt-5-mini`<br>api.openai.com | `gpt-4o-mini`<br>api.openai.com | `openai/gpt-5-mini`<br>openrouter.ai | `meta-llama/llama-3.3-70b-instruct`<br>openrouter.ai | `qwen3.6-35b-a3b`<br>vLLM medium (façade) | `swift-1.5-27b`<br>vLLM cluster + passerelle ¹⁰ |
+|---|---|---|---|---|---|---|
+| `temperature` | **REFUSE** ¹ | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `top_p` | **REFUSE** ² | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `top_k` | **REFUSE** ³ | **REFUSE** ⁷ | **IGNORE** ⁵ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `frequency_penalty` | **REFUSE** ² | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `presence_penalty` | **REFUSE** ² | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `logprobs` | NON_CONCLUABLE ⁴ | ACCEPTE | **REFUSE** ⁶ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `seed` | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `max_tokens` | **REFUSE** ⁸ | ACCEPTE | **IGNORE** ⁵ | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ ¹¹ |
+| `max_completion_tokens` | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ |
+| `reasoning_effort` | ACCEPTE | **REFUSE** ⁹ | ACCEPTE | ACCEPTE | ACCEPTE | ACCEPTE ¹⁰ ¹² |
 
 - ¹ `Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.`
 - ² `Unsupported parameter: '<p>' is not supported with this model.`
@@ -56,6 +56,9 @@ POST {base_url}/chat/completions
 - ⁷ `Unrecognized request argument supplied: top_k`.
 - ⁸ `Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.`
 - ⁹ `Unrecognized request argument supplied: reasoning_effort` — le curseur de raisonnement n'existe que sur les modèles de raisonnement.
+- ¹⁰ Colonne `swift-1.5-27b` : mesure du **2026-11-25**, lot de dix sondes (une par paramètre), **sur deux endpoints qui servent le même modèle** — le vLLM du cluster `http://192.168.0.47:5002/v1` et la passerelle `https://models.myia.io/v1`. Les vingt appels répondent **HTTP 200** : aucun paramètre n'est refusé, les dix verdicts sont ACCEPTE. Détail, routage de clé et effet mesuré : [la section dédiée](#swift-15-27b--mesure-du-2026-11-25-le-modèle-servi-par-le-cluster).
+- ¹¹ Effet visible du plafond : à `max_tokens=16`, la génération s'arrête en `finish_reason=length` avec exactement 16 tokens de complétion — le paramètre n'est pas seulement toléré, il borne la sortie.
+- ¹² `reasoning_effort="low"` passe de 15 à 45 `prompt_tokens` sur le vLLM du cluster (le serveur insère une consigne de budget de raisonnement dans le prompt), tandis que la passerelle laisse le prompt à 15 tokens : **le même modèle, deux endpoints, deux effets** — c'est ce que la colonne dit, et pas davantage.
 
 **Familles** : la matrice machine porte `gpt-5*` (mesuré sur `gpt-5-mini`) et `gpt-4o*`
 (mesuré sur `gpt-4o-mini`) comme entrées explicites — un modèle non mesuré de la famille
@@ -70,6 +73,73 @@ ou un modèle vivant) :
   « Cycle de vie d'un identifiant » plus bas.
 - `deepseek/deepseek-r1` : **plus servi par aucun fournisseur OpenRouter**
   (`no provider serves this model anymore`).
+
+## `swift-1.5-27b` — mesure du 2026-11-25 (le modèle servi par le cluster)
+
+Les carnets GenAI de la série Audio et d'autres séries font tous appel à
+`llm_model = "swift-1.5-27b"` (`04-6-Audiobook-Pipeline`, `04-1-Educational-Audio-Content`,
+`04-5-LiveCoding-LLM-Music`, `03-3-Realtime-Voice-API`) : c'est le modèle que sert le vLLM du
+cluster. La matrice ne le couvrait pas — la garde restait donc muette sur ses paramètres,
+faute de mesure.
+
+### Les deux endpoints qui servent ce modèle
+
+| Endpoint | Clé qui l'authentifie | `GET /models` |
+|---|---|---|
+| `http://192.168.0.47:5002/v1` (vLLM du cluster) | `VLLM_API_KEY_MEDIUM` (alias cible `TGWUI_MEDIUM_API_KEY`) | 200 — 2 modèles (`swift-1.5-27b`, `qwen3.6-35b-a3b`) |
+| `https://models.myia.io/v1` (passerelle fleet) | `CLAUDISH_PROXY_KEY` | 200 — 36 modèles |
+
+**Le routage de clé est la mesure qui a débloqué la campagne** : la clé `VLLM_API_KEY` du
+coffre partagé est **refusée** (401 `Unauthorized`) par le vLLM du cluster `:5002` — c'est
+`VLLM_API_KEY_MEDIUM` qui passe. C'est aussi pourquoi quatre des sept sites de
+[#24114](https://github.com/jsboige/CoursIA/issues/24114) étaient déclarés « non mesurables »
+sur les sièges précédents (le port 5002 y était en timeout TCP).
+
+### Les dix sondes
+
+Un lot de dix appels, un par paramètre, sur chaque endpoint (vingt appels au total) :
+**HTTP 200 partout**, aucune bannière `Unsupported parameter` — donc dix verdicts **ACCEPTE**
+dans la matrice machine. Trois effets ont été relevés au passage :
+
+- `max_tokens=16` → `finish_reason=length`, 16 tokens de complétion : le plafond agit ;
+- `temperature=0.0` est accepté — la famille `gpt-5` le refuse ;
+- `reasoning_effort="low"` porte le prompt de 15 à 45 tokens sur le vLLM du cluster et le
+  laisse à 15 sur la passerelle : même modèle, deux déploiements, deux effets.
+
+### Le nom servi n'est pas le même selon l'endpoint
+
+L'endpoint du cluster sert les **deux noms** pour le même checkpoint (Swift-1.5-Qwen3.8-27B
+W4A16-AWQ — voir [#26832](https://github.com/jsboige/CoursIA/issues/26832) et
+[`docs/genai/model-mapping-openai.md`](model-mapping-openai.md)) ; l'alias qui l'emporte dépend
+de l'endpoint. Mesuré le 2026-11-25T06:02:56Z :
+
+| Endpoint | Nom demandé | `model` renvoyé |
+|---|---|---|
+| vLLM du cluster `:5002` | `swift-1.5-27b` | `qwen3.6-35b-a3b` |
+| vLLM du cluster `:5002` | `qwen3.6-35b-a3b` | `qwen3.6-35b-a3b` |
+| passerelle `models.myia.io` | `swift-1.5-27b` | `swift-1.5-27b` |
+| passerelle `models.myia.io` | `qwen3.6-35b-a3b` | `swift-1.5-27b` |
+
+Les dix verdicts de la colonne valent donc pour les deux noms : c'est le même modèle, servi sous
+deux identifiants par deux déploiements.
+
+### Ce que cela dit des sept sites `max_tokens` de #24114
+
+Les sept appels du tableau de l'issue ont été rejoués **avec leur forme exacte** (température,
+`max_tokens`, et `chat_template_kwargs` pour les quatre appels `llm_client`) :
+
+| Site | Endpoint | Résultat |
+|---|---|---|
+| `04-6` c.9 (`max_tokens=1000`) | vLLM du cluster | **HTTP 200**, pas de bannière |
+| `04-6` c.12 (`max_tokens=1500`) | vLLM du cluster | **HTTP 200**, pas de bannière |
+| `04-1` c.9 (`max_tokens=1000`) | vLLM du cluster | **HTTP 200**, pas de bannière |
+| `03-3` c.23 (`max_tokens=200`) | vLLM du cluster | **HTTP 200**, pas de bannière |
+| `04-5` c.20 / c.33 / c.36 (`max_tokens=2000`) | passerelle fleet | **HTTP 200** ×3, pas de bannière |
+
+Le refus de `max_tokens` est donc **propre à l'API directe `gpt-5.6-luna`** — le cas de
+`04-11-Generation-TTS`, corrigé sur `main`. Sur les modèles que sert le cluster, le paramètre
+est accepté et il agit : **aucune modification de source n'est justifiée sur ces sept sites**,
+ce que l'issue demandait de vérifier avant tout changement.
 
 ## Famille image — mesure du 2026-10-26
 

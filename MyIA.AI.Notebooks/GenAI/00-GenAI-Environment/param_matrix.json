@@ -608,4 +608,67 @@
    }
   }
  }
+,
+ "swift-1.5-27b": {
+  "date": "2026-11-25T05:49:02Z",
+  "source": "vLLM du cluster http://192.168.0.47:5002/v1 et passerelle https://models.myia.io/v1 -- lot de dix sondes, memes verdicts sur les deux endpoints",
+  "note": "L'endpoint du cluster sert les deux noms pour le meme checkpoint (Swift-1.5-Qwen3.8-27B W4A16-AWQ, cf. #26832) : demander swift-1.5-27b rend model=qwen3.6-35b-a3b sur :5002 et model=swift-1.5-27b sur la passerelle (mesure 2026-11-25T06:02:56Z) -- les dix verdicts ci-dessus valent pour les deux noms.",
+  "parametres": {
+   "temperature": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1",
+    "note": "temperature=0.0 accepte -- la famille gpt-5 le refuse"
+   },
+   "top_p": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1"
+   },
+   "top_k": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1"
+   },
+   "frequency_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1"
+   },
+   "presence_penalty": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1"
+   },
+   "logprobs": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1",
+    "note": "200 sans le refus de compte/organisation observe sur gpt-5-mini"
+   },
+   "seed": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1"
+   },
+   "max_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1",
+    "note": "accepte ; a 16 tokens de completion la generation s'arrete en finish_reason=length -- le plafond est visible"
+   },
+   "max_completion_tokens": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1",
+    "note": "accepte, meme effet que max_tokens sur ce modele"
+   },
+   "reasoning_effort": {
+    "verdict": "ACCEPTE",
+    "date": "2026-11-25T05:49:02Z",
+    "source": "vLLM du cluster http://192.168.0.47:5002/v1 + passerelle https://models.myia.io/v1",
+    "note": "accepte ; sur le vLLM du cluster reasoning_effort=low porte le prompt de 15 a 45 tokens (le curseur est pris en compte), sur la passerelle le prompt reste a 15"
+   }
+  }
+ }
 }
