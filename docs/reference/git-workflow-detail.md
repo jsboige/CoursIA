@@ -1,6 +1,6 @@
 # Git workflow — détail : verbatim force-push, incidents, rationale
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Détail durable de [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) (harness-hygiene tier 2). La règle porte le périmètre opératoire ; ce fichier porte les verbatims et les incidents qui le fondent.
 
@@ -90,6 +90,58 @@ Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergé
 
 **L'ancre PR passe au listing REST par branche (2026-11, #23636)** : `gh pr list --state all --search "head:<branche>"` consomme le chemin de recherche GraphQL, refusé sous le login partagé alors même que le compteur horaire du seau `search` reste positif (plafond de points propre au chemin de recherche ; mesure firsthand 2026-10-31 : 3 échecs consécutifs `GraphQL: API rate limit already exceeded` alors que `gh api rate_limit` rendait `core: 4950` — le compteur ne prédit pas ce refus, seul le log de l'appel tranche). L'ancre autoritative est désormais `gh api "repos/<owner>/<repo>/pulls?state=all&head=<owner>:<branche>&per_page=5"` : seau `core`, filtre sur la tête **exacte** — le qualificatif `head:` de `--search` matche par sous-chaîne, donc moins précis pour l'intention « la PR dont `headRefName == branche` ». Le repli `--search` reste réservé aux branches de fork dont le propriétaire du head est inconnu : le filtre `head=` accepte bien `<fork-owner>:<branch>`, mais la voie REST de l'organe ne connaît que le propriétaire du dépôt courant. Ce n'est **pas** l'ancre interdite `commits/<oid>/pulls` (faux négatifs mesurés sur PRs OPEN) : le listing par branche n'a pas ce défaut. Fail-closed conservé dans l'organe : une erreur `gh` reste un `RuntimeError` → verdict `no_gh_unverifiable`, jamais un « 0 worktree » silencieux. Correctif appliqué dans `anchor_search_pr_for_branch` de `scripts/ci/prune_merged_worktrees.py` ; récurrence fondatrice #15369, mesure #23636, déploiement #23642.
 
+
+### 5.1 « Worktree cleanup » — ce que la règle portait encore (déport du 2026-11-24, base `28b990d13d`)
+
+Le verdict du 2026-10-27 (ligne 8, #11554) nommait cette section « une procédure opérationnelle déjà adossée à un script ». La tranche #23763 (2026-11-02) en a déclaré les commandes inchangées ; la section est donc restée entière dans la règle. Les blocs ci-dessous quittent la règle **sans réécriture** — seules les cibles de liens relatifs sont rebasées. La règle garde l'énoncé du problème, les commandes de fin de cycle et « Refus ≠ échec ».
+
+| Ligne de la règle (base `28b990d13d`) | Bloc déplacé |
+|---|---|
+| L102–104 | commandes du prune — dry-run, `--apply`, `--json` (seul `--json` quitte la règle) |
+| L107 | câblage quotidien #14473 — tâche planifiée, journal, filet |
+| L109–112 | commandes d'installation — `--install` et sa garde #14476, `--status`, `--install --dry-run` |
+| L115–119 | critères de retrait REMOVE / REFUSE / SKIP_CURRENT, artefacts tolérés |
+| L121 | ancre PR autoritative |
+| L123 | rapport par classe, `--warn-threshold 20`, attribution `.lane-owner` |
+| L125 | mesure datée et contrôle positif — pointeur vers la présente section, sans objet ici |
+
+#### L102–104 — commandes du prune
+
+```bash
+python scripts/ci/prune_merged_worktrees.py             # dry-run : liste ce qui serait retiré
+python scripts/ci/prune_merged_worktrees.py --apply     # applique
+python scripts/ci/prune_merged_worktrees.py --json      # sortie structuree pour sweep dashboard
+```
+
+#### L107 — câblage quotidien (#14473)
+
+**Cablage quotidien (#14473)** : `scripts/ci/install_prune_task.py` installe la tache planifiee locale (schtasks DAILY 03:17, journal `%LOCALAPPDATA%\CoursIA\prune_task\logs\`) qui execute la purge en `--apply` — l'appel manuel fin de cycle reste le filet (pourquoi une tache et pas la regle seule : [détail §5](#5-worktree-cleanup-14195--problème-mesures-datées-et-contrôle-positif)). Une fois par machine :
+
+#### L109–112 — commandes d'installation
+
+```bash
+python scripts/ci/install_prune_task.py --install   # garde : REFUSE tant que le fix #14476 n'est pas merge
+python scripts/ci/install_prune_task.py --status    # etat de la tache
+python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv schtasks sans installer
+```
+
+#### L115–119 — critères de retrait (cf issue #14195 acceptance)
+
+**Critères de retrait (cf issue #14195 acceptance)** :
+- **REMOVE** : PR MERGED ou CLOSED, branche sans unpushed, pas d'édition source untracked.
+- **REFUSE** : branche `main`/`master` (jamais le worktree de travail) · PR OPEN (l'itération continue) · commits non poussés vs upstream spécifique (`@{u}` non-`main`) · édition source untracked non tolérée (`.py`, `.ipynb`, `.lean`, `.md`, etc.).
+- **SKIP_CURRENT** : le worktree depuis lequel le script est lancé.
+- **Artefacts untracked tolérés** (`slides/images/`, `**/scripts/results/`, `.claude/agent-memory/*`, `*_output.ipynb`, `node_modules/`, `.cache/`, `.pytest_cache/`, `__pycache__/`, `_measurements/`, `.mypy_cache/`, `.ruff_cache/`, `dist/`, `build/`, `.eggs/`, `.tox/`) — d'après le dernier commentaire de #8924.
+
+#### L121 — ancre PR autoritative
+
+_« le scan L576 ci-dessus » : la section « Orphan-branch scan (L576 ★★) » de la règle, qui précède « Worktree cleanup » dans `.claude/rules/git-workflow.md`._
+
+**Ancre PR autoritative** : l'endpoint REST par branche du scan L576 ci-dessus (seau `core`, #23636) ; repli `--search head:` forks (rationale et détail : git-workflow-detail.md §5).
+
+#### L123 — refus ≠ échec, observabilité, attribution lane
+
+**Refus ≠ échec + observabilité** : un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision (mesure : [détail §5](#5-worktree-cleanup-14195--problème-mesures-datées-et-contrôle-positif)).
 ## 6. Le scope avale le mot-clé — la mesure sur 500 commits (#23348)
 
 Détail déporté de la puce « Safe reference syntax » de la règle. Le mandat `type(scope): subject` a une place invite pour le numéro d'issue — `type(scope,#N): subject` — et cette forme ne ferme rien : `(` et le scope s'assoient entre le mot-clé de fermeture et le numéro.

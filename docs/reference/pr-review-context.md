@@ -1,6 +1,6 @@
 # PR Review Discipline — Contexte, incident, anti-patterns
 
-> REFERENCE — vivante — dernière révision 2026-11-20
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
@@ -331,7 +331,9 @@ Deuxième passe sur la même règle (#11554) : entre la tranche 1 et le 2026-11-
 
 ### L17 — le seuil `DIAG-LOOP` et sa mesure fondatrice (#14821)
 
-PR #14821 : 31 commentaires et 68 101 caractères d'infra-diagnostic sur 5 jours (25/28 sans action attachée), pour un livrable qui n'avait pas bougé depuis le commit du premier jour. Le commentaire de diagnostic pur coûte une lecture à chaque lane et ne fait pas avancer la PR : c'est une pompe, pas un apport. D'où le seuil porté par la règle : **plus de 3 `[DIAG]` consécutifs sans `[ACTION]` intercalé** = `DIAG-LOOP`.
+Sur cinq jours, la PR #14821 a reçu 31 commentaires totalisant 68 101 caractères d'infra-diagnostic ; 25 des 28 commentaires de diagnostic n'étaient rattachés à aucune action. Le livrable n'avait pas bougé depuis le commit du premier jour. Cette répétition imposait une lecture aux lanes sans faire avancer la PR : c'est le coût que la règle évite en interdisant le commentaire de diagnostic sans action concrète dans le même cycle.
+
+Le détecteur B.0 applique un seuil complémentaire : plus de trois `[DIAG]` consécutifs sans `[ACTION]` intercalé produisent `DIAG-LOOP`. Le seuil repère une boucle de commentaires déjà émis ; il ne remplace pas l'obligation préventive de la règle.
 
 ### `[BASE-INHERITED]` — un rouge hérité de la base n'est pas un nit (#26364)
 
