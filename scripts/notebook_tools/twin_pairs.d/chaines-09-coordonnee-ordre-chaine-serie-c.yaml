@@ -2,6 +2,9 @@
   family: Physique/Chaines
   python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-09-Coordonnee-Ordre-Chaine-Serie-Python.ipynb
   csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-09-Coordonnee-Ordre-Chaine-Serie-CSharp.ipynb
-  parity_level: native-both
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design des deux cotes : l'arithmetique exacte de la serie est faite a la main — Python en fractions.Fraction (stdlib), C# en rationnel exact local (RationnelC13/Rat15 sur System.Numerics.BigInteger, 0 package externe). Aucun moteur externe canonique nommable d'un cote comme de l'autre, comme Chaines-05/-06/-08 qui font la meme arithmetique exacte."
   known_differences:
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Chaines-09-Coordonnee-Ordre-Chaine-Serie-Python.ipynb. Execution reelle sur kernel .net-csharp : 13 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Cellule 12 (lecture du §51) — statut epistemique du pas : le Python CONSTRUIT le pas (`deltas = [pas(c) for c in chaines.values()]`, prose « Construit (application de la regle, non mesure) ») ; le C# le TRANSCRIT en dur (`pasCites = { (1,1) x7 }`, aucune fonction de pas, prose « Cité, non recalculé », releve final de la cellule 29 « cite, non recalcule »). Le jumeau fait moins que la source sur ce point : le code et la prose du C# sont coherents entre eux, l'ecart est declare ici, non aligne."
