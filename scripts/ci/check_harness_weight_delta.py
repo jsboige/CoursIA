@@ -162,23 +162,6 @@ def suppressions(base: dict, head: dict) -> list[str]:
     return out
 
 
-def unlisted_path_gated_rules(
-        snapshot: dict,
-        inventory_paths: tuple[Path, ...] | None = None) -> list[str] | None:
-    """Regles path-gatees absentes des inventaires de lecture du harnais.
-
-    Les tests sur arbres temporaires injectent leurs inventaires explicites via
-    compare(); l'appel de production utilise toujours les deux fichiers du repo.
-    """
-    if inventory_paths is None:
-        root = Path(__file__).resolve().parents[2]
-        if not (root / "CLAUDE.md").is_file():
-            return None
-        inventory_paths = (root / "CLAUDE.md", root / "docs" / "reference" /
-                           "claude-code-config.md")
-    return unlisted_rules_against_inventory(snapshot, inventory_paths)
-
-
 def unlisted_rules_against_inventory(snapshot: dict,
                                      inventory_paths: tuple[Path, ...]
                                      ) -> list[str]:
