@@ -23,8 +23,12 @@
         csharp:
           absent: >-
             Le jumeau C# charge le moteur par `#r` vers la DLL `Microsoft.Z3`
-            du sous-module `SymbolicAI/SMT/Z3.Linq` et n'imprime aucun bandeau :
-            sa cellule 1 n'a pas de sortie. Declare ABSENT, pas mesure.
+            du sous-module `SymbolicAI/SMT/Z3.Linq` et n'imprime aucun bandeau
+            TEXTE : sa cellule 1 publie bien une sortie, mais une sortie
+            `display_data` `text/html` de .NET Interactive (« Installed
+            Packages : Microsoft.Z3, 4.12.2 »), pas la ligne `Z3 importe avec
+            succes`. La grandeur comparee est le bandeau texte : declare
+            ABSENT cote C#, pas mesure.
     - id: corpus_anchor_easy51
       description: >-
         Ancre de presence du fichier canonique `Sudoku_Easy51.txt` dans le
