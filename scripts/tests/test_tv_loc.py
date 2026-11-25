@@ -34,7 +34,7 @@ def _ecrire(repertoire: Path, nom: str, noyau: str, lignes=("x = 1",)) -> Path:
 
 def test_selection_par_noyau_pas_par_nom(tmp_path):
     """Un index porte un carnet Python et son pendant C# : le noyau tranche."""
-    _ecrire(tmp_path, "TV-00a-RoPE-from-scratch.ipynb", "python3")
+    _ecrire(tmp_path, "TV-00a-RoPE-from-scratch-Python.ipynb", "python3")
     _ecrire(tmp_path, "TV-00a-RoPE-from-scratch-CSharp.ipynb", ".net-csharp")
 
     assert loc.carnet_index("TV-00a", base=tmp_path) == 1
@@ -43,10 +43,10 @@ def test_selection_par_noyau_pas_par_nom(tmp_path):
 
 def test_invariance_au_suffixe_de_noyau(tmp_path):
     """Renommer le carnet (chantier A) ne change pas la valeur mesuree."""
-    _ecrire(tmp_path, "TV-01-Attention-Variants-SOTA.ipynb", "python3")
+    _ecrire(tmp_path, "TV-01-Attention-Variants-SOTA-Python.ipynb", "python3")
     avant = loc.carnet_index("TV-01", base=tmp_path)
 
-    (tmp_path / "TV-01-Attention-Variants-SOTA.ipynb").rename(
+    (tmp_path / "TV-01-Attention-Variants-SOTA-Python.ipynb").rename(
         tmp_path / "TV-01-Attention-Variants-SOTA-Python.ipynb")
 
     assert loc.carnet_index("TV-01", base=tmp_path) == avant
