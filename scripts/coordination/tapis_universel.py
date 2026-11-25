@@ -73,7 +73,17 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
     for it in metas:
         n = int(it["number"])
         labels = list(it.get("labels") or [])
-        if tapis_labels.ecart_label(labels):
+        # L'URNE (`candidate-delivered`) ne se decide PAS ici : elle a deux
+        # portes -- l'organe d'OCCUPATION (`tapis_occupation`), qui sait qu'une
+        # lane gerante (coordinateur, adjoint, secretaire) ne perd aucun grain
+        # et recoit l'urne en **resume**, et la regle LABEL du tirage complet.
+        # Ecarter l'urne ici supprimerait ce second porteur de la decision, et
+        # le retirage (voie legere) perdrait le grain sans publier son motif.
+        # Les AUTRES labels d'exclusion (la pause) s'appliquent ici, comme
+        # avant : les VAGUES et le REPLI lisent cette fonction.
+        autres = [lab for lab in labels
+                  if lab.strip().lower() != tapis_labels.LABEL_LIVRE]
+        if tapis_labels.ecart_label(autres):
             continue  # exclusion en donnees : le grain n'est pas servable
         titre = it.get("title") or ""
         parent = _parent_de_titre(titre)

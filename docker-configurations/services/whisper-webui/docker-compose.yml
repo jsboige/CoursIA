@@ -2,8 +2,11 @@
 # Base: jhj0517/whisper-webui (Gradio)
 # Config originale: D:\Production\Whisper-WebUI\docker-compose-myia.yaml
 #
-# GPU: RTX 3090 (nvidia-smi GPU 1, device_ids=['1'])
-# Coexiste avec ComfyUI Qwen sur la meme GPU en usage normal
+# GPU: RTX 3090 (24GB) - GPU_PCI_INDEX 1. Convention #28423 :
+#      CUDA_DEVICE_ORDER=PCI_BUS_ID, index nvidia-smi (0 = 3080 Ti, 1 = 3090).
+#      Les cles GPU_DEVICE_ID et CUDA_VISIBLE_DEVICES du .env ne sont plus lues :
+#      elles portent l'ancienne convention d'index.
+# Partage la carte avec whisper-api et demucs-api (decision #28423, paragraphe 2).
 # Port externe: 36540 (configurable via .env)
 # Auth: Gradio Basic Auth
 
@@ -18,7 +21,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${GPU_DEVICE_ID:-1}']
+              device_ids: ['${GPU_PCI_INDEX:-1}']
               capabilities: [gpu]
 
     ports:
@@ -42,7 +45,9 @@ services:
         target: /Whisper-WebUI/outputs
 
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
       - TZ=${TZ:-Europe/Paris}
       - HF_TOKEN=${HF_TOKEN:-}
 
