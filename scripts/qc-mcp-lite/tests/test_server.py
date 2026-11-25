@@ -24,37 +24,22 @@ from server import (
     _extract_stats,
     _get_credentials,
     _rate_limit,
-    attach_library,
     create_backtest,
     create_compile,
-    create_file,
     create_project,
-    delete_file,
     list_backtests,
     list_projects,
     read_backtest,
     read_backtest_chart,
     read_compile,
-    read_file,
     read_project,
-    update_file_contents,
 )
 
+from ._qc_helpers import _DUMMY_ENV, _mock_api_response
 
-@pytest.fixture(autouse=True)
-def _reset_rate_limit_state():
-    """Reset the module-global rate-limit deque before each test.
 
-    ``_rate_limit()`` appends to the module-global ``_call_timestamps`` deque
-    without clearing it. Tests that exercise the real ``_api_post`` (they mock
-    ``requests.post`` but still call ``_rate_limit``) therefore accumulate
-    timestamps across the suite. Once 10 calls fall inside the 60s window, the
-    real ``time.sleep(~60s)`` fires -- hanging the full suite (~60s per excess
-    call, observed: 13 tests = 61.67s; the whole suite hung >2min before this).
-    Clearing the deque per test isolates each test from the live rate limiter.
-    """
-    _call_timestamps.clear()
-    yield
+# La fixture autouse qui purge le deque de debit entre les tests vit dans
+# `conftest.py` : elle vaut pour tous les modules du dossier.
 
 
 # --- _get_credentials ---
@@ -441,17 +426,6 @@ class TestApiPost:
 # These all need env vars because _api_post -> _auth_headers -> _get_credentials.
 # We patch requests.post AND set dummy env vars.
 
-_DUMMY_ENV = {"QC_API_USER_ID": "test", "QC_API_ACCESS_TOKEN": "testtoken"}
-
-
-def _mock_api_response(json_data: dict) -> MagicMock:
-    """Create a mock response with json() and raise_for_status()."""
-    mock = MagicMock()
-    mock.json.return_value = json_data
-    mock.raise_for_status = MagicMock()
-    return mock
-
-
 @patch.dict("os.environ", _DUMMY_ENV)
 class TestCreateCompile:
     def test_returns_compile_id(self):
@@ -692,100 +666,6 @@ class TestReadProject:
                                    {"name": "util.py", "size": 0, "isLibrary": False}]
         assert mock_post.call_args_list[1].args[0].endswith("/files/read")
 
-    def test_surfaces_the_attached_libraries_and_their_flag(self):
-        """The attached libraries are listed, and their files carry
-        `isLibrary: true` — a green compile proves nothing, the listing does."""
-        project = _mock_api_response({
-            "projects": [{
-                "projectId": 42,
-                "name": "Consumer",
-                "organizationId": "org-consumer",
-                "libraries": [
-                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
-                ],
-            }]
-        })
-        files = _mock_api_response({
-            "files": [
-                {"name": "main.py", "content": "x" * 10},
-                {"name": "pouches_pcm.py", "content": "y" * 20, "isLibrary": True},
-            ]
-        })
-        with patch("requests.post", side_effect=[project, files]):
-            result = read_project(42)
-        assert result["libraries"] == [
-            {"projectId": 37966475, "libraryName": "SharedPCM", "access": True}
-        ]
-        library_files = [f for f in result["files"] if f["isLibrary"]]
-        assert library_files == [{"name": "pouches_pcm.py", "size": 20, "isLibrary": True}]
-
-
-@patch.dict("os.environ", _DUMMY_ENV)
-class TestAttachLibrary:
-    def test_attaches_by_numeric_id_and_returns_the_proof(self):
-        """The library is designated by its NUMERIC id — QC rejects the name
-        ("Given library ID is not valid")."""
-        update = _mock_api_response({"success": True})
-        project = _mock_api_response({
-            "projects": [{
-                "projectId": 42,
-                "libraries": [
-                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
-                ],
-            }]
-        })
-        files = _mock_api_response({
-            "files": [
-                {"name": "main.py", "content": "x" * 10},
-                {"name": "pouches_pcm.py", "content": "y" * 20, "isLibrary": True},
-            ]
-        })
-        with patch("requests.post", side_effect=[update, project, files]) as mock_post:
-            result = attach_library(42, 37966475)
-
-        assert mock_post.call_args_list[0].args[0].endswith("/projects/update")
-        assert mock_post.call_args_list[0].kwargs["json"] == {
-            "projectId": 42,
-            "libraries": [37966475],
-        }
-        assert result["libraries"] == [
-            {"projectId": 37966475, "libraryName": "SharedPCM", "access": True}
-        ]
-        assert result["libraryFiles"] == ["pouches_pcm.py"]
-
-    def test_cross_organization_attachment_is_accepted(self):
-        """The library may live in another organization than the consumer."""
-        update = _mock_api_response({"success": True})
-        project = _mock_api_response({
-            "projects": [{
-                "projectId": 42,
-                "libraries": [
-                    {"projectId": 37966475, "libraryName": "SharedPCM", "access": True},
-                ],
-            }]
-        })
-        files = _mock_api_response({"files": []})
-        with patch("requests.post", side_effect=[update, project, files]):
-            result = attach_library(42, 37966475)
-        assert result["libraries"][0]["access"] is True
-
-
-@patch.dict("os.environ", _DUMMY_ENV)
-class TestDeleteFile:
-    def test_deletes_the_named_file(self):
-        """The old local copy of a shared module is dropped once the library
-        is attached — the consumer then reads the single source."""
-        mock_resp = _mock_api_response({"success": True})
-        with patch("requests.post", return_value=mock_resp) as mock_post:
-            result = delete_file(42, "pouches_pcm.py")
-        assert mock_post.call_args.kwargs["json"] == {
-            "projectId": 42,
-            "name": "pouches_pcm.py",
-        }
-        assert mock_post.call_args.args[0].endswith("/files/delete")
-        assert result == {"success": True, "name": "pouches_pcm.py"}
-
-
 @patch.dict("os.environ", _DUMMY_ENV)
 class TestReadBacktestChart:
     CHART = {
@@ -827,59 +707,3 @@ class TestReadBacktestChart:
             with pytest.raises(TimeoutError, match="loading"):
                 read_backtest_chart(7, "bt1", "Strategy Equity", 0, 1, str(out))
         assert not out.exists()
-
-
-@patch.dict("os.environ", _DUMMY_ENV)
-class TestReadFile:
-    def test_reads_specific_file(self):
-        mock_resp = _mock_api_response({
-            "files": [{"name": "main.py", "content": "print('hello')"}]
-        })
-        with patch("requests.post", return_value=mock_resp):
-            result = read_file(1, "main.py")
-            assert result["name"] == "main.py"
-            assert result["content"] == "print('hello')"
-
-    def test_reads_all_files(self):
-        mock_resp = _mock_api_response({
-            "files": [
-                {"name": "main.py", "content": "code1"},
-                {"name": "alpha.py", "content": "code2" * 100},
-            ]
-        })
-        with patch("requests.post", return_value=mock_resp):
-            result = read_file(1)
-            assert result["count"] == 2
-            assert result["files"][1]["size"] > 0
-
-
-@patch.dict("os.environ", _DUMMY_ENV)
-class TestUpdateFile:
-    def test_update_file_contents(self):
-        mock_resp = _mock_api_response({"success": True})
-        with patch("requests.post", return_value=mock_resp) as mock_post:
-            result = update_file_contents(1, "main.py", "new content")
-            assert result["success"] is True
-            assert result["name"] == "main.py"
-            body = mock_post.call_args.kwargs["json"]
-            assert body["content"] == "new content"
-
-
-@patch.dict("os.environ", _DUMMY_ENV)
-class TestCreateFile:
-    def test_create_file(self):
-        mock_resp = _mock_api_response({"success": True})
-        with patch("requests.post", return_value=mock_resp) as mock_post:
-            result = create_file(1, "new_file.py", "# new file")
-            assert result["success"] is True
-            body = mock_post.call_args.kwargs["json"]
-            assert body["name"] == "new_file.py"
-            assert body["content"] == "# new file"
-
-    def test_create_file_empty_content(self):
-        mock_resp = _mock_api_response({"success": True})
-        with patch("requests.post", return_value=mock_resp) as mock_post:
-            result = create_file(1, "empty.py")
-            assert result["success"] is True
-            body = mock_post.call_args.kwargs["json"]
-            assert body["content"] == ""
