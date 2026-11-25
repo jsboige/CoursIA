@@ -15,6 +15,11 @@ mesure :
    ne la verrait pas lirait ce deplacement comme un gain.
 3. **Les fonctions pures** (percentile, minutes, detection d'etape) ont un
    comportement explicite sur les cas limites.
+4. **L'echantillon porte sur toute la fenetre**, et la part mediane du
+   checkout est rendue sous les deux populations que le critere de #22469
+   peut viser. La mesure du 2026-11-12 lisait une mediane nulle sur les seuls
+   1 000 runs les plus recents (3 h 16 sur 24) ; la base de comparaison de
+   l'audit (21 %) venait, elle, d'un echantillon de 4,2 % des jobs.
 """
 
 from __future__ import annotations
@@ -311,3 +316,280 @@ def test_identifiant_de_job_invalide_est_refuse(monkeypatch, job):
     monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 1, "jobs": [job]})
     with pytest.raises(RuntimeError, match="ID de job invalide"):
         mcp.collect_jobs(42)
+
+
+# --- Echantillon, populations et declencheur --------------------------------
+
+
+def _job(job_id, checkout_min, job_min):
+    """Un job de `job_min` minutes ; `checkout_min=None` = sans etape de checkout."""
+    from datetime import datetime, timedelta, timezone
+
+    base = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    steps = (
+        [
+            {
+                "name": "Checkout repository",
+                "started_at": base.strftime(mcp.FMT),
+                "completed_at": (base + timedelta(minutes=checkout_min)).strftime(mcp.FMT),
+            }
+        ]
+        if checkout_min is not None
+        else []
+    )
+    return {
+        "id": job_id,
+        "started_at": base.strftime(mcp.FMT),
+        "completed_at": (base + timedelta(minutes=job_min)).strftime(mcp.FMT),
+        "steps": steps,
+    }
+
+
+def _api_echantillon(nb_runs):
+    """`nb_runs` runs dans l'heure passee, un job par run.
+
+    Un run d'ID impair a une etape de checkout de 10 min sur un job de 20 min
+    (part 0,5) ; un run d'ID pair n'a pas d'etape de checkout et dure 5 min.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    runs = [
+        {
+            "id": i,
+            "name": "A" if i % 2 else "B",
+            "created_at": (now - timedelta(seconds=nb_runs - i)).strftime(mcp.FMT),
+        }
+        for i in range(1, nb_runs + 1)
+    ]
+    jobs = {
+        r["id"]: [_job(10 * r["id"], 10.0 if r["id"] % 2 else None, 20.0 if r["id"] % 2 else 5.0)]
+        for r in runs
+    }
+    listing, _ = _fake_actions(runs)
+    job_calls = []
+
+    def api(url):
+        if "/jobs?" in url:
+            run_id = int(url.split("/runs/")[1].split("/")[0])
+            job_calls.append(run_id)
+            return {"total_count": 1, "jobs": jobs[run_id]}
+        return listing(url)
+
+    return api, job_calls
+
+
+def test_sans_limite_tous_les_runs_de_la_fenetre_sont_rendus(monkeypatch):
+    runs = [_run(i, i) for i in range(1500)]
+    api, _ = _fake_actions(runs)
+    monkeypatch.setattr(mcp, "gh", api)
+    actual, complete = mcp.collect_runs(*_bounds(), None)
+    assert complete
+    assert [r["id"] for r in actual] == list(range(1499, -1, -1))
+
+
+def test_le_tirage_est_sans_remise_et_reproductible() -> None:
+    runs = [_run(i, i) for i in range(100)]
+    premier = mcp.draw_sample(runs, 10, 1)
+    assert [r["id"] for r in premier] == [r["id"] for r in mcp.draw_sample(runs, 10, 1)]
+    assert [r["id"] for r in premier] != [r["id"] for r in mcp.draw_sample(runs, 10, 2)]
+    assert len({r["id"] for r in premier}) == 10
+    # Un tirage plus grand que la population rend toute la population.
+    assert len(mcp.draw_sample(runs, 100, 1)) == 100
+    assert len(mcp.draw_sample(runs, 500, 1)) == 100
+    assert mcp.draw_sample([], 5, 1) == []
+
+
+def test_la_part_mediane_est_rendue_sous_les_deux_populations(monkeypatch, capsys):
+    import json
+
+    api, _ = _api_echantillon(40)
+    monkeypatch.setattr(mcp, "gh", api)
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--sample", "100", "--seed", "7"])
+    assert mcp.main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["window_complete"] is True
+    assert report["runs_limit"] is None
+    assert report["event_filter"] == "pull_request"
+    selection = report["selection"]
+    assert selection["methode"] == "tirage_aleatoire_sans_remise"
+    assert selection["graine"] == 7
+    assert selection["runs_dans_la_fenetre"] == 40
+    assert selection["runs_inspectes"] == 40
+    assert selection["taux_inspection"] == 1.0
+    assert selection["facteur_extrapolation"] == 1.0
+    parts = report["part_du_checkout"]
+    # 20 jobs a 10 min de checkout sur 20 min, 20 jobs sans checkout sur 5 min.
+    assert parts["tous_les_jobs"]["jobs"] == 40
+    assert parts["tous_les_jobs"]["mediane"] == 0.25
+    assert parts["tous_les_jobs"]["part_du_temps_total"] == 0.4
+    assert parts["tous_les_jobs"]["ic95_mediane"] is None
+    assert parts["jobs_avec_etape_checkout"]["jobs"] == 20
+    assert parts["jobs_avec_etape_checkout"]["mediane"] == 0.5
+    assert parts["jobs_avec_etape_checkout"]["p90"] == 0.5
+    assert parts["jobs_avec_etape_checkout"]["part_du_temps_total"] == 0.5
+    assert parts["jobs_avec_etape_checkout"]["ic95_mediane"] is None
+    assert parts["jobs_avec_checkout_sans_duree_de_job"] == 0
+    assert parts["parts_superieures_a_1"] == 0
+    # Les sommes par workflow suivent : les runs A seuls ont un checkout.
+    rows = {row["workflow"]: row for row in report["rows"]}
+    assert rows["A"]["checkout_min_somme"] == 200.0
+    assert rows["A"]["checkout_share_du_temps"] == 0.5
+    assert rows["B"]["checkout_min_somme"] == 0.0
+    assert rows["B"]["checkout_share_du_temps"] == 0.0
+
+
+def test_le_tirage_est_reproductible_et_porte_sur_toute_la_fenetre(monkeypatch, capsys):
+    import json
+
+    vu = []
+    for _ in range(2):
+        api, job_calls = _api_echantillon(300)
+        monkeypatch.setattr(mcp, "gh", api)
+        monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--sample", "60", "--seed", "3"])
+        assert mcp.main() == 0
+        vu.append((job_calls, json.loads(capsys.readouterr().out)))
+    (appels, rapport), (autres_appels, _) = vu
+    assert appels == autres_appels
+    # Seuls les runs tires paient un appel /jobs, et un run n'est pas tire deux fois.
+    assert len(appels) == 60 == len(set(appels))
+    selection = rapport["selection"]
+    assert selection["runs_dans_la_fenetre"] == 300
+    assert selection["runs_inspectes"] == 60
+    assert selection["taux_inspection"] == 0.2
+    assert selection["facteur_extrapolation"] == 5.0
+    # Un tirage sur toute la fenetre en couvre les deux bouts, alors que les
+    # 60 runs les plus recents couvriraient les seules 60 dernieres secondes.
+    covered = rapport["window_covered"]
+    etendue = mcp.ts(covered["to"]) - mcp.ts(covered["from"])
+    assert etendue.total_seconds() >= 240
+    assert rapport["part_du_checkout"]["tous_les_jobs"]["jobs"] == 60
+    parts = rapport["part_du_checkout"]["jobs_avec_etape_checkout"]
+    assert parts["mediane"] == 0.5
+    assert parts["ic95_mediane"][0] <= parts["mediane"] <= parts["ic95_mediane"][1]
+
+
+def test_aucun_filtre_de_declencheur_est_inscrit_au_rapport(monkeypatch, capsys):
+    import json
+
+    url = mcp.runs_url("2026-11-09T20:00:00Z", 1, "")
+    params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+    assert "event" not in params
+    assert params["created"] == [">=2026-11-09T20:00:00Z"]
+
+    api, _ = _api_echantillon(6)
+    monkeypatch.setattr(mcp, "gh", api)
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--runs", "6", "--event", "all"])
+    assert mcp.main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["event_filter"] is None
+    assert report["runs_limit"] == 6
+    assert report["selection"]["methode"] == "plus_recents"
+    assert report["selection"]["graine"] is None
+    # Les plus recents ne sont pas un echantillon : aucune marge n'est annoncee.
+    assert "ic95_mediane" not in report["part_du_checkout"]["tous_les_jobs"]
+
+
+def test_un_job_avec_checkout_sans_duree_de_job_est_compte_a_part(monkeypatch, capsys):
+    import json
+    from datetime import datetime, timezone
+
+    run = {"id": 1, "name": "A", "created_at": datetime.now(timezone.utc).strftime(mcp.FMT)}
+
+    def api(url):
+        if "/jobs?" in url:
+            job = _job(7, 2.0, 10.0)
+            job["completed_at"] = None
+            return {"total_count": 1, "jobs": [job]}
+        return {"total_count": 1, "workflow_runs": [run]}
+
+    monkeypatch.setattr(mcp, "gh", api)
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--runs", "5"])
+    assert mcp.main() == 0
+    parts = json.loads(capsys.readouterr().out)["part_du_checkout"]
+    assert parts["tous_les_jobs"]["jobs"] == 0
+    assert parts["tous_les_jobs"]["mediane"] is None
+    assert parts["jobs_avec_etape_checkout"]["jobs"] == 0
+    assert parts["jobs_avec_checkout_sans_duree_de_job"] == 1
+    assert parts["jobs_sans_duree_valide"] == 1
+
+
+def test_checkout_inacheve_n_est_pas_compte_comme_zero(monkeypatch, capsys):
+    import json
+    from datetime import datetime, timezone
+
+    run = {"id": 1, "name": "A", "created_at": datetime.now(timezone.utc).strftime(mcp.FMT)}
+    job = _job(7, 2.0, 10.0)
+    job["steps"][0]["completed_at"] = None
+    monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 1, "jobs": [job]} if "/jobs?" in url else {"total_count": 1, "workflow_runs": [run]})
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1"])
+    assert mcp.main() == 0
+    parts = json.loads(capsys.readouterr().out)["part_du_checkout"]
+    assert parts["tous_les_jobs"]["jobs"] == 0
+    assert parts["jobs_checkout_sans_duree_valide"] == 1
+
+
+def test_sample_et_runs_ne_se_combinent_pas(monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(sys, "argv", ["measure", "--sample", "10", "--runs", "20"])
+    with pytest.raises(SystemExit):
+        mcp.main()
+    monkeypatch.setattr(sys, "argv", ["measure", "--sample", "0"])
+    with pytest.raises(SystemExit):
+        mcp.main()
+
+
+def test_l_intervalle_bootstrap_est_reproductible_et_encadre_la_mediane() -> None:
+    import statistics
+
+    per_run = [[0.1, 0.2], [0.3], [0.5, 0.4], [0.2]]
+    mediane = statistics.median([value for group in per_run for value in group])
+    premier = mcp.bootstrap_median_ci(per_run, 11)
+    assert premier == mcp.bootstrap_median_ci(per_run, 11)
+    assert premier[0] <= mediane <= premier[1]
+    assert mcp.bootstrap_median_ci([[0.5]], 11) is None
+    assert mcp.bootstrap_median_ci([[], []], 11) is None
+
+
+def test_une_erreur_serveur_isolee_est_rejouee_pas_un_quota_epuise(monkeypatch):
+    import json
+    from types import SimpleNamespace
+
+    import pytest
+
+    reponses = iter(
+        [
+            SimpleNamespace(returncode=1, stdout="", stderr="gh: Internal Server Error (HTTP 500)"),
+            SimpleNamespace(returncode=1, stdout="", stderr="gh: Bad Gateway (HTTP 502)"),
+            SimpleNamespace(returncode=0, stdout=json.dumps({"total_count": 0}), stderr=""),
+        ]
+    )
+    pauses = []
+    monkeypatch.setattr(mcp.subprocess, "run", lambda *a, **k: next(reponses))
+    monkeypatch.setattr(mcp.time, "sleep", pauses.append)
+    assert mcp.gh("/x") == {"total_count": 0}
+    assert pauses == [1.0, 2.0]
+
+    monkeypatch.setattr(
+        mcp.subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="gh: Server Error (HTTP 503)"),
+    )
+    pauses.clear()
+    with pytest.raises(RuntimeError, match="gh api failed"):
+        mcp.gh("/x")
+    assert len(pauses) == mcp.ESSAIS - 1
+
+    appels = []
+
+    def quota(*a, **k):
+        appels.append(1)
+        return SimpleNamespace(returncode=1, stdout="", stderr="gh: API rate limit exceeded")
+
+    pauses.clear()
+    monkeypatch.setattr(mcp.subprocess, "run", quota)
+    with pytest.raises(RuntimeError, match="rate limit"):
+        mcp.gh("/x")
+    assert pauses == []
+    assert len(appels) == 1
