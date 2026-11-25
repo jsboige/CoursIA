@@ -234,7 +234,105 @@ Le pilote vérifie **seulement** que l'instrument s'exécute et que ses variable
 
 ## 10. Valeurs du pilote
 
-Ajoutées après exécution, conformément à §9. Cette section est vide au scellement.
+**Pilote, non compté (§9).** Exécuté le 2026-11-25 avec l'instrument au commit `d5c4adf83f`, sur `R` = les 11 règles de `RULE_ORDER` au commit `edbdbb0d44` (`inference_trace.py` est inchangé entre les deux commits). Commande, depuis `MyIA.AI.Notebooks/Sudoku` :
+
+```
+python scripts/path_profile.py Puzzles/Sudoku_gen_facile.txt Puzzles/Sudoku_gen_moyen.txt Puzzles/Sudoku_gen_difficile.txt Puzzles/Sudoku_Easy51.txt Puzzles/Sudoku_hardest.txt Puzzles/Sudoku_top95.txt --json profils.json
+```
+
+Aucune de ces valeurs n'entre dans un verdict de §7. Aucun de ces corpus n'est étiqueté par une échelle : **le pilote ne dit rien des niveaux ≥ 13**, et ses lignes ne sont pas des strates.
+
+Dans les tableaux, un nombre entre parenthèses est le nombre de valeurs définies ; un tiret signale qu'aucune ne l'est.
+
+### 10.1 Corpus et comptes
+
+| Corpus | Grilles | Doublons | Résolues par `R` | Arrêts | Couverture | Sans geste final |
+|---|---|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | 10 | 0 | 10 | 0 | 10/10 | 10 |
+| `Sudoku_gen_moyen.txt` | 10 | 0 | 5 | 5 | 5/10 | 0 |
+| `Sudoku_gen_difficile.txt` | 10 | 0 | 1 | 9 | 1/10 | 0 |
+| `Sudoku_Easy51.txt` | 50 | 1 | 50 | 0 | 50/50 | 40 |
+| `Sudoku_hardest.txt` | 11 | 0 | 3 | 8 | 3/11 | 1 |
+| `Sudoku_top95.txt` | 95 | 0 | 29 | 66 | 29/95 | 0 |
+
+- « Sans geste final » : grilles résolues par singletons seuls ; les variables du geste final (§4.1) ne sont pas définies pour elles.
+- Aucune ligne ignorée, aucune grille sans solution unique, aucune trace refusée par `verify_trace` sur les six corpus.
+- La couverture des trois strates du corpus généré reproduit celle du corps de la PR #27754 : 10/10, 5/10, 1/10.
+
+### 10.2 Empreintes des corpus
+
+`sha256` des octets de chaque fichier, dans `MyIA.AI.Notebooks/Sudoku/Puzzles/`.
+
+- `Sudoku_gen_facile.txt` : `869b7a3a37facb504318a101a6ac1b99018ce0beeb18b8451bf480023c9d1e4b`
+- `Sudoku_gen_moyen.txt` : `bdcfef99efe7bde69288324297aa542698df8fa39d35a8db88d4088188f85b10`
+- `Sudoku_gen_difficile.txt` : `aa1d8bbe081f6399db5e18db9cbfd14975cfaa26d9004fe9e31eb82bbadf94f1`
+- `Sudoku_Easy51.txt` : `6076b2175d7fe8f80072e260b0c35195d1e93f500c329799377c4e04c40b9290`
+- `Sudoku_hardest.txt` : `5e885932b99367116f577bf38d34b6bc6e6101d504f21787e51434185e55f84c`
+- `Sudoku_top95.txt` : `932fdd88208cd487021e22a9d2d5d26a66b041f6708d1e48d9ccfb1e9da6e088`
+
+### 10.3 Grilles résolues par `R` — médianes
+
+| Corpus | `P` (`n_steps`) | `r_max` | `pos_r_max` | `rank_last` | `support_last` | `elim_last` | `collapse` | `tangle_last` |
+|---|---|---|---|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | 56 (10) | 2 (10) | 0,018 (10) | — | — | — | — | — |
+| `Sudoku_gen_moyen.txt` | 54 (5) | 4 (5) | 0,283 (5) | 3 (5) | 2 (5) | 4 (5) | 38 (5) | 1 (5) |
+| `Sudoku_gen_difficile.txt` | 57 (1) | 4 (1) | 0,321 (1) | 4 (1) | 3 (1) | 7 (1) | 38 (1) | 1 (1) |
+| `Sudoku_Easy51.txt` | 53,5 (50) | 2 (50) | 0,037 (50) | 4,5 (10) | 2 (10) | 2,5 (10) | 43,5 (10) | 1 (10) |
+| `Sudoku_hardest.txt` | 62 (3) | 4 (3) | 0,2 (3) | 6,5 (2) | 3 (2) | 4 (2) | 48,5 (2) | 1 (2) |
+| `Sudoku_top95.txt` | 69 (29) | 6 (29) | 0,132 (29) | 3 (29) | 2 (29) | 5 (29) | 49 (29) | 1 (29) |
+
+### 10.4 Grilles en arrêt — médianes
+
+| Corpus | `steps_stall` | `empty_stall` | `cands_stall` | `tangle_stall` |
+|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | — | — | — | — |
+| `Sudoku_gen_moyen.txt` | 22 (5) | 34 (5) | 79 (5) | 1 (5) |
+| `Sudoku_gen_difficile.txt` | 19 (9) | 40 (9) | 110 (9) | 1 (9) |
+| `Sudoku_Easy51.txt` | — | — | — | — |
+| `Sudoku_hardest.txt` | 8,5 (8) | 50 (8) | 177 (8) | 1 (8) |
+| `Sudoku_top95.txt` | 12,5 (66) | 53 (66) | 191 (66) | 1 (66) |
+
+### 10.5 Rangs déclenchés avant l'arrêt
+
+Nombre de pas de chaque rang (`rank_hist`, §4.2), cumulé sur les grilles en arrêt du corpus. Un rang absent de l'histogramme vaut 0.
+
+| Rang | Règle | `gen_moyen` | `gen_difficile` | `hardest` | `top95` |
+|---|---|---|---|---|---|
+| 1 | `naked_single` | 36 | 35 | 16 | 189 |
+| 2 | `hidden_single` | 62 | 101 | 40 | 388 |
+| 3 | `naked_pair` | 6 | 14 | 9 | 94 |
+| 4 | `naked_triple` | 0 | 5 | 2 | 50 |
+| 5 | `naked_quad` | 1 | 4 | 2 | 37 |
+| 6 | `hidden_pair` | 0 | 0 | 0 | 23 |
+| 7 | `hidden_triple` | 0 | 0 | 0 | 1 |
+| 8 | `hidden_quad` | 0 | 0 | 0 | 0 |
+| 9 | `pointing_pair` | 5 | 4 | 12 | 179 |
+| 10 | `locked_claiming` | 1 | 6 | 3 | 22 |
+| 11 | `x_wing` | 0 | 2 | 0 | 2 |
+| | Total des pas | 111 | 171 | 84 | 985 |
+
+### 10.6 Distributions, pour lire les médianes
+
+| Corpus | Valeurs de `r_max` | Valeurs de `rank_last` | `pos_r_max` : min / médiane / max | Part avec `pos_r_max` ≥ 0,5 | `collapse` | `elim_last` |
+|---|---|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | {1, 2} | — | 0 / 0,018 / 0,145 | 0/10 | — | — |
+| `Sudoku_gen_moyen.txt` | {3, 4, 5} | {3, 4, 5} | 0,071 / 0,283 / 0,509 | 1/5 | 26 à 42 | 3 à 5 |
+| `Sudoku_gen_difficile.txt` | {4} | {4} | 0,321 / 0,321 / 0,321 | 0/1 | 38 | 7 |
+| `Sudoku_Easy51.txt` | {1, 2, 3, 4, 5, 9, 10, 11} | {3, 4, 5, 9, 10, 11} | 0 / 0,037 / 0,463 | 0/50 | 35 à 54 | 1 à 5 |
+| `Sudoku_hardest.txt` | {2, 4, 9} | {4, 9} | 0,115 / 0,2 / 0,414 | 0/3 | 48 à 49 | 3 à 5 |
+| `Sudoku_top95.txt` | {4, 5, 6, 9, 10} | {3, 4, 5, 6, 9} | 0,016 / 0,132 / 0,722 | 1/29 | 20 à 60 | 1 à 9 |
+
+### 10.7 Ce que le pilote établit
+
+1. **L'instrument s'exécute sur les six corpus**, et son rejou est comparé à `solve()` à chaque grille : aucune divergence.
+2. **Toutes les variables de §4 sont calculables** : chacune a au moins une valeur définie sur au moins un corpus.
+3. **`tangle` est constant.** Il vaut 1,0 sur chacun des 135 états mesurés : les 47 états qui précèdent un geste final et les 88 états d'arrêt. Sur ces corpus, le graphe d'exclusion d'un état est donc toujours connexe, et la part de sa plus grande composante ne sépare ni deux grilles, ni deux corpus. **C'est un défaut de comparabilité au sens de §9** : une variable constante ne peut pas porter la lecture topologique de §5.2. Il est réglé par la révision v2 (§11), en un commit séparé ; la présente section ne modifie aucune règle.
+
+### 10.8 Ce que le pilote n'établit pas
+
+- Rien sur les niveaux ≥ 13 : aucun corpus n'est étiqueté par une échelle (§6).
+- Rien sur les hypothèses de §5 : les lignes des tableaux sont des corpus d'origines différentes, pas des strates. Une médiane plus élevée sur `Sudoku_hardest.txt` que sur `Sudoku_top95.txt` n'est pas une comparaison de niveaux.
+- Rien sur la puissance d'une technique absente de `R` : un arrêt est la mesure de l'endroit où `R` s'arrête, pas la preuve qu'aucune technique ne le franchit.
 
 ## 11. Révision
 
