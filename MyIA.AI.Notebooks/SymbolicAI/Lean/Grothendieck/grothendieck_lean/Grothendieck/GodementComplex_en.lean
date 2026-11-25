@@ -318,6 +318,47 @@ variable {X : TopCat.{u}}
 -- which goes through `mono_cokernel_map_of_isPullback`: the unit square must
 -- be a pullback. `hsep` bears on the **right** term only; the separatedness
 -- of the left term is a hypothesis to be established (or added to the
--- statement) before even step `1`.
+-- statement) before even step `1`. **Part 102 below REFUTES that last
+-- sentence**: the separatedness of the left term is not required.
+
+/-!
+### Part 102 — the units square is a pullback: the separatedness of the LEFT
+term is NOT required
+
+Part 101 delivered step `n = 0` of `shortExact_godementCanonicalObj` and named
+the frontier of step `1`: the separatedness of the **left** term (`X₁`) looked
+required — Part 101 writes it: "`hsep` bears on the **right** term only; the
+separatedness of the left term is a hypothesis to be established (or added to
+the statement) before even step `1`".
+
+**It is not.** The lemma below shows that the units square
+
+    X₁ ──f──▶ X₂        C⁰X₁ ──C⁰f──▶ C⁰X₂
+    │         │          │            │
+   μ₁        μ₂         μ₁           μ₂
+
+is a **pullback** as soon as the **right** term is separated (`Mono (toGodement
+S.X₃)`) and the sequence `0 → X₁ → X₂ → X₃ → 0` is short exact: the fibre of
+the square is **bijective** — existence by `godementUnits_pullback`,
+uniqueness by `godementUnits_pullback_unique`. This is the brick that unlocks
+step `1`: the `IsPullback` shape of the same square, obtained through
+`mono_cokernel_map_of_isPullback`, will give the monicity of the cokernel
+arrow `coker μ₁ → coker μ₂` **without any hypothesis on `X₁`**.
+
+The argument is **local** and mobilizes nothing but stalk facts:
+
+1. `C⁰f(z) = μ₂(y)` gives componentwise `fₓ(z x) = germ_x(y)`;
+2. composing by `gₓ` and using `g ∘ f = 0`, the germs of `g(y)` vanish — hence
+   `g(y) = 0`, by **injectivity of the unit of `X₃`** (this is the only
+   separatedness used, and it bears on the right term);
+3. exactness `ker g = im f` then gives `x₀ ∈ X₁(U)` with `f(x₀) = y`;
+4. `fₓ` injective (the mono of `S.f` transported to the stalk by AB5) gives
+   `germ_x(x₀) = z x`;
+5. **uniqueness** requires only the monicity of `f`: two sections of `X₁` over
+   `U` with the same image by `f` are equal.
+
+No passage through the snake lemma is required at this level: the rigidity of
+the stalk products (`C⁰F(U) = ∏_{x ∈ U} Fₓ`) suffices.
+-/
 
 end Grothendieck_en
