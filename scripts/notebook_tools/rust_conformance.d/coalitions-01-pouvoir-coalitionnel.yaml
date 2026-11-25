@@ -19,13 +19,16 @@
 #   `feature/coalitions-01-registre-19-mesures`, non fusionnee : la lane a
 #   libere le chemin au profit de la PR #28269). Elles nomment les grandeurs
 #   dans le rapport et survivent a un changement de rendu, la ou une mesure
-#   de texte entier rougirait sur une largeur de colonne. 18 des 19 sont
-#   reprises a l'identique, de quantite et de motif ; la 19e,
-#   `smt_minimaux_jeu1`, compare la liste des modeles « a l'ordre pres »
-#   (voir les ecarts declares). Les motifs Rust du registre de CoursIA-2
-#   (lignes `cle valeur`, cellules decalees de son portage) ne s'appliquent
-#   pas ici : les deux cotes de CE couple ont la meme structure et le meme
-#   rendu, donc les motifs sont identiques des deux cotes.
+#   de texte entier rougirait sur une largeur de colonne. Les 19 identifiants
+#   et les 19 grandeurs sont repris. Cote Python, 16 motifs sont ceux du
+#   registre de CoursIA-2 ; deux captures de liste (`mwc_jeu1`,
+#   `mwc_joueur_nul`) sont seulement rendues paresseuses (meme texte capture
+#   aujourd'hui) ; la 19e, `smt_minimaux_jeu1`, compare la liste des modeles
+#   « a l'ordre pres » (voir les ecarts declares). Les motifs Rust du
+#   registre de CoursIA-2 (lignes `cle valeur`, cellules decalees de son
+#   portage) ne s'appliquent pas ici : les deux cotes de CE couple ont la
+#   meme structure et le meme rendu, donc chaque motif y est le meme des
+#   deux cotes.
 #
 # Les deux cotes ont la MEME structure de cellules (40 cellules, 12 code
 # aux memes index) : la correspondance des cellules est directe. Les
