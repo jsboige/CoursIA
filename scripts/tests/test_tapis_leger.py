@@ -91,7 +91,7 @@ def test_le_classement_ne_lit_que_des_metadonnees():
     assert "body" not in requete and "comments" not in requete
 
 
-def test_le_tirage_leger_qualifie_avant_de_servir(monkeypatch):
+def test_le_tirage_leger_qualifie_avant_de_servir(monkeypatch, tmp_path):
     """La voie leger QUALIFIE la fenetre servie avant de la servir.
 
     Le CLASSEMENT ne decide toujours aucun ecart sur ses metadonnees, mais la
@@ -102,6 +102,7 @@ def test_le_tirage_leger_qualifie_avant_de_servir(monkeypatch):
     ne disparait donc pas du classement : elle est rendue avec son etat, et
     l'action qui va avec.
     """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
     rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
                                        _run_faux(nb=6))
     assert code == 0
@@ -116,15 +117,16 @@ def test_le_tirage_leger_qualifie_avant_de_servir(monkeypatch):
             "le grain servi est deja qualifie : la lane ne le qualifie pas une fois de plus"
 
 
-def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
+def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains(monkeypatch, tmp_path):
     """La file sert plus de grains que demande : la qualification ecarte au
     moment de l'action, et la file doit rester pleine."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
     rapport, _ = tapis_leger.tirage(LANE, 2, NOW, 45, "g", Path("."),
                                     _run_faux(nb=12))
     assert len(rapport["grains"]) > 2
 
 
-def test_un_conteneur_ne_deplace_aucun_grain(monkeypatch):
+def test_un_conteneur_ne_deplace_aucun_grain(monkeypatch, tmp_path):
     """Un EPIC est un conteneur : il ne prend que sa place de creneau.
 
     La detection se fait sur les metadonnees (titre `[EPIC ...]`, labels), donc
@@ -147,6 +149,7 @@ def test_un_conteneur_ne_deplace_aucun_grain(monkeypatch):
                                 _noeud(9)])
         return _run_faux()(argv, timeout)
 
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
     rapport, _ = tapis_leger.tirage(LANE, 3, NOW, 45, "g", Path("."), run_epic)
     numeros = [g["numero"] for g in rapport["grains"]]
     assert len(numeros) == 3, "le lot garde sa taille"

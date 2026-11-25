@@ -98,8 +98,8 @@
       "note": "Specification du garde `twin-execution-heritage-guard` : le CORPS du garde est ici, le registre `scripts/ci/fast_lane_registry.py` ne porte que l'appel (modele `fast_lane_commenters.py` #27995). Module NEUF : il porte son propre plafond (51 lignes) pour que le corps puisse grossir sans faire grossir le registre."
     },
     "scripts/tests/test_tapis_leger.py": {
-      "lines": 810,
-      "note": "Test du tirage leger : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 778 (base de la branche) + 10 (cette PR : la qualification precede le service) + 22 (main : l'occupation de l'urne et l'ordre d'age). La croissance vient de main ET de cette PR ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction."
+      "lines": 813,
+      "note": "Test du tirage leger : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 778 (base de la branche) + 10 (cette PR : la qualification precede le service) + 22 (main : l'occupation de l'urne et l'ordre d'age). La croissance vient de main ET de cette PR ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction. +3 lignes le 25/11 : isolement du magasin d'ancres local (`COURSIA_TAPIS_ANCRE_DIR`) dans les 3 tests qui appellent `tapis_leger.tirage` -- ces tests lisaient l'ancre REELLE de la machine (lane `myia-ai-01:CoursIA-2`) et le lot depends de son etat (faux rouge mesure : `assert 2 == 3` sur `test_un_conteneur_ne_deplace_aucun_grain` apres un passage reel du tapis)."
     }
   },
   "known_large": [
