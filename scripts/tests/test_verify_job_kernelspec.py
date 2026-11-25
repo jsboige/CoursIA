@@ -6,13 +6,16 @@ imprimait un message et rendait SUCCES. Le job continuait sans noyau
 enregistre, et l'echec n'apparaitrait que plus loin -- sur un noyau que
 Jupyter resout ailleurs.
 
-Ces tests couvrent les trois controles du script
+Ces tests couvrent les quatre controles du script
 `scripts/ci/verify_job_kernelspec.py` :
 
 1. l'enregistrement est FATAL quand `ipykernel` manque ;
 2. le kernelspec EFFECTIVEMENT RESOLU est celui du job (repertoire de
    ressources sous le repertoire du job) ;
-3. `argv[0]` est l'interpreteur du job.
+3. `argv[0]` est l'interpreteur du job ;
+4. l'ENVIRONNEMENT du lanceur est celui du job -- deux virtualenvs
+   distincts partagent le meme binaire, et rien d'autre que le prefixe
+   ne les distingue.
 
 Plus le controle negatif du noyau absent : un job sans noyau ne peut pas
 lancer la legende papermill, ce n'est pas un incident, c'est un echec.
@@ -59,6 +62,63 @@ def test_a_conforming_spec_has_no_violation(tmp_path):
     assert violations == [], f"un spec conforme ne doit rien signaler : {violations}"
 
 
+def test_two_environments_sharing_a_binary_are_told_apart(tmp_path):
+    """CONTROLE NEGATIF : meme binaire, environments DIFFERENTS.
+
+    Deux virtualenvs distincts pointent sur le meme binaire : leurs
+    lanceurs ont le meme `realpath`, et rien d'autre que l'ENVIRONNEMENT ne
+    les distingue. Comparer les chemins seule accepterait donc le mauvais
+    virtualenv -- qui demarre sans erreur, et rend un succes SILENCIEUX.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    # Deux CHEMINS differents qui designent le MEME fichier.
+    lanceur_job = tmp_path / "envA" / "bin" / "python"
+    lanceur_job.parent.mkdir(parents=True)
+    lanceur_job.write_text("", encoding="utf-8")
+    faux_autre = tmp_path / "envB" / "bin" / ".." / ".." / "envA" / "bin" / "python"
+    assert os.path.realpath(faux_autre) == os.path.realpath(lanceur_job)
+
+    prefixes = {os.path.normcase(str(lanceur_job)): "/job", os.path.normcase(str(faux_autre)): "/autre"}
+
+    violations = vks.controler(
+        [str(faux_autre), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur_job),
+        str(job_dir),
+        prefixes=lambda executable: prefixes.get(os.path.normcase(executable)),
+    )
+
+    assert len(violations) == 1, violations
+    assert "environnement different" in violations[0], violations[0]
+
+
+def test_two_environments_sharing_a_binary_and_a_prefix_are_accepted(tmp_path):
+    """CONTROLE POSITIF : meme binaire ET meme environnement, rien a dire.
+
+    Le meme virtualenv designe par deux chemins ne doit pas declencher le
+    controle d'environnement : sinon le job rougirait sur lui-meme.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    lanceur = tmp_path / "envA" / "bin" / "python"
+    lanceur.parent.mkdir(parents=True)
+    lanceur.write_text("", encoding="utf-8")
+    meme = tmp_path / "envA" / "bin" / ".." / "bin" / "python"
+
+    violations = vks.controler(
+        [str(meme), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur),
+        str(job_dir),
+        prefixes=lambda executable: "/job",
+    )
+
+    assert violations == [], f"un meme environnement ne doit rien signaler : {violations}"
+
+
 def test_a_spec_resolved_outside_the_job_directory_is_reported(tmp_path):
     """CONTROLE NEGATIF : le spec resolu est hors du repertoire du job.
 
@@ -97,6 +157,93 @@ def test_a_spec_pointing_at_another_interpreter_is_reported(tmp_path):
 
     assert len(violations) == 1, violations
     assert "interpreteur different" in violations[0], violations[0]
+
+
+def _environnement_type_virtualenv(racine: Path, base: str) -> Path:
+    """Construit un environnement TYPE virtualenv : meme binaire, autre prefixe.
+
+    Un virtualenv est un repertoire qui porte un `pyvenv.cfg` et dont le
+    lanceur est un lien symbolique sur l'interpreteur de base. Deux de ces
+    environnements ont donc le MEME `realpath` de lanceur, et des
+    `sys.prefix` differents -- exactement le cas ou la comparaison des
+    chemins ne distingue plus rien.
+    """
+    bin_dir = racine / "bin"
+    bin_dir.mkdir(parents=True)
+    lanceur = bin_dir / "python"
+    lanceur.symlink_to(base)
+    (racine / "pyvenv.cfg").write_text(
+        f"home = {sys.base_prefix}\n"
+        "include-system-site-packages = false\n",
+        encoding="utf-8")
+    return lanceur
+
+
+@pytest.mark.skipif(os.name != "posix",
+                    reason="le lien symbolique qui porte le virtualenv "
+                           "demande POSIX")
+def test_two_real_environments_sharing_a_binary_are_told_apart(tmp_path):
+    """TEMOIN REEL : deux virtualenvs distincts, un seul binaire.
+
+    Le cas mesure par l'adjoint : deux lanceurs de virtualenv distincts ont
+    le meme `realpath` et des `sys.prefix` differents. Le repertoire de
+    ressources du noyau est bien DANS le dossier du job -- et pourtant le
+    noyau demarre un environnement qui n'est pas celui du job. Sans le
+    controle d'environnement, ce job rendrait un SUCCES SILENCIEUX.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    lanceur_job = _environnement_type_virtualenv(tmp_path / "envA", sys.executable)
+    lanceur_noyau = _environnement_type_virtualenv(tmp_path / "envB", sys.executable)
+
+    assert os.path.realpath(lanceur_job) == os.path.realpath(lanceur_noyau), (
+        "le témoin suppose deux lanceurs de meme binaire : "
+        f"{os.path.realpath(lanceur_job)} != {os.path.realpath(lanceur_noyau)}")
+
+    prefixe_job = vks.prefixe_de(str(lanceur_job))
+    prefixe_noyau = vks.prefixe_de(str(lanceur_noyau))
+    if prefixe_job is None or prefixe_noyau is None:
+        pytest.skip("l'interpreteur de cette machine ne repond pas sur son prefixe")
+    if prefixe_job == prefixe_noyau:
+        pytest.skip("les deux environnements n'exposent pas de prefixe distinct "
+                    "ici : le virtualenv n'est pas reconnu")
+
+    violations = vks.controler(
+        [str(lanceur_noyau), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur_job),
+        str(job_dir),
+    )
+
+    assert len(violations) == 1, violations
+    assert "environnement different" in violations[0], violations[0]
+
+
+@pytest.mark.skipif(os.name != "posix",
+                    reason="le lien symbolique qui porte le virtualenv "
+                           "demande POSIX")
+def test_the_job_environment_passes_its_own_control(tmp_path):
+    """CONTROLE POSITIF, en conditions REELLES : le job ne se signale pas lui-meme.
+
+    Le meme environnement designe par un autre chemin ne doit declencher
+    aucune violation : le controle doit etre capable de distinguer les
+    DEUX environnement, pas de les confondre tous les deux.
+    """
+    job_dir = tmp_path / "ks"
+    spec_dir = job_dir / "kernels" / "python3"
+    spec_dir.mkdir(parents=True)
+    lanceur = _environnement_type_virtualenv(tmp_path / "envA", sys.executable)
+    alias = lanceur.parent / ".." / "bin" / "python"
+
+    violations = vks.controler(
+        [str(alias), "-m", "ipykernel_launcher"],
+        str(spec_dir),
+        str(lanceur),
+        str(job_dir),
+    )
+
+    assert violations == [], f"le job ne doit pas se signaler lui-meme : {violations}"
 
 
 def test_a_missing_kernel_is_reported(tmp_path):
@@ -267,6 +414,8 @@ def test_the_script_fails_when_the_resolved_kernel_is_not_the_job_one(tmp_path):
 if __name__ == "__main__":
     for fn in (
         test_a_conforming_spec_has_no_violation,
+        test_two_environments_sharing_a_binary_are_told_apart,
+        test_two_environments_sharing_a_binary_and_a_prefix_are_accepted,
         test_a_spec_resolved_outside_the_job_directory_is_reported,
         test_a_spec_pointing_at_another_interpreter_is_reported,
         test_a_missing_kernel_is_reported,
@@ -282,4 +431,11 @@ if __name__ == "__main__":
     ):
         fn()
         print(f"OK: {fn.__name__}")
+    if os.name == "posix":
+        for fn in (
+            test_two_real_environments_sharing_a_binary_are_told_apart,
+            test_the_job_environment_passes_its_own_control,
+        ):
+            fn()
+            print(f"OK: {fn.__name__}")
     print("All tests passed.")

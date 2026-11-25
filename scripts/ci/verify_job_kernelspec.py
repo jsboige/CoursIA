@@ -14,8 +14,8 @@ PROPRE au job (`JUPYTER_DATA_DIR` / `JUPYTER_PATH`). Ce script est le
 **troisieme** morceau, celui qui manque : constater que l'isolation a ete
 declaree ne prouve pas que le noyau que Jupyter RESOUT est celui du job.
 
-TROIS CONTROLES, dont deux NEGATIFS
------------------------------------
+QUATRE CONTROLES, dont deux NEGATIFS
+------------------------------------
 1. **L'enregistrement est fatal.** Le geste precedent etait un
    `if python -c "import ipykernel" ; then ... ; else echo "ipykernel
    absent" ; fi` : quand l'import echouait, le step **imprimait un message
@@ -31,6 +31,14 @@ TROIS CONTROLES, dont deux NEGATIFS
 3. **L'argv[0] est l'interpreteur du job.** Le noyau doit demarrer le
    Python du job, pas un autre `python3` trouve ailleurs. C'est le controle
    qui rattrape #28500 (l'interpreteur resolu n'etait pas celui du job).
+4. **L'ENVIRONNEMENT du lanceur est celui du job.** Deux virtualenvs
+   distincts peuvent pointer sur le MEME binaire : leurs lanceurs ont le
+   meme `realpath`, mais pas le meme `sys.prefix`. Comparer les chemins
+   seule ne les distingue pas -- et le mauvais virtualenv demarre SANS
+   ERREUR (il importe `ipykernel` tres bien), si bien que le job rend un
+   SUCCES SILENCIEUX sur un environnement qui n'est pas le sien. Le
+   controle compare donc l'IDENTITE de l'interpreteur : son binaire
+   resolu ET le prefixe qu'il annonce lui-meme.
 
 Le noyau absent est un ECHEC, pas un incident : un job sans noyau ne peut
 pas lancer la legende papermill.
@@ -52,6 +60,7 @@ import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 RC_OK = 0
@@ -85,6 +94,30 @@ def _est_sous(enfant: str, parent: str) -> bool:
     return enfant == parent or enfant.startswith(parent + os.sep)
 
 
+def prefixe_de(interpreteur: str) -> str | None:
+    """Le `sys.prefix` que l'interpreteur annonce LUI-MEME.
+
+    Deux virtualenvs distincts peuvent pointer sur le meme binaire : leurs
+    lanceurs ont le meme `realpath` et des `sys.prefix` differents. Le
+    prefixe est donc ce qui distingue les ENVIRONNEMENTS la ou les chemins
+    ne distinguent plus rien.
+
+    Rend `None` quand l'interpreteur ne peut pas etre lance -- un prefixe
+    non mesurable n'est pas un prefixe different.
+    """
+    try:
+        fait = subprocess.run(
+            [interpreteur, "-c", "import sys; print(sys.prefix)"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=120, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if fait.returncode != 0:
+        return None
+    return (fait.stdout or "").strip() or None
+
+
 def resoudre_le_noyau(nom: str = KERNEL_NAME) -> tuple[list[str], str]:
     """Resout le kernelspec comme Jupyter le fait.
 
@@ -111,11 +144,14 @@ def controler(
     repertoire_du_spec: str | None,
     interpreteur_attendu: str,
     repertoire_du_job: str,
+    prefixes: Callable[[str], str | None] = prefixe_de,
 ) -> list[str]:
     """Rend la liste des violations (vide = conforme).
 
-    Les trois controles sont passes separement, pour que les tests
-    puissent en exercer un seul a la fois.
+    Les quatre controles sont passes separement, pour que les tests
+    puissent en exercer un seul a la fois. `prefixes` est injectable pour
+    que les tests puissent simuler deux environnements distincts sans
+    construire deux virtualenvs.
     """
     violations: list[str] = []
 
@@ -138,10 +174,10 @@ def controler(
     else:
         argv0 = argv[0]
         if os.path.isabs(argv0):
-            resolu = _normalise(argv0)
+            lanceur = argv0
         else:
-            trouve = shutil.which(argv0)
-            resolu = _normalise(trouve) if trouve else argv0
+            lanceur = shutil.which(argv0) or argv0
+        resolu = _normalise(lanceur)
         attendu = _normalise(interpreteur_attendu)
         if resolu != attendu:
             violations.append(
@@ -149,6 +185,21 @@ def controler(
                 f"utilise `{interpreteur_attendu}` -- le noyau ne demarre pas "
                 f"le Python du job"
             )
+        elif os.path.normcase(lanceur) != os.path.normcase(interpreteur_attendu):
+            # Meme binaire, deux LANCEURS : le cas des virtualenvs distincts,
+            # dont les `realpath` coincident. Les chemins ne distinguent plus
+            # rien ; l'ENVIRONNEMENT (le prefixe annonce par l'interpreteur)
+            # est ce qui les distingue encore.
+            prefixe_lanceur = prefixes(lanceur)
+            prefixe_job = prefixes(interpreteur_attendu)
+            if (prefixe_lanceur is not None and prefixe_job is not None
+                    and prefixe_lanceur != prefixe_job):
+                violations.append(
+                    f"environnement different : le noyau lance `{lanceur}` "
+                    f"(prefixe `{prefixe_lanceur}`), le job utilise "
+                    f"`{interpreteur_attendu}` (prefixe `{prefixe_job}`) -- "
+                    f"le noyau ne demarre pas le Python du job"
+                )
 
     return violations
 
@@ -256,6 +307,7 @@ def main(argv: list[str] | None = None) -> int:
             "kernel": KERNEL_NAME,
             "job_dir": repertoire_du_job,
             "interpreter": interpreteur,
+            "prefix": prefixe_de(interpreteur),
             "spec_dir": repertoire_du_spec,
             "argv": argv_noyau,
             "violations": violations,
