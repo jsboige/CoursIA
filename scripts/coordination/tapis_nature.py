@@ -2,8 +2,8 @@
 """La NATURE d'un grain : worker, harnais, parapluie.
 
 Decidee sur les **metadonnees seules** (titre + labels) : la voie legere ne
-lit ni corps ni fil, et le tapis doit decider de la tete du tirage sur ce
-qu'il a deja lu. Aucune lecture reseau de plus, aucun cout de temps ajoute.
+lit ni corps ni fil, et le tapis decide sur ce qu'il a deja lu. Aucune
+lecture reseau de plus, aucun cout de temps ajoute.
 
 Trois classes :
 
@@ -14,28 +14,22 @@ Trois classes :
   2. la **racine de famille** d'une consolidation : l'issue porte le label
      `consolidation` ET un AUTRE titre declare son numero comme racine
      (`[ICT #20298] G4 -- ...`, `Fix(tooling,#16231): ...`). La voie legere
-     ne lit pas les corps, donc elle ne voit pas `Part of #N` : elle lit les
-     TITRES, qui portent la meme declaration.
+     ne lit pas les corps : elle lit les TITRES, qui portent la declaration.
 
-  Effet mesure (24/11, pool de 489 issues ouvertes, lecture reelle) : les
-  **huit** premiers grains du tirage d'une lane worker etaient **huit**
-  issues de consolidation. La priorite de consolidation etait une priorite
-  TOTALE : elle passait devant la bande d'age ET devant la regle « jamais
-  visitee », donc la tete du tirage etait une famille, pas des grains. Apres
-  la correction, la tete du tirage worker est une suite de **sous-grains**
-  (#27170, #28195, #28305, #28306 -- des enfants de #17417 et #20298), et
-  les racines de famille passent dans le slot des conteneurs.
+  Effet mesure (24/11, pool de 489 issues ouvertes) : les **huit** premiers
+  grains d'une lane worker etaient **huit** issues de consolidation -- une
+  priorite TOTALE, devant la bande d'age ET devant la regle « jamais
+  visitee ». Apres la correction, la tete du tirage est une suite de
+  **sous-grains** (#27170, #28195, #28305, #28306) et les racines passent
+  dans le slot des conteneurs. La priorite de consolidation reste : un
+  sous-grain (une feuille) la garde, et l'invariant I7 tient -- une
+  consolidation **seule** n'a personne qui la declare racine : c'est une
+  feuille.
 
-  La priorite de consolidation, elle, reste : un sous-grain de famille
-  (une feuille) la garde, et l'invariant I7 (« la consolidation passe devant
-  l'anciennete ») tient toujours -- une issue de consolidation **seule** dans
-  le pool n'a personne qui la declare racine : c'est une feuille.
-
-- **harnais** : le travail de COORDINATION ou de HARNAIS. Ce n'est pas un
-  grain de worker : les labels `harnais` et `coordination` l'ecartent de la
-  tete d'une lane **worker**. Les lanes qui **gerent** l'urne (coordinateur,
-  adjoint, secretaire) le gardent : pour elles, c'est une information, pas
-  une exclusion.
+- **harnais** : le travail de COORDINATION ou de HARNAIS. Les labels
+  `harnais` et `coordination` l'ecartent de la tete d'une lane **worker** ;
+  les lanes qui **gerent** l'urne le gardent : pour elles, c'est une
+  information, pas une exclusion.
 
 - **worker** : le reste.
 """
@@ -63,7 +57,11 @@ _BRACKET_RE = re.compile(r"^\s*\[[^\]]*?#(\d+)[^\]]*\]")
 #: Un crochet de TETE `[EPIC #N] ...` : le crochet porte l'EPIC ET son numero.
 _EPIC_RE = re.compile(r"^\s*\[\s*epic\b[^\]]{0,40}?#(\d+)", re.IGNORECASE)
 
-#: Un numero cite entre parentheses : la forme du SCOPE (`Fix(tooling,#N)`).
+#: Un numero cite entre parentheses : la parenthese du TITRE declare une
+#: racine de famille. La forme est **large** (toute parenthese qui porte un
+#: numero) -- mesure (25/11, pool de 490 issues ouvertes) : 54 racines, dont
+#: 35 par une parenthese seule ; les 8 consolidations promues ont chacune des
+#: sous-grains vivants, et une mention pure n'en promeut aucune.
 _PAREN_RE = re.compile(r"\(([^)]*?#(\d+)[^)]*)\)")
 
 
@@ -93,7 +91,13 @@ def racines_declarees(metas: list[dict]) -> set[int]:
     les a deja lus. Deux formes :
 
     - le crochet de tete (`[ICT #20298] G4`) ;
-    - la parenthese du scope (`Fix(tooling,#16231): ...`).
+    - la **parenthese** du titre : `Fix(tooling,#16231): ...`, `(fille #14446,
+      3e serie)`, `(sous-grain de #3973)`, `(Parcours (#5081))`.
+
+    La parenthese est **large** : toute parenthese qui cite un numero
+    declare une racine, meme une mention pure (`(Concern #24179)`). La forme
+    etroite (le SCOPE seul) perdrait #5081 -- dont l'unique enfant (#24224)
+    declare sa mere par `(Parcours (#5081))`.
 
     Le numero d'une issue ne se declare pas **elle-meme** : c'est le seul
     cas ecarte. Une racine qui est elle-meme dans le pool reste une racine --
@@ -116,8 +120,8 @@ def racines_declarees(metas: list[dict]) -> set[int]:
 def est_conteneur_declare(titre: str, labels: list[str]) -> bool:
     """Le conteneur DECLARE : label `epic`/`umbrella`, ou titre `[EPIC...]`.
 
-    Meme regle que `tapis_rapide._conteneur_de` -- la VOIE LEGERE ne peut
-    pas la redire, elle la reprend (une regle dupliquee derive).
+    La regle **canonique** : elle vit ici (module sans dependance de
+    coordination), et la voie lourde y delègue au lieu de la recopier.
     """
     poses = {lab.strip().lower() for lab in labels}
     if poses & LABELS_CONTENEUR:

@@ -16,7 +16,11 @@ Ce que ces tests verrouillent :
    priorite de consolidation (invariant I7) tient ;
 4. le grain de **harnais** (labels `harnais` / `coordination`) n'est pas servi
    a une lane **worker** ; les lanes qui **gerent** l'urne le gardent ;
-5. le repli **nomme sa cause** : un tirage degrade s'explique.
+5. le repli **nomme sa cause** : un tirage degrade s'explique ;
+6. les trois ecarts mesures par la review Hermes du 24/11 restent fermes :
+   l'**urne l'emporte** sur le harnais, la forme **large** de la parenthese
+   est documentee et verrouillee, et la regle du conteneur declare n'existe
+   qu'en un seul endroit.
 
 Aucun test ne touche le reseau : `run` est un faux, le cache est un fake.
 """
@@ -29,7 +33,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import (tapis_nature, tapis_occupation, tapis_repli,
+from coordination import (tapis_nature, tapis_occupation, tapis_rapide, tapis_repli,
                           tapis_repli_cause, tapis_universel)
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
@@ -161,6 +165,63 @@ def test_le_motif_du_harnais_est_lisible():
     """L'exclusion n'est jamais silencieuse : elle porte son motif."""
     motif = tapis_occupation.motif(tapis_nature.MARQUE_HARNAIS)
     assert "harnais" in motif and "worker" in motif
+
+
+# --- LES ECARTS MESURES PAR LA REVIEW HERMES DU 24/11 ------------------------
+
+
+def test_l_urne_l_emporte_sur_le_harnais():
+    """Une issue qui porte les DEUX labels reste a l'urne.
+
+    L'ordre des `update` l'assurait : l'urne passe en dernier, donc elle
+    ecrase le harnais. Avant, le harnais ecrasait l'urne et les quatre issues
+    qui portent les deux labels (#18763, #21822, #22938, #26337) sortaient de
+    la section « urne » du `resume` des lanes gerantes (mesure Hermes)."""
+    metas = [_meta(18763, "Les deux labels", ["candidate-delivered", "harnais"]),
+             _meta(9, "Harnais seul", ["harnais"]),
+             _meta(10, "Urne seule", ["candidate-delivered"])]
+    marques = tapis_occupation.marques(metas, [], COORD)
+    assert marques[18763] == "urne", "l'urne l'emporte : c'est la classe la plus dure"
+    assert marques[9] == "harnais"
+    assert marques[10] == "urne"
+
+
+def test_la_parenthese_du_titre_declare_une_racine():
+    """La forme est **large** : toute parenthese qui cite un numero declare
+    une racine de famille.
+
+    C'est la regle **documentee et verrouillee** (Hermes, 24/11 : « la regle
+    est plus large que sa description »). La forme etroite (le SCOPE seul)
+    perdrait #5081 -- dont l'unique enfant (#24224) declare sa mere par
+    `(Parcours (#5081))` -- et les formes qui ne sont pas une declaration
+    (`(Concern #24179)`, `(inc. #10761)`) ne promeuvent aucune consolidation
+    sur le pool reel."""
+    metas = [_meta(5, "Une consolidation (soeur de #20298 et #17545)"),
+             _meta(6, "Un grain (fille #14446, 3e serie)"),
+             _meta(7, "Un grain (Concern #24179)"),
+             _meta(8, "Un grain (inc. #10761)")]
+    assert tapis_nature.racines_declarees(metas) == {20298, 14446, 24179, 10761}
+    scope = [_meta(10, "Fix(tooling,#16231): ...")]
+    assert tapis_nature.racines_declarees(scope) == {16231}, "le scope declare"
+
+
+def test_la_regle_du_conteneur_est_canonique():
+    """Une regle dupliquee derive : la voie lourde delègue a la regle
+    canonique (`tapis_nature`), au lieu de la recopier (Hermes : 83
+    conteneurs a la voie legere, 80 a la voie lourde)."""
+    corpus = [
+        ("EPIC du tas", []),
+        ("[EPIC #123] une tranche", []),
+        ("[EPIC du tas]", []),
+        ("Un grain ordinaire", []),
+        ("Un grain ordinaire", ["epic"]),
+        ("Un grain ordinaire", ["umbrella"]),
+        ("Une consolidation", ["consolidation"]),
+        ("", []),
+    ]
+    for titre, labels in corpus:
+        assert tapis_rapide._conteneur_de(titre, labels) == \
+            tapis_nature.est_conteneur_declare(titre, labels), titre
 
 
 # --- LE REPLI NOMME SA CAUSE ------------------------------------------------

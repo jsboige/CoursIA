@@ -171,11 +171,15 @@ def marques(metas: list[dict], prs: list[dict], lane: str) -> dict[int, str]:
     """Les trois classes, sur les metadonnees seules.
 
     L'urne l'emporte : c'est la classe la plus dure (une issue livree, dont
-    la cloture appartient au coordinateur).
+    la cloture appartient au coordinateur). L'ordre des `update` **l'ensure** :
+    l'urne passe en DERNIER, donc elle ecrase le harnais. Avant, le harnais
+    passait en dernier et ecrasait l'urne -- les quatre issues qui portent
+    les deux labels (#18763, #21822, #22938, #26337) sortaient de la section
+    « urne » du `resume` des lanes gerantes (mesure Hermes, 24/11).
     """
     m = marques_pr(prs, lane)
-    m.update(marques_urne(metas))
     m.update(marques_harnais(metas))
+    m.update(marques_urne(metas))
     return m
 
 
