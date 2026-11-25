@@ -2502,3 +2502,123 @@ class TestFpFamilies24289:
         result = self._scan_tmp(tmp_path, cells)
         assert result["verdict"] == "FABRICATION_DETECTED"
         assert any(f["normalized"] == "40.0" for f in result["findings"])
+
+
+class TestFpFamilies24289Residual:
+    """#24289 -- familles residuelles mesurees le 25/11 sur GT-18c
+    (GameTheory-18c-Humour-Banc-Python.ipynb, carnet SAIN) : le carnet
+    portait 5 derived_claims UNPROVEN, il est CLEAN apres le fix.
+
+    Les trois familles, chacune avec son faux positif donne et son faux
+    negatif donne (contrat d'acceptance de l'issue) :
+
+    * A -- le suffixe d'un NOM de carnet lu comme une unite d'octets
+      (« la cellule de corpus dur de 24b ») ;
+    * B -- l'INDEX d'une ancre de cellule (« La section circularite
+      (cell[43-45]) ») ;
+    * C -- la PORTEE d'une ancre : une ancre ne gouverne que la phrase
+      qui la cite, pas les autres claims de la meme ligne.
+    """
+
+    def _scan_tmp(self, tmp_path, cells):
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture24289residual.ipynb"
+        p.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    # --- famille A : le suffixe d'un nom de carnet n'est pas une unite ---
+
+    def test_familleA_suffixe_de_carnet_pas_une_mesure(self, tmp_path):
+        """FP donne (GT-18c c.23) : « la cellule de corpus dur de 24b » --
+        24b est le corpus GT-24b, pas 24 octets. La ligne porte un contexte
+        de derivation (« les features sont derivees du label »), donc le
+        jeton aurait ete un claim sans la correction."""
+        cells = [
+            _code_cell("eval()", [_stream_output("scores\n")]),
+            _md_cell(
+                "- **Circularité structurelle** : quand les features sont "
+                "dérivées du label par construction (la cellule de corpus dur "
+                "de 24b appelle `features_from_label`), le détecteur inverse "
+                "la dérivation."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["derived_claims"]
+
+    def test_familleA_octets_en_majuscules_restent_un_claim(self, tmp_path):
+        """Faux negatif donne : « 12.5B » (octets, majuscule) reste une
+        mesure controlee -- seule la casse minuscule sort du champ."""
+        cells = [
+            _code_cell("eval()", [_stream_output("scores\n")]),
+            _md_cell("Le corpus de départ compte 12.5B elements."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert any(f["normalized"] == "12.5" for f in result["findings"])
+
+    # --- famille B : l'index d'une ancre de cellule ----------------------
+
+    def test_familleB_index_de_cellule_pas_une_mesure(self, tmp_path):
+        """FP donne (GT-18c c.43) : « La section circularite (cell[43-45]) »
+        -- 43 et 45 designent des POSITIONS dans le carnet, pas des
+        valeurs mesurees."""
+        cells = [
+            _code_cell("eval()", [_stream_output("scores\n")]),
+            _md_cell(
+                "- **Circularité structurelle** : les features sont dérivées "
+                "du label (la section cell[43-45] le montre)."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["derived_claims"]
+
+    def test_familleB_valeur_a_cote_de_l_ancre_reste_detectee(self, tmp_path):
+        """Faux negatif donne : une valeur ecrite A COTE de l'ancre n'est
+        pas un index -- « cell[43] : le F1=0,455 » reste un claim
+        controle, et l'ancre ne l'absout pas."""
+        cells = [
+            _code_cell("eval()", [_stream_output("scores\n")]),
+            _md_cell(
+                "La réserve structurelle est posée en cell[43] : le F1=0,455 "
+                "reste à prouver."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert any(f["normalized"] == "0.455" for f in result["findings"])
+
+    # --- famille C : l'ancre ne gouverne que la phrase qui la cite -------
+
+    def test_familleC_ancre_limitee_a_la_phrase(self, tmp_path):
+        """FP donne (GT-18c c.49) : une ligne enchaine deux reserves --
+        la premiere cite cell[45], la seconde cite un F1=0,455 imprime
+        par une cellule de code bien plus haut. L'ancre de la premiere
+        phrase ne doit pas priver la seconde de sa preuve."""
+        cells = [
+            _code_cell("eval()", [_stream_output(
+                "LLM claude-haiku-4.5      0.312    0.833  0.455\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _code_cell("eval()", [_stream_output("F1 = 1.000\n")]),
+            _md_cell(
+                "La réserve structurelle est posée en cell[45] : le F1=1,000 "
+                "ne mesure pas la théorie du partage. L'écart avec le LLM "
+                "épinglé (haiku-4.5, F1 = 0,455) n'est pas un résultat."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["derived_claims"]
+
+    def test_familleC_valeur_absente_des_sorties_reste_detectee(self, tmp_path):
+        """Faux negatif donne : meme forme, mais la valeur n'est IMPRIMEE
+        nulle part -- la phrase sans ancre retombe sur la recherche
+        ascendante, qui ne trouve rien, et le claim reste detecte."""
+        cells = [
+            _code_cell("eval()", [_stream_output("scores\n")]),
+            _md_cell(
+                "La réserve structurelle est posée en cell[45]. L'écart avec "
+                "le LLM épinglé (haiku-4.5, F1 = 0,455) n'est pas un résultat."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert any(f["normalized"] == "0.455" for f in result["findings"])
+
