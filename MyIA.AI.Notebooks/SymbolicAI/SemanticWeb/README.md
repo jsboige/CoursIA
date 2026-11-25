@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SemanticWeb
-pedagogical_count: 29
-breakdown: SemanticWeb=29
-maturity: BETA=27, ALPHA=2
+pedagogical_count: 31
+breakdown: SemanticWeb=31
+maturity: BETA=29, ALPHA=2
 -->
 
 Le Web Sémantique est la promesse d'un Web où les machines comprennent la signification des données, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C définissent un langage commun pour décrire, interroger, valider et raisonner sur des graphes de connaissances. Cette série vous mène des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les données liées et les standards émergents (RDF 1.2, JSON-LD 1.1).
@@ -73,6 +73,7 @@ flowchart BT
 | SW-15 | [SW-15-Coup-Argumentatif-Python](SW-15-Coup-Argumentatif-Python.ipynb) | Greffer un graphe d'argumentation AIF : le coup bascule l'extension grounded de Dung | 45 min | EXTENSION |
 | SW-15 (C#) | [SW-15-Coup-Argumentatif-CSharp](SW-15-Coup-Argumentatif-CSharp.ipynb) | Le coup argumentatif en dotNetRDF : SHACL natif, fermeture OWL-RL via le pont Python.NET, bascule de Dung calculee en C# | 90 min | EXTENSION |
 | SW-16 | [SW-16-ProofCarryingOntologies-Python](SW-16-ProofCarryingOntologies-Python.ipynb) | Le certificat d'inférence : une conclusion vérifiable par un checker indépendant | 50 min | EXTENSION |
+| SW-16 (C#) | [SW-16-ProofCarryingOntologies-CSharp](SW-16-ProofCarryingOntologies-CSharp.ipynb) | Le même contrat en C# sur la seule BCL : checker découplé prouvé par scan IL, jambe réelle open-ontologies v1.4.0 invoquée par Process (SHA256 vérifié) | 50 min | JUMEAU |
 | Legacy | [RDF.Net-Legacy/RDF.Net](RDF.Net-Legacy/RDF.Net.ipynb) | Démonstration RDF.NET historique, antérieure à la double pile — archive de référence, non maintenue | — | ARCHIVE |
 
 **Durée totale** : ~10 h (parcours principal), ~4 h de plus (miroirs, jumeaux et extensions).
