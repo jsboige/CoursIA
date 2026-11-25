@@ -2,7 +2,7 @@
 #
 # Écrite à la livraison à partir des sorties COMMITÉES des deux carnets :
 # le carnet Rust rejoue la même démonstration que son jumeau Python (le
-# noyau d'insatisfiabilité minimal) par l'API du crate `z3`, et l'on compare
+# noyau d'insatisfiabilité) par l'API du crate `z3`, et l'on compare
 # ce que les deux côtés ont affiché, grandeur par grandeur.
 #
 # Pourquoi la comparaison est ligne à ligne et non bloc à bloc : le noyau
@@ -11,11 +11,24 @@
 # sont les VALEURS affichées — le verdict, le contenu du core, le nombre de
 # contraintes en conflit — et non la mise en page.
 #
-# L'ordre des étiquettes du core est comparé en texte strict : Z3 renvoie le
-# core dans l'ordre d'assertion, et les deux carnets assertent dans le même
-# ordre (x_ge_3, x_le_5, x_eq_10 ; h_ge_9, h_le_17, h_ne_12, h_eq_12,
-# h_ge_9b ; w_eq_1, w_ge_0, w_eq_2). C'est donc une grandeur, pas un accident
-# de présentation.
+# L'ORDRE des étiquettes n'est PAS une grandeur. `get_unsat_core` renvoie un
+# sous-ensemble insatisfaisable ; l'API ne garantit ni l'ordre de retour des
+# étiquettes, ni que le sous-ensemble renvoyé soit le plus petit. Le contenu
+# du core est donc comparé comme un ENSEMBLE d'étiquettes (transformation
+# `labels`), jamais comme une liste positionnée — les deux carnets assertent
+# dans le même ordre, mais ce serait une coïncidence, pas une garantie.
+#
+# La MINIMALITÉ, elle, n'est pas une grandeur de l'API : elle est mesurée par
+# les tests de retrait de la cellule 9 (retirer une contrainte, voir ce que
+# devient le reste). Ces mesures sont donc déclarées côté Rust seul, avec
+# leur motif côté Python — le jumeau Python n'exécute pas ces tests.
+#
+# Les deux mentions d'exclusion figées du jumeau Python (« Z3 ecarte
+# 'x>=3' du core », « (x>=0 exclu du core) ») sont des PHRASES, pas des
+# mesures : elles affirment une conclusion sans la dériver des étiquettes
+# renvoyées. Le port Rust les remplace par des valeurs CALCULÉES sur les
+# étiquettes ; l'écart entre les deux côtés est donc déclaré, mesuré et
+# documenté, plutôt que masqué.
 #
 # Cellules non mesurées (motif relevé à la relecture de la livraison) :
 #   - cellule 1 (Rust) : bannière d'environnement (version de la bibliothèque
@@ -62,7 +75,7 @@
           pattern: "' x>=3, x<=5, x=10 ' : (unsat)"
           transform: text
     - id: core_label_x_le_5
-      description: "Première étiquette du core des trois contraintes — x_le_5 des deux côtés"
+      description: "Présence de l'étiquette x_le_5 dans le core des trois contraintes — des deux côtés (présence, pas position)"
       tolerance: 0
       reference: python
       sides:
@@ -75,7 +88,7 @@
           pattern: '(?m)^\s+- (x_le_5)$'
           transform: text
     - id: core_label_x_eq_10
-      description: "Seconde étiquette du core des trois contraintes — x_eq_10 des deux côtés"
+      description: "Présence de l'étiquette x_eq_10 dans le core des trois contraintes — des deux côtés (présence, pas position)"
       tolerance: 0
       reference: python
       sides:
@@ -87,8 +100,21 @@
           cell: 6
           pattern: '(?m)^\s+- (x_eq_10)$'
           transform: text
+    - id: core_etiquettes_trois_contraintes
+      description: "ENSEMBLE des étiquettes du core des trois contraintes — {x_le_5, x_eq_10} des deux côtés, comparé sans tenir compte de l'ordre (l'ordre de retour d'un core n'est pas une garantie d'API)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '(?s)UNSAT CORE[^\n]*\n(.*?)\n->'
+          transform: labels
+        rust:
+          cell: 6
+          pattern: '(?s)UNSAT CORE[^\n]*\n(.*?)\n->'
+          transform: labels
     - id: core_exclut_x_ge_3
-      description: "Phrase de conclusion de la cellule 6 — l'exclusion de 'x>=3' du core, des deux côtés"
+      description: "Phrase de conclusion de la cellule 6 côté Python — l'exclusion de 'x>=3' affirmée en texte (le port Rust ne l'écrit pas en dur)"
       tolerance: 0
       reference: python
       sides:
@@ -97,8 +123,17 @@
           pattern: "(Z3 ecarte 'x>=3' du core)"
           transform: text
         rust:
+          absent: "le port Rust ne fige pas la phrase : il CALCULE l'absence de x_ge_3 sur les étiquettes renvoyees (mesure core_absente_x_ge_3)"
+    - id: core_absente_x_ge_3
+      description: "Absence de l'étiquette x_ge_3 dans le core, CALCULÉE sur les étiquettes renvoyées par le solveur — côté Rust"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "le jumeau Python affirme l'exclusion en phrase ('Z3 ecarte ...'), sans la deriver des etiquettes (mesure core_exclut_x_ge_3)"
+        rust:
           cell: 6
-          pattern: "(Z3 ecarte 'x>=3' du core)"
+          pattern: "-> 'x_ge_3' absente du core : (true)"
           transform: text
     - id: verdict_paire
       description: "Verdict de la paire {x<=5, x=10} seule — unsat des deux côtés"
@@ -114,7 +149,7 @@
           pattern: "' y<=5, y=10 ' .(sans y>=3). : (unsat)"
           transform: text
     - id: paire_suffit
-      description: "Phrase de confirmation de la minimalité — la paire suffit au conflit, des deux côtés"
+      description: "Phrase de confirmation de la suffisance — la paire suffit au conflit, des deux côtés"
       tolerance: 0
       reference: python
       sides:
@@ -125,6 +160,39 @@
         rust:
           cell: 9
           pattern: "(CONFIRME : la paire [{]x<=5, x=10[}] suffit au conflit)"
+          transform: text
+    - id: retrait_x_ge_3
+      description: "Test de retrait — sans x_ge_3, le reste reste en conflit (unsat) : la contrainte écartée est superflue — côté Rust"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "le jumeau Python n'execute pas les tests de retrait : il ne verifie pas la minimalite, il l'affirme"
+        rust:
+          cell: 9
+          pattern: "retrait de x_ge_3 : reste (unsat)"
+          transform: text
+    - id: retrait_x_le_5
+      description: "Test de retrait — sans x_le_5, le reste se satisfait (sat) : la contrainte est nécessaire — côté Rust"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "le jumeau Python n'execute pas les tests de retrait : il ne verifie pas la minimalite, il l'affirme"
+        rust:
+          cell: 9
+          pattern: "retrait de x_le_5 : reste (sat)"
+          transform: text
+    - id: retrait_x_eq_10
+      description: "Test de retrait — sans x_eq_10, le reste se satisfait (sat) : la contrainte est nécessaire — côté Rust"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "le jumeau Python n'execute pas les tests de retrait : il ne verifie pas la minimalite, il l'affirme"
+        rust:
+          cell: 9
+          pattern: "retrait de x_eq_10 : reste (sat)"
           transform: text
     - id: verdict_specification
       description: "Verdict de la spécification surcontrainte à 5 contraintes — unsat des deux côtés"
@@ -140,7 +208,7 @@
           pattern: "Specification .5 contraintes. : (unsat)"
           transform: text
     - id: core_label_h_ne_12
-      description: "Première contrainte coupable du core de la spécification — h_ne_12 des deux côtés"
+      description: "Présence de l'étiquette h_ne_12 dans le core de la spécification — des deux côtés (présence, pas position)"
       tolerance: 0
       reference: python
       sides:
@@ -153,7 +221,7 @@
           pattern: '(?m)^\s+COUPABLE : (h_ne_12)$'
           transform: text
     - id: core_label_h_eq_12
-      description: "Seconde contrainte coupable du core de la spécification — h_eq_12 des deux côtés"
+      description: "Présence de l'étiquette h_eq_12 dans le core de la spécification — des deux côtés (présence, pas position)"
       tolerance: 0
       reference: python
       sides:
@@ -192,20 +260,20 @@
           pattern: "Check.assumptions. : (unsat)"
           transform: text
     - id: core_innocence
-      description: "Contenu du core de la section 5 — w_eq_1 et w_eq_2, dans l'ordre d'assertion, des deux côtés"
+      description: "ENSEMBLE des étiquettes du core de la section 5 — {w_eq_1, w_eq_2} des deux côtés, comparé sans tenir compte de l'ordre"
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 14
           pattern: "UnsatCore = [{] ([^}]*) [}]"
-          transform: text
+          transform: labels
         rust:
           cell: 15
           pattern: "UnsatCore = [{] ([^}]*) [}]"
-          transform: text
+          transform: labels
     - id: innocence_exclue
-      description: "Mention de l'exclusion de la contrainte innocente — des deux côtés"
+      description: "Mention de l'exclusion de la contrainte innocente, en phrase figée — côté Python"
       tolerance: 0
       reference: python
       sides:
@@ -214,6 +282,15 @@
           pattern: "(x>=0 exclu du core)"
           transform: text
         rust:
+          absent: "le port Rust ne fige pas la mention : il CALCULE l'absence de w_ge_0 sur les etiquettes renvoyees (mesure innocence_w_ge_0_absente)"
+    - id: innocence_w_ge_0_absente
+      description: "Absence de l'étiquette w_ge_0 dans le core, CALCULÉE sur les étiquettes renvoyées par le solveur — côté Rust"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "le jumeau Python affiche la mention figee '(x>=0 exclu du core)', sans la deriver des etiquettes (mesure innocence_exclue)"
+        rust:
           cell: 15
-          pattern: "(x>=0 exclu du core)"
+          pattern: "w_ge_0 absente du core : (true)"
           transform: text
