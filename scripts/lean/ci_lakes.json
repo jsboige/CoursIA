@@ -594,7 +594,7 @@
       "display-name": "social_choice_core_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
-      "axiom-target-modules": "SocialChoice,SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,SocialChoice._SmokeTest",
+      "axiom-target-modules": "SocialChoice,SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.GibbardSatterthwaite,SocialChoice.GibbardSatterthwaite_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,SocialChoice._SmokeTest",
       "axiom-fail-on-sorry": "true",
       "certified-subdir": "SocialChoice",
       "paths": [

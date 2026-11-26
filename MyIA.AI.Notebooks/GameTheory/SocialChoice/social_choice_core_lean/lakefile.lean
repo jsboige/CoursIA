@@ -8,11 +8,15 @@ open Lake DSL
 -- qui l'utilisent »). Les carnets de la sous-serie GameTheory/SocialChoice/
 -- citent ses chemins (01b, cells 20/29/30/31/36/46).
 --
--- Contenu (19 modules FR/EN + umbrella) : Arrow (preuve alternative declaree,
--- port asouther4 -- voir NOTICE.md), Sen, AMD, Groves, MechanismDesign,
--- Voting, SortedListCounting, Framework, Basic. La preuve canonique
--- independante de Arrow vit dans lean_game_defs/SocialChoice.lean ;
--- la comparaison des deux strategies est dans le README et le carnet 01b.
+-- Contenu (19 modules FR/EN + umbrella, hors _SmokeTest exclu de la
+-- certification) : Arrow (preuve alternative declaree, port asouther4 -- voir
+-- NOTICE.md), Sen, AMD, Groves, MechanismDesign, Voting, SortedListCounting,
+-- Framework, Basic et GibbardSatterthwaite (temoins d'hypotheses de GS T5,
+-- #26961 ; arrive avec la fusion de main du 2026-11-26, il importe
+-- SocialChoice.Basic, SocialChoice.Voting et SocialChoice.SortedListCounting,
+-- tous trois dans ce lake). La preuve canonique independante de Arrow vit
+-- dans lean_game_defs/SocialChoice.lean ; la comparaison des deux strategies
+-- est dans le README et le carnet 01b.
 --
 -- CERTIFIED : sorry-baseline 0, gate d'axiomes fail-on-sorry (ci_lakes.json).
 -- Mathlib au meme pin que le hub d'origine (db584cd6).
