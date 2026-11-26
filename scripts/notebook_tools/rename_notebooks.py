@@ -42,6 +42,14 @@ ces invariants, pas des details :
       nomme pas ses chemins (git refuse un pathspec des que l'index porte une
       variante de casse -- #19159).
 
+CSV DE TRADUCTION (#16231) : un CSV du pipeline de traduction (schema T1,
+`translations/**/*.csv`) porte le hash de chaque texte qu'il detient. Le
+renommage d'un carnet cite dans `text_<lang>` reecrit ce texte ; les colonnes
+de hash invalidees par cette reecriture sont rafraichies dans la meme passe
+(`_refresh_translation_hashes`), et rien d'autre : un chemin reecrit dans
+`notebook` ne touche a aucun hash, une ligne non reecrite reste identique
+octet par octet.
+
 HOOKS PRE-COMMIT : les commits de l'outil passent par les hooks du depot. Un
 hook qui CORRIGE un fichier indexe (fix-hr-separator sur un carnet renomme) ou
 qui REFUSE un fichier entier (check-subprocess-encoding sur un script dont un
@@ -63,7 +71,10 @@ surfaces melangees) ; 2 = erreur d'invocation.
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime
+import importlib.util
+import io
 import json
 import os
 import re
@@ -71,6 +82,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 _here = str(Path(__file__).resolve().parent)
 if _here not in sys.path:
@@ -91,6 +103,12 @@ PYTHON_KERNELS = {"python3", "python3-wsl", "python3-coursia2", "python3-lean",
 CSHARP_KERNELS = {".net-csharp"}
 LEAN_KERNELS = {"lean4", "lean4-wsl", "lean4-wsl-conway", "lean4-wsl-groth16200",
                 "lean4-wsl-perc"}
+# Le noyau RUST est un noyau de carnet comme les autres : le canon partage
+# leDeclare deja (`naming_canon.KERNEL_LANG_SUFFIXES` porte "-rust",
+# `check_kernel_suffix_canon.KERNEL_CANONICAL["rust"] = "Rust"`). Le pilote etait
+# le dernier endroit a l'ignorer : ses 64 carnets tombaient en "noyau hors
+# table" (mesure 24/11 : 64 `metadata.kernelspec.name == "rust"` dans l'arbre).
+RUST_KERNELS = {"rust"}
 
 # Queue de titre legacy a resorber quand le noyau est Lean/Lean-Python, au
 # profit du suffixe canonique. Ordre : plus long d'abord, resorption repetee.
@@ -154,7 +172,8 @@ FIXTURES_DECLARED: tuple[str, ...] = (
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
 PART_RE = re.compile(r"[-_]Part(\d+)$", re.I)
 
-_CAP_MAP = {"python": "Python", "csharp": "CSharp", "lean": "Lean"}
+_CAP_MAP = {"python": "Python", "csharp": "CSharp", "lean": "Lean",
+            "rust": "Rust"}
 
 
 def _cap(suffix: str) -> str:
@@ -199,6 +218,8 @@ def kernel_to_suffix(ks: str | None) -> str | None:
     if not ks:
         return None
     low = ks.strip().lower()
+    if low in RUST_KERNELS:
+        return "rust"
     if low in CSHARP_KERNELS or "csharp" in low:
         return "csharp"
     if low in LEAN_KERNELS or low.startswith("lean4"):
@@ -228,14 +249,19 @@ def lean_drive_proof(nb: dict) -> tuple[int, str] | None:
 
 # Le suffixe de noyau se consomme d'un BLOC : `-Lean-Python` est UN suffixe, pas
 # deux mots. Plus long d'abord, sinon `lean-python` serait coupe en `lean`.
-_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
+_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp|rust)$", re.I)
 
 # Mot de noyau dans le TITRE : la grammaire l'exclut (le suffixe seul nomme le
 # noyau), en infixe comme EN TETE -- `Lean-Argumentation-Lean` repete le noyau,
 # ce que la regle d'accretion §1 refuse. Une cible qui en porte un sera renommee
 # une seconde fois -- review #17801 point 3 : elle tombe en A TRANCHER au lieu
 # d'etre proposee.
-_KERNEL_INFIX_RE = re.compile(r"(?:^|[-_])(?:lean|python|csharp)(?=[-_]|$)", re.I)
+#
+# `rust` y entre avec le noyau Rust (#28323) : mesure du 24/11 sur les 2098
+# carnets de l'arbre, AUCUN titre ne porte `Rust` en infixe -- le prix de la
+# regle (un titre qui cite le langage Rust sous un autre noyau tombe en A
+# TRANCHER) est nul sur l'etat mesure.
+_KERNEL_INFIX_RE = re.compile(r"(?:^|[-_])(?:lean|python|csharp|rust)(?=[-_]|$)", re.I)
 
 
 def _strip_final_kernel(title: str) -> str:
@@ -442,7 +468,7 @@ def propose(series_dir: str, repo: Path | None = None) -> str:
 # Formes de reference
 # ---------------------------------------------------------------------------
 
-_KNOWN_TAILS = ("-lean-python", "-csharp", "-python", "-lean", "_en", "_fr")
+_KNOWN_TAILS = ("-lean-python", "-csharp", "-python", "-lean", "-rust", "_en", "_fr")
 
 
 @dataclass
@@ -972,8 +998,20 @@ def load_mapping(src: str, repo: Path | None = None) -> list[tuple[str, str]]:
 #: est le membre GAUCHE d'une expression de transformation. La reecrire ferait
 #: `nouveau -> nouveau` et detruirait la phrase qui documente le geste
 #: (mesure : PARITY-INVENTORY.md, 21 remplacements, `X -> Y` devenus `Y -> Y`).
+#:
+#: L'EXTENSION de carnet peut s'interposer entre la forme citee et le
+#: marqueur : la forme citee est le plus souvent la TIGNE, sans extension, et le
+#: texte continue par `.ipynb devient ...` (#28323). Sans cette tolerance, la
+#: garde lisait `.ipynb` la ou elle attendait le marqueur, ne reconnaittait pas
+#: `devient`, et la ligne d'historique du registre devenait
+#: `Y-CSharp.ipynb devient Y-CSharp.ipynb` -- une tautologie qui FAUSSAIT
+#: l'historique du renommage.
+#:
+#: Seule l'extension `.ipynb` est toleree : c'est la seule extension que le
+#: pilote renomme. Un `.rst` ou un `.py` qui suivrait la forme n'ouvre aucun
+#: contexte de documentation et reste un referent a reecrire.
 _RENAME_DOC_CONTEXT = re.compile(
-    r"\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
+    r"\s*(?:\.ipynb)?\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
     re.IGNORECASE,
 )
 
@@ -1001,7 +1039,12 @@ def rewrite_file(p: Path, forms_list: list[RefForms]) -> int:
     autorisees. Rend le nombre de remplacements REELLEMENT effectues -- les
     occurrences preservees par le contexte de documentation (``X -> Y``) sont
     des matchs sans ecriture et ne comptent donc pas. Leve SystemExit si la
-    garde structurelle echoue ; dans ce cas rien n'est ecrit."""
+    garde structurelle echoue ; dans ce cas rien n'est ecrit.
+
+    Sur un CSV de traduction, les hashs des textes reecrits sont rafraichis
+    dans la meme passe (``_refresh_translation_hashes``) : ce sont les seuls
+    octets touches en plus des sous-chaines remplacees.
+    """
     raw = p.read_text(encoding="utf-8")
     edited = raw
     total = 0
@@ -1023,8 +1066,250 @@ def rewrite_file(p: Path, forms_list: list[RefForms]) -> int:
                 assert ca.get("outputs") == cb.get("outputs"), "I3 : sortie modifiee"
         except (ValueError, AssertionError, KeyError, TypeError) as e:
             raise SystemExit(f"I1/I2/I3 VIOLes sur {p} ({e}) : rien n'est ecrit")
+    if p.suffix.lower() == ".csv":
+        edited, n_hashes = _refresh_translation_hashes(raw, edited)
+        if n_hashes:
+            print(f"[hash] {p} : {n_hashes} cellule(s) de hash de traduction "
+                  "rafraichie(s)")
     p.write_text(edited, encoding="utf-8", newline="")
     return total
+
+
+# ---------------------------------------------------------------------------
+# CSV de traduction : rafraichir les hashs des textes reecrits (#16231)
+# ---------------------------------------------------------------------------
+# Un CSV de synchro de traduction (schema T1, scripts/translation/) porte, par
+# cellule de notebook, le texte de chaque langue et son hash :
+# ``hash_<lang> = cell_hash(text_<lang>)``, et pour le pivot
+# ``src_hash = hash_<pivot> = cell_hash(text_<pivot>)``. Reecrire un nom de
+# carnet dans un texte sans rafraichir son hash laissait la ligne incoherente
+# pour T2 (mesure : 45 anomalies nouvelles sur audio.csv pour un renommage de
+# 30 carnets, #16231). ``rewrite_file`` etant l'entree unique des deux modes
+# (--mapping commit 2 et --rebase-helper), le rafraichissement vit la et
+# couvre l'un et l'autre.
+
+#: Colonnes qui signent un CSV de synchro. Volontairement minimales : ni
+#: l'ordre ni la presence des autres colonnes ne portent la semantique, et les
+#: CSV legacy n'ont pas tous ``translate_policy`` ni ``src_hash_<lang>``.
+_TRANSLATION_SIGNATURE = frozenset({"notebook", "src_hash", "text_fr", "hash_fr"})
+
+_T2_MODULE: Any = None
+
+_CSV_SPECIAL = re.compile(r'[",\n]')
+_CSV_QUOTE = re.compile(r'"')
+
+
+def _translation_hash_module() -> Any:
+    """Le module T2 (``check_translation_sync``), source unique de ``cell_hash``.
+
+    Import PAR CHEMIN et paresseux : ce module reste importable seul
+    (``scripts/ci/creation_budget.py`` l'importe) et aucun hash n'est calcule
+    tant qu'aucun CSV de traduction n'est reecrit. Une seconde copie de
+    ``normalize`` divergerait en silence -- c'est le defaut meme que ce
+    rafraichissement corrige -- donc module introuvable = SystemExit, rien
+    n'est ecrit.
+    """
+    global _T2_MODULE
+    if _T2_MODULE is None:
+        path = (Path(__file__).resolve().parents[1] / "translation"
+                / "check_translation_sync.py")
+        spec = (importlib.util.spec_from_file_location(
+            "_rename_notebooks_check_translation_sync", path)
+            if path.is_file() else None)
+        if spec is None or spec.loader is None:
+            raise SystemExit(
+                f"module de traduction introuvable ({path}) : hashs de CSV de "
+                "traduction non rafraichissables, rien n'est ecrit")
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)
+        _T2_MODULE = mod
+    return _T2_MODULE
+
+
+def _csv_field_spans(text: str) -> list[list[tuple[int, int, bool]]]:
+    """Bornes de chaque champ d'un texte CSV, telles que le module ``csv`` le
+    decoupe (dialecte d'ecriture de T1 : QUOTE_MINIMAL, LF, UTF-8 sans BOM).
+
+    Rend, par enregistrement, la liste ``(debut, fin, entre_guillemets)`` ou
+    ``text[debut:fin]`` est le CONTENU du champ, guillemets encadrants exclus
+    (un guillemet litteral y reste double, comme a l'ecriture). Une ligne vide
+    rend ``[]``, comme ``csv.reader``. Sert a remplacer un champ sans
+    re-serialiser le fichier : hors ces bornes, rien ne bouge (I1).
+
+    Leve ValueError sur toute structure que le module ``csv`` lirait
+    autrement ; ``_csv_records`` compare les deux decoupages et l'appelant
+    refuse d'ecrire au moindre desaccord.
+    """
+    records: list[list[tuple[int, int, bool]]] = []
+    record: list[tuple[int, int, bool]] = []
+    n = len(text)
+    i = 0
+    while True:
+        start = i
+        if i < n and text[i] == '"':
+            i += 1
+            while True:
+                m = _CSV_QUOTE.search(text, i)
+                if m is None:
+                    raise ValueError("guillemet non ferme")
+                if m.end() < n and text[m.end()] == '"':
+                    i = m.end() + 1          # guillemet litteral double
+                    continue
+                break
+            record.append((start + 1, m.start(), True))
+            i = m.end()
+            if i < n and text[i] not in ",\n":
+                raise ValueError("caractere apres un guillemet fermant")
+        else:
+            m = _CSV_SPECIAL.search(text, i)
+            i = m.start() if m else n
+            record.append((start, i, False))
+        if i >= n:
+            records.append(record)
+            break
+        if text[i] == ",":
+            i += 1
+            continue
+        # Fin d'enregistrement : une ligne vide est ``[]`` pour csv.reader.
+        if len(record) == 1 and not record[0][2] and record[0][0] == record[0][1]:
+            records.append([])
+        else:
+            records.append(record)
+        record = []
+        i += 1
+        if i >= n:
+            break
+    return records
+
+
+def _csv_records(text: str) -> tuple[list[list[str]], list[list[tuple[int, int, bool]]]]:
+    """Valeurs (module ``csv``) et bornes (scanner local), verifiees l'une
+    contre l'autre. Leve ValueError si les deux decoupages divergent."""
+    spans = _csv_field_spans(text)
+    values = list(csv.reader(io.StringIO(text, newline="")))
+    if len(values) != len(spans):
+        raise ValueError(f"{len(values)} enregistrement(s) csv, {len(spans)} au scanner")
+    for vrow, srow in zip(values, spans):
+        if len(vrow) != len(srow):
+            raise ValueError(f"enregistrement a {len(vrow)} champ(s) csv, "
+                             f"{len(srow)} au scanner")
+        for val, (s, e, quoted) in zip(vrow, srow):
+            raw_field = text[s:e]
+            unescaped = raw_field.replace('""', '"') if quoted else raw_field
+            if unescaped != val:
+                raise ValueError(f"champ {raw_field[:40]!r} : csv={val[:40]!r}")
+    return values, spans
+
+
+def _refresh_translation_hashes(raw: str, edited: str) -> tuple[str, int]:
+    """Rend ``(texte, nombre de cellules de hash rafraichies)``.
+
+    Ne s'applique qu'a un CSV signe par ``_TRANSLATION_SIGNATURE`` ; tout autre
+    fichier est rendu tel quel (comportement d'avant #16231). Regles, une par
+    colonne invalidee par la reecriture :
+
+    - ``hash_<lang>`` : recalcule (``cell_hash`` du texte T2) si ``text_<lang>``
+      a ete reecrit ET que la cellule de hash n'etait pas vide ;
+    - pivot de la ligne (``src_lang``, defaut ``fr``) : ``src_hash`` recalcule
+      si ``text_<pivot>`` a ete reecrit et que ``src_hash`` n'etait pas vide ;
+      ``hash_<pivot>`` suit la premiere regle (meme valeur que ``src_hash``) ;
+    - ``src_hash_<lang>`` : avance au nouveau ``src_hash`` SEULEMENT si le pivot
+      ET ``text_<lang>`` ont ete reecrits dans la meme passe et que la trace
+      etait coherente avant (egale a l'ancien ``src_hash``). Une trace deja
+      perimee le reste (le renommage ne blanchit pas une anciennete
+      anterieure), et une traduction dont le texte n'a pas bouge garde sa
+      trace : T2 la signale ``STALE_TRAD``, comme apres un ``--update`` de T1
+      (meme convention, #20836).
+
+    Une cellule de hash vide reste vide (on ne fabrique pas de trace), et un
+    chemin reecrit dans ``notebook`` ne touche aucun hash. Toute structure non
+    relisible, tout desaccord scanner/csv et toute modification hors des
+    cellules visees leve SystemExit : rien n'est ecrit (fail-closed).
+    """
+    header_line = edited.split("\n", 1)[0]
+    try:
+        header_fields = next(csv.reader([header_line]), [])
+    except csv.Error:
+        return edited, 0                       # pas un CSV lisible : rien a faire
+    if header_fields:
+        header_fields = [header_fields[0].lstrip("\ufeff")] + header_fields[1:]
+    if not _TRANSLATION_SIGNATURE <= set(header_fields):
+        return edited, 0
+    try:
+        before, _ = _csv_records(raw)
+        after, spans = _csv_records(edited)
+    except (ValueError, csv.Error) as exc:
+        raise SystemExit(f"CSV de traduction non relisible ({exc}) : rien n'est ecrit")
+    if len(before) != len(after) or any(len(a) != len(b) for a, b in zip(after, before)):
+        raise SystemExit("CSV de traduction : la reecriture a change la structure "
+                         "(enregistrements/champs) -- rien n'est ecrit")
+    header = list(after[0])
+    if header:
+        header[0] = header[0].lstrip("\ufeff")
+    if len(set(header)) != len(header):
+        raise SystemExit("CSV de traduction : en-tete a colonnes dupliquees -- "
+                         "rien n'est ecrit")
+    col = {name: k for k, name in enumerate(header)}
+    cell_hash = _translation_hash_module().cell_hash
+    pivot_defaut = _translation_hash_module().PIVOT_LANG
+    hash_langs = [name[len("hash_"):] for name in header if name.startswith("hash_")]
+    trace_langs = [name[len("src_hash_"):] for name in header
+                   if name.startswith("src_hash_")]
+    expected = [row[:] for row in after]
+    edits: list[tuple[int, int, str]] = []
+    for r in range(1, len(after)):
+        arow, brow = after[r], before[r]
+        if not arow:
+            continue                          # ligne vide (csv.reader rend [])
+        changed = {name for name in col if brow[col[name]] != arow[col[name]]}
+        if not changed:
+            continue
+        pivot = (arow[col["src_lang"]] if "src_lang" in col else "") or pivot_defaut
+        old_src = brow[col["src_hash"]]
+        new_src = ""
+        text_pivot = f"text_{pivot}"
+        if text_pivot in changed and text_pivot in col and old_src:
+            new_src = cell_hash(arow[col[text_pivot]])
+        for lang in hash_langs:
+            text_name = f"text_{lang}"
+            if text_name not in col or text_name not in changed:
+                continue
+            old_hash = brow[col[f"hash_{lang}"]]
+            if not old_hash or not arow[col[text_name]]:
+                continue                      # hash vide : on ne fabrique rien
+            new_hash = cell_hash(arow[col[text_name]])
+            if new_hash == old_hash:
+                continue
+            expected[r][col[f"hash_{lang}"]] = new_hash
+            edits.append((*spans[r][col[f"hash_{lang}"]][:2], new_hash))
+        if not new_src:
+            continue
+        if old_src != new_src:
+            expected[r][col["src_hash"]] = new_src
+            edits.append((*spans[r][col["src_hash"]][:2], new_src))
+        for lang in trace_langs:
+            trace_name = f"src_hash_{lang}"
+            if trace_name not in col or f"text_{lang}" not in changed:
+                continue
+            trace = brow[col[trace_name]]
+            if trace and trace == old_src and trace != new_src:
+                expected[r][col[trace_name]] = new_src
+                edits.append((*spans[r][col[trace_name]][:2], new_src))
+    if not edits:
+        return edited, 0
+    out = edited
+    for start, end, value in sorted(edits, key=lambda e: e[0], reverse=True):
+        out = out[:start] + value + out[end:]
+    try:
+        final, _ = _csv_records(out)
+    except (ValueError, csv.Error) as exc:
+        raise SystemExit(f"rafraichissement des hashs non relisible ({exc}) : "
+                         "rien n'est ecrit")
+    if final != expected:
+        raise SystemExit("rafraichissement des hashs : la relecture ne rend pas "
+                         "les valeurs attendues -- rien n'est ecrit")
+    return out, len(edits)
 
 
 LEDGER_HEADER = "ancien\tnouveau\tdate\tlane"

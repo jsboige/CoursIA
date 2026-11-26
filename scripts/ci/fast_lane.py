@@ -50,6 +50,7 @@ from fast_lane_registry import TRANCHE51  # noqa: E402
 from fast_lane_registry import TOPLEVEL_SERIES_GUARDS  # noqa: E402
 from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 from fast_lane_registry import TRANCHE54  # noqa: E402  # #27611, meme motif
+from fast_lane_registry import CURRICULUM_PREREQ_GUARDS  # noqa: E402  # #27657, meme motif
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
@@ -934,6 +935,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46 + TRANCHE47
               + TRANCHE48 + TRANCHE49 + TRANCHE50 + TRANCHE52
               + RISK_KERNEL_GUARDS + TOPLEVEL_SERIES_GUARDS
+              + CURRICULUM_PREREQ_GUARDS
               if not args.only or g.name == args.only]
     if args.effects:
         guards = [g for g in guards if g.commenters]

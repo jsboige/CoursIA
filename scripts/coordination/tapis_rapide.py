@@ -231,7 +231,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: ecart_label(e.labels)),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
         ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
-        ("LIVREE", lambda: _livree(it, e, evts)),
+        # LIVREE se tait pendant la REPRISE : la preuve a retire l'ecart, les
+        # regles suivantes sont rejouees (`tapis_reprise_livree`, #28114).
+        ("LIVREE", lambda: None if ctx.get("livree_muette") else _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
         # La pause passe AVANT les ecarts de recul (COUVERTE, RELACHEE) : une
@@ -380,9 +382,13 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
         file.append(e)
         pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
-    # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
-    # demande une lecture et un --paths, il ne passe jamais devant un grain.
-    return sorted(file[:max(grains, 0)], key=lambda e: (not e.mon_claim, e.conteneur))
+    # Vos claims, puis les issues JAMAIS VISITEES, puis les grains, puis les
+    # conteneurs (#26926) : un conteneur demande une lecture et un --paths, il
+    # ne passe jamais devant un grain. Mais un conteneur jamais visite passe
+    # devant un grain deja visite : l'invariant de couverture (#27590) prime
+    # sur l'ordre de service (mesure du 25/11 : six issues en violation).
+    return sorted(file[:max(grains, 0)],
+                  key=lambda e: (not e.mon_claim, e.numero not in jamais, e.conteneur))
 
 
 def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane: str,
@@ -434,12 +440,6 @@ def _parser() -> argparse.ArgumentParser:
                         "lourd : l'ancienne lecture du pool entier (rejeu "
                         "--lecture inclus)")
     return p
-
-
-
-
-
-
 
 
 def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
