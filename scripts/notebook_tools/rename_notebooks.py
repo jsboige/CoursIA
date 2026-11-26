@@ -103,6 +103,12 @@ PYTHON_KERNELS = {"python3", "python3-wsl", "python3-coursia2", "python3-lean",
 CSHARP_KERNELS = {".net-csharp"}
 LEAN_KERNELS = {"lean4", "lean4-wsl", "lean4-wsl-conway", "lean4-wsl-groth16200",
                 "lean4-wsl-perc"}
+# Le noyau RUST est un noyau de carnet comme les autres : le canon partage
+# leDeclare deja (`naming_canon.KERNEL_LANG_SUFFIXES` porte "-rust",
+# `check_kernel_suffix_canon.KERNEL_CANONICAL["rust"] = "Rust"`). Le pilote etait
+# le dernier endroit a l'ignorer : ses 64 carnets tombaient en "noyau hors
+# table" (mesure 24/11 : 64 `metadata.kernelspec.name == "rust"` dans l'arbre).
+RUST_KERNELS = {"rust"}
 
 # Queue de titre legacy a resorber quand le noyau est Lean/Lean-Python, au
 # profit du suffixe canonique. Ordre : plus long d'abord, resorption repetee.
@@ -166,7 +172,8 @@ FIXTURES_DECLARED: tuple[str, ...] = (
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
 PART_RE = re.compile(r"[-_]Part(\d+)$", re.I)
 
-_CAP_MAP = {"python": "Python", "csharp": "CSharp", "lean": "Lean"}
+_CAP_MAP = {"python": "Python", "csharp": "CSharp", "lean": "Lean",
+            "rust": "Rust"}
 
 
 def _cap(suffix: str) -> str:
@@ -211,6 +218,8 @@ def kernel_to_suffix(ks: str | None) -> str | None:
     if not ks:
         return None
     low = ks.strip().lower()
+    if low in RUST_KERNELS:
+        return "rust"
     if low in CSHARP_KERNELS or "csharp" in low:
         return "csharp"
     if low in LEAN_KERNELS or low.startswith("lean4"):
@@ -240,14 +249,19 @@ def lean_drive_proof(nb: dict) -> tuple[int, str] | None:
 
 # Le suffixe de noyau se consomme d'un BLOC : `-Lean-Python` est UN suffixe, pas
 # deux mots. Plus long d'abord, sinon `lean-python` serait coupe en `lean`.
-_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp)$", re.I)
+_FINAL_KERNEL_RE = re.compile(r"[-_]+(?:lean-python|lean|python|csharp|rust)$", re.I)
 
 # Mot de noyau dans le TITRE : la grammaire l'exclut (le suffixe seul nomme le
 # noyau), en infixe comme EN TETE -- `Lean-Argumentation-Lean` repete le noyau,
 # ce que la regle d'accretion §1 refuse. Une cible qui en porte un sera renommee
 # une seconde fois -- review #17801 point 3 : elle tombe en A TRANCHER au lieu
 # d'etre proposee.
-_KERNEL_INFIX_RE = re.compile(r"(?:^|[-_])(?:lean|python|csharp)(?=[-_]|$)", re.I)
+#
+# `rust` y entre avec le noyau Rust (#28323) : mesure du 24/11 sur les 2098
+# carnets de l'arbre, AUCUN titre ne porte `Rust` en infixe -- le prix de la
+# regle (un titre qui cite le langage Rust sous un autre noyau tombe en A
+# TRANCHER) est nul sur l'etat mesure.
+_KERNEL_INFIX_RE = re.compile(r"(?:^|[-_])(?:lean|python|csharp|rust)(?=[-_]|$)", re.I)
 
 
 def _strip_final_kernel(title: str) -> str:
@@ -454,7 +468,7 @@ def propose(series_dir: str, repo: Path | None = None) -> str:
 # Formes de reference
 # ---------------------------------------------------------------------------
 
-_KNOWN_TAILS = ("-lean-python", "-csharp", "-python", "-lean", "_en", "_fr")
+_KNOWN_TAILS = ("-lean-python", "-csharp", "-python", "-lean", "-rust", "_en", "_fr")
 
 
 @dataclass
@@ -984,8 +998,20 @@ def load_mapping(src: str, repo: Path | None = None) -> list[tuple[str, str]]:
 #: est le membre GAUCHE d'une expression de transformation. La reecrire ferait
 #: `nouveau -> nouveau` et detruirait la phrase qui documente le geste
 #: (mesure : PARITY-INVENTORY.md, 21 remplacements, `X -> Y` devenus `Y -> Y`).
+#:
+#: L'EXTENSION de carnet peut s'interposer entre la forme citee et le
+#: marqueur : la forme citee est le plus souvent la TIGNE, sans extension, et le
+#: texte continue par `.ipynb devient ...` (#28323). Sans cette tolerance, la
+#: garde lisait `.ipynb` la ou elle attendait le marqueur, ne reconnaittait pas
+#: `devient`, et la ligne d'historique du registre devenait
+#: `Y-CSharp.ipynb devient Y-CSharp.ipynb` -- une tautologie qui FAUSSAIT
+#: l'historique du renommage.
+#:
+#: Seule l'extension `.ipynb` est toleree : c'est la seule extension que le
+#: pilote renomme. Un `.rst` ou un `.py` qui suivrait la forme n'ouvre aucun
+#: contexte de documentation et reste un referent a reecrire.
 _RENAME_DOC_CONTEXT = re.compile(
-    r"\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
+    r"\s*(?:\.ipynb)?\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
     re.IGNORECASE,
 )
 
