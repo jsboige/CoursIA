@@ -1,260 +1,244 @@
 # Ledger — Issue #15615 (ordre cible de gradation de la série GameTheory)
 
-> **Bornage strict** : ce ledger mesure `origin/main` au **2026-11-25**, tête `06cd3788510`. Périmètre gradué = les **144 carnets `GameTheory-*` de la racine** `MyIA.AI.Notebooks/GameTheory/`. Les **73 carnets des cinq sous-dossiers** (`SocialChoice` 25, `Dynamics` 26, `Metajeux` 16, `Coalitions` 5, `gateway` 1) restent hors périmètre : ils n'ont aucune ligne de gradation. Ce ledger **ne renumérote rien, ne régrada rien, ne touche aucun carnet** — il propose.
+> **Bornage strict** : ce ledger mesure `origin/main` au **2026-11-26**, tête `3b466e9ccb`. Périmètre = les **145 carnets `GameTheory-*` de la racine** `MyIA.AI.Notebooks/GameTheory/`, dans l'ordre des noms de fichiers — c'est l'ordre de la série. Les **73 carnets des sous-dossiers** (`SocialChoice` 25, `Dynamics` 26, `Metajeux` 16, `Coalitions` 5, `gateway` 1) sont gradués eux aussi (fournée E) mais forment des séries satellites : ils restent hors de cette mesure d'ordre. Ce ledger **ne renumérote rien, ne régrada rien, ne touche aucun carnet** — il propose. Il mesure l'ordre des **niveaux** et ce que les carnets **déclarent** ; il n'est pas un audit des prérequis des blocs 06 à 23 (limite au §2.4).
 >
-> **Révision du 2026-11-26**, sur réserve du coordinateur (26/11 08:53Z) : les exceptions 14 et 15 sont séparées et l'amplitude recalculée ; la simulation du 25/11 est remplacée par un **replay** des gestes sur la séquence réelle ; deux mesures sont publiées au lieu d'une ; G6, G7, G8 et G9 sont re-spécifiés ou écartés contre la **table des prérequis déclarés** ; le compte des sujets sans note est refait sur les noms réels (**21**, et non 12).
+> **Révision du 2026-11-26 (second passage)**. La version du matin mesurait la série sur les sept fichiers de gradation du dépôt : 91 lignes, 79 noms de carnets, échelle en quatre mots, 79 carnets couverts sur 145. Le fil de l'issue porte une seconde passe, postérieure et complète : trois niveaux, un critère falsifiable, les 144 carnets de la racine alors présents. **Tout est re-mesuré sur cette passe.** Les chiffres du matin (les deux mesures, la bande 2,50–3,29, les exceptions des blocs 14 et 15, le bilan 11 → 7, les gestes G1 à G9) ne sont pas comparables et ne sont pas reproduits.
 
 ## Origine
 
-Scope 2 du cadrage du 2026-10-03 (« proposer un ordre cible »), rendu décidable par l'acceptation 1 : sept ledgers de fournée ont publié le tableau de gradation — [fondations](15615-gradation-foundations.md), [fournées A](15615-gradation-fournee-a.md), [B](15615-gradation-fournee-b.md), [C](15615-gradation-fournee-c.md), [D](15615-gradation-fournee-d.md), [consolidé 01-05](15615-gradation-blocs-01-05-consolide.md), [reprise 06-21](15615-gradation-reprise-blocs-06-21.md). L'acceptation 2 (« ordre cible validé (user ou coordinateur) avant toute exécution ») était la seule non tranchée.
+Scope 2 du cadrage du 2026-10-03 (« proposer un ordre cible »). Le secrétariat a constaté (commentaire `7172850434`) que l'acceptation 1 est couverte par les fournées A à F et qu'il reste l'acceptation 2 — validation de l'ordre cible par le user ou le coordinateur, non vue dans le fil — puis les acceptations 3 et 4.
 
-Demande user fondatrice (commentaire #15586, 2026-09-11T13:43Z) : « la séquence refermée ne présente pas encore la cohérence qu'on retrouve dans les premiers numéros de la série ». Ce ledger mesure d'abord **si** c'est vrai, et où.
+Demande user fondatrice (commentaire `15586`, 2026-09-11T13:43Z) : « la séquence refermée ne présente pas encore la cohérence qu'on retrouve dans les premiers numéros de la série ». Ce ledger mesure d'abord **si** c'est vrai, et où.
 
-## 1. La base de mesure — et ce qu'elle ne couvre pas
+## 1. La base de mesure
 
-Les sept ledgers totalisent **142 entrées de gradation** pour **129 noms de carnets distincts**, sur une échelle en **mots** et non en chiffres romains (`I`/`II`/`III` n'apparaît dans aucun) : **Basse 6, Moyenne 29, Haute 73, Très haute 34**.
+### Deux passes de gradation, et laquelle fait autorité
 
-**Re-mesure du 2026-11-25** — le tableau a vieilli de deux façons, toutes deux mesurées :
+| | Passe des fichiers | Passe du fil |
+|---|---|---|
+| Support | sept fichiers `docs/ledgers/15615-gradation-*.md` sur `main` | commentaires A `6901222471`, B `6901454254`, C `7076327188`, D `7076900285`, E `7153370491`, F `7153774442` |
+| Dates | déposés le 2026-11-13 (le dernier modifié le 2026-11-23) | 15/11 → 25/11 |
+| Échelle | quatre mots (Basse, Moyenne, Haute, Très haute) | trois niveaux (`I`, `II`, `III`) |
+| Critère | cinq paliers nommés et définis par leurs carnets (Entrée, Cadre formel, Application, Twins enrichis et géométrie ordinale, Murs), sans critère par palier | publié et falsifiable (table ci-dessous) |
+| Racine couverte | 79 carnets sur 145 | 144 sur 144 à la fournée F, puis 145 |
+| Hors racine couverte | 0 sur 73 | 73 sur 73 (fournée E) |
+| Lignes | 91 lignes, 79 noms distincts | 128 dans les tableaux A–D, 26 dans la table F |
 
-| Constat | Mesure |
+La passe du fil fait autorité pour trois raisons : elle est complète, son critère est falsifiable, et le secrétariat la désigne comme couvrant l'acceptation 1.
+
+**Le critère, verbatim de la fournée A** :
+
+| Niveau | Critère |
 |---|---|
-| Carnets `GameTheory-*` à la racine | **144** |
-| dont porteurs d'une ligne de gradation | **79** (55 %) |
-| dont **non gradés** | **65** |
-| Noms des tables qui ne désignent plus aucun carnet de la racine | **47 des 129** — **50** si l'on ne tolère pas la casse `-Csharp` / `-CSharp` (trois noms) |
-| Sujets (bloc + indice) présents à la racine | **78** |
-| dont **aucun carnet ne porte de ligne de gradation** sous son nom actuel | **21** — voir le détail sous le tableau |
+| `I` | « outillage/installation, aucun concept mathématique mobilisé » |
+| `II` | « définitions formelles + calcul outillé (nashpy, scipy, networkx), sans développement algorithmique propre » |
+| `III` | « algorithme développé from-scratch, **ou** preuve formelle (Lean), **ou** théorème d'existence manipulé (point fixe, minimax, dualité, encodage SAT) » |
 
-Les **21 sujets sans carnet gradué** se répartissent en trois groupes, mesurés l'un après l'autre :
+**Contrôle de reconstruction.** Les tableaux A à D donnent 128 lignes (47 + 18 + 33 + 30), dont 10 nomment des carnets de `SocialChoice/`. La table F en donne 26. Les 118 lignes de la racine et les 26 de F retrouvent chacune un carnet, sans doublon ni ambiguïté : **144 = 1 I / 28 II / 115 III**, exactement le total que la fournée F annonce pour l'état de la série. Le 145ᵉ, `21-Capstone-Choix-Social-CSharp`, est né après (PR #28691) et hérite du niveau de son jumeau Python par la règle des jumeaux — gémellité vérifiée sur pièce : titre H1 identique (« la sous-série SocialChoice en une heure »), 16 cellules markdown et 11 cellules de code dans les deux carnets.
 
-- **12 sans aucune ligne dans les tables** : `02e`, `04i`, `04j`, `04k`, `05c`, `11c`, `11e`, `11f`, `14b`, `14c`, `22`, `23`.
-- **6 dont la ligne existe sous un autre nom** : pour cinq, la ligne se retrouverait par une consolidation nominative — `03d-Deux-Especes-de-Fleches` est gradué sous `03g` et `03h`, `03e-Meta-Actions-Tarifees` sous `03e` sans suffixe puis sous `03f`, `15d-Shapley-Groupes` sous `15f`, `16d-LLM-Players-Othman-Sandholm` sous `16e`, `16e-Populations-Othman-Sandholm` sous `16g` ; le sixième, `03b-Chambres-Murs-Chemins-Lean`, réunit dans son nom deux titres gradués séparément (`Chemins-de-Swaps`, `Chambres-et-Murs`).
-- **3 capstones jamais gradués** : `18`, `19` et `20` — les lignes de leur indice sont celles des carnets partis vers `Metajeux/`.
+**Ce que le changement de base emporte.** Les « deux mesures » du matin n'en font plus qu'une : tous les carnets ont un niveau, donc les 144 paires adjacentes sont toutes mesurables. Les moyennes par bloc du matin étaient calculées sur les seuls carnets gradués d'une échelle en quatre mots ; elles ne sont pas reprises.
 
-Deux conséquences, qui bornent ce que ce ledger peut affirmer :
+### Ce qui existe déjà sur `main`
 
-- **Un ordre cible au niveau du nom de fichier n'est pas produisible** sur un demi-corpus : 47 des 129 noms des tables ne désignent plus aucun carnet de la racine, et les indices des blocs 03, 15 et 16 ont changé depuis les tables. L'ordre cible se propose donc **au niveau du sujet** et de la **variante de langue**, en nommant les carnets par leur nom actuel.
-- **Les blocs 22 et 23 n'ont jamais été gradés** : ils sont entrés dans la série après la fournée D, qui déclarait « la série s'arrête au bloc 20 ». Aucun ordre ne peut les situer autrement qu'à titre provisoire.
+Ce ledger n'est pas le premier texte sur l'ordre de la série et il ne les remplace pas :
 
-### Deux mesures, et pourquoi la seconde est nécessaire
+- **`docs/ledgers/15615-gradation-blocs-01-05-consolide.md`** publie déjà un « Ordre cible proposé (scope 2 de l'acceptation) » pour les blocs 01 à 05. C'est un **ordre de lecture**, « dérivé des prérequis **déclarés** dans les carnets — pas d'une préférence éditoriale » : `02 → 02-cs → 02-P2 → 02-P2-cs → 02b …`, puis « twins C# systématiquement après leur Python ». Il demande « **Aucun renommage.** #18001 vient de renuméroter 93 carnets ; renuméroter une seconde fois pour déplacer `03b` avant `03c` coûterait une vague équivalente pour un gain de lecture marginal » et « **Aucun remplissage de trou.** ».
+- **`docs/ledgers/15615-gradation-reprise-blocs-06-21.md`** renvoie l'ordre cible à une étape séparée : « Sa proposition reste une étape séparée, pour arbitrage user/coordinateur conformément à l'acceptance de #15615. »
+- **Le README de la série** porte déjà cet ordre de lecture : pour les 52 sujets cités avec leurs deux jumeaux, le Python est cité avant le C# ; au bloc 02, `[Python](GameTheory-02-NormalForm-Python.ipynb) ([suite](GameTheory-02-NormalForm-Part2-Python.ipynb)) · [C#](GameTheory-02-NormalForm-CSharp.ipynb) ([suite](GameTheory-02-NormalForm-Part2-CSharp.ipynb))`.
+- **La sidebar du site** (`_quarto.yml`, 143 entrées) est rangée dans l'ordre alphabétique des noms : elle suit l'ordre des fichiers, donc range l'extension avant sa base et le C# avant le Python (50 sujets).
 
-L'ordre réel est l'ordre des **noms de fichiers**. Une descente est un couple adjacent dont la note baisse. Deux façons de compter ont été mesurées sur la même séquence :
+Ce ledger apporte le complément : les blocs 01 à 23 mesurés dans l'ordre sur la gradation complète (§2), et le replay des gestes (§4).
 
-| Mesure | Définition | Paires comptées |
-|---|---|---:|
-| **1** — voisins immédiats | deux carnets adjacents, **tous deux gradés** | **49** sur 143 |
-| **2** — gradés consécutifs | deux carnets gradés consécutifs, les carnets non gradés étant sautés | **78** sur 143 |
+## 2. Ce que la mesure dit
 
-La mesure 1 est celle des ledgers précédents ; elle est conservée pour la comparabilité. Mais elle **sous-estime** : un carnet non gradé entre deux carnets gradés masque la paire, et **94 paires sur 143 échappent à la mesure 1** (65 carnets n'ont pas de note). La mesure 2 est donc publiée comme contrôle, et **un geste ne se lit comme retirant une descente que s'il la retire sous les deux mesures** — c'est la règle appliquée au §4.
+### 2.1 La série est presque plate
 
-### La série a été restructurée depuis l'audit : 18-21 sont des portes
+**145 = 1 I / 28 II / 116 III.** Répartition par bloc (moyenne du niveau, I = 1, II = 2, III = 3) :
 
-Sur les blocs de queue, la racine ne garde que des **capstones**. Quatre séries satellites existent sous `GameTheory/` (72 carnets, aucun gradué), plus un carnet `gateway` isolé — 73 carnets hors racine au total —, et chaque capstone en ouvre une par son nom :
+| Bloc | n | I | II | III | Moyenne | Bloc | n | I | II | III | Moyenne |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| 01 | 1 | 1 | 0 | 0 | 1,00 | 13 | 12 | 0 | 1 | 11 | 2,92 |
+| 02 | 13 | 0 | 5 | 8 | 2,62 | 14 | 6 | 0 | 0 | 6 | 3,00 |
+| 03 | 10 | 0 | 3 | 7 | 2,70 | 15 | 6 | 0 | 0 | 6 | 3,00 |
+| 04 | 21 | 0 | 9 | 12 | 2,57 | 16 | 18 | 0 | 3 | 15 | 2,83 |
+| 05 | 4 | 0 | 1 | 3 | 2,75 | 17 | 9 | 0 | 0 | 9 | 3,00 |
+| 06 | 3 | 0 | 0 | 3 | 3,00 | 18 | 3 | 0 | 1 | 2 | 2,67 |
+| 07 | 2 | 0 | 2 | 0 | 2,00 | 19 | 2 | 0 | 0 | 2 | 3,00 |
+| 08 | 7 | 0 | 0 | 7 | 3,00 | 20 | 1 | 0 | 0 | 1 | 3,00 |
+| 09 | 8 | 0 | 3 | 5 | 2,62 | 21 | 3 | 0 | 0 | 3 | 3,00 |
+| 10 | 2 | 0 | 0 | 2 | 3,00 | 22 | 2 | 0 | 0 | 2 | 3,00 |
+| 11 | 9 | 0 | 0 | 9 | 3,00 | 23 | 1 | 0 | 0 | 1 | 3,00 |
+| 12 | 2 | 0 | 0 | 2 | 3,00 | | | | | | |
 
-| Bloc racine | Carnets présents | Série ouverte |
-|---|---|---|
-| 18 | `18-Capstone-Metajeux-Python/-CSharp`, `18c-Humour-Banc-Python` | porte vers `Metajeux/` (16 carnets) |
-| 19 | `19-Capstone-Dynamics-Python/-CSharp` | porte vers `Dynamics/` (26 carnets) |
-| 20 | `20-Capstone-Coalitions-Python` | porte vers `Coalitions/` (5 carnets) |
-| 21 | `21-Capstone-Choix-Social-Python/-Rust` | porte vers `SocialChoice/` (25 carnets) |
+**Treize blocs sont entièrement de niveau III** (06, 08, 10, 11, 12, 14, 15, 17, 19 à 23). Les dix autres sont mixtes, le bloc 01 compris, qui ne contient que le carnet d'installation ; dans les neuf restants, la moyenne (de 2,00 à 2,92) mesure la **part des carnets II**, pas une pente. La fournée A l'avait écrit dès le 15/11 (§7.5) : « la série n'est pas graduée au sens d'une montée douce — elle est **avancée dès son deuxième bloc**, et le reste. Le seul carnet de niveau I est le carnet d'installation. (…) il n'y a presque pas de pente à réordonner, il y a des **prérequis à déclarer** et des **libellés à réconcilier** ».
 
-Les renommages sortants des blocs 18 à 20 sont tracés par la fournée D : six carnets vers `Metajeux-01` à `Metajeux-06`, deux vers la série GOL (`GOL-08`, `GOL-09`). **Un capstone de porte n'est pas un sommet** : sa difficulté basse est un fait de conception, pas un défaut d'ordre.
+Une conséquence pour la demande fondatrice : la rampe 1,00 → 2,62 → 2,70 → 2,57 → 2,75 des cinq premiers blocs n'est pas une montée. Elle s'arrête au carnet d'installation. Ce qu'un ordre peut corriger est borné par là, et la section 4 le mesure.
 
-## 2. Ce que la mesure dit de la gradation réelle
+### 2.2 Les douze descentes
 
-### Moyennes par bloc (carnets gradés seulement)
+Une **descente** est un couple de carnets adjacents dont le niveau baisse. Sur 144 paires adjacentes : **12 descentes, toutes de un niveau — 11 intra-bloc, 1 de bord** (bord = dernier carnet d'un bloc, premier carnet du suivant).
 
-| Bloc | Gradés / présents | Moyenne | Bloc | Gradés / présents | Moyenne |
-|---|---:|---:|---|---:|---:|
-| 01 | 1 / 1 | 1,00 | 13 | 8 / 12 | 3,12 |
-| 02 | 8 / 13 | 1,75 | 14 | 2 / 6 | 4,00 |
-| 03 | 2 / 10 | 2,00 | 15 | 5 / 6 | 3,60 |
-| 04 | 9 / 21 | 3,00 | 16 | 8 / 18 | 3,25 |
-| 05 | 3 / 4 | 3,00 | 17 | 7 / 9 | 3,29 |
-| 06 | 3 / 3 | 2,67 | 18 | 1 / 3 | 4,00 |
-| 07 | 2 / 2 | 2,50 | 19 | 0 / 2 | — |
-| 08 | 6 / 7 | 3,00 | 20 | 0 / 1 | — |
-| 09 | 5 / 8 | 2,60 | 21 | 1 / 2 | 2,00 |
-| 10 | 2 / 2 | 3,00 | 22 | 0 / 2 | — |
-| 11 | 4 / 9 | 3,25 | 23 | 0 / 1 | — |
-| 12 | 2 / 2 | 3,00 | | | |
+Trois classes, définies par ce que le carnet descendant **déclare lui-même** (lu première main dans le markdown des carnets à `origin/main`) :
 
-**Lecture, avec les deux exceptions séparées.** La rampe que le user décrit existe et elle est mesurable : **1,00 → 1,75 → 2,00 → 3,00 sur les quatre premiers blocs**. Puis la série atteint son régime au bloc 04.
+- **Classe A — cohérente avec un prérequis déclaré.** Le carnet de niveau II déclare un prérequis de niveau III. Il ne peut pas ouvrir son bloc, et la descente ne s'efface qu'en réordonnant les sujets à l'intérieur du bloc.
+- **Classe B — calibration entre jumeaux.** Les deux carnets sont le même sujet, gradués différemment selon le noyau.
+- **Classe C — îlot de niveau II sans prérequis de niveau III.**
 
-Sur les blocs **05 à 17**, les moyennes vont de **2,50 à 4,00**, amplitude **1,50**. Deux blocs en sortent, et ce sont eux qui portent l'amplitude :
+| # | Rang | Paire (avant → après) | Lieu | Classe | Ce que le carnet descendant déclare |
+|---|---:|---|---|---|---|
+| 1 | 4 | `02-NormalForm-Part2-Python` (III) → `02-NormalForm-Python` (II) | 02 | C | l'extension se déclare « Suite de la tranche 1 » et trie avant sa base |
+| 2 | 6 | `02b-Lean-Definitions-Lean` (III) → `02c-Travelers-Dilemma-CSharp` (II) | 02 | C | « palier parent » = `02-NormalForm` (II) ; ne déclare pas `02b` |
+| 3 | 19 | `03b-Chambres-Murs-Chemins-Lean-Rust` (III) → `03d-Deux-Especes-de-Fleches-CSharp` (II) | 03 | A | « prolonge 03-Topology2x2 » (III) |
+| 4 | 27 | `04b-Lean-NashExistence-Lean` (III) → `04c-NashExistence-CSharp` (II) | 04 | A | « Notebook 4 : Équilibre de Nash » (III) ; ne déclare pas `04b` |
+| 5 | 35 | `04g-Supermodularite-Python` (III) → `04h-Routing-PriceOfAnarchy-CSharp` (II) | 04 | A | « 02 » et « 04 » (III) ; ne déclare pas `04g` |
+| 6 | 37 | `04h-Routing-PriceOfAnarchy-Lean` (III) → `04h-Routing-PriceOfAnarchy-Python` (II) | 04 | B | même sujet ; la preuve de Rosenthal est en Lean |
+| 7 | 46 | `05-ZeroSum-Minimax-CSharp` (III) → `05-ZeroSum-Minimax-Python` (II) | 05 | B | le C# « déroule tout à la main … simplexe from-scratch » |
+| 8 | 52 | `06i-Ensembles-Limites-Poincare-Bendixson-Python` (III) → `07-ExtensiveForm-CSharp` (II) | bord | A | « carnets 1 à 6 » (tout le bloc 06 est III) |
+| 9 | 63 | `09-BackwardInduction-Python` (III) → `09b-Commitment-Stackelberg-CSharp` (II) | 09 | A | « formes normales et induction à rebours » ; l'induction à rebours est `09-BackwardInduction` (III), le carnet qui précède |
+| 10 | 91 | `13f-Ataraxos-Patron-Python` (III) → `13g-Ataraxos-Organe-Natif` (II) | 13 | A | « deuxième temps » de l'EPIC Ataraxos, le premier étant `13f` |
+| 11 | 113 | `16c-Extraction-de-Revenu-DSIC-IR-Rust` (III) → `16d-LLM-Players-Othman-Sandholm-Python` (II) | 16 | A | la Proposition 6, « livrée dans `GameTheory-16-MechanismDesign-Python.ipynb` §4.6 » (III) |
+| 12 | 135 | `18-Capstone-Metajeux-Python` (III) → `18c-Humour-Banc-Python` (II) | 18 | C | aucun prérequis déclaré |
 
-| Bloc | Moyenne | Gradés / présents | Ce qu'il est |
-|---|---:|---:|---|
-| 14 | 4,00 | **2 / 6** | deux carnets Très haute, quatre non gradés |
-| 15 | 3,60 | **5 / 6** | coeur coopératif entièrement Très haute ou Haute |
+**7 de classe A, 2 de classe B, 3 de classe C.** Une seule est une inversion au sens de l'ordre : la n°1, une extension rangée avant sa base.
 
-**Hors ces deux exceptions**, les onze blocs restants (05 à 13, 16, 17) s'étalent de **2,50 à 3,29**, soit **0,79 d'amplitude** — huit dixièmes, et non « six » comme l'écrivait la version du 25/11. Le fait mesuré ne change pas de nature : **aucun palier n'est franchi en onze blocs**, la remontée n'arrive que par les deux sommets isolés ci-dessus, et la distribution du corpus reste plate (73 des 142 entrées de gradation sont Haute).
+### 2.3 Les jumeaux
 
-Ce n'est donc pas un défaut d'ordonnancement seul : une permutation ne peut pas fabriquer une pente que le contenu n'a pas. Ce que l'ordre peut porter, c'est une **progressivité intra-bloc** ; la progressivité inter-blocs demanderait une réévaluation des notes, hors de ce scope.
+Un **sujet** est un nom sans suffixe de noyau ; ses carnets sont ses **jumeaux**. Les 145 carnets de la racine se répartissent en **79 sujets** : 25 n'ont qu'un carnet, 54 en ont plusieurs. **52 sujets ont un jumeau Python et un jumeau C#** : niveaux égaux dans 51, C# au-dessus dans 1 (`05-ZeroSum-Minimax`), C# en dessous dans aucun. Deux sujets seulement ont un niveau mixte : `04h-Routing-PriceOfAnarchy` (C#, Python et Rust en II, Lean en III) et `05-ZeroSum-Minimax` (Python en II, C# en III).
 
-### Les descentes réelles, sous les deux mesures
+La règle des jumeaux, verbatim de la fournée F : « Un jumeau hérite du niveau publié pour son carnet de référence ; il n'est pas re-gradé. La gémellité est vérifiée sur pièce, pas sur le nom. »
 
-Une mesure antérieure, faite sur les noms des tables plutôt que sur la séquence réelle, avait été annoncée à 27 descentes sur 141 transitions. Rejouée ce jour sur les 142 entrées des sept tables, dans l'ordre du fichier de mesure, elle donne **28 descentes sur 141 transitions** (26 sur 128 en ne retenant que la première apparition de chacun des 129 noms) : le chiffre de 27 n'est pas reproduit. Ces marches ne décrivent de toute façon pas la série — elles parcourent des noms historiques, avec 13 noms portés par deux entrées et 47 noms qui ne désignent plus aucun carnet de la racine. Sur la séquence **réelle** :
+**L'ordre des fichiers ne range pas les jumeaux derrière leur carnet de référence.** Les 68 sujets qui ont un Python ont 66 jumeaux d'un autre noyau (C#, Lean, Rust). **53 se classent avant lui** — les 52 jumeaux C#, et le jumeau Lean de `04h` — parce que `CSharp` et `Lean` précèdent `Python` dans l'ordre des octets ; les 13 qui le suivent sont des jumeaux Rust. **64 sur 66 renvoient à leur Python** dans leur markdown ; les deux qui ne le font pas sont `02-NormalForm-Part2-CSharp` et `19-Capstone-Dynamics-CSharp`.
 
-| Classe | Mesure 1 (49 paires) | Mesure 2 (78 paires) |
-|---|---:|---:|
-| Descentes totales | **11** | **19** |
-| dont **intra-bloc** — le lecteur monte puis redescend dans le même bloc | **10** | **16** |
-| dont **de bord** — fin d'un bloc vers le début du suivant | **1** | **3** |
+### 2.4 Les références entre carnets de la racine
 
-Les **trois descentes de bord** de la mesure 2, nommées :
+Balayage mécanique du markdown des 145 carnets, chaque ligne relue : **984 références d'un carnet racine vers un autre carnet racine** (lien ou nom en code). **23** vont vers un carnet classé plus tard, dans un contexte de prérequis ou de navigation arrière (reconnaissance par mots-clés et par liens `<<` ou `<-`) :
 
-| Paire | Delta |
-|---|---:|
-| `05b-Lean-Minimax-Lean` (TH) → `06-EvolutionTrust-CSharp` (Ha) | −1 |
-| `08d-Lean-CGT-Lean` (TH) → `09-BackwardInduction-CSharp` (Mo) | **−2** |
-| `18c-Humour-Banc-Python` (TH) → `21-Capstone-Choix-Social-Python` (Mo) | **−2** |
+| Nature | Lignes | Lecture |
+|---|---:|---|
+| l'extension vers sa base (descente n°1) | 2 | `02-NormalForm-Part2-Python` vers `02-NormalForm-Python` : la seule inversion |
+| un jumeau vers son Python | 11 | `02c`, `04h`, `09c`, `13b`, `13h`, `14b`, `15`, `16c`, `16i`, `16j`, `16k` (« [<< … (track principal)] », « [Version Python] ») |
+| un pointeur vers l'avant | 9 | prolongements (`04e` depuis `04`, `04b`, `04c` ; `14c` depuis `06`), lecture suivante (`04k` depuis `04j`, `05c` depuis `05`), jumeau Rust (`02c`) : cohérents avec l'ordre des fichiers |
+| à trancher | 1 | `09-BackwardInduction-CSharp` : « Parité .NET ⇄ Python, suite de [GameTheory-11-BayesianGames-CSharp] » — provenance ou ordre de lecture, le carnet ne le dit pas |
 
-Une descente de bord est une **ré-entrée** : un bloc repart plus bas, c'est un fait de conception. Une descente intra-bloc est le défaut que le user décrit. La deuxième ligne du tableau traverse la chaîne des portes 19-20 : elle relève de la règle R5, pas d'un déplacement.
+**Aucune autre référence vers l'arrière n'a été trouvée.** Limite du balayage : il ne voit ni un prérequis écrit sans lien ni nom en code, ni une référence à un carnet d'un sous-dossier. Les prérequis des carnets descendants des douze descentes ont été lus première main (§2.2) ; ceux des autres carnets des blocs 06 à 23 n'ont pas été lus un par un.
 
-### L'échelle de langue ne prédit pas la difficulté — mesure
+## 3. Les règles de l'ordre cible
 
-Deux carnets sont **jumeaux** quand ils ne diffèrent que par la langue (`-Python`, `-CSharp`). **51 sujets de la racine** ont leurs deux jumeaux ; **21** en ont les deux notes :
+- **R1 — Une descente n'est un défaut que si le carnet descendant ne la déclare pas.** Une descente de classe A est la trace d'un prérequis : elle se déclare, elle ne se corrige pas.
+- **R2 — Un sujet n'est pas séparé de ses jumeaux.** Une descente de classe B est une décision de gradation (re-grader un jumeau, ou l'accepter comme la fournée F l'a publié), pas un geste d'ordre.
+- **R3 — Une extension suit sa base, toutes variantes comprises.**
+- **R3 bis — Un jumeau se lit après son carnet de référence.** Règle du ledger consolidé (« twins C# systématiquement après leur Python »), reprise telle quelle. L'ordre des fichiers ne la respecte pour aucun des 52 jumeaux C# (§2.3) ; aucun renommage n'est proposé pour eux, pour la raison que le ledger consolidé a écrite.
+- **R4 — Tout changement d'ordre est un renommage.** L'ordre de la série est l'ordre des noms de fichiers. Un geste retenu passe par `scripts/notebook_tools/rename_notebooks.py` : dry-run par défaut, application explicite, deux commits (les `git mv` seuls, puis les fichiers qui citent), jamais une cellule de code réécrite, jamais une sortie commitée touchée. Le renommage s'inscrit au `docs/reference/rename-ledger.tsv` (garde `check_rename_ledger.py`) et se vérifie par `check_notebook_nav_chain.py` et `check_slot_reservation.py`. L'organe le dit lui-même : « un numéro ou une lettre ne se propose JAMAIS : la renumérotation reste un acte pédagogique ».
 
-| Note du jumeau C# face à celle du jumeau Python | Sujets |
-|---|---:|
-| **+1** au-dessus | **4** — 04, 05, 06, 07 |
-| **égale** | **14** |
-| **1 en dessous** | **3** — 13, 16, 17 |
+## 4. Le replay des gestes
 
-Les blocs 13, 16 et 17 inversent la tendance des quatre premiers : le carnet Python y porte le contenu de référence (CFR complet, théorie des mécanismes, MARL) et le jumeau C# y est gradué une note plus bas. **Une règle « Python puis C# puis Lean » serait donc fausse** : la règle correcte est « par note graduée croissante, quelle que soit la langue ».
+Chaque geste est rejoué sur la séquence réelle des 145 carnets, en déplaçant un **groupe nommé** (jamais d'échange à deux). Colonnes : carnets qui changent de rang, descentes retirées, descentes créées, total après le geste. Chaque geste part de l'état actuel (12).
 
-La convention **déclarée** est autre chose que la note, et elle se mesure aussi. **Dix carnets C#** (onze noms dans les tables, une ancienne orthographe comprise) **citent un carnet Python parmi leurs prérequis**, dont **neuf leur propre base** (le dixième, `04c-NashExistence-CSharp`, cite la base du sujet `04`). Les quatre sujets où le C# est noté au-dessus (04, 05, 06, 07) sont parmi ces neuf. L'ordre alphabétique les sépare pourtant, parce que `-CSharp` trie avant `-Python`.
+### 4.1 Les neuf gestes de la version du matin
 
-## 3. L'ordre cible proposé — cinq règles
+| Geste | Groupe déplacé, ancre | Rangs changés | Retirées | Créées | Total |
+|---|---|---:|---:|---:|---:|
+| G1' | `02-NormalForm-Python`, en tête du bloc 02 | 4 | 1 | 0 | **11** |
+| G2 | `04-NashEquilibrium-CSharp` après `-Python` | 2 | 0 | 0 | 12 |
+| G3 | `05-ZeroSum-Minimax-CSharp` après `-Python` | 2 | 1 | 1 | 12 |
+| G4 | `06-EvolutionTrust-CSharp` après `-Python` | 2 | 0 | 0 | 12 |
+| G5 | `07-ExtensiveForm-CSharp` après `-Python` | 2 | 1 | 1 | 12 |
+| G6 | `04b-Lean-NashExistence-Lean` après les deux `04c` | 3 | 1 | 2 | **13** |
+| G7 | `08b-Lean-CombinatorialGames-Lean` après les deux `08c` | 3 | 0 | 0 | 12 |
+| G8 | sujet `15c` (deux carnets) avant `15` et `15b` | 5 | 0 | 0 | 12 |
+| G9 | `08d-Lean-CGT-Lean` en tête du bloc 09 | **0** | 0 | 0 | 12 |
+| **Les neuf, dans l'ordre du tableau** | | | 1 | 1 | **12** (10 intra / 2 bord) |
 
-**R1 — Dans un sujet, les variantes se rangent par note graduée croissante, et derrière toute variante que leurs prérequis déclarent.** Mesure au §2 : la langue ne prédit le niveau que dans quatre sujets sur vingt et un, et neuf carnets C# déclarent leur propre base Python.
+Ce que le replay dit, geste par geste :
 
-**R2 — Une extension suit sa base.** `02-NormalForm-Part2-*` après les deux variantes de `02-NormalForm-*`. Le défaut actuel est alphabétique : `NormalForm-Part2` trie avant `NormalForm-Python`.
+- **G1' retire la descente n°1** (`02-NormalForm-Part2-Python` III → `02-NormalForm-Python` II). C'est le seul des neuf qui retire une descente.
+- **G2, G4 et G7 ne font rien.** Les jumeaux C# et Python de `04`, `06`, `07` ont le même niveau sur cette passe, et `08b` comme `08c` sont III. Les gestes du matin calibraient des écarts qui n'existent que sur l'échelle en quatre mots.
+- **G3 et G5 déplacent la descente, ils ne la retirent pas.** G3 : la paire `05-CSharp` (III) → `05-Python` (II) cède la place au bord `04k-Equilibre-Correle-Python` (III) → `05-ZeroSum-Minimax-Python` (II). G5 : le bord `06i-…-Python` (III) → `07-ExtensiveForm-CSharp` (II) cède la place au bord `06i-…-Python` (III) → `07-ExtensiveForm-Python` (II). Une descente intra devient une descente de bord ; le total ne bouge pas.
+- **G6 crée une descente nette.** Il retire `04b` (III) → `04c-NashExistence-CSharp` (II) et en crée deux : `04-NashEquilibrium-Python` (III) → `04c-NashExistence-CSharp` (II) — le jumeau C# de `04` une fois G2 appliquée — et `04b-Lean-NashExistence-Lean` (III) → `04d-Marchandage-Asymetrique-CSharp` (II). La descente n°4 est de classe A : `04c` déclare le carnet `04` (III), donc il descend derrière lui où qu'il soit placé après lui. Total 12 → 13.
+- **G8 réordonne un sujet, et ne change rien au compte.** Le sujet `15c` passe devant `15` et `15b` : cinq carnets changent de rang. `15`, `15b` et `15c` sont tous de niveau III ; aucune paire ne descend ni ne cesse de descendre.
+- **G9 ne déplace rien.** `08d-Lean-CGT-Lean` est déjà le dernier carnet du bloc 08, immédiatement avant `09-BackwardInduction-CSharp`. Placer `08d` « en tête du bloc 09 » lui donne exactement le rang qu'il a : **zéro carnet ne change de rang**. Et sur cette passe les deux carnets sont de niveau III : la paire n'est pas une descente. Le geste ne traite donc rien — ni ne la reproduit.
+- **Les neuf ensemble : 12 → 12, mais 11 intra → 10 intra et 1 bord → 2 bord.** Une descente intra disparaît (n°1, par G1'), une devient une descente de bord (n°7, par G3), une naît (par G6). Le total ne baisse pas.
 
-**R3 — La place d'un sommet formel se lit dans la table des prérequis déclarés, jamais dans la note.** La version du 25/11 formulait l'inverse (« le sommet se place après toutes les variantes du sujet voisin qu'il domine »). La table la contredit sur ses trois cas :
+### 4.2 Les gestes de la présente révision
 
-| Sommet | Prérequis déclarés | Relation au sujet voisin |
-|---|---|---|
-| `04b-Lean-NashExistence-Lean` | `02b-Lean-Definitions` ; topologie ; tactiques Lean | **aucune** avec `04c` (qui déclare `04`) |
-| `08b-Lean-CombinatorialGames-Lean` | `08-CombinatorialGames` + bases Lean 4 | **aucune** avec `08c` (qui déclare `08` aussi) ; `08d` déclare « suite 8b/8c » |
-| `15b-Lean-CooperativeGames-Lean` | aucune — « compagnon formel du 15 » | `15c-Python` se déclare « **compagnon Python du 15b** » : la dépendance va du voisin vers le sommet, pas l'inverse |
+| Geste | Effet sur l'ordre | Rangs changés | Retirées | Créées | Total |
+|---|---|---:|---:|---:|---:|
+| **T1** | `02-NormalForm-Python` entre `02-NormalForm-CSharp` et les deux `Part2` | 3 | 1 | 0 | **11** (10 intra / 1 bord) |
+| T2 seul | sujet `02c` avant `02b` | 4 | 1 | 0 | 11 |
+| T2 après T1 | même geste, après T1 | 4 | 1 | 1 | 11 |
+| T3 | sujet `04h` après `04i` | 6 | 1 | 1 | 12 |
+| **T4** seul | sujets `04h` et `04i` avant `04e` | 10 | 1 | 0 | 11 |
+| **T4 après T1** | même geste, après T1 | 10 | 1 | 0 | **10** (9 intra / 1 bord) |
+| — | `18c-Humour-Banc-Python` en tête du bloc 18 | 3 | 1 | 1 | 12 |
+| — | tri complet des sujets par niveau, bloc par bloc | 116 | — | — | 9 (2 intra / 7 bord) |
 
-Aucune « domination » n'est donc établie, et un geste qui déplace un sommet devant le carnet qui le déclare comme prérequis n'est pas un ordre : c'est un défaut de plus. La règle ne fonde qu'**un** geste, G7, qui ne déplace `08b` que derrière des carnets indépendants de lui, `08d` restant après les deux.
+- **T1 est le seul geste qui retire un défaut d'ordre.** La descente n°1 est une inversion : `02-NormalForm-Part2-Python` se déclare « Suite de la tranche 1 » et trie avant elle, parce que `-Part2-` précède `-Python` dans l'ordre des octets. T1 range les deux variantes de la base avant les deux de l'extension.
+- **T2 est écarté.** Seul, il retire la descente n°2 en permutant les lettres d'accrétion `b` et `c` (quatre carnets renommés). Après T1, il ne retire plus rien : `02-NormalForm-Part2-Python` (III) → `02c-Travelers-Dilemma-CSharp` (II) naît à la place de celle qu'il retire.
+- **T3 est écarté.** Il échange `04h` et `04i`, tous deux de niveau II : la descente n°5 devient `04g-Supermodularite-Python` (III) → `04i-Utilite-Esperee-Risque-CSharp` (II).
+- **T4 est mesuré, il n'est pas proposé.** Il retire la descente n°5 en rangeant `04h` et `04i` avant `04e`, ce qui réécrit quatre lettres d'accrétion et renomme dix carnets ; les quatre sujets sont cités par 85 fichiers (`04e` 27, `04g` 18, `04h` 24, `04i` 16). Les prérequis déclarés par les quatre sujets déplacés sont respectés (lus première main). Ceux des carnets qui les citent n'ont pas tous été lus : c'est la raison pour laquelle le geste est mesuré et non proposé.
+- **La descente n°12 ne s'efface pas.** En tête du bloc 18, `18c-Humour-Banc` (II) recrée la descente au bord `17f-Market-to-Balance-Sheet-Python` (III) → `18c-Humour-Banc-Python` (II).
+- **Le tri complet n'est pas une option.** Ranger tous les sujets de chaque bloc par niveau ferait passer 116 carnets sur 145 à une autre place, pour 9 descentes : il ne supprime rien, il transfère les descentes aux bords de blocs (2 intra, 7 bord) et il réécrit la progression que les numéros portent.
 
-**R4 — Un bloc de contenu se termine sur son maximum, et son premier carnet n'est jamais un sommet qu'il abandonne.** La seule rupture de ce type entre deux blocs de contenu est `08d` (TH) → `09-BackwardInduction-CSharp` (Mo), −2 ; la seconde rupture −2 (`18c` → `21`) traverse la chaîne des portes et relève de R5. Une rupture de bord **ne se traite pas par un déplacement d'un cran** : les deux carnets sont déjà voisins, et les échanger ne change rien (mesure au §4, G9). Elle se déclare (R5) ou se traite par le contenu — rattacher `08d` au bloc 09 avec ses prérequis est une décision de sujet, pas un geste d'ordre.
+**Meilleur compte atteint par les gestes mesurés : 10** (T1 puis T4), contre 9 pour un tri complet qui ne respecte aucun prérequis.
 
-**R5 — Une porte n'est pas un sommet.** Les blocs 18 à 21 ouvrent les séries satellites ; leur note basse est acquise par conception et ne se corrige pas par déplacement. Une porte se déclare (titre, navigation) plutôt que de se reclasser.
+### 4.3 Le coût de T1, mesuré par l'organe de renommage
 
-## 4. Les onze descentes, le replay de chaque geste, et ce qui est retenu
+L'ordre visé n'est réalisable que par un renommage, puisque `-Part2-` précède `-Python`. Deux réalisations, toutes deux passées au dry-run de `rename_notebooks.py --mapping` (lecture seule, rien écrit) :
 
-### Les onze descentes de la mesure 1, avec noms réels
+| Réalisation | Renommages | Fichiers qui citent | Occurrences | Refus de l'organe |
+|---|---:|---:|---:|---|
+| **T1-a** — l'extension devient `02-NormalForm-Tranche2-{CSharp,Python}` | 2 | **12** | **317** | aucun |
+| **T1-b** — la base devient `02-NormalForm-Part1-{CSharp,Python}` | 2 | **54** | **642** | aucun |
 
-| # | Paire (avant → après) | Mesures | Delta | Classe |
-|---|---|---|---:|---|
-| 1 | `02-NormalForm-Part2-Python` (Mo) → `02-NormalForm-Python` (Ba) | 1 et 2 | −1 | extension avant base |
-| 2 | `04-NashEquilibrium-CSharp` (Ha) → `04-NashEquilibrium-Python` (Mo) | 1 et 2 | −1 | jumeau avant sa base |
-| 3 | `05-ZeroSum-Minimax-CSharp` (Ha) → `05-ZeroSum-Minimax-Python` (Mo) | 1 et 2 | −1 | jumeau avant sa base |
-| 4 | `06-EvolutionTrust-CSharp` (Ha) → `06-EvolutionTrust-Python` (Mo) | 1 et 2 | −1 | jumeau avant sa base |
-| 5 | `07-ExtensiveForm-CSharp` (Ha) → `07-ExtensiveForm-Python` (Mo) | 1 et 2 | −1 | jumeau avant sa base |
-| 6 | `04b-Lean-NashExistence-Lean` (TH) → `04c-NashExistence-CSharp` (Ha) | 1 et 2 | −1 | sommet formel avant son sujet |
-| 7 | `08b-Lean-CombinatorialGames-Lean` (TH) → `08c-CombinatorialGames-CSharp` (Ha) | 1 et 2 | −1 | sommet formel avant ses variantes |
-| 8 | `15b-Lean-CooperativeGames-Lean` (TH) → `15c-CooperativeGames-CSharp` (Ha) | 1 et 2 | −1 | sujet Très haute avant sujet Haute |
-| 9 | `08d-Lean-CGT-Lean` (TH) → `09-BackwardInduction-CSharp` (Mo) | 1 et 2 | **−2** | rupture de bord |
-| 10 | `16-MechanismDesign-Python` (TH) → `16b-Automated-Mechanism-Design-Python` (Ha) | 1 et 2 | −1 | note — l'ordre est juste (`16b` déclare GT-16) |
-| 11 | `17c-Lean-Lemons-Certificat-Lean` (TH) → `17d-Lean-Screening-Signaling-Lean` (Ha) | 1 et 2 | −1 | note — l'ordre est juste (`17d` se déclare compagnon de `17c`) |
+Les deux donnent le même ordre et le même compte, 12 → 11. Ni l'une ni l'autre ne touche une cellule de code ni une sortie commitée : les occurrences dans les carnets sont toutes des cellules markdown (une dans `02-NormalForm-CSharp`, deux dans `02-NormalForm-Part2-Python`, zéro dans les sorties). **Aucune ré-exécution n'est due** (C.2 : une modification markdown seulement).
 
-Les lignes 10 et 11 ne sont pas des défauts d'ordre : la cible déclare le carnet qui la précède, et la séquence est pédagogiquement juste. Elles ne se corrigent que par une note.
+- **T1-a** reprend le mot des carnets eux-mêmes. La base C# s'intitule « Tranche 1 : Nash from-scratch » et annonce « la résolution générale (support enumeration) est l'objet de la **tranche 2** » ; la navigation de l'extension dit « GameTheory-2 tranche 1 ». Elle laisse inchangé le nom du carnet d'entrée de la série, cité par 57 fichiers — d'autres séries (`Dynamics`, `Complexity`), trois jeux de slides, des tests. Son prix : `-Tranche<N>-` n'est porté par aucun nom de carnet du dépôt aujourd'hui, alors que `-Part<N>` est un slot de la grammaire de nommage. L'index (`02`) ne change pas dans les deux réalisations.
+- **T1-b** garde le slot `-Part<N>` et rend les deux parties symétriques. Son prix : elle renomme le carnet d'entrée, et 54 fichiers suivent.
 
-### Le replay : ce que chaque geste fait réellement
+Deux coûts à confirmer au moment de l'exécution, non mesurés ici : l'attestation de gémellité du couple (`twin_pairs.d/gametheory-2-normalform-part-2-support-enumeration.yaml`, six occurrences) porte une empreinte de contenu et se rescelle après le renommage ; le titre H1 des deux carnets d'extension dit « (Part 2) » et ne contient pas le nom du fichier, donc l'organe ne le réécrit pas — il s'aligne à la main si T1-a est retenue.
 
-Chaque geste est rejoué sur la séquence réelle des 144 carnets (groupes déplacés, jamais d'échange à deux), sous les deux mesures, puis confronté à la table des prérequis **dans les deux sens** : ce que le groupe déplacé déclare, et ce qui le déclare. Aucun carnet ne déclare `04b`, `04d` ni `08d` ; `08b` et `08c` ne sont cités que par `08d`, comme suite de navigation (« Aucune déclarée — suite 8b/8c ») ; `15c-Python` se dit compagnon du `15b`, et `17d` compagnon du `17c`. Effet net sur le **total** des descentes :
+## 5. Ce que l'ordre ne règle pas
 
-| Geste | Groupe déplacé | Ancre | Mesure 1 | Mesure 2 | Prérequis déclarés | Verdict |
-|---|---|---|---:|---:|---|---|
-| **G1'** | `02-NormalForm-Python` | en tête du bloc 02, avant `02-NormalForm-CSharp` | −1 | −1 | `02-NormalForm-CSharp` déclare `01 + 02-Python` | **retenu** |
-| G1 (écrit le 25/11) | `02-NormalForm-Python` | *après* `02-NormalForm-CSharp` | −1 | −1 | place la variante C# **avant** sa base déclarée | écarté |
-| **G2** | `04-NashEquilibrium-CSharp` | après `04-NashEquilibrium-Python` | −1 | −1 | le C# déclare `04-Python` | **retenu** |
-| **G3** | `05-ZeroSum-Minimax-CSharp` | après `05-ZeroSum-Minimax-Python` | −1 | −1 | le C# déclare `05-Python` | **retenu** |
-| **G4** | `06-EvolutionTrust-CSharp` | après `06-EvolutionTrust-Python` | −1 | −1 | le C# déclare `06-Python` | **retenu**, coût nommé |
-| **G5** | `07-ExtensiveForm-CSharp` | après `07-ExtensiveForm-Python` | **+1** | **+1** | le C# déclare `07-Python` | **retenu**, coût nommé |
-| G6-a (écrit) | `04b-Lean-NashExistence-Lean` | après les deux variantes de `04c` | −1 | **0** | aucune | écarté : **déplace** |
-| G6-b (option b)) | `04b-Lean-NashExistence-Lean` | après `04d-Marchandage-Asymetrique-Python` (Ha), avant `04e-Reflective-Oracles-Python` (TH) | −1 | −1 | aucune | option b) au §8, coût de sujet |
-| G6-c | `04b-Lean-NashExistence-Lean` | après `04e-Reflective-Oracles-Python` | −1 | −1 | aucune | écarté : même gain que G6-b, déplacement plus long |
-| **G7** | `08b-Lean-CombinatorialGames-Lean` | après les deux variantes de `08c` | −1 | −1 | `08b` et `08c` ne déclarent que `08` ; `08d` les suit | **retenu** |
-| G8 (écrit) | sujet `15c` (deux carnets) | avant `15` et `15b` | −1 | **+1** | `15c-Python` se dit « compagnon Python du 15b » | **écarté** : place le compagnon avant ce qu'il accompagne |
-| G9 (écrit) | `08d-Lean-CGT-Lean` | tête du bloc 09 | **0** | **0** | — | **écarté** : aucun rang ne change |
-
-Quatre constats de ce replay, chacun mesuré :
-
-1. **G1 écrit et G1' donnent le même compte** (−1) et ne se distinguent que par la table des prérequis : la version du 25/11 aurait placé `02-NormalForm-CSharp` avant sa base. Le compte ne suffit pas — c'est pourquoi la colonne des prérequis existe.
-2. **G6 tel qu'écrit ne retire pas la descente, il la déplace** : de `04b` (TH) → `04c-NashExistence-CSharp` vers `04b` (TH) → `04d-Marchandage-Asymetrique-Python` (Ha). La mesure 1 ne le voit pas, parce que `04d-Marchandage-Asymetrique-CSharp` n'a pas de note et masque la paire. Seul le placement **G6-b** la retire sous les deux mesures : après `04d-Marchandage-Asymetrique-Python` (Ha) et avant `04e-Reflective-Oracles-Python` (TH), il ne crée aucune paire descendante.
-3. **G8 réordonne bien un sujet entier, pas une variante** : le sujet `15c` (deux carnets) passe devant `15` et `15b`, cinq carnets changent de rang, le compagnon (`15c`) passe devant le `15b` dont il se dit l'illustration, et **sous la mesure 2** deux descentes de bord apparaissent (`14-DifferentialGames-Python` TH → `15c-CSharp` Ha ; `15b` TH → `16-MechanismDesign-CSharp` Ha) pour une retirée — la mesure 1 ne voit que la retirée, ses voisins immédiats étant non gradés.
-4. **G9 ne change aucun rang** : `08d` est déjà immédiatement avant `09-BackwardInduction-CSharp`. Le geste ne fait que requalifier la paire de « bord » en « intra » — il reproduit la descente sous une autre étiquette.
-
-### Ce que les chiffres du 25/11 contenaient
-
-| Scénario | Mesure 1 | Mesure 2 |
-|---|---|---|
-| État actuel | 11 total / 10 intra / 1 bord | 19 total / 16 intra / 3 bord |
-| G1 à G5 seuls — **les chiffres publiés le 25/11** | 8 / 5 / 3 | 16 / 11 / 5 |
-| + G7 — **option a)** | 7 / 4 / 3 | 15 / 10 / 5 |
-| + G6-b — **option b)** | 6 / 3 / 3 | 14 / 9 / 5 |
-| G1 à G9 tels qu'écrits | 5 / 3 / 2 | **16 / 10 / 6** |
-
-Trois corrections que ce tableau impose (mesure 1, sauf mention contraire) :
-
-- Les chiffres publiés (**11 → 8**, intra **10 → 5**, bord **1 → 3**) sont ceux de **G1 à G5 seuls**. La feuille de calcul du 25/11 n'a pas été conservée ; ces chiffres ne peuvent venir d'une exécution qui aurait appliqué G6 et G7 tels qu'écrits (elle donnerait 6 / 3 / 3) ni G8 (5 / 2 / 3).
-- La phrase « les trois descentes gagnées passent d'intra-bloc à bord » est fausse : le total perd trois descentes, donc **trois disparaissent** ; cinq quittent le compte intra et **deux** descentes de bord naissent, toutes deux créées par G5. La version du 25/11 attribuait à une conversion ce qui est une suppression plus une création.
-- L'ordre cible **tel qu'écrit** (G1 à G9) ne retire que trois descentes réelles (19 → 16 en mesure 2), et sa baisse du compte de bord en mesure 1 (2 au lieu de 3) vient du reclassement de G9, pas d'un déplacement.
-
-### Le coût de trois gestes, nommé
-
-- **G4** retire une descente intra sous les deux mesures et, **sous la mesure 2**, approfondit la descente de bord `05b` (TH) → tête du bloc 06, de −1 (`06-CSharp` Ha) à −2 (`06-Python` Mo). La mesure 1 ne voit ni l'une ni l'autre : `05c-KKT-Dualite-Lagrangienne-Python`, non gradé, est intercalé entre `05b` et le bloc 06. La dépendance déclarée l'emporte, mais le coût est réel.
-- **G5** retire une descente intra et **crée deux** descentes de bord (`06i-Ensembles-Limites-Poincare-Bendixson-Python` Ha → `07-Python` Mo ; `07-CSharp` Ha → `08-CombinatorialGames-CSharp` Mo) : **total +1**. Il est fondé par la dépendance déclarée (`07-Python`, pont twin), pas par le compte. Aucun placement ne l'évite tant que le bloc 06 se termine sur un carnet Haute et le bloc 08 commence sur Moyen.
-- **G6-b** retire une descente sous les deux mesures, au prix de **séparer `04b` de son sujet** (`04c`, existence de Nash) pour l'installer après `04d` (marchandage). C'est un arbitrage pédagogique, pas un calcul.
-
-Résultat du replay pour le bloc 08 après G7 : `08-CombinatorialGames-CSharp` Mo · `08-…-Python` Mo · `08-…-Rust` (non gradé) · `08c-CSharp` Ha · `08c-Python` Ha · `08b-Lean-…` TH · `08d-Lean-CGT-Lean` TH — le bloc devient strictement croissant sur ses carnets gradés.
-
-### Le tri complet n'est pas une option
-
-Un tri de chaque bloc par difficulté mesurée a été envisagé le 25/11 puis écarté. Ses chiffres d'alors (7 descentes au total, 4 intra-bloc) **ne sont pas reproduits ici** : ils avaient été obtenus sur les noms des tables, non sur la séquence réelle, et aucune feuille de calcul n'est conservée. Ce qui reste vrai sans chiffre : trier un bloc par note réordonne les **sujets** eux-mêmes, donc la progression pédagogique voulue par les numéros, et déplace les descentes vers les bords au lieu de les supprimer. Les gestes chirurgicaux sont préférés : ils touchent un groupe nommé, se vérifient un par un, et se rejouent.
-
-## 5. Ce que l'ordre cible ne règle pas, et qu'il faut nommer
-
-1. **65 carnets sans note** (45 % de la racine), dont les 21 sujets listés au §1, blocs 22 et 23 compris. Aucune règle d'ordre ne les situe : il leur faut une **ligne de gradation**, grain distinct. Tant qu'ils manquent, **94 paires adjacentes sur 143 restent hors de la mesure 1**.
-2. **Le nommage est la cause racine des descentes 1 à 5.** L'ordre alphabétique, et non une décision pédagogique, place un carnet avant sa base déclarée : `NormalForm-Part2` trie avant `NormalForm-Python` (descente 1), et `-CSharp` trie avant `-Python` (descentes 2 à 5). Neuf paires dont le carnet C# déclare sa propre base sont ainsi inversées : **quatre** se voient au compte, **cinq** restent invisibles, leurs deux notes étant égales (`02-NormalForm`, `02-NormalForm-Part2`, `02c-Travelers-Dilemma`, `03-Topology2x2`, `08-CombinatorialGames`). Deux voies, qui demandent toutes deux l'acceptation 2 : déplacer les carnets un par un (ce ledger), ou **renommer les bases** en retirant le suffixe `-Python` — un renommage de série, hors périmètre.
-3. **Le plateau de la bande 05-17** : la moyenne ne monte plus après le bloc 04. Une permutation n'y peut rien ; seule une réévaluation des notes, ou une refonte de la distribution du corpus, le pourrait. Ce ledger ne le maquille pas en progrès.
-4. **Les 73 carnets hors racine** — quatre séries satellites (`SocialChoice` 25, `Dynamics` 26, `Metajeux` 16, `Coalitions` 5) et un carnet `gateway` isolé : leur gradation est un chantier propre, par série.
-5. **Les 47 noms périmés des tables** (50 sans la tolérance de casse) : les sept ledgers restent des mesures datées de leur arbre, pas une description du présent. Une consolidation nominative serait un grain séparé.
+1. **La série est presque plate : 116 carnets sur 145 sont de niveau III.** C'est une question de gradation et de contenu, pas d'ordre. Une permutation ne fabrique pas une pente que le contenu n'a pas.
+2. **Les deux écarts entre jumeaux** (`04h` en Lean, `05` en C#) sont des décisions de gradation, publiées par la fournée F.
+3. **Les lettres d'accrétion portent l'identité des sujets.** Fermer un îlot de niveau II derrière un carnet III est un acte pédagogique, qui demande son argument écrit — l'organe de renommage l'exige.
+4. **Les 73 carnets hors racine sont gradués** (fournée E : 1 I / 9 II / 63 III) mais appartiennent à des séries satellites. Leur ordre se mesure par série.
+5. **Les sept fichiers de gradation du dépôt ne portent pas la passe du fil** : 79 noms sur une échelle en quatre mots, contre 145 sur trois niveaux qui n'existent que dans des commentaires d'issue. Les réconcilier est un grain distinct, à porter sur #15615.
 
 ## 6. Ce qui n'est pas exécuté
 
-- **Aucune renumérotation** : les gestes sont décrits, rejoués, pas appliqués. L'acceptation 2 exige la validation avant exécution.
-- **Aucun carnet modifié, aucun renommage, aucune réévaluation de note.**
-- **Tout geste retenu est un renommage** : l'ordre de la série est l'ordre des noms de fichiers, donc déplacer un carnet change son nom, ses liens de navigation et les références qui le citent. La version du 25/11 écrivait « sans changer un nom » : c'était faux, et l'acceptation 4 (liens croisés, curriculum, READMEs) mesure ce coût. Une alternative existe — porter l'ordre de lecture dans la navigation plutôt que dans les noms — mais elle est un choix d'architecture de la série, pas un geste de ce ledger.
-- Les blocs 22 et 23 ne sont **pas** situés : ils n'ont pas de note.
+- **Aucune renumérotation, aucun renommage, aucune réévaluation de note.** Les gestes sont rejoués, pas appliqués.
+- **Les deux dry-runs de l'organe de renommage n'ont rien écrit.**
+- Le seul geste qui retirerait une inversion (T1) est un renommage ; l'acceptation 4 en mesure le coût (§4.3). Sous l'option c) du §8, aucune tranche n'est à exécuter.
 
 ## 7. Correspondance aux acceptations de #15615
 
 | Acceptation | État après ce ledger |
 |---|---|
-| 1 — tableau de gradation publié | **couvert** par les sept ledgers de fournée (142 entrées de gradation) ; couverture 79/144 carnets de la racine, réserve du §1 |
-| 2 — ordre cible validé avant exécution | **devient décidable** : règles R1-R5, replay de chaque geste sous deux mesures, et options a/b/c au §8 ; la validation revient au user ou au coordinateur |
-| 3 — tranches exécutées, preuve octet-à-octet | **dépend de 2** ; non commencée, et rien à exécuter tant que 2 n'est pas tranchée |
-| 4 — liens croisés, labels, curriculum, READMEs réconciliés | **dépend de 3** ; le §6 chiffre ce que chaque geste y coûte (un renommage par carnet déplacé) |
+| 1 — tableau de gradation publié | **couvert** par les fournées A à F : les 145 carnets de la racine ont un niveau, reconstruction vérifiée au §1. Les sept fichiers du dépôt n'en portent que 79 |
+| 2 — ordre cible validé avant exécution | **devient décidable** : l'ordre de lecture des blocs 01 à 05 (ledger consolidé) vaut pour les blocs 06 à 23 — la mesure n'y trouve aucune inversion, dans les limites du §2.4 ; quatre règles (§3), douze descentes classées (§2.2), chaque geste rejoué (§4), options au §8 |
+| 3 — tranches exécutées, preuve octet-à-octet | **dépend de 2** ; une tranche candidate (T1), dry-run fait — ou aucune, si l'option c) est retenue |
+| 4 — liens croisés, labels, curriculum, READMEs réconciliés | **dépend de 3** ; coût mesuré au §4.3 |
 
 ## 8. La question, en forme fermée
 
-Ce qui reste à trancher tient en un choix, une lettre suffit :
+Une lettre suffit :
 
-- **a)** appliquer les **six gestes fondés par la table des prérequis** — G1' (`02-NormalForm-Python` en tête du bloc 02), G2, G3, G4, G5, G7 — soit 11 → 7 descentes (mesure 1) et 19 → 15 (mesure 2), **aucune dépendance déclarée inversée**, avec les coûts nommés au §4 (G4 approfondit une descente de bord, G5 en crée deux) ;
-- **b)** appliquer **a)** **plus G6-b** — `04b` après `04d-Python` — soit 11 → 6 (mesure 1) et 19 → 14 (mesure 2), au prix d'éloigner le compagnon formel de son sujet ;
-- **c)** ne rien déplacer et **grader d'abord** les 65 carnets non gradés (dont les 21 sujets sans aucun carnet gradué, blocs 22 et 23 compris), puis revoir l'ordre sur une base complète.
+- **a)** **T1-a** — renommer l'extension en `02-NormalForm-Tranche2-{CSharp,Python}` : 12 → 11 descentes, 2 carnets renommés, 12 fichiers, 317 occurrences.
+- **b)** **T1-b** — renommer la base en `02-NormalForm-Part1-{CSharp,Python}` : même ordre, 2 carnets renommés, 54 fichiers, 642 occurrences.
+- **c)** **Ne rien renommer** — retenir comme ordre cible l'ordre de lecture déjà publié pour les blocs 01 à 05 (ledger consolidé, README de la série), qui vaut pour les blocs 06 à 23 : l'ordre des fichiers, lu avec l'extension après sa base et chaque jumeau après son Python. Les douze descentes restent documentées (7 de classe A, 2 de classe B, 3 de classe C).
 
-Les gestes G8 et G9 ne sont plus des options : le premier place un compagnon devant le carnet dont il se dit l'illustration et, sous la mesure 2, ajoute une descente ; le second ne change aucun rang.
+Je recommande **c)**, pour trois mesures :
 
-Je recommande **a)**, et **b)** laissé à l'arbitrage de contenu : a) prend tout ce que les prérequis déclarés justifient sans séparer un sujet de son compagnon. Le volet **c)** reste utile ensuite, sur une base entièrement graduée.
+1. **L'ordre de lecture existe déjà.** Le README de la série cite le Python avant le C# pour 52 sujets sur 52, et la base du bloc 02 avant sa « suite » ; 64 jumeaux sur 66 renvoient à leur Python.
+2. **T1 ne ferme qu'un écart sur 53.** L'ordre des fichiers range 52 jumeaux C# avant leur Python, et une extension avant sa base. T1 corrige la seconde et aucune des premières : après T1, l'ordre des fichiers diffère encore de l'ordre de lecture aux 52 jumeaux C#, et aucun renommage n'est proposé pour eux.
+3. **Le ledger consolidé a pris la même position** sur l'écart de même nature aux blocs 01 à 05 (`03b` avant `03c`) : « Aucun renommage ».
+
+L'option **a)** est la bonne si l'on veut que l'ordre des fichiers lui-même respecte R3 au bloc 02 : c'est le seul geste mesuré qui retire une inversion, et son coût est faible (§4.3).
+
+Dans les trois cas, les descentes qui restent sont de classe A (7), de classe B (2), ou sans geste qui les retire (n°2, n°5, n°12) : elles se documentent, elles ne se déplacent pas. T4 (12 → 10) est mesuré et n'est pas proposé (§4.2).
+
+Une piste non mesurée, hors de ce ledger : la sidebar du site suit l'ordre alphabétique des noms. La porter à l'ordre de lecture ne demanderait aucun renommage, mais ses gardes n'ont pas été examinées.
 
 See #14944 (epic renum — mécanique refermée, cette issue est le volet gradation pédagogique)
 See #15586 (commentaire fondateur du user)
