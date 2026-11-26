@@ -40,6 +40,12 @@ Lectures honnetes que le rapport porte lui-meme :
 - une approbation soumise **apres** la fusion sort du denominateur : elle ne
   peut pas etre la cause de la fusion, et le delai serait negatif -- un delai
   negatif compte « sous 24 h » gonflerait la part qu'on cherche a mesurer ;
+- une approbation que l'approbateur fait suivre d'un `CHANGES_REQUESTED` sur
+  la **meme tete** n'est plus en force : la PR fusionnee sort du denominateur
+  (`approbation_retiree`), et une PR ouverte ainsi retiree n'attend pas un
+  merge. Cote ouvert, la population est celle que la recherche GitHub liste
+  sous `review:approved` (derniere decision de review) : ce filtre omet deja
+  ces PRs, et la regle tient aussi sans lui ;
 - les revues se lisent **page par page** : une page unique peut omettre
   l'approbation recente d'une PR tres commentee, et la PR serait alors classee
   « tete anterieure » a tort ;
@@ -204,21 +210,51 @@ def approbations(revues_lues: list[dict], approbateur: str) -> list[dict]:
 
 def approbation_tete(revues_lues: list[dict], tete: str, approbateur: str,
                      avant: datetime | None = None) -> dict | None:
-    """Derniere approbation de l'approbateur posee sur **cette** tete, ou None.
+    """Derniere approbation de l'approbateur **en force** sur cette tete, ou None.
 
     `avant` borne la lecture a l'instant qu'elle ne peut pas depasser, celui de
     la fusion quand il s'agit d'une PR fusionnee : une approbation soumise
     **apres** la fusion ne peut pas en etre la cause, et n'a donc aucun delai a
     donner.
+
+    Une approbation cesse d'etre en force quand l'approbateur demande lui-meme
+    des changements sur la meme tete : la decision de review redevient
+    « changements demandes », et la fusion n'attend plus le meme geste.
+    Retenir l'approbation d'avant ce retrait daterait le point de depart d'un
+    moment que la fusion ne suivait pas.
     """
     sur_la_tete = [
-        revue for revue in approbations(revues_lues, approbateur)
+        revue for revue in revues_lues
         if revue.get("commit_id") == tete
+        and (revue.get("user") or {}).get("login") == approbateur
+        and parse_ts(revue.get("submitted_at")) is not None
     ]
     if avant is not None:
         sur_la_tete = [revue for revue in sur_la_tete
                        if parse_ts(revue["submitted_at"]) <= avant]
-    return sur_la_tete[-1] if sur_la_tete else None
+    sur_la_tete.sort(key=lambda revue: parse_ts(revue["submitted_at"]))
+    en_force: dict | None = None
+    for revue in sur_la_tete:
+        etat = str(revue.get("state", "")).upper()
+        if etat == "APPROVED":
+            en_force = revue
+        elif etat == "CHANGES_REQUESTED":
+            en_force = None
+    return en_force
+
+
+def _classe_sans_approbation_en_force(revues_lues: list[dict], tete: str,
+                                      approbateur: str) -> str:
+    """Classe d'une PR dont aucune approbation n'est en force a sa tete.
+
+    Trois cas seuls, et ils ne se confondent pas : l'approbateur a approuve
+    cette tete puis l'a reprise (`approbation_retiree`) ; il n'a approuve
+    qu'une tete anterieure (`tete_anterieure`) ; il n'a rien approuve du tout
+    (`sans_approbation`).
+    """
+    if any(revue.get("commit_id") == tete for revue in approbations(revues_lues, approbateur)):
+        return "approbation_retiree"
+    return "tete_anterieure" if approbations(revues_lues, approbateur) else "sans_approbation"
 
 
 def classer(pr: dict, revues_lues: list[dict], approbateur: str,
@@ -243,13 +279,13 @@ def classer(pr: dict, revues_lues: list[dict], approbateur: str,
             "heures": (fusionnee_le - approuvee_le).total_seconds() / 3600.0,
         }
     if approbation_tete(revues_lues, tete, approbateur) is not None:
-        # Approbation posee sur cette tete, mais apres la fusion : la fusion
+        # Approbation en force sur cette tete, mais apres la fusion : la fusion
         # n'en est pas la consequence, et le delai serait negatif.
         return {"numero": pr["number"], "classe": "approbation_apres_fusion",
                 "heures": None}
-    if approbations(revues_lues, approbateur):
-        return {"numero": pr["number"], "classe": "tete_anterieure", "heures": None}
-    return {"numero": pr["number"], "classe": "sans_approbation", "heures": None}
+    return {"numero": pr["number"],
+            "classe": _classe_sans_approbation_en_force(revues_lues, tete, approbateur),
+            "heures": None}
 
 
 def percentile(valeurs: list[float], p: float) -> float | None:
@@ -276,6 +312,8 @@ def resume(lignes: list[dict], seuil: float = SEUIL_HEURES) -> dict:
             "max_heures": max(tete) if tete else None,
         },
         "tete_anterieure": sum(1 for ligne in lignes if ligne["classe"] == "tete_anterieure"),
+        "approbation_retiree": sum(1 for ligne in lignes
+                                   if ligne["classe"] == "approbation_retiree"),
         "approbation_apres_fusion": sum(1 for ligne in lignes
                                         if ligne["classe"] == "approbation_apres_fusion"),
         "revues_incompletes": sum(1 for ligne in lignes
@@ -295,6 +333,18 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
     PRs lentes. Ici, la population est celle des PRs ouvertes approuvees
     (`review:approved`), et l'age se lit depuis l'approbation **a la tete
     exacte** : une approbation suivie d'un push est perimee, elle n'attend rien.
+
+    Deux lectures honnetes que ce cote porte :
+
+    - la population est celle que la **recherche GitHub** liste sous
+      `review:approved`, c'est-a-dire la derniere decision de review. GitHub
+      en detient la semantique ; `trouvees` est son `total_count`, et
+      `tronquee` dit que seules `max_ouvertes` ont ete inspectees. Une PR dont
+      l'approbateur a redemande des changements n'y figure pas -- et la regle
+      de `approbation_tete` la retirerait de toute facon, donc l'accord des
+      deux se mesure, il ne se suppose pas ;
+    - une PR lue en entier dont l'approbation a la tete a ete reprise est
+      comptee `approbation_retiree` : elle n'attend pas un merge.
     """
     cherche = api(f"/search/issues?q=repo:{REPO}+is:pr+is:open+review:approved"
                   f"&per_page={PAR_PAGE}")
@@ -306,11 +356,12 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
         if not completes:
             lignes.append({"numero": numero, "classe": "revues_incompletes", "heures": None})
             continue
-        sur_la_tete = approbation_tete(revues_lues, (pr.get("head") or {}).get("sha") or "",
-                                       approbateur)
+        tete = (pr.get("head") or {}).get("sha") or ""
+        sur_la_tete = approbation_tete(revues_lues, tete, approbateur)
         if sur_la_tete is None:
-            classe = "tete_anterieure" if approbations(revues_lues, approbateur) else "sans_approbation"
-            lignes.append({"numero": numero, "classe": classe, "heures": None})
+            lignes.append({"numero": numero, "heures": None,
+                           "classe": _classe_sans_approbation_en_force(
+                               revues_lues, tete, approbateur)})
             continue
         approuvee_le = parse_ts(sur_la_tete["submitted_at"])
         lignes.append({"numero": numero, "classe": "tete_exacte",
@@ -325,6 +376,8 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
         "tronquee": cherche.get("total_count", 0) > len(numeros),
         "revues_incompletes": sum(1 for ligne in lignes
                                   if ligne["classe"] == "revues_incompletes"),
+        "approbations_retirees": sum(1 for ligne in lignes
+                                     if ligne["classe"] == "approbation_retiree"),
         "a_la_tete_exacte": len(ages),
         "au_dela_du_seuil": len(au_dela),
         "plus_ancienne_heures": max(ages) if ages else None,
@@ -397,6 +450,7 @@ def formater(rapport: dict) -> str:
         f" | p90 {_heures(bloc['p90_heures'])}"
         f" | min {_heures(bloc['min_heures'])} | max {_heures(bloc['max_heures'])}",
         f"Hors denominateur : {rapport['tete_anterieure']} approbation(s) sur tete anterieure"
+        f" | {rapport['approbation_retiree']} reprise(s) sur la tete par l'approbateur"
         f" | {rapport['approbation_apres_fusion']} soumise(s) apres la fusion"
         f" | {rapport['sans_approbation']} sans approbation de l'approbateur"
         f" | {rapport['revues_incompletes']} a revues non lues en entier (plafond de pages)",
@@ -408,7 +462,8 @@ def formater(rapport: dict) -> str:
             f" | inspectees : {ouvertes['inspectees']}"
             + ("  [TRONQUEE]" if ouvertes["tronquee"] else "")
             + f" | a la tete exacte : {ouvertes['a_la_tete_exacte']}"
-            + f" | revues non lues en entier : {ouvertes['revues_incompletes']}"
+            + f" | {ouvertes['revues_incompletes']} revues non lues en entier"
+            + f" | {ouvertes['approbations_retirees']} approbation(s) reprise(s)"
             + f" | au-dela du seuil : {ouvertes['au_dela_du_seuil']}"
             f" (la plus ancienne attend {_heures(ouvertes['plus_ancienne_heures'])})")
     return "\n".join(lignes)

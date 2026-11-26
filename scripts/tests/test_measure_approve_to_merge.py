@@ -24,7 +24,13 @@ pas un test. Ce qui est teste ici, c'est ce qui **decide** de la mesure :
    alors declaree incomplete (`fenetre_complete: false`, `tronquee`), et une PR
    dont les revues ne sont pas lues en entier sort du denominateur
    (`revues_incompletes`) -- jamais classee « sans approbation » alors que
-   l'approbation est sur une page non lue.
+   l'approbation est sur une page non lue ;
+9. **une approbation reprise par l'approbateur n'est plus en force** : un
+   `CHANGES_REQUESTED` du coordinateur sur la tete approuvee retire son
+   approbation. La PR fusionnee sort du denominateur (`approbation_retiree`),
+   et une PR ouverte ainsi reprise n'attend pas un merge. Cote ouvert, ce cas
+   etait masque par le filtre de recherche `review:approved`, qui suit la
+   derniere decision de review ; la regle tient sans ce filtre.
 
 Les appels reseau sont remplaces par une fonction `api` factice : les tests ne
 dependent ni du reseau ni du quota.
@@ -105,6 +111,55 @@ def test_approbation_d_un_autre_compte_ignoree():
     assert m.approbation_tete(revues, "abc", "myia-ai-01") is None
 
 
+def test_approbation_reprise_par_l_approbateur_n_est_plus_en_force():
+    """Temoin : l'approbation d'avant la reprise restait le point de depart.
+
+    Lu sur #28327 le 26/11 : APPROVE du coordinateur le 24/11 20:31:58Z, puis
+    `CHANGES_REQUESTED` du meme compte le 26/11 10:29:11Z, sur la meme tete.
+    La decision de review a change : la PR attend sa lane, pas un merge.
+    Compter depuis l'APPROVE la disait en attente de fusion depuis 38 h.
+    """
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-24T20:31:58Z"),
+        _revue("myia-ai-01", "CHANGES_REQUESTED", "abc", "2026-11-26T10:29:11Z"),
+    ]
+    assert m.approbation_tete(revues, "abc", "myia-ai-01") is None
+
+
+def test_reprise_par_un_autre_compte_ne_retire_pas():
+    """Seul l'approbateur retire son approbation : la regle de merge est la sienne."""
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T08:00:00Z"),
+        _revue("clusterManager-Myia", "CHANGES_REQUESTED", "abc", "2026-11-26T09:00:00Z"),
+    ]
+    choisie = m.approbation_tete(revues, "abc", "myia-ai-01")
+    assert choisie is not None
+    assert choisie["submitted_at"] == "2026-11-26T08:00:00Z"
+
+
+def test_demande_de_changements_anterieure_a_l_approbation_ne_retire_pas():
+    """Ordre habituel sur une meme tete : la reprise precede l'approbation."""
+    revues = [
+        _revue("myia-ai-01", "CHANGES_REQUESTED", "abc", "2026-11-26T08:00:00Z"),
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T09:00:00Z"),
+    ]
+    choisie = m.approbation_tete(revues, "abc", "myia-ai-01")
+    assert choisie is not None
+    assert choisie["submitted_at"] == "2026-11-26T09:00:00Z"
+
+
+def test_approbation_reposee_apres_une_reprise_est_en_force():
+    """Lu sur #28373 le 26/11 : approvee, relue en `COMMENTED`, puis re-approuvee."""
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-24T20:34:02Z"),
+        _revue("myia-ai-01", "CHANGES_REQUESTED", "abc", "2026-11-26T09:00:00Z"),
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T11:10:24Z"),
+    ]
+    choisie = m.approbation_tete(revues, "abc", "myia-ai-01")
+    assert choisie is not None
+    assert choisie["submitted_at"] == "2026-11-26T11:10:24Z"
+
+
 # --- classement ------------------------------------------------------------
 
 def test_classer_tete_exacte_donne_le_delai():
@@ -158,6 +213,53 @@ def test_classer_retient_l_approbation_anterieure_quand_une_autre_suit_la_fusion
     ligne = m.classer(pr, revues, "myia-ai-01")
     assert ligne["classe"] == "tete_exacte"
     assert ligne["heures"] == 2.5
+
+
+def test_classer_approbation_reprise_avant_la_fusion_sort_du_denominateur():
+    """Temoin : la fusion etait datee depuis une approbation que la reprise avait videe.
+
+    Aucune approbation n'etait en force a la fusion : la PR sort du
+    denominateur sous sa propre classe. Elle n'est ni « tete anterieure »
+    (l'approbation porte bien sur cette tete), ni « sans approbation ».
+    """
+    pr = _pr(6, "abc", "2026-11-26T10:30:00Z")
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-24T20:00:00Z"),
+        _revue("myia-ai-01", "CHANGES_REQUESTED", "abc", "2026-11-26T09:00:00Z"),
+    ]
+    ligne = m.classer(pr, revues, "myia-ai-01")
+    assert ligne["classe"] == "approbation_retiree"
+    assert ligne["heures"] is None
+    agregat = m.resume([ligne])
+    assert agregat["approbation_retiree"] == 1
+    assert agregat["tete_exacte"]["n"] == 0
+    assert agregat["tete_anterieure"] == 0
+    assert agregat["sans_approbation"] == 0
+
+
+def test_classer_reprise_posterieure_a_la_fusion_ne_retire_pas():
+    """La reprise suit la fusion : a la fusion, l'approbation etait en force."""
+    pr = _pr(7, "abc", "2026-11-26T10:30:00Z")
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T08:00:00Z"),
+        _revue("myia-ai-01", "CHANGES_REQUESTED", "abc", "2026-11-26T11:00:00Z"),
+    ]
+    ligne = m.classer(pr, revues, "myia-ai-01")
+    assert ligne["classe"] == "tete_exacte"
+    assert ligne["heures"] == 2.5
+
+
+def test_classer_approbation_reposee_compte_depuis_la_nouvelle():
+    """Reprise puis nouvelle approbation : le point de depart est la nouvelle."""
+    pr = _pr(8, "abc", "2026-11-26T10:30:00Z")
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T08:00:00Z"),
+        _revue("myia-ai-01", "CHANGES_REQUESTED", "abc", "2026-11-26T09:00:00Z"),
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T10:00:00Z"),
+    ]
+    ligne = m.classer(pr, revues, "myia-ai-01")
+    assert ligne["classe"] == "tete_exacte"
+    assert ligne["heures"] == 0.5
 
 
 def test_revues_suit_les_pages(monkeypatch):
@@ -289,12 +391,14 @@ def test_resume_compte_les_classes_hors_denominateur():
         {"numero": 3, "classe": "sans_approbation", "heures": None},
         {"numero": 4, "classe": "sans_approbation", "heures": None},
         {"numero": 5, "classe": "revues_incompletes", "heures": None},
+        {"numero": 6, "classe": "approbation_retiree", "heures": None},
     ]
     agregat = m.resume(lignes)
     assert agregat["tete_exacte"]["n"] == 1
     assert agregat["tete_anterieure"] == 1
     assert agregat["sans_approbation"] == 2
     assert agregat["revues_incompletes"] == 1
+    assert agregat["approbation_retiree"] == 1
 
 
 # --- lecture de la fenetre, borne et bout en bout --------------------------
@@ -539,6 +643,40 @@ def test_ouvertes_approuvees_compte_les_revues_incompletes(monkeypatch):
     assert ouvertes["au_dela_du_seuil"] == 0
 
 
+def test_ouvertes_une_approbation_reprise_n_attend_pas_un_merge(monkeypatch):
+    """Temoin : la regle ne tenait, cote ouvert, que par le filtre de recherche.
+
+    La PR 31 est approuvee a sa tete depuis 30 h, puis le coordinateur
+    demande des changements sur cette tete il y a 4 h. La recherche
+    `review:approved` ne la liste plus, donc le lecteur ne la voyait pas ;
+    lue quand meme (filtre en retard, population elargie), elle etait comptee
+    « en attente de fusion depuis 30 h ».
+    """
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    tetes = {31: "k1", 32: "k2"}
+    revues = {
+        31: [_revue("myia-ai-01", "APPROVED", "k1", "2026-11-24T18:00:00Z"),
+             _revue("myia-ai-01", "CHANGES_REQUESTED", "k1", "2026-11-25T20:00:00Z")],
+        # approuvee a sa tete il y a 30 h, jamais reprise : elle attend
+        32: [_revue("myia-ai-01", "APPROVED", "k2", "2026-11-24T18:00:00Z")],
+    }
+
+    def faux_api(chemin: str):
+        if "/search/" in chemin:
+            return {"total_count": 2, "items": [{"number": n} for n in tetes]}
+        numero = int(chemin.split("/pulls/")[1].split("/")[0])
+        if "/reviews" in chemin:
+            return revues[numero]
+        return {"number": numero, "head": {"sha": tetes[numero]}}
+
+    monkeypatch.setattr(m, "api", faux_api)
+    ouvertes = m.ouvertes_approuvees(jusqu_a)
+    assert ouvertes["a_la_tete_exacte"] == 1
+    assert ouvertes["approbations_retirees"] == 1
+    assert [ligne["numero"] for ligne in ouvertes["au_dela"]] == [32]
+    assert ouvertes["plus_ancienne_heures"] == 30.0
+
+
 def _rapport_echantillon(fenetre_complete: bool = True) -> dict:
     """Rapport a deux PRs inspectees sur neuf fusions ; la fenetre est complete sauf demande."""
     return {
@@ -553,10 +691,18 @@ def _rapport_echantillon(fenetre_complete: bool = True) -> dict:
                         "p50_heures": 2.0, "p90_heures": 30.0,
                         "min_heures": 1.0, "max_heures": 30.0},
         "tete_anterieure": 0,
+        "approbation_retiree": 0,
         "approbation_apres_fusion": 0,
         "revues_incompletes": 0,
         "sans_approbation": 0,
     }
+
+
+def test_formater_dit_les_approbations_reprises():
+    rapport = _rapport_echantillon()
+    rapport["approbation_retiree"] = 2
+    texte = m.formater(rapport)
+    assert "2 reprise(s) sur la tete par l'approbateur" in texte
 
 
 def test_formater_dit_la_troncature():
