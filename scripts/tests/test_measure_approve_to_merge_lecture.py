@@ -12,7 +12,11 @@ produire un releve.
   quand l'en-tete le donne ;
 - `main` le rend en refus lisible (code 3), sans ecrire de JSON partiel.
 
-`urlopen` est remplace : aucun test n'emet de requete.
+`urlopen` et la lecture du jeton sont remplacees : aucun test n'emet de requete
+et aucun n'appelle `gh`. Sans cela, `api` lisait le vrai jeton au premier appel
+et les cinq tests tombaient sur le runner, ou `gh auth token --user jsboige`
+n'a pas d'utilisateur connecte (mesure du 26/11 : 5 echecs, tous par
+`CalledProcessError`).
 """
 
 from __future__ import annotations
@@ -22,10 +26,17 @@ import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
 import measure_approve_to_merge as m  # noqa: E402
+
+# Le module ne sort jamais de lui-meme : ni requete, ni processus. Une source
+# non simulee (le jeton, par exemple) echoue ici en la nommant, au lieu de
+# dependre de l'etat `gh` de la machine -- c'est ce qui a rougi la CI le 26/11.
+pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
 class _Reponse:
     """Reponse minimale : `urlopen` rend un contexte dont `read()` donne le corps."""
@@ -49,7 +60,11 @@ def _erreur_http(code: int, entetes: dict | None = None) -> urllib.error.HTTPErr
 
 
 def _brancher_urlopen(monkeypatch, repondre):
-    """Remplace `urlopen` par `repondre(numero_de_l_appel)` et retire les pauses."""
+    """Remplace `urlopen` par `repondre(numero_de_l_appel)` et retire les pauses.
+
+    Le jeton est remplace aussi : `api` l'appelle avant `urlopen`, et le lire
+    vraiment ferait sortir le test de l'unite mesuree en lancant `gh`.
+    """
     appels: list[int] = []
 
     def faux_urlopen(_requete, timeout=0):
@@ -58,6 +73,7 @@ def _brancher_urlopen(monkeypatch, repondre):
 
     monkeypatch.setattr(m.urllib.request, "urlopen", faux_urlopen)
     monkeypatch.setattr(m.time, "sleep", lambda _secondes: None)
+    monkeypatch.setattr(m, "jeton", lambda: "jeton-de-test")
     return appels
 
 
