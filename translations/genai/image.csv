@@ -1193,7 +1193,7 @@ observations_ex3 = (
 print(f""\nObservations : {observations_ex3}"")
 
 print(""\nExemple guide 3 termine"")",,,,,,,,ca7b8f75d700d3b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07ca49a,markdown,fr,46ed19848da1cf75,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07ca49a,markdown,fr,d58554a13c4a9142,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-Generation-Image-Texte-API.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
 
 # Génération et analyse d'images par API multimodale
 
@@ -1222,7 +1222,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07c
 - **Multimodal** : Conversation texte + image simultanée
 - **Contexte étendu** : Jusqu'à 400K tokens [OpenAI 2025]
 - **Raisonnement** : Analyse complexe et déductive
-- **Éducatif** : Parfait pour l'enseignement","**Navigation** : [Index](../../README.md) | [<< Previous](01-1-OpenAI-DALL-E-3.ipynb) | [Next >>](01-3-Basic-Image-Operations.ipynb)
+- **Éducatif** : Parfait pour l'enseignement","**Navigation** : [Index](../../README.md) | [<< Previous](01-1-Generation-Image-Texte-API.ipynb) | [Next >>](01-3-Basic-Image-Operations.ipynb)
 
 # Image Generation and Analysis via Multimodal API
 
@@ -1251,7 +1251,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07c
 - **Multimodal** : Simultaneous text + image conversation
 - **Extended context** : Up to 400K tokens [OpenAI 2025]
 - **Reasoning** : Complex and deductive analysis
-- **Educational** : Perfect for teaching",,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-OpenAI-DALL-E-3.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
+- **Educational** : Perfect for teaching",,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-Generation-Image-Texte-API.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
 
 # Генерация и анализ изображений через мультимодальный API
 
@@ -1280,7 +1280,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07c
 - **Мультимодальность** : Одновременный диалог текст + изображение
 - **Расширенный контекст** : До 400K токенов [OpenAI 2025]
 - **Рассуждение** : Сложный и дедуктивный анализ
-- **Образование** : Идеально для обучения",,46ed19848da1cf75,a7b7c1a81ba5d791,,,,,c26ca0e029e59505,,46ed19848da1cf75,,,,,46ed19848da1cf75,,
+- **Образование** : Идеально для обучения",,d58554a13c4a9142,1d6283f719957fe2,,,,,79625a438699da4b,,d58554a13c4a9142,,,,,d58554a13c4a9142,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration conversation
