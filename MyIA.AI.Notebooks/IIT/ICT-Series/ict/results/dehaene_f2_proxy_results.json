@@ -271,7 +271,7 @@
  "limits": [
   "PROXY : discrimination inter-categories (code vs prose), pas self/other",
   "Test direct F2 (K-sweep sur case 4 self/other) = GPU-only",
-  "Tell c.8236 RECOVERABLE-MACHINE (po-2023/po-2024 GPU 24+ Go)",
+  "Siege 24+ Go de VRAM requis pour le test direct F2 (po-2023/po-2024)",
   "Témoins nuls (shape_perm, dirichlet) : n=100 permutations chacun, seed fixée pour reproductibilité"
  ]
 }
