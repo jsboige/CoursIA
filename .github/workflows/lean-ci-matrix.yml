@@ -156,6 +156,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean/lean-toolchain'
+      # gkdim_lean (lac dedie de l'EPIC #27589 : premier jalon formel de la
+      # dimension de Gelfand-Kirillov -- 0 sorry de naissance, axiom
+      # target-modules "*" -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lake-manifest.json'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -439,6 +446,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/formal_groups_lean/lean-toolchain'
+      # gkdim_lean (lac dedie de l'EPIC #27589 : premier jalon formel de la
+      # dimension de Gelfand-Kirillov -- 0 sorry de naissance, axiom
+      # target-modules "*" -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lake-manifest.json'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
