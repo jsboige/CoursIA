@@ -3,16 +3,14 @@
 cite au passe.
 
 Review du coordinateur (25/11, #28440) : `est_echec_outil()` lisait un code
-d'echec **n'importe ou** dans le commentaire. Une lane qui rend un grain
-parce que le GPU partage est indisponible -- en rappelant que son essai
-**precedent** a donne `verify-reject` -- voyait son grain degele pour
-toutes les autres lanes : le motif courant (une barriere reelle) etait lu
-comme un echec d'outil (un mot historique).
+d'echec **n'importe ou** dans le commentaire : une lane qui rendait un grain
+pour une barriere reelle voyait son grain degele pour toutes les autres lanes.
 
 Ce module decide : un code d'echec n'est le motif **courant** que si sa
-clause ne porte aucun marqueur d'**historique**. Un code cite au passe ne
-degel rien, et le motif courant etant alors inconnu ou ambigu, le gel
-reste **global** (fail-CLOSED) -- c'est le comportement d'avant.
+clause ne porte aucun marqueur d'**historique** ET que sa forme est
+**positivement identifiee** (format explicite `motif: <code>`, ou forme
+Rust mesuree -- voir `tapis_relache_forme`). Un code cite au passe, ou
+cite sans forme, ne degele rien : le gel reste **global** (fail-CLOSED).
 
 Le vocabulaire des cinq motifs d'echec d'OUTIL est **ferme** (les cinq
 mesures du dispatch `c0035b`, 24/11) ; le vocabulaire des marqueurs
@@ -24,6 +22,8 @@ from __future__ import annotations
 
 import re
 import unicodedata
+
+from coordination.tapis_relache_forme import codes_identifies
 
 #: Les motifs d'echec d'OUTIL mesures (dispatch `c0035b`, 24/11) : l'echec est
 #: dans la chaine d'outillage de la lane, pas dans le grain. Un grain rendu
@@ -90,14 +90,15 @@ def codes_historiques(corps: str) -> set[str]:
 def est_echec_outil(corps: str) -> bool:
     """Le rendu dit-il un echec d'OUTIL **courant** ?
 
-    Fail-CLOSED : un code cite au passe n'est pas le motif courant ; et si
-    le commentaire **mele** un code courant et un code historique, le motif
+    Fail-CLOSED : un code cite au passe n'est pas le motif courant ; un code
+    cite dans une forme non identifiee non plus ; un melange de codes
     reste ambigu -- le grain reste donc gele pour toute la flotte (le
-    comportement d'avant), plutot que de degeler sur une lecture unilatérale.
+    comportement d'avant), plutot que de degeler sur une lecture
+    unilaterale.
     """
     trouves = codes(corps)
     if not trouves:
         return False
     if codes_historiques(corps):
         return False
-    return True
+    return bool(codes_identifies(corps) & trouves)

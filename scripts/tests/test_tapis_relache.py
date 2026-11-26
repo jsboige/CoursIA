@@ -179,6 +179,35 @@ def test_un_code_historique_ne_degele_pas_le_grain():
     assert "echec d'outil" not in e.motif, "le code cite n'est pas le motif"
 
 
+def test_un_code_cite_dans_une_phrase_ne_degele_pas_le_grain():
+    """La forme **ordinaire** sur deux lignes (review du 25/11, #28440).
+
+    `[RELEASED] lane X -- GPU partage indisponible`, puis `Essai du 22/11 :
+    verify-reject` : aucun jeton de la deuxieme ligne n'est un marqueur
+    historique, et la premiere ligne ne porte aucun code. Le code n'est
+    pourtant pas le motif courant : il n'est ni au format explicite
+    (`motif: <code>`) ni dans la forme Rust mesuree (code suivi de sa
+    fournee et de sa date). Le grain ne doit donc pas etre servi aux autres
+    lanes : la barriere reelle le gele pour toute la flotte.
+    """
+    rendu = (f"[RELEASED] lane {AUTRE} -- GPU partage indisponible\n"
+             "Essai du 22/11 : verify-reject\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le grain reste gele pour toute la flotte"
+    assert "echec d'outil" not in e.motif, "le code cite n'est pas le motif"
+    # ... et la lane voisine n'est pas servie non plus (c'etait le defaut).
+    assert etat(lec, 1, lane=LANE).ecart == "RELACHEE"
+
+
+def test_le_format_explicite_reste_un_echec_d_outil():
+    """Le format explicite (`motif: <code>`) est une forme POSITIVEMENT
+    identifiee : la portee locale reste la sienne."""
+    from coordination import tapis_relache
+    assert tapis_relache.est_echec_outil(
+        f"[RELEASED] lane {AUTRE} -- motif: stage2-call-failed")
+
+
 def test_un_melange_de_codes_reste_ambigu():
     """Un code courant et un code historique dans le meme rendu : le motif
     reste ambigu, donc le gel reste global (fail-CLOSED)."""
@@ -215,7 +244,8 @@ def test_la_forme_rust_mesuree_reste_un_echec_d_outil():
 # qui n'est pas epingle.
 
 @pytest.mark.parametrize(("nom", "plafond"), [("tapis_relache.py", 100),
-                                              ("tapis_relache_motif.py", 105)])
+                                              ("tapis_relache_motif.py", 105),
+                                              ("tapis_relache_forme.py", 60)])
 def test_plafond_de_lignes(nom, plafond):
     """L'organe tient son plafond de lignes, et aucune de ses fonctions
     n'en depasse 60."""
