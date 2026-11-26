@@ -445,6 +445,9 @@ branche (tête `fba9624514`) et la CI a tourné sur cette tête-là. *How to app
 avant de rejouer un job, lire la **tête courante** de la PR et le `head_sha` du
 run ; un rejeu sur une tête abandonnée est une **mesure manquante**, et son
 verdict ne vaut pas pour la PR.
+
+### Tells de mesure (26/11, cycle c712)
+
 37. **Compter les jambes non vertes SANS le fold canonique sur-compte les
 tentatives périmées — et change la conclusion.** *Why :* sur #28781 (tête
 `60dfa524b99`), mon script listait **toutes** les tentatives non vertes de
