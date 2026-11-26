@@ -132,8 +132,11 @@ def test_ascii_text_passes_through_unchanged(validator):
 # --- Defaut 2 : le cote valide -------------------------------------------
 
 
-def test_lean_toolchain_counts_the_windows_chain_when_present(validator, monkeypatch):
+def test_lean_toolchain_counts_the_windows_chain_when_present(validator, monkeypatch, tmp_path):
     """Controle POSITIF : chaine Windows complete -> 3 composants."""
+    # Linux : check_command() commence par `bash -c "source ~/.elan/env ... && <cmd> --version"`.
+    # HOME isole => le which patche est la seule source, sur tout runner (#28622).
+    monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(validator.shutil, "which", lambda cmd: f"/usr/bin/{cmd}")
     monkeypatch.setattr(validator, "_kernel_drives_wsl", lambda *a, **k: False)
     checks = validator.check_lean_toolchain()
@@ -149,8 +152,11 @@ def test_lean_toolchain_excludes_the_windows_chain_on_a_wsl_seat(validator, monk
     assert checks == []
 
 
-def test_lean_toolchain_reports_missing_when_not_a_wsl_seat(validator, monkeypatch):
+def test_lean_toolchain_reports_missing_when_not_a_wsl_seat(validator, monkeypatch, tmp_path):
     """Hors WSL, une chaine Windows absente reste un verdict negatif."""
+    # Linux : sans ceci, un domicile portant ~/.elan/env repond par le sous-processus de
+    # check_command() avant le which patche -- le verdict suivait le runner, pas la PR (#28622).
+    monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(validator.shutil, "which", lambda cmd: None)
     monkeypatch.setattr(validator, "_kernel_drives_wsl", lambda *a, **k: False)
     checks = validator.check_lean_toolchain()
