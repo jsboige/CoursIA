@@ -44,15 +44,18 @@ Correspondance Stacks (groupe #15 de #28537 — « les points et les germes », 
 --------------------------------------------------------------------------
 Lecture de `AxiomMath/Stacks` sur l'**arborescence locale**
 `StacksFrontier/Topology/Sheaves/` (clone sparse du dossier entier, 1756
-fichiers couverts sur 1756) : un verdict « absent » signifie **aucun énoncé
-de ce nom dans l'ensemble de `Topology/Sheaves/`**.
+fichiers couverts sur 1756). Le critère de classement est le **contenu**,
+jamais le seul nom : une recherche par identifiant qui ne renvoie rien
+n'établit pas une absence, elle établit qu'un énoncé n'est pas *nommé* ainsi.
+Un verdict « absent » signifie donc : aucun contenu équivalent dans
+l'ensemble de `Topology/Sheaves/`, à aucun endroit.
 
 | Énoncé | Classe | Référent Stacks | Ce que notre version ajoute |
 |---|---|---|---|
-| `GermSeparated` | **couvert** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'` ; `:86` `isSeparated'_iff` (Stacks 007A) | la forme pointwise sur le sous-type `{x // x ∈ U}` |
+| `GermSeparated` | **couvert** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'` ; `:86` `isSeparated'_iff` (Stacks 007A) ; `Sheafify/Separated.lean:71` `IsSeparated` et `:88` `toSheafify_app_eq_iff_germ_eq` (la même condition par germes, sous la forme d'une équivalence avec la faisceautisation) | la forme pointwise sur le sous-type `{x // x ∈ U}` |
 | `GermGluing` | partiel | `Basis/Germs.lean:329` `germMap_range_eq_conditionStar` ; `:339` `germMap_bijection` (009M) | l'existence sur le site des ouverts, sans condition de base |
 | `germ_eq_of_isCompatible` | partiel | `Basis/Germs.lean:224` `germ_res` ; `:212` `germ_eq_iff_rel` | l'énoncé autonome, avec un prédicat `IsCompatible` de préfaisceau |
-| `isSheaf_iff_germSeparated_and_germGluing` | partiel | `Basis/Germs.lean:308` `germMap_injective` ; `:329` (009M) ; `Basis/Sheaf.lean:140` `main_theorem009J` (009J) | le sens inverse, où la condition de faisceau est **dérivée** des germes |
+| `isSheaf_iff_germSeparated_and_germGluing` | partiel | `Basis/Germs.lean:308` `germMap_injective` ; `:329` (009M) ; `Basis/Sheaf.lean:140` `main_theorem009J` (009J) ; `Basis/OnBasis.lean:74` `IsSheafOnBasis` (structure « séparé + recolle », EGA 0 3.2.2) ; `Sheaf/Basic.lean:35` (006T, recollement unique) | le sens inverse, où la condition de faisceau est **dérivée** des germes |
 
 Convention i18n (EPIC #4980 ratifiée 2026-07-04) : ce module est jumelé avec
 `StalkCharacterization_en.lean`. Les énoncés, preuves et noms Lean restent
@@ -87,7 +90,13 @@ carte « section ↦ famille de ses germes » est injective — et `:86`
 (`isSeparated'_iff`) en donne la forme pointwise identique à la nôtre : deux
 sections dont les germes coïncident en tout point de l'ouvert sont égales.
 Stacks note au passage (`:43`) que Mathlib a les tiges et les cartes de
-germe mais **pas** ce prédicat : c'est Stacks qui l'ajoute. Ce que notre
+germe mais **pas** ce prédicat : c'est Stacks qui l'ajoute. La même condition
+par germes réapparaît sous une seconde forme, **après faisceautisation** :
+`Sheafify/Separated.lean:71` (`IsSeparated`) pose la séparation par
+restrictions, et `:88` (`toSheafify_app_eq_iff_germ_eq`) donne l'équivalence
+« deux sections ont la même image par `toSheafify` **si et seulement si**
+leurs germes coïncident en tout point de l'ouvert » — notre énoncé, sous la
+forme d'une équivalence avec l'égalité des images. Ce que notre
 version ajoute : la forme pointwise est la nôtre pour un préfaisceau de
 `Type u` quelconque, sans hypothèse de faisceau, mais avec la dépendance au
 sous-type `{x : T // x ∈ U}`. -/
@@ -163,7 +172,13 @@ propriétés des germes) : Stacks 009M (`Basis/Germs.lean:308`
 faisceau est **définie** par la séparation et le recollement de **sections**
 (`Basis/Germs.lean:95` `PresheafOnBasisOpenSet.IsSheaf` ; `Basis/Sheaf.lean:88`
 `IsSheafOnBasis`, EGA 0 3.2.2, et `:140` `main_theorem009J`, 009J, le critère
-de la base). Ce que notre version ajoute : l'équivalence **dans le sens
+de la base). La forme **« séparé + recolle »** — la plus proche de notre
+énoncé — est littéralement la structure `IsSheafOnBasis`
+(`Basis/OnBasis.lean:73-74`, EGA 0 3.2.2, champs `separated` `:77` et `glue`
+`:88`), mais sa séparation est **par restrictions** et non par germes ; et le
+sens inverse y est le recollement **unique** des sections
+(`Sheaf/Basic.lean:35`, 006T, `isSheaf_iff_isSheafUniqueGluing_types`).
+Ce que notre version ajoute : l'équivalence **dans le sens
 direct** sur le site des ouverts, sans condition de base, et le sens inverse
 où la condition de faisceau est **dérivée** des germes plutôt que
 postulée. -/

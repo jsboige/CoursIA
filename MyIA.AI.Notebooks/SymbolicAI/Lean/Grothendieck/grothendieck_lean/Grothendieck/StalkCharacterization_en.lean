@@ -43,15 +43,18 @@ Stacks correspondence (group #15 of #28537 — “the points and the germs”, m
 --------------------------------------------------------------------------
 The reading of `AxiomMath/Stacks` is done on the **local tree**
 `StacksFrontier/Topology/Sheaves/` (sparse clone of the whole folder, 1756
-files covered out of 1756): an “absent” verdict therefore means **no
-statement of that name anywhere in `Topology/Sheaves/`**.
+files covered out of 1756). The classification criterion is **content**,
+never the name alone: an identifier search that returns nothing does not
+establish an absence, it establishes that a statement is not *named* that
+way. An “absent” verdict therefore means: no equivalent content anywhere in
+`Topology/Sheaves/`.
 
 | Statement | Class | Stacks referent | What our version adds |
 |---|---|---|---|
-| `GermSeparated` | **covered** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'`; `:86` `isSeparated'_iff` (Stacks 007A) | the pointwise form on the subtype `{x // x ∈ U}` |
+| `GermSeparated` | **covered** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'`; `:86` `isSeparated'_iff` (Stacks 007A); `Sheafify/Separated.lean:71` `IsSeparated` and `:88` `toSheafify_app_eq_iff_germ_eq` (the same germ-based condition, in the form of an equivalence with sheafification) | the pointwise form on the subtype `{x // x ∈ U}` |
 | `GermGluing` | partial | `Basis/Germs.lean:329` `germMap_range_eq_conditionStar`; `:339` `germMap_bijection` (009M) | existence on the site of opens, without a basis condition |
 | `germ_eq_of_isCompatible` | partial | `Basis/Germs.lean:224` `germ_res`; `:212` `germ_eq_iff_rel` | the standalone statement, with a presheaf `IsCompatible` predicate |
-| `isSheaf_iff_germSeparated_and_germGluing` | partial | `Basis/Germs.lean:308` `germMap_injective`; `:329` (009M); `Basis/Sheaf.lean:140` `main_theorem009J` (009J) | the backward direction, where the sheaf condition is **derived** from the germs |
+| `isSheaf_iff_germSeparated_and_germGluing` | partial | `Basis/Germs.lean:308` `germMap_injective`; `:329` (009M); `Basis/Sheaf.lean:140` `main_theorem009J` (009J); `Basis/OnBasis.lean:74` `IsSheafOnBasis` (a “separated + glue” structure, EGA 0 3.2.2); `Sheaf/Basic.lean:35` (006T, unique gluing) | the backward direction, where the sheaf condition is **derived** from the germs |
 
 The i18n convention (EPIC #4980, ratified 2026-07-04) pairs this module with
 `StalkCharacterization.lean`. Lean statements, proofs, and names remain
@@ -88,7 +91,13 @@ map “section ↦ family of its germs” is injective — and `:86`
 (`isSeparated'_iff`) gives it in the pointwise form that is identical to
 ours: two sections whose germs agree at every point of the open are equal.
 Stacks notes in passing (`:43`) that Mathlib has the stalks and the germ maps
-but **not** this predicate: Stacks is what adds it. What our version adds:
+but **not** this predicate: Stacks is what adds it. The same germ-based
+condition reappears in a second form, **after sheafification**:
+`Sheafify/Separated.lean:71` (`IsSeparated`) states separation by
+restrictions, and `:88` (`toSheafify_app_eq_iff_germ_eq`) gives the
+equivalence “two sections have the same image under `toSheafify` **if and
+only if** their germs agree at every point of the open” — our statement, in
+the form of an equivalence with equality of images. What our version adds:
 the pointwise form is ours for an arbitrary `Type u` presheaf, with no sheaf
 hypothesis, but with the dependency on the subtype `{x : T // x ∈ U}`. -/
 def GermSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
@@ -160,7 +169,13 @@ the germs ⇒ sheaf): Stacks does not have it — its sheaf condition is
 **defined** by separation and gluing of **sections**
 (`Basis/Germs.lean:95` `PresheafOnBasisOpenSet.IsSheaf`; `Basis/Sheaf.lean:88`
 `IsSheafOnBasis`, EGA 0 3.2.2, and `:140` `main_theorem009J`, 009J, the basis
-criterion). What our version adds: the equivalence **in the forward
+criterion). The **“separated + glue”** shape — the closest to our statement
+— is literally the structure `IsSheafOnBasis`
+(`Basis/OnBasis.lean:73-74`, EGA 0 3.2.2, fields `separated` `:77` and `glue`
+`:88`), but its separation is **by restrictions**, not by germs; and the
+backward direction there is the **unique gluing** of sections
+(`Sheaf/Basic.lean:35`, 006T, `isSheaf_iff_isSheafUniqueGluing_types`).
+What our version adds: the equivalence **in the forward
 direction** on the site of opens, without a basis condition, and the backward
 direction where the sheaf condition is **derived** from the germs rather than
 postulated. -/

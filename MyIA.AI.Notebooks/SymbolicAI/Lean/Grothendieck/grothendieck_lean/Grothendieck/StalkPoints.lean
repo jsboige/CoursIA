@@ -42,8 +42,21 @@ Correspondance Stacks (groupe #15 de #28537 — « les points et les germes », 
 --------------------------------------------------------------------------
 Lecture de `AxiomMath/Stacks` sur l'**arborescence locale**
 `StacksFrontier/Topology/Sheaves/` (clone sparse du dossier entier, 1756
-fichiers couverts sur 1756) : un verdict « absent » signifie **aucun énoncé
-de ce nom dans l'ensemble de `Topology/Sheaves/`**.
+fichiers couverts sur 1756). Le critère de classement est le **contenu**,
+jamais le seul nom : une recherche par identifiant qui ne renvoie rien
+n'établit pas une absence, elle établit qu'un énoncé n'est pas *nommé* ainsi.
+Un verdict « absent » signifie donc : aucun contenu équivalent dans
+l'ensemble de `Topology/Sheaves/`, à aucun endroit.
+
+Deux énoncés de ce tableau (`mem_of_fiber`, `fiberElem`) avaient d'abord été
+classés « absent » sur la foi d'une recherche par identifiant ; la relecture
+du contenu d'un seul fichier a montré que leur expression est **identique**
+à la nôtre, écrite en ligne. Le tableau ci-dessous est l'état corrigé.
+
+Deux énoncés de ce tableau (`mem_of_fiber`, `fiberElem`) avaient d'abord été
+classés « absent » sur la foi d'une recherche par identifiant ; la relecture
+du contenu d'un seul fichier a montré que leur expression est **identique**
+à la nôtre, écrite en ligne. Le tableau ci-dessous est l'état corrigé.
 
 La machinerie du point de site n'est **pas** absente de Stacks : elle est
 utilisée dans un seul fichier de l'arborescence lue,
@@ -55,8 +68,8 @@ nous avons un énoncé là où Stacks a une construction.
 | Énoncé | Classe | Référent Stacks | Ce que notre version ajoute |
 |---|---|---|---|
 | `opensPoint` | partiel | `Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:325` `openNhdsEquivPointElements` (attention à l'homonyme `opensPoint` de Stacks, même fichier `:76`) | la construction du point sur le site own, avec sa structure cofiltrée |
-| `mem_of_fiber` | absent | aucun (l'inverse de l'équivalence de Stacks fait le travail sans le nommer) | l'énoncé nommé de la réciproque tautologique |
-| `fiberElem` | absent | aucun | la construction de l'élément canonique |
+| `mem_of_fiber` | partiel | `UniverseLift.lean:331` — l'`inverse` de l'équivalence : `obj := fun U => ⟨U.obj, U.val.down.down⟩`, expression **identique** à la nôtre (`p.down.down`) | l'énoncé nommé, sur le point own et non sur le point canonique de Mathlib |
+| `fiberElem` | partiel | `UniverseLift.lean:328` — le `functor` de l'équivalence : `obj := fun U => .mk (obj := U.1) ⟨⟨U.2⟩⟩`, expression **identique** à la nôtre (`⟨⟨hx⟩⟩`) | idem, nommé et typé |
 | `fiberToStalkCocone` | partiel | `UniverseLift.lean:338` `neighbourhoodColimitFunctor` ; `:344` | le cône explicite, avec sa naturalité prouvée |
 | `fiberToStalk` | partiel | `UniverseLift.lean:344` (l'inverse de l'iso) | la descente universelle explicite |
 | `stalkToFiberCocone` | partiel | `UniverseLift.lean:338` | le cône des `toPresheafFiber` sur le diagramme des voisinages |
@@ -133,24 +146,25 @@ def opensPoint : GrothendieckTopology.Point (opensTopology T) where
 /-- Tout élément de la fibre de `U` provient d'une appartenance `x ∈ U`
 (réciproque tautologique de la construction).
 
-Correspondance Stacks — **ABSENT** : aucun énoncé de ce nom dans
-`StacksFrontier/Topology/Sheaves/` (recherche `mem_of_fiber` : 0 résultat).
-Le pendant le plus proche est l'`inverse` de `openNhdsEquivPointElements`
-(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:325`), qui
-extrait d'un élément de la fibre son ouvert et son appartenance, sans nommer
-l'énoncé. Ce que notre version ajoute : la réciproque tautologique
-nommée. -/
+Correspondance Stacks — **PARTIEL** : le contenu est **présent**, mais écrit
+en ligne et sans nom. L'`inverse` de `openNhdsEquivPointElements`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:331`) est
+écrit `obj := fun U => ⟨U.obj, U.val.down.down⟩` — la projection est
+**expression pour expression** la nôtre (`p.down.down`). Ce que notre
+version ajoute : l'énoncé nommé, et le fait que le point soit le nôtre
+(`opensPoint`) et non le point canonique de Mathlib
+(`Opens.pointGrothendieckTopology`). -/
 theorem mem_of_fiber {U : Opens T} (p : (opensPoint T x).fiber.obj U) : x ∈ U :=
   p.down.down
 
 /-- L'élément de la fibre codant une appartenance `x ∈ U`.
 
-Correspondance Stacks — **ABSENT** : aucun énoncé de ce nom dans
-`StacksFrontier/Topology/Sheaves/` (recherche `fiberElem` : 0 résultat) ; le
-seul endroit de l'arborescence qui manipule la fibre d'un point de site est
-`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean`, où elle
-n'est jamais construite élément par élément. Ce que notre version ajoute : la
-construction de l'élément canonique. -/
+Correspondance Stacks — **PARTIEL** : le contenu est **présent**, mais écrit
+en ligne et sans nom. Le `functor` de `openNhdsEquivPointElements`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:328`) est
+écrit `obj := fun U => .mk (obj := U.1) ⟨⟨U.2⟩⟩` — la construction est
+**expression pour expression** la nôtre (`⟨⟨hx⟩⟩`). Ce que notre version
+ajoute : l'énoncé nommé, et le point own. -/
 def fiberElem {U : Opens T} (hx : x ∈ U) : (opensPoint T x).fiber.obj U :=
   ⟨⟨hx⟩⟩
 
