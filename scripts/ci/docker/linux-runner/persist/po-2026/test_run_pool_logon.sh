@@ -17,7 +17,10 @@
 # Piege de forme : une entree de PATH ecrite `C:/...` n'est pas resolue par la
 # recherche de binaire de Git Bash ; le stub serait saute au profit du vrai
 # wsl.exe. Le banc n'utilise donc que des chemins POSIX, et un temoin verifie que
-# chaque stub se resout bien en tete de PATH : sans lui, INVALIDE.
+# chaque stub se resout bien au dossier du banc. Si l'un des deux ne s'y resout
+# pas, le banc s'arrete AVANT tout scenario (exit 1) : un scenario lance sans son
+# stub peut invoquer le vrai WSL ou attendre reellement. Un temoin de garde (en
+# fin de banc) rejoue le banc mute pour prouver cet arret.
 
 set -o pipefail
 set -o nounset
@@ -29,7 +32,7 @@ mkdir -p "$TEST_DIR/bin"
 # introuvable) ne laisse rien dans /tmp.
 nettoyer() {
   find "$TEST_DIR" -type f -delete 2>/dev/null
-  rmdir "$TEST_DIR/bin" "$TEST_DIR" 2>/dev/null
+  find "$TEST_DIR" -depth -type d -empty -delete 2>/dev/null
 }
 trap nettoyer EXIT
 
@@ -87,7 +90,8 @@ borne_mutee "$TEST_DIR/lanceur.sh" "$TEST_DIR/lanceur-borne-mutee.sh"
 
 # mesure <nom> <lanceur> <echecs> : execute le lanceur, remplit MESURE_*.
 # Les compteurs se lisent dans le FICHIER de trace : un stub non appele ne laisse
-# aucune trace, et c'est le signe distinctif de l'INVALIDE.
+# aucune trace. C'est la SEULE fonction qui lance le lanceur : le temoin de garde
+# la remplace, dans le banc mute, par un marqueur.
 mesure() {
   MESURE_LOG="$TEST_DIR/$1.log"
   MESURE_OUT="$TEST_DIR/$1.out"
@@ -101,9 +105,8 @@ mesure() {
 
 # ecart <appels> <pauses> <rc> : rend 0 si la mesure courante concorde, 1 si elle
 # est en ecart, 2 si elle est en ecart SANS qu'aucun appel du stub n'ait eu lieu
-# (le lanceur s'est termine sans attendre). Le cas 2 n'est un INVALIDE que si le
-# temoin de PATH a echoue : c'est lui, pas la mesure, qui dit si la simulation a
-# pu s'exercer.
+# (le lanceur s'est termine sans attendre). Le cas 2 n'est lu que derriere la
+# garde : un stub non resolu a deja arrete le banc.
 ecart() {
   if [ "$1" -gt 0 ] && [ ! -f "$MESURE_LOG" ]; then
     return 2
@@ -122,20 +125,12 @@ describe() { # $1 = appels, $2 = pauses, $3 = rc attendus
 }
 
 # cas <libelle> <appels> <pauses> <rc> : la mesure courante DOIT concorder.
-# Un ecart sans appel du stub n'est une mesure que si le temoin de PATH a passe.
-invalide() { # $1 = libelle de l'ecart
-  if grep -qx wsl.exe "$SIMULATION_VUE"; then
-    ko "$1 -- la trace d'appels est absente"
-  else
-    ko "$1 -- INVALIDE : le stub wsl.exe n'est pas en tete de PATH (voir le temoin)"
-  fi
-}
 cas() {
   ecart "$2" "$3" "$4"; local code=$?
   if [ "$code" = 0 ]; then
     ok "$1"
   elif [ "$code" = 2 ]; then
-    invalide "$1"
+    ko "$1 -- la trace d'appels est absente"
   else
     ko "$1 -- $(describe "$2" "$3" "$4")"
   fi
@@ -146,11 +141,7 @@ cas() {
 controle() {
   ecart "$2" "$3" "$4"; local code=$?
   if [ "$code" = 2 ]; then
-    if grep -qx wsl.exe "$SIMULATION_VUE"; then
-      ok "controle negatif vu : $1 -- $(describe "$2" "$3" "$4"), aucun appel du stub"
-    else
-      ko "controle negatif INVALIDE : stub wsl.exe hors PATH ($1)"
-    fi
+    ok "controle negatif vu : $1 -- $(describe "$2" "$3" "$4"), aucun appel du stub"
   elif [ "$code" = 0 ]; then
     ko "controle negatif NON vu : $1"
   else
@@ -163,7 +154,7 @@ echo "== banc de l'attente du gestionnaire utilisateur (run-pool-po2026.sh) =="
 # Temoin de simulation : sous le PATH du banc, wsl.exe et sleep DOIVENT se resoudre
 # aux stubs. Sans lui, un PATH non resolu (entree `C:/...` : voir en tete) fait
 # passer le vrai wsl.exe pour un lanceur silencieux. SIMULATION_VUE porte le
-# verdict du temoin dans un fichier, lu par les cas.
+# verdict du temoin dans un fichier, lu par la garde qui suit.
 SIMULATION_VUE="$TEST_DIR/simulation-vue"
 : > "$SIMULATION_VUE"
 for stub in wsl.exe sleep; do
@@ -175,6 +166,14 @@ for stub in wsl.exe sleep; do
     ko "temoin : $stub se resout a '${resolu:-inconnu}' au lieu de $TEST_DIR/bin/$stub"
   fi
 done
+
+# Un echec du temoin interdit toute execution du lanceur, meme simule : la garde
+# precede le premier appel de `mesure`. Le temoin de garde (fin de banc) prouve
+# qu'elle arrete bien avant tout scenario.
+if ! grep -qx wsl.exe "$SIMULATION_VUE" || ! grep -qx sleep "$SIMULATION_VUE"; then
+  echo "Banc invalide : scenarios non executes, resolution des stubs incorrecte" >&2
+  exit 1
+fi
 
 mesure present "$TEST_DIR/lanceur.sh" 0
 cas "gestionnaire present : 1 appel, 0 pause, lancement" 1 0 0
@@ -202,6 +201,82 @@ controle "bloc d'attente supprime" 60 59 1
 
 mesure borne-mutee "$TEST_DIR/lanceur-borne-mutee.sh" 100000
 controle "borne mutee a 3 essais" 60 59 1
+
+# --- Temoin de la garde -------------------------------------------------------
+# Le temoin rejoue le banc LUI-MEME, mute par sed comme l'est le lanceur :
+#   absent   : UN stub est renomme juste apres sa creation ; il ne se resout plus
+#              au dossier du banc, l'autre si ;
+#   mesure   : la fonction ne lance plus rien -- elle pose un marqueur et sort
+#              (code 42). Le vrai wsl.exe n'est donc jamais a portee du mutant,
+#              et le `command -v` du temoin CHERCHE un binaire sans l'appeler ;
+#   temoin   : la section presente est retiree (le mutant ne se rejoue pas) ;
+#   garde    : pour le controle, le bloc de garde est retire.
+# Avec la garde, le mutant s'arrete (code 1) sans poser le marqueur ; sans la
+# garde, il le pose. Sans ce controle, un temoin qui ne verrait jamais de
+# scenario passerait tout seul.
+BANC="$SCRIPT_DIR/$(basename -- "$0")"
+[ -r "$BANC" ] || { echo "banc introuvable ($0) : le temoin de garde lit son propre fichier"; exit 1; }
+GARDE="$TEST_DIR/garde"
+mkdir -p "$GARDE"
+
+# muter <nom> <stub absent> <avec|sans> : ecrit le banc mute dans $GARDE/<nom>.sh.
+# Chaque mutation doit porter. La presence de la garde ne s'y verifie PAS : c'est
+# le verdict qui la dit.
+muter() {
+  local cible="$GARDE/$1.sh" sedscript="$GARDE/$1.sed"
+  cat > "$sedscript" <<MUTATION
+s|^SCRIPT_DIR=.*|SCRIPT_DIR="$SCRIPT_DIR"|
+s|^chmod +x "\$TEST_DIR/bin/wsl.exe" "\$TEST_DIR/bin/sleep"$|&; mv "\$TEST_DIR/bin/$2" "\$TEST_DIR/bin/$2.absent"|
+s|^mesure() {\$|mesure() {\n  : > "\$MARQUEUR"; exit 42|
+/^# --- Temoin de la garde/,/^# --- fin du temoin de la garde/d
+MUTATION
+  if [ "$3" = sans ]; then
+    echo '/^# Un echec du temoin interdit/,/^fi$/d' >> "$sedscript"
+  fi
+  sed -f "$sedscript" "$BANC" > "$cible"
+  [ "$(grep -c -- "bin/$2.absent" "$cible")" = 1 ] || { echo "mutation du stub manquante ($1)"; exit 1; }
+  [ "$(grep -c 'exit 42' "$cible")" = 1 ] || { echo "mutation de mesure manquante ($1)"; exit 1; }
+  [ "$(grep -c 'Temoin de la garde' "$cible")" = 0 ] || { echo "mutation du temoin manquante ($1)"; exit 1; }
+  [ "$(grep -cF "SCRIPT_DIR=\"$SCRIPT_DIR\"" "$cible")" = 1 ] || { echo "mutation de SCRIPT_DIR manquante ($1)"; exit 1; }
+  if [ "$3" = sans ]; then
+    [ "$(grep -c 'Banc invalide' "$cible")" = 0 ] || { echo "garde encore la ($1)"; exit 1; }
+  fi
+}
+
+# joue <nom> <stub absent> <avec|sans> : execute le mutant et rend 0 s'il s'est
+# comporte comme attendu. Chaque comparaison porte sur sa propre ligne.
+joue() {
+  local marqueur="$GARDE/$1.marqueur" rc
+  MARQUEUR="$marqueur" bash "$GARDE/$1.sh" > "$GARDE/$1.out" 2> "$GARDE/$1.err"
+  rc=$?
+  grep -q "FAIL: temoin : $2 se resout" "$GARDE/$1.out" || return 1
+  if [ "$3" = avec ]; then
+    [ "$rc" = 1 ] || return 1
+    grep -q 'Banc invalide' "$GARDE/$1.err" || return 1
+    [ ! -e "$marqueur" ] || return 1
+    ! grep -q 'gestionnaire present' "$GARDE/$1.out" || return 1
+  else
+    [ "$rc" = 42 ] || return 1
+    [ -e "$marqueur" ] || return 1
+  fi
+  return 0
+}
+
+for stub in wsl.exe sleep; do
+  muter "avec-$stub" "$stub" avec
+  muter "sans-$stub" "$stub" sans
+  if joue "avec-$stub" "$stub" avec; then
+    ok "temoin de la garde : $stub non resolu -- arret avant tout scenario"
+  else
+    ko "temoin de la garde : $stub non resolu -- $(tr '\n' '|' < "$GARDE/avec-$stub.out")$(tr '\n' '|' < "$GARDE/avec-$stub.err")"
+  fi
+  if joue "sans-$stub" "$stub" sans; then
+    ok "controle negatif vu : sans la garde, $stub non resolu lance un scenario"
+  else
+    ko "controle negatif NON vu : sans la garde, $stub non resolu -- $(tr '\n' '|' < "$GARDE/sans-$stub.out")$(tr '\n' '|' < "$GARDE/sans-$stub.err")"
+  fi
+done
+# --- fin du temoin de la garde ---
 
 PASSES=$(grep -c '^PASS ' "$RESULTS")
 FAILS=$(grep -c '^FAIL ' "$RESULTS")

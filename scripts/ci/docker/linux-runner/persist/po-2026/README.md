@@ -200,17 +200,23 @@ Trois contraintes de forme, chacune heritee d'un piege deja paye sur ce lanceur 
   script, jamais dans la chaine transportee par `wsl.exe` ;
 - la borne est explicite : une attente sans fin masquerait une VM qui ne demarre pas.
 
-Banc : `test_run_pool_logon.sh` (neuf cas, cote hote sous Git Bash -- gestionnaire
-present, deux echecs puis reponse, gestionnaire jamais la, et deux controles
-negatifs). Controle negatif mesure : le meme banc sur un lanceur dont la pause vaut
-2 s, puis dont le message d'echec est retire, rend chacun **8 PASS / 1 FAIL**.
+Banc : `test_run_pool_logon.sh` (13 verdicts, cote hote sous Git Bash) : les
+scenarios du gestionnaire, leurs controles negatifs, puis le temoin de garde.
+Si `wsl.exe` ou `sleep` ne se resout pas au stub attendu, le banc s'arrete avant
+le premier scenario : sans son stub, un scenario peut appeler le vrai WSL ou
+attendre pour de vrai. Le temoin de garde rejoue une copie du banc, un stub
+absent a la fois : elle s'arrete sans lancer de scenario, et la meme copie sans
+la garde en lance un. Ces copies ne peuvent pas atteindre le vrai WSL. Controle
+negatif mesure : le meme banc sur un lanceur dont la pause vaut 2 s, puis dont
+le message d'echec est retire, rend chacun **12 PASS / 1 FAIL**.
 
 **Etat de la preuve, a lire tel quel.** Verifie le 25/11 : la sonde exercee sur un
-gestionnaire vivant (elle rend `255.4-1ubuntu8.18`), `bash -n` sur le script, et le
-banc (9 PASS / 0 FAIL). Le banc execute le lanceur avec des stubs : il ne dit rien
-du comportement **au boot**. Le lanceur du depot reprend la logique de la copie
-vivante ; seuls leurs commentaires different, pour distinguer les faits observes
-de l'hypothese. Non observe : le comportement au boot depuis le correctif. Sa preuve
+gestionnaire vivant (elle rend `255.4-1ubuntu8.18`) et `bash -n` sur le script.
+Le banc rend 13 PASS / 0 FAIL, rejoue le 26/11 avec le temoin de garde. Il execute le
+lanceur avec des stubs : il ne dit rien du comportement **au boot**. Le lanceur du
+depot reprend la logique de la copie vivante ; seuls leurs commentaires different,
+pour distinguer les faits observes de l'hypothese. Non observe : le comportement au
+boot depuis le correctif. Sa preuve
 est la premiere ouverture de session apres le prochain redemarrage -- une ligne
 `pool demarre` du jour dans `pool.log`, sans geste manuel.
 
