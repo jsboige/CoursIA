@@ -3644,11 +3644,8 @@ TRANCHE39: list[Guard] = [
 # est donc toujours verte -- c'est le levier A du mandat qui sera mesure
 # ainsi, une regle path-gatee a la fois.
 #
-# La mesure n'est pas reimplementee : `argv` appelle l'organe canonique (sa
-# sortie JSON sur stdout EST l'instantane), `delta_argv` compare les deux
-# instantanes. Un second compte de la surface serait un second chiffre qui
-# derive -- c'est exactement ce que l'instrument canonique a ete cree pour
-# corriger.
+# L'organe canonique produit l'instantane JSON ; `delta_argv` compare base et
+# tete. Aucun second compte de la surface ne peut ainsi diverger.
 #
 # `pre_argv` : la suite pytest du comparateur, qui contient le controle
 # positif END-TO-END (mesure reelle de l'organe sur un arbre, puis
