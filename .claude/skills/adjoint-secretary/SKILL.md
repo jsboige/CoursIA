@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (203 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (204 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
 
 1. **La porte `PR gate` est l'autorité de mergeabilité — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle mergeable ? ». Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque), jamais comme un bloqueur de listing.
 2. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP lui-même (`spawn(node, [mcp-wrapper.cjs])` + `initialize` / `notifications/initialized` / `tools/call roosync_messages {action:"send", to, subject, body, messageId}`) ; l'identité signée vient de `ROOSYNC_MACHINE_ID` + `ROOSYNC_WORKSPACE_ID` passés dans l'env du spawn (le `ROO_FLEET_ROSTER` ne sert qu'au partitionnement). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -332,6 +332,18 @@ Corollaire de mesure (c698) : **l'échéance annoncée dans le log est la bonne
 rejouées ont **toutes relu leurs checks** : **9 `INCONCLUSIVE` → 0**. Le budget de
 rejeux se pose donc à l'échéance lue dans le log, jamais à l'heure du verdict
 lui-même (tell 22).
+25. **Un `gh api --jq .body > fichier` écrit le corps d'erreur de l'API dans le
+fichier quand l'appel est refusé.** Mesure c698 : quota REST épuisé,
+`gh api .../pulls/28728 --jq .body > corps_publie.md` a produit **538 octets**
+tenant le JSON d'erreur 403 — et la relecture programmatique a répondu « structure
+OK » (le JSON d'erreur ne porte aucune clé `body`) et « identique à la source :
+False ». Sans le contrôle de **longueur** (16 267 attendus contre 538 mesurés), la
+mesure « corps publié » était **fausse** : un fichier d'erreur se lit comme un
+corps court. Corollaires : (a) ne jamais capturer une sortie d'API dans un fichier
+sans vérifier qu'elle ne contient ni « rate limit » ni un statut 403 ; (b) en cas
+de 403, basculer sur GraphQL — compteur distinct — pour relire le corps publié ;
+(c) la garde « longueur ≥ 100 » du gh-posting-hygiene **n'attrape pas** ce cas
+(538 > 100) : la garde utile est **longueur attendue contre longueur mesurée**.
 
 ## Émission de dossiers — garde-fous obligatoires
 
