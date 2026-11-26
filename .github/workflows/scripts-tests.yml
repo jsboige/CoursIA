@@ -666,6 +666,7 @@ jobs:
             pytest \
             scripts/tests \
             scripts/ci/tests \
+            scripts/curriculum/tests \
             tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
