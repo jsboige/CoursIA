@@ -730,3 +730,6 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Py
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Python.ipynb	2026-11-25	myia-po-2024:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Rust.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Capstone-Langlands-Rust.ipynb	2026-11-25	myia-po-2024:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-Capstone-MIMO-Python.ipynb	2026-11-25	myia-po-2024:CoursIA-2
+MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb	MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb	2026-11-25	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT.ipynb	MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT-Python.ipynb	2026-11-25	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb	MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop-Python.ipynb	2026-11-25	myia-po-2024:CoursIA

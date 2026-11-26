@@ -30,7 +30,7 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
-    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL",
+    "GameTheory", "Sudoku", "Probas", "Physique", "BioMedecine", "IIT", "RL",
 ]
 
 
