@@ -29,6 +29,11 @@
 #
 # Les cellules 8, 9 et 10 sont les trois exercices (C.1) : elles rendent le
 # même message sur les trois côtés et sont comparées en égalité stricte.
+#   - cellule 4 : le libelle de sortie de la phase d'enumeration differe entre les cotes.
+#     Rust nomme la phase « Affectations faisables » (l'exclusion ne prouve pas la non-dominance,
+#     c'est le filtre qui la teste) ; les cotes de reference conservent le libelle herite
+#     « Pareto : N solutions non-dominnees trouvees ». La mesure compare donc le NOMBRE
+#     d'affectations (groupe capture commun aux trois motifs), pas le libelle.
 - name: "Z3-19-Optimization-Lexicographic"
   family: "SymbolicAI/SMT/Z3-API"
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-Python.ipynb
@@ -121,21 +126,21 @@
           pattern: "(?m:^(  -> Cout secondaire[^\\r\\n]*)\\r?$)"
           transform: text
     - id: c4_compte_solutions
-      description: "Cellule 4 — nombre de solutions énumérées par la stratégie d'exclusion (ligne ancrée)"
+      description: "Cellule 4 — nombre d'affectations faisables énumérées par la stratégie d'exclusion (ligne ancrée ; le libellé diffère côté Rust — « Affectations faisables » —, c'est le nombre qui est comparé)"
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 4
-          pattern: "(?m:^(Pareto : 7 solutions non-dominnees trouvees)\\r?$)"
+          pattern: "(?m:^Pareto : (\\d+) solutions non-dominnees trouvees\\r?$)"
           transform: text
         csharp:
           cell: 4
-          pattern: "(?m:^(Pareto : 7 solutions non-dominnees trouvees)\\r?$)"
+          pattern: "(?m:^Pareto : (\\d+) solutions non-dominnees trouvees\\r?$)"
           transform: text
         rust:
           cell: 4
-          pattern: "(?m:^(Pareto : 7 solutions non-dominnees trouvees)\\r?$)"
+          pattern: "(?m:^Affectations faisables : (\\d+) enumeratees[^\\r\\n]*\\r?$)"
           transform: text
     - id: c4_tableau_chiffres
       description: "Cellule 4 — suite des nombres du tableau du front de Pareto (impact puis coût des 7 solutions, dans l'ordre)"
