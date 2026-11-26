@@ -61,6 +61,27 @@ def test_label_candidate_delivered():
     assert etat(lec, 1).ecart == "LABEL" and etat(lec, 2).ecart is None
 
 
+def test_label_pause_exclut_le_grain_quelle_que_soit_la_casse():
+    """I5 (#28114) : la pause est une DONNEE (un label), pas une memoire.
+
+    Le nom GitHub est libre : `Pause` et `pause` sont le meme label. Un grain
+    qui ne porte pas le label reste servable -- la regle ne vise que lui.
+    """
+    lec = lecture([issue(1, labels=["pause"]), issue(2, labels=["Pause"]),
+                   issue(3, labels=["bug"])])
+    assert etat(lec, 1).ecart == "LABEL" and etat(lec, 2).ecart == "LABEL"
+    assert "pause" in etat(lec, 1).motif
+    assert etat(lec, 3).ecart is None
+
+
+def test_le_role_d_un_grain_en_pause_est_attente():
+    """La pause est une ATTENTE ; l'urne de cloture reste l'urne."""
+    from coordination import visit_coverage
+    lec = lecture([issue(1, labels=["pause"]), issue(2, labels=["candidate-delivered"])])
+    assert visit_coverage.role(etat(lec, 1)) == "attente"
+    assert visit_coverage.role(etat(lec, 2)) == "urne"
+
+
 def test_gel_par_le_body_et_non_par_une_mention():
     lec = lecture([issue(1, body="[FROZEN] attente du user\n\nContexte"),
                    issue(2, body="Contexte : on parle ici du marqueur [FROZEN] en passant.")])
@@ -189,6 +210,50 @@ def test_relachee_trois_jours_puis_resservie():
     assert etat(lec, 4).ecart == "RELACHEE"    # ma propre lane l'a rendue : pas de retour
     assert etat(lec, 5).ecart is None          # un [NOT-DELIVERED] la rouvre
     assert etat(lec, 6).ecart == "RELACHEE"    # un conteneur rendu aussi
+
+
+def test_pause_explicite_ecarte_sans_delai():
+    """#27726 : un [RELEASED] qui porte `attend: #N` ecarte le grain SANS
+    delai. Au-dela des 3 jours de RELACHEE, la condition tient encore : la
+    cible citee (#27553) est ouverte."""
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- en attente du GO\nattend: #27553")
+    lec = lecture([issue(1, comments=[pause]), issue(27553),
+                   issue(2, comments=[com(24 * 5,
+                                          f"[RELEASED] lane {AUTRE} -- attente\nattend: Q-c.2344a")])])
+    e1 = etat(lec, 1)
+    assert e1.ecart == "PAUSE"
+    assert "attend #27553" in e1.motif      # le motif nomme la condition
+    assert etat(lec, 2).ecart == "PAUSE"    # une question user : meme code
+
+
+def test_pause_levee_et_reprise_par_un_marqueur_posterieur():
+    """La condition se leve quand la cible citee est fermee ; un marqueur
+    posterieur rend le grain de nouveau servable."""
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- attente\nattend: #27553")
+    # la cible (#27553) n'est plus dans la lecture : elle est fermee -> levee
+    assert etat(lecture([issue(1, comments=[pause])]), 1).ecart is None
+    # la cible est ouverte -> la pause tient
+    lec = lecture([issue(1, comments=[pause]), issue(27553)])
+    assert etat(lec, 1).ecart == "PAUSE"
+    # un marqueur posterieur : l'issue redevient servable
+    lec = lecture([issue(1, comments=[pause, com(2, f"[CLAIMED] lane {AUTRE} -- je reprends")]),
+                   issue(27553)])
+    assert etat(lec, 1).ecart == "RECLAMEE"
+
+
+def test_pause_une_pr_ciblee_et_le_role_d_attente():
+    """La cible peut etre une PR ouverte ; le role du code PAUSE est
+    l'attente (visit_coverage), pas un role de service."""
+    from coordination import visit_coverage as vc
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- attente du merge\nattend: #27900")
+    prs = [{"number": 27900, "title": "Fix(x,#1): y", "body": f"Grain: x -- lane {AUTRE}"}]
+    lec = lecture([issue(1, comments=[pause])], prs=prs)
+    assert etat(lec, 1).ecart == "PAUSE"     # la PR citee est encore ouverte
+    assert etat(lecture([issue(1, comments=[pause])]), 1).ecart is None  # fermee -> levee
+    e = tr.Etat(numero=1, titre="Grain", labels=[], cree_le="2026-10-01T00:00:00Z",
+                 parent=None, famille=1, conteneur=False, consolidation=False,
+                 ecart="PAUSE", motif="pause de x il y a 5.0 j : attend #27900")
+    assert vc.role(e) == "attente"
 
 
 def test_livree_info_avec_lane_avant_le_mot():
@@ -541,8 +606,13 @@ def test_cli_json_sur_un_dossier(tmp_path, capsysbinary):
     assert code == 0 and len(sortie["grains"]) == 6
     assert sortie["vos_prs"] == [{"numero": 900, "titre": "Ma PR", "age_j": 1.2}]
     assert sortie["ecartees"]["COUVERTE"] == [{"numero": 1, "motif":
-                                               "votre PR #900 la cite : portez-la au merge"}]
+                                               "votre PR #900 la cite : portez-la au merge",
+                                               "feuille": True}]
     assert sortie["lecture"]["issues"] == 7 and sortie["maintenant"] == tr._iso(NOW)
+    # L'assiette (#25082) : le tirage dit combien de feuilles il sert.
+    assert (sortie["lecture"]["servables_feuilles"] + sortie["lecture"]["servables_conteneurs"]
+            == sortie["lecture"]["servables"])
+    assert sortie["lecture"]["servables_conteneurs"] == 3  # les 3 familles de l'EPIC
     assert set(sortie) >= {"grains", "vos_prs", "ecartees", "lecture"}
 
 
@@ -641,14 +711,43 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # elle-meme : le diff ET l'etat de la PR -- extrait de tapis_diff.py pour
 # tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
 # son conteneur, son echec et la mise a plat d'une issue -- extrait de
+# gh_bulk.py pour tenir le plafond, 19/11) ; tapis_non_tente.py la
+# vingt-deuxieme (le grain NON TENTE : propose, jamais qualifie -- ni verdict
+# terminal, ni refus de lecture ; il ne fige pas le curseur, 19/11) ;
+# tapis_etat_schema.py la vingt-troisieme (le SCHEMA de l'etat : les classes,
+# l'etat neuf, les accesseurs, extrait de tapis_etat.py pour tenir le
+# plafond, 19/11) ; tapis_etat_commit.py la vingt-quatrieme (le COMMIT qui a
+# ecrit l'etat : l'etat est lie au code qui l'a produit, 19/11) ;
+# tapis_entrelace.py la vingt-cinquieme (le LOT entrelace : primaire et
+# reprise alternes, la reprise passe devant un tour sur deux, 19/11).
 # gh_bulk.py pour tenir le plafond, 19/11).
-# 18/11) ; tapis_dernier_grain.py la vingt-deuxieme (le DERNIER GRAIN d'une issue --
+# 18/11) ; tapis_dernier_grain.py la vingt-sixieme (le DERNIER GRAIN d'une issue --
 # grain, passage, absence etablie ou non mesurable -- et la regle des SEANCES,
 # extraite de tapis_equilibre.py pour que le module du classement tienne son
-# plafond, #27242, 19/11) ; tapis_citations.py la vingt-troisieme (les citations des
+# plafond, #27242, 19/11) ; tapis_citations.py la vingt-septieme (les citations des
 # PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
 # belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
-# passe pas devant les premieres visites, #27338).
+# passe pas devant les premieres visites, #27338) ; tapis_acceptance.py la
+# vingt-cinquieme (les criteres d'acceptation de #25082 mesures sur le service
+# effectif, 20/11) ; tapis_assiette.py la vingt-sixieme (la composition du pool :
+# feuilles contre conteneurs, #25082, 21/11) ; tapis_attente.py la vingt-septieme
+# (les ecarts d'ATTENTE : la remise de main et la pause explicite -- extrait de
+# tapis_rapide.py pour tenir le plafond quand la fusion avec main y ajoute les
+# ecarts de fond, #27726, 22/11) ; tapis_leger_texte.py la vingt-huitieme (la
+# SORTIE TEXTE de la voie leger -- extraite de tapis_leger.py pour que la greffe
+# du cap de livraisons tienne le plafond, #21067, 22/11) ;
+# tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
+# sur la voie de tirage reelle, #21067, 22/11) ; tapis_labels.py la
+# trentieme (les EXCLUSIONS EN DONNEES : la table des labels qui ecartent un
+# grain -- l'urne de cloture et la pause, #28114, 23/11) ;
+# tapis_occupation.py la trente-et-unieme (l'OCCUPATION d'un grain : l'urne de
+# cloture et la PR qui le tient, #28090, 22/11) ; tapis_leger_rapport.py la
+# trente-deuxieme (le RAPPORT du tirage leger -- extrait pour que le cumul des deux
+# organes du tapis tienne le plafond, #28090 + #27223, 22/11) ;
+# tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
+# de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
+# 22/11).
+
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -661,6 +760,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_reverif.py", 120),
                                               ("gh_issues.py", 80),
                                               ("tapis_leger.py", 220),
+                                              ("tapis_repli.py", 160),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),
@@ -670,7 +770,12 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80),
                                               ("tapis_ancre.py", 140),
-                                              ("tapis_etat.py", 115),
+                                              ("tapis_avance.py", 60),
+                                              ("tapis_non_tente.py", 60),
+                                              ("tapis_etat.py", 95),
+                                              ("tapis_etat_schema.py", 80),
+                                              ("tapis_etat_commit.py", 100),
+                                              ("tapis_entrelace.py", 40),
                                               ("tapis_retry.py", 50),
                                               ("tapis_tranche.py", 70),
                                               ("tapis_verdict.py", 50),
@@ -679,12 +784,24 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_lecture.py", 70),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
+                                              ("tapis_preuve.py", 110),
+                                              ("tapis_public.py", 40),
                                               ("tapis_dernier_grain.py", 260),
                                               ("tapis_citations.py", 40),
                                               ("belt_equite.py", 110),
-                                              ("tapis_preuve.py", 110),
+                                              ("tapis_tete.py", 30),
                                               ("tapis_ecarts_fond.py", 50),
-                                              ("tapis_voie_leger.py", 40)])
+                                              ("tapis_voie_leger.py", 40),
+                                              ("tapis_acceptance.py", 300),
+                                              ("tapis_assiette.py", 200),
+                                              ("tapis_attente.py", 60),
+                                              ("tapis_leger_texte.py", 80),
+                                              ("tapis_cap_livraisons.py", 160),
+                                              ("tapis_labels.py", 60),
+                                              ("tapis_occupation.py", 298),
+                                              ("tapis_leger_rapport.py", 50),
+                                              ("tapis_leger_texte_occupation.py", 33)])
+
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

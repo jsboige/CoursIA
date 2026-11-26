@@ -62,7 +62,7 @@ récupérer — avec le distinguo explicite matrice (c.728y+34) vs synthèse
 |---|---|---|---|
 | **Saillance** $s$ | Ce qui est perceptiblement présent dans l'écoulement | conceptuel, déjà nommé | socle strate 6 (Nom = saillance 0-valent) |
 | **Prégnance** $\pi$ | Ce qui donne de l'importance (charge, valence) | conceptuel, déjà nommé | socle strate 6 (Verbe = prégnance 1-4 actants) |
-| **Représentation** $q$ | Ce que le système croit de la cause/du futur ; `p̂` = cas simple (croyance réduite à un point) | [ICT-10](ICT-10-CatastropheGrammar-Python.ipynb), [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb) | déjà mesurée (cf. lacet de prédation Ch.4 §C) |
+| **Représentation** $q$ | Ce que le système croit de la cause/du futur ; `p̂` = cas simple (croyance réduite à un point) | [ICT-10](ICT-10-CatastropheGrammar-Python.ipynb), [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb) | déjà mesurée (cf. lacet de prédation Ch.4 §C) |
 | **Workspace** $W$ | Ce qui rend des composantes disponibles à d'autres mécanismes | [ICT-24](ICT-24-WorkspaceIgnition-Python.ipynb) (livré Gates 22-23, dissociation documentée) | transversal |
 
 Le présent document ne reproduit pas la matrice

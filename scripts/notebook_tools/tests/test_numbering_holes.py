@@ -60,6 +60,16 @@ class TestMeasurePaths:
         m = nh.measure_paths(["S/01-Freeform.ipynb", "S/02-Other.ipynb"])
         assert m["prefix"] is None and m["max"] is None and m["holes"] == []
 
+    def test_documented_palier_excluded_from_holes_and_orphans(self):
+        # Un palier (nu scindé en accrétions 07a/07b, le nu n'a jamais existé)
+        # est hors mesure : ni trou 7, ni 07a/07b orphelines.
+        m = nh.measure_paths(
+            ["T/T-07a-C-Python.ipynb", "T/T-07b-D-Python.ipynb",
+             "T/T-01-A-Python.ipynb", "T/T-08-E-Python.ipynb"],
+            palier_exceptions=frozenset({7}))
+        assert 7 not in m["holes"]
+        assert m["orphan_letters"] == []
+
     def test_explicit_prefix_overrides_dominant(self):
         paths = ["S/S-01-A-Python.ipynb", "S/S-02-B-Python.ipynb",
                  "S/T-01-X-Python.ipynb"]
@@ -95,6 +105,21 @@ class TestMeasureRoot:
         assert m["root"] == "MyIA.AI.Notebooks/Sudoku"
         assert m["max"] == 3 and m["holes"] == []
         assert m["notebook_count"] == 3  # le Sudoku2 (collision de préfixe) est exclu
+
+    def test_tweety_palier_07_excluded_via_root_lookup(self):
+        # measure_root applique PALIER_EXCEPTIONS[racine] : le palier 07 de
+        # Tweety (07a/07b, nu jamais existé) ne rend ni trou 7 ni orphelines.
+        all_ipynb = [
+            "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-A.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-B.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-C.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-D.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-E.ipynb",
+        ]
+        m = nh.measure_root(
+            all_ipynb, "MyIA.AI.Notebooks/SymbolicAI/Tweety")
+        assert 7 not in m["holes"]
+        assert m["orphan_letters"] == []
 
 
 class TestOutputArtifact:
