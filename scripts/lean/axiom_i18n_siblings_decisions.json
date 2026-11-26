@@ -1,7 +1,7 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-23T01:04:08Z",
-  "generated-by": "myia-po-2024:CoursIA",
+  "generated-at": "2026-11-26T04:29:55Z",
+  "generated-by": "myia-po-2027:CoursIA-2",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
   "lakes": [
@@ -291,7 +291,7 @@
       "reason": "opt-in sur : la surface `_en` ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
       "mode": "WILDCARD",
       "i18n-modules": 24,
-      "i18n-declarations": 810
+      "i18n-declarations": 813
     },
     {
       "lake": "linear",
@@ -311,6 +311,14 @@
     },
     {
       "lake": "busybeaver",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
+    },
+    {
+      "lake": "covering",
       "decision": "false",
       "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
       "mode": "WILDCARD",
