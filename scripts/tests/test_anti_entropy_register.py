@@ -1497,6 +1497,30 @@ def f():
     return 2
 '''
 
+# Une chaine triple-quotee dont seule la SECONDE ligne change : le contenu
+# du jeton fait partie du code, donc l'instrument a change (reserve du
+# 25/11, #28259). Ne garder que la ligne d'ouverture normaliserait les
+# deux versions a l'identique.
+_SOURCE_CHAINE_MULTILIGNE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire
+TEXTE = """ligne une
+ligne deux
+"""
+def f():
+    return TEXTE
+'''
+
+_SOURCE_CHAINE_MULTILIGNE_RETOUCHEE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire
+TEXTE = """ligne une
+ligne deux retouchee
+"""
+def f():
+    return TEXTE
+'''
+
 
 def _faux_blobs(monkeypatch, sources: dict[str, str]) -> None:
     """Sert des contenus de blob a la place de git."""
@@ -1525,6 +1549,20 @@ def test_instrument_inchange_detecte_une_vraie_ligne_de_code(monkeypatch):
     """Temoin vert : une vraie ligne de code changee fait deux instruments."""
     _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
                               "blob-2": _SOURCE_CODE})
+    assert aer.instrument_inchange("s@blob-2", "s@blob-1") is False
+
+
+def test_instrument_inchange_detecte_le_contenu_d_un_jeton_multiligne(monkeypatch):
+    """Temoin vert : le CONTENU d'une chaine multiligne fait l'instrument.
+
+    Le jeton s'etend sur plusieurs lignes : ne conserver que sa ligne
+    d'ouverture faisait normaliser a l'identique deux scripts dont la
+    seule seconde ligne de la chaine differe (reserve du 25/11, #28259).
+    """
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_CHAINE_MULTILIGNE,
+                              "blob-2": _SOURCE_CHAINE_MULTILIGNE_RETOUCHEE})
+    assert aer._code_normalise(_SOURCE_CHAINE_MULTILIGNE) \
+        != aer._code_normalise(_SOURCE_CHAINE_MULTILIGNE_RETOUCHEE)
     assert aer.instrument_inchange("s@blob-2", "s@blob-1") is False
 
 

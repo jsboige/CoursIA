@@ -727,15 +727,24 @@ def _lignes_avec_code(source: str) -> list[str] | None:
     chaines et les docstrings restent -- les retirer changerait le sens
     d'un instrument.
 
+    Un jeton qui s'etend sur plusieurs lignes (chaine triple-quotee,
+    docstring) conserve **tout** son contenu, pas seulement sa ligne de
+    depart : ne garder que l'ouverture faisait normaliser a l'identique
+    deux scripts dont la **seconde** ligne d'une chaine differe, et
+    l'instrument paraissait alors inchange (reserve du 25/11, #28259).
+
     `None` quand `tokenize` ne sait pas lire la source (script non Python,
     fichier tronque) : l'appelant replie sur le filtre ligne-a-ligne.
     """
     try:
         jetons = tokenize.generate_tokens(io.StringIO(source).readline)
-        numeros = {jeton.start[0] for jeton in jetons
-                   if jeton.type not in (tokenize.COMMENT, tokenize.NL,
-                                         tokenize.NEWLINE, tokenize.INDENT,
-                                         tokenize.DEDENT, tokenize.ENDMARKER)}
+        numeros = set()
+        for jeton in jetons:
+            if jeton.type in (tokenize.COMMENT, tokenize.NL,
+                               tokenize.NEWLINE, tokenize.INDENT,
+                               tokenize.DEDENT, tokenize.ENDMARKER):
+                continue
+            numeros.update(range(jeton.start[0], jeton.end[0] + 1))
     except (tokenize.TokenError, IndentationError, SyntaxError, ValueError):
         return None
     lignes = source.splitlines()
