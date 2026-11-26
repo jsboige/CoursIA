@@ -1,0 +1,51 @@
+---
+title: "Calcul scientifique — forme close, mesure, preuve"
+subtitle: "Série pédagogique — un même problème traité par le calcul exact, la mesure numérique et l'énoncé formel"
+description: "Série Calcul scientifique du dépôt CoursIA — une équation différentielle linéaire à coefficient variable : forme close obtenue et contrôlée avec SymPy, erreur d'un solveur SciPy mesurée contre cette forme aux tolérances successives, seuil de stabilité d'un schéma explicite, et énoncé Lean qui certifie la conséquence qualitative de la même équation."
+listing:
+  - id: calcul
+    contents: "Calcul-*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+---
+
+::: {.series-banner}
+**Un calcul ne dit pas ce qu'il prouve.** La forme close, l'erreur mesurée et l'énoncé formel sont trois réponses à trois questions différentes. Cette série les met côte à côte sur un même problème, et dit à chaque étape laquelle parle.
+:::
+
+## Vue d'ensemble
+
+| Carnet | Problème | Ce qui sert de vérité |
+|--------|----------|-----------------------|
+| **Calcul-01** | $C'(t) = -k_0\,\bigl(1+\varepsilon\cos(\omega t)\bigr)\,C(t)$, avec $C(0) = C_0$ | La forme close obtenue symboliquement et contrôlée par substitution ; puis l'énoncé Lean qui certifie l'invariance de la solution nulle |
+
+**Kernels** : `python3` · **GPU** : non requis · **Prérequis** : équations différentielles du premier ordre, Python de base.
+
+## Le pilote
+
+Le carnet part d'une équation d'une ligne : un refroidissement dont le coefficient d'échange est modulé périodiquement. Il en obtient la forme close, soumet au contrôle un candidat faux pour montrer que ce contrôle discrimine, mesure l'erreur d'un solveur adaptatif sur cinq tolérances, exhibe un pas fixe qui diverge et un autre qui reste stable sans être précis, puis lit dans le dépôt un théorème Lean sur la même équation — et nomme ce que ce théorème ne dit pas.
+
+::: {#calcul}
+:::
+
+## Démarrage rapide
+
+```bash
+python -m venv .venv
+source .venv/bin/activate     # ou .venv\Scripts\activate sous Windows
+pip install numpy scipy sympy matplotlib
+jupyter notebook MyIA.AI.Notebooks/CalculScientifique/
+```
+
+## Ressources complémentaires
+
+- **README de série** : [CalculScientifique/README.md](README.md) — objectifs, parcours, installation.
+- **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire de la série avec noyaux et besoins matériels.
+- **Séries connexes** :
+  - [Physique](../Physique/index.qmd) — la même démarche de vérification contre une vérité exacte, sur des équations aux dérivées partielles.
+  - [ML/learning_theory_lean](../ML/learning_theory_lean/README.md) — les énoncés formels du dépôt, dont celui que cite le carnet ; [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) pour apprendre à les lire.
+
+## Note sur le rendu Quarto
+
+Les carnets de la série sont en Python natif et rendus à partir de leurs sorties committées (règle C.2), sans ré-exécution par Quarto. Pour exécuter localement : noyau `python3` et les bibliothèques ci-dessus.
