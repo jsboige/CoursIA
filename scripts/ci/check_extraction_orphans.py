@@ -45,7 +45,11 @@ Limites documentees : une mention de PROSE sans extension (le stem du
 fichier) n'est pas attrapee ; les formes en backslash ne sont pas cherchees
 (le depot ecrit ses chemins en slashs) ; les artefacts derives regeneres par
 l'automatisation (COURSE_CATALOG.generated.*, translations/) sont exclus --
-leur regeneration a lieu au merge, pas dans la PR (mesure #27538).
+leur regeneration a lieu au merge, pas dans la PR (mesure #27538). Une cible
+URL-encodee (`serie/My%20Notebook.ipynb`) echappe aussi a la preselection : la
+recherche `git grep -F` porte sur le basename litteral, espaces compris, qui
+n'apparait pas dans le blob encode -- mesure du verdict Hermes du 24/11 sur
+cette PR (17 chemins avec espaces dans l'arbre, 0 lien `%20.ipynb` trouve).
 
 Sorties : rc=0 propre ; rc=1 orphelins trouves ; rc=2 panne d'instrument
 (git injoignable, rev introuvable). --self-test : pre-controle du moteur
