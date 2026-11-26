@@ -832,6 +832,42 @@ def quarantine_root_refusal(root: Path, repo_root: Optional[str],
     return None
 
 
+def quarantine_root_ownership_refusal(root: Path) -> Optional[str]:
+    """Motif de refus quand la racine n'est PAS une racine de l'organe.
+
+    Le marqueur `.prune-quarantine` est la preuve de propriete : la purge
+    est fail-closed dessus (une racine qui ne le porte pas n'est jamais
+    purgee). ADOPTER une racine preexistante -- y ecrire le marqueur --
+    la declarerait purgeable, et une purge ulterieure retirerait alors SES
+    enfants, qui ne sont pas les notres.
+
+    Fail-closed : une racine qui existe SANS marqueur et qui porte un
+    contenu ETRANGER (autre chose que notre propre sous-repertoire
+    d'archives) n'est pas adoptee. Le refus est rendu AVANT toute
+    ecriture : ni marqueur, ni sous-repertoire, et le contenu existant
+    reste intact.
+
+    Deux cas restent adoptables, et aucun ne peut endangered un enfant
+    etranger : une racine ABSENTE (l'organe la cree, et sa creation est
+    un acte de propriete) et une racine qui ne porte QUE son propre
+    sous-repertoire d'archives (relique d'un arret entre la creation du
+    sous-repertoire et la pose du marqueur -- aucune donnee etrangere a
+    proteger).
+    """
+    try:
+        if not root.exists():
+            return None
+        if (root / QUARANTINE_MARKER).exists():
+            return None
+        for child in root.iterdir():
+            if child.name == PR_OPEN_ARCHIVE_SUBDIR:
+                continue
+            return f"quarantine-root-not-ours:{root}"
+    except OSError as exc:
+        return f"quarantine-root-unreadable:{exc}"
+    return None
+
+
 def _submodule_gitdirs(modules_dir: Path) -> list[Path]:
     """Les gitdirs de sous-modules contenus dans `modules/`.
 
@@ -3385,7 +3421,12 @@ def archive_worktree_head(
     Fail-closed, dans l'ordre : meme garde de racine que la voie sous-modules
     (`quarantine_root_refusal` -- une racine DANS le depot hebergeur ou DANS
     le worktree retire rangerait l'archive dans un arbre qu'on supprime, et
-    dans le worktree rendrait son propre retrait impossible) ; base
+    dans le worktree rendrait son propre retrait impossible) ; racine qui
+    n'est pas une racine de l'organe (`quarantine_root_ownership_refusal` --
+    une racine preexistante SANS marqueur et portant un contenu etranger
+    n'est pas adoptee : y poser le marqueur la declarerait purgeable, et
+    une purge ulterieure retirerait ses enfants, qui ne sont pas les
+    notres) ; base
     irresolvable -> refus (jamais le repli sur un bundle complet) ; tete
     incluse dans la base -> MANIFEST seul, `git bundle` refusant une plage
     vide ; bundle non verifie -> refus, et le residu de la destination est
@@ -3394,6 +3435,9 @@ def archive_worktree_head(
     refusal = quarantine_root_refusal(quarantine_root, repo_root, wt.path)
     if refusal is not None:
         return False, refusal, None
+    ownership = quarantine_root_ownership_refusal(quarantine_root)
+    if ownership is not None:
+        return False, ownership, None
     sub_root = quarantine_root / PR_OPEN_ARCHIVE_SUBDIR
     dest = sub_root / dest_name
     try:

@@ -3213,6 +3213,52 @@ class TestArchiveWorktreeHead:
             "precedent"
         assert [p.name for p in dest.iterdir()] == ["MANIFEST.txt"]
 
+    def test_preexisting_unmarked_root_is_refused_before_any_write(
+            self, tmp_path):
+        """Une racine qui existe SANS le marqueur de l'organe n'est pas une
+        racine de l'organe. L'ADOPTER (y ecrire le marqueur) la declarerait
+        purgeable : une purge ulterieure retirerait alors SES enfants, qui
+        ne sont pas les notres.
+
+        Refus nomme AVANT toute ecriture : le fichier temoin preexistant
+        reste intact, aucun marqueur n'est pose, aucun sous-repertoire
+        d'archives n'est cree.
+        """
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        q.mkdir()
+        witness = q / "witness.txt"
+        witness.write_text("contenu etranger", encoding="utf-8")
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-7", repo_root=str(super))
+        assert ok is False
+        assert msg.startswith("quarantine-root-not-ours:"), msg
+        assert info is None
+        # Le contenu etranger est intact : aucune ecriture n'a eu lieu.
+        assert witness.read_text(encoding="utf-8") == "contenu etranger"
+        assert not (q / pmw.QUARANTINE_MARKER).exists()
+        assert not (q / pmw.PR_OPEN_ARCHIVE_SUBDIR).exists()
+        assert sorted(p.name for p in q.iterdir()) == ["witness.txt"]
+        # Le worktree n'est pas retire : l'echec d'archive est un refus.
+        assert wt.is_dir()
+
+    def test_preexisting_root_with_only_our_own_archive_is_adopted(
+            self, tmp_path):
+        """Cas tolere : la racine ne porte QUE le sous-repertoire d'archives
+        de l'organe (relique d'un arret entre sa creation et la pose du
+        marqueur). Aucun contenu etranger a proteger : l'organe reprend la
+        main et pose le marqueur, sans quoi la purge la refuserait
+        toujours."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        (q / pmw.PR_OPEN_ARCHIVE_SUBDIR).mkdir(parents=True)
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-8", repo_root=str(super))
+        assert ok, msg
+        assert info["commits_outside_basis"] == 1
+        assert (q / pmw.QUARANTINE_MARKER).is_file()
+        assert (q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-8").is_dir()
+
 
 class TestPrOpenArchiveApply:
     """L'apply ne retire JAMAIS un worktree dont la tete n'a pas ete
