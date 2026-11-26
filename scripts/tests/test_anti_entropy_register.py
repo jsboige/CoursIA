@@ -1497,6 +1497,21 @@ def f():
     return 2
 '''
 
+# Un script SHELL dont une ligne contient une parenthese ouvrante : le
+# tokeniseur Python echoue (TokenError), et les deux versions ne different
+# que par l'INDENTATION de cette ligne (reserve du 26/11, #28259).
+_SOURCE_SHELL = '''#!/bin/sh
+cat <<'EOF'
+echo (une ligne
+EOF
+'''
+
+_SOURCE_SHELL_RETOUCHE = '''#!/bin/sh
+cat <<'EOF'
+  echo (une ligne
+EOF
+'''
+
 # Une chaine triple-quotee dont seule la SECONDE ligne change : le contenu
 # du jeton fait partie du code, donc l'instrument a change (reserve du
 # 25/11, #28259). Ne garder que la ligne d'ouverture normaliserait les
@@ -1539,17 +1554,55 @@ def _faux_blobs(monkeypatch, sources: dict[str, str]) -> None:
 
 def test_instrument_inchange_ignore_un_commentaire_retouche(monkeypatch):
     """Temoin rouge : deux versions qui ne different que par un commentaire
-    designent le MEME instrument."""
+    designent le MEME instrument.
+
+    Le script est un **Python** (`s.py`) : c'est `tokenize` qui distingue le
+    code d'un commentaire. Hors Python, la comparaison est exacte (voir
+    `test_le_code_d_un_script_shell_est_compare_exactement`).
+    """
     _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
                               "blob-2": _SOURCE_COMMENTAIRE})
-    assert aer.instrument_inchange("s@blob-2", "s@blob-1") is True
+    assert aer.instrument_inchange("s.py@blob-2", "s.py@blob-1") is True
 
 
 def test_instrument_inchange_detecte_une_vraie_ligne_de_code(monkeypatch):
     """Temoin vert : une vraie ligne de code changee fait deux instruments."""
     _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
                               "blob-2": _SOURCE_CODE})
-    assert aer.instrument_inchange("s@blob-2", "s@blob-1") is False
+    assert aer.instrument_inchange("s.py@blob-2", "s.py@blob-1") is False
+
+
+def test_le_code_d_un_script_shell_est_compare_exactement(monkeypatch):
+    """Le temoin shell demande par la reserve du 26/11 (#28259).
+
+    Un here-document dont une ligne contient une parenthese ouvrante fait
+    echouer le tokeniseur Python : le repli ligne-a-ligne applique `strip()`
+    a chaque ligne, et rendait identiques deux documents dont cette ligne
+    differe par son indentation -- alors que le shell imprime des octets
+    differents. Hors Python, la comparaison est donc **exacte**.
+    """
+    assert aer._lignes_avec_code(_SOURCE_SHELL) is None, (
+        "le tokeniseur doit echouer sur ce source : le temoin perdrait son sens")
+    assert aer._code_normalise(_SOURCE_SHELL, python=False) \
+        != aer._code_normalise(_SOURCE_SHELL_RETOUCHE, python=False), (
+        "hors Python, deux sources qui different par l'indentation sont "
+        "deux instruments")
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_SHELL,
+                              "blob-2": _SOURCE_SHELL_RETOUCHE})
+    assert aer.instrument_inchange("s.sh@blob-2", "s.sh@blob-1") is False, (
+        "le script shell a change : l'instrument a change")
+
+
+def test_un_python_que_le_tokeniseur_ne_sait_pas_lire_est_compare_exactement():
+    """Meme regle pour un Python illisible : la comparaison est exacte.
+
+    Sans elle, `strip()` par ligne rendrait identiques deux sources qui ne
+    different que par l'indentation (reserve du 26/11, #28259).
+    """
+    assert aer._code_normalise(_SOURCE_SHELL) == _SOURCE_SHELL, (
+        "un Python que le tokeniseur ne sait pas lire est compare tel quel")
+    assert aer._code_normalise(_SOURCE_SHELL) \
+        != aer._code_normalise(_SOURCE_SHELL_RETOUCHE)
 
 
 def test_instrument_inchange_detecte_le_contenu_d_un_jeton_multiligne(monkeypatch):

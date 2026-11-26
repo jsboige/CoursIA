@@ -734,7 +734,8 @@ def _lignes_avec_code(source: str) -> list[str] | None:
     l'instrument paraissait alors inchange (reserve du 25/11, #28259).
 
     `None` quand `tokenize` ne sait pas lire la source (script non Python,
-    fichier tronque) : l'appelant replie sur le filtre ligne-a-ligne.
+    fichier tronque) : l'appelant compare alors les octets (reserve du
+    26/11, #28259).
     """
     try:
         jetons = tokenize.generate_tokens(io.StringIO(source).readline)
@@ -752,18 +753,26 @@ def _lignes_avec_code(source: str) -> list[str] | None:
             if numero in numeros]
 
 
-def _code_normalise(source: str) -> str:
+def _code_normalise(source: str, python: bool = True) -> str:
     """Le CODE d'un script : commentaires et lignes vides retires.
 
     C'est la grandeur qui dit « l'instrument a-t-il change ? ». Un
     commentaire retouche ne change pas l'instrument ; le comparer blob par
     blob le rendait change a chaque retouche (#28257).
+
+    Cette lecture est celle du **Python** : `tokenize` y distingue le code
+    d'un commentaire. Hors Python (un script `.sh`), et quand `tokenize` ne
+    sait pas lire la source, la comparaison est **exacte** : le repli
+    ligne-a-ligne applique `strip()` a chaque ligne, et rendait identiques
+    deux documents dont une ligne differe par son indentation -- alors que
+    le shell imprime des octets differents (reserve du 26/11, #28259).
     """
+    if not python:
+        return source
     lignes = _lignes_avec_code(source)
     if lignes is None:
-        # Repli ligne-a-ligne : un script que `tokenize` ne sait pas lire.
-        lignes = [ligne.strip() for ligne in source.splitlines()
-                  if ligne.strip() and not ligne.strip().startswith("#")]
+        # `tokenize` ne sait pas lire la source : on compare les octets.
+        return source
     return "\n".join(lignes)
 
 
@@ -771,8 +780,9 @@ def _code_du_script(identite: str) -> str:
     """Le CODE du script nomme par une identite `<script>@<sha>`, ou "".
 
     Le contenu est lu par `git cat-file` puis normalise : commentaires et
-    lignes vides retires. Un script illisible (blob absent, source
-    illisible) rend "" -- jamais de code a moitie.
+    lignes vides retires pour le Python, comparaison exacte sinon. Un script
+    illisible (blob absent, source illisible) rend "" -- jamais de code a
+    moitie.
     """
     blob = _blob_du_script(identite)
     if not blob:
@@ -780,7 +790,8 @@ def _code_du_script(identite: str) -> str:
     code, out, _ = _run(("git", "cat-file", "blob", blob))
     if code != 0:
         return ""
-    return _code_normalise(out)
+    script = identite.rsplit("@", 1)[0]
+    return _code_normalise(out, python=script.endswith(".py"))
 
 
 def instrument_inchange(identite: str, identite_reference: str) -> bool:
