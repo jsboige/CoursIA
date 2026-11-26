@@ -345,6 +345,87 @@ de 403, basculer sur GraphQL — compteur distinct — pour relire le corps publ
 (c) la garde « longueur ≥ 100 » du gh-posting-hygiene **n'attrape pas** ce cas
 (538 > 100) : la garde utile est **longueur attendue contre longueur mesurée**.
 
+### Tells de mesure (26/11, cycles c701 et c702)
+
+Huit pièges mesurés sur les rouges de la file. Le fil : **avant de classer un rouge,
+lire le log du job de bout en bout** (le checkout d'abord). Une légende
+d'annotation (`exit code 1`) ne dit rien du runner ; `runner_name` et les lignes
+`checkout`/`fetch` disent la classe.
+
+26. **Un rouge `Scripts Tests (CPU)` peut venir d'un CHECKOUT RATE du runner, pas
+du diff.** *Why :* neuf PRs rouges CPU échouaient toutes sur
+`GameTheory-06-EvolutionTrust-Python.ipynb` — un carnet de `main` qu'aucune ne
+touchait — avec `ModuleNotFoundError: No module named 'axelrod'` ; j'en concluais
+d'abord à un interpréteur de noyau différent. Le rejeu a montré la cause réelle :
+`RPC failed; curl 28 Operation too slow`, `fatal: protocol error: bad pack
+header`, `could not fetch <sha> from promisor remote`, exit 128 — l'arbre de travail
+est incomplet, et le module absent, la collection pytest qui crash et le plancher
+de couverture franchi en faux ne sont que des conséquences. *How to apply :* devant un
+rouge CPU, lire les lignes `checkout`/`fetch` du log **avant** d'alerter le
+porteur ; `ModuleNotFoundError` et « la collection a crash » sont des symptômes.
+Alerter un porteur sur un symptôme de runner = fausse attribution + un cycle
+perdu.
+27. **`actions/jobs/<id>` expose `runner_name` : c'est le discriminant infra /
+contenu.** *Why :* les neuf jobs CPU ci-dessus ont tourné sur
+`myia-po-2026-wsl-{1,2,3,4,6,7,8}` et `myia-ai-01-wsl-{3,7,8}`, les dix-sept autres
+rouges de contenu du même cycle sur `GitHub Actions <id>` (hébergé). L'annotation
+« exit code 1 » est identique dans les deux classes. *How to apply :* avant de
+classer un rouge (infra à rejouer / contenu à signaler), lire `runner_name` : un
+slot `*-wsl-*` oriente vers l'infra du runner, un runner hébergé vers le diff de
+la PR.
+28. **Un rejeu crée un NOUVEL id de job ; l'ancien reste en `failure`.** *Why :*
+le rejeu des neuf jobs CPU a produit les ids 139906226451 / 139906282543 /
+139906252178 / 139906240347 / 139909456804 / 139907422651 / 139906265524 /
+139906746638 / 139906767371 ; les ids d'origine restent lisibles avec
+`conclusion: failure`. *How to apply :* comme pour les portes, lire le check-run du
+**plus récent `started_at`** sur la tête courante, jamais l'id qu'on a rejoué ;
+n'accepter un verdict de rejeu qu'une fois le job `completed`.
+29. **Le rejeu peut révéler une cause DIFFÉRENTE du symptôme initial : c'est lui
+qui tranche.** *Why :* même PR (#28651), même organe : le premier job montrait
+`ModuleNotFoundError` (symptôme), le rejeu montrait `curl 28` + `bad pack header`
+(cause). Aucune lecture du premier log ne permettait de classer le rouge. *How to
+apply :* devant un doute infra/contenu, le rejeu n'est pas une répétition : c'est
+l'**expérience** qui tranche la classe — et c'est le moment de corriger publiquement
+la cause supposée si elle était fausse.
+30. **`check-runs?per_page=100` sans pagination fait DISPARAÎTRE la jambe rouge
+sur une tête à plus de 100 jobs.** *Why :* #28651 porte 120 check-runs ; la
+première page ne contenait ni `Scripts Tests (CPU)` ni `PR gate`, et j'ai conclu
+« aucune jambe non verte lue » pour une PR qui avait bien un job CPU rouge
+(139678411743). *How to apply :* paginer jusqu'à `total_count` avant de conclure
+« aucune jambe » ; un « rien » mesuré sur une page tronquée est une **mesure
+manquante**, pas une mesure nulle.
+31. **Un test dont l'assertion dépend de l'HÔTE échoue sur le runner alors qu'il
+passe en local.** *Why :* le rejeu de #28251 (job 139906282543, slot
+`myia-po-2026-wsl-1`) a vert 24 337 tests puis échoué sur
+`test_lean_toolchain_reports_missing_when_not_a_wsl_seat - assert not any(checks)`,
+avec `✓ elan: elan 4.1.2` dans le log : `validate_lean_setup.py::check_command`
+branche sur `platform.system() == "Linux"` et lance `bash -c "source ~/.elan/env
+… && elan --version"`. Le test neutralise `shutil.which` et `HOME` (#28622) mais
+**pas le `PATH` du runner** : sur un slot où `elan` est installé, le contrôle
+négatif tombe. Vérifié en local sur le siège : `python -m pytest
+scripts/tests/test_lean_validate_lean_setup.py -q` → **12 passed**. *How to
+apply :* un test qui échoue seulement sur runner n'est pas imputable au diff —
+l'exécuter en local avant d'alerter le porteur ; et le portage d'un test
+« runner-independent » se prouve par un run local vert, pas par un rejeu CI.
+32. **Une fast-lane publie un check-run par garde : deux jambes rouges peuvent
+n'être qu'UN SEUL garde.** *Why :* #28769 portait deux rouges — `Papermill ratchet
+(base vs PR)` (job 139906330627) et `Always-on guards -- 18 organes, 1 checkout`
+(job 139902434649). Le second a évalué **77 gardes** et le **seul** bloquant était
+`Papermill ratchet (base vs PR) -> failure` ; le job dédié n'a ni runner propre
+(`runner_name` null, `started_at == completed_at`) ni log : c'est un check-run
+**publié** par la fast-lane. *How to apply :* devant deux jambes rouges, lire la
+ligne d'agrégat `check-run publie : <garde> -> failure` du log avant d'alerter
+deux porteurs ; le job dédié peut n'être qu'une **publication** du même garde.
+33. **Un ref de merge figé rejoue le même échec : rejouer une tête périmée ne
+mesure plus la PR.** *Why :* sur #28690, `pull/28690/merge` était resté figé à
+`900c200d` alors que le test `test_candidate_paths_without_appdata` avait été
+corrigé par #28640 dans `main` (fondu à 07:48:52Z) ; le rejeu portait le ref
+figé, donc reproduisait l'échec. La lane porteuse a fusionné `main` dans sa
+branche (tête `fba9624514`) et la CI a tourné sur cette tête-là. *How to apply :*
+avant de rejouer un job, lire la **tête courante** de la PR et le `head_sha` du
+run ; un rejeu sur une tête abandonnée est une **mesure manquante**, et son
+verdict ne vaut pas pour la PR.
+
 ## Émission de dossiers — garde-fous obligatoires
 
 Référence complète : [coordinate-adjoint §Émission de dossiers](../coordinate-adjoint/SKILL.md). Les non-négociables :
