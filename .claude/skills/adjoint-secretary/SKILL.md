@@ -234,7 +234,12 @@ checks est INCONNU, pas faux ») et **REJOUABLE**. Deux corollaires : (a) une po
 titre vide **avec** des enfants rouges n'est pas un rouge d'infra — le rouge est
 dans le code, le titre vide est la *conséquence* de la porte qui n'a pas pu écrire ;
 (b) une porte à titre vide **sans** enfant rouge est le candidat quota — à confirmer
-dans le log avant tout rejeu. Le log dit que le balayage `pr-gate-stale-sweep`
+dans le log avant tout rejeu ; (c) **un titre vide ne prouve pas le quota** : #28126
+(rejouée à 10:04:56Z) a écrit un verdict `DWELL -- tete du 2026-11-26T08:44:15Z,
+81 min -- plancher 120 min, reste 39 min` dans son **log**, alors que le titre du
+check-run restait **vide** et la conclusion `failure`. Le discriminant est le **log**,
+jamais le titre : lire le log avant de classer un rouge, y compris un rouge « vide ».
+Le log dit que le balayage `pr-gate-stale-sweep`
 rejoue la jambe après le reset horaire : ne pas multiplier les rejeux concurrents.
 
 10. **La porte peut être sur la page 2.** Le REST `check-runs?per_page=100` sans
