@@ -1,7 +1,7 @@
 ---
 title: "Calcul scientifique — forme close, mesure, preuve"
 subtitle: "Série pédagogique — un même problème traité par le calcul exact, la mesure numérique et l'énoncé formel"
-description: "Série Calcul scientifique du dépôt CoursIA — une équation différentielle linéaire à coefficient variable : forme close obtenue et contrôlée avec SymPy, erreur d'un solveur SciPy mesurée contre cette forme aux tolérances successives, seuil de stabilité d'un schéma explicite, et énoncé Lean qui certifie la conséquence qualitative de la même équation."
+description: "Série Calcul scientifique du dépôt CoursIA — une équation différentielle linéaire à coefficient variable : forme close obtenue et contrôlée avec SymPy, erreur d'un solveur SciPy mesurée contre cette forme aux tolérances successives, seuil de stabilité d'un schéma explicite, et lecture d'un énoncé Lean de la même classe d'équations, qui certifie une conséquence qualitative."
 listing:
   - id: calcul
     contents: "Calcul-*.ipynb"
@@ -18,13 +18,13 @@ listing:
 
 | Carnet | Problème | Ce qui sert de vérité |
 |--------|----------|-----------------------|
-| **Calcul-01** | $C'(t) = -k_0\,\bigl(1+\varepsilon\cos(\omega t)\bigr)\,C(t)$, avec $C(0) = C_0$ | La forme close obtenue symboliquement et contrôlée par substitution ; puis l'énoncé Lean qui certifie l'invariance de la solution nulle |
+| **Calcul-01** | $C'(t) = -k_0\,\bigl(1+\varepsilon\cos(\omega t)\bigr)\,C(t)$, avec $C(0) = C_0$ | La forme close obtenue symboliquement et contrôlée par substitution ; puis un énoncé Lean de la même classe d'équations, lu pour ce qu'il certifie de l'invariance de la solution nulle |
 
 **Kernels** : `python3` · **GPU** : non requis · **Prérequis** : équations différentielles du premier ordre, Python de base.
 
 ## Le pilote
 
-Le carnet part d'une équation d'une ligne : un refroidissement dont le coefficient d'échange est modulé périodiquement. Il en obtient la forme close, soumet au contrôle un candidat faux pour montrer que ce contrôle discrimine, mesure l'erreur d'un solveur adaptatif sur cinq tolérances, exhibe un pas fixe qui diverge et un autre qui reste stable sans être précis, puis lit dans le dépôt un théorème Lean sur la même équation — et nomme ce que ce théorème ne dit pas.
+Le carnet part d'une équation d'une ligne : un refroidissement dont le coefficient d'échange est modulé périodiquement. Il en obtient la forme close, soumet au contrôle un candidat faux pour montrer que ce contrôle discrimine, mesure l'erreur d'un solveur adaptatif sur cinq tolérances, exhibe un pas fixe qui diverge et un autre qui reste stable sans être précis, puis lit dans le dépôt un théorème Lean portant sur la même classe d'équations — et nomme ce que ce théorème ne dit pas.
 
 ::: {#calcul}
 :::
@@ -43,7 +43,7 @@ jupyter notebook MyIA.AI.Notebooks/CalculScientifique/
 - **README de série** : [CalculScientifique/README.md](README.md) — objectifs, parcours, installation.
 - **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire de la série avec noyaux et besoins matériels.
 - **Séries connexes** :
-  - [Physique](../Physique/index.qmd) — la même démarche de vérification contre une vérité exacte, sur des équations aux dérivées partielles.
+  - [Physique/Numerique](../Physique/Numerique/README.md) — la même discipline de la mesure contre une solution exacte, et des lacunes rangées une à une, sur des lois de conservation.
   - [ML/learning_theory_lean](../ML/learning_theory_lean/README.md) — les énoncés formels du dépôt, dont celui que cite le carnet ; [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) pour apprendre à les lire.
 
 ## Note sur le rendu Quarto
