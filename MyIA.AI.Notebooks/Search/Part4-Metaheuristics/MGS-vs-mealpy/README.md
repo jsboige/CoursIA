@@ -29,7 +29,7 @@ Tous les carnets partagent le même protocole, posé dans le premier et détaill
 | 26 | [Optimiseur d'équilibre](MGS-26-EquilibriumOptimizer-vs-Mealpy.ipynb) | Chercher un écart ailleurs que dans les formules : MGS est un portage déclaré du code mealpy, et pourtant mealpy finit à 25,0 [21-31] contre 35,0 [35-41]. | Licence avancée. Le protocole de 22 ; la notion de réinsertion ([MGS-02](../MGS-02-Composition.ipynb)). | [Autour de 26](#autour-de-26) |
 | 27 | [Investigation criminalistique](MGS-27-ForensicBasedInvestigation-vs-Mealpy.ipynb) | Deux portages du même article qui ont dérivé. MGS 37,0 [25-39], mealpy 43,5 [43-45], MGS devant sur les quatre graines. | Licence avancée. Le protocole de 22. | [Autour de 27](#autour-de-27) |
 | 28 | [Essaim sans vitesse](MGS-28-BareBonesPSO-vs-Mealpy.ipynb) | Construire le jumeau qui manque à mealpy, puis décomposer l'écart en deux : l'ancrage de la formule (nul) et le reste du moteur (30,5 [29-31] contre 25,5 [19-27]). | Licence avancée. Les carnets 22 et 23. | [Autour de 28](#autour-de-28) |
-| 29 | [Algorithme génétique](MGS-29-GA-vs-Mealpy.ipynb) | La revanche à armes classiques : mealpy 12,5 [9-16], MGS 13,5 [12-18], « comparable » selon le critère annoncé. L'écart de l'essaim ne se reproduit pas. | Licence. Le protocole de 22 ; les opérateurs génétiques ([MGS-01](../MGS-01-Introduction.ipynb)). | [Autour de 29](#autour-de-29) |
+| 29 | [Algorithme génétique](MGS-29-GA-vs-Mealpy.ipynb) · [Rust](MGS-29-GA-vs-Mealpy-Rust.ipynb) | La revanche à armes classiques : mealpy 12,5 [9-16], MGS 13,5 [12-18], « comparable » selon le critère annoncé. L'écart de l'essaim ne se reproduit pas. | Licence. Le protocole de 22 ; les opérateurs génétiques ([MGS-01](../MGS-01-Introduction.ipynb)). | [Autour de 29](#autour-de-29) |
 | 30 | [Recherche par dispersion](MGS-30-ScatterSearch-Decomposition.ipynb) | Reconstruire un algorithme absent de mealpy et ablater une couche côté MGS : la diversité du jeu de référence ne paie pas ici (54,0 avec, 52,0 sans, 51,5 pour le jumeau). | Licence avancée. Les carnets 22 et 28. | [Autour de 30](#autour-de-30) |
 | 31 | [Synthèse croisée](MGS-31-Synthese-Croisee.ipynb) | Relire les neuf paires ensemble sans rien ré-exécuter : tableau croisé, contrôle d'intégrité, forme des écarts, et le verdict « coût systématique, qualité spécifique ». | Tous niveaux pour le verdict ; Licence pour la méthode. Aucune paire n'est un prérequis strict. | [Autour de 31](#autour-de-31) |
 
@@ -82,6 +82,8 @@ mealpy propose plusieurs variantes d'essaim particulaire, mais pas celle qui se 
 ### Autour de 29
 
 Le composé génétique par défaut de MGS (sélection élitiste, croisement et mutation uniformes) affronte l'algorithme génétique de base de mealpy. Les médianes sont à un conflit l'une de l'autre et les étendues se chevauchent. Le carnet relève un détail qui compte pour la lecture : à nombre de générations égal, les deux moteurs ne consomment pas le même nombre d'évaluations, et MGS en dépense moins. Les trois exercices sont intercalés dans le carnet : compter les conflits par rangée, tester la sensibilité sur huit graines, tracer la convergence époque par époque.
+
+Un portage Rust rejoue le même protocole avec la crate `genetic_algorithm` : il retrouve le verdict « comparable » (médiane 15,0, étendue 10-18) et ajoute une vérification différentielle de la fonction de coût contre le jumeau C#, sur trois vecteurs témoins dont les coûts coïncident exactement — 67, 71 et 60.
 
 ### Autour de 30
 
