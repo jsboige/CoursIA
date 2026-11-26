@@ -312,6 +312,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + Planners (cœur classique) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
+| [curriculum/decideur.md](curriculum/decideur.md) | Le décideur face à un système d'IA — parcours en 16 étapes et 4 actes, du prix de l'information au coût de l'erreur, à la représentation et à la responsabilité du déploiement (pli P1 de l'EPIC #28136) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
 | [curriculum/manifeste-dependances.md](curriculum/manifeste-dependances.md) | Manifeste des dépendances du cursus par famille de noyau — verdict d'inclusion dans l'image CPU, motifs mesurés ou déclarés, conflits de versions, manifeste consolidé (généré par `scripts/notebook_tools/dependency_manifest.py`, #27544) |
 

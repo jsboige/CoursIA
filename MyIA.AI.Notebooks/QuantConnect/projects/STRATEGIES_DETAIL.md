@@ -169,7 +169,7 @@ Références avancées clonées depuis la QC Cloud Library (avril 2026). Métriq
 
 ## Catalogue complémentaire (audit #17526, 2026-09-24)
 
-Projets présents sur le disque sans entrée dans les sections thématiques ci-dessus. Descriptions et statuts repris de l'inventaire best-guess [docs/qc/qc-strategies-status.md](../../../../docs/qc/qc-strategies-status.md) ; les fiches squelettes (README titre seul, pas de docstring) sont marquées telles quelles.
+Projets présents sur le disque sans entrée dans les sections thématiques ci-dessus. Descriptions et statuts repris de l'inventaire best-guess [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md) ; les fiches squelettes (README titre seul, pas de docstring) sont marquées telles quelles.
 
 - [CSharp-BTC-MACD-ADX](CSharp-BTC-MACD-ADX/) : BTC MACD + ADX adaptatif (C#, ID 30751067) — MaxDD catastrophique 72.7 %
 - [Cloud-MeanReversion-Sectors](Cloud-MeanReversion-Sectors/) : mean reversion secteurs — Needs-improvement / near-cash
