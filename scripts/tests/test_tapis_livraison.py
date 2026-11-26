@@ -53,6 +53,18 @@ def _balayage(monkeypatch, fil_=None, evenements_=None) -> list[str]:
     return ecritures
 
 
+@pytest.mark.parametrize("retour, attendu, diagnostic", [
+    (None, 2, "INCONNUS"),
+    ({}, 0, "aucun mouvement"),
+])
+def test_lecture_main_inconnue_ou_vide_necrit_pas(monkeypatch, capsys, retour, attendu, diagnostic):
+    ecritures = _balayage(monkeypatch, fil_=[], evenements_=[])
+    monkeypatch.setattr(tl.chemins, "touches_main", lambda depot: retour)
+    assert tl.main(["--apply", "--repo", REPO]) == attendu
+    assert ecritures == []
+    assert diagnostic in capsys.readouterr().out
+
+
 def test_le_balayage_pose_le_marqueur_et_le_label_quand_nothing_ne_l_interdit(monkeypatch):
     """TEMOIN DE CONTROLE POSITIF : sans veto ni lecture incomplete, le
     balayage ecrit bien les deux choses.

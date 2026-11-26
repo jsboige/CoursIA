@@ -230,9 +230,13 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     touches = chemins.touches_main(args.depot)
+    if touches is None:
+        print("[tapis-livraison] LECTURE INCOMPLETE : `origin/main` illisible ; "
+              "mouvements INCONNUS, aucune ecriture.")
+        return 2 if args.apply else 0
     if not touches:
-        print("[tapis-livraison] `origin/main` illisible (depot, historique ou "
-              "ref absents) : aucune suspicion, l'organe sort sans rien poser.")
+        print("[tapis-livraison] `origin/main` lu : aucun mouvement dans la fenetre ; "
+              "aucune suspicion ni ecriture.")
         return 0
 
     issues = pool(args.repo, args.limit)

@@ -60,8 +60,8 @@ def test_un_texte_vide_ne_leve_ni_erreur():
 # --- ce que main en dit ------------------------------------------------------
 
 def test_touches_main_echoue_ou_paie_sur_un_depot_absent():
-    # Un depot qui n'existe pas : aucun chemin, aucune exception.
-    assert chemins.touches_main("/d/nexiste-pas-du-tout") == {}
+    # Un depot absent rend l'historique inconnu, pas un historique vide.
+    assert chemins.touches_main("/d/nexiste-pas-du-tout") is None
 
 
 def test_touches_main_lit_ce_que_main_a_touche(tmp_path: Path):

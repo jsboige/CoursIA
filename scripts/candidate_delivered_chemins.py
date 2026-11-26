@@ -129,12 +129,11 @@ def _ancre_re(numero: int) -> re.Pattern[str]:
 
 
 def touches_main(depot: str | None = None,
-                 jours: int = FENETRE_J) -> dict[str, tuple[str, str, str]]:
+                 jours: int = FENETRE_J) -> dict[str, tuple[str, str, str]] | None:
     """`origin/main` : chemin -> (date ISO, added/modified, sujet du commit).
 
-    **Un** appel git pour tout le balayage. Un depot absent, un `origin/main`
-    absent, un git en erreur : un dictionnaire vide -- le signal ne s'applique
-    alors a aucun grain (fail-OPEN, le comportement d'avant).
+    **Un** appel git pour tout le balayage. Une erreur Git rend None ; un
+    historique lu sans mouvement rend un dictionnaire vide.
 
     Le **sujet** du commit est lu avec : c'est lui qui dit si le mouvement
     cite l'issue. Un commit de masse (une renommage de masse, une mise a jour
@@ -149,9 +148,9 @@ def touches_main(depot: str | None = None,
         proc = subprocess.run(argv, capture_output=True, text=True, check=False,
                               encoding="utf-8", errors="replace")
     except OSError:
-        return {}
+        return None
     if proc.returncode != 0:
-        return {}
+        return None
     out: dict[str, tuple[str, str, str]] = {}
     for record in (proc.stdout or "").split(_SEP):
         lignes = [l.strip() for l in record.splitlines() if l.strip()]
