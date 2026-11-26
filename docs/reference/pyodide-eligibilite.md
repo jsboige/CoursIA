@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1472** carnets Python, **574** eligibles, **898** refuses.
+Census : **1476** carnets Python, **577** eligibles, **899** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -77,7 +77,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Automata | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | CaseStudies | 4 | 0 | 4 | 0 | 4 | 0 | 0 | 4 |
 | Causalite | 12 | 2 | 10 | 1 | 0 | 1 | 0 | 9 |
-| Chaines | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Chaines | 14 | 14 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Coalitions | 4 | 2 | 2 | 0 | 0 | 0 | 2 | 1 |
 | Complexity | 28 | 24 | 4 | 0 | 0 | 0 | 1 | 3 |
 | Compression | 13 | 10 | 3 | 1 | 0 | 0 | 0 | 2 |
@@ -86,6 +86,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | DecisionTheory | 15 | 2 | 13 | 0 | 0 | 0 | 0 | 13 |
 | Diagnostic-Medical | 2 | 0 | 2 | 0 | 0 | 0 | 2 | 2 |
 | Dynamics | 11 | 10 | 1 | 0 | 1 | 1 | 0 | 0 |
+| Dynamiques | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | FallacyDetection | 5 | 2 | 3 | 0 | 0 | 1 | 1 | 1 |
 | FineTuning | 11 | 0 | 11 | 11 | 0 | 0 | 4 | 8 |
 | Fondations | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -130,7 +131,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | SmartContracts | 31 | 10 | 21 | 0 | 3 | 17 | 19 | 17 |
 | SocialChoice | 12 | 6 | 6 | 0 | 0 | 0 | 5 | 1 |
 | SymbolicLearning | 20 | 7 | 13 | 7 | 2 | 2 | 6 | 6 |
-| Texte | 48 | 3 | 45 | 18 | 22 | 27 | 5 | 35 |
+| Texte | 49 | 3 | 46 | 19 | 22 | 27 | 5 | 35 |
 | Tweety | 19 | 1 | 18 | 0 | 0 | 2 | 18 | 6 |
 | Vibe-Coding | 6 | 5 | 1 | 0 | 0 | 0 | 0 | 1 |
 | Video | 23 | 3 | 20 | 16 | 11 | 14 | 6 | 19 |
@@ -164,7 +165,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 781 | 574 |
+| Carnets eligibles | 784 | 577 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -220,6 +221,8 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-10-Groupe-Rotations-Automorphismes-Directions-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-12-Boosts-Et-L-Unite-Une-Python.ipynb` | Chaines | python3 | - | - |
+| `MyIA.AI.Notebooks/Physique/Chaines/Chaines-13-Spin-Helicite-Groupe-Spin-C-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/Physique/Chaines/Chaines-14-P-C-T-Et-CPT-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-02-Assistance-Games-Python.ipynb` | Coalitions | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb` | Coalitions | python3 | numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-01-StepCounting-Python.ipynb` | Complexity | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -309,6 +312,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb` | Dynamics | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb` | Dynamics | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb` | Dynamics | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb` | Dynamiques | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/GenAI/FallacyDetection/01_taxonomy_intro.ipynb` | FallacyDetection | python3 | - | - |
 | `MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb` | FallacyDetection | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb` | Fondations | python3 | numpy==2.4.6 | - |
