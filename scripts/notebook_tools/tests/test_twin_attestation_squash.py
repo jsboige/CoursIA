@@ -184,3 +184,50 @@ def test_attestation_perimee_vie_le_descripteur_touche(tmp_path):
     assert report["verdict"] == "MISMATCH", report
     assert report["pairs"][0]["pair"] == PAIR
     assert any("python" in detail for detail in report["pairs"][0]["details"])
+
+
+def test_schema_reserve_ignore_et_paire_reelle_controlee(tmp_path):
+    """`_schema.yaml` documente le registre : il n'est pas une paire.
+
+    Regression mesuree le 2026-11-26 sur #28276 : la PR ajoutait
+    `twin_pairs.d/_schema.yaml` (documentation du cote `rust:` optionnel) et
+    la garde rendait `_schema [NODESC]` -- un refus de fusion sur une PR
+    conforme, la documentation etant lue comme une paire sans descripteur.
+
+    Le temoin exige les DEUX moities : le schema est ignore, et la paire
+    reelle touchee dans le meme commit reste nommee et controlee.
+    """
+    repo = _make_repo(tmp_path)
+    _git(repo, "checkout", "-b", "feature")
+    _write(repo, f"{REGISTRY}/_schema.yaml",
+           "parity_level:\n  - surface\n  - semantic\n  - native-both\n")
+    _write(repo, f"{REGISTRY}/{PAIR}.yaml",
+           _descriptor() + "  known_differences:\n"
+           "    - \"edition de prose\"\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "schema et descripteur")
+    report = check(repo, "main", "feature")
+    assert report["verdict"] == "OK", report
+    assert [p["pair"] for p in report["pairs"]] == [PAIR]
+
+
+def test_schema_reserve_n_empeche_pas_de_voir_une_paire_perimee(tmp_path):
+    """Le schema ignore ne doit pas blanchir la paire a cote : une attestation
+    perimee reste vue quand le meme commit touche `_schema.yaml`."""
+    repo = _make_repo(tmp_path)
+    stale_python = _git(repo, "rev-parse", f"HEAD:{PY_PATH}")
+    stale_csharp = _git(repo, "rev-parse", f"HEAD:{CS_PATH}")
+    _git(repo, "checkout", "-b", "feature")
+    _write(repo, f"{REGISTRY}/_schema.yaml",
+           "parity_level:\n  - surface\n  - semantic\n  - native-both\n")
+    _write(repo, PY_PATH, "contenu python modifie\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "schema et carnet modifie")
+    _write(repo, f"{REGISTRY}/{PAIR}/0002-2026-11-23-test.yaml",
+           _attestation(stale_python, stale_csharp))
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "attestation perimee")
+    report = check(repo, "main", "feature")
+    assert report["verdict"] == "MISMATCH", report
+    assert report["pairs"][0]["pair"] == PAIR
+    assert any("python" in detail for detail in report["pairs"][0]["details"])

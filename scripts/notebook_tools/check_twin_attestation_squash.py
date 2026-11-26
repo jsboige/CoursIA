@@ -116,8 +116,25 @@ def _git_merged_tree(repo: Path, base: str, head: str) -> tuple[str, str | None]
     return tree, None
 
 
+def _is_reserved(name: str) -> bool:
+    """Nom reserve du registre : de la documentation, jamais une paire.
+
+    C'est la convention que `check_twin_parity.load_registry` applique deja :
+    un fichier de premier niveau prefixe par `_` (`_schema.yaml`) documente le
+    registre et ne decrit aucune paire. Il n'a donc ni descripteur de paire ni
+    attestation -- le prendre pour une paire rend `NODESC` sur une PR conforme.
+    Mesure du 2026-11-26 sur #28276, dont le `_schema.yaml` etait la seule
+    entree de registre touchee par la PR.
+    """
+    return name.startswith("_")
+
+
 def _touched_pairs(repo: Path, base: str, head: str) -> list[str]:
-    """Paires dont la PR touche le registre."""
+    """Paires dont la PR touche le registre.
+
+    Les noms reserves (`_schema.yaml`, `_<autre>.yaml`, repertoire `_<nom>/`)
+    sont hors du compte : documenter le registre n'est pas toucher une paire.
+    """
     merge_base = _git(repo, ["merge-base", base, head]).strip()
     if not merge_base:
         raise Unreadable(f"merge-base vide entre {base} et {head}")
@@ -130,11 +147,16 @@ def _touched_pairs(repo: Path, base: str, head: str) -> list[str]:
             continue
         if len(parts) >= 5:
             # <REGISTRY>/<slug>/<fichier>.yaml  ->  <slug>
+            if _is_reserved(parts[3]):
+                continue
             pairs.add(parts[3])
         elif len(parts) == 4 and parts[3].endswith(".yaml"):
             # <REGISTRY>/<slug>.yaml  ->  <slug>  (le descripteur de la paire ;
             # son nom porte l'extension, il n'est PAS le nom de la paire).
-            pairs.add(parts[3][: -len(".yaml")])
+            slug = parts[3][: -len(".yaml")]
+            if _is_reserved(slug):
+                continue
+            pairs.add(slug)
     return sorted(pairs)
 
 
