@@ -834,7 +834,10 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-11-23 (PR #26765, resolution du merge) : les deux increments avaient
 #   ete ecrits contre un arbre a 25 paires ; l'arbre fusionne porte
 #   25 + 2 + 1 = 28 (mesure discover_pairs post-merge), comme le 2026-11-04.
-EXPECTED_PAIR_COUNT = 28
+# 2026-11-26 (PR #27477 jalon 3) : +1 paire -- le carnet Lean-43 de la Greffe B
+#   arrive avec son jumeau : Lean-43-Borne-Couverture-C24-14-4-Lean_en.
+#   28 + 1 = 29.
+EXPECTED_PAIR_COUNT = 29
 
 
 def _collect_parity_failures(repo_root: Path,

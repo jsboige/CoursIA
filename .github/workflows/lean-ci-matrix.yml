@@ -183,6 +183,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lake-manifest.json'
+      # covering_lean (lac consommateur du paquet jamesyc/covering, #27477
+      # jalon 3 -- Greffe B. Le fichier consommateur ne declare que des
+      # #print axioms : 0 sorry reel, axiom target-modules "*" +
+      # fail-on-sorry vrai, toolchain v4.35.0-rc3 (comme l'amont) nouveau
+      # dans la matrice -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lake-manifest.json'
       # galois_lean (28e lake, #13751 item 4 -- wrapper lean-galois.yml
       # supprime, recette #20526/#20527. Module unique M23Lean4Web.lean
       # vendu (8115 l., Apache-2.0), 0 sorry reel (mesure c.1039),
@@ -466,6 +475,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lake-manifest.json'
+      # covering_lean (lac consommateur du paquet jamesyc/covering, #27477
+      # jalon 3 -- Greffe B. Le fichier consommateur ne declare que des
+      # #print axioms : 0 sorry reel, axiom target-modules "*" +
+      # fail-on-sorry vrai, toolchain v4.35.0-rc3 (comme l'amont) nouveau
+      # dans la matrice -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/lake-manifest.json'
       # galois_lean (28e lake, #13751 item 4 -- wrapper lean-galois.yml
       # supprime, recette #20526/#20527. Module unique M23Lean4Web.lean
       # vendu (8115 l., Apache-2.0), 0 sorry reel (mesure c.1039),
