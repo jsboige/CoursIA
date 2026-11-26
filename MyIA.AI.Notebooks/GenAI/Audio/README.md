@@ -59,9 +59,7 @@ Chaque dossier de niveau a sa page de présentation (`README.md`), qui présente
 
 ### 01-Foundation - Bases Speech & Audio
 
-Avant de produire un podcast, il faut maîtriser les deux briques de base : la synthèse vocale (TTS) pour générer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immédiates), puis passe en local GPU pour l'autonomie et le contrôle fin. À la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole.
-
-Prérequis, progression recommandée et points clés de ce niveau : [01-Foundation/README.md](01-Foundation/README.md).
+Avant de produire un podcast, il faut maîtriser les deux briques de base : la synthèse vocale (TTS) pour générer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immédiates), puis passe en local GPU pour l'autonomie et le contrôle fin. À la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole. Prérequis, progression recommandée et points clés de ce niveau : [01-Foundation/README.md](01-Foundation/README.md).
 
 La première brique est le signal lui-même : un tableau d'amplitudes échantillonné dans le temps. Le notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb) charge un échantillon avec `librosa` et en trace la forme d'onde, révélant la structure alternée de silence et de parole :
 
