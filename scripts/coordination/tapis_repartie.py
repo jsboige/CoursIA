@@ -9,10 +9,13 @@ dans la rotation (3 grains sur 24 servis avec une attestation vivante).
 
 **L'agregat n'ecarte rien par lui-meme.** Il n'intervient que sur un ecart
 LIVREE que la regle legere a DEJA pose (dernier commentaire : une
-attestation de livraison vivante, ou une livraison epic-wide) et que la voie
-unique (`tapis_diff`) leverait : il confronte l'attribution a l'UNION des
-livraisons, chacune prouvee par le diff de sa PR. Un grain sans attestation,
-ou livre par une seule PR, garde la voie unique, inchangee.
+attestation de livraison vivante, ou une livraison epic-wide), et APRES la
+voie unique : si son dernier marqueur couvre l'attribution (`tapis_diff`),
+rien n'est reecrit. Sinon l'UNION des livraisons prouvees, chacune par le
+diff de sa PR, est confrontee a l'attribution. L'agregat peut TENIR un ecart
+que la voie unique leverait, jamais en lever un qu'elle garde : un grain sans
+attestation, livre par une seule PR, ou dont un claim global est mele a des
+claims bornes, garde la lecture de la voie unique.
 
 **Ce que la preuve etablit.** Comme la voie unique, elle etablit qu'un
 PERIMETRE est couvre : chaque chemin que l'issue attribue a ete livre par une
@@ -26,11 +29,11 @@ Quatre garde-fous, tous fail-CLOSED :
    complet : la fenetre quand `tapis_fenetre.suffit` la dit entiere, sinon le
    fil relu par `tapis_fil_complet.confirmer`. Une fenetre partielle peut
    cacher une attribution plus large (un claim plus ancien qu'elle) : sur
-   LIVREE elle ne sonde rien et ne decide rien, l'etat est differe au fil
-   complet, ou la voie unique le juge aussi.
+   LIVREE elle ne sonde rien et ne decide rien, la voie unique comprise.
 2. **Perimetre declare d'abord.** L'union des perimetres declares doit
-   couvrir l'attribution AVANT toute lecture de PR : attribution inconnue,
-   globale, melee d'un claim sans clause `paths:`, ou en glob -- aucune sonde.
+   couvrir l'attribution AVANT toute lecture de PR par l'agregat :
+   attribution inconnue, globale, melee d'un claim sans clause `paths:`, ou
+   en glob -- il ne sonde rien (la voie unique a deja lu la sienne).
 3. **Une revocation desarme ce qui la precede.** Seules comptent les
    livraisons posterieures a la derniere retractation (`[NOT-DELIVERED]`,
    `[INFO] candidate-delivered-revoked`).
@@ -40,6 +43,7 @@ Quatre garde-fous, tous fail-CLOSED :
 """
 from __future__ import annotations
 
+import functools
 import sys
 from dataclasses import replace
 from datetime import datetime
@@ -66,12 +70,9 @@ def _nums(livres: list) -> str:
 
 
 def _fusion(nouveau, ancien) -> str:
-    """Le marqueur d'une PR livree deux fois : l'union de ses deux clauses.
-
-    Il est ecrit sous forme canonique : le debut du marqueur le plus recent
-    n'est pas recopie. Une clause ecrite `PATHS :`, ou precedee d'une prose
-    contenant `paths:`, n'y offrait pas de point de coupe fiable.
-    """
+    """Le marqueur d'une PR livree deux fois : l'union de ses deux clauses,
+    sous forme canonique (une clause ecrite `PATHS :`, ou precedee d'une prose
+    contenant `paths:`, n'offre pas de point de coupe fiable)."""
     per = perimetre(_ligne(ancien))
     per += [p for p in perimetre(_ligne(nouveau)) if p not in per]
     return f"PR #{pr_designee(_ligne(nouveau))} -- paths: {', '.join(per)}"
@@ -88,10 +89,9 @@ def revocation(comments: list[dict]) -> datetime:
 def verifiables(comments: list[dict]) -> list:
     """Les livraisons VERIFIABLES, une par PR, de la plus recente a la plus ancienne.
 
-    Une livraison est verifiable quand elle designe une PR, declare un
-    perimetre (`[DELIVERED] ... PR #N -- paths: ...`), et qu'aucune
-    retractation ne l'a desarmee. Une PR livree plusieurs fois (une clause
-    `paths:` etendue) compte pour une : son diff est un.
+    Verifiable : elle designe une PR, declare un perimetre (`[DELIVERED] ...
+    PR #N -- paths: ...`), et aucune retractation ne l'a desarmee. Une PR
+    livree plusieurs fois (une clause `paths:` etendue) compte pour une.
     """
     uniques: dict = {}
     borne = revocation(comments)
@@ -106,13 +106,9 @@ def verifiables(comments: list[dict]) -> list:
 
 
 def attribution_du_fil(comments: list[dict]) -> list[str] | None:
-    """L'attribution de l'issue -- `[]` des qu'un claim est GLOBAL.
-
-    Un marqueur d'attribution sans clause `paths:` attribue l'issue entiere
-    (deja lu par `attribution`). Un claim epic-wide d'une lane MELE a des
-    claims bornes d'autres lanes attribue l'issue entiere de la meme facon :
-    un diff de chemins ne peut pas le prouver.
-    """
+    """L'attribution de l'issue -- `[]` des qu'un claim est GLOBAL : sans
+    clause `paths:`, un marqueur attribue l'issue entiere, seul ou mele aux
+    claims bornes d'autres lanes, et un diff de chemins ne le prouve pas."""
     evts = evenements(comments)
     derniers = {e.lane: e for e in evts if e.marque in OUVRE and e.lane}
     nus = [e for e in derniers.values() if not perimetre(f"[{e.marque}] {e.reste}")]
@@ -122,10 +118,9 @@ def attribution_du_fil(comments: list[dict]) -> list[str] | None:
 def agreger(livres: list, attr: list[str] | None, preuve) -> tuple[str, str]:
     """(verdict, detail) de l'UNION des livraisons, chacune prouvee par le diff de sa PR.
 
-    `verdict(ligne, preuve, per)` confronte une livraison a SON propre
-    perimetre : il dit `COUVRE` ssi le diff de sa PR, integree, couvre chaque
-    entree explicite qu'elle declare. Le standard est celui de la voie unique
-    -- la clause DECLAREE doit couvrir l'attribution, pas seulement le diff.
+    Meme standard que la voie unique : une livraison est prouvee si le diff de
+    sa PR, integree, couvre chaque entree explicite qu'elle DECLARE, et la
+    clause declaree doit couvrir l'attribution, pas seulement le diff.
     """
     if attr is None:
         return TRANCHE, "attribution inconnue (l'issue ne porte aucun marqueur d'attribution)"
@@ -168,36 +163,51 @@ def decider(e, livres: list, comments: list[dict], preuve) -> str | None:
     return None
 
 
+def _unique_couvre(comments: list[dict], preuve) -> bool:
+    """Ce que la voie unique conclurait sur ce fil : COUVRE, sans rien ecrire."""
+    evts = evenements(comments)
+    livres = [e for e in evts if e.marque == "DELIVERED"]
+    ligne = _ligne(livres[-1]) if livres else ""
+    num = pr_designee(ligne)
+    if not perimetre(ligne) or not num:
+        return False
+    return verdict(ligne, preuve(num), attribution(evts))[0] == COUVRE
+
+
+def a_agreger(comments: list[dict], preuve) -> list:
+    """Les livraisons a reunir : vides quand la voie unique suffit deja."""
+    livres = verifiables(comments)
+    return livres if len(livres) > 1 and not _unique_couvre(comments, preuve) else []
+
+
 def sur_fenetre(etats: list, lec, preuve) -> tuple[list, list]:
     """(rendus, differees) : ce que la fenetre laisse a la voie unique, et ce
     qu'elle reporte au fil complet.
 
-    L'agregat ne decide que sur un fil PROUVE complet (`tapis_fenetre.suffit`).
-    Sur une fenetre PARTIELLE, un ecart LIVREE ne tient que d'un fil tronque :
-    la voie unique pourrait le confirmer sur une attribution amputee d'un
-    claim plus ancien que la fenetre. Il est differe -- ni sonde ni decide.
-    Les autres ecarts suivent la voie unique, comme avant.
+    L'ecart LIVREE se decide sur un fil PROUVE complet (`tapis_fenetre.suffit`),
+    par `sur_fil_complet`. Sur une fenetre PARTIELLE il ne tient que d'un fil
+    tronque -- une attribution plus large peut etre cachee plus haut : il est
+    differe, ni sonde ni decide. Les autres ecarts suivent la voie unique.
     """
     issues = {it["number"]: it for it in lec.issues}
     rendus, differees = [], []
     for e in etats:
         it = issues.get(e.numero) or {}
-        livres = []
-        if e.ecart == "LIVREE":
-            if not tapis_fenetre.suffit(it):
-                differees.append(e)
-                continue
-            livres = verifiables(it.get("comments") or [])
-        if len(livres) < 2:
+        if e.ecart != "LIVREE":
             rendus.append(e)
+        elif not tapis_fenetre.suffit(it):
+            differees.append(e)
         else:
-            decider(e, livres, it["comments"], preuve)
+            e.ecart = sur_fil_complet(e, it.get("comments") or [], e.ecart, preuve)
     return rendus, differees
 
 
 def sur_fil_complet(e, comments: list[dict], code: str | None, preuve) -> str | None:
-    """La passe sur le fil COMPLET : la livraison repartie decide, sinon la voie unique."""
-    livres = verifiables(comments) if code == "LIVREE" else []
-    if len(livres) > 1:
+    """Decide sur un fil PROUVE complet : la voie unique, l'union si elle ne suffit pas."""
+    if code != "LIVREE":
+        return tapis_diff.decider(e, comments, code, preuve)
+    preuve = functools.lru_cache(preuve)  # chaque PR lue une fois par decision
+    livres = a_agreger(comments, preuve)
+    if livres:
         return decider(e, livres, comments, preuve)
     return tapis_diff.decider(e, comments, code, preuve)

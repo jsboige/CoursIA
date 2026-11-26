@@ -17,7 +17,7 @@ Ce que ces tests verrouillent :
 
 1. l'UNION des livraisons prouvees couvre l'attribution : l'ecart LIVREE
    tient, sur la fenetre entiere et sur le fil complet relu ;
-2. rien n'est sonde tant que l'attribution n'est pas couverte par les
+2. l'AGREGAT ne sonde rien tant que l'attribution n'est pas couverte par les
    perimetres DECLARES (attribution inconnue, globale, melee, en glob) ;
 3. chaque livraison est prouvee par le diff ET l'etat de SA PR : une PR
    fermee sans fusion ou un diff partiel ne compte pas ;
@@ -29,7 +29,10 @@ Ce que ces tests verrouillent :
    lu au-dela de la couverture ;
 7. l'agregat n'ecarte rien par lui-meme : sans attestation, ou livre par une
    seule PR, le grain garde la voie unique ;
-8. un ecart leve reprend la decision du grain nu (l'occupation reprend ses
+8. la voie unique decide D'ABORD : ou elle suffit, l'agregat ne reecrit rien
+   et ne sonde rien de plus ; un claim global mele a des claims bornes garde
+   sa lecture (limite dite, pour le coordinateur) ;
+9. un ecart leve reprend la decision du grain nu (l'occupation reprend ses
    droits, comme dans `test_tapis_reprise_livree`).
 
 Aucun test ne touche le reseau : `run` et la preuve sont des faux.
@@ -46,7 +49,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_qualification as tq
+from coordination import tapis_diff, tapis_qualification as tq
 from coordination import tapis_repartie as tr
 from coordination.tapis_preuve import Preuve
 
@@ -194,12 +197,12 @@ def test_un_diff_partiel_ne_compte_pas(monkeypatch):
     assert 7 not in ecartees
 
 
-# --- 2 : rien n'est sonde sans perimetre declare couvrant -------------------
+# --- 2 : l'agregat ne sonde rien sans perimetre declare couvrant -------------
 
 
 def test_rien_n_est_sonde_sans_perimetre_declare_couvrant():
     """Attribution inconnue, globale, melee, en glob, ou plus large que
-    l'union declaree : aucune PR n'est lue."""
+    l'union declaree : l'agregat ne lit aucune PR."""
     livres = tr.verifiables(_repertorie())
     melee = _repertorie()
     melee.insert(1, _commentaire(_claim(None, TIERCE), "2026-11-10T06:00:00Z"))
@@ -431,7 +434,45 @@ def test_une_seule_livraison_verifiable_suit_la_voie_unique():
     assert (sondes.lues, occupe.ecart) == ([101], "OCCUPEE"), "un autre ecart n'est pas touche"
 
 
-# --- 8 : un ecart leve reprend la decision du grain nu ----------------------
+def test_la_voie_unique_qui_suffit_epargne_l_agregat():
+    """Le DERNIER marqueur couvre seul l'attribution : c'est la decision de la
+    voie unique, une seule PR lue, sur le fil complet comme sur la fenetre."""
+    fil = _repertorie([A, B], ((101, [A]), (102, [A, B])))
+    par_pr = {101: ((A,), "MERGED", True), 102: ((A, B), "MERGED", True)}
+    etat, sondes = _etat(), Sondes(par_pr)
+    assert tr.sur_fil_complet(etat, fil, "LIVREE", sondes) == "LIVREE"
+    assert (sondes.lues, etat.motif) == ([102], "PR #102 : le diff couvre le perimetre (2)")
+    assert not any(n.startswith("livraison repartie") for n in etat.notes)
+    fenetre, autres = _etat(), Sondes(par_pr)
+    assert tr.sur_fenetre([fenetre], _lec(fil), autres) == ([], [])
+    assert (fenetre.ecart, autres.lues) == ("LIVREE", [102])
+
+
+def _melee(derniere: list) -> tuple[list[dict], dict]:
+    """Un claim GLOBAL mele a un claim borne, deux livraisons bornees."""
+    fil = _fil([_claim(None, TIERCE), _claim([A, B]), _livree(101, [A]),
+                _livree(102, derniere), INFO])
+    return fil, {101: ((A,), "MERGED", True), 102: (tuple(derniere), "MERGED", True)}
+
+
+@pytest.mark.parametrize("derniere", [[B], [A, B]], ids=["tranche", "couvre"])
+def test_un_claim_global_mele_garde_la_lecture_de_la_voie_unique(derniere):
+    """LIMITE, dite : un claim sans clause mele a un claim borne.
+
+    La voie unique lit l'union des seuls claims bornes ; l'agregat, lui,
+    refuse une attribution melee. Il ne la remplace pas : la decision est
+    celle de la voie unique, qu'elle garde l'ecart ou le leve, et il ne sonde
+    rien de plus. La lecture de ce cas appartient au coordinateur.
+    """
+    fil, par_pr = _melee(derniere)
+    etat, jumelle, sondes = _etat(), _etat(), Sondes(par_pr)
+    voie_unique = tapis_diff.decider(jumelle, fil, "LIVREE", Sondes(par_pr))
+    assert tr.sur_fil_complet(etat, fil, "LIVREE", sondes) == voie_unique
+    assert etat.ecart == jumelle.ecart
+    assert sondes.lues == [102], "la seule PR que lit la voie unique"
+
+
+# --- 9 : un ecart leve reprend la decision du grain nu ----------------------
 
 
 @FENETRES
@@ -457,7 +498,7 @@ def test_le_module_reste_borne():
     de `tapis_reprise_livree`.
     """
     module = Path(tr.__file__).read_text(encoding="utf-8")
-    assert len(module.splitlines()) <= 210
+    assert len(module.splitlines()) <= 220, "celui de `tapis_leger`, pas un de plus"
     for noeud in ast.walk(ast.parse(module)):
         if isinstance(noeud, ast.FunctionDef | ast.AsyncFunctionDef):
             assert noeud.end_lineno - noeud.lineno + 1 <= 45, noeud.name
