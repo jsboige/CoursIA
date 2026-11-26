@@ -6,7 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Aucun moteur externe des deux cotes : le sujet du carnet est le COMPTAGE des comparaisons, qu'une bibliotheque de graphes masquerait ; l'arbre de decision T*, le minimax et Union-Find sont ecrits a la main en Python comme en C#."
   known_differences:
-    - "Frontiere de parite : les resultats combinatoires sont identiques case pour case des deux cotes -- tableau T* des neuf topologies (0 etoile, 6 K4, 5 C6 et K23), #MSF, bornes lb, pire cas du tri fusion (C(1000) = 8977) et ligne temoin ; la parite ne porte que sur les mesures de graphes aleatoires, ou elle n'est que statistique."
+    - "Frontiere de parite : les resultats combinatoires sont identiques case pour case des deux cotes -- tableau T* des neuf topologies (0 etoile, 6 K4, 5 C6 et K23), #MSF, bornes lb, pire cas du tri fusion (C(1000) = 8977) et ligne temoin ; les comptes d'etats memoises par la cloture coincident aussi (15, 119, 1402, 23929, 80748, 58612, 16633, 16633, 1) et egalent, des deux cotes, le nombre d'ensembles visites par le minimax sans inference ; la parite ne porte que sur les mesures de graphes aleatoires, ou elle n'est que statistique."
     - "Les instances aleatoires different : les deux langages n'ont pas le meme generateur (Kruskal 9,29 cote Python contre 9,32 cote C# a n = 500 ; Boruvka 5,22 contre 5,38 ; phases de Boruvka 4-5-5-5-6-6 contre 4-4-5-6-6-6), alors que les pentes par doublement coincident (Kruskal +1,00 par doublement des deux cotes)."
     - "Les figures sont tracees par matplotlib cote Python et rendues en barres de texte cote C#, un noyau .net-csharp n'ayant pas de bibliotheque de trace."
-    - "La colonne de temps depend du moteur d'execution et de la machine : T* de K4 en 10,61 s cote Python contre 1,83 s cote C#."
+    - "La colonne de temps depend du moteur d'execution et de la machine : sur l'execution auditee, T* de K4 prend 11,35 s cote Python contre 2,26 s cote C#."
