@@ -31,6 +31,12 @@ d'echec d'outil que personne ne connait ne gele que la lane qui l'a rendu.
 degelait le grain pour toute la flotte, meme quand la lane rendait le grain
 pour une barriere reelle et ne **rappellait** qu'un ancien `verify-reject`.
 La lecture du motif courant est dans `tapis_relache_motif`.
+
+**Le motif est borne au BLOC COURANT** (review du coordinateur du 26/11 sur
+#28440) : le rendu courant d'un [RELEASED] tient en deux blocs -- le bloc du
+marqueur et le bloc des essais qui l'ajuente. Les blocs suivants sont des
+rappels : un code qui n'y figure pas n'est pas le motif courant. La forme
+Rust mesuree exige en outre sa **fournee** et sa date.
 """
 from __future__ import annotations
 

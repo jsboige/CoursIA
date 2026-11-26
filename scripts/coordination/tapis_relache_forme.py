@@ -2,30 +2,17 @@
 """La FORME positive d'un echec d'OUTIL : quand un code d'echec est-il le
 MOTIF COURANT du rendu ?
 
-Review du coordinateur (25/11, #28440) : `est_echec_outil()` lisait un code
-d'echec **n'importe ou** dans le commentaire. Une forme ordinaire sur deux
-lignes suffisait :
+Le rendu courant d'un [RELEASED] tient en deux blocs : le **bloc du
+marqueur** (ce que la lane rend) et le **bloc des essais** qui l'ajuente (les
+essais consommes). Les blocs suivants sont des rappels : un code qui n'y
+figure pas n'est pas le motif courant.
 
-    [RELEASED] lane X -- GPU partage indisponible
-    Essai du 22/11 : verify-reject
-
-Aucun jeton de la deuxieme ligne n'est un marqueur du passe, et la premiere
-ligne ne porte aucun code : le rendu etait donc lu comme un echec d'OUTIL,
-et le grain etait **degele pour les autres lanes** alors que le motif
-courant etait une **barriere reelle** (le GPU partage indisponible).
-
-La portee locale -- un echec d'outil ne gele que la lane qui l'a subi --
-est donc reservee aux formes **positivement identifiees** :
-
-- le format **explicite** : `motif: <code>` ;
-- la forme **Rust mesuree** (22/11) : un code suivi de sa fournee et de sa
-  date, `(1) verify-reject (fournee w3p, 22/11)`.
-
-Toute autre mention d'un code est un rappel : le motif courant n'est pas
-identifie, et le gel reste **global** (fail-CLOSED) -- le comportement
-d'avant. La regle **ne depend pas** d'un vocabulaire de barrieres : une
-barriere reelle n'a pas besoin d'etre reconnue, il suffit que le code ne
-soit pas le motif courant.
+La portee locale (un echec d'outil ne gele que la lane qui l'a subi) est
+reservee aux formes **positivement identifiees** : le format **explicite**
+`motif: <code>` dans le bloc du marqueur ; la forme **Rust mesuree**
+(22/11) `code (fournee w3p, 22/11)` dans le bloc du marqueur ou celui des
+essais -- elle porte sa **fournee** ET sa date. Toute autre mention d'un
+code est un rappel : le gel reste **global** (fail-CLOSED).
 """
 from __future__ import annotations
 
@@ -34,17 +21,39 @@ import re
 #: Le format explicite : le code est **nomme** comme motif du rendu.
 _MOTIF_EXPLICITE_RE = re.compile(r"\bmotif\s*:\s*([\w-]+)")
 
-#: La forme Rust mesuree : le code est suivi de sa fournee et de sa date
-#: (`22/11`), comme dans les rendus de production du 22/11.
-_FORME_RUST_RE = re.compile(r"([\w-]+)\s*\([^()]*\d{1,2}/\d{1,2}[^()]*\)")
+#: Le marqueur du rendu : le bloc qui le porte.
+_MARQUEUR_RE = re.compile(r"\[\s*RELEASED\s*\]", re.IGNORECASE)
+
+#: La forme Rust mesuree : le code, sa **fournee** et sa date (`22/11`).
+_FORME_RUST_RE = re.compile(
+    r"([\w-]+)\s*\([^()]*\bfournee\b[^()]*\d{1,2}/\d{1,2}[^()]*\)")
+
+
+def _blocs(corps: str) -> list[str]:
+    """Les blocs du commentaire : les paragraphes, separes par une ligne vide."""
+    return [b for b in re.split(r"\n\s*\n", corps or "") if b.strip()]
+
+
+def bloc_courant(corps: str) -> tuple[str, str | None]:
+    """Le bloc du marqueur du rendu, et le bloc des essais qui le suit.
+
+    Le DERNIER marqueur parle : c'est lui qui decrit l'etat courant.
+    """
+    bs = _blocs(corps)
+    for i in range(len(bs) - 1, -1, -1):
+        if _MARQUEUR_RE.search(bs[i]):
+            return bs[i], bs[i + 1] if i + 1 < len(bs) else None
+    return "", None
 
 
 def codes_identifies(corps: str) -> set[str]:
     """Les codes d'echec **positivement identifies** comme motif courant.
 
-    Le corps est lu en minuscules : les codes du vocabulaire sont ASCII.
+    Le corps est lu en minuscules et sans accent (l'appelant normalise).
     """
-    texte = (corps or "").lower()
-    trouves = {m.group(1) for m in _MOTIF_EXPLICITE_RE.finditer(texte)}
-    trouves |= {m.group(1) for m in _FORME_RUST_RE.finditer(texte)}
+    marqueur, essais = bloc_courant(corps)
+    trouves = {m.group(1) for m in _MOTIF_EXPLICITE_RE.finditer(marqueur.lower())}
+    for bloc in (marqueur, essais):
+        if bloc:
+            trouves |= {m.group(1) for m in _FORME_RUST_RE.finditer(bloc.lower())}
     return trouves

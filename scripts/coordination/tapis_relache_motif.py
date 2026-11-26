@@ -2,21 +2,20 @@
 """Le MOTIF COURANT d'un rendu : l'echec d'outil d'aujourd'hui, ou le code
 cite au passe.
 
-Review du coordinateur (25/11, #28440) : `est_echec_outil()` lisait un code
-d'echec **n'importe ou** dans le commentaire : une lane qui rendait un grain
-pour une barriere reelle voyait son grain degele pour toutes les autres lanes.
+Reviews du coordinateur (25/11 et 26/11, #28440) : un code lu n'importe ou
+dans le commentaire degelait le grain d'une barriere reelle pour la flotte.
 
 Ce module decide : un code d'echec n'est le motif **courant** que si sa
 clause ne porte aucun marqueur d'**historique** ET que sa forme est
-**positivement identifiee** (format explicite `motif: <code>`, ou forme
-Rust mesuree -- voir `tapis_relache_forme`). Un code cite au passe, ou
-cite sans forme, ne degele rien : le gel reste **global** (fail-CLOSED).
+**positivement identifiee** ET **bornee au bloc courant** (format explicite
+`motif: <code>`, ou forme Rust mesuree -- voir `tapis_relache_forme`). Un
+code cite au passe, ou sans forme, ne degele rien : le gel reste global
+(fail-CLOSED).
 
 Le vocabulaire des cinq motifs d'echec d'OUTIL est **ferme** (les cinq
 mesures du dispatch `c0035b`, 24/11) ; le vocabulaire des marqueurs
-d'historique est, lui, **ouvert** : un marqueur inconnu ne rend un code
-historique que s'il est dans la liste, et une liste qui s'etend ne change
-rien au fail-CLOSED.
+d'historique est **ouvert** : une liste qui s'etend ne change rien au
+fail-CLOSED.
 """
 from __future__ import annotations
 
@@ -101,4 +100,6 @@ def est_echec_outil(corps: str) -> bool:
         return False
     if codes_historiques(corps):
         return False
-    return bool(codes_identifies(corps) & trouves)
+    # Le corps est normalise : la forme Rust mesuree ecrit « fournee »
+    # accentue (22/11), et les codes du vocabulaire sont ASCII.
+    return bool(codes_identifies(_sans_accents(corps)) & trouves)

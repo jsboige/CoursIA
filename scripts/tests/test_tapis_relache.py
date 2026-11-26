@@ -77,12 +77,18 @@ def test_un_echec_d_outil_gele_la_lane_qui_l_a_subi():
 
 
 def test_les_cinq_motifs_d_echec_d_outil_sont_recus():
-    """Le vocabulaire est ferme et connu : les cinq motifs mesures."""
+    """Le vocabulaire est ferme et connu : les cinq motifs mesures.
+
+    Le rendu doit porter son marqueur : le format explicite est rattache au
+    **bloc du marqueur** (review du 26/11, #28440) -- un corps sans marqueur
+    n'est pas un rendu, et ne dit donc rien du motif courant.
+    """
     from coordination import tapis_relache
     for motif in ("stage2-call-failed", "verify-reject",
                   "refused-revise-trace-mismatch", "built-structure-mismatch",
                   "stage2-unparsed"):
-        assert tapis_relache.est_echec_outil(f"lane X -- motif: {motif}"), motif
+        assert tapis_relache.est_echec_outil(
+            f"[RELEASED] lane X -- motif: {motif}"), motif
 
 
 def test_la_forme_reelle_d_un_rendu_de_production():
@@ -93,13 +99,14 @@ def test_la_forme_reelle_d_un_rendu_de_production():
     C'est la forme que le coordinateur a signalee : le grain etait gele pour
     toute la flotte alors qu'une seule lane avait consomme ses essais.
     """
-    rendu = ("[RELEASED] Coalitions-01-SMT (Rust) -- 2 essais contenu consommes\n"
-             "\n"
-             "Essais contenu : (1) verify-reject (fouragee w3p, 22/11) ; "
-             "(2) built-structure-mismatch (fouragee w3q, 22/11 11:37Z). "
-             "Interruptions non comptees : 1x stage2-call-failed (w3r2, 21/11).\n"
-             "\n"
-             "Consomme : 2 essais contenu -- la lane relache le grain, pas de 3e essai.\n")
+    rendu = ("[RELEASED] Coalitions-01-SMT (Rust) — 2 essais contenu consommés\n"
+             "Essais contenu : (1) verify-reject (fournée w3p, 22/11) ; "
+             "(2) built-structure-mismatch (fournée w3q, 22/11 11:37Z — stage 2 "
+             "terminé en 684 s, puis échec structurel : la table "
+             "cellule-par-cellule du carnet construit ne correspond pas à la "
+             "SPEC ; gates stage 4 jamais atteints, verify non exécuté). "
+             "Interruptions non comptées : 1× stage2-call-failed (w3r2, 21/11 — "
+             "échec environnemental MCP, sans production).\n")
     lec = lecture([
         issue(1, comments=[com(72, f"[CLAIMED] lane {AUTRE} -- je prends"),
                            com(24, rendu)]),
@@ -223,15 +230,92 @@ def test_un_melange_de_codes_reste_ambigu():
 def test_la_forme_rust_mesuree_reste_un_echec_d_outil():
     """Le format Rust mesure (22/11) n'est pas un souvenir : les codes y
     sont listes avec leur fournee et leur date, sans marqueur du passe. Le
-    correctif ne doit pas casser cette forme."""
+    correctif ne doit pas casser cette forme.
+
+    Le rendu est **verbatim** celui du 22/11 (issue #27719) : le marqueur et
+    l'enumeration des essais sont dans le meme paragraphe, et la fournee est
+    accentuee (« fournee »).
+    """
     from coordination import tapis_relache
-    rendu = ("[RELEASED] Coalitions-01-SMT (Rust) -- 2 essais contenu consommes\n"
-             "\n"
-             "Essais contenu : (1) verify-reject (fournee w3p, 22/11) ; "
-             "(2) built-structure-mismatch (fournee w3q, 22/11 11:37Z). "
-             "Interruptions non comptees : 1x stage2-call-failed (w3r2, 21/11).\n")
+    rendu = ("[RELEASED] Coalitions-01-SMT (Rust) — 2 essais contenu consommés\n"
+             "Essais contenu : (1) verify-reject (fournée w3p, 22/11) ; "
+             "(2) built-structure-mismatch (fournée w3q, 22/11 11:37Z — stage 2 "
+             "terminé en 684 s, puis échec structurel : la table "
+             "cellule-par-cellule du carnet construit ne correspond pas à la "
+             "SPEC ; gates stage 4 jamais atteints, verify non exécuté). "
+             "Interruptions non comptées : 1× stage2-call-failed (w3r2, 21/11 — "
+             "échec environnemental MCP, sans production).\n")
     assert tapis_relache.est_echec_outil(rendu)
     assert not tapis_relache.codes_historiques(rendu)
+
+
+# --- LE MOTIF EST BORNE AU BLOC COURANT (review du 26/11, #28440) -----------
+
+def test_le_temoin_negatif_de_la_forme_rust_ne_degele_pas_le_grain():
+    """Le temoin negatif demande par la review du 26/11 (#28440).
+
+    Une premiere ligne `[RELEASED] ... -- GPU partage indisponible`, puis
+    `Essai du 22/11 : verify-reject (22/11)` : la forme Rust acceptait toute
+    parenthese datee, et aucun jeton de cette ligne ne signale le passe. Le
+    grain ne doit donc pas etre servi aux autres lanes : la barriere reelle
+    le gele pour toute la flotte.
+    """
+    rendu = (f"[RELEASED] lane {AUTRE} -- GPU partage indisponible\n"
+             "Essai du 22/11 : verify-reject (22/11)\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le grain reste gele pour toute la flotte"
+    assert "echec d'outil" not in e.motif, "le code cite n'est pas le motif"
+    assert etat(lec, 1, lane=LANE).ecart == "RELACHEE"
+
+
+def test_la_forme_rust_exige_la_fournee():
+    """Meme code, mais dans le **bloc des essais** et sans **fournee** : ce
+    n'est pas la forme Rust mesuree (22/11), c'est une citation.
+    """
+    rendu = (f"[RELEASED] lane {AUTRE} -- GPU partage indisponible\n\n"
+             "Essai du 22/11 : verify-reject (22/11)\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le grain reste gele pour toute la flotte"
+    assert "echec d'outil" not in e.motif
+
+
+def test_le_motif_explicite_doit_etre_rattache_au_bloc_du_marqueur():
+    """`motif: <code>` hors du bloc du marqueur est un rappel : le motif
+    courant n'est pas identifie, le gel reste global (fail-CLOSED).
+    """
+    rendu = (f"[RELEASED] lane {AUTRE} -- barriere reelle, mesuree\n\n"
+             "motif: verify-reject\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le gel reste global"
+    assert "echec d'outil" not in e.motif
+
+
+def test_la_forme_rust_sur_la_ligne_du_marqueur_est_le_motif_courant():
+    """Une forme Rust posee sur la ligne du marqueur **nomme** le motif du
+    rendu : c'est le motif courant, la portee locale s'applique.
+    """
+    rendu = (f"[RELEASED] lane {AUTRE} -- verify-reject (fournee w3p, 22/11)\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)])])
+    assert etat(lec, 1).ecart is None, "les autres lanes ne sont pas gelees"
+    e = etat(lec, 1, lane=AUTRE)
+    assert e.ecart == "RELACHEE" and "echec d'outil" in e.motif
+
+
+def test_le_bloc_des_essais_tolere_la_ligne_vide():
+    """Le rendu mesure tient le marqueur et les essais dans le meme
+    paragraphe ; une ligne vide entre les deux ne doit pas faire perdre la
+    portee locale.
+    """
+    rendu = (f"[RELEASED] lane {AUTRE} -- 2 essais contenu consommes\n\n"
+             "Essais contenu : (1) verify-reject (fournee w3p, 22/11).\n")
+    lec = lecture([issue(1, comments=[com(24, rendu)]),
+                   issue(2, comments=[com(24, rendu)])])
+    assert etat(lec, 1).ecart is None, "les autres lanes ne sont pas gelees"
+    e2 = etat(lec, 2, lane=AUTRE)
+    assert e2.ecart == "RELACHEE" and "echec d'outil" in e2.motif
 
 
 # --- le plafond de l'organe -------------------------------------------------
