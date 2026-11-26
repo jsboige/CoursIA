@@ -56,7 +56,7 @@ POST {base_url}/chat/completions
 - ⁷ `Unrecognized request argument supplied: top_k`.
 - ⁸ `Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.`
 - ⁹ `Unrecognized request argument supplied: reasoning_effort` — le curseur de raisonnement n'existe que sur les modèles de raisonnement.
-- ¹⁰ Colonne `swift-1.5-27b` : mesure du **2026-11-25**, lot de dix sondes (une par paramètre), **sur deux endpoints qui servent le même modèle** — le vLLM du cluster `http://192.168.0.47:5002/v1` et la passerelle `https://models.myia.io/v1`. Les vingt appels répondent **HTTP 200** : aucun paramètre n'est refusé, les dix verdicts sont ACCEPTE. Détail, routage de clé et effet mesuré : [la section dédiée](#swift-15-27b--mesure-du-2026-11-25-le-modèle-servi-par-le-cluster).
+- ¹⁰ Colonne `swift-1.5-27b` : mesure du **2026-11-25**, lot de dix sondes (une par paramètre), pour le nom demandé `swift-1.5-27b` sur deux endpoints — le vLLM du cluster `http://192.168.0.47:5002/v1` et la passerelle `https://models.myia.io/v1`. Les vingt appels répondent **HTTP 200** : aucun paramètre n'est refusé, les dix verdicts sont ACCEPTE. Détail, routage de clé et effet mesuré : [la section dédiée](#swift-15-27b--mesure-du-2026-11-25-le-modèle-servi-par-le-cluster).
 - ¹¹ Effet visible du plafond : à `max_tokens=16`, la génération s'arrête en `finish_reason=length` avec exactement 16 tokens de complétion — le paramètre n'est pas seulement toléré, il borne la sortie.
 - ¹² `reasoning_effort="low"` passe de 15 à 45 `prompt_tokens` sur le vLLM du cluster (le serveur insère une consigne de budget de raisonnement dans le prompt), tandis que la passerelle laisse le prompt à 15 tokens : **le même modèle, deux endpoints, deux effets** — c'est ce que la colonne dit, et pas davantage.
 
@@ -89,15 +89,17 @@ faute de mesure.
 | `http://192.168.0.47:5002/v1` (vLLM du cluster) | `VLLM_API_KEY_MEDIUM` (alias cible `TGWUI_MEDIUM_API_KEY`) | 200 — 2 modèles (`swift-1.5-27b`, `qwen3.6-35b-a3b`) |
 | `https://models.myia.io/v1` (passerelle fleet) | `CLAUDISH_PROXY_KEY` | 200 — 36 modèles |
 
-**Le routage de clé est la mesure qui a débloqué la campagne** : la clé `VLLM_API_KEY` du
-coffre partagé est **refusée** (401 `Unauthorized`) par le vLLM du cluster `:5002` — c'est
-`VLLM_API_KEY_MEDIUM` qui passe. C'est aussi pourquoi quatre des sept sites de
-[#24114](https://github.com/jsboige/CoursIA/issues/24114) étaient déclarés « non mesurables »
-sur les sièges précédents (le port 5002 y était en timeout TCP).
+**Connectivité et authentification sont deux observations distinctes.** Le 13 novembre,
+la connexion TCP au port 5002 expirait depuis `myia-po-2027` : l'authentification n'était
+pas atteinte et la cause du timeout n'a pas été établie. Le 25 novembre, le port était
+joignable depuis cette lane ; `VLLM_API_KEY` recevait un 401, tandis que
+`VLLM_API_KEY_MEDIUM` recevait 200. Un refus d'authentification avait aussi été observé
+le 12 novembre depuis `myia-po-2023` avec `VLLM_API_KEY`. Ces observations ne permettent
+pas de déduire la cause du timeout depuis un autre siège.
 
 ### Les dix sondes
 
-Un lot de dix appels, un par paramètre, sur chaque endpoint (vingt appels au total) :
+Pour le nom demandé `swift-1.5-27b`, un lot de dix appels, un par paramètre, sur chaque endpoint (vingt appels au total) :
 **HTTP 200 partout**, aucune bannière `Unsupported parameter` — donc dix verdicts **ACCEPTE**
 dans la matrice machine. Trois effets ont été relevés au passage :
 
@@ -120,8 +122,9 @@ de l'endpoint. Mesuré le 2026-11-25T06:02:56Z :
 | passerelle `models.myia.io` | `swift-1.5-27b` | `swift-1.5-27b` |
 | passerelle `models.myia.io` | `qwen3.6-35b-a3b` | `swift-1.5-27b` |
 
-Les dix verdicts de la colonne valent donc pour les deux noms : c'est le même modèle, servi sous
-deux identifiants par deux déploiements.
+Ce tableau décrit les noms renvoyés, pas une mesure des paramètres sous chaque nom. Les dix
+sondes ont demandé `swift-1.5-27b` sur chacun des deux endpoints ; leurs verdicts ne sont pas
+étendus ici aux appels demandant `qwen3.6-35b-a3b`.
 
 ### Ce que cela dit des sept sites `max_tokens` de #24114
 

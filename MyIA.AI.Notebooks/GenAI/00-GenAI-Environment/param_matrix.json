@@ -607,12 +607,11 @@
     "note": "Unrecognized request argument supplied: reasoning_effort"
    }
   }
- }
-,
+ },
  "swift-1.5-27b": {
   "date": "2026-11-25T05:49:02Z",
   "source": "vLLM du cluster http://192.168.0.47:5002/v1 et passerelle https://models.myia.io/v1 -- lot de dix sondes, memes verdicts sur les deux endpoints",
-  "note": "L'endpoint du cluster sert les deux noms pour le meme checkpoint (Swift-1.5-Qwen3.8-27B W4A16-AWQ, cf. #26832) : demander swift-1.5-27b rend model=qwen3.6-35b-a3b sur :5002 et model=swift-1.5-27b sur la passerelle (mesure 2026-11-25T06:02:56Z) -- les dix verdicts ci-dessus valent pour les deux noms.",
+  "note": "Les dix sondes demandent swift-1.5-27b sur chacun des deux endpoints. Mesure distincte des noms renvoyes le 2026-11-25T06:02:56Z : sur :5002, les deux noms demandes rendent model=qwen3.6-35b-a3b ; sur la passerelle, ils rendent model=swift-1.5-27b. Cette observation ne mesure pas les parametres sous qwen3.6-35b-a3b.",
   "parametres": {
    "temperature": {
     "verdict": "ACCEPTE",
