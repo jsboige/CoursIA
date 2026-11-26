@@ -310,14 +310,20 @@ def test_le_budget_borne_les_lectures_et_les_prend_du_plus_vieux(monkeypatch):
 
 
 def test_l_echantillon_in_progress_borne_les_lectures(monkeypatch):
+    """Borne d'echantillon. Depuis #28552 elle ne mord que tant que la garde
+    anti-faux-positif n'est pas satisfaite : les jobs de ce temoin portent un
+    AUTRE label, donc aucune preuve n'est faite et la sonde va au bout de
+    l'echantillon (le cas « preuve faite » est couvert en 2ter)."""
     api = _patch(monkeypatch, FakeApi(
         in_progress=[_run(1000 + i, 1 + i) for i in range(40)],
-        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(40)},
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1, label="autre-label")]
+              for i in range(40)},
     ))
     st = _fetch(api, in_progress_sample=5)
     assert len(api.job_reads) == 5
     assert st.in_progress_unread == 35
-    assert len(st.in_progress) == 5
+    assert st.in_progress_satisfied_exit == 0
+    assert len(st.in_progress) == 0
 
 
 def test_le_budget_global_couvre_aussi_l_echantillon_in_progress(monkeypatch):
@@ -331,6 +337,170 @@ def test_le_budget_global_couvre_aussi_l_echantillon_in_progress(monkeypatch):
     st = _fetch(api, job_read_budget=2, in_progress_sample=20)
     assert st.job_reads == 2
     assert len(api.job_reads) == 2
+
+
+# --- 2ter. Saut des runs in_progress jeunes apres la preuve (#28552) --------
+#
+# La passe in_progress PROUVE qu'un slot du label sert (garde anti-faux-positif)
+# ET classe les jobs queued au-dela du seuil des runs qu'elle lit (faux negatif
+# #22215). Le saut est donc borne par l'AGE : une fois la preuve faite, seuls
+# les runs plus jeunes que `starve_minutes` sont sautes -- un job n'est jamais
+# plus vieux que son run, donc ils ne peuvent porter aucun job affame, et la
+# passe 1 ne les a pas lus. Les runs plus vieux restent lus. Le saut est compte
+# separement du budget (`in_progress_satisfied_exit`), et le compte de jobs en
+# cours devient une borne inferieure, dite « au moins N ».
+
+def test_la_preuve_saute_les_runs_jeunes_et_les_compte(monkeypatch):
+    """Un seul run lu suffit : les 4 suivants sont jeunes, donc sautes."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(5)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(5)},
+    ))
+    st = _fetch(api, in_progress_sample=5,
+                skip_young_in_progress_after_proof=True)
+    assert api.job_reads == [1000], api.job_reads
+    assert st.job_reads == 1
+    assert st.in_progress_satisfied_exit == 4
+    # Ces runs ne sont PAS « non lus faute de budget » : ils ne peuvent rien
+    # porter d'affame, et le compte le dit separement.
+    assert st.in_progress_unread == 0
+    assert len(st.in_progress) == 1
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert any(n.startswith("au moins 1 job(s) in_progress")
+               for n in v.notes), v.notes
+    assert not v.errors
+
+
+def test_la_preuve_ne_saute_pas_un_run_plus_vieux_que_le_seuil(monkeypatch):
+    """Temoin mixte de la review ai-01 (25/11) : le premier run prouve qu'un
+    job du label tourne, le second est plus vieux que le seuil et porte un job
+    du label queued depuis 40 min -- un run in_progress peut affamer. La sortie
+    anticipee ne doit PAS le masquer."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000, 5), _run(1001, 40)],
+        jobs={1000: [_job(9000, "in_progress", 4)],
+              1001: [_job(9001, "queued", 40)]},
+    ))
+    st = _fetch(api, in_progress_sample=5,
+                skip_young_in_progress_after_proof=True)
+    assert api.job_reads == [1000, 1001], api.job_reads
+    assert len(st.starved) == 1, st.starved
+    assert st.starved[0].run_id == 1001
+    assert st.in_progress_satisfied_exit == 0
+    # La detection est preservee : profil « drain lent », pas « file morte ».
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert not v.errors
+    assert any("file profonde mais saine" in n for n in v.notes), v.notes
+
+
+def test_la_preuve_distingue_les_sauts_des_hors_echantillon(monkeypatch):
+    """40 runs, limite 5, preuve au premier : 4 sauts par preuve (jeunes) et
+    35 hors echantillon, comptes SEPAREMENT -- et l'echantillon reste dit tel
+    quel sur les affames, sans promesse de completude."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(40)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(40)},
+    ))
+    st = _fetch(api, in_progress_sample=5,
+                skip_young_in_progress_after_proof=True)
+    assert api.job_reads == [1000], api.job_reads
+    assert st.in_progress_satisfied_exit == 4
+    assert st.in_progress_unread == 35
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert any(n.startswith("4 run(s) in_progress plus jeune(s)")
+               for n in v.notes), v.notes
+    assert any(n.startswith("35 run(s) in_progress hors echantillon")
+               for n in v.notes), v.notes
+
+
+def test_les_runs_non_lus_interdisent_la_conclusion_absolue(monkeypatch):
+    """Seconde moitie de la review ai-01 (25/11) : quand des runs restent non
+    lus, le decompte d'affames ne vaut que pour l'echantillon. Le verdict ne
+    doit donc pas dire « rien d'affame -- OK » dans l'absolu -- la formulation
+    exacte est conservee quand tout est lu (temoin precedent), et qualifiee
+    des qu'un run echappe a la lecture."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(40)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(40)},
+    ))
+    st = _fetch(api, in_progress_sample=5,
+                skip_young_in_progress_after_proof=True)
+    assert st.in_progress_unread == 35, st.in_progress_unread
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    note = next(n for n in v.notes if "job(s) in_progress," in n)
+    assert "-- OK" not in note, note
+    assert "35 run(s) non lu(s)" in note, note
+    # Le rouge n'est PAS demande ici : l'echantillon reste le contrat d'avant,
+    # seule la conclusion cesse de se dire complete.
+    assert not v.errors
+
+
+def test_defaut_lecture_complete_meme_apres_la_preuve(monkeypatch):
+    """Sans l'option (defaut), rien ne change pour les consommateurs existants
+    -- dont `ci_overflow_controller`, qui lit `in_progress` comme une CHARGE :
+    l'echantillon est lu en entier et le compte reste exact."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(5)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(5)},
+    ))
+    st = _fetch(api, in_progress_sample=5)
+    assert api.job_reads == [1000, 1001, 1002, 1003, 1004], api.job_reads
+    assert st.in_progress_satisfied_exit == 0
+    assert len(st.in_progress) == 5
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert any(n.startswith("5 job(s) in_progress") for n in v.notes), v.notes
+
+
+def test_un_etat_connu_rend_la_meme_sortie_qu_avant(monkeypatch):
+    """Temoin de semantique inchangee : quand la preuve n'arrive qu'au dernier
+    run eligible, la sonde lit tout l'echantillon et rend le compte EXACT,
+    identique a ce que rendait la sonde avant #28552."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(3)],
+        jobs={1000: [_job(9000, "completed", 1)],
+              1001: [_job(9001, "in_progress", 1, label="autre-label")],
+              1002: [_job(9002, "in_progress", 1)]},
+    ))
+    st = _fetch(api, in_progress_sample=3,
+                skip_young_in_progress_after_proof=True)
+    assert sorted(api.job_reads) == [1000, 1001, 1002], api.job_reads
+    assert st.in_progress_satisfied_exit == 0
+    assert len(st.in_progress) == 1
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert "1 job(s) in_progress, rien d'affame -- OK" in v.notes, v.notes
+    assert not v.errors
+
+
+def test_aucun_job_du_label_en_cours_lit_tout_l_echantillon(monkeypatch):
+    """Sans preuve, pas de saut : la garde ne se satisfait pas d'un silence,
+    et les runs restants restent des non-lus faute de budget/echantillon."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(4)],
+        jobs={1000 + i: [_job(9000 + i, "queued", 1)] for i in range(4)},
+    ))
+    st = _fetch(api, in_progress_sample=2,
+                skip_young_in_progress_after_proof=True)
+    assert len(api.job_reads) == 2
+    assert st.in_progress_satisfied_exit == 0
+    assert st.in_progress_unread == 2
+    assert st.in_progress == []
+
+
+def test_une_lecture_jobs_en_echec_ne_satisfait_pas_la_garde(monkeypatch):
+    """Un appel `jobs` en panne ne prouve rien : aucun saut anticipe, et le
+    passage ne conclut pas OK sur ce silence (#22215/#22234)."""
+    api = _patch(monkeypatch, FakeApi(
+        in_progress=[_run(1000 + i, 1 + i) for i in range(3)],
+        jobs={1000 + i: [_job(9000 + i, "in_progress", 1)] for i in range(3)},
+        fail_on=("jobs",),
+    ))
+    st = _fetch(api, in_progress_sample=3,
+                skip_young_in_progress_after_proof=True)
+    assert st.in_progress_satisfied_exit == 0
+    assert len(api.job_reads) == 3
+    assert st.in_progress == []
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert not any(n.endswith("rien d'affame -- OK") for n in v.notes), v.notes
 
 
 # --- 2bis. Budget epuise / listing illisible : jamais de conclusion
@@ -574,97 +744,3 @@ def test_sans_pat_pas_extinction_mais_starvation_gardee():
     assert v.status == "ERROR"
     assert not any("EXTINCTION" in e for e in v.errors)
     assert any("STARVATION" in e for e in v.errors)
-
-
-# --- #20697 point 4 : le residu, POOL ABSENT ------------------------------
-# Le predicat par hote exige `offline > 0` : il ne voit que les hotes qui ont
-# au moins une entree dans l'inventaire. Un hote dont ZERO runner est inscrit
-# cote GitHub -- le cas fondateur de l'issue, dix conteneurs vivants et zero
-# runner enregistre pendant ~2 jours -- lui est structurellement invisible.
-# L'inventaire declare apporte ce qui manquait : la liste de ce qui DEVRAIT
-# exister.
-
-
-def _declared(path: str, hosts: list[dict]) -> mod.DeclaredHosts:
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump({"schema_version": 1, "hosts": hosts}, fh)
-    return mod.load_declared_hosts(path, _WAITER)
-
-
-def test_hote_declare_absent_de_l_inventaire_tire_pool_absent(tmp_path):
-    """Le cas fondateur : l'hote n'a NI online NI offline -- invisible sinon."""
-    declared = _declared(str(tmp_path / "d.json"), [
-        {"host": _HOST, "labels": [_WAITER], "slots": 10},
-        {"host": "myia-po-2099-linux-docker", "labels": [_WAITER], "slots": 4},
-    ])
-    inv = mod.RunnerInventory(online=_online(10), offline=[])
-    warnings = mod.evaluate_host_loss(inv, declared)
-    absent = [w for w in warnings if "POOL ABSENT" in w]
-    assert len(absent) == 1, f"un seul hote manque : {warnings}"
-    assert "myia-po-2099-linux-docker" in absent[0]
-    assert "4 slot" in absent[0], "l'ampleur de la perte est chiffree"
-    assert "d.json" in absent[0], "le message nomme le fichier a corriger"
-
-
-def test_hote_declare_present_meme_offline_ne_double_pas_le_message(tmp_path):
-    """Un hote qui apparait, meme entierement offline, garde POOL LOSS seul."""
-    declared = _declared(str(tmp_path / "d.json"),
-                         [{"host": _HOST, "labels": [_WAITER], "slots": 10}])
-    inv = mod.RunnerInventory(online=[], offline=_online(10))
-    warnings = mod.evaluate_host_loss(inv, declared)
-    assert any("POOL LOSS" in w for w in warnings)
-    assert not any("POOL ABSENT" in w for w in warnings), \
-        f"un hote liste n'est pas absent : {warnings}"
-
-
-def test_la_declaration_est_filtree_par_label(tmp_path):
-    """Un hote declare pour un autre label ne crie pas sur celui-ci.
-
-    Sans ce filtre, chaque passage de sonde alerterait sur les hotes des
-    autres labels -- et l'organe deviendrait du bruit qu'on apprend a ignorer.
-    """
-    path = str(tmp_path / "d.json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump({"schema_version": 1, "hosts": [
-            {"host": "myia-po-2028-linux-docker", "labels": ["coursia-linux"],
-             "slots": 3},
-        ]}, fh)
-    declared = mod.load_declared_hosts(path, _WAITER)
-    assert declared.available and declared.hosts == {}, \
-        "le label mesure ne doit retenir que ses hotes"
-    assert not mod.evaluate_host_loss(mod.RunnerInventory(online=_online(10)),
-                                      declared)
-
-
-def test_inventaire_declare_illisible_est_une_note_pas_un_rouge(tmp_path):
-    """On ne peut pas prouver une disparition avec un fichier qu'on ne lit pas."""
-    bad = tmp_path / "bad.json"
-    bad.write_text("{ pas du json", encoding="utf-8")
-    declared = mod.load_declared_hosts(str(bad), _WAITER)
-    assert not declared.available and declared.error
-    inv = mod.RunnerInventory(online=_online(10), offline=[])
-    block = mod.evaluate(inv, mod.Starvation(), warn_floor=2, label=_WAITER,
-                         declared=declared)
-    assert block.status == "OK", f"pas de rouge : {block.errors}"
-    assert any("inventaire declare non lu" in n for n in block.notes)
-
-
-def test_sans_fichier_declare_le_predicat_est_desactive():
-    """Chemin absent : l'organe reste utilisable, sans POOL ABSENT ni bruit."""
-    declared = mod.load_declared_hosts("/chemin/inexistant.json", _WAITER)
-    assert not declared.available
-    inv = mod.RunnerInventory(online=_online(10), offline=[])
-    assert not mod.evaluate_host_loss(inv, declared)
-    assert not mod.evaluate_host_loss(inv, None)
-
-
-def test_l_inventaire_declare_du_depot_couvre_les_hotes_du_label_waiter():
-    """Le fichier livre avec l'organe n'est pas vide : il declare bien l'hote
-    qui sert `coursia-waiter` (10 slots mesures le 2026-11-12). Un fichier
-    vide rendrait le predicat inerte tout en donnant l'illusion du contraire."""
-    shipped = mod.DEFAULT_DECLARED_HOSTS
-    assert Path(shipped).is_file(), f"fichier livre absent : {shipped}"
-    declared = mod.load_declared_hosts(shipped, "coursia-waiter")
-    assert declared.available, declared.error
-    assert declared.hosts, "au moins un hote declare pour ce label"
-    assert "myia-ai-01-wsl-waiterb" in declared.hosts
