@@ -38,6 +38,7 @@ from path_profile import (  # noqa: E402
     CorpusReport,
     ReplayDivergence,
     exclusion_graph,
+    fingerprint,
     format_report,
     main,
     profile_corpus,
@@ -49,6 +50,12 @@ from path_profile import (  # noqa: E402
 
 PUZZLES = _SUDOKU / "Puzzles"
 RANK = {rule: i + 1 for i, rule in enumerate(InferenceSolver.RULE_ORDER)}
+
+# Les six corpus du pilote (protocole §10.1), du plus facile au plus dur.
+CORPUS_PILOTE = (
+    "Sudoku_gen_facile.txt", "Sudoku_gen_moyen.txt", "Sudoku_gen_difficile.txt",
+    "Sudoku_Easy51.txt", "Sudoku_hardest.txt", "Sudoku_top95.txt",
+)
 
 
 def _load(name: str, n: int | None = None) -> list[str]:
@@ -263,14 +270,21 @@ def test_support_d_un_recomptage_nul_vaut_none() -> None:
 
 
 def test_support_est_reconnu_pour_tout_pas_des_traces_reelles() -> None:
-    """Aucun pas d'une regle connue ne rend ``support`` non defini."""
+    """Aucun pas d'une regle connue ne rend ``support`` non defini.
+
+    Sur les six corpus du pilote : ``hidden_triple`` et ``hidden_quad``
+    n'apparaissent que dans ``Sudoku_top95``. Le jeu des regles rencontrees
+    est asserte egal a ``RULE_ORDER``, pour qu'une regression qui ne toucherait
+    qu'une regle rare ne passe plus entre deux corpus.
+    """
     rules_seen = set()
-    for puzzle in _load("Sudoku_Easy51.txt") + _load("Sudoku_hardest.txt"):
-        for pas in replay(InferenceSolver(puzzle)).steps:
-            rules_seen.add(pas.rule)
-            assert support(pas.rule, pas.step.premises, pas.before) is not None
-            assert support(pas.rule, pas.step.premises, pas.before) >= 1
-    assert rules_seen <= set(InferenceSolver.RULE_ORDER)
+    for name in CORPUS_PILOTE:
+        for puzzle in _load(name):
+            for pas in replay(InferenceSolver(puzzle)).steps:
+                rules_seen.add(pas.rule)
+                assert support(pas.rule, pas.step.premises, pas.before) is not None
+                assert support(pas.rule, pas.step.premises, pas.before) >= 1
+    assert rules_seen == set(InferenceSolver.RULE_ORDER)
 
 
 # ---------------------------------------------------------------------------
@@ -382,6 +396,30 @@ def test_comptes_d_exclusion(tmp_path: Path) -> None:
     assert report.n_traces_refusees == 0
     assert len(report.sha256) == 64
     assert report.profiles[0].puzzle == easy
+
+
+def test_empreinte_d_un_corpus_ne_depend_pas_des_fins_de_ligne(
+        tmp_path: Path) -> None:
+    """LF et CRLF donnent la meme empreinte.
+
+    Un checkout Windows livre en CRLF un fichier commite en LF : sur les
+    octets lus tels quels, le meme corpus avait deux ``sha256`` selon la
+    plateforme (#28619).
+    """
+    premiere, seconde = _load("Sudoku_gen_facile.txt", 2)
+    texte = premiere + "\n" + seconde + "\n"
+    en_lf = tmp_path / "en_lf.txt"
+    en_crlf = tmp_path / "en_crlf.txt"
+    en_lf.write_bytes(texte.encode("utf-8"))
+    en_crlf.write_bytes(texte.replace("\n", "\r\n").encode("utf-8"))
+
+    assert fingerprint(en_lf.read_bytes()) == fingerprint(en_crlf.read_bytes())
+    assert fingerprint(en_crlf.read_bytes()) == fingerprint(texte.encode("utf-8"))
+    rapport_lf, rapport_crlf = profile_corpus(en_lf), profile_corpus(en_crlf)
+    assert rapport_lf.sha256 == rapport_crlf.sha256
+    assert rapport_lf.n_grilles == rapport_crlf.n_grilles == 2
+    # Un retour chariot isole n'est pas une fin de ligne : il reste dans l'empreinte.
+    assert fingerprint(b"a\rb\n") != fingerprint(b"ab\n")
 
 
 def test_une_trace_refusee_est_comptee_et_publiee(

@@ -263,14 +263,28 @@ Dans les tableaux, un nombre entre parenthèses est le nombre de valeurs défini
 
 ### 10.2 Empreintes des corpus
 
-`sha256` des octets de chaque fichier, dans `MyIA.AI.Notebooks/Sudoku/Puzzles/`.
+Empreinte canonique de chaque fichier, dans `MyIA.AI.Notebooks/Sudoku/Puzzles/` :
+`sha256` des octets, **fins de ligne normalisées en LF** (seules les suites CRLF
+sont réduites, un retour chariot isolé reste dans l'empreinte). C'est la valeur
+que rend `path_profile.fingerprint`, et elle est la même sur un checkout Windows
+(`core.autocrlf=true`) et sur Linux. La normalisation est nécessaire ici parce
+que le dépôt porte trois de ces corpus en LF et trois en CRLF : les octets du
+fichier de travail ne sont donc pas une référence stable. Vérification :
+`git cat-file blob HEAD:<chemin> | tr -d '\r' | sha256sum`.
 
-- `Sudoku_gen_facile.txt` : `869b7a3a37facb504318a101a6ac1b99018ce0beeb18b8451bf480023c9d1e4b`
-- `Sudoku_gen_moyen.txt` : `bdcfef99efe7bde69288324297aa542698df8fa39d35a8db88d4088188f85b10`
-- `Sudoku_gen_difficile.txt` : `aa1d8bbe081f6399db5e18db9cbfd14975cfaa26d9004fe9e31eb82bbadf94f1`
-- `Sudoku_Easy51.txt` : `6076b2175d7fe8f80072e260b0c35195d1e93f500c329799377c4e04c40b9290`
-- `Sudoku_hardest.txt` : `5e885932b99367116f577bf38d34b6bc6e6101d504f21787e51434185e55f84c`
-- `Sudoku_top95.txt` : `932fdd88208cd487021e22a9d2d5d26a66b041f6708d1e48d9ccfb1e9da6e088`
+Les trois premières valeurs publiées dans cette section étaient celles du
+fichier de travail d'un clone Windows pour les corpus commités en LF ; elles
+sont remplacées par les empreintes canoniques (#28619).
+
+- `Sudoku_gen_facile.txt` : `3a286199dfbc6419f57ebad82cfbc515406754658eba72d9c91ffcc02c57c8c8`
+- `Sudoku_gen_moyen.txt` : `8b344a5aa627c470a541187c2acb009c9b9e1a6e2f3a74ae313e03fbc4c190e1`
+- `Sudoku_gen_difficile.txt` : `9d694503c02f4ebdb1a0e86d7c324f1ed11f5c84c008e4b401e90610422f71c2`
+- `Sudoku_Easy51.txt` : `95e49fd71fabfb916d0d586a554e0b9fca4b339fb0b54ad853456e885c3dc593`
+- `Sudoku_hardest.txt` : `398e1e5df4f50723078e3b510e00ea7eb9e104c521a9a186b4c20cd066c0459f`
+- `Sudoku_top95.txt` : `b16eff35fbe41fb7b122f21c5c6ba30b85861b47946d33257070df1a69cddd36`
+
+Dans les deux tableaux qui suivent, la colonne `tangle` porte les valeurs **v1**,
+celles du pilote ; la définition révisée et ses valeurs sont en §10.9.
 
 ### 10.3 Grilles résolues par `R` — médianes
 

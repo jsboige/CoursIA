@@ -13,7 +13,7 @@ name: Sudoku-DLX-Tests
 # Portee stricte : cibles-FICHIER explicites, jamais le dossier.
 # `test_inference_trace.py` est entre avec #27222 (trace verifiable, 11
 # tests) ; `test_path_profile.py` avec #28619 (instrument de mesure du
-# chemin de resolution, 32 tests, #27214). Le dossier `Sudoku/tests/`
+# chemin de resolution, 33 tests, #27214). Le dossier `Sudoku/tests/`
 # contient aussi `test_thermal_safe_train.py`, un test d'entrainement torch
 # (59 tests, ~35 s de collecte seule, run de plusieurs minutes) : l'inclure
 # rendrait ce garde lourd et instable. Ce test torch reste hors perimetre
@@ -60,22 +60,22 @@ concurrency:
 
 jobs:
   sudoku-dlx-tests:
-    name: Sudoku DLX certificates pytest (71 collected)
+    name: Sudoku DLX certificates pytest (72 collected)
     if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
-      # Plancher mesure firsthand : `pytest ... --collect-only -q` = 71 tests
-      # sur les trois cibles (mesure 2026-11-25, branche de #28619) :
+      # Plancher mesure firsthand : `pytest ... --collect-only -q` = 72 tests
+      # sur les trois cibles (mesure 2026-11-26, branche de #28619) :
       # 17 test_dlx_certificates.py + 22 test_inference_trace.py (11 entres
-      # par #27222, 11 de plus par #27754) + 32 test_path_profile.py
+      # par #27222, 11 de plus par #27754) + 33 test_path_profile.py
       # (#28619). La valeur precedente (28) datait de #27222 : elle etait
       # restee basse apres #27754, les deux cibles collectant deja 39. Les
       # comptes sont statiques (aucun marqueur de version, parametrisation
       # a liste litterale) : la collecte Python 3.11 du job rend les memes.
       # Si des tests sont retires INTENTIONNELLEMENT, ajuster cette valeur
       # dans la meme PR.
-      SUDOKU_DLX_TEST_FLOOR: 71
+      SUDOKU_DLX_TEST_FLOOR: 72
 
     steps:
       - uses: actions/checkout@v4
@@ -103,8 +103,8 @@ jobs:
       # silencieuse de tests du chemin de collecte. Aucun `|| true` : on
       # veut EXIT 1 si le grep echoue (signal a distinguer d'une baisse).
       # #27214 : test_inference_trace.py ajoute 11 tests (17 -> 28).
-      # #28619 : test_path_profile.py ajoute 32 tests (39 -> 71).
-      - name: Collection floor-guard (71)
+      # #28619 : test_path_profile.py ajoute 33 tests (39 -> 72).
+      - name: Collection floor-guard (72)
         if: always()
         run: |
           COLLECTED=$(pytest MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py MyIA.AI.Notebooks/Sudoku/tests/test_inference_trace.py MyIA.AI.Notebooks/Sudoku/tests/test_path_profile.py --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)

@@ -439,16 +439,30 @@ def load_puzzles(path: Path) -> Tuple[List[str], int]:
     return puzzles, skipped
 
 
+def fingerprint(raw: bytes) -> str:
+    """Empreinte canonique d'un corpus : ``sha256`` des octets, fins de ligne en LF.
+
+    Le meme corpus arrive en CRLF sur un checkout Windows
+    (``core.autocrlf=true``) et en LF sur Linux ; sur les octets lus tels
+    quels, un meme commit donnait deux ``report.json`` et une empreinte qui
+    n'etait ni celle du blob ni une forme declaree (#28619). Seule la suite
+    CRLF est reduite : un retour chariot isole dans une ligne appartient au
+    corpus. ``load_puzzles`` lit les memes grilles dans les deux formes.
+    """
+    return hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
+
+
 def profile_corpus(path: Path) -> CorpusReport:
     """Profil de chaque grille d'un fichier, avec les comptes de §7.5.
 
     Une grille sans solution unique est ecartee par l'oracle et comptee ; une
     trace refusee par ``verify_trace`` est comptee, et son profil publie tel
-    quel, marque ``trace_accepted=False``.
+    quel, marque ``trace_accepted=False``. L'empreinte du corpus est celle de
+    ``fingerprint``.
     """
     raw, skipped = load_puzzles(path)
     report = CorpusReport(path=path.name,
-                          sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                          sha256=fingerprint(path.read_bytes()),
                           n_lignes_ignorees=skipped)
     seen = set()
     for puzzle in raw:
