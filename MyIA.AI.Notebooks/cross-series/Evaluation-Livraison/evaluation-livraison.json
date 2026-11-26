@@ -1,0 +1,80 @@
+{
+  "description": "Parcours vertical d'evaluation : mesurer un systeme que l'on livre soi-meme, avec un protocole dont chaque maillon est nomme avant la mesure. Premiere branche livree : un protocole d'evaluation rejoue sur la banque de questions publiee par le depot. La route (modele local auto-heberge), la reference (la banque et son tri), le juge (deterministe), les seuils (ecrits avant la mesure) et le verdict (la comparaison, seuil par seuil) sont les cinq maillons de la branche ; le juge probabiliste avec garde-fou anti-bias reste a ecrire et n'est pas pretendu ici.",
+  "branches": [
+    {
+      "id": "evaluer-avant-de-livrer",
+      "description": "Evaluer avant de livrer : la route declaree, la reference publiee, le juge deterministe, les seuils ecrits avant la mesure, le verdict comme comparaison. La mesure porte sur la banque de questions QCM du depot, lue et jamais modifiee ; les questions que le juge a lettre ne sait pas noter sont ecartees et l'exclusion est affichee dans les sorties.",
+      "notebooks": [
+        "cross-series/Evaluation-Livraison/Evaluation-Livraison-01-Protocole-Python.ipynb"
+      ]
+    }
+  ],
+  "accretions": [],
+  "reference": {
+    "source": "MyIA.AI.Notebooks/cross-series/qcm/",
+    "questions_publiees": 146,
+    "questions_notees": 135,
+    "regle_de_selection": "type multichoice ou truefalse, choix_unique vrai, et une seule option marquee correcte",
+    "exclusions": 11,
+    "motifs_d_exclusion": [
+      "type matching : la reponse attendue est un appariement, non une lettre",
+      "reponses multiples : la lettre rendue n'identifie plus une reponse unique"
+    ]
+  },
+  "juge": {
+    "type": "deterministe",
+    "principe": "extraction de la premiere lettre isolee de la reponse, comparee a la cle de correction",
+    "auto_tests": 7,
+    "auto_tests_conformes": 7,
+    "statuts": [
+      "correct",
+      "incorrect",
+      "abstention"
+    ]
+  },
+  "candidat": {
+    "type": "modele local auto-heberge",
+    "route_declaree_dans_le_carnet": true,
+    "temperature": 0,
+    "raisonnement": "desactive",
+    "cle": "lue dans le trousseau local du siege, jamais ecrite dans le carnet"
+  },
+  "seuils": {
+    "exactitude_globale_min": 0.5,
+    "exactitude_par_theme_min": 0.35,
+    "taux_abstention_max": 0.1,
+    "latence_p95_s_max": 30.0,
+    "jetons_par_requete_max": 600,
+    "jetons_par_bonne_reponse_max": 4000,
+    "declaration": "ecrits avant la mesure, affiches dans les sorties, jamais reecrits apres"
+  },
+  "mesures": {
+    "exactitude_globale": 0.6444,
+    "bonnes_reponses": 87,
+    "questions_posees": 135,
+    "taux_abstention": 0.0,
+    "hasard_de_reference_global": 0.2005,
+    "exactitude_par_theme": {
+      "dl-evaluation-seance": 0.8125,
+      "ia-1-introduction-agents": 0.8462,
+      "ia-2-resolution-problemes": 0.3125,
+      "ia-3-logique-bases-connaissances": 0.6875,
+      "ia-4-systemes-probabilistes": 0.5217,
+      "ia-5-apprentissage": 0.8947
+    },
+    "exactitude_par_type": {
+      "multichoice": 0.6198,
+      "truefalse": 0.8571
+    },
+    "jetons_total": 20638,
+    "jetons_par_requete": 152.9,
+    "jetons_par_bonne_reponse": 237.2
+  },
+  "verdict": {
+    "resultat": "FAIL",
+    "seuils_franchis": 5,
+    "seuils_total": 6,
+    "seuil_non_franchi": "exactitude par theme : 0.3125 contre un plancher de 0.35",
+    "lecture": "Le seuil manque porte sur le theme le plus faible, ou le candidat fait 2.55 fois mieux que le hasard de reference du theme (0.1225). Le seuil est un seuil de qualite, pas un seuil de devinette ; deux lectures restent ouvertes, celle d'une difficulte du candidat sur cette famille de questions et celle de cles de correction plus strictes sur cette famille."
+  }
+}
