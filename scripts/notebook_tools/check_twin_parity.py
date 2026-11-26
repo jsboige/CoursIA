@@ -661,7 +661,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
 
     # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
     r_ls = _run_git(
-        ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
+        ["git", "-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
         cwd=str(repo_root),
     )
     entries: list = []
@@ -1739,7 +1739,7 @@ def _audit_indexes_at_ref(repo_root: Path, git_ref: str, registry_dir: Path,
         return set()
     try:
         r = _run_git(
-            ["git", "ls-tree", "-r", "--name-only", git_ref, "--",
+            ["git", "-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", git_ref, "--",
              f"{reg_rel}/{slug}/"],
             cwd=str(repo_root),
         )

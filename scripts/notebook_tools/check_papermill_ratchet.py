@@ -49,9 +49,19 @@ EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
 
 
 def git(*args, cwd=None):
-    """Run a git command, returning stdout (utf-8) or None on failure."""
+    """Run a git command, returning stdout (utf-8) or None on failure.
+
+    ``-c core.quotePath=false`` : sans ce drapeau, git *cite* les chemins non
+    ASCII (``"Cr\\303\\251ateur de mail personnalis\\303\\251.ipynb"``). Le
+    chemin cite n'existe pas sur le disque : le ratchet le prenait pour un
+    carnet AJOUTE et annoncait un **ADDED** sur un carnet que la PR ne
+    faisait que modifier (#28632). Le meme correctif existe deja dans le
+    depot (``check_notebook_navlinks.py``, ``check_notebook_nav_chain.py``) :
+    on le suit, on ne l'invente pas.
+    """
     try:
-        out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+        out = subprocess.run(["git", "-c", "core.quotePath=false", *args],
+                             cwd=cwd, capture_output=True,
                              encoding="utf-8", errors="replace", check=False)
     except OSError:
         return None
