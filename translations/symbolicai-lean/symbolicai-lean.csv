@@ -9195,7 +9195,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb,99edfb4f,
 C'est ce théorème qui transforme la dérivée d'un concept élégant en un **algorithme qui termine** : comme l'espace des dérivées est fini, un reconnaisseur qui passe d'une dérivée à la suivante ne peut visiter qu'un nombre borné d'états distincts. D'où la complexité **linéaire** des moteurs RE# et `.NonBacktracking`.
 
 Ci-dessous, nous illustrons ce concept sur un **mini-projet Lean autonome** (sans dépendance Mathlib).",,,,,,,,1e612219a21653f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb,115a3011,code,fr,9d0d7b1ff3bb0136,"import subprocess
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb,115a3011,code,fr,834dc869be7cda5b,"import subprocess
 from pathlib import Path
 
 # Le mini-projet Lake no-Mathlib (autonome, a cote des autres projets Lean de la serie).
@@ -9212,7 +9212,7 @@ def wsl(cmd, timeout=180):
     except subprocess.TimeoutExpired:
         return -1, '', f'TIMEOUT after {timeout}s'
 
-# Tell c.28 strict fondateur (c.30 #18805) : chemin code en dur = MACHINE_PATH leak.
+# Regle : un chemin code en dur = MACHINE_PATH leak (fondateur #18805).
 # On utilise le chemin du module (notebook) pour calculer LEAN_PROJECT.
 # Path(__file__) ne marche pas pour un .ipynb execute via nbconvert, donc on se rabat
 # sur Path.cwd() qui doit etre le cwd du notebook au moment de l'execution.
@@ -9225,7 +9225,7 @@ LEAN_PROJECT = f'/mnt/{_drive}/{_path_tail}/finiteness_lean'
 rc, out, err = wsl(f'cat {LEAN_PROJECT}/lean-toolchain')
 print('Toolchain:', out.strip())
 print('WSL bridge: OK')
-",,,,,,,,9d0d7b1ff3bb0136,,,,,,,,,,,,,,,
+",,,,,,,,834dc869be7cda5b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb,e91d349e,code,fr,ac357738d0c7cb6c,"# Construction du mini-projet Lean (no-Mathlib : rapide, ~10s)
 rc, out, err = wsl(f'cd {LEAN_PROJECT} && lake build Finiteness 2>&1')
 print(out)

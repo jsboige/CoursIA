@@ -172,6 +172,7 @@ ORGANES = (
     "scripts/coordination/tapis_qualification_fil.py",
     "scripts/coordination/tapis_rapide.py",
     "scripts/coordination/tapis_repli.py",
+    "scripts/coordination/tapis_reprise_livree.py",
     "scripts/coordination/tapis_retry.py",
     "scripts/coordination/tapis_reverif.py",
     "scripts/coordination/tapis_rotation.py",

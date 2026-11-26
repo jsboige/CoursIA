@@ -592,6 +592,7 @@ personne ne pouvait nommer, et laissait passer des modules du chemin qui ne l'é
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
 | `scripts/coordination/tapis_qualification_fil.py` | la qualification **côté consommateur** : le fil complet déjà lu, rejoué sans appel réseau (`tapis_rapide.etats`) — extrait de `check_lane_claim.py` (#27242) |
+| `scripts/coordination/tapis_reprise_livree.py` | la **reprise** d'un grain dont la livraison n'est pas prouvée : les règles sont rejouées avec `LIVREE` muet, puis l'occupation s'applique — un marqueur non prouvé ne rend pas le grain plus servable que son absence (#28114) |
 | `scripts/coordination/tapis_fil_complet.py` | le **fil complet** des seuls candidats retenus : lever le doute de la fenêtre (`gh_snapshot`, REST paginé) |
 | `scripts/coordination/gh_issues.py` | la lecture **ciblée** des issues nommées, aux champs demandés — une porte pour tous les lecteurs ciblés (`gh_selection.qualifier`) |
 | `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
