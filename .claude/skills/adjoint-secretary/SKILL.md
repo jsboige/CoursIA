@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (200 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (203 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
 
 1. **La porte `PR gate` est l'autorité de mergeabilité — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle mergeable ? ». Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque), jamais comme un bloqueur de listing.
 2. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP lui-même (`spawn(node, [mcp-wrapper.cjs])` + `initialize` / `notifications/initialized` / `tools/call roosync_messages {action:"send", to, subject, body, messageId}`) ; l'identité signée vient de `ROOSYNC_MACHINE_ID` + `ROOSYNC_WORKSPACE_ID` passés dans l'env du spawn (le `ROO_FLEET_ROSTER` ne sert qu'au partitionnement). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -300,6 +300,38 @@ de la porte le dit : « Rien a corriger dans le code : cette jambe est un minute
 et 54 rouges de contenu, hors de mon ressort — plus 6 portes rouges à titre vide
 (dont 2 confirmées quota d'installation par le log, 4 avec enfants rouges donc de
 contenu).
+
+### Tells de mesure (26/11, cycle c698)
+
+Deux pièges mesurés dans le cycle c698 : l'un sur le **crible** qui compose les
+listes, l'autre sur le **verdict** qui décide qu'une PR part.
+
+23. **Un crible de tag `Grain:` à forme unique classe « SANS TAG » des PRs qui en
+portent un.** Le tag s'écrit `—` ou `--` selon la main qui l'a posé : mon crible en
+exigeait un, et il a classé **3 PRs du lot comme sans tag** alors qu'elles en
+portent un (`MED/readme`, `DEEP/notebook-python`). Un faux « SANS TAG » ne se voit
+pas : il fait sortir la PR d'une liste de fusion **pour une raison imaginaire**, et
+rien dans le rapport ne le signale. Accepter **les deux formes** ; ne jamais
+conclure « pas de tag » d'un crible à forme unique ; relire le corps de la PR avant
+de la retirer d'une liste, et dire dans le rapport qu'on l'a retirée.
+24. **Une porte `PR gate` verte et `mergeable_state: unstable` coexistent : « porte
+verte » ne veut pas dire « fusionnable ».** Mesure c698 (#28346) : porte `success`
+(verdict `PASS`) et `mergeable_state: unstable`. La porte ignore les advisories ; le
+prédicat de l'organe de merge (`latest-wins-green`) les compte. Le seul check non
+vert de #28346 est `_quarto.yml render list freshness (advisory)` en `failure` —
+dont l'annotation dit « Ceci **NE BLOQUE PAS** la PR », dont l'échec porte sur un
+notebook **hors du périmètre** de la PR, et qui est **vert sur `main`** : base
+périmée, pas diff. Corollaires : (a) lire `mergeable_state` **avant** d'annoncer
+une PR mergeable ; (b) lire l'annotation de l'advisory **avant** d'alerter une
+lane — l'alerte sur une base périmée enverrait la porteuse réparer un diff qu'elle
+n'a pas ; (c) le remède est `gh pr update-branch` (il ne ré-arme pas le plancher
+DWELL, #16149) et non un rejeu à la même tête, qui reproduirait le même rouge.
+
+Corollaire de mesure (c698) : **l'échéance annoncée dans le log est la bonne
+échéance.** Après le reset du quota d'installation (10:37:08Z), les 12 portes
+rejouées ont **toutes relu leurs checks** : **9 `INCONCLUSIVE` → 0**. Le budget de
+rejeux se pose donc à l'échéance lue dans le log, jamais à l'heure du verdict
+lui-même (tell 22).
 
 ## Émission de dossiers — garde-fous obligatoires
 
