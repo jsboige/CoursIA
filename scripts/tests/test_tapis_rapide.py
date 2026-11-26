@@ -417,12 +417,12 @@ def test_une_seule_famille_garde_ses_invariants():
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
-    assert set(ordre[:2]) == {2, 3}
-    # les deux grains visites une fois forment le niveau 1, decale par lane
-    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
-    # en dernier : il demande une lecture et un --paths (#26926)
-    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
+    # les jamais visitees d'abord (#5 visitee il y a 300 h, hors fenetre de 7 j,
+    # donc jamais visitee comme #1, #2, #3) ; seul #4 l'a ete
+    assert set(ordre[:4]) == {1, 2, 3, 5} and set(ordre[4:]) == {4}
+    # le conteneur passe apres les grains jamais visites (#26926) mais avant un
+    # grain deja visite : l'invariant de couverture (#27590) prime (mesure 25/11)
+    assert ordre.index(1) < ordre.index(4)
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -739,7 +739,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
 # sur la voie de tirage reelle, #21067, 22/11) ; tapis_labels.py la
 # trentieme (les EXCLUSIONS EN DONNEES : la table des labels qui ecartent un
-# grain -- l'urne de cloture et la pause, #28114, 23/11).
+# grain -- l'urne de cloture et la pause, #28114, 23/11) ;
+# tapis_occupation.py la trente-et-unieme (l'OCCUPATION d'un grain : l'urne de
+# cloture et la PR qui le tient, #28090, 22/11) ; tapis_leger_rapport.py la
+# trente-deuxieme (le RAPPORT du tirage leger -- extrait pour que le cumul des deux
+# organes du tapis tienne le plafond, #28090 + #27223, 22/11) ;
+# tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
+# de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
+# 22/11).
+
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -789,7 +797,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_attente.py", 60),
                                               ("tapis_leger_texte.py", 80),
                                               ("tapis_cap_livraisons.py", 160),
-                                              ("tapis_labels.py", 60)])
+                                              ("tapis_labels.py", 60),
+                                              ("tapis_occupation.py", 298),
+                                              ("tapis_leger_rapport.py", 50),
+                                              ("tapis_leger_texte_occupation.py", 33)])
+
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
