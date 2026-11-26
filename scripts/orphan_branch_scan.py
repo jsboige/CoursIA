@@ -196,7 +196,13 @@ def content_diff(branch: str, branch_tip: str, main_ref: str = "origin/main") ->
             status = STATUS_ABSENT
         elif not _run(["git", "cat-file", "-e", f"{main_ref}:{path}"]).returncode == 0:
             status = STATUS_ABSENT
-        elif _run(["git", "diff", "--quiet", main_ref, branch_tip, "--", path]).returncode == 0:
+        # `git diff` interprets ordinary pathspecs from the caller's cwd. The
+        # name-status path above is repository-root relative, so anchor it at
+        # the repository top to keep this comparison cwd-independent.
+        elif _run([
+            "git", "diff", "--quiet", main_ref, branch_tip, "--",
+            f":(top,literal){path}",
+        ]).returncode == 0:
             status = STATUS_SAME
         else:
             status = STATUS_DIFF

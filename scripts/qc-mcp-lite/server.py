@@ -158,6 +158,12 @@ def _extract_stats(bt: dict) -> dict:
     runtime_profit = runtime_stats.get("Net Profit")
     if runtime_profit:
         result["statistics"]["netProfitAbsolute"] = runtime_profit
+    # Custom runtime statistics (SetRuntimeStatistic) carry instrumented
+    # counters — e.g. the #19455 stop-exit proof, or the #19837 'Trainings'
+    # tallies. Dropping them forced a raw dump or a browser fallback; pass
+    # the dict through verbatim (QC values are display strings).
+    if runtime_stats:
+        result["runtimeStatistics"] = runtime_stats
     if error or stacktrace:
         # 'error' and 'stacktrace' are often identical; keep both but cap size.
         result["error"] = error[:1200]

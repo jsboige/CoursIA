@@ -1,0 +1,20 @@
+date: '2026-10-25'
+by: myia-ai-01:CoursIA
+python_sha: 34231e83eef66e42e6eb445487d57d3214ed99de
+csharp_sha: c41c476e16a189d67e13eff22fb4f7cbfbf6a0b8
+content_python_sha: 5cef26ecbde06141d9cd142cc84bb7f2c418da33c1e1056540740ff0b1aa5cbc
+content_csharp_sha: e7bc7b42544d5f19ee5ffeccb8dc6512b419c6d2b4ac825a25744c97851a0275
+reason: >-
+  Integration d'une PR de TP (#22563, rendu d'un groupe d'etudiants EPF),
+  Python-only. Le rendu de l'exercice 2 (PDB symetrique par reflexion
+  diagonale) devient l'exemple guide 2, credite, et un exercice 7 non
+  resolu le remplace (comparer les noeuds developpes par IDA* avec
+  h_additive puis h_combined). La cause de l'IndexError du rendu (globales N
+  et move ecrasees par des cellules ulterieures) est corrigee a la racine par
+  renommage (N_STATES, move_policy). Aucun moteur tiers n'est introduit :
+  l'axe `semantic` (from-scratch des deux cotes, BFS + Manhattan) est
+  intact. Asymetrie de contenu declaree : l'exemple guide 2 et l'exercice 7
+  n'ont pas d'equivalent dans le jumeau C#, qui n'est pas touche. Carnet
+  Python re-execute en entier (papermill, 55 cellules, 24 cellules de code
+  numerotees 1 a 24, 0 erreur). Attestation ecrite apres le scrub
+  papermill du commit 0b2b7d34e02.

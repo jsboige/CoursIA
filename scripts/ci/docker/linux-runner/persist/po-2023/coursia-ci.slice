@@ -1,0 +1,47 @@
+# Budget AGREGE des conteneurs runner CI -- myia-po-2023 (VM WSL de 32 Go).
+# Adapte le 2026-10-24 de persist/po-2028/coursia-ci.slice. Doctrine inchangee :
+# budget userspace = somme des caps ; AUCUN SWAP pour la CI (MemorySwapMax=0 :
+# un job qui deborde meurt localement, exit 137 retryable, au lieu de swapper
+# la VM et de faire tomber DriveFS puis la coordination de flotte).
+#
+# ARITHMETIQUE (2026-10-24, depart) :
+#   3 slots docker x 4096 Mo = 12 288 Mo de caps (classe Scripts Tests,
+#   pic mesure 3,5 Gio + agent + marge ~15 %, #16643 -- cap 4g, pids 512)
+#   budget userspace COURSIA_RUNNER_BUDGET_GB = 12 (= somme des caps)
+#   MemoryHigh = 10G -- DEVIATION ASSUMEE par rapport a po-2028 (12G) : cette
+#     VM porte 20 conteneurs GenAI vivants, ~16,9 Go residants au moment de la
+#     pose. Le reclaim doit commencer 2 Go PLUS BAS que sur une VM nue, pour
+#     que la pression tombe sur la CI et jamais sur les services.
+#   MemoryMax  = 12G -- egal a la somme des caps (po-2028 met +2 Go au-dessus).
+#     16,9 + 12 = 28,9 Go sur 32 : il reste 3,1 Go a la VM, et 641 Go de disque
+#     laissent le swap du systeme travailler.
+#   -> 19 Go restent aux services GenAI et a Docker Desktop.
+#
+# I/O : valeurs REPRISES de la mesure ai-01 (2026-09-07, 3 conteneurs :
+# 221 Mo/s cumules sous plafond contre 16,9 Go/s sans, facteur 76). Role :
+# interdire qu'un thrash PASSE L'ECHELLE, pas reguler un debit normal.
+# Chemin = DockerRootDir du daemon docker-ce (verifie /var/lib/docker).
+#
+# CPU : pas de CPUQuota ici (doctrine po-2024) -- l'axe CPU est garde par
+# COURSIA_RUNNER_CPU_BUDGET=10 dans le wrapper, refus au demarrage au depassement.
+#
+# ORDRE : cette slice se deploye AVANT les conteneurs ; assert_ci_slice
+# (supervise.sh) REFUSE le demarrage si elle est absente ou sans io.max
+# (COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET=1 dans le wrapper po-2023).
+[Unit]
+Description=CoursIA CI runner containers -- aggregate budget (po-2023)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+Before=slices.target
+
+[Slice]
+CPUAccounting=yes
+
+IOAccounting=yes
+IOWeight=50
+IOWriteBandwidthMax=/var/lib/docker 209715200
+IOReadBandwidthMax=/var/lib/docker 419430400
+
+MemoryAccounting=yes
+MemoryHigh=10G
+MemoryMax=12G
+MemorySwapMax=0

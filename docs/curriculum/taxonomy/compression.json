@@ -1,0 +1,3124 @@
+{
+  "schema_version": 1,
+  "series": "Compression",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb"
+  ],
+  "concepts": [
+    {
+      "id": "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+      "path": "compression/codes-prefixes",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Codes préfixes",
+      "label_en": "Prefix codes",
+      "definition_fr": "Codes binaires où aucun mot de code n'est le préfixe d'un autre, ce qui permet un décodage sans séparateur.",
+      "definition_en": "Binary codes in which no codeword is a prefix of another, allowing decoding without separators.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "6e98be9a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "6e98be9a"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "491fa9bc-13d7-4e31-b369-8696a5170786",
+      "path": "compression/codes-prefixes/kraft",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Inégalité de Kraft",
+      "label_en": "Kraft inequality",
+      "definition_fr": "Critère nécessaire et suffisant pour qu'un ensemble de longueurs de mots binaires soit réalisable par un code préfixe.",
+      "definition_en": "A necessary and sufficient condition for a set of binary codeword lengths to be realizable by a prefix code.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "a5be33fe"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "exo1_enonce"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "c6cdd14c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "a5be33fe"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "be5e58c4-a73d-4c97-b075-e4c7a6d75a50",
+      "path": "compression/codes-prefixes/shannon-fano",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Codage de Shannon-Fano",
+      "label_en": "Shannon-Fano coding",
+      "definition_fr": "Construction descendante qui répartit récursivement les symboles en groupes de masses proches.",
+      "definition_en": "A top-down construction that recursively splits symbols into groups with similar probability mass.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "485c3452"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "485c3452"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "79a69cbd-3b2d-4695-90df-d825a407489d",
+      "path": "compression/codes-prefixes/huffman",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Codage de Huffman",
+      "label_en": "Huffman coding",
+      "definition_fr": "Construction ascendante qui fusionne les deux masses les plus faibles pour obtenir un code préfixe de longueur moyenne minimale.",
+      "definition_en": "A bottom-up construction that repeatedly merges the two lowest weights to obtain a prefix code with minimum average length.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "6b215306"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_arbre"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "07fe5701"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "2b9502ed"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "6b215306"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "491fa9bc-13d7-4e31-b369-8696a5170786"
+      ]
+    },
+    {
+      "id": "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+      "path": "compression/codes-prefixes/entropie",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Entropie de Shannon et longueur moyenne",
+      "label_en": "Shannon entropy and average code length",
+      "definition_fr": "L'entropie borne inférieurement la longueur moyenne d'un code préfixe ; Huffman reste à moins d'un bit de cette borne.",
+      "definition_en": "Entropy lower-bounds the average length of a prefix code; Huffman stays within one bit of this bound.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "ac0388d4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "lec_arbre"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "691c6d90"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b007"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "07711d19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "51af1916"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "8bb7037f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "ac0388d4"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "8498b0e2-81d9-408f-8088-1d042b61490a",
+      "path": "compression/huffman-canonique",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Huffman canonique",
+      "label_en": "Canonical Huffman coding",
+      "definition_fr": "Forme déterministe d'un code de Huffman reconstruite à partir des seules longueurs de code.",
+      "definition_en": "A deterministic form of a Huffman code reconstructed from codeword lengths alone.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_canonique"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "3b396418"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "7f7f81b2"
+        }
+      ],
+      "prerequisites": [
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "b36b8fab-b230-4bc4-9a78-106c1d507ac5",
+      "path": "compression/huffman-canonique/table-de-decodage",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Décodage de Huffman par table",
+      "label_en": "Table-based Huffman decoding",
+      "definition_fr": "Décodage par indexation d'une table pré-calculée plutôt que par parcours de l'arbre symbole par symbole.",
+      "definition_en": "Decoding through a precomputed lookup table instead of traversing a tree one symbol at a time.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_table"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "44b5ee79"
+        }
+      ],
+      "prerequisites": [
+        "8498b0e2-81d9-408f-8088-1d042b61490a"
+      ]
+    },
+    {
+      "id": "40304728-50d8-424e-8bc2-25b38fb3d51d",
+      "path": "compression/lz77",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "LZ77 et fenêtre glissante",
+      "label_en": "LZ77 and sliding window",
+      "definition_fr": "Compression par références qui remplacent les répétitions par des couples de décalage et longueur dans les données déjà produites.",
+      "definition_en": "Reference-based compression that replaces repeated sequences with offset and length pairs pointing into previously produced data.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "c4bd9fe3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "54e7a29a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "fcbdd379"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "037d04c5-8718-4e40-9ec7-719b20ad7542",
+      "path": "compression/ans",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Asymmetric Numeral Systems",
+      "label_en": "Asymmetric Numeral Systems",
+      "definition_fr": "Codage entropique à état arithmétique qui permet de partager les bits fractionnaires entre symboles.",
+      "definition_en": "Entropy coding with an arithmetic state that lets fractional bits be shared across symbols.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "c9f84e2a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "b9ec4bd5"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+        "8498b0e2-81d9-408f-8088-1d042b61490a",
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "955154c4-1265-48bd-829e-5587c12f60ae",
+      "path": "compression/ans/rans",
+      "decimal_path": "4.1",
+      "depth": 1,
+      "label_fr": "rANS en blocs",
+      "label_en": "Block rANS",
+      "definition_fr": "Variante ANS qui code les symboles dans un état entier et borne l'état pour produire un flux par blocs.",
+      "definition_en": "An ANS variant that codes symbols in an integer state and bounds the state to stream in blocks.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "b9ec4bd5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "40bddafa"
+        }
+      ],
+      "prerequisites": [
+        "037d04c5-8718-4e40-9ec7-719b20ad7542"
+      ]
+    },
+    {
+      "id": "f2ca3aa7-9a97-4d45-b8a2-e0163e38a6a2",
+      "path": "compression/ans/tans",
+      "decimal_path": "4.2",
+      "depth": 1,
+      "label_fr": "tANS",
+      "label_en": "tANS",
+      "definition_fr": "Variante tabulée qui représente l'état rANS par une table finie de puissances de deux.",
+      "definition_en": "A table-based variant that represents the rANS state with a finite table of power-of-two size.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "42d90e6d"
+        }
+      ],
+      "prerequisites": [
+        "037d04c5-8718-4e40-9ec7-719b20ad7542"
+      ]
+    },
+    {
+      "id": "f802bf60-6304-4582-b8e3-1125a5aaf13a",
+      "path": "compression/ans/choix-de-codec",
+      "decimal_path": "4.3",
+      "depth": 1,
+      "label_fr": "Comparer des codecs par leur front de Pareto",
+      "label_en": "Comparing codecs with a Pareto frontier",
+      "definition_fr": "Évaluation conjointe du taux de compression et de la vitesse, dont le classement dépend du corpus et du niveau choisi.",
+      "definition_en": "Joint evaluation of compression ratio and speed, where ranking depends on the corpus and selected level.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b016"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b013"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d",
+        "037d04c5-8718-4e40-9ec7-719b20ad7542"
+      ]
+    },
+    {
+      "id": "b4b3dc36-c0d9-4a3c-909c-700fb295252e",
+      "path": "compression/modeles-neuronaux",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Compression des modèles neuronaux",
+      "label_en": "Neural network model compression",
+      "definition_fr": "Réduction de la taille d'un modèle entraîné en mesurant le compromis avec son exactitude.",
+      "definition_en": "Reducing the size of a trained model while measuring the trade-off with its accuracy.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "bbce893d"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "999da768-3977-4480-88d7-f6ab4ec8fdaa",
+      "path": "compression/modeles-neuronaux/quantification",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Quantification des poids",
+      "label_en": "Weight quantization",
+      "definition_fr": "Réduction du nombre de bits utilisés pour représenter les poids, notamment par FP16 ou INT8.",
+      "definition_en": "Reducing the number of bits used to represent weights, for example with FP16 or INT8.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "aaed74aa"
+        }
+      ],
+      "prerequisites": [
+        "b4b3dc36-c0d9-4a3c-909c-700fb295252e"
+      ]
+    },
+    {
+      "id": "1fe562b1-b092-47db-9f34-3f53545dbb5c",
+      "path": "compression/modeles-neuronaux/elagage",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Élagage des poids",
+      "label_en": "Weight pruning",
+      "definition_fr": "Mise à zéro des poids jugés faibles, suivie de mesures du coût en exactitude et des possibilités de codage de la sparsité.",
+      "definition_en": "Zeroing low-magnitude weights, then measuring accuracy cost and the coding opportunities provided by sparsity.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "90b54ec2"
+        }
+      ],
+      "prerequisites": [
+        "b4b3dc36-c0d9-4a3c-909c-700fb295252e"
+      ]
+    },
+    {
+      "id": "9a60112c-01da-44a3-87cb-3fb824cc0942",
+      "path": "compression/modeles-neuronaux/distillation",
+      "decimal_path": "5.3",
+      "depth": 1,
+      "label_fr": "Distillation",
+      "label_en": "Knowledge distillation",
+      "definition_fr": "Entraînement d'un modèle élève plus petit à imiter les sorties adoucies d'un modèle maître.",
+      "definition_en": "Training a smaller student model to imitate the softened outputs of a teacher model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "7c587764"
+        }
+      ],
+      "prerequisites": [
+        "b4b3dc36-c0d9-4a3c-909c-700fb295252e"
+      ]
+    },
+    {
+      "id": "4e9e363c-b184-4c88-bc6e-0474a62f3e2e",
+      "path": "compression/mdl",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Principe MDL",
+      "label_en": "Minimum Description Length principle",
+      "definition_fr": "Choix d'un modèle en minimisant la somme de son coût de description et du coût d'encodage des données sous ce modèle.",
+      "definition_en": "Model selection by minimizing the sum of the model description cost and the cost of encoding data under that model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_03"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "db5dff23"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-003"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+        "8498b0e2-81d9-408f-8088-1d042b61490a"
+      ]
+    },
+    {
+      "id": "4eb0370b-d370-45db-aee0-7fd083012bad",
+      "path": "compression/mdl/complexite-de-kolmogorov",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Complexité de Kolmogorov",
+      "label_en": "Kolmogorov complexity",
+      "definition_fr": "Longueur du plus court programme qui produit une chaîne ; cette quantité n'est pas calculable en général.",
+      "definition_en": "Length of the shortest program that produces a string; this quantity is not computable in general.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_09"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-009"
+        }
+      ],
+      "prerequisites": [
+        "4e9e363c-b184-4c88-bc6e-0474a62f3e2e"
+      ]
+    },
+    {
+      "id": "04177b04-2952-4fc8-a21c-e38f54043f34",
+      "path": "compression/banc-de-compression",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Banc de compression",
+      "label_en": "Compression benchmark",
+      "definition_fr": "Dispositif qui fait tourner plusieurs codecs sur le même corpus en mesurant taux et vitesse, pour rendre leurs écarts comparables.",
+      "definition_en": "A rig running several codecs on the same corpus while measuring ratio and speed, so their gaps become comparable.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b000"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "c1e81052-3b14-4ac8-bb67-70e56ff87432",
+      "path": "compression/taux-d-entropie",
+      "decimal_path": "8",
+      "depth": 0,
+      "label_fr": "Taux d'entropie",
+      "label_en": "Entropy rate",
+      "definition_fr": "Entropie par symbole d'une source quand le contexte grandit : la borne que le conditionnement abaisse, contrairement à l'entropie d'ordre 0.",
+      "definition_en": "Per-symbol entropy of a source as context grows: the bound that conditioning lowers, unlike order-0 entropy.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "03efe331"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "2fb3d52c"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "b76a76fc-2629-4f7d-97c5-c5def56fa482",
+      "path": "compression/recette-de-reconstruction",
+      "decimal_path": "9",
+      "depth": 0,
+      "label_fr": "Recette de reconstruction",
+      "label_en": "Reconstruction recipe",
+      "definition_fr": "Programme borné qui reconstruit un contenu à partir d'une forme compacte, accompagné de sa preuve : le modèle propose, le vérificateur certifie.",
+      "definition_en": "A bounded program rebuilding a content from a compact form, shipped with its proof: the model proposes, the verifier certifies.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "4bb3b0ec"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "5a9a71b5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "957f420b"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "1c6d1d01-8f2e-437f-a9da-5335dd3fedf7",
+      "path": "compression/triage-par-llm",
+      "decimal_path": "10",
+      "depth": 0,
+      "label_fr": "Triage par le LLM",
+      "label_en": "LLM triage",
+      "definition_fr": "Choix, par un modèle de langue, de l'opération de compression applicable à chaque segment, sous contrainte d'inversibilité vérifiée.",
+      "definition_en": "A language model picking the compression operation for each segment, under a verified invertibility constraint.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "3df588aa"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "0fdb7a3f"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "a3e5df52-7efe-45e7-85e7-bff321285ce6",
+      "path": "compression/assemblage-de-documents",
+      "decimal_path": "11",
+      "depth": 0,
+      "label_fr": "Assemblage de documents",
+      "label_en": "Document assembly",
+      "definition_fr": "Compression d'un document construit par assemblage : on décrit les blocs et leurs placements, puis on reconstruit au lieu de stocker la redondance.",
+      "definition_en": "Compressing a document built by assembly: describe blocks and placements, then rebuild instead of storing the redundancy.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "f4933066"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-000"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "bdaca788-cf06-4a1a-93d2-48f6fe063b5e",
+      "path": "compression/assemblage-de-documents/par-llm",
+      "decimal_path": "11.1",
+      "depth": 1,
+      "label_fr": "Assemblage par le LLM",
+      "label_en": "LLM assembly",
+      "definition_fr": "Variante où le modèle propose la décomposition du document en segments, la reconstruction étant scriptée et vérifiée par empreinte.",
+      "definition_en": "A variant where the model proposes the document's segment decomposition, the reconstruction being scripted and hash-verified.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-00"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "c8895b49-5a0c-41a8-9bf6-31b9e702b552",
+      "path": "compression/codes-prefixes/codage-en-longueur-fixe",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Codage en longueur fixe",
+      "label_en": "Fixed-length coding",
+      "definition_fr": "Attribution à chaque symbole d'un mot binaire de même longueur, fixée par le nombre de symboles distincts à représenter.",
+      "definition_en": "Assigning every symbol a binary codeword of the same length, set by the number of distinct symbols to represent.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "941b696a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "941b696a"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "bfe7972e-7690-45ab-ab0e-99aa872e96d6",
+      "path": "compression/codes-prefixes/arbre-binaire-de-decodage",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "Arbre binaire de décodage",
+      "label_en": "Binary decoding tree",
+      "definition_fr": "Arbre dont chaque feuille porte un symbole et où chaque bit lu fait descendre d'un niveau, le décodage étant une marche de la racine vers une feuille.",
+      "definition_en": "A tree whose leaves carry symbols, where each bit read moves one level down, so decoding is a walk from the root to a leaf.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "6e98be9a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "6e98be9a"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "a39ebec7-83f6-4f82-8f6a-045a844f789f",
+      "path": "compression/codes-prefixes/kraft/arbre-de-code-complet",
+      "decimal_path": "1.1.1",
+      "depth": 2,
+      "label_fr": "Arbre de code complet",
+      "label_en": "Complete code tree",
+      "definition_fr": "Arbre de code dont la somme de Kraft vaut exactement 1 : aucune capacité binaire n'est perdue et chaque branche mène à un symbole utile.",
+      "definition_en": "A code tree whose Kraft sum equals exactly 1: no binary capacity is wasted and every branch leads to a useful symbol.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "a5be33fe"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "8a2cd128"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "cf581b45"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "a5be33fe"
+        }
+      ],
+      "prerequisites": [
+        "491fa9bc-13d7-4e31-b369-8696a5170786"
+      ]
+    },
+    {
+      "id": "0017d77a-9d75-4359-9afe-f68afed2f57d",
+      "path": "compression/codes-prefixes/ecart-shannon-fano-huffman",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Écart Shannon-Fano / Huffman",
+      "label_en": "Shannon-Fano versus Huffman gap",
+      "definition_fr": "Différence de longueur moyenne entre le code de Shannon-Fano et celui de Huffman sur une même distribution ; elle mesure le prix d'une coupe strictement locale.",
+      "definition_en": "Difference in average length between the Shannon-Fano code and the Huffman code on the same distribution; it measures the cost of a strictly local split.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "f7e592bb"
+        }
+      ],
+      "prerequisites": [
+        "be5e58c4-a73d-4c97-b075-e4c7a6d75a50",
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "8088ab97-ec75-43b2-a055-69efcf1c8f77",
+      "path": "compression/codes-prefixes/profondeur-maximale-d-un-code",
+      "decimal_path": "1.8",
+      "depth": 1,
+      "label_fr": "Profondeur maximale d'un code",
+      "label_en": "Maximum code depth",
+      "definition_fr": "Longueur du mot le plus long d'un code ; sur une distribution très inégale, l'arbre de Huffman s'étire en chaîne et cette profondeur croît fortement.",
+      "definition_en": "Length of the longest codeword; on a very skewed distribution the Huffman tree degenerates into a chain and this depth grows sharply.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "02dcc4a9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "6bd249cc"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+          "cell_id": "02dcc4a9"
+        }
+      ],
+      "prerequisites": [
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "c36e09d5-12d6-498f-96fa-96e57b5e296e",
+      "path": "compression/huffman-canonique/remplissage-sans-trou-de-la-table",
+      "decimal_path": "2.2",
+      "depth": 1,
+      "label_fr": "Remplissage sans trou de la table",
+      "label_en": "Hole-free table filling",
+      "definition_fr": "Propriété d'une table de décodage indexée sur L bits d'être remplie exactement, sans case vide ni collision, dès que la somme de Kraft vaut 1.",
+      "definition_en": "The property of a decoding table indexed by L bits of being filled exactly, with no empty entry and no collision, whenever the Kraft sum equals 1.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_table"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "c348c519"
+        }
+      ],
+      "prerequisites": [
+        "491fa9bc-13d7-4e31-b369-8696a5170786",
+        "a39ebec7-83f6-4f82-8f6a-045a844f789f",
+        "b36b8fab-b230-4bc4-9a78-106c1d507ac5"
+      ]
+    },
+    {
+      "id": "75325b7b-eb00-4211-ad1c-3e84f695ea66",
+      "path": "compression/codes-prefixes/compression-sans-perte",
+      "decimal_path": "1.9",
+      "depth": 1,
+      "label_fr": "Compression sans perte",
+      "label_en": "Lossless compression",
+      "definition_fr": "Propriété d'un codec dont le décodage restitue l'entrée octet pour octet, établie par un aller-retour exact plutôt qu'affirmée.",
+      "definition_en": "Property of a codec whose decoding restores the input byte for byte, established by an exact round-trip rather than asserted.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_rt"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "e6d5e5d0"
+        }
+      ],
+      "prerequisites": [
+        "8498b0e2-81d9-408f-8088-1d042b61490a",
+        "b36b8fab-b230-4bc4-9a78-106c1d507ac5"
+      ]
+    },
+    {
+      "id": "b805c574-f9e4-43b9-a533-57feb7e024d4",
+      "path": "compression/banc-de-compression/debit-mesure-et-chiffres-cites",
+      "decimal_path": "7.1",
+      "depth": 1,
+      "label_fr": "Débit mesuré et chiffres cités",
+      "label_en": "Measured throughput versus quoted figures",
+      "definition_fr": "Évaluation d'un codec par son débit sur un corpus et une machine nommés, en séparant les chiffres produits localement de ceux cités d'une publication.",
+      "definition_en": "Benchmarking a codec by throughput on a named corpus and machine, separating locally measured figures from figures quoted from a publication.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_debits"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "ead3b027"
+        }
+      ],
+      "prerequisites": [
+        "75325b7b-eb00-4211-ad1c-3e84f695ea66"
+      ]
+    },
+    {
+      "id": "9507910f-eb1c-4151-b21f-7046d9e7caf5",
+      "path": "compression/lz77/cout-de-la-recherche-du-meilleur-couple",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Coût de la recherche du meilleur couple",
+      "label_en": "Cost of the best-match search",
+      "definition_fr": "Nombre de sondes nécessaires pour trouver, à chaque position, la plus longue suite déjà vue ; une recherche exhaustive coûte O(n fois W).",
+      "definition_en": "Number of probes needed to find, at each position, the longest already-seen run; an exhaustive search costs O(n times W).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "a2562b9f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "fcbdd379"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "4875f5fd-7e19-4b4d-9ca6-b2dfdb11b03b",
+      "path": "compression/lz77/separation-du-parse-en-flux",
+      "decimal_path": "3.2",
+      "depth": 1,
+      "label_fr": "Séparation du parse en flux",
+      "label_en": "Splitting the parse into streams",
+      "definition_fr": "Décomposition d'un parse LZ77 en trois flux synchronisés — littéraux, longueurs, décalages — chacun destiné à son propre codage d'entropie.",
+      "definition_en": "Splitting an LZ77 parse into three synchronised streams — literals, lengths, offsets — each destined for its own entropy coder.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "b0a794d1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "8fba6a97"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "abee5889-c2b4-4aa7-b80c-f5e53c28a9e5",
+      "path": "compression/lz77/distribution-des-longueurs-de-couples",
+      "decimal_path": "3.3",
+      "depth": 1,
+      "label_fr": "Distribution des longueurs de couples",
+      "label_en": "Distribution of copy lengths",
+      "definition_fr": "Allure de la suite des longueurs de copies produites par un parse ; sur du texte naturel elle se concentre sur les petites valeurs et reste très dissymétrique.",
+      "definition_en": "Shape of the sequence of copy lengths produced by a parse; on natural text it concentrates on small values and stays strongly skewed.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "2d5e2a85"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "3ef1cde0"
+        }
+      ],
+      "prerequisites": [
+        "4875f5fd-7e19-4b4d-9ca6-b2dfdb11b03b",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "0773ee11-0b86-424a-bd13-f5b51fc1c18d",
+      "path": "compression/lz77/copie-chevauchante",
+      "decimal_path": "3.4",
+      "depth": 1,
+      "label_fr": "Copie chevauchante",
+      "label_en": "Overlapping copy",
+      "definition_fr": "Copie d'une longueur supérieure au décalage, légale parce que le décodeur relit sa propre sortie grandissante et déroule ainsi les répétitions de période d.",
+      "definition_en": "A copy whose length exceeds its offset, legal because the decoder reads its own growing output and thereby unrolls runs of period d.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "b1506b9a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "9d5e2a32"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "3860e474-8cf8-4655-855f-db7f7768a1d6",
+      "path": "compression/lz77/cout-d-un-jeton-en-champs-fixes",
+      "decimal_path": "3.5",
+      "depth": 1,
+      "label_fr": "Coût d'un jeton en champs fixes",
+      "label_en": "Fixed-field token cost",
+      "definition_fr": "Nombre de bits payés par un jeton LZ77 lorsque chaque champ garde une largeur fixe : un drapeau, huit bits pour un littéral, deux champs bornés pour un couple.",
+      "definition_en": "Bits paid per LZ77 token when every field keeps a fixed width: one flag bit, eight bits for a literal, two bounded fields for a copy.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "c44e83af"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "b33084de"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d",
+        "4875f5fd-7e19-4b4d-9ca6-b2dfdb11b03b"
+      ]
+    },
+    {
+      "id": "2464a596-b4da-4b1d-95b6-2d8532f8db14",
+      "path": "compression/lz77/double-couche-lz-et-entropie",
+      "decimal_path": "3.6",
+      "depth": 1,
+      "label_fr": "Double couche LZ et entropie",
+      "label_en": "Two-layer LZ plus entropy coding",
+      "definition_fr": "Architecture qui applique un codage d'entropie séparément à chacun des flux produits par la passe LZ, sur le modèle de DEFLATE et de zstd.",
+      "definition_en": "An architecture that applies entropy coding separately to each stream produced by the LZ pass, following the model of DEFLATE and zstd.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "c3ecb1f7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "3ef1cde0"
+        }
+      ],
+      "prerequisites": [
+        "4875f5fd-7e19-4b4d-9ca6-b2dfdb11b03b",
+        "3860e474-8cf8-4655-855f-db7f7768a1d6",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "6bc52153-caf1-4eb5-bc17-8d5e77183c4b",
+      "path": "compression/lz77/tableau-de-suffixes",
+      "decimal_path": "3.7",
+      "depth": 1,
+      "label_fr": "Tableau de suffixes",
+      "label_en": "Suffix array",
+      "definition_fr": "Table de toutes les positions d'un texte triées par ordre lexicographique de leur suffixe, où une recherche binaire borne les candidats d'une correspondance.",
+      "definition_en": "A table of all text positions sorted by the lexicographic order of their suffix, where binary search bounds the candidates for a match.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "80a160b6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "77066cd7"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d",
+        "9507910f-eb1c-4151-b21f-7046d9e7caf5"
+      ]
+    },
+    {
+      "id": "a3132f2c-807f-4523-b512-0c6d6428d1f2",
+      "path": "compression/ans/plafond-du-bit-entier",
+      "decimal_path": "4.4",
+      "depth": 1,
+      "label_fr": "Plafond du bit entier",
+      "label_en": "Integer-bit ceiling",
+      "definition_fr": "Sur une source très déséquilibrée, un code de Huffman ne peut pas descendre sous un bit par symbole, faute de mots de code de longueur fractionnaire.",
+      "definition_en": "On a highly skewed source, a Huffman code cannot go below one bit per symbol because codewords cannot have fractional length.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "37ec022a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "27bc2c22"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "f96d8a4b-5169-49c8-8b88-1bd28d8525cf",
+      "path": "compression/ans/pas-rans-reversible",
+      "decimal_path": "4.5",
+      "depth": 1,
+      "label_fr": "Pas rANS réversible",
+      "label_en": "Reversible rANS step",
+      "definition_fr": "Encodage d'un symbole par la bijection entière x' = (x div f)·M + cdf + (x mod f), qui fait croître l'état d'environ -log2 p bits.",
+      "definition_en": "Encoding a symbol through the integer bijection x' = (x div f)·M + cdf + (x mod f), growing the state by about -log2 p bits.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "b9ec4bd5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "27bc2c22"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "d2584c6d-23a6-4395-97c5-551ad929af2d",
+      "path": "compression/ans/rans/etat-rans-transparent",
+      "decimal_path": "4.1.1",
+      "depth": 2,
+      "label_fr": "État rANS transparent",
+      "label_en": "Big-integer rANS state",
+      "definition_fr": "Forme qui code tout le message dans un seul entier, dont le retour à la valeur initiale M après décodage prouve la réversibilité exacte.",
+      "definition_en": "A form encoding the whole message in one integer, whose return to the initial value M after decoding proves exact reversibility.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "84da7753"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "8bb7037f"
+        }
+      ],
+      "prerequisites": [
+        "f96d8a4b-5169-49c8-8b88-1bd28d8525cf"
+      ]
+    },
+    {
+      "id": "559d17a2-de25-4242-b855-b86fc20d85ca",
+      "path": "compression/ans/tans/pavage-dyadique-des-etats",
+      "decimal_path": "4.2.1",
+      "depth": 2,
+      "label_fr": "Pavage dyadique des états",
+      "label_en": "Dyadic tiling of states",
+      "definition_fr": "Découpage de [N, 2N] en intervalles de longueur puissance de deux, un jeu par symbole, dont les longueurs somment exactement à N.",
+      "definition_en": "Splitting [N, 2N] into power-of-two length intervals, one set per symbol, whose lengths sum exactly to N.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "4235f45a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "46becc6e"
+        }
+      ],
+      "prerequisites": [
+        "f2ca3aa7-9a97-4d45-b8a2-e0163e38a6a2"
+      ]
+    },
+    {
+      "id": "06b7bdfd-b93a-498f-aad2-2d686398e26f",
+      "path": "compression/ans/tans/spread-des-slots",
+      "decimal_path": "4.2.2",
+      "depth": 2,
+      "label_fr": "Spread des slots",
+      "label_en": "Slot spread",
+      "definition_fr": "Répartition des symboles dans les N slots de la table par interpolation à basse discrépance, qui évite de concentrer un symbole dans des slots voisins.",
+      "definition_en": "Distribution of symbols over the table's N slots by low-discrepancy interpolation, avoiding concentrating one symbol in neighbouring slots.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "42d90e6d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "46becc6e"
+        }
+      ],
+      "prerequisites": [
+        "f2ca3aa7-9a97-4d45-b8a2-e0163e38a6a2"
+      ]
+    },
+    {
+      "id": "9e3a6440-069c-486f-8975-39602c2671f3",
+      "path": "compression/ans/tans/appariement-tourne",
+      "decimal_path": "4.2.3",
+      "depth": 2,
+      "label_fr": "Appariement tourné",
+      "label_en": "Rotated pairing",
+      "definition_fr": "Rotation de f/2 dans l'appariement intervalle-slot, sans laquelle l'état N reste un point fixe qui n'émet plus qu'un seul bit par symbole.",
+      "definition_en": "A f/2 rotation in the interval-to-slot pairing; without it state N stays a fixed point emitting only one bit per symbol.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "4235f45a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "46becc6e"
+        }
+      ],
+      "prerequisites": [
+        "559d17a2-de25-4242-b855-b86fc20d85ca",
+        "06b7bdfd-b93a-498f-aad2-2d686398e26f"
+      ]
+    },
+    {
+      "id": "c349e202-9749-4563-9c1b-da60c543c320",
+      "path": "compression/ans/flot-lifo-de-bits",
+      "decimal_path": "4.6",
+      "depth": 1,
+      "label_fr": "Flot LIFO de bits",
+      "label_en": "LIFO bit stream",
+      "definition_fr": "Flot de bits empilés puis dépilés en sens inverse, si bien que le décodeur reconstruit le message à l'envers avant de le retourner.",
+      "definition_en": "A bit stream pushed and then popped in reverse order, so the decoder rebuilds the message backwards before reversing it.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "942c0b67"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "e5f92cd4"
+        }
+      ],
+      "prerequisites": [
+        "f2ca3aa7-9a97-4d45-b8a2-e0163e38a6a2"
+      ]
+    },
+    {
+      "id": "d7ac594b-e56b-484b-886f-c2620bf0ac37",
+      "path": "compression/mdl/modele-d-ordre-0-quantifie",
+      "decimal_path": "6.2",
+      "depth": 1,
+      "label_fr": "Modèle d'ordre 0 quantifié",
+      "label_en": "Quantised order-0 model",
+      "definition_fr": "Distribution sur les k symboles observés dont chaque probabilité est un multiple de 2^-b, décrite par 8 + (k-1)·b bits.",
+      "definition_en": "A distribution over the k observed symbols whose probabilities are multiples of 2^-b, described by 8 + (k-1)·b bits.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_03"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-003"
+        }
+      ],
+      "prerequisites": [
+        "4e9e363c-b184-4c88-bc6e-0474a62f3e2e"
+      ]
+    },
+    {
+      "id": "cb38ac41-d92d-4c48-8a28-f840e0fc8f61",
+      "path": "compression/mdl/plancher-de-quantification",
+      "decimal_path": "6.3",
+      "depth": 1,
+      "label_fr": "Plancher de quantification",
+      "label_en": "Quantisation floor",
+      "definition_fr": "Probabilité minimale 2^-b imposée à chaque symbole, qui sature le modèle aux faibles précisions et ramène le coût à n·log2(k) bits.",
+      "definition_en": "The minimum probability 2^-b forced on every symbol, saturating the model at low precision and bringing the cost back to n·log2(k) bits.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_05"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-005"
+        }
+      ],
+      "prerequisites": [
+        "d7ac594b-e56b-484b-886f-c2620bf0ac37"
+      ]
+    },
+    {
+      "id": "a3b57676-0fa5-4e9b-8da8-f0b6229456bb",
+      "path": "compression/mdl/precision-optimale-interieure",
+      "decimal_path": "6.4",
+      "depth": 1,
+      "label_fr": "Précision optimale intérieure",
+      "label_en": "Interior optimal precision",
+      "definition_fr": "Valeur de b qui minimise la facture totale ; elle se situe entre un modèle trivial et un modèle intransmissible, jamais à un bord.",
+      "definition_en": "The value of b minimising the total bill; it lies between a trivial model and an untransmittable one, never at an edge.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_05"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-005"
+        }
+      ],
+      "prerequisites": [
+        "4e9e363c-b184-4c88-bc6e-0474a62f3e2e",
+        "cb38ac41-d92d-4c48-8a28-f840e0fc8f61"
+      ]
+    },
+    {
+      "id": "ad3936bf-8241-4fbb-9e2a-a2c245c054cd",
+      "path": "compression/mdl/amortissement-en-racine-de-n",
+      "decimal_path": "6.5",
+      "depth": 1,
+      "label_fr": "Amortissement en racine de n",
+      "label_en": "Square-root-of-n amortisation",
+      "definition_fr": "Loi selon laquelle la précision optimale croît comme la moitié du logarithme de la taille des données : plus de données justifient un modèle plus fin.",
+      "definition_en": "The law by which optimal precision grows like half the logarithm of the data size: more data justify a finer model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_06"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-006"
+        }
+      ],
+      "prerequisites": [
+        "a3b57676-0fa5-4e9b-8da8-f0b6229456bb"
+      ]
+    },
+    {
+      "id": "af8a0f18-a059-45bd-ae1e-d26deb692bc4",
+      "path": "compression/mdl/complexite-de-kolmogorov/borne-superieure-de-k",
+      "decimal_path": "6.1.1",
+      "depth": 2,
+      "label_fr": "Borne supérieure de K",
+      "label_en": "Upper bound on K",
+      "definition_fr": "Longueur produite par un compresseur donné, qui majore K sans la mesurer ; deux compresseurs corrects en donnent deux différentes.",
+      "definition_en": "The length produced by a given compressor, an upper bound on K rather than a measurement; two correct compressors give two different ones.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_09"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-009"
+        }
+      ],
+      "prerequisites": [
+        "4eb0370b-d370-45db-aee0-7fd083012bad"
+      ]
+    },
+    {
+      "id": "5c3a8f82-60f2-4bc0-85e4-821a27596e7e",
+      "path": "compression/mdl/complexite-de-kolmogorov/compresseur-ne-mesure-pas-k",
+      "decimal_path": "6.1.2",
+      "depth": 2,
+      "label_fr": "Compresseur ne mesure pas K",
+      "label_en": "Compressors do not measure K",
+      "definition_fr": "Un compresseur général mesure l'entropie de l'alphabet et les répétitions locales, pas la complexité algorithmique : pi et du bruit sortent à la même taille.",
+      "definition_en": "A general compressor measures alphabet entropy and local repetitions, not algorithmic complexity: pi and noise come out the same size.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_11"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+          "cell_id": "cell-011"
+        }
+      ],
+      "prerequisites": [
+        "af8a0f18-a059-45bd-ae1e-d26deb692bc4"
+      ]
+    },
+    {
+      "id": "40c1de57-0b8c-4c12-a8d3-6af7caa1daee",
+      "path": "compression/taux-d-entropie/entropie-conditionnelle",
+      "decimal_path": "8.1",
+      "depth": 1,
+      "label_fr": "Entropie conditionnelle",
+      "label_en": "Conditional entropy",
+      "definition_fr": "Incertitude résiduelle sur une variable X une fois Y connue, moyenne pondérée des entropies de X conditionnées à chaque valeur de Y.",
+      "definition_en": "The residual uncertainty about a variable X once Y is known, the probability-weighted average of X's entropy given each value of Y.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "84c285c1"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "c9258a4e-7dc0-4258-badd-ccc1bec737a8",
+      "path": "compression/taux-d-entropie/information-mutuelle",
+      "decimal_path": "8.2",
+      "depth": 1,
+      "label_fr": "Information mutuelle",
+      "label_en": "Mutual information",
+      "definition_fr": "Écart entre l'entropie de X et l'entropie conditionnelle H(X|Y), qui mesure ce que connaître Y retire d'incertitude sur X.",
+      "definition_en": "The gap between the entropy of X and the conditional entropy H(X|Y), measuring how much knowing Y removes uncertainty about X.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "84c285c1"
+        }
+      ],
+      "prerequisites": [
+        "40c1de57-0b8c-4c12-a8d3-6af7caa1daee"
+      ]
+    },
+    {
+      "id": "58142c69-c0b4-4b26-8cba-09d72a282036",
+      "path": "compression/taux-d-entropie/taux-d-entropie-markovien",
+      "decimal_path": "8.3",
+      "depth": 1,
+      "label_fr": "Taux d'entropie markovien",
+      "label_en": "Markov chain entropy rate",
+      "definition_fr": "Taux d'entropie d'une chaîne de Markov, moyenne des entropies de ses lignes pondérées par la distribution stationnaire.",
+      "definition_en": "The entropy rate of a Markov chain, the average of its row entropies weighted by the stationary distribution.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "fd8f81ae"
+        }
+      ],
+      "prerequisites": [
+        "c1e81052-3b14-4ac8-bb67-70e56ff87432"
+      ]
+    },
+    {
+      "id": "9e69cf65-47ec-472b-bef7-b3f9933ebd1b",
+      "path": "compression/taux-d-entropie/courbe-du-taux-d-entropie",
+      "decimal_path": "8.4",
+      "depth": 1,
+      "label_fr": "Courbe du taux d'entropie",
+      "label_en": "Entropy rate curve",
+      "definition_fr": "Courbe de l'entropie conditionnelle selon la longueur de contexte ; décroissante, elle devient plate à l'ordre mémoire de la source.",
+      "definition_en": "The curve of conditional entropy against context length; decreasing, it flattens at the source's memory order.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "247f563b"
+        }
+      ],
+      "prerequisites": [
+        "c1e81052-3b14-4ac8-bb67-70e56ff87432"
+      ]
+    },
+    {
+      "id": "b0ab92cd-073d-42aa-8147-edea17c8173d",
+      "path": "compression/taux-d-entropie/biais-d-estimation-de-l-entropie",
+      "decimal_path": "8.5",
+      "depth": 1,
+      "label_fr": "Biais d'estimation de l'entropie",
+      "label_en": "Entropy estimation bias",
+      "definition_fr": "Sous-estimation systématique de l'entropie quand les contextes sont peu peuplés, la moyenne ne portant que sur les paires observées.",
+      "definition_en": "Systematic underestimation of entropy when contexts are sparsely populated, since the average only covers observed pairs.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+          "cell_id": "247f563b"
+        }
+      ],
+      "prerequisites": [
+        "40c1de57-0b8c-4c12-a8d3-6af7caa1daee"
+      ]
+    },
+    {
+      "id": "97c74b81-77a0-4022-9857-33b15f68579e",
+      "path": "compression/codes-prefixes/kraft/round-trip-du-decodage",
+      "decimal_path": "1.1.2",
+      "depth": 2,
+      "label_fr": "Round-trip du décodage",
+      "label_en": "Decoding round-trip",
+      "definition_fr": "Contrat du décodeur : concaténer les mots des feuilles puis décoder redonne exactement la liste des symboles, dans l'ordre et sans reste.",
+      "definition_en": "The decoder's contract: concatenating the leaf words then decoding returns exactly the symbol list, in order and with no remainder.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "c12b2d47"
+        }
+      ],
+      "prerequisites": [
+        "a6569545-20f5-4d43-a447-42131148ac8e"
+      ]
+    },
+    {
+      "id": "a6569545-20f5-4d43-a447-42131148ac8e",
+      "path": "compression/codes-prefixes/kraft/correction-du-pas-de-decodage",
+      "decimal_path": "1.1.3",
+      "depth": 2,
+      "label_fr": "Correction du pas de décodage",
+      "label_en": "Single-step decoding correctness",
+      "definition_fr": "Théorèmes établissant que lire un mot le long de l'arbre rend bien un mot de feuille, et que tout mot de feuille est lisible ainsi.",
+      "definition_en": "Theorems establishing that reading one word down the tree yields a leaf word, and that every leaf word can be read that way.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "c12b2d47"
+        }
+      ],
+      "prerequisites": [
+        "491fa9bc-13d7-4e31-b369-8696a5170786"
+      ]
+    },
+    {
+      "id": "bce52d10-f9fa-45cd-aa23-9f4bed494eb9",
+      "path": "compression/codes-prefixes/kraft/reciproque-de-mcmillan",
+      "decimal_path": "1.1.4",
+      "depth": 2,
+      "label_fr": "Réciproque de McMillan",
+      "label_en": "McMillan converse",
+      "definition_fr": "Théorème inverse de Kraft : toute bande de longueurs triée dont la masse tient sous 2^L est réalisée par un code préfixe de ces longueurs exactes.",
+      "definition_en": "The converse of Kraft: every sorted length sequence whose mass fits under 2^L is realised by a prefix code with exactly those lengths.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "3b396418"
+        }
+      ],
+      "prerequisites": [
+        "491fa9bc-13d7-4e31-b369-8696a5170786"
+      ]
+    },
+    {
+      "id": "78491698-9c07-4283-bc53-8a4f6c325bc7",
+      "path": "compression/codes-prefixes/huffman/loi-de-la-fusion-de-huffman",
+      "decimal_path": "1.3.1",
+      "depth": 2,
+      "label_fr": "Loi de la fusion de Huffman",
+      "label_en": "Huffman merge law",
+      "definition_fr": "Propriété de la construction : fusionner les deux plus petits poids puis payer leur somme donne exactement le coût de l'arbre final.",
+      "definition_en": "A property of the construction: merging the two smallest weights then paying their sum gives exactly the final tree's cost.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "07fe5701"
+        }
+      ],
+      "prerequisites": [
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "a9259869-dc20-415f-aec5-8fbd40c1de89",
+      "path": "compression/codes-prefixes/huffman/cout-en-produit-scalaire",
+      "decimal_path": "1.3.2",
+      "depth": 2,
+      "label_fr": "Coût en produit scalaire",
+      "label_en": "Cost as a dot product",
+      "definition_fr": "Théorème écrivant le coût d'un arbre comme la somme des poids de ses feuilles multipliés par leurs profondeurs respectives.",
+      "definition_en": "A theorem writing a tree's cost as the sum of its leaf weights multiplied by their respective depths.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "1e115d50"
+        }
+      ],
+      "prerequisites": [
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "ceafd4d1-3cf9-4216-bdc8-2e0a92dfa4bf",
+      "path": "compression/codes-prefixes/huffman/lemme-d-echange",
+      "decimal_path": "1.3.3",
+      "depth": 2,
+      "label_fr": "Lemme d'échange",
+      "label_en": "Exchange lemma",
+      "definition_fr": "Lemme local : si a est plus léger que b, remonter a d'un niveau et descendre b d'un niveau ne peut pas augmenter le coût de l'arbre.",
+      "definition_en": "A local lemma: if a is lighter than b, moving a up one level and b down one level cannot increase the tree's cost.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "9d5c57cf"
+        }
+      ],
+      "prerequisites": [
+        "a9259869-dc20-415f-aec5-8fbd40c1de89"
+      ]
+    },
+    {
+      "id": "8ac98c13-28bc-4915-8db4-928f93ccc61f",
+      "path": "compression/codes-prefixes/huffman/deux-minima-au-fond",
+      "decimal_path": "1.3.4",
+      "depth": 2,
+      "label_fr": "Deux minima au fond",
+      "label_en": "Two minima at the bottom",
+      "definition_fr": "Lemme autorisant à rendre sœurs les deux feuilles les plus légères au fond de l'arbre, sans changer la bande des poids.",
+      "definition_en": "A lemma allowing the two lightest leaves to be made siblings at the bottom of the tree without changing the weight multiset.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "9d5c57cf"
+        }
+      ],
+      "prerequisites": [
+        "ceafd4d1-3cf9-4216-bdc8-2e0a92dfa4bf"
+      ]
+    },
+    {
+      "id": "effab134-c553-4acb-be45-5facde28bb4d",
+      "path": "compression/codes-prefixes/passerelle-symbolcodec",
+      "decimal_path": "1.10",
+      "depth": 1,
+      "label_fr": "Passerelle SymbolCodec",
+      "label_en": "SymbolCodec bridge",
+      "definition_fr": "Théorèmes de transport qui identifient le trie canonique étiqueté par symboles et l'arbre pondéré du lake comme un seul et même objet.",
+      "definition_en": "Transport theorems identifying the canonical symbol-labelled trie and the lake's weighted tree as one and the same object.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+          "cell_id": "c7ddc0d3"
+        }
+      ],
+      "prerequisites": [
+        "8498b0e2-81d9-408f-8088-1d042b61490a",
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "5a84e720-ac3f-4448-a3f5-b3d8a943a2d9",
+      "path": "compression/banc-de-compression/protocole-de-banc-de-compression",
+      "decimal_path": "7.2",
+      "depth": 1,
+      "label_fr": "Protocole de banc de compression",
+      "label_en": "Compression benchmark protocol",
+      "definition_fr": "Précautions qui rendent un banc de codecs interprétable : aller-retour octet-exact vérifié, débit mesuré par répétition, et distinction entre ce que le banc mesure et le codec lui-même.",
+      "definition_en": "Precautions that make a codec benchmark interpretable: byte-exact round-trip check, repetition-based throughput, and a distinction between what the bench measures and the codec itself.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b001"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "263e14bb-f96b-4f8f-a59a-1aa53c66ae60",
+      "path": "compression/banc-de-compression/passer-sous-l-entropie-d-ordre-0",
+      "decimal_path": "7.3",
+      "depth": 1,
+      "label_fr": "Passer sous l'entropie d'ordre 0",
+      "label_en": "Beating order-0 entropy",
+      "definition_fr": "Propriété des codecs à deux couches : après avoir remplacé les répétitions par des références, ils codent des résidus dont l'entropie est plus basse que celle des octets d'origine.",
+      "definition_en": "Property of two-layer codecs: after replacing repetitions with references, they encode residuals whose entropy is lower than that of the original bytes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b012"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "cf0c3f81-cccf-4424-92d2-050adc3f4dc7",
+      "path": "compression/banc-de-compression/redondance-positionnelle",
+      "decimal_path": "7.4",
+      "depth": 1,
+      "label_fr": "Redondance positionnelle",
+      "label_en": "Positional redundancy",
+      "definition_fr": "Forme de redondance où des octets de forte entropie marginale restent compressibles parce que leur arrangement se répète, et non leur fréquence.",
+      "definition_en": "Form of redundancy where bytes with high marginal entropy stay compressible because their arrangement repeats, not their frequency.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b005"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "0e1661d5-5b95-47c6-b28d-e60c5a4c4299",
+      "path": "compression/banc-de-compression/classement-dependant-du-corpus",
+      "decimal_path": "7.5",
+      "depth": 1,
+      "label_fr": "Classement dépendant du corpus",
+      "label_en": "Corpus-dependent ranking",
+      "definition_fr": "Constat qu'un classement de codecs établi sur un corpus ne se transporte pas à un autre : le gagnant change avec le régime de compressibilité des données.",
+      "definition_en": "The finding that a codec ranking established on one corpus does not carry to another: the winner changes with the compressibility regime of the data.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b015"
+        }
+      ],
+      "prerequisites": [
+        "cf0c3f81-cccf-4424-92d2-050adc3f4dc7"
+      ]
+    },
+    {
+      "id": "04886392-38d0-4323-95b4-ffdca3d34fca",
+      "path": "compression/banc-de-compression/front-d-encodage-et-de-decodage",
+      "decimal_path": "7.6",
+      "depth": 1,
+      "label_fr": "Front d'encodage et de décodage",
+      "label_en": "Encoding and decoding fronts",
+      "definition_fr": "Deux fronts distincts obtenus en changeant l'axe de vitesse : un codec dominé peut entrer dans le front de décodage parce que l'encodage se paie une fois et le décodage souvent.",
+      "definition_en": "Two distinct fronts obtained by changing the speed axis: a dominated codec can join the decoding front because encoding is paid once and decoding many times.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b018"
+        }
+      ],
+      "prerequisites": [
+        "f802bf60-6304-4582-b8e3-1125a5aaf13a"
+      ]
+    },
+    {
+      "id": "c690b1c1-d8cb-4987-befc-a1b5f609bc5b",
+      "path": "compression/banc-de-compression/grille-de-regimes-taux-vitesse",
+      "decimal_path": "7.7",
+      "depth": 1,
+      "label_fr": "Grille de régimes taux-vitesse",
+      "label_en": "Ratio-speed regime grid",
+      "definition_fr": "Partage du plan taux-vitesse par les médianes des deux axes, qui range chaque codec dans un quadrant dont le classement dépend du seuil choisi.",
+      "definition_en": "Division of the ratio-speed plane by the medians of both axes, placing each codec in a quadrant whose ranking depends on the chosen threshold.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b021"
+        }
+      ],
+      "prerequisites": [
+        "f802bf60-6304-4582-b8e3-1125a5aaf13a"
+      ]
+    },
+    {
+      "id": "586dd3b6-2648-499a-8133-35d8cb507fe5",
+      "path": "compression/banc-de-compression/temoin-negatif-incompressible",
+      "decimal_path": "7.8",
+      "depth": 1,
+      "label_fr": "Témoin négatif incompressible",
+      "label_en": "Incompressible negative control",
+      "definition_fr": "Donnée à entropie maximale qu'aucun codec sans perte ne peut réduire, utilisée pour vérifier qu'un banc ne rend pas de chiffres impossibles.",
+      "definition_en": "Maximum-entropy data that no lossless codec can shrink, used to check that a benchmark does not return impossible figures.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b024"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "e577ffa5-2ec3-474a-840c-105e926bc243",
+      "path": "compression/banc-de-compression/levier-du-niveau-de-compression",
+      "decimal_path": "7.9",
+      "depth": 1,
+      "label_fr": "Levier du niveau de compression",
+      "label_en": "Compression level lever",
+      "definition_fr": "Réglage interne d'un codec qui déplace son point sur une même courbe taux-vitesse, avec un rendement qui s'effondre au-delà d'un certain cran.",
+      "definition_en": "Internal codec setting that moves its point along a single ratio-speed curve, with returns that collapse beyond a certain step.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b027"
+        }
+      ],
+      "prerequisites": [
+        "f802bf60-6304-4582-b8e3-1125a5aaf13a"
+      ]
+    },
+    {
+      "id": "f3a2f5fd-f4fb-49b7-8573-96d0a659d0bb",
+      "path": "compression/modeles-neuronaux/quantification/quantification-simulee",
+      "decimal_path": "5.1.1",
+      "depth": 2,
+      "label_fr": "Quantification simulée",
+      "label_en": "Fake quantization",
+      "definition_fr": "Simulation d'une quantification entière en calcul flottant : les poids sont arrondis sur la grille puis restaurés en float, ce qui isole le coût en exactitude sans changer la taille.",
+      "definition_en": "Simulating integer quantization in floating point: weights are rounded onto the grid then restored as floats, isolating the accuracy cost without changing the size.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "816b518a"
+        }
+      ],
+      "prerequisites": [
+        "999da768-3977-4480-88d7-f6ab4ec8fdaa"
+      ]
+    },
+    {
+      "id": "b19edec2-482d-4a83-b9eb-29b7266b1fb6",
+      "path": "compression/modeles-neuronaux/quantification/echelle-par-canal-de-sortie",
+      "decimal_path": "5.1.2",
+      "depth": 2,
+      "label_fr": "Échelle par canal de sortie",
+      "label_en": "Per-output-channel scale",
+      "definition_fr": "Politique de quantification qui donne à chaque canal de sortie sa propre échelle au lieu d'une échelle unique, au prix de métadonnées supplémentaires.",
+      "definition_en": "Quantization policy giving each output channel its own scale instead of one tensor-wide scale, at the cost of extra metadata.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "7347fe5d"
+        }
+      ],
+      "prerequisites": [
+        "999da768-3977-4480-88d7-f6ab4ec8fdaa"
+      ]
+    },
+    {
+      "id": "b1ced1c6-6520-42c2-8894-251ebde12451",
+      "path": "compression/modeles-neuronaux/elagage/sparsite-contre-taille-dense",
+      "decimal_path": "5.2.1",
+      "depth": 2,
+      "label_fr": "Sparsité contre taille dense",
+      "label_en": "Sparsity versus dense size",
+      "definition_fr": "Distinction entre la proportion de poids nuls d'un réseau et la taille de son fichier : un format dense stocke les zéros comme les autres valeurs, seule une compression les monnaie.",
+      "definition_en": "Distinction between the share of zero weights in a network and its file size: a dense format stores zeros like any other value, only a compression cashes them in.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "069dbd63"
+        }
+      ],
+      "prerequisites": [
+        "1fe562b1-b092-47db-9f34-3f53545dbb5c"
+      ]
+    },
+    {
+      "id": "1f75cdb2-822d-497a-86b7-6667663d930c",
+      "path": "compression/modeles-neuronaux/elagage/reentrainement-sous-masque",
+      "decimal_path": "5.2.2",
+      "depth": 2,
+      "label_fr": "Réentraînement sous masque",
+      "label_en": "Retraining under the mask",
+      "definition_fr": "Finetune d'un réseau élagué pendant lequel le masque de sparsité est réappliqué à chaque pas, pour empêcher l'optimiseur de repeupler les poids mis à zéro.",
+      "definition_en": "Fine-tuning of a pruned network during which the sparsity mask is reapplied at every step, preventing the optimizer from refilling the zeroed weights.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "ff585110"
+        }
+      ],
+      "prerequisites": [
+        "1fe562b1-b092-47db-9f34-3f53545dbb5c"
+      ]
+    },
+    {
+      "id": "688c5124-a0a1-4785-9651-675299a6d0e0",
+      "path": "compression/modeles-neuronaux/distillation/temperature-de-distillation",
+      "decimal_path": "5.3.1",
+      "depth": 2,
+      "label_fr": "Température de distillation",
+      "label_en": "Distillation temperature",
+      "definition_fr": "Paramètre qui adoucit la distribution de sortie du maître : à température élevée, les classes proches révèlent une proximité que l'étiquette dure cache.",
+      "definition_en": "Parameter that softens the teacher's output distribution: at high temperature, neighbouring classes reveal a proximity the hard label hides.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "7459f336"
+        }
+      ],
+      "prerequisites": [
+        "9a60112c-01da-44a3-87cb-3fb824cc0942"
+      ]
+    },
+    {
+      "id": "63da7bfd-9b93-4877-9941-c5674854e35f",
+      "path": "compression/modeles-neuronaux/chaine-de-compression-des-poids",
+      "decimal_path": "5.4",
+      "depth": 1,
+      "label_fr": "Chaîne de compression des poids",
+      "label_en": "Chained weight compression pipeline",
+      "definition_fr": "Enchaînement de codes complémentaires sur un même flux de poids : quantification pour l'amplitude, élagage pour la sparsité, codec symbolique pour les codes produits.",
+      "definition_en": "Chain of complementary codes over one weight stream: quantization for magnitude, pruning for sparsity, a symbolic codec for the resulting codes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "ea7c4fbc"
+        }
+      ],
+      "prerequisites": [
+        "999da768-3977-4480-88d7-f6ab4ec8fdaa",
+        "1fe562b1-b092-47db-9f34-3f53545dbb5c",
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "d195bbba-0e68-4fb4-8609-5efdf64c62e8",
+      "path": "compression/modeles-neuronaux/progression-de-compression",
+      "decimal_path": "5.5",
+      "depth": 1,
+      "label_fr": "Progression de compression",
+      "label_en": "Compression progress",
+      "definition_fr": "Thèse selon laquelle apprendre est déjà un acte de compression : la progression d'un modèle se mesure au gain de compressibilité qu'il apporte à ses données.",
+      "definition_en": "Thesis that learning is already an act of compression: a model's progress is measured by the compressibility gain it brings to its data.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "4a8ec50e"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "742f35eb-ecd2-4c61-add5-f089afc62c43",
+      "path": "compression/recette-de-reconstruction/decodeur-total-et-borne",
+      "decimal_path": "9.1",
+      "depth": 1,
+      "label_fr": "Décodeur total et borné",
+      "label_en": "Total bounded decoder",
+      "definition_fr": "Machine à pile dont chaque exécution termine sous un budget de pas et un plafond de sortie, et qui rend un refus motivé au lieu de boucler.",
+      "definition_en": "A stack machine whose every run terminates under a step budget and an output cap, returning a motivated refusal instead of looping.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "97502b35"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "72002d88-7e24-4978-93a3-b6d9edcc9df9",
+      "path": "compression/recette-de-reconstruction/certification-par-empreinte-du-round-trip",
+      "decimal_path": "9.2",
+      "depth": 1,
+      "label_fr": "Certification par empreinte du round-trip",
+      "label_en": "Hash-certified round trip",
+      "definition_fr": "Contrôle qui exécute la recette puis compare l'empreinte SHA-256 et les octets produits au flux d'origine, faisant de l'exactitude une mesure et non une déclaration.",
+      "definition_en": "A check that runs the recipe then compares the SHA-256 digest and the produced bytes with the original stream, making exactness a measurement rather than a claim.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "4b807b5d"
+        }
+      ],
+      "prerequisites": [
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482"
+      ]
+    },
+    {
+      "id": "0780027f-821e-40fb-942b-9ef85b851bf5",
+      "path": "compression/recette-de-reconstruction/proposer-sans-etre-cru",
+      "decimal_path": "9.3",
+      "depth": 1,
+      "label_fr": "Proposer sans être cru",
+      "label_en": "Propose but never trust",
+      "definition_fr": "Division du travail où un découvreur propose des candidats et où seul un vérificateur symbolique local décide, le modèle restant hors du chemin de décodage.",
+      "definition_en": "A division of labour where a discoverer proposes candidates and only a local symbolic verifier decides, the model staying outside the decoding path.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "00811274"
+        }
+      ],
+      "prerequisites": [
+        "72002d88-7e24-4978-93a3-b6d9edcc9df9"
+      ]
+    },
+    {
+      "id": "3b09bd5a-63ee-48f5-8331-d411b47fd736",
+      "path": "compression/recette-de-reconstruction/registre-de-recettes-signees",
+      "decimal_path": "9.4",
+      "depth": 1,
+      "label_fr": "Registre de recettes signées",
+      "label_en": "Signed recipe registry",
+      "definition_fr": "Table adressée par le contenu qui associe une signature de préfixe et de n-grammes à une recette certifiée, son MAC et l'empreinte du flux.",
+      "definition_en": "A content-addressed table mapping a prefix and n-gram signature to a certified recipe, its MAC and the stream digest.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "25c82ff5"
+        }
+      ],
+      "prerequisites": [
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482",
+        "72002d88-7e24-4978-93a3-b6d9edcc9df9"
+      ]
+    },
+    {
+      "id": "061689ec-4b6b-40ef-a902-83e710010e67",
+      "path": "compression/recette-de-reconstruction/couverture-du-registre-sans-decouvreur",
+      "decimal_path": "9.5",
+      "depth": 1,
+      "label_fr": "Couverture du registre sans découvreur",
+      "label_en": "Registry coverage without discoverer",
+      "definition_fr": "Taux d'opérations servies par une recette déjà enregistrée, compté avant tout appel au découvreur, qui mesure le recyclage d'une passe à la suivante.",
+      "definition_en": "The share of operations served by an already registered recipe, counted before any discoverer call, measuring reuse from one pass to the next.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "d8f91bdc"
+        }
+      ],
+      "prerequisites": [
+        "3b09bd5a-63ee-48f5-8331-d411b47fd736"
+      ]
+    },
+    {
+      "id": "ea577cbf-d48c-4950-9fdb-6e54cb5ffbcf",
+      "path": "compression/recette-de-reconstruction/refus-d-une-bombe-de-decompression",
+      "decimal_path": "9.6",
+      "depth": 1,
+      "label_fr": "Refus d'une bombe de décompression",
+      "label_en": "Decompression bomb refusal",
+      "definition_fr": "Comportement d'un décodeur borné devant une recette malveillante : refus motivé, rendu en temps borné et mesuré, avant toute production démesurée.",
+      "definition_en": "The behaviour of a bounded decoder facing a malicious recipe: a motivated refusal, returned in bounded and measured time, before any oversized output.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "d88cedf3"
+        }
+      ],
+      "prerequisites": [
+        "742f35eb-ecd2-4c61-add5-f089afc62c43"
+      ]
+    },
+    {
+      "id": "c3ce416a-594f-43ef-a381-78c8bbc55ea6",
+      "path": "compression/recette-de-reconstruction/separation-algorithmique-et-statistique-des-regularites",
+      "decimal_path": "9.7",
+      "depth": 1,
+      "label_fr": "Séparation algorithmique et statistique des régularités",
+      "label_en": "Algorithmic versus statistical regularity",
+      "definition_fr": "Distinction entre une redondance portée par la loi de génération, qu'un programme court capture, et une redondance de fréquences, que seuls les codecs de symboles exploitent.",
+      "definition_en": "The distinction between redundancy carried by the generation law, captured by a short program, and frequency redundancy, exploited only by symbol codecs.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "27b9b774"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "19df3f4c-0acb-42bc-8c0c-d82d895d0b84",
+      "path": "compression/recette-de-reconstruction/copie-litterale-comme-repli-honnete",
+      "decimal_path": "9.8",
+      "depth": 1,
+      "label_fr": "Copie littérale comme repli honnête",
+      "label_en": "Literal copy as honest fallback",
+      "definition_fr": "Recette triviale qui stocke les octets tels quels, retenue quand aucune hypothèse ne se certifie et servant de borne de coût pour juger toute candidate.",
+      "definition_en": "The trivial recipe storing the bytes as they are, kept when no hypothesis certifies and serving as the cost bound against which any candidate is judged.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+          "cell_id": "829993a5"
+        }
+      ],
+      "prerequisites": [
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482"
+      ]
+    },
+    {
+      "id": "d1cb4cd0-d836-41ce-9706-2ca14db78c17",
+      "path": "compression/triage-par-llm/vue-de-segment-pour-decider",
+      "decimal_path": "10.1",
+      "depth": 1,
+      "label_fr": "Vue de segment pour décider",
+      "label_en": "Decision view of a segment",
+      "definition_fr": "Description d'un bloc soumise au modèle — identifiant, taille, type, entropie en bits par octet et aperçu imprimable — les octets restant hors de sa vue.",
+      "definition_en": "The description of a block given to the model — identifier, size, type, entropy in bits per byte and a printable preview — the bytes staying out of its view.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "25a23c80"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "9358498b"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "8edf40ba-8302-49ec-953a-051b01d1b7e6",
+      "path": "compression/triage-par-llm/operation-inversable-par-table-inverse",
+      "decimal_path": "10.2",
+      "depth": 1,
+      "label_fr": "Opération inversable par table inverse",
+      "label_en": "Operation invertible by inverse table",
+      "definition_fr": "Primitive de compression accompagnée de sa fonction inverse déclarée, l'identité incluse, de sorte que le round-trip soit garanti par construction.",
+      "definition_en": "A compression primitive paired with its declared inverse function, identity included, so that the round trip is guaranteed by construction.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "3e09d4aa"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "b59fda8e"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "f3ae89fc-fda2-4602-b1d1-ff951ad6087f",
+      "path": "compression/triage-par-llm/decoupage-en-sous-segments-qualifies",
+      "decimal_path": "10.3",
+      "depth": 1,
+      "label_fr": "Découpage en sous-segments qualifiés",
+      "label_en": "Qualifying split into sub-segments",
+      "definition_fr": "Opération intermédiaire qui ne compresse rien mais produit des enfants typés dont l'identifiant porte la position, chacun repartant dans la file de traitement.",
+      "definition_en": "An intermediate operation that compresses nothing but produces typed children whose identifier carries their position, each re-entering the work queue.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "f660ce08"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "506e4c44"
+        }
+      ],
+      "prerequisites": [
+        "d1cb4cd0-d836-41ce-9706-2ca14db78c17"
+      ]
+    },
+    {
+      "id": "d953685d-c9a0-488e-858e-d276bc6bdae9",
+      "path": "compression/triage-par-llm/boucle-de-rappel-jusqu-au-terminal",
+      "decimal_path": "10.4",
+      "depth": 1,
+      "label_fr": "Boucle de rappel jusqu'au terminal",
+      "label_en": "Recall loop until terminal",
+      "definition_fr": "Boucle qui rappelle le modèle sur chaque segment produit jusqu'à ce que la file soit vide, un découpage créant du travail au lieu d'en terminer, sous budget d'appels.",
+      "definition_en": "A loop that calls the model on every produced segment until the queue is empty, a split creating work rather than finishing it, under a call budget.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "1276b0f4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "1a0cceff"
+        }
+      ],
+      "prerequisites": [
+        "f3ae89fc-fda2-4602-b1d1-ff951ad6087f"
+      ]
+    },
+    {
+      "id": "0429577a-9342-426f-aa3f-7f4822db8198",
+      "path": "compression/triage-par-llm/reparation-par-la-raison-du-refus",
+      "decimal_path": "10.5",
+      "depth": 1,
+      "label_fr": "Réparation par la raison du refus",
+      "label_en": "Repair guided by the refusal reason",
+      "definition_fr": "Mécanisme où le harnais refuse une opération inapplicable, renvoie sa raison au modèle et lui redemande une décision, chaque reprise comptée comme défaut du triage.",
+      "definition_en": "A mechanism where the harness refuses an inapplicable operation, returns its reason to the model and asks again, each retry counted as a triage defect.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "4113238b"
+        }
+      ],
+      "prerequisites": [
+        "d953685d-c9a0-488e-858e-d276bc6bdae9"
+      ]
+    },
+    {
+      "id": "3fa9418e-bda4-4204-8898-04539f43156c",
+      "path": "compression/triage-par-llm/recette-compacte-de-decisions",
+      "decimal_path": "10.6",
+      "depth": 1,
+      "label_fr": "Recette compacte de décisions",
+      "label_en": "Compact recipe of decisions",
+      "definition_fr": "Sérialisation de la seule liste ordonnée des opérations, sans aucun octet de données, qui suffit à rejouer la compression et se signe pour son intégrité.",
+      "definition_en": "The serialization of the ordered operation list alone, with no data bytes, enough to replay the compression and signed for its integrity.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "caa0d408"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "4f0b8440"
+        }
+      ],
+      "prerequisites": [
+        "f3ae89fc-fda2-4602-b1d1-ff951ad6087f"
+      ]
+    },
+    {
+      "id": "f832af13-fc39-44c4-a445-990c7e20e164",
+      "path": "compression/triage-par-llm/decompression-par-rejeu-inverse",
+      "decimal_path": "10.7",
+      "depth": 1,
+      "label_fr": "Décompression par rejeu inverse",
+      "label_en": "Decompression by reverse replay",
+      "definition_fr": "Phase qui parcourt la recette à l'envers, défait chaque compression par son décodeur et recolle chaque découpage, sans aucun appel au modèle.",
+      "definition_en": "The phase that walks the recipe backwards, undoes each compression with its decoder and glues each split back, with no call to the model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "a907fe24"
+        }
+      ],
+      "prerequisites": [
+        "3fa9418e-bda4-4204-8898-04539f43156c",
+        "8edf40ba-8302-49ec-953a-051b01d1b7e6"
+      ]
+    },
+    {
+      "id": "197ed0c6-1775-4e43-a499-6159c5118d5d",
+      "path": "compression/triage-par-llm/double-preuve-round-trip-et-mac",
+      "decimal_path": "10.8",
+      "depth": 1,
+      "label_fr": "Double preuve round-trip et MAC",
+      "label_en": "Double proof: round trip and MAC",
+      "definition_fr": "Exigence conjointe du round-trip octet pour octet sur les fichiers et du MAC sur la recette, la première prouvant la fidélité, le second l'intégrité.",
+      "definition_en": "The joint requirement of a byte-for-byte round trip on the files and of the recipe MAC, the first proving fidelity, the second integrity.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "52861d3f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "5fd5d724"
+        }
+      ],
+      "prerequisites": [
+        "f832af13-fc39-44c4-a445-990c7e20e164",
+        "72002d88-7e24-4978-93a3-b6d9edcc9df9"
+      ]
+    },
+    {
+      "id": "3de3ac40-bd4f-4d93-aa23-c0f509593b07",
+      "path": "compression/triage-par-llm/cout-des-decisions-compte",
+      "decimal_path": "10.9",
+      "depth": 1,
+      "label_fr": "Coût des décisions compté",
+      "label_en": "Decision cost counted",
+      "definition_fr": "Principe de comptabilité qui ajoute la recette sérialisée au total du triage, de sorte qu'un gain d'octets ne se déclare jamais sans le prix des décisions.",
+      "definition_en": "An accounting rule that adds the serialized recipe to the triage total, so that a byte gain is never claimed without the price of the decisions.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "0846b12b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "7f188cc8"
+        }
+      ],
+      "prerequisites": [
+        "3fa9418e-bda4-4204-8898-04539f43156c"
+      ]
+    },
+    {
+      "id": "d8042d38-1165-49ac-a93b-fb6f3e91cdb9",
+      "path": "compression/triage-par-llm/comparaison-a-l-oracle-global",
+      "decimal_path": "10.10",
+      "depth": 1,
+      "label_fr": "Comparaison à l'oracle global",
+      "label_en": "Comparison against the global oracle",
+      "definition_fr": "Borne de comparaison qui offre au traitement d'un bloc le meilleur codec choisi après coup sur tout le contenu, afin que le gain du triage soit jugé contre ce maximum.",
+      "definition_en": "A comparison bound that gives the single-block treatment the best codec chosen after the fact over the whole content, so the triage gain is judged against that maximum.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+          "cell_id": "d1a8b62b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+          "cell_id": "438399c4"
+        }
+      ],
+      "prerequisites": [
+        "3de3ac40-bd4f-4d93-aa23-c0f509593b07"
+      ]
+    },
+    {
+      "id": "84137a5d-94ab-4ff9-8cc9-02580f866ef0",
+      "path": "compression/triage-par-llm/carte-de-segment",
+      "decimal_path": "10.11",
+      "depth": 1,
+      "label_fr": "Carte de segment",
+      "label_en": "Segment card",
+      "definition_fr": "La carte de segment est la description compacte d'un bloc d'octets présentée au modèle : identifiant, taille, entropie, aperçu, structure interne reconnue et découpages réellement applicables.",
+      "definition_en": "A segment card is the compact description of a block of bytes shown to the model: identifier, size, entropy, preview, recognized internal structure and the splits that really apply.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "0de07eba"
+        }
+      ],
+      "prerequisites": [
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "a0d4bffa-d951-457f-9f0f-7d17dce63ac3",
+      "path": "compression/triage-par-llm/frontiere-designee-de-decoupage",
+      "decimal_path": "10.12",
+      "depth": 1,
+      "label_fr": "Frontière désignée de découpage",
+      "label_en": "Designated split boundary",
+      "definition_fr": "Un repère désigne une frontière reconnue dans un flux d'octets — préfixe de ligne, expression régulière, offset ou titre markdown — et son étiquette devient le rôle de la portion qu'il ouvre.",
+      "definition_en": "A boundary marker designates a recognized boundary in a byte stream — line prefix, regular expression, offset or markdown heading — and its label becomes the role of the portion it opens.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "3ff50c97"
+        }
+      ],
+      "prerequisites": [
+        "84137a5d-94ab-4ff9-8cc9-02580f866ef0"
+      ]
+    },
+    {
+      "id": "4ad7bf82-499e-4d32-b4b9-3c1197345cf6",
+      "path": "compression/triage-par-llm/reconnaissance-de-format-sur-les-octets",
+      "decimal_path": "10.13",
+      "depth": 1,
+      "label_fr": "Reconnaissance de format sur les octets",
+      "label_en": "Format recognition from bytes",
+      "definition_fr": "Le format d'un segment se lit dans ses octets — signatures binaires d'abord, puis parse, puis forme des lignes — jamais dans son extension ; chaque verdict publie sa méthode et sa confiance.",
+      "definition_en": "A segment's format is read from its bytes — binary signatures first, then parsing, then line shape — never from its file extension; each verdict publishes its method and its confidence.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "a1330549"
+        }
+      ],
+      "prerequisites": [
+        "84137a5d-94ab-4ff9-8cc9-02580f866ef0"
+      ]
+    },
+    {
+      "id": "a3c1d84d-80b0-4135-b760-7c78df0cd577",
+      "path": "compression/triage-par-llm/contrat-d-inversibilite-d-un-codec",
+      "decimal_path": "10.14",
+      "depth": 1,
+      "label_fr": "Contrat d'inversibilité d'un codec",
+      "label_en": "Codec invertibility contract",
+      "definition_fr": "Un codec est une primitive inversible : compresser puis décompresser rend exactement les octets d'origine ; ce contrat est vérifié sur vide, texte et binaire avant d'exposer le codec au modèle.",
+      "definition_en": "A codec is an invertible primitive: compressing then decompressing returns exactly the original bytes; the contract is checked on empty, text and binary input before the codec is exposed to the model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "9cc89b4b"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "26eccc51-48cf-43e8-9779-5b5e0bb7ac98",
+      "path": "compression/triage-par-llm/codec-a-dictionnaire-partage",
+      "decimal_path": "10.15",
+      "depth": 1,
+      "label_fr": "Codec à dictionnaire partagé",
+      "label_en": "Shared-dictionary codec",
+      "definition_fr": "Un codec à dictionnaire apprend une fois les sous-chaînes fréquentes du corpus, transmet ce dictionnaire une seule fois, puis remplace chaque occurrence par un index compact.",
+      "definition_en": "A dictionary codec learns the corpus's frequent substrings once, transmits that dictionary a single time, then replaces each occurrence with a compact index.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "fb732740"
+        }
+      ],
+      "prerequisites": [
+        "a3c1d84d-80b0-4135-b760-7c78df0cd577"
+      ]
+    },
+    {
+      "id": "fdafdb8b-8a8f-46b0-8259-e0db68dc1e2d",
+      "path": "compression/recette-de-reconstruction/invariant-de-couverture",
+      "decimal_path": "9.9",
+      "depth": 1,
+      "label_fr": "Invariant de couverture",
+      "label_en": "Coverage invariant",
+      "definition_fr": "Propriété d'une recette : tout segment original est compressé ou découpé en enfants tous couverts ; la vérification récursive lève une exception en nommant les segments oubliés.",
+      "definition_en": "A property of a recipe: every original segment is either compressed or split into children that are all covered; the recursive check raises an exception naming the forgotten segments.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "957f420b"
+        }
+      ],
+      "prerequisites": [
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482"
+      ]
+    },
+    {
+      "id": "a7b3d330-2fba-4c81-82ca-515c520bda77",
+      "path": "compression/triage-par-llm/decompression-sans-appel-au-modele",
+      "decimal_path": "10.16",
+      "depth": 1,
+      "label_fr": "Décompression sans appel au modèle",
+      "label_en": "Model-free decompression",
+      "definition_fr": "La décompression rejoue la recette à l'envers, décision par décision, sans modèle ni heuristique ; un compteur d'appels remis à zéro avant la reconstruction prouve qu'il est resté nul.",
+      "definition_en": "Decompression replays the recipe backwards, decision by decision, with no model and no heuristic; a call counter reset before the reconstruction proves it stayed at zero.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "cceec4ca"
+        }
+      ],
+      "prerequisites": [
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482",
+        "1c6d1d01-8f2e-437f-a9da-5335dd3fedf7"
+      ]
+    },
+    {
+      "id": "21a11d47-314b-4719-83ca-8907f63235b3",
+      "path": "compression/triage-par-llm/comparaison-tout-compris",
+      "decimal_path": "10.17",
+      "depth": 1,
+      "label_fr": "Comparaison tout compris",
+      "label_en": "All-in cost comparison",
+      "definition_fr": "Le total du triage compte les artefacts, l'en-tête du dictionnaire et la recette compressée ; il s'affronte au bloc indifférencié compressé avec le meilleur codec choisi après coup.",
+      "definition_en": "The triage total counts the artefacts, the dictionary header and the compressed recipe; it is compared against the undifferentiated block compressed with the best codec chosen after the fact.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "f7dc8a03"
+        }
+      ],
+      "prerequisites": [
+        "1c6d1d01-8f2e-437f-a9da-5335dd3fedf7",
+        "26eccc51-48cf-43e8-9779-5b5e0bb7ac98",
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482"
+      ]
+    },
+    {
+      "id": "9639ceff-4b20-4f3a-a0fa-81cc1e6817a9",
+      "path": "compression/triage-par-llm/entonnoir-et-arbitrage-par-mesure",
+      "decimal_path": "10.18",
+      "depth": 1,
+      "label_fr": "Entonnoir et arbitrage par mesure",
+      "label_en": "Funnel with measured arbitration",
+      "definition_fr": "Dans l'entonnoir, le modèle ne fournit que le format, le schéma et les repères ; un pipeline déterministe fait le reste, puis arbitre fichier par fichier le minimum des routes mesurées.",
+      "definition_en": "In the funnel, the model only supplies the format, the schema and the boundary markers; a deterministic pipeline does the rest, then arbitrates per file the minimum of the measured routes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "35e44614"
+        }
+      ],
+      "prerequisites": [
+        "4ad7bf82-499e-4d32-b4b9-3c1197345cf6",
+        "a0d4bffa-d951-457f-9f0f-7d17dce63ac3",
+        "b76a76fc-2629-4f7d-97c5-c5def56fa482",
+        "a3c1d84d-80b0-4135-b760-7c78df0cd577"
+      ]
+    },
+    {
+      "id": "fd9934d8-ecc4-4aef-a7d0-02a7fe5fa065",
+      "path": "compression/triage-par-llm/substituabilite-verifiee-d-un-artefact",
+      "decimal_path": "10.19",
+      "depth": 1,
+      "label_fr": "Substituabilité vérifiée d'un artefact",
+      "label_en": "Verified artifact substitutability",
+      "definition_fr": "Un artefact est remplaçable par un générateur — paramètres ou script — dont le rejeu le reproduit à l'identique ; le garde d'identité prouve la reproduction, jamais la causation.",
+      "definition_en": "An artefact is replaceable by a generator — parameters or a script — whose replay reproduces it identically; the identity guard proves reproduction, never causation.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+          "cell_id": "c6f213af"
+        }
+      ],
+      "prerequisites": [
+        "9639ceff-4b20-4f3a-a0fa-81cc1e6817a9",
+        "4ad7bf82-499e-4d32-b4b9-3c1197345cf6"
+      ]
+    },
+    {
+      "id": "ed9cf55e-8f45-4484-8090-a4ee114e2a66",
+      "path": "compression/assemblage-de-documents/document-assemble",
+      "decimal_path": "11.2",
+      "depth": 1,
+      "label_fr": "Document assemblé",
+      "label_en": "Assembled document",
+      "definition_fr": "Document dont les parties se répètent ou se dérivent — styles partagés, positions logiques, géométrie recalculée — au lieu d'être décrites une à une.",
+      "definition_en": "A document whose parts repeat or derive from one another — shared styles, logical positions, recomputed geometry — rather than being described one by one.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "5b38fcf3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-003"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "9fb6a7f9-fdd5-4b2b-aee9-50006067ea96",
+      "path": "compression/assemblage-de-documents/serialisation-naive",
+      "decimal_path": "11.3",
+      "depth": 1,
+      "label_fr": "Sérialisation naïve",
+      "label_en": "Naive serialization",
+      "definition_fr": "Exporteur sans mémoire qui, pour chaque bloc, réécrit entièrement son style résolu et ses coordonnées figées, sans référencer de définition partagée.",
+      "definition_en": "A stateless exporter that rewrites each block's resolved style and frozen coordinates in full, never referencing a shared definition.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "c5592b73"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-004"
+        }
+      ],
+      "prerequisites": [
+        "ed9cf55e-8f45-4484-8090-a4ee114e2a66"
+      ]
+    },
+    {
+      "id": "ee76199d-e96c-4668-af82-4cef0a6bfc97",
+      "path": "compression/assemblage-de-documents/redondance-structurelle",
+      "decimal_path": "11.4",
+      "depth": 1,
+      "label_fr": "Redondance structurelle",
+      "label_en": "Structural redundancy",
+      "definition_fr": "Répétition dans la forme d'un document — mêmes styles, marges et placements — qui ne porte aucune information après sa première occurrence.",
+      "definition_en": "Repetition within a document's form — identical styles, margins and placements — that carries no information after its first occurrence.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "4d53b5e9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-006"
+        }
+      ],
+      "prerequisites": [
+        "9fb6a7f9-fdd5-4b2b-aee9-50006067ea96"
+      ]
+    },
+    {
+      "id": "c99a937c-195e-4cf2-adb4-46f24f5ad01f",
+      "path": "compression/assemblage-de-documents/canoniques-placements-contenus",
+      "decimal_path": "11.5",
+      "depth": 1,
+      "label_fr": "Canoniques, placements, contenus",
+      "label_en": "Canonicals, placements, contents",
+      "definition_fr": "Découpage d'une recette en trois familles de segments : styles distincts écrits une fois, positions logiques par bloc, textes seuls dans l'ordre.",
+      "definition_en": "Splitting a recipe into three segment families: distinct styles written once, per-block logical positions, and texts alone in order.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "0b61c0e9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-007"
+        }
+      ],
+      "prerequisites": [
+        "ed9cf55e-8f45-4484-8090-a4ee114e2a66",
+        "ee76199d-e96c-4668-af82-4cef0a6bfc97"
+      ]
+    },
+    {
+      "id": "7a5626d3-357f-4d74-afbe-f1262c3f834a",
+      "path": "compression/assemblage-de-documents/reconstruction-dependante",
+      "decimal_path": "11.6",
+      "depth": 1,
+      "label_fr": "Reconstruction dépendante",
+      "label_en": "Dependent reconstruction",
+      "definition_fr": "Rejeu du document depuis la recette seule : les coordonnées sont recalculées à partir des marges et des pas, jamais recopiées de l'original.",
+      "definition_en": "Replaying the document from the recipe alone: coordinates are recomputed from margins and steps, never copied from the original.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "02afe782"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-013"
+        }
+      ],
+      "prerequisites": [
+        "c99a937c-195e-4cf2-adb4-46f24f5ad01f"
+      ]
+    },
+    {
+      "id": "e14074de-a857-496a-b51c-30152d690692",
+      "path": "compression/assemblage-de-documents/garde-d-identite-situant-l-ecart",
+      "decimal_path": "11.7",
+      "depth": 1,
+      "label_fr": "Garde d'identité situant l'écart",
+      "label_en": "Identity guard locating the gap",
+      "definition_fr": "Contrôle qui non seulement refuse un candidat faux, mais nomme la marge, le bloc ou l'octet où la première différence apparaît.",
+      "definition_en": "A check that not only rejects a wrong candidate but names the margin, block or byte where the first difference occurs.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "6fdb8051"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-016"
+        }
+      ],
+      "prerequisites": [
+        "7a5626d3-357f-4d74-afbe-f1262c3f834a"
+      ]
+    },
+    {
+      "id": "31fcb6f5-549d-4d79-85b0-a77b68e5d782",
+      "path": "compression/assemblage-de-documents/egalite-ordonnee-bloc-a-bloc",
+      "decimal_path": "11.8",
+      "depth": 1,
+      "label_fr": "Égalité ordonnée bloc à bloc",
+      "label_en": "Ordered block-wise equality",
+      "definition_fr": "Deux documents ne sont identiques que si leurs blocs coïncident dans l'ordre ; les mêmes valeurs rangées autrement ne suffisent pas.",
+      "definition_en": "Two documents are identical only if their blocks match in order; the same values arranged differently do not suffice.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "6f87e4a8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-021"
+        }
+      ],
+      "prerequisites": [
+        "e14074de-a857-496a-b51c-30152d690692"
+      ]
+    },
+    {
+      "id": "366de604-1845-4837-9c3d-6f5c9e4a9e8d",
+      "path": "compression/assemblage-de-documents/independance-de-la-resolution",
+      "decimal_path": "11.9",
+      "depth": 1,
+      "label_fr": "Indépendance de la résolution",
+      "label_en": "Resolution independence",
+      "definition_fr": "Propriété d'un artefact vectoriel dont la taille ne bouge presque pas quand la résolution de rendu double, contrairement à un raster.",
+      "definition_en": "Property of a vector artifact whose size barely changes when rendering resolution doubles, unlike a raster image.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "4fd49999"
+        }
+      ],
+      "prerequisites": [
+        "9fb6a7f9-fdd5-4b2b-aee9-50006067ea96"
+      ]
+    },
+    {
+      "id": "954de466-01b7-4cc9-9b36-221b811aabf1",
+      "path": "compression/assemblage-de-documents/forme-assemblee-par-defs-et-use",
+      "decimal_path": "11.10",
+      "depth": 1,
+      "label_fr": "Forme assemblée par defs et use",
+      "label_en": "Assembled form with defs and use",
+      "definition_fr": "Forme SVG native qui déclare chaque style une seule fois dans defs et le référence par use à chaque placement, au lieu de le répéter.",
+      "definition_en": "Native SVG form that declares each style once in defs and references it with use at every placement instead of repeating it.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "133d5250"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-025"
+        }
+      ],
+      "prerequisites": [
+        "c99a937c-195e-4cf2-adb4-46f24f5ad01f"
+      ]
+    },
+    {
+      "id": "5b7ffa0b-1e35-4e69-ac0e-c49707c2ff5d",
+      "path": "compression/assemblage-de-documents/equivalence-de-modele-rendu",
+      "decimal_path": "11.11",
+      "depth": 1,
+      "label_fr": "Équivalence de modèle rendu",
+      "label_en": "Rendered-model equivalence",
+      "definition_fr": "Invariant partagé par deux formes distinctes du même document : mêmes textes, mêmes styles résolus, mêmes coordonnées dérivées, dans l'ordre.",
+      "definition_en": "Invariant shared by two distinct forms of the same document: identical texts, resolved styles and derived coordinates, in order.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+          "cell_id": "133d5250"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+          "cell_id": "cell-025"
+        }
+      ],
+      "prerequisites": [
+        "954de466-01b7-4cc9-9b36-221b811aabf1"
+      ]
+    },
+    {
+      "id": "4d566435-b430-4273-911d-e1b61d1d3372",
+      "path": "compression/assemblage-de-documents/par-llm/digest-de-l-artefact-exporte",
+      "decimal_path": "11.1.1",
+      "depth": 2,
+      "label_fr": "Digest de l'artefact exporté",
+      "label_en": "Digest of the exported artifact",
+      "definition_fr": "Résumé minimal remis au modèle : signatures de style distinctes avec leur effectif et coordonnées distinctes, sans textes ni structure interne.",
+      "definition_en": "Minimal summary handed to the model: distinct style signatures with their counts and distinct coordinates, without texts or internal structure.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-11"
+        }
+      ],
+      "prerequisites": [
+        "9fb6a7f9-fdd5-4b2b-aee9-50006067ea96"
+      ]
+    },
+    {
+      "id": "ba592b5b-6ecd-4e04-b410-011329a844a4",
+      "path": "compression/assemblage-de-documents/par-llm/proposition-par-appel-d-outil",
+      "decimal_path": "11.1.2",
+      "depth": 2,
+      "label_fr": "Proposition par appel d'outil",
+      "label_en": "Proposal via tool call",
+      "definition_fr": "Mécanisme où le modèle ne rend pas du texte libre mais invoque une fonction dont les paramètres typés portent les canoniques et la grille proposées.",
+      "definition_en": "Mechanism where the model returns no free text but invokes a function whose typed parameters carry the proposed canonicals and grid.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-14"
+        }
+      ],
+      "prerequisites": [
+        "4d566435-b430-4273-911d-e1b61d1d3372"
+      ]
+    },
+    {
+      "id": "91081732-9abe-43d9-9836-2dc13e0c08d3",
+      "path": "compression/assemblage-de-documents/par-llm/validation-de-couverture",
+      "decimal_path": "11.1.3",
+      "depth": 2,
+      "label_fr": "Validation de couverture",
+      "label_en": "Coverage validation",
+      "definition_fr": "Contrôle exigeant que chaque signature observée dans l'artefact possède un canonique proposé, avec refus nommant la signature orpheline.",
+      "definition_en": "Check requiring every signature observed in the artifact to have a proposed canonical, refusing with the orphan signature named.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-14"
+        }
+      ],
+      "prerequisites": [
+        "ba592b5b-6ecd-4e04-b410-011329a844a4",
+        "4d566435-b430-4273-911d-e1b61d1d3372"
+      ]
+    },
+    {
+      "id": "2aeb27d5-7cca-44c9-a5de-6afe4ccc09f2",
+      "path": "compression/assemblage-de-documents/par-llm/reconstruction-par-division-exacte",
+      "decimal_path": "11.1.4",
+      "depth": 2,
+      "label_fr": "Reconstruction par division exacte",
+      "label_en": "Exact-division reconstruction",
+      "definition_fr": "Repasse des coordonnées figées par la grille proposée ; un reste non nul signifie que la proposition n'explique pas le document et la fait refuser.",
+      "definition_en": "Mapping frozen coordinates back through the proposed grid; a non-zero remainder means the proposal does not explain the document and is rejected.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-17"
+        }
+      ],
+      "prerequisites": [
+        "ba592b5b-6ecd-4e04-b410-011329a844a4"
+      ]
+    },
+    {
+      "id": "d7912e3b-ec9b-46f7-aefd-481d646e16ec",
+      "path": "compression/assemblage-de-documents/par-llm/juge-d-identite-dependant-du-format",
+      "decimal_path": "11.1.5",
+      "depth": 2,
+      "label_fr": "Juge d'identité dépendant du format",
+      "label_en": "Format-dependent identity judge",
+      "definition_fr": "Principe selon lequel l'invariant d'identité se choisit par format : le pixel pour un raster, la forme canonique de l'arbre pour un document structuré.",
+      "definition_en": "Principle that the identity invariant is chosen per format: pixels for a raster, the canonical tree form for a structured document.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-20"
+        }
+      ],
+      "prerequisites": [
+        "2aeb27d5-7cca-44c9-a5de-6afe4ccc09f2"
+      ]
+    },
+    {
+      "id": "094c5f9d-02db-4131-a9bb-d0eb3a774376",
+      "path": "compression/assemblage-de-documents/par-llm/forme-canonique-c14n",
+      "decimal_path": "11.1.6",
+      "depth": 2,
+      "label_fr": "Forme canonique c14n",
+      "label_en": "Canonical XML form",
+      "definition_fr": "Sérialisation normalisée d'un arbre : blancs décoratifs retirés et attributs triés, si bien que deux documents équivalents donnent les mêmes octets.",
+      "definition_en": "Normalized serialization of a tree: decorative whitespace removed and attributes sorted, so two equivalent documents yield the same bytes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-20"
+        }
+      ],
+      "prerequisites": [
+        "d7912e3b-ec9b-46f7-aefd-481d646e16ec"
+      ]
+    },
+    {
+      "id": "a5b67d96-ae99-4b74-9af1-618e73d65214",
+      "path": "compression/assemblage-de-documents/par-llm/limite-identite-et-parcimonie",
+      "decimal_path": "11.1.7",
+      "depth": 2,
+      "label_fr": "Limite identité et parcimonie",
+      "label_en": "Identity versus parsimony",
+      "definition_fr": "Le juge prouve que la recette reproduit l'artefact, jamais qu'elle est la plus petite : une grille dégénérée passe et grossit la recette.",
+      "definition_en": "The judge proves the recipe reproduces the artifact, never that it is smallest: a degenerate grid passes and inflates the recipe.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-25"
+        }
+      ],
+      "prerequisites": [
+        "2aeb27d5-7cca-44c9-a5de-6afe4ccc09f2",
+        "094c5f9d-02db-4131-a9bb-d0eb3a774376"
+      ]
+    },
+    {
+      "id": "44aabd52-cd16-4d5c-bab5-3c6f88d2f104",
+      "path": "compression/assemblage-de-documents/par-llm/borne-de-parcimonie-par-pgcd",
+      "decimal_path": "11.1.8",
+      "depth": 2,
+      "label_fr": "Borne de parcimonie par pgcd",
+      "label_en": "GCD parsimony bound",
+      "definition_fr": "Grille minimale calculée arithmétiquement : marge au minimum des coordonnées, pas au pgcd de leurs écarts, ce qui minimise les indices transportés.",
+      "definition_en": "Minimal grid computed arithmetically: margin at the minimum coordinate, step at the gcd of their gaps, minimizing the indices carried.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-35"
+        }
+      ],
+      "prerequisites": [
+        "a5b67d96-ae99-4b74-9af1-618e73d65214"
+      ]
+    },
+    {
+      "id": "146e89ac-d7f5-4462-abe9-dc1b4fd24f78",
+      "path": "compression/assemblage-de-documents/par-llm/le-digest-borne-l-observable",
+      "decimal_path": "11.1.9",
+      "depth": 2,
+      "label_fr": "Le digest borne l'observable",
+      "label_en": "Digest bounds the observable",
+      "definition_fr": "Ce qu'un digest ne décrit pas, aucune proposition ne peut le couvrir : construire le digest fixe la frontière de ce que le modèle peut isoler.",
+      "definition_en": "What a digest does not describe, no proposal can cover: building the digest sets the boundary of what the model may isolate.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-39"
+        }
+      ],
+      "prerequisites": [
+        "4d566435-b430-4273-911d-e1b61d1d3372",
+        "91081732-9abe-43d9-9836-2dc13e0c08d3"
+      ]
+    },
+    {
+      "id": "b355c945-0836-4eb2-a847-964eb3fa78aa",
+      "path": "compression/assemblage-de-documents/par-llm/cout-de-la-proposition-en-appels",
+      "decimal_path": "11.1.10",
+      "depth": 2,
+      "label_fr": "Coût de la proposition en appels",
+      "label_en": "Proposal cost in model calls",
+      "definition_fr": "Prix de la proposition mesuré en allers-retours réels vers le modèle, alors que rejouer, garder et mesurer n'en coûtent aucun.",
+      "definition_en": "Cost of the proposal measured in real round-trips to the model, while replaying, guarding and measuring cost none.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+          "cell_id": "cell-31"
+        }
+      ],
+      "prerequisites": [
+        "ba592b5b-6ecd-4e04-b410-011329a844a4"
+      ]
+    },
+    {
+      "id": "b9764cd1-1a63-43a9-a652-0fc9c8daebaf",
+      "path": "compression/huffman-canonique/tampon-de-bits-empaquete",
+      "decimal_path": "2.3",
+      "depth": 1,
+      "label_fr": "Tampon de bits empaqueté",
+      "label_en": "Packed bit buffer",
+      "definition_fr": "Les mots sont écrits bit à bit dans un tampon d'octets empaqueté ; le décodeur lit L bits avec bourrage nul final et borne la sortie par le nombre de symboles attendu.",
+      "definition_en": "Codewords are written bit by bit into a packed byte buffer; the decoder reads L bits with null padding and bounds the output by the expected symbol count.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "b6a10ea1"
+        }
+      ],
+      "prerequisites": [
+        "8498b0e2-81d9-408f-8088-1d042b61490a"
+      ]
+    },
+    {
+      "id": "f3a19bda-0a3b-406e-b57a-e91834d41ea6",
+      "path": "compression/lz77/limite-du-code-par-symbole",
+      "decimal_path": "3.8",
+      "depth": 1,
+      "label_fr": "Limite du code par symbole",
+      "label_en": "Limit of symbol-by-symbol coding",
+      "definition_fr": "Un code par symbole peut approcher l'entropie de l'histogramme, mais cette borne ne modélise pas les dépendances entre octets : mots et tournures répétés restent payés à chaque occurrence.",
+      "definition_en": "A symbol-by-symbol code can approach the histogram entropy, but that bound does not model dependencies between bytes: repeated words and turns are still paid at every occurrence.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "a01a53ef"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "1e01e7d0-6ac0-4dd8-a7b8-a3444b1a4243",
+      "path": "compression/banc-de-compression/framing-d-un-flux-compresse",
+      "decimal_path": "7.10",
+      "depth": 1,
+      "label_fr": "Framing d'un flux compressé",
+      "label_en": "Framing of a compressed stream",
+      "definition_fr": "Le framing est ce qu'un flux compressé porte en plus des données : un en-tête qui déclare signature, fenêtre et longueurs, le payload des jetons et jusqu'à sept bits de bourrage dans l'octet final.",
+      "definition_en": "Framing is what a compressed stream carries beyond the data: a header declaring the signature, the window and the lengths, the payload of tokens and up to seven padding bits in the final byte.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "f37b3e8c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+          "cell_id": "bfe45de8"
+        }
+      ],
+      "prerequisites": [
+        "3860e474-8cf8-4655-855f-db7f7768a1d6"
+      ]
+    },
+    {
+      "id": "998346e8-ce29-43b8-a97a-4881d5ff9391",
+      "path": "compression/banc-de-compression/borne-entropique-empirique-nh-x",
+      "decimal_path": "7.11",
+      "depth": 1,
+      "label_fr": "Borne entropique empirique nH(X)",
+      "label_en": "Empirical entropy bound nH(X)",
+      "definition_fr": "nH(X), le produit de la taille par l'entropie de l'histogramme, est une borne empirique : il estime un code par symbole, mais ce n'est ni la taille d'un flux Huffman construit ni un flux sérialisé.",
+      "definition_en": "nH(X), the size times the entropy of the histogram, is an empirical bound: it estimates a symbol-by-symbol code, but is neither the size of a built Huffman stream nor a serialized stream.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "b33084de"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "22dfa84f-bfa3-437d-bc6d-ff91fece876f",
+      "path": "compression/lz77/validite-et-qualite-d-un-parse-lz77",
+      "decimal_path": "3.9",
+      "depth": 1,
+      "label_fr": "Validité et qualité d'un parse LZ77",
+      "label_en": "Validity and quality of an LZ77 parse",
+      "definition_fr": "Un aller-retour qui restitue les octets d'origine certifie seulement qu'un parse est valide ; deux parses valides peuvent avoir des coûts estimés différents, et ce coût mesure la qualité du parse.",
+      "definition_en": "A round trip that restores the original bytes only certifies that a parse is valid; two valid parses can have different estimated costs, and that cost measures the parse quality.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb",
+          "cell_id": "77066cd7"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d",
+        "3860e474-8cf8-4655-855f-db7f7768a1d6"
+      ]
+    },
+    {
+      "id": "4168171b-ccc0-48f0-9e52-e61f9c7ff80e",
+      "path": "compression/ans/rans/cadre-binaire-versionne-du-codec-rans",
+      "decimal_path": "4.1.2",
+      "depth": 2,
+      "label_fr": "Cadre binaire versionné du codec rANS",
+      "label_en": "Versioned binary frame of the rANS codec",
+      "definition_fr": "Le cadre version 1 range un octet de version, le nombre de blocs et la longueur de chaque état sur 16 bits, plus le total de symboles sur huit octets big-endian.",
+      "definition_en": "The version 1 frame holds a version byte, the block count, each state's length on 16 bits, and the total symbol count on eight big-endian bytes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "47ee141a"
+        }
+      ],
+      "prerequisites": [
+        "955154c4-1265-48bd-829e-5587c12f60ae"
+      ]
+    },
+    {
+      "id": "64bfb131-8894-4eec-90ea-f9f72853b313",
+      "path": "compression/banc-de-compression/decomposition-du-cout-d-un-codec-entropique",
+      "decimal_path": "7.12",
+      "depth": 1,
+      "label_fr": "Décomposition du coût d'un codec entropique",
+      "label_en": "Cost decomposition of an entropy codec",
+      "definition_fr": "Le coût d'un codec se décompose en charge logique, état final, bourrage de l'octet incomplet, cadre et modèle ; ces postes se comptent séparément.",
+      "definition_en": "A codec's cost splits into payload bits, final state, padding of the incomplete byte, frame and model; these items are counted separately.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "27bc2c22"
+        }
+      ],
+      "prerequisites": [
+        "c349e202-9749-4563-9c1b-da60c543c320",
+        "4168171b-ccc0-48f0-9e52-e61f9c7ff80e"
+      ]
+    },
+    {
+      "id": "e119044e-271c-49e7-ba99-62ba27864bb3",
+      "path": "compression/banc-de-compression/mesures-de-temps-locales-non-universelles",
+      "decimal_path": "7.13",
+      "depth": 1,
+      "label_fr": "Mesures de temps locales, non universelles",
+      "label_en": "Local timings, not universal",
+      "definition_fr": "Les temps reportés sont des médianes de mesures répétées sur cette machine et ne valent pas comme performances universelles des algorithmes comparés.",
+      "definition_en": "The reported times are medians of repeated measures on this machine and do not stand as universal performance figures for the compared algorithms.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb",
+          "cell_id": "9c52646e"
+        }
+      ],
+      "prerequisites": []
+    }
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "Compression",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Compression"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Compression-02 — Huffman canonique : des longueurs aux tables de décodage",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-03-LZ77-Python.ipynb",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04-ANS-Python.ipynb",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Compression 04 — Codage entropique ANS (rANS et tANS)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Compression 04b — Codecs SOTA : le front de Pareto vitesse x taux",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-05-MLCompression-Python.ipynb",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "Compression-05 — Compression des modèles : quantifier, élaguer, distiller",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Compression-06 — MDL : décrire le modèle autant que les données",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb",
+      "decimal_path": "1.11",
+      "depth": 1,
+      "label_fr": "Compression-05b — Recettes neuro-symboliques : le modèle découvre, le vérificateur certifie",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb",
+      "decimal_path": "1.12",
+      "depth": 1,
+      "label_fr": "Compression-07 — Le triage par le LLM : recettes inversables d'opérations réelles",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb",
+      "decimal_path": "1.13",
+      "depth": 1,
+      "label_fr": "Compression-07b — Triage par LLM sous Semantic Kernel : codecs réels, couverture prouvée",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb",
+      "decimal_path": "1.14",
+      "depth": 1,
+      "label_fr": "Compression-08 — Reconstruire un document assemblé : l'élimination des redondances vectorielles",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-09-Assemblage-LLM-Python.ipynb",
+      "decimal_path": "1.15",
+      "depth": 1,
+      "label_fr": "Compression-09 — L'assemblage proposé par le modèle : isolation et reconstruction scriptée",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb",
+      "decimal_path": "1.16",
+      "depth": 1,
+      "label_fr": "Compression-09b — Le contexte rétrécit la borne : entropie conditionnelle et taux",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb",
+      "decimal_path": "1.17",
+      "depth": 1,
+      "label_fr": "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-02-HuffmanCanonique-CSharp.ipynb",
+      "decimal_path": "1.18",
+      "depth": 1,
+      "label_fr": "Compression-02 — Huffman canonique : des longueurs aux tables de décodage (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-03-LZ77-CSharp.ipynb",
+      "decimal_path": "1.19",
+      "depth": 1,
+      "label_fr": "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04-ANS-CSharp.ipynb",
+      "decimal_path": "1.20",
+      "depth": 1,
+      "label_fr": "Compression 04 — Codage entropique ANS (rANS et tANS) (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb",
+      "decimal_path": "1.21",
+      "depth": 1,
+      "label_fr": "Compression-06 — MDL : décrire le modèle autant que les données (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb",
+      "decimal_path": "1.22",
+      "depth": 1,
+      "label_fr": "Compression-07 — Le triage par le LLM (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb",
+      "decimal_path": "1.23",
+      "depth": 1,
+      "label_fr": "Compression-08 — Reconstruire un document assemblé (version C#)",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb"
+    },
+    {
+      "level": "subseries",
+      "path": "Compression/Compression_lean",
+      "decimal_path": "1.24",
+      "depth": 1,
+      "label_fr": "Variante Lean : preuves formelles de la série"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb",
+      "decimal_path": "1.24.1",
+      "depth": 2,
+      "label_fr": "Compression-01b — Kraft et McMillan : les preuves formelles des codes préfixes",
+      "repository_path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb"
+    }
+  ]
+}

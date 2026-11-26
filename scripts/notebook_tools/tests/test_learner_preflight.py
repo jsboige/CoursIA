@@ -452,3 +452,26 @@ def test_report_stage_label_returns_palier_name():
     assert "dotnet" in report.stage_label().lower() or ".NET" in report.stage_label()
     report3 = Report(profile="genai", stage=3)
     assert "GenAI" in report3.stage_label() or "genai" in report3.stage_label().lower()
+
+def test_kernels_failed_command_never_reports_ready():
+    """Même si la sortie ressemble à une liste, un échec n'atteste rien."""
+    result = subprocess.CompletedProcess(
+        args=[], returncode=1,
+        stdout="Available kernels:\n  python3 /some/kernels/python3\n",
+        stderr="configuration impossible",
+    )
+    with mock.patch("subprocess.run", return_value=result):
+        finding = _kernels_present(("python3",))[0]
+    assert not finding.ok
+    assert "rc=1" in finding.detail
+
+
+def test_kernels_warning_on_stderr_is_not_a_kernel():
+    result = subprocess.CompletedProcess(
+        args=[], returncode=0, stdout="Available kernels:\n",
+        stderr="python3 /some/kernels/python3 is invalid\n",
+    )
+    with mock.patch("subprocess.run", return_value=result):
+        finding = _kernels_present(("python3",))[0]
+    assert not finding.ok
+    assert "python3" in finding.detail

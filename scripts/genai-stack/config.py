@@ -198,15 +198,15 @@ NOTEBOOK_SERVICE_MAP = {
         "00-4-Environment-Validation.ipynb",
         "00-5-ComfyUI-Local-Test.ipynb",
         "01-1-OpenAI-DALL-E-3.ipynb",
-        "01-2-GPT-5-Image-Generation.ipynb",
+        "01-2-Generation-Image-API.ipynb",
         "01-3-Basic-Image-Operations.ipynb",
     ],
     "forge": [
         "01-4-Forge-SD-XL-Turbo.ipynb",
     ],
     "qwen": [
-        "01-5-Qwen-Image-Edit.ipynb",
-        "01-5b-Qwen-Image-Edit-2509.ipynb",
+        "01-5-Edition-Image-Prompt.ipynb",
+        "01-5b-Edition-Image-Prompt-Iterations.ipynb",
     ],
     "zimage": [
         "02-4-Z-Image-Lumina2.ipynb",
@@ -237,7 +237,7 @@ NOTEBOOK_SERVICE_MAP = {
         "01-4-Whisper-Local.ipynb",
     ],
     "audio_tts_light": [
-        "01-5-Kokoro-TTS-Local.ipynb",
+        "01-5-TTS-Local-ONNX.ipynb",
     ],
     "audio_tts_heavy": [
         "02-1-Chatterbox-TTS.ipynb",
@@ -260,25 +260,25 @@ NOTEBOOK_SERVICE_MAP = {
 
     # --- Video ---
     "video_api": [
-        "01-2-GPT-5-Video-Understanding.ipynb",
+        "01-2-Comprehension-Video-API.ipynb",
         "04-3-Sora-API-Cloud-Video.ipynb",
     ],
     "video_local": [
         "01-1-Video-Operations-Basics.ipynb",
     ],
     "video_qwenvl": [
-        "01-3-Qwen-VL-Video-Analysis.ipynb",
+        "01-3-Comprehension-Video-Locale.ipynb",
     ],
     "video_enhance": [
-        "01-4-Video-Enhancement-ESRGAN.ipynb",
+        "01-4-Video-Enhancement.ipynb",
     ],
     "video_diffusion_light": [
-        "02-2-LTX-Video-Lightweight.ipynb",
+        "02-2-Generation-Video-Legere.ipynb",
         "02-3-Wan-Video-Generation.ipynb",
         "02-4-SVD-Image-to-Video.ipynb",
     ],
     "video_diffusion_heavy": [
-        "01-5-AnimateDiff-Introduction.ipynb",
+        "01-5-Generation-Text-to-Video-Intro.ipynb",
         "02-1-HunyuanVideo-Generation.ipynb",
     ],
     "video_orchestration": [

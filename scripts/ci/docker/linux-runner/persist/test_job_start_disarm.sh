@@ -38,6 +38,11 @@ mk_repo() { # <nom> : un vrai mini-depot git sous $T/<nom>
 
 run_hook() { bash "$HOOK" >/dev/null 2>"$T/hook.err"; }
 
+# `grep -c` rend rc=1 quand le compte est ZERO tout en imprimant « 0 » : un
+# `|| echo 0` derriere lui ajoute une SECONDE ligne et l'assertion compare
+# « 0\n0 ». La substitution de commande ne garde que stdout, donc pas de repli.
+count_signal() { grep -c "INFRA_EXTERNALS_MISSING" "$T/hook.err" 2>/dev/null; }
+
 # --- Fixtures : CoursIA/CoursIA est le layout reel _work/<repo>/<repo> -----
 mkdir -p "$T/CoursIA"
 
@@ -66,15 +71,49 @@ rm -f "$obj"   # l'objet disparait, la ref pointe dans le vide
 # ignore sans echec, rc 0.
 mkdir -p "$T/CoursIA/vide/.git"
 
+# Cas 8 : refs pull/* -> supprimees SANS lecture d'objet (donc sans fetch
+# paresseux) ; une ref distante hors pull/ valide survit (#21745 limb A).
+mk_repo CoursIA/pull
+sha_p="$(git -C "$T/CoursIA/pull" rev-parse HEAD)"
+git -C "$T/CoursIA/pull" update-ref refs/remotes/origin/pull/1/merge "$sha_p"
+git -C "$T/CoursIA/pull" update-ref refs/remotes/origin/pull/2/head "$sha_p"
+git -C "$T/CoursIA/pull" update-ref refs/remotes/origin/main "$sha_p"
+
+# Cas 9 : externals requis absent -> signale INFRA_EXTERNALS_MISSING ;
+# present -> silencieux. Le crochet reste fail-open dans les deux cas.
+export RUNNER_HOME="$T/runnerhome"
+mkdir -p "$RUNNER_HOME/externals/node24/bin"
+: > "$RUNNER_HOME/externals/node24/bin/node"
+
 run_hook
 
-ck "cas1 clone arme purge"        "absent" "$([ -d "$T/CoursIA/arme" ] && echo present || echo absent)"
+# Cas 1 attend le DESARMEMENT EN PLACE (c0f1afd5b6), pas la purge : purger
+# entre le prepare et le premier step supprime le CWD du step checkout et tue
+# le job (ENOENT attribue a tort a « externals/node24/bin/node »). L'assertion
+# « purge » heritee de la version precedente faisait rougir ce banc sur main.
+ck "cas1 clone arme conserve"     "present" "$([ -d "$T/CoursIA/arme" ] && echo present || echo absent)"
+ck "cas1 drapeau sparse leve"     ""        "$(git -C "$T/CoursIA/arme" config --local --get core.sparseCheckout 2>/dev/null || true)"
+# Le fichier de motifs peut SURVIVRE a `sparse-checkout disable` selon la
+# version de git -- et c'est inoffensif : sans le drapeau, git l'ignore (cas 2
+# le prouve sur un clone qui n'a jamais eu le drapeau). L'invariant qui compte
+# est le drapeau, pas le fichier.
 ck "cas2 clone inertes conserve"  "present" "$([ -d "$T/CoursIA/inertes" ] && echo present || echo absent)"
 ck "cas2 motifs retires"          "absent" "$([ -f "$T/CoursIA/inertes/.git/info/sparse-checkout" ] && echo present || echo absent)"
 ck "cas3 clone sain conserve"     "present" "$([ -d "$T/CoursIA/sain" ] && echo present || echo absent)"
 ck "cas4 ref dangling supprimee"  "absent"  "$([ -n "$(git -C "$T/CoursIA/dangl" rev-parse --verify -q refs/remotes/origin/morte && echo x)" ] && echo present || echo absent)"
 ck "cas4 ref vivante conservee"   "present" "$([ -n "$(git -C "$T/CoursIA/dangl" rev-parse --verify -q refs/remotes/origin/vivante && echo x)" ] && echo present || echo absent)"
 ck "cas6 rc hook"                 "0" "$?"
+ck "cas8 pull/1/merge supprimee"  "absent"  "$([ -n "$(git -C "$T/CoursIA/pull" rev-parse --verify -q refs/remotes/origin/pull/1/merge && echo x)" ] && echo present || echo absent)"
+ck "cas8 pull/2/head supprimee"   "absent"  "$([ -n "$(git -C "$T/CoursIA/pull" rev-parse --verify -q refs/remotes/origin/pull/2/head && echo x)" ] && echo present || echo absent)"
+ck "cas8 origin/main conservee"   "present" "$([ -n "$(git -C "$T/CoursIA/pull" rev-parse --verify -q refs/remotes/origin/main && echo x)" ] && echo present || echo absent)"
+ck "cas9 externals present muet"  "0" "$(count_signal)"
+
+# Cas 9bis : externals absent -> signale, et le crochet reste fail-open (rc 0).
+mv -f "$RUNNER_HOME/externals/node24" "$RUNNER_HOME/externals/node24.off"
+run_hook
+ck "cas9bis externals absent signale" "1" "$(count_signal)"
+ck "cas9bis rc hook (fail-open)"      "0" "$?"
+mv -f "$RUNNER_HOME/externals/node24.off" "$RUNNER_HOME/externals/node24"
 
 # Cas 7 : idempotence -- un second passage ne trouve rien et rend 0.
 run_hook

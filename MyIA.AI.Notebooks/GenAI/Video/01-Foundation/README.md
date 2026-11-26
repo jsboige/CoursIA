@@ -4,7 +4,15 @@
 
 Ce module couvre les fondamentaux de la vidéo par IA : opérations vidéo, compréhension vidéo, et amélioration.
 
-**Dans le cadre du fil rouge pipeline vidéo pédagogique** : avant de générer des vidéos, il faut savoir les analyser et les manipuler. [01-1](01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A sur le contenu). [01-4](01-4-Video-Enhancement-ESRGAN.ipynb) améliore la qualité visuelle. [01-5](01-5-AnimateDiff-Introduction.ipynb) introduit la génération de mouvement à partir de texte.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : avant de générer des vidéos, il faut savoir les analyser et les manipuler. [01-1](01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-2-Comprehension-Video-API.ipynb) et [01-3](01-3-Comprehension-Video-Locale.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A sur le contenu). [01-4](01-4-Video-Enhancement.ipynb) améliore la qualité visuelle. [01-5](01-5-Generation-Text-to-Video-Intro.ipynb) introduit la génération de mouvement à partir de texte.
+
+## Comment lire ce README
+
+- Vous voulez **le socle technique** : [01-1](01-1-Video-Operations-Basics.ipynb) seul suffit pour découper, redimensionner, extraire l'audio et concaténer — les carnets suivants ingèrent tous ses sorties.
+- Vous voulez **extraire du sens d'une vidéo** : [01-2](01-2-Comprehension-Video-API.ipynb) (GPT-5, analyse libre structurée) puis [01-3](01-3-Comprehension-Video-Locale.ipynb) (Qwen-VL, extraction structurée : scènes, entités, transitions) — deux approches du même problème, à comparer.
+- Vous voulez **améliorer ou générer** : [01-4](01-4-Video-Enhancement.ipynb) (upscale spatial et interpolation temporelle) ou [01-5](01-5-Generation-Text-to-Video-Intro.ipynb) (texte → courte animation) ; le [bonus 01-1b](01-1b-Video-Slideshow-Bonus.ipynb) est un espace d'exercice facultatif, hors parcours.
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
 ## Vue d'overview
 
@@ -29,7 +37,7 @@ Le notebook [01-1-Video-Operations-Basics](01-1-Video-Operations-Basics.ipynb) p
 
 ### Compréhension vidéo avec GPT-5
 
-Une fois la vidéo techniquement manipulable, on veut en extraire du sens. Le notebook [01-2-GPT-5-Video-Understanding](01-2-GPT-5-Video-Understanding.ipynb) soumet une vidéo pédagogique à GPT-5 et lui demande d'en produire une analyse structurée : identification des scènes, transcription des sous-titres, Q&A sur le contenu. C'est le pont entre manipulation bas-niveau et compréhension haut-niveau.
+Une fois la vidéo techniquement manipulable, on veut en extraire du sens. Le notebook [01-2-Comprehension-Video-API](01-2-Comprehension-Video-API.ipynb) soumet une vidéo pédagogique à GPT-5 et lui demande d'en produire une analyse structurée : identification des scènes, transcription des sous-titres, Q&A sur le contenu. C'est le pont entre manipulation bas-niveau et compréhension haut-niveau.
 
 <p align="center"><img src="assets/readme/vid1-gpt5.png" alt="Cinq scènes vidéo analysées par GPT-5 — t=1.0s (orange, cercle orange + sous-titre 'Scene 1 — Intro'), t=3.0s (bleu, carré bleu + 'Scene 2 — Concept clé'), t=5.0s (vert, triangle vert + 'Scene 3 — Démonstration'), t=7.0s (rose, cercle rose + 'Scene 4 — Résultats'), t=9.0s (bleu nuit, 5 cercles jaunes + 'Scene 5 — Conclusion')" width="600"/></p>
 
@@ -37,7 +45,7 @@ Une fois la vidéo techniquement manipulable, on veut en extraire du sens. Le no
 
 ### Analyse multimodale avec Qwen-VL
 
-GPT-5 est généraliste ; Qwen-VL est spécialisé multimodal. Le notebook [01-3-Qwen-VL-Video-Analysis](01-3-Qwen-VL-Video-Analysis.ipynb) pousse plus loin : annotation automatique des scènes, Q&A ciblé, détection des entités visuelles (texte, objets, transitions). Utile quand on a besoin d'une extraction structurée plutôt que d'une analyse libre.
+GPT-5 est généraliste ; Qwen-VL est spécialisé multimodal. Le notebook [01-3-Comprehension-Video-Locale](01-3-Comprehension-Video-Locale.ipynb) pousse plus loin : annotation automatique des scènes, Q&A ciblé, détection des entités visuelles (texte, objets, transitions). Utile quand on a besoin d'une extraction structurée plutôt que d'une analyse libre.
 
 <p align="center"><img src="assets/readme/vid1-qwen-vl.png" alt="Cinq scènes vidéo d'un cours — Introduction (fond bleu nuit, point jaune), Chapitre 1 (fond brun, point jaune), Demo (fond vert forêt, point jaune), Résultats (fond olive, point jaune), Conclusion (fond violet, point jaune)" width="600"/></p>
 
@@ -45,7 +53,7 @@ GPT-5 est généraliste ; Qwen-VL est spécialisé multimodal. Le notebook [01-3
 
 ### Amélioration qualité avec ESRGAN
 
-Quand la vidéo source est basse résolution (LR), on peut l'upscaller (vers HR) avec Real-ESRGAN, un réseau convolutif entraîné sur des paires LR/HR. Le notebook [01-4-Video-Enhancement-ESRGAN](01-4-Video-Enhancement-ESRGAN.ipynb) couvre deux usages : l'**upscale spatial** (chaque frame gagne en résolution) et l'**interpolation temporelle** (de nouvelles frames sont insérées entre deux frames existantes pour fluidifier le mouvement).
+Quand la vidéo source est basse résolution (LR), on peut l'upscaller (vers HR) avec Real-ESRGAN, un réseau convolutif entraîné sur des paires LR/HR. Le notebook [01-4-Video-Enhancement](01-4-Video-Enhancement.ipynb) couvre deux usages : l'**upscale spatial** (chaque frame gagne en résolution) et l'**interpolation temporelle** (de nouvelles frames sont insérées entre deux frames existantes pour fluidifier le mouvement).
 
 <p align="center"><img src="assets/readme/vid1-esrgan.png" alt="Comparaison HR (Référence, ligne haute) vs LR (Input, ligne basse) sur 4 frames (Frame 0, 12, 24, 35) — HR320x240 plus détaillé que LR320x240, cercle rouge et points verts" width="600"/></p>
 
@@ -57,7 +65,7 @@ Quand la vidéo source est basse résolution (LR), on peut l'upscaller (vers HR)
 
 ### Génération de mouvement avec AnimateDiff
 
-Jusqu'ici on **analyse** ou **améliore** des vidéos existantes. AnimateDiff va plus loin : à partir d'un prompt textuel, il **génère** une vidéo courte (≈16 frames à 8 fps, soit 2 secondes) en injectant un module d'attention temporelle dans un UNet Stable Diffusion pré-entraîné. Le notebook [01-5-AnimateDiff-Introduction](01-5-AnimateDiff-Introduction.ipynb) montre comment combiner un prompt descriptif, un scheduler et un nombre de frames pour produire une animation cohérente.
+Jusqu'ici on **analyse** ou **améliore** des vidéos existantes. AnimateDiff va plus loin : à partir d'un prompt textuel, il **génère** une vidéo courte (≈16 frames à 8 fps, soit 2 secondes) en injectant un module d'attention temporelle dans un UNet Stable Diffusion pré-entraîné. Le notebook [01-5-Generation-Text-to-Video-Intro](01-5-Generation-Text-to-Video-Intro.ipynb) montre comment combiner un prompt descriptif, un scheduler et un nombre de frames pour produire une animation cohérente.
 
 <p align="center"><img src="assets/readme/vid1-animatediff.png" alt="Huit frames d'animation générée par AnimateDiff — 'A serene lake at sunset with mountains in the background' style painterly/pastel, Frames 1/3/5/7/9/11/13/16 sur 16 (échantillonnées via np.linspace), disposées sur 2 lignes × 4 colonnes" width="600"/></p>
 
@@ -65,16 +73,15 @@ Jusqu'ici on **analyse** ou **améliore** des vidéos existantes. AnimateDiff va
 
 ## Notebooks
 
-Référence tabulaire (Durée, Service, VRAM) pour les 5 notebooks illustrés ci-dessus — le tableau complète le narratif sans le répéter :
+Référence tabulaire (Durée, Service, VRAM) pour les carnets de ce niveau — le tableau complète le narratif sans le répéter, et ajoute le bonus optionnel 01-1b que les figures ne présentent pas :
 
-| # | Notebook | Contenu | Service | VRAM |
-|---|----------|---------|---------|------ |
-| 1 | [01-1-Video-Operations-Basics](01-1-Video-Operations-Basics.ipynb) | Opérations de base (FFmpeg, moviepy) | Local | 0 |
-| 1b | [01-1b-Video-Slideshow-Bonus](01-1b-Video-Slideshow-Bonus.ipynb) | *Bonus* — Générateur de slideshow (optionnel) | Local | 0 |
-| 2 | [01-2-GPT-5-Video-Understanding](01-2-GPT-5-Video-Understanding.ipynb) | Compréhension vidéo | OpenAI API | 0 |
-| 3 | [01-3-Qwen-VL-Video-Analysis](01-3-Qwen-VL-Video-Analysis.ipynb) | Analyse vidéo multimodale | Qwen | Variable |
-| 4 | [01-4-Video-Enhancement-ESRGAN](01-4-Video-Enhancement-ESRGAN.ipynb) | Amélioration qualité | Real-ESRGAN | ~4GB |
-| 5 | [01-5-AnimateDiff-Introduction](01-5-AnimateDiff-Introduction.ipynb) | Introduction à l'animation | AnimateDiff | ~12GB |
+| # | Notebook | Contenu | Service | VRAM | Ce qu'on y apprend |
+|---|----------|---------|---------|------ |--------------------|
+| 1 | [01-1-Video-Operations-Basics](01-1-Video-Operations-Basics.ipynb) | Opérations de base (FFmpeg, moviepy) | Local | 0 | Découper, redimensionner, extraire l'audio et concaténer une vidéo — les primitives que les autres carnets ingèrent |
+| 2 | [01-2-Comprehension-Video-API](01-2-Comprehension-Video-API.ipynb) | Compréhension vidéo | OpenAI API | 0 | Obtenir une analyse structurée d'une vidéo par GPT-5 : scènes, sous-titres, Q&A |
+| 3 | [01-3-Comprehension-Video-Locale](01-3-Comprehension-Video-Locale.ipynb) | Analyse vidéo multimodale | Qwen | Variable | Extraire des annotations structurées (entités, transitions) avec un VLM spécialisé, et comparer avec l'analyse libre |
+| 4 | [01-4-Video-Enhancement](01-4-Video-Enhancement.ipynb) | Amélioration qualité | Real-ESRGAN | ~4GB | Upscaler chaque frame et interpoler entre frames — deux opérations duales, avec leurs limites visibles |
+| 5 | [01-5-Generation-Text-to-Video-Intro](01-5-Generation-Text-to-Video-Intro.ipynb) | Introduction à l'animation | AnimateDiff | ~12GB | Générer une courte animation depuis un prompt textuel en injectant de l'attention temporelle |
 
 > **Provenance des figures** : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) documente le notebook source, la cellule, l'output, le format, les dimensions et le poids de chaque PNG utilisé ci-dessus. Les 6 figures sont extraites des **outputs déjà committés** des notebooks (règle C.3 : aucune re-exécution) et respectent la borne EPIC #5654 (≤200 KB/fichier, ≤1200 px max-dim).
 
@@ -99,11 +106,14 @@ pip install -r requirements-video.txt
 ## Progression recommandée
 
 1. **01-1-Video-Operations-Basics** - Bases du traitement vidéo
-   - 01-1b (optionnel) - Générateur de slideshow autonome
-2. **01-2-GPT-5-Video-Understanding** - Intelligence vidéo
-3. **01-3-Qwen-VL-Video-Analysis** - Analyse multimodale
-4. **01-4-Video-Enhancement-ESRGAN** - Amélioration qualité
-5. **01-5-AnimateDiff-Introduction** - Animation de base
+2. **01-2-Comprehension-Video-API** - Intelligence vidéo
+3. **01-3-Comprehension-Video-Locale** - Analyse multimodale
+4. **01-4-Video-Enhancement** - Amélioration qualité
+5. **01-5-Generation-Text-to-Video-Intro** - Animation de base
+
+## Bonus optionnel — [01-1b, créer un slideshow vidéo](01-1b-Video-Slideshow-Bonus.ipynb)
+
+Ce carnet prolonge l'exercice de montage de 01-1 : il sert d'espace de travail pour assembler des frames dessinées avec PIL en vidéo avec `imageio`, puis présente des exemples guidés. Il est facultatif et ne constitue pas une étape du parcours principal : passez directement de 01-1 à 01-2 pour suivre le fil manipulation → compréhension → amélioration → génération.
 
 ## Points clés
 
@@ -111,6 +121,12 @@ pip install -r requirements-video.txt
 - **Résolutions** : 720p à 4K
 - **Qualité** : ESRGAN pour upscale, AnimateDiff pour animation
 - **Performance** : Traitement local CPU ou GPU selon les modèles
+
+## Approfondissements
+
+- **Manipulation → compréhension → amélioration → génération** : l'ordre recommandé ci-dessus est aussi l'ordre des dépendances — 01-2/01-3 consomment les vidéos produites par 01-1, et 01-4 s'applique aux sorties des précédents.
+- **Les successeurs de niveau** : les modèles génératifs de pointe (HunyuanVideo, LTX, Wan, SVD, CogVideoX) et l'étude de licence MiniMax H3 vivent dans [02-Advanced](../02-Advanced/README.md) ; ce niveau garde les fondamentaux et un seul générateur d'introduction (AnimateDiff).
+- **La provenance des figures** : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) documente, pour chaque PNG, le carnet, la cellule et l'output source — les figures sont extraites des outputs déjà committés (règle C.3, aucune ré-exécution).
 
 ## Ressources
 

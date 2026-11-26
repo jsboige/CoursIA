@@ -21,12 +21,12 @@ REPO = Path(__file__).resolve().parent.parent.parent
 SW_DIR = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "SemanticWeb"
 
 DEFAULT_NOTEBOOKS = [
-    "SW-8-Python-SHACL.ipynb",
-    "SW-9-Python-JSONLD.ipynb",
-    "SW-10-Python-RDFStar.ipynb",
+    "SW-08-SHACL-Python.ipynb",
+    "SW-09-JSONLD-Python.ipynb",
+    "SW-10-RDFStar-Python.ipynb",
     "SW-11-Python-KnowledgeGraphs.ipynb",
-    "SW-12-Python-GraphRAG.ipynb",
-    "SW-13-Python-Reasoners.ipynb",
+    "SW-12-GraphRAG-Python.ipynb",
+    "SW-13-Reasoners-Python.ipynb",
 ]
 
 # Exercise numbering mapping for promoted examples

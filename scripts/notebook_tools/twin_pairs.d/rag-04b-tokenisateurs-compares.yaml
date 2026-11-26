@@ -1,0 +1,11 @@
+- name: "RAG 04b Tokenisateurs compares"
+  family: GenAI/RAG-et-Memoire-Semantique
+  python: MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux cotes calculent les trois algorithmes pedagogiques, et interrogent les vrais tokenizers et entraineurs Rust ; le C# appelle tokenizers par Python.NET et Qwen par Microsoft.ML.Tokenizers avec normalisation NFC et regex officielles."
+  known_differences:
+    - "La reference DistilBERT utilise le pipeline Rust issu du tokenizer.json officiel, compare au SDK BERT .NET ; celui-ci ne renvoie aucun ID pour l'emoji teste tandis que la reference renvoie [UNK]."
+    - "Budget BPE/WordPiece jouet 94 symboles, Unigram 93 pieces ; les details des entraineurs Rust et leur sortie peuvent varier avec la version."
+    - "C# requiert Python.NET, un CPython partage et un environnement Python avec tokenizers/huggingface-hub ; Qwen est execute nativement en .NET."

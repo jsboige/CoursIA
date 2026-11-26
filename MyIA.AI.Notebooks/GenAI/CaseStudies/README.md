@@ -4,7 +4,7 @@
 series: GenAI-CaseStudies
 pedagogical_count: 6
 breakdown: CaseStudies=6
-maturity: BETA=3, DRAFT=2, ALPHA=1
+maturity: ALPHA=3, BETA=3
 -->
 
 [← GenAI](../README.md)
@@ -16,7 +16,7 @@ maturity: BETA=3, DRAFT=2, ALPHA=1
 > | Chemin | Périmètre | Owner | Lien |
 > |---|---|---|---|
 > | `MyIA.AI.Notebooks/GenAI/CaseStudies/` (le présent) | 4 cas GenAI **agentiques** : Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker | po-2023 | ce README |
-> | `MyIA.AI.Notebooks/CaseStudies/` (top-level) | 3 cas **interdisciplinaires** fin de cycle M1/M2 : Diagnostic-Medical (Z3), Oncology-Planning (recherche + génétique), SmartGrid-Energy (OR-Tools + KG) | po-2025 | [CaseStudies/README.md](../../CaseStudies/README.md) |
+> | `MyIA.AI.Notebooks/CaseStudies/` (top-level) | 3 cas **interdisciplinaires** fin de cycle M1/M2 : Diagnostic-Medical-Python (Z3), Planification-Oncologie-Python (recherche + génétique), Reseau-Electrique-Intelligent (OR-Tools + KG) | po-2025 | [CaseStudies/README.md](../../CaseStudies/README.md) |
 >
 > Les deux séries sont **complémentaires** : les cas GenAI montrent l'**orchestration d'un seul paradigme** (LLM + tools), les cas interdisciplinaires montrent la **composition de plusieurs paradigmes IA** (CSP + A* + génétique + OR-Tools + KG + bayésien). Voir [#13581](https://github.com/jsboige/CoursIA/issues/13581) pour le contexte de la clarification (issue #13581 AC7).
 
@@ -59,7 +59,7 @@ Les séries thématiques de GenAI démontent chaque composant ; ces quatre proje
 
 **[Fort-Boyard](Fort-Boyard/README.md)** est le meilleur point de départ : un Père Fouras qui fait deviner un mot secret à un personnage célèbre, orchestré par deux `ChatCompletionAgent` dans un `AgentGroupChat` de Semantic Kernel. C'est l'occasion de comprendre les stratégies de terminaison : comment décider qu'un dialogue entre deux agents est terminé (mot trouvé, ou borne d'itérations).
 
-**[Barbie-Schreck](Barbie-Schreck/README.md)** est le plus visuel : deux personnages que tout oppose sont forcés de débattre sous contraintes, pendant que DALL-E illustre la joute. Sous le jeu, la mécanique est sérieuse : c'est un vrai dialogue multi-agent Semantic Kernel, avec ses prompts système rivaux et l'intégration image-dans-conversation.
+**[Barbie-Schreck](Barbie-Schreck/README.md)** est le plus visuel : deux personnages que tout oppose sont forcés de débattre sous contraintes, pendant que ComfyUI illustre la joute. Sous le jeu, la mécanique est sérieuse : c'est un vrai dialogue multi-agent Semantic Kernel, avec ses prompts système rivaux et l'intégration image-dans-conversation.
 
 **[Recipe-Maker](Recipe-Maker/README.md)** fait collaborer plusieurs agents pour produire une recette personnalisée et l'exporter en PDF. Son intérêt est la chaîne complète : de la conversation entre agents jusqu'au livrable final, en passant par la division du travail entre rôles.
 

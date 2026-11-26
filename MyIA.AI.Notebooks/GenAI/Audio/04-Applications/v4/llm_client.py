@@ -1,8 +1,10 @@
-"""GPT-5.4-mini structured output client for the v4 audiobook pipeline.
+"""Structured output client for the v4 audiobook pipeline.
 
-Uses the OpenAI JSON Schema structured output API (response_format with
-type ``json_schema``, strict: true) via the ``requests`` library to avoid
-the hang issues observed with the openai SDK in the v3 pipeline.
+Targets the cluster's local vLLM (Swift) by default -- the chat target of
+#22783 -- and uses the OpenAI JSON Schema structured output API
+(response_format with type ``json_schema``, strict: true) via the
+``requests`` library to avoid the hang issues observed with the openai SDK
+in the v3 pipeline.
 """
 from __future__ import annotations
 
@@ -10,6 +12,7 @@ import json
 import time
 from pathlib import Path
 from typing import Type
+from urllib.parse import urlparse
 
 import requests
 from dotenv import load_dotenv
@@ -24,9 +27,64 @@ load_dotenv(_GENAI_DIR / ".env")
 
 import os  # noqa: E402 — must follow load_dotenv
 
-_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
-_API_BASE: str = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1").rstrip("/")
-_MODEL: str = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")
+_API_KEY: str | None = os.getenv("VLLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+_API_BASE: str = (
+    os.getenv("VLLM_BASE_URL")
+    or os.getenv("OPENAI_API_BASE")
+    or "http://192.168.0.47:5002/v1"
+).rstrip("/")
+
+# Cible par defaut du chat (#22783) : le vLLM local du cluster (Swift), via la
+# route LAN du siege ai-01 -- le meme couple (VLLM_BASE_URL, VLLM_API_KEY) que
+# les carnets Audio de la serie (04-1-Educational-Audio-Content). Repli : le
+# modele de chat courant du mapping (docs/genai/model-mapping-openai.md) quand
+# le point d'entree vise n'est pas le service local.
+_LOCAL_TARGET_HOSTS = ("192.168.0.47", "models.myia.io")
+
+
+def _is_local_target(base: str) -> bool:
+    """Le point d'entree vise est-il l'un des services locaux du cluster ?
+
+    Comparaison du nom d'hote, pas d'une sous-chaine : une chaine peut
+    apparaitre a n'importe quel endroit de l'URL (CodeQL : sanitisation
+    incomplete de l'URL).
+    """
+    host = (urlparse(base).hostname or "").lower()
+    return host in _LOCAL_TARGET_HOSTS
+
+
+def _default_model(base: str) -> str:
+    """Modele courant du role demande, selon le point d'entree vise."""
+    if _is_local_target(base):
+        return "swift-1.5-27b"  # alias servi par le vLLM local (Swift)
+    return "gpt-5.6-luna"  # taille mini du mapping, hors service local
+
+
+# Un .env encore porte sur un identifiant d'une generation remplacee : on le
+# substitue, il ne doit jamais passer tel quel dans un appel (#22783).
+# Les identifiants ci-dessous ne sont que des CLES de correspondance (la table
+# de migration) : ils ne sont jamais envoyes a un service.
+# obsolescence: DOC
+_OBSOLETE_MODEL_SUBSTITUTIONS = {
+    "gpt-3.5": "gpt-5.6-sol",
+    "gpt-3.5-turbo": "gpt-5.6-sol",
+    "gpt-4": "gpt-5.6-sol",
+    "gpt-4-turbo": "gpt-5.6-sol",
+    "gpt-4o": "gpt-5.6-sol",
+    "gpt-4o-2024-08-06": "gpt-5.6-sol",
+    "gpt-4o-mini": "gpt-5.6-luna",
+    "gpt-4.1": "gpt-5.6-sol",
+    "gpt-4.1-mini": "gpt-5.6-luna",
+    "gpt-4.1-nano": "gpt-5.6-luna",
+    "gpt-5": "gpt-5.6-sol",
+    "gpt-5-mini": "gpt-5.6-luna",
+    "gpt-5-nano": "gpt-5.6-luna",
+}
+
+_CONFIGURED_MODEL: str = os.getenv("OPENAI_CHAT_MODEL_ID") or _default_model(_API_BASE)
+_MODEL: str = _OBSOLETE_MODEL_SUBSTITUTIONS.get(
+    _CONFIGURED_MODEL.strip(), _CONFIGURED_MODEL
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -133,7 +191,7 @@ def call_structured(
     context_block: str = "",
     timeout: int = 120,
 ) -> dict:
-    """Call GPT-5.4-mini with JSON Schema structured output and retry logic.
+    """Call the configured chat model with JSON Schema structured output and retry logic.
 
     Parameters
     ----------
@@ -160,7 +218,10 @@ def call_structured(
         After ``_MAX_RETRIES`` consecutive failures.
     """
     if not _API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not set. Check GenAI/.env.")
+        raise RuntimeError(
+            "VLLM_API_KEY (service local, cible par defaut) ni OPENAI_API_KEY "
+            "ne sont definies. Renseigner l'une des deux dans GenAI/.env."
+        )
 
     schema_name = schema_cls.__name__
     response_format = build_json_schema_response_format(schema_name, schema_cls)
@@ -186,7 +247,7 @@ def call_structured(
                 "messages": messages,
                 "response_format": response_format,
                 # 16384 is within the output cap of every model this client
-                # can target (gpt-4o-mini default AND the .env-configured
+                # can target (the local Swift default AND the .env-configured
                 # model); 32768 was rejected against the default (32768 >
                 # 16384). Valid for both, so no env knob.
                 "max_completion_tokens": 16384,

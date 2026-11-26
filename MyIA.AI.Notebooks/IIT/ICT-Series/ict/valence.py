@@ -229,6 +229,35 @@ def _obstacle_repulsion(pos: np.ndarray, obstacles: Optional[np.ndarray]) -> np.
     return r
 
 
+def _prepare_gate(gate: Optional[np.ndarray], n_steps: int) -> Optional[np.ndarray]:
+    """Valide et normalise la **porte de detection**.
+
+    ``None`` = aucun porte : comportement d'origine, strictement inchange.
+    Sinon : vecteur 1-D de longueur au moins ``n_steps``, valeurs finies dans
+    ``[0, 1]`` — 0 signifie « rien n'a ete detecte a cet instant », 1 « tout a
+    ete detecte ». Le pas de deplacement est multiplie par ce poids : c'est ce
+    qui permet de rejouer dans le champ la condition « detecte » que
+    :func:`ict.salience_valence_dissociation.measure_decision_given_detected`
+    mesure au niveau de la batterie abstraite.
+
+    Une porte malformee est **refusee**, jamais tronquee en silence : une porte
+    appliquee a moitie mesurerait autre chose que ce qu'elle pretend mesurer.
+    """
+    if gate is None:
+        return None
+    g = np.asarray(gate, dtype=float)
+    if g.ndim != 1:
+        raise ValueError("gate doit etre un vecteur 1-D")
+    if g.size < n_steps:
+        raise ValueError(
+            f"gate doit couvrir les {n_steps} pas (recu {g.size})")
+    if not np.all(np.isfinite(g)):
+        raise ValueError("gate ne doit pas contenir de valeurs non finies")
+    if np.any(g < 0.0) or np.any(g > 1.0):
+        raise ValueError("gate doit rester dans [0, 1]")
+    return g
+
+
 def simulate_reactive(
     source_traj: np.ndarray,
     size: int,
@@ -236,17 +265,26 @@ def simulate_reactive(
     n_steps: int,
     step: float = 0.8,
     obstacles: Optional[np.ndarray] = None,
+    gate: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Animat **reactif** (suivi de gradient) : monte :func:`valence_gradient`
     a chaque pas. C'est la baseline persistance en espace — il vise ou la
-    source *est*."""
+    source *est*.
+
+    ``gate`` (optionnel, defaut ``None``) est la **porte de detection** : son
+    poids a l'instant ``t`` multiplie le pas de deplacement. ``None`` garde le
+    comportement d'origine **bit pour bit** (aucun carnet existant ne change
+    de resultat) ; c'est le seul ajout de cette version.
+    """
+    gate_w = _prepare_gate(gate, n_steps)
     pos = np.asarray(start, dtype=float).copy()
     traj = np.empty((n_steps, 2), dtype=float)
     for t in range(n_steps):
         g = valence_gradient(pos, source_traj[t], obstacles)
         n = float(np.linalg.norm(g))
+        w = 1.0 if gate_w is None else float(gate_w[t])
         if n > 1e-9:
-            pos = pos + step * (g / n)
+            pos = pos + step * w * (g / n)
         traj[t] = _clip_to_bounds(pos, size)
     return traj
 
@@ -260,6 +298,7 @@ def simulate_phat(
     alpha: float = 0.25,
     step: float = 0.8,
     obstacles: Optional[np.ndarray] = None,
+    gate: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Animat **anticipateur p_hat** : interception pure vers la position future
     predite de la source (:func:`predict_source`), plus evitement dedie des
@@ -270,7 +309,14 @@ def simulate_phat(
     intercepte en avance. Sur l'erratique, les renversements trompent la vitesse
     EMA et il vise des fantomes : il y perd (gate 1). C'est la discipline du banc
     « sans complaisance » : si l'interception pure ne bat pas le reactif (suivi de
-    gradient = persistance spatiale) sur un regime, le modele interne n'y paie pas."""
+    gradient = persistance spatiale) sur un regime, le modele interne n'y paie pas.
+
+    ``gate`` (optionnel, defaut ``None``) est la **porte de detection** : son
+    poids a l'instant ``t`` multiplie le pas de deplacement, exactement comme
+    dans :func:`simulate_reactive`. ``None`` garde le comportement d'origine
+    **bit pour bit**.
+    """
+    gate_w = _prepare_gate(gate, n_steps)
     pos = np.asarray(start, dtype=float).copy()
     traj = np.empty((n_steps, 2), dtype=float)
     for t in range(n_steps):
@@ -287,8 +333,9 @@ def simulate_phat(
         repl = _obstacle_repulsion(pos, obstacles)
         move = desired + 0.5 * repl  # interception + evitement des obstacles
         nm = float(np.linalg.norm(move))
+        w = 1.0 if gate_w is None else float(gate_w[t])
         if nm > 1e-9:
-            pos = pos + step * (move / nm)
+            pos = pos + step * w * (move / nm)
         traj[t] = _clip_to_bounds(pos, size)
     return traj
 

@@ -3,45 +3,31 @@
   "_criterion": "Deux moities, toutes deux mesurees. (a) La serie PROUVE son padding : au moins un fichier dont le numero porte un zero de tete (`01`, `04a`). Une serie qui ne porte que des numeros >= 10 n'a rien adopte -- elle n'a simplement aucun numero a un chiffre, donc son etat ne dit rien de sa convention. (b) La serie ne porte AUCUNE violation sur son arbre ENTIER, sous-dossiers compris (le scan du garde est recursif). Ce second critere distingue ce garde du garde de casse canonique des suffixes (#15489 defaut 3), qui est DELTA et peut donc declarer une serie en laissant ses fichiers herites non conformes ; ici declarer une serie non migree rougit des dizaines de fichiers d'un coup.",
   "_why_explicit": "Le defaut 5 de #15489 dit exactement ceci : `check_series_zero_pad.py` doit rester opt-in par series MIGREES, une activation globale avant cartographie creant un mur rouge inutilisable. Avant ce registre, la portee vivait dans deux defauts argparse (`--series-dir` = GameTheory, `--prefix` = GameTheory) et une phrase de docstring -- une convention de fait, non datee, non justifiee, invisible a tout controle automatique. La docstring affirmait encore que GameTheory etait 'la seule zero-padee a ce jour' alors que sept autres series l'avaient adopte en silence.",
   "_measured": "2026-09-11, sur origin/main, par balayage de l'arbre (`parse_name` du canon #5081, hors /.lake/ et /_peters/). Chaque entree ci-dessous a ensuite ete revalidee par l'organe lui-meme en mode registre : `python scripts/notebook_tools/check_series_zero_pad.py` rend exit 0 sur main.",
+  "_measured_2026_11_24": "Re-mesure complete le 24/11 (dispatch c0030 du coordinateur, point 5 : 'add series as they normalize'). Les douze entrees ajoutees ce jour-la ont ete admises avec la MESURE, jamais supposees : zero violation rendue par l'organe lui-meme (`check_series_zero_pad.violations` sur l'arbre entier de la serie) ET au moins un fichier a zero de tete (critere (a)). Le compte `N fichiers a zero de tete` de chaque note est mesure. Les familles NON declarees ont ete re-mesurees le meme jour : leurs compteurs de violation sont actualises, et les entrees dont le repertoire n'existe plus (la famille `App`, deplacee de `Search/Applications/` vers `Search/Part3-Cas-pratiques/`) ont ete corrigees plutot que laissees a la valeur du 11/09.",
   "_how_to_extend": "Ajouter une entree UNIQUEMENT apres avoir mesure, sur la serie candidate : (a) au moins un nom zero-pade, et (b) zero fichier au chiffre unique sur l'arbre ENTIER. Puis relancer `python scripts/notebook_tools/check_series_zero_pad.py` -- exit 0 obligatoire sur main, et le test de parite verifie que le workflow et la fast lane citent le meme repertoire que cette entree. Migrer une serie (renommer ses fichiers) est une tranche a part, avec ses README et ses navlinks.",
   "_not_declared": {
     "_why": "Cartographie de la meme mesure, conservee ici pour que personne ne les ajoute 'pour elargir la couverture' : chacune de ces familles fabriquerait aujourd'hui le mur rouge que l'issue interdit. Les declarer demande d'abord de les MIGRER.",
+    "_re_mesure_2026_11_24": "Compteurs re-mesures le 24/11 par l'organe (`violations` sur l'arbre entier). Les familles dont le compteur est tombe a zero SANS avoir ete declarees ont ete declarees le jour meme (voir `adopted`) ; celles-ci restent a jour.",
     "unproven_no_leading_zero": [
-      "App -- Search/Applications/Search (4 numeros, tous >= 10 : aucun zero de tete, donc aucune preuve d'adoption)",
-      "MGS -- Search/Part4-Metaheuristics/MGS-vs-mealpy (10, tous >= 10)",
-      "Planners -- SymbolicAI/Planners/04-NeuroSymbolic (4, tous >= 10)",
-      "SC -- SymbolicAI/SmartContracts/03-Foundry-Testing (3, tous >= 10)",
-      "SC -- SymbolicAI/SmartContracts/04-Privacy-Cryptography (3, tous >= 10)",
-      "SC -- SymbolicAI/SmartContracts/05-Alternative-Chains (5, tous >= 10)",
-      "SC -- SymbolicAI/SmartContracts/06-Real-World (5, tous >= 10)"
+      "MGS -- Search/Part4-Metaheuristics/MGS-vs-mealpy (10 carnets, tous >= 10 : aucun zero de tete, donc aucune preuve d'adoption)",
+      "Planners -- SymbolicAI/Planners/04-NeuroSymbolic (4 carnets, tous >= 10)",
+      "SC -- SymbolicAI/SmartContracts/03-Foundry-Testing (3 carnets, tous >= 10)",
+      "SC -- SymbolicAI/SmartContracts/04-Privacy-Cryptography (3 carnets, tous >= 10)",
+      "SC -- SymbolicAI/SmartContracts/05-Alternative-Chains (7 carnets, tous >= 10)",
+      "SC -- SymbolicAI/SmartContracts/06-Real-World (6 carnets, tous >= 10)"
     ],
     "would_red_on_activation": [
-      "Tweety -- SymbolicAI/Tweety (28 violations)",
-      "ML -- ML/ML.Net (20)",
-      "CSP -- Search/Part2-CSP (18)",
-      "App -- Search/Applications/CSP (17)",
-      "SW -- SymbolicAI/SemanticWeb (17)",
-      "SL -- SymbolicAI/SymbolicLearning (17)",
-      "Lean -- SymbolicAI/Lean (11)",
-      "Infer -- Probas/Infer (10)",
-      "ICT -- IIT/ICT-Series (9)",
-      "DecPyMC -- Probas/DecisionTheory/DecPyMC (9)",
-      "Planners -- SymbolicAI/Planners/02-Classical (8)",
-      "Planners -- SymbolicAI/Planners/01-Foundation (6)",
-      "Planners -- SymbolicAI/Planners/03-Advanced (6)",
-      "SC -- SymbolicAI/SmartContracts/02-Solidity-Advanced (5)",
-      "SC -- SymbolicAI/SmartContracts/00-Foundations (4)",
-      "SC -- SymbolicAI/SmartContracts/01-Solidity-Foundation (4)",
-      "App -- Search/Applications/Hybrid (2)",
-      "RL -- RL (1 -- a UN fichier pres ; de toutes les familles, la plus proche d'une adoption)",
-      "Planners -- SymbolicAI/Planners/00-Environment (1)"
+      "CSP -- Search/Part2-CSP (19 violations ; aucun zero de tete)",
+      "SL -- SymbolicAI/SymbolicLearning (17 violations ; aucun zero de tete -- la migration est portee par la PR #27309, ouverte)",
+      "ICT -- IIT/ICT-Series (2 violations ; 9 fichiers a zero de tete : la renumerotation 13 -> 09 / 13b -> 09b est en cours, tranches G1/G2/G3 de l'EPIC #20298)",
+      "SC -- SymbolicAI/SmartContracts/02-Solidity-Advanced (1 violation ; 5 fichiers a zero de tete)"
     ]
   },
   "adopted": [
     {
       "series": "GameTheory",
       "dir": "MyIA.AI.Notebooks/GameTheory",
-      "note": "Serie fondatrice du garde (#11840/#12241). 48 noms zero-pades, 44 numeros a deux chiffres non pades (GameTheory-26)."
+      "note": "Serie fondatrice du garde (#11840/#12241). 48 noms zero-pades, 44 numeros a deux chiffres non pades (GameTheory-22)."
     },
     {
       "series": "FT",
@@ -77,6 +63,76 @@
       "series": "Sudoku",
       "dir": "MyIA.AI.Notebooks/Sudoku",
       "note": "19 noms zero-pades, 19 numeros a deux chiffres. Le pendant Python de la serie suit la meme convention."
+    },
+    {
+      "series": "Infer",
+      "dir": "MyIA.AI.Notebooks/Probas/Infer",
+      "note": "11 noms zero-pades (socle 01..09 sans le 6 -- trou symetrique conserve avec la serie Python PyMC --, accretions 01b/02b et extension 08b migrees avec leur numero de socle), 10 numeros a deux chiffres (10..19). Tranche A de l'EPIC #12933 (mapping PARITY-INVENTORY.md 5)."
+    },
+    {
+      "series": "DecPyMC",
+      "dir": "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC",
+      "note": "8 noms zero-pades (01..07 migres par la tranche zero-pad DecPyMC de l'EPIC #12933, 08 deja a deux chiffres), aucun numero a un chiffre. Serie Python jumelle de DecInfer (meme arc decisionnel, kernels differents). Le capstone actuariel reste DecPyMC-08 ; la sous-serie Actuariat/ est un repertoire distinct, hors de ce perimetre."
+    },
+    {
+      "series": "Tweety",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/Tweety",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 33 fichiers a zero de tete. Le compteur du 11/09 (28 violations) est perime : la famille a ete migree depuis."
+    },
+    {
+      "series": "ML",
+      "dir": "MyIA.AI.Notebooks/ML/ML.Net",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 29 fichiers a zero de tete. Compteur du 11/09 (20 violations) perime."
+    },
+    {
+      "series": "App",
+      "dir": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). La famille a change de repertoire (`Search/Applications/` n'existe plus) : elle vit desormais dans `Search/Part3-Cas-pratiques/`, ou le scan recursif trouve 56 carnets `App-*`. Mesure du jour : zero violation, 20 fichiers a zero de tete."
+    },
+    {
+      "series": "SW",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 18 fichiers a zero de tete. Compteur du 11/09 (17 violations) perime."
+    },
+    {
+      "series": "Lean",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/Lean",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 12 fichiers a zero de tete. Compteur du 11/09 (11 violations) perime. La serie des PRs Lean (`.lean`) n'entre pas dans ce scan : le prefixe est `Lean`."
+    },
+    {
+      "series": "RL",
+      "dir": "MyIA.AI.Notebooks/RL",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe, 20 fichiers a zero de tete. Compteur du 11/09 (1 violation -- 'a UN fichier pres') perime : la famille a ete migree depuis."
+    },
+    {
+      "series": "Planners",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment",
+      "note": "Admise le 24/11 (dispatch c0030, point 5), premier des quatre sous-repertoires Planners. Mesure du jour : zero violation, 1 fichier a zero de tete. Le repertoire declare est le sous-dossier, comme pour Search/ : chaque tranche de la famille se declare separement."
+    },
+    {
+      "series": "Planners",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 6 fichiers a zero de tete."
+    },
+    {
+      "series": "Planners",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 8 fichiers a zero de tete."
+    },
+    {
+      "series": "Planners",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 6 fichiers a zero de tete. Le quatrieme sous-repertoire (`04-NeuroSymbolic`) reste HORS registre : aucun de ses 4 carnets ne porte de zero de tete, son etat ne dit rien de la convention."
+    },
+    {
+      "series": "SC",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations",
+      "note": "Admise le 24/11 (dispatch c0030, point 5), premier des sous-repertoires SmartContracts. Mesure du jour : zero violation, 4 fichiers a zero de tete."
+    },
+    {
+      "series": "SC",
+      "dir": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation",
+      "note": "Admise le 24/11 (dispatch c0030, point 5). Mesure du jour : zero violation rendue par l'organe sur l'arbre entier, 6 fichiers a zero de tete."
     }
   ]
 }

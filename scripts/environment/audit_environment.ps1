@@ -151,7 +151,7 @@ try {
         } else {
             Write-Check ".NET Interactive" "WARNING" "Non installé globalement"
             $Results.DotNet.Interactive = $false
-            $Results.Recommendations += "Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701"
+            $Results.Recommendations += "Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001"
         }
     } catch {
         Write-Check ".NET Interactive" "WARNING" "Statut indéterminé"
@@ -308,7 +308,7 @@ Write-Host "`nESTIMATION TEMPS DE RÉPARATION: $RepairTimeMinutes minutes" -Fore
 
 # Export des résultats
 if ($ExportJson) {
-    $Results | ConvertTo-Json -Depth 10 | Out-File -FilePath $ResultsFile -Encoding UTF8
+    [System.IO.File]::WriteAllText($ResultsFile, ($Results | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "`nRésultats exportés vers: $ResultsFile" -ForegroundColor Green
 }
 
@@ -322,7 +322,7 @@ Missing Optional Packages: $($MissingOptional -join ', ')
 Repair Time Estimate: $RepairTimeMinutes minutes
 "@
 
-$LogContent | Out-File -FilePath $LogFile -Encoding UTF8
+[System.IO.File]::WriteAllText($LogFile, ($LogContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "Log sauvegardé: $LogFile" -ForegroundColor Gray
 
 return @{

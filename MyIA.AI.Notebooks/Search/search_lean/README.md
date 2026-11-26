@@ -157,7 +157,7 @@ consistante : la frontière de `f` ne recule jamais, donc **aucun nœud n'est ja
 ré-expansé** — par contraste avec une heuristique admissible (mais non consistante) qui
 garantit l'optimalité (phase 1) mais autorise des ré-expansions.
 
-**Preuve** (0 `sorry`, axiomes `[propext, Classical.choice, Quot.sound]`, 1 ligne) :
+**Preuve** (0 `sorry`, axiomes `[propext, Classical.choice, Quot.sound]`) :
 `g n' + h n' = g n + edge n n' + h n' ≥ g n + h n` par consistance
 (`h n ≤ edge n n' + h n'`), donc `linarith` après réécriture de `g n'`.
 
@@ -193,7 +193,7 @@ flowchart TD
 
 Le module [`Szpiro.lean`](Szpiro.lean) (miroir EN : [`Szpiro_en.lean`](Szpiro_en.lean))
 est le sibling Lean du carnet
-[`App-32-Szpiro-Pasten-2026.ipynb`](../Applications/Search/App-32-Szpiro-Pasten-2026.ipynb) :
+[`05-szpiro-pasten-2026.ipynb`](../../SymbolicAI/Lean/Langlands/05-szpiro-pasten-2026.ipynb) :
 Pasten 2026, *Improved Bounds for Szpiro's Conjecture* (arXiv 2609.17390) rend la borne
 `h(E) ≪ N·log log N` **inconditionnelle** — elle était connue sous GRH — et prouve
 `h(E) ≪_S N` pour les courbes semistables hors d'un ensemble fini.
@@ -213,7 +213,7 @@ prouvés** ; le module ancre ce qui, lui, se vérifie mécaniquement :
 ## Construction
 
 ```bash
-lake exe cache get   # récupère les .olean de Mathlib (v4.31.0-rc1)
+lake exe cache get   # récupère les .olean de Mathlib (pin db584cd6)
 lake build Astar     # build de la librairie
 ```
 
@@ -242,6 +242,6 @@ Phases suivantes (suivi #4048) :
   of Minimum Cost Paths*, IEEE Trans. Syst. Sci. Cybern. **4**(2), 1968.
 - H. Pasten, *Improved Bounds for Szpiro's Conjecture*, arXiv 2609.17390 (2026),
   archivé `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — carnet compagnon
-  [`App-32-Szpiro-Pasten-2026.ipynb`](../Applications/Search/App-32-Szpiro-Pasten-2026.ipynb).
+  [`05-szpiro-pasten-2026.ipynb`](../../SymbolicAI/Lean/Langlands/05-szpiro-pasten-2026.ipynb).
 - S. Russell, P. Norvig, *Artificial Intelligence: A Modern Approach*, §3.5 (A* Search).
 - Notebooks compagnons : [`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-02-Uninformed.ipynb), [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).

@@ -28,6 +28,7 @@ measure" with "measured 0".
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -36,6 +37,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_exec_sequence import code_exec_counts, sequence_verdict
 from fork_retry import run_with_fork_retry
+
+# Fail-by-design ack (#11577, #21273): when regressions are detected AND the
+# workflow passes --pr-number + --head-sha, the gate delegates to the ack
+# organ. The dual-key (label `exec-sequence-ack` + comment/review
+# `[EXEC-SEQ-ACK] head=<sha40>` from `myia-ai-01` at the EXACT head) lifts
+# the regression block. Anything else keeps the gate red as before.
 
 # Same exclusions as notebook-execution-required.yml's detect step plus the
 # checkpoints rule of the tier-1 scanner: archived, papermill-output and
@@ -167,6 +174,79 @@ def ratchet(base, cwd=None):
     return records
 
 
+def _consult_ack_organ(pr_number: int, head_sha: str,
+                         regressions: list[dict]) -> tuple[bool, dict | None]:
+    """Delegate the fail-by-design ack decision (#11577, #21273).
+
+    Invokes ``scripts/ci/exec_sequence_ack_required.py`` as a subprocess and
+    parses its JSON verdict. The script handles its own fetcher errors
+    (#15342 fail-closed semantics); this wrapper just shapes the result for
+    the ratchet's exit logic.
+
+    Args:
+        pr_number: the PR number, from ``--pr-number``.
+        head_sha: 40-char hex SHA of the PR head, from ``--head-sha``.
+        regressions: list of content regressions (head != "MISSING") the
+            ack organ is asked to acknowledge. Currently unused by the
+            organ (the dual-key applies to the PR as a whole) but kept in
+            the signature for future per-notebook acks.
+
+    Returns:
+        ``(ack_accepted, verdict)``: ``ack_accepted`` is True iff the dual-key
+        was satisfied AND the head matched. ``verdict`` is the parsed JSON
+        from the organ (or ``None`` if the subprocess failed to start).
+    """
+    # Locate the ack organ: it lives in scripts/ci/. Both this script and
+    # the organ are under scripts/, so a relative import is reliable.
+    here = Path(__file__).resolve().parent
+    ack_script = here.parent / "ci" / "exec_sequence_ack_required.py"
+    if not ack_script.exists():
+        # Missing organ is a build defect: the gate stays fail-closed.
+        print(f"::error::exec-sequence ack organ absent: {ack_script} -- "
+              f"le gate reste rouge (fail-closed, #21273).",
+              file=sys.stderr)
+        return False, None
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(ack_script),
+                "--pr-number", str(pr_number),
+                "--head", head_sha,
+            ],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", check=False, timeout=45,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"::error::exec-sequence ack organ subprocess failed: "
+              f"{type(e).__name__}: {e} -- gate reste rouge (fail-closed, "
+              f"#21273).", file=sys.stderr)
+        return False, None
+    if proc.returncode not in (0, 1):
+        stderr = (proc.stderr or "").strip()[:200]
+        print(f"::error::exec-sequence ack organ rc={proc.returncode}: "
+              f"{stderr} -- gate reste rouge (fail-closed, #21273).",
+              file=sys.stderr)
+        return False, None
+    try:
+        verdict = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError as e:
+        print(f"::error::exec-sequence ack organ output is not JSON: {e} -- "
+              f"gate reste rouge (fail-closed, #21273).", file=sys.stderr)
+        return False, None
+    if not isinstance(verdict, dict) or "guard_pass" not in verdict:
+        print(f"::error::exec-sequence ack organ verdict missing guard_pass: "
+              f"keys={list(verdict.keys()) if isinstance(verdict, dict) else 'n/a'}"
+              f" -- gate reste rouge (fail-closed, #21273).", file=sys.stderr)
+        return False, None
+    accepted = bool(verdict.get("guard_pass"))
+    # Surface the organ's reasoning to the job log so the ack audit trail is
+    # not buried inside the subprocess.
+    reason = verdict.get("reason", "")
+    if reason:
+        print(f"exec-sequence ack organ: {reason}", file=sys.stderr)
+    return accepted, verdict
+
+
 def main():
     # Sibling pattern (#12811, #13191, #14154, #15185, #15668) : l'organe est
     # consomme en subprocess par la CI et les tests, qui decodent stdout/stderr
@@ -184,6 +264,16 @@ def main():
     ap.add_argument("base", help="Base git ref (CI: origin/<base branch>)")
     ap.add_argument("--json", action="store_true", dest="as_json",
                     help="Machine-readable output")
+    ap.add_argument("--pr-number", type=int, default=None,
+                    help="PR number (CI: ${{ github.event.pull_request.number }}). "
+                         "When set with --head-sha, the gate delegates to "
+                         "scripts/ci/exec_sequence_ack_required.py on regression "
+                         "(#11577, #21273). Without these flags, the gate behaves "
+                         "as before (regression => exit 1).")
+    ap.add_argument("--head-sha", default=None,
+                    help="40-char hex SHA of the PR head (the ack marker must "
+                         "match this exact value; any push after the ack "
+                         "invalidates it).")
     args = ap.parse_args()
 
     try:
@@ -202,14 +292,29 @@ def main():
         sys.exit(2)
     regressions = [r for r in records if r["regression"]]
 
-    if args.as_json:
-        print(json.dumps({
-            "base": args.base,
-            "base_resolved": resolved,
-            "changed": len(records),
-            "regressions": len(regressions),
-            "records": records}, ensure_ascii=False, indent=1))
-    else:
+    if not regressions:
+        # Clean path. The JSON / human-readable summary is printed here, ONCE.
+        if args.as_json:
+            print(json.dumps({
+                "base": args.base,
+                "base_resolved": resolved,
+                "changed": len(records),
+                "regressions": 0,
+                "records": records}, ensure_ascii=False, indent=1))
+        else:
+            print(f"execution_count ratchet -- base {args.base} "
+                  f"(merge-base {resolved[:12]})")
+            print(f"changed notebooks : {len(records)}")
+            print(f"regressions       : 0")
+            for r in records:
+                print(f"  {r['base']}->{r['head']} {r['notebook']}")
+        sys.exit(0)
+
+    # Regressions found. The human-readable summary prints FIRST so the lane
+    # sees what soiled, then the ::error annotations, then the JSON payload
+    # (if --json), then exit. The JSON is printed ONCE per run -- never at the
+    # top (that would dup the payload on regression).
+    if not args.as_json:
         print(f"execution_count ratchet -- base {args.base} "
               f"(merge-base {resolved[:12]})")
         print(f"changed notebooks : {len(records)}")
@@ -219,6 +324,16 @@ def main():
             print(f"  {r['base']}->{r['head']} {r['notebook']} {mark}")
 
     if regressions:
+        # Fail-by-design ack delegation (#11577, #21273). Only valid on
+        # content regressions, not on MISSING files: a workspace defect is
+        # NOT a notebook defect, and acknowledging it would invert the
+        # fail-by-design into a workaround of the workspace itself.
+        content_regressions = [r for r in regressions if r["head"] != "MISSING"]
+        ack_accepted = False
+        ack_verdict: dict | None = None
+        if content_regressions and args.pr_number and args.head_sha:
+            ack_accepted, ack_verdict = _consult_ack_organ(
+                args.pr_number, args.head_sha, regressions=content_regressions)
         for r in regressions:
             if r["head"] == "MISSING":
                 # #20174 : un arbre ampute n'est pas un carnet casse. L'annotation
@@ -249,6 +364,48 @@ def main():
                   "incomplete. Do not open a fail-by-design ack for a file that "
                   "is not on disk — repair the workspace (#20174).",
                   file=sys.stderr)
+        if ack_accepted:
+            # #21273 : ack accepted at exact head by myia-ai-01. The ratchet
+            # bypasses with a structured notice; the ack is auditable in the
+            # job log. The override does NOT create a new right: it executes
+            # the rule already written since #11577.
+            notebooks = ", ".join(sorted(r["notebook"] for r in content_regressions))
+            # The dual-key protocol (#21273) restricts ack authorship to
+            # `myia-ai-01`. The verdict carries `ack_author` (the comment/review
+            # author login), which is read from the API at run time; when the
+            # fetch is bodies-only, the field is None and we fall back to the
+            # protocol's sole authorised author. The organ's reason field is
+            # the human-readable surface, this line is the audit trail.
+            ack_author = (ack_verdict or {}).get("ack_author") or "myia-ai-01"
+            print(f"::notice title=Exec-sequence ratchet ACK::accepted at "
+                  f"head={args.head_sha[:12] if args.head_sha else '?'} "
+                  f"by {ack_author} "
+                  f"-- notebooks: {notebooks}",
+                  file=sys.stderr)
+            print(f"exec-sequence ratchet: ACK accepted, gate passes "
+                  f"(label + marker from myia-ai-01 at head "
+                  f"{args.head_sha[:12] if args.head_sha else '?'}; "
+                  f"see #21273).",
+                  file=sys.stderr)
+            if args.as_json:
+                print(json.dumps({
+                    "base": args.base,
+                    "base_resolved": resolved,
+                    "changed": len(records),
+                    "regressions": len(regressions),
+                    "ack_applied": True,
+                    "ack_verdict": ack_verdict,
+                    "records": records}, ensure_ascii=False, indent=1))
+            sys.exit(0)
+        if args.as_json:
+            print(json.dumps({
+                "base": args.base,
+                "base_resolved": resolved,
+                "changed": len(records),
+                "regressions": len(regressions),
+                "ack_applied": False,
+                "ack_verdict": ack_verdict,
+                "records": records}, ensure_ascii=False, indent=1))
         sys.exit(1)
     sys.exit(0)
 

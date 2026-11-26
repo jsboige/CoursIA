@@ -1,5 +1,7 @@
 """Tests de scan_slidev_overflow (EPIC #11508 L2) — PNG synthétiques couvrant les verdicts."""
 
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -7,7 +9,12 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from scan_slidev_overflow import main, scan_export_dir  # noqa: E402
+from scan_slidev_overflow import (  # noqa: E402
+    archive_report,
+    compare_artifacts,
+    main,
+    scan_export_dir,
+)
 
 
 def _png(path: Path, w: int, h: int, rects):
@@ -91,3 +98,104 @@ def test_main_exit_codes(tmp_path, capsys):
     assert main([str(tmp_path / "absent")]) == 2  # entrée illisible -> exit 2
     out = capsys.readouterr().out
     assert "1/3 slides OVERFLOW" in out
+
+
+# --- opposabilite d'un releve (#24171) -------------------------------------
+
+def test_report_carries_the_font_dependency_and_the_machine(tmp_path):
+    """Le releve dit sur QUELLE machine il a ete pris et qu'il n'est pas
+    opposable d'une machine a l'autre : sans cette ligne, deux releves
+    divergents se comparent sans que personne ne le sache (#24171)."""
+    report = scan_export_dir(_make_export(tmp_path), rows=6, threshold=0.01,
+                             ignore_right_frac=0.10)
+    assert "polices systeme" in report["font_dependency"]
+    assert set(report["platform"]) >= {"system", "release", "machine"}
+
+
+def test_archive_carries_the_hash_of_every_measured_png(tmp_path):
+    d = _make_export(tmp_path)
+    report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    target = tmp_path / "releve.json"
+    artifact = archive_report(report, target)
+    assert target.is_file()
+    saved = json.loads(target.read_text(encoding="utf-8"))
+    assert saved["kind"] == "scan_slidev_overflow"
+    assert set(saved["png_sha256"]) == {"1.png", "2.png", "3.png"}
+    assert all(len(h) == 64 for h in saved["png_sha256"].values())
+    assert artifact["artifact_sha256"]
+    # l'artefact se verifie lui-meme : son contenu porte son empreinte
+    assert saved["content_sha256"] == artifact["content_sha256"]
+    body = {k: v for k, v in saved.items() if k != "content_sha256"}
+    recomputed = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, indent=2).encode("utf-8")
+    ).hexdigest()
+    assert recomputed == saved["content_sha256"]
+
+
+def test_archive_is_written_with_lf_line_endings(tmp_path):
+    """L'artefact doit etre byte-stable entre machines : `write_text` en mode
+    texte sous Windows traduit ``\\n`` en ``\\r\\n``, si bien que deux
+    archives identiques divergeaient sur deux OS -- un diff ligne-a-ligne
+    verrait alors un ecart fantome (#24171, suggestion S1 de la review)."""
+    d = _make_export(tmp_path)
+    report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    target = tmp_path / "releve.json"
+    archive_report(report, target)
+    raw = target.read_bytes()
+    assert b"\r\n" not in raw
+    assert raw.endswith(b"\n")
+
+
+def test_compare_separates_fixed_from_new(tmp_path):
+    """Comparer deux artefacts = dire ce qui a ete corrige et ce qui est
+    apparu ; c'est ce que deux compteurs rejoues ne permettent pas."""
+    d = _make_export(tmp_path)
+    report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    before = archive_report(report, tmp_path / "avant.json")
+
+    # apres correction : 2.png ne deborde plus
+    _png(d / "2.png", 200, 100, [(20, 20, 140, 60)])
+    _png(d / "4.png", 200, 100, [(20, 20, 140, 99)])
+    after_report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    after = archive_report(after_report, tmp_path / "apres.json")
+
+    cmp = compare_artifacts(before, after)
+    assert cmp["fixed"] == ["2.png"]
+    assert cmp["new"] == ["4.png"]
+    assert cmp["common_overflow"] == []
+    # l'image de 2.png a change -- c'est attendu pour une diapositive corrigee,
+    # et ca ne rend PAS la comparaison non concluante
+    assert cmp["png_changed"] == ["2.png"]
+    assert cmp["png_differ"] == []
+
+
+def test_compare_warns_when_the_images_differ(tmp_path):
+    """Une diapositive qui deborde dans les deux releves et dont l'image a
+    change : on a compare deux rendus differents de la meme slide -- la
+    comparaison n'y est pas concluante, l'avertissement le dit."""
+    d = _make_export(tmp_path)
+    report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    left = archive_report(report, tmp_path / "gauche.json")
+
+    # 2.png deborde toujours, mais son rendu a change
+    _png(d / "2.png", 200, 100, [(10, 10, 150, 99)])
+    report2 = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    right = archive_report(report2, tmp_path / "droite.json")
+
+    cmp = compare_artifacts(left, right)
+    assert cmp["common_overflow"] == ["2.png"]
+    assert cmp["png_differ"] == ["2.png"]
+
+
+def test_main_compare_prints_and_exits_on_still_overflowing(tmp_path, capsys):
+    d = _make_export(tmp_path)
+    report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    archive_report(report, tmp_path / "avant.json")
+    archive_report(report, tmp_path / "apres.json")
+    assert main(["--compare", str(tmp_path / "avant.json"),
+                 str(tmp_path / "apres.json")]) == 1
+    out = capsys.readouterr().out
+    assert "overflow : 1 -> 1" in out
+    assert "dependance" in out
+    assert main(["--compare", str(tmp_path / "absent.json"),
+                 str(tmp_path / "apres.json")]) == 2

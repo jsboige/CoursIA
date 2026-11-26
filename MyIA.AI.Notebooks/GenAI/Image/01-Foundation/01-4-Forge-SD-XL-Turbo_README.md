@@ -65,7 +65,7 @@ print(f"API Status: {response.status_code}")  # Attendu: 200
 
 ## 📖 Structure du Notebook
 
-Le notebook est organisé en **7 sections progressives** (15 cellules total):
+Le notebook est organisé en **7 sections progressives** :
 
 ### 1. Introduction (Cellules 0-1)
 - **Markdown** : Présentation objectifs + contexte API Forge

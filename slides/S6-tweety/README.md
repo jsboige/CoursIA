@@ -1,6 +1,6 @@
 # S6-tweety — Deck Slidev TweetyProject
 
-Deck de presentation pour la serie de 10 notebooks **TweetyProject** (`SymbolicAI/Tweety/`).
+Deck de presentation pour la serie **TweetyProject** (`SymbolicAI/Tweety/`).
 
 ## Contenu
 
@@ -24,7 +24,7 @@ Deck de presentation pour la serie de 10 notebooks **TweetyProject** (`SymbolicA
 
 ## Notebooks correspondants
 
-`MyIA.AI.Notebooks/SymbolicAI/Tweety/` — 10 notebooks, ~7h
+`MyIA.AI.Notebooks/SymbolicAI/Tweety/` — serie complete, ~7h
 
 | Notebook | Theme |
 |----------|-------|

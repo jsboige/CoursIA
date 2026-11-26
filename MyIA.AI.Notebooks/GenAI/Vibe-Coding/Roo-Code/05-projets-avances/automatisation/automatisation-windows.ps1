@@ -207,7 +207,7 @@ function Invoke-WithRetry {
     
     if (-not $success) {
         Write-Log -Message "Échec définitif de $Operation après $MaxRetries tentatives: $lastError" -Level "Error"
-        throw "Échec de $Operation: $lastError"
+        throw "Échec de ${Operation}: $lastError"
     }
     
     return $result
@@ -375,7 +375,7 @@ function Transform-File {
                 }
                 
                 # Écriture du fichier transformé
-                $content | Out-File -FilePath $outputFile -Encoding utf8
+                [System.IO.File]::WriteAllText($outputFile, $content, (New-Object System.Text.UTF8Encoding($false)))
             }
             ".csv" {
                 $csv = Import-Csv -Path $FileAnalysis.FilePath
@@ -671,7 +671,7 @@ function Generate-HtmlReport {
 
         # Écriture du fichier HTML
         $reportFilePath = Join-Path $OutputPath "AutomationReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
-        $html | Out-File -FilePath $reportFilePath -Encoding utf8
+        [System.IO.File]::WriteAllText($reportFilePath, ($html + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Rapport HTML généré: $reportFilePath" -Level "Info"
         return $reportFilePath
@@ -728,7 +728,7 @@ function Generate-JsonReport {
         
         # Écriture du fichier JSON
         $reportFilePath = Join-Path $OutputPath "AutomationReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
-        $report | ConvertTo-Json -Depth 10 | Out-File -FilePath $reportFilePath -Encoding utf8
+        [System.IO.File]::WriteAllText($reportFilePath, ($report | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Rapport JSON généré: $reportFilePath" -Level "Info"
         return $reportFilePath

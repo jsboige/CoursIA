@@ -210,6 +210,96 @@ def test_organ_driver_bare_list_still_flagged(tmp: Path) -> None:
     assert out and out[0][1] == "jeton lake"
 
 
+# --- exemption sink confine : payloads passes a un wrapper organe ------------
+#
+# Mesure du 2026-10-18 (#15666 case 1, migration lean_notebook_utils.py) : le
+# module migre construit ses commandes lake comme ARGUMENTS d'un wrapper local
+# (``_organ_run``) qui invoque l'organe via un helper (``_find_lean_exec``,
+# Constant ``lean_exec.py``). Ces listes decrivent ce que L'ORGANE lancera —
+# meme semantique que l'exemption argparse payload, meme marqueur conducteur.
+# Le marqueur d'exoneration reste la Constant ``lean_exec.py`` (ou l'import),
+# JAMAIS le nom de fonction : une fausse ``_organ_run`` sans reference a
+# l'organe n'exonere rien (controle ci-dessous).
+
+def test_negative_confined_sink_payload(tmp: Path) -> None:
+    # Forme reelle de lean_notebook_utils.py migre : le wrapper atteint
+    # l'organe par appel local au helper qui construit le chemin lean_exec.py.
+    assert not scan_source("""
+        import subprocess, sys, tempfile
+        def _find_lean_exec():
+            for parent in [ROOT] :
+                cand = parent / "scripts" / "lean" / "lean_exec.py"
+            return cand
+        def _organ_run(project, cmd_args, timeout):
+            argv = [sys.executable, str(_find_lean_exec()), "run", "--json"]
+            return subprocess.run(argv + cmd_args)
+        def run_lake(project, args, timeout=60):
+            return _organ_run(project, ["lake"] + args.split(), timeout)
+    """, tmp)
+
+
+def test_negative_confined_sink_direct_list(tmp: Path) -> None:
+    # Argument List litteral (pas seulement tete de concat) : payload.
+    assert not scan_source("""
+        import subprocess, sys
+        def _locate():
+            return ROOT / "scripts" / "lean" / "lean_exec.py"
+        def _organ_run(project, cmd_args, timeout):
+            return subprocess.run([sys.executable, str(_locate()), *cmd_args])
+        def run_lean_snippet(project, snippet, timeout=30):
+            return _organ_run(project, ["lake", "env", "lean", path], timeout)
+    """, tmp)
+
+
+def test_fake_organ_sink_name_still_flagged(tmp: Path) -> None:
+    # Conducteur d'organe (import lean_exec) mais fonction SANS chaine d'appels
+    # vers la Constant lean_exec.py : le nom ``_organ_run`` ne suffit pas, la
+    # liste reste une voie de lancement.
+    out = scan_source("""
+        import subprocess
+        import lean_exec
+        def _organ_run(project, cmd_args, timeout):
+            return subprocess.run(cmd_args)
+        def run_lake(project, args, timeout=60):
+            return _organ_run(project, ["lake"] + args.split(), timeout)
+    """, tmp)
+    assert out and out[0][1] == "jeton lake"
+
+
+def test_confined_sink_payload_via_import_still_direct_flagged(tmp: Path) -> None:
+    # Payload au sink confine (exonere) ET lancement direct dans le meme
+    # fichier conducteur (rouge) — l'exemption sink ne couvre QUE les
+    # arguments de l'appel confine, jamais les autres voies du fichier.
+    out = scan_source("""
+        import subprocess, sys
+        def _organ():
+            return ROOT / "scripts" / "lean" / "lean_exec.py"
+        def _organ_run(project, cmd_args, timeout):
+            return subprocess.run([sys.executable, str(_organ()), *cmd_args])
+        _organ_run(p, ["lake", "build"], 60)
+        subprocess.run(["lake", "env", "lean", f])
+    """, tmp)
+    kinds = {h[1] for h in out}
+    assert "lake env lean" in kinds, out
+    assert "jeton lake" not in kinds, (
+        f"le payload du sink confine doit etre exonere, vu: {out}")
+
+
+def test_migrated_notebook_module_clean() -> None:
+    """Controle sur le module reel migre : ses payloads lake vont a l'organe.
+
+    C'est la preuve de survie de la migration -- si une regression reintroduit
+    une invocation directe dans lean_notebook_utils.py, CE test rougit avant
+    la CI (le module est hors allowlist depuis #15666 case 1).
+    """
+    target = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI"
+              / "Lean" / "lean_notebook_utils.py")
+    if not target.exists():
+        pytest.skip("module absent de cet arbre")
+    assert not guard.scan_file(target), (
+        "invocation directe reintroduite dans lean_notebook_utils.py")
+
+
 # --- forme 2bis : executable tenu dans une VARIABLE -------------------------
 #
 # Mesure du 2026-10-09 (#15666 case 1) : les formes 1 et 2 ne lisent que des

@@ -2,6 +2,8 @@
 
 Sous-grain **G1** de l'EPIC #14169 (issue #16050). Suite directe du scanner préliminaire #16052 : ce ledger tranche les **18 PRs TBD** en verdicts définitifs et complète l'acceptance de #16050 (tableau 3 colonnes + `fichier:ligne` + faisabilité par `NOUVEAU-POUR-NOUS`).
 
+> **Renvoi — le fichier vivant.** Ce ledger reste la mesure **G1** (28 PRs amont, fork `20984bf`). Le recouvrement **post-G1** (`endjin/Z3.Linq` #100-#112, 13 PRs) est tranché dans le fichier vivant du sous-module : `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq/OVERLAP_G1.md`, section « G1-bis — Verdict des 13 PRs post-G1 (commits #100-#112 amont) ». Le gitlink qui porte cette mesure est bumpé sur `main` par #21363 (issue #20763). Ce renvoi est la couture entre les deux documents : il ne duplique aucun verdict, pour qu'une correction future ne se fasse pas d'un seul côté.
+
 ## Base de mesure
 
 | Objet | Valeur | Provenance |

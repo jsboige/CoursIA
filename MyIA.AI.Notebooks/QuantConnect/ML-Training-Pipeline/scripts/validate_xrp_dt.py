@@ -29,6 +29,14 @@ Verdict : BEATS / NO-BEATS / INCONCLUSIVE sur le NET Sharpe post-TC, avec
 p-value DM (HAC Newey-West), edge >= 2 sigma cross-seed sinon flag "noise".
 >=4 seeds (0/1/7/42/99). Pas de "promising".
 
+**Protocole d'evaluation (#21187)** : depuis #21187, le DT est evalue par
+``dt_causal_positions`` (une decision par pas, qui ne lit aucune ligne
+posterieure au rendement qu'elle pilote, RTG d'entree fixe par le calendrier
+d'entrainement) ; DT, momentum et BH sont mesures sur les memes rendements.
+Chaque resultat porte ``eval_protocol``. Les verdicts anterieurs (dont le
+BEATS@10bps du 21/07 et les holdouts) venaient d'un chemin qui anticipait :
+ils ne sont pas comparables aux mesures causales.
+
 Usage
 -----
 Smoke CPU :
@@ -57,7 +65,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -111,7 +119,14 @@ def momentum_naked_positions(prices: np.ndarray, window: int = 20,
 def dt_positions_on_test(model, test_trajs: dict, n_test: int,
                          context_length: int, batch_size: int, device: str
                          ) -> np.ndarray:
-    """Positions predites par le DT sur le test set (0=hold, 1=buy, 2=sell -> -1/0/1)."""
+    """Positions predites par le DT sur le test set (0=hold, 1=buy, 2=sell -> -1/0/1).
+
+    NON CAUSAL, conservee comme temoin negatif du test de non-anticipation
+    (#21187) : elle aplatit les argmax de fenetres glissantes qui se
+    chevauchent (la position k n'est pas la decision du pas k, certaines ont
+    vu jusqu'a 19 lignes au-dela du rendement qu'elles pilotent) et lit le
+    RTG realise du test. Les evaluations utilisent ``dt_causal_positions``.
+    """
     model.eval()
     batches = create_sequence_batches(test_trajs, context_length=context_length,
                                       batch_size=batch_size, shuffle=False)
@@ -131,6 +146,125 @@ def dt_positions_on_test(model, test_trajs: dict, n_test: int,
     positions[preds_array == 1] = 1.0
     positions[preds_array == 2] = -1.0
     return positions
+
+
+# ---------------------------------------------------------------------------
+# Evaluation causale (#21187)
+# ---------------------------------------------------------------------------
+#
+# Semantique du modele entraine (train_rl_dt) : la trajectoire j porte l'etat
+# features[W+j-W : W+j] (lignes <= W+j-1), l'action du teacher a la ligne W+j
+# et le RTG a la ligne W+j. Dans une fenetre de C pas, le logit lu sur le jeton
+# d'etat de la position o predit l'action de la trajectoire suivante, soit
+# l'action de la ligne W+i+o+1, qui pilote le rendement de cette ligne a la
+# suivante. Le jeton d'etat ne voit que les RTG et etats des positions <= o et
+# les actions des positions < o (masque causal du transformer).
+#
+# Une politique evaluable prend donc UNE decision par pas : le logit de la
+# derniere position de la fenetre i pilote le rendement d'indice W+i+C, et
+# cette decision n'a vu que des lignes <= W+i+C-2. Le RTG d'entree ne doit
+# porter aucune recompense future : il suit un calendrier fixe a l'avance,
+# rtg(t) = (recompense moyenne par pas du teacher sur l'entrainement) x
+# (nombre de pas restants du test), ce qui reproduit l'echelle et la pente des
+# RTG vus a l'entrainement sans lire le test.
+
+CAUSAL_EVAL_PROTOCOL = "causal-v1 (#21187)"
+
+
+def teacher_actions(prices: np.ndarray, window: int) -> np.ndarray:
+    """Actions du teacher momentum (0=hold, 1=buy, 2=sell), ligne par ligne.
+
+    Meme regle que ``build_trajectories`` : l'action de la ligne i ne lit que
+    les prix <= i-1. Derivee de ``momentum_naked_positions`` pour ne pas
+    dupliquer les seuils.
+    """
+    pos = momentum_naked_positions(prices, window=window)
+    actions = np.zeros(len(prices), dtype=np.int64)
+    actions[pos > 0] = 1
+    actions[pos < 0] = 2
+    return actions
+
+
+def train_rtg_per_step(train_trajs: dict) -> float:
+    """Recompense moyenne par pas du teacher sur l'entrainement (pente du RTG)."""
+    rewards = np.asarray(train_trajs["rewards"], dtype=np.float64)
+    return float(rewards.mean()) if rewards.size else 0.0
+
+
+@torch.no_grad()
+def dt_causal_positions(model, prices: np.ndarray, features_norm: np.ndarray,
+                        window: int, context_length: int, rtg_per_step: float,
+                        batch_size: int, device: str,
+                        rtg_rows: Optional[np.ndarray] = None
+                        ) -> Tuple[np.ndarray, int]:
+    """Positions DT non anticipatives, indexees sur les rendements du test.
+
+    Rend ``(positions, first_k)`` : ``positions`` a la longueur ``len(prices)-1``
+    (une entree par rendement k -> k+1), nulle avant ``first_k = window +
+    context_length``, premier rendement pilote par une decision du modele. La
+    decision qui pilote le rendement k est l'argmax de la derniere position de
+    la fenetre de trajectoires ``k-W-C .. k-W-1`` : etats sur les lignes
+    <= k-2, actions du teacher sur les lignes <= k-1 (calculees sur les prix
+    <= k-2), RTG du calendrier fixe. Aucune entree ne depend d'un prix
+    posterieur a la ligne k-2.
+
+    ``rtg_rows`` (longueur ``len(prices)``, indexe par ligne) remplace le
+    calendrier ``rtg_per_step * (n - ligne)``, alors ignore. La causalite ne
+    tient que si ``rtg_rows[t]`` ne depend d'aucun prix posterieur a la ligne
+    k-2 : une constante la preserve, un RTG realise la rompt (l'ablation de
+    ``ablation_rtg_leak.py`` s'en sert comme condition de fuite).
+    """
+    model.eval()
+    n = len(prices)
+    C = context_length
+    first_k = window + C
+    positions = np.zeros(max(n - 1, 0), dtype=np.float32)
+    n_windows = n - 1 - first_k
+    if n_windows <= 0:
+        return positions, first_k
+
+    rows = np.arange(window, n)  # ligne de chaque trajectoire j = rows[j]
+    feats = np.asarray(features_norm, dtype=np.float32)
+    states_all = np.stack([feats[t - window:t].reshape(-1) for t in rows])
+    actions_all = teacher_actions(prices, window)[rows]
+    if rtg_rows is None:
+        rtg_all = (rtg_per_step * (n - rows)).astype(np.float32)
+    else:
+        rtg_rows = np.asarray(rtg_rows, dtype=np.float32).reshape(-1)
+        if len(rtg_rows) != n:
+            raise ValueError(f"rtg_rows: {len(rtg_rows)} lignes, {n} attendues")
+        rtg_all = rtg_rows[rows]
+
+    offsets = np.arange(C)
+    for start in range(0, n_windows, batch_size):
+        idx = np.arange(start, min(start + batch_size, n_windows))
+        traj = idx[:, None] + offsets[None, :]  # [B, C]
+        states = torch.as_tensor(states_all[traj], device=device)
+        actions = torch.as_tensor(actions_all[traj], device=device)
+        rtg = torch.as_tensor(rtg_all[traj][..., None], device=device)
+        mask = torch.ones(traj.shape, dtype=torch.float32, device=device)
+        logits = model(states, actions, rtg, attention_mask=mask)
+        preds = logits[:, -1, :].argmax(dim=-1).cpu().numpy()
+        k = first_k + idx
+        positions[k] = np.where(preds == 1, 1.0, np.where(preds == 2, -1.0, 0.0))
+    return positions, first_k
+
+
+def causal_eval_series(test_prices: np.ndarray, dt_pos: np.ndarray,
+                       first_k: int, window: int
+                       ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Series alignees DT / momentum / BH sur les rendements pilotes par le DT.
+
+    Rend ``(dt_pos, mom_pos, bh_pos, returns)`` restreints aux rendements
+    d'indice ``first_k .. len(test_prices)-2`` : les trois strategies sont
+    comparees sur la meme fenetre, et la position k multiplie le rendement
+    k -> k+1.
+    """
+    returns = np.diff(test_prices) / (test_prices[:-1] + 1e-8)
+    mom_pos = momentum_naked_positions(test_prices, window=window)[:-1]
+    sl = slice(first_k, len(returns))
+    bh = np.ones(len(returns), dtype=np.float32)
+    return dt_pos[sl], mom_pos[sl], bh[sl], returns[sl]
 
 
 import strategy_metrics  # noqa: E402
@@ -218,12 +352,9 @@ def run_one_seed(seed: int, epochs: int, n_splits: int, window: int,
         train_trajs = build_trajectories(train_prices, train_features_norm,
                                          window=window, context_length=context_length,
                                          commission=commission)
-        test_trajs = build_trajectories(test_prices, test_features_norm,
-                                        window=window, context_length=context_length,
-                                        commission=commission)
         if len(train_trajs["states"]) <= context_length:
             continue
-        if len(test_trajs["states"]) <= context_length:
+        if len(test_prices) <= window + context_length + 1:
             continue
 
         state_dim = train_trajs["states"].shape[1]
@@ -233,17 +364,14 @@ def run_one_seed(seed: int, epochs: int, n_splits: int, window: int,
                           batch_size=batch_size, lr=lr, device=device)
         model = result["model"]
 
-        # Positions DT sur le test set.
-        dt_pos = dt_positions_on_test(model, test_trajs, len(test_prices),
-                                      context_length, batch_size, device)
-        # Rendements du test (alignes sur la trajectoire).
-        test_returns_full = np.diff(test_prices[:len(dt_pos) + 1]) / \
-            (test_prices[:len(dt_pos) + 1][:-1] + 1e-8)
-        # Momentum naked (teacher pur) sur le MEME test set.
-        mom_pos = momentum_naked_positions(test_prices[:len(dt_pos) + 1], window=window)
-        mom_pos = mom_pos[:len(dt_pos)]
-        # BH sur le meme horizon.
-        bh_pos = np.ones(len(dt_pos), dtype=np.float32)
+        # Positions DT causales (#21187) : une decision par pas, RTG du
+        # calendrier d'entrainement. Momentum naked (teacher pur) et BH sur les
+        # MEMES rendements.
+        dt_pos_full, first_k = dt_causal_positions(
+            model, test_prices, test_features_norm, window, context_length,
+            train_rtg_per_step(train_trajs), batch_size, device)
+        dt_pos, mom_pos, bh_pos, test_returns_full = causal_eval_series(
+            test_prices, dt_pos_full, first_k, window)
 
         dt_g = gross_returns(dt_pos, test_returns_full)
         dt_n = net_returns(dt_pos, test_returns_full, commission)
@@ -289,6 +417,7 @@ def run_one_seed(seed: int, epochs: int, n_splits: int, window: int,
 
     return {
         "seed": seed, "coin": COIN, "data_hash": data_hash, "n_folds": len(fold_records),
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
         "fold_records": fold_records,
         "dt_net_sharpe_oos": round(sharpe(dt_net_series), 4),
         "dt_gross_sharpe_oos": round(sharpe(dt_gross_series), 4),

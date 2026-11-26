@@ -58,8 +58,8 @@ TWEETY_NOTEBOOKS = [
     "Tweety-04-Belief-Revision-Python.ipynb",
     "Tweety-05-Abstract-Argumentation-Python.ipynb",
     "Tweety-06-Structured-Argumentation-Python.ipynb",
-    # Tweety-7 divided into 7a and 7b
-    "Tweety-07a-Extended-Frameworks-Python.ipynb",
+    # Palier 07 (ex-07a) et 07b
+    "Tweety-07-Extended-Frameworks-Python.ipynb",
     "Tweety-07b-Ranking-Probabilistic-Python.ipynb",
     "Tweety-08-Agent-Dialogues-Python.ipynb",
     "Tweety-09-Preferences-Python.ipynb",
@@ -113,7 +113,7 @@ KNOWN_ISSUES = {
         "AF Learning disabled - ClassCastException (Tautology cannot be cast to AssociativePlFormula)",
         "Limitation: Internal Tweety bug, section commented out"
     ],
-    "Tweety-07a-Extended-Frameworks-Python.ipynb": [
+    "Tweety-07-Extended-Frameworks-Python.ipynb": [
         "ADF section may fail - requires native SAT solver",
         "Other sections (Bipolar, WAF, SAF, SetAF, Extended) work correctly"
     ],
@@ -386,7 +386,7 @@ def find_libs_directory(tweety_dir: Path) -> Optional[Path]:
     possible_paths = [
         tweety_dir / "libs",
         tweety_dir.parent / "libs",  # SymbolicAI/libs
-        tweety_dir.parent / "Argument_Analysis" / "libs",
+        tweety_dir.parent / "ArgumentAnalysis" / "libs",
     ]
 
     for path in possible_paths:
@@ -430,7 +430,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     if not env.jdk_installed:
         portable_paths = [
             tweety_dir / "jdk-17-portable",
-            tweety_dir.parent / "Argument_Analysis" / "jdk-17-portable",
+            tweety_dir.parent / "ArgumentAnalysis" / "jdk-17-portable",
         ]
         for portable_path in portable_paths:
             if portable_path.exists():
@@ -478,7 +478,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     if not env.clingo_installed:
         local_clingo_paths = [
             tweety_dir / "ext_tools" / "clingo" / "clingo.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "clingo" / "clingo.exe",
+            tweety_dir.parent / "ArgumentAnalysis" / "ext_tools" / "clingo" / "clingo.exe",
         ]
         for clingo_path in local_clingo_paths:
             if clingo_path.exists():
@@ -493,7 +493,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     else:
         local_spass_paths = [
             tweety_dir / "ext_tools" / "spass" / "SPASS.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "spass" / "SPASS.exe",
+            tweety_dir.parent / "ArgumentAnalysis" / "ext_tools" / "spass" / "SPASS.exe",
         ]
         for spass_path in local_spass_paths:
             if spass_path.exists():
@@ -508,7 +508,6 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     else:
         local_eprover_paths = [
             tweety_dir.parent / "ext_tools" / "EProver" / "eprover.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "EProver" / "eprover.exe",
         ]
         for ep_path in local_eprover_paths:
             if ep_path.exists():

@@ -16,6 +16,8 @@ META-INF/
 .5shades-build/
 .causal-build/
 .7a-build/
+# TweetyProject v1.30 clone (rebuilt by rebuild-familyA-maven.sh)
+.familyA-clone/
 .sources-extracted/
 .sources-jar/
 .jars/

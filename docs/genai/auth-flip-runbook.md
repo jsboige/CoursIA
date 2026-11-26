@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-03
+
 # Runbook — Flip d'authentification des services exposés (#16 P2)
 
 **Issue** : #16 — Sécurisation des services IA exposés.
@@ -48,7 +50,7 @@ d'env + redémarrer**, sans développement, **réversible**.
 
 ### Pre-flight (à compléter avant le flip)
 
-1. **Énumérer les consommateurs claudish** : qui appelle `:3000` en POST non-anthropic ? (agents Roo/Claude du cluster en proxy LLM). Lister les clients à qui propager la clé.
+1. **Énumérer les consommateurs claudish** : qui appelle `:3000` en POST non-anthropic ? (agents Roo/Claude du cluster en proxy LLM). Lister les clients à qui propager la clé. Pour les **carnets notebooks**, l'énumération est mesurée et tenue dans [claudish-consumer-perimeter.md](claudish-consumer-perimeter.md) — la reprendre de là, ne pas la refaire à la main (c'est cette reprise manuelle qui l'avait fait dériver).
 2. **Générer une clé forte** (≥32 chars aléatoires). Rotation indépendante de Qdrant.
 
 ### Procédure de flip (sur `po-2023`, manuel)

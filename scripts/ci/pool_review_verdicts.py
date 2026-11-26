@@ -86,6 +86,31 @@ VERDICT_RE = re.compile(
     re.MULTILINE,
 )
 
+#: Forme HISTORIQUE du verdict Hermes, en prefixe de corps derriere l'en-tete
+#: de persona : « [Hermes] COMMENT_WITH_CONCERNS », « **[Hermes] Review —
+#: COMMENT_WITH_CONCERNS** ». B.0 documente ce canal comme LE canal verdict
+#: (« le verdict est un prefixe de body ») ; VERDICT_RE ne couvre que la
+#: forme moderne « VERDICT: X ». Sous-ensemble VERDICT-SEMANTIQUE du canon
+#: nits CONCERN_MARKERS (check_unaddressed_nits.py) : la prose bloquante
+#: (« avant merge ») et les nits rediges a la main n'y entrent pas -- ce ne
+#: sont pas des verdicts. Le marqueur capture est VALIDE contre la table :
+#: un mot quelconque apres l'en-tete (« **[NanoClaw]** structural review »)
+#: n'est pas une emission. En-tete en debut de ligne seulement — une mention
+#: en milieu de phrase (« cf [Hermes] COMMENT_WITH_CONCERNS hier ») ni le
+#: backtick d'une citation ne comptent (meme discipline que
+#: _PERSONA_MARKERS_RE, #13030).
+_PREFIX_VERDICT_MARKERS = {
+    "COMMENT_WITH_CONCERNS": "CONCERNS",
+    "CHANGES_REQUESTED": "CONCERNS",
+    "REQUEST_CHANGES": "CONCERNS",
+    "NEEDS_CHANGES": "CONCERNS",
+    "LGTM": "LGTM",
+}
+_PREFIX_VERDICT_RE = re.compile(
+    r"(?m)^[\s*]*\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+    r"[\s*–—-]*(?:Review)?[\s*–—-]*(\w+)"
+)
+
 #: Etats de review REELS de l'API : rares ici (token COMMENT-only) mais
 #: authentiques quand un humain review -- ils gouvernent alors.
 REAL_STATES = {"APPROVED": "APPROVED", "CHANGES_REQUESTED": "CHANGES_REQUESTED"}
@@ -150,15 +175,13 @@ def run_gh(args: list[str], stdin: str | None = None) -> str:
     return proc.stdout
 
 
-def _fetch_page(owner: str, name: str, window_reviews: int, window_comments: int,
-                cursor: str | None) -> str:
-    """Une page GraphQL, retentee une fois devant un 5xx transitoire."""
+def _graphql_with_retry(query: str, fields: dict[str, str]) -> str:
+    """Un appel GraphQL, retente une fois devant un 5xx transitoire."""
     import time
 
-    query = QUERY % (owner, name, PAGE_SIZE, window_reviews, window_comments)
     args = ["api", "graphql", "-f", "query=" + query]
-    if cursor:
-        args += ["-f", "endCursor=" + cursor]
+    for key, value in fields.items():
+        args += ["-f", f"{key}={value}"]
     try:
         return run_gh(args)
     except RuntimeError as exc:
@@ -166,6 +189,13 @@ def _fetch_page(owner: str, name: str, window_reviews: int, window_comments: int
             raise
         time.sleep(2)
         return run_gh(args)
+
+
+def _fetch_page(owner: str, name: str, window_reviews: int, window_comments: int,
+                cursor: str | None) -> str:
+    """Une page GraphQL, retentee une fois devant un 5xx transitoire."""
+    query = QUERY % (owner, name, PAGE_SIZE, window_reviews, window_comments)
+    return _graphql_with_retry(query, {"endCursor": cursor} if cursor else {})
 
 
 def fetch_pool(repo: str, window_reviews: int, window_comments: int) -> list[dict[str, Any]]:
@@ -190,6 +220,69 @@ def fetch_pool(repo: str, window_reviews: int, window_comments: int) -> list[dic
     return nodes
 
 
+PR_QUERY = """
+query {
+  repository(owner: "%s", name: "%s") {
+    pullRequest(number: %d) {
+      number
+      title
+      createdAt
+      mergeStateStatus
+      reviewDecision
+      reviews(last: %d) {
+        nodes {
+          author { login }
+          state
+          body
+          submittedAt
+        }
+      }
+      comments(last: %d) {
+        nodes {
+          author { login }
+          body
+          createdAt
+        }
+      }
+    }
+  }
+}
+"""
+
+
+def fetch_prs(repo: str, numbers: list[int],
+              window_reviews: int = DEFAULT_WINDOW_REVIEWS,
+              window_comments: int = DEFAULT_WINDOW_COMMENTS) -> dict[int, dict[str, Any]]:
+    """Verdict latest-wins d'un sous-ensemble borne de PRs, par numero (#16926).
+
+    Consommation per-PR par la file de reparation du picker : la vue de triage
+    n'a pas besoin du pool entier, seulement des PRs a points de review non
+    leves -- une poignee. Une requete par PR via la meme couture que
+    ``fetch_pool`` (``run_gh`` + retente une fois devant un 5xx), puis
+    ``classify_pr`` sur chaque noeud. Une PR injoignable, fermee ou au payload
+    inattendu rend une ENTREE ABSENTE, jamais une exception : la file de
+    reparation ne doit pas se bloquer sur une surface annexe.
+    """
+    owner, name = repo.split("/", 1)
+    out: dict[int, dict[str, Any]] = {}
+    for n in numbers:
+        # Le numero est interpole dans la requete, pas passe en variable :
+        # gh -f envoie tout en chaine, et GraphQL refuse de coercer "20961"
+        # vers Int! (mesure firsthand). L'entree est assainie par int().
+        query = PR_QUERY % (owner, name, int(n), window_reviews, window_comments)
+        try:
+            raw = _graphql_with_retry(query, {})
+            node = (((json.loads(raw).get("data") or {}).get("repository") or {})
+                    .get("pullRequest"))
+            if not isinstance(node, dict) or not node:
+                continue
+            classified = classify_pr(node)
+        except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
+            continue
+        out[int(classified["number"])] = classified
+    return out
+
+
 def _voice(body: str | None) -> dict[str, Any] | None:
     """La premiere emission de verdict d'un corps, ou None.
 
@@ -202,6 +295,9 @@ def _voice(body: str | None) -> dict[str, Any] | None:
     match = VERDICT_RE.search(text)
     if match:
         return {"verdict": match.group(1), "persona": bool(nits._PERSONA_MARKERS_RE.search(text))}
+    prefix = _PREFIX_VERDICT_RE.search(text)
+    if prefix and prefix.group(1) in _PREFIX_VERDICT_MARKERS:
+        return {"verdict": _PREFIX_VERDICT_MARKERS[prefix.group(1)], "persona": True}
     if nits._PERSONA_MARKERS_RE.search(text):
         return {"verdict": None, "persona": True}
     return None

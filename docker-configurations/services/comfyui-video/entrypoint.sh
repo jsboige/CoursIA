@@ -175,8 +175,38 @@ venv/bin/pip install bitsandbytes>=0.43.0 || echo "Bitsandbytes: installation op
 # =============================================================================
 echo "Demarrage du serveur ComfyUI-Video..."
 
-# GPU Device ID (defaut: 0)
-GPU_ID=${GPU_DEVICE_ID:-0}
-echo "Utilisation GPU ${GPU_ID}"
+# Traduit l'identifiant nvidia-smi d'une carte en index PyTorch.
+# Usage : cuda_index_for <carte> <CUDA_VISIBLE_DEVICES>  -> index sur stdout
+# PyTorch attend la position de la carte dans la liste des cartes visibles.
+# Sans liste (variable vide ou absente), l'index est l'identifiant lui-meme.
+# Renvoie 1 si la carte n'est pas dans la liste.
+cuda_index_for() {
+    local gpu_id="$1" visible="$2" gpu index=0
+    visible=$(echo "$visible" | tr -d ' ')
+    if [ -z "$visible" ]; then
+        echo "$gpu_id"
+        return 0
+    fi
+    local liste
+    IFS=',' read -r -a liste <<< "$visible"
+    for gpu in "${liste[@]}"; do
+        if [ "$gpu" = "$gpu_id" ]; then
+            echo "$index"
+            return 0
+        fi
+        index=$((index + 1))
+    done
+    return 1
+}
 
-exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --cuda-device ${GPU_ID}
+# Carte visee : GPU_DEVICE_ID est un identifiant nvidia-smi (l'ordre
+# PCI_BUS_ID est pose par le compose). Un masque qui ne contient pas cette
+# carte arrete le demarrage, plutot que de laisser partir le serveur ailleurs.
+GPU_ID=${GPU_DEVICE_ID:-0}
+if ! CUDA_INDEX=$(cuda_index_for "$GPU_ID" "${CUDA_VISIBLE_DEVICES:-}"); then
+    echo "GPU_DEVICE_ID=$GPU_ID n'est pas dans CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-} : arret." >&2
+    exit 1
+fi
+echo "Carte nvidia-smi ${GPU_ID}, index CUDA ${CUDA_INDEX}"
+
+exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --cuda-device ${CUDA_INDEX} ${COMFYUI_EXTRA_ARGS:-}

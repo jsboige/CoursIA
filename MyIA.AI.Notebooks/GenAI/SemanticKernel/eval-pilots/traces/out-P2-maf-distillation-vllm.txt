@@ -1,0 +1,26 @@
+﻿probe qwen3.6-35b-a3b: OK -> 
+
+OK
+MAF versions: agent-framework-core 1.21.0, agent-framework-orchestrations 1.3.1, agent-framework-openai 1.16.0
+sonde echec (modele inexistant): ChatClientException
+charge: distill_charge_vraie.md (18916 caracteres, charge reelle)
+endpoint: http://localhost:5002/v1 | modele: qwen3.6-35b-a3b | temperature 0 | jetons max: 3000
+[run 1] tours=1 verdict_final=ACCEPTE wall=376.17s appels=5
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[complet]: latence=111.95s jetons=in=None out=None
+    appel[complet]: latence=69.05s jetons=in=None out=None
+    appel[complet]: latence=116.35s jetons=in=None out=None
+    appel[complet]: latence=70.36s jetons=in=None out=None
+    appel[complet]: latence=8.45s jetons=in=None out=None
+[run 2] tours=1 verdict_final=ACCEPTE wall=167.47s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[complet]: latence=75.37s jetons=in=None out=None
+    appel[complet]: latence=66.5s jetons=in=None out=None
+    appel[complet]: latence=25.6s jetons=in=None out=None
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'ACCEPTE', '1') vs (1, 'ACCEPTE', '1')
+LLM CALLS: 10/16
+LOC PILOT: 405 lignes
+MESURES: moteur=maf modele=qwen3.6-35b-a3b endpoint=http://localhost:5002/v1 charge=distill_charge_vraie.md carac=18916 appels=10 jetons_in=n/d jetons_out=n/d latence_appels_s=545.51 tours=1 decision=DECISION: ACCEPTE tour 1 determinisme=OK
+PILOT OK orchestration=GroupChat(selection_func) charge=distillation

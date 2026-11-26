@@ -1,3 +1,7 @@
+---
+pagetitle: "QuantConnect ML Training Pipeline — Carnets de recherche"
+---
+
 <!-- CATALOG-STATUS
 series: QuantConnect-ML-Training-Pipeline
 pedagogical_count: 4
@@ -5,9 +9,19 @@ breakdown: ML-Training-Pipeline=4
 maturity: DRAFT=2, BETA=1, TEMPLATE=1
 -->
 
-# Pipeline d'entraînement ML pour la prévision financière
+[← QuantConnect](../README.md) | [→ research/](../research/README.md)
 
-Pipeline d'entraînement complet pour modèles ML sur données financières OHLCV. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Tous les scripts GPU utilisent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
+Cette sous-série est le **pipeline d'entraînement ML** de la famille QuantConnect : un cadre complet pour entraîner, valider et documenter des modèles de machine learning sur données financières OHLCV — du HAR économétrique aux Transformers à attention, du LSTM séquentiel au Decision Transformer. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Contrairement au [parcours principal](../README.md) (qui s'exécute sur QC Cloud), ces carnets sont des **recherches standalone de type (c)** : ils tournent en local sur données publiques (yfinance, Binance) et explorent une question méthodologique précise. Le fil rouge est l'**empirisme honnête** : chaque carnet applique un protocole strict (walk-forward 5-fold, multi-seed, Diebold-Mariano, coûts de transaction) et publie un verdict net — `BEATS`, `NO BEATS` ou `INCONCLUSIVE` — sans maquillage.
+
+Tous les scripts GPU partagent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, `batch_thermal_check`).
+
+## Comment lire ce README
+
+- **Vous voulez comprendre la démarche** : lisez [Ce que ce pipeline démontre](#ce-que-ce-pipeline-demonstre) — l'empirisme honnête appliqué au ML financier, et pourquoi la plupart des idées ne battent pas le buy-and-hold.
+- **Vous voulez relire un verdict** : la table [Les carnets de recherche](#les-carnets-de-recherche) récapitule chaque carnet, la question qu'il pose et le verdict mesuré.
+- **Vous voulez comprendre les fils méthodologiques** : [Approfondissements](#approfondissements) indexe les axes qui traversent les carnets (le triptyque des échecs vol, le contraste action vs forecast, le registre §C).
+- **Vous voulez re-entraîner un modèle** : [Démarrage rapide](#demarrage-rapide) et [Modèles](#modeles) documentent les scripts, leurs hyperparamètres et les commandes GPU recommandées.
+- Les nombres d'inventaire (carnets par catégorie, maturité) vivent dans le [catalogue généré](../../../COURSE_CATALOG.generated.md) et le bloc `CATALOG-STATUS` en tête ; ce README ne les recopie pas.
 
 ## Aperçu — la diversité méthodologique du pipeline en images
 
@@ -43,51 +57,43 @@ Enfin, le **TFT** ([m9](m9_tft_vol_research.ipynb)) apporte l'attention temporel
   <em>Sorties des notebooks <a href="m9_tft_vol_research.ipynb">m9</a> (gauche, cellule 6) et <a href="m11e_ensemble_research.ipynb">m11e</a> (droite, cellule 6) : attention TFT et diagnostic d'ensemble HAR-Kelly.</em>
 </p>
 
-## Classification type (c) — standalone
+## Les carnets de recherche
 
-Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud.
+Les carnets de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud. Chacun pose une question précise, applique le protocole complet (walk-forward 5-fold, multi-seed, Diebold-Mariano, coûts de transaction) et publie un verdict net.
 
-| Notebook | Sujet | Type |
-|----------|-------|------|
-| `ML-Research-Template.ipynb` | Template pour recherche ML | (c) |
-| `m3_har_asymmetric_semivariance.ipynb` | M16 — HAR asymétrique débiaisé : le signal survit-il hors biais ? | (c) |
-| `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
-| `research_l1_tsmom.ipynb` | L1 TSMOM — baseline momentum temporelle (NO BEATS) | (c) |
-| `research_l2_dual_momentum.ipynb` | L2 Cross-Sectional + Dual Momentum (NO BEATS) | (c) |
-| `research_l3_trend.ipynb` | L3 Trend Long-Horizon — LSTM directionnel (NO BEATS) | (c) |
-| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (BEATS panel @10bps ; OOT réel NO-BEATS) | (c) |
-| `c1330_xrp_dt_foldwise_research.ipynb` | c.1330 — XRP Decision Transformer : validation fold-wise §C (verdicts par bucket) | (c) |
-| `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
-| `c875_hmm_alpha_dm_research.ipynb` | C875 — HMM-alpha : validation rigoureuse Ledoit-Wolf DM (stress 50 bps, INCONCLUSIVE) | (c) |
-| `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
-| `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
-| `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer) : l'échec du surparamétrage | (c) |
-| `m11e_ensemble_research.ipynb` | Ensemble HAR-Kelly : la dilution confirmée (3e axe d'échec) | (c) |
-| `m12_har_rv_j_research.ipynb` | HAR-RV-J : décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | (c) |
-| `m15_lstm_rv_research.ipynb` | Log-LSTM RV : mémoire séquentielle pour la variance réalisée | (c) |
-| `m4_dlinear_vol_sc_validation.ipynb` | M4 — DLinear-vol : entrée §C du registre (conjonction multi-seed + DM `loss_fn="linear"`) | (c) |
-| `m15_lstm_rv_sc_validation.ipynb` | M15 — LSTM RV : entrée §C du registre (2e entrée §C, même protocole) | (c) |
+| Carnet | Question | Ce qu'on y apprend | Verdict mesuré |
+|--------|----------|--------------------|----------------|
+| [ML-Research-Template](ML-Research-Template.ipynb) | Template de recherche réutilisable | Le squelette d'un carnet : chargement, feature engineering, dry-run, évaluation d'un checkpoint | Template (dry-run) |
+| [m3_har_asymmetric_semivariance](m3_har_asymmetric_semivariance.ipynb) | M16 — le signal HAR survit-il une fois le biais retiré ? | Contrôle de stabilité 4-seed, test Diebold-Mariano, décomposition MSE = biais² + variance | 2/3 BEATS, 1/3 INCONCLUSIVE |
+| [m4_dlinear_vol_research](m4_dlinear_vol_research.ipynb) | M4 — un réseau linéaire simple bat-il la baseline HAR ? | La longueur des données comme facteur décisif : seul BTC (2278 j) distingue le DLinear du HAR | 5/21 BEATS (BTC-dominant) |
+| [m4_dlinear_vol_sc_validation](m4_dlinear_vol_sc_validation.ipynb) | M4 — entrée §C du registre | Conjonction multi-seed + DM sur perte de précision ; le contrôle de biais par de-biaisage symétrique | 2/3 BEATS (recentré) |
+| [m5_hmm_regime_research](m5_hmm_regime_research.ipynb) | M5 — quand la sophistication structurelle nuit | Dégradation croissante avec l'horizon, sensibilité à l'initialisation HMM | 1/6 BEATS, 4/6 INCONCLUSIVE |
+| [m9_tft_vol_research](m9_tft_vol_research.ipynb) | M9 — l'échec du surparamétrage | La catastrophe du fold 1 (overfitting), la courbe d'expressivité inversée | 0/6 BEATS, edge négatif |
+| [m11e_ensemble_research](m11e_ensemble_research.ipynb) | M11e — l'ensemble dilute-t-il les performances ? | Ne pas confondre ensemble et diversification : des experts corrélés ne diversifient pas | DILUTION (0/35 p<0.05) |
+| [m12_har_rv_j_research](m12_har_rv_j_research.ipynb) | M12 — décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | Revalidation cluster sept actifs, confrontation rendement/précision par horizon | NO BEATS (0/7) |
+| [m15_lstm_rv_research](m15_lstm_rv_research.ipynb) | M15 — mémoire séquentielle pour la variance réalisée | Le paradoxe MSE-Sharpe : gains de Sharpe sans la conjonction §C | NO BEATS (44/84, p=0.372) |
+| [m15_lstm_rv_sc_validation](m15_lstm_rv_sc_validation.ipynb) | M15 — entrée §C du registre | Les trois jambes du protocole §C ; la jambe mse comme vraie mesure de perte de précision | 3/3 BEATS (jambe mse) |
+| [hmm_alpha_research](hmm_alpha_research.ipynb) | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | Générer un signal directionnel par Markov cachés, de 2 à 4 états, validation walk-forward | 9 NO BEATS / 9 |
+| [hmm_alpha_dm_research](hmm_alpha_dm_research.ipynb) | HMM-alpha : validation rigoureuse Ledoit-Wolf DM | Le stress 50 bps et le test DM face à l'heuristique du carnet d'origine | 2 BEATS, 7 INCONCLUSIVE / 9 |
+| [research_l1_tsmom](research_l1_tsmom.ipynb) | L1 — TSMOM, baseline momentum temporelle | Le sweep des 4 lookbacks (21/63/126/252 j) et le stress coûts ×5 | 4/4 NO BEATS |
+| [research_l2_dual_momentum](research_l2_dual_momentum.ipynb) | L2 — Cross-Sectional + Dual Momentum | Top-5 mensuel, filtre absolu (cash = SHY), sélection par outliers winsorisés | 0/6 NO BEATS |
+| [research_l3_trend](research_l3_trend.ipynb) | L3 — Trend long-horizon (LSTM directionnel) | AUC ≡ hasard, pire que la baseline majority-class | NO BEATS (0/75) |
+| [research_l4_decision_transformer](research_l4_decision_transformer.ipynb) | L4 — Decision Transformer (action-based) | Le protocole causal, l'imitation du teacher momentum | NO BEATS (0/25) |
+| [xrp_dt_foldwise_research](xrp_dt_foldwise_research.ipynb) | XRP Decision Transformer : validation fold-wise §C | Pourquoi des modèles différents rendent le même Sharpe ; fresh vs aged | NO-BEATS (4 buckets) |
+| [research_what_dl_can_predict](research_what_dl_can_predict.ipynb) | Ce que le DL peut réellement prédire en finance | Cibles candidates, preuve académique, faiblesses méthodologiques de la littérature | (carnet de synthèse) |
 
-Classification complète : [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
+Classification complète par carnet : [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md).
 
-## Curriculum V2 — Keepers validés (2026-05-16, gate FERMEE)
+## Approfondissements
 
-Après 8 stages testés (S1–S8) sur un univers anti-FAANG/Mag7 (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmés sous OOS strict 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), coûts tx 10bps rebalance + 50bps stress — **amendé le 2026-09-13** (M12 revalidé NO BEATS, note sous le tableau) :
+Au-delà du verdict de chaque carnet, quelques fils méthodologiques traversent la série. Cette table les indexe ; chacun est développé dans les sections qui suivent ([Ladder de recherche](#ladder-de-recherche--verdicts), [Modèles](#modeles), [Ce que ce pipeline démontre](#ce-que-ce-pipeline-demonstre)).
 
-| Stage | Stratégie | Δ-Sharpe | Signification statistique | MaxDD | Script |
-|-------|----------|----------|---------------------------|-------|--------|
-| S1 vol | **M12 HAR-RV-J** (HAR augmenté par sauts) — **retiré des keepers le 2026-09-13** | n/a | Cycle 31 : p=0.0015 (56/84 sign-test) — **non confirmé** (note ci-dessous) | n/a | `m12_har_rv_j.py` |
-| S1 vol | **M15 LSTM h=32** (LSTM log-RV) | n/a | p=0.0107 (53/84 sign-test) | n/a | `m15_lstm_rv.py` |
-| S3 regime | **HMM Regime** (2 états, quotidien) | **+0.669** | 4/4 seeds positifs | -39.1% | `s3_hmm_regime.py` |
-| S4 v2 | **Ridge vol-inverse + HMM** | **+0.325** | 4/4 seeds positifs | -17.7% | `s4_inverse_vol_ridge_v2.py` |
-
-> **Amendement 2026-09-13 — M12 revalidé NO BEATS** (#16004, Epic #1454) : sous protocole cluster symétrique (sept actifs, calibration train-only des deux côtés, DM sur perte MSE, sign-test binomial exact au niveau actif), M12 obtient **0/7 BEATS, p = 1,0** — ADA NO BEATS (3/3 horizons), ETH NO BEATS (h=5/h=10), cinq actifs INCONCLUSIVE. Le BEATS Cycle 31 (p=7,9e-7) n'est pas confirmé : il comptait quatre labels de seed bit-identiques d'un OLS déterministe comme répétitions et calibrait la baseline seule. Non réfuté définitivement — protocoles et fenêtres diffèrent. Détail : [`REGISTRY.md`](REGISTRY.md) §M12 et [`docs/M12_HAR_RV_J.md`](docs/M12_HAR_RV_J.md).
-
-S1 long-horizon sweep a également produit **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). Reco portfolio : **S3 + S4 v2 rebalance mensuel, Sharpe ~1.12**.
-
-**Stages rejetés** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 classifieurs long-horizon (dir_acc ≠ edge).
-
-> Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud déployés à partir de ces KEEPERS — cf [`../partner-course-quant-trading/README.md`](../partner-course-quant-trading/README.md).
+| Fil | Carnets | Ce qu'on y apprend |
+|-----|---------|--------------------|
+| Le triptyque des échecs vol | m5, m9, m11e, m12, m15 | Richer features ≠ meilleur modèle : la sophistication structurelle (HMM, TFT, ensemble, HAR-RV-J) ne bat pas la baseline HAR une fois les coûts appliqués |
+| Le contraste action vs forecast | l1, l2, l3, l4 | Prédire une action discrète ou le rendement continu — les deux paradigmes restent NO BEATS sous protocole causal |
+| Le registre §C | m4_sc, m15_sc, xrp | La conjonction multi-seed + Diebold-Mariano comme critère unique de passage, et la jambe mse comme mesure de perte de précision |
+| Le ladder L1–L5 | l1, l2, l3, l4 (+ PatchTST) | L'évaluation systématique des générateurs de signaux, verdicts nets de frais |
 
 ## Architecture
 
@@ -107,7 +113,6 @@ flowchart TD
     VERD --> CKPT["Checkpoint<br/>model.pt + metadata.json"]
     VERD -.-> NO["NO BEATS<br/>(documente honnetement)"]
     CKPT --> REG["REGISTRY.md"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style VERD fill:#fff3e0,color:#bf360c
     style CKPT fill:#e8f5e9,color:#1b5e20
     style NO fill:#ffebee,color:#721c24
@@ -132,7 +137,7 @@ scripts/
   train_dqn_rl.py                  # DQN Reinforcement Learning (GPU recommandé)
 
   # --- Training: Advanced architectures ---
-  train_moe_regimes.py             # MoE avec routing régime-aware (Issue #754 Phase B)
+  train_moe_regimes.py             # MoE avec routing régime-aware (Phase B)
   train_moe.py                     # MoE avec gating network
   train_patchtst.py                # PatchTST (Nie et al., ICLR 2023)
   train_itransformer.py            # iTransformer (Li et al., ICLR 2024)
@@ -143,7 +148,7 @@ scripts/
   train_volatility_garch_dl.py     # GARCH+DL hybrid prévision volatilité
   train_volatility_regime.py       # Classifieur regime volatilité
   train_regime_classifier.py       # Détection regime HMM
-  train_har_baseline.py            # HAR(1,5,22d) vs GARCH-rolling vs naive sur crypto RV (#834 M2)
+  train_har_baseline.py            # HAR(1,5,22d) vs GARCH-rolling vs naive sur crypto RV (M2)
   train_realized_garch.py          # Realized GARCH (M10, Hansen et al. 2012)
 
   # --- Volatility sweep series (M10-M15) ---
@@ -172,13 +177,13 @@ scripts/
   eval_kronos_zeroshot.py          # Évaluation zero-shot Kronos (AAAI 2026, 4 tailles)
   eval_finstsb.py                  # Évaluation per-regime style FinTSB (4 régimes)
   eval_existing_checkpoints.py     # Pipeline complet : WF + baselines + régimes + coûts transaction
-  shadow_replay.py                 # Suivi en ombre : candidates gelées par SHA, rejeu mensuel, CSV en ajout seul (#18923)
+  shadow_replay.py                 # Suivi en ombre : candidates gelées par SHA, rejeu mensuel, CSV en ajout seul
 
   # --- Infrastructure ---
   checkpoint_utils.py              # Shared sauvegarde checkpoint PyTorch (model.pt + metadata.json)
   launch_po2025_track_a1.py        # Launcher séquentiel : Transformer -> DQN -> LSTM
   launch_ai01_track_b.py           # Launcher Track B (ai-01 RTX 4090 baselines)
-  validate_training_package.py     # Valider tous les scripts avec --dry-run
+  validate_training_package.py     # Valider les 4 scripts de base avec --dry-run (classification, lstm, transformer, dqn_rl)
   registry_update.py               # Construire REGISTRY.md depuis checkpoints
   walk_forward.py                  # Splitter walk-forward (expanding window, 5-fold)
 
@@ -237,7 +242,7 @@ Utilise des données synthétiques, epochs minimales. Valide le pipeline complet
 | train_transformer.py | Transformer encoder | Régression de rendement | Requis | d_model=256, heads=8, layers=6 |
 | train_dqn_rl.py | DQN | Actions de trading (buy/sell/hold) | Recommandé | hidden=512, 500 épisodes |
 
-### Architectures avancées (Issue #754)
+### Architectures avancées
 
 | Script | Modèle | Tâche | GPU | Notes |
 |--------|-------|------|-----|-------|
@@ -268,7 +273,7 @@ Utilise des données synthétiques, epochs minimales. Valide le pipeline complet
 
 | Script | Modèle | Tâche | GPU | Notes |
 |--------|-------|------|-----|-------|
-| train_har_baseline.py | HAR(1,5,22d) | Prévision Realized Variance | CPU | Walk-forward 5-fold vs GARCH-rolling, crypto OHLCV horaire (#834 M2) |
+| train_har_baseline.py | HAR(1,5,22d) | Prévision Realized Variance | CPU | Walk-forward 5-fold vs GARCH-rolling, crypto OHLCV horaire (M2) |
 
 ### Série volatilité sweep (M10--M15)
 
@@ -278,10 +283,10 @@ Comparaison systématique de modèles de volatilité contre HAR Classic Kelly su
 | ------ | --- | ----- | ------ | ------- |
 | train_realized_garch.py | M10_REALIZED_GARCH_VOL.md | Realized GARCH (Hansen et al. 2012) | ~8 | NO BEATS (MSE +62%) |
 | simulate_har_kelly.py | M2_HAR_BASELINE.md | HAR Classic Kelly (Corsi 2009) | 4 | **Baseline** (Sharpe +0.313 vs BH) |
-| m12_har_rv_j.py | M12_HAR_RV_J.md | HAR-RV-J (jump-augmented) | 7 | Cycle 31 : **BEATS** (p=7.9e-7) — **non confirmé** : revalidation cluster 2026-09-13 **NO BEATS** (0/7, p=1,0, #16004) |
+| m12_har_rv_j.py | M12_HAR_RV_J.md | HAR-RV-J (jump-augmented) | 7 | NO BEATS (revalidation cluster 0/7, p=1,0) |
 | m13_ms_har.py | M13_MS_HAR.md | Markov-Switching HAR (Hamilton 1989) | 11 | NO BEATS (39/84, p=0.7774) |
 | m14_heavy.py | M14_HEAVY.md | HEAVY (Shephard & Sheppard 2010) | 6 | NO BEATS (48/84, p=0.1149) |
-| m15_lstm_rv.py | M15_LSTM_RV.md | Log-LSTM RV (Hochreiter 1997) | ~4.8K (h=32) / ~17.7K (h=64) / ~68.2K (h=128) | NO BEATS h=32 (44/84, p=0.372, §C #11395) / NO BEATS h=64/128 (runs non trackes) |
+| m15_lstm_rv.py | M15_LSTM_RV.md | Log-LSTM RV (Hochreiter 1997) | ~4.8K (h=32) / ~17.7K (h=64) / ~68.2K (h=128) | NO BEATS h=32 (44/84, p=0.372, §C) / NO BEATS h=64/128 (runs non trackes) |
 
 Modules support : `har_model.py`, `realized_variance.py`, `intraday_loader.py`, `m11g_fee_aware_kelly.py`, `m11c_sharpe_test.py`. Roadmap complète : `docs/M_NEXT_VOL_PROPOSAL.md`.
 
@@ -294,13 +299,56 @@ Modules support : `har_model.py`, `realized_variance.py`, `intraday_loader.py`, 
 | eval_kronos_zeroshot.py | Kronos zero-shot | AAAI 2026, pre-trained sur 12B K-lines, 4 tailles modèle (4M-499M) |
 | eval_finstsb.py | Évaluation per-regime | 4 régimes (uptrend/downtrend/volatility/black_swan) |
 | eval_existing_checkpoints.py | Évaluation pipeline complet | WF + baselines + per-regime + coûts transaction pour tout checkpoint |
-| shadow_replay.py | Suivi en ombre des candidates | Gel par SHA, rejeu mensuel du code gelé (local, ou backtest QC via `plan-qc` puis `ingest-qc`), CSV en ajout seul ; règles et commandes dans `shadow/README.md` (#18923) |
+| shadow_replay.py | Suivi en ombre des candidates | Gel par SHA, rejeu mensuel du code gelé (local, ou backtest QC via `plan-qc` puis `ingest-qc`), CSV en ajout seul ; règles et commandes dans `shadow/README.md` |
+
+### Diagnostic du budget de completion (DAPO/GRPO)
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| analyse_dapo_saturation.py | Saturation du budget de completion d'un bras GRPO | Lit les artefacts JSON de run, regroupe par bras (`model_key`), rend `SIGNAL_UTILE` / `SIGNAL_PARTIEL` / `SIGNAL_NUL` ; code de sortie 1 si tous les bras sont nuls |
+
+Une generation tronquee au budget `max_completion_length` voit sa perte
+annulee par `mask_truncated_completions` : le run continue, le code de sortie
+reste nul, le log se remplit de metriques -- et l'echantillon utile se limite
+aux steps qui n'ont pas ete tronquees. L'organe mesure la fraction de steps
+saturees, le nombre de steps qui ont reellement porte un gradient, et le gain
+d'evaluation rapporte a ces steps : un bras qui n'a appris que sur deux steps
+ne se compare pas a un bras qui en a appris sur vingt-quatre.
+
+```bash
+python scripts/analyse_dapo_saturation.py scripts/results/m19_minicpm5_grpo/*_seed*.json scripts/results/m19_minicpm5_grpo/summary.json
+```
+
+L'agregat mesure par bras est versionne dans
+`scripts/results/m19_minicpm5_grpo/saturation_par_bras.json` ; il se regenere
+avec la commande ci-dessus (la liste est **explicite** : l'agregat lui-meme
+n'est pas un artefact de run, et le `summary.json` y est passe pour montrer
+la quarantaine des fichiers qui ne sont pas des graines). Le verdict par bras
+se lit la, la prose ne le refige pas.
+
+Deux conventions y sont explicites, parce qu'elles décident du verdict :
+
+- le seuil de saturation est **inclusif** -- une fraction de steps saturées
+  exactement égale à `0,95` est un `SIGNAL_NUL` (c'est le cas mesuré du bras
+  `qwen35`, graine 0) ;
+- à effectif **pair**, le bras suit le verdict le **moins grave** des deux
+  centraux (convention optimiste : un bras dont une graine sur deux sature
+  porte encore du signal). La convention est dans le code et épinglée par un
+  test.
+
+Le champ `gain_eval_par_step_avec_gradient` est la **médiane des ratios par
+graine**, chacun divisé par les steps qui ont porté un gradient *de cette
+graine* : il ne se rederive pas de `gain_eval_recompense / steps_avec_gradient`,
+dont le diviseur est une médiane de comptes. Quand cette médiane vaut moins de
+1 (le bras `qwen35` : `0,5`), la métrique vaut `null` et
+`gain_eval_par_step_comparable` vaut `false` — le gain par step n'y est pas
+comparable entre bras.
 
 ### Construction de dataset
 
 | Script | Purpose | Notes |
 |--------|---------|-------|
-| build_dataset_v2.py | Builder dataset V2 panier | 26 symboles, 7 classes d'actifs, features cross-asset, labels régime HMM+price (#754 Phase C) |
+| build_dataset_v2.py | Builder dataset V2 panier | 26 symboles, 7 classes d'actifs, features cross-asset, labels régime HMM+price (Phase C) |
 
 ### Utilitaires partagés
 
@@ -419,17 +467,6 @@ from shared.gpu_training import batch_thermal_check, setup_amp, get_gpu_temp
 
 **Comportement thermique** : Quand GPU dépasse MAX_TEMP, l'entraînement pause 30s. Sur laptops (MSI GE76 RTX 3080 Ti), attendre ~80C baseline, donc pauses thermiques fréquentes. L'efficacité d'entraînement est ~2-5% wall time sur hardware thermiquement contraint.
 
-## Lanceurs séquentiels
-
-Track A1 (`launch_po2025_track_a1.py`) lance modèles séquentiellement avec sécurité thermique complète :
-
-```bash
-# Track A1 complet : Transformer -> DQN -> LSTM
-python scripts/launch_po2025_track_a1.py --symbol SPY --data-dir ../datasets/yfinance
-```
-
-Track B (`launch_ai01_track_b.py`) lance baselines sur ai-01 (RTX 4090, pas de problèmes thermiques).
-
 ## Dépendances
 
 ### Core (tous les scripts)
@@ -481,7 +518,7 @@ python scripts/train_dqn_rl.py --data-dir ../datasets/yfinance --symbol SPY \
 Tous les scripts supportent `--dry-run` (données synthétiques, 2 epochs) sauf `train_moe.py`, `train_volatility_garch_dl.py`, et `train_regime_classifier.py` (pas de flag dry-run).
 
 ```bash
-# Valider tous les scripts
+# Valider les 4 scripts couverts par le validateur (TRAINING_SCRIPTS : classification, lstm, transformer, dqn_rl)
 python scripts/validate_training_package.py --verbose
 ```
 
@@ -505,11 +542,11 @@ Résultats dry-run (CPU, Python 3.13, torch 2.11.0+cpu) :
 
 Note : dry-run utilise des données aléatoires synthétiques. FAILS baseline est attendu avec random walks. Les résultats données réelles sont dans `results/` et sur le dashboard cluster.
 
-## Ladder #1409 — Verdicts finaux (2026-06-12, COMPLETE)
+## Ladder de recherche — verdicts
 
 Évaluation systématique d'approches de génération de signaux de trading, 7 disciplines strictes (walk-forward 5-fold expanding, multi-seed >= 4, univers anti-FAANG, coûts tx explicites + 50bps stress, Sharpe déflaté, verdict honnête).
 
-La leçon centrale du ladder n'est pas le score d'un modèle isolé mais le contraste entre **deux paradigmes de formulation du signal** : prédire la **direction/action discrète** (Buy/Hold/Sell) vs prédire le **rendement futur continu** puis seuiller. Le graphe ci-dessous résume pourquoi seul le paradigme action-based survit au seuil BEATS face au buy-and-hold 2015-2025 (Sharpe 1.15).
+Le ladder contraste **deux paradigmes de formulation du signal** : prédire la **direction/action discrète** (Buy/Hold/Sell) vs prédire le **rendement futur continu** puis seuiller. Re-mesurés sous protocole causal, les deux sont NO BEATS — face au buy-and-hold, aucun ne passe le seuil BEATS. Le graphe ci-dessous résume les deux chaînes et leur verdict.
 
 ```mermaid
 flowchart LR
@@ -523,33 +560,32 @@ flowchart LR
     ACT --> TR1["Trading direct"]
     RET --> TH["Seuillage / conversion<br/>en position"]
     TH --> TR2["Trading differe"]
-    TR1 --> RES1["L4 DT : 24/26 panel @10bps<br/>(OOT temporel réel 04/09 : NO-BEATS)"]
+    TR1 --> RES1["L4 DT : 0/26 BEATS<br/>sous protocole causal"]
     TR2 --> RES2["PatchTST : 0/26 seeds BEATS<br/>Signal noye dans le bruit"]
-    %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
-    style P1 fill:#e8f5e9,color:#1b5e20
+    style P1 fill:#ffebee,color:#721c24
     style P2 fill:#ffebee,color:#721c24
-    style RES1 fill:#c8e6c9,color:#1b5e20
+    style RES1 fill:#ffcdd2,color:#721c24
     style RES2 fill:#ffcdd2,color:#721c24
 ```
 
-L'écart de performance n'est pas un hasard : un classifieur d'action capture la **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. D'où le verdict consolidé — un seul BEATS (DT action-based, **panel @10bps** ; non confirmé hors-échantillon en temps, OOT réel 04/09 NO-BEATS), tout le reste NO BEATS (rendement/forecast).
+L'hypothèse était qu'un classifieur d'action capte une **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. La mesure causale ne la soutient pas : 0/26 avec signal, AUC médian 0.496, 104 combinaisons (`scripts/results/l4_decision_transformer/results.json`, protocole `causal-v1`). Le carnet montre en outre que le DT imite son teacher momentum (corrélation de 0.936 entre leurs expositions) : le conditionnement par le return-to-go oriente l'imitation, il ne crée pas de signal. Verdict consolidé : tous les échelons sont NO BEATS, qu'ils prédisent une action ou un rendement.
 
 | Rung | Modèle | Approche | Verdict | Métrique clé | Doc |
 |------|-------|----------|---------|--------------|-----|
 | L1 | TSMOM | Momentum time-series | NO BEATS | Sharpe net -2.56 à -2.26 (coûts tuent le signal) | `docs/L1_tsmom.md` |
 | L2 | CS+DM | Carry + momentum dual | NO BEATS | meilleur CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
 | L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, AUC médian 0.509, 300 combos | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** (panel @10bps) | **24/26, AUC médian 0.558** ; @50bps INCONCLUSIVE ; holdout 06/08 non reproduit (-6.63σ interne) ; **OOT réel 04/09 NO-BEATS** (train gelé ≤ 2025-06-30, 0/5 seeds, −5.38σ) | `docs/L4_decision_transformer.md` |
+| L4 | Decision Transformer | Action-based (buy/hold/sell) | NO BEATS | 0/26 signal, AUC médian 0.496, 104 combos, protocole causal | `docs/L4_decision_transformer.md` |
 | L5 | Composite vol-targeted | Filtre trend + vol-targeting 10% sur composite S7 | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
-| (side) | PatchTST | Forecast-based (prédiction rendement) — mislabellisé "L5" avant 2026-06-12 | NO BEATS | 0/26, AUC médian 0.501 | `results/l5_patchtst/` |
+| (side) | PatchTST | Forecast-based (prédiction rendement) | NO BEATS | 0/26, AUC médian 0.501 | `results/l5_patchtst/` |
 
 **Key findings** :
 
-1. **Action-based >> forecast-based** : DT (classifie buy/hold/sell) surperforme massivement PatchTST (prédit magnitude rendement). La couche de traduction portfolio (forecast -> position) détruit le signal forecast via coûts transaction et erreurs de discrétisation.
+1. **Ni action-based ni forecast-based** : l'avance du DT (classifie buy/hold/sell) sur PatchTST (prédit la magnitude du rendement) venait d'un return-to-go de test tiré des rendements futurs réalisés. Re-mesurés sous protocole causal, les deux sont NO BEATS.
 2. **Trend overlays systématiquement destructeurs** sur cet univers/période : L1, L2, L3 tous NO BEATS, et l'ablation L5 isole le filtre TSMOM 12-1 comme cause de son déficit (-0.260 seul vs -0.025 pour vol-targeting seul).
-3. **Vol-targeting = outil de risque, pas alpha** : le vol-target 10% de L5 atteint son objectif de risque (vol réalisée 10.3% vs 16.6%, MaxDD réduit) à coût Sharpe ~nul. À garder comme overlay de risque sur candidats production (S3 + S4 v2 KEEPERS), pas comme signal.
+3. **Vol-targeting = outil de risque, pas alpha** : le vol-target 10% de L5 atteint son objectif de risque (vol réalisée 10.3% vs 16.6%, MaxDD réduit) à coût Sharpe ~nul. À garder comme overlay de risque sur une stratégie candidate, pas comme signal.
 
-Résultats : `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`. Next : L4 DT multi-seed étendu (BG run ai-01), puis migration QC Cloud.
+Résultats : `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`.
 
 ## Reproductibilité
 
@@ -558,7 +594,7 @@ Résultats : `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l
 - **Historique entraînement** : Courbes de perte par epoch
 - **Seeds** : Données synthétiques utilisent seed=42 ; pour production, configurer `PYTHONHASHSEED` et `torch.manual_seed()`
 
-### Convention de stockage des résultats (#13740)
+### Convention de stockage des résultats
 
 Trois familles d'artefacts, trois emplacements distincts, **un seul verdict canonique par expérience** :
 
@@ -570,43 +606,23 @@ Trois familles d'artefacts, trois emplacements distincts, **un seul verdict cano
 
 **Règle d'or** : un répertoire `<exp>/` = une expérience = un verdict. Pas de JSON plats au racine de `scripts/results/`.
 
-#### Dérogations historiques connues (fichiers plats à migrer)
-
-Ces fichiers violent la convention (JSON plat à la racine de `scripts/results/` au lieu d'un sous-répertoire `<exp>/`). Ils sont **référencés en dur** par `m4_dlinear_vol_sc_validation.ipynb` (chemins `Path(...)` dans des cellules), `scripts/btc_vol.py` (default argparse) et `REGISTRY.md` (commandes `--out-json`). La migration est **non triviale** : déplacer les JSON casserait les consommateurs. Décision : **garder en l'état, flagger ici**, et traiter dans une PR dédiée quand les chemins seront refactorés en `Path(__file__).parent / "<exp>"`.
-
-| Fichier plat | Réf. canonique cible | Statut |
-|---|---|---|
-| `scripts/results/m4_dlinear_vol_btc_sc.json` | `scripts/results/m4_dlinear_vol_btc_sc/results.json` | À migrer (4 consumers) |
-| `scripts/results/m4_dlinear_vol_btc_sc_debiased.json` | idem sous-répertoire `--debias` | À migrer |
-| `scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` | idem `--debias --recentered` | À migrer |
-| `scripts/results/m4_dlinear_vol_btc_sc_mse.json` | `scripts/results/m4_dlinear_vol_btc_sc_mse/results.json` | À migrer (3 consumers) |
-
-Pour les **nouvelles expériences** : appliquer la convention dès la première écriture. Le pipeline de validation (`scripts/validate_training_package.py`) devrait idéalement rejeter les JSON plats au racine — non implémenté à ce jour.
-
 ---
 
-## Conclusion / Prochaines étapes
+## Ce que ce pipeline démontre
 
-### Ce que ce pipeline démontre
+Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : plutôt que de revendiquer un edge sur un backtest unique, il teste systématiquement des familles de modèles (HAR-RV, LSTM, Transformer, DQN, Decision Transformer, GNN, HMM regime) sous une méthodologie stricte et publie les verdicts — y compris les échecs.
 
-Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : plutôt que de revendiquer un edge sur un backtest unique, il teste systématiquement des familles de modèles (HAR-RV, LSTM, Transformer, DQN, Decision Transformer, GNN, HMM regime) sous une méthodologie stricte et publie les verdicts — y compris les échecs. L'arc pédagogique :
+- **La rigueur méthodologique d'abord** : walk-forward 5-fold expanding, 4-seed block bootstrap, coûts de transaction réalistes (10bps rebalance + 50bps stress), univers anti-FAANG/Mag7 pour éviter le beta-loading déguisé. Sans ces garde-fous, un Sharpe spectaculaire n'est qu'un artefact.
+- **Le paradigme ne crée pas le signal** : qu'un modèle prédise une action discrète (buy/hold/sell) ou le rendement continu, les échelons du ladder restent NO BEATS sous protocole causal.
+- **Trend overlays systématiquement destructeurs** sur cet univers/période ; **vol-targeting = outil de risque, pas d'alpha** (atteint sa cible de volatilité, réduit le MaxDD, à coût Sharpe quasi nul).
+- **La transparence sur les échecs** : le ladder documente publiquement que la plupart de ses échelons sont NO BEATS. C'est tout aussi instructif qu'un edge — **la plupart des idées ML ne battent pas le buy-and-hold**, et le savoir vaut mieux que l'illusion.
 
-- **La rigueur méthodologique d'abord** : walk-forward 5-fold expanding, 4-seed block bootstrap, OOS strict (2027 holdout jamais tuné), coûts de transaction réalistes (10bps rebalance + 50bps stress), univers anti-FAANG/Mag7 pour éviter le beta-loading déguisé. Ces choix sont **la condition de validité** de tout verdict — sans eux, un Sharpe spectaculaire n'est qu'un artefact.
-- **Les leçons transversales** : (1) **action-based >> forecast-based** — le Decision Transformer (classifie buy/hold/sell) surpasse massivement PatchTST (prédit la magnitude), car la couche de traduction forecast→position détruit le signal via coûts et discrétisation ; (2) **trend overlays systématiquement destructeurs** sur cet univers/période (L1/L2/L3 tous NO BEATS, le filtre TSMOM 12-1 isolé comme cause du déficit L5) ; (3) **vol-targeting = outil de risque, pas d'alpha** (atteint sa cible de vol 10.3% vs 16.6%, réduit le MaxDD, à coût Sharpe ~nul).
-- **Les KEEPERS validés** (Curriculum V2, gate 2026-05-16) : S3 HMM Regime (+0.669), S4 Inverse-vol Ridge+HMM (+0.325), M15 LSTM-RV. Reco portfolio S3+S4 monthly = Sharpe ~1.12. **Amendement 2026-09-13** : M12 HAR-RV-J, quatrième keeper historique, est **retiré** — revalidation cluster symétrique **NO BEATS** (0/7, p=1,0, #16004) ; son BEATS Cycle 31 (pseudo-réplication de seeds d'un OLS déterministe + calibration asymétrique de la baseline) n'est pas confirmé, sans réfutation définitive (protocoles et fenêtres diffèrent).
-- **La transparence sur les échecs** : le Ladder #1409 documente publiquement que 5/6 ladder levels sont NO BEATS. C'est aussi important pédagogiquement que les keepers — **la plupart des idées ML ne battent pas le buy-and-hold**, et le savoir vaut mieux que l'illusion.
+> **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (BEATS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec les données du fournisseur, les frais effectifs et le slippage est l'étape de validation obligatoire avant tout déploiement.
 
-### Prochaines étapes
+## Pour aller plus loin
 
-1. **Reproduire les KEEPERS** : cloner le repo, installer les dépendances (`Dependencies` ci-dessus), lancer `python scripts/dry_run_validation.py` pour valider le pipeline CPU, puis entraîner S3/S4 sur données réelles (`python scripts/s3_hmm_regime.py`).
-2. **Bilan L4 Decision Transformer** : BEATS panel @10bps (24/26) — mais la validation hors-échantillon temporelle **réelle** (04/09, train gelé ≤ 2025-06-30) est **NO-BEATS** (0/5 seeds, edge −5.38σ) : l'edge reste cantonné à la coupe transversale (détail : `docs/L4_decision_transformer.md`, §Protocole OOT).
-3. **Migration QC Cloud** : les keepers sont des modèles research standalone (type (c), données yfinance) ; l'étape suivante est l'intégration dans des `QCAlgorithm` déployables (cf. `../projects/` et la série QC-Py).
-4. **Surveiller la thermal safety** : tout training GPU doit passer par `shared/gpu_training.py` (MAX_TEMP=80C, AMP) — le repo RTX 3090/4090 a déjà subi des throttling thermiques.
-5. **Consulter le REGISTRY** : [`REGISTRY.md`](REGISTRY.md) catalogue les 70+ checkpoints par stage (-1/0/1/2) avec verdict BEATS/FAIL/MIXED et l'audit Anti-Bias.
-6. **Lire la méta-analyse** : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) pour la synthèse cross-iteration (parcimonie vs expressivité, vol vs direction).
-
-> **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (KEEPERS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec vraies données, frais réels et slippage est l'étape de validation obligatoire avant tout déploiement.
-
----
-
-*Version anglaise (snapshot pré-bascule) : [`README.en.md`](README.en.md).*
+- **La méthode complète** — design d'ablation, courbes, leçons : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md).
+- **Le plan d'apprentissage** qui ordonne les carnets : [`CURRICULUM.md`](CURRICULUM.md).
+- **Le registre des runs** (checkpoints, verdicts, provenance) : [`REGISTRY.md`](REGISTRY.md).
+- **La rigueur méthodologique de la famille** (baselines vérifiées, échelle de complexité) : [QuantConnect — Pour aller plus loin](../README.md#pour-aller-plus-loin).
+- **Version anglaise** : [`README.en.md`](README.en.md).

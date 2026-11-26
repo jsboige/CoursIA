@@ -2,6 +2,16 @@
 
 Ce document liste les prérequis nécessaires pour lire, comprendre et reproduire les preuves formelles du projet `social_choice_lean/`. Trois parcours sont proposés selon le niveau de familiarité avec Lean 4 et Mathlib.
 
+> **⚑ Tombstone documentaire — les `.lean` cités ci-dessous ne sont plus dans ce dossier.**
+> Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058) (2026-07-11), les sept modules
+> (`Basic`, `Framework`, `Arrow`, `Sen`, `Voting`, `MechanismDesign`, `SortedListCounting`) vivent
+> dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/), home canonique, avec
+> leurs miroirs `_en.lean`. **Tout nom de fichier `.lean` de cette page s'entend donc relativement
+> à ce home**, jamais à ce répertoire : c'est là qu'il faut ouvrir `Basic.lean`, y compris quand la
+> phrase dit « ouvrir `Arrow.lean` ».
+>
+> Les parcours, durées et prérequis Mathlib restent valables — seul le chemin des fichiers a changé.
+
 ---
 
 ## Parcours 1 — Débutant : Découverte de Lean 4
@@ -134,7 +144,11 @@ Pour reproduire les preuves existantes : **45-55h** supplémentaires. Les preuve
 
 ### Extensions possibles
 
-1. **Median Voter Theorem** : Compléter la preuve `sorry` dans `Voting.lean` (comptage Finset + tri)
+1. **Median Voter Theorem** : ~~compléter la preuve `sorry` dans `Voting.lean`~~ — **acquis**.
+   `median_voter_theorem_strict` est prouvé et `Voting.lean` est certifié sans `sorry` ; chercher
+   le trou dans le home canonique ne mènerait à rien. Pour s'entraîner sur le même terrain,
+   reformuler l'énoncé sur une variante (voir les règles de vote ci-dessous) plutôt que de
+   remplir un trou qui a été bouché.
 2. **Nouvelles règles de vote** : Borda, Copeland, Schulze (voir `SCC ι σ`)
 3. **Axiomes supplémentaires** : Anonymat, neutralite, resoluteness
 4. **Integration DominikPeters** : Porter des résultats depuis `SocialChoiceLean` (Phase 3 du README)

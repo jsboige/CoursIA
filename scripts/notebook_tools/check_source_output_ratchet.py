@@ -605,6 +605,16 @@ def main():
                          "Independent of the regression check; the report "
                          "is the ground truth against which any external "
                          "'0 diff' claim should be cross-checked.")
+    ap.add_argument("--advisory", action="store_true",
+                    help="Emit the per-cell annotations as ::warning instead "
+                         "of ::error. The exit code is UNCHANGED (1 on a "
+                         "stale cell); only the annotation severity follows "
+                         "the caller's declared contract. Use it when the "
+                         "check is wired report-only: an ::error on a job "
+                         "that is green BY DESIGN reads as a failure that "
+                         "never happened -- the same shape as the slow-lane "
+                         "pilot's false green (#12856), on the annotation "
+                         "channel instead of the status channel.")
     args = ap.parse_args()
 
     body_text = ""
@@ -671,16 +681,23 @@ def main():
                     print(f"    [{c['index']}] STALE_OUTPUT")
 
     if failing:
+        # The severity follows the caller's contract, never the exit code:
+        # a report-only wiring must not paint an ::error on a job that is
+        # green by design. The workflow's own annotation for the SAME
+        # condition is a ::warning -- the two must not contradict each other.
+        severity = "warning" if args.advisory else "error"
+        suffix = (" (advisory -- this check does NOT block the merge)"
+                  if args.advisory else "")
         for r in failing:
             for c in r["cells"]:
                 if c["regression"]:
-                    print(f"::error file={r['notebook']}::cell [{c['index']}] "
+                    print(f"::{severity} file={r['notebook']}::cell [{c['index']}] "
                           f"source changed but outputs are byte-identical to "
                           f"{args.base} - the committed output was produced "
                           f"by a source that no longer exists. Re-execute, "
                           f"or lift with 'Source-output ratchet: "
                           f"[{c['index']}] exempte -- <reason>' in the PR "
-                          f"body", file=sys.stderr)
+                          f"body{suffix}", file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 

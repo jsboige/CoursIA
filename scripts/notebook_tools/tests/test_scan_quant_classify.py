@@ -2,7 +2,7 @@
 
 Sub-genre `tooling-quant-classifier` distinct de c.1266 `tooling-v3-detector`
 (G-VAR-3 defensable). Golden set fondateur = les 5 PRs de la vague #8052
-(#9426 App-7-Wordle, #9427 App-11-Picross, #9428 Search-5-GeneticAlgorithms,
+(#9426 App-07-Wordle-Python, #9427 App-11-Picross-Python, #9428 Search-5-GeneticAlgorithms,
 #9429 GT-4c-NashExistence, + cas durée estimée structurel).
 """
 
@@ -119,7 +119,7 @@ class TestGoldenSet8052:
     """Golden set = les 5 PRs de la vague #8052 (#9426-#9429) + 1 cas structurel."""
 
     def test_9426_app7_wordle_tentatives(self):
-        """#9426 : App-7-Wordle `~3.3` -> `~3.1` tentatives.
+        """#9426 : App-07-Wordle-Python `~3.3` -> `~3.1` tentatives.
 
         Verdict attendu : STRUCTUREL (metrique d'algorithme, ordre de grandeur
         pedagogique, pas un timing runtime).
@@ -129,7 +129,7 @@ class TestGoldenSet8052:
         assert cls == "STRUCTUREL"
 
     def test_9427_app11_picross_speedup_structurel(self):
-        """#9427 : App-11-Picross speedup `2.78e24x` = STRUCTUREL (combinatorial).
+        """#9427 : App-11-Picross-Python speedup `2.78e24x` = STRUCTUREL (combinatorial).
 
         Verdict attendu : STRUCTUREL (formule `2^225 combinaisons` -> `2.78e24x`).
         """
@@ -138,7 +138,7 @@ class TestGoldenSet8052:
         assert cls == "STRUCTUREL"
 
     def test_9427_app11_picross_timing_machine_dep(self):
-        """#9427 : App-11-Picross `(28-364 ms mesure)` = MACHINE-DEP (timing runtime)."""
+        """#9427 : App-11-Picross-Python `(28-364 ms mesure)` = MACHINE-DEP (timing runtime)."""
         cls, _ = _classify_quant_value("28", 28.0,
                                        "durée d'exécution : (", "-364 ms mesure sur 100 tirages)")
         assert cls == "MACHINE-DEP"
@@ -323,12 +323,12 @@ class TestGoldenSetNitsC1273:
 
 
 # --------------------------------------------------------------------------- #
-#  Tests golden set fondateur Argument_Analysis (c.1275 — vague #9434 ArgAna)
+#  Tests golden set fondateur ArgumentAnalysis (c.1275 — vague #9434 ArgAna)
 # --------------------------------------------------------------------------- #
 
 
 class TestGoldenSetArgAnalysisC1275:
-    """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
+    """Golden set fondateur c.1275 — anti-FP classifier ArgumentAnalysis.
 
     Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
     Argumentation-08b-Executor-Python.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
@@ -1062,8 +1062,8 @@ def _aggregate_total(results):
 # seule chose que le test mesurait.
 # 28 notebooks, chemins relatifs a CORPUS_ML_DFA
 _COHORT_ML_DFA = frozenset((
-    "01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
-    "01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
     "02-ML-Cours/2.1-Workflow-ML.ipynb",
     "02-ML-Cours/2.2-Descente-de-gradient.ipynb",
     "02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb",
@@ -1073,23 +1073,23 @@ _COHORT_ML_DFA = frozenset((
     "02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb",
     "02-ML-Cours/2.8-Theorie-PAC.ipynb",
     "02-ML-Cours/2.9-Grokking-Generalisation.ipynb",
-    "Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb",
-    "Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb",
-    "Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb",
-    "Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb",
-    "Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb",
-    "Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb",
-    "Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb",
-    "Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb",
-    "Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb",
-    "Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb",
-    "Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb",
-    "Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb",
-    "Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb",
-    "Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb",
+    "06-Agents-de-Donnees/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb",
+    "06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb",
+    "06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb",
+    "06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb",
+    "06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb",
+    "06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb",
+    "06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb",
+    "07-Orchestration-d-Agents/Day4-Foundations/Lab8-ADK-Introduction.ipynb",
+    "07-Orchestration-d-Agents/Day4-Foundations/Lab9-First-ADK-Agent.ipynb",
+    "07-Orchestration-d-Agents/Day5-DS-Star/Lab10-File-Analyzer.ipynb",
+    "07-Orchestration-d-Agents/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb",
+    "07-Orchestration-d-Agents/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb",
+    "07-Orchestration-d-Agents/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb",
+    "07-Orchestration-d-Agents/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb",
+    "07-Orchestration-d-Agents/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb",
+    "07-Orchestration-d-Agents/Day7-Production/Lab16-Data-Science-Agent.ipynb",
+    "07-Orchestration-d-Agents/Day7-Production/Lab17-Final-Project.ipynb",
 ))
 
 # 29 notebooks, relatifs a CORPUS_SEARCH_PART1

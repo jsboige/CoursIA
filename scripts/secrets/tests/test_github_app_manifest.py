@@ -61,7 +61,8 @@ def test_excluded_rights_stay_excluded():
 
 def test_pilot_is_not_recreated():
     assert "ai-01" not in gam.LANES
-    assert len(gam.LANES) == 6
+    assert len(gam.LANES) == 7
+    assert "po-2028" in gam.LANES
 
 
 def test_permission_mismatches():

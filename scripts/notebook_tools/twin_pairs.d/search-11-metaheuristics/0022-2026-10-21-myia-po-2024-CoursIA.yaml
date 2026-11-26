@@ -1,0 +1,22 @@
+date: '2026-10-21'
+by: myia-po-2024:CoursIA
+python_sha: 35ad4e28a64a3f84100853bafdd8703acdb7b730
+csharp_sha: 79725c16fd7ef460cc9fb2bc100cb8f53e87bc83
+content_python_sha: 07b77e12ef516267fbbdf433a6a48a5baf12e1ba55028eed3bcad617ec393680
+content_csharp_sha: b7909062edb0c832acaf35e1e1e31ee4ef67d93b0c1fd7c6e932b84b63fbd0a3
+reason: >
+  Attestation PR #21550 (grain #21545 + correctif output-flood), audit firsthand
+  du diff origin/main...HEAD : la PR touche UN seul fichier, le jumeau Python
+  (gh pr view --json files) -- le cote C# est inchange (csharp_sha identique a
+  l'entree 0019). Deux changements de contenu, tous deux cote Python : (1) la
+  cellule de conclusion derivee de l'exposant empirique mesure (grain #21545,
+  conclusion reformulee depuis la sortie executee) ; (2) le correctif a la cause
+  du rouge Output-flood -- journal par epoque de mealpy desactive autour des
+  boucles (commit 91341fc4ac9, motif du carnet), avec re-execution complete
+  21/21 cellules, 0 erreur (outputs reelles commitees). La derive de la paire
+  est donc entirement portee par le jumeau Python ; aucun contenu a porter au
+  C# (la conclusion mealpy/metaheuristiques du jumeau C# reste la sienne).
+  Merge origin/main (9f5a9847086) fait AVANT attestation : les deux autres
+  derives mesurees pre-merge (GameTheory-3, GT-6) etaient des artefacts de
+  branche 122 commits en retard, resolus par le merge -- seule Search-11
+  restait, celle que la PR edite reellement.

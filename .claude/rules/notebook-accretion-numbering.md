@@ -80,6 +80,21 @@ Toute PR qui **ajoute** un notebook numerote porte dans son body une ligne qui d
 
 Le numero libre le plus haut pris par disponibilite est le tell « numero d'opportunite » du §3 (instance mesuree du 2026-10-04 : ICT-45, ramene en ICT-42b par #19153 ; ICT-43 et ICT-47 examines le meme jour sont restes en place sur argument de contenu). La ligne force la decision avant l'ecriture ; l'organe #19144 verifie apres coup profondeur, base de lettre et max+1 sur les noms ajoutes.
 
+## 4ter. Descendre en sous-serie : le palier garde son numero (sign-off user 2026-11-15, Q191)
+
+Quand une branche est trop epaisse pour se lire, l'autre sortie que la fusion du §4 est la **descente en sous-serie**. Elle obeit a trois conventions :
+
+1. **Le dossier porte le numero de son palier** (`ICT-07-<Sujet>/`), et un **capstone** occupe a la racine le numero nu de ce palier. Il presente la sous-serie et en reprend les resultats. Une descente ne laisse donc **aucun trou** a la racine : une PR de descente livre le capstone, ou nomme avant le merge l'issue qui le portera (decision user du 2026-09-25).
+2. **Dans le dossier, les membres gardent leur nom.** L'ancien numero devient un identifiant d'etape, declare dans le README du dossier par une table `etape -> carnet`. Le README de la serie mere et celui du dossier pointent l'un vers l'autre.
+3. **Les carnets d'un meme objet forment un seul dossier**, en escaliers nommes derriere un capstone, plutot que plusieurs dossiers freres.
+
+La numerotation est **la lecture d'un cheminement**. Deux consequences sur une serie dont la seconde moitie s'est remplie au fil des ajouts :
+
+- un numero eleve pose « a la fin par defaut » est le tell « numero d'opportunite » du §3 : il redescend dans l'accretion du numero qui introduit son substrat, sa mesure ou son objet ;
+- un carnet sans numero recoit une place : un numero du parcours, une accretion, ou une sous-serie derriere un capstone numerote.
+
+Doctrine du mainteneur citee et instance ICT : [notebook-renumbering-detail.md §7](../../docs/reference/notebook-renumbering-detail.md#7-la-descente-en-sous-serie-et-la-doctrine-du-cheminement-2026-11-15).
+
 ## 5. Protocole (HARD, l'ordre compte)
 
 1. **Lire le contenu**, pas les titres. Un mapping derive de titres et de volumes est une hypothese : l'annoncer comme telle.
@@ -93,7 +108,7 @@ Le numero libre le plus haut pris par disponibilite est le tell « numero d'oppo
 
 ## 6. Ce qu'une renum casse — et l'organe qui le rattrape
 
-Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq ont leur organe :
+Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, chacune a son organe, et le sixieme se lance contre un clone du depot consommateur :
 
 | Surface | Organe |
 |---|---|
@@ -102,11 +117,11 @@ Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq on
 | Accents perdus dans les cibles | `scripts/notebook_tools/detect_link_target_regression.py` |
 | Rendu des liens de README de serie | `scripts/notebook_tools/check_notebook_link_render.py` |
 | **Libelle qui ment sur sa cible** | `scripts/notebook_tools/check_link_label_agreement.py` — **sur `main` depuis la PR #14625** (#14624) |
-| **Referents hors depot** | **aucun organe possible** — le catalogue du depot projets etudiant `jsboigeEPF/2026-MSMIN5IN52-GenAI` (`docs/CATALOGUE.md`), consommateur connu des chemins `MyIA.AI.Notebooks/GenAI/**` (#15289) |
+| **Referents hors depot** | `scripts/notebook_tools/check_external_consumer_links.py --consumer <clone>` — hors CI, a lancer contre un clone du consommateur ; consommateur connu : le catalogue du depot projets etudiant `jsboigeEPF/2026-MSMIN5IN52-GenAI` (`docs/CATALOGUE.md`), qui cite les chemins `MyIA.AI.Notebooks/GenAI/**` (#15289) |
 
 **La cinquieme est celle que le sweep rate**, et c'est la sequelle propre a la renumerotation : les quatre premiers organes verifient que la cible **existe**, aucun ne verifie que le **libelle dit la verite**. Un `[Search-12](.../Search-03b-....ipynb)` passe les quatre. Mesure du 2026-09-04 : **32 desaccords sur 2194 fichiers**, dont la sequelle directe de #13770.
 
-**La sixieme sort du depot — et c'est la seule sans organe.** Le catalogue etudiant reference les notebooks par des liens absolus `github.com/jsboige/CoursIA/blob/main/...` ; aucun balayage du depot ne traverse la frontiere de depot, le vert d'un rollup ne dit donc rien de ces referents. Instance fondatrice : **#15289** — la renumerotation #15085 (zero-pad `GenAI/Texte` 1..9 -> 01..09) y casse **9 liens sur 7 chemins**, invisible au rollup vert. Aide-memoire : avant toute renum sous `GenAI/**`, grep ce catalogue dans la meme tranche (mise a jour embarquee ou report coordonne, jamais un renommage muet des deux cotes).
+**La sixieme sort du depot — son organe ne tourne donc pas en CI.** Le catalogue etudiant reference les notebooks par des liens absolus `github.com/jsboige/CoursIA/blob/main/...` ; aucun balayage du depot ne traverse la frontiere de depot, le vert d'un rollup ne dit donc rien de ces referents. Instance fondatrice : **#15289** — la renumerotation #15085 (zero-pad `GenAI/Texte` 1..9 -> 01..09) y casse **9 liens sur 7 chemins**, invisible au rollup vert. Seconde mesure, 2026-11-13 : 3 liens casses sur les 121 du meme catalogue, deux par la descente vers `GenAI/Audio/04-Applications/04-Voix/` (cible retrouvee par l'organe), un par la fusion de `10f` dans `10d` (#22525, cible disparue). Geste : avant toute renum sous `GenAI/**`, lancer `check_external_consumer_links.py --consumer <clone du depot consommateur> --ref <tete de la PR>` dans la meme tranche ; les cibles deplacees se reecrivent avec `--apply` dans le clone, les cibles disparues se tranchent a la main (mise a jour embarquee ou report coordonne, jamais un renommage muet des deux cotes).
 
 Deux residus supplementaires se traitent dans la meme tranche : les cles orphelines de `pedagogy_density_baseline.json` (#13815) et la liste de rendu Quarto (#13931).
 

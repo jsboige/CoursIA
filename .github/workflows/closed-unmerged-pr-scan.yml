@@ -1,0 +1,83 @@
+name: Closed-unmerged PR scan
+
+# The POST-CLOSE organ for issue #22166. `merge_ready`, the belt, the
+# prevalidation dossiers and B.0 only read OPEN PRs. A PR closed WITHOUT a
+# merge leaves every surface at the very moment its content becomes orphaned:
+# the branch survives, the commits survive, and nobody reads them any more.
+#
+# Founding case #20374: a lane force-pushed a head identical to its base, the
+# diff went empty, GitHub closed the PR, and the real commit landed one second
+# later -- a closed PR does not reopen itself. For eleven days nothing saw it.
+#
+# This scan enumerates closed-without-merge PRs over a window and names each
+# one: ACCIDENTAL_EMPTY_CLOSE / ORPHANED_CONTENT / SUPERSEDED / INTEGRATED /
+# UNKNOWN. It READS AND NAMES. It never reopens, recreates, closes, or labels
+# -- the decision stays with the coordinator.
+#
+# ADVISORY, never blocking (same posture as orphan-branch-scan.yml):
+#   - The job ALWAYS exits 0. The actionable payload is the marker-guarded
+#     report upserted on issue #22166, NEVER a red conclusion.
+#   - `UNKNOWN` is explicitly never a green: it means the measurement failed.
+#
+# Scheduled sweep (daily) is the trigger. #22166 is the report home: it is the
+# organ's own spec, and its daily output is the organ's output.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 05:41 UTC.
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: closed-unmerged-pr-scan
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Scan closed-without-merge PRs (advisory)"
+    # GitHub-hosted, et c'est MESURE, pas un choix par defaut : un job
+    # self-hosted exige une entree dans SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # (`scripts/ci/check_self_hosted_runner_policy.py`). Sans elle,
+    # `Scripts Tests (CPU)` rend WORKFLOW_NOT_ALLOWED sur ce workflow (test
+    # test_current_repository_self_hosted_jobs_satisfy_isolation_policy,
+    # mesure a f8a6d41e66). L'allowlist etait l'autre voie ; le fichier est
+    # touche par une PR OUVERTE d'une autre lane (#21413), donc l'y ajouter
+    # exposerait ce merge a un conflit -- pour un tir QUOTIDIEN qui ne pese
+    # rien sur le pool. Repasser en self-hosted = ajouter l'entree d'allowlist
+    # dans le meme commit, sinon la garde rougit.
+    #
+    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
+    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
+    # same-repo n'est requise.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Fetch ALL remote heads
+        # The scan diffs each closed PR's branch against main for content
+        # identity, so every remote head's objects must be present locally.
+        run: |
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run scan and upsert report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Always exit 0: an advisory that could turn the build red is a gate,
+          # and this is not a gate. The report is the payload, not the exit.
+          python scripts/ci/list_closed_unmerged_prs.py --window-days 14 --post-to 22166 \
+            || echo "scan advisory: non bloquant"
+          exit 0

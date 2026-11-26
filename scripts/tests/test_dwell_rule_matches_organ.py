@@ -16,6 +16,14 @@ l'inverse (« cadence MESUREE 2 h 33 - 5 h 18 entre tirs, **pas horaire** »).
 Le defaut a vecu ~5 jours sans etre vu parce que **rien ne comparait les deux
 surfaces**. C'est ce que ce fichier fait.
 
+#21808 (f2833def99) a deporte le REcit DWELL (conditions conjonctives,
+historique #15859/#16149) vers ``docs/reference/git-workflow-detail.md`` §4.
+Les assertions de recit lisent desormais le doc de detail ; celles qui
+epinglent ce que la REGLE doit dire elle-meme (matrice des gestes, predicat
+nomme, absence des claims perimees) restent sur la regle. Consequence
+mesuree : sans ce deplacement, le test restait rouge sur main apres le
+deport du contenu -- le temoin de cette classe est l'issue #22279.
+
 Ce que l'epingle couvre, et ce qu'elle ne couvre PAS (honnetete)
 ---------------------------------------------------------------
 Elle couvre des **invariants inter-surface** : deux surfaces qui doivent dire
@@ -35,6 +43,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RULE = REPO_ROOT / ".claude" / "rules" / "git-workflow.md"
+DETAIL = REPO_ROOT / "docs" / "reference" / "git-workflow-detail.md"
 ORGAN = REPO_ROOT / "scripts" / "ci" / "merge_dwell.py"
 
 #: La phrase d'AVANT correctif, verbatim (pour les controles negatifs).
@@ -118,6 +127,24 @@ def _dwell_section() -> str:
     return rest[:bounds[0]] if bounds else rest
 
 
+def _detail_dwell_section() -> str:
+    """Le voisinage DWELL du doc de detail, borne a la fin de sa section 4.
+
+    Le REcit DWELL vit ici depuis #21808 (f2833def99) : la regle porte la
+    MATRICE DES GESTES (ce qu'un geste fait au plancher), le doc de detail
+    porte le recit (pourquoi, conditions conjonctives, historique date).
+    Meme borne haute que ``_dwell_section`` -- la prochaine frontiere ``## ``
+    -- sans quoi une assertion de presence pourrait etre satisfaite par du
+    texte sans rapport d'une section voisine.
+    """
+    text = DETAIL.read_text(encoding="utf-8")
+    start = text.find("## 4. DWELL")
+    assert start >= 0, "le doc de detail n'a plus de section 4 DWELL : epingle a reancrer"
+    rest = text[start:]
+    bounds = [m.start() for m in re.finditer(r"\n## ", rest)]
+    return rest[:bounds[0]] if bounds else rest
+
+
 # ------------------------------------------------------- 1. la claim perimee
 
 def test_rule_does_not_claim_update_branch_resets_the_floor():
@@ -143,11 +170,16 @@ def test_negative_control_the_old_predicate_wording_is_flagged():
     assert predicate_is_named(OLD_LINE) is False
 
 
-def test_rule_states_the_three_conjunctive_conditions():
-    """Les trois conditions sont conjonctives : en oublier une rend le predicat faux."""
-    section = _norm(_dwell_section())
+def test_detail_states_the_three_conjunctive_conditions():
+    """Les trois conditions sont conjonctives : en oublier une rend le predicat faux.
+
+    Le recit vit dans le doc de detail §4 depuis #21808 -- l'epingle suit
+    son sujet (une epingle qui lit l'ancien emplacement reste rouge apres un
+    deport de contenu, temoin #22279).
+    """
+    section = _norm(_detail_dwell_section())
     for marker in ("deux parents", "ancetre de la base", "auto-merge"):
-        assert marker in section, "condition absente de la regle : {}".format(marker)
+        assert marker in section, "condition absente du doc de detail §4 : {}".format(marker)
 
 
 def test_rule_carries_the_gesture_matrix():
@@ -160,10 +192,13 @@ def test_rule_carries_the_gesture_matrix():
 # ------------------------------------- 3. #15859 conserve comme historique
 
 def test_15859_kept_as_corrected_history():
-    """Acceptance #16962 : le defaut a existe, on le date, on ne l'efface pas."""
-    section = _dwell_section()
-    assert "#15859" in section, "le defaut d'origine doit rester date (#15859)"
-    assert "#16149" in section, "le correctif d'origine doit rester date (#16149)"
+    """Acceptance #16962 : le defaut a existe, on le date, on ne l'efface pas.
+
+    L'historique date vit dans le doc de detail §4 depuis #21808.
+    """
+    section = _detail_dwell_section()
+    assert "#15859" in section, "le defaut d'origine doit rester date (#15859) au doc de detail §4"
+    assert "#16149" in section, "le correctif d'origine doit rester date (#16149) au doc de detail §4"
 
 
 # ------------------------------- 4. l'invariant de cadence, organe <-> regle

@@ -93,7 +93,7 @@
 - Cross-refs : `GameTheory/`, `Tweety-9-Preferences`
 
 **Autres series**:
-- `Argument_Analysis/`, `Planners/`, `RDF.Net/`, `SemanticWeb/`, `SmartContract/`
+- `ArgumentAnalysis/`, `Planners/`, `RDF.Net/`, `SemanticWeb/`, `SmartContract/`
 
 **Demos cliquables a preparer** :
 1. Tweety-2 cellule Modus Ponens en live (illustre theorie slide 13)

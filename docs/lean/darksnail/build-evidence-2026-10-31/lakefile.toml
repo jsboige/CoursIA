@@ -1,0 +1,11 @@
+name = "DsnailEnvelope"
+version = "0.1.0"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.33.0"
+
+[[lean_lib]]
+name = "DsnailEnvelope"
+roots = ["DsnailEnvelope", "Formalization.OcclusionTriad", "Formalization.BlockBridge"]

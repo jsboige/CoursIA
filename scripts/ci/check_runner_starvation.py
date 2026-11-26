@@ -43,6 +43,24 @@ Le predicat STARVATION ne demande aucun secret ; le predicat EXTINCTION lit
 read-only : incapable de minter un registration-token). Sans PAT, l'organe
 degrade proprement sur le seul symptome.
 
+COUT ET HONNETETE DE LA LECTURE (#22215, mesure du 2026-10-23 a 15:35Z)
+-----------------------------------------------------------------------
+Le passage lisait les jobs de CHAQUE run de la fenetre -- ~380 appels a
+15:20Z, et le heartbeat `workflow_run` a fait tourner la sonde 104 fois en
+3 h. Deux corrections, dans le meme geste parce que la seconde depend de la
+premiere :
+
+  - les jobs d'un run ne peuvent pas etre plus vieux que le run : un run de
+    moins de `starve_minutes` ne peut pas porter un job affame et ne vaut
+    aucun appel ; les autres sont lus du PLUS VIEUX au plus recent dans la
+    limite de `--job-read-budget` ; cote in_progress, un echantillon suffit
+    (le predicat ne demande que l'existence d'un slot qui sert) ;
+  - chaque echec d'appel est compte et NOMME (endpoint, code, message). Un
+    passage troue ne conclut ni `OK` ni `STARVATION` : il rend
+    `LECTURE API INCOMPLETE`. Avant, `_gh_json` rendait `None` et l'appelant
+    faisait `continue` -- le run 39976669812 (15:20Z) a annonce « 311 job(s)
+    queued ... et AUCUN job in_progress » alors que 34 runs l'etaient.
+
 Sortie : exit 1 + annotation ::error:: sur EXTINCTION ou STARVATION ;
 ::warning:: sur perte partielle (online < WARN_FLOOR) sans extinction, ou sur
 CADENCE SERVIE (le scheduler GitHub ne livre plus l'evenement schedule, #15332).
@@ -56,8 +74,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
+import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -71,26 +92,129 @@ DEFAULT_WINDOW_MAX_MINUTES = 360.0
 # un seuil dans la bande fabrique des fausses alertes en service normal --
 # revue ai-01 du 2026-09-16 sur #16388).
 DEFAULT_CADENCE_WARN_MINUTES = 360.0
+# #22215 : bornes de lecture. Un passage coutait un appel `jobs` par run de la
+# fenetre -- ~380 appels a 15:20Z le 2026-10-23, et 104 passages en 3 h.
+# Le budget couvre les runs queued les plus vieux (les seuls qui peuvent
+# affamer) ; l'echantillon in_progress ne sert qu'a prouver qu'un slot sert.
+DEFAULT_JOB_READ_BUDGET = 120
+DEFAULT_IN_PROGRESS_SAMPLE = 20
 RUNS_PAGE_SIZE = 100
+# Cutoff de la profondeur VIVANTE (#26719). Il DOIT rester egal au defaut du
+# CLI `--cutoff` de `scripts/ci/gh_queue_health.py` : la note de profondeur
+# annonce « la MEME mesure que --live-depth », et un cutoff different ferait
+# porter les deux chiffres sur deux populations differentes. Le test de
+# non-regression de `tests/test_runner_starvation_live_depth.py` compare les
+# deux valeurs a la source.
+LIVE_DEPTH_CUTOFF = "2026-08-20"
+# #26739 -- le seuil de saturation PARTAGE avec le balayeur de portes stale
+# (meme valeur que `QUEUE_SATURATED_N` dans son workflow) : en dessous, la
+# mesure complete de la profondeur vivante ne peut pas changer le verdict de
+# saturation, donc elle n'est pas payee (114 appels par invocation, sur un
+# quota horaire partage par tous les workflows du depot).
+LIVE_DEPTH_SATURATION_THRESHOLD = 800
+# Inventaire DECLARE des hotes de pool (#20697 point 4). Vit a cote de l'organe
+# pour que le defaut soit resolu sans argument : une sonde dont le predicat
+# depend d'un fichier qu'aucun workflow ne passe resterait inerte.
+DEFAULT_DECLARED_HOSTS = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "declared_runner_hosts.json")
 
 
-def _gh_json(args: list[str], token: str | None = None) -> object | None:
-    """Run `gh api ...` and parse stdout as JSON. None on failure."""
+@dataclass
+class CallStats:
+    """Compteur des appels `gh` d'un passage, echecs compris (#22215).
+
+    Avant ce compteur, `_gh_json` rendait `None` sur tout code retour non nul
+    et l'appelant faisait `continue` : un appel `jobs` en echec (quota, 5xx)
+    ne laissait AUCUNE trace, et le passage concluait « AUCUN job in_progress »
+    -- c'est-a-dire STARVATION -- sur une lecture trouee (run 39976669812 du
+    2026-10-23 a 15:20Z : 311 jobs queued annonces alors que 34 runs etaient
+    in_progress).
+    """
+
+    calls: int = 0
+    failures: list[tuple[str, int, str]] = field(default_factory=list)
+
+    @property
+    def failed(self) -> int:
+        return len(self.failures)
+
+    def record(self, endpoint: str, code: int, message: str) -> None:
+        self.failures.append((endpoint, code, message.strip()[:200]))
+
+    def summary(self) -> str:
+        return f"appels gh: {self.calls}, echecs: {self.failed}"
+
+    def examples(self, limit: int = 3) -> str:
+        return "; ".join(
+            f"{ep} rc={code} ({msg or 'sans message'})"
+            for ep, code, msg in self.failures[:limit]
+        )
+
+
+# Reserve NanoClaw #22234 : un 5xx/429 isole ne doit pas aveugler le passage
+# au rythme du heartbeat -- reprise bornee a UNE tentative de plus avant de
+# declarer la lecture impossible. Les indices transitoires sont lus dans le
+# message de gh (le code retour seul ne distingue pas 503 de 404).
+TRANSIENT_HINTS = (
+    "rate limit", "service unavailable", "bad gateway",
+    "server error", "try again", "timed out",
+)
+GH_RETRY_ATTEMPTS = 2
+
+
+def _is_transient(message: str) -> bool:
+    low = message.lower()
+    return any(h in low for h in TRANSIENT_HINTS)
+
+
+def _gh_json(
+    args: list[str],
+    token: str | None = None,
+    stats: CallStats | None = None,
+) -> object | None:
+    """Run `gh api ...` and parse stdout as JSON. None on failure.
+
+    Chaque echec est enregistre dans `stats` quand le passage en fournit un :
+    le motif de l'echec (endpoint, code retour, message de `gh`) est la donnee
+    qui distingue une file vide d'une lecture impossible (#22215). Sans
+    `stats`, l'appel reste silencieux -- reserve aux lectures dont l'echec est
+    deja modelise ailleurs (inventaire des runners sans droit admin).
+
+    Un echec TRANSITOIRE (5xx, rate limit) est rejoue une fois avant d'etre
+    declare : chaque tentative compte dans `stats.calls`, seul le resultat
+    FINAL est enregistre -- une reussite apres reprise n'est pas un echec.
+    """
     env = dict(os.environ)
     if token:
         env["GH_TOKEN"] = token
-    proc = subprocess.run(
-        ["gh", "api", *args], capture_output=True, text=True,
-        check=False, encoding="utf-8", errors="replace", env=env,
-    )
-    if proc.returncode != 0:
-        return None
-    if not proc.stdout.strip():
-        return None
-    try:
-        return json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        return None
+    endpoint = args[0] if args else "?"
+    for attempt in range(GH_RETRY_ATTEMPTS):
+        proc = subprocess.run(
+            ["gh", "api", *args], capture_output=True, text=True,
+            check=False, encoding="utf-8", errors="replace", env=env,
+        )
+        if stats is not None:
+            stats.calls += 1
+        if proc.returncode != 0:
+            message = proc.stderr or proc.stdout or ""
+            if (_is_transient(message)
+                    and attempt + 1 < GH_RETRY_ATTEMPTS):
+                time.sleep(1.0)
+                continue
+            if stats is not None:
+                stats.record(endpoint, proc.returncode, message)
+            return None
+        if not proc.stdout.strip():
+            if stats is not None:
+                stats.record(endpoint, 0, "stdout vide")
+            return None
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            if stats is not None:
+                stats.record(endpoint, 0, "stdout non-JSON")
+            return None
+    return None
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -106,11 +230,28 @@ def _parse_iso(value: str | None) -> datetime | None:
 class RunnerInventory:
     online: list[str] = field(default_factory=list)
     offline: list[str] = field(default_factory=list)
+    # #22937 phase B : l'inventaire distingue le slot EN LIGNE du slot
+    # LIBRE. Un runner en ligne mais occupe ne peut pas absorber un
+    # debordement : confondre les deux ferait annoncer une capacite locale
+    # qui n'existe pas. `busy`/`idle` sont additifs (les appelants
+    # existants ne les lisent pas).
+    busy: list[str] = field(default_factory=list)
+    idle: list[str] = field(default_factory=list)
+    # Runner en ligne dont le champ `busy` est ABSENT de la reponse : son
+    # occupation est INCONNUE. Il n'est donc pas comptabilise comme libre
+    # (fail-CLOSED vers « capacite disponible »), mais il est nomme pour que
+    # le rapport dise ce qu'il ne sait pas.
+    unknown: list[str] = field(default_factory=list)
 
     @property
     def available(self) -> bool:
         """False = l'inventaire n'a pas pu etre lu (pas de droit admin/PAT)."""
         return True
+
+    @property
+    def free(self) -> int:
+        """Nombre de slots en ligne ET libres pour le label demande."""
+        return len(self.idle)
 
 
 @dataclass
@@ -123,6 +264,305 @@ class InventoryUnavailable(RunnerInventory):
 
 
 @dataclass
+class DeclaredHosts:
+    """Inventaire DECLARE des hotes de pool (#20697 point 4).
+
+    Le predicat `evaluate_host_loss` ne voit que les hotes PRESENTS dans
+    l'inventaire mesure. Un hote dont ZERO runner est enregistre n'y figure
+    pas du tout : c'est precisement le cas fondateur de #20697 -- dix
+    conteneurs vivants sur `myia-ai-01-wsl`, zero runner inscrit cote GitHub
+    pendant environ deux jours, aucun signal. Le predicat exige `offline > 0`
+    et ne peut donc pas voir l'absence totale.
+
+    Ce que `scripts/ci/declared_runner_hosts.json` apporte est la seule chose
+    qui manquait : la liste de ce qui DEVRAIT exister, comparee a ce qui est
+    mesure. Le fichier est une DECLARATION d'intention (qui sert quel label),
+    pas une photo : c'est au superviseur qui cree ou retire des slots de le
+    tenir a jour, et l'avertissement nomme le fichier pour que le geste soit
+    evident.
+
+    `hosts` est restreint au label mesure par `load_declared_hosts` : un hote
+    declare pour `coursia-linux` ne doit pas alerter quand la sonde tourne sur
+    `coursia-waiter`, sinon chaque passage crie sur les hotes des autres.
+    """
+    hosts: dict[str, int] = field(default_factory=dict)  # host -> slots attendus
+    source: str = ""
+    error: str = ""
+    available: bool = True
+
+
+def load_declared_hosts(path: str | None, label: str) -> DeclaredHosts:
+    """Charge l'inventaire declare, restreint au label mesure.
+
+    Absence du fichier par defaut = pas d'erreur (compatibilite : l'organe
+    reste utilisable sans declaration). Un chemin DEMANDE explicitement et
+    introuvable, ou un fichier illisible, rend `available=False` avec sa
+    raison -- l'appelant en fait une note, jamais un rouge : un inventaire
+    qu'on ne sait pas lire ne prouve pas qu'un hote a disparu.
+    """
+    if not path:
+        return DeclaredHosts(available=False, error="aucun chemin d'inventaire declare")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        return DeclaredHosts(available=False, source=path,
+                             error=f"fichier absent ({path})")
+    except (OSError, json.JSONDecodeError) as exc:
+        return DeclaredHosts(available=False, source=path,
+                             error=f"illisible ({exc})")
+    entries = data.get("hosts")
+    if not isinstance(entries, list):
+        return DeclaredHosts(available=False, source=path,
+                             error="champ 'hosts' absent ou non-liste")
+    hosts: dict[str, int] = {}
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+        host = item.get("host")
+        labels = item.get("labels") or []
+        if not isinstance(host, str) or not host:
+            continue
+        if label not in labels:
+            continue
+        slots = item.get("slots")
+        hosts[host] = int(slots) if isinstance(slots, int) and slots > 0 else 0
+    return DeclaredHosts(hosts=hosts, source=path)
+
+
+# ---------------------------------------------------------------------------
+# MIROIR D'OBJETS (#26453) -- l'alerte `[WARN][mirror]` doit REMONTER ici.
+# ---------------------------------------------------------------------------
+# Incident mesure : le miroir d'ai-01 n'etait plus rafraichi depuis le
+# 26/10, et personne ne l'a vu pendant 19 jours. Le superviseur ecrivait bien
+# une ligne d'alerte, mais dans un journal que personne ne lisait : l'alerte
+# n'atteignait AUCUNE surface. Ce bloc la branche sur un organe qu'une lane
+# lit (le rapport de ce script, et son payload JSON).
+#
+# Les trois sources sont LOCALES a l'hote qui porte le miroir :
+#   - `<parent du miroir>/.objects-mirror.fails` : compteur d'echecs
+#     consecutifs (pose par `mirror_one_shot`, cf #26459) ;
+#   - `<parent du miroir>/.objects-mirror.ok` : horodatage du dernier fetch
+#     REUSSI (le meme PR) ;
+#   - `<state_dir>/objects-mirror.log` : journal du superviseur, d'ou la
+#     derniere ligne `[WARN][mirror]` VERBATIM (cause + compteur).
+#
+# Hors de l'hote du miroir (runner GitHub-hosted, machine qui ne porte pas le
+# parc), AUCUN de ces fichiers n'existe : le retour est `available=False` avec
+# une raison. C'est une NOTE, jamais un rouge -- l'absence du miroir ici ne
+# prouve pas qu'il est casse ailleurs.
+DEFAULT_MIRROR_FAIL_WARN = 3
+# Fraicheur maximale du compteur pour qu'une panne soit dite ACTIVE : au
+# dela, la boucle de rafraichissement est arretee (service desactive, hote
+# eteint) -- c'est un constat DIFFERENT d'un miroir qui echoue, et le
+# confondre produirait un rouge permanent sur un etat fige depuis des
+# semaines. La comparaison se fait sur la date de MODIFICATION du compteur,
+# qui est reecrite a chaque echec ET a chaque succes.
+DEFAULT_MIRROR_COUNTER_FRESH_S = 600.0
+DEFAULT_MIRROR_STATE_DIR = "/var/lib/coursia-runner"
+DEFAULT_MIRROR_PATH = "/opt/hostedtoolcache/coursia-mirror.git"
+MIRROR_WARN_MARKER = "[WARN][mirror]"
+# Taille de la queue de journal lue : la ligne d'alerte est en FIN de
+# journal (les echecs s'y accumulent), et le journal peut avoir grossi.
+MIRROR_LOG_TAIL_BYTES = 64 * 1024
+
+
+@dataclass
+class MirrorState:
+    """Etat du miroir d'objets, tel que l'hote qui le porte l'ecrit."""
+
+    available: bool = False
+    reason: str = ""
+    fails: int | None = None
+    counter_age_s: float | None = None
+    ok_age_s: float | None = None
+    warn_line: str = ""
+    log_path: str = ""
+    fails_path: str = ""
+    threshold: int = DEFAULT_MIRROR_FAIL_WARN
+
+
+def _read_int_file(path: str) -> tuple[int | None, float | None]:
+    """(valeur, age en secondes) d'un fichier d'entier ; (None, None) sinon."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            raw = fh.read().strip()
+    except OSError:
+        return None, None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None, None
+    try:
+        age = max(0.0, time.time() - os.path.getmtime(path))
+    except OSError:
+        age = None
+    return value, age
+
+
+def _tail_lines(path: str, max_bytes: int = MIRROR_LOG_TAIL_BYTES) -> list[str]:
+    """Dernieres lignes d'un journal, sans le charger entier en memoire."""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - max_bytes))
+            raw = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return []
+    return raw.splitlines()
+
+
+def read_mirror_state(state_dir: str, mirror_path: str,
+                      threshold: int = DEFAULT_MIRROR_FAIL_WARN) -> MirrorState:
+    """Lit l'etat du miroir d'objets sur l'hote qui le porte.
+
+    Aucun acces reseau : ce sont les fichiers que le superviseur ecrit deja
+    (#26459). La lecture est best-effort et LOCALE : hors de l'hote du
+    miroir, elle rend `available=False` avec une raison -- jamais une
+    erreur, jamais un rouge.
+    """
+    state = MirrorState(threshold=threshold)
+    parent = os.path.dirname(os.path.abspath(mirror_path)) or "/"
+    fails_path = os.path.join(parent, ".objects-mirror.fails")
+    ok_path = os.path.join(parent, ".objects-mirror.ok")
+    log_path = os.path.join(state_dir, "objects-mirror.log")
+    state.fails_path = fails_path
+    state.log_path = log_path
+
+    fails, age = _read_int_file(fails_path)
+    state.fails = fails
+    state.counter_age_s = age
+    if os.path.exists(ok_path):
+        try:
+            state.ok_age_s = max(0.0, time.time() - os.path.getmtime(ok_path))
+        except OSError:
+            state.ok_age_s = None
+
+    for line in reversed(_tail_lines(log_path)):
+        if MIRROR_WARN_MARKER in line:
+            state.warn_line = line.strip()
+            break
+
+    if state.fails is None and not state.warn_line:
+        state.reason = (
+            f"ni compteur d'echecs ({fails_path}) ni journal ({log_path}) "
+            f"lisibles -- ce passage tourne hors de l'hote qui porte le miroir")
+        return state
+    state.available = True
+    return state
+
+
+def mirror_verdict(state: MirrorState,
+                   counter_fresh_s: float = DEFAULT_MIRROR_COUNTER_FRESH_S,
+                   ) -> tuple[list[str], list[str], list[str]]:
+    """(errors, warnings, notes) de l'etat du miroir.
+
+    La panne ACTIVE (compteur d'echecs >= seuil ET compteur fraichement
+    reecrit) est un ROUGE : la boucle tourne et le miroir echoue -- c'est
+    exactement l'incident du 26/10, ou le miroir etait fige depuis 19 jours.
+    Un compteur fige (vieux) est une NOTE : la boucle est arretee ou l'etat
+    estancien, et la cause n'est pas la meme -- un rouge permanent sur un
+    etat fige apprendrait a etre ignore (cf la discipline anti-FP de cet
+    organe).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    notes: list[str] = []
+    if not state.available:
+        notes.append(f"miroir: etat non lisible ici ({state.reason}) -- "
+                     f"ce passage ne conclut rien sur le miroir")
+        return errors, warnings, notes
+
+    fails = state.fails
+    age = state.counter_age_s
+    if fails is None:
+        notes.append("miroir: compteur d'echecs illisible "
+                     f"({state.fails_path}) -- l'etat du miroir n'est pas "
+                     f"conclu")
+    else:
+        fresh = age is not None and age <= counter_fresh_s
+        if fails >= state.threshold and fresh:
+            line = state.warn_line or (f"{MIRROR_WARN_MARKER} refresh en echec "
+                                       f"{fails} fois de suite")
+            errors.append(
+                f"MIROIR FIGE: {line} -- {fails} echec(s) consecutifs "
+                f"(seuil {state.threshold}), compteur reecrit il y a "
+                f"{age:.0f}s. La boucle de rafraichissement tourne et echoue : "
+                f"chaque checkout retelecharge l'historique complet depuis le "
+                f"serveur. Verifier la propriete du miroir (chown) et le reseau."
+            )
+        elif fails >= state.threshold:
+            notes.append(
+                f"miroir: {fails} echec(s) consecutifs recorded(s) (seuil "
+                f"{state.threshold}) MAIS le compteur n'est plus reecrit "
+                f"(dernier ecrit il y a {age:.0f}s) : la boucle de "
+                f"rafraichissement est arretee ou l'etat est fige depuis "
+                f"longtemps -- cause differente d'un miroir qui echoue, donc "
+                f"pas un rouge."
+                if age is not None else
+                f"miroir: {fails} echec(s) consecutifs records (seuil "
+                f"{state.threshold}), age du compteur inconnu -- pas un rouge."
+            )
+        else:
+            notes.append(f"miroir: {fails} echec(s) consecutif(s) (seuil "
+                         f"{state.threshold}) -- aucun gel constate")
+    if state.ok_age_s is not None:
+        notes.append(f"miroir: dernier rafraichissement reussi il y a "
+                     f"{state.ok_age_s:.0f}s")
+    return errors, warnings, notes
+
+
+def run_mirror_only(args) -> int:
+    """Verdict du MIROIR SEUL : aucun appel API, aucun inventaire.
+
+    Ce mode sert le job de PR (#26465). Le job tourne sur le slot
+    auto-heberge qui **porte** le miroir : c'est la seule surface ou
+    l'etat est local, et la ou la conclusion peut atterrir sur la PR --
+    donc sur une surface qu'une lane lit sans y penser.
+
+    La lecture reste best-effort : hors de l'hote du miroir, l'etat est
+    illisible et le verdict est une NOTE, jamais un rouge (discipline
+    anti-FP : l'absence du miroir ici ne prouve rien sur le miroir
+    ailleurs).
+
+    Le cout est nul en quota : ce mode ne lit que des fichiers locaux.
+    """
+    state = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                               threshold=args.mirror_fail_warn)
+    errors, warnings, notes = mirror_verdict(state)
+    payload = {
+        "status": "ERROR" if errors else "OK",
+        "errors": errors,
+        "warnings": warnings,
+        "notes": notes,
+        "measurement": "mirror-only",
+        "gh_calls": 0,
+        "mirror": {
+            "available": state.available,
+            "reason": state.reason,
+            "fails": state.fails,
+            "threshold": state.threshold,
+            "counter_age_s": state.counter_age_s,
+            "ok_age_s": state.ok_age_s,
+            "warn_line": state.warn_line,
+            "log_path": state.log_path,
+            "fails_path": state.fails_path,
+        },
+    }
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        for n in notes:
+            print(f"[runner-starvation] {n}")
+        for w in warnings:
+            print(f"::warning::[runner-starvation] {w}")
+        for e in errors:
+            print(f"::error::[runner-starvation] {e}")
+    return 1 if errors else 0
+
+
+@dataclass
 class JobRow:
     workflow: str
     run_number: int
@@ -130,6 +570,14 @@ class JobRow:
     job_name: str
     status: str
     age_min: float | None
+    # Chemin du workflow du run (`.github/workflows/<fichier>`), tel que
+    # `run.path` le rend dans le listing des runs. C'est ce champ qui permet
+    # de separer la COHORTE du debordement (workflows qui lisent
+    # `vars.CI_OVERFLOW_LOCAL`) des jobs STATIQUES qui portent le meme label
+    # sans jamais revenir sur l'offre hebergee (#22937 phase B).
+    # Defaut vide : une reponse sans `path` n'est JAMAIS un membre de la
+    # cohorte, et les consommateurs existants de `JobRow` sont inchanges.
+    run_path: str = ""
 
 
 @dataclass
@@ -139,19 +587,197 @@ class Starvation:
     # runs non examines car plus vieux que la fenetre (classe abandonnee) :
     # comptes d'information, jamais un rouge -- cf docstring.
     unexamined: dict[str, int] = field(default_factory=dict)
+    # #22215 : traces de la lecture. `stats` porte les echecs ; les compteurs
+    # suivants portent ce qui a ete DELIBEREMENT non lu.
+    stats: CallStats = field(default_factory=CallStats)
+    job_reads: int = 0
+    skipped_young: int = 0
+    budget_unread: list[tuple[str, int, float]] = field(default_factory=list)
+    in_progress_unread: int = 0
+    # #28552 : runs in_progress NON lus parce que la garde anti-faux-positif
+    # etait deja satisfaite ET que le run est plus jeune que `starve_minutes`
+    # (il ne peut donc porter aucun job affame, cf passe 2). Distinct de
+    # `in_progress_unread` (hors echantillon, ou un job affame peut se cacher) :
+    # ici rien n'a manque a `starved`, mais le nombre de jobs en cours rendu est
+    # une BORNE INFERIEURE (« au moins N »), jamais une absence.
+    in_progress_satisfied_exit: int = 0
+    listing_failed: set[str] = field(default_factory=set)
+    # Runs ecartes PAR LE FILTRE DE CHEMIN (jamais lus, jamais comptes) :
+    # ils ne peuvent pas porter un job du label mesure. Le compte est une
+    # information, pas une borne -- rien n'a ete perdu, ces runs n'etaient
+    # pas concernes.
+    skipped_other_workflow: int = 0
+    # Runs dont le `path` est absent : ils sont LUS (une expression sans
+    # chemin ne peut pas etre ecartee sans risque de cacher une
+    # affamescence), et comptes a part.
+    unknown_path_reads: int = 0
+    # Nombre de runs `queued` VUS par cette sonde : la liste rendue par
+    # `_collect_window`, donc bornee a SA fenetre d'examen. C'est le chiffre
+    # que la note de profondeur confronte a la profondeur VIVANTE de
+    # `gh_queue_health` : quand les deux divergent, le rapport nomme les DEUX
+    # au lieu d'en choisir un (#26719).
+    queued_runs_seen: int = 0
+
+    @property
+    def complete(self) -> bool:
+        """False = la lecture n'a pas vu tout ce qu'elle devait voir."""
+        return not self.listing_failed and self.stats.failed == 0
+
+    @property
+    def truncated(self) -> bool:
+        """True = la lecture a ete arretee par le budget : les comptes sont
+        des BORNES INFERIEURES.
+
+        Distinct de `complete` : `complete` dit si la lecture a SUCCEEDE
+        (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run
+        non lu est un run vieux (les runs ages de moins que le seuil sont
+        ecartes sans cout) : il peut donc porter des jobs affames. La
+        consequence directionnelle : une lecture tronquee CONFIRME une
+        affirmation positive (« au moins N jobs affames ») mais n'etablit
+        aucune affirmation negative (« aucun job affame », « file videe »).
+        """
+        return bool(self.budget_unread)
 
 
 def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory:
-    data = _gh_json([f"repos/{repo}/actions/runners?per_page=100"], token=token)
+    # Echec attendu sans droit admin : les echecs d'appel ne comptent PAS
+    # dans le stats du passage (ce n'est pas la file qu'on accuse), mais le
+    # motif se rend dans la raison au lieu de mourir dans un compteur que
+    # personne ne lit (reserve NanoClaw #22234 : stats jetable illisible).
+    inv_stats = CallStats()
+    data = _gh_json([f"repos/{repo}/actions/runners?per_page=100"], token=token,
+                    stats=inv_stats)
     if not isinstance(data, dict) or "runners" not in data:
-        return InventoryUnavailable(reason="gh api actions/runners a echoue (droit admin ou RUNNERS_READ_PAT absent)")
+        motif = inv_stats.examples() if inv_stats.failed else "reponse inattendue"
+        return InventoryUnavailable(
+            reason=f"gh api actions/runners a echoue (droit admin ou "
+                   f"RUNNERS_READ_PAT absent) -- {motif}")
     inv = RunnerInventory()
     for r in data.get("runners", []):
         names = [l.get("name") for l in r.get("labels", [])]
         if label not in names:
             continue
-        (inv.online if r.get("status") == "online" else inv.offline).append(r.get("name", "?"))
+        name = r.get("name", "?")
+        if r.get("status") != "online":
+            inv.offline.append(name)
+            continue
+        inv.online.append(name)
+        # #22937 phase B : `busy` porte l'occupation reelle du slot.
+        # Le champ ABSENT laisse l'occupation INCONNUE : le runner n'est donc
+        # pas comptabilise comme libre (fail-CLOSED -- un `r.get("busy")`
+        # falsy placerait un runner muet dans `idle`, donc dans `free`, et
+        # annoncerait une capacite qui n'est pas etablie). Il est nomme
+        # dans `unknown` pour que le rapport dise ce qu'il ignore.
+        if "busy" not in r:
+            inv.unknown.append(name)
+        elif r.get("busy"):
+            inv.busy.append(name)
+        else:
+            inv.idle.append(name)
     return inv
+
+
+def _runs_endpoint(repo: str, workflow: str | None) -> str:
+    """Listing des runs, restreint a un workflow quand il est nomme.
+
+    #22215 : sur `coursia-waiter`, la sonde n'a besoin que des runs de
+    `pr-gate.yml` -- interroger le depot entier lui fait payer les ~340 runs
+    de la fenetre pour un label de 16 slots.
+    """
+    if workflow:
+        return f"repos/{repo}/actions/workflows/{workflow}/runs"
+    return f"repos/{repo}/actions/runs"
+
+
+def _collect_window(
+    repo: str,
+    status: str,
+    window_max_minutes: float,
+    now: datetime,
+    workflow: str | None,
+    result: Starvation,
+    seen_runs: set[int],
+) -> list[dict]:
+    """Runs du statut donne DANS la fenetre, du plus recent au plus ancien.
+
+    Ne lit aucun job : c'est la partie bon marche (100 runs par page). Le tri
+    et le budget de lecture des jobs vivent chez l'appelant, qui peut alors
+    choisir LESQUELS valent un appel (#22215).
+    """
+    out: list[dict] = []
+    endpoint = _runs_endpoint(repo, workflow)
+    page = 1
+    total: int | None = None
+    examined = 0
+    while True:
+        # Query params inline : `-f` forcerait un POST sur un endpoint GET.
+        runs = _gh_json(
+            [f"{endpoint}?status={status}"
+             f"&per_page={RUNS_PAGE_SIZE}&page={page}"],
+            stats=result.stats,
+        )
+        if not isinstance(runs, dict):
+            result.listing_failed.add(status)
+            break
+        if total is None:
+            raw_total = runs.get("total_count")
+            if isinstance(raw_total, int):
+                total = raw_total
+        workflow_runs = runs.get("workflow_runs", [])
+        if not workflow_runs:
+            break
+        # Pages triees du plus recent au plus ancien : des que le PLUS RECENT
+        # de la page depasse la fenetre, toutes les suivantes sont plus
+        # vieilles -- arret premature, le cout reste borne par la fenetre et
+        # non par la profondeur de la file.
+        newest = _parse_iso(workflow_runs[0].get("created_at"))
+        if newest is not None and (now - newest).total_seconds() / 60.0 > window_max_minutes:
+            break
+        last_page = len(workflow_runs) < RUNS_PAGE_SIZE
+        for run in workflow_runs:
+            created = _parse_iso(run.get("created_at"))
+            if created is None:
+                continue
+            if (now - created).total_seconds() / 60.0 > window_max_minutes:
+                # Classe ABANDONNEE, pas affamee : hors predicat (rouge
+                # permanent sinon, cf docstring). Comptee, jamais examinee.
+                continue
+            rid = run.get("id")
+            if rid not in seen_runs:
+                seen_runs.add(rid)
+                examined += 1
+            out.append(run)
+        if last_page:
+            break
+        page += 1
+        # Garde cout : au-dela de 20 pages (2000 runs) dans la fenetre,
+        # la file est un incident de profondeur, pas de pagination.
+        if page > 20:
+            result.unexamined[status] = max((total or examined) - examined, 0)
+            break
+    if isinstance(total, int) and total > examined and status not in result.unexamined:
+        result.unexamined[status] = total - examined
+    return out
+
+
+def _path_scope(run: dict, local_paths: set[str] | None) -> str:
+    """Le run peut-il porter un job du label mesure ?
+
+    ``local_paths`` a `None` = aucun filtre (comportement d'avant : tous les
+    runs sont lus). Sinon, seul un run dont le ``run.path`` figure dans la
+    liste est lu : les runs des workflows qui ne peuvent PAS porter un job
+    du label consomment alors AUCUNE lecture du budget.
+
+    Un ``path`` absent rend le run **INCONNU** : il est lu. Ecarter un run
+    sans chemin serait une perte de visibilite silencieuse sur une
+    affamescence locale -- le piege exact que ce filtre combat.
+    """
+    if local_paths is None:
+        return "all"
+    path = run.get("path")
+    if not isinstance(path, str) or not path:
+        return "unknown"
+    return "in" if path in local_paths else "out"
 
 
 def fetch_starvation(
@@ -160,127 +786,184 @@ def fetch_starvation(
     starve_minutes: float,
     window_max_minutes: float = DEFAULT_WINDOW_MAX_MINUTES,
     now: datetime | None = None,
+    workflow: str | None = None,
+    job_read_budget: int = DEFAULT_JOB_READ_BUDGET,
+    in_progress_sample: int = DEFAULT_IN_PROGRESS_SAMPLE,
+    local_paths: set[str] | None = None,
+    skip_young_in_progress_after_proof: bool = False,
 ) -> Starvation:
+    """Classe les jobs du label : affames (queued > seuil) et en cours.
+
+    Deux passes, comme avant #22215 -- mais dont la lecture est desormais
+    bornee et tracee.
+
+    Union dedupliquee des runs queued + in_progress, chaque JOB classe par SON
+    PROPRE statut (faux negatif reproduit par po-2025, 2026-09-02 : un run
+    in_progress peut porter un job coursia-linux reste queued -- extinction
+    ciblee de la jambe Linux pendant que les jobs GitHub-hosted du meme run
+    progressent ; le classer par le statut du RUN le rendait invisible aux deux
+    passes). Un run peut transiter queued -> in_progress ENTRE les deux passes :
+    il faut donc re-examiner ses jobs au second passage -- la dedup vit au
+    niveau JOB (cle run_id+job.id, repli nom), l'observation la plus recente
+    REMPLACE TOUTE observation anterieure, y compris vers un etat terminal : un
+    job vu queued puis completed au second passage quitte la liste des affames
+    (sinon faux positif apres drain, repro adjoint 2026-09-02 11:23Z) ; seuls
+    queued/in_progress sont reinseres.
+
+    ``skip_young_in_progress_after_proof`` (opt-in, #28552) : une fois qu'un
+    job du label a ete vu en cours, la passe 2 saute les runs **plus jeunes que
+    ``starve_minutes``** au lieu de tous les lire. Un job n'etant jamais plus
+    vieux que son run, ces runs ne peuvent porter aucun job affame, et la passe
+    1 ne les a pas lus (elle ne lit que les plus vieux) : ``starved`` reste
+    identique a ce que rend la lecture complete, et le cout par passage tombe.
+    ``in_progress`` devient une **borne inferieure** et
+    ``in_progress_satisfied_exit`` compte les sauts. Les runs **plus vieux**
+    restent lus : c'est la qu'un job queued au-dela du seuil peut se cacher
+    dans un run lui-meme in_progress (#22215). Defaut ``False`` : tout
+    consommateur existant garde exactement le comportement d'avant.
+    """
     now = now or datetime.now(timezone.utc)
     result = Starvation()
-
-    # Union dedupliquee des runs queued + in_progress, chaque JOB classe par
-    # SON PROPRE statut (faux negatif reproduit par po-2025, 2026-09-02 : un
-    # run in_progress peut porter un job coursia-linux reste queued --
-    # extinction ciblee de la jambe Linux pendant que les jobs GitHub-hosted
-    # du meme run progressent ; le classer par le statut du RUN le rendait
-    # invisible aux deux passes). Un run peut transiter queued -> in_progress
-    # ENTRE les deux passes : il faut donc re-examiner ses jobs au second
-    # passage -- la dedup vit au niveau JOB (cle run_id+job.id, repli nom),
-    # l'observation la plus recente REMPLACE TOUTE observation anterieure, y
-    # compris vers un etat terminal : un job vu queued puis completed au
-    # second passage quitte la liste des affames (sinon faux positif apres
-    # drain, repro adjoint 2026-09-02 11:23Z) ; seuls queued/in_progress
-    # sont reinseres.
     seen_runs: set[int] = set()
     seen_jobs: dict[tuple[int, str], JobRow] = {}
-    # Traçage des listings pour la re-verification du residuel adjoint
+    # Tracage des listings pour la re-verification du residuel adjoint
     # (2026-09-02 14:24Z) : un run observe au tour queued mais absent des deux
     # listings du tour in_progress a pu devenir terminal ENTRE les deux
     # queries -- sa re-verification directe tranche (voir plus bas).
-    listing_failed: set[str] = set()
     listing_seen: dict[int, set[str]] = {}
-    for status in ("queued", "in_progress"):
-        # Query params inline : `-f` forcerait un POST sur un endpoint GET.
-        page = 1
-        total: int | None = None
-        examined = 0
-        while True:
-            runs = _gh_json(
-                [f"repos/{repo}/actions/runs?status={status}"
-                 f"&per_page={RUNS_PAGE_SIZE}&page={page}"]
+
+    def absorb(run: dict, status: str, created: datetime) -> None:
+        """Classe les jobs DU LABEL de ce run ; l'observation recente gagne."""
+        result.job_reads += 1
+        rid = run.get("id")
+        listing_seen.setdefault(rid, set()).add(status)
+        jobs = _gh_json([f"repos/{repo}/actions/runs/{rid}/jobs?filter=latest"],
+                        stats=result.stats)
+        if not isinstance(jobs, dict):
+            return
+        for job in jobs.get("jobs", []):
+            if label not in job.get("labels", []):
+                continue
+            # Retrait AVANT filtration terminale : toute observation d'un job
+            # du label retire sa classification anterieure. Sans ce retrait un
+            # job vu queued au 1er passage puis completed/cancelled au 2eme
+            # resterait artificiellement starved apres drain (repro adjoint
+            # po-2025, 11:23Z). Cle stable : job.id, repli sur job.name.
+            key = (rid or 0, job.get("id") if job.get("id") is not None else job.get("name") or "?")
+            old = seen_jobs.pop(key, None)
+            if old is not None:
+                if old in result.starved:
+                    result.starved.remove(old)
+                if old in result.in_progress:
+                    result.in_progress.remove(old)
+            job_status = job.get("status")
+            if job_status not in ("queued", "in_progress"):
+                continue
+            # Ancrage par JOB : un job debloque tard (needs:, matrice
+            # differree) a attendu moins que le run n'est vieux -- l'age run
+            # serait un faux positif, sens inverse du fail-open de la fenetre.
+            anchor = _parse_iso(job.get("created_at")) or created
+            age_min = (now - anchor).total_seconds() / 60.0
+            # `run.path` peut manquer sur une reponse partielle : chaine
+            # vide, et une chaine vide ne compte jamais comme cohorte.
+            raw_path = run.get("path")
+            row = JobRow(
+                workflow=run.get("name", "?"),
+                run_number=run.get("run_number", 0),
+                run_id=rid or 0,
+                job_name=job.get("name", "?"),
+                status=job_status,
+                age_min=age_min,
+                run_path=raw_path if isinstance(raw_path, str) else "",
             )
-            if not isinstance(runs, dict):
-                listing_failed.add(status)
-                break
-            if total is None:
-                raw_total = runs.get("total_count")
-                if isinstance(raw_total, int):
-                    total = raw_total
-            workflow_runs = runs.get("workflow_runs", [])
-            if not workflow_runs:
-                break
-            # Pages triees du plus recent au plus ancien : des que le PLUS
-            # RECENT de la page depasse la fenetre, toutes les suivantes sont
-            # plus vieilles -- arret premature, le cout reste borne par la
-            # fenetre et non par la profondeur de la file.
-            newest = _parse_iso(workflow_runs[0].get("created_at"))
-            if newest is not None and (now - newest).total_seconds() / 60.0 > window_max_minutes:
-                break
-            last_page = len(workflow_runs) < RUNS_PAGE_SIZE
-            for run in workflow_runs:
-                created = _parse_iso(run.get("created_at"))
-                if created is None:
-                    continue
-                run_age = (now - created).total_seconds() / 60.0
-                if run_age > window_max_minutes:
-                    # Classe ABANDONNEE, pas affamee : hors predicat (rouge
-                    # permanent sinon, cf docstring). Comptee, jamais examinee.
-                    continue
-                rid = run.get("id")
-                if rid not in seen_runs:
-                    seen_runs.add(rid)
-                    examined += 1
-                listing_seen.setdefault(rid, set()).add(status)
-                jobs = _gh_json([f"repos/{repo}/actions/runs/{rid}/jobs?filter=latest"])
-                if not isinstance(jobs, dict):
-                    continue
-                for job in jobs.get("jobs", []):
-                    if label not in job.get("labels", []):
-                        continue
-                    # Retrait AVANT filtration terminale : toute observation
-                    # d'un job du label retire sa classification anterieure.
-                    # Sans ce retrait un job vu queued au 1er passage puis
-                    # completed/cancelled au 2eme resterait artificiellement
-                    # starved apres drain (repro adjoint po-2025, 11:23Z).
-                    # Cle stable : job.id, repli documente sur job.name.
-                    key = (rid or 0, job.get("id") if job.get("id") is not None else job.get("name") or "?")
-                    old = seen_jobs.pop(key, None)
-                    if old is not None:
-                        if old in result.starved:
-                            result.starved.remove(old)
-                        if old in result.in_progress:
-                            result.in_progress.remove(old)
-                    job_status = job.get("status")
-                    if job_status not in ("queued", "in_progress"):
-                        continue
-                    # Ancrage par JOB : un job debloque tard (needs:, matrice
-                    # differree) a attendu moins que le run n'est vieux --
-                    # l'age run serait un faux positif, sens inverse du
-                    # fail-open de la fenetre.
-                    anchor = _parse_iso(job.get("created_at")) or created
-                    age_min = (now - anchor).total_seconds() / 60.0
-                    row = JobRow(
-                        workflow=run.get("name", "?"),
-                        run_number=run.get("run_number", 0),
-                        run_id=rid or 0,
-                        job_name=job.get("name", "?"),
-                        status=job_status,
-                        age_min=age_min,
-                    )
-                    seen_jobs[key] = row
-                    if job_status == "queued":
-                        if age_min > starve_minutes:
-                            result.starved.append(row)
-                    else:
-                        result.in_progress.append(row)
-            if last_page:
-                break
-            page += 1
-            # Garde cout : au-dela de 20 pages (2000 runs) dans la fenetre,
-            # la file est un incident de profondeur, pas de pagination.
-            if page > 20:
-                result.unexamined[status] = max(
-                    (total or examined) - examined, 0
-                )
-                break
-        if isinstance(total, int) and total > examined and status not in result.unexamined:
-            result.unexamined[status] = total - examined
+            seen_jobs[key] = row
+            if job_status == "queued":
+                if age_min > starve_minutes:
+                    result.starved.append(row)
+            else:
+                result.in_progress.append(row)
+
+    # --- Passe 1 : queued. Les jobs d'un run ne peuvent pas etre plus vieux
+    # que le run : un run de moins de `starve_minutes` ne peut pas porter un
+    # job affame, donc il ne vaut aucun appel `jobs`. Les autres sont lus du
+    # PLUS VIEUX au plus recent, dans la limite du budget -- ce sont eux qui
+    # peuvent affamer (#22215).
+    queued_runs = _collect_window(repo, "queued", window_max_minutes, now,
+                                  workflow, result, seen_runs)
+    # Ce que CETTE sonde voit de la file : sa population dans sa fenetre
+    # d'examen. La note de profondeur vivante le confronte au chiffre de
+    # l'organe voisin (#26719), sans jamais fondre les deux.
+    result.queued_runs_seen = len(queued_runs)
+    queued_runs.sort(key=lambda r: r.get("created_at") or "")
+    for run in queued_runs:
+        created = _parse_iso(run.get("created_at"))
+        if created is None:
+            continue
+        age = (now - created).total_seconds() / 60.0
+        if age <= starve_minutes:
+            result.skipped_young += 1
+            continue
+        scope = _path_scope(run, local_paths)
+        if scope == "out":
+            # Run d'un workflow qui ne peut pas porter un job du label :
+            # ecarte SANS lecture -- il ne consomme pas le budget, et son
+            # exclusion ne retire rien a la mesure.
+            result.skipped_other_workflow += 1
+            continue
+        if result.job_reads >= job_read_budget:
+            result.budget_unread.append(
+                (run.get("name", "?"), run.get("run_number", 0), age))
+            continue
+        if scope == "unknown":
+            result.unknown_path_reads += 1
+        absorb(run, "queued", created)
+
+    # --- Passe 2 : in_progress. Le predicat n'a besoin que de l'EXISTENCE d'un
+    # job en cours (garde anti-faux-positif) : les runs les plus recents en
+    # sont la meilleure preuve, et le listing est deja trie du plus recent au
+    # plus ancien. Au-dela de l'echantillon, on ne lit plus (#22215).
+    in_progress_runs = _collect_window(repo, "in_progress", window_max_minutes,
+                                       now, workflow, result, seen_runs)
+    # Meme filtre qu'en passe 1 : l'echantillon de runs en cours doit porter
+    # sur des runs qui PEUVENT porter un job du label, sinon il est consomme
+    # par des runs sans rapport et la lecture locale se tronque aussi.
+    scoped_in_progress: list[dict] = []
+    for run in in_progress_runs:
+        scope = _path_scope(run, local_paths)
+        if scope == "out":
+            result.skipped_other_workflow += 1
+            continue
+        if scope == "unknown":
+            result.unknown_path_reads += 1
+        scoped_in_progress.append(run)
+    sample = min(max(in_progress_sample, 0),
+                 max(job_read_budget - result.job_reads, 0))
+    for idx, run in enumerate(scoped_in_progress):
+        created = _parse_iso(run.get("created_at"))
+        if created is None:
+            continue
+        if idx >= sample:
+            result.in_progress_unread += 1
+            continue
+        # #28552 : la passe in_progress PROUVE qu'un slot du label sert (garde
+        # anti-faux-positif : sans elle, une file qui drainne passerait pour
+        # une file morte). Elle ne sert pas QU'A ca : `absorb` y classe aussi
+        # les jobs queued au-dela du seuil d'un run lui-meme en cours (faux
+        # negatif #22215). Une sortie inconditionnelle des la preuve masquait
+        # donc un job affame loge dans un run plus ancien (review ai-01,
+        # 2026-11-25). Ce qui est saute ici est borne par l'AGE : un job n'est
+        # jamais plus vieux que son run, donc un run de moins de
+        # `starve_minutes` ne peut porter NI job affame, NI observation
+        # anterieure a rafraichir (la passe 1 ne lit que les runs plus vieux)
+        # -- le sauter ne retire rien a `starved`. Les runs plus vieux restent
+        # lus. Le saut est compte separement du budget epuise, et le nombre de
+        # jobs en cours rendu devient une borne inferieure.
+        age_min = (now - created).total_seconds() / 60.0
+        if (skip_young_in_progress_after_proof and result.in_progress
+                and age_min <= starve_minutes):
+            result.in_progress_satisfied_exit += 1
+            continue
+        absorb(run, "in_progress", created)
 
     # Residuel adjoint (po-2025:CoursIA-2, 2026-09-02 14:24Z) : un run observe
     # au tour queued qui transite vers un etat terminal ENTRE les deux listing
@@ -295,11 +978,12 @@ def fetch_starvation(
     # echoue. Un run queued stable, re-verifie puis encore queued, garde son
     # entree : purger sans re-verifier rendrait l'organe muet sous vraie file
     # profonde.
-    if not listing_failed:
+    if not result.listing_failed:
         for row in [*result.starved, *result.in_progress]:
             if listing_seen.get(row.run_id) != {"queued"}:
                 continue
-            run = _gh_json([f"repos/{repo}/actions/runs/{row.run_id}"])
+            run = _gh_json([f"repos/{repo}/actions/runs/{row.run_id}"],
+                           stats=result.stats)
             if isinstance(run, dict) and run.get("status") == "completed":
                 if row in result.starved:
                     result.starved.remove(row)
@@ -308,17 +992,22 @@ def fetch_starvation(
     return result
 
 
-def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3) -> list[datetime]:
+def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3,
+                         stats: CallStats | None = None) -> list[datetime]:
     """Dates de creation (UTC, ordre descroissant) des derniers runs
     ``event=schedule`` du workflow lui-meme.
 
     #15332 : la cadence SERVIE se mesure sur les seuls runs planifies -- les
     runs workflow_run/workflow_dispatch (heartbeats) ne prouvent rien du
     scheduler et ne doivent pas fausser la mesure.
+
+    `stats` est optionnel : fourni, l'appel de ce listing entre dans le
+    compteur `gh_calls` du passage (honnetete du cout annonce -- #22937).
     """
     data = _gh_json(
         [f"repos/{repo}/actions/workflows/{self_workflow}/runs"
-         f"?event=schedule&per_page={limit}"]
+         f"?event=schedule&per_page={limit}"],
+        stats=stats,
     )
     if not isinstance(data, dict):
         return []
@@ -328,6 +1017,75 @@ def fetch_scheduled_runs(repo: str, self_workflow: str, limit: int = 3) -> list[
         if d is not None:
             out.append(d)
     return out
+
+
+def _env_int(name: str) -> int | None:
+    """Entier d'environnement, ou None si absent/illisible.
+
+    `GITHUB_RUN_NUMBER` est fourni par le runner Actions ; hors Actions il
+    est absent, et la porte de mesure doit alors laisser passer (une
+    lecture qui ne sait pas ou elle est ne doit pas s'arreter).
+    """
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return None
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return None
+
+
+def gate_measurement(
+    *,
+    every_n: int,
+    run_number: int | None,
+    event_name: str,
+) -> tuple[bool, str]:
+    """Decide si CE passage paie la mesure complete (#22937).
+
+    Le heartbeat `workflow_run` d'une advisory se declenche sur CHAQUE fin
+    d'ancre. Mesure sur 24 h (fenetre `created=` cote serveur, sans
+    troncature de pagination) : 418 fins « Secret Scan » (309 pull_request
+    + 109 push) et 300 fins « Notebook outputs required » (238 + 62), soit
+    718 fins d'ancre -- 29,92/h, 60,62 runs/h pour la paire d'advisories, ~8
+    appels API par passage (compteur du script), donc ~479 appels/h sur le
+    jeton de depot (budget 1000 req/h). Le 2026-10-28 22:04Z : « API rate
+    limit exceeded for installation », puis 18 rouges sur `main` en 10 min.
+
+    La porte borne la MESURE, pas le RUN : le run existe toujours, son
+    rapport de cadence servie -- le devoir #15332 -- est emis a chaque
+    passage, et c'est cette SURVIE de l'observateur qui est la garantie. Un passage sur
+    `every_n` paie la lecture complete (inventaire + jobs des runs) ; les
+    autres ne paient que la lecture de la cadence servie (1 appel).
+
+    La jambe `schedule` n'est PAS concernee : elle est la cadence de
+    REFERENCE de l'advisory, elle mesure toujours. Le gate ne s'applique
+    qu'aux runs `workflow_run` -- jusqu'au #25510 (E1, 2026-11-12) cela
+    laissait intact l'advisory `runner-starvation-advisory.yml`
+    (coursia-ephemeral), le seul des trois sans heartbeat ; il en a recu un
+    depuis, avec la meme porte que ses deux freres : la sonde observe le
+    pool qui sert les jobs Lean, elle ne peut pas dependre du seul
+    scheduler (#15332).
+
+    `every_n <= 1` desactive la porte : le defaut est volontairement
+    inerte, pour qu'un appelant tiers ne change pas de comportement sans
+    l'avoir demande.
+    """
+    if every_n <= 1:
+        return True, "porte inactive (every_n<=1) : mesure complete"
+    if event_name != "workflow_run":
+        return True, (
+            f"jambe {event_name or 'inconnue'} : mesure complete "
+            "(cadence de reference, jamais gatee)"
+        )
+    if run_number is None:
+        return True, "numero de run inconnu : mesure complete"
+    if run_number % every_n == 0:
+        return True, f"run {run_number} : 1 sur {every_n} -> mesure complete"
+    return False, (
+        f"run {run_number} : mesure CADENCE SEULE (1 sur {every_n}) -- la "
+        "lecture complete (inventaire + jobs des runs) n'est pas payee"
+    )
 
 
 def evaluate_cadence(
@@ -385,11 +1143,141 @@ class Verdict:
     notes: list[str] = field(default_factory=list)
 
 
-def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int) -> Verdict:
+def _live_queue_depth(repo: str) -> tuple[int | None, int | None, str, int]:
+    """La profondeur VIVANTE de la file -- la MEME mesure que
+    `scripts/ci/gh_queue_health.py --live-depth`.
+
+    Renvoie (profondeur, majorant, raison, appels API) :
+
+    - (N, None, "", k) : la profondeur est MESUREE (N runs vivants) ;
+    - (None, M, "", k) : la mesure n'a pas ete payee -- le brut de la file
+      est sous le seuil de saturation, ce qui PROUVE que la file n'est pas
+      saturee ; M est alors un MAJORANT de la profondeur vivante (le brut
+      majore la vivante), jamais une profondeur ;
+    - (None, None, raison, k) : la mesure est impossible (import absent,
+      API muette, instrument incomplet).
+
+    La fonction ne porte aucun transport propre : elle appelle l'organe
+    voisin, ce qui la rend monkeypatchable -- les tests ne touchent jamais
+    l'API.
+
+    L'organe voisin est importe depuis CE repertoire, et l'import est sous
+    try/except : `check_runner_starvation.py` s'execute seul (workflows,
+    copie hors depot) et ne doit JAMAIS planter parce qu'un organe voisin
+    manque ou a casse. Son absence devient une raison, pas une exception.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import gh_queue_health
+    except Exception as exc:  # organe voisin absent ou casse : jamais un crash
+        return None, None, f"{type(exc).__name__}: {exc}", 0
+    kwargs = dict(
+        repo=repo,
+        cutoff=gh_queue_health.parse_date(LIVE_DEPTH_CUTOFF),
+        cutoff_date=LIVE_DEPTH_CUTOFF,
+        now=datetime.now(timezone.utc),
+        no_job_events=gh_queue_health.NO_JOB_EVENTS,
+        no_job_min_age_hours=gh_queue_health.DEFAULT_NO_JOB_MIN_AGE_HOURS,
+        max_workers=8,
+    )
+    try:
+        if hasattr(gh_queue_health, "measure_queue_depth"):
+            # #26739 -- l'organe voisin lit le BRUT d'abord (UN appel) et ne
+            # mesure la vivante que si le brut ATTEINT le seuil de
+            # saturation : le brut MAJORE la vivante, donc un brut sous le
+            # seuil PROUVE que la file n'est pas saturee et la mesure ne
+            # peut rien changer au verdict. Elle n'est alors pas payee
+            # (114 appels economises).
+            report = gh_queue_health.measure_queue_depth(
+                saturation_threshold=LIVE_DEPTH_SATURATION_THRESHOLD, **kwargs)
+        else:
+            # Organe voisin d'une version anterieure : la mesure complete
+            # est la seule voie disponible.
+            report = gh_queue_health.live_depth_report(**kwargs)
+    except Exception as exc:  # API muette, instrument en erreur
+        return None, None, f"{type(exc).__name__}: {exc}", 0
+    try:
+        calls = int(gh_queue_health.api_call_count())
+    except Exception:
+        calls = 0
+    if not isinstance(report, dict):
+        return None, None, f"reponse inattendue: {str(report)[:200]}", calls
+    if (report.get("depth_kind") or "live") == "raw-upper-bound":
+        bound = report.get("depth")
+        if not isinstance(bound, int):
+            return None, None, "reponse inattendue: majorant absent", calls
+        return None, bound, "", calls
+    if not isinstance(report.get("live_depth"), int):
+        return None, None, f"reponse inattendue: {str(report)[:200]}", calls
+    parse_failures = report.get("parse_failures") or 0
+    if parse_failures:
+        # Fail-closed, comme l'organe voisin : une profondeur calculee sur
+        # une population partiellement illisible n'est pas publiee.
+        return None, None, (f"instrument incomplet: {parse_failures} run(s) de "
+                            f"date illisible"), calls
+    return report["live_depth"], None, "", calls
+
+
+def _count_in_progress(st: Starvation) -> str:
+    """Compte rendu des jobs en cours (#28552).
+
+    La passe in_progress saute les runs plus jeunes que le seuil des que la
+    garde anti-faux-positif est satisfaite : le nombre lu n'est alors qu'une
+    BORNE INFERIEURE, et le dire « au moins N » est exact. Un echantillon lu en
+    entier rend le compte exact, comme avant.
+    """
+    if st.in_progress_satisfied_exit:
+        return f"au moins {len(st.in_progress)}"
+    return str(len(st.in_progress))
+
+
+def _sample_only(st: Starvation) -> str:
+    """Portee du decompte d'affames (review ai-01 du 25/11, #28552).
+
+    Le decompte ne vaut que pour les runs LUS. Tant qu'il reste des runs non
+    lus -- hors echantillon in_progress, ou faute de budget sur la passe
+    queued -- un job queued au-dela du seuil peut s'y cacher : la conclusion
+    « rien d'affame » se dit alors dans l'echantillon, jamais dans l'absolu.
+    Rendre la chaine vide quand tout est lu garde la formulation d'avant mot
+    pour mot (aucun consommateur ne lit un nota bene qui n'existe pas).
+    """
+    unread = st.in_progress_unread + len(st.budget_unread)
+    if not unread:
+        return ""
+    return (f" (decompte etabli dans l'echantillon seulement : {unread} run(s) "
+            f"non lu(s) peuvent encore porter un job affame)")
+
+
+def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
+             label: str = DEFAULT_LABEL,
+             declared: DeclaredHosts | None = None,
+             live_depth: int | None = None,
+             live_depth_bound: int | None = None,
+             live_depth_error: str = "") -> Verdict:
     v = Verdict()
 
     if inv.available:
-        if not inv.online:
+        if not inv.online and not inv.offline:
+            # Aucun runner enregistre ne porte le label : c'est un LABEL
+            # INCONNU, pas une extinction. Mesure du 2026-10-23 : la sonde
+            # `coursia-lean` rougissait « superviseur(s) mort(s) ? (offline:
+            # aucun) » a chaque passage depuis la veille alors que 40 runners
+            # etaient online et qu'aucun workflow de `main` ne routait plus
+            # vers ce label -- le pool a ete migre, la sonde est restee. Le
+            # rouge permanent est exactement ce que la garde anti-FP du
+            # predicat STARVATION interdit ailleurs : il apprend a etre
+            # ignore. Le symptome reste mesure independamment (jobs queued
+            # sans in_progress) : si un workflow route encore vers ce label,
+            # STARVATION rougira pour la bonne raison.
+            v.warnings.append(
+                f"LABEL INCONNU: aucun runner enregistre ne porte le label "
+                f"« {label} » -- label retire de la flotte, ou sonde obsolete ? "
+                f"Si un workflow route encore vers lui, ses jobs ne demarreront "
+                f"jamais ; sinon retirer cette sonde."
+            )
+        elif not inv.online:
             v.errors.append(
                 f"EXTINCTION: aucun runner online ne porte le label -- superviseur(s) mort(s) ? "
                 f"(offline: {', '.join(inv.offline) or 'aucun'})"
@@ -412,31 +1300,273 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int) -> Verdict:
             f"jamais un rouge. Cf pr-gate-stale-sweep / cancel-organs."
         )
 
+    # #22215 : ce que la lecture a coute, et ce qu'elle n'a pas pu lire. Un
+    # passage ou des appels ont echoue ne conclut NI `OK` NI `STARVATION` sur
+    # le silence -- c'est exactement ainsi que le run 39976669812 a annonce
+    # « AUCUN job in_progress » alors que 34 runs l'etaient.
+    v.notes.append(
+        f"lecture: {st.stats.summary()} ; {st.job_reads} run(s) inspecte(s), "
+        f"{st.skipped_young} run(s) queued trop jeune(s) pour affamer "
+        f"(aucun appel jobs)."
+    )
+    if st.in_progress_satisfied_exit:
+        v.notes.append(
+            f"{st.in_progress_satisfied_exit} run(s) in_progress plus jeune(s) "
+            f"que le seuil, non lus apres la preuve qu'un job du label tourne "
+            f"(#28552) -- un job n'est jamais plus vieux que son run, donc "
+            f"aucun ne peut y porter un job affame. Le compte de jobs en cours "
+            f"est une borne inferieure."
+        )
+    if st.in_progress_unread:
+        v.notes.append(
+            f"{st.in_progress_unread} run(s) in_progress hors echantillon -- "
+            f"non lus : la preuve qu'un job du label tourne n'en depend pas, "
+            f"mais un job queued au-dela du seuil peut s'y cacher, donc le "
+            f"compte d'affames n'est etabli QUE dans l'echantillon."
+        )
+    if st.budget_unread:
+        oldest_unread = max(a for _, _, a in st.budget_unread)
+        v.warnings.append(
+            f"BUDGET DE LECTURE: {len(st.budget_unread)} run(s) queued > seuil "
+            f"non inspecte(s) au-dela du budget (plus vieux: "
+            f"{oldest_unread:.0f} min). Un affame peut s'y cacher : "
+            f"augmenter --job-read-budget si la file est durablement profonde."
+        )
+    if st.stats.failed:
+        v.errors.append(
+            f"LECTURE API INCOMPLETE: {st.stats.failed} appel(s) gh en echec "
+            f"sur {st.stats.calls} -- le passage ne prouve ni file saine ni "
+            f"famine. Exemples: {st.stats.examples()}"
+        )
+    if st.listing_failed:
+        # #22234 (dossier adjoint c.6378853422) : un listing qui revient en
+        # TABLEAU est du JSON valide -- `_gh_json` ne le compte pas comme un
+        # echec d'appel, seul `listing_failed` le trace. Sans cette jambe, le
+        # passage rendait OK sur une file jamais lue (fail-open).
+        v.errors.append(
+            f"LISTING INCOMPLET: listing(s) {sorted(st.listing_failed)} "
+            f"illisible(s) (reponse non-dict) -- le passage ne prouve ni "
+            f"file saine ni famine."
+        )
+
+    # Profondeur VIVANTE de la file (#26719) : la MEME mesure que
+    # `scripts/ci/gh_queue_health.py --live-depth` (population queued MOINS
+    # les classes de fantomes mesurees). La sonde, elle, compte des RUNS dans
+    # sa fenetre d'examen : quand les deux chiffres divergent, on les NOMME
+    # tous les deux -- un seul ferait croire a une file saine ou a une famine
+    # selon qui le lit. Le predicat STARVATION reste au niveau des JOBS :
+    # cette note informe, elle ne juge pas.
+    if live_depth is not None:
+        v.notes.append(
+            f"profondeur VIVANTE de la file: {live_depth} run(s) (fantomes "
+            f"exclus -- meme mesure que scripts/ci/gh_queue_health.py "
+            f"--live-depth)"
+        )
+        if st.queued_runs_seen != live_depth:
+            gap = st.queued_runs_seen - live_depth
+            if gap > 0:
+                cause = (
+                    f"l'ecart est la classe de fantomes mesuree par "
+                    f"scripts/ci/gh_queue_health.py (pre-cutoff, pr-closed, "
+                    f"scheduled-orphan, no-job) et la part de file plus "
+                    f"vieille que la fenetre d'examen de cette sonde"
+                )
+            else:
+                cause = (
+                    f"ecart NEGATIF : cette sonde voit MOINS de runs que la "
+                    f"profondeur vivante -- restriction --workflow ou fenetre "
+                    f"d'examen plus etroite de son cote, jamais un fantome "
+                    f"supplementaire"
+                )
+            v.notes.append(
+                f"profondeur de file divergente: {st.queued_runs_seen} run(s) "
+                f"queued vu(s) par cette sonde vs {live_depth} run(s) de "
+                f"profondeur VIVANTE -- ecart {gap:+d}, {cause}"
+            )
+    elif live_depth_bound is not None:
+        # La mesure n'a pas ete payee : le brut de la file est sous le
+        # seuil de saturation, ce qui PROUVE que la file n'est pas saturee.
+        # Ce qui est annonce est un MAJORANT de la profondeur vivante (le
+        # brut majore la vivante), jamais une profondeur -- et l'ecart avec
+        # ce que la sonde voit n'est donc PAS affine : on ne l'affirme pas.
+        v.notes.append(
+            f"profondeur VIVANTE NON MESUREE: au plus {live_depth_bound} "
+            f"run(s) vivants (majorant -- le brut de la file est sous le "
+            f"seuil de saturation {LIVE_DEPTH_SATURATION_THRESHOLD} ; "
+            f"mesure complete non payee)"
+        )
+    elif live_depth_error:
+        # Mesure TENTEE et echouee : on le dit, et ca reste une WARNING --
+        # un instrument indisponible ne rend ni la file saine ni la famine
+        # prouvee. Sans raison fournie, l'appelant ne mesure pas la
+        # profondeur (appelant historique) : silence, pas une affirmation.
+        v.warnings.append(
+            f"PROFONDEUR VIVANTE non mesuree ({live_depth_error}) -- le "
+            f"verdict porte sur les jobs affames, pas sur la profondeur de "
+            f"la file"
+        )
+
     if st.starved and not st.in_progress:
         oldest = max(r.age_min or 0 for r in st.starved)
-        v.errors.append(
+        message = (
             f"STARVATION: {len(st.starved)} job(s) libelle queued > seuil (plus vieux: {oldest:.0f} min) "
             f"et AUCUN job in_progress -- la file ne drainne pas. Exemples: "
             + "; ".join(f"{r.workflow} #{r.run_number} ({r.job_name}, {r.age_min:.0f} min)" for r in st.starved[:5])
         )
+        # L'absence d'in_progress n'est PROUVEE que par une lecture complete.
+        # Trois angles morts la rendent NON ETABLIE : des appels en echec (run
+        # 39976669812 : « AUCUN job in_progress » annonce sur 34 runs en
+        # cours), des runs in_progress DELIBEREMENT non lus -- budget epuise
+        # par la passe queued, dossier #22234 : 3 affames lus, 2 en cours
+        # jamais regardes, evaluate lisait ce silence comme une absence -- et
+        # un listing illisible. Un STARVATION en plus accuserait la file sur
+        # un angle mort ; les erreurs LECTURE API INCOMPLETE / LISTING
+        # INCOMPLET portent deja le constat de lecture.
+        reasons = []
+        if st.stats.failed:
+            reasons.append("des appels ont echoue")
+        if st.in_progress_unread:
+            reasons.append(
+                f"{st.in_progress_unread} run(s) in_progress hors echantillon, "
+                f"non lus")
+        if st.listing_failed:
+            reasons.append(
+                f"listing(s) {sorted(st.listing_failed)} illisible(s)")
+        if reasons:
+            v.warnings.append(
+                f"{message} -- NON CONCLU : l'absence de job in_progress "
+                f"n'est pas etablie ({' ; '.join(reasons)})."
+            )
+        else:
+            v.errors.append(message)
     elif st.starved:
         v.notes.append(
             f"file profonde mais saine: {len(st.starved)} job(s) queued > seuil, "
-            f"{len(st.in_progress)} job(s) in_progress -- capacite en train de drainer"
+            f"{_count_in_progress(st)} job(s) in_progress -- capacite en train de drainer"
+            f"{_sample_only(st)}"
         )
     elif st.in_progress:
-        v.notes.append(f"{len(st.in_progress)} job(s) in_progress, rien d'affame -- OK")
+        tail = _sample_only(st)
+        v.notes.append(
+            f"{_count_in_progress(st)} job(s) in_progress, "
+            + (f"aucun job affame{tail}" if tail else "rien d'affame -- OK"))
     else:
-        v.notes.append("ni queue affamee ni job en cours -- OK")
+        v.notes.append("ni queue affamee ni job en cours"
+                       + (_sample_only(st) or " -- OK"))
+
+    # Alertes de perte de pool par hote (#20697 point 4) -- disjointes de
+    # EXTINCTION globale : un hote peut perdre tous ses online pendant que le
+    # pool global reste vert (les autres hotes du label tournent). Cas
+    # fondateur : myia-ai-01-wsl 0 online / 10 offline pendant ~2 jours,
+    # EXTINCTION muette car d'autres hotes du label restaient online.
+    # Inventaire vide = LABEL INCONNU, deja nomme ci-dessus : la perte par
+    # hote n'a rien a comparer et dirait N fois la meme chose (un hote declare
+    # serait « absent » par construction). On ne l'evalue que si le label a au
+    # moins une entree mesuree.
+    if inv.available and (inv.online or inv.offline):
+        v.warnings.extend(evaluate_host_loss(inv, declared))
+    if declared is not None and not declared.available and declared.error:
+        # Un inventaire declare qu'on ne sait pas lire ne prouve pas qu'un
+        # hote a disparu : note, jamais un rouge (meme discipline que
+        # l'inventaire non lisible ci-dessus).
+        v.notes.append(f"inventaire declare non lu ({declared.error}) -- "
+                       f"predicat POOL ABSENT non evalue")
 
     v.status = "ERROR" if v.errors else "OK"
     return v
+
+
+_HOST_SUFFIX = re.compile(r"-\d+$")
+
+
+def _host_of(runner_name: str) -> str:
+    """Nom de l'hote extrait du nom de slot (suffixe '-N' jete).
+
+    Le format canonique sur la flotte est `<host>-<slot>` (ex :
+    `myia-ai-01-wsl-1` -> host `myia-ai-01-wsl` ; `myia-po-2024-linux-docker-3`
+    -> host `myia-po-2024-linux-docker`). Les noms qui ne portent pas ce
+    suffixe (futur format) restent tels quels -- la detection par hote est
+    best-effort, le predicat EXTINCTION global reste la borne dure.
+    """
+    return _HOST_SUFFIX.sub("", runner_name)
+
+
+def evaluate_host_loss(inv: RunnerInventory,
+                       declared: DeclaredHosts | None = None) -> list[str]:
+    """Warnings de perte de pool par hote (#20697 point 4).
+
+    Constat fondateur (12:45Z) : le pool `myia-ai-01-wsl` est reste 0 online
+    pendant ~2 jours alors que les 10 conteneurs tournaient (visible cote
+    superviseur, invisible cote GitHub). Aucun signal n'a nomme cette
+    disjonction -- l'organe EXTINCTION global ne rougit que si TOUS les
+    online tombent (les 10 slots etaient OFFLINE cote GitHub, mais d'autres
+    hotes du label restaient online ; l'extinction globale n'a jamais tire).
+
+    Le predicat par hote : `online == 0` ET `offline > 0` -- les conteneurs
+    existent (slots listes, ne serait-ce qu'en OFFLINE) mais aucun n'a pu
+    s'inscrire. C'est la disjonction superviseur mort / conteneurs vivants
+    sur UN hote, pas la famine globale.
+
+    Un hote avec `online > 0` et `offline > 0` n'est PAS une perte de pool :
+    certains slots sont en cours de redemarrage et le pool rend des jobs.
+    C'est la garde anti-FP, mesure du jour : `myia-po-2024-linux-docker-3`
+    est OFFLINE pendant que `myia-po-2024-linux-docker-1` est ONLINE, et
+    l'inventaire rend `online=1, offline=1` -- on NE DOIT PAS alerter.
+    """
+    if not inv.available:
+        return []
+    online = set(inv.online)
+    offline = set(inv.offline)
+    by_host: dict[str, dict[str, int]] = defaultdict(lambda: {"online": 0, "offline": 0})
+    for name in online | offline:
+        host = _host_of(name)
+        bucket = by_host[host]
+        if name in online:
+            bucket["online"] += 1
+        else:
+            bucket["offline"] += 1
+    out: list[str] = []
+    for host, counts in sorted(by_host.items()):
+        if counts["online"] == 0 and counts["offline"] > 0:
+            out.append(
+                f"POOL LOSS: host {host} a 0 runner online et {counts['offline']} offline -- "
+                f"conteneurs listes mais aucun ne s'inscrit (superviseur mort ? #20697)"
+            )
+
+    # POOL ABSENT -- le residu du point 4 (#20697). L'hote DECLARE n'apparait
+    # ni en online ni en offline : zero runner inscrit cote GitHub, alors que
+    # ses conteneurs peuvent tourner. Le predicat ci-dessus exige `offline > 0`
+    # et ne peut donc structurellement pas le voir : c'est le cas fondateur
+    # (10 conteneurs vivants, 0 runner inscrit, ~2 jours sans signal).
+    # Un hote declare qui apparait, meme offline, est deja couvert (ou non)
+    # par le predicat precedent : on ne double pas le message.
+    if declared is not None and declared.available:
+        for host, slots in sorted(declared.hosts.items()):
+            if host in by_host:
+                continue
+            attendu = (f"{slots} slot(s) attendu(s)" if slots
+                       else "nombre de slots non chiffre")
+            out.append(
+                f"POOL ABSENT: host {host} declare ({attendu}) n'a AUCUN runner "
+                f"dans l'inventaire du label -- ni online ni offline : le "
+                f"superviseur ne s'inscrit plus (conteneurs peut-etre vivants, "
+                f"invisibles cote GitHub). Declaration: {declared.source} ; "
+                f"si l'hote est retire volontairement, mettre ce fichier a jour "
+                f"(#20697)"
+            )
+    return out
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", default=os.environ.get("REPO", DEFAULT_REPO))
     ap.add_argument("--label", default=os.environ.get("LABEL", DEFAULT_LABEL))
+    ap.add_argument("--declared-hosts",
+                    default=os.environ.get("DECLARED_HOSTS_FILE", DEFAULT_DECLARED_HOSTS),
+                    help="inventaire DECLARE des hotes de pool (#20697 point 4) ; "
+                         "les hotes declares pour le label mesure qui n'ont AUCUN "
+                         "runner dans l'inventaire rendent un warning POOL ABSENT. "
+                         "Vide = predicat desactive.")
     ap.add_argument("--starve-minutes", type=float,
                     default=float(os.environ.get("STARVE_MINUTES", DEFAULT_STARVE_MINUTES)))
     ap.add_argument("--warn-floor", type=int, default=DEFAULT_WARN_FLOOR)
@@ -454,19 +1584,67 @@ def main() -> int:
                     default=float(os.environ.get("CADENCE_WARN_MINUTES", DEFAULT_CADENCE_WARN_MINUTES)),
                     help="minutes sans run planifie avant le warning "
                          "SCHEDULER MUET (echelle de l'arret total, pas du retard chronique)")
+    ap.add_argument("--workflow", default=os.environ.get("PROBE_WORKFLOW", ""),
+                    help="restreint le listing des runs a CE fichier de workflow "
+                         "(#22215 : une sonde de pool n'a pas besoin de payer "
+                         "tous les runs du depot) ; vide = depot entier")
+    ap.add_argument("--job-read-budget", type=int,
+                    default=int(os.environ.get("JOB_READ_BUDGET", DEFAULT_JOB_READ_BUDGET)),
+                    help="nombre maximal de runs dont les jobs sont lus sur un "
+                         "passage, du plus vieux au plus recent")
+    ap.add_argument("--in-progress-sample", type=int,
+                    default=int(os.environ.get("IN_PROGRESS_SAMPLE", DEFAULT_IN_PROGRESS_SAMPLE)),
+                    help="nombre de runs in_progress inspectes (preuve qu'un "
+                         "slot sert) -- les plus recents d'abord")
+    ap.add_argument("--measure-every-n-runs", type=int,
+                    default=int(os.environ.get("MEASURE_EVERY_N_RUNS", "0")),
+                    help="borne la mesure complete (#22937) : sur les runs "
+                         "workflow_run, une mesure complete sur N passages ; "
+                         "les autres ne paient que la lecture de la cadence "
+                         "servie (1 appel). 0 ou 1 = porte inactive")
+    ap.add_argument("--mirror-state-dir",
+                    default=os.environ.get("COURSIA_RUNNER_STATE_DIR",
+                                           DEFAULT_MIRROR_STATE_DIR),
+                    help=" repertoire d'etat du superviseur des runners "
+                         "(journal `objects-mirror.log`) -- #26453")
+    ap.add_argument("--mirror-path",
+                    default=os.environ.get("COURSIA_RUNNER_MIRROR_PATH",
+                                           DEFAULT_MIRROR_PATH),
+                    help="chemin du miroir d'objets ; son parent porte le "
+                         "compteur `.objects-mirror.fails` et l'horodatage "
+                         "`.objects-mirror.ok` -- #26453")
+    ap.add_argument("--mirror-fail-warn", type=int,
+                    default=int(os.environ.get("COURSIA_RUNNER_MIRROR_FAIL_WARN",
+                                               DEFAULT_MIRROR_FAIL_WARN)),
+                    help="nombre d'echecs consecutifs du miroir au-dela "
+                         "duquel l'alerte `[WARN][mirror]` est attendue")
+    ap.add_argument("--mirror-off", action="store_true",
+                    help="desactive la lecture de l'etat du miroir")
+    ap.add_argument("--mirror-only", action="store_true",
+                    help="n'evalue QUE l'etat local du miroir : aucun appel "
+                         "API, aucune lecture de cadence, aucun inventaire. "
+                         "C'est le mode du job de PR (#26465) : il tourne sur "
+                         "le slot auto-heberge qui PORTE le miroir, donc la "
+                         "seule surface ou l'etat est local, et son verdict "
+                         "arrive sur la PR.")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
 
-    token = os.environ.get("RUNNERS_READ_PAT") or None
-    inv = fetch_inventory(args.repo, args.label, token)
-    st = fetch_starvation(
-        args.repo, args.label, args.starve_minutes,
-        window_max_minutes=args.window_max_minutes,
-    )
-    v = evaluate(inv, st, args.warn_floor)
+    # Le mode miroir seul court AVANT tout le reste : il ne doit payer aucun
+    # appel API. Le job de PR s'execute sur chaque PR du depot -- un appel
+    # par PR sur la quota partagee `jsboige` serait un cout reel.
+    if args.mirror_only:
+        return run_mirror_only(args)
+
+    # La cadence servie est lue AVANT la porte de mesure : c'est elle qui
+    # porte le rapport #15332, et elle ne doit jamais dependre du passage
+    # que la porte economise. Le compteur `calls` est partage pour que le
+    # `gh_calls` annonce soit le cout REEL du passage (#22937).
+    calls = CallStats()
+    v = Verdict()
     if args.self_workflow:
         cad = evaluate_cadence(
-            fetch_scheduled_runs(args.repo, args.self_workflow),
+            fetch_scheduled_runs(args.repo, args.self_workflow, stats=calls),
             datetime.now(timezone.utc),
             args.declared_cadence_minutes,
             args.cadence_warn_minutes,
@@ -474,18 +1652,161 @@ def main() -> int:
         v.notes.extend(cad.notes)
         v.warnings.extend(cad.warnings)
         v.errors.extend(cad.errors)
-        v.status = "ERROR" if v.errors else "OK"
+
+    run_number = _env_int("GITHUB_RUN_NUMBER")
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    measure, gate_reason = gate_measurement(
+        every_n=args.measure_every_n_runs,
+        run_number=run_number,
+        event_name=event_name,
+    )
+    v.notes.append(f"porte de mesure: {gate_reason}")
+
+    inv: RunnerInventory | None = None
+    st: Starvation | None = None
+    # Profondeur VIVANTE (#26719) : remplie par le passage complet, jamais
+    # par le passage econome (cf `if measure:` plus bas).
+    live_depth: int | None = None
+    live_depth_bound: int | None = None
+    live_depth_error = ""
+    # Le cout de la mesure de profondeur, en appels API (#26739 : le quota
+    # horaire est partage par tous les workflows du depot).
+    depth_calls = 0
+    # Le MIROIR est lu HORS de la porte de mesure : l'alerte `[WARN][mirror]`
+    # ne doit pas dependre du fait que le passage complet soit econome
+    # (4 runs sur 1). Un miroir fige fait tomber les checkouts, donc la
+    # famine qu'on cherche a mesurer -- c'est une CAUSE, pas une note.
+    mirror: MirrorState | None = None
+    if not args.mirror_off:
+        mirror = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                                   threshold=args.mirror_fail_warn)
+        m_errors, m_warnings, m_notes = mirror_verdict(mirror)
+        v.errors.extend(m_errors)
+        v.warnings.extend(m_warnings)
+        v.notes.extend(m_notes)
+    # #15332 : le chemin cadence-only n'appelle pas load_declared_hosts, mais
+    # le payload annonce toujours `declared_hosts`. Sans cette initialisation,
+    # la porte de mesure economisait la lecture ET cassait le passage.
+    declared: DeclaredHosts | None = None
+    if measure:
+        token = os.environ.get("RUNNERS_READ_PAT") or None
+        inv = fetch_inventory(args.repo, args.label, token)
+        st = fetch_starvation(
+            args.repo, args.label, args.starve_minutes,
+            window_max_minutes=args.window_max_minutes,
+            workflow=args.workflow or None,
+            job_read_budget=args.job_read_budget,
+            in_progress_sample=args.in_progress_sample,
+            # #28552 : la sonde rend un VERDICT, elle n'a pas besoin du compte
+            # exact de jobs en cours pour le rendre -- elle opte donc pour le
+            # saut des runs in_progress plus jeunes que le seuil une fois la
+            # preuve faite. `ci_overflow_controller` lit `in_progress` comme une
+            # CHARGE et exige `in_progress_unread == 0` : il garde le defaut
+            # (lecture complete), aucun changement de comportement pour lui.
+            skip_young_in_progress_after_proof=True,
+        )
+        declared = load_declared_hosts(args.declared_hosts, args.label)
+        # Profondeur VIVANTE (#26719) : une SECONDE lecture de la file (elle
+        # pagine toute la population queued et sonde les classes de
+        # fantomes). On ne la paie que sur un passage qui a REELLEMENT lu la
+        # file : une sonde sans aucun appel (lecture injectee) n'a rien
+        # mesure, et annoncer une profondeur venue d'ailleurs serait un
+        # chiffre sans provenance. Un echec est absorbe ici : il devient une
+        # WARNING du verdict, jamais une erreur.
+        #
+        # #26739 -- la porte se FERME encore : la mesure n'a lieu que si un
+        # job AFFAME est detecte (le seul cas ou la note aide a lire le
+        # verdict). Sans affame, la note de profondeur n'apporte rien au
+        # verdict, et la mesurer coutait 114 appels API par passage sur un
+        # quota horaire partage par tous les workflows du depot.
+        if st.starved and st.stats.calls:
+            (live_depth, live_depth_bound, live_depth_error,
+             depth_calls) = _live_queue_depth(args.repo)
+        full = evaluate(inv, st, args.warn_floor, label=args.label,
+                        declared=declared, live_depth=live_depth,
+                        live_depth_bound=live_depth_bound,
+                        live_depth_error=live_depth_error)
+        v.notes = full.notes + v.notes
+        # #26739 -- le cout du passage, nomme : le quota horaire est partage
+        # par tous les workflows du depot, un organe qui consomme 114 appels
+        # par passage doit pouvoir le dire dans sa sortie.
+        total_calls = (calls.calls
+                       + (st.stats.calls if st is not None else 0)
+                       + depth_calls)
+        v.notes.append(
+            f"api-quota: {total_calls} appel(s) API sur ce passage "
+            f"(dont {depth_calls} pour la profondeur vivante)"
+        )
+        v.warnings = full.warnings + v.warnings
+        v.errors = full.errors + v.errors
+    v.status = "ERROR" if v.errors else "OK"
 
     payload = {
         "status": v.status,
         "errors": v.errors,
         "warnings": v.warnings,
         "notes": v.notes,
-        "online_runners": inv.online if inv.available else None,
-        "offline_runners": inv.offline if inv.available else None,
-        "starved_jobs": [r.__dict__ for r in st.starved],
-        "in_progress_jobs": len(st.in_progress),
-        "unexamined_runs": st.unexamined,
+        "measurement": "full" if measure else "cadence-only",
+        "gate": {
+            "every_n": args.measure_every_n_runs,
+            "run_number": run_number,
+            "event_name": event_name,
+            "reason": gate_reason,
+        },
+        "online_runners": inv.online if (inv is not None and inv.available) else None,
+        "offline_runners": inv.offline if (inv is not None and inv.available) else None,
+        "declared_hosts": (sorted(declared.hosts) if declared is not None
+                           and declared.available else None),
+        "starved_jobs": [r.__dict__ for r in st.starved] if st is not None else [],
+        "in_progress_jobs": len(st.in_progress) if st is not None else None,
+        # Profondeur VIVANTE (#26719) : la surface machine de la mesure que
+        # la note annonce -- un lecteur compare les deux chiffres sans
+        # concatener de la prose.
+        "live_depth": live_depth,
+        "live_depth_error": live_depth_error,
+        # #26739 -- quand la mesure n'a pas ete payee, ce qui est annonce
+        # est un MAJORANT de la profondeur vivante (le brut de la file est
+        # sous le seuil de saturation, ce qui PROUVE que la file n'est pas
+        # saturee). Un lecteur machine sait ainsi qu'il n'a pas un chiffre
+        # de profondeur mais une borne.
+        "live_depth_upper_bound": live_depth_bound,
+        "live_depth_api_calls": depth_calls,
+        "queued_runs_seen": st.queued_runs_seen if st is not None else None,
+        "unexamined_runs": st.unexamined if st is not None else None,
+        "gh_calls": calls.calls + (st.stats.calls if st is not None else 0)
+        + depth_calls,
+        "gh_failures": [
+            {"endpoint": ep, "returncode": code, "message": msg}
+            for ep, code, msg in calls.failures
+        ] + ([
+            {"endpoint": ep, "returncode": code, "message": msg}
+            for ep, code, msg in st.stats.failures
+        ] if st is not None else []),
+        "job_reads": st.job_reads if st is not None else None,
+        "skipped_young_runs": st.skipped_young if st is not None else None,
+        "budget_unread_runs": len(st.budget_unread) if st is not None else None,
+        "in_progress_unread_runs": st.in_progress_unread if st is not None else None,
+        # #28552 : runs non lus parce que la garde anti-faux-positif etait deja
+        # satisfaite. Distinct des `in_progress_unread_runs` (budget) : ici le
+        # verdict ne perd rien, seul le COMPTE de jobs en cours devient une
+        # borne inferieure (rendu « au moins N » dans le rapport texte).
+        "in_progress_satisfied_exit_runs": (
+            st.in_progress_satisfied_exit if st is not None else None),
+        "listing_failed": sorted(st.listing_failed) if st is not None else [],
+        # L'etat du miroir d'objets (#26453) : la ligne `[WARN][mirror]` doit
+        # etre lisible par une machine, pas seulement par un oeil sur le
+        # rapport texte.
+        "mirror": ({
+            "available": mirror.available,
+            "reason": mirror.reason,
+            "fails": mirror.fails,
+            "threshold": mirror.threshold,
+            "counter_age_s": mirror.counter_age_s,
+            "ok_age_s": mirror.ok_age_s,
+            "warn_line": mirror.warn_line,
+            "log_path": mirror.log_path,
+            "fails_path": mirror.fails_path,
+        } if mirror is not None else None),
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

@@ -72,7 +72,7 @@ from check_perimeter import TARGET_LANGS  # noqa: E402
 # #15216 casestudies) are replayed by the pytest suite.
 SELF_TEST_BASE = "378af0229^"
 SELF_TEST_HEAD = "378af0229"
-SELF_TEST_NOTEBOOK = "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb"
+SELF_TEST_NOTEBOOK = "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb"
 SELF_TEST_CELLS = ("b07ca49a",)
 
 

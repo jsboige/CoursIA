@@ -32,7 +32,7 @@ Voir aussi
 ----------
 
 - TV-00b : ``Attention-Variants-from-scratch.ipynb`` (origine).
-- TV-03  : ``TV-03-Internalisation-CoT.ipynb`` (à venir — grain d'exécution).
+- TV-03  : ``TV-03-Internalisation-CoT-Python.ipynb`` (à venir — grain d'exécution).
 - Issue  : **#17540**.
 """
 from __future__ import annotations
@@ -40,12 +40,18 @@ from __future__ import annotations
 from .model import (
     VariantAttn,
     Bloc,
+    BlocDecodeur,
     PetitLM,
+    PetitEncodeur,
+    EncodeurDecodeur,
+    AttnCroisee,
     build_kv_heads,
     attn_masked,
+    attn_pleine,
     attn_banded,
     causal_window_mask,
     selfcheck_attn_equivalence,
+    selfcheck_encodeurs,
 )
 from .task import (
     Vocab,
@@ -91,12 +97,18 @@ from .task import (
 __all__ = [
     "VariantAttn",
     "Bloc",
+    "BlocDecodeur",
     "PetitLM",
+    "PetitEncodeur",
+    "EncodeurDecodeur",
+    "AttnCroisee",
     "build_kv_heads",
     "attn_masked",
+    "attn_pleine",
     "attn_banded",
     "causal_window_mask",
     "selfcheck_attn_equivalence",
+    "selfcheck_encodeurs",
     "Vocab",
     "Lot",
     "lot_single_hop",

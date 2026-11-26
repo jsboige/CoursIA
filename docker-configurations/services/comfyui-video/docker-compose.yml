@@ -1,7 +1,7 @@
 # ComfyUI-Video - Generation et edition video par IA
 # Base sur comfyui-qwen avec nodes video supplementaires
 #
-# GPU: RTX 3090 (PyTorch 0, nvidia-smi GPU 1)
+# GPU: RTX 3090 (carte nvidia-smi GPU 1 ; seule carte visible de CUDA)
 # EXCLUSIF avec comfyui-qwen (meme GPU, ne pas lancer les deux)
 # Port: 8189 (pour ne pas confliter avec comfyui-qwen:8188)
 #
@@ -26,6 +26,13 @@ services:
 
     ports:
       - "127.0.0.1:${COMFYUI_VIDEO_PORT:-8189}:8188"
+
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 12g (swap disabled),
+    # pids_limit 512. Measured 2026-11-07: 834 MiB idle / 63 PIDs; video
+    # generation peaks well above idle but stays under 12g on this host.
+    mem_limit: 12g
+    memswap_limit: 12g
+    pids_limit: 512
 
     volumes:
       - type: bind
@@ -56,13 +63,19 @@ services:
         target: /install_video_nodes.sh
 
     environment:
-      # Expose both GPUs to CUDA; selection is done by the entrypoint's
-      # --cuda-device flag (GPU_DEVICE_ID). Avoids pre-filtering with
-      # CUDA_VISIBLE_DEVICES, which (without PCI_BUS_ID order) remaps indices
-      # unpredictably and previously landed the server on the 16GB GPU0.
-      - CUDA_VISIBLE_DEVICES=0,1
-      # Deterministic enumeration = nvidia-smi order, so device index N inside
-      # matches nvidia-smi GPU N (0=3080Ti 16GB, 1=3090 24GB).
+      # Liste des cartes visibles de CUDA, lue dans le .env du service ; par
+      # defaut, la seule carte visee (GPU_DEVICE_ID). C'est le reglage qui
+      # isole : sous WSL2, device_ids et NVIDIA_VISIBLE_DEVICES ne suffisent
+      # pas (mesure du 2026-11-24 sur ce banc : un conteneur declare avec
+      # device_ids=["1"] voit encore les deux cartes).
+      # Ce pre-filtrage est sur parce que l'ordre ci-dessous est PCI_BUS_ID :
+      # sans lui, il a remappe les index et pose le serveur sur la 3080 Ti
+      # de 16 Go (correctif #3204). L'entrypoint traduit GPU_DEVICE_ID en index
+      # PyTorch.
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-${GPU_DEVICE_ID:-0}}
+      # Ordre d'enumeration = ordre nvidia-smi : l'index CUDA N est la carte
+      # nvidia-smi N (0 = 3080Ti 16GB, 1 = 3090 24GB). Sans cette variable,
+      # l'ordre par defaut de CUDA est l'inverse.
       - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
       - GPU_DEVICE_ID=${GPU_DEVICE_ID:-0}
@@ -83,6 +96,11 @@ services:
       - COMFYUI_VIDEO_TOKEN=${COMFYUI_VIDEO_TOKEN}
       - CORS_ENABLED=${CORS_ENABLED:-true}
       - API_TIMEOUT=${API_TIMEOUT:-600}
+      # Extra CLI args optionnels (defaut vide = comportement historique).
+      # Etalon de recette video 19/11 : --lowvram --cpu-vae -- le cgroup 12g deborde
+      # au chargement VAE/CLIP (mort exit 0 + rejeu de queue = crash-loop,
+      # 8 restarts mesures) sous pression hote (stack TTS montee).
+      - COMFYUI_EXTRA_ARGS=${COMFYUI_EXTRA_ARGS:-}
       # Idle monitoring (pour documentation, utilise par le sidecar)
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
 
@@ -129,6 +147,11 @@ services:
     working_dir: /app
 
     command: ["python", "comfyui_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar): measured 17 MiB / 2 PIDs.
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     depends_on:
       comfyui-video:

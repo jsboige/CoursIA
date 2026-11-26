@@ -2,7 +2,7 @@
 
 [← CaseStudies](../README.md) | [↑ GenAI](../../README.md)
 
-Duel verbal multi-agents Semantic Kernel entre Barbie et l'Âne de Shrek, avec illustrations DALL-E des répliques de l'Âne. Un style linguistique (rime, Shakespeare, chanson) est tiré au sort et imposé via les instructions système des deux agents.
+Duel verbal multi-agents Semantic Kernel entre Barbie et l'Âne de Shrek, avec illustrations générées en local (ComfyUI, Qwen-Image-Edit 2.1) des répliques de l'Âne. Un style linguistique (rime, Shakespeare, chanson) est tiré au sort et imposé via les instructions système des deux agents.
 
 ## Vue d'ensemble
 
@@ -17,12 +17,12 @@ Duel verbal multi-agents Semantic Kernel entre Barbie et l'Âne de Shrek, avec i
 
 | # | Notebook | Description |
 |---|----------|-------------|
-| 1 | [barbie-schreck](barbie-schreck.ipynb) | Duel verbal Barbie vs Âne de Shrek (Semantic Kernel, DALL-E) |
+| 1 | [barbie-schreck](barbie-schreck.ipynb) | Duel verbal Barbie vs Âne de Shrek (Semantic Kernel, ComfyUI) |
 
 ## Technologies
 
 - **Semantic Kernel** : orchestration multi-agents (deux `ChatCompletionAgent` sur kernels séparés)
-- **OpenAI DALL-E** : génération des illustrations de l'Âne à chaque réplique
+- **ComfyUI (Qwen-Image-Edit 2.1)** : génération en local des illustrations de l'Âne à chaque réplique, via le client partagé `shared/helpers/comfyui_client.py`
 - **Python** : orchestration du notebook
 
 ## Prérequis

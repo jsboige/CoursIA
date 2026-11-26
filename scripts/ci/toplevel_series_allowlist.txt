@@ -1,0 +1,42 @@
+# Dossiers de premier niveau AUTORISES sous `MyIA.AI.Notebooks/`.
+#
+# Garde : scripts/ci/check_toplevel_series.py (#27141)
+# Decision du mainteneur : #27092 (17/11) -- « Le critere d'eparpillement est
+# le premier niveau. Une serie soeur se range dans un hub, elle ne s'ajoute pas
+# a la racine. Aucune serie ni sous-serie nouvelle sans GO ecrit. »
+#
+# FORMAT
+#   une ligne = un dossier de premier niveau ; `#` ouvre un commentaire.
+#
+#   - un dossier PRESENT sur `main` est autorise par son merge (pas de
+#     citation necessaire) ;
+#   - un dossier autorise par un GO ECRIT mais pas encore sur `main` porte la
+#     citation de son GO en commentaire.
+#
+#   L'ajout d'un dossier a cette liste passe par une PR qui cite le GO du
+#   mainteneur. La liste est lue dans l'etat de la tete : une PR qui ajoute le
+#   dossier ET sa ligne passe ici, et c'est le reviewer qui verifie que le GO
+#   est ecrit.
+#
+# Dossiers presents sur `main` (autorisation = leur merge) :
+CaseStudies
+Complexity
+Compression
+Config
+GameTheory
+GenAI
+IIT
+ML
+NLP
+Physique
+Probas
+QuantConnect
+RL
+Search
+Sudoku
+SymbolicAI
+cross-series
+#
+# Dossier autorise par GO ecrit, pas encore sur `main` :
+InformationCalcul          # GO du mainteneur : #27092 (17/11) -- parapluie « Information et calcul »
+BioMedecine                # GO du mainteneur : #28135 (22/11) -- serie technique a cote de Physique

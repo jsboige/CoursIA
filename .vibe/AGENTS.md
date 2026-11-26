@@ -51,12 +51,12 @@ D:\dev\CoursIA\.vibe\
 3. Filtrer par lane : myia-po-2025:Microsoft VS Code
 4. git fetch origin main ; travail en worktree isole `feature/<sujet>` depuis origin/main
 
-**Phase 2 : Selection — le picker d'abord (P0 inclus)**
-- **Premier geste de selection : le picker calibre**, apres lecture inbox/dashboard — jamais de scan manuel du pool avant lui :
-  `python scripts/pick_idle_grain.py --belt --lane "myia-po-2025:Microsoft VS Code" --json`
-  (verification des claims active ; `--no-check-claims` interdit)
-- Cle `"repair"` non nulle : **P0** — le picker retourne le backlog rouge/review de la lane ; la reparation de la PR nommee (`repair.grain`) EST le grain du cycle, preparee en relais humain comme tout livrable Vibe.
-- Sinon : prendre les `picks` du tapis **dans l'ordre** (derniere visite la plus ancienne en tete), en ne sautant que les candidats hors **profil Vibe** : mono-sujet, CPU/local, verifiable textuellement. Exclus : GPU/vision, QuantConnect, Lean froid, notebooks a re-executer, travail relationnel/multi-fichiers, catalogue (enumeration des PRs de la lane via le tag `Grain:` du body, jamais `--author @me` : faux 0 silencieux sur cette machine multi-comptes).
+**Phase 2 : Selection — le tapis rapide d'abord (P0 inclus)**
+- **Premier geste de selection : le tapis rapide**, apres lecture inbox/dashboard — jamais de scan manuel du pool avant lui :
+  `python scripts/coordination/tapis_rapide.py --lane "myia-po-2025:Microsoft VS Code" --json`
+  (~50 s ; le tapis lourd `pick_idle_grain.py --belt` ne se tire plus, #26926)
+- `vos_prs` porte une PR de plus de 24 h : **P0** — la reparation de cette PR EST le grain du cycle, preparee en relais humain comme tout livrable Vibe.
+- Sinon : prendre les `grains` du tapis **dans l'ordre** (grains avant conteneurs ; un conteneur se sert par sa `procedure` et `check_lane_claim.py N --paths`), en ne sautant que les candidats hors **profil Vibe** : mono-sujet, CPU/local, verifiable textuellement. Exclus : GPU/vision, QuantConnect, Lean froid, notebooks a re-executer, travail relationnel/multi-fichiers, catalogue (enumeration des PRs de la lane via le tag `Grain:` du body, jamais `--author @me` : faux 0 silencieux sur cette machine multi-comptes).
 - Avant d'editer : `check_lane_claim.py --lane "myia-po-2025:Microsoft VS Code" <N>`, puis `[CLAIMED]` en commentaire d'issue (tag `Grain:` et clause `paths:` sur deux lignes distinctes).
 
 **Phase 3 : Execution**
@@ -145,6 +145,7 @@ roosync_search(query: "fix main red", limit: 10)
 | 2026-08-20 | Creation + correction MCP | jsboige + Mistral Vibe |
 | 2026-08-20 | Annonce dans 3 dashboards | Mistral Vibe |
 | 2026-09-01 | Alignement #14114 : picker calibre en premier geste de selection (P0 rouge/review via mode repair), relais humain [REVIEW-NEEDED] (plus de push/PR autonome), cadence feeder 4 h / probe `--wake` 1 h, retrait de `--author @me` | jsboige + Claude Code |
+| 2026-11-16 | #26926 : tapis rapide en premier geste de selection (`tapis_rapide.py --json`, P0 = `vos_prs` de plus de 24 h, `grains` dans l'ordre, conteneurs servis apres les grains avec `--paths`) ; le tapis lourd `pick_idle_grain.py --belt` ne se tire plus | jsboige + Claude Code |
 
 ---
 

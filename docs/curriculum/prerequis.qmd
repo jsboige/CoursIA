@@ -1,0 +1,216 @@
+---
+title: "Carte des prérequis"
+description: "Dépendances entre carnets dérivées de la taxonomie conceptuelle — régénérées avant chaque rendu de déploiement."
+format:
+  html:
+    echo: false
+---
+
+<!-- FICHIER GÉNÉRÉ — ne pas éditer à la main.
+     Source     : docs/curriculum/taxonomy/*.json
+     Générateur : scripts/curriculum/generate_prereq_map.py
+     La CI de déploiement le rejoue avant chaque rendu du site. -->
+
+Cette page ne se dessine jamais à la main : la carte, les tables et les comptes
+sont **générés** depuis la taxonomie conceptuelle du dépôt
+(`docs/curriculum/taxonomy/`, issue #24993), par
+[`scripts/curriculum/generate_prereq_map.py`](https://github.com/jsboige/CoursIA/blob/main/scripts/curriculum/generate_prereq_map.py).
+Une mise à jour de la taxonomie (nouveau carnet, nouvelle notion, nouveau
+prérequis) se propage au prochain rendu du site, sans retouche de cette page.
+
+## Comment lire la carte
+
+- Chaque **nœud** est un carnet de la série ; chaque **flèche** `A -> B` se lit
+  « le carnet A enseigne une notion prérequise par le carnet B » : suivez les
+  flèches pour savoir quoi ouvrir avant.
+- L'arête est **dérivée, pas déclarée** : elle existe parce qu'une notion citée
+  dans B référence comme prérequis une notion citée dans A. Les références non
+  résolues sont comptées sous la carte plutôt que silencieusement ignorées.
+- La série pilote est **Z3-Linq2Z3**, la seule dont la taxonomie couvre
+  aujourd'hui l'inventaire réel de ses carnets — la table « Couverture des
+  séries » mesure l'état des autres contre le disque.
+
+## Carte — Z3-Linq2Z3 (série pilote)
+
+La carte est scindée en une vue d'ensemble puis un détail par plage de carnets :
+les carnets 01 et 02 sont les prérequis de presque tout le catalogue, et un
+diagramme unique de vingt nœuds rendrait chaque étiquette illisible. Les plages
+sont un regroupement de lecture du générateur, pas une donnée de la taxonomie.
+
+### Vue d'ensemble
+
+```{mermaid}
+flowchart TB
+  A["Carnets 01–04<br/>4 carnets"]
+  B["Carnets 05–09<br/>4 carnets"]
+  C["Carnets 10–20<br/>11 carnets"]
+  A -->|1 arête| B
+  A -->|22 arêtes| C
+```
+
+Le nombre porté par une flèche compte les arêtes carnet→carnet entre deux
+plages ; les arêtes internes restent dans les détails (**Carnets 01–04** 5 arête(s) · **Carnets 05–09** 3 arête(s)).
+
+### Détail — Carnets 01–04
+
+```{mermaid}
+flowchart TB
+  subgraph S["Carnets 01–04"]
+    direction TB
+    n01["01 — Introduction à Linq2Z3"]
+    n02["02 — Sudoku : théorème explicite contre tableau implicite"]
+    n03["03 — Sudoku : comparaison des modes de collection"]
+    n04["04 — Théorie des tableaux Z3"]
+  end
+  n01 --> n02
+  n01 --> n03
+  n01 --> n04
+  n02 --> n03
+  n02 --> n04
+  click n01 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.html" "Ouvrir le carnet"
+  click n02 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.html" "Ouvrir le carnet"
+  click n03 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.html" "Ouvrir le carnet"
+  click n04 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.html" "Ouvrir le carnet"
+```
+
+### Détail — Carnets 05–09
+
+```{mermaid}
+flowchart TB
+  subgraph S["Carnets 05–09"]
+    direction TB
+    n01("04 — Théorie des tableaux Z3")
+    n02["05 — Tableaux imbriqués et grilles 2D"]
+    n03["06 — Planificateur de repas : modélisation"]
+    n04["08 — Planificateur de repas : capstone patient"]
+    n05["09 — Planificateur de repas : convergence à l'échelle"]
+  end
+  n01 --> n02
+  n02 --> n03
+  n03 --> n04
+  n04 --> n05
+  click n01 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.html" "Ouvrir le carnet"
+  click n02 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.html" "Ouvrir le carnet"
+  click n03 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.html" "Ouvrir le carnet"
+  click n04 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.html" "Ouvrir le carnet"
+  click n05 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.html" "Ouvrir le carnet"
+```
+
+### Détail — Carnets 10–20
+
+```{mermaid}
+flowchart LR
+  subgraph S["Carnets 10–20"]
+    direction LR
+    n01("01 — Introduction à Linq2Z3")
+    n02("02 — Sudoku : théorème explicite contre tableau implicite")
+    n03["10 — Génération de témoins et automates"]
+    n04["11 — Ordonnancement d'atelier (job shop)"]
+    n05["12 — Coloration de graphe (Petersen)"]
+    n06["13 — Cryptarithmes"]
+    n07["14 — Optimisation et MaxSAT"]
+    n08["15 — Bit-vectors et débordements"]
+    n09["16 — Arithmétique des réels"]
+    n10["17 — Cores UNSAT"]
+    n11["18 — Énigme d'Einstein"]
+    n12["19 — Choix du solveur et tactiques"]
+    n13["20 — Rewriters de théorèmes"]
+  end
+  n01 --> n03
+  n01 --> n04
+  n01 --> n05
+  n01 --> n06
+  n01 --> n07
+  n01 --> n08
+  n01 --> n09
+  n01 --> n10
+  n01 --> n11
+  n01 --> n12
+  n01 --> n13
+  n02 --> n03
+  n02 --> n04
+  n02 --> n05
+  n02 --> n06
+  n02 --> n07
+  n02 --> n08
+  n02 --> n09
+  n02 --> n10
+  n02 --> n11
+  n02 --> n12
+  n02 --> n13
+  click n01 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.html" "Ouvrir le carnet"
+  click n02 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.html" "Ouvrir le carnet"
+  click n03 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.html" "Ouvrir le carnet"
+  click n04 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.html" "Ouvrir le carnet"
+  click n05 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.html" "Ouvrir le carnet"
+  click n06 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.html" "Ouvrir le carnet"
+  click n07 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.html" "Ouvrir le carnet"
+  click n08 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.html" "Ouvrir le carnet"
+  click n09 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.html" "Ouvrir le carnet"
+  click n10 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.html" "Ouvrir le carnet"
+  click n11 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.html" "Ouvrir le carnet"
+  click n12 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/19_Solver_Choice_And_Tactics.html" "Ouvrir le carnet"
+  click n13 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/20_Theorem_Rewriters.html" "Ouvrir le carnet"
+```
+
+Mesuré à la génération : **33 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 1079. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
+Dans les détails, un nœud **arrondi** est un carnet d'une autre plage, rappelé
+comme entrée : sans lui la plage paraîtrait sans prérequis.
+
+## Notions par carnet
+
+| Carnet | Notions enseignées (taxonomie) |
+|---|---|
+| [Introduction à Linq2Z3](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.html) | Programmation déclarative et solveur SMT · Le théorème Z3.Linq : DSL C# déclaratif |
+| [Sudoku : théorème explicite contre tableau implicite](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.html) | Le théorème Z3.Linq : DSL C# déclaratif · Quantificateurs bornés (ForAll / Exists) |
+| [Sudoku : comparaison des modes de collection](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.html) | Modes de collection : Array contre Constants |
+| [Théorie des tableaux Z3](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.html) | Théorie des tableaux : axiomes de McCarthy |
+| [Tableaux imbriqués et grilles 2D](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.html) | Tableaux imbriqués et grilles 2D (Theorem<Grid>) |
+| [Planificateur de repas : modélisation](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.html) | Modélisation d'un planificateur de repas |
+| [Planificateur de repas : données externes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.html) | Données réelles : jointure Ciqual × RecipeML |
+| [Planificateur de repas : capstone patient](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.html) | Capstone : restrictions d'un patient |
+| [Planificateur de repas : convergence à l'échelle](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.html) | Encodage et tractabilité à l'échelle |
+| [Génération de témoins et automates](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.html) | Génération de témoins et automates |
+| [Ordonnancement d'atelier (job shop)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.html) | Ordonnancement d'atelier (job shop) |
+| [Coloration de graphe (Petersen)](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.html) | Coloration de graphe et nombre chromatique |
+| [Cryptarithmes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.html) | Cryptarithmes et arithmétique positionnelle |
+| [Optimisation et MaxSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.html) | Optimisation et contraintes molles (MaxSAT) |
+| [Bit-vectors et débordements](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.html) | Bit-vectors et débordement arithmétique |
+| [Arithmétique des réels](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.html) | Arithmétique réelle exacte |
+| [Cores UNSAT](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.html) | Cores UNSAT : expliquer l'insatisfiabilité |
+| [Énigme d'Einstein](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.html) | Énigme d'Einstein : attributs croisés |
+| [Choix du solveur et tactiques](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/19_Solver_Choice_And_Tactics.html) | Choix du solveur et chaîne de tactiques |
+| [Rewriters de théorèmes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/20_Theorem_Rewriters.html) | Points d'extension de réécriture du DSL |
+
+## Couverture des séries
+
+La carte ci-dessus se dessine pour la série pilote ; cette table mesure, pour
+chaque série, la part des carnets **réellement présents sur le disque** que la
+taxonomie cite. Le dénominateur est l'inventaire mesuré (`*.ipynb` sous le
+dossier de la série), jamais la liste que la taxonomie déclare : une série qui
+ne cite qu'une partie de ses carnets reste partielle même si sa liste est courte.
+
+Ce bloc suit l'inventaire du disque : il est régénéré avant chaque rendu du
+site, et la garde de fraîcheur de la PR compare le reste de la page.
+<!-- COVERAGE-INVENTAIRE-DISQUE:BEGIN -->
+
+| Série | Notions citées | Carnets cités / réels | Couverture |
+|---|---|---|---|
+| Compression | 136 / 136 | 21 / 21 | complète |
+| GameTheory | 182 / 182 | 50 / 217 | 23 % |
+| IIT | 28 / 28 | 10 / 119 | 8 % |
+| Planners | 111 / 111 | 26 / 29 | 89 % |
+| Probas | 135 / 135 | 32 / 99 | 32 % |
+| Search | 121 / 121 | 26 / 201 | 12 % |
+| SymbolicAI (`semanticweb`) | 23 / 23 | 8 / 32 | 25 % |
+| SymbolicAI (`tweety`) | 21 / 21 | 5 / 39 | 12 % |
+| Z3-Linq2Z3 *(pilote)* | 21 / 21 | 20 / 68 | 29 % |
+
+<!-- COVERAGE-INVENTAIRE-DISQUE:END -->
+
+## Liens inter-séries
+
+Aucune arête inter-séries dans la taxonomie aujourd'hui : les prérequis
+référencés résolvent tous dans leur série d'origine. Dès que la densification
+conceptuelle (#26646) croise les séries, les liens apparaissent ici
+automatiquement — cette section, comme la carte, est régénérée.

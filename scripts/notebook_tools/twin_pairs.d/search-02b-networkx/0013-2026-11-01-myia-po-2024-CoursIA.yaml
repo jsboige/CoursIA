@@ -1,0 +1,13 @@
+date: '2026-11-01'
+by: myia-po-2024:CoursIA
+python_sha: 16fba3a7bbb6375092119b6e99eaa7e7d106997a
+csharp_sha: c53e1742bf9a4ec7b5bdc05c4daa6f45d1094732
+content_python_sha: 5b97e9b465ad598be5e1ec0b9e037b241e9d649772f6847a66509a8956e5a1fc
+content_csharp_sha: b81ab701ee664a7b4ae330d128dbdd2ca154ddb56da192c5ded435fc88e7f8f2
+note: >-
+  Re-attestation apres convergence kernel canon 3.13 (PR tranche 1/5 de
+  #23904). Drift Python = re-execution seule (21/21, 0 source modifiee) :
+  versions env (matplotlib 3.10.9->3.11.0, numpy 2.4.4->2.4.2), colonne
+  temps du benchmark (281.1->97.3 / 506.2->240.4 ms), ordre d'iteration
+  du set nx.max_weight_matching (memes 4 paires, meme total 33). Cote C#
+  inchange (sha identique a 0012). Parite pedagogique intacte.

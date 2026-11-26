@@ -52,8 +52,8 @@ hash_fr, hash_en, hash_es, hash_ar, hash_fa, hash_zh, hash_ru, hash_pt
 
 ```bash
 # Extraire le CSV initial d'une série (langue pivot fr, #1650 Phase 0.5)
-python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ \
-    -o translations/symbolicai/argument_analysis.csv
+python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ \
+    -o translations/symbolicai/argumentanalysis.csv
 
 # Un seul notebook (POC / review du schéma)
 python scripts/translation/extract_cells_to_csv.py notebook.ipynb -o poc.csv
@@ -76,7 +76,7 @@ Détecte le drift entre les notebooks courants et le CSV. **Non-bloquant** (mode
 
 ```bash
 # Vérifier un CSV (exit 1 si drift)
-python scripts/translation/check_translation_sync.py translations/symbolicai/argument_analysis.csv
+python scripts/translation/check_translation_sync.py translations/symbolicai/argumentanalysis.csv
 
 # Vérifier tous les CSV (mode CI non-bloquant, exit 0)
 python scripts/translation/check_translation_sync.py translations/ --check

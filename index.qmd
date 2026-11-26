@@ -35,7 +35,7 @@ toc: false
 ## Structure du dépôt
 
 ```
-MyIA.AI.Notebooks/         # Séries pédagogiques par thème (13 séries niveau 1)
+MyIA.AI.Notebooks/         # Séries pédagogiques par thème
   Search/                  # Algorithmes de recherche + métaheuristiques
   Sudoku/                  # Résolution multi-paradigme
   ML/                      # Machine Learning (.NET C#)
@@ -53,7 +53,7 @@ docs/                      # Documentation projet (règles, harnais, référence
 
 ## Comment commencer ?
 
-Trois parcours certifiés selon votre niveau — voir [parcours.qmd](parcours.qmd) :
+Trois parcours certifiés selon votre niveau — voir [parcours.qmd](docs/parcours.qmd) :
 
 1. **Local sobre** — Python + Jupyter uniquement, sans GPU, sans Docker. Idéal pour démarrer.
 2. **ML.NET + Symbolic** — Ajout de .NET Interactive pour les algorithmes C# et Lean 4.

@@ -76,8 +76,9 @@ T3 (cette tranche) epingle le backend d'execution par lake :
    commandement ``backends`` expose le registre et les sondes.
 
 Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
-borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
-publie ses metriques en JSON.
+borne aux enfants (``LEAN_NUM_THREADS`` — le seul levier mesure qui borne la
+concurrence reelle de Lake ; ``-Kjobs=N`` est **inerte**, cf.
+``bound_command`` et #26480) et publie ses metriques en JSON.
 
 Interface operateur (case 8 de #15666) — diagnostic, arret d'urgence et
 recuperation :
@@ -141,6 +142,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shlex
 import shutil
 import signal
@@ -169,6 +171,10 @@ EXIT_INTERRUPTED = 130
 CREATE_SUSPENDED = 0x00000004
 
 LEAN_PROC_NAMES = {"lean", "lean.exe", "lake", "lake.exe"}
+# Les COMPILATIONS, seules, portent le budget : `lake` est le scheduler et
+# ses aides, pas une compilation. Les compter decalait le seuil d'une unite
+# et rendait le budget inapplicable (#26480, mesure du 14/11).
+LEAN_WORKER_NAMES = {"lean", "lean.exe"}
 
 _STATE_SUBDIR_WIN = ("CoursIA", "lean_exec")
 _STATE_SUBDIR_POSIX = ("coursia", "lean_exec")
@@ -292,6 +298,25 @@ def _count_from_lines(lines: list[str]) -> int:
     return n
 
 
+def _count_live_posix_lines(lines: list[str]) -> int:
+    """Compte les processus Lean sauf les zombies, sans exclure les autres états."""
+    if not lines:
+        raise ValueError("sortie ps vide")
+    names = []
+    for line in lines:
+        fields = line.strip().split(maxsplit=1)
+        if len(fields) != 2:
+            raise ValueError("ligne ps sans état ou nom")
+        state, name = fields
+        # États Linux documentés et modificateurs de ps ; tout autre format
+        # refuse la mesure plutôt que de sous-compter silencieusement.
+        if not re.fullmatch(r"[RSDTtZXxKWPI][<NLsl+]*", state):
+            raise ValueError(f"état ps inconnu : {state!r}")
+        if not state.startswith("Z"):
+            names.append(name)
+    return _count_from_lines(names)
+
+
 def scan_native_population() -> tuple[int, str]:
     """Compte les lean/lake vivants cote natif. Echec = mesurable=false."""
     try:
@@ -308,11 +333,12 @@ def scan_native_population() -> tuple[int, str]:
             ]
             return _count_from_lines(names), "tasklist"
         out = subprocess.run(
-            ["ps", "-eo", "comm="], capture_output=True, text=True, timeout=15,
+            ["ps", "-eo", "stat=,comm="], capture_output=True, text=True, timeout=15,
             encoding="utf-8", errors="replace",
         )
-        return _count_from_lines(out.stdout.splitlines()), "ps"
-    except (OSError, subprocess.SubprocessError) as exc:
+        out.check_returncode()
+        return _count_live_posix_lines(out.stdout.splitlines()), "ps"
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
         return -1, f"unavailable: {exc}"
 
 
@@ -859,6 +885,23 @@ def forced_backends() -> list[str] | None:
     return [b for b in raw.split(",") if b in BACKENDS]
 
 
+def sole_backend() -> str | None:
+    """Backend UNIQUE offert par la machine, sinon None.
+
+    Sert le cas cache-d'origine-inconnue de resolve_backend : quand un
+    seul backend existe (runner CI posix : WSL off par construction, lake
+    natif installe par le workflow), l'auto-epinglage ne peut basculer
+    vers rien du tout — il n'y a pas d'ambiguite a refuser de trancher.
+    La surcharge LEAN_EXEC_FORCE_BACKENDS declare l'univers tel quel :
+    une entree unique = backend unique, deux entrees = ambiguite reelle.
+    Les sondes sont memoisees par processus : le second appel est gratuit."""
+    forced = forced_backends()
+    if forced is not None:
+        return forced[0] if len(forced) == 1 else None
+    available = [b for b in BACKENDS if _probe(b)[0]]
+    return available[0] if len(available) == 1 else None
+
+
 def preflight_backends(
     requested: str, lake_root: Path | None, pinned: str | None,
 ) -> list[str]:
@@ -915,6 +958,9 @@ def resolve_backend(
     - pas de lake englobant -> native, rien a epingler ;
     - pas d'epingle -> premier disponible de DEFAULT_BACKEND_ORDER, epingle
       posee (premier-ecrivain proprietaire) ;
+    - pas d'epingle + cache d'origine inconnue -> refus fail-closed, SAUF
+      machine a backend unique (runner CI posix) : rien a trancher, epingle
+      posee sur l'unique backend ;
     - epingle existante -> elle gagne, auto comme demande conforme ;
     - demande differente de l'epingle -> refus sauf --repin ET cache purge
       (.lake/build absent) : la bascule implicite coute 1-2 h de
@@ -965,9 +1011,21 @@ def resolve_backend(
             )
         if _cache_present(lake_root):
             # Cache d'origine INCONNUE (aucune epingle ne l'a enregistre) :
-            # l'auto-epinglage ne tranche pas a sa place. La bascule coute
-            # 1-2 h de recompilation Mathlib (lean_server.py:86-89) et
-            # l'organe ne purge JAMAIS un cache lui-meme.
+            # l'auto-epinglage ne tranche pas entre plusieurs candidats —
+            # la bascule coute 1-2 h de recompilation Mathlib
+            # (lean_server.py:86-89) et l'organe ne purge JAMAIS un cache
+            # lui-meme. Exception mesuree : une machine a backend UNIQUE
+            # (runner CI posix, qui construit son cache nativement hors
+            # organe — proof-integrity rouges x7 sur #21655) ; sans second
+            # candidat il n'y a rien a trancher et aucune bascule n'est
+            # possible : l'auto-epinglage pose l'unique choix.
+            sole = sole_backend()
+            if sole is not None:
+                _record(sole, "sole-backend (cache origine inconnue)")
+                return sole, (
+                    f"cache origine inconnue, backend unique {sole} : "
+                    + ("auto-epinglage sans ambiguite" if not dry
+                       else "dry-run : NON epingle"))
             return None, (
                 "cache .lake/build present sans epingle connue : origine "
                 "inconnue, l'auto-epinglage ne tranche pas — epinglez "
@@ -1049,16 +1107,19 @@ def _host_is_windows() -> bool:
 
 def backend_command(
     cmd: list[str], backend: str, env: dict,
+    cwd: str | None = None,
 ) -> tuple[list[str], dict]:
     """Traduit la commande pour son backend. WSL depuis Windows :
     ``wsl --cd <wslpath> -- bash -lc '<cmd>'`` — le PATH de login seul voit
     ~/.elan/bin (mesure po-2026) — et ``LEAN_NUM_THREADS`` passe par export
-    explicite dans le shell de login. Echec de traduction = OSError (le
+    explicite dans le shell de login. ``cwd`` explicite = repertoire de
+    travail demande par ``run --cwd`` (forme hote ; defaut : ``Path.cwd()``,
+    comportement historique). Echec de traduction = OSError (le
     demandeur refuse, pas de repli silencieux en natif qui viserait le cache
     du mauvais backend)."""
     if backend != "wsl" or not _host_is_windows():
         return cmd, env
-    wsl_cwd = wsl_path_of(Path.cwd())
+    wsl_cwd = wsl_path_of(Path(cwd) if cwd else Path.cwd())
     if not wsl_cwd:
         raise OSError(
             "wslpath a echoue : chemin WSL du cwd introuvable "
@@ -1473,6 +1534,56 @@ def descendants_of(root_pid: int, table: dict[int, int] | None = None) -> set[in
     return found
 
 
+def count_lean_workers(root_pid: int,
+                       table: dict[int, int] | None = None) -> int:
+    """Nombre de COMPILATIONS lean vivantes sous `root_pid`.
+
+    Seuls les processus `lean` sont comptes : `lake` est le scheduler du
+    build (et ses aides), pas une compilation. Le budget de l'organe porte
+    sur les compilations concurrentes -- la grandeur que la parallélisme
+    accordee controle reellement. Compter le scheduler decalait le seuil
+    d'une unite : le run etait tue alors qu'il hebergeait exactement la
+    parallélisme qu'on lui avait accordee (#26480).
+
+    La fonction est **pure** (table de processus fournie) : elle se teste
+    sans Windows, sans Lake et sans toolchain.
+    """
+    table = table if table is not None else snapshot_processes()
+    return sum(
+        1 for p in descendants_of(root_pid, table)
+        if _proc_name(p, table) in LEAN_WORKER_NAMES
+    )
+
+
+def budget_violation_reason(own: int, granted: int, budget: int) -> str | None:
+    """Raison d'une violation du budget de concurrence, ou ``None``.
+
+    Le seuil est la **parallélisme accordee** (`granted`), qui est elle-meme
+    bornee par les places reservees dans le cap machine (`budget`). Comparer
+    au seul `budget` tuait les runs qui utilisaient exactement la
+    parallélisme qu'on leur avait accordee (#26480) ; compter les processus
+    du scheduler `lake` decalait le seuil d'une unite.
+
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain -- le temoin du defaut.
+    """
+    if own <= granted:
+        return None
+    return (f"{own} compilations lean > parallélisme accordée {granted} "
+            f"(places reservees {budget})")
+
+
+def effective_granted(granted: int, budget: int) -> int:
+    """Parallélisme effectivement accordee a un run.
+
+    Le cap machine-wide compte des PROCESSUS (`native_pop + budget <= cap`) :
+    le budget est donc le nombre de compilations que le run peut heberger.
+    Une parallélisme accordee superieure au budget produirait un run CONCU
+    pour violer son propre budget (#26480). On aligne les deux grandeurs.
+    """
+    return max(0, min(granted, budget))
+
+
 def kill_pids(pids: list[int]) -> None:
     if os.name == "nt":
         k32 = ctypes.windll.kernel32
@@ -1525,7 +1636,25 @@ def config() -> dict:
 
 def bound_command(cmd: list[str], jobs: int) -> list[str]:
     """Parallelisme explicitement borne (regle interim de flotte #15666) :
-    ``-Kjobs=N`` insere pour ``lake build`` nu, le flag reste decidable."""
+    ``-Kjobs=N`` insere pour ``lake build`` nu, le flag reste decidable.
+
+    **Avertissement mesure (#26480, 14/11) : ce drapeau est INERTE.** Dans
+    Lake, ``-K`` est une CLE DE CONFIGURATION (``-K key[=value]``), pas le
+    nombre de jobs ; ni ``-j`` ni ``--jobs`` n'existent, et la source de
+    Lake 4.35 ne definit aucune option de configuration ``jobs``. Mesure :
+    4 modules independants de ~20 s, meme disque -- ``-Kjobs=1`` donne un
+    mural de 23,7 s / 18,4 s, ``-Kjobs=4`` un mural de 19,8 s / 24,3 s :
+    la concurrence reelle est la meme dans les deux bras.
+
+    Le seul levier mesure qui borne la concurrence reelle est
+    ``LEAN_NUM_THREADS`` (le nombre de heartbeats du runtime Lean, dont
+    depend le scheduler ``Task`` de Lake) : meme projet,
+    ``LEAN_NUM_THREADS=1`` -> mural 67,3 s / 77,1 s (modules serialises),
+    ``LEAN_NUM_THREADS=4`` -> mural 22,3 s / 21,4 s (modules paralleles).
+    C'est lui que l'organe pose (cf. `_attempt`). Le drapeau est conserve
+    parce qu'il est sans effet, pas parce qu'il bornerait quoi que ce soit :
+    le dire ici evite qu'un lecteur lui prête un pouvoir qu'il n'a pas.
+    """
     if (
         len(cmd) >= 2
         and cmd[0].rsplit("\\", 1)[-1].rsplit("/", 1)[-1].lower()
@@ -1586,6 +1715,10 @@ def run_command(
     caller: str | None = None,
     backend: str = "auto",
     repin: bool = False,
+    cwd: str | None = None,
+    stdout_file: str | None = None,
+    stderr_file: str | None = None,
+    stdin_file: str | None = None,
 ) -> int:
     cfg = config()
     cap = cap_override if cap_override is not None else cfg["cap"]
@@ -1612,7 +1745,15 @@ def run_command(
         "population_before": None,
     }
 
-    lake_root = find_lake_root(Path.cwd())
+    # --cwd explicite (capacite #15666 case 1) : recherche du lakefile et
+    # travail de l'enfant depuis ce repertoire, pas depuis le cwd du
+    # processus appelant. L'appelant migre (lean_notebook_utils.run_lake)
+    # passe la forme HOTE — l'organe traduit lui-meme vers le dialecte WSL.
+    start_dir = Path(cwd).resolve() if cwd else Path.cwd()
+    result["cwd"] = str(start_dir)
+    if stdin_file is not None:
+        result["stdin_file"] = str(stdin_file)
+    lake_root = find_lake_root(start_dir)
     result["tree"] = str(lake_root) if lake_root else None
 
     # Preflight HORS verrou : les sondes de backend (wsl bash -lc, 10 s)
@@ -1634,6 +1775,9 @@ def run_command(
     tree_lease: Path | None = None
     granted = cfg["jobs"]
     budgets: dict = {}
+    child_out_fh = None
+    child_err_fh = None
+    child_in_fh = None
     queue_file: Path | None = None
     enqueued_at: float | None = None
     wait_deadline = (
@@ -1648,6 +1792,7 @@ def run_command(
         'insufficient' | 'cap' | 'backend' | 'tree' | 'spawn' | 'internal')
         pose dans result['reason']."""
         nonlocal proc, job, confined, tree_lease, granted, budgets
+        nonlocal child_out_fh, child_err_fh, child_in_fh
         with AdmissionLock():
             sweep_stale_runs()
             # NB : pas de sweep des tree leases ici — acquire_tree_lease
@@ -1678,6 +1823,15 @@ def run_command(
                 return "telemetry"
             granted, budgets = compute_granted(
                 cfg["jobs"], resources, native_pop)
+            # Le cap machine-wide compte des PROCESSUS (`native_pop + budget
+            # <= cap`) : le budget est donc le nombre de compilations que ce
+            # run peut heberger. Si la parallélisme accordee le depasse, le
+            # run est CONCU pour violer son propre budget -- et la
+            # supervision le tue des qu'il l'atteint (mesure #26480 :
+            # `7 lean/lake descendants > budget 3` pour `granted_jobs=6`).
+            # On aligne donc la parallélisme accordee sur les places
+            # reservees : les deux grandeurs ne doivent jamais se contredire.
+            granted = effective_granted(granted, budget)
             result["granted_jobs"] = granted
             result["budgets"] = budgets
             if granted < 1:
@@ -1749,7 +1903,8 @@ def run_command(
             env["LEAN_NUM_THREADS"] = str(threads)
             try:
                 spawn_cmd, spawn_env = backend_command(
-                    bound_command(cmd, granted), lean_backend, env)
+                    bound_command(cmd, granted), lean_backend, env,
+                    cwd=str(start_dir))
             except OSError as exc:
                 # backend_command leve OSError quand la traduction WSL
                 # echoue (wslpath, :950) : sans ce relai, l'OSError fuit
@@ -1768,6 +1923,39 @@ def run_command(
 
             job = None
             popen_kwargs: dict = {"env": spawn_env}
+            if cwd is not None:
+                # Natif : l'enfant travaille depuis start_dir. En WSL,
+                # ``wsl --cd`` prime et ce cwd hote ne sert que de point
+                # de lancement a wsl.exe (meme effect).
+                popen_kwargs["cwd"] = str(start_dir)
+            # Capture par fichier (capacite #15666 case 1) : sous Windows,
+            # le petit-enfant spawn confine (CREATE_NO_WINDOW + job) n'herite
+            # PAS le stdout pipe du grand-parent — sa sortie etait perdue.
+            # Passer un handle fichier a Popen est le mecanisme garanti ;
+            # sous POSIX c'est uniforme aussi (l'enfant ecrit au meme
+            # endroit quelque soit l'OS). Le demandeur lit les fichiers.
+            if stdout_file is not None:
+                child_out_fh = open(stdout_file, "wb")
+                popen_kwargs["stdout"] = child_out_fh
+            if stderr_file is not None:
+                child_err_fh = open(stderr_file, "wb")
+                popen_kwargs["stderr"] = child_err_fh
+            # Entree standard par fichier (capacite stdin, #15666) : le
+            # mode ``lake env lean --stdin`` de lean_server lit un snippet
+            # — meme mecanisme de handle garanti que la capture par fichier
+            # (un pipe spawn confine herite mal sous Windows, un handle
+            # fichier jamais). Le fichier est lu en binaire et streame tel
+            # quel ; wsl.exe le forwarde vers l'enfant Linux si besoin.
+            if stdin_file is not None:
+                try:
+                    child_in_fh = open(stdin_file, "rb")
+                except OSError as exc:
+                    result.update(
+                        exit_code=EXIT_REFUSED, status="refused",
+                        reason=f"stdin_file illisible: {exc}",
+                    )
+                    return "spawn"
+                popen_kwargs["stdin"] = child_in_fh
             if os.name == "nt":
                 job = WindowsJob(cfg["mem_frac"], cfg["cpu_pct"])
                 # SUSPENDED -> assign -> resume : la racine est dans le job
@@ -1811,7 +1999,7 @@ def run_command(
                 "pid": proc.pid,
                 "host": host_id(),
                 "cmd": cmd,
-                "cwd": os.getcwd(),
+                "cwd": str(start_dir),
                 "tree": str(lake_root) if lake_root else None,
                 "caller": caller,
                 "budget": budget,
@@ -1843,7 +2031,7 @@ def run_command(
         if kind == "ok":
             queue_remove(queue_file)
             if enqueued_at is not None:
-                result["queue_wait_s"] = round(time.time() - enqueued_at, 2)
+                result["queue_wait_s"] = round(time.monotonic() - enqueued_at, 2)
             queue_file = None
             break
         if kind in ("internal", "spawn", "backend"):
@@ -1869,7 +2057,7 @@ def run_command(
                     reason=f"queue full: {qreason}",
                 )
                 return _emit(result, as_json)
-            enqueued_at = time.time()
+            enqueued_at = time.monotonic()
         if time.monotonic() >= wait_deadline:
             queue_remove(queue_file)
             queue_file = None
@@ -1922,17 +2110,15 @@ def run_command(
                     orphans = terminate_tree()
                     break
                 # Budget supervise : ce run ne doit jamais heberger plus de
-                # lean/lake vivants que son budget declare.
+                # COMPILATIONS lean vivantes que la parallélisme accordee
+                # (qui est elle-meme bornee par les places reservees dans le
+                # cap machine). Le seuil n'est plus decale par les processus
+                # du scheduler `lake` (#26480).
                 if confined and os.name == "nt" and job is not None:
-                    table = snapshot_processes()
-                    own = sum(
-                        1 for p in descendants_of(proc.pid, table)
-                        if _proc_name(p, table) in LEAN_PROC_NAMES
-                    )
-                    if own > budget:
-                        result["budget_violation"] = (
-                            f"{own} lean/lake descendants > budget {budget}"
-                        )
+                    own = count_lean_workers(proc.pid)
+                    reason = budget_violation_reason(own, granted, budget)
+                    if reason is not None:
+                        result["budget_violation"] = reason
                         status = "timeout"
                         killed = True
                         orphans = terminate_tree()
@@ -1959,6 +2145,14 @@ def run_command(
 
     if job is not None:
         job.close()  # kill-on-close : dernier filet, meme sur chemin lent
+    # Handles de capture fermes avant le verdict : le contenu est visible
+    # pour le demandeur des la sortie de l'organe (flush + close).
+    for fh in (child_out_fh, child_err_fh, child_in_fh):
+        if fh is not None:
+            try:
+                fh.close()
+            except OSError:
+                pass
     release_tree_lease(tree_lease)
     _remove_run_record(run_id)
 
@@ -2683,6 +2877,25 @@ def main(argv: list[str] | None = None) -> int:
                             "JAMAIS lui-meme)")
     p_run.add_argument("--json", action="store_true",
                        help="Resultat JSON sur stdout")
+    p_run.add_argument("--cwd", default=None,
+                       help="Repertoire de travail de l'enfant et de "
+                            "recherche du lakefile (forme hote ; defaut: "
+                            "cwd du processus appelant). Capacite #15666 "
+                            "case 1, requise par la migration de "
+                            "lean_notebook_utils.run_lake.")
+    p_run.add_argument("--stdout-file", default=None,
+                       help="Fichier de capture du stdout de l'enfant. "
+                            "Sous Windows l'enfant confine (CREATE_NO_WINDOW"
+                            " + job) n'herite pas le stdout pipe du "
+                            "grand-parent : sans ce fichier, sa sortie est "
+                            "perdue (mesure #15666 case 1).")
+    p_run.add_argument("--stderr-file", default=None,
+                       help="Fichier de capture du stderr de l'enfant "
+                            "(memes raisons que --stdout-file).")
+    p_run.add_argument("--stdin-file", default=None,
+                       help="Fichier branche sur l'entree standard de "
+                            "l'enfant (mode stdin : 'lake env lean "
+                            "--stdin' de lean_server lit un snippet).")
     p_run.add_argument("cmd", nargs=argparse.REMAINDER,
                        help="commande apres --")
 
@@ -2769,7 +2982,9 @@ def main(argv: list[str] | None = None) -> int:
                 cmd, timeout_s=args.timeout, cap_override=args.cap,
                 budget_override=args.budget, as_json=args.json,
                 wait_s=args.wait, caller=args.caller,
-                backend=args.backend, repin=args.repin,
+                backend=args.backend, repin=args.repin, cwd=args.cwd,
+                stdout_file=args.stdout_file, stderr_file=args.stderr_file,
+                stdin_file=args.stdin_file,
             )
     except Exception as exc:  # l'organe echoue visiblement, jamais en trace
         print(f"[lean_exec] internal error: {exc}", file=sys.stderr)

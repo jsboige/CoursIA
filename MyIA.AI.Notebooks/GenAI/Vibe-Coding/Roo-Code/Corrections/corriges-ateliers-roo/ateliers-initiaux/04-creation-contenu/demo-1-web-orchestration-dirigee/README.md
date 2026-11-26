@@ -32,16 +32,16 @@ demo-1-web-orchestration-dirigee/
 ├── portfolio.html          # Page portfolio
 ├── contact.html            # Page contact
 ├── css/
-│   └── style.css           # Feuille de style principale (2120 lignes)
+│   └── style.css           # Feuille de style principale
 ├── js/
-│   ├── main.js             # Script principal (447 lignes)
-│   ├── contact.js          # Gestion du formulaire de contact (421 lignes)
-│   └── portfolio.js        # Gestion du portfolio (209 lignes)
+│   ├── main.js             # Script principal
+│   ├── contact.js          # Gestion du formulaire de contact
+│   └── portfolio.js        # Gestion du portfolio
 ├── images/
 │   ├── *.svg               # Collection complète d'icônes et illustrations
-│   └── [12 fichiers SVG]   # Logo, icônes services, clients, etc.
+│   └── [fichiers SVG]   # Logo, icônes services, clients, etc.
 ├── README-original.md      # Documentation originale du projet
-└── roo_task_sep-8-2025_6-41-33-am.md  # Trace complète (37261 lignes)
+└── roo_task_sep-8-2025_6-41-33-am.md  # Trace complète
 ```
 
 ## 🚀 Fonctionnalités implémentées
@@ -109,7 +109,7 @@ demo-1-web-orchestration-dirigee/
 
 ## 🔍 Analyse de la trace complète
 
-Le fichier `roo_task_sep-8-2025_6-41-33-am.md` (37 261 lignes) contient :
+Le fichier `roo_task_sep-8-2025_6-41-33-am.md` contient :
 - **Dialogue complet** entre l'utilisateur et l'agent Roo
 - **Évolution itérative** du code avec corrections
 - **Gestion d'erreurs** en temps réel
@@ -154,16 +154,12 @@ npx serve .
 ## 📊 Métriques du projet
 
 - **Durée totale** : Session de travail complète (plusieurs heures)
-- **Lignes de code CSS** : 2 120 lignes
-- **Lignes de code JS** : 1 077 lignes (total des 3 fichiers)
-- **Pages HTML** : 5 pages complètes
-- **Assets** : 12 illustrations SVG
 - **Fonctionnalités** : Navigation, formulaires, animations, responsive design
 
 ## 🔗 Fichiers connexes
 
 - `README-original.md` : Documentation technique originale du projet
-- `roo_task_sep-8-2025_6-41-33-am.md` : Trace complète de l'orchestration (37k+ lignes)
+- `roo_task_sep-8-2025_6-41-33-am.md` : Trace complète de l'orchestration
 
 ---
 

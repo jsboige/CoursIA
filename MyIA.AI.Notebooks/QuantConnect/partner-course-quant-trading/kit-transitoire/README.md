@@ -27,7 +27,40 @@ Chaque stratégie inclut un notebook de recherche (QuantBook) documentant les it
 | Positions max | 4 (2 en marché baissier) |
 | Allocation | 95 % |
 
-**Meilleur backtest** : Sharpe 0.556, CAGR 11.43 %, MaxDD 17.2 %
+**Backtest de référence** (étiquettes corrigées, graine 42) : Sharpe 0.387, CAGR 9.92 %, MaxDD 46.6 %. Sur les graines 0, 1, 7, 42 et 99 : Sharpe 0.334 à 0.453, CAGR 8.86 % à 11.52 %, MaxDD 46.5 % à 46.6 %.
+
+`main.py` accepte deux paramètres optionnels :
+
+| Paramètre | Défaut | Rôle |
+|---|---|---|
+| `label_mode` | `forward` | `forward` retire de l'entraînement les séances dont le rendement à 20 séances est inconnu ; `legacy` rétablit les anciennes étiquettes |
+| `rf_seed` | `42` | graine de la forêt aléatoire |
+
+#### Étiquettes des 20 dernières séances : mesure QC Cloud (#22429), 2026-10-25
+
+Le modèle apprend à prédire si le rendement à 20 séances sera positif. Pour les 20 dernières séances de chaque fenêtre d'entraînement, ce rendement n'existe pas encore. Comme `NaN > 0` vaut `False`, l'ancien code les étiquetait « baisse ». Sur l'ensemble des ré-entraînements, cela touche 2,0 % des exemples d'entraînement (21 300 sur 1 054 312). Le code corrigé retire ces exemples avant l'entraînement, et la part de cibles « hausse » passe de 61,35 % à 62,62 %.
+
+La règle de mesure a été inscrite dans #22429 avant le premier backtest. Dix runs, sur la même compilation et le même jour, couvrent la fenêtre du kit, du 2015-01-01 au 2024-12-31 : les deux modes d'étiquetage, chacun sous les graines 0, 1, 7, 42 et 99.
+
+**Non-régression.** En mode `legacy`, graine 42, le run retrouve la pire baisse publiée, 17,2 %, mais pas le Sharpe ni le CAGR : 0,604 et 12,25 %, contre 0,556 et 11,43 % publiés. Le code de négociation de ce mode est celui d'avant le correctif. L'écart reste inexpliqué : QC réécrit ses prix ajustés d'une date de mesure à l'autre, ce qui pourrait suffire, mais rien ne le démontre ici.
+
+| Graine | Sharpe `legacy` | Sharpe `forward` | CAGR `legacy` | CAGR `forward` | Pire baisse `legacy` | Pire baisse `forward` |
+|---|---|---|---|---|---|---|
+| 0 | 0,245 | 0,423 | 6,76 % | 10,73 % | 50,7 % | 46,5 % |
+| 1 | 0,634 | 0,334 | 12,51 % | 8,86 % | 17,9 % | 46,5 % |
+| 7 | 0,275 | 0,453 | 7,46 % | 11,52 % | 50,7 % | 46,5 % |
+| 42 | 0,604 | 0,387 | 12,25 % | 9,92 % | 17,2 % | 46,6 % |
+| 99 | 0,223 | 0,368 | 6,30 % | 9,50 % | 50,7 % | 46,5 % |
+
+Le Sharpe est celui affiché par QC.
+
+**Lecture.**
+- Le signe de l'effet n'est pas établi. La différence de Sharpe `forward` − `legacy` est positive pour 3 graines sur 5, avec une médiane de +0,145. La règle demandait le même signe sur les 5 graines : l'effet est donc non mesurable à cette résolution.
+- La graine pèse plus que le correctif. En mode `legacy`, l'écart-type du Sharpe entre graines vaut 0,204, au-dessus de cette médiane.
+- La pire baisse de 17,2 % publiée jusqu'ici dépendait de la graine. En mode `legacy`, les graines 1 et 42 ont leur pire baisse fin 2018, autour de 17 %. Les trois autres perdent 50,7 % pendant le krach de février-mars 2020. En mode `forward`, les cinq graines perdent 46,5 % à 46,6 % pendant ce même krach, plus que SPY détenu sur la fenêtre (−33,7 %, section 03).
+- Une observation hors de la règle, donnée à titre descriptif : en mode `forward`, l'écart-type du Sharpe entre graines tombe à 0,046. Avec les étiquettes corrigées, le résultat dépend beaucoup moins de la graine. Ce mode passe aussi plus d'ordres : 625 à 638, contre 556 à 569.
+
+Les traces des runs (plans, empreintes, graphiques, statistiques) sont conservées hors dépôt, sous `QC-traces/22429-kit-rf-labels/`.
 
 ### 02 — ML XGBoost Sector Rotation
 
@@ -39,10 +72,32 @@ Chaque stratégie inclut un notebook de recherche (QuantBook) documentant les it
 | Arbres / Profondeur / LR | 100 / 4 / 0.05 |
 | Entraînement | Rolling 3 ans, entraînement bi-hebdomadaire |
 | Filtre baissier | SPY < SMA200 -> max 2 positions |
-| Positions max | 5 (2 en marché baissier) |
+| Positions max | 4 (2 en marché baissier) |
 | Allocation | 95 % |
+| Seuil de prédiction | 0.01 |
 
-**Meilleur backtest** : Sharpe 0.521, CAGR 12.81 %, MaxDD 39.1 %
+**Backtest de référence** (graine 42, mesure du 2026-10-25) : Sharpe 0.66, CAGR 16.21 %, MaxDD 24.7 %, 837 ordres.
+
+#### Paramètres du code et chiffres publiés : mesure sur QC Cloud (#22429), 2026-10-25
+
+Le tableau des paramètres annonçait 5 positions au plus, alors que `main.py` en tient 4, avec une allocation de 95 % et un seuil de prédiction de 0.01. L'en-tête du fichier attribuait le chiffre affiché ici jusqu'alors (Sharpe 0.521, MaxDD 39.1 %) à une version antérieure : 5 positions, 90 %, seuil 0.005.
+
+La règle de mesure a été écrite dans #22429 avant le premier backtest. Deux runs, le même jour, sur la fenêtre du kit (2015-01-01 au 2024-12-31) : A est le `main.py` actuel, inchangé ; B est le même fichier avec les trois constantes de la version antérieure. Le code actuel est retenu quel que soit le résultat : garder la version au meilleur backtest reviendrait à sélectionner sur la fenêtre d'évaluation.
+
+| Version | Sharpe | CAGR | Drawdown max | Ordres |
+|---|---|---|---|---|
+| A : code actuel (4 positions, 95 %, seuil 0.01) | 0.66 | 16.21 % | 24.7 % | 837 |
+| B : constantes antérieures (5 positions, 90 %, seuil 0.005) | 0.532 | 12.81 % | 36.0 % | 1109 |
+
+Le Sharpe est celui affiché par QC.
+
+**Lecture.**
+- Le chiffre publié n'est pas reproduit. La règle demandait à B un Sharpe à trois centièmes près et un drawdown max à 2 points près. Le Sharpe et le CAGR concordent, mais le drawdown max s'écarte de 3.1 points. L'écart reste inexpliqué.
+- L'en-tête notait aussi, pour le code actuel, Sharpe 0.442 et MaxDD 37.9 %. A ne le retrouve pas non plus.
+- Le pire repli de A court de mai 2015 à février 2016 ; celui de B tombe pendant le krach de février-mars 2020.
+- Un seul run par version, sous une seule graine : ces chiffres décrivent le code, ils ne comparent pas deux stratégies.
+
+Les cellules CALIBRATION des carnets (RandomForest et XGBoost) annoncent encore les anciennes constantes. Ce sont des cellules de code, à ré-exécuter sur QC Cloud après modification : elles suivront dans une session QC (#22429).
 
 ### 03 — Framework Composite
 
@@ -140,9 +195,47 @@ Les notebooks `research.ipynb` utilisent `QuantBook` et nécessitent l'environne
 | Ré-entraînement | Mensuel | Bi-hebdomadaire | N/A (pas de ML) |
 | Positions max | 4 (2 en baissier) | 4 (2 en baissier) | Dynamique |
 | Apprentissage | Entraînement modèle | Entraînement modèle | Règles expertes |
-| Sharpe | 0.556 | 0.521 | 0.376 |
-| CAGR | 11.43 % | 12.81 % | 7.60 % |
-| MaxDD | 17.2 % | 39.1 % | 20.6 % |
+| Sharpe | 0.387 | 0.66 | 0.376 |
+| CAGR | 9.92 % | 16.21 % | 7.60 % |
+| MaxDD | 46.6 % | 24.7 % | 20.6 % |
+
+Les colonnes RandomForest et XGBoost reprennent les backtests de référence (graine 42, mesure du 2026-10-25). La colonne Framework reprend le meilleur backtest publié pour cette stratégie.
+
+## Le partage de `XLU` entre les deux tranches — mesuré
+
+`XLU` est dans les deux univers du kit 03 : c'est un secteur dans `sector_tickers` **et** un actif défensif dans `defensive_tickers`. Les deux tranches émettent donc leur insight sur le même titre, et le modèle de construction de portefeuille doit décider ce qu'il en fait. Cette décision est mesurable — elle a été mesurée sur QC Cloud.
+
+**Le protocole.** Un projet cloud jetable (`nr20188-kit03-xlu`), deux backtests qui ne diffèrent que par le paramètre `pcm_mode` du carnet :
+
+| Mode | Sémantique du `MultiStrategyPCM` |
+|---|---|
+| `base` | le modèle de base de Lean ne transmet que le **dernier** insight actif par titre : la tranche qui parle en dernier gagne, et la tranche qui perd son poids le **perd entièrement** |
+| `intent` | les cibles sont **reconstruites** depuis l'insight actif le plus récent par `(symbole, source_model)`, puis **additionnées** par symbole : les deux tranches s'additionnent |
+
+Même code, même fenêtre (2015-01-01 → 2024-12-31), même capital (100 000), même courtage : la seule variable est le mode.
+
+**La mesure** (QC Cloud, 2026-11-11) :
+
+| Mesure | `base` | `intent` | Écart |
+|---|---|---|---|
+| Ratio de Sharpe | 0,377 | 0,365 | **−0,012** |
+| CAGR | 7,596 % | 7,434 % | −0,162 pt |
+| Pire baisse | 20,700 % | 21,900 % | **+1,200 pt** |
+| Valeur finale du portefeuille | 208 071,56 $ | 204 939,90 $ | −3 131,66 $ |
+| Cas `XLU` (`both_up`) | 114 | 114 | 0 |
+| Cible moyenne reçue par `XLU` | 0,0184 | **0,1052** | × 5,7 |
+
+Le run `base` **reproduit la ligne publiée du kit** (Sharpe 0,376 ; CAGR 7,60 % ; pire baisse 20,6 %) : l'environnement de mesure est donc **fidèle**, et l'écart entre les deux colonnes porte bien sur le seul mode du PCM.
+
+**Ce que les compteurs disent.** Les trois compteurs sont des *statistiques de runtime* du carnet : ils sont **lus sur le run**, pas déduits du code.
+
+- **Les cas sont identiques** des deux côtés (`both_up=114`, `sector_up_only=588`, `defensive_up_only=77`, `none_up=259`) : le mode ne change pas le flux d'insights, seulement la répartition du poids. C'est un contrôle — les deux runs ont vu exactement les mêmes décisions.
+- **La cible sur `XLU` change** : 0,0184 → 0,1052. En mode `base`, la tranche défensive porte `XLU` dans les 1 038 appels, et son poids sectoriel est donc **perdu entièrement** — y compris dans les 588 séances où la seule tranche sectorielle était active, où la cible reçue par `XLU` vaut zéro. En mode `intent`, le poids sectoriel sur `XLU` est conservé et **s'ajoute** à celui de la tranche défensive : `XLU` est targeted bien plus souvent et bien plus lourd.
+- **`XLU passed = Defensive` dans les deux modes** : ce compteur nomme la source de l'insight qui **porte** la cible, pas le nombre de contributeurs. En mode `intent` la cible est une somme, mais elle reste portée par le même insight : l'amplitude se lit donc dans la cible moyenne, pas dans ce compteur.
+
+**La lecture.** Le mode additif **n'est pas neutre** : sur ce consommateur, il change les chiffres. Il restaure le poids sectoriel sur `XLU` — c'est l'effet recherché de la sémantique `intent` — mais il **surcharge** `XLU` et coûte, sur cette fenêtre, **0,012 de Sharpe** et **1,2 point de pire baisse**. La ligne publiée du kit (Sharpe 0,376) correspond au mode `base`, c'est-à-dire au comportement « la dernière tranche gagne ».
+
+Ce résultat complète la mesure du canonique (`SharedPCM/pouches_pcm.py`, défaut `additive`) : sur les consommateurs dont les tranches sont **disjointes**, les deux modes sont **indiscernables** (27 statistiques, 0 écart) ; ici, où `XLU` est partagé par les deux tranches, ils **ne le sont pas**. Le mode additif est donc une **décision par projet**, pas un détail global : chaque projet dont les tranches se recouvrent doit la mesurer.
 
 ---
 

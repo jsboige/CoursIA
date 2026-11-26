@@ -1,0 +1,7 @@
+date: '2026-10-18'
+by: myia-po-2023:CoursIA-2
+python_sha: e3fb097a52540d65976fc7d5a4c30d2ccbbe75aa
+csharp_sha: 7de6ec4c5b02ea488d40aed696575f4a5c7dfc28
+content_python_sha: 7ee36c4428ffc0fbbc7b3cb277a760bab8f66488c45d73494506573718ba70eb
+content_csharp_sha: c1aab2101b95e38360c5ff171def70d1f75f4bae1f7ae29c812f4cadd84e856b
+known_differences: PR #20888 (Yurichev R1) — Python a drift (cellule ## Source ancrage chapitre Yurichev +1/-21). csharp_sha byte-identique a l'attestation precedente (last_audit_by hors-flotte:claude-session-16638 2026-10-14). NAMING c.1541-N1 unilateral OK.

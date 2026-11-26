@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-23
+
 # Inventaire et table de correspondance — modèles GenAI/OpenAI (issue #14755, tranche 1)
 
 > **Statut** : tranche 1/5 de #14755. Cadrage uniquement. Aucune substitution de notebook dans cette PR — la substitution était gelée tant que la table n'était pas validée contre l'API du fournisseur. **Gel levé le 2026-09-09** par la validation API (section 8).
@@ -24,7 +26,7 @@ Le body initial de #14755 (rédigé 2026-09-05) annonçait 657 occurrences ; l'�
 | **TTS** | `/v1/audio/speech` | `gpt-4o-mini-tts` (12), `gpt-4o-mini-tts-2025-03-20`, `gpt-4o-mini-tts-2025-12-15` |
 | **Realtime** | `/v1/realtime` | `gpt-4o-realtime-preview` (10) |
 | **Codex / code** | `/v1/chat/completions` (mode code) | `gpt-5.3-codex` (3), `gpt-5.1-codex-mini` (1), `gpt-5.1-codex-max` (1), `gpt-5.1-codex` (1), `gpt-5.2-codex` (1) |
-| **OpenRouter (passerelle)** | `https://openrouter.ai/api/v1` | `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`, `openai/gpt-5.2-codex`, etc. (~26 modèles `gpt-5*` listés dans `01-2-GPT-5-Image-Generation.ipynb`) |
+| **OpenRouter (passerelle)** | `https://openrouter.ai/api/v1` | `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`, `openai/gpt-5.2-codex`, etc. (~26 modèles `gpt-5*` listés dans `01-2-Generation-Image-API.ipynb`) |
 
 > **Note sur la nomenclature OpenRouter** : OpenRouter préfixe chaque identifiant par `openai/` et expose parfois des **variantes non-officielles** (sous-numérotation `.5`, `.5.5`, suffixes `codex-max`, `image-2`). Le paysage officiel OpenAI n'expose pas toutes ces variantes ; une vérification contre `GET https://api.openai.com/v1/models` est indispensable avant toute substitution.
 
@@ -80,6 +82,8 @@ Le body initial de #14755 (rédigé 2026-09-05) annonçait 657 occurrences ; l'�
 | `gpt-image` (sans `-1`) | Image legacy | 21 | OBS probable | `gpt-image-1` | Vérifier (DALL-E résiduel ?) |
 | `gpt-invalid-model` | — | 6 | PLACEHOLDER | à retirer | Probablement fixture de test |
 | `gpt-realtime-d-openai-supporte-mcp-et-sip-97770.html` | — | 4 | FAUX POSITIF | — | URL dans prose, hors scope |
+
+> **Note (2026-11-23, tranche 5)** : les trois lignes audio ci-dessus (STT/TTS/Realtime) sont **supersédées** par la table vérifiée le 2026-11-15 (`gpt-transcribe`, `gpt-audio-mini`, `gpt-realtime-2.1`). La famille audio relève de la tranche 3 pour les carnets ; la tranche 5 n'a mis à jour que le commentaire d'option de `.env.example`. Détail : section 9.
 
 ## 4. Conservations pédagogiques pressenties
 
@@ -172,3 +176,53 @@ La revue ai-01 de la PR #15378 a requalifié `INTRINSIC` → `RECOVERABLE-MACHIN
 | `SemanticKernel/04-…-Filters-Observability.ipynb` §6 (cellule d'appel) | sidecar vLLM du LAN ai-01 (adresse retirée de la doc publique ; injoignable des machines worker) | `https://models.myia.io/v1` (proxy claudish, OpenAI-compatible) | `qwen3.6-35b-a3b` (inchangé) | `CLAUDISH_PROXY_KEY` (clé dédiée à la façade claudish, obligatoire — distincte de `VLLM_API_KEY` qui authentifie le sidecar vLLM) |
 
 Même cible opérationnelle que SK/01 et SK/03 (sections déjà exécutées via le proxy claudish). La cellule exige la clé **dédiée** à la façade claudish dans le slot `CLAUDISH_PROXY_KEY` (distincte de `VLLM_API_KEY`, qui authentifie le sidecar vLLM du cluster — pas la façade) et échoue explicitement si elle manque — aucun repli sur `OPENAI_API_KEY` (credential cross-provider interdit : le secret d'un fournisseur ne doit jamais partir vers l'hôte d'un autre). Les sections §1-§5 du même notebook continuent de router sur `api.openai.com` avec `OPENAI_API_KEY` : l'isolement se fait par client `AsyncOpenAI` explicite, jamais par `OPENAI_BASE_URL` global (qui détournerait aussi les sections précédentes).
+
+## 9. Tranche 5 — config, scripts, QuantConnect (2026-11-23)
+
+Mesure de référence, `origin/main@1964480103`, le 2026-11-23 :
+
+```bash
+git grep -ciE 'gpt-(3\.5|4o|4-|4")' origin/main -- 'MyIA.AI.Notebooks/**' 'scripts/**'
+```
+
+Résultat : **131 chemins, 668 correspondances**. Le partage suit le découpage de l'issue : **81 chemins hors carnets** (périmètre de cette tranche, **482 correspondances**) et **50 carnets** (périmètre des tranches 2 à 4, **186 correspondances**) — ces derniers ne sont ni qualifiés ni modifiés ici.
+
+### 9.1 Références hors carnets — qualification
+
+| Classe | Chemins | Correspondances | Verdict |
+|---|---:|---:|---|
+| Gardes, tests, fixtures | 8 | 128 | **Conserver** : un détecteur d'identifiants obsolètes doit les nommer (`test_check_obsolete_chat_model.py` en porte 94). |
+| Protocole et cache Oversight | 4 | 98 | **Conserver** : protocole v2 pré-enregistré, cache committé et clé par `(protocol, model, ...)`. Changer le modèle exige de régénérer 620 appels et de ré-exécuter les carnets, pas une migration de config. |
+| Étude de variance budgétaire | 6 | 59 | **Conserver** : artefacts de mesure datés (`budget_variance_study_18776*`), et la table du script **nomme** les anciens ids pour les substituer — c'est un garde, pas un usage. |
+| Échantillon Vibe-Coding | 11 | 56 | **Conserver** : transcriptions d'ateliers et corrigés datés. Seul `generation_dc.py` est un appel réel ; son chemin est occupé par la PR #27684 (autre lane), il reste hors de ce claim. |
+| Pilotes d'évaluation épinglés | 20 | 28 | **Conserver** : `gpt-4o-mini`, température 0, mesures comparatives historiques. Changer le modèle change la mesure, pas la config. |
+| Famille audio (STT/TTS/Realtime) | 12 | 26 | **Conserver pour les carnets** (tranche 3) ; la cible vérifiée est `gpt-transcribe` / `gpt-audio-mini` / `gpt-realtime-2.1`. Seul le commentaire d'option de `.env.example` est mis à jour ici, sans exécution. |
+| Documentation | 7 | 32 | **Conserver** : prose pédagogique et guides ; les ids cités décrivent une époque ou une comparaison. |
+| Détecteurs | 2 | 19 | **Conserver** : `check_obsolete_chat_model.py` et `check_markdown_claims_output.py` doivent nommer les familles qu'ils reconnaissent. |
+| Notes d'audit historiques | 1 | 14 | **Conserver** : `populate_semantickernel_cost.py` chiffre un scan passé (c.945), pas une cible courante. |
+| Matrice de paramètres mesurée | 1 | 13 | **Conserver** : `param_matrix.json` porte des mesures datées du 2026-10-26 sur `gpt-4o` (dont le rejet de `top_k`) ; c'est une preuve, pas une recommandation. |
+| Juge mesuré | 3 | 3 | **Conserver** : `judge_family_agreement.py` et son rapport committé nomment `gpt-4o-mini` ; une substitution exige une nouvelle passe du juge. |
+| Config cible | 1 | 1 | **Modifié** : voir §9.2. |
+| Commentaire historique | 1 | 1 | **Conserver** : `_shared_state.py` décrit le format d'appel de `gpt-4o-mini` avant la bascule. |
+| Archive | 1 | 1 | **Conserver** : instantané. |
+| Docstring d'exemple | 1 | 1 | **Conserver** : exemple de mécanique (`gpt-3.5-turbo` -> `gpt-5-mini`), pas un usage. |
+| Déjà migré (commentaire) | 2 | 2 | **Conserver** : `livecoding_video_pipeline.py` et `ML-LLM-Summarization/main.py` portent déjà la cible 5.6 et ne gardent l'ancien id que dans le commentaire de migration. |
+
+### 9.2 Action exécutée — option STT de `.env.example`
+
+La ligne d'option devient `# Options: whisper-1, gpt-transcribe (meilleur mais plus cher)`. Le défaut actif `OPENAI_STT_MODEL=whisper-1` est **inchangé** : c'est un commentaire de configuration, sans appel ni sortie de carnet. La cible suit la table vérifiée le 2026-11-15 (section 8 de `model-mapping-openai.md`), qui supersède la ligne `gpt-4o-transcribe` de la section 3 ci-dessus.
+
+### 9.3 Ce que la tranche 5 ne peut pas faire
+
+- **`generation_dc.py`** (appel chat réel, `gpt-4o-mini`) : chemin occupé par la PR #27684 d'une autre lane. Une édition ici entrerait en collision ; le fichier reste à son propriétaire.
+- **`docs/README.md`** : occupé par trois PRs ouvertes (#27706, #27852, #27819). Aucune modification.
+- **Les 50 carnets** : hors périmètre de la tranche 5 par le découpage de l'issue (« Config + scripts + QuantConnect — hors notebooks »). Leur qualification appartient aux tranches 2 à 4.
+
+### 9.4 Verdict d'acceptance
+
+| Critère de l'issue | État |
+|---|---|
+| Table de correspondance publiée et vérifiée | Satisfait (sections 8 et 9 ; cibles audio du 2026-11-15) |
+| Le compte du `git grep` décroît | Satisfait à la marge : une seule référence vivante supprimée (`.env.example`), les autres étant des preuves, des gardes, des archives ou des échantillons datés. Le compte **ne peut pas atteindre zéro** sans détruire ces preuves. |
+| Chaque carnet substitué est ré-exécuté | Non applicable à cette tranche : aucun carnet modifié. |
+| Les conservations délibérées sont listées avec leur raison | Satisfait : §9.1. |

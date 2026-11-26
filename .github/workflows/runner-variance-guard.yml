@@ -44,6 +44,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: scripts/ci
 
       - name: Measure window and merge 24 h log
         env:
@@ -59,7 +62,7 @@ jobs:
           else
             gh issue view "$ISSUE_NUMBER" --json body --jq .body > body.md
           fi
-          python scripts/ci/check_runner_variance.py \
+          python3 scripts/ci/check_runner_variance.py \
             --window-minutes "$WINDOW" --body-file body.md --json > verdict.json
           jq -r '.next_body' verdict.json > next_body.md
           jq '{runs_measured, window_slow_runners, log_entries, signals}' verdict.json

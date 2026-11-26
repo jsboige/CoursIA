@@ -41,3 +41,108 @@ def test_leading_orphan_punctuation_does_not_seed_a_chunk():
 
     chunks = _split_sentences("»; Bonjour le monde.")
     assert chunks == ["Bonjour le monde."]
+
+
+class _FakeResp:
+    ok = True
+    status_code = 200
+    text = ""
+    headers = {"content-type": "audio/wav"}
+    content = b"WAVBYTES"
+
+
+def test_post_speech_overrides_url_and_bearer(monkeypatch):
+    """Per-call overrides (#21145): base_url/api_key/model route the request
+    at the published gateway instead of the local :8196 socket, without
+    touching the module constants for other callers."""
+    import v4.prosody_lab.qwen_tts_client as client
+
+    seen: dict = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        seen["url"] = url
+        seen["payload"] = json
+        seen["headers"] = headers
+        return _FakeResp()
+
+    monkeypatch.setattr(client.requests, "post", fake_post)
+    out = client.qwen_tts_customvoice(
+        "Bonjour.",
+        voice="serena",
+        # base_url is the gateway BASE (no /v1): _post_speech appends the
+        # route itself. The p5 layer normalizes the documented ".../v1" form.
+        base_url="https://tts-api.myia.io",
+        api_key="secret-key",
+        model="custom-voice-checkpoint",
+    )
+    assert out == b"WAVBYTES"
+    assert seen["url"] == "https://tts-api.myia.io/v1/audio/speech"
+    assert seen["headers"]["Authorization"] == "Bearer secret-key"
+    assert seen["payload"]["model"] == "custom-voice-checkpoint"
+    assert seen["payload"]["task_type"] == "CustomVoice"
+    assert seen["payload"]["voice"] == "serena"
+
+
+def test_customvoice_chunked_forwards_overrides_and_gaps(monkeypatch):
+    """qwen_tts_customvoice_chunked threads the overrides to every chunk and
+    concatenates with the silence gap (transport parallel of the VoiceDesign
+    chunked path) — None on any chunk failure, never a partial passage."""
+    import sys
+    import types
+
+    import v4.prosody_lab.qwen_tts_client as client
+
+    calls: list[dict] = []
+
+    def fake_cv(text, **kw):
+        calls.append({"text": text, **kw})
+        return b"WAVBYTES"
+
+    monkeypatch.setattr(client, "qwen_tts_customvoice", fake_cv)
+
+    pydub = types.ModuleType("pydub")
+
+    class _FakeAudio:
+        def __init__(self, tag):
+            self.tag = tag
+
+        def __add__(self, other):
+            return _FakeAudio(f"{self.tag}+{getattr(other, 'tag', 'gap')}")
+
+        def export(self, buf, format=None):
+            buf.write(b"COMBINEDWAV")
+
+        @staticmethod
+        def from_file(buf, format=None):
+            return _FakeAudio("chunk")
+
+        @staticmethod
+        def silent(duration=None):
+            return _FakeAudio("gap")
+
+    pydub.AudioSegment = _FakeAudio
+    monkeypatch.setitem(sys.modules, "pydub", pydub)
+
+    text = "Premiere phrase assez longue pour exister seule. " * 2
+    out = client.qwen_tts_customvoice_chunked(
+        text,
+        voice="serena",
+        base_url="https://tts-api.myia.io",
+        api_key="k",
+        model="m",
+        gap_ms=120,
+        max_chars=40,  # force one chunk per sentence (each is ~48 chars)
+    )
+    assert out == b"COMBINEDWAV"
+    assert len(calls) >= 2, "two sentence chunks expected"
+    for c in calls:
+        assert c["base_url"] == "https://tts-api.myia.io"
+        assert c["api_key"] == "k"
+        assert c["model"] == "m"
+        assert c["voice"] == "serena"
+
+    # A failed chunk returns None — a partial passage is never measured.
+    monkeypatch.setattr(
+        client, "qwen_tts_customvoice", lambda text, **kw: None
+    )
+    assert client.qwen_tts_customvoice_chunked(text, voice="serena") is None

@@ -10,6 +10,7 @@ PRs): #10770 and #10684 orphaned deliverables (must surface), #10791 did NOT
 
 import sys
 import os
+import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -86,3 +87,44 @@ def test_empty_content_is_same_not_orphan():
         open_prs_to_main=0, content=[],
     )
     assert verdict == "same"
+
+
+def test_content_diff_pathspec_is_root_anchored_from_subdirectory(tmp_path):
+    """The reported paths are root-relative even when the caller is not at root."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args):
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True, text=True
+        )
+
+    git("init", "-q")
+    git("config", "user.email", "tests@example.invalid")
+    git("config", "user.name", "Test")
+    (repo / "scripts").mkdir()
+    target = repo / "scripts" / "sample.txt"
+    target.write_text("main version\n", encoding="utf-8")
+    git("add", "scripts/sample.txt")
+    git("commit", "-qm", "base")
+    base = git("rev-parse", "HEAD").stdout.strip()
+    git("update-ref", "refs/remotes/origin/main", base)
+    git("checkout", "-qb", "feature")
+    target.write_text("feature version\n", encoding="utf-8")
+    git("commit", "-qam", "change content")
+    tip = git("rev-parse", "HEAD").stdout.strip()
+
+    module_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "orphan_branch_scan.py",
+    )
+    result = subprocess.run(
+        [sys.executable, "-c",
+         f"import runpy; content_diff = runpy.run_path({module_path!r})['content_diff']; "
+         f"print(content_diff('feature', '{tip}'))"],
+        cwd=repo / "scripts", capture_output=True, text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "'status': 'DIFF'" in result.stdout
+    assert "'path': 'scripts/sample.txt'" in result.stdout

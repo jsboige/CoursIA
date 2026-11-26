@@ -16,6 +16,10 @@ class MlRandomForestAlgorithm(QCAlgorithm):
         - Features: 14 technical indicators per sector
         - Model: RandomForestClassifier (200 trees, depth 6)
         - Training: 4-year rolling window, monthly retrain
+        - Labels: 20-day forward return > 0; the last 20 bars of each window,
+          whose forward return is unknown, are dropped (#22429). Parameters
+          label_mode=legacy (old labels, those bars counted as "down") and
+          rf_seed (forest seed, 42 by default) replay the measurement.
         - Rebalancing: Monthly
         - Risk: SMA200 bear filter, max 4 sectors, 5% cash buffer
 
@@ -24,6 +28,11 @@ class MlRandomForestAlgorithm(QCAlgorithm):
         - Benchmark: SPY Buy & Hold
         - v2: threshold 0.65, max_positions 3, allocation 95% -> Sharpe 0.286 (worse)
         - v3: threshold 0.55 (original), max_positions 4, allocation 95% -> Sharpe 0.556
+          (old labels, seed 42; replayed 2026-10-25: Sharpe 0.604, same MaxDD 17.2%)
+        - v4 (#22429): labels fixed, seed 42 -> Sharpe 0.387, CAGR 9.92%, MaxDD 46.6%
+          (reference backtest). Seeds 0/1/7/42/99: Sharpe 0.334 to 0.453. Under the
+          old labels, the seed alone moved Sharpe from 0.223 to 0.634 and MaxDD
+          from 17.2% to 50.7%.
     """
 
     def Initialize(self):
@@ -59,6 +68,17 @@ class MlRandomForestAlgorithm(QCAlgorithm):
         self.max_positions = 4
         self.probability_threshold = 0.55
         self.allocation_pct = 0.95
+
+        # Labels: "forward" drops the last 20 bars of each training window,
+        # whose 20-day forward return is unknown (#22429). "legacy" keeps the
+        # pre-fix behaviour, where those bars were labelled 0 ("down").
+        self.label_mode = self.GetParameter("label_mode") or "forward"
+        self.rf_seed = int(self.GetParameter("rf_seed") or 42)
+
+        # Label diagnostics, summed over every retrain
+        self.n_label_rows = 0
+        self.n_unknown_fwd = 0
+        self.n_positive = 0
 
         # State
         self.model = None
@@ -163,12 +183,20 @@ class MlRandomForestAlgorithm(QCAlgorithm):
                 features = self.calculate_features(history)
                 closes = history["close"]
 
-                # Target: positive 20-day forward return
+                # Target: positive 20-day forward return. The last 20 bars have
+                # no forward return: NaN > 0 is False, so they must be masked
+                # explicitly, otherwise they are all labelled 0.
                 future_ret = closes.pct_change(20).shift(-20)
                 target = (future_ret > 0).astype(int)
+                if self.label_mode != "legacy":
+                    target = target.where(future_ret.notna())
 
                 features["target"] = target
                 features = features.dropna()
+
+                self.n_unknown_fwd += int(future_ret.isna().sum())
+                self.n_label_rows += len(features)
+                self.n_positive += int(features["target"].sum())
 
                 if len(features) > 50:
                     all_X.append(features.drop("target", axis=1))
@@ -191,7 +219,7 @@ class MlRandomForestAlgorithm(QCAlgorithm):
             n_estimators=self.n_estimators,
             max_depth=self.max_depth,
             min_samples_leaf=self.min_samples_leaf,
-            random_state=42,
+            random_state=self.rf_seed,
             n_jobs=-1,
         )
         self.model.fit(X_scaled, y)
@@ -261,3 +289,12 @@ class MlRandomForestAlgorithm(QCAlgorithm):
         bear_str = " [BEAR MODE]" if is_bear else ""
         top3 = ", ".join(f"{t}:{p:.2f}" for t, p in sorted_preds[:3])
         self.Debug(f"Rebalance{bear_str}: {len(selected)} positions | Top3: {top3}")
+
+    def OnEndOfAlgorithm(self):
+        """Publish the label diagnostics as runtime statistics."""
+        if self.n_label_rows:
+            self.SetRuntimeStatistic("Label rows", str(self.n_label_rows))
+            self.SetRuntimeStatistic("Unknown fwd", str(self.n_unknown_fwd))
+            self.SetRuntimeStatistic("Up share", f"{self.n_positive / self.n_label_rows:.4f}")
+        self.Log(f"labels mode={self.label_mode} seed={self.rf_seed} rows={self.n_label_rows} "
+                 f"unknown_fwd={self.n_unknown_fwd} up={self.n_positive}")

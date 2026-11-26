@@ -2,6 +2,10 @@
 
 > **Bornage strict** : ce ledger couvre les **carnets 01, 04 et 05** de la série GameTheory sur `origin/main` au 2026-10-10. Il **complète la fournée A** (blocs 01-05) ouverte par la strate « Fondations » ([15615-gradation-foundations.md](15615-gradation-foundations.md), carnets 02 + 03). Les blocs 06 et au-delà font l'objet des fournées B-D.
 
+> **Resynchronisation (2026-10-24).** Deux carnets du bloc 04 sont **entrés après cette mesure** et n'ont pas de ligne ci-dessous : **`04g-Supermodularite-Python`** (#21938) et **`04h-Routing-PriceOfAnarchy-Python`** (#21979). Les comptes de cellules de `04-Python` (36 → 38) et `05-Python` (38 → 39) ont également dérivé. La table reste la trace de la mesure du 2026-10-10 ; le tableau de référence pour les blocs 01-05 est **[15615-gradation-blocs-01-05-consolide.md](15615-gradation-blocs-01-05-consolide.md)** (29 carnets, tête `8957d81ad44`).
+>
+> Le « Hors périmètre » ci-dessous annonce que le tableau consolidé « dépend de l'arbitrage #18001 » : **cet arbitrage est rendu** — #18001 est **MERGED** depuis le 2026-09-29T22:39:32Z — et le tableau consolidé est livré.
+
 ## Origine
 
 Issue #15615 — audit de gradation demandé après le nit user du 2026-09-11 (« remettre un peu de cohérence dans la gradation »). Le fil a depuis posé un plan en fournées A-D (A = blocs 01-05) ; la strate « Fondations » a livré la première moitié (15 carnets, PR #18195). Ce ledger livre la seconde moitié : **12 carnets** (01 × 1, 04 × 8, 05 × 3).

@@ -12,10 +12,10 @@ from datetime import datetime
 # reading the BTC regime from a 24/7 market (no halts, circuit breakers, or closing bell).
 # Author-reported reference (2014-2026): Sharpe 0.838 vs QQQ 0.682 / SPY 0.564.
 #
-# Instrumentation de mesure (#19929) : les parametres d'origine (start-year/
-# start-month/end-year/end-month) restent les defauts ; "start"/"end" (ISO
-# YYYY-MM-DD) les surchargent quand fournis. mode = "gate" (defaut, le gate
-# distille -- la regle et le couple liquidate/set_holdings sont inchanges),
+# Instrumentation de mesure (#19929) : "start"/"end" (ISO YYYY-MM-DD) sont
+# lus par get_parameter sans defaut (contrat #27482). mode = "gate" (defaut,
+# le gate distille -- la regle et le couple liquidate/set_holdings sont
+# inchanges),
 # "hold-qqq" (benchmark buy-and-hold QQQ), "spy" et "sixty40" (references
 # detenues : SPY seul, ou 60 % SPY / 40 % IEF, reequilibrees le premier jour de
 # bourse du mois). sma_window (50), roc_window (20) et frequency ("weekly"
@@ -89,22 +89,11 @@ class BitcoinRegimeGate(QCAlgorithm):
         if self._execution_mode not in ("base", "settled"):
             raise ValueError(f"execution inconnue : {self._execution_mode}")
 
-        # Dates: parametres d'origine (start-year/start-month/end-year/end-month)
-        # surcharges par "start"/"end" (ISO YYYY-MM-DD) quand fournis.
-        start = self.get_parameter("start")
-        if start:
-            d = datetime.strptime(start, "%Y-%m-%d")
-            self.set_start_date(d.year, d.month, d.day)
-        else:
-            self.set_start_date(int(self.get_parameter("start-year", 2016)),
-                                int(self.get_parameter("start-month", 1)), 1)
-        end = self.get_parameter("end")
-        if end:
-            d = datetime.strptime(end, "%Y-%m-%d")
-            self.set_end_date(d.year, d.month, d.day)
-        else:
-            self.set_end_date(int(self.get_parameter("end-year", 2026)),
-                              int(self.get_parameter("end-month", 6)), 30)
+        # Dates: "start"/"end" (ISO YYYY-MM-DD), lus sans defaut (contrat #27482).
+        start = datetime.strptime(self.get_parameter("start"), "%Y-%m-%d")
+        end = datetime.strptime(self.get_parameter("end"), "%Y-%m-%d")
+        self.set_start_date(start.year, start.month, start.day)
+        self.set_end_date(end.year, end.month, end.day)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
@@ -303,7 +292,10 @@ class BitcoinRegimeGate(QCAlgorithm):
     def on_data(self, data):
         if self.is_warming_up:
             return
-        if self.mode in REFERENCE_WEIGHTS and self.time.month != self._ref_month:
+        if (self.mode in REFERENCE_WEIGHTS
+                and self.time.month != self._ref_month
+                and any(data.bars.contains_key(symbol)
+                        for symbol in self.ref_symbols.values())):
             # Reference detenue, reequilibree a la premiere barre journaliere du mois.
             self._ref_month = self.time.month
             for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():

@@ -73,7 +73,7 @@ Intelligence Artificielle -- VI
 
 # Agent Apprenant
 
-- **4 modules** : performance, apprentissage, critique, générateur de problemes
+- **Modules** : performance, apprentissage, critique, générateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
 - Le générateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
@@ -666,6 +666,15 @@ layout: dense
 
 <!-- Bagging = echantillons paralleles, Boosting = echantillons séquentiels ponderes -->
 
+<style scoped>
+/* 22 puces + le pseudo-code ADABOOST en pleine largeur : le bloc d'algorithme
+   commencait sous le bas du canvas et se coupait en plein `for k = 1 to K`.
+   Mesure `scan_slidev_overflow --threshold 0.0005` : ink 0.0154. */
+:deep(ul) { font-size: 0.7em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.12 !important; }
+img { max-height: 170px !important; }
+</style>
+
 
 ---
 layout: section
@@ -753,8 +762,20 @@ layout: two-cols
 - Apprend sur des datasets linéairement séparable
 - vs Arbre de décision: bon sur majorité, mauvais sur restaurant
 
-<img src="./images/img_025.png" alt="img_025.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_026.png" alt="img_026.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_025.png" alt="img_025.png">
+<img src="./images/img_026.png" alt="img_026.png">
+</div>
+
+<style scoped>
+/* Deux figures empilees en pleine largeur sous six puces : la seconde
+   commencait sous le bas du canvas. Mesure : ink 0.0068 (sous le seuil par
+   defaut de 0.01, parce que l'amorce visible est etroite — le seuil ne voit
+   pas un element dont seule une bande centrale depasse). Elles passent en
+   grille deux colonnes, hauteur auto (le theme impose sinon 300 px par
+   grille, dont 180 px de vide sous une rangee de 118 px). */
+:deep(.img-grid) { height: auto !important; }
+</style>
 
 
 ---
@@ -794,6 +815,20 @@ layout: two-cols
 <img src="./images/img_030.png" alt="img_030.png" class="img-fit">
 </div>
 </div>
+
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 263 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). Deux causes : la
+   grille garde le budget fixe de 300 px impose par le theme (180 px de vide
+   sous une rangee de 96 px), et l'image isolee vient apres elle. Grille en
+   hauteur auto, images bornees, liste resserree. La cible est un
+   degagement d'une trentaine de pixels, pas l'egalite au canvas : les
+   metriques de police dependent de la machine (#24171). */
+:deep(.img-grid) { height: auto !important; }
+:deep(.img-grid.cols3 img) { max-height: 84px; }
+:deep(img.img-fit) { max-height: 72px; }
+:deep(.dense-list ul) { font-size: 0.78em; }
+</style>
 ---
 
 
@@ -832,6 +867,15 @@ layout: two-cols
 
 <img src="./images/img_032.png" alt="img_032.png" class="img-fit">
 
+<style scoped>
+/* Quinze puces puis une figure `img-fit` : la figure commencait sous le bas
+   du canvas (ink 0.0062 a seuil bas). Le plafond de `img-fit` ne suffit pas,
+   c'est le bloc de puces qui doit ceder de la place. */
+:deep(ul) { font-size: 0.74em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.1 !important; }
+img { max-height: 120px !important; }
+</style>
+
 
 ---
 
@@ -869,6 +913,19 @@ layout: two-cols
 
 <!-- Architecture NN : entrée → couches cachees (activation ReLU/sigmoid) → sortie -->
 </div>
+
+<style scoped>
+/* La diapo empilait texte + grille de 4 images + une image `img-fit` jusqu'a
+   1323 px de haut dans un canvas de 552 : les deux dernieres images tombaient
+   sous le champ. `dense-list` n'est definie nulle part dans le theme (classe
+   heritee du port Marp), donc le texte gardait sa taille par defaut. Ici :
+   texte condense, grille sur UNE rangee de 4 colonnes, image isolee bornee. */
+:deep(ul) { font-size: 0.74em; }
+:deep(li) { margin: 0; line-height: 1.14; }
+:deep(.img-grid) { height: 130px !important; grid-template-columns: repeat(4, 1fr) !important; }
+img { max-height: 130px !important; object-fit: contain; }
+img.img-fit { max-height: 60px !important; }
+</style>
 ---
 
 
@@ -891,12 +948,24 @@ layout: two-cols
 - + normalisation
 - + mise en série
 
-<img src="./images/img_038.png" alt="img_038.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_039.png" alt="img_039.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_040.png" alt="img_040.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_041.png" alt="img_041.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_038.png" alt="img_038.png">
+<img src="./images/img_039.png" alt="img_039.png">
+<img src="./images/img_040.png" alt="img_040.png">
+<img src="./images/img_041.png" alt="img_041.png">
+</div>
 
 <!-- CNN : convolution → feature maps → pooling → couches denses → classification -->
+
+<style scoped>
+/* 16 puces puis quatre images empilees en flux vertical (chacune a sa taille
+   naturelle, le `max-width` inline ne borne que la largeur) : la diapo montait
+   a 1239 px. Les images passent en grille sur une rangee, le texte se condense. */
+:deep(ul) { font-size: 0.72em; }
+:deep(li) { margin: 0; line-height: 1.12; }
+:deep(.img-grid) { height: 100px !important; grid-template-columns: repeat(4, 1fr) !important; }
+:deep(.slidev-layout) { padding-top: 24px; padding-bottom: 16px; }
+</style>
 
 
 ---
@@ -914,6 +983,14 @@ layout: two-cols
 <img src="./images/img_046.png" alt="img_046.png">
 <img src="./images/img_047.png" alt="img_047.png">
 </div>
+
+<style scoped>
+/* Deux grilles empilees (2 + 4 images) sans aucun texte : le theme impose
+   300 px de haut a chaque `.img-grid:not(.absolute)` alors qu'une rangee
+   d'images en occupe 118 — la 5e image demarrait sous le canvas (ink 0.0060).
+   Hauteur auto : les deux grilles se tassent, les six images tiennent. */
+:deep(.img-grid) { height: auto !important; }
+</style>
 
 
 ---
@@ -1005,6 +1082,34 @@ layout: two-cols
 - Opérations simples
 - Passe ou pas / Ajout du signal / Activation  tanh
 - Ex. Sujet de la phrase
+</div>
+
+<div class="img-grid">
+<img src="./images/img_055.png" alt="img_055.png">
+<img src="./images/img_056.png" alt="img_056.png">
+<img src="./images/img_057.png" alt="img_057.png">
+<img src="./images/img_058.png" alt="img_058.png">
+</div>
+
+<style scoped>
+/* 24 puces puis SEPT images empilees en flux vertical : la diapo montait a
+   1794 px, soit trois canvas. `dense-list` ne condensait rien (classe heritee
+   du port Marp, definie depuis dans styles/index.css) ; les images passent en
+   grille de 4 colonnes sur deux rangees a budget fixe. */
+:deep(ul) { font-size: 0.64em; }
+:deep(li) { margin: 0; line-height: 1.08; }
+:deep(.img-grid) { height: 80px !important; grid-template-columns: repeat(4, 1fr) !important; }
+:deep(.slidev-layout) { padding-top: 22px; padding-bottom: 14px; }
+</style>
+
+
+---
+
+
+# Réseaux récurrents - portes et variantes
+
+<div class="dense-list">
+
 - Porte 1: On oublie le précédent
 - Porte 2: On MAJ le sujet courant
 - Porte 3: On le passe en sortie pour le verbe
@@ -1018,13 +1123,19 @@ layout: two-cols
 - But= tirer profit du futur
 </div>
 
-<img src="./images/img_055.png" alt="img_055.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_056.png" alt="img_056.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_057.png" alt="img_057.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_058.png" alt="img_058.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_059.png" alt="img_059.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_060.png" alt="img_060.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_061.png" alt="img_061.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_059.png" alt="img_059.png">
+<img src="./images/img_060.png" alt="img_060.png">
+<img src="./images/img_061.png" alt="img_061.png">
+</div>
+
+<style scoped>
+/* Suite de la diapo precedente, scindee : 24 puces et SEPT images ne
+   tenaient pas dans un canvas de 552 px (mesure 1794 px avant correction). */
+:deep(ul) { font-size: 0.8em; }
+:deep(li) { margin: 0; line-height: 1.18; }
+:deep(.img-grid) { height: 150px !important; grid-template-columns: repeat(4, 1fr) !important; }
+</style>
 
 
 ---
@@ -1153,6 +1264,23 @@ layout: two-cols
 <img src="./images/img_082.png" alt="img_082.png">
 <img src="./images/img_083.png" alt="img_083.png">
 </div>
+
+<style scoped>
+/* La diapo empilait 21 puces et un `img-grid cols3` de 9 images sans aucun
+   budget de hauteur : la 3e rangee tombait sous le canvas et 3 des 9 images
+   etaient invisibles (mesure `scan_slidev_overflow` : ink 0.0761 dans les
+   6 dernieres rangees de pixels).
+   `grid-template-columns` / `grid-auto-rows` du theme sont inertes ici :
+   `style.css` du deck redefinit `.img-grid` en `flex-wrap`, ou l'empilement
+   est pilote par la largeur des images, pas par une grille. On force donc
+   une vraie grille 3x3 bornee a 200 px, et les images remplissent leur
+   cellule (`object-fit: contain`) au lieu de flotter a 31 % de largeur.
+   Mesure apres : ink 0.0000, 9 images sur 9 visibles, aucun contenu retire. */
+:deep(ul) { font-size: 0.56em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.06 !important; }
+:deep(.img-grid) { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; grid-auto-rows: 1fr !important; height: 200px !important; }
+:deep(.img-grid img) { width: 100% !important; height: 100% !important; max-height: 100% !important; object-fit: contain !important; }
+</style>
 
 
 ---
@@ -1642,6 +1770,16 @@ layout: dense
 
 <img src="./images/img_097.png" alt="img_097.png" style="display:block; margin:10px auto; max-width:100%;">
 </div>
+
+<style scoped>
+/* La derniere puce s'ecrivait PAR-DESSUS le pied de page « Intelligence(s) »,
+   et la figure du dernier groupe `v-click` sortait du canvas. L'export rend
+   tous les clics (`?clicks=99`), donc c'est bien l'etat complet qui doit
+   tenir. Mesure : ink 0.0502 sur la bande de fond. */
+:deep(ul) { font-size: 0.8em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.1 !important; }
+img { max-height: 120px !important; }
+</style>
 ---
 
 
@@ -2110,9 +2248,23 @@ layout: dense
 - P(h|e) m.a.j.
 - Théorie du control robuste: ensemble d’hypothèses H  pire des cas
 
-<img src="./images/img_102.png" alt="img_102.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_103.png" alt="img_103.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_104.png" alt="img_104.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_102.png" alt="img_102.png">
+<img src="./images/img_103.png" alt="img_103.png">
+<img src="./images/img_104.png" alt="img_104.png">
+</div>
+
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 417 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). Les trois figures
+   etaient empilees en pleine largeur (la plus haute, img_103, faisait
+   336 px de haut) sous une liste de vingt-cinq lignes. Elles passent sur
+   une rangee (31 % de largeur) a hauteur bornee, et la liste est resserree.
+   Aucune figure n'est retiree. */
+:deep(.img-grid) { height: auto !important; }
+:deep(.img-grid img) { width: 31%; max-height: 92px; }
+:deep(ul) { font-size: 0.76em; line-height: 1.18; }
+</style>
 
 
 ---
@@ -2145,6 +2297,15 @@ layout: dense
 
 
 </div>
+
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 162 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). La grille gardait
+   le budget fixe de 300 px du theme alors que ses deux figures
+   n'occupaient qu'une rangee de 118 px. Hauteur auto + liste resserree. */
+:deep(.img-grid) { height: auto !important; }
+:deep(.dense-list ul) { font-size: 0.80em; }
+</style>
 ---
 
 
@@ -2206,6 +2367,17 @@ layout: dense
 <img src="./images/img_113.png" alt="img_113.png">
 </div>
 
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 176 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). La grille gardait
+   le budget fixe de 300 px du theme (deux rangees de figures sous une
+   liste de dix-sept lignes) et la liste ne comprimeait rien. Grille en
+   hauteur auto, figures a 76 px, liste resserree. */
+:deep(.img-grid) { height: auto !important; }
+:deep(.img-grid.cols3 img) { max-height: 76px; }
+:deep(ul) { font-size: 0.78em; line-height: 1.2; }
+</style>
+
 
 ---
 layout: dense
@@ -2230,10 +2402,22 @@ layout: dense
 - Si observable  Apprentissage inductif
 - Sinon plus difficile (HMM)
 
-<img src="./images/img_114.png" alt="img_114.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_115.png" alt="img_115.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_116.png" alt="img_116.png" style="display:block; margin:10px auto; max-width:100%;">
-<img src="./images/img_117.png" alt="img_117.png" style="display:block; margin:10px auto; max-width:100%;">
+<div class="img-grid">
+<img src="./images/img_114.png" alt="img_114.png">
+<img src="./images/img_115.png" alt="img_115.png">
+<img src="./images/img_116.png" alt="img_116.png">
+<img src="./images/img_117.png" alt="img_117.png">
+</div>
+
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 70 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). Les quatre
+   equations etaient empilees en pleine largeur. Elles passent en grille
+   deux colonnes a hauteur bornee ; aucune equation n'est retiree. */
+:deep(.img-grid) { height: auto !important; }
+:deep(.img-grid img) { max-height: 70px; }
+:deep(ul) { font-size: 0.80em; line-height: 1.2; }
+</style>
 
 
 ---
@@ -2328,6 +2512,17 @@ layout: dense
 <img src="./images/img_135.png" alt="img_135.png">
 </div>
 
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 251 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). Les huit
+   figures formaient trois rangees sous une liste de douze lignes, et la
+   reference de carnet passait sous le canvas. Quatre colonnes a hauteur
+   bornee, liste resserree : deux rangees au lieu de trois. */
+:deep(.img-grid) { height: auto !important; }
+:deep(.img-grid.cols3 img) { width: 23%; max-height: 60px; }
+:deep(ul) { font-size: 0.76em; line-height: 1.18; }
+</style>
+
 <p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb">RL-13-Curiosite-RND-Python.ipynb</a> (exploration et curiosité).</p>
 
 
@@ -2372,6 +2567,16 @@ layout: dense
 </div>
 
 <p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb">RL-04-Bandits-Manchots-Python.ipynb</a> (bandits et regret).</p>
+
+<style scoped>
+/* #24171 (point 3) : cette diapo sortait de 262 px sous le canvas 980x552
+   (mesure scan_slidev_composition, 2026-11-11, deck 06). La grille des
+   quatre figures gardait le budget fixe de 300 px du theme alors que ses
+   figures tiennent sur une rangee de 90 px. Hauteur auto + liste resserree. */
+:deep(.img-grid) { height: auto !important; }
+:deep(.img-grid.onerow img) { max-height: 70px; }
+:deep(.dense-list ul) { font-size: 0.72em; }
+</style>
 
 
 ---
@@ -2605,3 +2810,4 @@ layout: end
 
 - Jean-Sylvain Boige
 - jsboige@myia.org
+
