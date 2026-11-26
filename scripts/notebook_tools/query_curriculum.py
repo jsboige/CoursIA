@@ -338,7 +338,9 @@ def _concepts_citing_notebook(
     return matches[:limit] if limit is not None else matches
 
 
-def notebooks_for_concept(graph: Graph, concept_ref: str) -> list[str]:
+def notebooks_for_concept(
+    graph: Graph, concept_ref: str, limit: int | None = None
+) -> list[str]:
     """Carnets citants d'un concept, accepté par UUID ou URI (#27635)."""
     concepts = [
         concept for concept in graph.subjects(RDF.type, SKOS.Concept)
@@ -360,7 +362,8 @@ def notebooks_for_concept(graph: Graph, concept_ref: str) -> list[str]:
             matches.append(
                 f"{_label(graph, notebook)}\t{_identifier(graph, notebook)}\t{cell_id}"
             )
-    return sorted(set(matches), key=str.casefold)
+    ordered = sorted(set(matches), key=str.casefold)
+    return ordered[:limit] if limit is not None else ordered
 
 
 def concepts_of_notebook(
@@ -545,7 +548,7 @@ def main(argv: list[str] | None = None) -> int:
             elif args.notebook:
                 _print_lines(concepts_of_notebook(graph, args.notebook, args.query, args.limit))
             elif args.concept:
-                _print_lines(notebooks_for_concept(graph, args.concept))
+                _print_lines(notebooks_for_concept(graph, args.concept, args.limit))
             else:
                 _print_lines(concepts_for(graph, args.query, args.limit))
         elif args.command == "bridges":

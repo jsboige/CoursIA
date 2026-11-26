@@ -1,0 +1,289 @@
+# Conformite differentielle du triplet GameTheory-08 (Jeux combinatoires).
+#
+# Le carnet Rust (kernel `evcxr`, `std` seul — aucun `:dep`) rejoue les
+# grandeurs pivots du carnet : classification P/N du jeu 1-2-3, nim-sum de
+# Bouton, coup gagnant au Nim, mex, valeurs de Grundy (Nim et jeu de
+# soustraction S({1,3,4})), et la mise en jumeau Sprague-Grundy. Les trois
+# cotes n'ont pas la meme structure de cellules (le C# n'a pas de cellule de
+# mise en jumeau scalaire, il imprime les tableaux G1/G2/XOR a la place).
+#
+# Ecarts de FORME declares (le contenu est le meme, la mise en forme change) :
+#   - le Python et le Rust ecrivent les tas "(1, 2, 3)" et les ensembles
+#     "mex({0, 1, 2})" avec des espaces, le C# sans espace : "(1,2,3)",
+#     "mex({0,1,2})" ; les motifs par cote en tiennent compte ;
+#   - le C# imprime "Nouvelle position: [2, 5, 7]  Nim-sum: 0" dans la meme
+#     ligne que la position de depart, la ou le Python/Rust impriment
+#     "Nouvelle nim-sum: 0" sur sa propre ligne ;
+#   - les tableaux P/N et Grundy sont imprimes avec des largeurs de colonnes
+#     differentes ; les motifs n'ancrent que le numero de ligne et la valeur.
+#
+# Ecart de FOND declare : la mise en jumeau scalaire "n = 5 jetons : Grundy
+# = 3 -> Nim de 3 jetons" (cellule 29 des jumeaux Python/Rust) n'a pas de
+# contrepartie dans le carnet C#, qui verifie Sprague-Grundy par les tableaux
+# G1/G2/XOR de sa cellule 20. Cote declare ABSENT pour ces deux grandeurs.
+#
+# Tolerance 0 partout : toutes les grandeurs sont des entiers exacts (nim-sums,
+# valeurs de Grundy, mex).
+- name: "GameTheory-08 CombinatorialGames"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Rust.ipynb
+  measures:
+    - id: type_4_pn
+      description: "Jeu 1-2-3 : la position 4 est P (n % 4 == 0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: '\n\s*4\s+\|\s+([PN])\s+\|'
+          transform: text
+        csharp:
+          cell: 2
+          pattern: '\n\s*4\s+\|\s+([PN])\s+\|'
+          transform: text
+        rust:
+          cell: 3
+          pattern: '\n\s*4\s+\|\s+([PN])\s+\|'
+          transform: text
+    - id: type_5_pn
+      description: "Jeu 1-2-3 : la position 5 est N (periode 4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: '\n\s*5\s+\|\s+([PN])\s+\|'
+          transform: text
+        csharp:
+          cell: 2
+          pattern: '\n\s*5\s+\|\s+([PN])\s+\|'
+          transform: text
+        rust:
+          cell: 3
+          pattern: '\n\s*5\s+\|\s+([PN])\s+\|'
+          transform: text
+    - id: type_16_pn
+      description: "Jeu 1-2-3 : la position 16 est P (la periode 4 tient jusqu'au bout du tableau)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: '\n\s*16\s+\|\s+([PN])\s+\|'
+          transform: text
+        csharp:
+          cell: 2
+          pattern: '\n\s*16\s+\|\s+([PN])\s+\|'
+          transform: text
+        rust:
+          cell: 3
+          pattern: '\n\s*16\s+\|\s+([PN])\s+\|'
+          transform: text
+    - id: nim_sum_123
+      description: "Nim-sum du tas (1, 2, 3) : 1 xor 2 xor 3 = 0 (P-position)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: '\(1,\s*2,\s*3\)\s*\|\s*([0-9]+)'
+          transform: int
+        csharp:
+          cell: 5
+          pattern: '\(1,\s*2,\s*3\)\s*\|\s*([0-9]+)'
+          transform: int
+        rust:
+          cell: 8
+          pattern: '\(1,\s*2,\s*3\)\s*\|\s*([0-9]+)'
+          transform: int
+    - id: nim_sum_124
+      description: "Nim-sum du tas (1, 2, 4) : 7 (N-position)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: '\(1,\s*2,\s*4\)\s*\|\s*([0-9]+)'
+          transform: int
+        csharp:
+          cell: 5
+          pattern: '\(1,\s*2,\s*4\)\s*\|\s*([0-9]+)'
+          transform: int
+        rust:
+          cell: 8
+          pattern: '\(1,\s*2,\s*4\)\s*\|\s*([0-9]+)'
+          transform: int
+    - id: winning_move_new_nim
+      description: "Coup gagnant de [3, 5, 7] : reduire le tas 0 de 3 a 2, nouvelle nim-sum 0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'Nouvelle nim-sum: ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 8
+          pattern: 'Nouvelle position: \[2, 5, 7\]\s+Nim-sum: ([0-9]+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'Nouvelle nim-sum: ([0-9]+)'
+          transform: int
+    - id: mex_012
+      description: "mex de {0, 1, 2} : 3 (le plus petit entier absent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: 'mex\(\{0, 1, 2\}\) = ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 11
+          pattern: 'mex\(\{0,1,2\}\) = ([0-9]+)'
+          transform: int
+        rust:
+          cell: 14
+          pattern: 'mex\(\{0, 1, 2\}\) = ([0-9]+)'
+          transform: int
+    - id: mex_123
+      description: "mex de {1, 2, 3} : 0 (le plus petit entier absent est 0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: 'mex\(\{1, 2, 3\}\) = ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 11
+          pattern: 'mex\(\{1,2,3\}\) = ([0-9]+)'
+          transform: int
+        rust:
+          cell: 14
+          pattern: 'mex\(\{1, 2, 3\}\) = ([0-9]+)'
+          transform: int
+    - id: grundy_nim_9
+      description: "Grundy de nim(9) : 9 (identite du Nim, derniere ligne du tableau)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: '\n\s*9\s*\|\s*([0-9]+)\s*\|\s*OK'
+          transform: int
+        csharp:
+          cell: 14
+          pattern: '\n\s*9\s*\|\s*([0-9]+)\s*\|\s*OK'
+          transform: int
+        rust:
+          cell: 17
+          pattern: '\n\s*9\s*\|\s*([0-9]+)\s*\|\s*OK'
+          transform: int
+    - id: nim_sum_479
+      description: "Nim-sum de la position [4, 7, 9] : 10 (N-position)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: 'Nim-sum: ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 23
+          pattern: 'Nim-sum: ([0-9]+)'
+          transform: int
+        rust:
+          cell: 20
+          pattern: 'Nim-sum: ([0-9]+)'
+          transform: int
+    - id: winning_move_479
+      description: "Coup gagnant de [4, 7, 9] : tas 2, de 9 a 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: 'Coup gagnant: (tas 2: 9 -> 3)'
+          transform: text
+        csharp:
+          cell: 23
+          pattern: 'Coup gagnant: (tas 2: 9 -> 3)'
+          transform: text
+        rust:
+          cell: 20
+          pattern: 'Coup gagnant: (tas 2: 9 -> 3)'
+          transform: text
+    - id: grundy_s134_n5
+      description: "Jeu de soustraction S({1,3,4}) : Grundy de la position 5 = 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: '\n\s*5\s*\|\s*([0-9]+)\s*\|\s*[PN]'
+          transform: int
+        csharp:
+          cell: 17
+          pattern: '\n\s*5\s*\|\s*([0-9]+)\s*\|\s*[PN]'
+          transform: int
+        rust:
+          cell: 26
+          pattern: '\n\s*5\s*\|\s*([0-9]+)\s*\|\s*[PN]'
+          transform: int
+    - id: type_s134_n7
+      description: "Jeu de soustraction S({1,3,4}) : la position 7 est P (Grundy = 0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: '\n\s*7\s*\|\s*[0-9]+\s*\|\s*([PN])'
+          transform: text
+        csharp:
+          cell: 17
+          pattern: '\n\s*7\s*\|\s*[0-9]+\s*\|\s*([PN])'
+          transform: text
+        rust:
+          cell: 26
+          pattern: '\n\s*7\s*\|\s*[0-9]+\s*\|\s*([PN])'
+          transform: text
+    - id: pairing_n5_grundy
+      description: "Mise en jumeau Sprague-Grundy : la position 5 de S({1,3,4}) equivaut a un Nim de 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'n = 5 jetons : Grundy = ([0-9]+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne porte pas la mise en jumeau scalaire : il verifie
+            Sprague-Grundy par les tableaux G1/G2/XOR de sa cellule 20. La
+            grandeur est propre aux jumeaux Python et Rust, sans contrepartie
+            scalaire cote C#. Cote declare ABSENT.
+        rust:
+          cell: 29
+          pattern: 'n = 5 jetons : Grundy = ([0-9]+)'
+          transform: int
+    - id: pairing_n7_grundy
+      description: "Mise en jumeau Sprague-Grundy : la position 7 de S({1,3,4}) equivaut a un Nim de 0 (P)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'n = 7 jetons : Grundy = ([0-9]+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme motif que pairing_n5_grundy : la mise en jumeau scalaire est
+            propre aux jumeaux Python et Rust. Cote declare ABSENT.
+        rust:
+          cell: 29
+          pattern: 'n = 7 jetons : Grundy = ([0-9]+)'
+          transform: int
