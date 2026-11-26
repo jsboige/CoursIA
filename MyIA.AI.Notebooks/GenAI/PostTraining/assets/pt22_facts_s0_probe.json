@@ -12,7 +12,7 @@
     "dtype": "float32",
     "offline": true,
     "torch_threads": 10,
-    "elapsed_seconds": 272.5
+    "elapsed_seconds": 395.8
   },
   "model": {
     "repo": "Qwen/Qwen3-1.7B-Base",
@@ -23,7 +23,7 @@
     "R0": "aucun nom inventé (prénom, nom de famille, attribut) n'est un jeton unique",
     "R1": "la réponse gloutonne n'égale l'attribut pour aucun des faits fictifs",
     "R2": "rang du premier jeton de la cible > 20 pour au moins 90 % des faits fictifs",
-    "R3": "témoin positif : au moins 8 attributs réels sur 12 (exactitude exacte ou contenance, comparaison normalisée)",
+    "R3": "témoin positif : au moins 8 attributs réels sur 12, chaque fait compté une fois (exactitude exacte ou contenance, comparaison normalisée)",
     "verdict": {
       "R0_no_single_token_name": true,
       "R1_greedy_exact_zero": true,
@@ -31,11 +31,34 @@
       "R3_control_recall": false
     }
   },
+  "threshold_witness": {
+    "threshold": 8,
+    "total": 12,
+    "observed": {
+      "greedy_exact": 2,
+      "greedy_contains": 5,
+      "naive_sum": 7,
+      "distinct_count": 5,
+      "naive_verdict_pass": false,
+      "distinct_verdict_pass": false
+    },
+    "frontier": {
+      "greedy_exact": 2,
+      "greedy_contains": 6,
+      "naive_sum": 8,
+      "distinct_count": 6,
+      "naive_verdict_pass": true,
+      "distinct_verdict_pass": false
+    },
+    "assumption": "les reponses ajoutees a la frontiere sont contenantes mais non exactes",
+    "line": "temoin de seuil R3 (seuil = 8 attributs sur 12) : observe 2 exactes + 5 contenues, somme naive 7 (sous le seuil) contre comptage distinct 5 (sous le seuil) ; cas frontiere 2 exactes + 6 contenues : somme naive 8 (au seuil) ferait passer la garde du cote PASS, alors que le comptage distinct 6 (sous le seuil) la laisse du cote FAIL."
+  },
   "summary": {
     "fictitious": {
       "n": 60,
       "greedy_exact": 0,
       "greedy_contains": 0,
+      "greedy_distinct": 0,
       "rank_first_gt_20": 57,
       "rank_first_median": 177.5,
       "rank_first_min": 3,
@@ -54,6 +77,7 @@
       "n": 12,
       "greedy_exact": 2,
       "greedy_contains": 5,
+      "greedy_distinct": 5,
       "rank_first_gt_20": 3,
       "rank_first_median": 6.5,
       "rank_first_min": 1,

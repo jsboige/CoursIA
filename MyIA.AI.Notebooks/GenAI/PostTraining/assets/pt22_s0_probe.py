@@ -24,9 +24,11 @@ Règles posées **avant** la mesure (elles ne se recalibrent pas après les rés
   exceptions sont nommées, avec la raison lue dans la sortie (jeton initial
   fréquent ou non).
 * **R3 — témoin positif.** Sur 12 faits réels du même gabarit, jamais entraînés, le
-  modèle rappelle exactement au moins 8 attributs sur 12 (comparaison normalisée,
-  avec la contenance rapportée à part). Un témoin qui échoue accuse le gabarit de
-  question, pas le corpus.
+  modèle rappelle au moins 8 attributs sur 12 (comparaison normalisée, chaque fait
+  compté une fois : une réponse exacte est déjà une réponse contenant l'attribut).
+  Un témoin qui échoue accuse le gabarit de question, pas le corpus. La sortie
+  porte un témoin de seuil qui expose la somme naïve et le comptage distinct côte
+  à côte, calculés sur les valeurs observées.
 
 Sortie : ``pt22_facts_s0_probe.json``, à côté de ce script — environnement, empreinte
 du corpus, empreinte du snapshot de modèle, résumé par règle, puis une entrée par fait
@@ -198,6 +200,8 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "n": len(rows),
         "greedy_exact": sum(1 for row in rows if row["greedy_exact"]),
         "greedy_contains": sum(1 for row in rows if row["greedy_contains"]),
+        # Une réponse exacte est déjà contenante : chaque fait ne compte qu'une fois.
+        "greedy_distinct": sum(1 for row in rows if row["greedy_exact"] or row["greedy_contains"]),
         "rank_first_gt_20": sum(1 for rank in ranks if rank > RANK_MIN),
         "rank_first_median": statistics.median(ranks),
         "rank_first_min": min(ranks),
@@ -211,6 +215,77 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             slot: statistics.median([row["rank_first"] for row in rows if row["slot"] == slot])
             for slot in sorted({row["slot"] for row in rows})
         },
+    }
+
+
+def _threshold_position(value: int) -> str:
+    if value > CONTROL_MIN_EXACT:
+        return "au-dessus du seuil"
+    if value == CONTROL_MIN_EXACT:
+        return "au seuil"
+    return "sous le seuil"
+
+
+def _threshold_witness(exact: int, contains: int, distinct: int, total: int) -> dict[str, Any]:
+    """Témoin de seuil R3 : somme naïve des deux compteurs contre comptage distinct.
+
+    Une réponse exacte est déjà une réponse contenant l'attribut : additionner
+    ``greedy_exact`` et ``greedy_contains`` double chaque réponse exacte. Le témoin
+    rend les deux arithmétiques côte à côte sur les valeurs observées, puis dérive
+    le cas frontière où la somme naïve atteint le seuil alors que le comptage
+    distinct n'y arrive pas (les réponses ajoutées sont supposées contenantes mais
+    non exactes). Tout est calculé ici, rien n'est recopié à la main.
+    """
+    naive = exact + contains
+    deficit = max(0, CONTROL_MIN_EXACT - naive)
+    frontier_exact = exact
+    frontier_contains = contains + deficit
+    frontier_naive = frontier_exact + frontier_contains
+    frontier_distinct = frontier_exact + (frontier_contains - frontier_exact)
+    naive_pass = naive >= CONTROL_MIN_EXACT
+    distinct_pass = distinct >= CONTROL_MIN_EXACT
+    frontier_naive_pass = frontier_naive >= CONTROL_MIN_EXACT
+    frontier_distinct_pass = frontier_distinct >= CONTROL_MIN_EXACT
+    divergence = frontier_naive_pass and not frontier_distinct_pass
+    line = (
+        f"temoin de seuil R3 (seuil = {CONTROL_MIN_EXACT} attributs sur {total}) : "
+        f"observe {exact} exactes + {contains} contenues, somme naive {naive} "
+        f"({_threshold_position(naive)}) contre comptage distinct {distinct} "
+        f"({_threshold_position(distinct)}) ; "
+        f"cas frontiere {frontier_exact} exactes + {frontier_contains} contenues : "
+        f"somme naive {frontier_naive} ({_threshold_position(frontier_naive)})"
+    )
+    if divergence:
+        line += (
+            " ferait passer la garde du cote PASS, alors que le comptage distinct "
+            f"{frontier_distinct} ({_threshold_position(frontier_distinct)}) la laisse du cote FAIL."
+        )
+    else:
+        line += (
+            f" ; comptage distinct {frontier_distinct} "
+            f"({_threshold_position(frontier_distinct)}) : pas de divergence a la frontiere derivee."
+        )
+    return {
+        "threshold": CONTROL_MIN_EXACT,
+        "total": total,
+        "observed": {
+            "greedy_exact": exact,
+            "greedy_contains": contains,
+            "naive_sum": naive,
+            "distinct_count": distinct,
+            "naive_verdict_pass": naive_pass,
+            "distinct_verdict_pass": distinct_pass,
+        },
+        "frontier": {
+            "greedy_exact": frontier_exact,
+            "greedy_contains": frontier_contains,
+            "naive_sum": frontier_naive,
+            "distinct_count": frontier_distinct,
+            "naive_verdict_pass": frontier_naive_pass,
+            "distinct_verdict_pass": frontier_distinct_pass,
+        },
+        "assumption": "les reponses ajoutees a la frontiere sont contenantes mais non exactes",
+        "line": line,
     }
 
 
@@ -283,14 +358,19 @@ def main(argv: list[str] | None = None) -> int:
 
     fictitious_summary = _summary(fictitious)
     control_summary = _summary(control) if control else {}
+    threshold_witness = _threshold_witness(
+        control_summary.get("greedy_exact", 0),
+        control_summary.get("greedy_contains", 0),
+        control_summary.get("greedy_distinct", 0),
+        control_summary.get("n", 0),
+    ) if control else {}
     rules = {
         "R0_no_single_token_name": not fictitious_summary["single_token_violations"],
         "R1_greedy_exact_zero": fictitious_summary["greedy_exact"] == 0,
         "R2_rank_above_threshold_share": (
             fictitious_summary["rank_first_gt_20"] >= RANK_MIN_SHARE * fictitious_summary["n"]
         ),
-        "R3_control_recall": (control_summary.get("greedy_exact", 0)
-                              + control_summary.get("greedy_contains", 0) >= CONTROL_MIN_EXACT) if control else None,
+        "R3_control_recall": (control_summary.get("greedy_distinct", 0) >= CONTROL_MIN_EXACT) if control else None,
     }
     out = {
         "schema": SCHEMA,
@@ -318,10 +398,11 @@ def main(argv: list[str] | None = None) -> int:
             "R1": "la réponse gloutonne n'égale l'attribut pour aucun des faits fictifs",
             "R2": f"rang du premier jeton de la cible > {RANK_MIN} pour au moins "
                   f"{int(RANK_MIN_SHARE * 100)} % des faits fictifs",
-            "R3": f"témoin positif : au moins {CONTROL_MIN_EXACT} attributs réels sur 12 "
-                  f"(exactitude exacte ou contenance, comparaison normalisée)",
+            "R3": f"témoin positif : au moins {CONTROL_MIN_EXACT} attributs réels sur 12, chaque fait "
+                  f"compté une fois (exactitude exacte ou contenance, comparaison normalisée)",
             "verdict": rules,
         },
+        "threshold_witness": threshold_witness,
         "summary": {"fictitious": fictitious_summary, "positive_control": control_summary},
         "fictitious": fictitious,
         "positive_control": control,
@@ -331,6 +412,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"RESUME : {json.dumps(fictitious_summary, ensure_ascii=False)}")
     print(f"TEMOIN : {json.dumps(control_summary, ensure_ascii=False)}")
     print(f"REGLES : {json.dumps(rules, ensure_ascii=False)}")
+    if threshold_witness:
+        print(f"TEMOIN DE SEUIL : {threshold_witness['line']}")
     return 0
 
 
