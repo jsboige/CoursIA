@@ -555,13 +555,15 @@ def test_verify_recorded_sha_triplet_rust_illisible_dit_pourquoi(tmp_path):
     """Carnet Rust present dans git mais qui n'est plus un notebook : c'est
     l'empreinte de CONTENU qui manque, pas celle de blob -- le diagnostic ne dit
     donc pas « absent de git » (les deux indisponibilites n'appellent pas le meme
-    geste : restaurer un chemin, ou re-executer le carnet)."""
+    geste : restaurer un chemin, ou re-executer le carnet). Le verdict normal
+    (`check_pair`) le dit aussi : no_baseline du cote rust, jamais un OK."""
     repo = _make_repo(tmp_path, {
         "nb/py-10.ipynb": _MINIMAL_NB,
         "nb/cs-10.ipynb": _MINIMAL_NB,
         "nb/ru-10.ipynb": _MINIMAL_NB,
     })
     pair = _attested_by_update(repo, "T-illisible", "nb/ru-10.ipynb")
+    assert check_pair(repo, pair)["status"] == "OK"
     (repo / "nb/ru-10.ipynb").write_text("ceci n est pas un notebook", encoding="utf-8")
     _commit_all(repo, "carnet rust illisible")
 
@@ -575,6 +577,17 @@ def test_verify_recorded_sha_triplet_rust_illisible_dit_pourquoi(tmp_path):
     assert len(champs["calculated"]) == 12, champs
     assert "illisible" in lignes["content_rust_sha"], lignes["content_rust_sha"]
     assert "absent de git" not in lignes["content_rust_sha"], lignes["content_rust_sha"]
+
+    # Le verdict NORMAL dit la meme chose (review de la PR #28276) : l'empreinte
+    # de contenu courante indisponible est un no_baseline, jamais un OK. Rien a
+    # re-attester du cote drift : le defaut est l'illisibilite, elle est nommee.
+    verdict = check_pair(repo, pair)
+    assert verdict["status"] == "DRIFT", verdict
+    assert verdict["no_baseline"] is True, verdict
+    assert verdict["drift_sides"] == [], verdict["drift_sides"]
+    assert verdict["current_content_rust_sha"] is None, verdict
+    assert any("indisponible" in d and "illisible" in d for d in verdict["details"]), (
+        verdict["details"])
 
 
 # --- verdicts per-pair : le cote rust participe --------------------------------

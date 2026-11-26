@@ -1014,6 +1014,17 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
             if use_content_ru:
                 ru_drift = (cur_cru is not None
                             and cur_cru != audit.get("content_rust_sha"))
+                if cur_cru is None:
+                    # Meme regle que py/cs (ci-dessus) : une empreinte de
+                    # contenu COURANTE indisponible n'est jamais un OK. Le
+                    # carnet rust est suivi mais illisible a cette ref ; sans
+                    # ce garde, le verdict disait OK la ou verify_recorded_sha
+                    # dit deja MISMATCH. Le geste n'est pas --update mais de
+                    # rendre le carnet lisible (restaurer, re-executer).
+                    no_baseline = True
+                    details.append(
+                        f"Empreinte de contenu Rust indisponible : {ru} "
+                        "(suivi mais illisible a cette ref)")
             else:
                 ru_drift = (rec_ru is not None and cur_ru != rec_ru)
             if ru_drift:
