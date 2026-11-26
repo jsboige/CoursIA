@@ -188,6 +188,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (pytest.ini testpaths, liste pytest de ce workflow, ce dict).
         "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
+        # Option-Wheel/tests (#28618) : dossier neuf apporte avec son test,
+        # hermétique (AlgorithmImports maquetté, zéro réseau ; 8 tests en
+        # 0,12 s en local). Cablé des trois côtés dans la même PR — testpaths,
+        # bloc pytest littéral de ce workflow, ce dict — plutôt que déclaré en
+        # dette tolérée : un test ajouté pour prouver un plafond doit tourner.
+        "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests",
