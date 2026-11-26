@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1472** carnets Python, **574** eligibles, **898** refuses.
+Census : **1473** carnets Python, **575** eligibles, **898** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -86,6 +86,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | DecisionTheory | 15 | 2 | 13 | 0 | 0 | 0 | 0 | 13 |
 | Diagnostic-Medical | 2 | 0 | 2 | 0 | 0 | 0 | 2 | 2 |
 | Dynamics | 11 | 10 | 1 | 0 | 1 | 1 | 0 | 0 |
+| Dynamiques | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | FallacyDetection | 5 | 2 | 3 | 0 | 0 | 1 | 1 | 1 |
 | FineTuning | 11 | 0 | 11 | 11 | 0 | 0 | 4 | 8 |
 | Fondations | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -164,7 +165,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 781 | 574 |
+| Carnets eligibles | 782 | 575 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -309,6 +310,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb` | Dynamics | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb` | Dynamics | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb` | Dynamics | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb` | Dynamiques | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/GenAI/FallacyDetection/01_taxonomy_intro.ipynb` | FallacyDetection | python3 | - | - |
 | `MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb` | FallacyDetection | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb` | Fondations | python3 | numpy==2.4.6 | - |
