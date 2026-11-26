@@ -3472,6 +3472,38 @@
    "commenters": []
   }
  ],
+ "CURRICULUM_PREREQ_GUARDS": [
+  {
+   "name": "curriculum-prereq-staleness-guard",
+   "argv": [
+    "python",
+    "scripts/curriculum/generate_prereq_map.py",
+    "--check"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [
+    "docs/curriculum/taxonomy/**",
+    "docs/curriculum/prerequis.qmd",
+    "scripts/curriculum/generate_prereq_map.py",
+    "scripts/curriculum/tests/test_generate_prereq_map.py",
+    "scripts/ci/fast_lane.py",
+    "scripts/ci/fast_lane_registry.py"
+   ],
+   "blocking": true,
+   "needs_base": false,
+   "diff_bounded": false,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [],
+   "commenters": []
+  }
+ ],
  "TRANCHE52": [
   {
    "name": "Prose-numbers vs outputs ratchet (base vs PR, advisory)",
