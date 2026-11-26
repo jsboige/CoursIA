@@ -37,7 +37,7 @@ L'extension n'est pas première chez Whitehead, la **connexion extensive** l'est
 **Les lectures retenues, déclarées avant mesure.** Deux énoncés imprimés ne peuvent pas être lus au pied de la lettre ; les lemmes L1 et L2 le prouvent (section 4). Le banc adopte donc deux conventions, et les mesure comme telles :
 
 - **K1 — irréflexivité conventionnelle.** C et la connexion médiate sont irréflexives par convention de nomenclature (le texte le dit de A4 : « merely a convenient arrangement of nomenclature »). La lecture littérale est traitée en L2, pas dans la matrice.
-- **K2 — inclusion = E1.** `A ⊒ B` ssi *(toute région connectée avec B est connectée avec A)* **et** `A ≠ B`. E1 est l'émendation minimale de D2 : elle rend A7 satisfiable (L1) sans rendre A5 vacueux (A5 reste une thèse à mesurer, non un corollaire de la définition).
+- **K2 — inclusion (v1, remplacée par K2′ en v2 : voir §8).** `A ⊒ B` ssi *(toute région connectée avec B est connectée avec A)* **et** `A ≠ B`. E1 est l'émendation minimale de D2 : elle rend A7 satisfiable (L1) sans rendre A5 vacueux (A5 reste une thèse à mesurer, non un corollaire de la définition).
 - **K3 — tautologies déclarées.** A21 (équivalence réflexive) et A26 (non-incidence en soi) sont des conséquences de D12 et D15 (« merely a convenient arrangement of nomenclature ») : le banc les compte vraies et les marque **par définition**, jamais « mesurées ». A1 est mesuré pour sa moitié « connexion » et **prouvé** pour sa moitié « connexion médiate » (le texte le dit, p. 451 : « can be proved from the terms of the definition »).
 - **K4 — « any two regions » = paires distinctes** (A2, seconde clause). Sans cela A2 et A4 sont contradictoires (L2).
 
@@ -103,3 +103,36 @@ La lentille grothendieckienne lit D10-D16 comme une **complétion** : les régio
 1. **Ce document, commité, est le scellé.** Toute modification des prédictions se fait par amendement **pré-exécution** horodaté dans ce fichier (`v1 → v2 AVANT run`), jamais silencieusement.
 2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/whitehead_extensive_connection.py`, les tests `ict/tests/test_whitehead_extensive_connection.py` et les mesures `ict/results/whitehead_extensive_connection_results.json` vivront dans un commit fils, avec la ligne du tableau `docs/ict/README.md` ajoutée dans la même PR.
 3. Verdict rapporté sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) avec la matrice brute par substrat et par graine. La veille ne se clôt pas sur une tranche.
+
+## 8. Amendement v2 — pré-exécution (2026-11-26, avant toute ligne de banc)
+
+Rédigé en spécifiant le banc, **avant qu'il existe**. Le commit du scellé v1 (`8d46c8047a8`) reste le parent ; cet amendement en est le fils ; le banc sera le petit-fils. Aucune mesure n'a été prise à cette date.
+
+### L5 — le chapitre emploie un seul mot pour deux relations
+
+K2 (v1) lisait « include » comme l'inclusion **propre** partout. Appliquée à D11, elle interdit à un ensemble abstractif de se couvrir lui-même (aucun membre ne s'inclut proprement), et A21 — « an abstractive set is equivalent to itself… An abstractive set **obviously** satisfies the conditions for such reflexive equivalence » (p. 456) — devient **fausse**. Le texte dit « obviously » : dans D11-D12, « include » est donc **réflexif**. Dans A7 (« a region does not include itself »), il est **irréflexif** — L1 montre que A7 est insatisfiable sous la lecture réflexive. Les deux emplois sont forcés, et ils sont incompatibles : le même mot désigne deux relations.
+
+### K2′ (remplace K2)
+
+- `A ⊑ B` (inclusion **faible**) := D2 littérale : toute région connectée avec B est connectée avec A. Réflexive.
+- `A ⊏ B` (inclusion **propre**) := `A ⊑ B` et `A ≠ B`.
+- **A5-A9** sont évaluées sur `⊏` (elles parlent d'asymétrie, A7-A8, et « includes *other* regions », A9).
+- **D3** (« a third region which they both include ») : la troisième région est distincte de A et de B, où `⊑` et `⊏` coïncident — aucune convention n'est nécessaire.
+- **D8-D9** (« B is included in A ») : sur `⊏`.
+- **D10-D15** (couvrir, équivalence, élément, incident) : sur `⊑`.
+
+### Statuts de cellule et critère « 24/24 »
+
+Une case `(substrat, hypothèse)` vaut `true`, `false`, `par_definition` (K1, K3, A7 sous `⊏`) ou `partiel` — ce dernier quand une partie du domaine ne peut être évaluée sur la batterie. Une région sans coupure interne dans la batterie n'a pas de dissection constructible : c'est un **artefact de batterie**, compté et nommé, jamais rangé parmi les contre-exemples. **« 24/24 » signifie : aucune case `false`.** Chaque case `partiel` porte son nombre de régions exclues et son motif.
+
+### Tailles de batterie (fixées)
+
+S1/S2 — toutes les paires de la grille `{0, 1/2, 1, 3/2, 2, 3, 4, 6, 10}` (36 intervalles), 6 unions, 8 régions tirées par graine : **50** ; S3 — les 63 parties non vides (déterministe : les graines coïncident par construction) ; S4 — 30 boîtes par dimension ; S5 — 14 nœuds (déterministe).
+
+### Dissections : le constructeur propose, la définition dispose
+
+Les générateurs de dissections sont propres à chaque substrat (coupure interne pour S1/S2/S4, retrait d'une cellule pour S3, sous-arbres fils pour S5). **Chaque candidat est vérifié contre D4 avant d'être compté** ; un candidat rejeté est rapporté, jamais déposé en silence.
+
+### A21-A26 : palier d'abstraction, pouvoir discriminant déclaré faible
+
+Ces six hypothèses portent sur des ensembles abstractifs **infinis**. Le banc les évalue sur des chaînes explicites (S1 seulement : familles `[0, 2^-n]`, `[0, 3^-n]`, `[-2^-n, 2^-n]` convergeant vers 0, et `[1, 1+2^-n]` convergeant vers 1 — un tronçon de longueur finie, la fin de chaîne étant below toute région de la batterie). Aucune de ces hypothèses ne peut y échouer pour une raison non triviale : leur statut est rapporté `true` **avec la marque « peu discriminant »**, et il n'entre pas dans le compte des hypothèses qui portent le verdict.
