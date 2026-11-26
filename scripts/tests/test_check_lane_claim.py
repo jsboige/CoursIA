@@ -7867,20 +7867,40 @@ def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     assert "CLEAR" in captured.out
 
 
-def test_implicit_undatable_pr_does_not_flip_the_caller_verdict(monkeypatch, capsys):
-    # #26751 -- la jambe IMPLICIT tourne DESORMAIS pour la lane appelante
-    # (elle ne tournait que si `mine is None`). L'invariant de la review
-    # 5429946072 est preserve par le FILTRE CHRONOLOGIQUE : une PR
-    # ANTERIEURE au claim signale que le claim a recouvre une livraison
-    # (verdict IMPLICIT), une PR POSTERIEURE reste subsumee par le claim
-    # (verdict CLEAR) -- les deux cas sont pintest dans
-    # scripts/tests/test_check_lane_claim_implicit.py.
+def test_implicit_undatable_tagged_pr_still_occupies(monkeypatch, capsys):
+    # #28787 -- la date de creation n'est demandee que pour une PR SANS tag de
+    # lane lisible. Ici la lane tierce est LISIBLE (`myia-po-2026:CoursIA`,
+    # distincte de l'appelante) : elle occupe le grain meme sans date, puisque
+    # `_find_open_prs_referencing_issue` exclut deja les PR de l'appelante.
     #
-    # Ici la PR n'a pas de date de creation : l'ORDRE ne peut pas etre
-    # etabli, donc la jambe ne fabrique pas de verdict (fail-open + WARN,
-    # meme posture que sur un `gh` mort). Le verdict de la lane reste
-    # CLEAR -- c'est le comportement d'avant #26751, preserve.
+    # Avant #28787 ce cas rendait CLEAR avec un WARN (l'ORDRE ne pouvait pas
+    # etre etabli) -- la meme classe de faux CLEAR que la mesure du 25/11 sur
+    # #28250, ou la date seule suffisait a blanchir une occupation tierce.
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
+    p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
+                        "2026-09-02T10:00:00Z"),
+                number=14259)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT:" in captured.out
+    assert "#14293" in captured.out
+    brace = captured.out.find("{")
+    data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
+    assert data["my_active_claim"] is True
+    assert [f["number"] for f in data["implicit_occupation"]] == [14293]
+
+
+def test_implicit_undatable_untagged_pr_does_not_flip_the_caller_verdict(
+        monkeypatch, capsys):
+    # #26751 / #28787 -- une PR SANS tag de lane lisible ET sans date reste la
+    # seule ou l'ordre ne peut pas etre etabli : elle peut etre la livraison de
+    # l'appelante elle-meme, donc la jambe ne fabrique pas de verdict
+    # (fail-open + WARN, meme posture que sur un `gh` mort). Le verdict de la
+    # lane reste CLEAR -- comportement d'avant #26751, preserve.
+    untagged = dict(_PR_14293, body="See #14259")
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [untagged])
     p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
                         "2026-09-02T10:00:00Z"),
                 number=14259)

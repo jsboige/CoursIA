@@ -6053,12 +6053,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     #   (b) une lane qui detient DEJA son claim recevait CLEAR pour toujours
     #       (`mine is None`), meme au-dessus d'une PR plus ancienne que son
     #       claim : c'est exactement le cas #26597 (deux PRs pour un grain).
-    # La jambe tourne donc desormais pour la lane appelante ; le filtre
+    # La jambe tourne donc desormais pour la lane appelante. Le filtre
     # chronologique (le `createdAt` serveur du claim contre celui de la PR)
-    # ne retient que les PRs ANTERIEURES au claim : une PR posterieure
-    # reste subsumee par le claim (review 5429946072). Le cout du round-trip
-    # gh est le meme qu'avant (memo de processus + cache de session) ; seule
-    # la lecture d'une lane qui CLAIMait l'evite.
+    # ne retient que les PRs ANTERIEURES au claim (review 5429946072) -- et il
+    # ne s'applique qu'a une PR SANS tag de lane lisible, qui peut etre la
+    # livraison de l'appelante : une lane tierce LISIBLE occupe le grain a
+    # toute date (voir le site du filtre, plus bas). Le cout du round-trip
+    # gh est le meme qu'avant (memo de processus + cache de session).
     implicit_occupation: list[dict] = []
     # #22408 (item 3) -- `[]` disait deux choses incompatibles : « mesure, et
     # personne n'occupe » et « jambe non demandee ». Instance #21881 : le
@@ -6074,12 +6075,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             implicit_occupation = _find_open_prs_referencing_issue(
                 int(payload["number"]), my_lane)
             if mine is not None:
-                # #26751 -- la lane appelante detient son claim : seule une PR
-                # ANTERIEURE a ce claim signale que le claim a recouvre une
-                # livraison en cours. Une PR posterieure reste subsumee.
+                # #26751 -- la lane appelante detient son claim : le filtre
+                # chronologique ne vaut que pour une PR dont le tag de lane est
+                # ILLISIBLE (`lane is None`). Une telle PR peut etre la
+                # livraison de l'appelante elle-meme, et une PR posterieure a
+                # son claim y reste subsumee (review 5429946072).
+                #
+                # Des que la lane tierce est LISIBLE, la date ne dit plus rien :
+                # `_find_open_prs_referencing_issue` exclut deja les PR de
+                # l'appelante (`lane == my_lane`, l. 3417), donc tout ce qui
+                # reste occupe le grain, anterieur ou posterieur au claim.
+                # Mesure du 25/11 14:42:43Z : `--paths
+                # Search/Part1-Foundations/Search-11-Metaheuristics-Rust.ipynb`
+                # rendait rc=0 avec `implicit_occupation: []` au-dessus de la PR
+                # #28250 (lane `myia-ai-01:CoursIA-2` lisible, ouverte le 23/11
+                # APRES le claim du 22/11 de `myia-po-2028:claudish`) : les cinq
+                # grains de son lot ont failli etre dupliques, arretes au seul
+                # controle d'instant du lanceur.
                 claim_at = mine.get("created_at")
                 kept: list[dict] = []
                 for finding in implicit_occupation:
+                    if finding.get("lane") is not None:
+                        kept.append(finding)
+                        continue
                     pr_at = finding.get("created_at")
                     if not claim_at or not pr_at:
                         # Mesure impossible : la jambe ne fabrique pas de
