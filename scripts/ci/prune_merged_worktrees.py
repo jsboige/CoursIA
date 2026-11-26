@@ -396,6 +396,14 @@ class WorktreeStatus:
     lock_class: Optional[str] = None
     lock_pid: Optional[int] = None
     dead_lock_unlocked: bool = False
+    # Champ --max-pr-open-days (additif, #DISK Maintenance 26/11) : worktree a
+    # PR OPEN dont l'age (created_at) depasse le seuil -- le retrait est
+    # autorise MAIS seulement apres archivage de HEAD (bundle + MANIFEST) dans
+    # la quarantaine. `pr_open_archived` porte la decision, `pr_open_age_days`
+    # l'age mesure pour le rapport. Sans le seuil (flag non passe), le
+    # predicat 3 reste REFUSE comme avant : comportement par defaut inchange.
+    pr_open_archived: bool = False
+    pr_open_age_days: Optional[int] = None
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -2245,6 +2253,10 @@ def _rest_row_to_pr_row(row: dict, branch: str) -> Optional[dict]:
         "url": row.get("html_url"),
         "headRefName": ref,
         "headRefOid": head.get("sha"),
+        # --max-pr-open-days : l'age de la PR se lit sur `created_at` (REST
+        # `pulls` le porte par PR). Absent sur la voie GraphQL (forks) -> le
+        # calcul d'age rend None et le predicat 3 reste REFUSE (fail-closed).
+        "created_at": row.get("created_at"),
     }
 
 
@@ -2601,11 +2613,35 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     return None
 
 
+def _pr_open_age_days(pr: Optional[dict]) -> Optional[int]:
+    """Age en jours entiers d'une PR depuis son `created_at` (UTC).
+
+    Rend None si `pr` est vide, `created_at` absent, ou la date illisible :
+    un age incalculable ne doit JAMAIS autoriser un retrait d'un worktree a
+    PR OPEN -- l'appelant garde alors le REFUSE historique (fail-closed).
+    """
+    if not pr:
+        return None
+    created = pr.get("created_at")
+    if not created:
+        return None
+    try:
+        from datetime import datetime, timezone
+        dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - dt).total_seconds() / 86400.0
+    except (ValueError, TypeError):
+        return None
+    return int(age)
+
+
 def diagnose_worktree(wt_path: str, current_path: str,
                       head_sha: Optional[str] = None,
                       activity_window_h: float = 6.0,
                       gh_unavailable_reason: Optional[str] = None,
-                      quarantine_submodules: bool = False) -> WorktreeStatus:
+                      quarantine_submodules: bool = False,
+                      max_pr_open_days: Optional[int] = None) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
@@ -2856,6 +2892,38 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     # Predicat 3 : PR OPEN -> REFUSE
     if pr_state == "OPEN":
+        # --max-pr-open-days (opt-in, #DISK Maintenance 26/11) : un worktree a
+        # PR OPEN dont l'age depasse le seuil est retirable. C'est SEUR ici :
+        # tous les gardes upstream (commits non poussees, source dirty,
+        # untracked bloquant, sous-modules, worktree courant) ont deja tire
+        # AVANT ce point, donc un worktree qui arrive a ce predicat est par
+        # construction propre a retirer -- le seul frein residuel est que la
+        # PR est encore OPEN. Le retrait est alors marque `pr_open_archived` :
+        # l'apply archive HEAD (bundle + MANIFEST) AVANT `git worktree remove`.
+        # Sans le seuil, ou si l'age est incalculable (created_at absent), on
+        # garde le REFUSE historique : le defaut ne bouge pas.
+        age_days = _pr_open_age_days(pr)
+        if (max_pr_open_days is not None and age_days is not None
+                and age_days > max_pr_open_days):
+            return WorktreeStatus(
+                path=wt_path,
+                branch=info["branch"],
+                is_current=False,
+                pr_state=pr_state,
+                pr_number=pr_number,
+                pr_url=pr_url,
+                ahead_count=info["ahead_count"],
+                has_source_dirty=info["has_source_dirty"],
+                untracked_paths=info["untracked"],
+                decision="REMOVE",
+                refusal_reason=None,
+                has_submodules=info["has_submodules"],
+                blocking_untracked=info.get("blocking_untracked", []),
+                ignored_extra=info.get("ignored_extra", []),
+                lane_owner=info.get("lane_owner"),
+                pr_open_archived=True,
+                pr_open_age_days=age_days,
+            )
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -3245,6 +3313,59 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     return removed
 
 
+def archive_worktree_head(wt: "WorktreeStatus", quarantine_root: Path,
+                          dest_name: str) -> tuple[bool, str]:
+    """Archive le HEAD d'un worktree a PR OPEN expiree, AVANT son retrait.
+
+    `--max-pr-open-days` retire un worktree dont la PR est encore OPEN : pour
+    ne perdre rien, le `HEAD` de sa branche est capture en `git bundle` (plus
+    un MANIFEST daté) sous `quarantine_root/pr_open_archive/<dest_name>/`. Un
+    echec d'archivage est renvoye (False, raison) et l'APPLY retire PAS le
+    worktree -- on n'archive pas a demi. Le sous-repertoire `pr_open_archive/`
+    est distinct de la quarantaine de sous-modules (les entrees de celle-ci
+    s'achevent par `-{wt.name}`) : pas de couplage entre les deux registres.
+    """
+    sub_root = quarantine_root / "pr_open_archive"
+    dest = sub_root / dest_name
+    try:
+        if dest.exists():
+            return False, "archive-destination-exists"
+        sub_root.mkdir(parents=True, exist_ok=True)
+        marker = sub_root / QUARANTINE_MARKER
+        if not marker.exists():
+            marker.write_text(
+                "archives pr_open_archive du pruneur de worktrees\n",
+                encoding="utf-8",
+            )
+        dest.mkdir(parents=True)
+    except OSError as exc:
+        return False, f"archive-dir-failed:{exc}"
+    head_ref = wt.branch if wt.branch else "HEAD"
+    bundle = dest / "head.bundle"
+    bproc = run_git(
+        wt.path, "bundle", "create", str(bundle), head_ref, check=False,
+    )
+    if bproc.returncode != 0:
+        return False, f"bundle-failed:{bproc.stderr.strip()[:120]}"
+    head_sha = _local_head_sha(wt.path) or "unknown"
+    manifest = (
+        f"worktree: {wt.path}\n"
+        f"branch: {wt.branch}\n"
+        f"pr: #{wt.pr_number}\n"
+        f"pr_state: {wt.pr_state}\n"
+        f"head_sha: {head_sha}\n"
+        f"pr_open_age_days: {wt.pr_open_age_days}\n"
+        f"archived_at: "
+        f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}\n"
+        f"reason: pr_open_expired (--max-pr-open-days)\n"
+    )
+    try:
+        (dest / "MANIFEST.txt").write_text(manifest, encoding="utf-8")
+    except OSError as exc:
+        return False, f"manifest-failed:{exc}"
+    return True, ""
+
+
 def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     """Tente `git worktree remove`. Retourne (success, stderr).
 
@@ -3574,6 +3695,17 @@ def main() -> int:
              "racine qui ne porte pas le marqueur de l'organe n'est pas "
              "purgee.",
     )
+    p.add_argument(
+        "--max-pr-open-days",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Seuil d'age (en jours) au-dela duquel un worktree a PR OPEN "
+             "est archive (bundle + MANIFEST dans la quarantaine) puis retire "
+             "(#DISK Maintenance 26/11). Opt-in : sans ce drapeau, le "
+             "comportement mesure (REFUSE pr_open) est inchange. Ne force "
+             "JAMAIS le retrait et ne supprime JAMAIS la branche.",
+    )
     args = p.parse_args()
 
     # #21743 : la decontamination par quarantaine est OPT-IN (un drapeau
@@ -3698,6 +3830,7 @@ def main() -> int:
                     activity_window_h=args.activity_window_h,
                     gh_unavailable_reason=gh_unavailable_reason,
                     quarantine_submodules=args.quarantine_submodules,
+                    max_pr_open_days=args.max_pr_open_days,
                 ),
                 wt.get("locked_reason"),
             )
@@ -3765,6 +3898,29 @@ def main() -> int:
                         error_count += 1
                     else:
                         quarantine_refused_count += 1
+                    continue
+            # --max-pr-open-days : un worktree a PR OPEN expiree n'est retirable
+            # QUE son HEAD ait d'abord ete archive (bundle + MANIFEST). Un
+            # echec d'archivage annule le retrait de ce worktree (exit 0,
+            # decompte en refus de quarantaine) -- on ne retire jamais a
+            # l'aveugle un worktree dont la PR est encore ouverte.
+            if s.pr_open_archived:
+                dest_name = f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}-" \
+                            f"{Path(s.path).name}"
+                arch_ok, arch_msg = archive_worktree_head(
+                    s, quarantine_root, dest_name,
+                )
+                if not arch_ok:
+                    apply_results.append({
+                        "path": s.path,
+                        "branch": s.branch,
+                        "pr_number": s.pr_number,
+                        "applied": False,
+                        "stderr": f"pr-open-archive-refused:{arch_msg}",
+                        "cleaned_artifacts": cleaned,
+                        "quarantine": None,
+                    })
+                    quarantine_refused_count += 1
                     continue
             ok, stderr = apply_removal(s)
             apply_results.append({

@@ -612,6 +612,98 @@ class TestDiagnoseRefusalCauses:
         assert s.refusal_reason == "uncommitted_source_changes"
 
 
+class TestMaxPrOpenDays:
+    """--max-pr-open-days : seuil d'age au-dela duquel un worktree a PR OPEN
+    expiree est archive (bundle + MANIFEST) puis retire. Couvre le calcul
+    d'age (fonction pure) et le basculement OPEN->REMOVE de diagnose_worktree,
+    en preservant le defaut (flag absent -> REFUSE pr_open, fail-closed).
+    """
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/X", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    # --- calcul d'age (fonction pure) --------------------------------
+
+    def test_age_days_from_created_at(self):
+        from datetime import datetime, timedelta, timezone
+        old = (datetime.now(timezone.utc) - timedelta(days=40)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+        assert pmw._pr_open_age_days({"created_at": old}) == 40
+
+    def test_age_days_young(self):
+        from datetime import datetime, timedelta, timezone
+        recent = (datetime.now(timezone.utc) - timedelta(days=3)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+        assert pmw._pr_open_age_days({"created_at": recent}) == 3
+
+    def test_age_days_none_when_no_created_at(self):
+        assert pmw._pr_open_age_days(
+            {"number": 1, "state": "OPEN"}) is None
+
+    def test_age_days_none_when_pr_empty(self):
+        assert pmw._pr_open_age_days(None) is None
+
+    def test_age_days_none_on_garbage(self):
+        assert pmw._pr_open_age_days({"created_at": "not-a-date"}) is None
+
+    # --- basculement OPEN -> REMOVE via diagnose_worktree ------------
+
+    def _old_open_pr(self):
+        from datetime import datetime, timedelta, timezone
+        created = (datetime.now(timezone.utc) - timedelta(days=40)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+        return {"state": "OPEN", "number": 999, "url": "u",
+                "created_at": created}
+
+    def _diagnose(self, monkeypatch, pr, max_days=None):
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch", lambda *a, **k: pr,
+        )
+        return pmw.diagnose_worktree(
+            "C:/fake", "C:/other", max_pr_open_days=max_days,
+        )
+
+    def test_open_old_pr_removed_with_flag(self, monkeypatch):
+        s = self._diagnose(monkeypatch, self._old_open_pr(), max_days=30)
+        assert s.decision == "REMOVE"
+        assert s.pr_open_archived is True
+        assert s.pr_open_age_days == 40
+        assert s.refusal_reason is None
+
+    def test_open_old_pr_refused_without_flag(self, monkeypatch):
+        # Defaut inchange : sans le seuil, la PR OPEN reste REFUSE.
+        s = self._diagnose(monkeypatch, self._old_open_pr(), max_days=None)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#999"
+
+    def test_open_young_pr_refused_with_flag(self, monkeypatch):
+        # Une PR jeune (3 j) reste REFUSE meme sous le seuil de 30 j.
+        from datetime import datetime, timedelta, timezone
+        created = (datetime.now(timezone.utc) - timedelta(days=3)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+        pr = {"state": "OPEN", "number": 999, "url": "u",
+              "created_at": created}
+        s = self._diagnose(monkeypatch, pr, max_days=30)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#999"
+
+    def test_open_pr_without_created_at_refused(self, monkeypatch):
+        # Fail-closed : age incalculable (created_at absent) -> REFUSE,
+        # jamais un REMOVE d'un worktree a PR OPEN.
+        pr = {"state": "OPEN", "number": 999, "url": "u"}
+        s = self._diagnose(monkeypatch, pr, max_days=30)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#999"
+
+
 class TestRemoteHeadPrResolution:
     """#17771 predicat 1 : la tete distante qui porte HEAD resout la PR.
 
@@ -2927,7 +3019,8 @@ class TestRefusalReport3895:
         monkeypatch.setattr(
             pmw, "diagnose_worktree",
             lambda path, cur, head_sha=None, activity_window_h=6.0,
-                   gh_unavailable_reason=None, quarantine_submodules=False:
+                   gh_unavailable_reason=None, quarantine_submodules=False,
+                   max_pr_open_days=None:
                 next(s for s in statuses if s.path == path),
         )
         monkeypatch.setattr(
