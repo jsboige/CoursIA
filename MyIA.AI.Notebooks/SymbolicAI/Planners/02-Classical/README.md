@@ -45,7 +45,7 @@ Cette partie porte **deux paliers lettrés**, tous deux accrochés au numéro 5.
 | Lettre | Notebook | Ce qu'elle ajoute | Prérequis en plus |
 |---|---|---|---|
 | 5b | [Planners-05b-Lean-Relaxation-Lean](Planners-05b-Lean-Relaxation-Lean.ipynb) | Companion **natif** kernel Lean 4 : preuve formelle 0-sorry de $h^{+} \leq h^{*}$ dans le lake `planning_lean` | kernel Lean 4 (via WSL) |
-| 5c | [Planners-05c-Differentiel-Atteignabilite-Python](Planners-05c-Differentiel-Atteignabilite-Python.ipynb) · [jumeau C#](Planners-05c-Differentiel-Atteignabilite-CSharp.ipynb) | Différentiel d'atteignabilité (strate 7) : protocole 4 pas — inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré ; consomme les théorèmes du lake `planning_lean` | Python stdlib pur (sans Docker) |
+| 5c | [Planners-05c-Differentiel-Atteignabilite-Python](Planners-05c-Differentiel-Atteignabilite-Python.ipynb) · [jumeau C#](Planners-05c-Differentiel-Atteignabilite-CSharp.ipynb) · [jumeau Rust](Planners-05c-Differentiel-Atteignabilite-Rust.ipynb) | Différentiel d'atteignabilité (strate 7) : protocole 4 pas — inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré ; consomme les théorèmes du lake `planning_lean` | Python stdlib pur (sans Docker) |
 
 Les jumeaux C# ne sont pas des approfondissements : ce sont les mêmes numéros dans un autre langage, ils figurent donc sur la ligne de leur numéro dans la table du parcours principal. Le détail de leurs deux tranches (from-scratch, puis moteur SOTA) est décrit dans la colonne « Ce qu'on y apprend ».
 
