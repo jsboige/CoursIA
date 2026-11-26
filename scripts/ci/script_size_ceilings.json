@@ -42,8 +42,8 @@
       "note": "Grammaire des marqueurs de B.0 : familles FORMELLE/PROSE (#27881), vocabulaire des verdicts (glyphes de severite, verdicts de blocage, refus d'approbation) et predicat de signalement. Module NEUF extrait de `scripts/check_unaddressed_nits.py` dans #27882 : il porte son propre plafond (184 lignes) pour que la grammaire puisse grossir sans faire grossir l'organe."
     },
     "scripts/ci/prune_merged_worktrees.py": {
-      "lines": 3939,
-      "note": "Purge des worktrees : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 532 lignes depuis la mesure du 13/11 (3407 -> 3939)"
+      "lines": 4044,
+      "note": "Purge des worktrees : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 532 lignes depuis la mesure du 13/11 (3407 -> 3939). Releve au 26/11 (#28811) : rapport auto-descriptif -- bloc `organ` (chemin du script, sha256 du code REELLEMENT execute, racine de la ferme scannee, version Python, horodatage UTC) et bloc `locks[]` (chaque verrou vu, nomme un par un : chemin, classe, pid, decision, motif de refus, raison brute lue au porcelain), en JSON ET en mode texte ; le tout strictement additif, aucun critere de retrait modifie (3939 -> 4044)."
     },
     "scripts/coordination/debt_ledger.py": {
       "lines": 4421,
