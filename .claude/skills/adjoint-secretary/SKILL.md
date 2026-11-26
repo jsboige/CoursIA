@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (193 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (198 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
 
 1. **La porte `PR gate` est l'autorité de mergeabilité — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle mergeable ? ». Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque), jamais comme un bloqueur de listing.
 2. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP lui-même (`spawn(node, [mcp-wrapper.cjs])` + `initialize` / `notifications/initialized` / `tools/call roosync_messages {action:"send", to, subject, body, messageId}`) ; l'identité signée vient de `ROOSYNC_MACHINE_ID` + `ROOSYNC_WORKSPACE_ID` passés dans l'env du spawn (le `ROO_FLEET_ROSTER` ne sert qu'au partitionnement). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -198,6 +198,79 @@ réserve attachée à une tête abandonnée (tell 13, vu du côté de l'organe).
 comparer à la tête** : si la review est sur une tête abandonnée, l'alerte utile n'est
 pas « répare », mais « la levée doit venir de l'auteur de la réserve » — et le dire à
 l'expéditeur, qui peut se croire bloqué après avoir tout réparé.
+
+### Tells de mesure (26/11, cycle c697)
+
+Cinq pièges mesurés dans le cycle c697. Le premier a coûté une **liste** déjà
+transmise à ai-01 (31 PRs annoncées, 39 réelles) ; le dernier prive de toute
+relecture.
+
+8. **La classe d'une réserve exige la CHRONOLOGIE des reviews, pas seulement le
+dernier état.** Un classifieur « si la dernière review n'est pas `APPROVED`, c'est
+une réserve » se trompe trois fois : une `CHANGES_REQUESTED` suivie d'un `APPROVED`
+plus tard est **levée** ; `COMMENTED` et `DISMISSED` **ne sont pas** des réserves
+(un `COMMENTED` de pause — « Pause (décision du mainteneur) … Rien à faire sur
+cette branche d'ici là » — se lit comme une levée écrite) ; une CR sur une tête
+**antérieure** est une réserve **vivante** que la branche a devancée, pas une
+branche abandonnée. Mesure c697 sur 76 PRs portant une review d'ai-01 (337
+balayées) : 2 PRs **sortent** de la liste de 31 déjà transmise (#27119 levée par
+`APPROVED @14fbbfb46d61` du 20/11 03:40Z ; #27153 levée en écrit le 21/11
+20:54Z) et 10 **entrent**, dont 9 CR à la tête exacte jamais transmises → **39** et
+non 31. La pagination est **réfutée** comme cause : max **9 reviews** par PR
+ouverte, la fenêtre ne tronquait pas. Recette : lire `state` + `submittedAt` +
+`commit.oid` + `body` de chaque review ; `APPROVED` = levée, `CHANGES_REQUESTED` =
+réserve ; `COMMENTED`/`DISMISSED` = levée écrite (phrase dans le corps) ou pause ;
+comparer ensuite le commit de la CR à la tête courante. Une réserve sur une tête
+antérieure n'est pas « à réparer » par la lane : elle attend la relecture d'ai-01.
+
+9. **Porte rouge à TITRE VIDE = quota d'installation ; la cause se lit dans le LOG
+du job, jamais dans le titre.** Signature mesurée sur quatre PRs (#27119, #28126,
+#28393, #28728) : `installation-quota 403 -- announced reset Ns away : rendering
+INCONCLUSIVE now and releasing the runner` puis `WARN -- self-cancel refused
+(exit 1): … API rate limit exceeded for installation` — le self-cancel having été
+refusé **par le même 403**, la jambe conclut `FAILURE` (exit 3) au lieu de
+`CANCELLED`, alors que son verdict interne est **INCONCLUSIVE** (« l'état des
+checks est INCONNU, pas faux ») et **REJOUABLE**. Deux corollaires : (a) une porte à
+titre vide **avec** des enfants rouges n'est pas un rouge d'infra — le rouge est
+dans le code, le titre vide est la *conséquence* de la porte qui n'a pas pu écrire ;
+(b) une porte à titre vide **sans** enfant rouge est le candidat quota — à confirmer
+dans le log avant tout rejeu. Le log dit que le balayage `pr-gate-stale-sweep`
+rejoue la jambe après le reset horaire : ne pas multiplier les rejeux concurrents.
+
+10. **La porte peut être sur la page 2.** Le REST `check-runs?per_page=100` sans
+`--paginate` renvoie la page 1 : #27119 porte **134** check-runs et sa porte est en
+page 2 — une lecture sans `--paginate` conclut « pas de porte » sur une PR qui en a
+une. Toujours `--paginate`.
+
+11. **Après un rejeu, le job porte encore l'ancienne tentative tant qu'aucun runner
+ne l'a prise.** `gh run rerun --job` renvoie rc=0 sans rien écrire à l'écran ; l'objet
+job garde `run_attempt: 1` et sa conclusion `completed|failure` **pendant** que la
+tentative 2 attend le pool. Un observateur qui lit le job publie donc un verdict
+**périmé** (mesuré : « ROUGE (tentative 1) » quatre minutes après le rejeu). Vérifier
+au niveau du **RUN** (`run_attempt`), et n'accepter un verdict que si
+`run_attempt >= 2`.
+
+12. **Une réponse RooSync ne se relit pas : `action:"reply"` ignore la clé
+d'idempotence.** Dans `build/tools/roosync/messages.js`, le cas `reply` ne transmet
+**pas** `messageId` à l'expediteur : un rejeu **duplique** le message, et l'id créé
+n'est **pas interrogeable** — le corps publié ne peut donc pas être relu, ce qui
+supprime la garde « relire le corps publié ». Utiliser `action:"send"` avec
+`reply_to: <id du message parent>` **et** `messageId: <clé stable>` : la clé est
+transmise, le rejeu est absorbé, et `action:"message"` avec cette clé rend le corps
+publié (vérifié sur un envoi réel : préfixe, suffixe et séparateur serveur présents,
+aucun PAYLOAD-TRAP). Règle : **une réponse s'émet par `send`**, jamais par `reply`.
+
+Corollaire de mesure (c697) : **une PR sans porte n'est pas une PR rouge.** Sur 338
+PRs ouvertes, 41 n'ont pas de `PR gate` dans la fenêtre GraphQL ; vérifiées en REST
+`--paginate`, **39 n'ont AUCUNE jambe de check à leur tête** (la CI n'a pas tourné
+sur cette tête) et 6 ont des jambes sans porte. Les compter à part, ne jamais les
+ajouter à un total de rouges : un « rouge » annoncé sur une PR sans CI est un
+faux rouge qui pollue la file. Mesure du cycle c697, sur 338 PRs : 227 vertes,
+3 portes en vol, 61 rouges **avec** titre — dont **7 minuteurs DWELL** (le contenu
+de la porte le dit : « Rien a corriger dans le code : cette jambe est un minuteur »)
+et 54 rouges de contenu, hors de mon ressort — plus 6 portes rouges à titre vide
+(dont 2 confirmées quota d'installation par le log, 4 avec enfants rouges donc de
+contenu).
 
 ## Émission de dossiers — garde-fous obligatoires
 
