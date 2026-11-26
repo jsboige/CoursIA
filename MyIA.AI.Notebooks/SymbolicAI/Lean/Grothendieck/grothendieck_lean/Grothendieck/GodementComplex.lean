@@ -1360,4 +1360,113 @@ theorem godementUnits_pullback_unique {S : ShortComplex (X.Presheaf AddCommGrpCa
       ((NatTrans.mono_iff_mono_app _).mp hS.mono_f (op U))
   exact hinjf (hx.trans hx'.symm)
 
+/-!
+### Partie 103 — la fibre du carré des unités est compatible avec la restriction
+
+La Partie 102 a établi que la fibre du carré des unités est **bijective** —
+existence par `godementUnits_pullback`, unicité par
+`godementUnits_pullback_unique`. Mais une bijection **point par point** n'est
+pas encore une construction **globale** : pour poser la forme `IsPullback` du
+carré des unités — et tirer de là la monicité de la flèche de conoyaux
+`coker μ₁ → coker μ₂` par `mono_cokernel_map_of_isPullback` — il faut que les
+fibres se **recollent** en un morphisme de préfaisceaux, c'est-à-dire que la
+bijection de fibre **respecte les restrictions**.
+
+C'est ce que prouve la Partie 103 :
+
+1. **Préservation** (`godementUnits_pullback_res`) : si `x` est un élément de
+   fibre au-dessus de `V` (c'est-à-dire `f(x) = y` et `unit(x) = z`), alors la
+   restriction de `x` à `U ⊆ V` est encore un élément de fibre au-dessus de
+   `U` : les **deux** équations de fibre y sont transportées. La première
+   vient de la **naturalité** de `S.f` (le morphisme de préfaisceaux commute
+   aux restrictions) ; la seconde du fait que **le germe commute à la
+   restriction** (`TopCat.Presheaf.germ_res_apply`).
+2. **Unicité restreinte** (`godementUnits_pullback_res_unique`) : l'élément de
+   fibre au-dessus de `U` n'est pas *un* élément de fibre, c'est **le**
+   restreint de celui au-dessus de `V` — l'unicité de la Partie 102 appliquée
+   en `U` identifie toute section de `X₁` dont l'image par `f` vaut
+   `S.X₂.map i.op y` à la restriction de `x`.
+
+Le premier lemme n'emploie **aucune hypothèse de short-exactitude** : c'est un
+fait de naturalité. Le second en employe une (l'unicité de la Partie 102 en
+dépend), mais **aucune** sur `X₁` : la séparéité du terme gauche reste
+inutilisée, comme en Partie 102.
+
+Ce qui manque encore, et que la Partie 103 ne fait pas : la moitié **existence**
+du recollement — garantir que la donnée restreinte `(y', z')` relève bien, au
+niveau de `U`, de la forme que la Partie 102 consomme (une section de Godement
+de `C⁰X₁(U)`), de sorte que l'unicité restreinte puisse s'appliquer à un
+élément qui **existe**. La Partie 103 fournit la moitié **unicité** ; la
+question laissée ouverte est une **descente sur les tiges**, non une
+difficulté d'algèbre.
+-/
+
+/-- **La fibre du carré des unités se restreint** : les deux équations de la
+fibre — `f(x) = y` et `unit(x) = z` — sont **préservées par la restriction** à
+un sous-ouvert `U ⊆ V`, et l'élément de fibre restreint est exactement
+l'élément de `X₁(U)` obtenu par restriction de `x`.
+
+C'est la **compatibilité par restriction** de la bijection de fibre de la
+Partie 102, et c'est l'une des deux briques qui manquent pour la
+**globaliser** : sans elle, la construction du pullback global du carré des
+unités ne peut pas passer du point (`godementUnits_pullback`) au global — les
+fibres ne se recollent pas en morphisme de préfaisceaux. Avec elle, la
+compatibilité des fibres est acquise ; il reste la moitié **existence** du
+recollement (la Partie 103 le dit en clair), et la forme `IsPullback` du même
+carré, puis la monicité de la flèche de conoyaux `coker μ₁ → coker μ₂` par
+`mono_cokernel_map_of_isPullback`, **sans aucune hypothèse sur `X₁`**.
+
+L'argument est **local** et n'emploie **aucune hypothèse de short-exactitude**
+— c'est un fait de naturalité, pas d'algèbre :
+
+1. la première équation vient de la **naturalité** de `S.f` : le morphisme de
+   préfaisceaux commute aux restrictions, donc `f` transporte l'image par
+   restriction de `V` à l'image par restriction de `U` ;
+2. la seconde vient du fait que **le germe commute à la restriction**
+   (`TopCat.Presheaf.germ_res_apply`) : le germe en `x` de la section
+   restreinte est le germe en `x` de la section d'origine. -/
+theorem godementUnits_pullback_res {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    {U V : Opens X} (i : U ⟶ V) (y : ↥(S.X₂.obj (op V))) (z : godementSection S.X₁ V)
+    (x : ↥(S.X₁.obj (op V))) (hx1 : S.f.app (op V) x = y)
+    (hx2 : (toGodement S.X₁).app (op V) x = z) :
+    S.f.app (op U) (S.X₁.map i.op x) = S.X₂.map i.op y ∧
+      (toGodement S.X₁).app (op U) (S.X₁.map i.op x) = (godementPresheaf S.X₁).map i.op z := by
+  refine ⟨?_, ?_⟩
+  · have hnat : S.X₁.map i.op ≫ S.f.app (op U) = S.f.app (op V) ≫ S.X₂.map i.op :=
+      S.f.naturality i.op
+    have happ := congrArg
+      (fun m : S.X₁.obj (op V) ⟶ S.X₂.obj (op U) => m x) hnat
+    rw [CategoryTheory.comp_apply, CategoryTheory.comp_apply] at happ
+    rw [hx1] at happ
+    exact happ
+  · funext xU
+    change S.X₁.germ U (xU : X) xU.2 (S.X₁.map i.op x) = _
+    rw [godementPresheaf_map_apply]
+    rw [← hx2]
+    rw [TopCat.Presheaf.germ_res_apply]
+    rfl
+
+/-- **L'élément de fibre sur `U` est la restriction de l'élément de fibre sur
+`V`** : l'unicité de la Partie 102 (`godementUnits_pullback_unique`),
+appliquée en `U`, identifie toute section de `X₁` dont l'image par `f` est
+`S.X₂.map i.op y` à la restriction de `x`.
+
+C'est la **compatibilité de la bijection de fibre avec la restriction** : la
+bijection `fibre ↦ section` de la Partie 102 respecte les restrictions, et
+c'est la condition pour que les fibres se recollent point par point en un
+morphisme de préfheaux — le geste qui manque encore pour poser la forme
+`IsPullback` du carré des unités, et par là la monicité de la flèche de
+conoyaux au cran `1`. -/
+theorem godementUnits_pullback_res_unique {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) {U V : Opens X} (i : U ⟶ V)
+    (y : ↥(S.X₂.obj (op V))) (z : godementSection S.X₁ V)
+    (x : ↥(S.X₁.obj (op V))) (hx1 : S.f.app (op V) x = y)
+    (hx2 : (toGodement S.X₁).app (op V) x = z)
+    (x' : ↥(S.X₁.obj (op U)))
+    (hx'1 : S.f.app (op U) x' = S.X₂.map i.op y)
+    (_hx'2 : (toGodement S.X₁).app (op U) x' = (godementPresheaf S.X₁).map i.op z) :
+    x' = S.X₁.map i.op x := by
+  exact godementUnits_pullback_unique (S := S) hS U (S.X₂.map i.op y) x'
+    (S.X₁.map i.op x) hx'1 (godementUnits_pullback_res (S := S) i y z x hx1 hx2).1
+
 end Grothendieck
