@@ -53,11 +53,6 @@ classés « absent » sur la foi d'une recherche par identifiant ; la relecture
 du contenu d'un seul fichier a montré que leur expression est **identique**
 à la nôtre, écrite en ligne. Le tableau ci-dessous est l'état corrigé.
 
-Deux énoncés de ce tableau (`mem_of_fiber`, `fiberElem`) avaient d'abord été
-classés « absent » sur la foi d'une recherche par identifiant ; la relecture
-du contenu d'un seul fichier a montré que leur expression est **identique**
-à la nôtre, écrite en ligne. Le tableau ci-dessous est l'état corrigé.
-
 La machinerie du point de site n'est **pas** absente de Stacks : elle est
 utilisée dans un seul fichier de l'arborescence lue,
 `Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean`, pour un

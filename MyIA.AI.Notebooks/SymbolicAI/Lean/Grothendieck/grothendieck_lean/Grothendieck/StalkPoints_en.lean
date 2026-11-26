@@ -52,11 +52,6 @@ classified “absent” on the strength of an identifier search; re-reading the
 content of a single file showed that their expression is **identical** to
 ours, written inline. The table below is the corrected state.
 
-Two statements of this table (`mem_of_fiber`, `fiberElem`) had first been
-classified “absent” on the strength of an identifier search; re-reading the
-content of a single file showed that their expression is **identical** to
-ours, written inline. The table below is the corrected state.
-
 The machinery of the point of the site is **not** absent from Stacks: it is
 used in a single file of the tree read,
 `Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean`, for a
