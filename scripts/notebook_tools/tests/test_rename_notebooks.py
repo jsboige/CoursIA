@@ -676,7 +676,10 @@ class TestGenericBasenameDirChangeResolves(unittest.TestCase):
         _git(repo, "config", "user.email", "test@example.invalid")
         _git(repo, "config", "user.name", "test")
         for rel, body in files:
-            _write(repo, rel, body)
+            if isinstance(body, dict):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
         _git(repo, "add", "-A")
         _git(repo, "commit", "-qm", "base")
 
@@ -716,6 +719,67 @@ class TestGenericBasenameDirChangeResolves(unittest.TestCase):
             plan = rn.scan_referents(self._forms(), repo)
 
             self.assertEqual(plan.path_refused, [])
+            self.assertNotIn(carrier, plan.rewrites)
+
+    def test_markdown_carrier_with_rewritable_occurrence_is_refused(self):
+        """Reserve ai-01 (2e tour), volet Markdown : un porteur qui porte AUSSI
+        une occurrence reecrivable (la forme complete, raw_total > 0) et un lien
+        relatif qui resout vers l'ancien emplacement ne doit jamais etre
+        declare reecrivable -- le lien resterait en 404 silencieux. L'ordre des
+        branches le garantit par construction (la garde (a)/(b) l'atteint deja
+        aujourd'hui ; le volet notebook, lui, etait reellement muet)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/notes.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "cible : " + self.OLD + "\n"
+                          "suite : [suite](Ancienne/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertTrue([r for r in plan.path_refused if r[0] == carrier])
+            self.assertNotIn(carrier, plan.rewrites)
+            # Rien n'est ecrit : passage manuel du fichier entier.
+            self.assertIn("Ancienne/README.md",
+                          (repo / carrier).read_text(encoding="utf-8"))
+
+    def test_full_form_citation_at_repo_root_still_rewritten(self):
+        """Precision du detecteur de liens resolus : un porteur de la RACINE
+        cite la forme COMPLETE du fichier deplace. Le chemin reconstitue depuis
+        la racine EST cette forme complete, que la reecriture met a jour
+        correctement (prefixe et nom ensemble) : le compter comme un lien non
+        reecrivable serait un faux refus (mesure en ecrivant le temoin)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "notes.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "cible : " + self.OLD + "\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn(carrier, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_notebook_carrier_relative_link_is_refused(self):
+        """Reserve ai-01 (2e tour) : la branche notebook ne consommait pas
+        `resolve_hits` -- un carnet dont le SEUL referent est le lien relatif
+        resolu (raw_total = det_total = 0, donc pas de motif de reecriture ni
+        de detection) etait saute sans aucun signalement."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/Sujet.ipynb"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, _nb([_md("suite : [suite](Ancienne/README.md)\n")])),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((carrier, "Ancienne/README.md"), plan.path_refused)
             self.assertNotIn(carrier, plan.rewrites)
 
 

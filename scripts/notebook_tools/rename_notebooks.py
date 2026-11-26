@@ -680,6 +680,12 @@ def _resolve_link_hits(raw: str, dir_change: list[RefForms],
         if carrier_rel == f.old_rel:
             continue  # le fichier deplace lui-meme : auto-mention, pas un lien
         rel = posixpath.relpath(f.old_rel, cdir) if cdir else f.old_rel
+        if rel == f.full:
+            # Porteur a la RACINE : le chemin reconstitue EST la forme
+            # complete, que la reecriture sait deja mettre a jour (prefixe et
+            # nom ensemble). Le compter ici ferait refuser un porteur sain --
+            # faux refus mesure en ecrivant le temoin.
+            continue
         # `rel in raw` = court-circuit C rapide sur les porteurs sans aucune
         # occurrence du chemin reconstitue ; la borne garantit qu'on ne prend
         # pas `X/Ancienne/README.md` (un autre fichier) pour notre cible.
@@ -778,10 +784,18 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             if (raw_total or det_total) and (path_hits or same_dir):
                 plan.path_refused.append(
                     (rel, path_hits[0] if path_hits else same_dir[0].filename))
+            elif resolve_hits:
+                # #28490 (reserve ai-01, 2e tour) : ordre conservateur. Un lien
+                # relatif qui resout vers l'ancien emplacement n'est pas
+                # reecrivable ; il prime sur une reecriture par ailleurs
+                # possible. Mesure : sur un porteur Markdown, ce chemin est
+                # ATTEINT par les signatures (a)/(b) -- le basename d'un lien
+                # relatif est precede de `/`, et un nom nu implique un porteur
+                # du dossier d'origine. L'ordre est garde pour que l'invariant
+                # tienne par construction plutot que par cette interaction.
+                plan.path_refused.append((rel, resolve_hits[0]))
             elif raw_total:
                 plan.rewrites[rel] = raw_total
-            elif resolve_hits:
-                plan.path_refused.append((rel, resolve_hits[0]))
             continue
 
         try:
@@ -807,7 +821,10 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                             for _, pat, _, _ in pats)
             if blob_hits < joined_hits:
                 plan.fragmented.append((rel, i))
-        if not raw_total and not det_total:
+        # #28490 (reserve ai-01, 2e tour) : resolve_hits est calcule AVANT ce
+        # saut -- un porteur notebook dont le seul referent est le lien relatif
+        # resolu (raw_total = det_total = 0) etait saute ici, sans refus.
+        if not raw_total and not det_total and not resolve_hits:
             continue
 
         # Comptage par surface : markdown + metadata top-niveau = REESCRIRE ;
@@ -837,6 +854,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
             # coup de reecriture (allowed = 0), le refus est pourtant du.
             plan.path_refused.append(
                 (rel, path_hits[0] if path_hits else same_dir[0].filename))
+        elif resolve_hits:
+            # #28490 (reserve ai-01, 2e tour) : meme regle que la branche non
+            # notebook -- le lien relatif resolu prime sur la reecriture des
+            # surfaces saines, sinon il survit au scan en 404 silencieux.
+            plan.path_refused.append((rel, resolve_hits[0]))
         elif allowed:
             plan.rewrites[rel] = allowed
 
