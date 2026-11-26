@@ -1101,6 +1101,13 @@ def load_baseline(path: Path = BASELINE_PATH) -> dict | None:
         return None
 
 
+# Quarto front-matter (``---`` ... ``---``) precedes the body of a .qmd page,
+# so the production header is not the first bytes of the file (#28194).
+_FRONT_MATTER_RE = re.compile(r"\A---[ \t]*\r?\n.*?\r?\n---[ \t]*\r?\n", re.DOTALL)
+# Generators write the accented form ("FICHIER GÉNÉRÉ"); both spellings count.
+_GENERATED_HEADER_RE = re.compile(r"\bFICHIER\s+G[ÉE]N[ÉE]R[ÉE]\b", re.IGNORECASE)
+
+
 def _is_generated_source(source: Path) -> bool:
     """Detect a generated page by its header, not by a hardcoded path.
 
@@ -1108,16 +1115,23 @@ def _is_generated_source(source: Path) -> bool:
     cron repairs their links after the merge (#22651). Only the explicit
     production header grants this excuse; prose mentioning generation later in
     a hand-written page does not.
+
+    Two shapes carry that header: a page whose body starts with the HTML
+    comment, and a Quarto page whose YAML front-matter precedes it
+    (``docs/curriculum/prerequis.qmd``). Only the FIRST comment after the
+    front-matter counts -- a comment placed after prose does not.
     """
     try:
         with source.open(encoding="utf-8") as handle:
             prefix = handle.read(4096)
     except (OSError, UnicodeDecodeError):
         return False
-    header = re.match(r"\s*<!--(.*?)-->", prefix, re.DOTALL)
+    front = _FRONT_MATTER_RE.match(prefix)
+    body = prefix[front.end():] if front else prefix
+    header = re.match(r"\s*<!--(.*?)-->", body, re.DOTALL)
     if header is None:
         return False
-    return re.search(r"\bFICHIER GENERE\b", header.group(1), re.IGNORECASE) is not None
+    return _GENERATED_HEADER_RE.search(header.group(1)) is not None
 
 
 def generated_source_excuses(result: ScanResult) -> list[LinkRef]:

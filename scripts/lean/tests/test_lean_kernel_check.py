@@ -24,6 +24,7 @@ from lean_kernel_check import (  # noqa: E402
     candidate_kernel_json_paths,
     inspect_kernel_wrapper,
     inspect_wrapper_content_drift,
+    windows_kernel_json_candidates,
     wsl_to_unc,
 )
 
@@ -81,10 +82,13 @@ def test_candidate_paths_include_appdata(monkeypatch):
     assert len([path for path in paths if "fake" in str(path)]) == 1
 
 
-def test_candidate_paths_without_appdata(monkeypatch):
+def test_candidate_paths_without_appdata(monkeypatch, tmp_path):
+    # La partie Windows de la liste a deux sources : %APPDATA%, et l'enumeration de
+    # /mnt/c/Users/<profil>/AppData/Roaming quand cette racine existe (#21614) -- le cas
+    # dans tout WSL. Sans APPDATA le test ne porte que sur la premiere : racine interop
+    # vide, sinon le verdict suit le runner (#28639).
     monkeypatch.delenv("APPDATA", raising=False)
-    paths = candidate_kernel_json_paths("lean4-wsl")
-    assert all("appdata" not in str(path).lower() for path in paths)
+    assert windows_kernel_json_candidates("lean4-wsl", windows_users_root=str(tmp_path)) == []
 
 
 def test_python_wrapper_fqdn_is_ok():
@@ -129,6 +133,8 @@ def test_cli_missing_kernel():
          "nonexistent-test"],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=str(Path(__file__).resolve().parent.parent),
     )
     assert result.returncode == 1

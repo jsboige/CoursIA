@@ -25,6 +25,19 @@ et c'est elle qui doit interroger la BASE du squash, pas la tete de la branche.
 from __future__ import annotations
 
 
+def est_documentation_registre(nom: str) -> bool:
+    """Une entree `_`-prefixee du registre est de la DOCUMENTATION.
+
+    Regle du lecteur canonique (`check_twin_parity.load_registry`) : dans
+    `twin_pairs.d/`, chaque `*.yaml` ne commencant pas par `_` est le
+    descripteur d'UNE paire ; les `_`-prefixes (`_schema.yaml`) sont ignores.
+
+    La regle vit ici parce que `check_twin_parity.py` est epingle (plafond de
+    lignes) : les modules freres partagent la decision sans la dupliquer.
+    """
+    return nom.startswith("_")
+
+
 def squash_base_ref(organ, repo_root) -> str:
     """Base du squash : `origin/main` si elle se resout, sinon `HEAD`.
 

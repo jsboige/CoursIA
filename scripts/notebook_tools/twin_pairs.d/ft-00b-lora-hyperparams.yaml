@@ -1,0 +1,9 @@
+- name: "FT-00b LoRA hyperparams"
+  family: GenAI/FineTuning
+  python: MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python utilise PyTorch ; C# utilise TorchSharp-cpu et libtorch pour les convolutions, gradients et Adam sur les mêmes archives Fashion-MNIST."
+  known_differences:
+    - "Le sous-ensemble PCG64 source est figé dans le JSON vérifié ; les ordres de lots et les initialisations CPU peuvent différer du replay Python CUDA. Aucun score GPU n'est repris."

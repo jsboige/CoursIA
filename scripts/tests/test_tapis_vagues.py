@@ -18,6 +18,7 @@ Aucun test ne touche le reseau : l'organe de qualification est simule.
 from __future__ import annotations
 
 import sys
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -25,7 +26,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_age, tapis_rotation, tapis_vagues  # noqa: E402
+from coordination import tapis_age, tapis_ancre, tapis_rotation, tapis_vagues  # noqa: E402
+from coordination import tapis_qualification as tq  # noqa: E402
+from coordination.tapis_preuve import Preuve  # noqa: E402
+
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -55,7 +59,7 @@ def _simule(accepte: set[int], arrete: bool = False):
     vus: list[list[int]] = []
 
     def _q(candidats, lane, maintenant, jours, prs, citations, run,
-           echeance=None, lot=50, horloge=None, debut=None):
+           echeance=None, lot=50, horloge=None, debut=None, preuve=None):
         vus.append(list(candidats))
         servis = [_Grain(n) for n in candidats if n in accepte]
         ecartes = {n: {"numero": n, "code": "LABEL", "motif": "simule"}
@@ -74,7 +78,14 @@ def _ordre(n: int) -> list[_Grain]:
 
 def _vagues(accepte: set[int], monkeypatch, max_vagues: int = 4,
             arrete: bool = False, pool: int = 48, grains: int = GRAINS):
-    """Les vagues sur un pool de `pool` grains, sans reseau."""
+    """Les vagues sur un pool de `pool` grains, sans reseau.
+
+    L'etat d'ancre est ISOLE (un repertoire temporaire par appel) : sinon la
+    file d'attente accumulee par les tests precedents -- ou par les tours
+    reels de la lane -- separe le pool et le nombre de vagues change.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT,
+                       tempfile.mkdtemp(prefix="tapis-vagues-"))
     simule = _simule(accepte, arrete)
     monkeypatch.setattr(tapis_vagues.tq, "qualifier", simule)
     servis, ecartees, rapport = tapis_vagues.vagues(
@@ -140,3 +151,85 @@ def test_le_mur_arrete_les_vagues(monkeypatch):
     _, _, rapport, _ = _vagues(set(), monkeypatch, arrete=True)
     assert rapport["vagues_jouees"] == 1
     assert rapport["vagues"][0]["servis"] == 0
+
+
+# --- LA PREUVE DE DIFF SUR LA VOIE DES VAGUES (revue du peer, 19/11) ----
+#
+# La voie des vagues QUALIFIE : elle fait passer le lot par le meme organe
+# que la voie nominative. Un marqueur `[DELIVERED]` y DESIGNE une PR a
+# verifier ; la preuve, c'est le diff de cette PR. Un marqueur SANS diff
+# probant n'est pas une livraison : le grain reste servable.
+
+MARQUEUR = ("[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #27242 -- "
+            "paths: scripts/coordination/tapis_diff.py")
+#: Le marqueur SANS perimetre : les regles d'ecart le prennent pour une
+#: livraison. C'est lui que la preuve doit contredire.
+MARQUEUR_SANS_PATHS = "[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #27242"
+ATTRIBUTION = ("[CLAIMED] lane myia-ai-01:CoursIA-2 -- paths: "
+               "scripts/coordination/tapis_diff.py")
+FICHIER = "scripts/coordination/tapis_diff.py"
+
+
+def _issue_7(marqueur: str = MARQUEUR, autres: list[str] | None = None) -> dict:
+    """L'issue qui porte le marqueur de livraison et son attribution."""
+    commentaires = [{"created_at": "2026-11-10T00:00:00Z", "author": "jsboige",
+                     "body": marqueur}]
+    for i, autre in enumerate(autres or []):
+        commentaires.append({"created_at": f"2026-11-1{i}T00:00:00Z",
+                             "author": "jsboige", "body": autre})
+    return {"number": 7, "title": "Grain 7", "body": "",
+            "created_at": "2026-11-01T00:00:00Z",
+            "comments": commentaires,
+            "comments_total": len(commentaires), "labels": []}
+
+
+def _vague_avec_lecture(monkeypatch, tmp_path, preuve_gh,
+                        marqueur: str = MARQUEUR,
+                        autres: list[str] | None = None):
+    """Les vagues sur un grain reellement lu, avec la preuve du diff voulue.
+
+    La lecture est simulee (aucun reseau) ; la qualification, elle, est la
+    vraie : c'est elle qui applique la preuve.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    issue = _issue_7(marqueur, autres)
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier",
+                        lambda run, depot, numeros=None: {7: issue})
+    monkeypatch.setattr(tq.tapis_fenetre, "fil_complet",
+                        lambda numero: issue["comments"])
+    monkeypatch.setattr(tapis_vagues.tapis_diff, "preuve_gh",
+                        lambda run: preuve_gh)
+    return tapis_vagues.vagues([_Grain(7)], [], LANE, MAINTENANT, 45, [],
+                                None, 1, 1, taille=1, echeance=None,
+                                debut=0.0)
+
+
+def test_un_marqueur_sans_diff_probant_n_est_pas_une_livraison(monkeypatch,
+                                                               tmp_path):
+    """TEMOIN (revue du peer, 19/11) : la voie des vagues refuse le marqueur.
+
+    Le marqueur, sans perimetre, est pris pour une livraison par les regles
+    d'ecart. La preuve est absente (le diff n'est pas lisible) : le grain
+    n'est donc pas ecarte LIVREE, il reste **servable** -- il revient dans
+    la file.
+    """
+    servis, ecartees, rapport = _vague_avec_lecture(
+        monkeypatch, tmp_path, lambda pr: None,
+        marqueur=MARQUEUR_SANS_PATHS)
+    assert 7 not in ecartees, "un marqueur sans diff n'est pas une livraison"
+    assert [e.numero for e in servis] == [7], "le grain reste servable"
+
+
+def test_un_diff_probant_livre_le_grain_par_la_vague(monkeypatch, tmp_path):
+    """Le CONTRE-TEMOIN : avec la preuve, le meme grain est livre.
+
+    Meme voie, meme perimetre : la seule difference est la preuve. Sans
+    elle le grain reste dans la file ; avec elle, il sort.
+    """
+    preuve = Preuve((FICHIER,), "CLOSED", True)
+    servis, ecartees, rapport = _vague_avec_lecture(
+        monkeypatch, tmp_path, lambda pr: preuve,
+        marqueur=MARQUEUR, autres=[ATTRIBUTION])
+    assert [e.numero for e in servis] == [], "une livraison prouvee n'est pas servie"
+    assert ecartees[7]["code"] == "LIVREE"
+    assert "couvre" in ecartees[7]["motif"]

@@ -6,7 +6,7 @@ API OpenAI-compatible pour la synthese vocale, basee sur le modele Kokoro v0.19.
 |-------|--------|
 | Modele | kokoro-v0_19 |
 | Port | 8191 |
-| GPU | GPU 1, RTX 3090 (24 GB) |
+| GPU | GPU 0, RTX 3080 Ti (16 GB) |
 | VRAM | ~2 GB |
 | API | OpenAI `/v1/audio/speech` compatible |
 | Idle timeout | 300 s (default), 1200 s (prod) |
@@ -105,6 +105,7 @@ Les voix Kokoro natives (`af_sky`, `af_bella`, `am_adam`, `am_michael`) sont aus
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `GPU_PCI_INDEX` | `0` | Carte cible : index `nvidia-smi`, donc index PCI (0 = RTX 3080 Ti, 1 = RTX 3090). Le compose en derive `device_ids`, `CUDA_VISIBLE_DEVICES` et `NVIDIA_VISIBLE_DEVICES` sous `CUDA_DEVICE_ORDER=PCI_BUS_ID` (#28423) |
 | `TTS_DEVICE` | `cuda` | Peripherique (`cuda` ou `cpu`) |
 | `DEFAULT_TTS_MODEL` | `kokoro` | Modele par defaut |
 | `DEFAULT_TTS_VOICE` | `af_sky` | Voix par defaut |

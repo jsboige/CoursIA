@@ -266,7 +266,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -275,7 +275,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -283,7 +283,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -381,7 +381,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md",
         motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
         raison=(
             "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
@@ -869,14 +869,6 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         raison=(
             "« Distinct sur les 9 cellules » = contrainte sur les cases "
             "d'une ligne de la grille Sudoku demontree. Cellules de grille."
-        ),
-    ),
-    ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md",
-        motif=re.compile(r"une rangée de 4 cellules"),
-        raison=(
-            "« une rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
-            "du carnet 02, decrit en miroir ici. Cellules du probleme."
         ),
     ),
     # --- Tranche GenAI/Audio (#17636 volet 2, lane myia-po-2023:CoursIA) ---

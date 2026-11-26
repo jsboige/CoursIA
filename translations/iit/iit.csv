@@ -22428,7 +22428,7 @@ Deux régimes nets : les **oscillateurs** (blinker, pulsar) présentent une popu
 Le Jeu de la Vie est le seul des trois à offrir des **trajectoires longues d'objets transporteurs** — et le seul dont le moteur de calcul est **prouvé correct dans le régime non-vacuous** (`evolveHashlifeFastAtN_correct_uncond`, sans hypothèse, Lean 4). Le théorème historique `hashlife_correct` (même fichier) reste vrai techniquement, mais par vacuité dès que le saut s'exerce — il n'établit rien dans le régime où le moteur est réellement utilisé.",,,,,,,,f183400b2e475418,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb,39ca7247,markdown,fr,3ea80adfc140f6dc,"## 5. Le pont Lean — ce que `evolveHashlifeFastAtN_correct_uncond` garantit, et où `hashlife_correct` s'arrête
 
-La track `conway_lean` (`MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/`) formalise l'algorithme **Hashlife** de Gosper — évaluation par quadtree mémoïsé avec sauts temporels $2^k$. Le théorème central, dans `Conway/Life/HashlifeCorrectness.lean` (déclaration `evolveHashlifeFastAtN_correct_uncond`, cherchable par son nom) :
+La track `conway_lean` (`MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/`) formalise l'algorithme **Hashlife** de Gosper — évaluation par quadtree mémoïsé avec sauts temporels $2^k$. Le théorème central, dans `Conway/Life/HashlifeCorrectness.lean` (déclaration `evolveHashlifeFastAtN_correct_uncond`, cherchable par son nom) :
 
 > **`evolveHashlifeFastAtN_correct_uncond`** — pour toute grille `g` et tout horizon `n`, sans hypothèse supplémentaire, l'évaluation Hashlife (variante `evolveHashlifeFastAtN` à moteur décorrélé, introduite par #11161) et la simulation naïve pas-à-pas produisent **le même film** : `evolveHashlifeFastAtN n g = evolve n g`.
 
@@ -22450,7 +22450,7 @@ def _racine_depot(depart):
 
 
 racine = _racine_depot(Path.cwd().resolve())
-lake = racine / ""MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"" if racine else None
+lake = racine / ""MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean"" if racine else None
 fichier = lake / ""Conway/Life/HashlifeCorrectness.lean"" if lake else None
 
 if fichier is None or not fichier.exists():
@@ -42394,7 +42394,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb,8b3c32af
 
 Le carnet enchaine la theorie de Thom (cette section 8.1) avec la theorie
 des noeuds de la serie **`knot_lean`** (carnets `KNOTS-01/02/03`, dont le lake a ete deplace sous
-`SymbolicAI/Lean/KNOTS/` ; cf. #19572). Le pont aller est trace ici : la
+`SymbolicAI/Lean/Noeuds/` ; cf. #19572). Le pont aller est trace ici : la
 cubique cuspidale `y^2 = x^3` (singularite A2 de Thom) est l'invariant
 algebrique commun au trefle (Lickorish 1997, Theorem 4.5).
 
@@ -42508,11 +42508,11 @@ def parse_lean_polynomial(poly_str):
     return [acc.get(md - i, 0) for i in range(md + 1)], None
 
 
-# Chemin du lake knot_lean, sous Lean/KNOTS/ depuis la descente #19572.
+# Chemin du lake knot_lean, sous Lean/Noeuds/ depuis la descente #19572.
 # `alexander_trefoil` a ete deplace de Conway.lean vers AlexanderTrivial.lean
 # (arc #21107) ; l'enonce multi-ligne reste parse car le polynome
 # tient sur une seule ligne (les \s* du regex absorbent les sauts).
-LEAN_PATH = Path(""../../SymbolicAI/Lean/KNOTS/knot_lean/Knots/AlexanderTrivial.lean"")
+LEAN_PATH = Path(""../../SymbolicAI/Lean/Noeuds/knot_lean/Knots/AlexanderTrivial.lean"")
 lean_src = LEAN_PATH.read_text(encoding=""utf-8"")
 m = re.search(
     r""theorem\s+alexander_trefoil\s*:\s*alexanderPolynomial trefoil\s*=\s*([^\n]+?)\s*:=\s*by"",
