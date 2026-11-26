@@ -42,8 +42,8 @@
       "note": "Grammaire des marqueurs de B.0 : familles FORMELLE/PROSE (#27881), vocabulaire des verdicts (glyphes de severite, verdicts de blocage, refus d'approbation) et predicat de signalement. Module NEUF extrait de `scripts/check_unaddressed_nits.py` dans #27882 : il porte son propre plafond (184 lignes) pour que la grammaire puisse grossir sans faire grossir l'organe."
     },
     "scripts/ci/prune_merged_worktrees.py": {
-      "lines": 3939,
-      "note": "Purge des worktrees : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 532 lignes depuis la mesure du 13/11 (3407 -> 3939)"
+      "lines": 4248,
+      "note": "Purge des worktrees : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 532 lignes depuis la mesure du 13/11 (3407 -> 3939). Releve au 26/11 (#28687) : option opt-in --max-pr-open-days (worktree a PR OUVERTE expiree, archive incrementale de sa tete puis retrait) + sa reparation d'apres revue (3939 -> 4248) : fenetre agent vivant #18494 sur ce chemin, garde quarantine_root_refusal en tete de l'archive, bundle incremental sur origin/main (un bundle nu embarquait les 33,16 Gio d'objets du depot), purge qui preserve et nomme les archives, compteur apply_archive_refusals separe."
     },
     "scripts/coordination/debt_ledger.py": {
       "lines": 4421,

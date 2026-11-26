@@ -771,6 +771,20 @@ def worktree_blocks_removal_for_submodules(wt_path: str) -> bool:
 #: racine qui ne le porte pas (une racine pas a nous n'est pas a purger).
 QUARANTINE_MARKER = ".prune-quarantine"
 
+# Sous-repertoire des archives de HEAD `--max-pr-open-days` (#DISK Maintenance
+# 26/11). Il vit DANS la racine de quarantaine mais n'appartient PAS a son
+# registre : les entrees de la quarantaine de sous-modules s'achevent par
+# `-{wt.name}` et sont purgees par `--purge-quarantine` ; une archive de HEAD
+# est la seule copie d'une tete de PR encore OUVERTE, la purge ne la touche
+# pas (elle la NOMME dans `preserved`).
+PR_OPEN_ARCHIVE_SUBDIR = "pr_open_archive"
+
+# Base d'un bundle d'archive : `git bundle create` SANS plage de revisions
+# embarque tout l'historique joignable depuis la ref (mesure sur ce depot :
+# 33,16 Gio d'objets au 26/11 -- une archive plus grosse que le worktree
+# qu'elle libere). On n'archive donc que ce que `main` ne porte pas deja.
+PR_OPEN_ARCHIVE_BASIS = "origin/main"
+
 
 def default_quarantine_root() -> Path:
     """Racine de quarantaine par defaut : hors du depot, hors du worktree.
@@ -1299,16 +1313,28 @@ def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
 
     Fail-closed : une racine qui ne porte pas le marqueur n'est pas purgee
     -- on ne supprime jamais un repertoire qu'on n'a pas cree.
+
+    `pr_open_archive/` N'EST PAS purge (reserve Hermes du 26/11) : la voie
+    est nommee pour les modules de sous-modules ; une archive de HEAD y
+    serait la seule copie d'une tete de PR encore OUVERTE. Selon l'etat de
+    la racine, l'emporter eut ete silencieux -- sur une racine marquee, la
+    purge reussissait ; sur une racine neuve, elle refusait. Le sous-repertoire
+    survit donc dans les deux cas et est nomme dans `preserved`.
     """
     if not root.exists():
-        return True, "", {"root": str(root), "removed": [], "bytes": 0}
+        return True, "", {"root": str(root), "removed": [], "bytes": 0,
+                          "preserved": []}
     if not (root / QUARANTINE_MARKER).exists():
         return False, f"quarantine-root-not-ours:{root}", None
     removed: list[str] = []
+    preserved: list[str] = []
     total = 0
     try:
         for child in sorted(root.iterdir()):
             if child.name == QUARANTINE_MARKER:
+                continue
+            if child.name == PR_OPEN_ARCHIVE_SUBDIR and child.is_dir():
+                preserved.append(str(child))
                 continue
             size = sum(
                 f.stat().st_size for f in child.rglob("*") if f.is_file()
@@ -1322,8 +1348,10 @@ def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
     except OSError as exc:
         return False, f"quarantine-purge-failed:{exc}", {
             "root": str(root), "removed": removed, "bytes": total,
+            "preserved": preserved,
         }
-    return True, "", {"root": str(root), "removed": removed, "bytes": total}
+    return True, "", {"root": str(root), "removed": removed, "bytes": total,
+                      "preserved": preserved}
 
 
 def is_source_dirty(path: str) -> bool:
@@ -2893,18 +2921,42 @@ def diagnose_worktree(wt_path: str, current_path: str,
     # Predicat 3 : PR OPEN -> REFUSE
     if pr_state == "OPEN":
         # --max-pr-open-days (opt-in, #DISK Maintenance 26/11) : un worktree a
-        # PR OPEN dont l'age depasse le seuil est retirable. C'est SEUR ici :
-        # tous les gardes upstream (commits non poussees, source dirty,
-        # untracked bloquant, sous-modules, worktree courant) ont deja tire
-        # AVANT ce point, donc un worktree qui arrive a ce predicat est par
-        # construction propre a retirer -- le seul frein residuel est que la
-        # PR est encore OPEN. Le retrait est alors marque `pr_open_archived` :
-        # l'apply archive HEAD (bundle + MANIFEST) AVANT `git worktree remove`.
+        # PR OPEN dont l'age depasse le seuil est retirable. Les gardes de
+        # PROPRETE amont (commits non poussees, source sale, untracked
+        # bloquant, sous-modules, worktree courant) ont deja tire AVANT ce
+        # point. Le retrait est alors marque `pr_open_archived` : l'apply
+        # archive HEAD (bundle + MANIFEST) AVANT `git worktree remove`.
         # Sans le seuil, ou si l'age est incalculable (created_at absent), on
         # garde le REFUSE historique : le defaut ne bouge pas.
         age_days = _pr_open_age_days(pr)
         if (max_pr_open_days is not None and age_days is not None
                 and age_days > max_pr_open_days):
+            # #18494, fenetre « agent vivant » (reserve Hermes du 26/11) : la
+            # liveness n'est PAS un garde de proprete. Une lane en rework
+            # travaille plusieurs jours dans le meme worktree de la meme PR
+            # -- « PR ancienne + agent actif » est le cas NOMINAL, pas un
+            # bord. La fenetre s'applique donc ici comme aux predicats 5 a 7 :
+            # un marqueur d'activite recent fait REFUSER, du motif existant.
+            age_h = recent_activity_age_hours(wt_path)
+            if age_h < activity_window_h:
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=pr_state,
+                    pr_number=pr_number,
+                    pr_url=pr_url,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REFUSE",
+                    refusal_reason=f"recent_activity:{age_h:.1f}h",
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    pr_open_age_days=age_days,
+                )
             return WorktreeStatus(
                 path=wt_path,
                 branch=info["branch"],
@@ -3313,41 +3365,93 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
     return removed
 
 
-def archive_worktree_head(wt: "WorktreeStatus", quarantine_root: Path,
-                          dest_name: str) -> tuple[bool, str]:
+def archive_worktree_head(
+    wt: "WorktreeStatus", quarantine_root: Path, dest_name: str,
+    repo_root: Optional[str] = None,
+    basis: str = PR_OPEN_ARCHIVE_BASIS,
+) -> tuple[bool, str, Optional[dict]]:
     """Archive le HEAD d'un worktree a PR OPEN expiree, AVANT son retrait.
 
-    `--max-pr-open-days` retire un worktree dont la PR est encore OPEN : pour
-    ne perdre rien, le `HEAD` de sa branche est capture en `git bundle` (plus
-    un MANIFEST daté) sous `quarantine_root/pr_open_archive/<dest_name>/`. Un
-    echec d'archivage est renvoye (False, raison) et l'APPLY retire PAS le
-    worktree -- on n'archive pas a demi. Le sous-repertoire `pr_open_archive/`
-    est distinct de la quarantaine de sous-modules (les entrees de celle-ci
-    s'achevent par `-{wt.name}`) : pas de couplage entre les deux registres.
+    `--max-pr-open-days` retire un worktree dont la PR est encore OPEN : ce
+    que `basis` (defaut : `origin/main`) ne porte pas deja de sa tete est
+    capture en `git bundle` INCREMENTAL (`basis..<tete>`), plus un MANIFEST
+    date, sous `quarantine_root/pr_open_archive/<dest_name>/`. Retourne
+    (ok, message, infos) ; un echec est renvoye (False, raison nommee) et
+    l'APPLY retire PAS le worktree -- on n'archive pas a demi. Le sous-
+    repertoire `pr_open_archive/` est distinct de la quarantaine de
+    sous-modules (ses entrees s'achevent par `-{wt.name}`) et la purge ne
+    l'emporte pas.
+
+    Fail-closed, dans l'ordre : meme garde de racine que la voie sous-modules
+    (`quarantine_root_refusal` -- une racine DANS le depot hebergeur ou DANS
+    le worktree retire rangerait l'archive dans un arbre qu'on supprime, et
+    dans le worktree rendrait son propre retrait impossible) ; base
+    irresolvable -> refus (jamais le repli sur un bundle complet) ; tete
+    incluse dans la base -> MANIFEST seul, `git bundle` refusant une plage
+    vide ; bundle non verifie -> refus, et le residu de la destination est
+    retire (il ne contient rien que le worktree ne porte encore).
     """
-    sub_root = quarantine_root / "pr_open_archive"
+    refusal = quarantine_root_refusal(quarantine_root, repo_root, wt.path)
+    if refusal is not None:
+        return False, refusal, None
+    sub_root = quarantine_root / PR_OPEN_ARCHIVE_SUBDIR
     dest = sub_root / dest_name
     try:
-        if dest.exists():
-            return False, "archive-destination-exists"
         sub_root.mkdir(parents=True, exist_ok=True)
-        marker = sub_root / QUARANTINE_MARKER
+        # Le marqueur se pose sur la RACINE, comme la voie sous-modules : une
+        # racine creee par la seule archive reste une racine de l'organe.
+        marker = quarantine_root / QUARANTINE_MARKER
         if not marker.exists():
             marker.write_text(
-                "archives pr_open_archive du pruneur de worktrees\n",
+                "racine de quarantaine du pruneur de worktrees\n",
                 encoding="utf-8",
             )
+        if dest.exists():
+            return False, "archive-destination-exists", None
         dest.mkdir(parents=True)
     except OSError as exc:
-        return False, f"archive-dir-failed:{exc}"
+        return False, f"archive-dir-failed:{exc}", None
     head_ref = wt.branch if wt.branch else "HEAD"
-    bundle = dest / "head.bundle"
-    bproc = run_git(
-        wt.path, "bundle", "create", str(bundle), head_ref, check=False,
-    )
-    if bproc.returncode != 0:
-        return False, f"bundle-failed:{bproc.stderr.strip()[:120]}"
     head_sha = _local_head_sha(wt.path) or "unknown"
+
+    def _abandon(reason: str) -> tuple[bool, str, None]:
+        try:
+            _rmtree_readonly_tolerant(dest)
+        except OSError as exc:
+            return False, f"{reason} (residu: {dest}: {exc})", None
+        return False, reason, None
+
+    basis_proc = run_git(
+        wt.path, "rev-parse", "--verify", "--quiet", f"{basis}^{{commit}}",
+        check=False,
+    )
+    if basis_proc.returncode != 0:
+        return _abandon(f"archive-basis-unresolvable:{basis}")
+    basis_sha = basis_proc.stdout.strip()
+    count_proc = run_git(
+        wt.path, "rev-list", "--count", f"{basis}..{head_ref}", check=False,
+    )
+    if count_proc.returncode != 0:
+        return _abandon(
+            f"archive-range-failed:{count_proc.stderr.strip()[:120]}")
+    try:
+        outside = int(count_proc.stdout.strip() or "0")
+    except ValueError:
+        return _abandon("archive-range-unreadable")
+    bundle: Optional[Path] = None
+    if outside > 0:
+        bundle = dest / "head.bundle"
+        bproc = run_git(
+            wt.path, "bundle", "create", str(bundle),
+            f"{basis}..{head_ref}", check=False,
+        )
+        if bproc.returncode != 0:
+            return _abandon(f"bundle-failed:{bproc.stderr.strip()[:120]}")
+        vproc = run_git(
+            wt.path, "bundle", "verify", str(bundle), check=False,
+        )
+        if vproc.returncode != 0:
+            return _abandon(f"bundle-unverified:{vproc.stderr.strip()[:120]}")
     manifest = (
         f"worktree: {wt.path}\n"
         f"branch: {wt.branch}\n"
@@ -3355,6 +3459,11 @@ def archive_worktree_head(wt: "WorktreeStatus", quarantine_root: Path,
         f"pr_state: {wt.pr_state}\n"
         f"head_sha: {head_sha}\n"
         f"pr_open_age_days: {wt.pr_open_age_days}\n"
+        f"basis: {basis}@{basis_sha}\n"
+        f"commits_outside_basis: {outside}\n"
+        f"bundle: {bundle.name if bundle else 'none (tete incluse dans la base)'}\n"
+        f"restore: git bundle list-heads <bundle>, puis git fetch <bundle> "
+        f"<ref> (prerequis : {basis})\n"
         f"archived_at: "
         f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}\n"
         f"reason: pr_open_expired (--max-pr-open-days)\n"
@@ -3362,8 +3471,14 @@ def archive_worktree_head(wt: "WorktreeStatus", quarantine_root: Path,
     try:
         (dest / "MANIFEST.txt").write_text(manifest, encoding="utf-8")
     except OSError as exc:
-        return False, f"manifest-failed:{exc}"
-    return True, ""
+        # Le bundle est bon : on le GARDE, le MANIFEST manque.
+        return False, f"manifest-failed:{exc}", None
+    return True, "", {
+        "dest": str(dest),
+        "bundle": str(bundle) if bundle else None,
+        "basis_sha": basis_sha,
+        "commits_outside_basis": outside,
+    }
 
 
 def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
@@ -3479,10 +3594,18 @@ def render_text(
                 f"  dead_lock_unlocked(pid={s.lock_pid})"
                 if s.dead_lock_unlocked else ""
             )
+            # #DISK 26/11 : un retrait de ce type depose une archive de la
+            # tete. Le lecteur doit le voir sur la ligne, pas seulement dans
+            # le JSON -- c'est ce qui distingue un retrait reversible d'une
+            # suppression.
+            arch_part = (
+                f"  archive=pr_open({s.pr_open_age_days}j)"
+                if s.pr_open_archived else ""
+            )
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
-                    f"{ignored_part}{lock_part}".rstrip()
+                    f"{arch_part}{ignored_part}{lock_part}".rstrip()
                 )
             else:
                 # Mode --apply : vraie realite du disque.
@@ -3490,7 +3613,7 @@ def render_text(
                 if result is None or result.get("applied"):
                     lines.append(
                         f"REMOVED     {s.path}  {branch_part}  {pr_part}"
-                        f"{ignored_part}{lock_part}".rstrip()
+                        f"{arch_part}{ignored_part}{lock_part}".rstrip()
                     )
                 else:
                     # `git worktree remove` a echoue : on dit FAILED + cause.
@@ -3693,7 +3816,8 @@ def main() -> int:
         action="store_true",
         help="Purge la quarantaine et sort (#21743). Voie NOMMEE : une "
              "racine qui ne porte pas le marqueur de l'organe n'est pas "
-             "purgee.",
+             "purgee. Les archives pr_open_archive/ de --max-pr-open-days "
+             "sont conservees et nommees dans `preserved`.",
     )
     p.add_argument(
         "--max-pr-open-days",
@@ -3701,10 +3825,12 @@ def main() -> int:
         default=None,
         metavar="N",
         help="Seuil d'age (en jours) au-dela duquel un worktree a PR OPEN "
-             "est archive (bundle + MANIFEST dans la quarantaine) puis retire "
-             "(#DISK Maintenance 26/11). Opt-in : sans ce drapeau, le "
-             "comportement mesure (REFUSE pr_open) est inchange. Ne force "
-             "JAMAIS le retrait et ne supprime JAMAIS la branche.",
+             "sans activite recente est archive (ce que origin/main ne "
+             "porte pas de sa tete : bundle incremental + MANIFEST dans la "
+             "quarantaine) puis retire (#DISK Maintenance 26/11). Opt-in : "
+             "sans ce drapeau, le comportement mesure (REFUSE pr_open) est "
+             "inchange. Ne force JAMAIS le retrait et ne supprime JAMAIS la "
+             "branche.",
     )
     args = p.parse_args()
 
@@ -3728,9 +3854,15 @@ def main() -> int:
             }, ensure_ascii=False))
         else:
             if ok:
+                # Les archives de tete de PR OUVERTE survivent a la purge :
+                # les taire ferait lire « quarantaine videe » alors que la
+                # seule copie d'une tete non poussee est encore la.
+                kept = (info or {}).get("preserved", [])
+                kept_part = (f", {len(kept)} archive(s) preservee(s) : "
+                             + ", ".join(kept)) if kept else ""
                 print(f"quarantine purgee : {quarantine_root} "
                       f"({len((info or {}).get('removed', []))} entree(s), "
-                      f"{(info or {}).get('bytes', 0)} octets)")
+                      f"{(info or {}).get('bytes', 0)} octets{kept_part})")
             else:
                 print(f"ERROR: purge de la quarantaine refusee : {msg}",
                       file=sys.stderr)
@@ -3849,6 +3981,7 @@ def main() -> int:
     refused_count = 0
     removal_count = 0
     quarantine_refused_count = 0
+    archive_refused_count = 0
     error_count = 0
     if args.apply:
         for s in statuses:
@@ -3883,6 +4016,7 @@ def main() -> int:
                         "stderr": f"quarantine-refused:{q_msg}",
                         "cleaned_artifacts": cleaned,
                         "quarantine": quarantine_info or {"error": q_msg},
+                        "pr_open_archive": None,
                     })
                     # Un refus de quarantaine (modules/ rendu au worktree,
                     # retrait annule) est une DECISION de l'organe : exit 0,
@@ -3901,27 +4035,38 @@ def main() -> int:
                     continue
             # --max-pr-open-days : un worktree a PR OPEN expiree n'est retirable
             # QUE son HEAD ait d'abord ete archive (bundle + MANIFEST). Un
-            # echec d'archivage annule le retrait de ce worktree (exit 0,
-            # decompte en refus de quarantaine) -- on ne retire jamais a
-            # l'aveugle un worktree dont la PR est encore ouverte.
+            # echec d'archivage annule le retrait de ce worktree : c'est une
+            # DECISION de l'organe (exit 0), avec son PROPRE decompte -- le
+            # compteur de quarantaine de sous-modules ne porte plus deux
+            # registres (reserve Hermes du 26/11). Le champ
+            # `pr_open_archive` distingue « rien a archiver » (null) de
+            # « archive refusee » ({ok: false, reason}).
+            pr_open_archive_info: Optional[dict] = None
             if s.pr_open_archived:
                 dest_name = f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}-" \
                             f"{Path(s.path).name}"
-                arch_ok, arch_msg = archive_worktree_head(
+                arch_ok, arch_msg, arch_info = archive_worktree_head(
                     s, quarantine_root, dest_name,
+                    repo_root=_repo_root_for_worktree(s.path),
                 )
-                if not arch_ok:
-                    apply_results.append({
-                        "path": s.path,
-                        "branch": s.branch,
-                        "pr_number": s.pr_number,
-                        "applied": False,
-                        "stderr": f"pr-open-archive-refused:{arch_msg}",
-                        "cleaned_artifacts": cleaned,
-                        "quarantine": None,
-                    })
-                    quarantine_refused_count += 1
-                    continue
+                if arch_ok:
+                    pr_open_archive_info = {"ok": True, **(arch_info or {})}
+                else:
+                    pr_open_archive_info = {"ok": False, "reason": arch_msg}
+                    archive_refused_count += 1
+            if s.pr_open_archived and not pr_open_archive_info["ok"]:
+                apply_results.append({
+                    "path": s.path,
+                    "branch": s.branch,
+                    "pr_number": s.pr_number,
+                    "applied": False,
+                    "stderr": "pr-open-archive-refused:" + (
+                        pr_open_archive_info["reason"]),
+                    "cleaned_artifacts": cleaned,
+                    "quarantine": quarantine_info,
+                    "pr_open_archive": pr_open_archive_info,
+                })
+                continue
             ok, stderr = apply_removal(s)
             apply_results.append({
                 "path": s.path,
@@ -3931,6 +4076,7 @@ def main() -> int:
                 "stderr": stderr,
                 "cleaned_artifacts": cleaned,
                 "quarantine": quarantine_info,
+                "pr_open_archive": pr_open_archive_info,
             })
             _progress(progress_on, f"[apply] {'retrait' if ok else 'ECHEC'} {s.path}")
             if ok:
@@ -3979,6 +4125,7 @@ def main() -> int:
             out["applied"] = removal_count
             out["apply_errors"] = error_count
             out["apply_quarantine_refusals"] = quarantine_refused_count
+            out["apply_archive_refusals"] = archive_refused_count
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
         # Texte
@@ -3988,7 +4135,13 @@ def main() -> int:
                               gh_unavailable_reason=gh_unavailable_reason))
             print()
             print(f"applied={removal_count}  errors={error_count}"
-                  f"  quarantine_refusals={quarantine_refused_count}")
+                  f"  quarantine_refusals={quarantine_refused_count}",
+                  end="")
+            # La ligne ne s'allonge que quand l'archive a refuse : sans
+            # `--max-pr-open-days`, la sortie texte est inchangee.
+            if archive_refused_count:
+                print(f"  archive_refusals={archive_refused_count}", end="")
+            print()
         else:
             print(render_text(statuses, dry_run=True,
                               gh_unavailable_reason=gh_unavailable_reason))

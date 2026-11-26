@@ -703,6 +703,67 @@ class TestMaxPrOpenDays:
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "pr_open:#999"
 
+    # --- fenetre « agent vivant » #18494 (reserve Hermes du 26/11) ------
+    #
+    # Une lane en rework travaille plusieurs jours dans le meme worktree de
+    # la meme PR : « PR ancienne + agent actif » est le cas NOMINAL. Sans la
+    # fenetre, --max-pr-open-days retirerait le worktree d'un agent vivant
+    # et la purge emporterait l'archive de sa tete.
+
+    def _diagnose_with_activity(self, monkeypatch, age_h, max_days=30):
+        calls = {"n": 0}
+
+        def _spy(path, now=None):
+            calls["n"] += 1
+            return age_h
+
+        monkeypatch.setattr(pmw, "recent_activity_age_hours", _spy)
+        s = self._diagnose(monkeypatch, self._old_open_pr(), max_days=max_days)
+        return s, calls
+
+    def test_recent_activity_refuses_even_when_the_pr_is_old(
+            self, monkeypatch):
+        s, calls = self._diagnose_with_activity(monkeypatch, 1.5)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "recent_activity:1.5h"
+        assert s.pr_open_archived is False
+        # L'age est quand meme rapporte : le lecteur voit les deux faits.
+        assert s.pr_open_age_days == 40
+        assert calls["n"] == 1
+
+    def test_activity_outside_the_window_still_removes(self, monkeypatch):
+        s, calls = self._diagnose_with_activity(monkeypatch, 7.0)
+        assert s.decision == "REMOVE"
+        assert s.pr_open_archived is True
+        assert s.pr_open_age_days == 40
+        assert calls["n"] == 1
+
+    def test_window_boundary_is_strict(self, monkeypatch):
+        # `age_h < window` : a l'egale exactement, l'activite ne protege
+        # plus (meme contrat que les predicats 5 a 7).
+        s, _ = self._diagnose_with_activity(monkeypatch, 6.0)
+        assert s.decision == "REMOVE"
+
+    def test_window_is_not_consulted_without_the_flag(self, monkeypatch):
+        def _boom(path, now=None):
+            raise AssertionError(
+                "la fenetre ne doit pas etre consultee sans le drapeau")
+
+        monkeypatch.setattr(pmw, "recent_activity_age_hours", _boom)
+        s = self._diagnose(monkeypatch, self._old_open_pr(), max_days=None)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "pr_open:#999"
+
+    def test_activity_age_from_lane_owner_marker(self, tmp_path):
+        (tmp_path / ".lane-owner").write_text("lane", encoding="utf-8")
+        assert pmw.recent_activity_age_hours(str(tmp_path)) < 0.1
+
+    def test_activity_age_is_infinite_for_an_unreadable_path(self, tmp_path):
+        # Aucune activite prouvable : le worktree n'est pas protege par la
+        # garde (meme semantique que les autres predicats).
+        assert pmw.recent_activity_age_hours(
+            str(tmp_path / "absent")) == float("inf")
+
 
 class TestRemoteHeadPrResolution:
     """#17771 predicat 1 : la tete distante qui porte HEAD resout la PR.
@@ -2982,6 +3043,306 @@ class TestEndToEndHermetic14693:
         ok, stderr = pmw.apply_removal(s)
         assert ok, f"REMOVE annonce mais retrait echoue: {stderr}"
         assert not wt.exists(), "le worktree doit avoir quitte le disque"
+
+
+# ---------------------------------------------------------------------------
+# #DISK Maintenance 26/11 : archive de la tete d'un worktree a PR OPEN
+# expiree (--max-pr-open-days). Controle positif hermetique sur git REEL.
+# ---------------------------------------------------------------------------
+
+
+def _make_repo_with_origin_and_feature_worktree(
+    base: Path,
+) -> tuple[Path, Path]:
+    """Depot temoin muni d'un `origin` REEL (clone nu) + worktree feature.
+
+    La base d'archive par defaut est `origin/main` : le fixture la rend
+    resolvable au lieu de passer une base locale, pour que le DEFAUT soit
+    l'objet du test. La tete du worktree porte exactement UN commit que
+    `origin/main` ne connait pas.
+    """
+    super = base / "super"
+    super.mkdir()
+    _git_ok(str(super), "init", "-b", "main")
+    (super / "README.md").write_text("tmp", encoding="utf-8")
+    _git_ok(str(super), "add", "README.md")
+    _git_ok(str(super), "commit", "-m", "init")
+    origin = base / "origin.git"
+    _git_ok(str(base), "init", "--bare", "-b", "main", str(origin))
+    _git_ok(str(super), "remote", "add", "origin",
+            str(origin).replace("\\", "/"))
+    _git_ok(str(super), "push", "origin", "main")
+    _git_ok(str(super), "fetch", "origin")
+    wt = base / "wt-feature"
+    _git_ok(str(super), "worktree", "add", str(wt), "-b", "feature/pr-open")
+    (wt / "draft.txt").write_text("wip", encoding="utf-8")
+    _git_ok(str(wt), "add", "draft.txt")
+    _git_ok(str(wt), "commit", "-m", "wip head of an open PR")
+    return super, wt
+
+
+class TestArchiveWorktreeHead:
+    """`archive_worktree_head` : bundle INCREMENTAL sur `origin/main`, prouve
+    restorable, et refus fail-closed AVANT toute ecriture.
+
+    Defaut mesure sur ce depot (26/11) : `git bundle create <ref>` sans
+    plage de revisions embarque TOUT l'historique joignable -- 33,16 Gio
+    d'objets. Une archive plus grosse que le worktree qu'elle libere ne
+    libere rien : on n'archive que ce que la base ne porte pas.
+    """
+
+    def _status(self, path: Path, **over):
+        base = dict(
+            path=str(path), branch="feature/pr-open", is_current=False,
+            pr_state="OPEN", pr_number=999, pr_url=None, ahead_count=1,
+            has_source_dirty=False, untracked_paths=[], decision="REMOVE",
+            refusal_reason=None, pr_open_archived=True, pr_open_age_days=40,
+        )
+        base.update(over)
+        return pmw.WorktreeStatus(**base)
+
+    def test_incremental_bundle_is_restorable_in_a_fresh_clone(
+            self, tmp_path):
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        head = _git_ok(str(wt), "rev-parse", "HEAD").stdout.strip()
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-1", repo_root=str(super))
+        assert ok, msg
+        assert info["commits_outside_basis"] == 1
+        dest = Path(info["dest"])
+        assert dest == q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-1"
+        bundle = dest / "head.bundle"
+        assert bundle.is_file()
+        manifest = (dest / "MANIFEST.txt").read_text(encoding="utf-8")
+        assert "basis: origin/main@" in manifest
+        assert "commits_outside_basis: 1" in manifest
+        assert f"head_sha: {head}" in manifest
+        # Une racine creee par la seule archive est une racine de l'organe :
+        # sans le marqueur, la purge la refuserait pour toujours.
+        assert (q / pmw.QUARANTINE_MARKER).is_file()
+        # INCREMENTAL, mesure : le bundle ne porte pas l'historique de la base.
+        full = tmp_path / "full.bundle"
+        _git_ok(str(wt), "bundle", "create", str(full), "feature/pr-open")
+        assert bundle.stat().st_size < full.stat().st_size
+        # Preuve de restauration : la tete se recupere dans un clone NEUF
+        # qui ne la porte PAS (seule main est clonee). Le clone passe par
+        # `file://` -- un clone LOCAL copie tout le magasin d'objets, y
+        # compris les commits d'autres branches, et ne prouverait rien.
+        clone = tmp_path / "clone"
+        _git_ok(str(tmp_path), "clone", "--single-branch", "--branch", "main",
+                super.as_uri(), str(clone))
+        absent = subprocess.run(
+            ["git", "-C", str(clone), "cat-file", "-e", head + "^{commit}"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace")
+        assert absent.returncode != 0, "la tete ne doit pas etre dans le clone"
+        _git_ok(str(clone), "bundle", "verify", str(bundle).replace("\\", "/"))
+        _git_ok(str(clone), "fetch", str(bundle).replace("\\", "/"),
+                "feature/pr-open")
+        assert _git_ok(str(clone), "rev-parse", "FETCH_HEAD").stdout.strip() \
+            == head
+        # Le worktree est intact : archiver n'est pas retirer.
+        assert _git_ok(str(wt), "rev-parse", "HEAD").stdout.strip() == head
+        assert wt.is_dir()
+
+    def test_head_inside_the_basis_is_manifest_only(self, tmp_path):
+        """Tete incluse dans la base : rien a archiver, `git bundle` refuse
+        une plage vide -- l'archive est alors le MANIFEST seul (la tete est
+        deja sur `origin/main`, l'archivage n'a rien a preserver)."""
+        super, _wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(super, branch="main"), q, "entry-2",
+            repo_root=str(super))
+        assert ok, msg
+        assert info["commits_outside_basis"] == 0
+        dest = Path(info["dest"])
+        assert not (dest / "head.bundle").exists()
+        manifest = (dest / "MANIFEST.txt").read_text(encoding="utf-8")
+        assert "commits_outside_basis: 0" in manifest
+        assert "bundle: none" in manifest
+
+    def test_unresolvable_basis_refuses_and_leaves_no_residue(self, tmp_path):
+        """Base irresolvable : JAMAIS le repli sur un bundle complet (qui
+        embarquerait tout l'historique) -- refus nomme, destination retiree
+        (elle ne contient rien que le worktree ne porte encore)."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-3", repo_root=str(super),
+            basis="origin/does-not-exist")
+        assert ok is False
+        assert msg.startswith("archive-basis-unresolvable:")
+        assert info is None
+        assert not (q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-3").exists()
+        assert wt.is_dir()
+
+    def test_root_inside_the_repo_is_refused_before_any_write(self, tmp_path):
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), super / "q", "entry-4", repo_root=str(super))
+        assert (ok, msg, info) == (False, "quarantine-root-inside-repo", None)
+        assert not (super / "q").exists()
+
+    def test_root_inside_the_worktree_is_refused_before_any_write(
+            self, tmp_path):
+        """L'archive dans le worktree a retirer serait detruite par le
+        retrait qu'elle autorise -- et rendrait ce retrait impossible sans
+        force. Rien n'est cree : le worktree reste propre."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), wt / "q", "entry-5", repo_root=str(super))
+        assert (ok, msg, info) == (
+            False, "quarantine-root-inside-worktree", None)
+        assert not (wt / "q").exists()
+        status = _git_ok(str(wt), "status", "--porcelain").stdout
+        assert status.strip() == "", status
+
+    def test_existing_destination_is_refused(self, tmp_path):
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        dest = q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-6"
+        dest.mkdir(parents=True)
+        (dest / "MANIFEST.txt").write_text("precedent", encoding="utf-8")
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-6", repo_root=str(super))
+        assert (ok, msg, info) == (False, "archive-destination-exists", None)
+        # L'archive precedente n'est ni ecrasee ni completee.
+        assert (dest / "MANIFEST.txt").read_text(encoding="utf-8") == \
+            "precedent"
+        assert [p.name for p in dest.iterdir()] == ["MANIFEST.txt"]
+
+
+class TestPrOpenArchiveApply:
+    """L'apply ne retire JAMAIS un worktree dont la tete n'a pas ete
+    archivee ; l'echec d'archive est une DECISION de l'organe (exit 0) avec
+    son PROPRE decompte -- plus de registre double sur le compteur de
+    quarantaine de sous-modules (reserve Hermes du 26/11)."""
+
+    def _status(self, **over):
+        base = dict(
+            path="C:/fake/pr-open0", branch="feature/pr-open",
+            is_current=False, pr_state="OPEN", pr_number=999, pr_url=None,
+            ahead_count=0, has_source_dirty=False, untracked_paths=[],
+            decision="REMOVE", refusal_reason=None, pr_open_archived=True,
+            pr_open_age_days=40,
+        )
+        base.update(over)
+        return pmw.WorktreeStatus(**base)
+
+    def _run_main(self, monkeypatch, archive_result, apply_calls,
+                  argv_extra=("--apply", "--json")):
+        status = self._status()
+        monkeypatch.setattr(pmw, "list_worktrees", lambda: [
+            {"path": status.path, "branch": status.branch}])
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(pmw, "diagnose_worktree",
+                            lambda path, cur, **kwargs: status)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None))
+        monkeypatch.setattr(pmw, "clean_tolerated_artifacts", lambda s: [])
+        monkeypatch.setattr(pmw, "_repo_root_for_worktree", lambda p: None)
+        monkeypatch.setattr(pmw, "archive_worktree_head",
+                            lambda *a, **k: archive_result)
+
+        def _apply(s):
+            apply_calls.append(s.path)
+            return True, ""
+
+        monkeypatch.setattr(pmw, "apply_removal", _apply)
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", *argv_extra])
+        return pmw.main()
+
+    def test_archive_refusal_cancels_the_removal(self, monkeypatch, capsys):
+        calls = []
+        rc = self._run_main(monkeypatch, (
+            False, "archive-basis-unresolvable:origin/main", None), calls)
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0, "un refus d'archive est une decision, pas une panne"
+        assert calls == [], "aucun retrait ne doit etre tente"
+        assert out["applied"] == 0
+        assert out["apply_errors"] == 0
+        assert out["apply_quarantine_refusals"] == 0
+        assert out["apply_archive_refusals"] == 1
+        entry = out["apply_results"][0]
+        assert entry["applied"] is False
+        assert entry["stderr"] == (
+            "pr-open-archive-refused:archive-basis-unresolvable:origin/main")
+        assert entry["pr_open_archive"] == {
+            "ok": False, "reason": "archive-basis-unresolvable:origin/main"}
+
+    def test_archive_success_then_removal(self, monkeypatch, capsys):
+        calls = []
+        info = {"dest": "D:/q/pr_open_archive/e", "bundle": None,
+                "basis_sha": "abc", "commits_outside_basis": 0}
+        rc = self._run_main(monkeypatch, (True, "", info), calls)
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert calls == ["C:/fake/pr-open0"]
+        assert out["applied"] == 1
+        assert out["apply_archive_refusals"] == 0
+        entry = out["apply_results"][0]
+        assert entry["applied"] is True
+        assert entry["pr_open_archive"]["ok"] is True
+        assert entry["pr_open_archive"]["commits_outside_basis"] == 0
+
+    def test_nothing_to_archive_is_null_not_a_failure(self, monkeypatch,
+                                                      capsys):
+        """`pr_open_archive` vaut null quand il n'y avait rien a archiver :
+        distinct de {ok: false, reason} -- un lecteur du JSON ne confond
+        pas « sans objet » et « refuse »."""
+        calls = []
+        status = self._status(pr_open_archived=False, pr_state="MERGED")
+        monkeypatch.setattr(pmw, "list_worktrees", lambda: [
+            {"path": status.path, "branch": status.branch}])
+        monkeypatch.setattr(pmw, "diagnose_worktree",
+                            lambda path, cur, **kwargs: status)
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None))
+        monkeypatch.setattr(pmw, "clean_tolerated_artifacts", lambda s: [])
+        monkeypatch.setattr(pmw, "apply_removal",
+                            lambda s: calls.append(s.path) or (True, ""))
+
+        def _boom(*a, **k):
+            raise AssertionError("rien a archiver : ne pas appeler")
+
+        monkeypatch.setattr(pmw, "archive_worktree_head", _boom)
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--apply", "--json"])
+        rc = pmw.main()
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert out["applied"] == 1
+        assert out["apply_archive_refusals"] == 0
+        assert out["apply_results"][0]["pr_open_archive"] is None
+
+    def test_text_output_counts_archive_refusals(self, monkeypatch, capsys):
+        calls = []
+        rc = self._run_main(monkeypatch, (False, "bundle-failed:x", None),
+                            calls, argv_extra=("--apply",))
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert calls == []
+        assert "applied=0" in out
+        assert "archive_refusals=1" in out
+        assert "FAILED" in out
+        assert "pr-open-archive-refused:bundle-failed:x" in out
+
+    def test_text_output_names_the_archive_on_the_decision_line(
+            self, monkeypatch, capsys):
+        calls = []
+        rc = self._run_main(monkeypatch, (True, "", {"ok": True}), calls,
+                            argv_extra=())
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "WOULD REMOVE" in out
+        assert "archive=pr_open(40j)" in out
+        assert "pr=#999(OPEN)" in out
 
 
 class TestRefusalReport3895:
