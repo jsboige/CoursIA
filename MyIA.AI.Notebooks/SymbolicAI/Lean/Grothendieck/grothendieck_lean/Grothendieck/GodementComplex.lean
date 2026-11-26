@@ -1340,7 +1340,6 @@ theorem godementUnits_pullback {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     exact hx
   have hinjst : Function.Injective
       ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.f) := by
-    refine (AddCommGrpCat.mono_iff_injective _).mpr ?_
     refine TopCat.Presheaf.stalkFunctor_map_injective_of_app_injective (fun U => ?_) (x : X)
     exact (AddCommGrpCat.mono_iff_injective (S.f.app (op U))).mp
       ((NatTrans.mono_iff_mono_app S.f).mp hS.mono_f (op U))
