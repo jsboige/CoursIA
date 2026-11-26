@@ -1,7 +1,7 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-23T01:04:08Z",
-  "generated-by": "myia-po-2024:CoursIA",
+  "generated-at": "2026-11-26T18:23:24Z",
+  "generated-by": "myia-po-2026:CoursIA-2",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
   "lakes": [
@@ -138,8 +138,8 @@
       "decision": "false",
       "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
       "mode": "EXPLICIT",
-      "i18n-modules": 25,
-      "i18n-declarations": 653
+      "i18n-modules": 26,
+      "i18n-declarations": 669
     },
     {
       "lake": "mathlibexamples",
@@ -212,6 +212,14 @@
       "mode": "WILDCARD",
       "i18n-modules": 5,
       "i18n-declarations": 16
+    },
+    {
+      "lake": "gkdim",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 2,
+      "i18n-declarations": 6
     },
     {
       "lake": "combinators",
@@ -291,7 +299,7 @@
       "reason": "opt-in sur : la surface `_en` ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
       "mode": "WILDCARD",
       "i18n-modules": 24,
-      "i18n-declarations": 810
+      "i18n-declarations": 813
     },
     {
       "lake": "linear",
