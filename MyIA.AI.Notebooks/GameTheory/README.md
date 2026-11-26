@@ -428,7 +428,7 @@ change de substrat en lisant le lake [`assignment_lean/`](assignment_lean/).
 | # | Notebook | Noyau | Public |
 |---|----------|-------|--------|
 | 01 | [Pouvoir coalitionnel et SMT](Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb) | Python | Recherche |
-| 02 | [Assistance Games (résultat 2026)](Coalitions/Coalitions-02-Assistance-Games-Python.ipynb) | Python | Recherche |
+| 02 | [Assistance Games (résultat 2026)](Coalitions/Coalitions-02-Assistance-Games-Python.ipynb) · [C#](Coalitions/Coalitions-02-Assistance-Games-CSharp.ipynb) | Python · C# | Recherche |
 | 03 | [Échange de reins](Coalitions/Coalitions-03-Echange-de-Reins-Lean-Python.ipynb) | Python | Licence |
 | 04 | [Affectation de Kuhn-Munkres](Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | Python | Licence |
 | 05 | [Affectation en Lean](Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | Lean | Recherche |
