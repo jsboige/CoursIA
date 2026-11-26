@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (**253 entrées**, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md` : c'est le **support de référence des mesures datées** (comptes, listes de jobs, ids de run, heures de reset, quotas). La skill porte le **geste**, pas l'archive.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (**255 entrées**, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md` : c'est le **support de référence des mesures datées** (comptes, listes de jobs, ids de run, heures de reset, quotas). La skill porte le **geste**, pas l'archive.
 
 4. **La porte `PR gate` est l'autorité de TRI ; l'admissibilité à la fusion se lit ailleurs — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle fusionnable ? », qui se lit sur `mergeable_state`, sur les jambes **requises**, sur B.0 et sur l'approbation d'ai-01 à la tête (tell 27). Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque) ; une jambe **requise** non verte reste, elle, un bloqueur de merge — les deux questions se posent séparément, jamais l'une à la place de l'autre.
 5. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP (la recette d'appel — wrapper, handshake, identité signée — vit dans la mémoire par machine du siège, pas ici). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -445,6 +445,38 @@ branche (tête `fba9624514`) et la CI a tourné sur cette tête-là. *How to app
 avant de rejouer un job, lire la **tête courante** de la PR et le `head_sha` du
 run ; un rejeu sur une tête abandonnée est une **mesure manquante**, et son
 verdict ne vaut pas pour la PR.
+37. **Compter les jambes non vertes SANS le fold canonique sur-compte les
+tentatives périmées — et change la conclusion.** *Why :* sur #28781 (tête
+`60dfa524b99`), mon script listait **toutes** les tentatives non vertes de
+`check-runs` au lieu de plier par nom : brut **111** jambes / 3 non vertes / 7
+« en vol » ; au fold `pr_gate.dedupe_latest` (latest-wins par nom, avec le
+repli `skipped`), **93** jambes / 2 non vertes / **0 en vol** — les 7
+`lean-matrix` étaient des tentatives périmées, et `Always-on guards -- body`
+(`cancelled` 18:26:18Z) avait une tentative **success** de 18:28:10Z. Ma
+lecture annonçait « 7 jambes en vol, donc aucun rejeu » là où le fold donnait
+« plus rien en vol » ; sur #28728 elle annonçait « 5 en vol » là où la porte
+était **terminée en DWELL**. *How to apply :* ne jamais écrire son propre
+fold — **importer** `dedupe_latest` de `scripts/pr_gate.py` ; le comptage brut
+sert au repérage (combien de tentatives), jamais au verdict (quelles jambes
+sont rouges à la tête) ; croiser tout « en vol » annoncé avec le fold avant de
+conclure « aucun rejeu possible ».
+38. **Une porte rendue `INCONCLUSIVE` sur un quota d'installation est
+REJOUABLE : le log nomme le geste.** *Why :* porte `PR gate` de #28781 (run
+45875835520, job 140102546996), titre `PR gate: api-quota: 11 gh api call(s),
+2 served by a 304 (0 quota)` — titre non-verdict (tell 24). Le LOG nomme la
+cause et le geste : `installation-quota 403 -- announced reset 693s away (> 300s):
+rendering INCONCLUSIVE now and releasing the runner`, puis `INCONCLUSIVE --
+quota d'installation GitHub App epuisee : l'etat des checks est INCONNU, pas
+faux. REJOUABLE : relancer la jambe (gh run rerun <run_id> --job <job_id>)
+apres le reset horaire`. La jambe `Analyze (actions)` (CodeQL) avait **terminé
+son analyse et exporté le SARIF**, puis échoué sur `API rate limit exceeded for
+installation` à la publication — l'échec est en fin de log, après le travail.
+*How to apply :* un `INCONCLUSIVE` (et non un `FAIL`) se rejoue **après** le
+reset horaire annoncé dans le log, jamais avant ; le rejeu porte sur le **job**
+(`gh run rerun <run_id> --job <job_id>`), jamais sur la porte dont l'état est
+inconnu — et le nouveau job porte un **id différent** (tell 31). Une jambe
+dont le log montre le travail **accompli** puis un échec de publication est un
+rouge d'infra, pas de contenu.
 
 ## Clauses prescriptives candidates à normalisation (sign-off user)
 
