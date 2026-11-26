@@ -1378,6 +1378,23 @@ extension, pas une redite.
   — workspace $W$ (Gates 22-23 livrés, dissociation documentée).
 - [ICT-Argumentation-BeliefTrajectories-Python](ICT-Argumentation-BeliefTrajectories-Python.ipynb)
   — 5 classes Argumentum (espèces thomiennes).
+- [ICT-Turing1952-Thom-Morphogenese-Python](ICT-Turing1952-Thom-Morphogenese-Python.ipynb)
+  — **Turing 1952 contre Thom 1991** : la longueur d'onde chimique et le
+  canal. Confronte la phrase « la vie est essentiellement canalisation,
+  endiguement et lutte contre la diffusion » (Ch.3, p.60) au §8 de Turing
+  sur la morphogenèse, sur un banc de réaction-diffusion 1-D (Schnakenberg,
+  $D_v = 40$). Mesures : anneau libre 27 lobes pour 26,77 prédits
+  ($-0{,}84\,\%$ d'écart sur $\lambda_c$) ; **8/8** quantifications de paroi
+  dans $\{\lfloor s_c \rfloor, \lceil s_c \rceil\}$, mais seulement **3/8**
+  sur l'argmax linéaire — l'écart de $\sigma$ entre modes voisins (0,2–2,0 %)
+  explique pourquoi la règle des « deux entiers les plus proches » de Turing
+  ne se déduit pas linéairement ; exposant de seuil mesuré $0{,}466$
+  (trois estimations concordantes), soit la loi $\tfrac12$ d'une
+  catastrophe au sens de Thom, non une amplification linéaire. Témoins
+  asymétriques décisifs : sans asymétrie de diffusion, amplitude $0{,}000000$
+  **même avec parois** ; chimie seule (anneau libre) sans paroi, amplitude
+  $0{,}897909$ — le canal quantifie, il ne crée pas. Voir
+  [#28772](https://github.com/jsboige/CoursIA/issues/28772).
 
 ### Documents de synthèse
 
