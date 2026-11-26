@@ -154,11 +154,25 @@ jobs:
     # par construction. L'entree d'allowlist du workflow reste NECESSAIRE pour
     # lui -- ne pas la retirer en croyant suivre la note d'origine.
     runs-on: ubuntu-latest
-    # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
-    # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
-    # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
-    # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
-    timeout-minutes: 60
+    # 75 et non 60 depuis le 24/11 (pages-deploy-rouge, option 1 de #26337) :
+    # le plafond de 60 avait ete calibre sur un rendu de 19-24 min (#14283),
+    # mais la liste de rendu est passee de ~1276 a **2846** entrees et le
+    # diagnostic du 13/11 (#26337, livre par po-2028) mesure 41-52 min de job
+    # sur ~2655 documents, avec un debit constant de 0,96 s/doc -- c'est le
+    # CORPUS qui a double, pas un cache perdu.
+    #
+    # Re-mesure du 24/11 sur les runs `push` :
+    #   run 45340506900 (tete deb5039f7) -- rendu REUSSI en **47 min**
+    #     (06:46:03Z -> 07:33:05Z) ;
+    #   run 45371168543 (tete 0e3519999) -- rendu TUE par le plafond
+    #     (10:36:18Z -> 11:36:18Z, soit 60 min 16 s), job `cancelled`,
+    #     `assemble-pages` et `deploy` SAUTES => **le site n'est plus publie**.
+    # 75 min couvre le pire cas mesure (rendu >= 57 min) avec ~18 min de
+    # marge, et la croissance du corpus (+19 s/jour a 0,96 s/doc) pendant des
+    # annees ; le diagnostic de #26337 y evaluait ~3 mois de pousse.
+    # Le rendu reste sur `ubuntu-latest` (hosted, minutes gratuites) : le pool
+    # auto-heberge ne tient pas 2846 documents.
+    timeout-minutes: 75
     permissions:
       contents: read
     steps:
@@ -340,7 +354,18 @@ jobs:
     # (un organe qui enumere zero cible ne mesure rien, #8807 trap 1).
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     name: Build Slidev decks
-    runs-on: ubuntu-latest
+    # ubuntu-24.04 et NON ubuntu-latest (pages-deploy-rouge, 24/11) :
+    # `ubuntu-latest` est passe a **ubuntu 26.04**, et le `playwright-core`
+    # epingle dans `slides/package-lock.json` (1.58.2) refuse cette plateforme :
+    #   Error: ERROR: Playwright does not support chromium on ubuntu26.04-x64
+    #   at Registry._downloadExecutable (.../playwright-core/.../registry/index.js:1152)
+    # -> `npm ci` echoue sur le script d'installation de `playwright-chromium`,
+    # et le job rouge sur les deux jobs a chaque push. Controle positif :
+    # `slides-build-advisory.yml` construit les memes decks sur **ubuntu-24.04**
+    # et il est vert (run 45395701137, 12:39Z, meme jour) -- la voie est donc
+    # prouvee, et l'image est **epinglee** (comme le pin de Quarto et de
+    # gitleaks) pour ne pas dependre du glissement de `ubuntu-latest`.
+    runs-on: ubuntu-24.04
     timeout-minutes: 75
     permissions:
       contents: read
@@ -513,9 +538,20 @@ jobs:
 
       - name: Install JupyterLite
         # Versions egales : le noyau Pyodide doit correspondre au core.
+        #
+        # `jupyter-server` est requis PAR LA CONSTRUCTION (pages-deploy-rouge,
+        # 24/11) : l'etape `post_build:contents:contents:.` de `jupyter lite
+        # build` leve sans lui
+        #   RuntimeError: jupyter-server is not installed.
+        #                You cannot add custom content to jupyterlite.
+        # et le job echoue. Mesure locale (venv `jupyterlite-core==0.8.7` +
+        # `jupyterlite-pyodide-kernel==0.8.7`, lot de 8 carnets) : rc != 0 sans
+        # le paquet, **rc=0** avec lui (les 8 carnets sont bien copies dans
+        # `files/`). `jupyterlab-server` est ajoute pour la meme raison cote
+        # traductions (l'avertissement `No module named 'jupyterlab_server'`).
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7"
+          python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7" "jupyter-server" "jupyterlab-server"
 
       - name: Build the JupyterLite lot
         run: |
@@ -554,6 +590,14 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout (sources des carnets)
+        # La passe des boutons de lancement (#27551) lit les carnets SOURCES
+        # (noyau du carnet) et la presence du devcontainer (pli 1.4) : il lui
+        # faut donc l'arbre, pas seulement le site rendu.
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Download Quarto site
         uses: actions/download-artifact@v4
         with:
@@ -591,6 +635,48 @@ jobs:
           if [ "$N_LOT" -eq 0 ]; then
             echo "::warning::Aucun carnet JupyterLite dans l'artifact (job build-jupyterlite en echec ou lot vide) -- deploiement SANS /jupyterlite/."
           fi
+
+      - name: Boutons de lancement sur les pages de carnets (#27551)
+        # Pli 2.3 de l'Epic #27543 : chaque page de carnet offre les
+        # lancements auxquels il a droit (Codespaces via le devcontainer,
+        # Colab pour les carnets Python, JupyterLite pour les carnets
+        # publies dans le bundle). L'eligibilite est CALCULEE sur l'arbre et
+        # sur le manifeste publie du bundle -- jamais posee a la main.
+        # Fail-soft : les boutons sont un enrichissement du site ; une panne
+        # de la passe ne doit pas empecher la publication ( meme doctrine que
+        # les decks et le lot JupyterLite). Le compte rendu reste dans le log.
+        id: boutons
+        continue-on-error: true
+        run: |
+          python3 scripts/notebook_tools/launch_buttons.py \
+            --site-dir _site \
+            --repo-root . \
+            --rapport "$RUNNER_TEMP/launch-buttons.json"
+
+      - name: Compte rendu des boutons de lancement (#27551)
+        # La passe est fail-soft : elle ne bloque pas la publication, mais son
+        # echec ne doit pas etre MUET. Le rapport est annonce par une
+        # annotation `warning::` (visible dans le run) et publie en artefact.
+        # Reserve NanoClaw du 21/11 sur la PR #27706.
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/launch-buttons.json" ]; then
+            cat "$RUNNER_TEMP/launch-buttons.json"
+            echo "::warning::Rapport des boutons de lancement (version complete en artefact launch-buttons-report)."
+          else
+            echo "::warning::Pas de rapport de boutons de lancement ($RUNNER_TEMP/launch-buttons.json absent) : la passe a echoue avant de produire son compte rendu."
+          fi
+          if [ "${{ steps.boutons.outcome }}" != "success" ]; then
+            echo "::warning::La passe des boutons de lancement a echoue (outcome=${{ steps.boutons.outcome }}) : le site est publie sans boutons."
+          fi
+
+      - name: Artefact du rapport des boutons de lancement (#27551)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-buttons-report
+          path: ${{ runner.temp }}/launch-buttons.json
+          if-no-files-found: warn
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

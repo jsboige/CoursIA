@@ -142,6 +142,11 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
         # argumentum_snapshot (14 tests) devient un test de la collection.
         "scripts/fallacy_detection/tests",
+        # scripts/humor_detection/tests : dir entier (#20301) — 12 tests de
+        # la campagne ColBERT (annotation_campaign), hors reseau, memes deps
+        # stdlib+pytest que fallacy_detection (le module importe Reply de
+        # fallacy_detection.generate_teacher_corpus).
+        "scripts/humor_detection/tests",
         # #22735 : huit suites de `scripts/**/tests/` etaient vertes en local
         # et jouees par AUCUN workflow -- absentes aussi de pytest.ini, donc
         # invisibles des DEUX sens de ce garde : datasets, genai-stack,
@@ -168,6 +173,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # mais absent des testpaths de pytest.ini -- la convergence
         # local <-> CI est un invariant de ce garde (#22735).
         "scripts/ci/tests",
+        # scripts/curriculum/tests : suite neuve de #27657 (temoins des
+        # fonctions pures du generateur de carte des prerequis), pure et sans
+        # reseau. Cablee des trois cotes dans la meme PR (pytest.ini,
+        # liste pytest de scripts-tests.yml, ce dict) -- sans quoi le second
+        # sens du garde (#22735) la voyait sur le disque et non jouee.
+        "scripts/curriculum/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         # ICT-Series scripts/tests : dir entier (#23730, classe #22735) —
         # 45 tests sur 3 fichiers (protocol, records, reward_dynamics),

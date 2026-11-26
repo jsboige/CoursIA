@@ -52,6 +52,7 @@ from fast_lane_commenters import (  # noqa: E402
     _body_outputs_required,
     _body_stale_claim,
 )
+from fast_lane_twin_heritage import twin_execution_heritage_guard  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
@@ -932,13 +933,25 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/GameTheory/**",
             "MyIA.AI.Notebooks/GenAI/FineTuning/**",
             "MyIA.AI.Notebooks/IIT/**",
+            "MyIA.AI.Notebooks/ML/ML.Net/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/**",
             "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
+            "MyIA.AI.Notebooks/RL/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+            "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/**",
             "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
             "MyIA.AI.Notebooks/Sudoku/**",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+            "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/**",
+            "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/**",
+            "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/**",
+            "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/**",
+            "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/**",
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/**",
+            "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/**",
+            "MyIA.AI.Notebooks/SymbolicAI/Tweety/**",
             "scripts/notebook_tools/zero_pad_series.json",
             "scripts/notebook_tools/check_series_zero_pad.py",
             "scripts/notebook_tools/naming_canon.py",
@@ -3188,6 +3201,7 @@ TRANCHE32: list[Guard] = [
         needs_base=True,
         warn_rc=(2,),
     ),
+
     # #27969 : attestation de parite orpheline -- une attestation qui cite un
     # blob qui N'EXISTE NI sur la base NI a la tete de la revision ne peut pas
     # survivre au squash : le squash ecrit l'arbre de la branche, pas son
@@ -3224,6 +3238,9 @@ TRANCHE32: list[Guard] = [
         diff_bounded=True,
         warn_rc=(2,),
     ),
+    # Heritage d'execution entre carnets jumeaux : le corps est dans `fast_lane_twin_heritage.py`.
+    twin_execution_heritage_guard(Guard, FAST_LANE_NATIVE),
+
 ]
 
 # ---------------------------------------------------------------------------
@@ -4609,6 +4626,73 @@ RISK_KERNEL_GUARDS: list[Guard] = [
         ],
         argv=[
             "python", "scripts/quantconnect/check_risk_kernel_copies.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# CURRICULUM_PREREQ_GUARDS -- carte des prerequis derivee de la taxonomie
+# (#27657, suite de #27556/#27594).
+#
+# `docs/curriculum/prerequis.qmd` est GENEREE par
+# `scripts/curriculum/generate_prereq_map.py` depuis
+# `docs/curriculum/taxonomy/*.json` : une modification de la taxonomie laisse
+# la page deriver en silence tant qu'aucune jambe CI ne rejoue le `--check` du
+# generateur. Incident fondateur, mesure au tete `6c335ed6e28` de `main`
+# (23/11) : trois PRs de densification taxonomique (#27454 Probas 22->135
+# concepts, #27461 GameTheory 28->182, #27471 Search CSP 33->121) ont fusionne
+# APRES la generation unique de la page (#27594) sans la regenerer -- la page
+# commettait encore les compteurs de l'ancienne taxonomie (427 refs au lieu de
+# 947, GameTheory 9/170 au lieu de 50/202...). Cette PR regenere la page et
+# pose la garde qui rend la derive impossible a merger.
+#
+# Portee : la garde ne se declenche que sur les PRs qui touchent la
+# taxonomie, la page, ou le generateur -- une PR qui ne peut pas causer la
+# derive ne peut pas etre accusee de la porter (forme
+# lean-derived-pages-gate, #24183 : une porte qui redd toute la flotte pour un
+# defaut qu'elle ne cause pas a une portee fausse).
+#
+# Correction de cause (DM coordinateur 24/11) : la promesse ci-dessus etait
+# rompue par `real_inventory`. Le bloc « Couverture des series » de la page est
+# mesure contre le DISQUE (tous les *.ipynb sous le dossier de la serie), pas
+# contre la taxonomie : chaque carnet fusionne hors taxonomie re-perimait la
+# page pour toute la flotte, et la PR suivante touchant la taxonomie etait
+# accusee d'une derive venue d'ailleurs. `--check` compare donc desormais la
+# partie derivee de la taxonomie SEULE ; le bloc de couverture (borne par
+# COVERAGE_BEGIN/END) reste dans la page et se regenere au rendu du site
+# (quarto-pages-deploy) et au cron catalogue, comme _quarto.yml (#19901 : la
+# fraicheur de main appartient a l'automatisation, jamais aux PR de contenu).
+# Temoin : un carnet factice ajoute hors taxonomie ne rougit pas --check ; un
+# compteur de la carte tamponne rougit toujours.
+#
+# Forme : predicat ABSOLU (pas de base) -- le `--check` compare la page
+# commisee a la taxonomie du checkout courant, sans diff. rc=1 = page perimee ;
+# le geste de reparation est imprime par le generateur (relancer sans --check).
+# Une taxonomie JSON malformee leve une exception -> exit 1 egalement :
+# fail-closed, une taxonomie illisible ne vaut jamais un quitus vert.
+#
+# `absorbed=True` : mesure sur la tete de cette PR (page regeneree incluse),
+# `generate_prereq_map.py --check` rend rc=0. Sur `main` NU la page est
+# perimee (incident ci-dessus) : l'absorption devient vraie au MERGE de cette
+# PR, qui livre la page regeneree dans le meme commit que la garde.
+# ---------------------------------------------------------------------------
+CURRICULUM_PREREQ_GUARDS: list[Guard] = [
+    Guard(
+        name="curriculum-prereq-staleness-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/curriculum/taxonomy/**",
+            "docs/curriculum/prerequis.qmd",
+            "scripts/curriculum/generate_prereq_map.py",
+            "scripts/curriculum/tests/test_generate_prereq_map.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/curriculum/generate_prereq_map.py", "--check",
         ],
         blocking=True,
         absorbed=True,
