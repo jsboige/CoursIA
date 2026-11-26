@@ -39,6 +39,20 @@ References:
   - Parts 74 (`Grothendieck.StalkSeparated`, separation) and 75
     (`Grothendieck.StalkGluing`, gluing).
 
+Stacks correspondence (group #15 of #28537 — “the points and the germs”, measured 26/11)
+--------------------------------------------------------------------------
+The reading of `AxiomMath/Stacks` is done on the **local tree**
+`StacksFrontier/Topology/Sheaves/` (sparse clone of the whole folder, 1756
+files covered out of 1756): an “absent” verdict therefore means **no
+statement of that name anywhere in `Topology/Sheaves/`**.
+
+| Statement | Class | Stacks referent | What our version adds |
+|---|---|---|---|
+| `GermSeparated` | **covered** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'`; `:86` `isSeparated'_iff` (Stacks 007A) | the pointwise form on the subtype `{x // x ∈ U}` |
+| `GermGluing` | partial | `Basis/Germs.lean:329` `germMap_range_eq_conditionStar`; `:339` `germMap_bijection` (009M) | existence on the site of opens, without a basis condition |
+| `germ_eq_of_isCompatible` | partial | `Basis/Germs.lean:224` `germ_res`; `:212` `germ_eq_iff_rel` | the standalone statement, with a presheaf `IsCompatible` predicate |
+| `isSheaf_iff_germSeparated_and_germGluing` | partial | `Basis/Germs.lean:308` `germMap_injective`; `:329` (009M); `Basis/Sheaf.lean:140` `main_theorem009J` (009J) | the backward direction, where the sheaf condition is **derived** from the germs |
+
 The i18n convention (EPIC #4980, ratified 2026-07-04) pairs this module with
 `StalkCharacterization.lean`. Lean statements, proofs, and names remain
 identical; only docstrings and comments differ.
@@ -65,7 +79,18 @@ variable (T : Type u) [TopologicalSpace T]
 /-- **Separation by germs**: two sections of a presheaf having the same germ at
 every point of an open set are equal. Part 74 established this conclusion for
 a sheaf; it is promoted here to a property of the presheaf itself, so that it
-can be taken as a hypothesis. -/
+can be taken as a hypothesis.
+
+Stacks correspondence — **COVERED**:
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:78`
+(`TopCat.Presheaf.IsSeparated'`, Stacks 007A) states the same property — the
+map “section ↦ family of its germs” is injective — and `:86`
+(`isSeparated'_iff`) gives it in the pointwise form that is identical to
+ours: two sections whose germs agree at every point of the open are equal.
+Stacks notes in passing (`:43`) that Mathlib has the stalks and the germ maps
+but **not** this predicate: Stacks is what adds it. What our version adds:
+the pointwise form is ours for an arbitrary `Type u` presheaf, with no sheaf
+hypothesis, but with the dependency on the subtype `{x : T // x ∈ U}`. -/
 def GermSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
   ∀ (U : Opens T) (s t : F.obj (op U)),
     (∀ (x : T) (hx : x ∈ U), F.germ U x hx s = F.germ U x hx t) → s = t
@@ -73,7 +98,22 @@ def GermSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
 /-- **Gluing of germs**: every locally representable family of germs (in the
 sense of Part 75) comes from a section. Part 75 proved this existence for a
 sheaf **and** gave uniqueness; only existence is kept here, uniqueness being
-exactly the separation above. -/
+exactly the separation above.
+
+Stacks correspondence — **PARTIAL**: Stacks 009M
+(`StacksFrontier/Topology/Sheaves/Basis/Germs.lean:329`,
+`germMap_range_eq_conditionStar`, and `:339`, `germMap_bijection`) proves that
+the image of the germ map is **exactly** the set of families of germs
+satisfying condition (*), hence that every **locally representable** family of
+germs comes from a section. Stacks' condition (*) is the same as our
+`IsLocallyRepresentable`: at each point, a local representative whose germ
+agrees with the family. Two differences of frame: Stacks works on a
+**presheaf on a basis** (`PresheafOnBasisOpenSet`) and its stalk is the
+**quotient** by the germ-equivalence relation (`:132` `Stalk`), ours a
+filtered colimit; and Stacks establishes the forward direction under the
+hypothesis `hF : F.IsSheaf`, ours states it as a hypothesis. What our
+version adds: existence in the frame of the site of opens, without a basis
+condition. -/
 def GermGluing (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
   ∀ (U : Opens T) (a : GermFamily T F U),
     GermFamily.IsLocallyRepresentable T F U a →
@@ -82,7 +122,17 @@ def GermGluing (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
 /-- The germ form of compatibility: two members of a compatible family have the
 same germ at every point of their intersection. This is the ingredient that
 makes the family of germs built on a covering family well defined — two local
-representatives of the same point agree locally, hence in germ. -/
+representatives of the same point agree locally, hence in germ.
+
+Stacks correspondence — **PARTIAL**: the ingredient is in Stacks:
+`Basis/Germs.lean:224` (`germ_res`) shows that the germ commutes with
+restriction, and `:212` (`germ_eq_iff_rel`) that equality of germs is
+equivalent to the germ-equivalence relation. Stacks has however **no** named
+statement “the germs of two compatible local representatives agree”: there,
+compatibility is expressed by equality of restrictions on basis elements
+(`Basis/LocallyBijectiveBasisIso.lean:83`, `IsCompatibleOnBasisPresheaf`) and
+the conclusion follows. What our version adds: the standalone statement,
+with a presheaf `IsCompatible` predicate and the site of opens. -/
 theorem germ_eq_of_isCompatible
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) {ι : Type*}
     (U : ι → Opens T) (sf : ∀ i, F.obj (op (U i)))
@@ -100,7 +150,20 @@ section (gluing).
 
 This is the capstone of the vein opened by Parts 72-75, and the only place in
 the lake where the sheaf condition is derived from elementary properties
-rather than postulated. -/
+rather than postulated.
+
+Stacks correspondence — **PARTIAL**: both halves exist in Stacks, but
+**separately** and in a different frame. Forward direction (sheaf ⇒ properties
+of the germs): Stacks 009M (`Basis/Germs.lean:308` `germMap_injective` and
+`:329` `germMap_range_eq_conditionStar`). Backward direction (properties of
+the germs ⇒ sheaf): Stacks does not have it — its sheaf condition is
+**defined** by separation and gluing of **sections**
+(`Basis/Germs.lean:95` `PresheafOnBasisOpenSet.IsSheaf`; `Basis/Sheaf.lean:88`
+`IsSheafOnBasis`, EGA 0 3.2.2, and `:140` `main_theorem009J`, 009J, the basis
+criterion). What our version adds: the equivalence **in the forward
+direction** on the site of opens, without a basis condition, and the backward
+direction where the sheaf condition is **derived** from the germs rather than
+postulated. -/
 theorem isSheaf_iff_germSeparated_and_germGluing
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) :
     TopCat.Presheaf.IsSheaf F ↔ GermSeparated T F ∧ GermGluing T F := by

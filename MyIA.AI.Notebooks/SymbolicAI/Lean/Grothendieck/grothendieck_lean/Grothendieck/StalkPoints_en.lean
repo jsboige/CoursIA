@@ -37,6 +37,36 @@ References:
   - Part 70 (`Grothendieck.SpacesMathlib`): the equality of topologies.
   - Part 72 (`Grothendieck.Stalks`): concrete germs and stalks.
 
+Stacks correspondence (group #15 of #28537 — “the points and the germs”, measured 26/11)
+--------------------------------------------------------------------------
+The reading of `AxiomMath/Stacks` is done on the **local tree**
+`StacksFrontier/Topology/Sheaves/` (sparse clone of the whole folder, 1756
+files covered out of 1756): an “absent” verdict therefore means **no
+statement of that name anywhere in `Topology/Sheaves/`**.
+
+The machinery of the point of the site is **not** absent from Stacks: it is
+used in a single file of the tree read,
+`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean`, for a
+technical universe-lifting need. That is where the closest counterpart of
+`stalkFiberIso` lies — hence the class “partial” wherever we have a
+statement where Stacks has a construction.
+
+| Statement | Class | Stacks referent | What our version adds |
+|---|---|---|---|
+| `opensPoint` | partial | `Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:325` `openNhdsEquivPointElements` (beware of the homonym `opensPoint` in Stacks, same file `:76`) | the construction of the point on the own site, with its cofiltered structure |
+| `mem_of_fiber` | absent | none (the inverse of Stacks' equivalence does the work without naming it) | the named statement of the tautological converse |
+| `fiberElem` | absent | none | the construction of the canonical element |
+| `fiberToStalkCocone` | partial | `UniverseLift.lean:338` `neighbourhoodColimitFunctor`; `:344` | the explicit cone, with its naturality proved |
+| `fiberToStalk` | partial | `UniverseLift.lean:344` (the inverse of the iso) | the explicit universal descent |
+| `stalkToFiberCocone` | partial | `UniverseLift.lean:338` | the cone of the `toPresheafFiber` maps on the diagram of neighborhoods |
+| `stalkToFiber` | partial | `UniverseLift.lean:344` `neighbourhoodColimitIsoPointFiber` | the public morphism, for arbitrary `Type u` |
+| `toPresheafFiber_fiberToStalk` | partial | `UniverseLift.lean:344` (via `Functor.Final.colimitIso`) | the component-by-component formula |
+| `germ_stalkToFiber` | partial | `UniverseLift.lean:344` | same, in the other direction |
+| `stalkToFiber_comp_fiberToStalk` | partial | `UniverseLift.lean:344` (the `left_inv`/`right_inv` fields of the iso) | the round-trip identity, named and proved |
+| `fiberToStalk_comp_stalkToFiber` | partial | `UniverseLift.lean:344` | same |
+| `stalkFiberIso` | partial | `UniverseLift.lean:344` `neighbourhoodColimitIsoPointFiber` | the public iso, for `Type u` presheaves, not `private` |
+| `stalkFiberIso_naturality` | partial | `UniverseLift.lean:344` (a `NatIso`) | the equality of morphisms, isolated and named |
+
 i18n convention (EPIC #4980 ratified 2026-07-04): this module is twinned
 with `StalkPoints.lean`. Statements, proofs and Lean names remain
 identical; only docstrings and comments differ.
@@ -69,7 +99,21 @@ neighborhoods of `x` and their inclusions — is cofiltered; every covering
 sieve of an open containing `x` contains a neighborhood of `x`
 (`mem_opensTopology_iff`). This is the transcription on the own site of
 Mathlib's canonical point `Opens.pointGrothendieckTopology`, the equality
-of topologies (Part 70) guaranteeing it is the same point. -/
+of topologies (Part 70) guaranteeing it is the same point.
+
+Stacks correspondence — **PARTIAL**: the point of the site of opens is
+not absent from Stacks, but Stacks **uses** Mathlib's
+(`Opens.pointGrothendieckTopology`) instead of rebuilding it, and proves the
+equivalence with the elements of the fiber:
+`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:325`
+(`openNhdsEquivPointElements`, `OpenNhds x ≌
+(Opens.pointGrothendieckTopology x).fiber.Elements`), “the open
+neighborhoods of a point are the elements of the fiber of the Grothendieck
+point at that point”. Beware of the homonym: the only `opensPoint` in Stacks
+(same file, `:76`) is “a point of an open `U`, read as a point of the open
+subspace `U`”, that is the identity `x : U` — it is not a point of the site.
+What our version adds: the construction of the point on the **own** site (with the cofiltered structure and the joint
+surjectivity built here), rather than borrowed. -/
 def opensPoint : GrothendieckTopology.Point (opensTopology T) where
   fiber.obj U := ULift.{u} (PLift (x ∈ U))
   fiber.map f := ↾fun h ↦ ⟨⟨leOfHom f h.down.down⟩⟩
@@ -88,11 +132,26 @@ def opensPoint : GrothendieckTopology.Point (opensTopology T) where
     exact ⟨_, _, hf, ⟨⟨hV⟩⟩, rfl⟩
 
 /-- Every element of the fiber of `U` arises from a membership `x ∈ U`
-(tautological converse of the construction). -/
+(tautological converse of the construction).
+
+Stacks correspondence — **ABSENT**: no statement of that name in
+`StacksFrontier/Topology/Sheaves/` (search for `mem_of_fiber`: 0 results).
+The closest counterpart is the `inverse` of `openNhdsEquivPointElements`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:325`), which
+extracts from an element of the fiber its open and its membership, without
+naming the statement. What our version adds: the named tautological
+converse. -/
 theorem mem_of_fiber {U : Opens T} (p : (opensPoint T x).fiber.obj U) : x ∈ U :=
   p.down.down
 
-/-- The element of the fiber encoding a membership `x ∈ U`. -/
+/-- The element of the fiber encoding a membership `x ∈ U`.
+
+Stacks correspondence — **ABSENT**: no statement of that name in
+`StacksFrontier/Topology/Sheaves/` (search for `fiberElem`: 0 results); the
+only place in the tree that manipulates the fiber of a point of the site is
+`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean`, where it is
+never built element by element. What our version adds: the construction of
+the canonical element. -/
 def fiberElem {U : Opens T} (hx : x ∈ U) : (opensPoint T x).fiber.obj U :=
   ⟨⟨hx⟩⟩
 
@@ -100,7 +159,17 @@ variable (F : TopCat.Presheaf (Type u) (TopCat.of T))
 
 /-- The cone of germs on the diagram of elements of the fiber: an element
 `(U, p)` lives over an open `U` which contains `x`, and the germ restricts
-along the inclusion (`germ_res`). -/
+along the inclusion (`germ_res`).
+
+Stacks correspondence — **PARTIAL**: Stacks has the same diagram — the
+elements of the fiber of the point — and the corresponding colimit, but it
+obtains it through an **end-finiteness equivalence** rather than an explicit
+cone: `Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:338`
+(`neighbourhoodColimitFunctor`, the colimit over the open neighborhoods,
+hence the stalk) and `:344` (`neighbourhoodColimitIsoPointFiber`), whose
+proof goes through `Functor.Final.colimitIso E (P ⋙ M)`. What our version
+adds: the cone of germs on the diagram of the elements of the fiber, with
+its naturality **proved**. -/
 noncomputable def fiberToStalkCocone :
     Cocone ((CategoryOfElements.π (opensPoint T x).fiber).op ⋙ F) where
   pt := TopCat.Presheaf.stalk (X := TopCat.of T) F x
@@ -110,14 +179,29 @@ noncomputable def fiberToStalkCocone :
     exact TopCat.Presheaf.germ_res (X := TopCat.of T) F f.unop.1 x hV
 
 /-- **From the fiber to the stalk**: universal descent of the cone of
-germs, a morphism from the fiber colimit to the stalk. -/
+germs, a morphism from the fiber colimit to the stalk.
+
+Stacks correspondence — **PARTIAL**: the morphism exists in Stacks as
+the inverse of the iso `neighbourhoodColimitIsoPointFiber`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`), but as
+a component of a `NatIso`, never posed as a universal descent. What our
+version adds: the explicit universal descent, in the sense of
+`colimit.desc`. -/
 noncomputable def fiberToStalk :
     (opensPoint T x).presheafFiber.obj F ⟶ TopCat.Presheaf.stalk (X := TopCat.of T) F x :=
   colimit.desc _ (fiberToStalkCocone T x F)
 
 /-- The cone of `toPresheafFiber` maps on the diagram of neighborhoods:
 every neighborhood `U ∋ x` provides a section over `U`, hence an element of
-the fiber colimit (`toPresheafFiber_w`). -/
+the fiber colimit (`toPresheafFiber_w`).
+
+Stacks correspondence — **PARTIAL**: the diagram of neighborhoods is
+in Stacks (`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:338`,
+`neighbourhoodColimitFunctor`, `(OpenNhds.inclusion x).op ⋙ colim`), but the
+other face — the `toPresheafFiber` maps — is Mathlib's `presheafFiber`
+machinery, never replayed by Stacks as a cone. What our version adds: the
+cone of the `toPresheafFiber` maps on the diagram of neighborhoods, with its
+naturality proved. -/
 noncomputable def stalkToFiberCocone :
     Cocone ((OpenNhds.inclusion (X := TopCat.of T) x).op ⋙ F) where
   pt := (opensPoint T x).presheafFiber.obj F
@@ -127,21 +211,42 @@ noncomputable def stalkToFiberCocone :
     exact (opensPoint T x).toPresheafFiber_w f.unop ⟨⟨hV⟩⟩ F
 
 /-- **From the stalk to the fiber**: universal descent of the cone of
-`toPresheafFiber` maps, a morphism from the stalk to the fiber. -/
+`toPresheafFiber` maps, a morphism from the stalk to the fiber.
+
+Stacks correspondence — **PARTIAL**: this is the iso
+`neighbourhoodColimitIsoPointFiber`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`), whose
+first component goes from the colimit of the neighborhoods to the fiber of
+the point. What our version adds: a public, named morphism, for arbitrary
+`Type u` presheaves, and not for abelian groups. -/
 noncomputable def stalkToFiber :
     TopCat.Presheaf.stalk (X := TopCat.of T) F x ⟶ (opensPoint T x).presheafFiber.obj F :=
   colimit.desc _ (stalkToFiberCocone T x F)
 
 /-- The morphism `fiberToStalk` sends the `toPresheafFiber` of a section
 over `U` to its germ: both sides are colimit components
-(`colimit.ι_desc`). -/
+(`colimit.ι_desc`).
+
+Stacks correspondence — **PARTIAL**: the equality of the two sides is the
+content of the iso `neighbourhoodColimitIsoPointFiber`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`), whose
+components are obtained through `Functor.Final.colimitIso` — but Stacks
+nowhere states the formula “the `toPresheafFiber` of a section is its
+germ”. What our version adds: the component-by-component formula. -/
 theorem toPresheafFiber_fiberToStalk (U : Opens T) (p : (opensPoint T x).fiber.obj U) :
     (opensPoint T x).toPresheafFiber U p F ≫ fiberToStalk T x F =
       TopCat.Presheaf.germ (X := TopCat.of T) F U x p.down.down :=
   colimit.ι_desc _ _
 
 /-- The morphism `stalkToFiber` sends every germ to the `toPresheafFiber`
-of the section: both sides are colimit components (`colimit.ι_desc`). -/
+of the section: both sides are colimit components (`colimit.ι_desc`).
+
+Stacks correspondence — **PARTIAL**: symmetric to the previous one — the
+content of the iso `neighbourhoodColimitIsoPointFiber`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`) is the
+identity of the two descriptions, but it is not phrased “the germ maps to
+the `toPresheafFiber` of the section”. What our version adds: that
+formula. -/
 theorem germ_stalkToFiber (U : Opens T) (hx : x ∈ U) :
     TopCat.Presheaf.germ (X := TopCat.of T) F U x hx ≫ stalkToFiber T x F =
       (opensPoint T x).toPresheafFiber U ⟨⟨hx⟩⟩ F :=
@@ -154,7 +259,14 @@ set_option backward.isDefEq.respectTransparency false
 /-- The round trip stalk → fiber → stalk is the identity: two morphisms
 out of the stalk coincide as soon as they coincide after every germ
 (`stalk_hom_ext`), and the triangle closes via the two characterizations
-above. -/
+above.
+
+Stacks correspondence — **PARTIAL**: the round-trip identity is carried
+by the `left_inv`/`right_inv` fields of the iso
+`neighbourhoodColimitIsoPointFiber`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`),
+without a named statement or a proof. What our version adds: the named and
+proved identity, through the two extension lemmas. -/
 @[simp]
 theorem stalkToFiber_comp_fiberToStalk :
     stalkToFiber T x F ≫ fiberToStalk T x F = 𝟙 _ := by
@@ -166,7 +278,13 @@ theorem stalkToFiber_comp_fiberToStalk :
 /-- The round trip fiber → stalk → fiber is the identity: two morphisms
 out of the fiber colimit coincide as soon as they coincide after every
 `toPresheafFiber` (`presheafFiber_hom_ext`), and the triangle closes
-symmetrically. -/
+symmetrically.
+
+Stacks correspondence — **PARTIAL**: same for the other round trip, through
+the `left_inv`/`right_inv` fields of the iso
+`neighbourhoodColimitIsoPointFiber`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`). What
+our version adds: the named and proved identity via `presheafFiber_hom_ext`. -/
 @[simp]
 theorem fiberToStalk_comp_stalkToFiber :
     fiberToStalk T x F ≫ stalkToFiber T x F = 𝟙 _ := by
@@ -182,7 +300,19 @@ end
 between the fiber of any presheaf `F` at the site point `opensPoint T x`
 and the topological stalk of `F` at `x`. This iso is the explicit TODO of
 `Mathlib.Topology.Sheaves.Points`; it solders the abstract theory of Part
-15 to the concrete computation of Part 72. -/
+15 to the concrete computation of Part 72.
+
+Stacks correspondence — **PARTIAL**: the statement does have an exact
+counterpart in Stacks — “the colimit of the neighborhoods of a point is the
+fiber functor of the Grothendieck point at that point”:
+`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`
+(`neighbourhoodColimitIsoPointFiber`), established through `:325`
+(`openNhdsEquivPointElements`) and `:338` (`neighbourhoodColimitFunctor`).
+Three differences: in Stacks the iso is **`private`** (a technical
+universe-lifting tool, not an API); it is about **abelian groups**
+(`Ab.{max u v}`), not `Type u` presheaves; and it is established on
+Mathlib's site of opens, not on our own site. What our version adds: the
+public iso, for arbitrary `Type u`, on the own site. -/
 noncomputable def stalkFiberIso :
     (opensPoint T x).presheafFiber.obj F ≅ TopCat.Presheaf.stalk (X := TopCat.of T) F x where
   hom := fiberToStalk T x F
@@ -193,7 +323,14 @@ noncomputable def stalkFiberIso :
 set_option backward.defeqAttrib.useBackward true in
 set_option backward.isDefEq.respectTransparency false in
 /-- The iso `stalkFiberIso` is natural in the presheaf: it intertwines
-`presheafFiber.map` and `stalkFunctor.map`. -/
+`presheafFiber.map` and `stalkFunctor.map`.
+
+Stacks correspondence — **PARTIAL**: the naturality in the presheaf is
+**included in the type** of Stacks' iso — a `NatIso`, whose naturality proof
+is `NatIso.ofComponents … (by intros; rfl)`
+(`Cohomology/PerfectComplexes/FiniteFreeLocus/UniverseLift.lean:344`) — but
+it is neither isolated nor stated as an equality of morphisms. What our
+version adds: the equality of morphisms, named and proved. -/
 theorem stalkFiberIso_naturality {G : TopCat.Presheaf (Type u) (TopCat.of T)} (f : F ⟶ G) :
     (opensPoint T x).presheafFiber.map f ≫ fiberToStalk T x G =
       fiberToStalk T x F ≫
