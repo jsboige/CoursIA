@@ -41,6 +41,10 @@ Usage : tapis_defilement.py [--json] [--dashboard-line] [--lane <machine:workspa
      borne ; 1 ordre rompu, defilement incomplet, ou hors borne ; 2 lecture
      incomplete sans secours, jamais un faux 0)
 
+Un POOL VIDE (lecture complete, zero issue) est un etat **defini** : la
+mesure est complete et le rapport le nomme (`pool_vide`), plutot que de lever
+l'echec de lecture que le repli porte sur un cache vide.
+
 Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
@@ -133,6 +137,11 @@ def ordre(etats: list[tapis_rapide.Etat], lane: str, maintenant: datetime,
                             if int(getattr(e, "visites", 0) or 0) > 0),
     }
     exclusions = sorted(e.numero for e in etats if e.ecart is not None)
+    # Le PERIMETRE MARATHON est nomme, pas retire : les marathons de parite
+    # (#26070, #26510) sont a niveau infini -- hors equilibrage, servis par le
+    # harnais sk-agent. Ils restent dans le defilement (ils ne sortent pas du
+    # pool) ; le rapport dit simplement qu'ils ne disputent pas l'equilibre.
+    marathons = sorted(e.numero for e in etats if tapis_equilibre.est_marathon(e))
     file_ = tapis_rapide.ordonner(etats, lane, maintenant, grains)
     pos = _positions(file_)
 
@@ -173,6 +182,7 @@ def ordre(etats: list[tapis_rapide.Etat], lane: str, maintenant: datetime,
         "classes": classes,
         "exclusions_dures": len(exclusions),
         "exclusions_numeros": exclusions,
+        "marathon": {"hors_equilibrage": marathons, "nombre": len(marathons)},
         "file": [int(e.numero) for e in file_],
         "equite": {"ok": equite_ok, "temoins": temoins_equite,
                    "jamais_servies": len(jamais), "deja_servies": len(deja)},
@@ -269,10 +279,38 @@ def defilement(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     La couverture attendue est celle du pool **servable** : les issues ecartees
     par une exclusion dure (label de pause) ne sont pas comptees comme
     manquantes -- elles sont nommees.
+
+    Le POOL VIDE est un etat **defini** : la lecture est complete (elle a
+    rendu zero issue), il n'y a donc rien a defiler. Le repli, lui, ne peut pas
+    servir un cache vide -- il leverait `LectureIncomplete` sur une lecture
+    reussie. C'est un **zero vrai** : une mesure sur un pool vide, jamais un
+    defilement absent (jamais un faux 0).
     """
     dossier = dossier or Path(tempfile.gettempdir()) / "tapis-defilement"
     dossier.mkdir(parents=True, exist_ok=True)
     gh_cache_fichier.ecrire(dossier / f"lecture-{jours}j.json", lecture)
+    ouvertes = ouvertes_pool(lecture)
+    if not ouvertes:
+        return {
+            "lane": lane,
+            "ouvertes": 0,
+            "exclues": [],
+            "attendues": 0,
+            "servies": 0,
+            "manquantes": [],
+            "manquantes_detail": _detail_manquantes(lecture, [], maintenant),
+            "tours": 0,
+            "blocs_annonces": 0,
+            "slots": 0,
+            "reprises": 0,
+            "secondes": 0.0,
+            "borne_s": borne_s,
+            "sous_la_borne": True,
+            "complet": True,
+            "bloc": None,
+            "avance": 0,
+            "pool_vide": True,
+        }
     servies: set[int] = set()
     tours = 0
     slots = 0
@@ -302,7 +340,6 @@ def defilement(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             if blocs and tours >= blocs:
                 break  # un cycle complet : le pool n'est pas couvert, c'est dit
     secondes = time.monotonic() - debut
-    ouvertes = ouvertes_pool(lecture)
     exclues = _exclues_par_labels(lecture)
     attendues = ouvertes - exclues
     manquantes = sorted(attendues - servies)
@@ -383,6 +420,8 @@ def _texte(r: dict, source: str) -> str:
          f"retirees) ; {c['consolidation']} consolidation(s), "
          f"{c['jamais_visitee']} jamais visitee(s), {c['deja_visitee']} deja visitee(s)."),
         f"  file servie : {o['file']}",
+        (f"  marathons (hors equilibrage, harnais sk-agent) : "
+         f"{o['marathon']['nombre']} {o['marathon']['hors_equilibrage']}"),
         (f"  equite (0 visite avant 1 visite) : "
          f"{'OK' if o['equite']['ok'] else 'ROMPUE -- ' + str(o['equite']['temoins'])}"),
         (f"  consolidation : "
@@ -463,8 +502,17 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
                     "prs": len(lecture.prs), "depuis_cache": lecture.depuis_cache},
     }
     with tempfile.TemporaryDirectory(prefix="tapis-defilement-") as dossier:
-        r["defilement"] = defilement(lecture, args.lane, maintenant, args.grains,
-                                    args.jours, Path(dossier), args.max_s)
+        try:
+            r["defilement"] = defilement(lecture, args.lane, maintenant, args.grains,
+                                        args.jours, Path(dossier), args.max_s)
+        except gh_bulk.LectureIncomplete as exc:
+            # Le repli n'a pas pu lire son cache (`tapis_repli.replir` leve) :
+            # l'echec de lecture reste l'echec de lecture, avec le meme
+            # contrat que la lecture initiale -- rc 2, jamais une traceback.
+            print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
+                  file=sys.stderr)
+            print("Defilement NON MESURE -- jamais un faux 0.", file=sys.stderr)
+            return 2
     code = verdict(r)
     if args.json:
         out = json.dumps(r, ensure_ascii=False, indent=1)

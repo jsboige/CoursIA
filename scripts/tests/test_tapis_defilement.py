@@ -22,6 +22,7 @@ donne la mesure de reference a rejouer apres une correction.
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -30,7 +31,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, tapis_blocs, tapis_defilement, tapis_rapide
+from coordination import (
+    gh_bulk,
+    tapis_blocs,
+    tapis_defilement,
+    tapis_equilibre,
+    tapis_rapide,
+    tapis_repli,
+)
 
 NOW = datetime(2026, 11, 26, 11, 30, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
@@ -51,9 +59,10 @@ def _lecture(issues: list[dict]) -> gh_bulk.Lecture:
 
 
 def _etat(n: int, *, visites: int = 0, consolidation: bool = False,
+          conteneur: bool = False,
           cree: str = "2026-11-01T00:00:00Z", ecart: str | None = None) -> tapis_rapide.Etat:
     """Un etat du tapis, construit a la main (aucune lecture reseau)."""
-    e = tapis_rapide.Etat(n, f"Grain {n}", [], cree, None, n, False, consolidation)
+    e = tapis_rapide.Etat(n, f"Grain {n}", [], cree, None, n, conteneur, consolidation)
     e.visites = visites
     e.visites_total = visites
     e.ecart = ecart
@@ -247,3 +256,172 @@ def test_la_ligne_de_dashboard_reste_bornee():
     ligne = tapis_defilement.ligne_dashboard(r, 1)
     assert len(ligne) <= 200
     assert "Defilement" in ligne
+
+
+# --- le pool vide et l'echec de lecture du repli (coordinateur 26/11 18:53Z) ------
+#
+# Defaut annonce : `main()` attrape `LectureIncomplete` autour de la LECTURE
+# initiale, mais pas autour de `defilement()` -- alors que `tapis_repli.replir()`
+# la leve sur un cache vide. Le process rendait une TRACEBACK au lieu du
+# contrat rc=2 de l'organe.
+
+
+def test_le_pool_vide_est_un_etat_defini_et_measure_sans_repli(tmp_path,
+                                                                monkeypatch):
+    """Un pool vide se mesure : le repli n'est meme pas appele.
+
+    Le repli ne sait pas servir un cache vide ; c'est pourquoi il ne doit pas
+    etre appele sur un pool vide -- la mesure y est un ZERO VRAI.
+    """
+
+    def _interdit(*_a, **_k):
+        raise AssertionError("le repli ne doit pas etre appele sur un pool vide")
+
+    monkeypatch.setattr(tapis_repli, "replir", _interdit)
+    r = tapis_defilement.defilement(_lecture([]), LANE, NOW, grains=4, jours=45,
+                                    dossier=tmp_path)
+    assert r["pool_vide"] is True, "le pool vide doit etre nomme"
+    assert r["complet"] is True, "un pool vide est couvert par definition"
+    assert r["servies"] == 0 and r["attendues"] == 0
+    assert r["manquantes"] == []
+    assert r["sous_la_borne"] is True
+
+
+def test_le_repli_illisible_tient_le_rc_2_sans_traceback(monkeypatch, capsys):
+    """Un cache illisible : rc 2 et le message de l'organe, jamais de traceback."""
+    pool = [_issue(300, cree="2026-11-20T00:00:00Z")]
+    monkeypatch.setattr(gh_bulk, "lire_tout",
+                        lambda depot, cache_s, run, jours: _lecture(pool))
+
+    def _replir_illisible(*_a, **_k):
+        raise gh_bulk.LectureIncomplete("selection", "repli",
+                                        "ni cache local exploitable")
+
+    monkeypatch.setattr(tapis_repli, "replir", _replir_illisible)
+    code = tapis_defilement.main(["--lane", LANE])
+    assert code == 2, f"le contrat de l'organe est rc 2, pas {code}"
+    err = capsys.readouterr().err
+    assert "NON MESURE" in err, "le message de l'organe doit etre dit"
+    assert "Traceback" not in err, "jamais de traceback sur un echec de lecture"
+
+
+def test_le_pool_vide_ne_leve_pas_dans_main(monkeypatch, capsys):
+    """Une lecture complete et vide : la mesure rend un rapport, pas un echec."""
+    monkeypatch.setattr(gh_bulk, "lire_tout",
+                        lambda depot, cache_s, run, jours: _lecture([]))
+    code = tapis_defilement.main(["--lane", LANE, "--json"])
+    assert code == 0, f"un pool vide est une mesure complete, pas {code}"
+    rapport = json.loads(capsys.readouterr().out)
+    assert rapport["defilement"]["pool_vide"] is True
+    assert rapport["defilement"]["complet"] is True
+    assert rapport["lecture"]["issues"] == 0
+# --- le chemin de l'inversion, etage par etage (coordinateur 26/11 18:53Z) ------
+#
+# Le coordinateur demande d'identifier l'ETAPE du passage inter-niveaux, au lieu
+# de l'attribuer a `_decaler` seul : `tapis_equilibre.ordre` range par niveau
+# (tete decalee par niveau, `_decaler` comprise), puis `tapis_rapide.ordonner`
+# retrie les entrees selectionnees (claims, jamais visitees hors marathon,
+# conteneurs).
+#
+# Pool discriminant, construit a la main : un CONTENEUR de consolidation
+# (jamais visite) contre un grain ordinaire (jamais visite). Meme age, memes
+# visites : la consolidation est posee EN PREMIER dans le bonus, donc son
+# niveau est meilleur -- l'ordre par niveau doit servir le conteneur d'abord.
+
+
+def _mesure(etats, ordre=None):
+    """La mesure I7/equite de l'organe, sur un ordre impose."""
+    original = tapis_rapide.ordonner
+    if ordre is not None:
+        tapis_rapide.ordonner = lambda *a, **k: list(ordre)
+    try:
+        return tapis_defilement.ordre(etats, LANE, NOW, 8)
+    finally:
+        tapis_rapide.ordonner = original
+
+
+def test_le_passage_inter_niveaux_vient_du_retri_final_pas_de_la_rotation():
+    """L'etape est identifiee : c'est le retri final, pas `_decaler`.
+
+    Le conteneur de consolidation passe devant le grain ordinaire dans
+    l'ordre par NIVEAU (rotation comprise) -- la consolidation n'est pas
+    distancee. Le retri final (`tapis_rapide.ordonner`) le repousse en fin de
+    file : la composante `conteneur` de son tri les classe dans cet ordre.
+
+    Ce temoin ne corrige pas la regle du conteneur (deliberee : un conteneur
+    demande une lecture et un `--paths`, il ne passe jamais devant un grain) :
+    il NOMME l'etape, pour que l'arbitrage ne porte pas sur le mauvais organe.
+    """
+    etats = [_etat(7001, consolidation=True, conteneur=True),
+             _etat(7002)]
+    conso = tapis_equilibre.familles_consolidation(etats)
+    servables = [e for e in etats if not e.mon_claim]
+
+    niveau_7001 = tapis_equilibre.niveau(etats[0], conso, NOW)
+    niveau_7002 = tapis_equilibre.niveau(etats[1], conso, NOW)
+    assert niveau_7001 < niveau_7002, (
+        "la consolidation doit avoir le meilleur niveau : "
+        f"{niveau_7001} / {niveau_7002}")
+
+    # Etape A : l'ordre par niveau, rotation comprise.
+    ordre_a = tapis_equilibre.ordre(etats, servables, "graine", NOW, rotation=True)
+    assert [int(e.numero) for e in ordre_a] == [7001, 7002], (
+        "l'ordre par niveau sert la consolidation d'abord")
+    m_a = _mesure(etats, ordre=ordre_a)
+    assert m_a["consolidation"]["ok"] is True, (
+        "I7 tient a l'etape du niveau : le temoin est "
+        f"{m_a['consolidation']['temoins']}")
+
+    # Etape A0 : le meme ordre, rotation neutralisee -- `_decaler` n'y change rien.
+    ordre_a0 = tapis_equilibre.ordre(etats, servables, "graine", NOW, rotation=False)
+    assert [int(e.numero) for e in ordre_a0] == [7001, 7002]
+
+    # Etape B : le retri final.
+    ordre_b = tapis_rapide.ordonner(etats, LANE, NOW, 8, "graine")
+    assert [int(e.numero) for e in ordre_b] == [7002, 7001], (
+        "le retri final met le conteneur en second temps")
+    m_b = _mesure(etats, ordre=ordre_b)
+    assert m_b["consolidation"]["ok"] is False, (
+        "l'etape du passage inter-niveaux est le retri final")
+    assert m_b["consolidation"]["temoins"] == [7002]
+
+
+def test_la_rotation_tourne_la_tete_d_un_niveau_sans_en_changer():
+    """`_decaler` fait tourner la tete d'un niveau : il ne fait pas passer un
+    grain d'un niveau a l'autre.
+
+    La rotation garde la priorite IDENTIQUE : elle permute des grains de meme
+    niveau (memes visites, meme bonus), donc elle ne peut ni sacrifier la
+    consolidation ni l'anciennete sur les issues admissibles.
+    """
+    etats = [_etat(7101, consolidation=True, cree="2026-11-25T00:00:00Z"),
+             _etat(7102, cree="2026-11-25T00:00:00Z"),
+             _etat(7103, visites=2, cree="2026-11-25T00:00:00Z"),
+             _etat(7104, visites=2, cree="2026-11-25T00:00:00Z"),
+             _etat(7105, visites=5, cree="2026-11-25T00:00:00Z")]
+    conso = tapis_equilibre.familles_consolidation(etats)
+    servables = list(etats)
+    for graine in ("graine-1", "graine-2", "graine-3", "graine-4", "graine-5"):
+        ordre = tapis_equilibre.ordre(etats, servables, graine, NOW, rotation=True)
+        niveaux = [tapis_equilibre.niveau(e, conso, NOW) for e in ordre]
+        assert niveaux == sorted(niveaux), (
+            f"la rotation a croise deux niveaux ({graine}) : {niveaux}")
+        assert 7101 in [int(e.numero) for e in ordre][:2], (
+            "la consolidation passe devant l'anciennete")
+
+
+def test_le_perimetre_marathon_est_nomme_sans_sortir_du_defilement():
+    """Le marathon est hors equilibre, mais il reste dans le pool.
+
+    Son perimetre est NOME par le rapport (les numeros), jamais retire : le
+    harnais sk-agent le sert, le tapis ne le dispute pas.
+    """
+    etats = [_etat(26070, cree="2026-11-01T00:00:00Z"), _etat(7106)]
+    r = tapis_defilement.ordre(etats, LANE, NOW, 8)
+    assert r["marathon"]["hors_equilibrage"] == [26070], (
+        "le perimetre marathon doit etre nomme")
+    assert r["marathon"]["nombre"] == 1
+    assert 26070 not in r["exclusions_numeros"], (
+        "le marathon n'est pas ecarte : il reste dans le defilement")
+
+
