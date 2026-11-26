@@ -25,8 +25,8 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 
 | Invariant | Etat au 22/11 | Preuve |
 |---|---|---|
-| I1 file sans fin par lane | tenu | `tapis_leger.tirage` rend une file a toute lane |
-| I2 repli chronologique | tenu (23/11, ce PR) | hors reseau, la voie legere lit le cache local (`tapis_repli.py`) et sert le pool par date de creation |
+| I1 file sans fin par lane | tenu | `tapis_leger.tirage` rend une file a toute lane -- version **etat** : le curseur du repli est par lane (26/11) |
+| I2 repli chronologique | tenu (23/11, ce PR) | hors reseau, la voie legere lit le cache local (`tapis_repli.py`) et sert le pool par date de creation -- version **etat** : le cycle annonce est le cycle reel (26/11) |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause`, sur le tirage complet **et** sur la voie legere |
@@ -38,6 +38,16 @@ CACHE LOCAL (`coordination/tapis_repli.py`), sert le pool dans l'ordre de
 creation, et un curseur persiste fait defiler le pool de bloc en bloc. Le
 marqueur `xfail` du test I2 est donc retire : le test passe, et le CI le
 prouve.
+
+I1 et I2 ont aussi une version **ETAT** (26/11, PR #28768) : le contrat n'est
+pas seulement « une file non vide », c'est « le cycle que le repli ANNONCE est
+le cycle REEL, et le curseur est PAR LANE ». Les deux classes du lot (grains
+et conteneurs) doivent etre dans le pool de test : les conteneurs partagent
+le lot, donc la tranche primaire des grains vaut `taille - quota` -- un pool
+sans conteneur ne teste pas cette arithmetique, et le compte faux y tombe
+juste. C'est le piege qui a laisse passer le defaut du 26/11 (115 issues sur
+558 jamais servies sur le pool reel) : le test I2 d'alors passait sur un code
+qui ne servait plus jamais la queue de l'ordre d'age.
 
 I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
@@ -82,8 +92,17 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, gh_cache_fichier, gh_selection, main_freshness
-from coordination import tapis_ancre, tapis_cap_livraisons, tapis_leger, tapis_rapide
+from coordination import (
+    gh_bulk,
+    gh_cache_fichier,
+    gh_selection,
+    main_freshness,
+    tapis_ancre,
+    tapis_cap_livraisons,
+    tapis_leger,
+    tapis_rapide,
+    tapis_repli,
+)
 
 NOW = datetime(2026, 11, 22, 21, 0, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
@@ -301,6 +320,112 @@ def test_I2_le_cap_du_repli_ne_recoit_aucun_fetteur_capable_de_lire_le_reseau(
         assert run is tapis_cap_livraisons.fetcher_hors_reseau, \
             "le cap du repli ne doit recevoir que le fetteur INERTE"
         assert run is not None, "run=None lierait le fetteur reel du depot"
+
+
+# --- I1 et I2 -- version ETAT (le curseur, le cycle, les deux classes) ---------
+
+def _pool_deux_classes(grains: int = 40, conteneurs: int = 4) -> list[dict]:
+    """Un pool synthetique qui contient les DEUX classes du lot.
+
+    Les conteneurs **partagent** le lot avec les grains (un creneau chacune) :
+    un pool qui ne contient qu'une des deux classes ne teste pas l'arithmetique
+    du partage -- le compte faux y tombe juste. C'est le piege qui a laisse
+    passer le defaut du 26/11 (115 issues sur 558 jamais servies).
+    """
+    pool = [_meta(3000 + k,
+                  cree=(NOW - timedelta(days=40 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+            for k in range(grains)]
+    pool += [_meta(3500 + k, titre=f"Famille {k}", labels=("epic",),
+                   cree=(NOW - timedelta(days=40 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+             for k in range(conteneurs)]
+    return pool
+
+
+def _ecrire_cache(tmp_path, monkeypatch, pool: list[dict]) -> None:
+    """Le cache local que le repli lit quand le reseau est tombe."""
+    lecture = gh_bulk.Lecture(
+        issues=[_issue(m["number"], m["title"], m["created_at"],
+                       labels=tuple(m["labels"])) for m in pool],
+        prs=[], citations={}, lu_a="2026-11-22T20:00:00Z", secondes=0.1, appels=1)
+    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
+
+
+def test_I2_le_cycle_annonce_par_le_repli_est_le_cycle_reel(tmp_path, monkeypatch):
+    """I2, version ETAT : le cycle que le repli ANNONCE est le cycle reel.
+
+    Les conteneurs **partagent le lot** : la tranche primaire des grains vaut
+    `taille - quota` (6 pour une taille demandee de 8), pas `taille`. Un repli
+    qui compte ses blocs avec la taille **demandee** annonce un cycle plus
+    COURT que le cycle reel : le curseur reboucle avant la fin du pool, et la
+    queue de l'ordre d'age n'est jamais servie -- mesure du 26/11 sur le pool
+    reel : **115 issues sur 558 jamais servies** (PR #28768).
+
+    Le contrat tient en une egalite : le nombre de blocs annonce par le repli
+    est le nombre de blocs que la rotation declare. Deux versions du meme
+    calcul, c'est une derive qui attend.
+
+    Le pool contient les **deux classes** (40 grains + 4 conteneurs) : sans
+    conteneur, le compte faux tombe juste et le test ne voit rien.
+    """
+    pool = _pool_deux_classes()
+    _ecrire_cache(tmp_path, monkeypatch, pool)
+
+    vus: set[int] = set()
+    tours = 0
+    while len(vus) < len(pool) and tours < 20:
+        rapport, code = tapis_leger.tirage(LANE, 8, NOW, 45, f"graine-{tours}",
+                                           Path("."), _run_casse())
+        assert code == 0, "le repli chronologique rend une file, pas un echec"
+        numeros = [g["numero"] for g in rapport["grains"]]
+        assert numeros, "chaque tour du repli rend une file non vide"
+        annonce = rapport["repli"]["blocs"]
+        reel = rapport["fenetre"]["blocs"]
+        assert annonce == reel, (
+            f"le repli annonce {annonce} blocs, le cycle reel en fait {reel} : "
+            "le curseur reboucle avant la fin du pool et la queue de l'ordre "
+            "d'age n'est jamais servie")
+        vus.update(numeros)
+        tours += 1
+    assert vus == {m["number"] for m in pool}, \
+        "le cycle du repli doit couvrir TOUTES les issues ouvertes, sans en sauter"
+
+
+def test_I1_le_repli_garde_un_curseur_par_lane_et_ne_vide_pas_la_file(
+        tmp_path, monkeypatch):
+    """I1, version ETAT : la file d'une lane ne se vide pas, et chaque lane a
+    son propre curseur.
+
+    Le curseur du repli est un fichier PAR LANE : deux lanes qui se disputent
+    le meme cache ne se volent pas leurs blocs. Une lane servie ne prive pas la
+    voisine de sa file -- c'est le sens exact de l'invariant I1 (« quelle que
+    soit l'occupation des autres lanes »).
+    """
+    pool = _pool_deux_classes()
+    _ecrire_cache(tmp_path, monkeypatch, pool)
+
+    rapport_lane, code = tapis_leger.tirage(LANE, 8, NOW, 45, "graine-a",
+                                             Path("."), _run_casse())
+    assert code == 0
+    assert rapport_lane["grains"], "la lane doit obtenir une file non vide"
+    rapport_voisine, code = tapis_leger.tirage(VOISINE, 8, NOW, 45, "graine-b",
+                                                Path("."), _run_casse())
+    assert code == 0
+    assert rapport_voisine["grains"], "la voisine doit obtenir une file non vide"
+
+    # Les curseurs sont distincts : la voisine n'a pas herite de la position
+    # de la lane, et les deux fichiers existent.
+    assert rapport_lane["repli"]["curseur"] == 0
+    assert rapport_voisine["repli"]["curseur"] == 0, \
+        "la voisine a son propre curseur : elle ne demarre pas a la position de la lane"
+    assert tapis_repli.curseur(tmp_path, LANE) == 1
+    assert tapis_repli.curseur(tmp_path, VOISINE) == 1
+
+    # Et la file ne se vide pas : un nouveau tour rend encore des grains.
+    rapport, code = tapis_leger.tirage(LANE, 8, NOW, 45, "graine-c", Path("."),
+                                       _run_casse())
+    assert code == 0
+    assert rapport["grains"], "la file d'une lane ne se vide pas tant que le pool est ouvert"
 
 
 # --- I3 -- l'autonomie de la lane ----------------------------------------------
