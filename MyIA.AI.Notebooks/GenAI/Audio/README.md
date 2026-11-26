@@ -41,11 +41,27 @@ Audio/
 └── 06-Diffusion-SOTA/ # AudioLDM et HiFi-GAN pré-entraînés, comparaison A/B
 ```
 
+Chaque dossier de niveau a sa page de présentation (`README.md`), qui présente ses carnets un par un et remonte vers cette page. Celle-ci garde la vue d'ensemble de la série ; la page du dossier développe ce que les tableaux de la section suivante ne peuvent que résumer — prérequis propres au niveau, progression conseillée, concepts clés — ou bien, pour le niveau 02, les sous-séries d'Applications et les blocs 05 et 06, propose un parcours de lecture en trois étages : Découverte, Pratique, Recherche.
+
+| Dossier | Page de présentation | Ce qu'elle développe |
+|---------|----------------------|----------------------|
+| 01-Foundation | [Bases Speech & Audio](01-Foundation/README.md) | Prérequis du niveau, progression recommandée, points clés |
+| 02-Advanced | [Audio avancé : voix, musique, effets sonores et séparation](02-Advanced/README.md) | Parcours par famille (voix, musique, effets sonores, séparation, bruitages, compréhension), installation et limites |
+| 03-Orchestration | [Multi-modèles & Temps réel](03-Orchestration/README.md) | Concepts clés et architecture des pipelines |
+| 04-Applications | [Cas d'usage production](04-Applications/README.md) | Les trois sous-séries et la correspondance entre les deux numérotations de phases de l'audiobook |
+| 04-Audiobook | [Audiobook : du texte à la voix](04-Applications/04-Audiobook/README.md) | La fabrication d'un audiobook, de la lecture du texte à l'assemblage |
+| 04-Voix | [Voix : comparer, distribuer et évaluer](04-Applications/04-Voix/README.md) | Comparaison des moteurs TTS, choix d'une voix par personnage, évaluation de l'écoute |
+| 04-Musique | [Musique : comprendre, transcrire et séparer](04-Applications/04-Musique/README.md) | Représentations et transcription symbolique, méthodes classiques, séparation des sources et étalonnage de sa mesure |
+| 05-Diffusion-from-scratch | [Diffusion audio — construire les briques](05-Diffusion-from-scratch/README.md) | La représentation latente, le processus de débruitage et le rôle du vocodeur |
+| 06-Diffusion-SOTA | [Diffusion audio — comparer les modèles SOTA](06-Diffusion-SOTA/README.md) | AudioLDM, HiFi-GAN et leur comparaison, à la suite des implémentations du bloc 05 |
+
 ## Progression par niveau
 
 ### 01-Foundation - Bases Speech & Audio
 
 Avant de produire un podcast, il faut maîtriser les deux briques de base : la synthèse vocale (TTS) pour générer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immédiates), puis passe en local GPU pour l'autonomie et le contrôle fin. À la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole.
+
+Prérequis, progression recommandée et points clés de ce niveau : [01-Foundation/README.md](01-Foundation/README.md).
 
 La première brique est le signal lui-même : un tableau d'amplitudes échantillonné dans le temps. Le notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb) charge un échantillon avec `librosa` et en trace la forme d'onde, révélant la structure alternée de silence et de parole :
 
@@ -118,6 +134,8 @@ La séparation de sources en est l'exemple le plus visuel : plutôt que de rég�
 
 Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 réalise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps réel pour les interactions live. Le TTS streaming local (03-4) ajoute la brique sans dépendance cloud : le moteur Kokoro servi par le framework pipecat, mesuré en débit (RTF) et en latence premier audio (TTFA). Le notebook 03-5 expose la transcription, la synthèse et l'analyse comme outils du protocole MCP, et mesure le choix d'outils d'un agent réel.
 
+Concepts clés et architecture des pipelines : [03-Orchestration/README.md](03-Orchestration/README.md).
+
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [03-1-Multi-Model-Audio-Comparison](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) | Benchmark STT et TTS | Mixed | ~12 GB |
@@ -131,6 +149,8 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels. 04-14 rend le voice leading en audio GenAI, et 04-15 ouvre la voie compréhension musicale de la famille YuE2 avec les embeddings MERT2. 04-16 ouvre un axe différent : la **transcription** audio vers partition ABC éditable (SheetSage2), comparée à une vérité-terrain construite puis rebouclée vers l'audio par resynthèse. 04-18 prolonge cette transcription au niveau de la **note** : basic-pitch (Spotify, ICASSP 2022, export ONNX) détecte onset, hauteur et durée de chaque note, avec rappel/précision mesurés sur vérité-terrain synthétique, sur CPU seul. 04-17 pose le socle **classique** du MIR — beat tracking, tempo, tonalité Krumhansl–Schmuckler, accords par templates, avec librosa — le signal et les statistiques qui ont précédé les modèles neuronaux de 04-15 et 04-16. 04-19 referme la boucle d'**évaluation** subjective : le protocole d'écoute (ITU-T P.800) et l'agrégateur MOS que la grille de 04-7 laissaient ouverts. 04-20 ferme la série en **mesurant** la séparation de sources : trois générations de Demucs (v3, v4, v4 fine-tuné par source) comparées sur une piste MUSDB18 à stems de référence — SDR par stem, témoin négatif et cohérence d'énergie. 04-21 en fait la **contre-épreuve** : au lieu de demander quel modèle sépare le mieux, il mesure le point zéro de la métrique SI-SDR sur un mélange dont la vérité est exacte par construction (deux stems studio additionnés à gains choisis), avec le mélange lui-même comme lot de contrôle et le ratio d'énergie comme levier.
 
 Le dossier est rangé en trois sous-séries — [`04-Audiobook/`](04-Applications/04-Audiobook/) pour la chaîne de production, [`04-Voix/`](04-Applications/04-Voix/) pour la voix mesurée, [`04-Musique/`](04-Applications/04-Musique/) pour le signal musical ; les workflows généraux et le rendu voice-leading restent à sa racine. Les carnets ci-dessous gardent leur numéro : c'est le sous-répertoire qui porte le regroupement. Structure et table de correspondance des phases : [04-Applications/README.md](04-Applications/README.md).
+
+Chaque sous-série a de plus sa propre page, en parcours à trois étages (Découverte, Pratique, Recherche) : [Audiobook — du texte à la voix](04-Applications/04-Audiobook/README.md) pour la chaîne de production, [Voix — comparer, distribuer et évaluer](04-Applications/04-Voix/README.md) pour la voix mesurée, [Musique — comprendre, transcrire et séparer](04-Applications/04-Musique/README.md) pour le signal musical.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -167,6 +187,8 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 
 Ce bloc existe pour une raison précise : dans [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb), on écrit `MusicGen.generate(...)` et on obtient de la musique — sans voir ce qui se passe. Ici, la même famille de modèles est réécrite à la main, sans `diffusers`, sans `TTS`, sans `audiocraft` : la diffusion latente d'un côté, le vocodeur adversarial de l'autre.
 
+Parcours de lecture de ce bloc, de la représentation latente au vocodeur : [05-Diffusion-from-scratch/README.md](05-Diffusion-from-scratch/README.md).
+
 | Notebook | Contenu | Moteur |
 |----------|---------|--------|
 | [05-1-AudioDiffusion-Latent-From-Scratch](05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb) | Encodeur latent, U-Net audio à auto-attention temporelle, ordonnanceur DDPM appliqué aux latents, décodeur — la pile complète en ~62 000 paramètres entraînés en 40 s sur CPU, avec deux frontières annoncées plutôt que tues | PyTorch + torchaudio, CPU ou GPU local |
@@ -175,6 +197,8 @@ Ce bloc existe pour une raison précise : dans [02-3](02-Advanced/02-3-MusicGen-
 ### 06-Diffusion-SOTA - Le pendant industriel, et la comparaison
 
 Le deuxième bloc pose aux mêmes problèmes les moteurs pré-entraînés, et mesure ce que l'abstraction achète — puis ce qu'elle cache. Les témoins et la métrique sont ceux du bloc 05, sans quoi l'écart mesuré ne voudrait rien dire.
+
+Parcours de lecture de ce bloc, qui fait suite aux implémentations du bloc 05 : [06-Diffusion-SOTA/README.md](06-Diffusion-SOTA/README.md).
 
 | Notebook | Contenu | Moteur |
 |----------|---------|--------|
@@ -395,6 +419,8 @@ Les notebooks 04-6 à 04-13 forment un pipeline séquentiel qui transforme un te
 7. **04-13 FishAudio S2-Pro** : variante avec 29 tags prosodiques officiels (meilleure qualité).
 
 Les notebooks 04-6 (pipeline orchestrateur) et 04-1 (narration éducative) sont des entrées plus simples pour découvrir le workflow.
+
+La page de la sous-série donne à chaque carnet sa place dans ce parcours : [Audiobook — du texte à la voix](04-Applications/04-Audiobook/README.md).
 
 ## Renumérotation narrative (audit #5081 → [#7597](https://github.com/jsboige/CoursIA/issues/7597) — verdict **NO-RENUMBER**)
 
