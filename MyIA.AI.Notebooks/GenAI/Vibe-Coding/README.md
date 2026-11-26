@@ -198,6 +198,46 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 
 **Côté pédagogique** : ce pattern montre qu'un « vibe-coding » professionnel n'est pas la délégation totale à un agent pendant une session : c'est l'orchestration de plusieurs agents, sur plusieurs machines, avec gouvernance explicite. C'est aussi une bonne introduction aux systèmes multi-agents (un coordinateur, N workers, une mémoire partagée).
 
+### Voir le dépôt vivre — animation Gource de l'historique
+
+Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prête à une **animation [Gource](https://gource.io/)** : le dépôt comme arbre qui pousse, chaque commit est une étincelle sur un fichier. C'est le même harnais que vous venez de lire — vu de l'extérieur, dans le temps.
+
+**Accès** : la vidéo (`gource-coursia-history.mp4`) est stockée **hors dépôt** — une vidéo de plus de 512 Ko n'entre pas dans le dépôt. Elle vit dans le Google Drive du mainteneur, dossier `MyIA/IA/CoursIA-artefacts/` (demander l'accès au mainteneur pour la consulter).
+
+**Ce qu'elle montre** : l'arborescence réelle du dépôt telle que git la connaît, ses commits réels (2022-08-19 → 2026-11-24), et les auteurs git tels qu'ils sont enregistrés dans l'historique public.
+
+**Ce qu'elle ne montre pas** (bornes à garder en tête) :
+
+- Gource ne distingue pas une contribution humaine d'une contribution agentique : sous un compte git partagé, les deux apparaissent mêlées.
+- Les **sous-modules** (Z3.Linq, Argumentum, …) apparaissent comme un seul fichier (le *gitlink*) : leur historique interne ne se déploie pas dans l'animation.
+- Un commit est un événement git, pas une mesure de valeur pédagogique.
+
+**Jalons de l'historique** (date du premier commit touchant chaque périmètre, lue dans `git log`) :
+
+| Date | Jalon |
+|------|-------|
+| 2022-08-19 | Premier commit du dépôt |
+| 2024-05-14 | Premier carnet Jupyter |
+| 2024-11-18 | Première série Search / SMT |
+| 2025-01-31 | Première série GenAI |
+| 2026-01-23 | Première preuve Lean |
+| 2026-01-27 | Première série GameTheory |
+| 2026-02-02 | Premier projet QuantConnect |
+| 2024-05-14 | Premier fichier C# / .NET |
+
+**Comment la reproduire** (procédure reproductible) :
+
+1. **Prérequis** : [Gource 0.53](https://github.com/acaudwell/Gource/releases/tag/gource-0.53) (archive `win64` : le binaire + ses DLLs, à dézipper dans un dossier) et **ffmpeg** dans le PATH ; un clone **complet** du dépôt (pas shallow — Gource lit tout l'historique).
+2. **Rendu** (depuis la racine du clone ; `-s 0.25` = 0,25 s de vidéo par jour d'historique, l'auto-skip de Gource compresse les périodes sans commit) :
+
+   ```bash
+   gource -s 0.25 -r 30 --output-ppm-stream - . \
+     | ffmpeg -y -r 30 -f image2pipe -vcodec ppm -i - -b:v 4000k gource-coursia-history.mp4
+   ```
+
+3. **Mesure de référence** : la vidéo fait **3 min 29** (119 Mo) ; le rendu complet (plus de 22 000 commits) a tourné en arrière-plan en ~20 min sur une machine du cluster (mesuré le 24/11/2026).
+4. **Note Gource** : le flag `-a` n'est **pas** un booléen dans la 0.53 — c'est `--auto-skip-seconds SECONDS` (actif par défaut) ; il n'y a pas de `--auto-skip-times` dans ce binaire.
+
 ### Références croisées
 
 - Pour aller plus loin sur ce qui précède (anatomie d'un cycle worker `/continue`, garde-fous auto-chargés, situation dans le parcours pédagogique) : [CLUSTER-ORCHESTRATION.md](docs/CLUSTER-ORCHESTRATION.md)
