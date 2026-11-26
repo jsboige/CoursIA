@@ -42,14 +42,14 @@ sont un regroupement de lecture du générateur, pas une donnée de la taxonomie
 ```{mermaid}
 flowchart TB
   A["Carnets 01–04<br/>4 carnets"]
-  B["Carnets 05–09<br/>5 carnets"]
+  B["Carnets 05–09<br/>4 carnets"]
   C["Carnets 10–20<br/>11 carnets"]
   A -->|1 arête| B
   A -->|22 arêtes| C
 ```
 
 Le nombre porté par une flèche compte les arêtes carnet→carnet entre deux
-plages ; les arêtes internes restent dans les détails (**Carnets 01–04** 5 arête(s) · **Carnets 05–09** 5 arête(s)).
+plages ; les arêtes internes restent dans les détails (**Carnets 01–04** 5 arête(s) · **Carnets 05–09** 3 arête(s)).
 
 ### Détail — Carnets 01–04
 
@@ -82,22 +82,18 @@ flowchart TB
     n01("04 — Théorie des tableaux Z3")
     n02["05 — Tableaux imbriqués et grilles 2D"]
     n03["06 — Planificateur de repas : modélisation"]
-    n04["07 — Planificateur de repas : données externes"]
-    n05["08 — Planificateur de repas : capstone patient"]
-    n06["09 — Planificateur de repas : convergence à l'échelle"]
+    n04["08 — Planificateur de repas : capstone patient"]
+    n05["09 — Planificateur de repas : convergence à l'échelle"]
   end
   n01 --> n02
   n02 --> n03
   n03 --> n04
-  n03 --> n05
   n04 --> n05
-  n05 --> n06
   click n01 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.html" "Ouvrir le carnet"
   click n02 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.html" "Ouvrir le carnet"
   click n03 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.html" "Ouvrir le carnet"
-  click n04 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.html" "Ouvrir le carnet"
-  click n05 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.html" "Ouvrir le carnet"
-  click n06 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.html" "Ouvrir le carnet"
+  click n04 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.html" "Ouvrir le carnet"
+  click n05 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.html" "Ouvrir le carnet"
 ```
 
 ### Détail — Carnets 10–20
@@ -157,7 +153,7 @@ flowchart LR
   click n13 href "../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/20_Theorem_Rewriters.html" "Ouvrir le carnet"
 ```
 
-Mesuré à la génération : **33 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 427. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
+Mesuré à la génération : **33 arêtes** carnet→carnet sur **20 carnets**, 0 référence(s) de prérequis non résolue(s) sur 1079. Chaque flèche se lit « le carnet source est un prérequis du carnet cible » ; le nombre d'arêtes suit la taxonomie, pas un dessin.
 Dans les détails, un nœud **arrondi** est un carnet d'une autre plage, rappelé
 comme entrée : sans lui la plage paraîtrait sans prérequis.
 
@@ -171,7 +167,7 @@ comme entrée : sans lui la plage paraîtrait sans prérequis.
 | [Théorie des tableaux Z3](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.html) | Théorie des tableaux : axiomes de McCarthy |
 | [Tableaux imbriqués et grilles 2D](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.html) | Tableaux imbriqués et grilles 2D (Theorem<Grid>) |
 | [Planificateur de repas : modélisation](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.html) | Modélisation d'un planificateur de repas |
-| [Planificateur de repas : données externes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.html) | Données réelles : jointure Ciqual × RecipeML |
+| [Planificateur de repas : données externes](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-CSharp.html) | Données réelles : jointure Ciqual × RecipeML |
 | [Planificateur de repas : capstone patient](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.html) | Capstone : restrictions d'un patient |
 | [Planificateur de repas : convergence à l'échelle](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.html) | Encodage et tractabilité à l'échelle |
 | [Génération de témoins et automates](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.html) | Génération de témoins et automates |
@@ -194,17 +190,23 @@ taxonomie cite. Le dénominateur est l'inventaire mesuré (`*.ipynb` sous le
 dossier de la série), jamais la liste que la taxonomie déclare : une série qui
 ne cite qu'une partie de ses carnets reste partielle même si sa liste est courte.
 
+Ce bloc suit l'inventaire du disque : il est régénéré avant chaque rendu du
+site, et la garde de fraîcheur de la PR compare le reste de la page.
+<!-- COVERAGE-INVENTAIRE-DISQUE:BEGIN -->
+
 | Série | Notions citées | Carnets cités / réels | Couverture |
 |---|---|---|---|
-| Compression | 18 / 18 | 7 / 17 | 41 % |
-| GameTheory | 28 / 28 | 9 / 170 | 5 % |
-| IIT | 28 / 28 | 10 / 110 | 9 % |
-| Planners | 111 / 111 | 26 / 27 | 96 % |
-| Probas | 22 / 22 | 6 / 21 | 28 % |
-| Search | 33 / 33 | 6 / 57 | 10 % |
-| SymbolicAI (`semanticweb`) | 23 / 23 | 8 / 29 | 27 % |
+| Compression | 136 / 136 | 21 / 21 | complète |
+| GameTheory | 182 / 182 | 50 / 217 | 23 % |
+| IIT | 28 / 28 | 10 / 119 | 8 % |
+| Planners | 111 / 111 | 26 / 29 | 89 % |
+| Probas | 135 / 135 | 32 / 99 | 32 % |
+| Search | 121 / 121 | 26 / 201 | 12 % |
+| SymbolicAI (`semanticweb`) | 23 / 23 | 8 / 32 | 25 % |
 | SymbolicAI (`tweety`) | 21 / 21 | 5 / 39 | 12 % |
-| Z3-Linq2Z3 *(pilote)* | 21 / 21 | 20 / 20 | complète |
+| Z3-Linq2Z3 *(pilote)* | 21 / 21 | 20 / 68 | 29 % |
+
+<!-- COVERAGE-INVENTAIRE-DISQUE:END -->
 
 ## Liens inter-séries
 

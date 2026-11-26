@@ -41,8 +41,9 @@ Rejeu QuantConnect, en deux temps autour du MCP (l'API QC ne s'appelle que par l
    nom du backtest, plage du graphique a lire ;
 2. l'operateur pousse ces fichiers par le MCP, lance le backtest avec ces parametres, attend
    `completed: true`, puis enregistre la sortie de `read_backtest` et le graphique `shadow` lu
-   par `read_backtest_chart` (#18939) dans le dossier du plan ;
-3. `ingest-qc` relit les deux fichiers et rend la meme ligne de CSV que le rejeu local.
+   par `read_backtest_chart` (#18939) dans le dossier du plan, avec le graphique `Benchmark`
+   qui temoigne de la publication des seances (#27482) ;
+3. `ingest-qc` relit ces fichiers et rend la meme ligne de CSV que le rejeu local.
 
 Point d'entree d'une candidate QC : `chemin/du/projet:identifiant_du_projet_QC`. Contrat de la
 candidate : voir `shadow/qc_example/main.py` et `shadow/README.md`.
@@ -275,6 +276,24 @@ QC_FILE_LIMIT = 64000   # caracteres par fichier de projet QC
 # cloture d'un graphique complet est toujours plus recente que cela avant la date
 # de passage (mesure : fs774 termine un vendredi pour un passage le mardi, 4 jours).
 QC_MAX_END_GAP_DAYS = 7
+# Temoin de la publication des seances : la cloture du benchmark, lue sur le graphique
+# du meme nom. Lean recopie vers l'avant une barre journaliere qui n'est pas encore
+# publiee, et le backtest mesure alors des seances plates (backtest 273d04de du
+# 2026-11-20 : les barres du mercredi 18 et du jeudi 19 n'etaient pas publiees, passage
+# accepte puis retire de #27480). Le graphique porte un point par jour de calendrier,
+# a minuit New York, et le point du jour J porte la cloture de la derniere seance
+# terminee : celui du samedi 14 novembre porte celle du vendredi 13, il n'y a pas de
+# cloture du samedi. Un point repete donc celui de la veille apres un samedi, un
+# dimanche ou un jour de marche ferme -- cas sains -- ou parce que la barre de la veille
+# n'etait pas publiee. Ne comptent que les seances de semaine strictement avant la
+# date du passage. Une seule repetition reste admise : c'est aussi la forme d'un jour
+# ferie la veille du passage, que rien ici ne distingue d'une barre en retard d'un jour.
+# Deux ecarts entre points ne se lisent pas de meme : un week-end connu, qui ne laisse
+# passer que des samedis et des dimanches (avec ou sans point), continue la suite ; un
+# jour de semaine sans point est une rupture de couverture, les seances du trou ne se
+# lisent pas et la suite s'interrompt.
+QC_BENCHMARK_CHART = "Benchmark"
+QC_FROZEN_SESSIONS = 2
 
 
 def qc_entrypoint(candidate: dict) -> tuple[str, int]:
@@ -325,7 +344,8 @@ def plan_qc(repo: Path, candidate: dict, pass_date: str, out_dir: Path) -> dict:
                            **{k: str(v) for k, v in candidate["params"].items()}},
             "backtest_name": f"shadow-{candidate['id']}-{pass_date}",
             "chart": QC_CHART, "chart_start": _unix(candidate["frozen_on"]),
-            "chart_end": _unix(pass_date) + 86400, "chart_count": span + 10}
+            "chart_end": _unix(pass_date) + 86400, "chart_count": span + 10,
+            "benchmark_chart": QC_BENCHMARK_CHART}
     (target / "plan.json").write_text(json.dumps(plan, indent=2) + "\n", encoding="utf-8")
     return plan
 
@@ -334,7 +354,7 @@ def _chart_points(chart: dict, key: str) -> list[tuple[int, float]]:
     """Points [t, v], [t, o, h, l, c] (cloture) ou {x, y} d'une serie, tries par date."""
     s = (chart.get("series") or {}).get(key)
     if not s or not s.get("values"):
-        raise ValueError(f"chart {QC_CHART!r}: missing series {key!r}")
+        raise ValueError(f"chart {(chart.get('name') or QC_CHART)!r}: missing series {key!r}")
     pts = [(v["x"], v["y"]) if isinstance(v, dict) else (v[0], v[-1]) for v in s["values"]]
     return sorted(pts)
 
@@ -405,9 +425,119 @@ def qc_daily_equity(chart: dict,
     return dates, [v for _, _, v in points]
 
 
-def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict,
+def _missing_weekdays(first: dt.date, day: dt.date) -> list[str]:
+    """Jours de semaine sans point entre deux dates consecutives du graphique."""
+    return [(first + dt.timedelta(days=k)).isoformat()
+            for k in range(1, (day - first).days)
+            if (first + dt.timedelta(days=k)).weekday() < 5]
+
+
+def qc_frozen_sessions(benchmark: dict, pass_date: str) -> list[str]:
+    """Seances de fin dont la barre du benchmark n'etait pas publiee au passage.
+
+    Le temoin est cote par la plateforme, pas par la candidate : une cloture qui ne bouge
+    pas alors que le marche cote n'est pas un portefeuille en liquidites, c'est une barre
+    que Lean a recopiee. Le point du jour J porte la cloture de la veille (voir
+    `QC_BENCHMARK_CHART`) : un point qui repete celui de la veille est attribue a la
+    seance de la veille, et la fonction ne rend que la suite consecutive qui termine la
+    lecture -- une repetition isolee plus tot n'affecte pas le passage.
+
+    Ne comptent que les seances de semaine strictement anterieures a `pass_date`. Un
+    ecart entre deux points qui ne laisse passer que des samedis et des dimanches est un
+    week-end connu : le point d'apres porte toujours la cloture de la veille, la suite
+    continue, que le week-end porte des points ou non. Un jour de semaine sans point est
+    une rupture de couverture : ses seances ne se lisent pas. A travers une rupture, seul
+    le groupe se lit -- bornes egales = toutes figees, bornes differentes = au moins une
+    publiee sans dire laquelle, chaque seance du trou restant alors non lue ; une seule
+    seance dans la fenetre est tranchee par la difference. Deux points le meme jour
+    (arret en cours de journee) ne sont compares a rien.
+
+    Une seance non lue dans la fin rend celle-ci indecidable : le graphique n'y etablit
+    ni la consecutivite des seances figees, ni la publication des seances qu'il ne lit
+    pas. La fonction leve alors `ValueError` -- le temoin est incomplet, il ne se compte
+    pas -- sauf si aucun scenario possible n'atteint le seuil. Une suite etablie d'au
+    moins `QC_FROZEN_SESSIONS` seances figees qui termine la lecture est rendue telle
+    quelle : elle suffit au refus.
+    """
+    closes = sorted({(_session(t), float(v)) for t, v in
+                     _chart_points(benchmark, QC_BENCHMARK_CHART)})
+    limit = dt.date.fromisoformat(pass_date)
+    # Statut de chaque seance de semaine anterieure au passage, dans l'ordre
+    # chronologique : "frozen" (la barre n'etait pas publiee), "published" (elle
+    # l'etait), "unread" (le graphique ne la lit pas). `holes` porte, pour une seance non
+    # lue, les jours sans point qui l'expliquent -- vide quand le graphique s'arrete.
+    statuses: list[tuple[str, str]] = []
+    holes: dict[str, list[str]] = {}
+    for (before, previous), (day, close) in zip(closes, closes[1:]):
+        session, following = dt.date.fromisoformat(before), dt.date.fromisoformat(day)
+        if following == session:
+            continue                        # deux points le meme jour : non compares
+        missing = _missing_weekdays(session, following)
+        if not missing:
+            if session.weekday() < 5 and session < limit:
+                statuses.append((before, "frozen" if close == previous else "published"))
+            continue
+        window = [before] + missing
+        sessions = [d for d in window if dt.date.fromisoformat(d).weekday() < 5]
+        scoped = [d for d in sessions if dt.date.fromisoformat(d) < limit]
+        if close == previous:
+            read = "frozen"                    # aucune cloture n'est arrivee dans le trou
+        elif len(sessions) == 1:
+            read = "published"                 # une seule seance a pu faire bouger la cote
+        else:
+            read = "unread"
+        for d in scoped:
+            statuses.append((d, read))
+            if read == "unread":
+                holes[d] = missing
+    # Seances que le graphique ne lit pas parce qu'il s'arrete avant le passage : la
+    # derniere date du graphique attend un point suivant qui n'existe pas, et celles qui
+    # la suivent n'ont aucun point.
+    last = dt.date.fromisoformat(closes[-1][0]) if closes else limit
+    for k in range((limit - last).days):
+        day = last + dt.timedelta(days=k)
+        if day.weekday() < 5:
+            statuses.append((day.isoformat(), "unread"))
+            holes.setdefault(day.isoformat(), [])
+    # Verdict depuis la fin : une seance publiee ferme la suite ; une seance non lue la
+    # rend indecidable, sauf si aucun scenario ne peut atteindre le seuil.
+    trailing: list[str] = []   # seances figees consecutives qui terminent la lecture
+    potential = 0              # plus longue suite qu'un scenario possible etablit
+    unclear = False            # une seance non lue s'est intercalee depuis la fin
+    causes: list[str] = []
+    stops = False
+    for day, read in reversed(statuses):
+        if read == "published":
+            break
+        potential += 1
+        if read == "unread":
+            unclear = True
+            gap = holes.get(day) or []
+            if gap:
+                causes.extend(d for d in gap if d not in causes)
+            else:
+                stops = True
+        elif not unclear:
+            trailing = [day] + trailing
+    if len(trailing) >= QC_FROZEN_SESSIONS:
+        return trailing
+    if potential >= QC_FROZEN_SESSIONS:
+        why = []
+        if causes:
+            why.append(f"no point on {', '.join(causes)}")
+        if stops:
+            why.append(f"the chart stops on {closes[-1][0]}, before the pass date {pass_date}")
+        run = (f"the trailing run ({', '.join(trailing)}) is not established" if trailing
+               else "no trailing run is established")
+        raise ValueError(f"chart {QC_BENCHMARK_CHART!r}: {'; '.join(why)} -- coverage "
+                         f"broken inside the tail: the publication of the sessions there "
+                         f"cannot be read, {run}")
+    return trailing
+
+
+def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict, benchmark: dict,
               series_dir: Path | None = None) -> dict:
-    """Ligne de CSV d'un passage QC, a partir de la sortie de `read_backtest` et du graphique."""
+    """Ligne de CSV d'un passage QC, a partir de `read_backtest` et de ses deux graphiques."""
     if (plan["candidate"], plan["sha"], plan["frozen_on"]) != (
             candidate["id"], candidate["sha"], candidate["frozen_on"]):
         raise ValueError(f"plan does not match the frozen candidate {candidate['id']}")
@@ -442,6 +572,29 @@ def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict,
         raise ValueError(f"{candidate['id']}: last equity close {dates[-1]} is "
                          f"{stale.days} days before the pass date {plan['pass_date']} "
                          f"-- chart truncated or incomplete")
+    # Les dernieres seances sont recentes (controle precedent) mais peuvent n'etre pas
+    # encore publiees : l'equite ne distingue pas une seance plate d'un portefeuille en
+    # liquidites, la cloture du benchmark, si (#27482). Le temoin doit couvrir la fin de
+    # la fenetre : le graphique d'un backtest termine a la date du passage porte un
+    # dernier point au minuit de cette date, apres la derniere cloture tracee (mesure :
+    # backtest 273d04de). Un jour de semaine sans point autour des dernieres seances est
+    # une rupture de couverture : les seances du trou ne se lisent pas, le refus tombe
+    # au nom de la candidate.
+    benchmark_days = sorted({_session(t) for t, _ in
+                             _chart_points(benchmark, QC_BENCHMARK_CHART)})
+    if benchmark_days[-1] < dates[-1]:
+        raise ValueError(f"{candidate['id']}: chart {QC_BENCHMARK_CHART!r} ends on "
+                         f"{benchmark_days[-1]}, before the last close {dates[-1]} -- "
+                         f"truncated or incomplete, the publication of the last sessions "
+                         f"cannot be read")
+    try:
+        frozen = qc_frozen_sessions(benchmark, plan["pass_date"])
+    except ValueError as exc:
+        raise ValueError(f"{candidate['id']}: {exc}") from exc
+    if len(frozen) >= QC_FROZEN_SESSIONS:
+        raise ValueError(f"{candidate['id']}: benchmark bars of the last {len(frozen)} "
+                         f"sessions were not published at the pass date "
+                         f"({', '.join(frozen)}) -- the pass measures flat sessions")
     costs = {}
     for key in ("fees", "turnover"):
         t, v = _chart_points(chart, key)[-1]
@@ -504,7 +657,8 @@ def main(argv: list[str] | None = None) -> int:
 
     g = sub.add_parser("ingest-qc", help="ajouter la ligne d'un passage QC termine")
     g.add_argument("--plan-dir", type=Path, required=True,
-                   help="dossier d'une candidate, avec plan.json, backtest.json et chart.json")
+                   help="dossier d'une candidate, avec plan.json, backtest.json, chart.json "
+                        "et benchmark.json")
     g.add_argument("--series-dir", type=Path, default=None,
                    help="dossier hors depot pour les series journalieres")
 
@@ -535,9 +689,16 @@ def main(argv: list[str] | None = None) -> int:
         if candidate is None:
             print(f"INVALID {plan['candidate']}: not in the registry")
             return 1
+        benchmark = a.plan_dir / "benchmark.json"
+        if not benchmark.is_file():
+            print(f"INVALID {plan['candidate']}: {benchmark.name} is missing from the plan "
+                  f"dir -- read the chart {plan.get('benchmark_chart', QC_BENCHMARK_CHART)!r} "
+                  f"of this backtest first, the pass cannot be checked for unpublished sessions")
+            return 1
         row = ingest_qc(candidate, plan,
                         json.loads((a.plan_dir / "backtest.json").read_text(encoding="utf-8")),
                         json.loads((a.plan_dir / "chart.json").read_text(encoding="utf-8")),
+                        json.loads(benchmark.read_text(encoding="utf-8")),
                         a.series_dir)
         append_row(a.csv, row)
         print(json.dumps(row, ensure_ascii=False))
