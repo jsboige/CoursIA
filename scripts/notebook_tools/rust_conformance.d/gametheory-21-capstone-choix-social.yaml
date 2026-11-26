@@ -9,7 +9,7 @@
 # GameTheory-21-*-CSharp.ipynb ; consigne spec #27965 : jumeau C# aucun).
 # Timeout d'execution (spec #27965) : min(15 x duree du bloc commite, 300 s) --
 # duree mesuree 12.483406 s -> timeout 187 s, kernel rust a cwd = dossier du carnet
-# (les cellules 18/19 lisent game_theory_lean/SocialChoice/ en relatif).
+# (les cellules 18/19 lisent SocialChoice/social_choice_core_lean/SocialChoice/ en relatif).
 - name: "GameTheory-21 Capstone Choix Social"
   family: "GameTheory (SocialChoice capstone)"
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb

@@ -191,13 +191,20 @@ COOPERATIVE_GAMES_DIR = next(
 SHAPLEY_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Shapley.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 
-# Canonical home is game_theory_lean since the #6058 absorption merged
-# (SocialChoice/Arrow+Sen+Voting moved into game_theory_lean on
-# 2026-07-11). The legacy social_choice_lean dir survives as md-only
-# (README/STATUS/NOTICE/LEAN_PREREQUISITES; FORMAL_STATUS removed #9535
-# item 6) — its SocialChoice/*.lean are gone, so deriving VOTING_FILE
-# from it yields a non-existent path (#6248).
+# Canonical home is the autonomous lake GameTheory/SocialChoice/
+# social_choice_core_lean since the T3 descent of #24183 (commit
+# c3b44f61b85, 2026-11-08): the SocialChoice lib follows its consumer
+# notebooks, per the R1 doctrine the user arbitrated on 2026-11-02 ("le site
+# d'un lake suit les carnets qui l'utilisent"). The descent removed
+# SocialChoice/*.lean from game_theory_lean, so deriving VOTING_FILE from the
+# hub now yields a non-existent path — the same failure mode #6248 pinned for
+# the gutted legacy dirs. game_theory_lean stays as the runner-up so a
+# checkout that predates the descent still resolves (that is where #6058 had
+# absorbed SocialChoice/Arrow+Sen+Voting on 2026-07-11). The legacy
+# social_choice_lean dir survives as md-only (README/STATUS/NOTICE/
+# LEAN_PREREQUISITES; FORMAL_STATUS removed #9535 item 6).
 _SOCIAL_CHOICE_CANDIDATES = [
+    _workspace_relative("GameTheory/SocialChoice/social_choice_core_lean"),
     _workspace_relative("GameTheory/game_theory_lean"),
     _workspace_relative("GameTheory/social_choice_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
