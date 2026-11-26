@@ -19,7 +19,11 @@ Ce que fait cet organe, et rien de plus :
    pose deviendrait le dernier evenement humain, et effacerait le veto du
    classificateur). Une LECTURE INCOMPLETE du fil ou des evenements vaut
    veto aussi : rien n'est pose sur une lecture incomplete (reserve du
-   coordinateur du 25/11 sur #28454).
+   coordinateur du 25/11 sur #28454) ;
+6. une lecture INCOMPLETE du **pool** (issues ouvertes ou PRs ouvertes)
+   vaut de meme refus de la voie d'ecriture : ce qui est en cours est
+   INCONNU, pas absent, et la voie `--apply` rend `2` sans rien ecrire
+   (reserve du coordinateur du 26/11 sur #28454).
 
 La decision de cloture reste au coordinateur et a l'adjoint, qui lisent
 les criteres de l'issue (G.9). La marque de la suspicion est une **donnee**
@@ -38,7 +42,6 @@ Usage :
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import subprocess
 import sys
@@ -50,7 +53,12 @@ if str(RACINE / "scripts") not in sys.path:
 
 import candidate_delivered_chemins as chemins  # noqa: E402
 import issue_containers  # noqa: E402
-from candidate_delivered import human_retraction, is_epic, parse_label_events  # noqa: E402
+from candidate_delivered import (  # noqa: E402
+    human_retraction,
+    is_epic,
+    parse_label_events,
+    parse_pages,
+)
 
 #: Le label de l'urne de cloture (la source unique est `tapis_labels`).
 LABEL = "candidate-delivered"
@@ -66,31 +74,58 @@ _REF_RE = re.compile(r"#(\d+)")
 
 
 def _gh_json(args: list[str]) -> object:
-    """Un appel `gh` qui rend du JSON (ou `None` si la reponse est vide)."""
+    """Un appel `gh` qui rend du JSON (ou `None` si la reponse est illisible).
+
+    La sortie peut contenir PLUSIEURS documents JSON : `gh api --paginate`
+    imprime un document PAR PAGE. Les pages sont aplatis par
+    `candidate_delivered.parse_pages` -- sans quoi un fil ou une timeline de
+    deux pages se lisait comme une lecture ratee, alors que GitHub avait
+    repondu correctement (reserve du coordinateur du 26/11 sur #28454).
+    """
     proc = subprocess.run(["gh", *args], capture_output=True, text=True,
                           check=False, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         return None
-    try:
-        return json.loads(proc.stdout or "null")
-    except json.JSONDecodeError:
-        return None
+    return parse_pages(proc.stdout or "")
 
 
-def pool(repo: str, limit: int) -> list[dict]:
-    """Le pool ouvert, avec titre, corps, labels et date de creation."""
+def pool(repo: str, limit: int) -> list[dict] | None:
+    """Le pool ouvert, avec titre, corps, labels et date de creation.
+
+    `None` = LECTURE INCOMPLETE (appel rate, reponse illisible) : le pool est
+    alors INCONNU, pas vide. Une lecture incomplete ne se lit pas comme «
+    aucune issue ouverte » -- ce serait un zero fabriqué.
+    """
     data = _gh_json(["issue", "list", "--repo", repo, "--state", "open",
                      "--limit", str(limit), "--json",
                      "number,title,body,labels,createdAt"])
-    return data if isinstance(data, list) else []
+    if not isinstance(data, list):
+        return None
+    if len(data) >= limit:
+        # Plafond atteint : la lecture est probablement complete, mais on ne
+        # peut pas le distinguer d'une page coupee -- donc inconcluante.
+        return None
+    return data
 
 
-def prs_ouverts(repo: str, limit: int = 300) -> set[int]:
-    """Les numeros d'issue cites par une PR ouverte (le travail en cours)."""
+def prs_ouverts(repo: str, limit: int = 300) -> set[int] | None:
+    """Les numeros d'issue cites par une PR ouverte (le travail en cours).
+
+    `None` = LECTURE INCOMPLETE (appel rate, reponse illisible, ou plafond
+    atteint) : le pool des PRs ouvertes est alors INCONNU, pas vide. Une
+    lecture incomplete ne peut pas se lire comme « aucune PR ouverte » --
+    ce serait soupconner une issue dont le travail est en cours. En mode
+    `--apply`, la voie d'ecriture refuse sur une lecture incomplete
+    (reserve du coordinateur du 26/11 sur #28454).
+    """
     data = _gh_json(["pr", "list", "--repo", repo, "--state", "open",
                      "--limit", str(limit), "--json", "number,title,body"])
+    if not isinstance(data, list):
+        return None
+    if len(data) >= limit:
+        return None
     cites: set[int] = set()
-    for pr in data if isinstance(data, list) else []:
+    for pr in data:
         texte = f"{pr.get('title') or ''}\n{pr.get('body') or ''}"
         cites.update(int(n) for n in _REF_RE.findall(texte))
     return cites
@@ -202,6 +237,31 @@ def main(argv: list[str] | None = None) -> int:
 
     issues = pool(args.repo, args.limit)
     cites_prs = prs_ouverts(args.repo)
+
+    # Une LECTURE INCOMPLETE n'est pas un zero. Le pool des issues ouvertes
+    # et le pool des PRs ouvertes sont les DEUX lectures qui disent ce qui est
+    # en cours : les confondre avec un pool vide ferait soupconner une issue
+    # dont le travail est en cours (fail-OPEN), et ecrire sur une lecture
+    # incomplete est un fail-OPEN de la meme famille. En `--apply`, la voie
+    # d'ecriture REFUSE (reserve du coordinateur du 26/11 sur #28454).
+    lectures_incompletes = []
+    if issues is None:
+        lectures_incompletes.append("pool des issues ouvertes")
+    if cites_prs is None:
+        lectures_incompletes.append("pool des PRs ouvertes")
+    if lectures_incompletes:
+        detail = ", ".join(lectures_incompletes)
+        if args.apply:
+            print(f"[tapis-livraison] LECTURE INCOMPLETE ({detail}) : la voie "
+                  f"--apply n'ecrit rien sur une lecture incomplete. "
+                  f"Ce qui est en cours est INCONNU, pas absent.")
+            return 2
+        print(f"[tapis-livraison] LECTURE INCOMPLETE ({detail}) : le rapport "
+              f"est produit, mais il peut soupconner une issue dont le "
+              f"travail est en cours (ce qui est en cours est INCONNU).")
+        issues = issues or []
+        cites_prs = cites_prs or set()
+
     print(f"[tapis-livraison] repo={args.repo} pool={len(issues)} "
           f"chemins sur main={len(touches)} mode="
           f"{'apply' if args.apply else 'rapport'}")

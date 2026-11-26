@@ -585,8 +585,53 @@ def classify(
 # gh wiring
 # ---------------------------------------------------------------------------
 
+def parse_pages(text: str) -> object | None:
+    """Parse a `gh` stdout that may hold SEVERAL JSON documents.
+
+    ``gh api --paginate`` prints **one JSON document per page**: the output of
+    a two-page thread or timeline is ``[{...}][{...}]``, which is NOT valid
+    JSON. A single ``json.loads`` raised ``Extra data`` there, so a perfectly
+    correct GitHub answer was read as an empty (or failed) read -- a false
+    veto, or a silently skipped timeline (reserve du coordinateur du
+    26/11 sur #28454).
+
+    List pages are concatenated in order; a lone document is returned as-is;
+    an unreadable output returns ``None`` -- never an empty list, which would
+    read as "no result" instead of "unknown".
+    """
+    decoder = json.JSONDecoder()
+    pages: list[object] = []
+    index = 0
+    length = len(text)
+    while index < length:
+        while index < length and text[index].isspace():
+            index += 1
+        if index >= length:
+            break
+        try:
+            document, end = decoder.raw_decode(text, index)
+        except json.JSONDecodeError:
+            return None
+        pages.append(document)
+        index = end
+    if not pages:
+        return None
+    if all(isinstance(page, list) for page in pages):
+        merged: list[object] = []
+        for page in pages:
+            merged.extend(page)  # type: ignore[arg-type]
+        return merged
+    if len(pages) == 1:
+        return pages[0]
+    return None
+
+
 def _gh_json(args: list[str]) -> object:
-    """Run a gh command, return parsed JSON (or None if empty). Raise on failure."""
+    """Run a gh command, return parsed JSON (or None if empty). Raise on failure.
+
+    The payload may hold SEVERAL JSON documents (``gh api --paginate`` prints
+    one per page): they are flattened by :func:`parse_pages`.
+    """
     proc = subprocess.run(
         ["gh", *args],
         capture_output=True, text=True, check=False, encoding="utf-8",
@@ -595,7 +640,13 @@ def _gh_json(args: list[str]) -> object:
         raise RuntimeError(f"gh failed ({proc.returncode}): {proc.stderr.strip() or proc.stdout.strip()}")
     if not proc.stdout.strip():
         return None
-    return json.loads(proc.stdout)
+    parsed = parse_pages(proc.stdout)
+    if parsed is None and proc.stdout.strip() != "null":
+        # Un JSON illisible reste une ERREUR ici : cet organe tourne en CI et
+        # doit echouer bruyamment plutot que de lire « rien » dans une reponse
+        # illisible. Le cas « null » est une reponse legitime, pas une panne.
+        raise RuntimeError(f"gh returned an unreadable payload: {proc.stdout.strip()[:200]}")
+    return parsed
 
 
 # Plafond de lecture de la liste ouverte. Ce n'est pas un reglage de confort :
@@ -830,12 +881,14 @@ def cross_refs_via_timeline(repo: str, number: int) -> list[dict]:
     dry-run with a full-scope token found 64). The timeline endpoint does not
     have that failure mode: it is the same auth path as ``issue view``.
 
-    ``gh api --paginate`` walks the Link headers and merges the raw timeline
-    into ONE clean JSON array. A ``-q`` filter is deliberately NOT used here:
-    with ``--paginate``, gh applies the query **per page** and prints each
-    page's result separately (e.g. ``[page1 events][page2 events]``), which is
-    invalid JSON and made ``json.loads`` raise ``Extra data`` on the largest
-    timelines (#10488, 102 events) -- silently SKIPping them as no_delivery.
+    ``gh api --paginate`` walks the Link headers and prints **one JSON
+    document per page** (e.g. ``[page1 events][page2 events]``) -- that
+    concatenation is NOT valid JSON, and a single ``json.loads`` raised
+    ``Extra data`` on the largest timelines (#10488, 102 events), silently
+    SKIPping them as no_delivery. The pages are now flattened by
+    :func:`parse_pages`. A ``-q`` filter is deliberately NOT used here:
+    with ``--paginate``, gh applies the query **per page** too, so the filter
+    would be applied page by page rather than over the whole timeline.
     The event-type filter is applied in Python instead. :func:`_parse_cross_ref_events`
     then extracts the PR number and merge timestamp from each event's
     ``source.issue`` payload.
