@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-23
+> REFERENCE — vivante — dernière révision 2026-11-26
 
 # ICT — Index de la documentation de cadrage et de synthèse
 
