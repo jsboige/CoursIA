@@ -2,7 +2,7 @@
 
 > **Bornage strict** : ce ledger mesure `origin/main` au **2026-11-26**, tête `3b466e9ccb`. Périmètre = les **145 carnets `GameTheory-*` de la racine** `MyIA.AI.Notebooks/GameTheory/`, dans l'ordre des noms de fichiers — c'est l'ordre de la série. Les **73 carnets des sous-dossiers** (`SocialChoice` 25, `Dynamics` 26, `Metajeux` 16, `Coalitions` 5, `gateway` 1) sont gradués eux aussi (fournée E) mais forment des séries satellites : ils restent hors de cette mesure d'ordre. Ce ledger **ne renumérote rien, ne régrada rien, ne touche aucun carnet** — il propose. Il mesure l'ordre des **niveaux** et ce que les carnets **déclarent** ; il n'est pas un audit des prérequis des blocs 06 à 23 (limite au §2.4).
 >
-> **Révision du 2026-11-26 (second passage)**. La version du matin mesurait la série sur les sept fichiers de gradation du dépôt : 91 lignes, 79 noms de carnets, échelle en quatre mots, 79 carnets couverts sur 145. Le fil de l'issue porte une seconde passe, postérieure et complète : trois niveaux, un critère falsifiable, les 144 carnets de la racine alors présents. **Tout est re-mesuré sur cette passe.** Les chiffres du matin (les deux mesures, la bande 2,50–3,29, les exceptions des blocs 14 et 15, le bilan 11 → 7, les gestes G1 à G9) ne sont pas comparables et ne sont pas reproduits.
+> **Révision du 2026-11-26 (second passage)**. La version du matin mesurait la série sur les sept ledgers de gradation du dépôt : 79 noms de carnets, échelle en quatre mots, 79 carnets couverts sur 145. Le fil de l'issue porte une seconde passe, postérieure et complète : trois niveaux, un critère falsifiable, les 144 carnets de la racine alors présents. **Tout est re-mesuré sur cette passe.** Les chiffres du matin (les deux mesures, la bande 2,50–3,29, les exceptions des blocs 14 et 15, le bilan 11 → 7, les gestes G1 à G9) ne sont pas comparables et ne sont pas reproduits.
 
 ## Origine
 
@@ -22,7 +22,7 @@ Demande user fondatrice (commentaire `15586`, 2026-09-11T13:43Z) : « la séquen
 | Critère | cinq paliers nommés et définis par leurs carnets (Entrée, Cadre formel, Application, Twins enrichis et géométrie ordinale, Murs), sans critère par palier | publié et falsifiable (table ci-dessous) |
 | Racine couverte | 79 carnets sur 145 | 144 sur 144 à la fournée F, puis 145 |
 | Hors racine couverte | 0 sur 73 | 73 sur 73 (fournée E) |
-| Lignes | 91 lignes, 79 noms distincts | 128 dans les tableaux A–D, 26 dans la table F |
+| Lignes | 79 noms distincts | 128 dans les tableaux A–D, 26 dans la table F |
 
 La passe du fil fait autorité pour trois raisons : elle est complète, son critère est falsifiable, et le secrétariat la désigne comme couvrant l'acceptation 1.
 
@@ -34,7 +34,7 @@ La passe du fil fait autorité pour trois raisons : elle est complète, son crit
 | `II` | « définitions formelles + calcul outillé (nashpy, scipy, networkx), sans développement algorithmique propre » |
 | `III` | « algorithme développé from-scratch, **ou** preuve formelle (Lean), **ou** théorème d'existence manipulé (point fixe, minimax, dualité, encodage SAT) » |
 
-**Contrôle de reconstruction.** Les tableaux A à D donnent 128 lignes (47 + 18 + 33 + 30), dont 10 nomment des carnets de `SocialChoice/`. La table F en donne 26. Les 118 lignes de la racine et les 26 de F retrouvent chacune un carnet, sans doublon ni ambiguïté : **144 = 1 I / 28 II / 115 III**, exactement le total que la fournée F annonce pour l'état de la série. Le 145ᵉ, `21-Capstone-Choix-Social-CSharp`, est né après (PR #28691) et hérite du niveau de son jumeau Python par la règle des jumeaux — gémellité vérifiée sur pièce : titre H1 identique (« la sous-série SocialChoice en une heure »), 16 cellules markdown et 11 cellules de code dans les deux carnets.
+**Contrôle de reconstruction.** Les tableaux A à D donnent 128 entrées (47 + 18 + 33 + 30), dont 10 nomment des carnets de `SocialChoice/`. La table F en donne 26. Les 118 entrées de la racine et les 26 de F retrouvent chacune un carnet, sans doublon ni ambiguïté : **144 = 1 I / 28 II / 115 III**, exactement le total que la fournée F annonce pour l'état de la série. Le 145ᵉ, `21-Capstone-Choix-Social-CSharp`, est né après (PR #28691) et hérite du niveau de son jumeau Python par la règle des jumeaux — gémellité vérifiée sur pièce : titre H1 identique (« la sous-série SocialChoice en une heure »), même nombre de cellules markdown et même nombre de cellules de code.
 
 **Ce que le changement de base emporte.** Les « deux mesures » du matin n'en font plus qu'une : tous les carnets ont un niveau, donc les 144 paires adjacentes sont toutes mesurables. Les moyennes par bloc du matin étaient calculées sur les seuls carnets gradués d'une échelle en quatre mots ; elles ne sont pas reprises.
 
@@ -175,7 +175,7 @@ Ce que le replay dit, geste par geste :
 - **T1 est le seul geste qui retire un défaut d'ordre.** La descente n°1 est une inversion : `02-NormalForm-Part2-Python` se déclare « Suite de la tranche 1 » et trie avant elle, parce que `-Part2-` précède `-Python` dans l'ordre des octets. T1 range les deux variantes de la base avant les deux de l'extension.
 - **T2 est écarté.** Seul, il retire la descente n°2 en permutant les lettres d'accrétion `b` et `c` (quatre carnets renommés). Après T1, il ne retire plus rien : `02-NormalForm-Part2-Python` (III) → `02c-Travelers-Dilemma-CSharp` (II) naît à la place de celle qu'il retire.
 - **T3 est écarté.** Il échange `04h` et `04i`, tous deux de niveau II : la descente n°5 devient `04g-Supermodularite-Python` (III) → `04i-Utilite-Esperee-Risque-CSharp` (II).
-- **T4 est mesuré, il n'est pas proposé.** Il retire la descente n°5 en rangeant `04h` et `04i` avant `04e`, ce qui réécrit quatre lettres d'accrétion et renomme dix carnets ; les quatre sujets sont cités par 85 fichiers (`04e` 27, `04g` 18, `04h` 24, `04i` 16). Les prérequis déclarés par les quatre sujets déplacés sont respectés (lus première main). Ceux des carnets qui les citent n'ont pas tous été lus : c'est la raison pour laquelle le geste est mesuré et non proposé.
+- **T4 est mesuré, il n'est pas proposé.** Il retire la descente n°5 en rangeant `04h` et `04i` avant `04e`, ce qui réécrit quatre lettres d'accrétion et renomme dix carnets ; les quatre sujets sont cités par d'autres fichiers du dépôt, bien au-delà des dix carnets renommés (`04e` le plus largement, puis `04h`, `04g`, `04i`). Les prérequis déclarés par les quatre sujets déplacés sont respectés (lus première main). Ceux des carnets qui les citent n'ont pas tous été lus : c'est la raison pour laquelle le geste est mesuré et non proposé.
 - **La descente n°12 ne s'efface pas.** En tête du bloc 18, `18c-Humour-Banc` (II) recrée la descente au bord `17f-Market-to-Balance-Sheet-Python` (III) → `18c-Humour-Banc-Python` (II).
 - **Le tri complet n'est pas une option.** Ranger tous les sujets de chaque bloc par niveau ferait passer 116 carnets sur 145 à une autre place, pour 9 descentes : il ne supprime rien, il transfère les descentes aux bords de blocs (2 intra, 7 bord) et il réécrit la progression que les numéros portent.
 
@@ -192,8 +192,8 @@ L'ordre visé n'est réalisable que par un renommage, puisque `-Part2-` précèd
 
 Les deux donnent le même ordre et le même compte, 12 → 11. Ni l'une ni l'autre ne touche une cellule de code ni une sortie commitée : les occurrences dans les carnets sont toutes des cellules markdown (une dans `02-NormalForm-CSharp`, deux dans `02-NormalForm-Part2-Python`, zéro dans les sorties). **Aucune ré-exécution n'est due** (C.2 : une modification markdown seulement).
 
-- **T1-a** reprend le mot des carnets eux-mêmes. La base C# s'intitule « Tranche 1 : Nash from-scratch » et annonce « la résolution générale (support enumeration) est l'objet de la **tranche 2** » ; la navigation de l'extension dit « GameTheory-2 tranche 1 ». Elle laisse inchangé le nom du carnet d'entrée de la série, cité par 57 fichiers — d'autres séries (`Dynamics`, `Complexity`), trois jeux de slides, des tests. Son prix : `-Tranche<N>-` n'est porté par aucun nom de carnet du dépôt aujourd'hui, alors que `-Part<N>` est un slot de la grammaire de nommage. L'index (`02`) ne change pas dans les deux réalisations.
-- **T1-b** garde le slot `-Part<N>` et rend les deux parties symétriques. Son prix : elle renomme le carnet d'entrée, et 54 fichiers suivent.
+- **T1-a** reprend le mot des carnets eux-mêmes. La base C# s'intitule « Tranche 1 : Nash from-scratch » et annonce « la résolution générale (support enumeration) est l'objet de la **tranche 2** » ; la navigation de l'extension dit « GameTheory-2 tranche 1 ». Elle laisse inchangé le nom du carnet d'entrée de la série, cité au-delà de la série — par `Dynamics`, `Complexity`, trois jeux de slides, des tests. Son prix : `-Tranche<N>-` n'est porté par aucun nom de carnet du dépôt aujourd'hui, alors que `-Part<N>` est un slot de la grammaire de nommage. L'index (`02`) ne change pas dans les deux réalisations.
+- **T1-b** garde le slot `-Part<N>` et rend les deux parties symétriques. Son prix : elle renomme le carnet d'entrée, et tous ceux qui le citent suivent — les autres séries, les slides, les tests.
 
 Deux coûts à confirmer au moment de l'exécution, non mesurés ici : l'attestation de gémellité du couple (`twin_pairs.d/gametheory-2-normalform-part-2-support-enumeration.yaml`, six occurrences) porte une empreinte de contenu et se rescelle après le renommage ; le titre H1 des deux carnets d'extension dit « (Part 2) » et ne contient pas le nom du fichier, donc l'organe ne le réécrit pas — il s'aligne à la main si T1-a est retenue.
 
@@ -224,8 +224,8 @@ Deux coûts à confirmer au moment de l'exécution, non mesurés ici : l'attesta
 
 Une lettre suffit :
 
-- **a)** **T1-a** — renommer l'extension en `02-NormalForm-Tranche2-{CSharp,Python}` : 12 → 11 descentes, 2 carnets renommés, 12 fichiers, 317 occurrences.
-- **b)** **T1-b** — renommer la base en `02-NormalForm-Part1-{CSharp,Python}` : même ordre, 2 carnets renommés, 54 fichiers, 642 occurrences.
+- **a)** **T1-a** — renommer l'extension en `02-NormalForm-Tranche2-{CSharp,Python}` : 12 → 11 descentes, 2 carnets renommés, 317 occurrences de l'ancien nom.
+- **b)** **T1-b** — renommer la base en `02-NormalForm-Part1-{CSharp,Python}` : même ordre, 2 carnets renommés, 642 occurrences de l'ancien nom.
 - **c)** **Ne rien renommer** — retenir comme ordre cible l'ordre de lecture déjà publié pour les blocs 01 à 05 (ledger consolidé, README de la série), qui vaut pour les blocs 06 à 23 : l'ordre des fichiers, lu avec l'extension après sa base et chaque jumeau après son Python. Les douze descentes restent documentées (7 de classe A, 2 de classe B, 3 de classe C).
 
 Je recommande **c)**, pour trois mesures :
