@@ -23,6 +23,7 @@ Usage :
     python scripts/ci/measure_approve_to_merge.py --depuis 2026-11-19
     python scripts/ci/measure_approve_to_merge.py --heures 168 --json --out .tmp/a2m.json
     python scripts/ci/measure_approve_to_merge.py --approuveur myia-ai-01 --max-prs 400
+    python scripts/ci/measure_approve_to_merge.py --max-pages 20 --json
 
 Lectures honnetes que le rapport porte lui-meme :
 
@@ -41,7 +42,13 @@ Lectures honnetes que le rapport porte lui-meme :
   negatif compte « sous 24 h » gonflerait la part qu'on cherche a mesurer ;
 - les revues se lisent **page par page** : une page unique peut omettre
   l'approbation recente d'une PR tres commentee, et la PR serait alors classee
-  « tete anterieure » a tort.
+  « tete anterieure » a tort ;
+- chaque lecture a un plafond de pages (`MAX_PAGES`, `--max-pages`). Atteint sur
+  une page **pleine**, il laisse la lecture sans preuve d'avoir tout vu : la
+  fenetre est alors declaree incomplete (`fenetre_complete: false`, et
+  `tronquee: true`), et une PR dont les revues ne sont pas lues en entier sort
+  du denominateur sous `revues_incompletes` -- jamais classee « tete
+  anterieure » ou « sans approbation » sur un prefixe.
 
 Lecture seule : aucune ecriture dans le depot, aucun secret (le jeton est lu
 par ``gh auth token`` au premier appel, et n'est jamais imprime).
@@ -119,14 +126,24 @@ def parse_ts(valeur: str | None) -> datetime | None:
     return moment.astimezone(timezone.utc)
 
 
-def fusionnees(depuis: datetime, jusqu_a: datetime, max_pages: int = MAX_PAGES) -> list[dict]:
-    """PRs fusionnees dont `merged_at` tombe dans la fenetre, de la plus recente a la plus ancienne."""
+def fusionnees(depuis: datetime, jusqu_a: datetime,
+               max_pages: int = MAX_PAGES) -> tuple[list[dict], bool]:
+    """PRs fusionnees dont `merged_at` tombe dans la fenetre, de la plus recente a la plus ancienne.
+
+    Rend aussi la preuve que la fenetre a ete lue en entier. Elle manque dans un
+    seul cas : le plafond `max_pages` est atteint sur une page pleine dont la
+    plus ancienne `updated_at` reste dans la fenetre -- des fusions plus
+    anciennes peuvent alors exister au-dela. La liste rendue n'est dans ce cas
+    qu'un prefixe de la population, et `complete` vaut `False`.
+    """
     trouvees: list[dict] = []
+    complete = False
     for page in range(1, max_pages + 1):
         lot = api(
             f"/repos/{REPO}/pulls?state=closed&sort=updated&direction=desc"
             f"&per_page={PAR_PAGE}&page={page}")
         if not lot:
+            complete = True
             break
         for pr in lot:
             fusionnee_le = parse_ts(pr.get("merged_at"))
@@ -137,31 +154,40 @@ def fusionnees(depuis: datetime, jusqu_a: datetime, max_pages: int = MAX_PAGES) 
         # `updated_at` decroit le long des pages : la page suivante est plus ancienne.
         plus_ancienne = parse_ts(lot[-1].get("updated_at"))
         if plus_ancienne is not None and plus_ancienne < depuis:
+            # Une fusion de la fenetre est mise a jour au plus tard a sa fusion :
+            # rien d'elle ne peut se trouver sur une page plus ancienne.
+            complete = True
             break
         if len(lot) < PAR_PAGE:
+            complete = True
             break
     trouvees.sort(key=lambda pr: parse_ts(pr["merged_at"]), reverse=True)
-    return trouvees
+    return trouvees, complete
 
 
-def revues(numero: int, max_pages: int = MAX_PAGES) -> list[dict]:
-    """Toutes les revues d'une PR, page par page.
+def revues(numero: int, max_pages: int = MAX_PAGES) -> tuple[list[dict], bool]:
+    """Toutes les revues d'une PR, page par page, et la preuve qu'elles ont ete lues en entier.
 
     Une page unique ne suffit pas : sur une PR tres commentee, l'approbation
     recente tombe sur une page suivante, et le classement conclurait alors
     « tete anterieure » ou « sans approbation » sur une PR pourtant approuvee a
     la tete exacte. La lecture suit les pages jusqu'a une page courte.
+
+    La preuve manque quand le plafond `max_pages` est atteint sur une page
+    pleine : les revues des pages suivantes n'ont pas ete lues, et elles
+    peuvent porter l'approbation qui decide du classement. Rendues dans ce cas,
+    elles ne sont qu'un prefixe, et `complete` vaut `False`.
     """
     lues: list[dict] = []
     for page in range(1, max_pages + 1):
         lot = api(f"/repos/{REPO}/pulls/{numero}/reviews"
                   f"?per_page={PAR_PAGE}&page={page}")
         if not lot:
-            break
+            return lues, True
         lues.extend(lot)
         if len(lot) < PAR_PAGE:
-            break
-    return lues
+            return lues, True
+    return lues, False
 
 
 def approbations(revues_lues: list[dict], approbateur: str) -> list[dict]:
@@ -195,8 +221,17 @@ def approbation_tete(revues_lues: list[dict], tete: str, approbateur: str,
     return sur_la_tete[-1] if sur_la_tete else None
 
 
-def classer(pr: dict, revues_lues: list[dict], approbateur: str) -> dict:
-    """Classe une PR fusionnee : tete exacte, tete anterieure, ou sans approbation."""
+def classer(pr: dict, revues_lues: list[dict], approbateur: str,
+            revues_completes: bool = True) -> dict:
+    """Classe une PR fusionnee : tete exacte, tete anterieure, sans approbation, ou revues incompletes.
+
+    Sur des revues lues en prefixe (`revues_completes` faux), aucun classement
+    n'est sur : ceux qui annoncent l'absence d'une approbation a la tete
+    (« tete anterieure », « sans approbation ») seraient faux si les pages non
+    lues en portaient une. La PR sort du denominateur sans etre classee.
+    """
+    if not revues_completes:
+        return {"numero": pr["number"], "classe": "revues_incompletes", "heures": None}
     tete = (pr.get("head") or {}).get("sha") or ""
     fusionnee_le = parse_ts(pr.get("merged_at"))
     sur_la_tete = approbation_tete(revues_lues, tete, approbateur, avant=fusionnee_le)
@@ -243,12 +278,15 @@ def resume(lignes: list[dict], seuil: float = SEUIL_HEURES) -> dict:
         "tete_anterieure": sum(1 for ligne in lignes if ligne["classe"] == "tete_anterieure"),
         "approbation_apres_fusion": sum(1 for ligne in lignes
                                         if ligne["classe"] == "approbation_apres_fusion"),
+        "revues_incompletes": sum(1 for ligne in lignes
+                                  if ligne["classe"] == "revues_incompletes"),
         "sans_approbation": sum(1 for ligne in lignes if ligne["classe"] == "sans_approbation"),
     }
 
 
 def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
-                        seuil: float = SEUIL_HEURES, max_ouvertes: int = MAX_OPEN_READ) -> dict:
+                        seuil: float = SEUIL_HEURES, max_ouvertes: int = MAX_OPEN_READ,
+                        max_pages: int = MAX_PAGES) -> dict:
     """Cote censure du releve : les PRs ouvertes qu'une approbation attend.
 
     Une PR approuvee qui n'est pas encore fusionnee n'entre dans aucun
@@ -264,7 +302,10 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
     lignes: list[dict] = []
     for numero in numeros:
         pr = api(f"/repos/{REPO}/pulls/{numero}")
-        revues_lues = revues(numero)
+        revues_lues, completes = revues(numero, max_pages)
+        if not completes:
+            lignes.append({"numero": numero, "classe": "revues_incompletes", "heures": None})
+            continue
         sur_la_tete = approbation_tete(revues_lues, (pr.get("head") or {}).get("sha") or "",
                                        approbateur)
         if sur_la_tete is None:
@@ -282,6 +323,8 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
         "trouvees": cherche.get("total_count", len(numeros)),
         "inspectees": len(numeros),
         "tronquee": cherche.get("total_count", 0) > len(numeros),
+        "revues_incompletes": sum(1 for ligne in lignes
+                                  if ligne["classe"] == "revues_incompletes"),
         "a_la_tete_exacte": len(ages),
         "au_dela_du_seuil": len(au_dela),
         "plus_ancienne_heures": max(ages) if ages else None,
@@ -291,26 +334,31 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
 
 def mesurer(depuis: datetime, jusqu_a: datetime, approbateur: str = APPROUVEUR,
             max_prs: int = MAX_PR_READ, avec_ouvertes: bool = True,
-            max_ouvertes: int = MAX_OPEN_READ) -> dict:
+            max_ouvertes: int = MAX_OPEN_READ, max_pages: int = MAX_PAGES) -> dict:
     """Mesure bornee : liste les PRs fusionnees de la fenetre, lit leurs revues, classe."""
-    pool = fusionnees(depuis, jusqu_a)
+    pool, fenetre_complete = fusionnees(depuis, jusqu_a, max_pages)
     inspectees = pool[:max_prs]
-    lignes = [classer(pr, revues(pr["number"]), approbateur) for pr in inspectees]
+    lignes = []
+    for pr in inspectees:
+        revues_lues, completes = revues(pr["number"], max_pages)
+        lignes.append(classer(pr, revues_lues, approbateur, revues_completes=completes))
     agregat = resume(lignes)
     rapport = {
         "fenetre": {"depuis": depuis.isoformat().replace("+00:00", "Z"),
                     "jusqu_a": jusqu_a.isoformat().replace("+00:00", "Z")},
         "approuveur": approbateur,
         "seuil_heures": SEUIL_HEURES,
+        # Borne basse quand `fenetre_complete` est faux : la liste lue est un prefixe.
         "fusionnees_dans_la_fenetre": len(pool),
+        "fenetre_complete": fenetre_complete,
         "inspectees": len(inspectees),
-        "tronquee": len(pool) > len(inspectees),
+        "tronquee": len(pool) > len(inspectees) or not fenetre_complete,
         **agregat,
         "lignes": lignes,
     }
     if avec_ouvertes:
         rapport["ouvertes_approuvees"] = ouvertes_approuvees(
-            jusqu_a, approbateur, SEUIL_HEURES, max_ouvertes)
+            jusqu_a, approbateur, SEUIL_HEURES, max_ouvertes, max_pages)
     return rapport
 
 
@@ -318,19 +366,31 @@ def _heures(valeur: float | None) -> str:
     return "-" if valeur is None else f"{valeur:.2f} h"
 
 
+def _causes_troncature(rapport: dict) -> list[str]:
+    """Raisons pour lesquelles la part ne vaut pas pour la fenetre entiere."""
+    causes: list[str] = []
+    if not rapport["fenetre_complete"]:
+        causes.append("plafond de pages atteint sur une page pleine,"
+                      " la fenetre n'est pas lue en entier")
+    if rapport["fusionnees_dans_la_fenetre"] > rapport["inspectees"]:
+        causes.append("--max-prs atteint, la part ne vaut que pour l'echantillon")
+    return causes
+
+
 def formater(rapport: dict) -> str:
     """Rendu lisible : les nombres d'abord, la lecture ensuite."""
     bloc = rapport["tete_exacte"]
     part = bloc["part_sous_le_seuil"]
     part_txt = "n/a (aucune PR a tete exacte)" if part is None else f"{part * 100:.1f} %"
+    causes = _causes_troncature(rapport)
     lignes = [
         f"Fenetre {rapport['fenetre']['depuis']} -> {rapport['fenetre']['jusqu_a']}"
         f" (merged_at), approbateur {rapport['approuveur']},"
         f" seuil {rapport['seuil_heures']:.0f} h",
         f"Fusionnees dans la fenetre : {rapport['fusionnees_dans_la_fenetre']}"
-        f" | inspectees : {rapport['inspectees']}"
-        + ("  [TRONQUEE : --max-prs atteint, la part ne vaut que pour l'echantillon]"
-           if rapport["tronquee"] else ""),
+        + ("" if rapport["fenetre_complete"] else " (borne basse)")
+        + f" | inspectees : {rapport['inspectees']}"
+        + ("  [TRONQUEE : " + " ; ".join(causes) + "]" if causes else ""),
         f"Tete exacte : {bloc['n']} PRs | sous le seuil : {bloc['sous_le_seuil']}"
         f" | part : {part_txt}",
         f"Delais tete exacte : p50 {_heures(bloc['p50_heures'])}"
@@ -338,7 +398,8 @@ def formater(rapport: dict) -> str:
         f" | min {_heures(bloc['min_heures'])} | max {_heures(bloc['max_heures'])}",
         f"Hors denominateur : {rapport['tete_anterieure']} approbation(s) sur tete anterieure"
         f" | {rapport['approbation_apres_fusion']} soumise(s) apres la fusion"
-        f" | {rapport['sans_approbation']} sans approbation de l'approbateur",
+        f" | {rapport['sans_approbation']} sans approbation de l'approbateur"
+        f" | {rapport['revues_incompletes']} a revues non lues en entier (plafond de pages)",
     ]
     ouvertes = rapport.get("ouvertes_approuvees")
     if ouvertes is not None:
@@ -347,7 +408,8 @@ def formater(rapport: dict) -> str:
             f" | inspectees : {ouvertes['inspectees']}"
             + ("  [TRONQUEE]" if ouvertes["tronquee"] else "")
             + f" | a la tete exacte : {ouvertes['a_la_tete_exacte']}"
-            f" | au-dela du seuil : {ouvertes['au_dela_du_seuil']}"
+            + f" | revues non lues en entier : {ouvertes['revues_incompletes']}"
+            + f" | au-dela du seuil : {ouvertes['au_dela_du_seuil']}"
             f" (la plus ancienne attend {_heures(ouvertes['plus_ancienne_heures'])})")
     return "\n".join(lignes)
 
@@ -364,11 +426,17 @@ def main(argv: list[str] | None = None) -> int:
                            help="nombre de PRs dont les revues sont lues (borne la depense)")
     analyseur.add_argument("--max-ouvertes", type=int, default=MAX_OPEN_READ,
                            help="nombre de PRs ouvertes approuvees inspectees (cote censure)")
+    analyseur.add_argument("--max-pages", type=int, default=MAX_PAGES,
+                           help="plafond de pages de chaque lecture (100 lignes par page) ;"
+                                " atteint sur une page pleine, il est dit dans le rapport")
     analyseur.add_argument("--sans-ouvertes", action="store_true",
                            help="ne pas mesurer les PRs ouvertes approuvees")
     analyseur.add_argument("--json", action="store_true", help="sortie machine")
     analyseur.add_argument("--out", default="", help="ecrit le JSON dans ce fichier")
     options = analyseur.parse_args(argv)
+    if options.max_pages < 1:
+        print("--max-pages doit valoir au moins 1", file=sys.stderr)
+        return 2
 
     maintenant = datetime.now(timezone.utc)
     if options.depuis:
@@ -389,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
 
     rapport = mesurer(depuis, maintenant, options.approuveur, options.max_prs,
                       avec_ouvertes=not options.sans_ouvertes,
-                      max_ouvertes=options.max_ouvertes)
+                      max_ouvertes=options.max_ouvertes, max_pages=options.max_pages)
     texte = json.dumps(rapport, indent=1, ensure_ascii=False)
     if options.out:
         with open(options.out, "w", encoding="utf-8", newline="\n") as flux:

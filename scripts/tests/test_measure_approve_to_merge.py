@@ -19,7 +19,12 @@ pas un test. Ce qui est teste ici, c'est ce qui **decide** de la mesure :
    peut pas etre la cause de la fusion, et le delai negatif qu'elle produisait
    se lisait « sous 24 h » ;
 7. **les revues se lisent page par page** : une page unique peut omettre
-   l'approbation recente d'une PR tres commentee.
+   l'approbation recente d'une PR tres commentee ;
+8. **un plafond de pages atteint sur une page pleine est dit** : la fenetre est
+   alors declaree incomplete (`fenetre_complete: false`, `tronquee`), et une PR
+   dont les revues ne sont pas lues en entier sort du denominateur
+   (`revues_incompletes`) -- jamais classee « sans approbation » alors que
+   l'approbation est sur une page non lue.
 
 Les appels reseau sont remplaces par une fonction `api` factice : les tests ne
 dependent ni du reseau ni du quota.
@@ -175,11 +180,78 @@ def test_revues_suit_les_pages(monkeypatch):
         return pages.get(int(chemin.rsplit("page=", 1)[1]), [])
 
     monkeypatch.setattr(m, "api", faux_api)
-    lues = m.revues(9)
+    lues, completes = m.revues(9)
     assert len(lues) == 3
+    assert completes is True
     ligne = m.classer(_pr(9, tete, "2026-11-26T10:30:00Z"), lues, "myia-ai-01")
     assert ligne["classe"] == "tete_exacte"
     assert ligne["heures"] == 2.5
+
+
+def test_revues_page_pleine_au_plafond_n_a_pas_de_preuve_d_exhaustivite(monkeypatch):
+    """Temoin : le plafond atteint sur une page pleine ne disait rien.
+
+    Les pages 1 et 2 sont pleines et la page 3 existe : la lecture bornee a
+    deux pages rend un prefixe. Rien ne prouve qu'elle a tout vu, et
+    `complete` doit le dire. La page 3 n'est pas demandee -- le plafond borne
+    la depense.
+    """
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    demandees: list[int] = []
+
+    def faux_api(chemin: str) -> list[dict]:
+        page = int(chemin.rsplit("page=", 1)[1])
+        demandees.append(page)
+        return [_revue("autre", "COMMENTED", "abc", f"2026-11-26T0{page}:00:00Z")] * 2
+
+    monkeypatch.setattr(m, "api", faux_api)
+    lues, completes = m.revues(9, max_pages=2)
+    assert len(lues) == 4
+    assert completes is False
+    assert demandees == [1, 2]
+
+
+def test_une_approbation_au_dela_du_plafond_n_est_pas_dite_absente(monkeypatch):
+    """Temoin : l'approbation a la tete exacte etait sur la page non lue.
+
+    Le prefixe lu ne contient aucune approbation. Classe tel quel, il
+    concluait « sans approbation » : la PR sortait du denominateur alors
+    qu'elle est approuvee a sa tete. Une lecture incomplete ne classe pas.
+    """
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    pages = {
+        1: [_revue("autre", "COMMENTED", "abc", "2026-11-26T06:00:00Z")] * 2,
+        2: [_revue("autre", "COMMENTED", "abc", "2026-11-26T07:00:00Z")] * 2,
+        3: [_revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T08:00:00Z")],
+    }
+
+    def faux_api(chemin: str) -> list[dict]:
+        return pages.get(int(chemin.rsplit("page=", 1)[1]), [])
+
+    monkeypatch.setattr(m, "api", faux_api)
+    lues, completes = m.revues(9, max_pages=2)
+    assert completes is False
+    ligne = m.classer(_pr(9, "abc", "2026-11-26T10:30:00Z"), lues, "myia-ai-01",
+                      revues_completes=completes)
+    assert ligne["classe"] == "revues_incompletes"
+    agregat = m.resume([ligne])
+    assert agregat["sans_approbation"] == 0
+    assert agregat["tete_anterieure"] == 0
+    assert agregat["tete_exacte"]["n"] == 0
+    assert agregat["revues_incompletes"] == 1
+
+
+def test_revues_incompletes_ne_classe_pas_meme_avec_une_ancienne_approbation():
+    """Le prefixe porte une approbation sur une tete anterieure.
+
+    Les pages non lues peuvent en porter une sur la tete courante : le
+    classement « tete anterieure » n'est pas sur non plus.
+    """
+    pr = _pr(10, "nouvelle", "2026-11-26T10:30:00Z")
+    revues = [_revue("myia-ai-01", "APPROVED", "ancienne", "2026-11-25T08:00:00Z")]
+    ligne = m.classer(pr, revues, "myia-ai-01", revues_completes=False)
+    assert ligne["classe"] == "revues_incompletes"
+    assert ligne["heures"] is None
 
 
 # --- agregats --------------------------------------------------------------
@@ -216,14 +288,25 @@ def test_resume_compte_les_classes_hors_denominateur():
         {"numero": 2, "classe": "tete_anterieure", "heures": None},
         {"numero": 3, "classe": "sans_approbation", "heures": None},
         {"numero": 4, "classe": "sans_approbation", "heures": None},
+        {"numero": 5, "classe": "revues_incompletes", "heures": None},
     ]
     agregat = m.resume(lignes)
     assert agregat["tete_exacte"]["n"] == 1
     assert agregat["tete_anterieure"] == 1
     assert agregat["sans_approbation"] == 2
+    assert agregat["revues_incompletes"] == 1
 
 
 # --- lecture de la fenetre, borne et bout en bout --------------------------
+
+def _pages_fusionnees() -> dict[int, list[dict]]:
+    """Trois pages de deux PRs, toutes fusionnees le 25/11 (dans la fenetre de ces tests)."""
+    return {
+        1: [_pr(1, "a", "2026-11-25T12:00:00Z"), _pr(2, "b", "2026-11-25T11:00:00Z")],
+        2: [_pr(3, "c", "2026-11-25T10:00:00Z"), _pr(4, "d", "2026-11-25T09:00:00Z")],
+        3: [_pr(5, "e", "2026-11-25T08:00:00Z")],
+    }
+
 
 def test_fusionnees_filtre_sur_merged_at(monkeypatch):
     depuis = datetime(2026, 11, 25, tzinfo=timezone.utc)
@@ -235,8 +318,56 @@ def test_fusionnees_filtre_sur_merged_at(monkeypatch):
          "updated_at": "2026-11-25T13:00:00Z"},       # fermee sans fusion
     ]
     monkeypatch.setattr(m, "api", lambda chemin: page if "page=1" in chemin else [])
-    trouvees = m.fusionnees(depuis, jusqu_a)
+    trouvees, complete = m.fusionnees(depuis, jusqu_a)
     assert [pr["number"] for pr in trouvees] == [1]
+    assert complete is True
+
+
+def test_fusionnees_page_pleine_au_plafond_dans_la_fenetre_est_incompletee(monkeypatch):
+    """Temoin : le plafond atteint sur une page pleine encore dans la fenetre.
+
+    Des fusions de la fenetre existent au-dela (page 3) : la liste rendue est
+    un prefixe, et `complete` vaut False -- le rapport declarera la fenetre
+    tronquee au lieu de compter 4 fusions pour un total.
+    """
+    depuis = datetime(2026, 11, 25, tzinfo=timezone.utc)
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    pages = _pages_fusionnees()
+    demandees: list[int] = []
+
+    def faux_api(chemin: str) -> list[dict]:
+        page = int(chemin.rsplit("page=", 1)[1])
+        demandees.append(page)
+        return pages.get(page, [])
+
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    monkeypatch.setattr(m, "api", faux_api)
+    trouvees, complete = m.fusionnees(depuis, jusqu_a, max_pages=2)
+    assert complete is False
+    assert [pr["number"] for pr in trouvees] == [1, 2, 3, 4]
+    assert demandees == [1, 2]
+
+
+def test_fusionnees_plafond_sur_une_page_sortie_de_la_fenetre_est_complete(monkeypatch):
+    """Page pleine au plafond, mais sa plus ancienne `updated_at` sort de la fenetre.
+
+    Une fusion de la fenetre est mise a jour au plus tard a sa fusion : rien
+    d'elle ne peut etre sur une page plus ancienne. La preuve d'exhaustivite
+    existe, `complete` vaut True bien que le plafond soit atteint.
+    """
+    depuis = datetime(2026, 11, 25, tzinfo=timezone.utc)
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    pages = {
+        1: [_pr(1, "a", "2026-11-25T12:00:00Z"), _pr(2, "b", "2026-11-25T11:00:00Z")],
+        2: [_pr(3, "c", "2026-11-25T10:00:00Z"),
+            _pr(4, "d", "2026-11-20T09:00:00Z", mise_a_jour="2026-11-24T09:00:00Z")],
+    }
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    monkeypatch.setattr(m, "api",
+                        lambda chemin: pages.get(int(chemin.rsplit("page=", 1)[1]), []))
+    trouvees, complete = m.fusionnees(depuis, jusqu_a, max_pages=2)
+    assert complete is True
+    assert [pr["number"] for pr in trouvees] == [1, 2, 3]
 
 
 def test_mesurer_borne_la_lecture_et_le_dit(monkeypatch):
@@ -264,10 +395,67 @@ def test_mesurer_borne_la_lecture_et_le_dit(monkeypatch):
     monkeypatch.setattr(m, "api", faux_api)
     rapport = m.mesurer(depuis, jusqu_a, max_prs=2)
     assert rapport["fusionnees_dans_la_fenetre"] == 3
+    assert rapport["fenetre_complete"] is True
     assert rapport["inspectees"] == 2
     assert rapport["tronquee"] is True
     assert rapport["tete_exacte"]["n"] == 2
     assert rapport["tete_exacte"]["part_sous_le_seuil"] == 1.0
+
+
+def test_mesurer_dit_une_fenetre_incompletee(monkeypatch):
+    """Temoin : au plafond, le rapport affichait encore `tronquee: false`.
+
+    La fenetre lue est un prefixe de deux pages sur trois. Le rapport porte
+    `fenetre_complete: false`, `tronquee: true`, et le rendu dit la cause.
+    """
+    depuis = datetime(2026, 11, 25, tzinfo=timezone.utc)
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    pages = _pages_fusionnees()
+    revues = {1: [_revue("myia-ai-01", "APPROVED", "a", "2026-11-25T10:00:00Z")]}
+
+    def faux_api(chemin: str):
+        if "/reviews" in chemin:
+            return revues.get(int(chemin.split("/pulls/")[1].split("/")[0]), [])
+        return pages.get(int(chemin.rsplit("page=", 1)[1]), [])
+
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    monkeypatch.setattr(m, "api", faux_api)
+    rapport = m.mesurer(depuis, jusqu_a, avec_ouvertes=False, max_pages=2)
+    assert rapport["fenetre_complete"] is False
+    assert rapport["fusionnees_dans_la_fenetre"] == 4
+    assert rapport["inspectees"] == 4
+    assert rapport["tronquee"] is True
+    texte = m.formater(rapport)
+    assert "TRONQUEE : plafond de pages atteint sur une page pleine" in texte
+    assert "borne basse" in texte
+
+
+def test_mesurer_sort_une_pr_a_revues_incompletes(monkeypatch):
+    """La PR 1 est approuvee a sa tete, sur une page de revues que le plafond omet."""
+    depuis = datetime(2026, 11, 25, tzinfo=timezone.utc)
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    page = [_pr(1, "a", "2026-11-25T12:00:00Z")]
+    pages_revues = {
+        1: [_revue("autre", "COMMENTED", "a", "2026-11-25T10:00:00Z")] * 2,
+        2: [_revue("autre", "COMMENTED", "a", "2026-11-25T10:30:00Z")] * 2,
+        3: [_revue("myia-ai-01", "APPROVED", "a", "2026-11-25T11:00:00Z")],
+    }
+
+    def faux_api(chemin: str):
+        if "/reviews" in chemin:
+            return pages_revues.get(int(chemin.rsplit("page=", 1)[1]), [])
+        return page if "page=1" in chemin else []
+
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    monkeypatch.setattr(m, "api", faux_api)
+    rapport = m.mesurer(depuis, jusqu_a, avec_ouvertes=False, max_pages=2)
+    assert rapport["fenetre_complete"] is True
+    assert rapport["tronquee"] is False
+    assert rapport["lignes"][0]["classe"] == "revues_incompletes"
+    assert rapport["revues_incompletes"] == 1
+    assert rapport["sans_approbation"] == 0
+    assert rapport["tete_exacte"]["n"] == 0
+    assert "1 a revues non lues en entier" in m.formater(rapport)
 
 
 def test_mesurer_sans_ouvertes_n_interroge_pas_la_recherche(monkeypatch):
@@ -315,14 +503,50 @@ def test_ouvertes_approuvees_compte_l_attente_a_la_tete_exacte(monkeypatch):
     assert ouvertes["au_dela_du_seuil"] == 1
     assert [ligne["numero"] for ligne in ouvertes["au_dela"]] == [11]
     assert ouvertes["plus_ancienne_heures"] == 30.0
+    assert ouvertes["revues_incompletes"] == 0
 
 
-def test_formater_dit_la_troncature():
-    rapport = {
+def test_ouvertes_approuvees_compte_les_revues_incompletes(monkeypatch):
+    """Temoin : une PR ouverte approuvee etait lue « sans approbation ».
+
+    Sa page de revues 3 porte l'approbation a sa tete ; bornee a deux pages,
+    la lecture ne la voit pas. Elle est comptee a part, pas comme une PR
+    qu'aucune approbation n'attend.
+    """
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    tetes = {21: "k1", 22: "k2"}
+    pages_revues = {
+        (21, 1): [_revue("myia-ai-01", "APPROVED", "k1", "2026-11-25T22:00:00Z")],
+        (22, 1): [_revue("autre", "COMMENTED", "k2", "2026-11-25T21:00:00Z")] * 2,
+        (22, 2): [_revue("autre", "COMMENTED", "k2", "2026-11-25T21:30:00Z")] * 2,
+        (22, 3): [_revue("myia-ai-01", "APPROVED", "k2", "2026-11-25T22:00:00Z")],
+    }
+
+    def faux_api(chemin: str):
+        if "/search/" in chemin:
+            return {"total_count": 2, "items": [{"number": n} for n in tetes]}
+        numero = int(chemin.split("/pulls/")[1].split("/")[0])
+        if "/reviews" in chemin:
+            return pages_revues.get((numero, int(chemin.rsplit("page=", 1)[1])), [])
+        return {"number": numero, "head": {"sha": tetes[numero]}}
+
+    monkeypatch.setattr(m, "api", faux_api)
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    ouvertes = m.ouvertes_approuvees(jusqu_a, max_pages=2)
+    assert ouvertes["inspectees"] == 2
+    assert ouvertes["revues_incompletes"] == 1
+    assert ouvertes["a_la_tete_exacte"] == 1
+    assert ouvertes["au_dela_du_seuil"] == 0
+
+
+def _rapport_echantillon(fenetre_complete: bool = True) -> dict:
+    """Rapport a deux PRs inspectees sur neuf fusions ; la fenetre est complete sauf demande."""
+    return {
         "fenetre": {"depuis": "2026-11-19T00:00:00Z", "jusqu_a": "2026-11-26T00:00:00Z"},
         "approuveur": "myia-ai-01",
         "seuil_heures": 24.0,
         "fusionnees_dans_la_fenetre": 9,
+        "fenetre_complete": fenetre_complete,
         "inspectees": 2,
         "tronquee": True,
         "tete_exacte": {"n": 2, "sous_le_seuil": 1, "part_sous_le_seuil": 0.5,
@@ -330,16 +554,33 @@ def test_formater_dit_la_troncature():
                         "min_heures": 1.0, "max_heures": 30.0},
         "tete_anterieure": 0,
         "approbation_apres_fusion": 0,
+        "revues_incompletes": 0,
         "sans_approbation": 0,
     }
-    texte = m.formater(rapport)
-    assert "TRONQUEE" in texte
+
+
+def test_formater_dit_la_troncature():
+    texte = m.formater(_rapport_echantillon())
+    assert "TRONQUEE : --max-prs atteint" in texte
+    assert "n'est pas lue en entier" not in texte
+    assert "borne basse" not in texte
     assert "50.0 %" in texte
     assert "p90 30.00 h" in texte
 
 
+def test_formater_dit_une_fenetre_incompletee_et_ses_deux_causes():
+    texte = m.formater(_rapport_echantillon(fenetre_complete=False))
+    assert "9 (borne basse)" in texte
+    assert ("TRONQUEE : plafond de pages atteint sur une page pleine,"
+            " la fenetre n'est pas lue en entier ; --max-prs atteint") in texte
+
+
 def test_main_depuis_illisible_rend_2():
     assert m.main(["--depuis", "pas-une-date"]) == 2
+
+
+def test_main_max_pages_inferieur_a_1_rend_2():
+    assert m.main(["--depuis", "2026-11-25T00:00:00Z", "--max-pages", "0"]) == 2
 
 
 def test_main_ecrit_le_json(monkeypatch, tmp_path, capsys):
