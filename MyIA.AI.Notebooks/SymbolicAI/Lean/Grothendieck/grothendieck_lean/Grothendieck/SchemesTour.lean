@@ -110,7 +110,7 @@ noncomputable example {X Y : Scheme} (i : X ≅ Y) : X ≃ₜ Y :=
 -- Le foncteur oublie des schémas vers les espaces localement annelés (pleinement fidèle)
 #check @Scheme.forgetToLocallyRingedSpace
 
--- Le type `FullyFaithful` du foncteur oublie
+-- Le type FullyFaithful du foncteur oublie
 #check Scheme.forgetToLocallyRingedSpace.FullyFaithful
 
 /-!

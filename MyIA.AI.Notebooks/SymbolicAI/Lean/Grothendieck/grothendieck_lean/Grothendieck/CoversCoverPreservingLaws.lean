@@ -156,8 +156,8 @@ theorem covers_comp_of_coverPreserving {C : Type u} [Category.{v} C]
     rw [GrothendieckTopology.covers_iff]; exact hKM
   have hL : L.Covers ((S.functorPushforward F).functorPushforward G) (G.map (F.map f)) :=
     covers_pushforward_of_coverPreserving hG (F.map f) (S.functorPushforward F) hKL
-  -- Étape 5 : convertir le but en la forme de hL (membre de droite de
-  -- functorPushforward_comp + F.map f ≫ G.map f pour comp_map).
+  -- Étape 5 : convertir le but en la forme de hL (membre de droite de functorPushforward_comp +
+  -- F.map f ≫ G.map f pour comp_map).
   -- hL est L.Covers (S.functorPushforward G (S.functorPushforward F S))
   --             (G.map (F.map f)), donc le but doit être réécrit DANS cette forme.
   rw [Sieve.functorPushforward_comp, Functor.comp_map]

@@ -58,11 +58,10 @@ Formellement, `GrothendieckTopology.Point J` est une structure consistant en :
 Référence : SGA 4 IV 6.3.
 -/
 
--- Un point d'un site (C, J) est un foncteur fibre Φ : C ⥤ Type dont la
--- catégorie des éléments est cofiltrée et qui satisfait une condition de
--- couverture. Il généralise la notion de « point » de la topologie aux
--- sites arbitraires.
--- C'est `GrothendieckTopology.Point` de `Sites.Point.Basic` dans Mathlib.
+-- Un point d'un site (C, J) est un foncteur fibre Φ : C ⥤ Type dont la catégorie
+-- des éléments est cofiltrée et qui satisfait une condition de couverture.
+-- Il généralise la notion de « point » de la topologie aux sites arbitraires.
+-- C'est `GrothendieckTopology.Point` de Sites.Point.Basic dans Mathlib.
 #check @GrothendieckTopology.Point
 
 /-!
