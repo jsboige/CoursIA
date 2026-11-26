@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (191 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (193 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
 
 1. **La porte `PR gate` est l'autorité de mergeabilité — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle mergeable ? ». Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque), jamais comme un bloqueur de listing.
 2. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP lui-même (`spawn(node, [mcp-wrapper.cjs])` + `initialize` / `notifications/initialized` / `tools/call roosync_messages {action:"send", to, subject, body, messageId}`) ; l'identité signée vient de `ROOSYNC_MACHINE_ID` + `ROOSYNC_WORKSPACE_ID` passés dans l'env du spawn (le `ROO_FLEET_ROSTER` ne sert qu'au partitionnement). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -173,6 +173,31 @@ Cinq pièges mesurés dans le cycle c695. Le premier est le plus coûteux : il n
 4. **Vérifier le FICHIER après toute écriture scriptée dans la mémoire du siège.** Une queue d'index contenant une séquence d'échappement a coupé la ligne d'index de `MEMORY.md` en quatre morceaux et injecté un `---` (règle horizontale) au milieu de la liste à puces — **sans erreur, et le compteur reste correct**. Il faut relire le fichier (nombre de puces, règle horizontale isolée, ligne d'index tenant sur une seule ligne), pas seulement la valeur qu'on voulait écrire.
 
 5. **Le crible « CR à la tête exacte » est AVEUGLE à la classe des réserves attachées à une tête abandonnée.** Mesure c695 : sur les 40 PRs du pool portant une `CHANGES_REQUESTED` d'ai-01, **33** ont la CR sur un commit qui n'est plus la tête — et **23 de ces 33 sont vertes au gate**. Une telle réserve ne peut pas être levée (la levée exige un `APPROVED` sur la tête courante) et la lane ne peut pas la lever : le blocage est **systématique**, et le crible « CR à la tête exacte » ne le voit pas — il ne compte que les réserves encore attachées. **Relire la tête COURANTE de chaque PR porteuse de CR** (une requête par PR : le multi-alias GraphQL rend des nœuds vides sans erreur) et classer `ORPHELINE` / `EXACTE` / `APPROUVÉE`. La tête du snapshot périmé : 3 PRs avaient bougé entre le balayage de 08:19Z et la mesure. Et relire une classe ne se déduit pas d'une liste déjà transmise — 22 des 23 étaient déjà dans mes listes de vertes depuis c692 : seule la **qualification** était nouvelle.
+
+### Tells de mesure (26/11, cycle c696)
+
+Deux pièges mesurés dans le cycle c696, tous deux sur la lecture
+
+6. **La pagination GraphQL `contexts(first:N)` tronque en silence.** Mon scan de
+pool demande 40 contextes par PR ; mesure c696 : **198 PRs sur 338 sont
+exactement à la limite** — la page est coupée sans erreur ni avertissement, et
+le fold travaille alors sur une fenêtre incomplète. Contrôle ciblé en REST
+`--paginate` sur #28732 : la tentative de porte vue était bien la plus récente
+(la porte est un des contextes les plus récents) — la troncature n'a pas inversé
+le verdict sur cet échantillon ; ce qui peut manquer, ce sont des noms de checks
+**anciens**. **Annoncer la limite** quand je publie une liste de vertes (le
+lecteur l'hérite), et vérifier en REST `--paginate` avant d'affirmer un rouge sur
+une PR dont le nombre de contextes vaut exactement la page demandée.
+
+7. **L'organe B.0 compte une réserve de bot attachée à une tête abandonnée comme
+une réserve vivante.** Mesure c696 (#28565) : l'un des 2 nits bloqués est la
+review Hermes (deux glyphes de sévérité) posée sur `7986b2d5`, alors que la tête est
+`c450579f9` — l'organe ne distingue pas une réserve attachée à la tête d'une
+réserve attachée à une tête abandonnée (tell 13, vu du côté de l'organe).
+**Avant d'alerter une lane sur un `BLOCKED`, lire le commit de chaque review et le
+comparer à la tête** : si la review est sur une tête abandonnée, l'alerte utile n'est
+pas « répare », mais « la levée doit venir de l'auteur de la réserve » — et le dire à
+l'expéditeur, qui peut se croire bloqué après avoir tout réparé.
 
 ## Émission de dossiers — garde-fous obligatoires
 
