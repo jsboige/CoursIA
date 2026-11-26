@@ -585,10 +585,10 @@ Si l'encodage SAT d'Arrow (SocialChoice 04) semble trivial, vérifiez le nombre 
 
 ### Un lake Lean ne se construit pas
 
-Chaque lake du dossier est un projet Lake indépendant, avec sa propre toolchain (`lean-toolchain`). Pour construire le module SocialChoice :
+Chaque lake du dossier est un projet Lake indépendant, avec sa propre toolchain (`lean-toolchain`). Pour construire le module SocialChoice, allez dans son lake — `SocialChoice/social_choice_core_lean/` depuis la descente T3 de #24183, le site d'un lake suivant ses carnets consommateurs :
 
 ```bash
-cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
+cd MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean
 lake build SocialChoice
 ```
 
@@ -651,7 +651,7 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 
 | Lake | Ce qu'il prouve | Carnets | Pourquoi il est séparé |
 |------|-----------------|---------|------------------------|
-| `game_theory_lean` (module SocialChoice) | Impossibilité d'Arrow, caractérisation de Sen | SocialChoice 01b | **R1** — le site suit les carnets : son consommateur est la sous-série `SocialChoice/`, vers laquelle il descend (T3 de #24183) |
+| `SocialChoice/social_choice_core_lean` (module SocialChoice) | Impossibilité d'Arrow, caractérisation de Sen | SocialChoice 01b | **R1** — le site suit les carnets : son consommateur est la sous-série `SocialChoice/`, où il a descendu (T3 de #24183, 2026-11-08) |
 | `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b | Mathlib (`Finset`, cône dual) ; tous ses carnets vivent à la racine de la série, aucune sous-série ne le réclame |
 | `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, SocialChoice 02 | Mathlib ; consommé depuis la racine **et** depuis `SocialChoice/02`, aucun site unique ne s'impose |
 | `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | 06b, 06c | couplage d'import : `ProgramGames` importe `RepeatedGames.Stage`, les deux modules ne descendent pas l'un sans l'autre |
@@ -684,7 +684,7 @@ Les anciens lakes autonomes du choix social, des jeux coopératifs, du mariage s
 ```
 GameTheory/
 ├── GameTheory-*.ipynb             # parcours principal, approfondissements, extensions
-├── SocialChoice/                  # sous-série Choix social (son propre README, lake social_choice_lean_peters/)
+├── SocialChoice/                  # sous-série Choix social (son propre README ; lakes social_choice_core_lean/ et social_choice_lean_peters/)
 ├── assets/readme/                 # figures du README et leur MANIFEST
 ├── game_theory_utils.py           # utilitaires partagés
 ├── limit_sets.py                  # détecteur d'ensembles limites (extension 22)

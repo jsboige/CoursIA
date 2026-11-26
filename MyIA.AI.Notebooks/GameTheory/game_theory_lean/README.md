@@ -54,13 +54,21 @@ Le track Lean de GameTheory accueillait six projets Lake avant le regroupement :
 
 `game_theory_lean/` est la **cible de regroupement** qui résout ces trois
 points : un seul `lakefile.lean`, une seule toolchain, un seul
-`lake-manifest.json`, et **quatre `lean_lib` distincts** (`StableMarriage` +
-`CooperativeGames` + `SocialChoice` + `RepeatedGames`) qui cohabitent comme modules siblings sans coupler leurs
-preuves ni leurs imports Mathlib. Le squelette a été posé en c.299 (PR #5902)
-puis rempli incrémentalement c.300–c.308 (PRs #5904 → #5940 + suppression du
-doublon `stable_marriage_lean/` via PR #5971).
+`lake-manifest.json`, et des `lean_lib` distincts qui cohabitent comme modules
+siblings sans coupler leurs preuves ni leurs imports Mathlib — quatre à
+l'issue de c.308 (`StableMarriage` + `CooperativeGames` + `SocialChoice` +
+`RepeatedGames`), neuf au 2026-11-26. Le squelette a été posé en c.299
+(PR #5902) puis rempli incrémentalement c.300–c.308 (PRs #5904 → #5940 +
+suppression du doublon `stable_marriage_lean/` via PR #5971). `SocialChoice` en
+est ressorti le 2026-11-08 (#24183, T3) vers le lake autonome
+[`SocialChoice/social_choice_core_lean/`](../SocialChoice/social_choice_core_lean/),
+la doctrine R1 voulant que le site d'un lake suive les carnets qui l'utilisent.
 
 ## Architecture multi-lib
+
+L'extrait ci-dessous est l'état du `lakefile.lean` à l'issue de c.308, conservé
+comme histoire : `SocialChoice` n'y est plus déclaré depuis sa descente
+(#24183, T3), et le lakefile courant fait foi.
 
 ```
 package «game_theory_lean» where
@@ -91,11 +99,11 @@ package «game_theory_lean» where
 Le pattern Lake retenu est celui de `decision_theory_lean/` : plusieurs
 `lean_lib` cohabitent comme **points d'entrée indépendants** vers Mathlib,
 sans coupler les graphes d'imports. Chaque `lean_lib` racine
-(`StableMarriage.lean` / `CooperativeGames.lean` / `SocialChoice.lean` /
-`RepeatedGames.lean`, le tout ré-importé par l'agrégateur `GameTheory.lean`)
-sert d'**agrégateur** qui re-importe ses sous-modules FR ; les siblings
-`_en.lean` restent accessibles via `import <Module>.<SousModule>_en`
-direct.
+(`StableMarriage.lean` / `CooperativeGames.lean` / `RepeatedGames.lean`, le
+tout ré-importé par l'agrégateur `GameTheory.lean` ; le lake autonome suit le
+même pattern avec `SocialChoice.lean`) sert d'**agrégateur** qui re-importe ses
+sous-modules FR ; les siblings `_en.lean` restent accessibles via
+`import <Module>.<SousModule>_en` direct.
 
 ## Convention i18n (EPIC #4980)
 
@@ -348,8 +356,9 @@ les anciens énoncés contrefactuels de `StableMarriage.Lattice` ont été
 retirés car réfutés par `NoCrossCounterexample`), et **convention i18n
 FR/EN sibling pair** (EPIC #4980). Le pattern Lake multi-lib retenu est
 calqué sur `decision_theory_lean/` (modèle éprouvé c.299–c.308), avec
-**quatre `lean_lib` distincts** (`StableMarriage` + `CooperativeGames`
-+ `SocialChoice` + `RepeatedGames`) qui cohabitent sans coupler leurs
+**quatre `lean_lib` distincts** à l'issue de c.308 (`StableMarriage` +
+`CooperativeGames` + `SocialChoice` + `RepeatedGames`) — `SocialChoice` a
+depuis rejoint son lake autonome — qui cohabitent sans coupler leurs
 imports Mathlib.
 **État actuel** : squelette posé en c.299, remplissage incrémental c.300
 → c.308, doublon `stable_marriage_lean/` supprimé via PR #5971,
