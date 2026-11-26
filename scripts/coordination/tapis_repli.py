@@ -29,7 +29,7 @@ from coordination import (
     gh_bulk,
     gh_selection,
     tapis_age,
-    tapis_ancre,
+    tapis_ancre, tapis_blocs,
     tapis_origami,
     tapis_rotation,
     tapis_universel,
@@ -134,8 +134,8 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     conteneurs = [e for e in etats_ if e.conteneur]
     ancres = tapis_ancre.lire(lane)
     ages, exclus, _ = tapis_age.tour(grains_, ancres, maintenant, conteneurs)
-    part = max(int(grains), 1)
-    blocs = max(1, -(-len(grains_) // part))
+    quota, part = tapis_blocs.quotas(int(grains), int(grains), len(conteneurs))
+    blocs = tapis_blocs.nombre_blocs(len(grains_), len(conteneurs), part, quota)
     servis = curseur(dossier, lane)
     avance = servis % blocs
     file, fenetre = tapis_rotation.bloc(grains_, conteneurs, grains, grains, lane,

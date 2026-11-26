@@ -90,8 +90,8 @@
       "note": "Rapport de B.0 : ligne de verdict (#13512/#13779), bloc A RELIRE des commentaires non evalues, notes de preuve des levees rembobinees (#13639/#20066). Module NEUF extrait de `scripts/check_unaddressed_nits.py` dans #27874 : il porte son propre plafond (139 lignes) pour que le rapport puisse grossir sans faire grossir l'organe. La constante `_BLOB_UNCOMPARABLE` reste propriete de l'organe et est passee en argument."
     },
     "scripts/tests/test_tapis_rapide.py": {
-      "lines": 810,
-      "note": "Test du tapis rapide : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 782 (base de la branche) + 16 (tests de cette PR : occupation, urne, occupation dans la sortie texte) + 12 (main : ecarts de fond, etiquette, matrice de compatibilite). La croissance vient de `main` et de cette PR, pas de cette PR seule ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction."
+      "lines": 815,
+      "note": "Test du tapis rapide : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 782 (base de la branche) + 16 (tests de cette PR : occupation, urne, occupation dans la sortie texte) + 12 (main : ecarts de fond, etiquette, matrice de compatibilite). La croissance vient de `main` et de cette PR, pas de cette PR seule ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction. +5 lignes le 26/11 : l'extraction de `tapis_blocs.py` (les tailles du bloc) entre dans la liste des plafonds de ligne -- une entree de parametre et le rappel de l'extraction ; la croissance est celle de l'extraction citee, pas une derive."
     },
     "scripts/ci/fast_lane_twin_heritage.py": {
       "lines": 51,

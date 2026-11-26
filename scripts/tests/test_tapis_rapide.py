@@ -746,7 +746,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # organes du tapis tienne le plafond, #28090 + #27223, 22/11) ;
 # tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
 # de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
-# 22/11).
+# 22/11) ; tapis_blocs.py la trente-quatrieme (les TAILLES du bloc : le quota
+# des conteneurs, la part des grains, le nombre de blocs -- extraites de
+# tapis_rotation.py pour que le repli chronologique et la rotation lisent la
+# MEME arithmetique, 26/11 : le repli comptait 60 blocs pour 80 reels, et
+# 115 issues sur 558 n'etaient jamais servies).
 
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
@@ -800,7 +804,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_labels.py", 60),
                                               ("tapis_occupation.py", 298),
                                               ("tapis_leger_rapport.py", 50),
-                                              ("tapis_leger_texte_occupation.py", 33)])
+                                              ("tapis_leger_texte_occupation.py", 33),
+                                              ("tapis_blocs.py", 60)])
 
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
