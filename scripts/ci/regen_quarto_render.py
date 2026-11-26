@@ -47,6 +47,7 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
     "MyIA.AI.Notebooks/Physique/index.qmd",
+    "MyIA.AI.Notebooks/BioMedecine/index.qmd",
     "docs/index.qmd",
     # Page parcours : deplacee de la racine vers docs/ (#13751, fenetre Quarto)
     # — la racine ne garde que index.qmd ; le glob "*.qmd" ci-dessus ne la
@@ -95,6 +96,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/InformationCalcul/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
     "MyIA.AI.Notebooks/Physique/",                 # serie Physique numerique (EPIC #23161) -- Integrales deplaces de Probas/Applications/ (T1)
+    "MyIA.AI.Notebooks/BioMedecine/",             # serie Bio & Medecine (#28135) -- pli Dynamiques, fondation de la serie
     "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (203 rendus, 221 git-tracked - 18 sous /archive/ ; sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/",  # tranche 19 #18423 (6)
     "MyIA.AI.Notebooks/GenAI/3D/",                # serie 3D Pli 2 #19949 (2, NeRF from scratch + critique des limitations)
