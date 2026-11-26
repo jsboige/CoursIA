@@ -215,7 +215,7 @@ Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prêt
 
 **Moins d'étiquettes.** Trois faits commandent la densité des noms ; deux sont des réglages, et le film livré les porte tous les deux. D'abord, la durée d'affichage d'un nom de répertoire n'est **pas** réglable : dans Gource 0.53, `RDirNode::drawDirName` (`src/dirnode.cpp`) dessine un nom pendant les **cinq secondes** qui suivent la dernière apparition d'un fichier dans ce répertoire ou dans l'un de ses descendants, avec un alpha qui décroît linéairement jusqu'à zéro, et cette constante n'est exposée par aucune option ; `--filename-time`, le seul réglage de durée d'affichage des noms, ne concerne que les noms de fichiers (masqués ici) et refuse moins de 2 s. Ensuite, deux leviers subsistent :
 
-- **`--dir-name-depth 1`** : Gource nomme les répertoires jusqu'à la profondeur demandée **plus un** — le test du code est `dir_name_depth < depth - 1`, les répertoires de premier niveau étant à `depth 1` — donc les deux premiers niveaux : les sections du dépôt (`MyIA.AI.Notebooks`, `docs`, `scripts`, …) et, dessous, les séries (`SymbolicAI`, `GenAI`, `QuantConnect`, `IIT`, `GameTheory`, …). Le rendu précédent, en profondeur 2, nommait un niveau de plus, les sous-séries. Compté sur les 28 266 fichiers ajoutés de `main`, renommages compris comme ajouts, le vivier de noms que Gource peut avoir à dessiner passe de 739 répertoires (34 au niveau 1, 242 au niveau 2, 463 au niveau 3) à 276 : le niveau retiré est le plus peuplé des trois.
+- **`--dir-name-depth 1`** : Gource nomme les répertoires jusqu'à la profondeur demandée **plus un** — le test du code est `dir_name_depth < depth - 1`, les répertoires de premier niveau étant à `depth 1` — donc les deux premiers niveaux : les sections du dépôt (`MyIA.AI.Notebooks`, `docs`, `scripts`, …) et, dessous, les séries (`SymbolicAI`, `GenAI`, `QuantConnect`, `IIT`, `GameTheory`, …). Le rendu précédent, en profondeur 2, nommait un niveau de plus, les sous-séries. Compté à la date du rendu sur les fichiers ajoutés de `main`, renommages compris comme ajouts : le niveau retiré est le plus peuplé des trois, et le vivier de noms que Gource peut avoir à dessiner tombe à un peu plus d'un tiers.
 - **`--max-file-lag 0.3`** : les fichiers d'un commit apparaissent dans une fenêtre de 0,3 s au lieu de 5 s. Le minuteur de chaque répertoire parent est ré-armé à chaque apparition de fichier (`parent->nodeUpdated(true)`), donc cette fenêtre est ce qui étale les noms dans le temps.
 
 Mesuré sur le même extrait 4K de la fin de l'historique, par OCR à une lecture par seconde, en comptant les lignes de texte autres que la date : 151 lignes et jusqu'à 25 noms simultanés en profondeur 2 ; 66 lignes et 10 noms en profondeur 1 ; 41 lignes et 9 noms en ajoutant `--max-file-lag 0.3`. Sur cet extrait le dernier nom s'éteint à 13 s, 10 s puis 6 s, et le troisième film dure 12,4 s au lieu de 17,0 s — l'écart entre les deux fenêtres de fichiers fait 4,7 s. Sur le film entier livré, la même mesure donne 828 lignes sur 182 trames (moyenne 4,55 par trame), un maximum de 12 vers 150 s, et plus aucun nom après 175 s. La police des noms passe de 26 à 20 : en 4K, les étiquettes que l'OCR restitue mesurent 30 à 38 pixels de haut.
@@ -254,11 +254,11 @@ Trois bornes de méthode. L'OCR de Windows lit mal un nom en fondu ou masqué pa
 
 *Bandeau : dimanche, février 2025 — le quantième n'y est pas lisible ; la courbe date ↔ temps situe la trame au 2 février. Soixante-deux fichiers, trois répertoires, et un arbre qui n'a pas bougé depuis le commit du 31 janvier, celui qui fait entrer la série GenAI : à quatre jours d'historique par seconde, ce week-end tient dans une demi-seconde de film. L'OCR lit un fragment d'un seul nom (`. Notebooks`, 31 pixels de haut), reste de `MyIA.AI.Notebooks`, le seul répertoire de premier niveau de l'arbre.*
 
-![2026-01-23 : les premiers fichiers Lean, 959 fichiers](assets/gource/05-2026-01-serie-lean.jpg)
+![2026-01-23 : les premiers fichiers Lean](assets/gource/05-2026-01-serie-lean.jpg)
 
 *Bandeau : vendredi 23 janvier 2026. Neuf cent cinquante-neuf fichiers et douze répertoires de premier niveau, un ordre de grandeur de plus que la trame précédente. Le premier fichier Lean et le dossier `SymbolicAI/Lean/` entrent ce jour-là. L'OCR lit `docs` (32 pixels) et deux fragments (`ookAp`, `cripts`), restes de `GradeBookApp` et de `scripts`.*
 
-![2026-06-12 : Z3 / SMT la veille, 5 418 fichiers](assets/gource/06-2026-06-z3-smt.jpg)
+![2026-06-12 : Z3 / SMT la veille](assets/gource/06-2026-06-z3-smt.jpg)
 
 *Bandeau : vendredi 12 juin 2026. Cinq mille quatre cent dix-huit fichiers et onze répertoires de premier niveau ; la série Z3 / SMT a été créée la veille, et sera rangée sous `SMT/` le lendemain. L'OCR lit `slides` (30 pixels), `.github` (38 pixels) et des fragments restés illisibles.*
 
@@ -266,7 +266,7 @@ Trois bornes de méthode. L'OCR de Windows lit mal un nom en fondu ou masqué pa
 
 *Bandeau : dimanche 20 septembre 2026. Onze mille cent soixante et onze fichiers et dix-huit répertoires de premier niveau — le maximum des huit trames. C'est la zone la plus dense du film, celle où le nombre d'étiquettes devient le sujet. Les huit lignes de texte lues y sont toutes partielles (`…Unrading.Backtester.Tests`, `tran ions`, `.cl u`, `cripts`) : à cette densité les noms se chevauchent, et aucun ne se lit entier.*
 
-![2026-11-26 14:46:43 : l'état final, 19 141 fichiers](assets/gource/08-2026-11-etat-final.jpg)
+![2026-11-26 14:46:43 : l'état final](assets/gource/08-2026-11-etat-final.jpg)
 
 *Bandeau : jeudi 26 novembre 2026, 14:46:43 — l'heure du dernier commit du rendu. Dix-neuf mille cent quarante et un fichiers et treize répertoires de premier niveau, les projets .NET désormais repartis sous `dotnet/` (GradeBookApp, MyIA.AI.Shared, les trois MyIA.Trading.*). L'OCR n'y lit aucun nom : sur cette trame, tous les noms sont éteints.*
 
