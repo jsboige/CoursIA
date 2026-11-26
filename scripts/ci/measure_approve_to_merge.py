@@ -54,7 +54,15 @@ Lectures honnetes que le rapport porte lui-meme :
   fenetre est alors declaree incomplete (`fenetre_complete: false`, et
   `tronquee: true`), et une PR dont les revues ne sont pas lues en entier sort
   du denominateur sous `revues_incompletes` -- jamais classee « tete
-  anterieure » ou « sans approbation » sur un prefixe.
+  anterieure » ou « sans approbation » sur un prefixe ;
+- une lecture peut echouer en route : le releve lit une page de recherche, les
+  pages de la fenetre, puis les revues de chaque PR inspectee, et le 26/11 deux
+  passages **consecutifs** sont tombes en route (un 502 a 11:39Z, un quota
+  epuise a 11:45Z). Les erreurs transitoires (5xx, limite secondaire 403/429)
+  sont retentees quatre fois ; un **quota primaire epuise** n'est pas retente a
+  l'aveugle : le releve s'arrete sur un refus lisible (code 3) qui porte
+  l'instant de reinitialisation, et **aucun releve partiel n'est produit** --
+  une mesure coupee par une panne ne se lirait pas comme une mesure.
 
 Lecture seule : aucune ecriture dans le depot, aucun secret (le jeton est lu
 par ``gh auth token`` au premier appel, et n'est jamais imprime).
@@ -78,8 +86,38 @@ APPROUVEUR = "myia-ai-01"
 MAX_PR_READ = 400
 MAX_PAGES = 10
 MAX_OPEN_READ = 60
+# Erreurs qui se retentent : limite secondaire, et defaut passager du serveur.
+A_REESSAYER = (403, 429, 500, 502, 503, 504)
+RETOUR_QUOTA_EPUISE = 3
 
 _TOKEN: str | None = None
+
+
+class QuotaEpuise(RuntimeError):
+    """Quota primaire GitHub epuise : la lecture ne peut pas continuer.
+
+    Repeter dans les secondes qui suivent ne sert a rien : le quota se
+    reinitialise a un instant connu, porte par `reinitialisation` (ou `None`
+    si l'en-tete manque).
+    """
+
+    def __init__(self, reinitialisation: datetime | None):
+        super().__init__("quota GitHub epuise")
+        self.reinitialisation = reinitialisation
+
+
+def _quota_epuise(erreur: urllib.error.HTTPError) -> bool:
+    entetes = erreur.headers
+    return entetes is not None and str(entetes.get("X-RateLimit-Remaining")) == "0"
+
+
+def _reinitialisation(erreur: urllib.error.HTTPError) -> datetime | None:
+    entetes = erreur.headers
+    brut = entetes.get("X-RateLimit-Reset") if entetes is not None else None
+    try:
+        return datetime.fromtimestamp(int(brut), tz=timezone.utc)
+    except (TypeError, ValueError):
+        return None
 
 
 def jeton() -> str:
@@ -111,7 +149,9 @@ def api(chemin: str, essais: int = 4):
             with urllib.request.urlopen(requete, timeout=90) as reponse:
                 return json.loads(reponse.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
-            if exc.code in (403, 429) and tentative < essais - 1:
+            if exc.code in (403, 429) and _quota_epuise(exc):
+                raise QuotaEpuise(_reinitialisation(exc)) from exc
+            if exc.code in A_REESSAYER and tentative < essais - 1:
                 time.sleep(pause)
                 pause *= 2
                 continue
@@ -510,9 +550,17 @@ def main(argv: list[str] | None = None) -> int:
         print("fenetre vide : --depuis est dans le futur", file=sys.stderr)
         return 2
 
-    rapport = mesurer(depuis, maintenant, options.approuveur, options.max_prs,
-                      avec_ouvertes=not options.sans_ouvertes,
-                      max_ouvertes=options.max_ouvertes, max_pages=options.max_pages)
+    try:
+        rapport = mesurer(depuis, maintenant, options.approuveur, options.max_prs,
+                          avec_ouvertes=not options.sans_ouvertes,
+                          max_ouvertes=options.max_ouvertes, max_pages=options.max_pages)
+    except QuotaEpuise as exc:
+        instant = ("-"
+                   if exc.reinitialisation is None
+                   else exc.reinitialisation.isoformat().replace("+00:00", "Z"))
+        print(f"quota GitHub epuise : reinitialisation a {instant} ; aucun releve"
+              " produit, relancer apres cet instant", file=sys.stderr)
+        return RETOUR_QUOTA_EPUISE
     texte = json.dumps(rapport, indent=1, ensure_ascii=False)
     if options.out:
         with open(options.out, "w", encoding="utf-8", newline="\n") as flux:

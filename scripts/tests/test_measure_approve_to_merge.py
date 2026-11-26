@@ -33,7 +33,8 @@ pas un test. Ce qui est teste ici, c'est ce qui **decide** de la mesure :
    derniere decision de review ; la regle tient sans ce filtre.
 
 Les appels reseau sont remplaces par une fonction `api` factice : les tests ne
-dependent ni du reseau ni du quota.
+dependent ni du reseau ni du quota. La couche de lecture (`api`) a sa
+propre suite : `test_measure_approve_to_merge_lecture.py`.
 """
 
 from __future__ import annotations
