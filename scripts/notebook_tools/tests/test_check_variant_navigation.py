@@ -121,7 +121,7 @@ class VariantNavigationFixture(unittest.TestCase):
 
     def _verify(self):
         findings, stats, _ = verify(
-            self.root, self.registry, (FAMILY,), self.surfaces, ()
+            self.root, [self.registry], (FAMILY,), self.surfaces, ()
         )
         return findings, stats
 
@@ -249,6 +249,75 @@ class TestDerivationDuType(unittest.TestCase):
             "csharp": "b.ipynb",
         }
         self.assertIsNone(derive_correspondence(entry))
+
+
+class TestTripletRust(unittest.TestCase):
+    """Notion a trois cotes (Python / C# / Rust) : attestee par deux registres.
+
+    Le registre des jumeaux porte la paire Python/C#, le registre de conformite
+    Rust porte l'ensemble des trois cotes et ses mesures. La certification porte
+    sur la **notion**, pas sur la paire : un lien C# -> Rust est donc atteste.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.twin = self.root / "twin_pairs.d"
+        self.rust = self.root / "rust_conformance.d"
+        self.twin.mkdir(parents=True)
+        self.rust.mkdir(parents=True)
+
+        py = "MyIA.AI.Notebooks/GameTheory/GT-02c-Python.ipynb"
+        cs = "MyIA.AI.Notebooks/GameTheory/GT-02c-CSharp.ipynb"
+        rs = "MyIA.AI.Notebooks/GameTheory/GT-02c-Rust.ipynb"
+        (self.twin / "gt-02c.yaml").write_text(
+            f"- name: GT-02c\n  family: {FAMILY}\n  python: {py}\n  csharp: {cs}\n"
+            "  parity_level: native-both\n  bridge_verdict: SOTA-OK\n",
+            encoding="utf-8",
+        )
+        (self.rust / "gt-02c.yaml").write_text(
+            f"- name: GT-02c\n  family: {FAMILY}\n  python: {py}\n  csharp: {cs}\n  rust: {rs}\n"
+            "  measures:\n  - id: m1\n    tolerance: 0\n",
+            encoding="utf-8",
+        )
+        for rel, source, kernel in (
+            (cs, f"**Variante jumelle** : [GT-02c-Rust](GT-02c-Rust.ipynb) — "
+                f"correspondance : {TYPE_EQUIVALENCE} · noyau : `.net-csharp`\n", ".net-csharp"),
+            (rs, f"**Variante jumelle** : [GT-02c-CSharp](GT-02c-CSharp.ipynb) — "
+                f"correspondance : {TYPE_EQUIVALENCE} · noyau : `evcxr`\n", "evcxr"),
+        ):
+            path = self.root / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps(_nb(source, kernel=kernel), indent=1, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_triplet_certifie(self):
+        findings, stats, _ = verify(
+            self.root, [self.twin, self.rust], (FAMILY,), (), ()
+        )
+        bloquants = [f for f in findings if f["kind"] != "MISSING_VARIANT"]
+        self.assertEqual([], bloquants, f"le triplet doit etre certifie : {bloquants}")
+        self.assertEqual(1, stats["notions_multi_cotes"], "la notion porte trois cotes")
+        self.assertEqual(2, stats["headers"])
+
+    def test_triplet_sans_attestation_bloquant(self):
+        """Un lien vers un carnet hors registre reste bloquant, meme dans un triplet."""
+        rs = self.root / "MyIA.AI.Notebooks/GameTheory/GT-02c-Rust.ipynb"
+        _write_nb(
+            rs,
+            _nb(
+                "**Variante jumelle** : [GT-02c-Inconnu](GT-02c-Inconnu.ipynb) — "
+                f"correspondance : {TYPE_EQUIVALENCE} · noyau : `evcxr`\n"
+            ),
+        )
+        findings, _, _ = verify(self.root, [self.twin, self.rust], (FAMILY,), (), ())
+        casses = [f for f in findings if f["kind"] == "BROKEN_LINK"]
+        self.assertTrue(casses)
 
 
 class TestCleDeNotion(unittest.TestCase):

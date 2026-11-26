@@ -15,25 +15,41 @@ est de la **prose** : rien ne garantissait qu'une paire annoncée y soit
 attestée, ni que le type de correspondance annoncé corresponde à l'attestation.
 Un lien mort ou une équivalence affirmée sans preuve passaient inaperçus.
 
-Ce tool relie les deux : il lit le registre, il lit les surfaces de navigation,
+Ce tool relie les deux : il lit les registres, il lit les surfaces de navigation,
 et il signale l'écart.
+
+Deux registres sont lus :
+- `scripts/notebook_tools/twin_pairs.d/` — le registre des jumeaux (`parity_level`,
+  `bridge_verdict`, enregistrement d'audit) ;
+- `scripts/notebook_tools/rust_conformance.d/` — le registre de conformité Rust
+  (mesures cellule par cellule entre le port Rust et son modèle).
+
+La certification porte sur la **notion**, pas sur la paire : le pivot est le
+carnet Python, et chaque cote se rattache à cette notion. Une notion peut ainsi
+porter plus de deux cotes (triplet Python / C# / Rust) : un lien entre le
+carnet C# et le carnet Rust est attesté dès lors que les deux appartiennent à
+la même notion — formulation de l'EPIC #28763 (« notion commune, variantes
+réellement disponibles »).
 
 Les contrôles
 -------------
 1. `BROKEN_LINK`      — la cible annoncée n'existe pas sur le disque.
-2. `UNATTESTED_PAIR`  — la navigation annonce une paire que le registre n'atteste
-                        pas (équivalence annoncée sans démonstration).
+2. `UNATTESTED_PAIR`  — la navigation annonce une variante que le registre
+                        n'atteste pas (équivalence annoncée sans démonstration).
 3. `TYPE_MISMATCH`    — le type de correspondance annoncé diffère de celui que
                         l'attestation du registre permet de déduire.
 4. `KERNEL_MISMATCH`  — le noyau annoncé diffère du kernelspec réel du carnet.
 5. `MISSING_VARIANT`  — une notion existe d'un seul côté de la famille (variante
                         absente) : elle ne peut pas se dire « équivalence vérifiée ».
+                        Finding consultatif : il nomme l'asymétrie, il ne bloque pas.
 
 Le type de correspondance est **dérivé** du registre, jamais déclaré à la main :
 
     deux côtés + parity_level semantic/native-both + bridge_verdict SOTA-OK
         + un enregistrement d'audit  ->  « équivalence vérifiée »
     deux côtés + parity_level surface ->  « même progression »
+    registre Rust : mesures à tolérance nulle ->  « équivalence vérifiée »
+    registre Rust : mesures tolérées     ->  « même progression »
     un seul côté                     ->  « complément »
     sinon                            ->  indéterminé (l'organe le signale)
 
@@ -43,7 +59,8 @@ Modes
     python check_variant_navigation.py --json          # sortie machine
     python check_variant_navigation.py --check         # exit 1 si finding bloquant
     python check_variant_navigation.py --surface <f>   # une surface de plus
-    python check_variant_navigation.py --all-families  # toutes les familles du registre
+    python check_variant_navigation.py --family <f>    # une famille de plus
+    python check_variant_navigation.py --all-families  # toutes les familles
     python check_variant_navigation.py --list-families
 
 Read-only : ne modifie aucun carnet, aucun registre, aucune documentation.
@@ -65,6 +82,7 @@ except ImportError:  # pragma: no cover
 
 REPO_ROOT_DEFAULT = Path(__file__).resolve().parents[2]
 REGISTRY_DEFAULT = "scripts/notebook_tools/twin_pairs.d"
+RUST_REGISTRY_DEFAULT = "scripts/notebook_tools/rust_conformance.d"
 
 # Familles de navigation couvertes par defaut : les deux familles de variantes
 # de la serie Probas (inference probabiliste + theorie de la decision).
@@ -168,7 +186,26 @@ def sides_of(entry: dict) -> list:
 
 
 def derive_correspondence(entry: dict) -> str | None:
-    """Type de correspondance **deduit** de l'attestation du registre."""
+    """Type de correspondance **deduit** de l'attestation du registre.
+
+    Deux registres sont lus :
+    - le registre des jumeaux (`twin_pairs.d`), qui porte `parity_level`,
+      `bridge_verdict` et un enregistrement d'audit ;
+    - le registre de conformite Rust (`rust_conformance.d`), qui porte des
+      **mesures** cellule par cellule entre le port Rust et son modele.
+
+    Regle de derivation :
+
+        un seul cote                      -> « complement »
+        `parity_level: surface`           -> « meme progression »
+        semantic/native-both + SOTA-OK
+          + un enregistrement d'audit     -> « equivalence verifiee »
+        registre Rust : toutes les
+          mesures a tolerance nulle       -> « equivalence verifiee »
+          (egalite stricte des sorties declarees)
+        registre Rust : mesures tolerees  -> « meme progression »
+        sinon                             -> indetermine (l'organe le signale)
+    """
     sides = sides_of(entry)
     if len(sides) < 2:
         return TYPE_COMPLEMENT
@@ -178,6 +215,12 @@ def derive_correspondence(entry: dict) -> str | None:
     if level in ("semantic", "native-both") and entry.get("bridge_verdict") == "SOTA-OK":
         if has_audit(entry):
             return TYPE_EQUIVALENCE
+    measures = entry.get("measures")
+    if measures:
+        tolerances = [m.get("tolerance", 0) for m in measures if isinstance(m, dict)]
+        if tolerances and all(t == 0 for t in tolerances):
+            return TYPE_EQUIVALENCE
+        return TYPE_PROGRESSION
     return None
 
 
@@ -242,6 +285,8 @@ def scan_surface_pairs(surface: Path, dir_pairs: dict, repo_root: Path) -> list:
             right = [t for t in targets if parent_dir(t) == dcs]
             for a in left:
                 for b in right:
+                    if a == b:
+                        continue
                     if notion_key(a, dirs) and notion_key(a, dirs) == notion_key(b, dirs):
                         claims.append(
                             {
@@ -316,26 +361,57 @@ def notion_key(path: str, dirs: tuple) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def verify(repo_root: Path, registry_path: Path, families, surfaces, extra_surfaces):
-    entries = load_registry(registry_path)
+def verify(repo_root: Path, registry_paths, families, surfaces, extra_surfaces):
+    entries = []
+    for reg_path in registry_paths:
+        entries.extend(load_registry(reg_path))
     fam_entries = [e for e in entries if e.get("family") in families]
 
-    # Index : ensemble de deux cotes -> entree attestee.
-    attested = {}
+    # Index par **notion** : le pivot est le carnet Python ; chaque cote
+    # rattachee a cette notion. Une notion peut avoir plus de deux cotes
+    # (triplet Python / C# / Rust) : l'attestation porte alors sur la notion,
+    # pas sur la paire -- c'est la formulation de l'EPIC #28763 (« notion
+    # commune, variantes reellement disponibles »).
+    groups = {}
+    side_group = {}
     dir_pairs = {}
     for e in fam_entries:
         sides = sides_of(e)
-        if len(sides) >= 2:
-            attested[frozenset(sides[:2])] = e
-            dpy = str(Path(e["python"]).parent).replace("\\", "/")
-            dcs = str(Path(e["csharp"]).parent).replace("\\", "/")
+        if len(sides) < 2:
+            continue
+        pivot = e.get("python") or sides[0]
+        g = groups.setdefault(pivot, {"sides": set(), "entries": []})
+        g["sides"].update(sides)
+        g["entries"].append(e)
+        dpy = parent_dir(pivot)
+        dcs = parent_dir(sides[1])
+        if dpy != dcs:
+            # famille a repertoire unique (les cotes sont voisines) : ce n'est
+            # pas une famille de variantes « cote a cote », mais les carnets
+            # restent scannes (un triplet Rust tient dans un seul dossier).
             dir_pairs[frozenset((dpy, dcs))] = (dpy, dcs)
+    for g in groups.values():
+        for s in g["sides"]:
+            side_group[s] = g
+
+    def group_type(g) -> str | None:
+        """Type deduit du groupe : unique s'il est coherent, sinon indetermine."""
+        types = {t for t in (derive_correspondence(e) for e in g["entries"]) if t}
+        if len(types) == 1:
+            return types.pop()
+        return None
 
     findings = []
-    stats = {"pairs_announced": 0, "pairs_attested": 0, "headers": 0}
+    stats = {
+        "pairs_announced": 0,
+        "pairs_attested": 0,
+        "headers": 0,
+        "notions": len(groups),
+        "notions_multi_cotes": sum(1 for g in groups.values() if len(g["sides"]) >= 3),
+    }
 
     # --- Surface A : en-tetes de variante dans les carnets -------------------
-    notebook_dirs = sorted({d for pair in dir_pairs.values() for d in pair})
+    notebook_dirs = sorted({parent_dir(s) for s in side_group})
     for d in notebook_dirs:
         abs_dir = repo_root / d
         if not abs_dir.is_dir():
@@ -354,9 +430,9 @@ def verify(repo_root: Path, registry_path: Path, families, surfaces, extra_surfa
                         }
                     )
                     continue
-                pair = frozenset((rel_nb, target))
-                entry = attested.get(pair)
-                if entry is None:
+                g = side_group.get(rel_nb)
+                g_other = side_group.get(target)
+                if g is None or g_other is None or g is not g_other:
                     findings.append(
                         {
                             "kind": "UNATTESTED_PAIR",
@@ -366,7 +442,7 @@ def verify(repo_root: Path, registry_path: Path, families, surfaces, extra_surfa
                     )
                     continue
                 stats["pairs_attested"] += 1
-                derived = derive_correspondence(entry)
+                derived = group_type(g)
                 declared = header.get("correspondence")
                 if declared is None:
                     findings.append(
@@ -382,8 +458,8 @@ def verify(repo_root: Path, registry_path: Path, families, surfaces, extra_surfa
                             "kind": "TYPE_MISMATCH",
                             "surface": rel_nb,
                             "detail": (
-                                f"annonce « {declared} » ; registre "
-                                f"« {entry.get('name')} » -> « {derived or 'indetermine'} »"
+                                f"annonce « {declared} » ; registre -> "
+                                f"« {derived or 'indetermine'} »"
                             ),
                         }
                     )
@@ -410,7 +486,8 @@ def verify(repo_root: Path, registry_path: Path, families, surfaces, extra_surfa
         for claim in scan_surface_pairs(surf, dir_pairs, repo_root):
             a, b = claim["a"], claim["b"]
             stats["pairs_announced"] += 1
-            if frozenset((a, b)) in attested:
+            g = side_group.get(a)
+            if g is not None and g is side_group.get(b):
                 stats["pairs_attested"] += 1
             else:
                 findings.append(
@@ -448,7 +525,12 @@ def verify(repo_root: Path, registry_path: Path, families, surfaces, extra_surfa
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo-root", default=str(REPO_ROOT_DEFAULT))
-    ap.add_argument("--registry", default=REGISTRY_DEFAULT)
+    ap.add_argument(
+        "--registry",
+        action="append",
+        default=None,
+        help=f"registre lu (repetable) ; defaut : {REGISTRY_DEFAULT} + {RUST_REGISTRY_DEFAULT}",
+    )
     ap.add_argument("--family", action="append", default=[])
     ap.add_argument("--surface", action="append", default=[])
     ap.add_argument("--all-families", action="store_true")
@@ -458,23 +540,28 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     repo_root = Path(args.repo_root).resolve()
-    registry_path = Path(args.registry)
-    if not registry_path.is_absolute():
-        registry_path = repo_root / registry_path
+    registry_paths = args.registry or [REGISTRY_DEFAULT, RUST_REGISTRY_DEFAULT]
+    registry_paths = [
+        p if Path(p).is_absolute() else repo_root / p for p in registry_paths
+    ]
 
     if args.list_families:
-        entries = load_registry(registry_path)
-        for fam in sorted({str(e.get("family")) for e in entries}):
+        fams = set()
+        for reg_path in registry_paths:
+            fams |= {str(e.get("family")) for e in load_registry(reg_path)}
+        for fam in sorted(fams):
             print(fam)
         return 0
 
     families = tuple(args.family) if args.family else DEFAULT_FAMILIES
     if args.all_families:
-        entries = load_registry(registry_path)
-        families = tuple(sorted({str(e.get("family")) for e in entries}))
+        fams = set()
+        for reg_path in registry_paths:
+            fams |= {str(e.get("family")) for e in load_registry(reg_path)}
+        families = tuple(sorted(fams))
 
     findings, stats, fam_entries = verify(
-        repo_root, registry_path, families, DEFAULT_SURFACES, args.surface
+        repo_root, registry_paths, families, DEFAULT_SURFACES, args.surface
     )
 
     blocking = [f for f in findings if f["kind"] != "MISSING_VARIANT"]
@@ -496,8 +583,9 @@ def main(argv=None) -> int:
         print(f"familles : {', '.join(families)}")
         print(f"entrees de registre : {len(fam_entries)}")
         print(
-            "paires annoncees : {pairs_announced} | attestees : {pairs_attested} | "
-            "en-tetes de variante : {headers}".format(**stats)
+            "notions : {notions} (dont {notions_multi_cotes} a plus de deux cotes) | "
+            "paires annoncees : {pairs_announced} | "
+            "attestees : {pairs_attested} | en-tetes de variante : {headers}".format(**stats)
         )
         for f in findings:
             print(f"[{f['kind']}] {f['surface']} — {f['detail']}")
