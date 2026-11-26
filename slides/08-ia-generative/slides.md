@@ -297,7 +297,7 @@ class: nb-map nb-k100
 
 <div class="nb-card"><p class="nb-step">Position par rotation</p><p class="nb-what">RoPE : coder la position d’un token par une rotation de son vecteur.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch-Python.ipynb" target="_blank" rel="noopener">TV-00a-RoPE-from-scratch-Python</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Variantes d’attention</p><p class="nb-what">MHA, MQA, GQA, fenêtre glissante : partager des têtes ou restreindre la fenêtre pour économiser mémoire et calcul.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb" target="_blank" rel="noopener">TV-00b-Attention-Variants-from-scratch</a></p></div>
+<div class="nb-card"><p class="nb-step">Variantes d’attention</p><p class="nb-what">MHA, MQA, GQA, fenêtre glissante : partager des têtes ou restreindre la fenêtre pour économiser mémoire et calcul.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb" target="_blank" rel="noopener">TV-00b-Attention-Variants-from-scratch-Python</a></p></div>
 
 <div class="nb-card"><p class="nb-step">Les deux autres familles</p><p class="nb-what">Encodeur seul et encodeur-décodeur, à côté du décodeur seul des modèles de chat.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb" target="_blank" rel="noopener">TV-00d-Encodeurs-from-scratch-Python</a></p></div>
 

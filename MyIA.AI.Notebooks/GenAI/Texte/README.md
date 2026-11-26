@@ -109,7 +109,7 @@ La sous-série part du notebook [TV-00a — RoPE from scratch](TransformerVarian
 | # | Notebook | Ce qu’on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
 | TV-00a | [RoPE from scratch](TransformerVariants/TV-00a-RoPE-from-scratch-Python.ipynb) | Rotation par paires de dimensions, invariance de position relative mesurée et comparaison au PE additif | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
-| TV-00b | [Attention variants from scratch](TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | Comparaison MHA, MQA, GQA et fenêtre glissante SWA | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-00b | [Attention variants from scratch](TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb) | Comparaison MHA, MQA, GQA et fenêtre glissante SWA | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
 | TV-00d | [Encodeurs from scratch](TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb) | Encodeur seul et encodeur-décodeur, avec ablations de position, transfert de masque et génération seq2seq | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
 | TV-01 | [Attention variants SOTA](TransformerVariants/TV-01-Attention-Variants-SOTA-Python.ipynb) | Mesures d’attention, KV-cache, champ réceptif, préremplissage et décodage sur Mistral-7B | Bloc B (GPU) | [README de la sous-série](TransformerVariants/README.md) |
 | TV-02 | [MoE SOTA](TransformerVariants/TV-02-MoE-SOTA.ipynb) | Routage et charge mesurés sur OLMoE, comparés au notebook 3.4c | Bloc B (GPU) | [README de la sous-série](TransformerVariants/README.md) |

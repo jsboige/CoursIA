@@ -1508,7 +1508,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/24_Generative_Agents_MiniMonde.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch-Python.ipynb"
-    - "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA-Python.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb"

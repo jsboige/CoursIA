@@ -1,7 +1,7 @@
 """Briques canoniques d'un mini-transformer, extraites de TV-00b.
 
 Ce module isole les pièces qui vivent dans les cellules du notebook
-``TV-00b-Attention-Variants-from-scratch.ipynb`` pour les rendre importables
+``TV-00b-Attention-Variants-from-scratch-Python.ipynb`` pour les rendre importables
 par un autre notebook ou un test, sans dépendance au reste du notebook.
 
 Trois classes principales :
