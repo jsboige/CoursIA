@@ -35,7 +35,13 @@ Lectures honnetes que le rapport porte lui-meme :
   de denominateur, et 0 % se lirait comme « aucune fusion rapide » ;
 - la mesure des **fusionnees** ne voit pas une PR approuvee qui attend encore :
   la section « ouvertes approuvees » (sauf `--sans-ouvertes`) compte celles
-  dont l'approbation a la tete exacte attend depuis plus que le seuil.
+  dont l'approbation a la tete exacte attend depuis plus que le seuil ;
+- une approbation soumise **apres** la fusion sort du denominateur : elle ne
+  peut pas etre la cause de la fusion, et le delai serait negatif -- un delai
+  negatif compte « sous 24 h » gonflerait la part qu'on cherche a mesurer ;
+- les revues se lisent **page par page** : une page unique peut omettre
+  l'approbation recente d'une PR tres commentee, et la PR serait alors classee
+  « tete anterieure » a tort.
 
 Lecture seule : aucune ecriture dans le depot, aucun secret (le jeton est lu
 par ``gh auth token`` au premier appel, et n'est jamais imprime).
@@ -138,8 +144,24 @@ def fusionnees(depuis: datetime, jusqu_a: datetime, max_pages: int = MAX_PAGES) 
     return trouvees
 
 
-def revues(numero: int) -> list[dict]:
-    return api(f"/repos/{REPO}/pulls/{numero}/reviews?per_page={PAR_PAGE}")
+def revues(numero: int, max_pages: int = MAX_PAGES) -> list[dict]:
+    """Toutes les revues d'une PR, page par page.
+
+    Une page unique ne suffit pas : sur une PR tres commentee, l'approbation
+    recente tombe sur une page suivante, et le classement conclurait alors
+    « tete anterieure » ou « sans approbation » sur une PR pourtant approuvee a
+    la tete exacte. La lecture suit les pages jusqu'a une page courte.
+    """
+    lues: list[dict] = []
+    for page in range(1, max_pages + 1):
+        lot = api(f"/repos/{REPO}/pulls/{numero}/reviews"
+                  f"?per_page={PAR_PAGE}&page={page}")
+        if not lot:
+            break
+        lues.extend(lot)
+        if len(lot) < PAR_PAGE:
+            break
+    return lues
 
 
 def approbations(revues_lues: list[dict], approbateur: str) -> list[dict]:
@@ -154,12 +176,22 @@ def approbations(revues_lues: list[dict], approbateur: str) -> list[dict]:
     return retenues
 
 
-def approbation_tete(revues_lues: list[dict], tete: str, approbateur: str) -> dict | None:
-    """Derniere approbation de l'approbateur posee sur **cette** tete, ou None."""
+def approbation_tete(revues_lues: list[dict], tete: str, approbateur: str,
+                     avant: datetime | None = None) -> dict | None:
+    """Derniere approbation de l'approbateur posee sur **cette** tete, ou None.
+
+    `avant` borne la lecture a l'instant qu'elle ne peut pas depasser, celui de
+    la fusion quand il s'agit d'une PR fusionnee : une approbation soumise
+    **apres** la fusion ne peut pas en etre la cause, et n'a donc aucun delai a
+    donner.
+    """
     sur_la_tete = [
         revue for revue in approbations(revues_lues, approbateur)
         if revue.get("commit_id") == tete
     ]
+    if avant is not None:
+        sur_la_tete = [revue for revue in sur_la_tete
+                       if parse_ts(revue["submitted_at"]) <= avant]
     return sur_la_tete[-1] if sur_la_tete else None
 
 
@@ -167,7 +199,7 @@ def classer(pr: dict, revues_lues: list[dict], approbateur: str) -> dict:
     """Classe une PR fusionnee : tete exacte, tete anterieure, ou sans approbation."""
     tete = (pr.get("head") or {}).get("sha") or ""
     fusionnee_le = parse_ts(pr.get("merged_at"))
-    sur_la_tete = approbation_tete(revues_lues, tete, approbateur)
+    sur_la_tete = approbation_tete(revues_lues, tete, approbateur, avant=fusionnee_le)
     if sur_la_tete is not None:
         approuvee_le = parse_ts(sur_la_tete["submitted_at"])
         return {
@@ -175,6 +207,11 @@ def classer(pr: dict, revues_lues: list[dict], approbateur: str) -> dict:
             "classe": "tete_exacte",
             "heures": (fusionnee_le - approuvee_le).total_seconds() / 3600.0,
         }
+    if approbation_tete(revues_lues, tete, approbateur) is not None:
+        # Approbation posee sur cette tete, mais apres la fusion : la fusion
+        # n'en est pas la consequence, et le delai serait negatif.
+        return {"numero": pr["number"], "classe": "approbation_apres_fusion",
+                "heures": None}
     if approbations(revues_lues, approbateur):
         return {"numero": pr["number"], "classe": "tete_anterieure", "heures": None}
     return {"numero": pr["number"], "classe": "sans_approbation", "heures": None}
@@ -204,6 +241,8 @@ def resume(lignes: list[dict], seuil: float = SEUIL_HEURES) -> dict:
             "max_heures": max(tete) if tete else None,
         },
         "tete_anterieure": sum(1 for ligne in lignes if ligne["classe"] == "tete_anterieure"),
+        "approbation_apres_fusion": sum(1 for ligne in lignes
+                                        if ligne["classe"] == "approbation_apres_fusion"),
         "sans_approbation": sum(1 for ligne in lignes if ligne["classe"] == "sans_approbation"),
     }
 
@@ -298,6 +337,7 @@ def formater(rapport: dict) -> str:
         f" | p90 {_heures(bloc['p90_heures'])}"
         f" | min {_heures(bloc['min_heures'])} | max {_heures(bloc['max_heures'])}",
         f"Hors denominateur : {rapport['tete_anterieure']} approbation(s) sur tete anterieure"
+        f" | {rapport['approbation_apres_fusion']} soumise(s) apres la fusion"
         f" | {rapport['sans_approbation']} sans approbation de l'approbateur",
     ]
     ouvertes = rapport.get("ouvertes_approuvees")

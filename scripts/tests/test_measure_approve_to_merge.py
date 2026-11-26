@@ -14,7 +14,12 @@ pas un test. Ce qui est teste ici, c'est ce qui **decide** de la mesure :
    dite dans le rapport et dans le rendu lisible ;
 5. **le releve porte son cote censure** : une PR ouverte qu'une approbation a la
    tete exacte attend depuis plus que le seuil est comptee comme attente, une
-   approbation perimee par un push n'attend rien.
+   approbation perimee par un push n'attend rien ;
+6. **une approbation soumise apres la fusion sort du denominateur** : elle ne
+   peut pas etre la cause de la fusion, et le delai negatif qu'elle produisait
+   se lisait « sous 24 h » ;
+7. **les revues se lisent page par page** : une page unique peut omettre
+   l'approbation recente d'une PR tres commentee.
 
 Les appels reseau sont remplaces par une fonction `api` factice : les tests ne
 dependent ni du reseau ni du quota.
@@ -118,6 +123,63 @@ def test_classer_sans_approbation():
     ligne = m.classer(pr, [], "myia-ai-01")
     assert ligne["classe"] == "sans_approbation"
     assert ligne["heures"] is None
+
+
+def test_classer_approbation_soumise_apres_la_fusion_ne_donne_pas_de_delai():
+    """Temoin : une approbation posterieure a la fusion produisait un delai negatif.
+
+    Le delai negatif etait compte « sous 24 h » et gonflait la part mesuree.
+    Une approbation qui suit la fusion ne peut pas en etre la cause : elle sort
+    du denominateur, comptee a part.
+    """
+    pr = _pr(4, "abc", "2026-11-26T10:30:00Z")
+    revues = [_revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T14:00:00Z")]
+    ligne = m.classer(pr, revues, "myia-ai-01")
+    assert ligne["classe"] == "approbation_apres_fusion"
+    assert ligne["heures"] is None
+    agregat = m.resume([ligne])
+    assert agregat["tete_exacte"]["n"] == 0
+    assert agregat["tete_exacte"]["sous_le_seuil"] == 0
+    assert agregat["approbation_apres_fusion"] == 1
+
+
+def test_classer_retient_l_approbation_anterieure_quand_une_autre_suit_la_fusion():
+    """La derniere approbation d'avant la fusion fait foi, pas la plus recente."""
+    pr = _pr(5, "abc", "2026-11-26T10:30:00Z")
+    revues = [
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T08:00:00Z"),
+        _revue("myia-ai-01", "APPROVED", "abc", "2026-11-26T12:00:00Z"),
+    ]
+    ligne = m.classer(pr, revues, "myia-ai-01")
+    assert ligne["classe"] == "tete_exacte"
+    assert ligne["heures"] == 2.5
+
+
+def test_revues_suit_les_pages(monkeypatch):
+    """Temoin : sur une page unique, l'approbation recente disparaissait.
+
+    Une PR tres commentee porte son approbation sur une page suivante ; le
+    lecteur doit la trouver, sinon la PR est classee « tete anterieure » a tort.
+    """
+    monkeypatch.setattr(m, "PAR_PAGE", 2)
+    tete = "abc"
+    pages = {
+        1: [_revue("autre", "COMMENTED", tete, "2026-11-26T07:00:00Z"),
+            _revue("autre", "COMMENTED", tete, "2026-11-26T07:05:00Z")],
+        2: [_revue("myia-ai-01", "APPROVED", tete, "2026-11-26T08:00:00Z")],
+    }
+
+    def faux_api(chemin: str) -> list[dict]:
+        if "/reviews" not in chemin:
+            return []
+        return pages.get(int(chemin.rsplit("page=", 1)[1]), [])
+
+    monkeypatch.setattr(m, "api", faux_api)
+    lues = m.revues(9)
+    assert len(lues) == 3
+    ligne = m.classer(_pr(9, tete, "2026-11-26T10:30:00Z"), lues, "myia-ai-01")
+    assert ligne["classe"] == "tete_exacte"
+    assert ligne["heures"] == 2.5
 
 
 # --- agregats --------------------------------------------------------------
@@ -240,7 +302,7 @@ def test_ouvertes_approuvees_compte_l_attente_a_la_tete_exacte(monkeypatch):
         if "/search/" in chemin:
             return {"total_count": 3, "items": [{"number": n} for n in tetes]}
         numero = int(chemin.split("/pulls/")[1].split("/")[0])
-        if chemin.endswith("/reviews?per_page=100"):
+        if "/reviews" in chemin:
             return revues[numero]
         return {"number": numero, "head": {"sha": tetes[numero]}}
 
@@ -267,6 +329,7 @@ def test_formater_dit_la_troncature():
                         "p50_heures": 2.0, "p90_heures": 30.0,
                         "min_heures": 1.0, "max_heures": 30.0},
         "tete_anterieure": 0,
+        "approbation_apres_fusion": 0,
         "sans_approbation": 0,
     }
     texte = m.formater(rapport)
