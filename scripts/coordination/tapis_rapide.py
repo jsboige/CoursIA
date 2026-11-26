@@ -503,7 +503,9 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     # Bascule (#27225) : le tirage par defaut est leger -- classement sur
     # metadonnees, qualification du grain servi sur son FIL COMPLET. Le rejeu
     # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
-    # sait relire un dossier de lecture.
+    # sait relire un dossier de lecture. La voie LOURDE est un DIAGNOSTIC :
+    # elle garde ses budgets propres, pas l'enveloppe I6, qui borne le tirage
+    # par defaut.
     if args.voie == "leger" and not args.lecture:
         # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
         # calculer des deux cotes ouvrirait une course au passage d'une tranche.

@@ -567,6 +567,12 @@ impossible reste un refus ; et un **repli** lancé après l'échéance ne sert *
 rendrait la main hors contrat. Les primitives vivent dans `scripts/coordination/tapis_borne.py`, sans
 réseau.
 
+**Ce que l'enveloppe ne couvre pas.** La voie **lourde** (`--voie lourd`) et le rejeu `--lecture` sont des
+**diagnostics** : ils lisent le pool entier (ou rejouent une lecture) et gardent leurs budgets propres, ils
+ne sont pas sous l'enveloppe I6. Le contrat I6 borne le **tirage par défaut** — la voie légère, celle que
+la lane lance. Une lecture qui ignore son timeout est abandonnée au passage de l'échéance **dans la voie
+légère** ; dans la voie lourde, le même abandonment se fait au timeout de la lecture, pas à l'échéance.
+
 **La borne est vérifiée, pas seulement énoncée.** Les témoins sont dans
 `scripts/tests/test_tapis_borne_entree.py` : la borne du CLI par défaut est **strictement** sous les 60 s
 du contrat (mesure à l'instant, pas une constante citée) ; et le **pire cas** — chaque étage consomme
