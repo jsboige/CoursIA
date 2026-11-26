@@ -202,7 +202,7 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 
 Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prête à une **animation [Gource](https://gource.io/)** : le dépôt comme arbre qui pousse, chaque commit est une étincelle sur un fichier. C'est le même harnais que vous venez de lire — vu de l'extérieur, dans le temps.
 
-**Accès** : la vidéo (`gource-coursia-history-1080p.mp4`, 1920×1080, 30 images par seconde, 3 min 28) est stockée **hors dépôt** — une vidéo de cette taille n'entre pas dans le dépôt. Elle vit dans le Google Drive du mainteneur, dossier `MyIA/IA/CoursIA-artefacts/` (demander l'accès au mainteneur pour la consulter). Les huit trames clés ci-dessous sont dans le dépôt, sous `assets/gource/`, pour que l'histoire reste lisible sans la vidéo.
+**Accès** : la vidéo (`gource-coursia-history-1080p.mp4`, 1920×1080, 30 images par seconde, 3 min 30) est stockée **hors dépôt** — une vidéo de cette taille n'entre pas dans le dépôt. Elle vit dans le Google Drive du mainteneur, dossier `MyIA/IA/CoursIA-artefacts/` (demander l'accès au mainteneur pour la consulter). Les huit trames clés ci-dessous sont dans le dépôt, sous `assets/gource/`, pour que l'histoire reste lisible sans la vidéo.
 
 **Ce qu'elle montre** : l'arborescence réelle du dépôt telle que git la connaît, ses 22 732 commits réels (2022-08-19 → 2026-11-26, état du clone au moment du rendu), et les auteurs git tels qu'ils sont enregistrés dans l'historique public.
 
@@ -211,9 +211,9 @@ Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prêt
 - Gource ne distingue pas une contribution humaine d'une contribution agentique : sous un compte git partagé, les deux apparaissent mêlées.
 - Les **sous-modules** (Z3.Linq, Argumentum, …) apparaissent comme un seul fichier (le *gitlink*) : leur historique interne ne se déploie pas dans l'animation.
 - Un commit est un événement git, pas une mesure de valeur pédagogique.
-- Le temps de la vidéo n'est **pas** proportionnel au temps calendaire : Gource compresse les périodes sans commit, donc l'essentiel de la durée couvre les deux dernières années, les plus actives.
+- Le temps de la vidéo n'est **pas** proportionnel au temps calendaire : Gource saute les périodes sans commit. Mesuré sur le rendu livré, 2025 commence à 38 s, 2026 à 112 s, et la date se fige à 195 s : les trois quarts de la durée couvrent donc 2025 et 2026, et les vingt et un mois qui séparent le premier commit des premiers carnets tiennent en six secondes.
 
-**Moins d'étiquettes.** Un premier rendu à `--dir-name-depth 3` devenait illisible dans sa dernière minute : à 179,5 s, des dizaines de noms de répertoires se chevauchaient en une masse. Le rendu livré garde `--dir-name-depth 2`, c'est-à-dire le niveau des **séries** (le nom utile pour un lecteur du dépôt), avec `--dir-font-size 26`. Le centre du graphe reste dense dans les vingt dernières secondes — c'est la limite assumée de ce réglage, et le prochain levier serait une police plus petite.
+**Moins d'étiquettes.** Un premier rendu à `--dir-name-depth 3`, en police 26, devenait illisible dans sa dernière minute : à 179,5 s, des dizaines de noms de répertoires se chevauchaient en une masse. Le rendu livré garde `--dir-name-depth 2` — les sections du dépôt et le niveau des séries : sur les dernières trames se lisent `MyIA.AI.Notebooks`, `SymbolicAI`, `GenAI`, `QuantConnect`, `IIT`, `GameTheory`, `Probas`, `docs`, `scripts` — et passe `--dir-font-size` de 26 à 20. Le vivier de noms que Gource peut avoir à dessiner mesure 123 répertoires distincts au niveau 1, 699 au niveau 2 et 4 419 au niveau 3, comptés sur les 97 251 lignes du log que Gource a lui-même lu : la profondeur divise ce vivier par 6,3, la police fait le reste. Le centre reste dense dans la dernière minute, comme le montre la trame du 22 septembre ci-dessous — c'est la limite assumée du réglage ; descendre au niveau 1 effacerait le nom des séries, qui est précisément ce qu'un lecteur du dépôt y cherche.
 
 **Jalons de l'historique** (date du premier commit touchant chaque périmètre, lue par `git log --reverse --diff-filter=A`) :
 
@@ -224,44 +224,44 @@ Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prêt
 | 2024-05-20 | Premier fichier C# (`*.cs`) |
 | 2024-11-18 | Première série Search (GeneticSharp) |
 | 2025-01-31 | Première série GenAI |
-| 2026-01-23 | Première série Lean (et premier fichier `*.lean`) |
+| 2026-01-23 | Premier fichier Lean et dossier `SymbolicAI/Lean/` |
 | 2026-01-27 | Première série GameTheory |
 | 2026-02-02 | Premier projet QuantConnect |
-| 2026-06-11 | Première série Z3 / SMT |
+| 2026-06-11 | Première série Z3 / SMT, rangée sous `SMT/` le 2026-06-13 |
 
 **Trames clés.** Chaque image est datée par le bandeau que Gource lui-même dessine en haut de la trame : la provenance est dans l'image, pas dans une correspondance externe.
 
-![2022-08-23 : un seul point lumineux, le premier commit](assets/gource/01-2022-08-naissance.jpg)
+![2022-08-19 : un seul point lumineux, le premier commit](assets/gource/01-2022-08-naissance.jpg)
 
-*2022-08-23 — un point et sa traînée : le dépôt vient de naître, et il restera presque vide pendant vingt mois.*
+*2022-08-19 — une poignée de pixels lumineux : le dépôt vient de naître, et il restera presque vide pendant vingt mois.*
 
-![2024-05-23 : les premiers carnets](assets/gource/02-2024-05-premiers-carnets.jpg)
+![2024-05-14 : les premiers carnets](assets/gource/02-2024-05-premiers-carnets.jpg)
 
-*2024-05-23 — les premiers carnets arrivent (les noms `Sudoku`, `TSP`, `Practical Optimization` apparaissent à droite) et les auteurs git entrent dans le cadre.*
+*2024-05-14 — les premiers carnets et le premier projet .NET arrivent : trois points — rose, vert, blanc — et un auteur entrent dans le cadre. Rien n'est encore nommé.*
 
-![2024-11-19 : les premiers amas](assets/gource/03-2024-11-premieres-series.jpg)
+![2024-11-18 : les premiers amas](assets/gource/03-2024-11-premieres-series.jpg)
 
-*2024-11-19 — les premiers amas de fichiers se forment et se relient ; le graphe a une structure, plus seulement des points.*
+*2024-11-18 — les premiers amas de fichiers se forment et se relient autour de `MyIA.AI.Notebooks`, seul nom lisible ; le graphe a une structure, plus seulement des points. La première série Search entre ce jour-là.*
 
-![2025-02-25 : l'explosion GenAI](assets/gource/04-2025-02-explosion-genai.jpg)
+![2025-01-31 : l'arrivée de GenAI](assets/gource/04-2025-01-explosion-genai.jpg)
 
-*2025-02-25 — l'explosion GenAI : un noyau blanc sature la droite de l'image (c'est aussi le plus fort changement de l'image mesuré dans tout le film).*
+*2025-01-31 — la série GenAI entre dans l'historique ; sur la trame, un long trait vert traverse le graphe vers un amas bleu qui vient de se former, entre les amas orange de gauche et le centre.*
 
-![2026-01-23 : la série Lean](assets/gource/05-2026-01-serie-lean.jpg)
+![2026-01-23 : les premiers fichiers Lean](assets/gource/05-2026-01-serie-lean.jpg)
 
-*2026-01-23 — l'année 2026 s'ouvre sur un graphe large : `docs`, `slides`, `services`, `docker`, `scripts`, `SymbolicAI` se lisent séparément ; la série Lean entre ce jour-là.*
+*2026-01-23 — l'année 2026 s'ouvre sur un graphe large : `MyIA.AI.Notebooks`, `SymbolicAI`, `Search`, `GenAI`, `slides`, `scripts` et `GradeBookApp` se lisent séparément. Le premier fichier Lean et le dossier `SymbolicAI/Lean/` entrent ce jour-là.*
 
-![2026-06-08 : la forêt se sépare en troncs](assets/gource/06-2026-06-z3-smt.jpg)
+![2026-06-11 : la forêt se sépare en troncs](assets/gource/06-2026-06-z3-smt.jpg)
 
-*2026-06-08 — la forêt a plusieurs troncs : `QuantConnect`, `SymbolicAI`, `GameTheory`, `IIT` et `Physique` se distinguent encore dans la couronne droite. La série Z3 / SMT, créée le 11 juin, arrive juste après.*
+*2026-06-11 — la forêt a plusieurs troncs : `SymbolicAI`, `IIT`, `Physics`, `QuantConnect`, `GameTheory` et `MyIA.AI.Notebooks` se distinguent encore dans la couronne droite. La série Z3 / SMT est créée ce jour-là, et sera rangée sous `SMT/` deux jours plus tard.*
 
-![2026-09-28 : la densification](assets/gource/07-2026-09-densification.jpg)
+![2026-09-22 : la densification](assets/gource/07-2026-09-densification.jpg)
 
-*2026-09-28 — la densification : les séries se touchent et les étiquettes commencent à se chevaucher au centre. C'est le moment où le nombre d'étiquettes devient le sujet.*
+*2026-09-22 — la densification : les séries se touchent et les étiquettes se chevauchent au centre (`FallacyDetection`, `CaseStudies`, `Probas`, `ML`), tandis que `docs`, `scripts` et `MyIA.AI.Notebooks` restent lisibles à la périphérie. C'est le moment où le nombre d'étiquettes devient le sujet.*
 
 ![2026-11-26 : l'état final](assets/gource/08-2026-11-etat-final.jpg)
 
-*2026-11-26 — dernier commit du rendu : le graphe tient dans le cadre, couronne haute et lance basse, avec le noyau rose des carnets en bas à gauche.*
+*2026-11-26 — dernier commit du rendu : le graphe tient dans le cadre, couronne haute à droite, lance basse, et le noyau rose des carnets en bas au centre. `MyIA.AI.Notebooks`, `scripts`, `notebook_tools` et `GradeBookApp` restent nommés.*
 
 **Comment la reproduire** (procédure reproductible) :
 
@@ -271,15 +271,15 @@ Avec plus de 22 000 commits sur quatre ans, l'historique git de CoursIA se prêt
    ```bash
    gource --viewport 1920x1080 --multi-sampling \
           --hide filenames,usernames,mouse \
-          --dir-name-depth 2 --dir-font-size 26 --file-font-size 12 \
+          --dir-name-depth 2 --dir-font-size 20 --file-font-size 12 \
           -s 0.25 -r 30 --output-ppm-stream - . \
      | ffmpeg -y -r 30 -f image2pipe -vcodec ppm -i - \
               -c:v libx264 -crf 18 -preset medium -pix_fmt yuv420p \
               gource-coursia-history-1080p.mp4
    ```
 
-3. **Mesure de référence** : 6 247 trames, **208,2 s**, 98,98 Mo ; le rendu complet a tourné en arrière-plan en ~58 min sur une machine du cluster (mesuré le 26/11/2026). La version précédente (`-b:v 4000k`, sortie 1024×768) faisait 3 min 29 pour 119 Mo.
-4. **Trames clés, méthode** : le signal de changement se calcule sur la vidéo elle-même — `ffmpeg -i film.mp4 -vf "fps=2,scale=480:270" -f rawvideo -pix_fmt gray -` puis, en niveaux de gris, la différence moyenne absolue entre trames successives ; ses maxima locaux espacés d'au moins 2 s sont les moments où le graphe bascule (relocalisation de caméra, afflux de fichiers). La date de chaque trame se lit ensuite **dans la trame**, au bandeau du haut. On n'a donc pas besoin de projeter un index de trame sur un commit.
+3. **Mesure de référence** : 6 294 trames, **209,8 s**, 99,77 Mo ; le rendu complet a tourné en arrière-plan en ~63 min sur une machine du cluster (mesuré le 26/11/2026). La version précédente (`-b:v 4000k`, sortie 1024×768) faisait 3 min 29 pour 119 Mo.
+4. **Trames clés, méthode** : le signal de changement se calcule sur la vidéo elle-même — `ffmpeg -i film.mp4 -vf "fps=2,scale=480:270" -f rawvideo -pix_fmt gray -` puis, en niveaux de gris, la différence moyenne absolue entre trames successives ; ses maxima locaux espacés d'au moins 2 s sont les moments où le graphe bascule (relocalisation de caméra, afflux de fichiers). Chaque instant candidat est ensuite validé **par le bandeau de sa propre trame**, lu automatiquement : le moteur OCR livré avec Windows (`Windows.Media.Ocr`, appelable depuis Windows PowerShell 5.1) lit la date du haut sur un recadrage agrandi trois fois. Sur 210 mesures à une seconde d'intervalle, aucune n'est restée illisible ; elles donnent la courbe date ↔ temps du film, avec ses sauts (à 6 s, 26 s et 83 s) et sa queue statique à partir de 195 s. On n'a donc pas besoin de projeter un index de trame sur un commit.
 5. **Note Gource** : le flag `-a` n'est **pas** un booléen dans la 0.53 — c'est `--auto-skip-seconds SECONDS` (actif par défaut) ; il n'y a pas de `--auto-skip-times` dans ce binaire.
 
 ### Références croisées
