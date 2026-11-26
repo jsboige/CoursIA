@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-25
+> REFERENCE — vivante — dernière révision 2026-11-27
 
 # GenAI Services - ComfyUI Image Generation
 
@@ -292,10 +292,12 @@ BATCH_MODE=false
 
 | GPU | Model | VRAM | Services |
 |-----|-------|------|----------|
-| GPU0 | RTX 3080Ti | 16 GB | comfyui-qwen, tts-api, serveur d'embeddings vLLM (hors dépôt) |
+| GPU0 | RTX 3080Ti | 16 GB | comfyui-qwen, tts-api, serveur d'embeddings vLLM du workspace `vllm` (hors dépôt) |
 | GPU1 | RTX 3090 | 24 GB | comfyui-video, whisper-webui, whisper-api, demucs-api, vllm-zimage, sd-forge-main, forge-turbo, tts-fishaudio, tts-kokoro, tts-qwen, tts-tada, musicgen-api, qwen-asr-api |
 
 **Convention d'index (#28423)** : les composes du banc fixent `CUDA_DEVICE_ORDER=PCI_BUS_ID`, donc l'index de `CUDA_VISIBLE_DEVICES` est celui de `nvidia-smi` — GPU0 = RTX 3080 Ti (`0000:01:00.0`), GPU1 = RTX 3090 (`0000:06:00.0`). Sans cette variable, l'ordre CUDA par défaut est l'inverse et un masque `0` désigne la 3090. Mesuré sur ce banc (WSL2, 2026-11-24) : `device_ids` et `NVIDIA_VISIBLE_DEVICES` n'isolent pas ; seul `CUDA_VISIBLE_DEVICES` isole. Les trois champs désignent néanmoins la même carte, sous une seule variable `GPU_PCI_INDEX`, pour que le conteneur ne voie jamais l'autre carte par accident d'ordre.
+
+**Relevé du 2026-11-27** (`docker inspect` sur les conteneurs du banc) : `comfyui-qwen` (masque `1`, sans ordre) et `tts-api` (masque `1`, sans ordre) sur la 3080 Ti ; `whisper-api`, `demucs-api` et `whisper-webui` (masque `0`, sans ordre) sur la 3090 ; `tts-kokoro` et `tts-tada` (masque `1` + `PCI_BUS_ID`) sur la 3090 ; `qwen3_4b_awq_embedding_server` (workspace `vllm`, hors dépôt ; masque `0` + `PCI_BUS_ID`) sur la 3080 Ti ; `comfyui-video` (`0,1` + `PCI_BUS_ID`) voit les deux cartes. `vllm-zimage` et `tts-fishaudio` ne portent pas de masque `CUDA_VISIBLE_DEVICES` : leur carte se lit à leur VRAM résidente, pas à un index. Les services du tableau absents de ce relevé ne tournaient pas à cette date : leur ligne est la carte cible de la décision #28423 §2, pas une mesure.
 
 ### Quantization Settings per Service
 
@@ -318,6 +320,8 @@ BATCH_MODE=false
 ### Quantification — mesures du 2026-10-29
 
 Relevé de départ de la RTX 3090 de `po-2023` (24 576 MiB) : **23 419 MiB occupés**, avec `vllm-zimage` en fp8, `tts-fishaudio` en fp16 (`--half`), la pile `tts-multi`, Whisper et un serveur d'embeddings. Chaque ligne du tableau ci-dessus est donc une question de quantification, pas une fatalité.
+
+**Instantané daté, pas le placement actuel** : à la date de ce relevé, un serveur d'embeddings était compté dans l'occupation de la 3090. Le serveur d'embeddings du banc (`qwen3_4b_awq_embedding_server`, workspace `vllm`) porte aujourd'hui `CUDA_VISIBLE_DEVICES=0` + `CUDA_DEVICE_ORDER=PCI_BUS_ID`, donc la 3080 Ti (relevé du 2026-11-27, §GPU Layout). Les deux indications ne se contredisent pas : l'une est un instantané du 2026-10-29, l'autre la mesure du jour.
 
 Dérivés quantifiés mesurés pour `fishaudio/s2-pro` (tailles réelles fichier par fichier, `api/models/<repo>?blobs=true`) :
 
