@@ -1,0 +1,629 @@
+# Triplet Metajeux-05 : jumeau Python + jumeau C# + portage Rust (spec #27945, port livre par la PR #27981).
+#
+# Les trois carnets ont la meme structure de cellules (31 cellules, 13 cellules de code) :
+# les cotes se correspondent par index de cellule.
+#
+# Ce que la mesure prepare a montre sur les sorties commitees (cellule par cellule) :
+#   - les 10 cellules de MESURE (2, 4, 6, 8, 10, 13, 15, 17, 19, 21) sont IDENTIQUES caractere
+#     par caractere entre Python et Rust ;
+#   - les 3 cellules d'EXERCICE (24, 26, 28) different : le stub Python ne produit aucune sortie
+#     (il ne se limite qu'a des commentaires), le stub Rust imprime une ligne de titre
+#     ("Exercice A : a completer (...)"). L'ecart est declare cote Python ;
+#   - le cote C# derive en FORMAT (fins de ligne CRLF, lignes "(attendu N) -> CONFORME" en plus)
+#     sur les cellules de mesure -- les valeurs y coincident, les motifs ci-dessous sont donc
+#     ecrits pour etre insensibles au CRLF -- et il derive en CONTENU sur les cellules 13, 15 et 17
+#     : le C# y porte des EXEMPLES GUIDES a completer la ou Python et Rust livrent la RESOLUTION.
+#     Ces trois cellules sont declarees absentes cote C#.
+# Le portage Rust est en `std` seul (aucune crate) ; les deux cellules d'exemple guide resolues
+# (13 et 15) sont les memes des deux cotes.
+- name: "Metajeux-05 Temoins Impossibilite"
+  family: "GameTheory (Metajeux)"
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Rust.ipynb
+  measures:
+    - id: permutaedre_ordres_stricts
+      description: "Le permutaedre S_4 compte 24 ordres stricts (cellule de configuration)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "Permutaedre : (\\d+) ordres stricts"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "Permutaedre : (\\d+) ordres stricts"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "Permutaedre : (\\d+) ordres stricts"
+          transform: int
+    - id: permutaedre_voisinage
+      description: "Le permutaedre a 3 voisins par ordre (adjacence par transposition)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(\\d+) voisins / ordre"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "(\\d+) voisins / ordre"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "(\\d+) voisins / ordre"
+          transform: int
+    - id: chambres_sommets
+      description: "Le produit cartesien compte 576 chambres (24 x 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "Chambres : (\\d+) sommets"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "Chambres : (\\d+) sommets"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "Chambres : (\\d+) sommets"
+          transform: int
+    - id: chambres_voisinage
+      description: "Une chambre a 6 voisins (3 par coordonnee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(\\d+) voisins / chambre"
+          transform: int
+        csharp:
+          cell: 2
+          pattern: "(\\d+) voisins / chambre"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "(\\d+) voisins / chambre"
+          transform: int
+    - id: structure_produit_verification
+      description: "Verification exhaustive de la structure produit sur 576 chambres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Verification exhaustive sur (\\d+) chambres"
+          transform: int
+        csharp:
+          cell: 4
+          pattern: "Verification exhaustive sur (\\d+) chambres"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "Verification exhaustive sur (\\d+) chambres"
+          transform: int
+    - id: structure_produit_ecarts
+      description: "Zero ecart sur la verification exhaustive (le produit cartesien tient)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "chambres : (\\d+) ecarts"
+          transform: int
+        csharp:
+          cell: 4
+          pattern: "chambres : (\\d+) ecarts"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "chambres : (\\d+) ecarts"
+          transform: int
+    - id: structure_produit_verdict
+      description: "La structure produit est declaree EXACTE"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Structure produit : (\\w+)"
+          transform: text
+        csharp:
+          cell: 4
+          pattern: "Structure produit : (\\w+)"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "Structure produit : (\\w+)"
+          transform: text
+    - id: diametre_permutaedre
+      description: "Diametre du permutaedre : 6 (distance maximale entre deux ordres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Diametre permutaedre : (\\d+)"
+          transform: int
+        csharp:
+          cell: 4
+          pattern: "Diametre permutaedre : (\\d+)"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "Diametre permutaedre : (\\d+)"
+          transform: int
+    - id: diametre_chambres
+      description: "Diametre des chambres : 12 (produit : 6 + 6)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Diametre chambres : (\\d+)"
+          transform: int
+        csharp:
+          cell: 4
+          pattern: "Diametre chambres : (\\d+)"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "Diametre chambres : (\\d+)"
+          transform: int
+    - id: table24_symetrie
+      description: "La table 24x24 des distances est symetrique : 0 asymetrie"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Symetrie 24x24 : (\\d+) asymetries"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "Symetrie 24x24 : (\\d+) asymetries"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "Symetrie 24x24 : (\\d+) asymetries"
+          transform: int
+    - id: table24_triangularite
+      description: "L'inegalite triangulaire de la table 24x24 tient : 0 violation sur 13824 triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "violations sur (\\d+) triplets"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "violations sur (\\d+) triplets"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "violations sur (\\d+) triplets"
+          transform: int
+    - id: cas_a_verdict
+      description: "Cas A (antipode, k_max=5) : IMPOSSIBLE"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "CAS A \\(antipode, k_max=5\\) : (\\w+)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "CAS A \\(antipode, k_max=5\\) : (\\w+)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "CAS A \\(antipode, k_max=5\\) : (\\w+)"
+          transform: text
+    - id: cas_a_dmin
+      description: "Cas A : d_min = 12 (6 + 6), au-dessus du seuil 5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "d_perm\\(row\\) \\+ d_perm\\(col\\) = \\d+ \\+ \\d+ = (\\d+) > (\\d+)"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "d_perm\\(row\\) \\+ d_perm\\(col\\) = \\d+ \\+ \\d+ = (\\d+) > (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "d_perm\\(row\\) \\+ d_perm\\(col\\) = \\d+ \\+ \\d+ = (\\d+) > (\\d+)"
+          transform: int
+    - id: cas_b_verdict
+      description: "Cas B (rangee identique, k_max=3) : IMPOSSIBLE"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "CAS B \\(row identique, k_max=3\\) : (\\w+)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "CAS B \\(row identique, k_max=3\\) : (\\w+)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "CAS B \\(row identique, k_max=3\\) : (\\w+)"
+          transform: text
+    - id: cas_b_dmin
+      description: "Cas B : d_min = 4 (0 + 4), au-dessus du seuil 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "CAS B \\(row identique, k_max=3\\).*?= \\d+ \\+ \\d+ = (\\d+) > (\\d+)"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "CAS B \\(row identique, k_max=3\\).*?= \\d+ \\+ \\d+ = (\\d+) > (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "CAS B \\(row identique, k_max=3\\).*?= \\d+ \\+ \\d+ = (\\d+) > (\\d+)"
+          transform: int
+    - id: cas_c_verdict
+      description: "Cas C (frontiere, k_max=1) : POSSIBLE (le seuil est atteint)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "CAS C \\(frontiere, k_max=1\\) : (\\w+)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "CAS C \\(frontiere, k_max=1\\) : (\\w+)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "CAS C \\(frontiere, k_max=1\\) : (\\w+)"
+          transform: text
+    - id: bfs_cas_a_sommets
+      description: "BFS tronque du cas A : 235 sommets a <= 5 pas"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "CAS A : sommets a <= 5 pas = (\\d+)"
+          transform: int
+        csharp:
+          cell: 10
+          pattern: "CAS A : sommets a <= 5 pas = (\\d+)"
+          transform: int
+        rust:
+          cell: 10
+          pattern: "CAS A : sommets a <= 5 pas = (\\d+)"
+          transform: int
+    - id: bfs_cas_a_absence
+      description: "BFS tronque du cas A : RENVERS est absent du voisinage (temoin IMPOSSIBLE verifie)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "RENVERS present \\? (\\w+)"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "RENVERS present \\? (\\w+)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "RENVERS present \\? (\\w+)"
+          transform: text
+    - id: bfs_cas_b_sommets
+      description: "BFS tronque du cas B : 68 sommets a <= 3 pas"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "CAS B : sommets a <= 3 pas = (\\d+)"
+          transform: int
+        csharp:
+          cell: 10
+          pattern: "CAS B : sommets a <= 3 pas = (\\d+)"
+          transform: int
+        rust:
+          cell: 10
+          pattern: "CAS B : sommets a <= 3 pas = (\\d+)"
+          transform: int
+    - id: bfs_cas_c_sommets
+      description: "BFS tronque du cas C : 7 sommets a <= 1 pas"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "CAS C : sommets a <= 1 pas = (\\d+)"
+          transform: int
+        csharp:
+          cell: 10
+          pattern: "CAS C : sommets a <= 1 pas = (\\d+)"
+          transform: int
+        rust:
+          cell: 10
+          pattern: "CAS C : sommets a <= 1 pas = (\\d+)"
+          transform: int
+    - id: bfs_cas_c_presence
+      description: "BFS tronque du cas C : H_C est present (cas POSSIBLE verifie)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "H_C present \\? (\\w+)"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "H_C present \\? (\\w+)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "H_C present \\? (\\w+)"
+          transform: text
+    - id: exemple_5_1_certificat
+      description: "Exemple guide 5.1 : le certificat analytique classe le couple IMPOSSIBLE (le C# y porte l'exemple non resolu)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "Certificat analytique : (\\w+)"
+          transform: text
+        csharp:
+          absent: "la cellule C# porte l'exemple guide 5.1 NON RESOLU (sortie « Exemple guide 5.1 a completer » + Etapes), la ou Python et Rust livrent la resolution"
+        rust:
+          cell: 13
+          pattern: "Certificat analytique : (\\w+)"
+          transform: text
+    - id: exemple_5_1_bfs
+      description: "Exemple guide 5.1 : le BFS tronque atteint 68 sommets a <= 3 pas"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "BFS tronque : (\\d+) sommets"
+          transform: int
+        csharp:
+          absent: "la cellule C# porte l'exemple guide 5.1 NON RESOLU (sortie « Exemple guide 5.1 a completer » + Etapes), la ou Python et Rust livrent la resolution"
+        rust:
+          cell: 13
+          pattern: "BFS tronque : (\\d+) sommets"
+          transform: int
+    - id: exemple_5_1_accord
+      description: "Exemple guide 5.1 : les deux verifications (certificat et BFS) sont d'accord"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "Verifications d'accord : (\\w+)"
+          transform: text
+        csharp:
+          absent: "la cellule C# porte l'exemple guide 5.1 NON RESOLU (sortie « Exemple guide 5.1 a completer » + Etapes), la ou Python et Rust livrent la resolution"
+        rust:
+          cell: 13
+          pattern: "Verifications d'accord : (\\w+)"
+          transform: text
+    - id: exemple_5_2_bascule
+      description: "Exemple guide 5.2 : la bascule IMPOSSIBLE -> POSSIBLE a k=12 (le C# y porte l'exemple non resolu)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "Bascule IMPOSSIBLE -> POSSIBLE a k=(\\d+)"
+          transform: int
+        csharp:
+          absent: "la cellule C# porte l'exemple guide 5.2 NON RESOLU (sortie « Exemple guide 5.2 a completer » + Etapes), la ou Python et Rust livrent la resolution"
+        rust:
+          cell: 15
+          pattern: "Bascule IMPOSSIBLE -> POSSIBLE a k=(\\d+)"
+          transform: int
+    - id: exemple_5_3_paire1_seuil5
+      description: "Exemple guide 5.3 : la premiere paire est IMPOSSIBLE au seuil 5 (le C# y porte l'exemple non resolu)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Paire 1 : k_max=5 -> (\\w+)"
+          transform: text
+        csharp:
+          absent: "la cellule C# porte l'exemple guide 5.3 NON RESOLU (sortie « Exemple guide 5.3 a completer » + Etapes), la ou Python et Rust livrent la resolution"
+        rust:
+          cell: 17
+          pattern: "Paire 1 : k_max=5 -> (\\w+)"
+          transform: text
+    - id: exemple_5_3_paire1_seuil6
+      description: "Exemple guide 5.3 : la premiere paire est POSSIBLE au seuil 6 (le C# y porte l'exemple non resolu)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Paire 1 : k_max=5 -> \\w+, k_max=6 -> (\\w+)"
+          transform: text
+        csharp:
+          absent: "la cellule C# porte l'exemple guide 5.3 NON RESOLU (sortie « Exemple guide 5.3 a completer » + Etapes), la ou Python et Rust livrent la resolution"
+        rust:
+          cell: 17
+          pattern: "Paire 1 : k_max=5 -> \\w+, k_max=6 -> (\\w+)"
+          transform: text
+    - id: inventaire_k5_effectifs
+      description: "Inventaire (echantillon de 100 chambres, seed=42) : 34100 paires IMPOSSIBLE sur 57500 a k_max=5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "5\\s+\\|\\s+(\\d+)\\s*/"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "5\\s+\\|\\s+(\\d+)\\s*/"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "5\\s+\\|\\s+(\\d+)\\s*/"
+          transform: int
+    - id: inventaire_k5_pourcentage
+      description: "Inventaire : 59.3 % des paires sont IMPOSSIBLE a k_max=5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "5\\s+\\|\\s+\\d+\\s*/\\s*\\d+\\s*\\|\\s*([\\d.]+)%"
+          transform: float
+        csharp:
+          cell: 19
+          pattern: "5\\s+\\|\\s+\\d+\\s*/\\s*\\d+\\s*\\|\\s*([\\d.]+)%"
+          transform: float
+        rust:
+          cell: 19
+          pattern: "5\\s+\\|\\s+\\d+\\s*/\\s*\\d+\\s*\\|\\s*([\\d.]+)%"
+          transform: float
+    - id: inventaire_k7_effectifs
+      description: "Inventaire : 13900 paires IMPOSSIBLE sur 57500 a k_max=7"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "7\\s+\\|\\s+(\\d+)\\s*/"
+          transform: int
+        csharp:
+          cell: 19
+          pattern: "7\\s+\\|\\s+(\\d+)\\s*/"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "7\\s+\\|\\s+(\\d+)\\s*/"
+          transform: int
+    - id: resume_structure_produit
+      description: "Resume final : la structure produit tient sur 576/576 chambres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "Structure produit : (\\d+)/(\\d+) chambres"
+          transform: int
+        csharp:
+          cell: 21
+          pattern: "Structure produit : (\\d+)/(\\d+) chambres"
+          transform: int
+        rust:
+          cell: 21
+          pattern: "Structure produit : (\\d+)/(\\d+) chambres"
+          transform: int
+    - id: resume_verdict_cas_a
+      description: "Resume final : le verdict du cas A reste IMPOSSIBLE"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "CAS A : (\\w+)"
+          transform: text
+        csharp:
+          cell: 21
+          pattern: "CAS A : (\\w+)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "CAS A : (\\w+)"
+          transform: text
+    - id: resume_verdict_cas_c
+      description: "Resume final : le verdict du cas C reste POSSIBLE"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "CAS C : (\\w+)"
+          transform: text
+        csharp:
+          cell: 21
+          pattern: "CAS C : (\\w+)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "CAS C : (\\w+)"
+          transform: text
+    - id: resume_densite_k5
+      description: "Resume final : 59.3 % des paires sont IMPOSSIBLE a k_max=5"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "A k_max=5 : ([\\d.]+)% des paires sont IMPOSSIBLE"
+          transform: float
+        csharp:
+          cell: 21
+          pattern: "A k_max=5 : ([\\d.]+)% des paires sont IMPOSSIBLE"
+          transform: float
+        rust:
+          cell: 21
+          pattern: "A k_max=5 : ([\\d.]+)% des paires sont IMPOSSIBLE"
+          transform: float
+    - id: exercice_a_titre
+      description: "Exercice A : le stub Rust annonce la consigne (le stub Python n'imprime rien -- absence declaree)"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "sortie vide : le stub Python de l'exercice A ne se compose que de commentaires et n'imprime rien"
+        csharp:
+          absent: "format different : le stub C# imprime « Exercice A a completer » suivi des Etapes 1 a 3"
+        rust:
+          cell: 24
+          pattern: "Exercice A : a completer \\((.*)\\)"
+          transform: text
+    - id: exercice_b_titre
+      description: "Exercice B : le stub Rust annonce la consigne (le stub Python n'imprime rien -- absence declaree)"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "sortie vide : le stub Python de l'exercice B ne se compose que de commentaires et n'imprime rien"
+        csharp:
+          absent: "format different : le stub C# imprime « Exercice B a completer » suivi des Etapes 1 a 3"
+        rust:
+          cell: 26
+          pattern: "Exercice B : a completer \\((.*)\\)"
+          transform: text
+    - id: exercice_c_titre
+      description: "Exercice C : le stub Rust annonce la consigne (le stub Python n'imprime rien -- absence declaree)"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "sortie vide : le stub Python de l'exercice C ne se compose que de commentaires et n'imprime rien"
+        csharp:
+          absent: "format different : le stub C# affiche ses strates puis « Exercice C a completer » suivi des Etapes 1 a 3"
+        rust:
+          cell: 28
+          pattern: "Exercice C : a completer \\((.*)\\)"
+          transform: text
