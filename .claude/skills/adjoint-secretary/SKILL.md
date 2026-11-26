@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (198 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (200 entrées, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md`.
 
 1. **La porte `PR gate` est l'autorité de mergeabilité — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle mergeable ? ». Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque), jamais comme un bloqueur de listing.
 2. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP lui-même (`spawn(node, [mcp-wrapper.cjs])` + `initialize` / `notifications/initialized` / `tools/call roosync_messages {action:"send", to, subject, body, messageId}`) ; l'identité signée vient de `ROOSYNC_MACHINE_ID` + `ROOSYNC_WORKSPACE_ID` passés dans l'env du spawn (le `ROO_FLEET_ROSTER` ne sert qu'au partitionnement). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -201,7 +201,7 @@ l'expéditeur, qui peut se croire bloqué après avoir tout réparé.
 
 ### Tells de mesure (26/11, cycle c697)
 
-Cinq pièges mesurés dans le cycle c697. Le premier a coûté une **liste** déjà
+Sept pièges mesurés dans le cycle c697. Le premier a coûté une **liste** déjà
 transmise à ai-01 (31 PRs annoncées, 39 réelles) ; le dernier prive de toute
 relecture.
 
@@ -264,6 +264,30 @@ supprime la garde « relire le corps publié ». Utiliser `action:"send"` avec
 transmise, le rejeu est absorbé, et `action:"message"` avec cette clé rend le corps
 publié (vérifié sur un envoi réel : préfixe, suffixe et séparateur serveur présents,
 aucun PAYLOAD-TRAP). Règle : **une réponse s'émet par `send`**, jamais par `reply`.
+
+13. **Un titre NON-VERDICT est aussi trompeur qu'un titre vide.** Le sélecteur du
+balayage `pr-gate-stale-sweep` (`.github/workflows/pr-gate-stale-sweep.yml`
+l.1207-1208) prend la **dernière ligne contenant `[pr-gate]`** du journal et la
+colle dans `output.title` — et la porte imprime **après** son verdict une ligne de
+comptabilité (`scripts/pr_gate.py:2810`, `[pr-gate] api-quota: N gh api call(s),
+M served by a 304 (0 quota)`). Mesure c697 (fait mesuré par po-2028:CoursIA-3,
+10:12Z) : **12 portes réparées, 12 titres non-verdict** (11 `api-quota:` et 1 repli
+« aucune ligne [pr-gate] »). Le verdict réel se lit dans la **3ᵉ annotation** du
+check-run, ou sur la ligne de journal dont le texte après `[pr-gate] ` commence par
+PASS / FAIL / INCONCLUSIVE / DWELL / STARVED. Corollaire grave : un `FAIL` de
+contenu réparé par le même sélecteur serait rangé « infra » et **jamais relu** —
+donc **ne jamais citer un titre de porte comme classe**, et relire par l'annotation.
+
+14. **Le quota d'installation a une échéance annoncée dans le log ; rejouer avant
+l'échéance reproduit le rouge.** La ligne `[pr-gate] installation-quota 403 --
+announced reset Ns away (> 300s)` porte l'heure de réarmement (mesure c697 :
+`981s away` à 10:20:47Z, soit **10:37:08Z**). Un `gh run rerun` accepté (rc=0)
+**ne prouve pas** que la cause a disparu : mes 8 rejeux de 10:20Z ont tous
+reproduit `INCONCLUSIVE`. Corollaires : (a) le quota d'installation de l'App
+GitHub est un compteur **distinct** du quota utilisateur `jsboige` — la mesure du
+quota utilisateur ne dit rien de l'échéance de l'App ; (b) lire `announced reset`
+**avant** de rejouer, et rejouer après ; (c) le balayage `pr-gate-stale-sweep`
+rejoue la même jambe de son côté — ne pas multiplier les rejeux concurrents.
 
 Corollaire de mesure (c697) : **une PR sans porte n'est pas une PR rouge.** Sur 338
 PRs ouvertes, 41 n'ont pas de `PR gate` dans la fenêtre GraphQL ; vérifiées en REST
