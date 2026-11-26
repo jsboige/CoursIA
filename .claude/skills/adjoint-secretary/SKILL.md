@@ -147,7 +147,7 @@ Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..
 
 ### Tells de mesure (26/11, cycle c693)
 
-Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (**255 entrées**, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md` : c'est le **support de référence des mesures datées** (comptes, listes de jobs, ids de run, heures de reset, quotas). La skill porte le **geste**, pas l'archive.
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (**257 entrées**, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md` : c'est le **support de référence des mesures datées** (comptes, listes de jobs, ids de run, heures de reset, quotas). La skill porte le **geste**, pas l'archive.
 
 4. **La porte `PR gate` est l'autorité de TRI ; l'admissibilité à la fusion se lit ailleurs — classer sur elle, pas sur l'agrégat des checks.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle fusionnable ? », qui se lit sur `mergeable_state`, sur les jambes **requises**, sur B.0 et sur l'approbation d'ai-01 à la tête (tell 27). Les checks non verts restent à lister, mais comme **information pour ai-01** (souvent : sa revue de périmètre qui manque) ; une jambe **requise** non verte reste, elle, un bloqueur de merge — les deux questions se posent séparément, jamais l'une à la place de l'autre.
 5. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP (la recette d'appel — wrapper, handshake, identité signée — vit dans la mémoire par machine du siège, pas ici). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
@@ -480,6 +480,21 @@ reset horaire annoncé dans le log, jamais avant ; le rejeu porte sur le **job**
 inconnu — et le nouveau job porte un **id différent** (tell 31). Une jambe
 dont le log montre le travail **accompli** puis un échec de publication est un
 rouge d'infra, pas de contenu.
+
+### Tells de mesure (26/11, cycle c713)
+
+39. **Chaque cycle de mesure a son titre, et la numérotation se vérifie par
+extraction.** *Why :* mes tells 37 et 38, mesurés en c712, sont restés sous le
+titre `### Tells de mesure (26/11, cycles c701 et c702)` : le titre annonçait un
+cycle que la section ne portait pas. Un document dont l'objet est la traçabilité
+ne peut pas porter lui-même une traçabilité fausse. *How to apply :* ouvrir un
+titre par cycle de mesure (un cycle = un titre) ; vérifier la numérotation par
+**extraction** — regex `^\d+\. \*\*` bornée à la section des tells, contrôlant
+trous, doublons et titres — et non à l'œil ; **re-mesurer les fins de ligne après
+chaque écriture** : le fichier est **intégralement CRLF, sans BOM** (mesure :
+**0 LF nu** avant comme après la correction — l'invariant à préserver, pas un
+compte à recopier) ; et ne pas écrire dans le texte un nombre **volatil** — un
+compte de lignes y devient faux au commit suivant, il ne se recopie pas.
 
 ## Clauses prescriptives candidates à normalisation (sign-off user)
 
