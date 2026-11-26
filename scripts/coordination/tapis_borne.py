@@ -3,17 +3,15 @@
 
 Invariant I6 du contrat du picker (#28114) : le budget d'une commande de
 tirage est **un seul**, pris au **vrai point d'entree**. Avant, chaque etage
-repartait d'une horloge neuve (la garde de fraicheur : 120 s pour un `git
-fetch`, 60 s par appel git ; la selection : 30 s ; la qualification : 60 s ;
-le cap : 60 s par tranche) -- la commande pouvait depasser plusieurs fois son
-contrat.
+repartait d'une horloge neuve (garde : 120 s pour un `git fetch`, 60 s par
+appel git ; selection : 30 s ; qualification : 60 s ; cap : 60 s par
+tranche) -- la commande pouvait depasser son contrat.
 
 Ce module rend les **primitives** de la borne : `echeance()` (le point de
 fin, pose au point d'entree), `restant()` / `expire()`, `timeout_borne()`
-(le timeout d'un appel, borne par le restant), `part()` (le budget d'un
-etage, plafonne par l'echeance de la commande), `sous_echeance()` (une lecture
-**abandonnee** au passage de l'echeance -- fail-OPEN : la mesure vaut `None`,
-elle n'ecarte rien) et `fetteur_sous_borne()`.
+(timeout d'un appel, borne par le restant), `part()` (budget d'un etage,
+plafonne par l'echeance), `sous_echeance()` (lecture **abandonnee** au
+passage de l'echeance -- fail-OPEN) et `fetteur_sous_borne()`.
 
 Aucun appel reseau ici : le module est pur, il se teste sans `gh`.
 """
@@ -25,26 +23,30 @@ import time
 
 from coordination import gh_selection
 
-#: La part de la garde de fraicheur dans le budget de la commande. Mesuree
-#: le 25/11 sur ce depot : `git fetch origin main` 12,4 s + `git diff` des
-#: organes 20,1 s + `git rev-list` 1,7 s -- soit 35 s. La part est le double
-#: : la garde ne doit pas pouvoir affamer le tirage, ni etre coupee sur un
-#: reseau lent.
-FRAICHEUR_S = 45.0
+#: La part de la garde de fraicheur. Mesuree le 26/11 sur ce depot :
+#: `git fetch origin main` 20,4 s + `git rev-list` (x2) 2,2 s + `git diff
+#: --name-only origin/main` des organes 1,1 s -- soit 23,7 s. La part est
+#: 30 s : au-dela, la coupe est **degradable** (`FRAICHEUR_BORNEE`).
+FRAICHEUR_S = 30.0
 
-#: Le budget de la COMMANDE entiere : le mur global du tirage (lu dans
-#: `gh_selection`, l'organe qui le porte) PLUS la part de la garde de
-#: fraicheur. Chaque etage garde son propre budget, pris DANS celui de la
-#: commande : la commande ne peut pas depasser la somme de ses etages, et
-#: aucun etage ne peut affamer les autres.
-BUDGET_S = float(gh_selection.MUR_GLOBAL_S) + FRAICHEUR_S
+#: La borne de la COMMANDE entiere -- la borne du CLI, prise au point
+#: d'entree. C'est le CONTRAT : I6 de #28114 dit qu'un tirage rend en moins
+#: de 60 s (55 s ici, marge 5 s). Les parts des etages (30 s la garde, 30 s
+#: le tirage) sont volontairement SUPERIEURES a cette enveloppe : elles ne
+#: s'additionnent pas, elles se PARTAGENT (chaque etage prend
+#: `min(echeance, maintenant + sa part)`). La commande ne peut donc pas
+#: depasser l'enveloppe : elle est COUPEE, pas attendue. Le pire cas est
+#: assume ainsi : l'etage degradable (la garde) encaisse la coupe, l'etage
+#: decisionnel (la selection) garde son budget dans le cas normal (23,7 s
+#: mesurees -> 31,3 s pour un tirage qui en demande 30).
+BUDGET_S = 55.0
 
 
 def part(echeance_: float | None, part_s: float) -> float | None:
     """Le budget d'un etage : le sien, jamais au-dela de l'echeance.
 
     L'etage garde son propre budget (le tirage 30 s, la garde de fraicheur
-    45 s) mais il est **plafonne par l'echeance de la commande** : un etage
+    30 s) mais il est **plafonne par l'echeance de la commande** : un etage
     ne peut pas depenser la part d'un autre.
     """
     if echeance_ is None:

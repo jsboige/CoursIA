@@ -180,6 +180,60 @@ def test_une_selection_lente_est_coupee_sans_depasser(monkeypatch, capsys):
         assert "Lecture incomplete" in capture.err
 
 
+def test_la_borne_de_la_commande_par_defaut_tient_dans_le_contrat():
+    """La borne du CLI, par defaut, tient STRICTEMENT dans le contrat.
+
+    L'invariant I6 de #28114 dit qu'un tirage de lane rend en moins de
+    60 s. La borne posee au point d'entree (`tapis_borne.echeance()`, sans
+    argument) est celle du CLI : elle doit y tenir, avec une marge --
+    sinon le contrat reste une declaration, et non une borne.
+    """
+    borne = tapis_borne.echeance() - time.monotonic()
+    assert 0.0 < borne < 60.0, \
+        f"la borne du CLI est de {borne:.1f} s pour un contrat de 60 s"
+
+
+def test_le_pire_cas_tient_dans_la_borne_de_la_commande(monkeypatch, capsys):
+    """Le pire cas, temoin a l'horloge REELLE : chaque etage consomme TOUTE
+    sa part, la commande rend malgre tout dans la borne.
+
+    Le runner git dort tout le timeout qu'il recoit -- il consomme donc la
+    part de la garde de fraicheur -- et la selection dort de meme (elle
+    consomme la sienne). L'echeance est **mise a l'echelle** (2 s au lieu
+    de la borne reelle) : ce qui est prouve ici, c'est la FORME -- la
+    commande ne peut pas depasser l'enveloppe qu'on lui donne, elle est
+    coupee et non attendue -- et la valeur reelle de l'enveloppe est
+    verifiee par le test du contrat (borne par defaut < 60 s).
+    """
+    monkeypatch.setenv("MAIN_FRESHNESS_FORCE", "1")
+    temps: list[int] = []
+
+    def run_git(argv, timeout):
+        temps.append(timeout)
+        time.sleep(min(timeout, 2.0))
+        return (124, "", "timeout du runner")
+
+    monkeypatch.setattr(main_freshness, "run_defaut", run_git)
+
+    def run_lent(argv, timeout):
+        time.sleep(min(timeout, 2.0))
+        return "[]"
+
+    enveloppe = 2.0
+    debut = time.monotonic()
+    code = tapis_rapide.main(["--lane", LANE, "--grains", "3", "--json"],
+                              run=run_lent,
+                              echeance=time.monotonic() + enveloppe)
+    ecoule = time.monotonic() - debut
+    capture = capsys.readouterr()
+    assert temps, "la garde doit avoir lance ses appels git"
+    for t in temps:
+        assert t <= enveloppe, f"un appel git a depasse l'enveloppe ({t} s)"
+    assert code in (0, 3), f"la commande rend un verdict, elle ne plante pas ({code})"
+    assert ecoule < enveloppe + 4.0, \
+        f"le pire cas a depasse la borne : {ecoule:.1f} s pour {enveloppe} s"
+
+
 # --- 3. le repli reel ---------------------------------------------------------
 
 def test_le_repli_reel_sert_le_cache_dans_la_borne(monkeypatch, tmp_path, capsys):

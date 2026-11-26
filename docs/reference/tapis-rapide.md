@@ -551,15 +551,28 @@ liste à moitié. La qualification a son propre mur : dépassée, elle rend ce q
 **L'échéance de commande** (invariant I6 de #28114). Le point d'entrée `tapis_rapide.main` pose **une
 seule** échéance, partagée par tous les étages : la garde de fraîcheur, la sélection, la qualification, le
 cap de livraisons et le repli. Aucun étage ne s'attribue un budget neuf : chacun reçoit le **temps
-restant**, et une lecture qui ignore son timeout est **abandonnée** au passage de l'échéance. Le budget
-total est la somme des parts — 30 s pour le tirage (`gh_selection.MUR_GLOBAL_S`) et 45 s pour la garde de
-fraîcheur (`tapis_borne.FRAICHEUR_S`, mesuré sur ce dépôt le 25/11 : `git fetch origin main` 12,4 s +
-`git diff --name-only origin/main` 20,1 s + `git rev-list` 1,7 s) — de sorte qu'aucun étage n'affame le
-suivant. Deux conséquences en découlent : une fraîcheur **coupée** par la borne est une **dégradation**
+restant**, et une lecture qui ignore son timeout est **abandonnée** au passage de l'échéance. La borne
+de la commande est le **contrat** lui-même : `tapis_borne.BUDGET_S` = **55 s**, strictement sous les 60 s
+d'I6 (marge 5 s). Les parts des étages — 30 s pour le tirage (`gh_selection.MUR_GLOBAL_S`) et 30 s pour
+la garde de fraîcheur (`tapis_borne.FRAICHEUR_S`, mesuré sur ce dépôt le 26/11 : `git fetch origin main`
+20,4 s + `git rev-list` ×2 2,2 s + `git diff --name-only origin/main` des organes 1,1 s, soit 23,7 s) —
+sont **volontairement supérieures à cette enveloppe** : elles ne s'additionnent pas, elles se **partagent**
+(chaque étage prend `min(échéance, maintenant + sa part)`). La commande ne peut donc pas dépasser
+l'enveloppe : elle est **coupée**, pas attendue. Le pire cas est assumé ainsi : l'étage **dégradable**
+(la garde de fraîcheur) encaisse la coupe, l'étage **décisionnel** (la sélection) garde son budget dans
+le cas normal — 23,7 s mesurées laissent 31,3 s pour un tirage qui en demande 30. Deux conséquences en
+découlent : une fraîcheur **coupée** par la borne est une **dégradation**
 (`FRAICHEUR_BORNEE` : le tirage rend sa file avec l'avertissement), pas un refus — seule une mesure
 impossible reste un refus ; et un **repli** lancé après l'échéance ne sert **rien** (fail-CLOSED), il
 rendrait la main hors contrat. Les primitives vivent dans `scripts/coordination/tapis_borne.py`, sans
 réseau.
+
+**La borne est vérifiée, pas seulement énoncée.** Les témoins sont dans
+`scripts/tests/test_tapis_borne_entree.py` : la borne du CLI par défaut est **strictement** sous les 60 s
+du contrat (mesure à l'instant, pas une constante citée) ; et le **pire cas** — chaque étage consomme
+toute sa part — est tenu à l'**horloge réelle** : le runner git dort tout le timeout qu'il reçoit, la
+sélection dort de même, et la commande rend un verdict **dans** l'enveloppe qu'on lui donne (l'échéance
+y est mise à l'échelle : ce qui est prouvé est la forme, la borne réelle est celle du contrat).
 
 **Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
 désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,
