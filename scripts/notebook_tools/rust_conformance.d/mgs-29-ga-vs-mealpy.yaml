@@ -1,0 +1,100 @@
+- name: "MGS-29 GA vs mealpy (Rust)"
+  family: MGS-vs-mealpy
+  csharp: MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy-Rust.ipynb
+  measures:
+    - id: lcg_witness_seed1
+      description: >-
+        Cout de la grille de reference decodee depuis le premier vecteur temoin
+        LCG (graine 1, 36 genes) — 67 des deux cotes. Ce que la mesure verifie
+        n'est PAS le solveur mais la FONCTION DE COUT : sans cette egalite,
+        aucun ecart de qualite entre moteurs ne serait interpretable.
+      tolerance: 0
+      reference: csharp
+      sides:
+        csharp:
+          cell: 8
+          pattern: "vecteur temoin 1 : cout C# = (\\d+)"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "\\r?\\n1[ \\t]+67[ \\t]+(\\d+)"
+          transform: int
+    - id: lcg_witness_seed2
+      description: >-
+        Cout du deuxieme vecteur temoin LCG (graine 2, 36 genes) — 71 des deux
+        cotes. Meme role que le premier temoin.
+      tolerance: 0
+      reference: csharp
+      sides:
+        csharp:
+          cell: 8
+          pattern: "vecteur temoin 2 : cout C# = (\\d+)"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "\\r?\\n2[ \\t]+71[ \\t]+(\\d+)"
+          transform: int
+    - id: lcg_witness_seed3
+      description: >-
+        Cout du troisieme vecteur temoin LCG (graine 3, 36 genes) — 60 des deux
+        cotes. Meme role que les deux precedents.
+      tolerance: 0
+      reference: csharp
+      sides:
+        csharp:
+          cell: 8
+          pattern: "vecteur temoin 3 : cout C# = (\\d+)"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "\\r?\\n3[ \\t]+60[ \\t]+(\\d+)"
+          transform: int
+    - id: midpoints_at_half
+      description: >-
+        Nombre de valeurs exactement a .5 dans les trois vecteurs temoins (0).
+        Cette grandeur n'a de sens que cote Rust : elle mesure si les deux
+        conventions d'arrondi en presence — `round()` (demi vers le haut) et
+        `round_ties_even()` (la convention `Math.Round` de .NET) — peuvent
+        diverger sur ces entrees. A 0, la divergence est LATENTE (elle existe
+        dans le code, elle ne se declenche sur aucun temoin) ; le carnet Rust
+        publie les deux colonnes pour que le fait soit visible plutot que tu.
+      tolerance: 0
+      reference: rust
+      sides:
+        rust:
+          cell: 4
+          pattern: "valeurs exactement a \\.5 dans les trois vecteurs : (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas cette grandeur : il n'a qu'une seule
+            convention d'arrondi (`Math.Round`, demi vers le pair), donc rien a
+            comparer de son cote. La colonne `ties_even` du carnet Rust existe
+            precisement pour montrer que les deux conventions coincident sur ces
+            trois vecteurs. Declare ABSENT, pas mesure.
+    - id: bench_final_conflicts
+      description: >-
+        Conflits finaux du bench (4 graines, population 50, 160 generations).
+        DECLARE NON CONFORME, et c'est le resultat de l'experience, pas un
+        manque : le jumeau C# execute deux moteurs (MGS `"Default"` et mealpy
+        via PythonNet) qui publient 12/18/15/12 et 10/9/16/15 ; le carnet Rust
+        execute la crate `genetic_algorithm` 0.28, un TROISIEME moteur, qui
+        publie 18/15/10/15. Une graine n'est pas un identifiant de course
+        universel : les trois moteurs ne consomment pas leur generateur dans le
+        meme ordre, donc leurs trajectoires divergent des la premiere
+        generation. Comparer ces lignes serait une mesure fausse ; le carnet
+        compare les DISTRIBUTIONS (mediane, min-max), pas les lignes.
+      tolerance: 0
+      reference: csharp
+      sides:
+        csharp:
+          cell: 15
+          pattern: "MGS\\s+0\\s+12\\s+-\\s+6066\\s+253"
+          transform: text
+        rust:
+          absent: >-
+            Le carnet Rust publie ses propres conflits finaux (table de la
+            section 5), mais ils mesurent un troisieme moteur : la grandeur
+            n'est pas une quantite de conformite. Declare ABSENT, pas mesure —
+            l'ecart est le sujet du carnet, pas un defaut de portage.

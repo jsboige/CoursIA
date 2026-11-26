@@ -1,0 +1,13 @@
+- name: "SW-16 Proof-Carrying Ontologies"
+  family: SemanticWeb/open-ontologies
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Moteur de production nommé des deux cotes pour la jambe reelle : binaire open-ontologies epingle v1.4.0 (SHA256 verifie avant invocation), invoque par subprocess (Python) et System.Diagnostics.Process (C#)."
+  known_differences:
+    - "Le moteur Horn jouet et le checker (sections 2-5) sont des copies pedagogiques declarees, ecrites independamment de chaque cote (Python stdlib / C# BCL seule, zero NuGet) ; meme schema de certificat sw16-toy-cert/1, meme format oo-cert/1 relu cote TSV."
+    - "La preuve mecanique du decouplage checker/moteur scanne co_names en Python et l'IL compile (opcodes call/callvirt resolus en noms de methodes) en C# ; meme assert (aucun appel a MatchMoteur/ForwardChain ni match/forward_chain)."
+    - "Sorties numeriquement identiques sur les deux jambes : jouet 9 assertes / 18 point fixe / 9 inferences / 3 iterations ; reelle pizza.owl 1944 triplets / 99 classes / 218 individus / 258 derivations rdfs11 en 4 iterations."
+    - "Forge E : l'ordre des derivations du binaire n'est pas stable entre executions, total_problems est une mesure de run ; l'invariant clame (rejet + CONCLUSION_MISMATCH present) est le meme des deux cotes."
+    - "Ecart idiomatique C# : un appel params expanse imbrique dans un autre appel ne compile pas sous le parseur C# scripting (CS1026) — les forges construisent chaque etape dans une variable avant de la transmettre, note en commentaire dans le carnet."
