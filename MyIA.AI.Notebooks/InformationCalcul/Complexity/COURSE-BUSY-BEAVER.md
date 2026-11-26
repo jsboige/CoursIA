@@ -159,7 +159,7 @@ fichiers disent, projet par projet :
 - **2016** — le papier de `ZF192` cite Yedidia-Aaronson **une seule fois** (clé
   `yedidia-aaronson`, en introduction, pour situer la fonction BB en temps d'exécution ; ses
   autres clés sont `godel`, `zf207`, `zf209`, `k230`). Aucun autre des sept papiers ne les cite,
-  et le mot **Laconic n'apparaît nulle part** dans les 83 fichiers archivés. La filiation
+  et le mot **Laconic n'apparaît nulle part** dans l'instantané archivé du dépôt. La filiation
   Laconic → moteurs actuels est donc une **piste de lecture**, pas un fait documenté (§10).
   C'est une correction à l'issue, qui la présentait comme « l'ancêtre direct des moteurs
   actuels » : la formulation est plus forte que ce que les fichiers portent.
@@ -263,8 +263,8 @@ le sujet, autant que les machines.
 | `Support/<Projet>Support/` | huit modules de support — Coding, Calculus, Execution, Machine, Logic, SetTheory, Independence, Palomar (liste du README de `ZF192`) | ZF192, I3-334 |
 | `Vendor/` ou `vendor/` | sources *Foundation* embarquées (Apache-2.0) | tous |
 | `VENDORED_FOUNDATION_HASHES.json` | **122 entrées** `chemin → sha256` (26 Vorspiel, 5 Logic, 84 FirstOrder, 3 Propositional, 4 Syntax) | ligne ZF |
-| `provenance/FOUNDATION_FROM_PA196.json` | **39** fichiers repris de la copie PA196 (autre révision amont) | ligne ZF |
-| `provenance/FOUNDATION_PATCHES.json` | fichiers patchés, avec `original_sha256`, `patched_sha256` et **raison** écrite | ligne ZF (1 fichier), I0-451 (3, hérités de ZF207) |
+| `provenance/FOUNDATION_FROM_PA196.json` | **39 entrées** reprises de la copie PA196 (autre révision amont) | ligne ZF |
+| `provenance/FOUNDATION_PATCHES.json` | fichiers patchés, avec `original_sha256`, `patched_sha256` et **raison** écrite | ligne ZF (un seul), I0-451 (trois, hérités de ZF207) |
 | `comparator.json` | modules défi/solution, noms de théorèmes, axiomes permis, `enable_nanoda` | tous |
 | `check.py` | contrôle **source** (pas une preuve de compilation) : table exacte, données contextuelles, appendice du papier, défi autonome | ligne ZF |
 | `Audit.lean` | `#print axioms` sur les déclarations clés — neuf dans `ZF207`, le compte varie par projet | tous |
@@ -279,7 +279,7 @@ explicite.
 
 **Pourquoi on hache les fondations.** La preuve ne porte pas sur des mathématiques abstraites :
 elle porte sur un **texte précis** de *Foundation*, à une révision donnée, éventuellement patché.
-`check.py` (184 lignes, lu) rend ce texte **clos** :
+`check.py`, lu, rend ce texte **clos** :
 
 - chaque fichier de `Vendor/Foundation` doit figurer dans **l'union** des deux manifestes —
   `present == listed`, à la ligne près : ni fichier non déclaré, ni fichier manquant ;
@@ -293,7 +293,7 @@ elle porte sur un **texte précis** de *Foundation*, à une révision donnée, �
   closure, Comparator, or NanoDa success. »
 
 C'est la réponse enseignable à la question « pourquoi épingler un lac, et pourquoi hacher » : un
-hachage transforme « la preuve suppose *Foundation* » en « la preuve suppose **ces 122 fichiers,
+hachage transforme « la preuve suppose *Foundation* » en « la preuve suppose **ces fichiers,
 à ces empreintes** », et rend la dérive **visible** au lieu d'invisible.
 
 **Ce que vérifier coûte — ce que les fichiers enregistrent, et ce qu'ils taisent.** Chaque ligne
@@ -363,12 +363,13 @@ grignotaient les limites de la logique dans le Jeu de la Vie, jusqu'à culminer 
 
 `GOL-04-Canons` ouvre sur une échelle de quatre barreaux — `| Barreau | Demande | État |`, où le
 barreau 2 est « **ce notebook** » et les barreaux 3 et 4 « hors d'atteinte, nommé tel quel » — et
-la referme sur un tableau de bilan, reproduit ici verbatim :
+la referme sur un tableau de bilan, reproduit ici verbatim (un seul `[…]` : il retire la taille
+de départ que le carnet donne en chiffre, laissée à sa source) :
 
 | Barreau | Vérifié ? | Construit ? | Témoignage |
 |---|---|---|---|
 | 1 — quasi-particule | **oui, par le lake** (`decide`, `Computation.lean:176`) | le planeur est une donnée, pas une construction | la translation périodique existe |
-| 2 — source périodique | **oui, ici** : période 30 + cadence 30 mesurées, certificat `#eval` sur horizon 90 | **non, et mesuré** : 0/3 000 soupes, zéro calibré par contrôle positif | le canon de Gosper : croissance non bornée depuis 36 cellules |
+| 2 — source périodique | **oui, ici** : période 30 + cadence 30 mesurées, certificat `#eval` sur horizon 90 | **non, et mesuré** : 0/3 000 soupes, zéro calibré par contrôle positif | le canon de Gosper : croissance non bornée depuis […] cellules |
 | 3 — automate fini | non | non | nécessite une synthèse dirigée — hors d'atteinte, dit comme tel |
 | 4 — machine de Turing | non | non | programme Gemini : des années de design |
 
@@ -425,7 +426,7 @@ affirme, et ce qu'elle n'affirme pas :
 
 | Question | État | Pourquoi |
 |---|---|---|
-| Laconic est-il l'ancêtre **direct** des moteurs actuels ? | **piste**, non établi | 0 occurrence de « Laconic » dans les 83 fichiers archivés ; Yedidia-Aaronson n'est cité qu'une fois, en introduction de `ZF192` |
+| Laconic est-il l'ancêtre **direct** des moteurs actuels ? | **piste**, non établi | aucune occurrence de « Laconic » dans l'instantané archivé ; Yedidia-Aaronson n'est cité qu'une fois, en introduction de `ZF192` |
 | Un état PA et un état ZF mesurent-ils la même chose ? | **comparaison non établie** | théories différentes ; l'équivalence des énoncés arithmétiques est **rapportée** par la note de 2016, non vérifiée ici |
 | La bande de 2016 est-elle infinie des deux côtés ? | non précisé là où j'ai lu | le 7-uplet ne fixe pas le sens ; `ZF192` écrit « in both directions » |
 | Andrew James Wade (crédit du générateur) est-il l'auteur de Gemini ? | **homonymie non tranchée** | `ZF/generator/LICENSE.wade` ne dit que « MIT No Attribution / Copyright 2025 Andrew James Wade » |
@@ -434,8 +435,9 @@ affirme, et ce qu'elle n'affirme pas :
 ## 11. Sources, et où elles sont archivées
 
 **Dépôt** — `jamesyc/BusyBeaver`, commit épinglé `88c1fdbbddb1f9759d9a12a6345acfecfbcdcbfc`
-(MIT, « Copyright (c) 2026 James Chang » ; sources *Foundation* Apache-2.0). Instantané de
-**83 fichiers texte**, chacun vérifié byte-identique au commit par empreinte de blob git :
+(MIT, « Copyright (c) 2026 James Chang » ; sources *Foundation* Apache-2.0). Instantané intégral
+du texte du dépôt, chaque fichier vérifié byte-identique au commit par empreinte de blob git
+(le décompte et les empreintes sont au `PROVENANCE.md` du dossier) :
 
 `G:\Mon Drive\MyIA\IA\Bibliographie IA\Automata\Complexity Theory and Hardness\2026 - Chang (depot jamesyc) - BusyBeaver, paquets de preuve PA, ZF et grands cardinaux (github, MIT)\`
 
