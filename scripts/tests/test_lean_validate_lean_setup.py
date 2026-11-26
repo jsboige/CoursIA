@@ -149,31 +149,10 @@ def test_lean_toolchain_excludes_the_windows_chain_on_a_wsl_seat(validator, monk
     assert checks == []
 
 
-class _AbsentBinary:
-    """Reponse de sonde : le binaire interroge n'existe pas sur ce siege."""
-
-    returncode = 127
-    stdout = ""
-    stderr = ""
-
-
-def _no_toolchain_installed(*_args, **_kwargs):
-    return _AbsentBinary()
-
-
 def test_lean_toolchain_reports_missing_when_not_a_wsl_seat(validator, monkeypatch):
-    """Hors WSL, une chaine Windows absente reste un verdict negatif.
-
-    Neutraliser ``shutil.which`` ne suffit pas : ``check_command`` sonde d'abord
-    l'execution (``bash -c "source ~/.elan/env && <cmd> --version"``) quand
-    ``platform.system() == "Linux"``, donc sur tout siege WSL -- ou elan, lean et
-    lake sont reellement installes. Le verdict suivait alors le runner au lieu du
-    cas mesure (#28639). On coupe aussi cette sonde, pour que le test dise
-    « rien d'installe » sur les deux sieges.
-    """
+    """Hors WSL, une chaine Windows absente reste un verdict negatif."""
     monkeypatch.setattr(validator.shutil, "which", lambda cmd: None)
     monkeypatch.setattr(validator, "_kernel_drives_wsl", lambda *a, **k: False)
-    monkeypatch.setattr(validator.subprocess, "run", _no_toolchain_installed)
     checks = validator.check_lean_toolchain()
     assert len(checks) == 3
     assert not any(checks)
