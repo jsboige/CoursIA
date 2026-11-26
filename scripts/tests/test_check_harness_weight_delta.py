@@ -464,6 +464,9 @@ def test_le_cliquet_est_cable_dans_la_voie_rapide():
     assert "TRANCHE40" in source, (
         "la liste effective des gardes ne cite pas la tranche du cliquet : "
         "le garde ne sera jamais selectionne")
+    assert fast_lane.guard_applies(
+        g, ["docs/reference/claude-code-config.md"]
+    ), "le cliquet doit etre selectionne par un diff limite a l'inventaire"
     assert fast_lane.guard_applies(g, ["CLAUDE.md"]), (
         "le cliquet doit etre selectionne par le chemin qu'il surveille")
     assert fast_lane.guard_applies(g, [".claude/rules/git-workflow.md"]), (

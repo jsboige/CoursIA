@@ -3654,6 +3654,7 @@ TRANCHE40: list[Guard] = [
         paths=[
             "CLAUDE.md",
             ".claude/rules/**",
+            "docs/reference/claude-code-config.md",
             "scripts/audit/measure_autoloaded_harness.py",
             "scripts/ci/check_harness_weight_delta.py",
             "scripts/tests/test_check_harness_weight_delta.py",

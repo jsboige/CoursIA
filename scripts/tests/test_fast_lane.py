@@ -123,6 +123,16 @@ def test_path_matches_accepts_windows_separators():
     assert fast_lane.path_matches("MyIA.AI.Notebooks\\x\\y.ipynb", "**/*.ipynb")
 
 
+def test_tranche40_selection_inventory_only_diff():
+    guard = next(
+        g for g in fast_lane_registry.TRANCHE40
+        if "Harness autoloaded weight ratchet" in g.name
+    )
+    assert fast_lane.guard_applies(
+        guard, ["docs/reference/claude-code-config.md"]
+    )
+
+
 def test_guard_without_paths_always_applies():
     guard = Guard(name="g", argv=["true"], source="s", paths=[])
     assert fast_lane.guard_applies(guard, []) is True
