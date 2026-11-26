@@ -37,14 +37,14 @@ Une statuation ne s'appuie pas sur la mesure d'un autre sans relire (G.1). Tout 
 
 | Témoin | Cellules code | `execution_count` | Erreurs | Sorties |
 |---|---|---|---|---|
-| `IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb` | 9 | `1..9` contigus | 0 | 8 cellules sur 9 ; la 9ᵉ est une cellule sans sortie (aucune erreur), pas une cellule non exécutée |
+| `IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb` | 9 | `1..9` contigus | 0 | toutes les cellules sauf une ont une sortie ; la dernière est une cellule sans sortie (aucune erreur), pas une cellule non exécutée |
 | `IIT/ICT-Series/ICT-30-InhibitedInvention-Python.ipynb` | 8 | `1..8` contigus | 0 | 8 sur 8 |
 
 **Tests des deux modules** — `python -m pytest tests/test_inhibited_action.py tests/test_inhibited_invention.py -q` depuis `MyIA.AI.Notebooks/IIT/ICT-Series/` : **35 passed en 38,24 s**, 0 échec.
 
 ## 3. Attestation 1 — `ICT-12d` : l'action qu'on peut produire et qu'on s'interdit
 
-**Sources** : `ict/inhibited_action.py` (418 lignes) — `InhibitedEnvironment` (l. 50), `adaptive_animat` (l. 166), `action_entropy` (l. 218), `rigidification_test` (l. 243), `goal_seeking_efficacy_test` (l. 279, avec `greedy_toward` l. 300 et `target_fraction` l. 307), `controllability_estimation_test` (l. 330), `irreversibility_debt_bridge` (l. 373). Le module **n'importe que `numpy` et `typing`** (l. 40-42) : il ne dépend d'aucun autre module du paquet.
+**Sources** : `ict/inhibited_action.py` — `InhibitedEnvironment` (l. 50), `adaptive_animat` (l. 166), `action_entropy` (l. 218), `rigidification_test` (l. 243), `goal_seeking_efficacy_test` (l. 279, avec `greedy_toward` l. 300 et `target_fraction` l. 307), `controllability_estimation_test` (l. 330), `irreversibility_debt_bridge` (l. 373). Le module **n'importe que `numpy` et `typing`** (l. 40-42) : il ne dépend d'aucun autre module du paquet.
 
 **Ce que le carnet imprime** (sorties committées, cellules 2 à 14) :
 
@@ -55,7 +55,7 @@ Une statuation ne s'appuie pas sur la mesure d'un autre sans relire (G.1). Tout 
 | **chute d'entropie** | **`0.830`** | verdict `rigidified` (seuil 0,3) |
 | **perte d'efficacité** | **`0.706`** | verdict `lost_control` |
 | erreur d'estimation de `alpha` sur 3 régimes | `max err = 0.028` | verdict `detected` (seuil 0,1) |
-| contrat de la cellule 19 | 4 lignes, 4 tenues | — |
+| contrat de la cellule 19 | chaque clause du contrat tient | — |
 
 **Robustesse sur 5 seeds** : `detected 5/5`, `rigidified 5/5`, `lost_control 5/5` ; `entropy_drop` moyenne `0.8678`, écart-type `0.0841`, plage `[0.7407, 0.9423]` contre un seuil de `0.3` ; `efficacy_drop` moyenne `0.6813`, écart-type `0.0428`, plage `[0.6088, 0.7125]`. La dispersion est très en dessous des marges : ce n'est pas un franchissement de seuil par chance.
 
@@ -63,7 +63,7 @@ Une statuation ne s'appuie pas sur la mesure d'un autre sans relire (G.1). Tout 
 
 ## 4. Attestation 2 — `ICT-30` : l'invention qu'on peut produire et qu'on s'interdit
 
-**Sources** : `ict/inhibited_invention.py` (286 lignes) — `InhibitedInventingGame(InventingSignalingGame)` (l. 48), `_invent` (l. 89), `play_round` (l. 103), `final_inhibition` (l. 119), `inhibition_traps_rigidification_test` (l. 134), `learned_helplessness_test` (l. 180), `trap_persists_under_more_compute_test` (l. 223), `no_inhibition_escapes_control_test` (l. 260). Le module **s'appuie sur** `ict.symbol_invention.InventingSignalingGame` et `ict.signaling_convention.mutual_information` (l. 44-45) — une mécanique de base différente de celle de l'attestation 1.
+**Sources** : `ict/inhibited_invention.py` — `InhibitedInventingGame(InventingSignalingGame)` (l. 48), `_invent` (l. 89), `play_round` (l. 103), `final_inhibition` (l. 119), `inhibition_traps_rigidification_test` (l. 134), `learned_helplessness_test` (l. 180), `trap_persists_under_more_compute_test` (l. 223), `no_inhibition_escapes_control_test` (l. 260). Le module **s'appuie sur** `ict.symbol_invention.InventingSignalingGame` et `ict.signaling_convention.mutual_information` (l. 44-45) — une mécanique de base différente de celle de l'attestation 1.
 
 **Ce que le carnet imprime** (cellules 5 à 18) :
 
@@ -113,7 +113,7 @@ Ni une réécriture pédagogique du carnet, ni un changement de graine ne sont d
 
 ## 7. Ce que cette tranche ne fait pas
 
-- **Elle ne statue pas `institutionnaliser`.** L'entrée reste en file d'attente, mais son motif « DAO seulement » est lui aussi à re-mesurer : deux bancs candidats existent sur `main`, mesurés ce cycle sans être pesés — `SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb` (23 cellules, 8 code `1..8`, 0 erreur) et `SymbolicAI/SmartContracts/00-Foundations/SC-02b-Bac-ASable-Institutionnel-Python.ipynb` (41 cellules, 18 code `1..18`, 0 erreur, avec ses bras et contrôles dans `sc2b_resultats/`). Le prochain grain du chantier doit les peser sur les trois axes, et écrire d'abord la définition de l'opération — elle n'existe pas davantage que celle de `inhiber` (§1).
+- **Elle ne statue pas `institutionnaliser`.** L'entrée reste en file d'attente, mais son motif « DAO seulement » est lui aussi à re-mesurer : deux bancs candidats existent sur `main`, mesurés ce cycle sans être pesés — `SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb` (code `1..8` contigu, 0 erreur) et `SymbolicAI/SmartContracts/00-Foundations/SC-02b-Bac-ASable-Institutionnel-Python.ipynb` (code `1..18` contigu, 0 erreur, avec ses bras et contrôles dans `sc2b_resultats/`). Le prochain grain du chantier doit les peser sur les trois axes, et écrire d'abord la définition de l'opération — elle n'existe pas davantage que celle de `inhiber` (§1).
 - **Elle ne corrige pas le lien mort du corps de l'EPIC** vers `docs/ledgers/12204-ict-chantier-1-audit-froid.md` : le fichier vit à [`docs/transients/2026-08-24-12204-ict-chantier-1-audit-froid.md`](../transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) depuis son déplacement en lane transiente. Signalé ici, à porter au body dans une édition séparée.
 - **Elle ne relit pas** les mesures de contenu des tranches antérieures (témoins d'A9, verdicts d'A11) : elles ne sont citées ici que comme contexte, jamais comme preuve.
 
