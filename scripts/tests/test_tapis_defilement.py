@@ -105,6 +105,37 @@ def test_l_ordre_equitable_passe_sur_un_pool_sain():
     assert r["rompu"] is False
 
 
+def test_la_consolidation_distancee_est_nommee(monkeypatch):
+    """Une non-consolidation servie DEVANT la consolidation : temoin I7.
+
+    L'ordre inverse exact de l'ordre attendu : meme age, meme classe de
+    visite, et le bonus superieur est celui de la **consolidation** (mandat du
+    18/11 : elle est posee en premier dans le bonus). L'organe doit le
+    nommer -- un `ok` sur cette file serait un faux vert.
+    """
+    conso = _etat(1, visites=0, consolidation=True, cree="2026-11-25T11:30:00Z")
+    avant = _etat(2, visites=0, cree="2026-11-25T11:30:00Z")
+    monkeypatch.setattr(tapis_rapide, "ordonner",
+                        lambda *a, **k: [avant, conso])
+    r = tapis_defilement.ordre([conso, avant], LANE, NOW, grains=8)
+    assert r["consolidation"]["ok"] is False, "l'ordre inverse doit etre signale"
+    assert 2 in r["consolidation"]["temoins"], (
+        "le temoin est la non-consolidation servie devant la consolidation")
+    assert r["rompu"] is True
+
+
+def test_l_ordre_consolidation_devant_passe(monkeypatch):
+    """L'ordre attendu -- la consolidation devant, meme age, meme classe."""
+    conso = _etat(1, visites=0, consolidation=True, cree="2026-11-25T11:30:00Z")
+    avant = _etat(2, visites=0, cree="2026-11-25T11:30:00Z")
+    monkeypatch.setattr(tapis_rapide, "ordonner",
+                        lambda *a, **k: [conso, avant])
+    r = tapis_defilement.ordre([conso, avant], LANE, NOW, grains=8)
+    assert r["consolidation"]["ok"] is True
+    assert r["consolidation"]["temoins"] == []
+    assert r["rompu"] is False
+
+
 # --- le defilement reel ---------------------------------------------------------
 
 def test_le_defilement_couvre_un_pool_entier(tmp_path):

@@ -144,18 +144,27 @@ def ordre(etats: list[tapis_rapide.Etat], lane: str, maintenant: datetime,
     equite_ok = not temoins_equite
 
     # --- la consolidation : elle ne se fait pas distancer -------------------
+    # I7 : dans une meme classe de visite, la consolidation est posee EN
+    # PREMIER dans le bonus (mandat du 18/11) : son bonus est donc le plus
+    # eleve, et elle doit preceder les non-consolidations de sa classe.
+    # Une non-consolidation servie DEVANT elle, alors que le bonus de la
+    # consolidation est le superieur, la fait distancer : le temoin est cette
+    # non-consolidation, et le bonus superieur attendu est celui de la
+    # consolidation -- pas celui du temoin.
     temoins_conso: list[int] = []
     for i, e in enumerate(file_):
         if not _est_conso(e, conso):
             continue
         dix, _ = tapis_equilibre.bonus(e, conso, maintenant)
         for j, f in enumerate(file_):
-            if j <= i or _est_conso(f, conso):
+            if _est_conso(f, conso):
                 continue
             if int(getattr(e, "visites", 0) or 0) != int(getattr(f, "visites", 0) or 0):
                 continue  # pas la meme classe de visite : l'equite tranche
+            if j >= i:
+                continue  # la consolidation est deja devant : rien a signaler
             dix_f, _ = tapis_equilibre.bonus(f, conso, maintenant)
-            if dix_f > dix:
+            if dix > dix_f:
                 temoins_conso.append(int(f.numero))
     conso_ok = not temoins_conso
 
