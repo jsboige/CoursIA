@@ -2168,7 +2168,7 @@ class: nb-map nb-k102
 <p class="nb-foot"><strong>À observer.</strong> Sur un morceau que vous connaissez, quelle erreur fait la transcription : hauteur, durée ou instrument ?</p>
 
 ---
-class: nb-map nb-k94
+class: nb-map nb-k98
 ---
 
 # Chaînes audio et livre audio agentique
