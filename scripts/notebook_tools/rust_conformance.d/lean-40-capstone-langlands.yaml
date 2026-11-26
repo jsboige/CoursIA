@@ -22,7 +22,14 @@
 # litteral qui n'est pas nul — SzpiroPasten nomme le marqueur 'sorry' trois fois
 # dans sa prose sans porter aucune preuve, et l'enonce separe desormais
 # l'absence de preuve sorry du comptage du marqueur ; commentaire de la cellule
-# 28 « six modules ».
+# 28 « six modules ». Deux findings d'audit du 26/11 (c.1351 de #17357) ont ete
+# ajoutes dans la meme tranche : md01/md10/md20/md29 annonçaient que la relation
+# de Hecke « caracterise » tau, ce qui est faux (elle definit une forme propre :
+# la cellule 9 construit deux suites multiplicatives qui passent les memes 9 cas,
+# l'une differant de tau sur 65 des 130 premieres valeurs) ; la quatrieme
+# dimension du Monstre etait ecrite 842603213 au lieu de 842609326 (md25, et les
+# constantes des cellules 18 et 26, desormais vivantes : c3 = 864299970 se ferme
+# en 2*1 + 2*196883 + 21296876 + 842609326).
 # Tolerance unique : egalite stricte du texte (aucun flottant calcule —
 # arithmetique entiere exacte), largeurs et espaces finaux compris.
 # Le cote C# n'existe pas dans le depot au moment du portage (consigne spec
@@ -179,7 +186,7 @@
           pattern: "droit = (-?\\d+),"
           transform: int
     - id: perturbee_ecart
-      description: "Ecart de la suite perturbee (2144, non nul : la relation caracterise)"
+      description: "Ecart de la suite perturbee (2144, non nul : la relation ecarte une suite non multiplicative)"
       tolerance: 0
       reference: python
       sides:
@@ -203,6 +210,71 @@
         rust:
           cell: 9
           pattern: "en viole (\\d+)\\."
+          transform: int
+    - id: contre_epreuve_b
+      description: "Contre-epreuve : la suite b passe les memes 9 cas (9, d'ou « ne caracterise pas »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "b : b\\(2\\) = 5.*?-> (\\d+)/"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "b : b\\(2\\) = 5.*?-> (\\d+)/"
+          transform: int
+    - id: contre_epreuve_sigma11
+      description: "Contre-epreuve : sigma11 (a(p) = 1 + p^11) passe les memes 9 cas (9)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "sigma11 : a\\(p\\) = 1 \\+ p\\^11\\s+-> (\\d+)/"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "sigma11 : a\\(p\\) = 1 \\+ p\\^11\\s+-> (\\d+)/"
+          transform: int
+    - id: contre_epreuve_diff_b
+      description: "b differe de tau sur 65 des 130 premieres valeurs"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "b differe de tau sur (\\d+)/130"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "b differe de tau sur (\\d+)/130"
+          transform: int
+    - id: contre_epreuve_noeuds
+      description: "b differe de tau sur 4 des 9 noeuds p^r testes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "dont (\\d+) des 9 noeuds"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "dont (\\d+) des 9 noeuds"
+          transform: int
+    - id: contre_epreuve_diff_sigma11
+      description: "sigma11 differe de tau sur 129 des 130 premieres valeurs"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "sigma11 differe de tau sur (\\d+)/130"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "sigma11 differe de tau sur (\\d+)/130"
           transform: int
     - id: docstring_module
       description: "Docstring du module lue au fichier (extrait aplat, mesure a l'execution)"
@@ -373,6 +445,32 @@
           cell: 18
           pattern: "coefficient c2 = (\\d+)"
           transform: int
+    - id: c3_valeur
+      description: "Troisieme coefficient de j (864299970, ferme par les 4 dimensions du Monstre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "coefficient c3 = (\\d+)"
+          transform: int
+        rust:
+          cell: 18
+          pattern: "coefficient c3 = (\\d+)"
+          transform: int
+    - id: c3_egalite
+      description: "Egalite Moonshine c3 = 2*1 + 2*196883 + 21296876 + 842609326 (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\| egalite c3 : (True|False)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\| egalite c3 : (True|False)"
+          transform: text
     - id: exo1_tau11
       description: "tau(11) imprime par l'exercice 1 (534612)"
       tolerance: 0
