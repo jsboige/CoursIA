@@ -139,7 +139,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | gateway | 2 | 0 | 2 | 0 | 0 | 0 | 1 | 1 |
 | kelly_lean | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | partner-course-quant-trading | 7 | 0 | 7 | 0 | 0 | 0 | 5 | 4 |
-| projects | 113 | 5 | 108 | 10 | 0 | 3 | 65 | 53 |
+| projects | 113 | 5 | 108 | 10 | 0 | 3 | 65 | 54 |
 | research | 26 | 5 | 21 | 4 | 0 | 0 | 4 | 17 |
 | scripts/notebook_tools | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 
@@ -257,10 +257,10 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb` | Compression | python3 | lxml==6.1.3 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-09b-Entropie-Conditionnelle-Taux-Compression-Python.ipynb` | Compression | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb` | Constructeur | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb` | DataScienceWithAgents | python3 | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb` | DataScienceWithAgents | python3 | pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-01-Python_pour_la_Data_Science-Python.ipynb` | DataScienceWithAgents | python3 | - | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-03-Analyse_de_Donnees_avec_Pandas-Python.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/PyDS-05-Exploration_Nettoyage_Donnees_Reelles-Python.ipynb` | DataScienceWithAgents | python3 | pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11c-Lasso-SOTA-Comparison.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
@@ -711,9 +711,9 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb` | SymbolicLearning | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-output.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb` | SymbolicLearning | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb` | SymbolicLearning | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb` | Texte | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
