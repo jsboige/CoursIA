@@ -10,6 +10,8 @@ cloture (ou une arrivee) decale l'index du pool sans sauter de numero.
 """
 from __future__ import annotations
 
+from coordination import tapis_tete
+
 
 def position(nums: list[int], ancre: int | None) -> int:
     """L'index du premier numero strictement superieur a l'ancre (cyclique).
@@ -63,4 +65,5 @@ def membres(ordre: list, ancre: int | None, part: int, avance: int = 0,
     else:
         tranche_ = tranche(nums, ancre, part, avance)
     choisis = set(tranche_)
-    return ([g for g in ordre if g.numero in choisis], tranche_)
+    membres_ = [g for g in ordre if g.numero in choisis]
+    return (tapis_tete.en_tete(membres_, tranche_[0]), tranche_)

@@ -1,0 +1,9 @@
+- name: "GameTheory-11d Raffinements Sequentiels"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-25 (myia-po-2026:CoursIA-2, PR CoursIA #28493) : jumeau Python re-execute sous le kernel canon 3.13 (metadata.language_info.version 3.12.3 -> 3.13.13) -- l'ecart de contenu est limite au re-encodage PNG de l'arbre de la cellule 5 (51 024 o -> 45 156 o) : rendu identique au pixel (893x493, 0 pixel different sur 440 249), sources inchangees, sorties texte inchangees, jumeau C# non touche."
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27686) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (arbre a information imparfaite, WSE par census de grille puis census exact, suites eps de Kreps-Wilson, verificateurs PL/P/B, diagnostic AGM, table de synthese WSE/SE/PBE) ; le code C# n'utilise que la BCL, aucune dependance externe. Valeurs temoins identiques des deux cotes (0.050000 sur la frontiere mu(be)=1/3, 70 ordres examines pour l'exhaustion P1/P2)."
+    - "Le calcul Python utilise les entiers natifs et numpy ; le port C# utilise la BCL seule (dictionnaires de tuples), les ecarts d'utilite exacts restant entiers."

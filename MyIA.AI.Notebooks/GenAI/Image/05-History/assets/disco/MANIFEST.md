@@ -1,6 +1,6 @@
 # Manifeste des figures — GenAI/Image/05-History/assets/disco
 
-Artefacts du notebook `05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb`.
+Artefacts du carnet **DiscoDiffusion**, accessible depuis le [parcours principal de 05-History](../../README.md#parcours-principal). Le parcours donne le nom courant du carnet ; ce manifeste décrit les exécutions dont proviennent les figures.
 
 > **QA visuelle déléguée (merge-gate)** : ce MANIFEST est rédigé sur la lane `myia-po-2023:CoursIA` (GLM, sans vision). Les champs mécaniques (dimensions PIL, poids octets, métriques CLIP calculées par outil) sont vérifiés par outil ; les champs descriptifs sont des descriptions de provenance — **la vérification visuelle firsthand est déléguée au merge-gate** (ai-01 ou lane CoursIA-2 MiniMax, doctrine vision des figures).
 
@@ -31,6 +31,8 @@ Artefacts du notebook `05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb`.
 
 ## dd_vs_modern.png · grid_guidance.png
 
-- **Source** : extraction directe des `image/png` des outputs d'exécution du notebook 05-1 (cellules « comparaison pré/post-SD » et « grille d'exploration »), exécution finale du 18/09/2026 (kernel python3, papermill).
+- **Source** : extraction directe des `image/png` des sorties du [carnet DiscoDiffusion au chemin utilisé pour ces figures](https://github.com/jsboige/CoursIA/blob/ce655318c881f303881d136bd2ee0c034bf9a5ba/MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb).
+- **Cellules sources** : « comparaison pré/post-SD » et « grille d'exploration ».
+- **Exécution** : passage final du 18/09/2026 (kernel python3, Papermill).
 - **Contenu réel vérifié** : PNG extraits des outputs (1 521 999 / 1 547 774 octets). Vérification visuelle déléguée merge-gate.
 - **Alt-text (FR)** : diptyque DD contre Z-Image même prompt ; grille 2×2 de la guidance CLIP.

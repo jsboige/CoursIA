@@ -1,0 +1,8 @@
+- name: "Argumentation-5c Formal-Richness-Matrix"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-23 (myia-po-2028:claudish, #28104) : jumeau C# cree depuis le jumeau Python -- meme plan de 24 cellules, 9 cellules code executees (execution_count sequentiel, 0 erreur, validation H.1/H.3 PASS au check-run) ; la cellule de Lecture du resultat (cellule 10) suit le seul output qui en demande un, conformement a la regle #17040 lue en review Hermes sig 7a0d77a0."
+    - "C# sur kernel .net-csharp (.NET natif, #nullable enable) : records/Dictionary au lieu de dataclass/dict Python, memes matrices de richesse et memes classements 4-verdicts."
