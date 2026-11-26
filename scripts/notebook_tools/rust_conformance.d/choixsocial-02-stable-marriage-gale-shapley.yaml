@@ -1,0 +1,324 @@
+# Conformité différentielle de ChoixSocial-02-Stable-Marriage-Gale-Shapley (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "ChoixSocial-02-Stable-Marriage-Gale-Shapley"
+  family: "GameTheory/SocialChoice"
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Rust.ipynb
+  measures:
+    - id: c2_text
+      description: "Sortie de la cellule 2, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 2 diffère du texte Python (ligne 1 : « …Stable (Gale-Shapley, twin C# .NET 9) » contre « …Stable (Gale-Shapley) » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c4_text
+      description: "Sortie de la cellule 4, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 4 diffère du texte Python (ligne 2 : « m0 prefere w1 a w2 ? True » contre « m0 préfère w1 à w2 ? True » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 10 diffère du texte Python (ligne 1 : « Step 1: homme 0 propose a femme 3 » contre « Step 1: homme 0 propose à femme 3 » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_couplage_final
+      description: "« Couplage final : » de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^Couplage\\ final\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(?m:^Couplage\\ final\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "(?m:^Couplage\\ final\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c13_text
+      description: "Sortie de la cellule 13, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 13 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_couplage_gale_shapley
+      description: "« Couplage Gale-Shapley : » de la cellule 13, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(?m:^Couplage\\ Gale\\-Shapley\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "(?m:^Couplage\\ Gale\\-Shapley\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 13
+          pattern: "(?m:^Couplage\\ Gale\\-Shapley\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c13_stable
+      description: "« Stable ? » de la cellule 13, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "(?m:^Stable\\ \\?[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "(?m:^Stable\\ \\?[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 13
+          pattern: "(?m:^Stable\\ \\?[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c16_text
+      description: "Sortie de la cellule 16, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 16 diffère du texte Python (ligne 9 : « Present dans les stables ? True » contre « Présent dans les stables ? True » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_nombre_total_de_couplages
+      description: "« Nombre total de couplages : » de la cellule 16, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^Nombre\\ total\\ de\\ couplages\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^Nombre\\ total\\ de\\ couplages\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^Nombre\\ total\\ de\\ couplages\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c16_nombre_de_couplages_stables
+      description: "« Nombre de couplages stables : » de la cellule 16, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^Nombre\\ de\\ couplages\\ stables\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^Nombre\\ de\\ couplages\\ stables\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^Nombre\\ de\\ couplages\\ stables\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c16_couplage_gale_shapley
+      description: "« Couplage Gale-Shapley : » de la cellule 16, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^Couplage\\ Gale\\-Shapley\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^Couplage\\ Gale\\-Shapley\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^Couplage\\ Gale\\-Shapley\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c16_le_couplage_gale_shapley_est_man_optimal
+      description: "« Le couplage Gale-Shapley est man-optimal : » de la cellule 16, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^Le\\ couplage\\ Gale\\-Shapley\\ est\\ man\\-optimal\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^Le\\ couplage\\ Gale\\-Shapley\\ est\\ man\\-optimal\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^Le\\ couplage\\ Gale\\-Shapley\\ est\\ man\\-optimal\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c21_text
+      description: "Sortie de la cellule 21, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 21 diffère du texte Python (ligne 1 : « Exercice 1 a completer par l'etudiant : Gale-Shapley femmes- » contre « Couplage femmes-proposent : {} » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c21_couplage_femmes_proposent
+      description: "« Couplage femmes-proposent : » de la cellule 21, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(?m:^Couplage\\ femmes\\-proposent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(?m:^Couplage\\ femmes\\-proposent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 21
+          pattern: "(?m:^Couplage\\ femmes\\-proposent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c21_couplage_hommes_proposent
+      description: "« Couplage hommes-proposent : » de la cellule 21, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(?m:^Couplage\\ hommes\\-proposent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(?m:^Couplage\\ hommes\\-proposent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 21
+          pattern: "(?m:^Couplage\\ hommes\\-proposent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c21_identiques
+      description: "« Identiques ? » de la cellule 21, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(?m:^Identiques\\ \\?[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(?m:^Identiques\\ \\?[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 21
+          pattern: "(?m:^Identiques\\ \\?[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_text
+      description: "Sortie de la cellule 23, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 23 diffère du texte Python (ligne 1 : « Exercice 2 : woman-pessimalite de Gale-Shapley » contre « Exercice 2 : woman-pessimalité de Gale-Shapley » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_resultat
+      description: "« Resultat : » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^Resultat\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^Resultat\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^Resultat\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c25_text
+      description: "Sortie de la cellule 25, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 25
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 25 diffère du texte Python (ligne 1 : « Exercice 3 a completer par l'etudiant : verification empiriq » contre « Exercice 3 : vérification empirique sur profils aléatoires » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."

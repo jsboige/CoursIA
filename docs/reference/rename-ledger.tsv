@@ -692,6 +692,10 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents	MyIA.AI.Notebooks/ML/D
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration	MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents	2026-11-13	myia-po-2028:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-30-FormalGroups-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-06-FormalGroups-Lean.ipynb	2026-11-17	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean	MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean	2026-11-17	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-Comprehension-Video-API.ipynb	2026-11-18	unknown
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb	2026-11-18	unknown
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb	2026-11-18	unknown
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb	MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb	2026-11-18	unknown
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb	2026-11-20	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb	2026-11-20	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb	MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb	2026-11-17	myia-po-2023:CoursIA
@@ -710,3 +714,14 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb	MyIA.AI.No
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb	MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb	2026-11-17	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb	MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb	2026-11-17	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb	MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb	2026-11-17	myia-po-2024:CoursIA
+MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-Csharp.ipynb	MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-CSharp.ipynb	2026-11-21	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb	MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-CSharp.ipynb	2026-11-21	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24b-Confiance-Preuves-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-01-Confiance-Preuves-Native.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-03-Lean-ERC20-Native-Companion.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-04-Calibration-Native-Companion.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-05-Coherence-et-Temoin.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34-Calculabilite-et-Limites.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-06-Calculabilite-et-Limites.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-07-FairBot-Loeb.ipynb	2026-11-21	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb	2026-11-24	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-output.ipynb	MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output.ipynb	2026-11-24	myia-po-2023:CoursIA

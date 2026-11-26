@@ -10,6 +10,8 @@ de git reel.
 """
 
 import importlib.util
+import os
+import base64
 import json
 import re
 import subprocess
@@ -171,6 +173,10 @@ class ScriptedRunner:
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
+        # Porte 5bis.ter (#28202) : attestation jumelle decrivant l'arbre de
+        # fusion. 0 = conforme, 1 = defaut trouve, 2 = mesure impossible.
+        attest_rc: int = 0,
+        attest_stdout: str = "",
         # Revendications d'ordinal des PRs ouvertes (organe
         # twin_open_claims.py) : 0 = liste vide, 1 = liste portee par
         # claims_stdout, 2 = API illisible (fail-closed).
@@ -180,6 +186,12 @@ class ScriptedRunner:
         # 0 = clear, 1 = collision, 2 = unreadable. Cf. SLOT_DOCUMENTED_RC.
         slot_rc: int = 0,
         slot_stdout: str = "",
+        # #27875 : reponse scriptee de la lecture du manifeste des lakes
+        # (`gh api repos/.../contents/scripts/lean/ci_lakes.json?ref=<tete>`).
+        # `None` (defaut) = 404 : manifeste non lu, la garde retombe sur son
+        # motif generique (fail-closed conserve). Une chaine = stdout BRUT
+        # (reponse malformee) ; un dict = payload JSON.
+        ci_lakes_payload: dict | str | None = None,
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
         base_search: dict[str, list[dict]] | None = None,
@@ -254,6 +266,13 @@ class ScriptedRunner:
         # `main_red_view_rc` non nul simule une lecture ILLISIBLE.
         main_red_views: dict[int, dict | str] | None = None,
         main_red_view_rc: int = 0,
+        # #27684 : liste COMPLETE des fichiers d'une PR, lue en REST pagine
+        # (``/pulls/{n}/files``) quand la vue ``gh pr view --json files`` est
+        # tronquee (plafond de 100). Cle = numero de PR, valeur = la liste
+        # des chemins, dans l'ordre ; ``pr_files_rc`` non nul simule une
+        # lecture ILLISIBLE (quota, 5xx).
+        pr_files: dict[int, list[str]] | None = None,
+        pr_files_rc: int = 0,
     ):
         self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
@@ -299,12 +318,16 @@ class ScriptedRunner:
         # Vide par defaut (les tests historiques ``twin-index-collision``
         # n'attendent pas de classification).
         self.twin_stdout = twin_stdout
+        # Porte 5bis.ter (#28202) : rapport de l'organe d'attestation.
+        self.attest_rc = attest_rc
+        self.attest_stdout = attest_stdout
         self.claims_rc = claims_rc
         self.claims_stdout = claims_stdout
         # #20774 : organe slot-reservation-guard, mode en ligne. Meme
         # convention que twin_rc/twin_stdout.
         self.slot_rc = slot_rc
         self.slot_stdout = slot_stdout
+        self.ci_lakes_payload = ci_lakes_payload
         # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
@@ -316,6 +339,9 @@ class ScriptedRunner:
         # la commande pour tester le chemin ``unreadable``.
         self.base_search = base_search or {}
         self.base_search_rc = base_search_rc
+        # #27684 : fichiers d'une PR en REST pagine.
+        self.pr_files = pr_files or {}
+        self.pr_files_rc = pr_files_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -369,6 +395,19 @@ class ScriptedRunner:
             pr = int(c[3])
             view = self.views.get(pr, default_view(pr=pr))
             return mr.RunResult(0, json.dumps(view), "")
+        if c[:2] == ["gh", "api"] and "/pulls/" in c[2] and "/files" in c[2]:
+            # #27684 : lecture paginee de la liste des fichiers d'une PR.
+            # Le REST nomme le champ `filename` (la vue gh nomme `path`).
+            if self.pr_files_rc != 0:
+                return mr.RunResult(self.pr_files_rc, "", "gh failed")
+            pr = int(c[2].split("/pulls/")[1].split("/")[0])
+            per_page = int(c[2].split("per_page=")[1].split("&")[0])
+            page = int(c[2].rsplit("page=", 1)[1].split("&")[0])
+            chemins = self.pr_files.get(pr, [])
+            tranche = chemins[(page - 1) * per_page: page * per_page]
+            return mr.RunResult(
+                0, json.dumps([{"filename": ch} for ch in tranche]), ""
+            )
         if c[:3] == ["gh", "pr", "merge"]:
             if self.merge_script:
                 rc, err = self.merge_script.pop(0)
@@ -376,6 +415,16 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/contents/" in c[2]:
+            # #27875 : lecture du manifeste des lakes a la TETE de la PR
+            # (garde Lean). Defaut = 404 : un manifeste non lu laisse la
+            # garde sur son motif generique -- le fail-closed est conserve.
+            payload = self.ci_lakes_payload
+            if payload is None:
+                return mr.RunResult(1, "", "HTTP 404")
+            if isinstance(payload, str):
+                return mr.RunResult(0, payload, "")
+            return mr.RunResult(0, json.dumps(payload), "")
         if c[:2] == ["gh", "api"] and c[2].startswith("users/"):
             # #17437 : sonde d'identite App (``users/<login>[bot] --jq .type``).
             # Defaut = 404 (rc 1) : une sonde non scriptee est un login
@@ -544,8 +593,16 @@ class ScriptedRunner:
             return mr.RunResult(self.nits_rc, "", "")
         if c[:1] == ["git"] and "fetch" in c:
             return mr.RunResult(self.fetch_rc, "", "")
+        if c[:1] == ["git"] and "rev-parse" in c:
+            # La base RESOLUE du contexte de passe (22/11).
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:1] == ["git"] and "worktree" in c:
+            # Retrait du worktree de passe : rien a faire dans un test.
+            return mr.RunResult(0, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
             return mr.RunResult(self.twin_rc, self.twin_stdout, "")
+        if len(c) > 1 and "check_twin_attestation_squash.py" in c[1]:
+            return mr.RunResult(self.attest_rc, self.attest_stdout, "")
         if len(c) > 1 and "twin_open_claims.py" in c[1]:
             return mr.RunResult(self.claims_rc, self.claims_stdout, "")
         if len(c) > 1 and "check_slot_reservation.py" in c[1]:
@@ -590,6 +647,9 @@ def _mergeable_reads(runner: ScriptedRunner) -> list[list[str]]:
         if cmd[:2] == ["gh", "api"] and "/pulls/" in cmd[2]
         and "--jq" not in cmd
         and not cmd[2].split("?", 1)[0].endswith("/reviews")
+        # #27684 : la lecture paginee des FICHIERS (`/pulls/{n}/files`) n'est
+        # pas une lecture de mergeabilite.
+        and not cmd[2].split("?", 1)[0].endswith("/files")
     ]
 
 
@@ -820,6 +880,61 @@ def test_prelecture_clean_puis_garde_finale_joue_les_tests_d_arbre(tmp_path):
     assert lines[-1]["verdict"] == "would-merge"
     assert lines[-1]["reason"] is None
     assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+# --- #26799 : la prelecture REST passe AVANT les etapes couteuses ------------
+
+
+#: Une PR qui touche le registre des twin-pairs ET un carnet : elle declenche
+#: les DEUX collisions (5bis et 5bis.bis) quand elle va jusque-la.
+VUE_COUTEUSE = default_view(
+    files=(
+        "scripts/notebook_tools/twin_pairs.d/une-paire/0001-2026-01-01-x.yaml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/Lean-01-un-carnet.ipynb",
+    )
+)
+
+
+def test_etat_bloque_refuse_sans_payer_b0_ni_collisions(tmp_path):
+    """Une PR `blocked` est refusee SANS payer l'organe B.0 ni les collisions.
+
+    Mesure du 2026-11-23 sur trois PRs bloquees (#28166, #28168, #28171) :
+    la collision d'index twin coute 90 s a 131 s, la collision de slot 39 s
+    a 52 s, l'organe B.0 7 s a 8 s -- et la lecture REST qui revele l'etat
+    `blocked` coute 0,8 s. Le deplacement de la prelecture avant l'etape 4
+    fait passer une PR bloquee de ~150 s a ~1 s.
+    """
+    runner = ScriptedRunner(
+        views={123: VUE_COUTEUSE},
+        pulls=[{"mergeable_state": "blocked", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "mergeable-state:blocked"
+    flat = runner.flat()
+    assert not any("check_unaddressed_nits.py" in f for f in flat)
+    assert not any("check_twin_index_collisions.py" in f for f in flat)
+    assert not any("twin_open_claims.py" in f for f in flat)
+    assert not any("check_slot_reservation.py" in f for f in flat)
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_etat_clean_paye_b0_et_collisions(tmp_path):
+    """Le CONTROLE de l'assertion ci-dessus : la meme PR, etat `clean`, paie
+    bien B.0 et les collisions -- le deplacement de la prelecture n'a donc
+    pas supprime les etapes, il les a seulement rendues conditionnelles."""
+    runner = ScriptedRunner(
+        views={123: VUE_COUTEUSE},
+        pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    flat = runner.flat()
+    assert any("check_unaddressed_nits.py" in f for f in flat)
+    assert any("check_twin_index_collisions.py" in f for f in flat)
+    assert any("check_slot_reservation.py" in f for f in flat)
 
 
 def test_prelecture_unstable_ne_saute_pas_les_tests_d_arbre(tmp_path):
@@ -1229,6 +1344,193 @@ def test_max_arrete_le_run(tmp_path):
     assert [row["pr"] for row in lines] == [101]
 
 
+# --- borne de duree de la passe (#28009) ------------------------------------------
+
+
+def _fake_clock(step_s: float):
+    """Horloge factice : chaque lecture avance de ``step_s`` secondes.
+
+    La borne de duree se lit sur ``mr._clock`` ; un test doit pouvoir la
+    faire avancer sans attendre 45 minutes.
+    """
+    state = {"t": 0.0}
+
+    def clock() -> float:
+        state["t"] += step_s
+        return state["t"]
+
+    return clock
+
+
+def _payload(capsys) -> dict:
+    """Payload JSON du run (dernière ligne non vide de stdout)."""
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+    return json.loads(lines[-1])
+
+
+def test_le_budget_de_passe_arrete_la_passe_et_journalise_le_reste(
+    tmp_path, monkeypatch, capsys
+):
+    """Budget de duree epuise : arret PROPRE, et les PRs non evaluees sont
+    journalisees avec un motif nomme -- jamais une PR disparue du bilan.
+
+    L'horloge factice avance de 100 s par lecture : le budget de 250 s est
+    epuise a la TROISIEME lecture de la boucle, donc apres deux PRs
+    evaluees. La troisieme PR n'est jamais atteinte.
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "250", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    # Le motif d'arret distingue la DUREE du nombre de merges.
+    assert payload["stopped_reason"] == mr.PASS_BUDGET_REASON
+    # Les deux PRs atteintes sont evaluees normalement ; la troisieme est
+    # journalisee avec le meme motif, et un verdict qui dit qu'elle n'a pas
+    # ete evaluee (elle ne porte aucun cout d'evaluation).
+    assert [row["pr"] for row in lines] == [101, 102, 103]
+    assert lines[-1]["verdict"] == mr.VERDICT_NOT_EVALUATED
+    assert lines[-1]["reason"] == mr.PASS_BUDGET_REASON
+    # Le bilan separe les deux comptes : « evaluee(s) » reste exact, et les
+    # PRs non evaluees sont nommees une par une.
+    assert len(payload["results"]) == 2
+    assert payload["not_evaluated"] == [
+        {"pr": 103, "reason": mr.PASS_BUDGET_REASON}
+    ]
+    assert not _evaluated(runner, 103)
+
+
+def test_une_passe_sous_budget_se_comporte_comme_avant(
+    tmp_path, monkeypatch, capsys
+):
+    """Controle negatif : sous budget, rien ne change (aucune PR non
+    evaluee, aucun arret)."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(1.0))
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "600", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    assert payload["stopped_reason"] is None
+    assert payload["not_evaluated"] == []
+    assert [row["pr"] for row in lines] == [101, 102, 103]
+    assert all(row["verdict"] != mr.VERDICT_NOT_EVALUATED for row in lines)
+    assert len(payload["results"]) == 3
+
+
+def test_un_budget_nul_desactive_la_borne(tmp_path, monkeypatch, capsys):
+    """``--pass-budget-s 0`` = pas de borne (le comportement d'avant)."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(1000.0))
+    runner = ScriptedRunner(prs=(101, 102))
+    rc, lines, _ = run_organ(
+        tmp_path, runner, extra=("--pass-budget-s", "0", "--json")
+    )
+    assert rc == 0
+    payload = _payload(capsys)
+    assert payload["stopped_reason"] is None
+    assert payload["not_evaluated"] == []
+    assert [row["pr"] for row in lines] == [101, 102]
+
+
+def test_un_budget_negatif_est_refuse():
+    with pytest.raises(SystemExit):
+        mr.run(["--pass-budget-s", "-1"], runner=ScriptedRunner())
+
+
+# --- curseur de reprise (revue du 22/11) ----------------------------------------
+
+
+def _passe_evaluatee(tmp_path, prs, extra=("--pass-budget-s", "250", "--json")):
+    """Une passe, et la liste des PRs **evaluees** par cette passe.
+
+    Les lignes `unevaluated` sont les PRs que la passe n'a PAS regardees :
+    elles ne comptent pas comme evaluees. Le journal **cumule** les passes :
+    on ne lit que les lignes de la passe courante.
+    """
+    journal = tmp_path / "journal.jsonl"
+    avant = (len(journal.read_text(encoding="utf-8").splitlines())
+             if journal.is_file() else 0)
+    runner = ScriptedRunner(prs=tuple(prs))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=extra)
+    assert rc == 0
+    return [row["pr"] for row in lines[avant:]
+            if row["verdict"] != mr.VERDICT_NOT_EVALUATED]
+
+
+def test_le_curseur_de_reprise_continue_apres_la_derniere_pr_evaluee(
+    tmp_path, monkeypatch
+):
+    """Une passee arretee sur le budget ne se rejoue pas au meme endroit.
+
+    La premiere passe s'arrete a #102 (budget de 250 s, horloge de 100 s par
+    lecture) ; la seconde doit **continuer** a #103 et non revenir a #101.
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    prs = (101, 102, 103, 104)
+    premiere = _passe_evaluatee(tmp_path, prs)
+    assert premiere == [101, 102], "la premiere passe s'arrete apres deux PRs"
+    assert mr.read_pass_cursor(tmp_path / "journal.jsonl") == 102
+    seconde = _passe_evaluatee(tmp_path, prs)
+    assert seconde == [103, 104], "la seconde passe continue apres le curseur"
+
+
+def test_n_passes_coupees_evaluent_toutes_les_prs_sans_sauter_deux_fois(
+    tmp_path, monkeypatch
+):
+    """Contrat de la revue du 22/11 : la borne doit garanter que chaque PR
+    ouverte est evaluee en un nombre **borne** de passes.
+
+    Une horloge qui coupe chaque passe apres deux PRs : six passes successives
+    evaluent les douze PRs, et aucune n'est sautee deux fois de suite.
+
+    Sans le curseur de reprise, chaque passe repart de la file entiere et
+    s'arrete au meme endroit : les PRs du haut ne sont jamais vues (c'est la
+    famine de queue mesuree par le coordinateur sur le journal du 22/11).
+    """
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    prs = tuple(range(101, 113))
+    passes = []
+    for _ in range(6):
+        passes.append(_passe_evaluatee(tmp_path, prs))
+    vues = [pr for p in passes for pr in p]
+    assert sorted(vues) == list(prs), "les douze PRs doivent etre evaluees"
+    assert len(vues) == len(set(vues)), "aucune PR ne doit etre evaluee deux fois"
+    for avant, apres in zip(passes, passes[1:]):
+        assert not (set(avant) & set(apres)), \
+            "aucune PR ne doit etre sautee deux fois de suite"
+
+
+def test_une_passe_qui_parcourt_la_file_remet_le_curseur_a_zero(
+    tmp_path, monkeypatch
+):
+    """Une passe qui a vu TOUTE la file n'a plus de curseur a rendre : la
+    suivante repart du debut de la file."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    journal = tmp_path / "journal.jsonl"
+    _passe_evaluatee(tmp_path, (101, 102, 103))
+    assert mr.read_pass_cursor(journal) == 102
+    # Une passe sous budget (pas d'arret) parcourt toute la file.
+    _passe_evaluatee(tmp_path, (101, 102, 103), extra=("--pass-budget-s", "600",
+                                                        "--json"))
+    assert mr.read_pass_cursor(journal) is None
+
+
+def test_un_curseur_illisible_vaut_absent_il_ne_bloque_pas_la_passe(
+    tmp_path, monkeypatch
+):
+    """Fail-OPEN : un curseur corrompu ne fait pas echouer la passe, il vaut
+    « depuis le debut »."""
+    monkeypatch.setattr(mr, "_clock", _fake_clock(100.0))
+    journal = tmp_path / "journal.jsonl"
+    mr.write_pass_cursor(journal, 102)
+    (tmp_path / mr.PASS_CURSOR_FILENAME).write_text("{pas du json", encoding="utf-8")
+    assert mr.read_pass_cursor(journal) is None
+    assert _passe_evaluatee(tmp_path, (101, 102, 103)) == [101, 102]
+
+
 def test_argv_organes_relatif_au_depot(tmp_path):
     """#26102 : l'argv journalise ne depend pas du chemin du worktree.
 
@@ -1544,15 +1846,34 @@ def test_jeton_irresolu_exit_2(tmp_path):
 # --- garde de troncature de la liste de fichiers (revue ai-01) ----------------
 
 
-def test_skip_files_truncated_fail_closed(tmp_path):
-    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
-    # que la vue montre pourrait cacher un fichier hors perimetre.
+def test_files_truncated_par_la_vue_puis_completes_par_le_rest(tmp_path):
+    # #27684 : `gh pr view --json files` plafonne a 100 fichiers. La troncature
+    # rendait la PR non mergeable (skip `files-truncated:1/150`) alors que le
+    # REST pagine la liste complete : la PR n'est plus bloquee, et le controle
+    # de perimetre porte sur la liste COMPLETE.
     view = default_view(files=("src/a.py",))
     view["changedFiles"] = 150
-    runner = ScriptedRunner(views={123: view})
+    runner = ScriptedRunner(
+        views={123: view},
+        pr_files={123: [f"src/f{i}.py" for i in range(150)]},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert not any(
+        str(line.get("reason") or "").startswith("files-truncated")
+        for line in lines
+    )
+    assert any("pulls/123/files" in flat for flat in runner.flat())
+
+
+def test_liste_des_fichiers_illisible_reste_fail_closed(tmp_path):
+    # Le controle de perimetre reste fail-closed : une liste ILLISIBLE
+    # (quota, 5xx) bloque la PR, mais le motif dit qu'il s'agit d'une lecture.
+    view = default_view(files=("src/a.py",))
+    view["changedFiles"] = 150
+    runner = ScriptedRunner(views={123: view}, pr_files_rc=1)
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "files-truncated:1/150"
+    assert lines[-1]["reason"] == "files-unreadable"
     assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
@@ -1561,7 +1882,7 @@ def test_skip_changed_files_absent_fail_closed(tmp_path):
     del view["changedFiles"]
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert lines[-1]["reason"].startswith("files-truncated:")
+    assert lines[-1]["reason"] == "files-unknown-count"
 
 
 def test_wt_vibe_prefix_lifted_with_13410_reopening():
@@ -2500,6 +2821,83 @@ def test_twin_arbre_de_fusion_illisible_is_fail_closed(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "skipped"
     assert lines[0]["reason"] == "twin-collision-unreadable:merged"
+
+
+# --- 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) --------
+
+
+def _attestation_payload(verdict: str, reason: str) -> str:
+    """Rapport JSON de l'organe d'attestation, forme reelle."""
+    return json.dumps({
+        "verdict": verdict,
+        "base": "origin/main",
+        "head": HEAD,
+        "tree": "a" * 40,
+        "pairs": [{
+            "pair": "sw-5-linked-data",
+            "verdict": verdict,
+            "attestation": "0012-2026-09-25-lane.yaml",
+            "details": [reason],
+        }],
+        "reason": f"sw-5-linked-data {verdict} : {reason}",
+    })
+
+
+def test_twin_attestation_mismatch_skips(tmp_path):
+    """Un sha atteste qui ne decrit pas l'arbre de fusion fait sauter le
+    merge : c'est la classe que la CI de PR ne voit pas et qui rougit `main`
+    apres le squash (#28202)."""
+    reason = "csharp_sha atteste aaaaaaaaaaaa / arbre de fusion bbbbbbbbbbbb"
+    payload = _attestation_payload("MISMATCH", reason)
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=1, attest_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-attestation-mismatch:")
+    assert "sw-5-linked-data" in lines[0]["reason"]
+
+
+def test_twin_attestation_unreadable_is_fail_closed(tmp_path):
+    """« Je n'ai pas pu lire » n'est pas « c'est propre » : une mesure
+    impossible (rc 2) fait sauter le merge."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-attestation-unreadable:rc=2"
+
+
+def test_twin_attestation_sortie_illisible_is_fail_closed(tmp_path):
+    """Une sortie non JSON sur rc 1 n'est pas un « conforme » deguise : le
+    motif reste un skip fail-closed."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=1, attest_stdout="pas du json")
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-attestation-unreadable:sortie-illisible"
+
+
+def test_twin_attestation_clean_merges_and_interroge_le_tete_evaluee(tmp_path):
+    """Conforme : le merge se fait, et l'organe est interroge sur la base et
+    la tete EVALUEES (pas sur `main` courant, pas sur la branche)."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    calls = [c for c in runner.cmds()
+             if len(c) > 1 and "check_twin_attestation_squash.py" in c[1]]
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("--base") + 1] == "origin/main"
+    assert calls[0][calls[0].index("--head") + 1] == HEAD
+
+
+def test_twin_attestation_organ_not_called_when_registry_untouched(tmp_path):
+    """Une PR hors registre twin ne paie ni fetch ni organe d'attestation."""
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    assert not any("check_twin_attestation_squash.py" in f for f in runner.flat())
 
 
 def test_twin_collision_avec_une_pr_ouverte_skips(tmp_path):
@@ -3484,8 +3882,79 @@ def test_stacked_on_main_self_reference_is_explicit(tmp_path):
 
 
 def _combined_calls(runner):
+    """Appels d'EVALUATION de l'organe (les tests d'arbre fusionne).
+
+    Le retrait du worktree de passe passe par le meme binaire en mode
+    ``--cleanup`` : ce n'est pas une evaluation, et il ne doit pas etre
+    compte comme telle.
+    """
     return [c for c in runner.cmds()
-            if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+            if len(c) > 1 and "premerge_combined_check.py" in c[1]
+            and "--cleanup" not in c]
+
+
+def _cleanup_calls(runner):
+    return [c for c in runner.cmds() if "--cleanup" in c]
+
+
+def test_le_contexte_de_passe_nomme_un_worktree_par_passe():
+    """Une passe = UN worktree, nomme par le PID de la passe.
+
+    Deux passes concurrentes ne doivent jamais partager le dossier : les
+    tests d'un candidat joueraient alors sur l'arbre d'un autre.
+    """
+    ctx = mr.combined_pass_context()
+    assert ctx is not None
+    assert "premerge-passe-" in ctx.worktree.name
+    assert str(os.getpid()) in ctx.worktree.name
+
+
+def test_le_contexte_de_passe_est_eteint_par_le_rollback_operateur(monkeypatch):
+    """`MERGE_READY_COMBINED_CHECK=0` retire l'etape : pas de contexte."""
+    monkeypatch.setenv(mr.COMBINED_DISABLE_ENV, "0")
+    assert mr.combined_pass_context() is None
+
+
+def test_l_etape_5quinquies_recoit_le_worktree_de_passe(tmp_path):
+    """L'argv de l'etape porte le worktree de la passe et le reutilise.
+
+    Sans `--reuse-worktree`, l'organe refait un `worktree add` et un
+    `worktree remove` par candidat : 38 s + 9 s, mesures.
+    """
+    runner = ScriptedRunner(views={123: default_view()})
+    rc, _, _ = run_organ(tmp_path, runner)
+    calls = _combined_calls(runner)
+    assert calls, "l'organe premerge doit etre invoque"
+    argv = calls[0]
+    assert "--reuse-worktree" in argv
+    worktree = argv[argv.index("--worktree") + 1]
+    assert worktree.startswith(".tmp/premerge-passe-")
+    # Aucun chemin absolu de la machine dans l'argv (#26102).
+    assert not any(str(mr.REPO_ROOT) in tok for tok in argv)
+    # Le retrait du worktree passe par l'ORGANE (`--cleanup`), jamais par un
+    # `git` lance par la passe.
+    cleanups = _cleanup_calls(runner)
+    assert cleanups, "le worktree de la passe doit etre retire"
+    assert not any(c[:1] == ["git"] for c in runner.cmds())
+
+
+def test_une_passe_sans_evaluation_ne_retire_rien(tmp_path, monkeypatch):
+    """Aucune evaluation -> aucun worktree pose -> aucun retrait.
+
+    Une passe dont toutes les PRs sont refusees en amont (porte STACK)
+    n'a rien demande au disque : elle ne doit rien demander en sortant.
+    """
+    monkeypatch.setattr(
+        mr.gate, "default_stack_index", lambda: {124: "entree-de-la-partenaire"}
+    )
+    monkeypatch.setattr(
+        mr.gate, "stack_reasons",
+        lambda target, index: ["stack top: raison de test"],
+    )
+    runner = ScriptedRunner(views={123: default_view()})
+    run_organ(tmp_path, runner)
+    assert _combined_calls(runner) == []
+    assert _cleanup_calls(runner) == []
 
 
 def test_combined_green_merges_and_judges_the_view_head(tmp_path):
@@ -3507,6 +3976,32 @@ def test_combined_red_skips_and_names_the_first_red_test(tmp_path):
     assert lines[-1]["verdict"] == "skipped"
     assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_combined_red_ecrit_la_raon_dans_le_journal(tmp_path):
+    """Le journal porte la RAISON du rouge, pas seulement son identifiant.
+
+    Deux PRs approuvees ont ete sautees sur un test qui ne les concernait
+    pas (22/11) : `FAILED <id>` obligeait a DEVINER la cause. La section
+    FAILURES de pytest la donne.
+    """
+    stdout = json.dumps({"verdict": "RED",
+                         "failed": ["scripts/x/test_a.py::test_u"],
+                         "failure_detail": "E   assert proc.returncode == 0\n"})
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout=stdout)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
+    assert "assert proc.returncode == 0" in lines[-1]["detail"]
+
+
+def test_le_journal_dune_pr_sans_detail_ne_porte_pas_la_cle(tmp_path):
+    """Une ligne sans raison n'invente pas une cle vide."""
+    runner = ScriptedRunner(prs=(401,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert "detail" not in lines[0]
 
 
 def test_combined_conflict_skips(tmp_path):
@@ -3569,7 +4064,7 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
 # la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
 # first-parent de merge_dwell).
 
-LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway.lean"
 ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
 
 
@@ -3628,10 +4123,10 @@ def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
     """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
     fichiers Lean : changer la toolchain change ce que le build doit prouver."""
     for path in (
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json",
     ):
         runner = ScriptedRunner(views={123: default_view(files=(path,))})
         _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
@@ -3698,6 +4193,105 @@ def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tm
     _, lines, _ = run_organ(tmp_path, runner)
     assert lines[-1]["reason"] == "lean:no-local-build-attestation"
     assert lines[-1]["merged"] is False
+
+
+# --- #27875 : un lake INTRODUIT par la PR et non declare au manifeste -------
+#
+# Cas fondateur : PR #27587 (lake `busybeaver_lean`). L'entree de manifeste
+# `scripts/lean/ci_lakes.json` arrive dans une PR EMPILÉE (#27658) : tant
+# qu'elle n'est pas mergee, aucune attestation ne peut couvrir le lake, et le
+# motif generique « pas d'attestation » ne nomme ni le lake ni le geste. La
+# garde rend donc un motif NOMME.
+
+BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
+BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
+CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean"
+
+#: Manifeste des lakes declares en CI : `conway` y est, `busybeaver` non.
+CI_LAKES_MANIFEST = {
+    "version": 1,
+    "lakes": [
+        {
+            "lake": "conway",
+            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
+            "paths": [
+                "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
+            ],
+        }
+    ],
+}
+
+
+def _manifest_payload(manifest: dict) -> dict:
+    """Payload REST `contents` du manifeste (base64)."""
+    raw = json.dumps(manifest).encode("utf-8")
+    return {"content": base64.b64encode(raw).decode("ascii")}
+
+
+def test_lake_introduit_non_declare_donne_un_motif_nomme(tmp_path):
+    """#27875 -- la PR INTRODUIT un lake que le manifeste ne declare pas : le
+    motif nomme le lake (il nomme aussi le geste), au lieu du generique."""
+    view = default_view(
+        files=(BUSYBEAVER_LAKEFILE, BUSYBEAVER + "/BusyBeaver.lean")
+    )
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "lean:lake-not-declared:" + BUSYBEAVER
+    assert lines[-1]["merged"] is False
+
+
+def test_lake_declare_donne_le_motif_generique(tmp_path):
+    """Controle negatif : un lake DECLARE (son `lakefile` est touche) garde le
+    motif generique -- pas de faux positif sur les PRs Lean ordinaires."""
+    view = default_view(files=(CONWAY_LAKEFILE,))
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_sans_lakefile_aucune_lecture_de_manifeste(tmp_path):
+    """Controle negatif : une PR Lean sans `lakefile.*` ne paie AUCUNE lecture
+    de manifeste (le cout de la garde ne bouge pas)."""
+    view = default_view(files=(LEAN_FILE,))
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert not [cmd for cmd in runner.cmds() if "/contents/" in " ".join(cmd)]
+
+
+def test_manifeste_illisible_laisse_le_motif_generique(tmp_path):
+    """Controle negatif : un manifeste illisible (404) laisse la garde sur son
+    motif generique -- le fail-closed est conserve, aucun motif nomme n'est
+    forge sur une absence d'information."""
+    view = default_view(files=(BUSYBEAVER_LAKEFILE,))
+    runner = ScriptedRunner(views={123: view})  # pas de payload : 404
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_valide_passe_meme_avec_un_lakefile(tmp_path):
+    """Non-regression : une attestation valide a la tete passe, meme sur une
+    PR qui touche un `lakefile.*` -- la detection ne bloque rien de plus que
+    la garde d'avant."""
+    view = default_view(
+        files=(BUSYBEAVER_LAKEFILE,),
+        comments=[_attestation_comment(HEAD)],
+    )
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
 
 
 def test_attestation_suivie_d_un_rafraichissement_seul_laisse_passer(tmp_path):

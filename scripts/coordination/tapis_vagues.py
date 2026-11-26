@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 """Les VAGUES de la prise en charge : la file se remplit, ou le pool est vide.
 
-Mesure du 18/11 : les 9 premiers candidats sont **tous** ecartes (les neuf
-ecarts, lus sur le fil complet). Servir 0 grain alors que le pool en contient
-serait un echec de methode, pas un pool vide : la qualification ouvre donc la
-**vague** suivante tant que la file n'est pas pleine, dans la limite de
-`max_vagues`.
+Mesure du 18/11 : les 9 premiers candidats sont **tous** ecartes. Servir 0
+grain alors que le pool en contient serait un echec de methode, pas un pool
+vide : la qualification ouvre donc la **vague** suivante tant que la file
+n'est pas pleine, dans la limite de `max_vagues`.
 
-Une vague est un bloc **contigu** de l'ordre classe, dans la fenetre de la
-lane : la vague 0 est le bloc de la tranche, la vague 1 le bloc suivant, et
-ainsi de suite. La vague s'arrete des que la file est pleine -- ou quand le
-budget d'action est epuise : le mur reste un **refus** (jamais un demi-resultat).
+Une vague est un bloc **contigu** de l'ordre classe : la vague 0 est le bloc
+de la tranche, la vague 1 le bloc suivant. La vague s'arrete des que la file
+est pleine, ou quand le budget d'action est epuise : le mur reste un **refus**.
 
-Ce module ne fait que vaguer : il qualifie (organe `tapis_qualification`) et
-publie, vague par vague, ce que chaque vague a decide.
+Ce module ne fait que vaguer : il qualifie et publie, vague par vague.
 
-Usage :
-
-    python scripts/coordination/tapis_vagues.py --lane machine:workspace
-    python scripts/coordination/tapis_vagues.py --lane machine:workspace --grains 8 --vagues 4
+Usage : `python scripts/coordination/tapis_vagues.py --lane machine:workspace`
 """
 from __future__ import annotations
 
@@ -28,9 +22,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_rotation
-from coordination import tapis_qualification as tq
-from coordination import tapis_rapide
+from coordination import gh_bulk, gh_selection, tapis_age, tapis_ancre, tapis_rotation
+from coordination import tapis_diff, tapis_qualification as tq, tapis_rapide
 from coordination.tapis_marqueurs import _iso
 
 #: Vagues maximum : au dela, la file reste courte et le rapport le dit.
@@ -47,22 +40,31 @@ def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime
     Rend `(servis, ecartees, rapport)` : les exclusions portent leur code et
     leur motif, et le rapport dit, vague par vague, ce que la vague a decide.
 
-    Les **citations** ne sont pas passees : la requalification decide sur le
-    fil (revue du 19/11, #27242).
+    Les **citations** ne sont pas passees : la requalification decide sur le fil.
     """
     taille = taille or max(grains * 3, grains)
     servis: list = []
     ecartees: dict[int, dict] = {}
     detail: list[dict] = []
+    # Meme selection que le tirage (mandat du 22/11) : l'ordre d'age.
+    ancres = tapis_ancre.lire(lane)
+    ages, exclus, _ = tapis_age.tour(grains_ordre, ancres, maintenant, conteneurs)
     for k in range(max_vagnes := max_vagues):
         bloc, fen = tapis_rotation.bloc(grains_ordre, conteneurs, grains, taille,
-                                         lane, maintenant, bloc_suivant=k)
+                                         lane, maintenant, bloc_suivant=k,
+                                         ancres=ancres, ages_g=ages,
+                                         exclus_g=exclus)
         nums = [e.numero for e in bloc]
         if not nums:
             break
+        # Le bloc pris en charge est PROPOSE : la tranche pendante de l'etat
+        # doit etre celle que la vague a reellement servie (19/11).
+        tapis_ancre.proposer(lane, "grains", fen["primaires"]["grains"],
+                              fen["reprises"]["grains"])
+        # La preuve par le diff, comme sur la voie nominative (19/11).
         s, ec, echecs, arrete, appels, chrono = tq.qualifier(
-            nums, lane, maintenant, jours, prs, run, echeance,
-            debut=debut)
+            nums, lane, maintenant, jours, prs, run, echeance, debut=debut,
+            preuve=tapis_diff.preuve_gh(run))
         for e in s:
             if e.numero not in {x.numero for x in servis}:
                 servis.append(e)

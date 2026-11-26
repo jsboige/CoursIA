@@ -1,6 +1,6 @@
 # Parcours d'apprentissage CoursIA
 
-Cinq parcours narratifs — objectif, public, durée et sortie concrète — sont
+Six parcours narratifs — objectif, public, durée et sortie concrète — sont
 livrés par l'équipe `docs/curriculum/`, rejoints par quatre **parcours verticaux**
 organisés par métier (section suivante). Cinq autres pages listent les notebooks
 par domaine thématique ; ce sont des **vues du catalogue**, pas des parcours
@@ -15,8 +15,9 @@ d'apprentissage, et elles sont régénérées chaque jour par `catalog-cron.yml`
 | 3 | [Recherche et Corpus (AIMA-inspired)](docs/curriculum/aima-walk.md) | Lecteur qui veut retraverser l'IA classique avec un manuel de référence (Russel & Norvig) et vérifier chaque concept sur du code | ~25-30 h | A*, CSP, logiques Tweety, Bayes PyMC, Nash, CFR, RL, pipeline LLM — plus la carte de ce que le corpus ajoute à AIMA |
 | 4 | [IA hybride : LLM + solveurs + vérificateurs](docs/curriculum/ia-hybride.md) | Développeur qui sait prompter un LLM et veut apprendre à le fiabiliser avec des moteurs formels | ~5-7 h | Pipeline argumentatif LLM→Tweety orchestré SK, théorème d'impossibilité prouvé par SAT-Z3, verdict trois bras LLM vs évolution |
 | 5 | [IA, société et responsabilité](docs/curriculum/ia-societe-responsabilite.md) | Étudiant ou praticien qui veut interroger ce qu'un système fait **aux personnes**, pas seulement ce qu'il prédit | 16 étapes, durée publiée à l'étape | Équité mesurée par sous-groupes, donnée-responsabilité (attaque d'appartenance, confidentialité différentielle), théorèmes d'impossibilité du choix social, argumentation de Dung, oversight chiffré |
+| 6 | [Le décideur face à un système d'IA](docs/curriculum/decideur.md) | Manager, élu ou direction qui arbitre un projet d'IA — acheter une étude, valider un modèle, autoriser un déploiement — sans en écrire le code | 16 étapes, durée publiée aux étapes 10, 11 et 13 | Prix de l'information (EVPI, EVSI), coût attendu de l'erreur, prime et spirale d'antisélection, probabilité de ruine, prix en accuracy de l'équité, comité dans le core, axiome d'Arrow abandonné, signal de persuasion, coût local par million de jetons, dérive au déploiement, refus expliqué |
 
-Les cinq parcours suivent le modèle « Parcours alternatifs » du
+Les six parcours suivent le modèle « Parcours alternatifs » du
 [README GameTheory](MyIA.AI.Notebooks/GameTheory/README.md) : durée annoncée,
 liste numérotée, clause de prérequis qui dit ce qui est supposé **et ce qui ne
 l'est pas**. La matière première est l'inventaire des embryons de parcours
@@ -25,7 +26,7 @@ l'est pas**. La matière première est l'inventaire des embryons de parcours
 
 ### Parcours verticaux (par métier)
 
-Quatre parcours **verticaux** complètent les cinq parcours narratifs : là où ceux-ci
+Quatre parcours **verticaux** complètent les six parcours narratifs : là où ceux-ci
 traversent le dépôt en suivant un fil, les verticaux le traversent en suivant un
 **métier**. Ils sont déclarés en JSON — chaque branche énumère des carnets **existants**,
 exécutés avec leurs sorties, et ne crée aucun carnet nouveau :
@@ -66,12 +67,13 @@ matériel puis-je avancer ? »*. Trois profils y sont documentés :
 2. **ML.NET + symbolique** — ajout de .NET Interactive pour C# et Lean 4.
 3. **GenAI complet** — Docker (ComfyUI, Qwen), GPU RTX 3090, services cloud.
 
-C'est un axe orthogonal : les cinq parcours narratifs ci-dessus sont chacun
+C'est un axe orthogonal : les six parcours narratifs ci-dessus sont chacun
 réalisables dans le profil *Local sobre*, à l'exception de `genai-rush.md` qui
 exige une clé OpenAI directe pour les étapes image et voix (deux endpoints non
-relayés par les tiers) et de `ia-hybride.md` dont deux étapes (la section 5 de
-l'étape 2 et le bras LLM de l'étape 8) appellent un LLM — toutes les autres
-tournent sans clé.
+relayés par les tiers), de `ia-hybride.md` dont deux étapes (la section 5 de
+l'étape 2 et le bras LLM de l'étape 8) appellent un LLM et de `decideur.md` dont
+l'étape 13 mesure une carte graphique et un serveur de modèles local (Ollama) —
+toutes les autres tournent sans clé.
 
 Avant d'ouvrir le premier notebook d'un parcours, exécuter le préflight :
 
@@ -139,8 +141,9 @@ python scripts/notebook_tools/generate_parcours.py --dry-run # Aperçu sans écr
 
 Source : `COURSE_CATALOG.generated.json` (mis à jour par `generate_catalog.py`).
 
-Les pages narratives `genai-rush.md`, `symbolic-formalization.md`,
-`aima-walk.md` et l'inventaire `2026-09-02-curriculum-inventory.md` suivent la convention des pages
+Les pages narratives `genai-rush.md`, `aima-walk.md`, `symbolic-formalization.md`,
+`ia-hybride.md`, `ia-societe-responsabilite.md`, `decideur.md` et l'inventaire
+`2026-09-02-curriculum-inventory.md` suivent la convention des pages
 manuelles (préfixe underscore ou hors liste des cinq ids du générateur) : elles
 n'appartiennent **pas** au catalogue et ne sont jamais écrasées par
 `catalog-cron.yml`.

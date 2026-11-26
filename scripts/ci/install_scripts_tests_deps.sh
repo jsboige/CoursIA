@@ -45,6 +45,27 @@ pip install requests bcrypt jupyter_client
 # Le test de visibilite ajoute dans le meme commit rougit si ce
 # kernelspec disparait a nouveau.
 pip install ipykernel
+# kernelspec `python3` aligne sur l'interpreteur du job (#28500).
+# `pip install ipykernel` installe le MODULE ; il n'ECRIT aucun
+# kernelspec. Le job.countait donc sur un `python3` deja present dans
+# l'image -- dont l'interpreteur n'est pas forcement celui que `pip`
+# remplit. Mesure du 2026-11-25 (PR #28485) : sur le parc auto-heberge
+# `CoursIA-runners-p0`, le noyau papermill `-k python3` part d'un autre
+# interpreteur que le toolcache -- `pip install "axelrod>=4.0.0"` y
+# reussit ("Requirement already satisfied"), et `import axelrod` echoue
+# en cellule 56 de GameTheory-06 ; la jambe `Scripts Tests (CPU)`
+# tombe. Deux slots differents (6 et 5), meme echec ; le runner
+# heberge passe (job 139001135192) : c'est bien l'image du parc qui
+# decide.
+#
+# Le remede : ENREGISTRER l'interpreteur du job comme kernelspec
+# `python3`. `ipykernel install` ecrit un `argv` ABSOLU
+# (`sys.executable`) -- le noyau est alors exactement l'interpreteur
+# que `pip` remplit, quel que soit le `python3` de l'image. Le
+# repertoire utilisateur passe avant le prefixe systeme ET avant
+# `/usr/share/jupyter` dans l'ordre de recherche de Jupyter : c'est
+# donc celui-ci qui gagne.
+python -m ipykernel install --user --name python3 --display-name "python3"
 pip install pyyaml tomli
 # python-dotenv: scripts/notebook_tools/whisper_int8_comparison.py (and several
 # genai-stack modules) import `dotenv` at top level.
@@ -167,6 +188,9 @@ python -c "import pysat; from importlib.metadata import version; print('python-s
 # test_run_gateway.py signalerait une dependance manquante au lieu
 # d'exercer le lanceur.
 pip install jupyter_kernel_gateway
+# trueskill: oracle independant des formes fermees du service Probas/Infer
+# (#27217). Le coeur reste en Python pur ; ce paquet sert uniquement aux tests.
+pip install "trueskill>=0.4.5,<1"
 # opentelemetry-sdk + pydantic + openai : trois paquets que ce job
 # consomme a l'import mais n'installait pas -- il ne passait que sur
 # les slots au toolcache chaud (residu d'installations d'autres
@@ -196,6 +220,20 @@ pip install "opentelemetry-sdk>=1.20.0" "pydantic==2.12.5" "openai==2.24.0"
 # verts du run (mesure du 2026-10-27, run 40489527870 :
 # "1 error in 750.75s" -> Scripts Tests rouge -> PR gate rouge).
 pip install nashpy
+# dowhy: les 7 modules de MyIA.AI.Notebooks/Probas/Causalite/tests
+# importent les organes de la serie (#14049 : causal_organs,
+# dowhy_organs, dowhy_discovery_organs, dowhy_iv_organs,
+# dowhy_sensitivity_organs, fairness_organs, test_anti_derive_notebook)
+# qui importent dowhy au niveau module. Dernier dossier non trie du T1
+# #25366 : le marqueur CI-EXCLUDED herite de Causal-Bridges (pre-rename
+# #26392) disait deja la feuille de route -- « installer dowhy puis
+# cabler ». Mesure locale 2026-11-23 (Python 3.13, dowhy 0.14) :
+# 107 passed en 137,87 s depuis la racine du depot. Plancher >=0.12 :
+# l'API dowhy.gcm utilisee par les organes est stable depuis 0.12.
+# NB : dowhy tire causal-learn/cvxpy/numba (wheels linux x86_64) et
+# exige numpy>2.0 -- le bloc numpy/pandas/scipy ci-dessus est NON epingle,
+# la mesure locale tourne sous numpy 2.4.2 : aucun conflit de plancher.
+pip install "dowhy>=0.12"
 # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
 # Not a speed nicety -- the sequential run is what makes this job
 # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,

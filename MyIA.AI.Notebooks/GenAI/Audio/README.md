@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Audio
-pedagogical_count: 47
-breakdown: Audio=47
-maturity: BETA=45, ALPHA=1, DRAFT=1
+pedagogical_count: 50
+breakdown: Audio=50
+maturity: BETA=48, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
@@ -12,6 +12,8 @@ maturity: BETA=45, ALPHA=1, DRAFT=1
 Le traitement audio est souvent le parent pauvre de l'IA générative, éclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalités les plus naturelles de l'interaction humaine. Cette série couvre l'ensemble de la chaîne audio IA : reconnaissance vocale, synthèse, clonage, génération musicale, et orchestration de pipelines.
 
 Les notebooks de cette série sont répartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production. Le niveau Applications abrite un pipeline audiobook complet — un orchestrateur agentique qui enchaîne analyse littéraire, casting vocal, annotation prosodique, synthèse et compilation — étendu par une variante FishAudio S2-Pro pilotable par 29 tags prosodiques officiels et évaluée par taux d'erreur (WER).
+
+Deux blocs de diffusion audio s'ajoutent à ces quatre niveaux, et se lisent l'un contre l'autre : le bloc **05** réécrit la chaîne à la main (diffusion latente et vocodeur adversarial, sans bibliothèque de diffusion), le bloc **06** pose les mêmes questions aux moteurs pré-entraînés ; le dernier carnet de la série les compare mesure par mesure.
 
 ## Pourquoi cette série
 
@@ -34,7 +36,9 @@ Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio
 ├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif
 ├── 03-Orchestration/  # Multi-modèles, temps réel
-└── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook
+├── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook
+├── 05-Diffusion-from-scratch/ # Diffusion latente et vocodeur écrits à la main
+└── 06-Diffusion-SOTA/ # AudioLDM et HiFi-GAN pré-entraînés, comparaison A/B
 ```
 
 ## Progression par niveau
@@ -97,6 +101,7 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 | [02-10-Effets-Sonores-AudioLDM2](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | AudioLDM2, text-to-SFX, descripteurs mesurés | Local GPU | <3 GB |
+| [02-11-Text-to-Audio-Bruitages](02-Advanced/02-11-Text-to-Audio-Bruitages.ipynb) | AudioGen (`audiocraft`), text-to-audio autoregressif en tokens, bruitages et scènes sonores | Local GPU | ~6 GB |
 | [02-12-SVS-Singing-Voice-RVC](02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) | RVC v2, conversion de voix chantée sur CPU | Kernel WSL (CPU) | — |
 
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
@@ -153,6 +158,27 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
   <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="340" alt="Deux barplots côte-à-côte « Latence / Taille audio par modele et type de texte » — gauche échelle log-ms (kokoro ~2,5–3,2·10³ ms, openai/tts-1 ~3,5–4,5·10³ ms) ; droite KB 0–350 (kokoro 245–335, openai/tts-1 230–370) ; légende Type couleur (dialogue bleu, monologue orange, narration vert) — kokoro plus rapide mais tailles comparables, monologue toujours plus volumineux que narration ou dialogue."></a><br>
   <em>Sortie du notebook <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb">03-1</a> (cellule 29 ; provenance détaillée dans <a href="assets/readme/MANIFEST.md">MANIFEST</a>) : 2 barplots Latence/Taille audio kokoro vs openai/tts-1 — discrimination nette sur latence, taille cohérente openai &gt; kokoro.</em>
 </p>
+
+### 05-Diffusion-from-scratch - La chaîne écrite à la main
+
+Ce bloc existe pour une raison précise : dans [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb), on écrit `MusicGen.generate(...)` et on obtient de la musique — sans voir ce qui se passe. Ici, la même famille de modèles est réécrite à la main, sans `diffusers`, sans `TTS`, sans `audiocraft` : la diffusion latente d'un côté, le vocodeur adversarial de l'autre.
+
+| Notebook | Contenu | Moteur |
+|----------|---------|--------|
+| [05-1-AudioDiffusion-Latent-From-Scratch](05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb) | Encodeur latent, U-Net audio à auto-attention temporelle, ordonnanceur DDPM appliqué aux latents, décodeur — la pile complète en ~62 000 paramètres entraînés en 40 s sur CPU, avec deux frontières annoncées plutôt que tues | PyTorch + torchaudio, CPU ou GPU local |
+| [05-2-Vocoder-From-Scratch](05-Diffusion-from-scratch/05-2-Vocoder-From-Scratch.ipynb) | Vocodeur `mel -> onde` dans l'esprit de HiFi-GAN : générateur à sur-échantillonnage ×256, discriminateurs multi-périodes et multi-échelles, trois pertes, plancher non neuronal Griffin-Lim et métrique de distorsion cépstrale mel (MCD) | PyTorch + torchaudio, LJ Speech local |
+
+### 06-Diffusion-SOTA - Le pendant industriel, et la comparaison
+
+Le deuxième bloc pose aux mêmes problèmes les moteurs pré-entraînés, et mesure ce que l'abstraction achète — puis ce qu'elle cache. Les témoins et la métrique sont ceux du bloc 05, sans quoi l'écart mesuré ne voudrait rien dire.
+
+| Notebook | Contenu | Moteur |
+|----------|---------|--------|
+| [06-1-AudioLDM-SOTA-Comparison](06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb) | `diffusers.AudioLDMPipeline` (`cvssp/audioldm-s-full-v2`, ~400 M paramètres) : anatomie de l'appel, latence froide et chaude, effet du `guidance scale`, comparaison spectrale contre de vrais enregistrements ESC-50 sur trois classes et quatre graines | diffusers, GPU 24 Go |
+| [06-2-HiFiGAN-SOTA-Comparison](06-Diffusion-SOTA/06-2-HiFiGAN-SOTA-Comparison.ipynb) | Le vocodeur HiFi-GAN pré-entraîné sur l'intégralité de LJ Speech, confronté au 05-2 sur les mêmes témoins et la même métrique (MCD, plus RMSE de F0) ; l'inférence chaude y est mesurée à 25 ms | HiFi-GAN pré-entraîné, GPU CUDA |
+| [06-3-AudioDiffusion-Comparison-A-vs-B](06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) | Le tableau croisé Bloc A (from scratch) contre Bloc B (SOTA) : qualité, latence, paramètres, lignes de code, dépendances — ce que le from scratch explique, et ce que le SOTA achète en production | — |
+
+Le carnet [06-3](06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb) est la sortie du bloc : il ne réexécute rien, il rassemble les mesures des quatre carnets précédents et tranche le *pourquoi* du from scratch contre le *quand* du SOTA.
 
 ## Technologies
 
@@ -219,6 +245,10 @@ pip install -r requirements-audio.txt
     |
 04-Applications (production)
     |
+05-Diffusion-from-scratch (diffusion et vocodeur écrits à la main)
+    |
+06-Diffusion-SOTA (mêmes questions, moteurs pré-entraînés, comparaison A/B)
+    |
 Video/ (série complémentaire)
 ```
 
@@ -227,6 +257,7 @@ Video/ (série complémentaire)
 | Découverte rapide | 01-1, 01-2, 01-3 |
 | Speech complet | 01-1 à 02-2 |
 | Musique | 02-3, 02-6, 02-7, 02-4, 04-3 |
+| Diffusion audio | 05-1, 05-2, 06-1, 06-2, puis 06-3 pour la comparaison |
 | Production | Tous + 03 + 04 |
 
 ## Recette : construire un podcast automatisé
