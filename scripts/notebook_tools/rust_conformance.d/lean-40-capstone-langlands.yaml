@@ -14,10 +14,15 @@
 # sont mesures au commit du lac, pas figes.
 # Decoupes de texte en CARACTERES (chars().take(n)), jamais en octets : le
 # fichier contient des non-ASCII (ℂ ℍ ℕ ℤ → ∣ « »).
-# Anomalies de prose de la source PRESERVEES, non corrigees (spec) : md13 et
-# md27 disent « six modules » alors que l'inventaire en imprime sept (avec
-# SzpiroPasten) ; l'enonce de l'exercice 2 (md25) dit « redonne c_3 » alors que
-# la cible est c_2 = 21493760 ; commentaire de la cellule 28 « six modules ».
+# Anomalies de prose de la source, CORRIGEES sur les deux cotes par index
+# (tranche #17073, valeurs mesurees au lac) : md13 disait « six modules » la ou
+# l'inventaire en imprime sept (avec SzpiroPasten, 20 enonces) et 110 enonces au
+# total ; l'enonce de l'exercice 2 (md25) disait « redonne c_3 » alors que la
+# cible est c_2 = 21493760 ; md27 annoncait « zero partout » pour un comptage
+# litteral qui n'est pas nul — SzpiroPasten nomme le marqueur 'sorry' trois fois
+# dans sa prose sans porter aucune preuve, et l'enonce separe desormais
+# l'absence de preuve sorry du comptage du marqueur ; commentaire de la cellule
+# 28 « six modules ».
 # Tolerance unique : egalite stricte du texte (aucun flottant calcule —
 # arithmetique entiere exacte), largeurs et espaces finaux compris.
 # Le cote C# n'existe pas dans le depot au moment du portage (consigne spec
@@ -239,7 +244,7 @@
           pattern: "HeckeOperator\\.lean\\s+(\\d+) enonces"
           transform: int
     - id: inventaire_szpiropasten
-      description: "Enonces du module SzpiroPasten.lean (20 — le septieme module, absent du decompte 'six modules' de md13)"
+      description: "Enonces du module SzpiroPasten.lean (20 — le septieme module, nomme par md13 depuis #17073)"
       tolerance: 0
       reference: python
       sides:
@@ -395,7 +400,7 @@
           pattern: "(Exercice a completer : poser resultat_11 et resultat_13)"
           transform: text
     - id: exo2_stub
-      description: "Ligne du stub exercice 2 (decomposition Monstre, c.3 anomalie de l'enonce PRESERVEE)"
+      description: "Ligne du stub exercice 2 (decomposition Monstre ; enonce aligne sur c_2 par #17073)"
       tolerance: 0
       reference: python
       sides:
@@ -408,7 +413,7 @@
           pattern: "(Exercice a completer : chercher \\(m0\\.\\.m3\\))"
           transform: text
     - id: exo3_stub
-      description: "Ligne du stub exercice 3 (audit des six modules — anomalie source PRESERVEE)"
+      description: "Ligne du stub exercice 3 (audit des sept modules, comptage distinct de l'absence de preuve par #17073)"
       tolerance: 0
       reference: python
       sides:
