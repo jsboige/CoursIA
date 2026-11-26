@@ -304,6 +304,13 @@ Cette page sert aux agents qui backtestent, corrigent ou mesurent des stratégie
 - **Geste :** demander les barres du suivi en ombre avec `fill_forward=False`.
 - **Source :** mesure directe, sans issue dédiée.
 
+### Un point du graphique Benchmark porte la clôture de la veille, pas celle du jour
+
+- **Symptôme :** les dernières séances du graphique `Benchmark` d'un backtest se répètent alors que le marché a coté, et l'équité du même backtest est plate alors que la candidate porte des positions ; `ingest-qc` refuse le passage.
+- **Cause :** la barre journalière des toutes dernières séances n'est pas toujours publiée, et Lean la recopie vers l'avant. Le graphique `Benchmark` porte un point par jour de calendrier, à minuit New York, et le point du jour J porte la clôture de la dernière séance terminée : sur le backtest `273d04de`, le point du samedi 14/11 (754,37) diffère de celui du vendredi 13 (757,12), il n'y a pas de clôture de samedi. Lire chaque point comme la clôture du jour décale la lecture d'une séance et fait manquer la répétition du vendredi.
+- **Geste :** comparer chaque point au précédent, attribuer une répétition à la date de la veille, et lire aussi le point de la date du passage ; `ingest-qc` le fait depuis #27482 et refuse le passage à partir de deux séances non publiées.
+- **Source :** #27482, backtest `273d04de` du 2026-11-20.
+
 ### shadow_replay.py : options avant la sous-commande
 
 - **Symptôme :** un appel qui place les chemins après la sous-commande ne les prend pas en compte.
