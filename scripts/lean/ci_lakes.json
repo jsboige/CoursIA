@@ -384,6 +384,7 @@
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "true",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/gkdim_lean/lakefile.lean",
