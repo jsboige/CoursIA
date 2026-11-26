@@ -50,7 +50,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 1 | declare | couverte | non consomme | - | 2026-06-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/torchlean_lean` | 3 | 0 | hors CI | hors matrice | ok (1) | - | 2026-10-22 |
 | `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | 2 | 1 | declare | sans gate | ok (1) | - | 2026-06-05 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean` | 2 | 0 | declare | couverte | non consomme | - | 2026-11-20 |
+| `MyIA.AI.Notebooks/InformationCalcul/Complexity/busybeaver_lean` | 2 | 0 | declare | hors matrice | non consomme | - | 2026-11-20 |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | 0 | 0 | declare | vendu | non consomme | - | 2026-10-05 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/upstream` | 0 | 0 | hors CI | vendu | non consomme | - | 2026-05-16 |
 | `docs/lean/darksnail/build-evidence-2026-10-31` | 0 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-31 |
