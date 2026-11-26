@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,793a205e,markdown,fr,c6864a39d64ffbcd,"# OpenAI DALL-E 3 - Generation d'Images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,793a205e,markdown,fr,a4b2a2cd466da939,"# Génération d'images texte-à-image par API
 
 **Navigation** : [Index](../README.md) | [Suivant >>](01-2-Generation-Image-API.ipynb)
 
@@ -84,8 +84,8 @@ OpenRouter НЕ поддерживает endpoint `/v1/images/generations`.
 Если у вас есть только ключ OpenRouter, перейдите к notebook 01-2 (анализ изображений GPT-5).
 
 
-**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,c6864a39d64ffbcd,208d02230ee0c368,,,,,5f92a7b4fd831656,,c6864a39d64ffbcd,,,,,c6864a39d64ffbcd,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,02190507,code,fr,58bec2d4319d6420,"# Parametres Papermill - JAMAIS modifier ce commentaire
+**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,a4b2a2cd466da939,208d02230ee0c368,,,,,5f92a7b4fd831656,,c6864a39d64ffbcd,,,,,c6864a39d64ffbcd,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,02190507,code,fr,58bec2d4319d6420,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration generation
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -104,14 +104,14 @@ generate_images = True             # Generer les images (False pour validation s
 save_images = True                 # Sauvegarder images generees
 generate_variations = False        # Creer variations du prompt
 export_metadata = True             # Exporter metadonnees generation",,,,,,,,58bec2d4319d6420,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,m2r7m8j3kkb,markdown,fr,3cc2cbe9854ecb9a,"## Setup de l'environnement
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,m2r7m8j3kkb,markdown,fr,3cc2cbe9854ecb9a,"## Setup de l'environnement
 
 Installation des dependances, chargement de la configuration API, et preparation des utilitaires de generation.","## Environment setup
 
 Installing dependencies, loading the API configuration, and preparing the generation utilities.",,,,,"## Настройка окружения
 
 Установка зависимостей, загрузка конфигурации API и подготовка утилит для генерации.",,3cc2cbe9854ecb9a,9f3bdcf4f9ca6222,,,,,88b7e513c6d15a74,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,b42e153d,code,fr,69bb179c12242405,"# Import guards - availability flags for external dependencies
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,b42e153d,code,fr,69bb179c12242405,"# Import guards - availability flags for external dependencies
 
 try:
     from PIL import Image
@@ -186,12 +186,12 @@ logger = logging.getLogger('dalle3_generation')
 print(f""🎨 OpenAI DALL-E 3 - Génération d'Images"")
 print(f""📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""🔧 Mode: {notebook_mode}, Qualité: {image_quality}, Style: {image_style}"")",,,,,,,,69bb179c12242405,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,gtgdldnbxwh,markdown,fr,d8cdb8f9ebafa383,"L'environnement Python est initialise. La cellule suivante configure l'authentification aupres de l'API OpenAI directe et **verifie que la famille gpt-image (le modele de generation d'images actuel d'OpenAI, qui a succede a DALL-E 3 en 2025) est accessible** via `/v1/images/generations`.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,gtgdldnbxwh,markdown,fr,d8cdb8f9ebafa383,"L'environnement Python est initialise. La cellule suivante configure l'authentification aupres de l'API OpenAI directe et **verifie que la famille gpt-image (le modele de generation d'images actuel d'OpenAI, qui a succede a DALL-E 3 en 2025) est accessible** via `/v1/images/generations`.
 
 > **Note de cadrage (issue #8474, EPIC #8052).** Le titre historique de ce notebook mentionne DALL-E 3 -- ce nom reste un **fil conducteur pedagogique** (le concept de reecriture automatique des prompts, le mapping des parametres `size`/`quality`/`style` viennent de l'ere DALL-E 3). En pratique, toutes les generations de ce notebook utilisent la famille `gpt-image` (modele par defaut `gpt-image-1.5`) parce que DALL-E 3 a ete retraite par OpenAI. Voir la cellule de doc-honesty plus bas pour le detail du fallback automatique.","The Python environment is initialized. The next cell configures authentication with the direct OpenAI API and **checks that the gpt-image family (OpenAI's current image generation model, which succeeded DALL-E 3 in 2025) is accessible** via `/v1/images/generations`.
 
 > **Scoping note (issue #8474, EPIC #8052).** The historical title of this notebook mentions DALL-E 3 -- that name remains a **pedagogical through-line** (the concept of automatic prompt rewriting, the mapping of the `size`/`quality`/`style` parameters come from the DALL-E 3 era). In practice, all generations in this notebook use the `gpt-image` family (default model `gpt-image-1`) because DALL-E 3 has been retired by OpenAI. See the doc-honesty cell below for the details of the automatic fallback.",,,,,"Среда Python инициализирована. Следующая ячейка настраивает аутентификацию в прямом API OpenAI и проверяет, что модель DALL-E 3 доступна.",,d8cdb8f9ebafa383,4cb955ada076260f,,,,,2829765925f146c8,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a11e36a0,code,fr,6abb8579cc9d6adf,"# Configuration API OpenAI pour la generation d'images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,a11e36a0,code,fr,6abb8579cc9d6adf,"# Configuration API OpenAI pour la generation d'images
 # IMPORTANT: DALL-E 3 necessite l'API OpenAI directe (pas OpenRouter)
 # OpenRouter ne supporte PAS le endpoint /v1/images/generations
 
@@ -260,14 +260,14 @@ print(f""Resolution: {image_size}"")
 print(f""Style: {image_style}, Qualite: {image_quality}"")
 print(f""API: {api_base_url}"")
 ",,,,,,,,6abb8579cc9d6adf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,dwxu8jge49o,markdown,fr,a7cd5f6e16f36702,"### Fonction de generation et prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,dwxu8jge49o,markdown,fr,a7cd5f6e16f36702,"### Fonction de generation et prompts
 
 Definissons la fonction d'appel a l'API DALL-E 3, puis preparons un ensemble de prompts optimises illustrant différents styles (photorealiste, artistique, technique).","### Generation function and prompts
 
 Let us define the function that calls the DALL-E 3 API, then prepare a set of optimized prompts illustrating different styles (photorealistic, artistic, technical).",,,,,"### Функция генерации и промпты
 
 Определим функцию вызова API DALL-E 3, затем подготовим набор оптимизированных промптов, иллюстрирующих различные стили (фотореалистичный, художественный, технический).",,a7cd5f6e16f36702,3e0b46fa6588f8e2,,,,,ae0dafc647d7955b,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,7087aa90,code,fr,024d46d602043d47,"# Fonction de génération d'image via l'API OpenAI (famille gpt-image)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,7087aa90,code,fr,024d46d602043d47,"# Fonction de génération d'image via l'API OpenAI (famille gpt-image)
 # - Migration DALL-E 3 -> famille gpt-image (cf. issue #8474, EPIC #8052 ; gpt-image-1.5 depuis le 2026-10-28).
 # - Le modele `model_name` (cfg Papermill) pointe sur gpt-image-1.5 depuis le 2026-10-28.
 # - L'endpoint /v1/images/generations est commun aux deux familles.
@@ -351,14 +351,14 @@ def generate_image(prompt: str,
         }
 
 print(""[ok] Fonction generate_image() prête (famille gpt-image via OpenAI directe)"")",,,,,,,,024d46d602043d47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,hvtdmnal8gg,markdown,fr,4944bd73d9e5200e,"### Generation et analyse des résultats
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,hvtdmnal8gg,markdown,fr,4944bd73d9e5200e,"### Generation et analyse des résultats
 
 Lancons la generation d'images avec les prompts optimises ci-dessus, puis analysons la qualite des résultats et les stratégies d'amelioration iterative des prompts.","### Generation and analysis of results
 
 Let us launch image generation with the optimized prompts above, then analyze the quality of the results and the iterative prompt improvement strategies.",,,,,"### Генерация и анализ результатов
 
 Запустим генерацию изображений с оптимизированными выше промптами, затем проанализируем качество результатов и стратегии итеративного улучшения промптов.",,4944bd73d9e5200e,4d8cf8ef3ec444b7,,,,,f87342d61eee1538,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,be1ddafb,code,fr,96a69c546f5c870d,"# Exemples de prompts optimisés pour DALL-E 3
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,be1ddafb,code,fr,96a69c546f5c870d,"# Exemples de prompts optimisés pour DALL-E 3
 print(""\n[exemples] EXEMPLES DE GÉNÉRATION DALL-E 3"")
 print(""="" * 45)
 
@@ -405,7 +405,7 @@ print(f""- Mentionnez le style artistique desire"")
 print(f""- Precisez l'eclairage et l'atmosphere"")
 print(f""- Utilisez des termes techniques (8K, cinematic, etc.)"")
 print(f""- DALL-E 3 revise automatiquement vos prompts"")",,,,,,,,96a69c546f5c870d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a02bbf24,markdown,fr,650045fe05a32e03,"### Exemple guidé 1 : Construction progressive de prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,a02bbf24,markdown,fr,650045fe05a32e03,"### Exemple guidé 1 : Construction progressive de prompts
 
 La démonstration précédente envoie un prompt déjà riche. Cet exemple guidé part au contraire d'une description minimale et l'enrichit en **3 itérations successives**, pour une image de « robot assistant dans un bureau moderne » :
 
@@ -442,7 +442,7 @@ The three images are generated then displayed side by side. The group recorded i
 4. Сравните три промпта и определите, какие элементы оказали наибольшее влияние
 
 **Подсказка** : Технические термины, такие как ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"", направляют DALL-E 3 к более профессиональному рендерингу.",,650045fe05a32e03,2eab2bc45e9007cc,,,,,1113ce73c942fa9c,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,61d83ca5,code,fr,35c71cc5d4dd23ed,"# ============================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,61d83ca5,code,fr,35c71cc5d4dd23ed,"# ============================================================
 # Exemple guide 1 : Construction progressive de prompts (contribution etudiante, PR #18449 et #18561)
 # ============================================================
 
@@ -542,8 +542,8 @@ if generate_images and all(r.get('success') for r in results.values()):
 else:
     print(""\n[info] Generation non executee ou incomplete : ""
           ""affichage des images ignore."")",,,,,,,,35c71cc5d4dd23ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,o127drbt8o,markdown,fr,1df32d1d6efb4aef,Les exemples de prompts précédents illustrent les différentes catégories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requête a l'API DALL-E 3 et affiche l'image produite.,The previous prompt examples illustrate the different stylistic categories. Now let us move on to actual generation: the next cell sends the request to the DALL-E 3 API and displays the produced image.,,,,,Предыдущие примеры промптов иллюстрируют различные стилистические категории. Теперь перейдём к фактической генерации: следующая ячейка отправляет запрос к API DALL-E 3 и отображает полученное изображение.,,1df32d1d6efb4aef,a218022812ed88b2,,,,,b7221fb54cb01ab9,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,82075ed6,code,fr,f3dedfa41be1c423,"# Generation d'images avec les exemples
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,o127drbt8o,markdown,fr,1df32d1d6efb4aef,Les exemples de prompts précédents illustrent les différentes catégories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requête a l'API DALL-E 3 et affiche l'image produite.,The previous prompt examples illustrate the different stylistic categories. Now let us move on to actual generation: the next cell sends the request to the DALL-E 3 API and displays the produced image.,,,,,Предыдущие примеры промптов иллюстрируют различные стилистические категории. Теперь перейдём к фактической генерации: следующая ячейка отправляет запрос к API DALL-E 3 и отображает полученное изображение.,,1df32d1d6efb4aef,a218022812ed88b2,,,,,b7221fb54cb01ab9,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,82075ed6,code,fr,f3dedfa41be1c423,"# Generation d'images avec les exemples
 print(""\n[generate_image] DEMONSTRATION"")
 print(""="" * 50)
 
@@ -634,7 +634,7 @@ else:
     print(f""\n[err] Echec de la generation"")
     print(f""[err] Erreur: {result['error']}"")
     print(f""[hint] Prompt teste: {result['prompt'][:100]}..."")",,,,,,,,f3dedfa41be1c423,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c244fd12,markdown,fr,9224b2182f586c27,"### Exemple guidé 2 : `vivid` contre `natural` — prompt engineering, pas `style=`
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,c244fd12,markdown,fr,9224b2182f586c27,"### Exemple guidé 2 : `vivid` contre `natural` — prompt engineering, pas `style=`
 
 **Contexte** : un client hésite entre un visuel « vif et créatif » et un visuel « naturel et réaliste ». DALL-E 3 exposait pour cela un paramètre `style` à deux valeurs : `vivid` (couleurs saturées, rendu dramatique) et `natural` (rendu photographique plus discret). La cellule 18 d'origine utilisait `style=""vivid""` et `style=""natural""` avec un prompt identique.
 
@@ -669,7 +669,7 @@ DALL-E 3 предлагает несколько параметров, кото�
 5. Обобщите свои наблюдения в сравнительной таблице
 
 **Подсказка**: Стиль ""vivid"" даёт более насыщенные цвета и более драматичный результат. Стиль ""natural"" нацелен на более сдержанный фотографический результат.",,9224b2182f586c27,091f5feaa38c6d9d,,,,,a17b839b106e66b2,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,081a2f47,code,fr,59870467a4f7cbf2,"# Exemple guide 2 : vivid contre natural -- levier prompt engineering (issue #20682)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,081a2f47,code,fr,59870467a4f7cbf2,"# Exemple guide 2 : vivid contre natural -- levier prompt engineering (issue #20682)
 #
 # Le parametre style= de DALL-E 3 (vivid/natural) n'est pas transmis par generate_image()
 # sur gpt-image-1, qui le refuse en silence. Les requetes d'origine etaient donc identiques
@@ -787,8 +787,8 @@ else:
     print(""Comparaison impossible : au moins une image n'a pas ete generee."")
     print(""Cause probable : OPENAI_API_KEY absente ou /v1/images/generations en panne."")
 ",,,,,,,,59870467a4f7cbf2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,rfbj2tyfgwf,markdown,fr,61cf14014a54a455,"Une fois la generation de demonstration executee, le mode interactif vous invite a tester vos propres prompts avec les paramètres de votre choix.","Once the demonstration generation has run, the interactive mode invites you to test your own prompts with the parameters of your choice.",,,,,После выполнения генерации демонстрации интерактивный режим предлагает вам протестировать собственные промпты с параметрами по вашему выбору.,,61cf14014a54a455,c654e401dceadab4,,,,,e642a36f32d6d30c,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,6e3ba2ff,code,fr,d5e6fda855f82b61,"# Mode interactif - Generation personnalisee
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,rfbj2tyfgwf,markdown,fr,61cf14014a54a455,"Une fois la generation de demonstration executee, le mode interactif vous invite a tester vos propres prompts avec les paramètres de votre choix.","Once the demonstration generation has run, the interactive mode invites you to test your own prompts with the parameters of your choice.",,,,,После выполнения генерации демонстрации интерактивный режим предлагает вам протестировать собственные промпты с параметрами по вашему выбору.,,61cf14014a54a455,c654e401dceadab4,,,,,e642a36f32d6d30c,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,6e3ba2ff,code,fr,d5e6fda855f82b61,"# Mode interactif - Generation personnalisee
 # Le runner canonique (scripts/notebook_tools) exporte BATCH_MODE dans
 # l'environnement : en mode batch il n'y a pas de stdin, donc le bloc
 # interactif n'a rien a proposer et le carnet prend sa branche batch.
@@ -851,8 +851,8 @@ if notebook_mode == ""interactive"" and not skip_widgets and not _batch_env:
 else:
     print(""\n[batch] Mode batch - Interface interactive desactivee"")
     print(""[hint] Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,d5e6fda855f82b61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,e0dstl5fn6,markdown,fr,6239d50fc5892413,L'interface interactive permet d'experimenter librement avec ses propres prompts. La cellule suivante recapitule les bonnes pratiques et les paramètres optimaux identifies lors de cette session.,The interactive interface lets you experiment freely with your own prompts. The next cell summarizes the best practices and the optimal parameters identified during this session.,,,,,"Интерактивный интерфейс позволяет свободно экспериментировать со своими собственными промптами. Следующая ячейка резюмирует лучшие практики и оптимальные параметры, выявленные в ходе этой сессии.",,6239d50fc5892413,5d8822342584ee6e,,,,,ee9872fe7d2d2d2e,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,f28d27b1,code,fr,129f92786d0d494e,"# Analyse et optimisation des résultats
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,e0dstl5fn6,markdown,fr,6239d50fc5892413,L'interface interactive permet d'experimenter librement avec ses propres prompts. La cellule suivante recapitule les bonnes pratiques et les paramètres optimaux identifies lors de cette session.,The interactive interface lets you experiment freely with your own prompts. The next cell summarizes the best practices and the optimal parameters identified during this session.,,,,,"Интерактивный интерфейс позволяет свободно экспериментировать со своими собственными промптами. Следующая ячейка резюмирует лучшие практики и оптимальные параметры, выявленные в ходе этой сессии.",,6239d50fc5892413,5d8822342584ee6e,,,,,ee9872fe7d2d2d2e,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,f28d27b1,code,fr,129f92786d0d494e,"# Analyse et optimisation des résultats
 print(""\n📊 ANALYSE ET BONNES PRATIQUES DALL-E 3"")
 print(""="" * 50)
 
@@ -904,7 +904,7 @@ print(f""3. Explorer le notebook 01-2 (GPT-5 Image Generation)"")
 print(f""4. Découvrir les opérations d'images (01-3)"")
 
 print(f""\n✅ Notebook DALL-E 3 terminé - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,129f92786d0d494e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ed100025,markdown,fr,5394464675537db5,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,ed100025,markdown,fr,5394464675537db5,"***
 
 ## CHALLENGE BONUS - Génération d'Icone pour Application
 
@@ -1033,7 +1033,7 @@ Section 5 shows optimized prompts with:
 - **OpenAI** (2023). *DALL-E 3 System Card*. — Документирует автоматическую перепись промптов через GPT-4 и обучение на улучшенных подписях (recaptioning), центральные характеристики модели, преподаваемые в этом ноутбуке.
 - **Ramesh, A. et al.** (2022). *Hierarchical Text-Conditional Image Generation with CLIP Latents* (DALL-E 2). arXiv:2204.06125. — Архитектурная преемственность: CLIP latents + процесс диффузии, основа, на которую опирается DALL-E 3.
 - **OpenAI** (2021). *DALL-E: Creating Images from Text* (DALL-E 1, Ramesh et al.). arXiv:2102.12092. — Предшественник: авторегрессионный трансформер dVAE, исток линейки DALL-E.",,5394464675537db5,e72ed447b003e91f,,,,,30531e1b2f9da2b8,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,776936fd,markdown,fr,ccb73cfaea675bb8,"### Exemple guidé 3 : Optimiser un prompt pour la page d'accueil d'une startup
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,776936fd,markdown,fr,ccb73cfaea675bb8,"### Exemple guidé 3 : Optimiser un prompt pour la page d'accueil d'une startup
 
 **Contexte** : une startup a besoin d'un visuel pour sa page d'accueil, sur le thème « collaboration humaine et technologie ». L'énoncé d'origine proposait d'écrire un prompt simple, de le comparer au `revised_prompt` renvoyé par le modèle, puis d'écrire un second prompt enrichi de ce que la révision avait ajouté.
 
@@ -1063,7 +1063,7 @@ DALL-E 3 автоматически пересматривает промпты,
 5. Напишите второй, ""улучшенный"" промпт, интегрировав эти уроки, и сгенерируйте заново
 
 **Подсказка** : Обратите внимание, как DALL-E 3 систематически добавляет уточнения об освещении, композиции и уровне детализации.",,ccb73cfaea675bb8,3d3fedfbf21bdf52,,,,,f9c1e7dde6502d1c,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,21ab51ad,code,fr,ca7b8f75d700d3b4,"# Exemple guide 3 : Optimisation d'un prompt pour une page d'accueil (contribution etudiante, PR #18561)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,21ab51ad,code,fr,ca7b8f75d700d3b4,"# Exemple guide 3 : Optimisation d'un prompt pour une page d'accueil (contribution etudiante, PR #18561)
 import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
@@ -4265,12 +4265,12 @@ Ce notebook a parcouru les opérations de base de Pillow sur une même photo de 
 
 Les trois exemples guidés et les quatre exercices proposent une mise en pratique progressive ; l'exercice 4 demande d'assembler ces opérations en un pipeline complet pour une API de génération.
 ",,,,,,,,5ce7fdba2339fb89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,7aee4370,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,7aee4370,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2a,markdown,fr,a23ad93d73a19c8b,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-3-Basic-Image-Operations.ipynb) | [Suivant >>](01-5-Edition-Image-Prompt.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b2a,markdown,fr,02daa96656358b32,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-3-Basic-Image-Operations.ipynb) | [Suivant >>](01-5-Edition-Image-Prompt.ipynb)
 
-# Notebook: Stable Diffusion Forge - SD XL Turbo
+# Génération d'images locale via Forge
 
 ## Objectif
 
@@ -4293,8 +4293,8 @@ Ce notebook pédagogique vous apprend à utiliser l'**API Stable Diffusion Forge
 ## Pré-requis
 
 - Packages Python: `requests`, `Pillow`, `matplotlib`, `python-dotenv`
-- Accès réseau à l'API Forge",,,,,,,,a23ad93d73a19c8b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,utxuutve5lr,markdown,fr,a791f513403d3149,"## 🔐 Authentification et Configuration
+- Accès réseau à l'API Forge",,,,,,,,02daa96656358b32,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,utxuutve5lr,markdown,fr,a791f513403d3149,"## 🔐 Authentification et Configuration
 
 ### Flux d'Authentification Forge
 
@@ -4347,7 +4347,7 @@ Le notebook gère automatiquement l'authentification en deux étapes :
 | **Timeout** | API inaccessible | Vérifier connectivité réseau |
 
 **Note** : La fonction `get_forge_session()` gère automatiquement ces scénarios et affiche des messages de debug.",,,,,,,,a791f513403d3149,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,a1f04e7b,markdown,fr,546c829abd0e96e1,"### Schema du flux d'authentification
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,a1f04e7b,markdown,fr,546c829abd0e96e1,"### Schema du flux d'authentification
 
 Le diagramme ci-dessous reprend la logique de connexion decrite ci-dessus (tentative Basic Auth, bascule vers le portail de service, puis verification finale).
 
@@ -4361,7 +4361,7 @@ flowchart TD
     B3 --> C[""3. Verification finale""]
     C --> C1[""Test endpoint /sdapi/v1/options""]
 ```",,,,,,,,546c829abd0e96e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,6061ffac,code,fr,725f3092754ea4c8,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,6061ffac,code,fr,725f3092754ea4c8,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -4508,11 +4508,11 @@ print(""✅ Configuration initiale chargée"")
 print(f""📡 API Forge: {API_BASE_URL}"")
 if AUTH:
     print(""🔐 Authentification activée"")",,,,,,,,725f3092754ea4c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2b,markdown,fr,fc35d84127929540,"""""""
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b2b,markdown,fr,fc35d84127929540,"""""""
 Vérification du statut de l'API et affichage d'une bannière visuelle
 """"""
 ",,,,,,,,fc35d84127929540,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,84d77c5e,code,fr,cb918247b1a77e34,"# Test de connectivité API
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,84d77c5e,code,fr,cb918247b1a77e34,"# Test de connectivité API
 try:
     # Utilisation de la session authentifiée
     response = FORGE_SESSION.get(f""{API_BASE_URL}/sdapi/v1/options"", timeout=10)
@@ -4543,7 +4543,7 @@ except requests.exceptions.RequestException as e:
     print(f""⚠️ Avertissement: Impossible de contacter l'API Forge"")
     print(f""   Erreur: {e}"")
     print(f""   Vérifiez que l'API est accessible à {API_BASE_URL}"")",,,,,,,,cb918247b1a77e34,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2c,markdown,fr,1c888b3aef827f3c,"## 1. Comprendre l'API Stable Diffusion Forge
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b2c,markdown,fr,1c888b3aef827f3c,"## 1. Comprendre l'API Stable Diffusion Forge
 
 ### Architecture
 
@@ -4571,7 +4571,7 @@ Le modèle **SD XL Turbo** est optimisé pour la **vitesse**:
 2. **Envoyer requête POST** à l'endpoint `/sdapi/v1/txt2img`
 3. **Recevoir réponse JSON** contenant image(s) encodée(s) en base64
 4. **Décoder + afficher** image avec Pillow/Matplotlib",,,,,,,,1c888b3aef827f3c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,87ea0704,code,fr,2486282aa15e6423,"""""""
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,87ea0704,code,fr,2486282aa15e6423,"""""""
 Fonction helper pour générer des images via API Forge
 """"""
 
@@ -4652,12 +4652,12 @@ def generate_image_forge(
         return None
 
 print(""✅ Fonction generate_image_forge() définie"")",,,,,,,,2486282aa15e6423,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2d,markdown,fr,5fb555e41edb1112,"## 2. Exemple Simple: Première Génération
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b2d,markdown,fr,5fb555e41edb1112,"## 2. Exemple Simple: Première Génération
 
 Testons la fonction avec un prompt simple pour générer un paysage de montagne au coucher du soleil.
 
 **Note**: SD XL Turbo est conçu pour la vitesse — seulement 4 steps de débruitage contre ~30 pour SD XL standard. Le temps exact dépend du GPU (RTX 3090, cloud T4…) et varie d'une exécution à l'autre : il s'observe à l'exécution de la cellule suivante, pas dans un nombre figé.",,,,,,,,5fb555e41edb1112,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,e9298db0,code,fr,182a53c1ba19e519,"# Génération d'un paysage de montagne au coucher du soleil
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,e9298db0,code,fr,182a53c1ba19e519,"# Génération d'un paysage de montagne au coucher du soleil
 image_simple = generate_image_forge(
     prompt=""A serene mountain landscape at sunset, golden hour lighting, photorealistic"",
     negative_prompt=""blurry, low quality, distorted"",
@@ -4677,7 +4677,7 @@ if image_simple:
     plt.show()
 else:
     print(""⚠️ La génération a échoué. Vérifiez la connexion à l'API."")",,,,,,,,182a53c1ba19e519,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2e,markdown,fr,8c221dc12487c45c,"## 3. Optimisation des Paramètres SD XL Turbo
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b2e,markdown,fr,8c221dc12487c45c,"## 3. Optimisation des Paramètres SD XL Turbo
 
 ### Pourquoi `steps=4` ?
 
@@ -4706,7 +4706,7 @@ Samplers recommandés pour SD XL Turbo :
 - **LMS** : Qualité légèrement supérieure
 
 ⚠️ **Éviter** : DDIM, PLMS (trop lents pour Turbo)",,,,,,,,8c221dc12487c45c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,77d908a0,code,fr,c5ac2bd72ec0b64a,"# Test des paramètres optimaux Turbo
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,77d908a0,code,fr,c5ac2bd72ec0b64a,"# Test des paramètres optimaux Turbo
 print(""🧪 Test comparatif: Impact du nombre de steps\n"")
 
 prompt_test = ""A futuristic city at night, neon lights, cyberpunk style""
@@ -4736,14 +4736,14 @@ if image_turbo:
     plt.show()
     
 print(""\n✅ Résultat: 4 steps suffisent pour qualité acceptable en ~18s"")",,,,,,,,c5ac2bd72ec0b64a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2f,markdown,fr,c1311c3cd1ab90cd,"## 4. Cas d'Usage Avancé: Comparaison de Prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b2f,markdown,fr,c1311c3cd1ab90cd,"## 4. Cas d'Usage Avancé: Comparaison de Prompts
 
 Explorons comment de **légères variations de prompt** influencent le résultat final.
 
 ### Technique: Grid Comparison
 
 Génération de plusieurs images avec prompts légèrement différents pour identifier les formulations les plus efficaces.",,,,,,,,c1311c3cd1ab90cd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,715733b9,code,fr,a70d3a1622767554,"# Définition de 3 variations de prompt
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,715733b9,code,fr,a70d3a1622767554,"# Définition de 3 variations de prompt
 prompts_comparison = [
     ""A futuristic city at night"",
     ""A futuristic city at night, neon lights, rainy streets"",
@@ -4787,7 +4787,7 @@ if len(images_grid) == 3:
     print(""- Prompt + style → Cohérence artistique maximale"")
 else:
     print(""⚠️ Certaines générations ont échoué"")",,,,,,,,a70d3a1622767554,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,86464df9,markdown,fr,aee811ab71d3e68f,"### Exercice 1 : Artisan de prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,86464df9,markdown,fr,aee811ab71d3e68f,"### Exercice 1 : Artisan de prompts
 
 L'objectif de cet exercice est de rediger des prompts de qualite pour generer une image thematique, en appliquant les techniques de formulation observees dans la section précédente.
 
@@ -4804,7 +4804,7 @@ L'objectif de cet exercice est de rediger des prompts de qualite pour generer un
 - `# Étape 1` : Commencez par un prompt minimal de 5-10 mots
 - `# Étape 2` : Ajoutez progressivement des details (eclairage, atmosphere)
 - `# Étape 3` : Ajoutez un style artistique explicite et un qualificatif technique",,,,,,,,aee811ab71d3e68f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,2d83fa90,code,fr,6374b94a0ffdbe6e,"# Exercice 1 : Artisan de prompts
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,2d83fa90,code,fr,6374b94a0ffdbe6e,"# Exercice 1 : Artisan de prompts
 
 # TODO etudiant : choisissez votre theme et redigez 3 variations de prompt
 # Variation 1 : prompt simple (5-10 mots)
@@ -4835,7 +4835,7 @@ for titre, prompt in zip(titres, variations):
 
 # Etape 3 : identifiez la meilleure formulation
 print(""Exercice a completer"")",,,,,,,,6374b94a0ffdbe6e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b30,markdown,fr,115dab23c633cc3d,"""""""
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b30,markdown,fr,115dab23c633cc3d,"""""""
 Techniques Avancées de Génération
 
 Ce bloc explore des techniques avancées pour améliorer vos générations:
@@ -4844,7 +4844,7 @@ Ce bloc explore des techniques avancées pour améliorer vos générations:
 3. Génération batch optimisée
 """"""
 ",,,,,,,,115dab23c633cc3d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,59d0a296,code,fr,25b6fbecada47420,"import time
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,59d0a296,code,fr,25b6fbecada47420,"import time
 import random
 
 # --- Technique 1: Reproductibilité avec Seed Fixe ---
@@ -4971,7 +4971,7 @@ if len(resultats_batch) >= 2:
     plt.show()
     
     print(""\n💡 Usage: Idéal pour prototypage rapide de concepts multiples"")",,,,,,,,25b6fbecada47420,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,a9fd7b1a,markdown,fr,b233da938c0bea02,"### Exercice 2 : Exploration des paramètres de generation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,a9fd7b1a,markdown,fr,b233da938c0bea02,"### Exercice 2 : Exploration des paramètres de generation
 
 L'objectif de cet exercice est d'etudier l'impact des paramètres `cfg_scale` et `sampler_name` sur la qualite et le style des images generees.
 
@@ -4989,7 +4989,7 @@ L'objectif de cet exercice est d'etudier l'impact des paramètres `cfg_scale` et
 - `# Étape 1` : Fixez le prompt et le seed pour une comparaison equitable
 - `# Étape 2` : Faites varier un seul paramètre a la fois
 - `# Étape 3` : Affichez les images en grille pour comparaison visuelle",,,,,,,,b233da938c0bea02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8022e986,code,fr,d884489c1bb5934e,"# Exercice 2 : Exploration des parametres cfg_scale et sampler
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8022e986,code,fr,d884489c1bb5934e,"# Exercice 2 : Exploration des parametres cfg_scale et sampler
 
 # TODO etudiant : choisissez un prompt fixe pour la comparaison
 prompt_fixe = ""a mystical forest with glowing mushrooms, fantasy art""  # TODO etudiant : remplacez par votre prompt
@@ -5018,7 +5018,7 @@ for cfg in cfg_values:
 
 # Etape 3 : observation
 print(""Exercice a completer"")",,,,,,,,d884489c1bb5934e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b31,markdown,fr,c36e7b8c64658c17,"## 5. Bonnes Pratiques et Recommandations
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b31,markdown,fr,c36e7b8c64658c17,"## 5. Bonnes Pratiques et Recommandations
 
 ### ✅ À Faire
 
@@ -5054,7 +5054,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b3
 | Itération créative | ✅ Excellent | ⚠️ Acceptable |
 | Production finale | ⚠️ Acceptable | ✅ Préférable |
 | Haute résolution (>1024px) | ❌ Non adapté | ✅ Recommandé |",,,,,,,,c36e7b8c64658c17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,fbb5115d,code,fr,32bc347f6365eaa0,"""""""
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,fbb5115d,code,fr,32bc347f6365eaa0,"""""""
 Exemple 4: Version améliorée avec logging coloré
 (Inspiré du pattern LocalLlama)
 """"""
@@ -5119,7 +5119,7 @@ if img_test:
     plt.axis('off')
     plt.title(""Test Logging Coloré"", fontsize=11)
     plt.show()",,,,,,,,32bc347f6365eaa0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b32,markdown,fr,1153651314f9ec87,"## 💡 Tips & Troubleshooting
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b32,markdown,fr,d7e5b67969ca2aed,"## 💡 Tips & Troubleshooting
 
 ### Erreurs Courantes et Solutions
 
@@ -5217,8 +5217,8 @@ image_hq = generate_image_forge(
 
 - **Documentation API Complète**: [`GUIDE-APIS-ETUDIANTS.md`](../../../../docs/archive/suivis/genai-image/GUIDE-APIS-ETUDIANTS.md)
 - **Notebook Qwen (Édition Images)**: [`01-5-Edition-Image-Prompt.ipynb`](01-5-Edition-Image-Prompt.ipynb)
-- **Status API Temps Réel**: `https://turbo.stable-diffusion-webui-forge.myia.io/sdapi/v1/progress`",,,,,,,,1153651314f9ec87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b33,markdown,fr,249cdb76c8dad72b,"### Exercice 3 : Generation libre - synthese des techniques
+- **Status API Temps Réel**: `https://turbo.stable-diffusion-webui-forge.myia.io/sdapi/v1/progress`",,,,,,,,d7e5b67969ca2aed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b33,markdown,fr,249cdb76c8dad72b,"### Exercice 3 : Generation libre - synthese des techniques
 
 ### Objectif
 
@@ -5235,7 +5235,7 @@ Créez votre propre génération d'image en appliquant les techniques apprises.
 ### Template de Code
 
 Complétez le code ci-dessous avec vos propres paramètres :",,,,,,,,249cdb76c8dad72b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,e943fc66,code,fr,0e593d5a67ce0020,"# 🎯 EXERCICE PRATIQUE: Complétez ce code avec vos propres paramètres
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,e943fc66,code,fr,0e593d5a67ce0020,"# 🎯 EXERCICE PRATIQUE: Complétez ce code avec vos propres paramètres
 
 # TODO: Définissez votre prompt personnalisé
 mon_prompt = ""Votre description ici""  # Ex: ""A majestic dragon flying over a medieval castle""
@@ -5266,7 +5266,7 @@ if mon_image:
     print(f""📝 Prompt utilisé: {mon_prompt}"")
 else:
     print(""❌ La génération a échoué. Vérifiez vos paramètres et la connexion à l'API."")",,,,,,,,0e593d5a67ce0020,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b34,markdown,fr,51b989930a9834af,"## 6. Ressources et Documentation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,8f3c9b34,markdown,fr,51b989930a9834af,"## 6. Ressources et Documentation
 
 ### Documentation Complète
 
@@ -8465,12 +8465,12 @@ print(""   • Inpainting avec masques personnalisés"")
 print(""   • Batch processing"")
 print(""   • Analyse comparative CFG"")
 print(""\n➡️  Prochain notebook: 02-2-FLUX-1-Advanced-Generation.ipynb"")",,,,,,,,4531b1305c59f203,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,6c3bb47b,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,6c3bb47b,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-0,markdown,fr,c48439cfd2d95154,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) | [Suivant >>](02-3-Stable-Diffusion-3-5.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-0,markdown,fr,4d8617802a6d16e7,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) | [Suivant >>](02-3-Generation-Image-MMDiT.ipynb)
 
-# FLUX.1 - Génération d'Images Avancée
+# Génération d'images haute qualité
 
 **Module :** 02-Images-Advanced  
 **Niveau :** Intermédiaire/Avancé  
@@ -8518,8 +8518,8 @@ flowchart TD
 
 - Module 00-GenAI-Environment complété
 - GPU avec 12GB+ VRAM (pour exécution locale)
-- Ou clé API pour services cloud (fal.ai, Replicate)",,,,,,,,c48439cfd2d95154,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,f1ux2adv,markdown,fr,7dd965b29fffbc89,"**Lire le graphe ci-dessus.** Il se parcourt de haut en bas : le prompt part vers deux encodeurs en parallèle, leurs représentations se rejoignent dans le transformeur de diffusion, et le décodeur VAE ramène le résultat en pixels.
+- Ou clé API pour services cloud (fal.ai, Replicate)",,,,,,,,4d8617802a6d16e7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,f1ux2adv,markdown,fr,7dd965b29fffbc89,"**Lire le graphe ci-dessus.** Il se parcourt de haut en bas : le prompt part vers deux encodeurs en parallèle, leurs représentations se rejoignent dans le transformeur de diffusion, et le décodeur VAE ramène le résultat en pixels.
 
 > **Lecture.** FLUX.1 combine **deux encodeurs de texte** complémentaires : T5-XXL
 > capture la sémantique fine du prompt, CLIP-L l'alignement texte-image. Leurs
@@ -8538,7 +8538,7 @@ MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,
 
 **Conséquence sur la mémoire.** Le nœud le plus lourd du graphe n'est pas celui qu'on croit : T5-XXL pèse à lui seul plusieurs Go en demi-précision, avant même les 12 milliards de paramètres du DiT. C'est ce cumul -- et non le seul débruiteur -- qui fonde le prérequis **12GB+ de VRAM** posé ci-dessus, et que l'appel `enable_model_cpu_offload()` du chargement (plus bas dans ce notebook) sert à desserrer.
 ",,,,,,,,7dd965b29fffbc89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-1,code,fr,7da7caa81aa15c2d,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-1,code,fr,7da7caa81aa15c2d,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -8664,8 +8664,8 @@ print(f""\n🔑 Configuration API:"")
 print(f""   FAL.ai: {'✅ Configuré' if FAL_API_KEY else '❌ Non configuré'}"")
 print(f""   Replicate: {'✅ Configuré' if REPLICATE_API_KEY else '❌ Non configuré'}"")
 print(f""   HuggingFace: {'✅ Configuré' if HF_TOKEN else '❌ Non configuré'}"")",,,,,,,,7da7caa81aa15c2d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,w9rq689ngwc,markdown,fr,4e310e04b3f797e8,L'environnement est configure et les bibliotheques importees. La cellule suivante detecte la disponibilite d'un GPU CUDA et tente de charger la bibliotheque Diffusers pour l'exécution locale de FLUX.1.,,,,,,,,4e310e04b3f797e8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-2,code,fr,2b6f9d9749e50688,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,w9rq689ngwc,markdown,fr,4e310e04b3f797e8,L'environnement est configure et les bibliotheques importees. La cellule suivante detecte la disponibilite d'un GPU CUDA et tente de charger la bibliotheque Diffusers pour l'exécution locale de FLUX.1.,,,,,,,,4e310e04b3f797e8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-2,code,fr,2b6f9d9749e50688,"# =============================================================================
 # 2. DÉTECTION GPU ET CHARGEMENT DIFFUSERS (LOCAL)
 # =============================================================================
 
@@ -8712,8 +8712,8 @@ if USE_LOCAL:
         USE_LOCAL = False
 
 print(f""\n🔧 Mode d'exécution: {'Local (GPU)' if USE_LOCAL else 'API Cloud'}"")",,,,,,,,2b6f9d9749e50688,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,inmkv7tvfe,markdown,fr,920a039dd120fb27,La disponibilite du GPU et de la bibliotheque Diffusers est verifiee. La cellule suivante définit la classe `FluxAPI` qui encapsule l'acces a FLUX.1 via l'API cloud ou en exécution locale selon le GPU disponible.,,,,,,,,920a039dd120fb27,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-3,code,fr,f9bb2c51853a70e4,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,inmkv7tvfe,markdown,fr,920a039dd120fb27,La disponibilite du GPU et de la bibliotheque Diffusers est verifiee. La cellule suivante définit la classe `FluxAPI` qui encapsule l'acces a FLUX.1 via l'API cloud ou en exécution locale selon le GPU disponible.,,,,,,,,920a039dd120fb27,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-3,code,fr,f9bb2c51853a70e4,"# =============================================================================
 # 3. CLIENT FLUX.1 UNIFIÉ (Local + API)
 # =============================================================================
 
@@ -8957,10 +8957,10 @@ except ValueError as e:
     print(f""\n⚠️ {e}"")
     print(""\nPour utiliser ce notebook, configurez:"")
     print(""  - FAL_API_KEY dans .env (recommandé)"")",,,,,,,,f9bb2c51853a70e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-4,markdown,fr,50b4e2b872c4a4df,"## 4. Génération de Base avec FLUX.1-schnell
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-4,markdown,fr,50b4e2b872c4a4df,"## 4. Génération de Base avec FLUX.1-schnell
 
 FLUX.1-schnell est optimisé pour la rapidité (1-4 steps) tout en maintenant une bonne qualité.",,,,,,,,50b4e2b872c4a4df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-5,code,fr,ffc67e2adefdecda,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-5,code,fr,ffc67e2adefdecda,"# =============================================================================
 # 4. GÉNÉRATION DE BASE
 # =============================================================================
 
@@ -8998,7 +8998,7 @@ if flux:
         print(f""\n📐 Dimensions: {demo_image.size}"")
 else:
     print(""⚠️ Client FLUX non initialisé"")",,,,,,,,ffc67e2adefdecda,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,d094dc1e,markdown,fr,2db627b15e8d2dcf,"### Exercice 1 : Analyse de l'impact des inference steps
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,d094dc1e,markdown,fr,2db627b15e8d2dcf,"### Exercice 1 : Analyse de l'impact des inference steps
 
 FLUX.1-schnell est optimise pour fonctionner en 1 a 4 steps. Chaque step supplementaire ameliore la qualite, mais avec des rendements decroissants. Comprendre cette dynamique est essentiel pour choisir le bon compromis vitesse/qualite.
 
@@ -9010,7 +9010,7 @@ FLUX.1-schnell est optimise pour fonctionner en 1 a 4 steps. Chaque step supplem
 - `# Étape 3` : Afficher les 3 images cote a cote avec `plt.subplots(1, 3)`
 - `# Étape 4` : Noter pour chaque image le temps de generation et la qualite percue
 - `# Indice` : Avec FLUX.1-schnell, `guidance_scale=0.0` (pas de guidance) est la valeur recommandee",,,,,,,,2db627b15e8d2dcf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,10d6a973,code,fr,d1c22f75de09c324,"# Exercice 1 : Analyse de l'impact des inference steps
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,10d6a973,code,fr,d1c22f75de09c324,"# Exercice 1 : Analyse de l'impact des inference steps
 # TODO etudiant : generer une image avec 1, 2 et 4 steps pour comparer
 
 steps_prompt = None  # TODO etudiant : definir un prompt avec des details fins
@@ -9026,10 +9026,10 @@ steps_to_test = [1, 2, 4]
 
 # TODO etudiant : afficher les 3 resultats cote a cote
 print(""Exercice a completer"")",,,,,,,,d1c22f75de09c324,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-6,markdown,fr,1127d09319676333,"## 5. Analyse du Nombre d'Étapes (Inference Steps)
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-6,markdown,fr,1127d09319676333,"## 5. Analyse du Nombre d'Étapes (Inference Steps)
 
 Comparons l'impact du nombre d'étapes sur la qualité de génération.",,,,,,,,1127d09319676333,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-7,code,fr,d6a9dec04ba0a296,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-7,code,fr,d6a9dec04ba0a296,"# =============================================================================
 # 5. ANALYSE DES INFERENCE STEPS
 # =============================================================================
 
@@ -9079,10 +9079,10 @@ if flux:
         print(""   8 steps: Diminishing returns, peu d'amélioration"")
 else:
     print(""⚠️ Client FLUX non initialisé"")",,,,,,,,d6a9dec04ba0a296,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-8,markdown,fr,7da2729afc20b282,"## 6. Exploration des Ratios d'Aspect
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-8,markdown,fr,7da2729afc20b282,"## 6. Exploration des Ratios d'Aspect
 
 FLUX.1 supporte différents ratios d'aspect pour des compositions variées.",,,,,,,,7da2729afc20b282,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-9,code,fr,9e294262346775ca,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-9,code,fr,9e294262346775ca,"# =============================================================================
 # 6. RATIOS D'ASPECT
 # =============================================================================
 
@@ -9131,10 +9131,10 @@ if flux:
         plt.show()
 else:
     print(""⚠️ Client FLUX non initialisé"")",,,,,,,,9e294262346775ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-10,markdown,fr,54c45ff2202be04b,"## 7. Batch Generation: Variations d'un Même Prompt
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-10,markdown,fr,54c45ff2202be04b,"## 7. Batch Generation: Variations d'un Même Prompt
 
 Générons plusieurs variations en changeant uniquement la seed.",,,,,,,,54c45ff2202be04b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-11,code,fr,44b47c783173a247,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-11,code,fr,44b47c783173a247,"# =============================================================================
 # 7. BATCH GENERATION - VARIATIONS
 # =============================================================================
 
@@ -9185,7 +9185,7 @@ if flux:
         print(f""\n✅ {len(variations)} variations générées"")
 else:
     print(""⚠️ Client FLUX non initialisé"")",,,,,,,,44b47c783173a247,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,6c0e37d3,markdown,fr,7d6418ac3a922383,"### Exercice 2 : Exploration des seeds et sélection de la meilleure variation
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,6c0e37d3,markdown,fr,7d6418ac3a922383,"### Exercice 2 : Exploration des seeds et sélection de la meilleure variation
 
 La **seed** contrôle le bruit initial de la generation. Changer la seed produit une variation différente de la même image, en conservant la même composition générale. C'est un outil essentiel pour iterer rapidement.
 
@@ -9197,7 +9197,7 @@ La **seed** contrôle le bruit initial de la generation. Changer la seed produit
 - `# Étape 3` : Afficher les 6 images dans une grille 2x3
 - `# Étape 4` : Sélectionner la meilleure selon 3 critères : fidelite au prompt, qualite des details, coherence globale
 - `# Indice` : Avec FLUX.1-schnell, chaque generation prend seulement 4 steps, donc 6 variations restent rapides",,,,,,,,7d6418ac3a922383,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,a7a2ac92,code,fr,d2ea8cfaf882d2d0,"# Exercice 2 : Exploration des seeds et selection de la meilleure variation
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,a7a2ac92,code,fr,d2ea8cfaf882d2d0,"# Exercice 2 : Exploration des seeds et selection de la meilleure variation
 # TODO etudiant : generer 6 variations avec differentes seeds
 
 seed_prompt = None  # TODO etudiant : definir un prompt creatif detaille
@@ -9215,10 +9215,10 @@ seeds = [100, 200, 300, 400, 500, 600]
 # fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 # ...
 print(""Exercice a completer"")",,,,,,,,d2ea8cfaf882d2d0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-12,markdown,fr,6f7fb6d8b59a43a9,"## 8. Techniques de Prompt Engineering pour FLUX
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-12,markdown,fr,6f7fb6d8b59a43a9,"## 8. Techniques de Prompt Engineering pour FLUX
 
 FLUX.1 répond particulièrement bien à certains styles de prompts.",,,,,,,,6f7fb6d8b59a43a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-13,code,fr,a14207c068599eb8,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-13,code,fr,a14207c068599eb8,"# =============================================================================
 # 8. PROMPT ENGINEERING AVANCÉ
 # =============================================================================
 
@@ -9290,10 +9290,10 @@ else:
         print(f""\n{style.upper()}:"")
         print(f""  Préfixe: {template['prefix']}"")
         print(f""  Suffixe: {template['suffix']}"")",,,,,,,,a14207c068599eb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-14,markdown,fr,50683614b6984e24,"## 9. Génération de Texte dans les Images
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-14,markdown,fr,50683614b6984e24,"## 9. Génération de Texte dans les Images
 
 FLUX.1 excelle particulièrement dans le rendu de texte lisible dans les images.",,,,,,,,50683614b6984e24,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-15,code,fr,007288c26532dd10,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-15,code,fr,007288c26532dd10,"# =============================================================================
 # 9. GÉNÉRATION DE TEXTE DANS LES IMAGES
 # =============================================================================
 
@@ -9339,7 +9339,7 @@ if flux:
         plt.show()
 else:
     print(""⚠️ Client FLUX non initialisé"")",,,,,,,,007288c26532dd10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,46250595,markdown,fr,bbcbb37884c33e28,"### Exercice 3 : Creation d'une affiche personnalisee avec texte
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,46250595,markdown,fr,bbcbb37884c33e28,"### Exercice 3 : Creation d'une affiche personnalisee avec texte
 
 FLUX.1 est reconnu pour sa capacite a generer du texte lisible dans les images. Cette capacite peut etre exploitee pour créer des visuels communicationnels : affichés, couvertures de livre, logos, etc.
 
@@ -9351,7 +9351,7 @@ FLUX.1 est reconnu pour sa capacite a generer du texte lisible dans les images. 
 - `# Étape 3` : Preciser le style visuel (ex: ""vintage poster"", ""modern minimalist"")
 - `# Étape 4` : Generer avec `flux.generate(num_inference_steps=4, seed=42)`
 - `# Indice` : FLUX.1 gere mieux les textes courts (2-5 mots). Evitez les phrases trop longues.",,,,,,,,bbcbb37884c33e28,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,720692a7,code,fr,b9d97be206072303,"# Exercice 3 : Creation d'une affiche personnalisee avec texte
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,720692a7,code,fr,b9d97be206072303,"# Exercice 3 : Creation d'une affiche personnalisee avec texte
 # TODO etudiant : creer une image contenant du texte lisible
 
 poster_prompt = None  # TODO etudiant : construire un prompt avec texte entre guillemets
@@ -9365,7 +9365,7 @@ poster_prompt = None  # TODO etudiant : construire un prompt avec texte entre gu
 #         plt.show()
 
 print(""Exercice a completer"")",,,,,,,,b9d97be206072303,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-16,markdown,fr,ea6895bbb5affd13,"## 10. Exercices du Notebook
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-16,markdown,fr,ea6895bbb5affd13,"## 10. Exercices du Notebook
 
 Les exercices pratiques sont repartis dans le notebook aux endroits stratégiques :
 
@@ -9376,14 +9376,14 @@ Les exercices pratiques sont repartis dans le notebook aux endroits stratégique
 | **Exercice 3** | Section 9 (après texte dans images) | Affiche personnalisee avec texte | Après demo texte |
 
 Chaque exercice est precede d'un bloc markdown avec les objectifs et indices, suivi d'une cellule de code a completer.",,,,,,,,ea6895bbb5affd13,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-17,code,fr,03e02fc9dfe40357,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-17,code,fr,03e02fc9dfe40357,"# =============================================================================
 # Les exercices sont maintenant disponibles directement dans le notebook
 # aux sections 4, 7 et 9. Cherchez les cellules ""### Exercice N"" pour
 # les trouver et les completer.
 # =============================================================================
 
 print(""3 exercices disponibles dans les sections 4, 7 et 9 du notebook"")",,,,,,,,03e02fc9dfe40357,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-18,markdown,fr,1a27122a52c6f581,"## 11. Récapitulatif et Points Clés
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-18,markdown,fr,15a549a2a7862fe1,"## 11. Récapitulatif et Points Clés
 
 ### Paramètres FLUX.1
 
@@ -9412,7 +9412,7 @@ MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,
 
 - [FLUX.1 on HuggingFace](https://huggingface.co/black-forest-labs)
 - [fal.ai Documentation](https://fal.ai/models/fal-ai/flux)
-- Notebook suivant: **02-3-Stable-Diffusion-3-5**
+- Notebook suivant: **02-3-Generation-Image-MMDiT**
 
 ### Références savantes
 
@@ -9422,8 +9422,8 @@ MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,
 - **Su, J., Lu, Y., Pan, S., Murtadha, A., Wen, B., & Liu, Y.** (2021). *RoFormer: Enhanced Transformer with Rotary Position Embedding* (RoPE). arXiv:2104.09864.
 - **Raffel, C., Shazeer, N., Roberts, A., et al.** (2020). *Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer* (T5). JMLR, arXiv:1910.10683. — T5-XXL, encodeur de texte principal de FLUX.1.
 - **Radford, A., Kim, J. W., Hallacy, C., et al.** (2021). *Learning Transferable Visual Models From Natural Language Supervision* (CLIP). arXiv:2103.00020.
-- **Kingma, D. P., & Welling, M.** (2013). *Auto-Encoding Variational Bayes* (VAE). ICLR 2014, arXiv:1312.6114. — Décodeur VAE latent → pixel space.",,,,,,,,1a27122a52c6f581,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-19,code,fr,dfcd049ec3766944,"# =============================================================================
+- **Kingma, D. P., & Welling, M.** (2013). *Auto-Encoding Variational Bayes* (VAE). ICLR 2014, arXiv:1312.6114. — Décodeur VAE latent → pixel space.",,,,,,,,15a549a2a7862fe1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-19,code,fr,b409aa1c573be7a7,"# =============================================================================
 # FIN DU NOTEBOOK
 # =============================================================================
 
@@ -9438,10 +9438,10 @@ print(""   • Analyse des inference steps"")
 print(""   • Ratios d'aspect"")
 print(""   • Prompt engineering avancé"")
 print(""   • Génération de texte dans les images"")
-print(""\n➡️  Prochain notebook: 02-3-Stable-Diffusion-3-5.ipynb"")",,,,,,,,dfcd049ec3766944,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-0,markdown,fr,5a800dcb441e2cd1,"**Navigation** : [Index](../../README.md) | [<< Précédent](02-2-FLUX-1-Advanced-Generation.ipynb) | [Suivant >>](02-4-Z-Image-Lumina2.ipynb)
+print(""\n➡️  Prochain notebook: 02-3-Generation-Image-MMDiT.ipynb"")",,,,,,,,b409aa1c573be7a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-0,markdown,fr,667fae438e03d3df,"**Navigation** : [Index](../../README.md) | [<< Précédent](02-2-Generation-Image-Haute-Qualite.ipynb) | [Suivant >>](02-4-Z-Image-Lumina2.ipynb)
 
-# Stable Diffusion 3.5 - Génération de Pointe
+# Génération d'images de pointe (MMDiT)
 
 **Module :** 02-Images-Advanced  
 **Niveau :** Intermédiaire/Avancé  
@@ -9482,8 +9482,8 @@ MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-0
 
 - Module 00-GenAI-Environment complété
 - GPU avec 8GB+ VRAM (Medium) ou 16GB+ (Large)
-- Token HuggingFace avec acceptation licence SD 3.5",,,,,,,,5a800dcb441e2cd1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,5d35mmdt,markdown,fr,1f23edf5340da1de,"Le diagramme ci-dessous rend l'architecture **MMDiT** sous forme de graphe : le
+- Token HuggingFace avec acceptation licence SD 3.5",,,,,,,,667fae438e03d3df,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,5d35mmdt,markdown,fr,1f23edf5340da1de,"Le diagramme ci-dessous rend l'architecture **MMDiT** sous forme de graphe : le
 **triple encodeur** de texte alimente le transformeur de diffusion multimodal, puis le
 VAE 16 canaux decode l'image finale.
 
@@ -9512,7 +9512,7 @@ flowchart TD
 > *flow matching* (rectified flow). Le **VAE a 16 canaux** restitue une image nette en
 > 1024x1024.
 ",,,,,,,,1f23edf5340da1de,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-1,code,fr,e093089d4637ae49,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-1,code,fr,e093089d4637ae49,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -9609,8 +9609,8 @@ print(""║   Stable Diffusion 3.5 - Génération de Pointe     ║"")
 print(""╚════════════════════════════════════════════════════╝"")
 print(f""\n📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""\n🔑 HuggingFace: {'✅ Token configuré' if HF_TOKEN else '❌ Token manquant'}"")",,,,,,,,e093089d4637ae49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,wqeyek1l0kb,markdown,fr,95f986efe8bd0fdd,"L'environnement est initialise. La cellule suivante detecte le GPU disponible et recommande la variante SD 3.5 adaptee (Medium 2B pour 8GB, Large 8B pour 16GB+, Large Turbo pour generation rapide).",,,,,,,,95f986efe8bd0fdd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-2,code,fr,b3653e0ab049b2b8,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,wqeyek1l0kb,markdown,fr,95f986efe8bd0fdd,"L'environnement est initialise. La cellule suivante detecte le GPU disponible et recommande la variante SD 3.5 adaptee (Medium 2B pour 8GB, Large 8B pour 16GB+, Large Turbo pour generation rapide).",,,,,,,,95f986efe8bd0fdd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-2,code,fr,b3653e0ab049b2b8,"# =============================================================================
 # 2. DÉTECTION GPU ET CONFIGURATION
 # =============================================================================
 
@@ -9646,8 +9646,8 @@ if GPU_NAME:
         print(f""   ✅ Recommandation: {RECOMMENDED_MODEL.split('/')[-1]}"")
 else:
     print(""\n⚠️ Pas de GPU CUDA détecté"")",,,,,,,,b3653e0ab049b2b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,aqnoup5iaz8,markdown,fr,4127f504fb18804c,"La detection GPU est effectuee et le modèle recommande est determine selon la VRAM disponible. La cellule suivante définit la classe `SD35Client` qui gere le chargement du pipeline SD 3.5 et l'optimisation memoire (CPU offload, attention slicing).",,,,,,,,4127f504fb18804c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-3,code,fr,3e5630cc0ad12c55,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,aqnoup5iaz8,markdown,fr,4127f504fb18804c,"La detection GPU est effectuee et le modèle recommande est determine selon la VRAM disponible. La cellule suivante définit la classe `SD35Client` qui gere le chargement du pipeline SD 3.5 et l'optimisation memoire (CPU offload, attention slicing).",,,,,,,,4127f504fb18804c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-3,code,fr,3e5630cc0ad12c55,"# =============================================================================
 # 3. CLIENT SD 3.5
 # =============================================================================
 
@@ -9771,10 +9771,10 @@ try:
 except (ValueError, Exception) as e:
     print(f""SD35 non initialise: {e}"")
     sd35 = None",,,,,,,,3e5630cc0ad12c55,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-4,markdown,fr,c99a4ffb012991eb,"## 4. Generation de Base
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-4,markdown,fr,c99a4ffb012991eb,"## 4. Generation de Base
 
 Le pipeline SD 3.5 est maintenant initialise. Cette section genere une première image avec un prompt complexe (phenix, flames, dark fantasy) pour evaluer la capacite du modèle a rendre les details fins et les effets de lumiere. Le paramètre `seed=42` garantit la reproductibilite du résultat.",,,,,,,,c99a4ffb012991eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-5,code,fr,e69e8a5682ffe9ba,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-5,code,fr,e69e8a5682ffe9ba,"# =============================================================================
 # 4. GÉNÉRATION DE BASE
 # =============================================================================
 
@@ -9798,7 +9798,7 @@ if sd35:
         plt.show()
 else:
     print(""⚠️ SD35 non initialisé"")",,,,,,,,e69e8a5682ffe9ba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,16783619,markdown,fr,a8570b2a72492102,"### Exercice 1 : Portrait artistique avec différentes valeurs CFG
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,16783619,markdown,fr,a8570b2a72492102,"### Exercice 1 : Portrait artistique avec différentes valeurs CFG
 
 Le **CFG Scale** (Classifier-Free Guidance) est un paramètre cle qui contrôle le degré d'adherence du modèle au prompt. Pour un portrait artistique, différentes valeurs CFG produisent des résultats très différents : bas CFG = plus creatif, haut CFG = plus fidele au prompt.
 
@@ -9809,7 +9809,7 @@ Le **CFG Scale** (Classifier-Free Guidance) est un paramètre cle qui contrôle 
 - `# Étape 2` : Boucler sur les valeurs CFG [3.0, 5.0, 7.0]
 - `# Étape 3` : Appeler `sd35.generate(prompt=..., guidance_scale=cfg, seed=42)` pour chaque valeur
 - `# Indice` : Un CFG bas (3.0) donnera un style plus libre, un CFG haut (7.0) suivra le prompt plus fidelement",,,,,,,,a8570b2a72492102,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,8d94cab8,code,fr,c7c3f204b56e6ed4,"# Exercice 1 : Portrait artistique avec differentes valeurs CFG
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,8d94cab8,code,fr,c7c3f204b56e6ed4,"# Exercice 1 : Portrait artistique avec differentes valeurs CFG
 # TODO etudiant : generer un portrait style huile avec 3 valeurs de CFG
 
 portrait_prompt = None  # TODO etudiant : definir un prompt de portrait en style huile
@@ -9822,10 +9822,10 @@ cfg_values = [3.0, 5.0, 7.0]
 
 # TODO etudiant : afficher les 3 portraits cote a cote
 print(""Exercice a completer"")",,,,,,,,c7c3f204b56e6ed4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-6,markdown,fr,a0f81649ef6871fc,"## 5. Analyse CFG Scale
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-6,markdown,fr,a0f81649ef6871fc,"## 5. Analyse CFG Scale
 
 Le **CFG Scale** (Classifier-Free Guidance) contrôle le degré d'adherence du modèle au prompt textuel. Une valeur basse (2.0) produit des images plus creatives mais potentiellement hors-sujet, tandis qu'une valeur elevee (10.0) suit le prompt plus fidelement mais risque de sur-saturer les couleurs. Cette section genere une grille comparative pour observer cet effet.",,,,,,,,a0f81649ef6871fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-7,code,fr,0777494a726dfe4e,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-7,code,fr,0777494a726dfe4e,"# =============================================================================
 # 5. ANALYSE CFG SCALE
 # =============================================================================
 
@@ -9856,10 +9856,10 @@ elif sd35:
     print(""Mode Turbo: CFG fixé à 0"")
 else:
     print(""⚠️ SD35 non initialisé"")",,,,,,,,0777494a726dfe4e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-8,markdown,fr,5f7d04b9f2655b8e,"## 6. Comparaison Inference Steps
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-8,markdown,fr,5f7d04b9f2655b8e,"## 6. Comparaison Inference Steps
 
 Le nombre de **steps d'inference** determine combien d'itérations de denoise le modèle effectue. Plus de steps produisent généralement des images plus detaillees, mais avec des rendements decroissants. Cette section compare plusieurs valeurs (10, 20, 28, 40 steps) pour trouver le point optimal entre qualite et temps de calcul.",,,,,,,,5f7d04b9f2655b8e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-9,code,fr,a117f8349f62bd4c,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-9,code,fr,a117f8349f62bd4c,"# =============================================================================
 # 6. ANALYSE INFERENCE STEPS
 # =============================================================================
 
@@ -9890,7 +9890,7 @@ if sd35:
         plt.show()
 else:
     print(""⚠️ SD35 non initialisé"")",,,,,,,,a117f8349f62bd4c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,866debf2,markdown,fr,f62b8c872019f12b,"### Exercice 2 : Generation en différents ratios d'aspect
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,866debf2,markdown,fr,f62b8c872019f12b,"### Exercice 2 : Generation en différents ratios d'aspect
 
 SD 3.5 supporte différentes resolutions. Le ratio d'aspect modifie la composition de l'image : un format paysage (16:9) convient aux panoramas, un format portrait (9:16) aux personnages, et le carre (1:1) aux sujets centres.
 
@@ -9901,7 +9901,7 @@ SD 3.5 supporte différentes resolutions. Le ratio d'aspect modifie la compositi
 - `# Étape 2` : Calculer les dimensions : 1024x1024 (1:1), 1344x768 (16:9), 768x1344 (9:16)
 - `# Étape 3` : Generer avec `sd35.generate(width=..., height=...)` en gardant le même seed
 - `# Indice` : Les dimensions doivent etre des multiples de 8 pour etre compatibles avec le VAE",,,,,,,,f62b8c872019f12b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,13f615e1,code,fr,3bc205ac035783be,"# Exercice 2 : Generation en differents ratios d'aspect
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,13f615e1,code,fr,3bc205ac035783be,"# Exercice 2 : Generation en differents ratios d'aspect
 # TODO etudiant : generer la meme scene en 3 ratios (1:1, 16:9, 9:16)
 
 ratio_prompt = None  # TODO etudiant : definir un prompt avec elements horizontaux et verticaux
@@ -9914,10 +9914,10 @@ aspect_ratios = [(""1:1"", 1024, 1024), (""16:9"", 1344, 768), (""9:16"", 768, 1
 
 # TODO etudiant : afficher les 3 resultats avec leurs dimensions respectives
 print(""Exercice a completer"")",,,,,,,,3bc205ac035783be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-10,markdown,fr,7af0cb1f1e7670c7,"## 7. Styles Artistiques
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-10,markdown,fr,7af0cb1f1e7670c7,"## 7. Styles Artistiques
 
 Le même sujet peut etre interprete dans des styles visuels très différents selon le prompt. Cette section compare quatre styles (photorealiste, peinture a l'huile, anime, aquarelle) sur un sujet identique pour observer comment les mots-cles de style influencent la sortie du modèle.",,,,,,,,7af0cb1f1e7670c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-11,code,fr,8e3ca788bc90c9a2,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-11,code,fr,8e3ca788bc90c9a2,"# =============================================================================
 # 7. STYLES ARTISTIQUES
 # =============================================================================
 
@@ -9952,7 +9952,7 @@ if sd35:
         plt.show()
 else:
     print(""⚠️ SD35 non initialisé"")",,,,,,,,8e3ca788bc90c9a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,5a9f825c,markdown,fr,2244e0c4b7105473,"### Exercice 3 : Impact des negative prompts sur la qualite
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,5a9f825c,markdown,fr,2244e0c4b7105473,"### Exercice 3 : Impact des negative prompts sur la qualite
 
 Le `negative_prompt` guide le modèle en specifier ce qu'il doit eviter. Un bon negative prompt peut ameliorer significativement la qualite en eliminant les artefacts courants (flou, distorsions, basse qualite).
 
@@ -9963,7 +9963,7 @@ Le `negative_prompt` guide le modèle en specifier ce qu'il doit eviter. Un bon 
 - `# Étape 2` : Définir 3 negative prompts de complexite croissante : (a) chaîne vide, (b) ""blurry, low quality"", (c) ""blurry, low quality, distorted, deformed, ugly, watermark""
 - `# Étape 3` : Generer avec `sd35.generate()` en fixant le même `seed` pour chaque variation
 - `# Indice` : Observez comment le negative prompt elimine progressivement les artefacts indesirables",,,,,,,,2244e0c4b7105473,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,b8cc6cd4,code,fr,4bb05c72d2636166,"# Exercice 3 : Impact des negative prompts sur la qualite
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,b8cc6cd4,code,fr,4bb05c72d2636166,"# Exercice 3 : Impact des negative prompts sur la qualite
 # TODO etudiant : comparer 3 niveaux de negative prompts
 
 neg_prompt_subject = None  # TODO etudiant : definir un prompt detaille
@@ -9976,7 +9976,7 @@ negative_prompts = None  # TODO etudiant : definir une liste de 3 negative promp
 
 # TODO etudiant : afficher les 3 resultats cote a cote
 print(""Exercice a completer"")",,,,,,,,4bb05c72d2636166,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-12,markdown,fr,7d247d229761ae15,"## 8. Recapitulatif des Exercices
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-12,markdown,fr,7d247d229761ae15,"## 8. Recapitulatif des Exercices
 
 Les exercices pratiques sont repartis dans le notebook aux endroits stratégiques :
 
@@ -9987,17 +9987,17 @@ Les exercices pratiques sont repartis dans le notebook aux endroits stratégique
 | **Exercice 3** | Section 7 (après styles artistiques) | Impact des negative prompts | Après comparaison styles |
 
 Chaque exercice est precede d'un bloc markdown avec les objectifs et indices, suivi d'une cellule de code a completer.",,,,,,,,7d247d229761ae15,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-13,code,fr,cddde845e63cc544,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-13,code,fr,cddde845e63cc544,"# =============================================================================
 # Les exercices sont maintenant disponibles directement dans le notebook
 # aux sections 4, 6 et 7. Cherchez les cellules ""### Exercice N"" pour
 # les trouver et les completer.
 # =============================================================================
 
 print(""3 exercices disponibles dans les sections 4, 6 et 7 du notebook"")",,,,,,,,cddde845e63cc544,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-14,markdown,fr,36727e9ef5720be9,"## 9. Nettoyage Memoire
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-14,markdown,fr,36727e9ef5720be9,"## 9. Nettoyage Memoire
 
 Les modèles de diffusion comme SD 3.5 occupent plusieurs gigaoctets de VRAM. La cellule suivante libere le pipeline et la memoire GPU pour permettre l'exécution d'autres notebooks sans redemarrer le kernel. Le pattern `del pipeline; torch.cuda.empty_cache()` est la méthode standard pour liberer la memoire en PyTorch.",,,,,,,,36727e9ef5720be9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-15,code,fr,6b397f74629d733d,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-15,code,fr,6b397f74629d733d,"# =============================================================================
 # 9. NETTOYAGE
 # =============================================================================
 
@@ -10009,7 +10009,7 @@ if sd35:
     if torch.cuda.is_available():
         vram_after = torch.cuda.memory_allocated() / 1e9
         print(f""   Libéré: {vram_before - vram_after:.1f} GB"")",,,,,,,,6b397f74629d733d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-16,markdown,fr,839b93af5b827b85,"## 10. Récapitulatif
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-16,markdown,fr,839b93af5b827b85,"## 10. Récapitulatif
 
 ### Paramètres SD 3.5
 
@@ -10032,7 +10032,7 @@ MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-1
 - **Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., & Le, M.** (2023). *Flow Matching for Generative Modeling*. ICLR 2023, arXiv:2210.02747. — Formulation théorique du Flow Matching dont le rectified flow est un cas particulier.
 - **Radford, A., Kim, J. W., Hallacy, C., et al.** (2021). *Learning Transferable Visual Models From Natural Language Supervision* (CLIP). arXiv:2103.00020. — Encodeurs de texte/image CLIP-L et CLIP-G utilisés par SD 3.5.
 - **Raffel, C., Shazeer, N., Roberts, A., et al.** (2020). *Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer* (T5). JMLR, arXiv:1910.10683. — T5-XXL, troisième encodeur de texte de SD 3.5 pour la compréhension fine des prompts.",,,,,,,,839b93af5b827b85,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-17,code,fr,73c0bbf33741f4f3,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,cell-17,code,fr,73c0bbf33741f4f3,"# =============================================================================
 # FIN DU NOTEBOOK
 # =============================================================================
 
@@ -21214,7 +21214,7 @@ print(""   ../../tutorials/gpt5-image-analysis-guide.md"")
 print(""   ../../tutorials/educational-workflows.md"")
 print(""\nProchaine étape : corriger les défauts relevés, régénérer et revalider"")
 print(""="" * 50)",,,,,,,,7639a93fe7a1cc56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,dalle3-gpt-image1-disclosure,markdown,fr,6c42e190a6120bce,"### Sur le modèle réellement utilisé : DALL-E 3 -> gpt-image-1.5
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,dalle3-gpt-image1-disclosure,markdown,fr,6c42e190a6120bce,"### Sur le modèle réellement utilisé : DALL-E 3 -> gpt-image-1.5
 
 > **Note d'honnêteté documentaire (EPIC #8052, repli renouvelé le 2026-10-28).** La cellule
 > précédente vérifie la disponibilité de DALL-E 3 auprès de l'API OpenAI. Le résultat commité
@@ -21319,10 +21319,10 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,gu
 - **01-2** (précédent) couvrait la génération GPT-5 Image ; le présent notebook en est la contre-face *déterministe* : l'image de test est fixée par une graine, et les sorties chiffrées comme les figures sont identiques d'une exécution à l'autre (seuls les horodatages changent) — un outil de test reproductible pour vos pipelines génératifs.
 - Pour l'analyse d'images par modèle de vision (description, extraction structurée), le pattern payload GPT-5 Vision de la Section 5 est le point de départ direct.
 - Approfondissement PIL hors série : le module `ImageOps.exif_transpose` automatise exactement la compensation d'orientation EXIF discutée en Section 4 — un réflexe professionnel à adopter dès qu'une source photo entre dans un pipeline.",,,,,,,,e4b5be036cf6857e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,6d6c2d6b,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,6d6c2d6b,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,6bbea001,markdown,fr,0617c45d38f612d4,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,6bbea001,markdown,fr,0617c45d38f612d4,"## Conclusion
 
 Stable Diffusion 3.5 marque la convergence de Stability AI vers l'architecture **MMDiT (Multimodal Diffusion Transformer)** avec entraînement par Flow Matching. Trois encodeurs de texte (CLIP-L, CLIP-G, T5-XXL) alimentent un débruiteur transformer où l'attention est **jointe** entre tokens texte et patches image — un changement structurel majeur par rapport aux UNet des générations précédentes (SD 1.5, SD 2.x).
 
@@ -21377,7 +21377,7 @@ BATCH_MODE = _os_params.getenv(""BATCH_MODE"", ""false"")
 # les parameters au kernel subprocess). Vide = fallback sur recherche parent.
 PAPERMILL_ENV_FILE = _os_params.getenv(""PAPERMILL_ENV_FILE"", """")
 ",,,,,,,,744a375939e86ee1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,763083b2,markdown,fr,1d66e2af43278269,"## Exercices à compléter
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,763083b2,markdown,fr,1d66e2af43278269,"## Exercices à compléter
 
 Trois exercices non résolus (7, 8, 9) sont proposés à la fin du carnet. Les trois sections qui suivent sont des **exemples guidés** : ils conservent, avec leur attribution, les résolutions rendues pour les exercices 4, 5 et 6.
 
@@ -21406,7 +21406,7 @@ Writing a rich prompt is one thing; checking that the model actually obeyed is a
 **Hint 1** : `img.convert(""HSV"")` separates hue (H), saturation (S) and brightness (V); `ImageStat.Stat(img_hsv).mean` gives the mean of each channel. **Mind the units**: Pillow encodes H on **0-255** (not 0-360°); a pure blue gives H ≈ 170, not 240. **Beware of circularity**: hue is an angle — two reds on either side of the wrap-around (H=254 and H=0) give an arithmetic mean of 127 (cyan), while the circular mean stays red. **Mask low-saturation pixels** (S < 30): a gray has H=0 and must not count as red. For a warm vs cold palette, measure a **proportion of pixels** in H sectors (warm: 0-60 and 200-255, cold: 100-180) rather than a mean alone. Daytime vs night reads mostly on V; saturated vs desaturated on S.
 
 **Hint 2** : to decode the image from the result of `generate_image()`: `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.",,,,,,,1d66e2af43278269,2895e19875e1992b,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,ef08a391d9a75f16,"# Exemple guide 5 : densite de detail, mesuree sur les pixels
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,ccb08b37,code,fr,ef08a391d9a75f16,"# Exemple guide 5 : densite de detail, mesuree sur les pixels
 # Contribution etudiante de @hellsgame14-create (PR #23121)
 import matplotlib.pyplot as plt
 from PIL import ImageFilter, ImageStat
@@ -21468,7 +21468,7 @@ else:
 
 print(conclusion_ex5_detail)
 ",,,,,,,,ef08a391d9a75f16,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,aa0a8773,markdown,fr,64fd592dbbe12823,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,aa0a8773,markdown,fr,64fd592dbbe12823,"## Conclusion
 
 gpt-image (la famille de generation d'images d'OpenAI utilisee depuis 2025, qui a succede a DALL-E 3) via l'API OpenAI directe illustre l'approche **boite noire managée** : on delègue entierement le pipeline de generation a un service heberge et on consomme le resultat via `generate_image(prompt, size, quality, style)`. Les parametres exposes (`size`, `quality`, `style`) restent volontairement restreints -- l'optimisation fine (sampler, scheduler, CFG) est inaccessible, ce qui est coherent avec le public vise (createurs de contenu, prototypage rapide).
 
@@ -21485,7 +21485,7 @@ gpt-image (OpenAI's image generation family used since 2025, which succeeded DAL
 **Putting things in perspective with the rest of the course** : gpt-image contrasts with the *open weights* approach explored in the other Foundation notebooks (Forge SD XL Turbo, Qwen-Image-Edit). The trade-offs (perceived quality vs control, cost vs sovereignty, ease vs transparency) structure the image generation landscape and recur in every GenAI architecture decision.
 
 **To go further** : systematically compare the same creative intent on gpt-image, SD XL Turbo, Qwen-Image-Edit and FLUX.1. The variations in style, required prompt engineering and brief fidelity reveal the training biases specific to each model -- an enlightening cross-cutting exercise for the `03-1-Multi-Model-Comparison` notebook.",,,,,,,64fd592dbbe12823,0e050db9f8edd746,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg1-lecture,markdown,fr,0c252b8fc2865404,"### Lecture du résultat — exemple guidé 1
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,eg1-lecture,markdown,fr,0c252b8fc2865404,"### Lecture du résultat — exemple guidé 1
 
 - **Niveau 1** (« A robot assistant in a modern office ») : sans consigne de style, le modèle choisit un rendu **photographique** : un robot blanc qui salue, un bureau gris, la lumière froide d'une fenêtre. L'image n'est pas pauvre, elle montre le choix par défaut du modèle, qu'on ne remarque qu'en la comparant aux niveaux suivants.
 - **Niveau 2** (+ « digital art style, soft natural lighting, warm color palette ») : c'est le changement le plus fort des trois. Le rendu devient une **illustration** au trait épais, et toute l'image vire à une palette monochrome orange-sépia. L'observation du groupe tient : le style et l'éclairage sont les leviers qui changent le plus l'image.
@@ -21498,9 +21498,9 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg1-lectu
 - **Level 3** (+ ""ultra-detailed, cinematic composition, 8K, sharp focus, shallow depth of field""): the technical terms do more than refine level 2. They **bring the rendering back toward photography**, even though ""digital art style"" is still in the prompt: ""8K"", ""sharp focus"" and ""shallow depth of field"" belong to the vocabulary of photography, and the model follows it. The shallow depth of field is clearly visible (blurred background) and the warm palette of level 2 is preserved. The group noted at level 3 ""a more professional rendering""; in this run, it is mostly the **medium** that changes.
 - **Revised prompt**: for the three levels, the API returns none. This is the finding the group made in its exercise 3 (guided example 3).
 - **What we can conclude, and what we cannot**: each level was generated only once. The gap between levels 1 and 2 is massive enough to survive the draw. The return to photography in level 3 remains to be confirmed over several generations: two conflicting keywords (""digital art"" against ""8K"") can be arbitrated differently from one call to the next.",,,,,,,0c252b8fc2865404,ab3253ba226e3056,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure-md,markdown,fr,2b310d19b9322b04,"La cellule 20 ci-dessous complète la mesure de la cellule 18 par une vérification indépendante en HSV (espace colorimétrique Teinte/Saturation/Valeur), pour s'assurer que la différence observée (saturation, luminosité) est robuste au choix de l'espace.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,eg2-mesure-md,markdown,fr,2b310d19b9322b04,"La cellule 20 ci-dessous complète la mesure de la cellule 18 par une vérification indépendante en HSV (espace colorimétrique Teinte/Saturation/Valeur), pour s'assurer que la différence observée (saturation, luminosité) est robuste au choix de l'espace.
 ","The cell 20 below complements the measurement of cell 18 with an independent check in HSV (the Hue/Saturation/Value color space), to make sure the observed difference (saturation, brightness) is robust to the choice of color space.",,,,,,,2b310d19b9322b04,7a752a72c17d326b,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure,code,fr,44f4f9d98351623f,"# Mesure complementaire en HSV (PIL.ImageStat) sur les memes images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,eg2-mesure,code,fr,44f4f9d98351623f,"# Mesure complementaire en HSV (PIL.ImageStat) sur les memes images
 from PIL import ImageStat
 
 for nom, img in [(""vivid"", img_vivid), (""natural"", img_natural)]:
@@ -21515,7 +21515,7 @@ print(""Si l'ecart de saturation entre vivid et natural est plus grand que l'eca
 print(""typique entre deux tirages du meme prompt (cf. exercice 5), le levier"")
 print(""prompt engineering fait ce que `style=` n'a jamais fait sur gpt-image-1."")
 ",,,,,,,,44f4f9d98351623f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-lecture,markdown,fr,0246c92b2421427c,"### Lecture du résultat — exemple guidé 2
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,eg2-lecture,markdown,fr,0246c92b2421427c,"### Lecture du résultat — exemple guidé 2
 
 - **Les deux images partagent la scène fixée par le tronc commun du prompt** : même rue bordée de tours, piétons et voitures autonomes, coucher de soleil dans l'axe. Ce qui varie d'une image à l'autre — teintes du ciel, exposition, palette de couleurs — provient des **adjectifs distincts** du suffixe de chaque prompt (« vivid, saturated, dramatic, high contrast » vs « natural, soft, realistic, low contrast »).
 - **La mesure** : la cellule 18 attend que la saturation moyenne (écart-type des canaux RGB) de l'image `vivid` dépasse celle de l'image `natural`, et que la luminosité suive le sens attendu. Les valeurs précises dépendent du tirage, mais le **sens** (vivid plus saturé que natural) doit être stable sur plusieurs exécutions, contrairement à la version d'origine où les deux requêtes étaient identiques et où l'écart n'était que du tirage.
@@ -21527,7 +21527,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-lectu
 - **The measurement** : cell 18 expects the mean saturation (standard deviation of the RGB channels) of the `vivid` image to exceed that of the `natural` image, and the brightness to follow the expected direction. The precise values depend on the draw, but the **direction** (vivid more saturated than natural) should be stable across several executions, unlike the original version where the two requests were identical and the gap was only the draw.
 - **The trap that remains** : on a single draw, the observed gap is **one draw** from the distribution. Another draw can reverse the sign of the gap, especially on a complex scene. Cell 20 (HSV measure) is a consistency check in another color space ; to conclude definitively, one would have to average over N draws — this is the subject of exercise 5 (""stability of a prompt engineering effect""), which explicitly asks to compare the gap between A and B with the gap between two draws of A.
 - **Why not keep `style=""vivid""` / `style=""natural""`** : this project's `generate_image()` function does not send `style=` to `gpt-image-1` (the parameter is `dall-e-3` only). The two requests would have been identical and the example would have kept illustrating a difference with no cause, which was precisely the flaw the original integration wanted to show. The revision for issue #20682 keeps the pedagogical value (showing how to produce a **genuinely** distinct comparison) by replacing the failing lever with one that works.",,,,,,,0246c92b2421427c,4b8d40983f346c4e,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg3-lecture,markdown,fr,f4ee84f9f780248f,"### Lecture du résultat — exemple guidé 3
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,eg3-lecture,markdown,fr,f4ee84f9f780248f,"### Lecture du résultat — exemple guidé 3
 
 La liste `differences` a été écrite par le groupe sur ses propres images. Confrontée aux images de cette exécution :
 
@@ -21569,7 +21569,7 @@ What stands out: the **content** and **style** instructions (palette, light, obj
 This is the methodological point of this example: two visual claims of comparable appearance — ""the lighting changes"", ""the palette changes"" — separate as soon as one measures, one carried by a gap of **49 points**, the other by **4.1** on a 255 scale. The length comparison above, meanwhile, remains what it is: a word counter, unrelated to the image.
 
 **A methodological caveat, and it matters.** These values are those of **this run**. Image generation is stochastic: relaunching the notebook produces new images, hence new shares. Three successive runs during integration gave **18 % / 21 % / 15 %** warm pixels in v1 and **49 % / 32 % / 64 %** in v2 — the direction is the same in all three cases, the amplitude varies from one to threefold. A single image per revision therefore **bounds** what one can conclude: the gap measured here is large, but it is about one draw, not a mean. This is exactly what exercise 6 invites you to address.",,,,,,,f4ee84f9f780248f,1cb012a84046ecb6,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-md,markdown,fr,f1fd6ee62c1ebace,"### Exemple guidé 6 : Effet de `quality`, ou bruit du tirage ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex5-md,markdown,fr,f1fd6ee62c1ebace,"### Exemple guidé 6 : Effet de `quality`, ou bruit du tirage ?
 
 *Contribution etudiante de @hellsgame14-create (PR #23121), integree comme exemple guide.*
 
@@ -21594,7 +21594,7 @@ Guided example 2 compares two images generated from two distinct prompts, whose 
 **Hint 1** : `ImageStat.Stat(img.convert(""L"").filter(ImageFilter.FIND_EDGES)).mean[0]` gives a mean edge density: a more detailed image has more edges.
 
 **Hint 2** : `quality=""high""` costs significantly more than low. Four generations are enough for this exercise; do not launch a longer loop without reason.",,,,,,,f1fd6ee62c1ebace,a486c1fa19d4a98b,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-code,code,fr,59a56a280ca0d873,"# Exemple guide 6 : effet d'un parametre, ou bruit du tirage ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex5-code,code,fr,59a56a280ca0d873,"# Exemple guide 6 : effet d'un parametre, ou bruit du tirage ?
 # Contribution etudiante de @hellsgame14-create (PR #23121)
 import statistics
 from PIL import ImageFilter, ImageStat
@@ -21649,7 +21649,7 @@ else:
 
 print(conclusion_ex6_quality)
 ",,,,,,,,59a56a280ca0d873,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-md,markdown,fr,6df1160f40776d80,"### Exemple guidé 7 : Une consigne de mise en page est-elle respectée ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex6-md,markdown,fr,6df1160f40776d80,"### Exemple guidé 7 : Une consigne de mise en page est-elle respectée ?
 
 *Contribution etudiante de @hellsgame14-create (PR #23121), integree comme exemple guide.*
 
@@ -21670,7 +21670,7 @@ In guided example 3, the group asks for ""plenty of negative space on the left f
 5. Conclude: how many images out of 3 respect the instruction? Reformulate the prompt once (subject position, background, expressions like ""copy space"") and compare the success rate
 
 **Hint** : `img.crop((0, 0, largeur // 3, hauteur))` isolates the left third; `ImageStat.Stat(tiers.convert(""L"")).stddev[0]` measures its brightness variability.",,,,,,,6df1160f40776d80,f2dc49c2d6c99675,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex6-code,code,fr,b2d5af24a3c48ced,"# Exemple guide 7 : une consigne de mise en page est-elle respectee ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex6-code,code,fr,b2d5af24a3c48ced,"# Exemple guide 7 : une consigne de mise en page est-elle respectee ?
 # Contribution etudiante de @hellsgame14-create (PR #23121)
 import matplotlib.pyplot as plt
 from PIL import ImageStat
@@ -21752,7 +21752,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,bd
 notebook_mode = ""batch""
 skip_widgets = ""True""
 ",,,,,,,,06c484f9b7560109,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,5a46cd63,markdown,fr,6d251de1374e4603,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb,5a46cd63,markdown,fr,6d251de1374e4603,"## Conclusion
 
 SD XL Turbo via Forge WebUI (Automatic1111 fork) illustre l'approche **open weights avec distillation adversariale** : Sauer et al. (2023) ont compressé un modèle de diffusion classique (50+ steps) en seulement 4 steps grâce à l'Adversarial Diffusion Distillation, sans perte de qualité perceptible. C'est la même philosophie que FLUX.1-schnell mais avec un an d'avance et un écosystème (ComfyUI / Forge) plus mature.
 
@@ -22902,10 +22902,10 @@ else:
     print(""Exercice a completer : distance_wasserstein() renvoie None pour l'instant"")
     print(f""Filtres a comparer : {list(filters_to_test)}"")
 ",,,,,,,,7961d66a1e8b3119,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,cd415ea8,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,cd415ea8,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,5689b8c9,markdown,fr,46717c89b080f7f7,"### Exemple guidé 4 : Le prompt tient-il ses promesses ? — mesure sur les pixels
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,5689b8c9,markdown,fr,46717c89b080f7f7,"### Exemple guidé 4 : Le prompt tient-il ses promesses ? — mesure sur les pixels
 
 *Contribution étudiante du groupe de la PR #20957, intégrée comme exemple guidé.*
 
@@ -22914,7 +22914,7 @@ Un prompt qui demande une « palette chaude » tient-il sa promesse, ou l'impres
 *Student contribution from the group of PR #20957, integrated as a guided example.*
 
 Does a prompt that asks for a ""warm palette"" keep its promise, or does the visual impression alone tempt us to believe it? The method: two identical prompts except for the axis mention (warm vs. cool), generation at `quality=""low""`, then measurement on the pixels — hue-sector shares over saturated pixels only (greys have no hue), circular mean of the hue together with its concentration, and the arithmetic mean displayed solely to show the trap it is on an angle.",,,,,,,46717c89b080f7f7,1f87f3ee8d6632ef,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,8b5d44bb,code,fr,80479ab3a5acea7f,"# Exemple guide 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,8b5d44bb,code,fr,80479ab3a5acea7f,"# Exemple guide 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
 # Contribution etudiante du groupe de la PR #20957
 import base64
 from io import BytesIO
@@ -23089,7 +23089,7 @@ else:
     conclusion_ex4 = ""Au moins une generation a echoue : impossible de conclure.""
 
 print(""\nConclusion :"", conclusion_ex4)",,,,,,,,80479ab3a5acea7f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,1e7b8e69,markdown,fr,160a278511e6575f,"### Lecture du résultat — exemple guidé 4
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,1e7b8e69,markdown,fr,160a278511e6575f,"### Lecture du résultat — exemple guidé 4
 
 À cette exécution, la promesse est tenue de façon nette, et la mesure la chiffre :
 
@@ -23110,7 +23110,7 @@ At this execution, the promise is kept in a clear-cut way, and the measurement q
 The mean saturation (195 for A, 130 for B) is a reminder that ""warm"" and ""cool"" are not distinguished by colour intensity but by the **position** of the hue — which is indeed the measured axis. The arithmetic mean of H stays displayed as a trap: here it coincides with the circular one (R close to 1, a single hue), but over a blend of two hues on either side of the 0/255 wrap-around, it would invent a hue that exists nowhere.
 
 The limit stated by the conclusion is the method's own: **a single draw per condition**. The maximal gap says that this particular pair keeps the promise; it does not say that every pair would — one would need to repeat the generation and compare the A−B gap with the gap between two images of the same prompt, the same reservation as for guided example 2.",,,,,,,160a278511e6575f,7512eb3ba1d0dd35,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,0326f554,markdown,fr,4bd3903518563164,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,0326f554,markdown,fr,3b7aee64b70da7d6,"## Conclusion
 
 FLUX.1 de Black Forest Labs (équipe fondatrice de Stable Diffusion) pousse l'architecture MMDiT + Flow Matching à 12 milliards de paramètres, servis par un encodeur double T5-XXL + CLIP-L. Le résultat : une qualité d'image perçue comme supérieure à SD 3.5 et une capacité de **génération de texte lisible dans les images** inégalée — un avantage décisif pour les affiches, logos et signalétique.
 
@@ -23120,23 +23120,23 @@ FLUX.1 de Black Forest Labs (équipe fondatrice de Stable Diffusion) pousse l'ar
 
 **Patterns d'usage avancés** : le prompt engineering FLUX privilégie les templates structurés (photorealistic, cinematic, illustration, anime) avec préfixe et suffixe technique (« shot with Canon EOS R5 », « dramatic lighting, anamorphic lens »). C'est plus directif que DALL-E 3 mais plus fin que SD XL Turbo.
 
-**Pour aller plus loin** : `02-3-Stable-Diffusion-3-5` permet une comparaison directe MMDiT-vs-MMDiT (les deux utilisent l'architecture d'Esser et al. 2024 mais avec des philosophies d'entraînement différentes). Les notebooks 03-Orchestration assemblent FLUX dans des chaînes de production.
-",,,,,,,,4bd3903518563164,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,7f0ce411,markdown,fr,4adc7df419b840aa,"**Lecture chiffree — la garde de dependances qui echoue honnetement.** `WARNING: diffusers non installe - pip install diffusers`, `Dependances manquantes: ['diffusers']`, `.env charge depuis: .env`, `Token configuré`. Trois lectures. (1) Le statut du token HuggingFace est imprime, jamais sa valeur : un notebook commite avec ses outputs ne doit pas laisser fuiter de secret, et ce token gate l'acces aux repos `stabilityai/`. (2) `diffusers` est signale manquant ICI alors que la section 4 charge reellement le pipeline (barres de chargement, puis 9 images au compteur final) : les deux sorties ne peuvent pas venir de la meme session — sans le paquet, `SD35Client` basculerait en echec de chargement et aucune image ne serait produite. (3) Les dates le confirment : la banniere affiche `Date: 2026-08-18 06:32:31` quand la cellule de fin affiche `Terminé: 2026-08-15 15:25:22` — une session n'acheve pas ~2 jours et 15 heures avant d'avoir commence. Au moins deux sessions d'execution contribuent aux outputs ; les `execution_count` (2 ici, 14 en fin de notebook) sont la metadonnee qui rend cette provenance lisible.
+**Pour aller plus loin** : `02-3-Generation-Image-MMDiT` permet une comparaison directe MMDiT-vs-MMDiT (les deux utilisent l'architecture d'Esser et al. 2024 mais avec des philosophies d'entraînement différentes). Les notebooks 03-Orchestration assemblent FLUX dans des chaînes de production.
+",,,,,,,,3b7aee64b70da7d6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,7f0ce411,markdown,fr,4adc7df419b840aa,"**Lecture chiffree — la garde de dependances qui echoue honnetement.** `WARNING: diffusers non installe - pip install diffusers`, `Dependances manquantes: ['diffusers']`, `.env charge depuis: .env`, `Token configuré`. Trois lectures. (1) Le statut du token HuggingFace est imprime, jamais sa valeur : un notebook commite avec ses outputs ne doit pas laisser fuiter de secret, et ce token gate l'acces aux repos `stabilityai/`. (2) `diffusers` est signale manquant ICI alors que la section 4 charge reellement le pipeline (barres de chargement, puis 9 images au compteur final) : les deux sorties ne peuvent pas venir de la meme session — sans le paquet, `SD35Client` basculerait en echec de chargement et aucune image ne serait produite. (3) Les dates le confirment : la banniere affiche `Date: 2026-08-18 06:32:31` quand la cellule de fin affiche `Terminé: 2026-08-15 15:25:22` — une session n'acheve pas ~2 jours et 15 heures avant d'avoir commence. Au moins deux sessions d'execution contribuent aux outputs ; les `execution_count` (2 ici, 14 en fin de notebook) sont la metadonnee qui rend cette provenance lisible.
 ",,,,,,,,4adc7df419b840aa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,a25c73ca,markdown,fr,48ccc88648ce7e10,"**Lecture chiffree — la recommandation GPU est une consequence des poids.** `GPU: NVIDIA GeForce RTX 3080 Ti Laptop GPU`, `VRAM: 17.2 GB`, `Recommandation: stable-diffusion-3.5-large-turbo`. La regle codee : VRAM >= 24 -> large, >= 16 -> large-turbo, >= 8 -> medium ; 17.2 GB tombe dans [16, 24[. Ces seuils ne sont pas arbitraires : le tableau d'introduction donne 8B de parametres a Large et Turbo, 2.5B a Medium — en fp16 (2 octets par poids), le transformer seul pese 16 Go (8 milliards de poids a 2 octets chacun en fp16), d'ou l'exigence `16GB+` du tableau ; Medium en pese 5 (2.5 milliards de poids), et le palier 8 Go laisse la place aux encodeurs de texte et aux activations. Le `DTYPE` suit la meme frontiere : `torch.float16` des 16 Go de VRAM, `torch.bfloat16` en dessous. Une seule cellule a donc fait trois arbitrages avant tout telechargement : quelle variante, quelle precision, quel peripherique — le pattern a reproduire pour tout notebook qui charge un modele lourd.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,a25c73ca,markdown,fr,48ccc88648ce7e10,"**Lecture chiffree — la recommandation GPU est une consequence des poids.** `GPU: NVIDIA GeForce RTX 3080 Ti Laptop GPU`, `VRAM: 17.2 GB`, `Recommandation: stable-diffusion-3.5-large-turbo`. La regle codee : VRAM >= 24 -> large, >= 16 -> large-turbo, >= 8 -> medium ; 17.2 GB tombe dans [16, 24[. Ces seuils ne sont pas arbitraires : le tableau d'introduction donne 8B de parametres a Large et Turbo, 2.5B a Medium — en fp16 (2 octets par poids), le transformer seul pese 16 Go (8 milliards de poids a 2 octets chacun en fp16), d'ou l'exigence `16GB+` du tableau ; Medium en pese 5 (2.5 milliards de poids), et le palier 8 Go laisse la place aux encodeurs de texte et aux activations. Le `DTYPE` suit la meme frontiere : `torch.float16` des 16 Go de VRAM, `torch.bfloat16` en dessous. Une seule cellule a donc fait trois arbitrages avant tout telechargement : quelle variante, quelle precision, quel peripherique — le pattern a reproduire pour tout notebook qui charge un modele lourd.
 ",,,,,,,,48ccc88648ce7e10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,46b81857,markdown,fr,6bb6f7a8cb1c7d47,"**Lecture chiffree — le chargement reel : la RAM decide avant la VRAM.** `Chargement du modele...`, `RAM libre 25.5 GB : T5-XXL desactive (encodage CLIP uniquement)`, puis `A mixture of fp16 and non-fp16 filenames will be loaded.` Deux decisions de placement visibles. (1) T5-XXL — le troisieme encodeur du trio CLIP-L / CLIP-G / T5 — est desactive parce que 25.5 Go de RAM libre sont juges insuffisants pour l'heberger en plus du transformer : le notebook degrade explicitement l'encodage (CLIP seul) plutot que d'echouer. (2) Le melange fp16 / non-fp16 : les fichiers listes montrent les encodeurs de texte en `model.fp16.safetensors` tandis que `transformer/` et `vae/` chargent leurs poids en pleine precision — precision economique a la peripherie, pleine precision au coeur. La barre `Loading pipeline components...` avance de `2/8` composants a `7.85it/s` : huit modules a charger avant la premiere image. Et le phenix de la section est demande avec `seed=42` — le chargement lent ne se paie qu'une fois, la graine rend la generation reproductible.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,46b81857,markdown,fr,6bb6f7a8cb1c7d47,"**Lecture chiffree — le chargement reel : la RAM decide avant la VRAM.** `Chargement du modele...`, `RAM libre 25.5 GB : T5-XXL desactive (encodage CLIP uniquement)`, puis `A mixture of fp16 and non-fp16 filenames will be loaded.` Deux decisions de placement visibles. (1) T5-XXL — le troisieme encodeur du trio CLIP-L / CLIP-G / T5 — est desactive parce que 25.5 Go de RAM libre sont juges insuffisants pour l'heberger en plus du transformer : le notebook degrade explicitement l'encodage (CLIP seul) plutot que d'echouer. (2) Le melange fp16 / non-fp16 : les fichiers listes montrent les encodeurs de texte en `model.fp16.safetensors` tandis que `transformer/` et `vae/` chargent leurs poids en pleine precision — precision economique a la peripherie, pleine precision au coeur. La barre `Loading pipeline components...` avance de `2/8` composants a `7.85it/s` : huit modules a charger avant la premiere image. Et le phenix de la section est demande avec `seed=42` — le chargement lent ne se paie qu'une fois, la graine rend la generation reproductible.
 ",,,,,,,,6bb6f7a8cb1c7d47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,11ed083f,markdown,fr,2e6ff167819a683c,"**Lecture chiffree — Turbo court-circuite l'analyse CFG.** La grille `cfg_values = [2.0, 4.5, 7.0, 10.0]` est definie, la sortie tient en une ligne : `Mode Turbo: CFG fixé à 0`. La garde `if sd35 and not sd35.is_turbo` a rendu la main. La raison est dans le tableau final : `guidance_scale` 4.0-7.5 en Standard, `0.0` en Turbo — un modele distille a son guidance cuit dans les poids, la variation de CFG n'y a plus le gradient qu'elle a en Standard. Le cout n'est pas symetrique non plus : un CFG non nul fait passer DEUX forwards par etape (une propagation conditionnee par le prompt, une non conditionnee, dont l'ecart guide le pas de denoise) ; a CFG 0, la moitie de ce travail disparait — c'est une piece du rapport ~7x entre 28-50 steps standard et 4 steps turbo (l'autre piece etant la distillation elle-meme). Reste l'exercice 1 : tester CFG 3.0 / 5.0 / 7.0 sur un portrait huile — l'effet s'observe la ou la grille a un gradient, c'est-a-dire sur un pipeline non turbo.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,11ed083f,markdown,fr,2e6ff167819a683c,"**Lecture chiffree — Turbo court-circuite l'analyse CFG.** La grille `cfg_values = [2.0, 4.5, 7.0, 10.0]` est definie, la sortie tient en une ligne : `Mode Turbo: CFG fixé à 0`. La garde `if sd35 and not sd35.is_turbo` a rendu la main. La raison est dans le tableau final : `guidance_scale` 4.0-7.5 en Standard, `0.0` en Turbo — un modele distille a son guidance cuit dans les poids, la variation de CFG n'y a plus le gradient qu'elle a en Standard. Le cout n'est pas symetrique non plus : un CFG non nul fait passer DEUX forwards par etape (une propagation conditionnee par le prompt, une non conditionnee, dont l'ecart guide le pas de denoise) ; a CFG 0, la moitie de ce travail disparait — c'est une piece du rapport ~7x entre 28-50 steps standard et 4 steps turbo (l'autre piece etant la distillation elle-meme). Reste l'exercice 1 : tester CFG 3.0 / 5.0 / 7.0 sur un portrait huile — l'effet s'observe la ou la grille a un gradient, c'est-a-dire sur un pipeline non turbo.
 ",,,,,,,,2e6ff167819a683c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,a0a8fb52,markdown,fr,054815cb417d569a,"**Lecture chiffree — le prix d'une etape de diffusion, et ce que la barre mesure vraiment.** `Analyse Steps (Turbo)`, `Generation (seed: 7777, steps: 1)...`, puis `1/1 [00:32<00:00, 32.93s/it]` : UNE etape de denoise du MMDiT 8B coute 32.93 s sur ce GPU laptop. La grille turbo `[1, 2, 4, 8]` (contre `[10, 20, 28, 40]` en standard) donne l'echelle : une image turbo de 4 etapes ~ 4 x 32.93 = 131.7 s de transformer, quand une image standard de 28 etapes couterait 28 x 32.93 = 922 s (environ 15 minutes) sur la meme machine. Et la barre tqdm affiche la moyenne CUMULEE, pas le pas courant — la cellule styles le montre : `35.02s/it` affiche apres 1 pas, `29.49s/it` apres 2, donc le deuxieme pas a reellement pris 2 x 29.49 - 35.02 = 23.96 s : le premier pas paie l'echauffement des kernels (~46 % plus cher que le second). Lire une barre de progression comme une mesure, pas comme une animation — c'est la difference entre savoir que ca a pris deux minutes et connaitre le profil du cout.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,a0a8fb52,markdown,fr,054815cb417d569a,"**Lecture chiffree — le prix d'une etape de diffusion, et ce que la barre mesure vraiment.** `Analyse Steps (Turbo)`, `Generation (seed: 7777, steps: 1)...`, puis `1/1 [00:32<00:00, 32.93s/it]` : UNE etape de denoise du MMDiT 8B coute 32.93 s sur ce GPU laptop. La grille turbo `[1, 2, 4, 8]` (contre `[10, 20, 28, 40]` en standard) donne l'echelle : une image turbo de 4 etapes ~ 4 x 32.93 = 131.7 s de transformer, quand une image standard de 28 etapes couterait 28 x 32.93 = 922 s (environ 15 minutes) sur la meme machine. Et la barre tqdm affiche la moyenne CUMULEE, pas le pas courant — la cellule styles le montre : `35.02s/it` affiche apres 1 pas, `29.49s/it` apres 2, donc le deuxieme pas a reellement pris 2 x 29.49 - 35.02 = 23.96 s : le premier pas paie l'echauffement des kernels (~46 % plus cher que le second). Lire une barre de progression comme une mesure, pas comme une animation — c'est la difference entre savoir que ca a pris deux minutes et connaitre le profil du cout.
 ",,,,,,,,054815cb417d569a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,93d017a2,markdown,fr,dac775c22cd9a497,"**Lecture chiffree — quatre styles, une seule graine.** Le meme sujet `a ancient tree in a mystical forest` est decline en quatre prompts (`Photorealistic`, `Oil Painting`, `Anime`, `Watercolor`), tous generes par `Generation (seed: 5555, steps: 4)` en 768x768. Fixer le seed isole la variable : le bruit initial du latent est identique dans les quatre images, seule la direction du prompt change — l'ecart visuel entre les rendus est attribuable au style, pas a la chance. Le notebook applique cette discipline section par section : `seed=42` pour le phenix, `7777` pour l'analyse steps, `5555` pour les styles, `12345` pour la grille CFG — chaque comparaison intra-section est controlee, et les comparaisons inter-sections sont sagement non faites (les sujets et resolutions different). Dernier detail de trace : la sortie imprime le nom du style AVANT sa barre de generation (`--- Photorealistic ---` puis la progression), le log se lit donc comme un cahier d'experience ou chaque essai est identifie par sa graine.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,93d017a2,markdown,fr,dac775c22cd9a497,"**Lecture chiffree — quatre styles, une seule graine.** Le meme sujet `a ancient tree in a mystical forest` est decline en quatre prompts (`Photorealistic`, `Oil Painting`, `Anime`, `Watercolor`), tous generes par `Generation (seed: 5555, steps: 4)` en 768x768. Fixer le seed isole la variable : le bruit initial du latent est identique dans les quatre images, seule la direction du prompt change — l'ecart visuel entre les rendus est attribuable au style, pas a la chance. Le notebook applique cette discipline section par section : `seed=42` pour le phenix, `7777` pour l'analyse steps, `5555` pour les styles, `12345` pour la grille CFG — chaque comparaison intra-section est controlee, et les comparaisons inter-sections sont sagement non faites (les sujets et resolutions different). Dernier detail de trace : la sortie imprime le nom du style AVANT sa barre de generation (`--- Photorealistic ---` puis la progression), le log se lit donc comme un cahier d'experience ou chaque essai est identifie par sa graine.
 ",,,,,,,,dac775c22cd9a497,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,e99a00e6,markdown,fr,40ca9478c26b8fd5,"**Lecture chiffree — 0.0 GB liberes, et pourquoi ce n'est pas un bug.** `Memoire liberee`, `Libéré: 0.0 GB`. La cellule mesure `torch.cuda.memory_allocated()` avant et apres `unload()`, et affiche un delta nul — apres une session qui a produit 9 images avec un transformer 8B. La lecture tient dans la strategie de la section 3 : le client est construit autour de l'offload CPU et de l'attention slicing (`RAM libre 25.5 GB : T5-XXL desactive` montrait deja que les placements se decident en RAM systeme) ; avec l'offload, les poids resident hors GPU et n'y transitent que couche par couche au moment du calcul — `memory_allocated()` ne voit donc que le residuel (buffers, tenseurs temporaires), pas l'empreinte du modele. La liberation a bien eu lieu, mais sa preuve se lit en RAM, pas en VRAM allouee. Le pattern reste le bon — liberer avant de passer a un autre notebook lourd — a condition de savoir quelle metrique on interroge : c'est le meme reflexe de lecture que pour la barre tqdm de la section precedente.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,e99a00e6,markdown,fr,40ca9478c26b8fd5,"**Lecture chiffree — 0.0 GB liberes, et pourquoi ce n'est pas un bug.** `Memoire liberee`, `Libéré: 0.0 GB`. La cellule mesure `torch.cuda.memory_allocated()` avant et apres `unload()`, et affiche un delta nul — apres une session qui a produit 9 images avec un transformer 8B. La lecture tient dans la strategie de la section 3 : le client est construit autour de l'offload CPU et de l'attention slicing (`RAM libre 25.5 GB : T5-XXL desactive` montrait deja que les placements se decident en RAM systeme) ; avec l'offload, les poids resident hors GPU et n'y transitent que couche par couche au moment du calcul — `memory_allocated()` ne voit donc que le residuel (buffers, tenseurs temporaires), pas l'empreinte du modele. La liberation a bien eu lieu, mais sa preuve se lit en RAM, pas en VRAM allouee. Le pattern reste le bon — liberer avant de passer a un autre notebook lourd — a condition de savoir quelle metrique on interroge : c'est le meme reflexe de lecture que pour la barre tqdm de la section precedente.
 ",,,,,,,,40ca9478c26b8fd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,6759093e,markdown,fr,31d46e90b0c51f37,"**Lecture chiffree — le compteur final comme registre d'audit.** `Images générées dans cette session: 9`, `Terminé: 2026-08-15 15:25:22`. Le 9 se reconcilie exactement avec les sections executees : 1 image phenix (section 4) + 4 images steps 1 / 2 / 4 / 8 (section 6) + 4 images styles (section 7) = 9 ; la section CFG n'a rien ajoute (`Mode Turbo: CFG fixé à 0`) — si elle avait genere, le compteur afficherait 13. C'est un compteur honnete : incremente a chaque generation reelle, il permet l'audit croise a posteriori — la valeur finale dit QUELLES sections ont produit sans rouvrir une seule image. La garde symetrique existe : la meme cellule imprime `aucune image générée` avec renvoi a l'erreur de chargement de la section 4 si le compte est nul, l'echec est signale plutot que laisse en page blanche. Et le fil forensique ouvert en tete de notebook se referme ici : cette date de fin (08-15) est anterieure a la banniere d'ouverture (08-18) — les outputs composites se lisent, eux aussi, comme une donnee.
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb,6759093e,markdown,fr,31d46e90b0c51f37,"**Lecture chiffree — le compteur final comme registre d'audit.** `Images générées dans cette session: 9`, `Terminé: 2026-08-15 15:25:22`. Le 9 se reconcilie exactement avec les sections executees : 1 image phenix (section 4) + 4 images steps 1 / 2 / 4 / 8 (section 6) + 4 images styles (section 7) = 9 ; la section CFG n'a rien ajoute (`Mode Turbo: CFG fixé à 0`) — si elle avait genere, le compteur afficherait 13. C'est un compteur honnete : incremente a chaque generation reelle, il permet l'audit croise a posteriori — la valeur finale dit QUELLES sections ont produit sans rouvrir une seule image. La garde symetrique existe : la meme cellule imprime `aucune image générée` avec renvoi a l'erreur de chargement de la section 4 si le compte est nul, l'echec est signale plutot que laisse en page blanche. Et le fil forensique ouvert en tete de notebook se referme ici : cette date de fin (08-15) est anterieure a la banniere d'ouverture (08-18) — les outputs composites se lisent, eux aussi, comme une donnee.
 ",,,,,,,,31d46e90b0c51f37,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb,73b6f9b6,markdown,fr,70f02d13d6f097b0,"## Conclusion
 
@@ -23888,7 +23888,7 @@ for prompt, edition in editions_ex2b.items():
 
 # Question : quel prompt deplace le plus MAE, et que PSNR ne voit-il pas ?
 print(""Exercice a completer"")",,,,,,,,d1a26875ffccd955,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg5-lecture,markdown,fr,4eeec79433a3541f,"### Lecture du résultat — exemples guidés 5, 6 et 7
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,eg5-lecture,markdown,fr,4eeec79433a3541f,"### Lecture du résultat — exemples guidés 5, 6 et 7
 
 Ces trois exemples forment une progression, et c'est elle qu'il faut retenir plutôt que les chiffres d'une exécution :
 
@@ -23907,7 +23907,7 @@ These three examples form a progression, and it is the progression you should re
 
 The displayed values are those of the run above; re-running the notebook regenerates every image, hence every measurement. What carries over is the protocol — freeze the subject, fix the threshold beforehand, compare the effect against the noise — not the numbers.
 ",,,,,,,4eeec79433a3541f,f5aa59e8fd5418b6,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex7-md,markdown,fr,9132a2ae11e89c15,"### Exercice 7 : La consigne de luminosité est-elle tenue ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex7-md,markdown,fr,9132a2ae11e89c15,"### Exercice 7 : La consigne de luminosité est-elle tenue ?
 
 Les exemples guidés 4 et 5 mesurent une palette et une densité de détail. Un troisième axe, annoncé dans les consignes de l'exercice 4 mais jamais mesuré ici, est la **luminosité** : « scène diurne » contre « scène nocturne ».
 
@@ -23936,7 +23936,7 @@ Guided examples 4 and 5 measure a palette and a density of detail. A third axis,
 
 **Hint**: watch out for the trap already met in guided example 3 — a ""warm"" or ""cold"" light is not a stronger light. Do not confuse the axis you measure with the one the eye notices.
 ",,,,,,,9132a2ae11e89c15,1e91b444e4184628,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex7-code,code,fr,cbf8b2e1b013ed7e,"# Exercice 7 : la consigne de luminosite est-elle tenue ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex7-code,code,fr,cbf8b2e1b013ed7e,"# Exercice 7 : la consigne de luminosite est-elle tenue ?
 from PIL import ImageStat
 
 # Etape 1 : Deux prompts identiques sauf la mention jour / nuit
@@ -23961,7 +23961,7 @@ conclusion_ex7 = None  # TODO etudiant : ecart de luminosite, sens, amplitude, e
 
 print(""Exercice a completer"")
 ",,,,,,,,cbf8b2e1b013ed7e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex8-md,markdown,fr,58f5fb13724bd604,"### Exercice 8 : L'effet `quality` se voit-il aussi dans le poids du fichier ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex8-md,markdown,fr,58f5fb13724bd604,"### Exercice 8 : L'effet `quality` se voit-il aussi dans le poids du fichier ?
 
 L'exemple guidé 6 compare `low` et `high` avec une densité de contours. Cette mesure a un biais connu : elle dépend du contenu autant que de la qualité. Le poids du PNG en octets est un second indicateur, indépendant du premier — une image plus détaillée se compresse moins bien.
 
@@ -23990,7 +23990,7 @@ Guided example 6 compares `low` and `high` with edge density. That measurement h
 
 **Hint**: `quality` acts on generation, not on encoding: both images are PNGs either way. A size gap therefore reflects content complexity, not a format choice.
 ",,,,,,,58f5fb13724bd604,bd9e779beb09cc6a,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex8-code,code,fr,12c76db5aec7577f,"# Exercice 8 : effet de quality mesure par le poids du PNG
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex8-code,code,fr,12c76db5aec7577f,"# Exercice 8 : effet de quality mesure par le poids du PNG
 from io import BytesIO
 
 # Etape 1 : Prompt riche en details fins
@@ -24017,7 +24017,7 @@ conclusion_ex8 = None  # TODO etudiant : l'effet depasse-t-il le bruit ? meme ve
 
 print(""Exercice a completer"")
 ",,,,,,,,12c76db5aec7577f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex9-md,markdown,fr,2eceaca4b4e609a6,"### Exercice 9 : Le critère de « zone vide » voit-il un objet uni ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex9-md,markdown,fr,2eceaca4b4e609a6,"### Exercice 9 : Le critère de « zone vide » voit-il un objet uni ?
 
 L'exemple guidé 7 juge un tiers vide à son **écart-type de luminosité**. Cet instrument a un angle mort, et cet exercice consiste à le démontrer : un objet **parfaitement uni**, posé sur un fond uni de la même luminosité moyenne, ne fait quasiment pas varier l'écart-type — le critère le déclarerait « vide ».
 
@@ -24046,7 +24046,7 @@ Guided example 7 judges a third empty by its **luminance standard deviation**. T
 
 **Hint**: this counter-example costs no API call — it is built locally. That is the cheapest way to test a measurement instrument before letting it judge generated images.
 ",,,,,,,2eceaca4b4e609a6,18870edf0da68858,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex9-code,code,fr,178b799a2acd0593,"# Exercice 9 : un contre-exemple pour le critere de zone vide
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb,t01-ex9-code,code,fr,178b799a2acd0593,"# Exercice 9 : un contre-exemple pour le critere de zone vide
 from PIL import Image, ImageDraw
 
 # Etape 1 : Image synthetique : fond uni + rectangle uni dans le tiers gauche
@@ -24274,7 +24274,7 @@ Three readings, in order of what is solid:
 And a counter-reading, so as not to overinterpret: **both verdicts choose the same image** (the map, B). Direct comparison does not promise a better verdict — it removes an intermediary where information can get lost, and the asymmetry between the two images. What remains fragile in the text path lies elsewhere: the numbers it relays (22 former regions, 96 departments) come from a single description, and nothing in the chain contradicts them; the direct path reads them on the map.
 
 Cost of the section: five vision calls on `openai/gpt-5` — the acceptance probe, the three calls of the text path, the call of the direct path. A lighter model would suffice for these calls, one of the five in particular: direct comparison requires only one. Not measured here.",,,,,,,edd6677661d03a54,21afe1d8785dcf93,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-88c82e63,markdown,fr,769436fb8079af44,"🎨 **Lecture** : La seed est **9999 pour les quatre styles** — photoréaliste, cinématique, illustration, anime — et la montre reste dans sa bande (36,1 s, puis 33,2/33,3/33,2 s) ; le levier de variation est ici **le texte seul**. Même bruit initial, même budget de pas : les mots de style (« photorealistic », « cinematic still », « digital illustration », « anime artwork ») steernt la même matière première vers quatre rendus différents. C'est le contrepoint exact de la section précédente sur les seeds — là, le prompt était figé et le bruit variait ; ici, le bruit est figé et le prompt varie. Les quatre vignettes de la figure se comparent sous cet angle : ce qui les sépare ne peut venir que du texte.",,,,,,,,769436fb8079af44,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,cell-88c82e63,markdown,fr,769436fb8079af44,"🎨 **Lecture** : La seed est **9999 pour les quatre styles** — photoréaliste, cinématique, illustration, anime — et la montre reste dans sa bande (36,1 s, puis 33,2/33,3/33,2 s) ; le levier de variation est ici **le texte seul**. Même bruit initial, même budget de pas : les mots de style (« photorealistic », « cinematic still », « digital illustration », « anime artwork ») steernt la même matière première vers quatre rendus différents. C'est le contrepoint exact de la section précédente sur les seeds — là, le prompt était figé et le bruit variait ; ici, le bruit est figé et le prompt varie. Les quatre vignettes de la figure se comparent sous cet angle : ce qui les sépare ne peut venir que du texte.",,,,,,,,769436fb8079af44,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,96ff31ed,markdown,fr,03a2e5447289748f,"## 6. Le transfert de style par reference : la capacite distinctive
 
 La variance de graine (section 5) jouait sur la **composition**. Ce qui
@@ -24413,3 +24413,31 @@ de temoin -- ces deux vignettes de la planche restent sous LGPL-3.0.
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,38156584,markdown,fr,1a3cc466b02247c0,"### Lecture du résultat
 
 La sortie établit les deux prérequis de connexion en une ligne chacun : l'endpoint (`https://qwen-image-edit.myia.io`, l'instance hébergée du palier INT8 décrite en §1) et le token — **présent mais jamais affiché**, la sortie ne portant que son existence. C'est la discipline de secrets du dépôt appliquée au fil du carnet : le `.env` de la série est découvert en remontant les répertoires parents, les deux noms de variables (`COMFYUI_AUTH_TOKEN`/`COMFYUI_API_TOKEN`) couvrent les deux conventions du stack, et une exception explicite (« voir scripts/genai-stack ») renvoie vers l'audit d'auth plutôt que de laisser une ValueError nue. Le `CLIENT_ID` uuid4 en fin de cellule est le marqueur de session WebSocket : ComfyUI y route les événements d'exécution du client qui a soumis le prompt. Le meme pattern se retrouve dans tous les carnets GenAI de la serie : la presence d'un secret se teste, sa valeur ne se print jamais — une sortie de cellule commitee est un artefact public du depot. Concretement : qui clone le depot et execute le carnet sans `.env` voit la cellule echouer sur une exception explicite — jamais sur un appel reseau qui part sans authentification.",,,,,,,,1a3cc466b02247c0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,bf71e597,markdown,fr,d56a5701f335e52e,"📦 **Lecture** : La sortie confirme que toutes les dépendances externes sont disponibles (diffusers, torch, etc.), ce qui permet d'exécuter FLUX.1 localement sans blocage. Le warning sur l'absence de .env indique que la configuration utilise les variables d'environnement directement.
+",,,,,,,,d56a5701f335e52e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,c293c677,markdown,fr,cf640234e5fd9096,"⚠️ **Lecture complémentaire** : La configuration API l'assume : « FAL.ai: ❌ Non configuré », « Replicate: ❌ Non configuré », « HuggingFace: ✅ Configuré » — le notebook ne dépend d'aucune clé payante, tout passe par le hub HuggingFace et le GPU local.
+",,,,,,,,cf640234e5fd9096,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,efcf1e8b,markdown,fr,d9b5ac073dbef57f,"🎮 **Lecture** : Le GPU NVIDIA GeForce RTX 3090 avec 25.8 GB de VRAM est détecté et jugé suffisant pour exécuter FLUX.1-schnell en mode local, ce qui évite de recourir à une API externe. La sortie enchaine ensuite « 📦 Diffusers disponible pour FLUX local » puis « 🔧 Mode d'exécution: Local (GPU) » — le seuil est explicite dans la sortie (« ✅ Suffisant pour FLUX.1-schnell en local »), rien de plus n'est mesuré ici.
+",,,,,,,,d9b5ac073dbef57f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,99ca861a,markdown,fr,47b02433603f1f55,"🔧 **Lecture** : Le FluxClient est initialisé en mode local, confirmant que toutes les dépendances sont correctement configurées pour une exécution locale avec le GPU disponible.
+
+L'objet mérite une phrase sur son rôle : le même appel servira la voie locale (pipeline diffusers sur le GPU détecté plus haut) ou la voie API FAL.ai, sans que les cellules suivantes n'aient à le savoir. La sortie dit « mode local » parce que la sonde du début a trouvé la clé FAL absente — ici l'abstraction n'est pas un confort, c'est ce qui rend le carnet exécutable sur une machine sans GPU en changeant une configuration, pas douze appels.",,,,,,,,47b02433603f1f55,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,e49462f2,markdown,fr,260ae43de5670180,"🖼️ **Lecture détaillée** : Le pipeline « black-forest-labs/FLUX.1-schnell » a été chargé pour cela (barres de progression en sortie), puis « 🎨 Génération locale (seed: 42) » : le modèle servi est identifié, la seed est fixée, la reproductibilité est posée dès la première image.
+
+Un chiffre à retenir de cette première image : **88,7 s**. Toutes les générations qui suivront dans ce carnet — ratios, seeds, styles, texte — tiendront dans une bande de **33 à 42 s**. La première image d'une session paie donc environ **2,5 fois** le régime établi : chargement des poids déjà fait, mais initialisation CUDA et compilation des noyaux encore à amortir. Toute comparaison de chronomètre dans ce carnet se lira contre cette asymétrie, pas seulement au nombre de pas.",,,,,,,,260ae43de5670180,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,bd16f9b9,markdown,fr,31716bebc30c5f75,"📊 **Lecture détaillée** : Les observations du notebook portent sur le rendu, pas sur les temps : « 1 step: Très rapide, structure de base », « 2 steps: Bon compromis vitesse/qualité », « 4 steps: Qualité optimale pour schnell », « 8 steps: Diminishing returns, peu d'amélioration » — vite (au rendu) ≠ vite (au chronomètre) : le 1 step mesuré est le plus LENT (786.4s) parce qu'il paie l'échauffement que les suivants réutilisent.
+",,,,,,,,31716bebc30c5f75,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,6d724cb2,markdown,fr,1fa705f4e589bca0,"📐 **Lecture approfondie** : La série couvre carré (1:1), paysage (16:9), portrait (9:16) et standard (4:3) — les quatre familles de formats courants, générés depuis le même prompt « A stunning sunset over the ocean, vibrant orange a... ». Les quatre rendus sont à comparer dans la figure 1600x800 : c'est là, et pas dans les temps, que se lit l'adaptation au format — la montre donne 36,5 s (1:1), 33,3 s (16:9), 33,1 s (9:16) et 36,8 s (4:3) : une bande de 3,7 s, trop serrée pour ordonner les formats, et qui confirme qu'aucune géométrie ne double le coût.
+",,,,,,,,1fa705f4e589bca0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,96b73c5c,markdown,fr,32ba5a08771582ab,"🎲 **Lecture** : La génération de 4 variations avec différentes seeds produit des images distinctes à partir du même prompt, illustrant l'impact de l'initialisation aléatoire sur la créativité du modèle.
+",,,,,,,,32ba5a08771582ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,d68a732b,markdown,fr,aa5d93f10001959a,"🎲 **Lecture approfondie** : Les quatre seeds sont espacées d'un pas constant : 1000 → 35.4s, 2000 → 42.4s, 3000 → 38.0s, 4000 → 33.5s, même prompt « A mystical forest with bioluminescent plants, ... ». La sortie conclut « ✅ 4 variations générées » — les quatre interprétations sont côte à côte dans la figure 1200x1200, à y comparer plutôt qu'à le décréter.
+",,,,,,,,aa5d93f10001959a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,c074a375,markdown,fr,3473b2c1b0f9d365,"✍️ **Lecture détaillée** : Quatre cibles textuelles, quatre seeds séquentielles (2024-2027) : l'enseigne « OPEN 24 HOURS » (34.9s), le gâteau d'anniversaire en cursive (36.6s), le panneau bois (35.1s), le « Good Morning! » dans le latte art (33.4s). La lisibilité se juge dans la figure 1200x1200 — la réputation qui précède (« FLUX.1 est reconnu pour... ») est celle du notebook, la preuve est l'image.
+",,,,,,,,3473b2c1b0f9d365,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,30b6203b,markdown,fr,c4a01a456e3767ce,"📋 **Lecture** : La synthèse des exercices disponibles confirme que les trois exercices pratiques (analyse des steps, exploration des seeds, création d'affiche) sont accessibles directement dans le notebook aux sections correspondantes.
+
+Lu comme un triptyque expérimental, chaque exercice isole **un seul levier** : le premier fait varier le **budget de débruitage** (nombre de pas) à prompt et seed fixés ; le deuxième fait varier la **matière première** (la seed, c'est-à-dire le bruit initial) à prompt fixé ; le troisième fait varier le **contenu à rendre** (le texte à écrire) dans un style posé. Trois leviers, trois grilles de lecture — et une même question de fond : qu'est-ce qui, du bruit initial, du budget ou de l'énoncé, décide de ce qu'on voit ?",,,,,,,,c4a01a456e3767ce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb,a18f5d9e,markdown,fr,fa75902fff2864b8,"✅ **Lecture** : La conclusion du notebook confirme que toutes les démonstrations ont été exécutées avec succès, validant la configuration locale de FLUX.1 et sa capacité à générer des images de qualité selon différentes approches.
+
+Le bandeau est un **reçu** : date de fin (2026-09-03 16:16:05), liste des concepts couverts qui reflète un à un les sections parcourues, et un passage de relais explicite vers `02-3-Generation-Image-MMDiT.ipynb`. La date mérite d'être lue pour ce qu'elle prouve : ces sorties sont celles d'une exécution réelle et datée, pas d'un état figé — quiconque rejoue le carnet obtiendra ses propres images et ses propres chronomètres, la seed en moins.",,,,,,,,fa75902fff2864b8,,,,,,,,,,,,,,,
