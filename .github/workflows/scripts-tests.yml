@@ -86,6 +86,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
+      - 'scripts/humor_detection/**'
       # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
       # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
@@ -109,6 +110,13 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #19571 pli 1 HMM/Viterbi (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/NLP/gateway/**'
+      # #28370 export du corpus Z3 par la serie : une modification de l'export
+      # doit rejouer le test de parite (scripts/notebook_tools/tests/
+      # test_z3_instances_parity.py), sans quoi la derive export/carnets
+      # s'installerait en silence.
+      - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/z3_instances.py'
       # #23423 (mirror of the push path above).
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
@@ -406,6 +414,47 @@ jobs:
           python-version: '3.11'
           cache: pip
 
+      - name: Isoler le kernelspec du job (#28501)
+        # Le kernelspec `python3` est enregistre dans le repertoire
+        # UTILISATEUR -- partage par tous les jobs d'un meme hote. Sur le
+        # parc auto-heberge, deux slots peuvent tourner deux jobs
+        # SIMULTANEMENT sur le meme hote : les deux enregistrent `python3`
+        # vers deux interpreteurs differents, dans le MEME fichier. Mesure
+        # (po-2026, 25/11, hors parc) : 33 changements d'argv et 5 echecs en
+        # 6 s.
+        #
+        # Deux variables decalent les DEUX operations vers un repertoire
+        # PROPRE au job :
+        #   - l'ECRITURE : `install_kernel_spec(user=True)` ecrit dans
+        #     `jupyter_data_dir()/kernels`, et `jupyter_data_dir()` lit
+        #     `JUPYTER_DATA_DIR` ;
+        #   - la LECTURE : `jupyter_path("kernels")` place `JUPYTER_PATH` EN
+        #     PREMIER, et `find_kernel_specs` ne retient que le PREMIER nom
+        #     trouve.
+        # Mesure (po-2026, 25/11, jupyter_client 8.x / jupyter_core 5.x) :
+        # `JUPYTER_DATA_DIR=B` -> l'ecriture part dans `B/kernels/python3` ;
+        # `JUPYTER_PATH=A` + `JUPYTER_DATA_DIR=B` -> la lecture rend l'argv
+        # de A, pas celui de B.
+        #
+        # L'unicite vient de l'identite du JOB (`RUNNER_NAME`,
+        # `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, `GITHUB_JOB`) : deux jobs
+        # concurrents ont des identites differentes, meme sur un hote
+        # partage. `RUNNER_TEMP` seul ne suffirait pas -- il est partage par
+        # hote sur le parc auto-heberge.
+        #
+        # Cette etape ne fait QUE declarer l'isolation : elle est placee
+        # AVANT l'installation, pour que le script d'installation partage
+        # (PR #28501) enregistre son noyau DANS le repertoire du job. La
+        # declaration seule ne suffit pas a mettre un noyau a disposition :
+        # l'enregistrement se fait dans l'etape suivante, apres que
+        # `ipykernel` est installe.
+        run: |
+          ks="${RUNNER_TEMP}/ks-$(printf '%s' "${RUNNER_NAME}" | tr -c 'A-Za-z0-9._-' '_')-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          mkdir -p "$ks"
+          echo "JUPYTER_DATA_DIR=$ks" >> "$GITHUB_ENV"
+          echo "JUPYTER_PATH=$ks" >> "$GITHUB_ENV"
+          echo "kernelspec du job : $ks"
+
       - name: Install dependencies
         # L'environnement de cette suite est installe par un script PARTAGE :
         # `scripts/ci/install_scripts_tests_deps.sh`. Le lot quotidien en
@@ -415,6 +464,28 @@ jobs:
         # VERBATIM de cette etape le 2026-11-09 (PR #25521) : toute
         # modification de l'un doit etre portee dans l'autre.
         run: bash scripts/ci/install_scripts_tests_deps.sh
+      - name: Enregistrer et verifier le noyau du job (#28501)
+        # L'enregistrement se fait ICI, apres l'installation : `ipykernel`
+        # est alors present, et les variables d'isolation declarees plus
+        # haut sont en vigueur -- le noyau atterrit dans le repertoire DU
+        # JOB, pas dans celui de l'hote partage.
+        #
+        # L'argv du noyau est celui de l'interpreteur que `pip` remplit :
+        # c'est exactement le defaut corrige par #28501 (#28500). Les deux
+        # gestes sont idempotents : si #28501 est fusionnee, le script
+        # d'installation a deja ecrit ce meme noyau au meme endroit.
+        #
+        # Le geste est porte par un SCRIPT, pas par une ligne de shell :
+        # l'ancien `if python -c "import ipykernel" ; then ... ; else echo
+        # "ipykernel absent" ; fi` imprimait un message et rendait SUCCES
+        # quand l'import echouait -- le job continuait sans noyau enregistre,
+        # et l'echec n'apparaitrait que plus loin, sur un noyau que Jupyter
+        # resout ailleurs. Le script rend l'echec FATAL et controle ensuite
+        # que le kernelspec EFFECTIVEMENT RESOLU est celui du job (repertoire
+        # de ressources sous le repertoire du job, `argv[0]` = l'interpreteur
+        # du job). Declarer l'isolation ne prouve pas que la lecture la
+        # respecte : c'est ce controle qui le prouve.
+        run: python scripts/ci/verify_job_kernelspec.py --register
       - name: Epingler les pools de threads BLAS/OpenMP du job (#24696)
         # Le runner est un pool auto-heberge PARTAGE : quand plusieurs jobs se
         # partagent la machine, la creation de threads echoue et les
@@ -658,12 +729,14 @@ jobs:
             pytest \
             scripts/tests \
             scripts/ci/tests \
+            scripts/curriculum/tests \
             tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
             scripts/audit/tests \
             scripts/fallacy_detection/tests \
+            scripts/humor_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
@@ -680,6 +753,7 @@ jobs:
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_trueskill_core.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_flagship_endpoint.py \
+            MyIA.AI.Notebooks/NLP/gateway/test_hmm_viterbi_core.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/Probas/Causalite/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \

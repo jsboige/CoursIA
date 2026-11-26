@@ -1,0 +1,9 @@
+- name: "TV-00b Attention Variants"
+  family: GenAI/Texte/TransformerVariants
+  python: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python utilise PyTorch ; C# utilise TorchSharp-cpu avec libtorch pour les opérations, modules, gradients et entraînements."
+  known_differences:
+    - "Les temps CPU varient selon l'exécution ; les mesures sont entrelacées à budget identique. Le test de partage de stockage utilise une mutation réversible plutôt qu'une comparaison d'adresses."
