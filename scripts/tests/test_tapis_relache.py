@@ -269,6 +269,53 @@ def test_le_temoin_negatif_de_la_forme_rust_ne_degele_pas_le_grain():
     assert etat(lec, 1, lane=LANE).ecart == "RELACHEE"
 
 
+@pytest.mark.parametrize("corps", [
+    # meme paragraphe (la ligne suit le marqueur)
+    "[RELEASED] lane X -- GPU partage indisponible\n"
+    "Essai du 22/11 : verify-reject (fournee w3p, 22/11)\n",
+    # paragraphe distinct (ligne vide entre les deux)
+    "[RELEASED] lane X -- GPU partage indisponible\n\n"
+    "Essai du 22/11 : verify-reject (fournee w3p, 22/11)\n",
+])
+def test_le_rappel_date_complet_ne_degele_pas_le_grain(corps):
+    """Le temoin demande par la review du 26/11 (#28440), 4e passe.
+
+    `[RELEASED] ... -- GPU partage indisponible`, suivi de
+    `Essai du 22/11 : verify-reject (fournee w3p, 22/11)` : le rappel prend
+    la **forme COMPLETE** (le code, sa fournee, sa date), mais il se
+    rapporte a un essai **passe**. Il ne nomme donc pas le motif courant :
+    la portee locale ne doit pas s'y ouvrir, et le grain reste gele pour
+    toute la flotte.
+
+    Les deux dispositions sont couvertes : meme paragraphe (la ligne suit
+    le marqueur) et paragraphe distinct (la ligne vide les separe) -- le
+    paragraphe suivant n'est le bloc des **essais** que si le marqueur
+    l'**annonce**, et une clause de rappel date se rapporte a un essai passe
+    meme dans la forme Rust complete.
+    """
+    from coordination import tapis_relache
+    assert not tapis_relache.est_echec_outil(corps)
+    lec = lecture([issue(1, comments=[com(24, corps)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le grain reste gele pour toute la flotte"
+    assert "echec d'outil" not in e.motif, "le rappel n'est pas le motif"
+    assert etat(lec, 1, lane=LANE).ecart == "RELACHEE"
+
+
+def test_le_rappel_date_ne_devient_pas_le_motif_du_bloc_des_essais():
+    """Meme rappel date, mais dans le bloc que le marqueur **annonce** comme
+    le bloc des essais : la clause se rapporte a un essai passe, elle ne
+    nomme pas le motif courant (fail-CLOSED)."""
+    from coordination import tapis_relache
+    corps = ("[RELEASED] lane X -- 2 essais contenu consommes\n\n"
+             "Essai du 22/11 : verify-reject (fournee w3p, 22/11)\n")
+    assert not tapis_relache.est_echec_outil(corps)
+    lec = lecture([issue(1, comments=[com(24, corps)])])
+    e = etat(lec, 1)
+    assert e.ecart == "RELACHEE", "le grain reste gele pour toute la flotte"
+    assert "echec d'outil" not in e.motif
+
+
 def test_la_forme_rust_exige_la_fournee():
     """Meme code, mais dans le **bloc des essais** et sans **fournee** : ce
     n'est pas la forme Rust mesuree (22/11), c'est une citation.
@@ -326,10 +373,17 @@ def test_le_bloc_des_essais_tolere_la_ligne_vide():
 # (`scripts/tests/test_script_size_ratchet.py`) rougit alors la PR qui l'a
 # fait grossir. L'entree de cet organe vit donc dans SON module de test,
 # qui n'est pas epingle.
+#
+# Le plafond de `tapis_relache_forme.py` a ete porte de 60 a 100 lignes le
+# 26/11 (#28440) : la 4e reserve du coordinateur demande de distinguer le
+# bloc des **essais** (que le marqueur doit annoncer) des blocs de rappel,
+# et d'ecarter les clauses de **rappel date** meme quand elles prennent la
+# forme Rust complete -- quatre regles et leur fenetre de contexte, que 60
+# lignes ne portaient plus.
 
 @pytest.mark.parametrize(("nom", "plafond"), [("tapis_relache.py", 100),
                                               ("tapis_relache_motif.py", 105),
-                                              ("tapis_relache_forme.py", 60)])
+                                              ("tapis_relache_forme.py", 100)])
 def test_plafond_de_lignes(nom, plafond):
     """L'organe tient son plafond de lignes, et aucune de ses fonctions
     n'en depasse 60."""
