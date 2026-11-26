@@ -655,6 +655,70 @@ class TestRelativeLinkDirChangeRefused(unittest.TestCase):
             self.assertEqual(plan.path_refused, [])
 
 
+class TestGenericBasenameDirChangeResolves(unittest.TestCase):
+    """#28490 (reserve ai-01 sur la review de #28495) : un basename GENERIQUE
+    (README.md, feuille de sous-serie) deplace de dossier ne porte que sa forme
+    complete. Un lien RELATIF d'un porteur d'un autre dossier, qui RESOLUT vers
+    l'emplacement ANCIEN (`Ancienne/README.md` vu de `ICT/`), ne matche ni un
+    pattern de reecriture (raw_total = 0) ni `_path_context_hits` (saute quand
+    raw_total vaut 0) : ni reecrit, ni signale, 404 silencieux. Le scan le
+    RESOLUT depuis le porteur et le signale (refus, passage manuel) ; un
+    `README.md` homonyme dans un autre dossier, NON deplace, n'est pas signe."""
+
+    OLD = "ICT/Ancienne/README.md"
+    NEW = "ICT/Nouvelle/Guide.md"
+
+    def _forms(self):
+        return [rn.ref_forms(self.OLD, self.NEW)]
+
+    def _repo(self, repo, files):
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        for rel, body in files:
+            _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "base")
+
+    def test_relative_link_resolving_to_moved_generic_file_is_signaled(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/README.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "suite : [suite](Ancienne/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            # Le lien relatif resolut vers l'ancien emplacement : SIGNE.
+            self.assertIn((carrier, "Ancienne/README.md"), plan.path_refused)
+            # ... mais jamais reecrit (basename generique, forme complete seule).
+            self.assertNotIn(carrier, plan.rewrites)
+            # Rien n'est ecrit : l'ancien lien survit au scan (passage manuel).
+            self.assertIn("Ancienne/README.md",
+                          (repo / carrier).read_text(encoding="utf-8"))
+
+    def test_homonym_readme_in_other_dir_not_linked_is_ignored(self):
+        """Le lien pointe vers un `README.md` homonyme (autre dossier, NON
+        deplace) : il ne resout pas vers le fichier deplace -> rien a signaler.
+        La precision est structurelle : le chemin reconstitue vers le fichier
+        VRAIMENT deplace n'apparait pas dans le porteur."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/README.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                ("ICT/Other/README.md", "# Autre README homonyme\n"),
+                (carrier, "autre : [autre](Other/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertEqual(plan.path_refused, [])
+            self.assertNotIn(carrier, plan.rewrites)
+
+
 class TestSameNameDirChangeDetected(unittest.TestCase):
     """#19173 (reserve Hermes sur la review de #19154) : renommage qui change
     de dossier SANS changer de nom. La paire filename y est un no-op,

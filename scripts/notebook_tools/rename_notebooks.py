@@ -66,6 +66,7 @@ import argparse
 import datetime
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -651,6 +652,43 @@ def _path_context_hits(raw: str, forms_list: list[RefForms],
     return hits
 
 
+def _resolve_link_hits(raw: str, dir_change: list[RefForms],
+                       carrier_rel: str) -> list[str]:
+    """Liens relatifs du porteur qui RESOLVENT vers l'emplacement ANCIEN d'un
+    fichier deplace, reconstitués DEPUIS le dossier du porteur (#28490,
+    reserve ai-01 sur la review de #28495).
+
+    Pour un basename generique (README.md, feuille de sous-serie) la seule
+    forme portante est la forme complete -- un lien relatif `Ancienne/README.md`
+    d'un porteur d'un autre dossier ne la contient pas. Il ne matche donc ni un
+    pattern de reecriture (raw_total = 0) ni `_path_context_hits` (appele quand
+    raw_total vaut 0), et le scan ne le voyait plus : ni reecrit, ni signale,
+    404 silencieux.
+
+    On reconstitue ici, pour CHAQUE porteur, le chemin relatif exact qui mene
+    de son dossier a l'emplacement ANCIEN du fichier deplace, et on le cherche
+    borne comme cible de lien. La precision est structurelle : un homonyme
+    (un `README.md` dans UN AUTRE dossier, NON deplace) n'est pas dans
+    `dir_change`, et un lien vers lui ne coincide pas avec le chemin reconstitue
+    vers le fichier VRAIMENT deplace -- il ne matche pas.
+    """
+    if not dir_change:
+        return []
+    cdir = carrier_rel.rsplit("/", 1)[0] if "/" in carrier_rel else ""
+    out: list[str] = []
+    for f in dir_change:
+        if carrier_rel == f.old_rel:
+            continue  # le fichier deplace lui-meme : auto-mention, pas un lien
+        rel = posixpath.relpath(f.old_rel, cdir) if cdir else f.old_rel
+        # `rel in raw` = court-circuit C rapide sur les porteurs sans aucune
+        # occurrence du chemin reconstitue ; la borne garantit qu'on ne prend
+        # pas `X/Ancienne/README.md` (un autre fichier) pour notre cible.
+        if rel in raw and re.search(
+                r"(?<![\w/])" + re.escape(rel) + r"(?![\w])", raw):
+            out.append(rel)
+    return out
+
+
 _TEXT_SUFFIXES = frozenset({
     ".py", ".md", ".ipynb", ".yaml", ".yml", ".json", ".lean", ".cs", ".txt",
     ".csv", ".sh", ".ps1", ".html", ".htm", ".js", ".ts", ".tex", ".cff",
@@ -730,6 +768,11 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                     if rel != f.old_rel
                     and cdir == (f.old_rel.rsplit("/", 1)[0]
                                  if "/" in f.old_rel else "")]
+        # #28490 (reserve ai-01) : basename generique deplace -- un lien
+        # relatif d'un porteur qui RESOLUT vers l'ancien emplacement n'est ni
+        # reecrivable (forme complete seule) ni vu par _path_context_hits ;
+        # on le signale (refus, passage manuel) au lieu du 404 silencieux.
+        resolve_hits = _resolve_link_hits(raw, dir_change, rel)
 
         if not rel.endswith(".ipynb"):
             if (raw_total or det_total) and (path_hits or same_dir):
@@ -737,6 +780,8 @@ def scan_referents(forms_list: list[RefForms], repo: Path | None = None) -> Plan
                     (rel, path_hits[0] if path_hits else same_dir[0].filename))
             elif raw_total:
                 plan.rewrites[rel] = raw_total
+            elif resolve_hits:
+                plan.path_refused.append((rel, resolve_hits[0]))
             continue
 
         try:
