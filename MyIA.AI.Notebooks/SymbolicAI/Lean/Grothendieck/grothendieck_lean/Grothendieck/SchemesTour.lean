@@ -78,10 +78,10 @@ Chaque schéma a un espace localement annelé sous-jacent, un espace
 topologique, et un préfaisceau d'anneaux commutatifs.
 -/
 
--- The type of schemes
+-- Le type des schémas
 #check @AlgebraicGeometry.Scheme
 
--- The forgetful functor from schemes to topological spaces
+-- Le foncteur oublie des schémas vers les espaces topologiques
 #check @Scheme.forgetToTop
 
 /-!
@@ -107,10 +107,10 @@ morphismes entre schémas respectent la structure de faisceau.
 noncomputable example {X Y : Scheme} (i : X ≅ Y) : X ≃ₜ Y :=
   Scheme.homeoOfIso i
 
--- The forgetful functor from schemes to locally ringed spaces (fully faithful)
+-- Le foncteur oublie des schémas vers les espaces localement annelés (pleinement fidèle)
 #check @Scheme.forgetToLocallyRingedSpace
 
--- The FullyFaithful type for the forgetful functor
+-- Le type `FullyFaithful` du foncteur oublie
 #check Scheme.forgetToLocallyRingedSpace.FullyFaithful
 
 /-!
