@@ -307,6 +307,12 @@ def _live_benchmark(start: str, n_days: int) -> dict:
     return _benchmark([700.0 + i for i in range(n_days)], start)
 
 
+def _benchmark_days(points: list[tuple[str, float]]) -> dict:
+    """Chart `Benchmark` point by point, for a chart without one point per calendar day."""
+    return {"name": "Benchmark", "series": {"Benchmark": {"values": [
+        [_midnight_ts(day), float(close)] for day, close in points]}}}
+
+
 # Graphique `Benchmark` du backtest 273d04de (projet 39243884), lu le 2026-11-25 : neuf
 # points, un par jour de calendrier, du jeudi 12 au vendredi 20 novembre. Chaque point porte
 # la cloture de la veille : celui du samedi 14 porte celle du vendredi 13 (754,37 differe de
@@ -676,6 +682,64 @@ def test_qc_frozen_sessions_compares_only_the_day_after():
     assert qc_frozen_sessions(stopped(74780.0), "2026-11-11") == []
 
 
+def test_qc_frozen_sessions_keeps_the_run_over_a_weekend_without_points():
+    # Meme week-end que le test precedent, sans ses deux points : l'ecart du vendredi 20
+    # au lundi 23 ne laisse passer qu'un samedi et un dimanche, et le point du lundi
+    # porte toujours la cloture du vendredi. La seance du vendredi se lit.
+    benchmark = _benchmark_days([("2026-11-17", 100.0), ("2026-11-18", 100.0),
+                                 ("2026-11-19", 100.0), ("2026-11-20", 100.0),
+                                 ("2026-11-23", 100.0)])
+    assert qc_frozen_sessions(benchmark, "2026-11-23") == [
+        "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]
+
+
+def test_qc_frozen_sessions_refuses_a_coverage_break_in_the_tail():
+    # Lundi 16 et mardi 17 a 100, puis jeudi 19 et vendredi 20 a 101 : aucun point le
+    # mercredi 18. Chacune des deux repetitions isole une seance non publiee, mais le
+    # graphique ne dit rien du mercredi : il n'etablit pas que lundi et jeudi se
+    # suivent. Le temoin est incomplet, il ne fonde ni un compte de deux seances de
+    # suite ni leur admission. Le passage est lu au vendredi 20 : la fin du graphique
+    # est lue, seul le trou du milieu reste indecidable.
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0)])
+    with pytest.raises(ValueError, match=r"no point on 2026-11-18.*trailing run \(2026-11-19\)"):
+        qc_frozen_sessions(benchmark, "2026-11-20")
+
+
+def test_qc_frozen_sessions_refuses_a_chart_that_stops_before_the_pass_date():
+    # Meme graphique, passage lu le samedi 21 : le point du vendredi 20 est la derniere
+    # date lue, et la seance du vendredi n'a pas de point suivant qui la tranche. La
+    # repetition du jeudi plaide pour une suite figee qui pourrait l'inclure : la
+    # couverture s'arrete avant le passage, le temoin est incomplet.
+    benchmark = _benchmark_days([("2026-11-19", 101.0), ("2026-11-20", 101.0)])
+    with pytest.raises(ValueError,
+                       match=r"the chart stops on 2026-11-20, before the pass date 2026-11-21"):
+        qc_frozen_sessions(benchmark, "2026-11-21")
+    # Le meme graphique lu au vendredi 20 ne cache rien : la repetition du jeudi reste
+    # une seule seance, sous le seuil, et le passage est admis.
+    assert qc_frozen_sessions(benchmark, "2026-11-20") == ["2026-11-19"]
+
+
+def test_qc_frozen_sessions_closes_a_coverage_break_on_a_published_session():
+    # Meme trou, mais le point du samedi 21 ne repete pas celui du vendredi 20 : la
+    # seance du vendredi a ete publiee, aucune suite figee ne termine le graphique. Le
+    # trou ne porte plus sur la fin, il ne refuse rien.
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0),
+                                 ("2026-11-21", 102.0)])
+    assert qc_frozen_sessions(benchmark, "2026-11-21") == []
+
+
+def test_qc_frozen_sessions_counts_what_follows_a_coverage_break():
+    # Apres le trou du mardi 17, trois seances de suite repetees (mercredi 18, jeudi 19,
+    # vendredi 20, lues aux points du lendemain) : le refus se fonde sur elles seules.
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-18", 101.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0),
+                                 ("2026-11-21", 101.0)])
+    assert qc_frozen_sessions(benchmark, "2026-11-21") == [
+        "2026-11-18", "2026-11-19", "2026-11-20"]
+
+
 def test_ingest_qc_refuses_the_passage_that_measured_flat_sessions():
     # Accepte le 2026-11-20 par la version d'alors, ce passage a ete retire de #27480. La
     # date de sa derniere cloture (la veille) est recente : la fraicheur des seances se lit
@@ -684,6 +748,18 @@ def test_ingest_qc_refuses_the_passage_that_measured_flat_sessions():
     with pytest.raises(ValueError, match=r"last 2 sessions.*\(2026-11-18, 2026-11-19\)"):
         ingest_qc(candidate, plan, backtest, chart,
                   _benchmark(BENCHMARK_273D04DE, "2026-11-12"))
+
+
+def test_ingest_qc_names_the_candidate_of_an_incomplete_witness():
+    # Un jour de semaine sans point autour des dernieres seances : le passage est refuse
+    # comme temoin incomplet, au nom de la candidate, pas comme deux seances de suite
+    # que le graphique n'etablit pas.
+    candidate, plan, backtest, chart = _passage_273d04de()
+    benchmark = _benchmark_days([("2026-11-16", 100.0), ("2026-11-17", 100.0),
+                                 ("2026-11-19", 101.0), ("2026-11-20", 101.0)])
+    with pytest.raises(ValueError,
+                       match=r"^short-intl-v2: chart 'Benchmark': no point on 2026-11-18"):
+        ingest_qc(candidate, plan, backtest, chart, benchmark)
 
 
 def test_ingest_qc_accepts_a_flat_candidate_on_a_published_market():

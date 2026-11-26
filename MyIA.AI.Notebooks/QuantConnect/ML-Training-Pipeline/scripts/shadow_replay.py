@@ -288,6 +288,10 @@ QC_MAX_END_GAP_DAYS = 7
 # n'etait pas publiee. Ne comptent que les seances de semaine strictement avant la
 # date du passage. Une seule repetition reste admise : c'est aussi la forme d'un jour
 # ferie la veille du passage, que rien ici ne distingue d'une barre en retard d'un jour.
+# Deux ecarts entre points ne se lisent pas de meme : un week-end connu, qui ne laisse
+# passer que des samedis et des dimanches (avec ou sans point), continue la suite ; un
+# jour de semaine sans point est une rupture de couverture, les seances du trou ne se
+# lisent pas et la suite s'interrompt.
 QC_BENCHMARK_CHART = "Benchmark"
 QC_FROZEN_SESSIONS = 2
 
@@ -421,6 +425,13 @@ def qc_daily_equity(chart: dict,
     return dates, [v for _, _, v in points]
 
 
+def _missing_weekdays(first: dt.date, day: dt.date) -> list[str]:
+    """Jours de semaine sans point entre deux dates consecutives du graphique."""
+    return [(first + dt.timedelta(days=k)).isoformat()
+            for k in range(1, (day - first).days)
+            if (first + dt.timedelta(days=k)).weekday() < 5]
+
+
 def qc_frozen_sessions(benchmark: dict, pass_date: str) -> list[str]:
     """Seances de fin dont la barre du benchmark n'etait pas publiee au passage.
 
@@ -428,25 +439,100 @@ def qc_frozen_sessions(benchmark: dict, pass_date: str) -> list[str]:
     pas alors que le marche cote n'est pas un portefeuille en liquidites, c'est une barre
     que Lean a recopiee. Le point du jour J porte la cloture de la veille (voir
     `QC_BENCHMARK_CHART`) : un point qui repete celui de la veille est attribue a la
-    seance de la veille, et la fonction ne rend que la suite consecutive qui termine le
-    graphique -- une repetition isolee plus tot n'affecte pas le passage.
+    seance de la veille, et la fonction ne rend que la suite consecutive qui termine la
+    lecture -- une repetition isolee plus tot n'affecte pas le passage.
 
-    Ne comptent que les seances de semaine strictement anterieures a `pass_date`, et
-    elles n'interrompent pas la suite : un samedi et un dimanche sains separent le
-    vendredi d'un passage le lundi. Un point qui ne suit pas la veille (deux points le
-    meme jour, trou dans le graphique) n'est compare a rien.
+    Ne comptent que les seances de semaine strictement anterieures a `pass_date`. Un
+    ecart entre deux points qui ne laisse passer que des samedis et des dimanches est un
+    week-end connu : le point d'apres porte toujours la cloture de la veille, la suite
+    continue, que le week-end porte des points ou non. Un jour de semaine sans point est
+    une rupture de couverture : ses seances ne se lisent pas. A travers une rupture, seul
+    le groupe se lit -- bornes egales = toutes figees, bornes differentes = au moins une
+    publiee sans dire laquelle, chaque seance du trou restant alors non lue ; une seule
+    seance dans la fenetre est tranchee par la difference. Deux points le meme jour
+    (arret en cours de journee) ne sont compares a rien.
+
+    Une seance non lue dans la fin rend celle-ci indecidable : le graphique n'y etablit
+    ni la consecutivite des seances figees, ni la publication des seances qu'il ne lit
+    pas. La fonction leve alors `ValueError` -- le temoin est incomplet, il ne se compte
+    pas -- sauf si aucun scenario possible n'atteint le seuil. Une suite etablie d'au
+    moins `QC_FROZEN_SESSIONS` seances figees qui termine la lecture est rendue telle
+    quelle : elle suffit au refus.
     """
     closes = sorted({(_session(t), float(v)) for t, v in
                      _chart_points(benchmark, QC_BENCHMARK_CHART)})
     limit = dt.date.fromisoformat(pass_date)
-    frozen: list[str] = []
+    # Statut de chaque seance de semaine anterieure au passage, dans l'ordre
+    # chronologique : "frozen" (la barre n'etait pas publiee), "published" (elle
+    # l'etait), "unread" (le graphique ne la lit pas). `holes` porte, pour une seance non
+    # lue, les jours sans point qui l'expliquent -- vide quand le graphique s'arrete.
+    statuses: list[tuple[str, str]] = []
+    holes: dict[str, list[str]] = {}
     for (before, previous), (day, close) in zip(closes, closes[1:]):
-        session = dt.date.fromisoformat(before)
-        if (session >= limit or session.weekday() >= 5
-                or dt.date.fromisoformat(day) != session + dt.timedelta(days=1)):
+        session, following = dt.date.fromisoformat(before), dt.date.fromisoformat(day)
+        if following == session:
+            continue                        # deux points le meme jour : non compares
+        missing = _missing_weekdays(session, following)
+        if not missing:
+            if session.weekday() < 5 and session < limit:
+                statuses.append((before, "frozen" if close == previous else "published"))
             continue
-        frozen = frozen + [before] if close == previous else []
-    return frozen
+        window = [before] + missing
+        sessions = [d for d in window if dt.date.fromisoformat(d).weekday() < 5]
+        scoped = [d for d in sessions if dt.date.fromisoformat(d) < limit]
+        if close == previous:
+            read = "frozen"                    # aucune cloture n'est arrivee dans le trou
+        elif len(sessions) == 1:
+            read = "published"                 # une seule seance a pu faire bouger la cote
+        else:
+            read = "unread"
+        for d in scoped:
+            statuses.append((d, read))
+            if read == "unread":
+                holes[d] = missing
+    # Seances que le graphique ne lit pas parce qu'il s'arrete avant le passage : la
+    # derniere date du graphique attend un point suivant qui n'existe pas, et celles qui
+    # la suivent n'ont aucun point.
+    last = dt.date.fromisoformat(closes[-1][0]) if closes else limit
+    for k in range((limit - last).days):
+        day = last + dt.timedelta(days=k)
+        if day.weekday() < 5:
+            statuses.append((day.isoformat(), "unread"))
+            holes.setdefault(day.isoformat(), [])
+    # Verdict depuis la fin : une seance publiee ferme la suite ; une seance non lue la
+    # rend indecidable, sauf si aucun scenario ne peut atteindre le seuil.
+    trailing: list[str] = []   # seances figees consecutives qui terminent la lecture
+    potential = 0              # plus longue suite qu'un scenario possible etablit
+    unclear = False            # une seance non lue s'est intercalee depuis la fin
+    causes: list[str] = []
+    stops = False
+    for day, read in reversed(statuses):
+        if read == "published":
+            break
+        potential += 1
+        if read == "unread":
+            unclear = True
+            gap = holes.get(day) or []
+            if gap:
+                causes.extend(d for d in gap if d not in causes)
+            else:
+                stops = True
+        elif not unclear:
+            trailing = [day] + trailing
+    if len(trailing) >= QC_FROZEN_SESSIONS:
+        return trailing
+    if potential >= QC_FROZEN_SESSIONS:
+        why = []
+        if causes:
+            why.append(f"no point on {', '.join(causes)}")
+        if stops:
+            why.append(f"the chart stops on {closes[-1][0]}, before the pass date {pass_date}")
+        run = (f"the trailing run ({', '.join(trailing)}) is not established" if trailing
+               else "no trailing run is established")
+        raise ValueError(f"chart {QC_BENCHMARK_CHART!r}: {'; '.join(why)} -- coverage "
+                         f"broken inside the tail: the publication of the sessions there "
+                         f"cannot be read, {run}")
+    return trailing
 
 
 def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict, benchmark: dict,
@@ -491,7 +577,9 @@ def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict, benchmar
     # liquidites, la cloture du benchmark, si (#27482). Le temoin doit couvrir la fin de
     # la fenetre : le graphique d'un backtest termine a la date du passage porte un
     # dernier point au minuit de cette date, apres la derniere cloture tracee (mesure :
-    # backtest 273d04de).
+    # backtest 273d04de). Un jour de semaine sans point autour des dernieres seances est
+    # une rupture de couverture : les seances du trou ne se lisent pas, le refus tombe
+    # au nom de la candidate.
     benchmark_days = sorted({_session(t) for t, _ in
                              _chart_points(benchmark, QC_BENCHMARK_CHART)})
     if benchmark_days[-1] < dates[-1]:
@@ -499,7 +587,10 @@ def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict, benchmar
                          f"{benchmark_days[-1]}, before the last close {dates[-1]} -- "
                          f"truncated or incomplete, the publication of the last sessions "
                          f"cannot be read")
-    frozen = qc_frozen_sessions(benchmark, plan["pass_date"])
+    try:
+        frozen = qc_frozen_sessions(benchmark, plan["pass_date"])
+    except ValueError as exc:
+        raise ValueError(f"{candidate['id']}: {exc}") from exc
     if len(frozen) >= QC_FROZEN_SESSIONS:
         raise ValueError(f"{candidate['id']}: benchmark bars of the last {len(frozen)} "
                          f"sessions were not published at the pass date "
