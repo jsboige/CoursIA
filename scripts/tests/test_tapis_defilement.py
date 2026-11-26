@@ -59,13 +59,14 @@ def _lecture(issues: list[dict]) -> gh_bulk.Lecture:
 
 
 def _etat(n: int, *, visites: int = 0, consolidation: bool = False,
-          conteneur: bool = False,
+          conteneur: bool = False, claim: bool = False,
           cree: str = "2026-11-01T00:00:00Z", ecart: str | None = None) -> tapis_rapide.Etat:
     """Un etat du tapis, construit a la main (aucune lecture reseau)."""
     e = tapis_rapide.Etat(n, f"Grain {n}", [], cree, None, n, conteneur, consolidation)
     e.visites = visites
     e.visites_total = visites
     e.ecart = ecart
+    e.mon_claim = claim
     return e
 
 
@@ -408,6 +409,30 @@ def test_la_rotation_tourne_la_tete_d_un_niveau_sans_en_changer():
             f"la rotation a croise deux niveaux ({graine}) : {niveaux}")
         assert 7101 in [int(e.numero) for e in ordre][:2], (
             "la consolidation passe devant l'anciennete")
+
+
+def test_le_perimetre_claims_est_nomme_sans_change_l_invariant_equite():
+    """Les claims de la lane sont servis EN TETE par construction.
+
+    `tapis_rapide.ordonner` commence par les claims ("vos claims en tete") :
+    un claim deja visite precede donc, par DESIGN, une issue jamais visitee,
+    et le controle d'equite peut le nommer comme temoin.
+
+    Le rapport NOME cette classe (`claims_en_tete`) pour que la lecture du
+    temoin soit immediate ; l'INVARIANT n'est pas change -- exempter les
+    claims de l'equite est un arbitrage du coordinateur, pas un correctif
+    silencieux que l'organe s'autorise.
+    """
+    claim = _etat(7107, visites=2, claim=True)
+    jamais = _etat(7108, visites=0)
+    r = tapis_defilement.ordre([claim, jamais], LANE, NOW, grains=8)
+    assert r["claims_en_tete"]["numeros"] == [7107], (
+        "le perimetre des claims doit etre nomme")
+    assert r["claims_en_tete"]["nombre"] == 1
+    assert r["file"][0] == 7107, "un claim est servi en tete"
+    # L'invariant reste ce qu'il est : le claim deja visite est un temoin.
+    assert r["equite"]["ok"] is False
+    assert 7107 in r["equite"]["temoins"]
 
 
 def test_le_perimetre_marathon_est_nomme_sans_sortir_du_defilement():

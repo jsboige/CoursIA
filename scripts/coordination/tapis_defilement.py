@@ -142,6 +142,12 @@ def ordre(etats: list[tapis_rapide.Etat], lane: str, maintenant: datetime,
     # harnais sk-agent. Ils restent dans le defilement (ils ne sortent pas du
     # pool) ; le rapport dit simplement qu'ils ne disputent pas l'equilibre.
     marathons = sorted(e.numero for e in etats if tapis_equilibre.est_marathon(e))
+    # Les CLAIMS de la lane sont servis EN TETE par construction ("vos claims
+    # en tete") : un claim deja visite precede donc, par design, une issue
+    # jamais visitee, et le controle d'equite peut le nommer comme temoin.
+    # Le rapport les NOME (le rapport se lit) ; l'invariant n'est pas change
+    # -- c'est un arbitrage du coordinateur, pas un correctif silencieux.
+    claims = sorted(e.numero for e in etats if getattr(e, "mon_claim", False))
     file_ = tapis_rapide.ordonner(etats, lane, maintenant, grains)
     pos = _positions(file_)
 
@@ -183,6 +189,7 @@ def ordre(etats: list[tapis_rapide.Etat], lane: str, maintenant: datetime,
         "exclusions_dures": len(exclusions),
         "exclusions_numeros": exclusions,
         "marathon": {"hors_equilibrage": marathons, "nombre": len(marathons)},
+        "claims_en_tete": {"numeros": claims, "nombre": len(claims)},
         "file": [int(e.numero) for e in file_],
         "equite": {"ok": equite_ok, "temoins": temoins_equite,
                    "jamais_servies": len(jamais), "deja_servies": len(deja)},
@@ -422,6 +429,8 @@ def _texte(r: dict, source: str) -> str:
         f"  file servie : {o['file']}",
         (f"  marathons (hors equilibrage, harnais sk-agent) : "
          f"{o['marathon']['nombre']} {o['marathon']['hors_equilibrage']}"),
+        (f"  claims de la lane (servis en tete par construction) : "
+         f"{o['claims_en_tete']['nombre']} {o['claims_en_tete']['numeros']}"),
         (f"  equite (0 visite avant 1 visite) : "
          f"{'OK' if o['equite']['ok'] else 'ROMPUE -- ' + str(o['equite']['temoins'])}"),
         (f"  consolidation : "
