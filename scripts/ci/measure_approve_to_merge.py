@@ -379,7 +379,12 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
     - la population est celle que la **recherche GitHub** liste sous
       `review:approved`, c'est-a-dire la derniere decision de review. GitHub
       en detient la semantique ; `trouvees` est son `total_count`, et
-      `tronquee` dit que seules `max_ouvertes` ont ete inspectees. Une PR dont
+      `tronquee` dit que la population lue n'est pas la population entiere --
+      soit parce que seules `max_ouvertes` ont ete inspectees, soit parce que
+      la recherche elle-meme a rendu `incomplete_results: true` (signal porte
+      a part en `resultats_incomplets`, car il ne se lit pas dans les
+      comptes : GitHub peut rendre autant d'items que de `total_count`
+      annonce, zero compris). Une PR dont
       l'approbateur a redemande des changements n'y figure pas -- et la regle
       de `approbation_tete` la retirerait de toute facon, donc l'accord des
       deux se mesure, il ne se suppose pas ;
@@ -389,6 +394,13 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
     cherche = api(f"/search/issues?q=repo:{REPO}+is:pr+is:open+review:approved"
                   f"&per_page={PAR_PAGE}")
     numeros = [item["number"] for item in cherche.get("items", [])][:max_ouvertes]
+    # Deux causes distinctes de couverture partielle, et la seconde ne se lit
+    # pas dans les comptes : la recherche GitHub annonce `incomplete_results`
+    # quand elle a rendu un resultat partiel -- avec parfois autant d'items que
+    # de `total_count`, zero compris. Comparer les seuls nombres laisserait
+    # alors `tronquee: false` sur une population qu'on n'a pas lue en entier.
+    trouvees = cherche.get("total_count", len(numeros))
+    resultats_incomplets = bool(cherche.get("incomplete_results"))
     lignes: list[dict] = []
     for numero in numeros:
         pr = api(f"/repos/{REPO}/pulls/{numero}")
@@ -411,9 +423,10 @@ def ouvertes_approuvees(jusqu_a: datetime, approbateur: str = APPROUVEUR,
                       if ligne["classe"] == "tete_exacte" and ligne["heures"] > seuil),
                      key=lambda ligne: ligne["heures"], reverse=True)
     return {
-        "trouvees": cherche.get("total_count", len(numeros)),
+        "trouvees": trouvees,
         "inspectees": len(numeros),
-        "tronquee": cherche.get("total_count", 0) > len(numeros),
+        "tronquee": trouvees > len(numeros) or resultats_incomplets,
+        "resultats_incomplets": resultats_incomplets,
         "revues_incompletes": sum(1 for ligne in lignes
                                   if ligne["classe"] == "revues_incompletes"),
         "approbations_retirees": sum(1 for ligne in lignes
@@ -470,6 +483,21 @@ def _causes_troncature(rapport: dict) -> list[str]:
     return causes
 
 
+def _causes_troncature_ouvertes(ouvertes: dict) -> list[str]:
+    """Raisons pour lesquelles la population ouverte lue n'est pas entiere.
+
+    Deux causes, et une seule se lit dans les nombres : le plafond
+    `--max-ouvertes`, et le signal `incomplete_results` de la recherche
+    GitHub, qui peut accompagner des comptes egaux.
+    """
+    causes: list[str] = []
+    if ouvertes["trouvees"] > ouvertes["inspectees"]:
+        causes.append("plafond --max-ouvertes atteint, la population n'est pas lue en entier")
+    if ouvertes.get("resultats_incomplets"):
+        causes.append("resultats incomplets annonces par la recherche GitHub")
+    return causes
+
+
 def formater(rapport: dict) -> str:
     """Rendu lisible : les nombres d'abord, la lecture ensuite."""
     bloc = rapport["tete_exacte"]
@@ -497,10 +525,12 @@ def formater(rapport: dict) -> str:
     ]
     ouvertes = rapport.get("ouvertes_approuvees")
     if ouvertes is not None:
+        causes_ouvertes = _causes_troncature_ouvertes(ouvertes)
         lignes.append(
             f"Ouvertes approuvees (cote censure) : {ouvertes['trouvees']} trouvees"
             f" | inspectees : {ouvertes['inspectees']}"
-            + ("  [TRONQUEE]" if ouvertes["tronquee"] else "")
+            + ("  [TRONQUEE : " + " ; ".join(causes_ouvertes) + "]"
+               if causes_ouvertes else "")
             + f" | a la tete exacte : {ouvertes['a_la_tete_exacte']}"
             + f" | {ouvertes['revues_incompletes']} revues non lues en entier"
             + f" | {ouvertes['approbations_retirees']} approbation(s) reprise(s)"

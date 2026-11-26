@@ -31,6 +31,11 @@ pas un test. Ce qui est teste ici, c'est ce qui **decide** de la mesure :
    et une PR ouverte ainsi reprise n'attend pas un merge. Cote ouvert, ce cas
    etait masque par le filtre de recherche `review:approved`, qui suit la
    derniere decision de review ; la regle tient sans ce filtre.
+10. **une population ouverte partielle est dite, meme a comptes egaux** : la
+    recherche GitHub peut annoncer `incomplete_results: true` en rendant
+    autant d'items que de `total_count` annonce, zero compris. Le signal est
+    porte a part (`resultats_incomplets`) et nomme dans le rendu, au lieu de
+    conclure `tronquee: false` sur une file qu'on n'a pas lue en entier.
 
 Les appels reseau sont remplaces par une fonction `api` factice : les tests ne
 dependent ni du reseau ni du quota. La couche de lecture (`api`) a sa
@@ -609,6 +614,54 @@ def test_ouvertes_approuvees_compte_l_attente_a_la_tete_exacte(monkeypatch):
     assert [ligne["numero"] for ligne in ouvertes["au_dela"]] == [11]
     assert ouvertes["plus_ancienne_heures"] == 30.0
     assert ouvertes["revues_incompletes"] == 0
+    assert ouvertes["resultats_incomplets"] is False
+
+
+def test_ouvertes_approuvees_propage_les_resultats_incomplets_a_comptes_egaux(monkeypatch):
+    """Temoin : comptes egaux, population pourtant partielle.
+
+    La recherche rend deux items et annonce `total_count: 2`, mais elle porte
+    `incomplete_results: true` : la population n'est pas lue en entier.
+    Comparer les seuls nombres rendait `tronquee: false` et le rapport pouvait
+    sous-estimer la file en attente sans avertissement. Le signal se lit donc
+    dans le JSON et se nomme dans le rendu lisible.
+    """
+    jusqu_a = datetime(2026, 11, 26, tzinfo=timezone.utc)
+    tetes = {41: "k1", 42: "k2"}
+
+    def faux_api(chemin: str):
+        if "/search/" in chemin:
+            return {"total_count": 2, "incomplete_results": True,
+                    "items": [{"number": n} for n in tetes]}
+        numero = int(chemin.split("/pulls/")[1].split("/")[0])
+        if "/reviews" in chemin:
+            return [_revue("myia-ai-01", "APPROVED", tetes[numero], "2026-11-24T18:00:00Z")]
+        return {"number": numero, "head": {"sha": tetes[numero]}}
+
+    monkeypatch.setattr(m, "api", faux_api)
+    ouvertes = m.ouvertes_approuvees(jusqu_a)
+    assert ouvertes["trouvees"] == 2
+    assert ouvertes["inspectees"] == 2
+    assert ouvertes["resultats_incomplets"] is True
+    assert ouvertes["tronquee"] is True
+    rapport = _rapport_echantillon()
+    rapport["ouvertes_approuvees"] = ouvertes
+    texte = m.formater(rapport)
+    assert "resultats incomplets annonces par la recherche GitHub" in texte
+    assert "plafond --max-ouvertes" not in texte
+
+
+def test_formater_nomme_la_cause_du_plafond_des_ouvertes():
+    """Le plafond et le signal GitHub sont deux causes, et le rendu les nomme."""
+    rapport = _rapport_echantillon()
+    rapport["ouvertes_approuvees"] = {
+        "trouvees": 9, "inspectees": 2, "tronquee": True,
+        "resultats_incomplets": False, "revues_incompletes": 0,
+        "approbations_retirees": 0, "a_la_tete_exacte": 2,
+        "au_dela_du_seuil": 1, "plus_ancienne_heures": 30.0,
+    }
+    texte = m.formater(rapport)
+    assert "TRONQUEE : plafond --max-ouvertes atteint" in texte
 
 
 def test_ouvertes_approuvees_compte_les_revues_incompletes(monkeypatch):
