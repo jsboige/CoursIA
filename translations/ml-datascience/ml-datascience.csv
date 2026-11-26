@@ -34613,7 +34613,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transf
 - Karpathy, A. (2015). *The Unreasonable Effectiveness of Recurrent Neural Networks*.
 - Alammar, J. (2018). *The Illustrated Transformer*.
 - Maupassant, G. de (1887). *Le Horla* — corpus, domaine public.",,,,,,,,24f9752dee018285,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb,7b335709,markdown,fr,af3f377b7aae371b,"# 3.4c — Mixture of Experts : router les jetons, croître sans payer
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb,7b335709,markdown,fr,374cc496907811fa,"# 3.4c — Mixture of Experts : router les jetons, croître sans payer
 
 **Navigation** : [<< 3.4 — Attention & Transformer](3.4-Attention-Transformer-From-Scratch.ipynb) · [3.4d — Fourier features >>](3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) · [Feuille de route de la série](README.md)
 
@@ -34624,7 +34624,7 @@ Le pari économique : si seulement k des E experts travaillent par jeton, le mod
 
 Ce notebook implémente la couche MoE from scratch (routeur top-k, capacité par expert, dropout, loss d'équilibrage), la vérifie sur des cas contrôlés, mesure le coût exact contre deux FFN denses d'équivalences différentes, puis entraîne dense contre MoE sur la tâche jouet du TV-00b — avec et sans loss d'équilibrage, pour voir le routeur s'effondrer ou non. Comme dans tout la série : pas de framework de MoE (`timm`, `megablocks`...), tout à la main, tout mesuré.
 
-**Prérequis** : [TV-00b — variantes d'attention](../../../GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb) (attention causale, la classe `PetitLM`, la méthodologie de banc entrelacé).",,,,,,,,af3f377b7aae371b,,,,,,,,,,,,,,,
+**Prérequis** : [TV-00b — variantes d'attention](../../../GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch-Python.ipynb) (attention causale, la classe `PetitLM`, la méthodologie de banc entrelacé).",,,,,,,,374cc496907811fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb,5f900780,markdown,fr,d4167cd2d2857250,"## Sommaire
 
 1. **Le routeur top-k** — experts, porte, renormalisation, vérifications sur cas contrôlés
