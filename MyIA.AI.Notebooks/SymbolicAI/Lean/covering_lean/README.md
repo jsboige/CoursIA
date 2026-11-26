@@ -52,7 +52,7 @@ que l'amont publie lui-meme dans son `comparator.json`.
 
 L'amont publie aussi ses **chiffres** : le tableau des bornes (C(24,14,4) :
 19 -> 20, meilleure construction connue 23 ; C(25,15,5) : 32 -> 34, meilleure
-construction connue 42) et la propagation par le bornes de Schonheim (25 -> 34,
+construction connue 42) et la propagation par la borne de Schonheim (25 -> 34,
 26 -> 56, 27 -> 89, 28 -> 139). Ces trois dernieres valeurs sont une consequence
 arithmetique du theoreme, appliquee par le carnet ; le paquet ne les formalise
 pas, et l'amont le dit explicitement.

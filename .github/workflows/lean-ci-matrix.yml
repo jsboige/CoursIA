@@ -184,8 +184,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lake-manifest.json'
       # covering_lean (lac consommateur du paquet jamesyc/covering, #27477
-      # jalon 3 -- Greffe B. Le fichier consommateur ne declare que des
-      # #print axioms : 0 sorry reel, axiom target-modules "*" +
+      # jalon 3 -- Greffe B. Le fichier consommateur declare deux temoins
+      # `def witness_covering_*` a corps constant (non-vacuite au niveau du
+      # lac : sans eux la porte d'axiomes n'inspecterait rien) et les deux
+      # `#print axioms` sur `Covering.covering_24_14_4` et
+      # `Covering.covering_25_15_5`. 0 sorry reel, axiom target-modules "*" +
       # fail-on-sorry vrai, toolchain v4.35.0-rc3 (comme l'amont) nouveau
       # dans la matrice -- parametres au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/**.lean'
@@ -476,8 +479,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean/lake-manifest.json'
       # covering_lean (lac consommateur du paquet jamesyc/covering, #27477
-      # jalon 3 -- Greffe B. Le fichier consommateur ne declare que des
-      # #print axioms : 0 sorry reel, axiom target-modules "*" +
+      # jalon 3 -- Greffe B. Le fichier consommateur declare deux temoins
+      # `def witness_covering_*` a corps constant (non-vacuite au niveau du
+      # lac : sans eux la porte d'axiomes n'inspecterait rien) et les deux
+      # `#print axioms` sur `Covering.covering_24_14_4` et
+      # `Covering.covering_25_15_5`. 0 sorry reel, axiom target-modules "*" +
       # fail-on-sorry vrai, toolchain v4.35.0-rc3 (comme l'amont) nouveau
       # dans la matrice -- parametres au manifeste)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/covering_lean/**.lean'
