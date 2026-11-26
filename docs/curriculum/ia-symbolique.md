@@ -196,8 +196,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 105 | [Capstone Langlands — l'escalier : de la forme calculée…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb) | BETA | Non |
 | 106 | [Capstone Langlands — l'escalier : de la forme calculée…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Rust.ipynb) | BETA | Non |
 | 107 | [Lean-41 : Capstone — escalier vers la sous-série MIMO…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb) | ALPHA | Non |
-| 108 | [Lean-42 — L'indépendance arithmétique, certifiée : PA…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb) | BETA | Non |
-| 109 | [Lean-42 — Arithmetic independence, certified: PA does…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean_en.ipynb) | BETA | Non |
+| 108 | [Lean-42 — L'indépendance arithmétique, certifiée : PA…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean.ipynb) | BETA | Non |
+| 109 | [Lean-42 — Arithmetic independence, certified: PA does…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean_en.ipynb) | BETA | Non |
 | 110 | [MIMO-01 : Le budget de descente - quand la decroissance…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb) | BETA | Non |
 | 111 | [MIMO-02 : Detection MIMO par flips -- le seuil 2 log N…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb) | BETA | Non |
 | 112 | [MIMO-03 : le lake mimo_lean par ses énoncés — compagnon…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-03-Converse-Native-Lean.ipynb) | BETA | Non |

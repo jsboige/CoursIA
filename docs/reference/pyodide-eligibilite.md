@@ -460,7 +460,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb` | Lean | python3 | numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb` | Lean | python3 | - | - |
+| `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-04-Capstone-Digestion-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-01-Conway-Proofs-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |

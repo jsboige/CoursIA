@@ -3083,8 +3083,8 @@
   },
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean.ipynb",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-42-Independance-Arithmetique-BusyBeaver-Lean_en.ipynb",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean.ipynb",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08f-Independance-Arithmetique-BusyBeaver-Lean_en.ipynb",
    "sha1_fr": "f45562c5efb01cf89c97592df4b6daf2c41cebd7",
    "sha1_en": "623dc14c53b93c200f7e8f6825f1c480a09877d5",
    "sources_sha1_fr": "466590d0e01325efddae55a34a6e8cef5a86da0e",
