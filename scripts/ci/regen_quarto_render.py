@@ -142,6 +142,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/",  # serie SignalProcessing #27086 (carnet 02 convolution/filtrage, hub InformationCalcul)
     "MyIA.AI.Notebooks/InformationCalcul/Automata/",  # serie Automata #27158 (automates et langages formels, jumeaux Python/C#)
     "MyIA.AI.Notebooks/InformationCalcul/Cryptography/",  # serie Cryptography #27081 (chiffrement homomorphe, preuves ZK ; carnet .NET BCL)
+    "MyIA.AI.Notebooks/AgentInterfaces/",             # serie AgentInterfaces #27071 (interfaces agentiques : inventaire CLI/MCP/bridge + invocation)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
