@@ -285,10 +285,96 @@ def concepts_for(graph: Graph, query: str | None = None, limit: int | None = Non
     return matches[:limit] if limit is not None else matches
 
 
+def _citation_notebook_identifier(source) -> str:
+    """Identifiant de carnet (côté catalogue) d'une source de citation."""
+    raw = str(source)
+    if raw.startswith(BLOB_PREFIX):
+        raw = raw[len(BLOB_PREFIX):]
+    if raw.startswith(NOTEBOOKS_ROOT):
+        raw = raw[len(NOTEBOOKS_ROOT):]
+    return raw
+
+
+def _concept_citations(graph: Graph, concept: URIRef) -> list[tuple[str, str]]:
+    """Citations d'un concept : (identifiant de carnet, cellId)."""
+    pairs = []
+    for citation in graph.objects(concept, VOCAB.hasCellCitation):
+        source = graph.value(citation, DCTERMS.source)
+        cell_id = graph.value(citation, VOCAB.cellId)
+        if source is None or cell_id is None:
+            continue
+        pairs.append((_citation_notebook_identifier(source), str(cell_id)))
+    return sorted(set(pairs))
+
+
+def concepts_by_series(graph: Graph, series: str, limit: int | None = None) -> list[str]:
+    """Concepts d'une série, par le schéma SKOS qui les regroupe (#27635)."""
+    wanted = {
+        scheme
+        for scheme in graph.subjects(RDF.type, SKOS.ConceptScheme)
+        if _label(graph, scheme).casefold() == series.casefold()
+    }
+    matches = [
+        f"{_label(graph, concept)}\t{concept}"
+        for concept in graph.subjects(RDF.type, SKOS.Concept)
+        if graph.value(concept, SKOS.inScheme) in wanted
+    ]
+    matches.sort(key=str.casefold)
+    return matches[:limit] if limit is not None else matches
+
+
+def _concepts_citing_notebook(
+    graph: Graph, path: str, limit: int | None = None
+) -> list[str]:
+    """Concepts citant un carnet, avec la cellule source de chaque citation (#27635)."""
+    notebook = find_notebook(graph, path)
+    identifier = _identifier(graph, notebook)
+    matches = []
+    for concept in graph.subjects(RDF.type, SKOS.Concept):
+        for cited_notebook, cell_id in _concept_citations(graph, concept):
+            if cited_notebook == identifier:
+                matches.append(f"{_label(graph, concept)}\t{concept}\t{cell_id}")
+    matches = sorted(set(matches), key=str.casefold)
+    return matches[:limit] if limit is not None else matches
+
+
+def notebooks_for_concept(
+    graph: Graph, concept_ref: str, limit: int | None = None
+) -> list[str]:
+    """Carnets citants d'un concept, accepté par UUID ou URI (#27635)."""
+    concepts = [
+        concept for concept in graph.subjects(RDF.type, SKOS.Concept)
+        if str(concept) == concept_ref
+        or str(graph.value(concept, DCTERMS.identifier)) == concept_ref
+        or str(concept).endswith("/concept/" + concept_ref)
+    ]
+    if not concepts:
+        raise KeyError(concept_ref)
+    matches = []
+    for concept in concepts:
+        for cited_notebook, cell_id in _concept_citations(graph, concept):
+            try:
+                notebook = find_notebook(graph, cited_notebook)
+            except KeyError:
+                # Le carnet cité n'est pas dans la couche catalogue de l'export.
+                matches.append(f"{cited_notebook}\t{cell_id}")
+                continue
+            matches.append(
+                f"{_label(graph, notebook)}\t{_identifier(graph, notebook)}\t{cell_id}"
+            )
+    ordered = sorted(set(matches), key=str.casefold)
+    return ordered[:limit] if limit is not None else ordered
+
+
 def concepts_of_notebook(
     graph: Graph, path: str, query: str | None = None, limit: int | None = None
 ) -> list[str]:
-    """Concepts qui citent un carnet : libellé, identifiant, taxonomie, cellules citées."""
+    """Concepts qui citent un carnet : libellé, identifiant, taxonomie, cellules citées.
+
+    Nom unique de la passerelle (#27641) : CLI et passerelle HTTP l'invoquent.
+    Retombe sur les citations déclarées `hasCellCitation` quand le lien direct
+    `vocab:concept` est absent (couche concepts fusionnée #27635).
+    """
     identifier = path.replace("\\", "/").removeprefix(NOTEBOOKS_ROOT)
     notebook = find_notebook(graph, identifier)
     source = URIRef(BLOB_PREFIX + NOTEBOOKS_ROOT + identifier)
@@ -311,6 +397,12 @@ def concepts_of_notebook(
         lines.append(
             f"{label}\t{_identifier(graph, concept)}\t{_taxonomy_of(graph, concept)}\t{', '.join(cells)}"
         )
+    if not lines:
+        # Couche concepts fusionnée : citations par identifiant de carnet (#27635).
+        citing = _concepts_citing_notebook(graph, path, limit=None)
+        if needle:
+            citing = [line for line in citing if needle in line.casefold()]
+        lines = citing
     lines.sort(key=str.casefold)
     if not lines:
         return ["Aucun concept lié à ce carnet dans l'export."]
@@ -411,10 +503,13 @@ def main(argv: list[str] | None = None) -> int:
         "concepts", help="lister les concepts explicitement liés aux carnets"
     )
     concepts.add_argument("--query", help="filtrer le libellé du concept")
-    concepts.add_argument(
+    concepts.add_argument("--limit", type=positive_int, help="nombre maximal de résultats")
+    reading = concepts.add_mutually_exclusive_group()
+    reading.add_argument("--series", help="concepts d'une série (par son schéma SKOS)")
+    reading.add_argument(
         "--notebook", help="ne lister que les concepts qui citent ce carnet (chemin du dépôt)"
     )
-    concepts.add_argument("--limit", type=positive_int, help="nombre maximal de résultats")
+    reading.add_argument("--concept", help="carnets citants d'un concept (UUID ou URI)")
     bridges_cmd = commands.add_parser(
         "bridges", help="lister les ponts entre taxonomies (concepts partagés, prérequis, alignements)"
     )
@@ -448,8 +543,12 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "prerequisites":
             _print_lines(prerequisites_for(graph, args.path))
         elif args.command == "concepts":
-            if args.notebook:
+            if args.series:
+                _print_lines(concepts_by_series(graph, args.series, args.limit))
+            elif args.notebook:
                 _print_lines(concepts_of_notebook(graph, args.notebook, args.query, args.limit))
+            elif args.concept:
+                _print_lines(notebooks_for_concept(graph, args.concept, args.limit))
             else:
                 _print_lines(concepts_for(graph, args.query, args.limit))
         elif args.command == "bridges":

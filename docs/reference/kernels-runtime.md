@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-19
+> REFERENCE — vivante — dernière révision 2026-11-21
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
@@ -9,6 +9,27 @@ Document de référence détaillant l'inventaire kernels obligatoire sur toute m
 ## Setup macOS / Linux (poste contributeur)
 
 Ce document est centré cluster Windows. Pour le setup d'un poste contributeur **macOS / Linux** (équivalents `brew`/`apt` des commandes `winget`/`choco`, `elan` Lean sans WSL, backend MPS sur Apple Silicon), cf [setup-linux-macos.md](setup-linux-macos.md). Les kernels .NET Interactive, Python et Lean 4 sont cross-OS ; les notebooks s'exécutent à l'identique modulo le backend GPU.
+
+## Pins d'acquisition des toolchains (plis 1.1 et 1.2 de #27543)
+
+Les quatre familles de noyaux du dépôt s'acquièrent par **trois points de
+download**, épinglés ici une fois pour toutes : le manifeste du pli 1.1
+([#27544](https://github.com/jsboige/CoursIA/issues/27544)) et l'image
+d'apprentissage du pli 1.2 ([#27545](https://github.com/jsboige/CoursIA/issues/27545))
+lisent cette table, au lieu d'y recopier des versions qui divergent. La
+quatrième famille, .NET Interactive, a déjà son canon propre (1.0.712001,
+décision #18766) dans la section suivante.
+
+| Famille | Pin d'acquisition | Verification |
+|---------|--------------------|--------------|
+| Python 3.13 (`global-3.13`) | **Miniforge — dernière release** (`conda-forge/miniforge`, `releases/latest/download/Miniforge3-Linux-x86_64.sh`, canal conda-forge) | `conda create -n global-3.13 python=3.13 ipykernel` puis `python -m ipykernel install --name global-3.13` |
+| Lean 4 | **elan-init — branche `master`** (`leanprover/elan`, `elan/master/elan-init.sh`), toolchain `stable` | `elan --version`, `elan toolchain list` |
+| Rust (evcxr) | **toolchain rustup `stable` = rustc 1.100.0** (mesuré sur le poste) | `rustc --version` — détail et pièges dans la section Rust plus bas |
+
+Les trois pins correspondent à ce que l'image `docker-configurations/notebook-runner`
+fait déjà (`releases/latest/...` pour Miniforge, `elan/master/elan-init.sh` pour
+elan) ; Rust n'y est pas encore installé — c'est le manque que le pli 1.2 doit
+couvrir, et son pin est donc fixé ici avant que l'image ne le consomme.
 
 ## .NET Interactive (C# notebooks)
 

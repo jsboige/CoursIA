@@ -1,0 +1,8 @@
+- name: "Frontieres-06 Learning To Branch Generalization Audit"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "CSP, AC-3, recherche et métriques en C# ; HistGradientBoostingClassifier réel via Python.NET. Les entrées déterministes sont déclarées dans data/frontieres-learned-inputs/csp-instances.json et son générateur."
+    - "L'ordre de parcours des sets Python affecte activity ; un contrôle à ordre apparié retrouve les 11461 lignes et onze features à 1e-12. Les temps sont propres à chaque exécution."

@@ -1,0 +1,10 @@
+- name: "Argumentation-06b ATMS conflits"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06b-ATMS-Conflits-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06b-ATMS-Conflits-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le C# construit les scénarios puis appelle les vrais ATMS et ConflictResolver des modules EPITA présents dans argumentation_lib via Python.NET 3.1.0. Les résultats structurés sont interprétés dans le carnet."
+  known_differences:
+    - "Le C# conserve les sur-ensembles d'environnements et le comportement observé de l'invalidation de ⊥. Les exemples et la résolution des conflits invoquent les mêmes objets que le Python."
+    - "Les exercices utilisent des instances séparées et la dernière cellule affiche les compteurs sans imposer une date d'exécution. Les formes des messages de présentation diffèrent selon le langage."
