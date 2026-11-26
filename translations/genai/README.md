@@ -13,7 +13,7 @@
 | [`finetuning.csv`](finetuning.csv) | `GenAI/FineTuning/` | 5 | 161 | QLoRA, SFT, RLHF/DPO, model merging & routing (`FT-01` → `FT-05`) |
 | [`image.csv`](image.csv) | `GenAI/Image/` (4 sous-niveaux + `examples/`) | 20 | 533 | Génération d'images : ComfyUI/Forge, SDXL/Flux, ControlNet, inpainting, upscaling, workflows multi-étapes |
 | [`posttraining.csv`](posttraining.csv) | `GenAI/PostTraining/` | 7 | 171 | Post-training (`PT_*`) |
-| [`texte.csv`](texte.csv) | `GenAI/Texte/` (20 notebooks `1`–`20`) | 20 | 718 | LLMs texte : OpenAI, OWUI, LocalLlama (`1_OpenAI_Intro` → `20_OWUI`) |
+| [`texte.csv`](texte.csv) | `GenAI/Texte/` (notebooks `1`–`20`) | 20 | 718 | LLMs texte : OpenAI, OWUI, LocalLlama (`1_OpenAI_Intro` → `20_OWUI`) |
 | [`video.csv`](video.csv) | `GenAI/Video/` (4 sous-niveaux) | 17 | 486 | Génération vidéo IA (4 sous-niveaux : Foundation, Advanced, Orchestration, Applications) |
 
 **Schéma** : 21 colonnes au seed (#4957 §1) — le schéma courant se lit dans l'en-tête des CSV. `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en`/`es`/`ar`/`fa`/`zh`/`ru`/`pt`) vides en attente du moteur T3 Argumentum (#1650 Phase 1).

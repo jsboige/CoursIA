@@ -35,6 +35,12 @@ def _charger(nom: str):
 
 gh_etag = _charger("gh_etag")
 
+# #28272 : le funnel d'appel a ete extrait dans `scripts/ci/gh_app_failover.py`
+# (#27012 point 3) et c'est LUI qui importe gh_etag ; `check_unaddressed_nits`
+# ne porte plus l'attribut. Le mock doit viser le module qui appelle, sinon il
+# ne couvre plus rien (mesure CI : AttributeError au head).
+gh_app_failover = _charger("gh_app_failover")
+
 
 class FauxGh:
     """200 (avec Etag) sans `If-None-Match`, 304 (rc=1, mesure #26260) avec.
@@ -245,8 +251,8 @@ def test_b0_gh_json_route_le_rest_conditionnable(monkeypatch):
     def _cond(path, timeout=None):
         return ({"number": 42, "title": "T", "body": "B", "state": "open"}, True)
 
-    monkeypatch.setattr(nits.gh_etag, "conditional_get", _cond)
-    monkeypatch.setattr(nits.gh_etag, "etag_applicable",
+    monkeypatch.setattr(gh_app_failover.gh_etag, "conditional_get", _cond)
+    monkeypatch.setattr(gh_app_failover.gh_etag, "etag_applicable",
                         lambda args: "repos/jsboige/CoursIA/issues/42"
                         if args[:2] == ["api", "repos/jsboige/CoursIA/issues/42"]
                         else None)
@@ -261,7 +267,7 @@ def test_b0_gh_json_route_le_rest_conditionnable(monkeypatch):
     def _boom(*a, **k):
         raise AssertionError("gh_etag ne doit pas etre appele")
 
-    monkeypatch.setattr(nits.gh_etag, "conditional_get", _boom)
+    monkeypatch.setattr(gh_app_failover.gh_etag, "conditional_get", _boom)
     monkeypatch.setattr(
         nits.subprocess, "run",
         lambda cmd, **k: subprocess.CompletedProcess(

@@ -1,0 +1,297 @@
+# Paire ML 2.7 : jumeau Python + portage Rust (issue #27134, page de spec #28296,
+# Lot 6 de l'Epic Origami #26510).
+# Les deux carnets ont exactement la meme structure 24 cellules (mêmes indices) :
+# les cotes se correspondent par index. Cote Rust = evcxr + smartcore 0.7.0.
+# Le carnet 2.7 n'a pas de cote C# (jumeau Rust seul) ; les carnets voisins 2.7b et
+# 2.7c ont le leur, hors de ce registre.
+# Les cartes ASCII (cellules 3, 5, 7, 12, 14) sont des RENDUS, hors registre :
+# comparees qualitativement dans le body de la PR (droite contre croissant,
+# enclaves a k = 1, bandes verticales sans standardisation).
+# Les precisions se comparent a 0,05 pres : les generateurs de scikit-learn
+# tirent leur melange et leur bruit de numpy (random_state=42), le jumeau d'un
+# xorshift64 maison -- les nuages de points different, donc les precisions aussi.
+# Ecart maximal mesure sur les 9 precisions comparees : 0.033 (RBF sur les
+# demi-lunes, 0.930 contre 0.897). Les precisions a k = 1 sont a 1.000 des deux cotes.
+# L'exercice 1 est re-aime cote Rust (precision par valeur de C, et non nombre de
+# vecteurs supports) : la grandeur demandee change, le prefixe de la ligne est commun.
+# La parite SHA par cote (twin_pairs.d, cote rust) attend le point 1 de #27098 :
+# declaree ici, pas reimplementee.
+- name: "ML 2.7 Modeles non parametriques (SVM et k-NN)"
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb
+  rust: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques-Rust.ipynb
+  measures:
+    - id: banniere_configuration
+      description: "Bannière de configuration du carnet (identique des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "(Configuration OK : 2\\.7 - Modeles non parametriques \\(SVM et k-NN\\))"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "(Configuration OK : 2\\.7 - Modeles non parametriques \\(SVM et k-NN\\))"
+          transform: text
+    - id: formes_moons
+      description: "Formes du jeu de données make_moons (300 points, 2 variables)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(X_moons : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(X_moons : [^\\n]*)"
+          transform: text
+    - id: classes_moons
+      description: "Classes du jeu de données (0 et 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "(Classes : [^\\n]*)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "(Classes : [^\\n]*)"
+          transform: text
+    - id: svm_lineaire_moons
+      description: "Précision du SVM linéaire (C = 1) sur les demi-lunes (Python 0.850)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "SVM lineaire -- accuracy sur les demi-lunes : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "SVM lineaire -- accuracy sur les demi-lunes : ([0-9.]+)"
+          transform: float
+    - id: verdict_droite
+      description: "Verdict du SVM linéaire : la frontière est une droite"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(La frontiere est une DROITE[^\\n]*)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(La frontiere est une DROITE[^\\n]*)"
+          transform: text
+    - id: svm_lineaire
+      description: "Précision du SVM linéaire sur les demi-lunes (Python 0.850)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "SVM lineaire -- accuracy : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 7
+          pattern: "SVM lineaire -- accuracy : ([0-9.]+)"
+          transform: float
+    - id: svm_rbf
+      description: "Précision du SVM RBF (C = 1, gamma scale) sur les demi-lunes (Python 0.897)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "SVM RBF +-- accuracy : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 7
+          pattern: "SVM RBF +-- accuracy : ([0-9.]+)"
+          transform: float
+    - id: vecteurs_supports
+      description: "Nombre de vecteurs supports du SVM RBF (Python 100)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Nombre de vecteurs supports \\(RBF\\) : (\\d+)"
+          transform: int
+        rust:
+          absent: >-
+            SVC de smartcore 0.7.0 n'expose aucun accesseur public aux vecteurs
+            supports (src/svm/svc.rs) : le jumeau affiche a la place le nombre de
+            points mal classes a l'entrainement (RBF), sans equivalent cote Python.
+    - id: exercice_1
+      description: "Ligne d'exercice 1 (préfixe commun ; la grandeur demandée change côté Rust)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(Exercice 1 a completer)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(Exercice 1 a completer)"
+          transform: text
+    - id: knn_k1
+      description: "Précision du k-NN pour k = 1 (Python 1.000)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "k-NN \\(k= 1\\) -- accuracy : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "k-NN \\(k= 1\\) -- accuracy : ([0-9.]+)"
+          transform: float
+    - id: knn_k15
+      description: "Précision du k-NN pour k = 15 (Python 0.903)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "k-NN \\(k=15\\) -- accuracy : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "k-NN \\(k=15\\) -- accuracy : ([0-9.]+)"
+          transform: float
+    - id: knn_k75
+      description: "Précision du k-NN pour k = 75 (Python 0.883)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "k-NN \\(k=75\\) -- accuracy : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "k-NN \\(k=75\\) -- accuracy : ([0-9.]+)"
+          transform: float
+    - id: verdict_knn
+      description: "Verdict k-NN : surajustement à k = 1, sous-ajustement à k = 75"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "(k=1 : frontiere fracturee[^\\n]*)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "(k=1 : frontiere fracturee[^\\n]*)"
+          transform: text
+    - id: knn_brutes
+      description: "Précision du k-NN (k = 15) sur variables brutes déformées, x1 x 100 (Python 0.770)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "k-NN sur variables brutes deformees +: ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 14
+          pattern: "k-NN sur variables brutes deformees +: ([0-9.]+)"
+          transform: float
+    - id: knn_standardisees
+      description: "Précision du k-NN (k = 15) sur variables standardisées (Python 0.900)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "k-NN sur variables standardisees +: ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 14
+          pattern: "k-NN sur variables standardisees +: ([0-9.]+)"
+          transform: float
+    - id: verdict_standardisation
+      description: "Verdict standardisation : sans elle, x1 (x 100) écrase la distance"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(Sans standardisation[^\\n]*)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(Sans standardisation[^\\n]*)"
+          transform: text
+    - id: exercice_2
+      description: "Ligne d'exercice 2 (meilleur k, stub des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(Exercice 2 a completer[^\\n]*)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(Exercice 2 a completer[^\\n]*)"
+          transform: text
+    - id: cancer_svm
+      description: "Précision de test du SVM RBF standardisé sur le cancer du sein (Python 0.977)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "  SVM \\(RBF, standardise\\) : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "  SVM \\(RBF, standardise\\) : ([0-9.]+)"
+          transform: float
+    - id: cancer_knn
+      description: "Précision de test du k-NN (k = 5) standardisé sur le cancer du sein (Python 0.959)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "  k-NN \\(k=5, standardise\\) : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "  k-NN \\(k=5, standardise\\) : ([0-9.]+)"
+          transform: float
+    - id: verdict_cancer
+      description: "Verdict cancer du sein : les deux modèles standardisés, le SVM RBF légèrement meilleur"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(Les deux modeles non parametriques[^\\n]*)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(Les deux modeles non parametriques[^\\n]*)"
+          transform: text
+    - id: exercice_3
+      description: "Ligne d'exercice 3 (noyau polynomial contre RBF, stub des deux côtés)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "(Exercice 3 a completer[^\\n]*)"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "(Exercice 3 a completer[^\\n]*)"
+          transform: text
