@@ -1,0 +1,10 @@
+- name: "Z3-Python-11 Graph-Coloring"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Coloration du graphe de Petersen resolue NATIVEMENT des deux cotes par le meme coeur C++ Z3 : pyz3 (`from z3 import *`, Solver/check/model) et Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"`, ctx.MkSolver/Check/Model) sont les deux bindings officiels — pas de pont intermediaire, aucune reimplementation a la main de la resolution. Valeurs mesurees identiques des deux cotes : glouton first-fit 3 couleurs en ordre naturel [0,1,0,1,2,1,0,2,2,1] et 4 en ordre defavorable [2,3,0,1,0,1,1,3,0,2], k=1 et k=2 UNSAT, k=3 SAT, nombre chromatique chi=3, et temoin Z3 identique [0,1,2,0,1,1,0,0,2,2]."
+  known_differences:
+    - "2026-11-20 (myia-po-2027:CoursIA, #27283) : creation du jumeau C# natif (portage integral du carnet Python sur Microsoft.Z3, 27 cellules dont 10 code, kernel .net-csharp). La figure matplotlib de la cellule 15 est remplacee par un SVG statique emis par le code et rendu par un formateur HTML (`record PlotSvg` + `Formatter.Register(..., \"text/html\")`), le noyau .net-csharp n'ayant pas matplotlib : positions canoniques et palette identiques (pentagone externe rayon 2.0, pentagramme interne rayon 1.0 decale de 36 degres, #e41a1c/#377eb8/#4daf4a), aucune donnee calculee ne change."
+    - "2026-11-20 (myia-po-2027:CoursIA, #27283) : le commentaire du stub de l'exercice 1 passe au pluriel cote C# (`ajouter les aretes creant une clique de taille 4`) — le texte Python dit `une arete` alors qu'un K4 en exige trois et que le markdown du meme carnet le dit ; le stub reste non resolu des deux cotes."
