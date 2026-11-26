@@ -546,6 +546,20 @@ Trois colonnes, trois instruments :
 Un passage dont l'organe ne publie pas de ligne `api-quota:` est rendu `n.m.` :
 une valeur inventee serait pire qu'un trou.
 
+**Un zero n'est pas une mesure indisponible.** Quand la lecture echoue (403,
+erreur de transport, JSON invalide), le workflow est **conserve** avec le
+statut `indisponible` et un volume `inconnu` -- jamais rendu 0, jamais
+supprime du tableau (y compris au-dela de la limite `top`). Un 403 sur le plus
+gros consommateur le ferait sinon disparaitre du classement sans que
+l'incompletude soit signalee. La liste des workflows est lue **page par
+page** (100 par page, la queue etant celle des plus sollicites) ; une page
+interrompue est signalee par `pagination_complete: false`. Le rapport porte
+donc une **couverture** (`complet`, `workflows_indisponibles`, `erreur`), et le
+classement n'est annonce exact que si elle est complete : le code de sortie
+vaut alors `2` (le rapport est malgre tout produit). `0` signifie « j'ai
+mesure zero », `None` signifie « je ne sais pas » -- les deux ne se
+confondent jamais.
+
 **Deux pieges de mesure, deja payes.** Le listing global
 `GET /repos/{owner}/{repo}/actions/runs` est **plafonne a 1 000 resultats**
 (mesure du 2026-11-25 : la page 11 rend `total_count: 0` sur une fenetre de 24 h

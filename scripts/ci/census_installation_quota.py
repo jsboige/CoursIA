@@ -20,6 +20,14 @@ Trois colonnes, trois instruments :
 | appels payes/passage | lignes `api-quota:` des journaux | les appels **payes** (les 304 sont gratuits) -- `n.m.` si l'organe ne publie pas la ligne |
 | appels visibles/passage | lignes `##[command]gh api` des journaux | borne inferieure : les appels faits par un script Python (sortie capturee) n'apparaissent pas |
 
+**Un zero n'est pas une mesure indisponible.** Une lecture qui echoue rend
+`None` (`indisponible`), jamais `0` : un `0` fake ferait disparaitre un
+consommateur du classement -- et un 403 sur le plus gros consommateur
+disparait silencieusement, sans que l'incompletude soit signalee. Le rapport
+porte donc une **couverture** (`complet`, `pagination_complete`, workflows
+illisibles) et le classement n'est annonce exact que si elle est complete ; le
+code de sortie vaut `2` sinon.
+
 **Pourquoi un compte par workflow et non le listing global.** Le listing
 `GET /repos/{owner}/{repo}/actions/runs` est plafonne a **1 000 resultats**
 (mesure : la page 11 rend `total_count: 0` sur une fenetre de 24 h qui en
@@ -32,6 +40,10 @@ Usage :
 python scripts/ci/census_installation_quota.py --hours 24 --sample 3
 python scripts/ci/census_installation_quota.py --json
 ```
+
+Code de sortie : `0` census complet, `2` couverture partielle (une lecture a
+echoue, ou la pagination des workflows a ete interrompue) -- le rapport est
+malgre tout produit, mais son classement n'est **pas** exact.
 
 Cout du census : une lecture de la liste des workflows, plus une lecture par
 workflow (environ 100 appels), plus un journal par passage echantillonne des
@@ -67,19 +79,36 @@ API_QUOTA_RE = re.compile(r"api-quota:\s*(\d+)\s+(?:gh api|appel)", re.IGNORECAS
 VISIBLE_CALL_RE = re.compile(r"##\[command\]gh api\b")
 
 
+class MesureIndisponible(Exception):
+    """Une lecture a echoue : la mesure est INCONNUE, pas nulle.
+
+    Distincte d'une mesure a zero. Rendre `0` ou une liste vide a la place
+    ferait croire a une absence de consommation -- et le classement perdrait
+    silencieusement le consommateur qu'on cherche.
+    """
+
+
 @dataclass
 class Passage:
-    """Un passage d'un workflow, mesure sur la fenetre."""
+    """Un passage d'un workflow, mesure sur la fenetre.
+
+    `statut` distingue deux etats qui ne se confondent jamais :
+
+    - `mesure` : le volume de passages est connu -- y compris ZERO ;
+    - `indisponible` : la lecture a echoue, le volume est INCONNU.
+    """
 
     workflow: str
-    runs_24h: int
+    runs_24h: int | None
+    statut: str = "mesure"
     paid_calls: float | None = None
     visible_calls: float | None = None
     samples: list[int] = field(default_factory=list)
+    erreur: str | None = None
 
     @property
     def calls_24h(self) -> float | None:
-        if self.paid_calls is None:
+        if self.paid_calls is None or self.runs_24h is None:
             return None
         return self.paid_calls * self.runs_24h
 
@@ -105,25 +134,67 @@ def window_start(hours: int, now: datetime | None = None) -> datetime:
     return reference - timedelta(hours=hours)
 
 
-def fetch_workflows(repo: str) -> list[tuple[int, str]]:
-    """Liste des workflows du depot : (identifiant, nom)."""
-    code, out, _ = run_gh(
-        ["api", f"repos/{repo}/actions/workflows?per_page=100"]
-    )
-    if code != 0:
-        return []
-    try:
-        data = json.loads(out)
-    except json.JSONDecodeError:
-        return []
-    workflows = []
-    for item in data.get("workflows", []):
-        workflows.append((int(item["id"]), str(item.get("name", "?"))))
-    return workflows
+def fetch_workflows(
+    repo: str, max_pages: int = 20
+) -> tuple[list[tuple[int, str]], bool]:
+    """Liste des workflows du depot : (identifiant, nom) + couverture complete.
+
+    La lecture est **paginee** : l'API rend 100 workflows par page, et un depot
+    qui en compte davantage perdrait sa queue -- c'est-a-dire les workflows les
+    plus sollicites, ceux que le census cherche. Rend
+    `(workflows, pagination_complete)` : `False` signale une pagination
+    interrompue (erreur sur une page laterale, ou plafond de pages atteint).
+
+    Une erreur de transport sur la **premiere** page leve `MesureIndisponible` :
+    rendre une liste vide ferait croire a un depot sans workflow, donc a un
+    census exact de zero consommateur.
+    """
+    workflows: list[tuple[int, str]] = []
+    vus: set[int] = set()
+    complete = True
+    for page in range(1, max_pages + 1):
+        code, out, err = run_gh(
+            ["api", f"repos/{repo}/actions/workflows?per_page=100&page={page}"]
+        )
+        if code != 0:
+            if page == 1:
+                raise MesureIndisponible(
+                    "liste des workflows illisible (page 1) : "
+                    + (err.strip() or f"code {code}")
+                )
+            complete = False
+            break
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            if page == 1:
+                raise MesureIndisponible(
+                    "liste des workflows illisible (JSON invalide, page 1)"
+                )
+            complete = False
+            break
+        items = data.get("workflows", [])
+        for item in items:
+            identifiant = int(item["id"])
+            if identifiant not in vus:
+                vus.add(identifiant)
+                workflows.append((identifiant, str(item.get("name", "?"))))
+        if len(items) < 100:
+            break
+    else:
+        # plafond de pages atteint sans page courte : la queue est peut-etre laissee
+        complete = False
+    return workflows, complete
 
 
-def count_runs(repo: str, workflow_id: int, since: datetime) -> int:
-    """Nombre de runs d'un workflow sur la fenetre (`total_count`, exact)."""
+def count_runs(repo: str, workflow_id: int, since: datetime) -> int | None:
+    """Nombre de runs d'un workflow sur la fenetre (`total_count`, exact).
+
+    Rend `None` quand la lecture est IMPOSSIBLE (erreur de transport, JSON
+    invalide) : `None` dit « je ne sais pas », `0` dit « j'ai mesure zero ».
+    Confondre les deux ferait disparaitre un consommateur du classement sans
+    que l'incompletude soit signalee.
+    """
     stamp = since.strftime("%Y-%m-%dT%H:%M:%SZ")
     code, out, _ = run_gh(
         [
@@ -133,11 +204,11 @@ def count_runs(repo: str, workflow_id: int, since: datetime) -> int:
         ]
     )
     if code != 0:
-        return 0
+        return None
     try:
         return int(json.loads(out).get("total_count", 0))
     except (json.JSONDecodeError, TypeError, ValueError):
-        return 0
+        return None
 
 
 def fetch_run_ids(repo: str, workflow_id: int, since: datetime, limit: int) -> list[int]:
@@ -182,17 +253,22 @@ def measure_passages(
     coute plus de quota qu'il n'en mesure. Les workflows non echantillonnes
     gardent leur volume de passages et restent `n.m.` sur les colonnes de
     compte -- un trou nomme, jamais une valeur inventee.
+
+    Un workflow dont la **lecture du compteur** echoue est conserve avec le
+    statut `indisponible` : il ne disparait pas du rapport (c'est precisement
+    lui qu'on cherche), et il n'est jamais rendu 0. Un workflow mesure a zero
+    passages sort du tableau : il n'a rien consomme.
     """
-    counted: list[tuple[int, str, int]] = []
+    counted: list[tuple[int, str, int | None]] = []
     for workflow_id, name in workflows:
         counted.append((workflow_id, name, count_runs(repo, workflow_id, since)))
-    counted = [row for row in counted if row[2] > 0]
-    counted.sort(key=lambda row: (-row[2], row[1]))
-    sampled = {row[0] for row in counted[:sample_top]} if sample_top else {
-        row[0] for row in counted
+    actifs = [row for row in counted if row[2] is not None and row[2] > 0]
+    actifs.sort(key=lambda row: (-row[2], row[1]))
+    sampled = {row[0] for row in actifs[:sample_top]} if sample_top else {
+        row[0] for row in actifs
     }
     passages: list[Passage] = []
-    for workflow_id, name, runs_24h in counted:
+    for workflow_id, name, runs_24h in actifs:
         passage = Passage(workflow=name, runs_24h=runs_24h)
         if workflow_id in sampled and runs_24h:
             run_ids = fetch_run_ids(repo, workflow_id, since, sample)
@@ -210,23 +286,43 @@ def measure_passages(
             if visible and any(visible):
                 passage.visible_calls = sum(visible) / len(visible)
         passages.append(passage)
+    for workflow_id, name, runs_24h in counted:
+        if runs_24h is None:
+            passages.append(
+                Passage(
+                    workflow=name,
+                    runs_24h=None,
+                    statut="indisponible",
+                    erreur="compteur de runs illisible",
+                )
+            )
     return passages
 
 
 def render_table(passages: list[Passage], top: int) -> str:
-    """Rend le tableau Markdown (colonnes mesurees, `n.m.` explicite)."""
+    """Rend le tableau Markdown (colonnes mesurees, `n.m.` explicite).
+
+    Les workflows `indisponible` sont **toujours** rendus, meme au-dela du
+    `top` : ils sont la raison pour laquelle le classement n'est pas exact, et
+    un tableau qui les cache reproduit exactement le defaut corrige ici.
+    """
+    mesures = [p for p in passages if p.statut == "mesure"]
+    indisponibles = [p for p in passages if p.statut != "mesure"]
     ranked = sorted(
-        passages,
+        mesures,
         key=lambda p: (
             -(p.calls_24h or 0),
-            -(p.visible_calls or 0) * p.runs_24h,
-            -p.runs_24h,
+            -(p.visible_calls or 0) * (p.runs_24h or 0),
+            -(p.runs_24h or 0),
         ),
     )[:top]
+    ranked = ranked + sorted(
+        indisponibles, key=lambda p: p.workflow
+    )
     lines = [
         "| # | Consommateur | runs/24 h | appels payes/passage | appels payes/24 h | "
-        "appels visibles/passage |",
-        "|---|---|---|---|---|---|",
+        "appels visibles/passage | statut |",
+        "|---|---|---|---|---|---|---|",
     ]
     for index, passage in enumerate(ranked, 1):
         paid = f"{passage.paid_calls:.1f}" if passage.paid_calls is not None else "n.m."
@@ -236,35 +332,62 @@ def render_table(passages: list[Passage], top: int) -> str:
             if passage.visible_calls is not None
             else "n.m."
         )
+        runs = passage.runs_24h if passage.runs_24h is not None else "inconnu"
         lines.append(
-            f"| {index} | {passage.workflow} | {passage.runs_24h} | {paid} | "
-            f"{per_day} | {visible} |"
+            f"| {index} | {passage.workflow} | {runs} | {paid} | "
+            f"{per_day} | {visible} | {passage.statut} |"
         )
     return "\n".join(lines)
 
 
 def build(args: argparse.Namespace) -> dict:
     since = window_start(args.hours)
-    workflows = fetch_workflows(args.repo)
+    erreur: str | None = None
+    try:
+        workflows, pagination_complete = fetch_workflows(args.repo)
+    except MesureIndisponible as exc:
+        workflows, pagination_complete, erreur = [], False, str(exc)
     passages = measure_passages(
         args.repo, workflows, since, args.sample, args.sample_top
+    )
+    mesures = [p for p in passages if p.statut == "mesure"]
+    indisponibles = [p for p in passages if p.statut != "mesure"]
+    complet = (
+        erreur is None
+        and pagination_complete
+        and not indisponibles
     )
     return {
         "repo": args.repo,
         "hours": args.hours,
         "since": since.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "workflows_measured": len(passages),
+        "complet": complet,
+        "couverture": {
+            "workflows_lus": len(workflows),
+            "workflows_mesures": len(mesures),
+            "workflows_indisponibles": len(indisponibles),
+            "pagination_complete": pagination_complete,
+            "erreur": erreur,
+        },
+        "workflows_measured": len(mesures),
         "table": render_table(passages, args.top),
         "passages": [
             {
                 "workflow": p.workflow,
                 "runs_24h": p.runs_24h,
+                "statut": p.statut,
+                "erreur": p.erreur,
                 "paid_calls": p.paid_calls,
                 "paid_calls_24h": p.calls_24h,
                 "visible_calls": p.visible_calls,
             }
             for p in sorted(
-                passages, key=lambda p: (-(p.calls_24h or 0), -p.runs_24h)
+                passages,
+                key=lambda p: (
+                    -(p.calls_24h or 0),
+                    -(p.runs_24h or 0),
+                    p.workflow,
+                ),
             )
         ],
     }
@@ -298,7 +421,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             "borne inferieure, les appels faits par un script Python "
             "(sortie capturee) n'y figurent pas."
         )
-    return 0
+        if not report["complet"]:
+            couverture = report["couverture"]
+            print()
+            print(
+                "**COUVERTURE PARTIELLE -- le classement ci-dessus n'est PAS "
+                "exact.** "
+                f"{couverture['workflows_indisponibles']} workflow(s) en echec de "
+                "lecture (ils sont lists avec le statut `indisponible` et un "
+                "volume `inconnu`, pas 0) ; "
+                f"pagination des workflows : "
+                f"{'complete' if couverture['pagination_complete'] else 'INTERROMPUE'}"
+                + (f" ; erreur : {couverture['erreur']}" if couverture["erreur"] else "")
+                + "."
+            )
+    return 0 if report["complet"] else 2
 
 
 if __name__ == "__main__":

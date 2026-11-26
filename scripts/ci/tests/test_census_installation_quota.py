@@ -22,11 +22,14 @@ Aucun test n'atteint le reseau : le lancement de `gh` est simule.
 
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+import pytest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "census_installation_quota.py"
 _spec = importlib.util.spec_from_file_location("census_installation_quota", SCRIPT)
@@ -75,13 +78,66 @@ def test_fetch_workflows_reads_ids_and_names(monkeypatch):
     monkeypatch.setattr(
         mod, "run_gh", lambda args: (0, json.dumps(payload), "")
     )
-    assert mod.fetch_workflows("jsboige/CoursIA") == [(11, "PR gate"), (12, "Sweep")]
+    workflows, complete = mod.fetch_workflows("jsboige/CoursIA")
+    assert workflows == [(11, "PR gate"), (12, "Sweep")]
+    assert complete is True
 
 
-def test_count_runs_is_zero_on_transport_error(monkeypatch):
+def test_fetch_workflows_pagine_et_signale_une_couverture_partielle(monkeypatch):
+    """La lecture est paginee : la queue des workflows ne doit pas disparaitre."""
+
+    def fake_run_gh(args):
+        page = int(
+            next(
+                a
+                for a in args
+                if "actions/workflows?" in a
+            ).split("&page=")[1]
+        )
+        if page == 1:
+            items = [{"id": i, "name": f"W{i}"} for i in range(100)]
+        else:
+            items = [{"id": 100, "name": "W100"}]
+        return (0, json.dumps({"workflows": items}), "")
+
+    monkeypatch.setattr(mod, "run_gh", fake_run_gh)
+    workflows, complete = mod.fetch_workflows("jsboige/CoursIA")
+    assert len(workflows) == 101
+    assert workflows[-1] == (100, "W100")
+    assert complete is True
+
+
+def test_fetch_workflows_echec_leve_une_erreur_nommee_pas_une_liste_vide(monkeypatch):
+    monkeypatch.setattr(mod, "run_gh", lambda args: (1, "", "403"))
+    with pytest.raises(mod.MesureIndisponible):
+        mod.fetch_workflows("jsboige/CoursIA")
+
+
+def test_fetch_workflows_signale_une_page_interrompue(monkeypatch):
+    def fake_run_gh(args):
+        page = int(
+            next(
+                a
+                for a in args
+                if "actions/workflows?" in a
+            ).split("&page=")[1]
+        )
+        if page == 1:
+            items = [{"id": i, "name": f"W{i}"} for i in range(100)]
+            return (0, json.dumps({"workflows": items}), "")
+        return (1, "", "502")
+
+    monkeypatch.setattr(mod, "run_gh", fake_run_gh)
+    workflows, complete = mod.fetch_workflows("jsboige/CoursIA")
+    assert len(workflows) == 100
+    assert complete is False
+
+
+def test_count_runs_echec_de_transport_rend_none_pas_zero(monkeypatch):
+    """Un zero est une MESURE ; une lecture impossible est INCONNUE."""
     monkeypatch.setattr(mod, "run_gh", lambda args: (1, "", "boom"))
     since = mod.window_start(24)
-    assert mod.count_runs("jsboige/CoursIA", 11, since) == 0
+    assert mod.count_runs("jsboige/CoursIA", 11, since) is None
 
 
 def test_count_runs_reads_total_count(monkeypatch):
@@ -157,3 +213,123 @@ def test_fetch_run_ids_reads_the_recent_runs(monkeypatch):
     assert mod.fetch_run_ids(
         "jsboige/CoursIA", 11, mod.window_start(24), 3
     ) == [501, 502]
+
+
+# --------------------------------------------------------------------------
+# Un zero n'est pas une mesure indisponible (#28551, reserve du 26/11)
+# --------------------------------------------------------------------------
+
+
+def _args(**kwargs) -> argparse.Namespace:
+    base = {
+        "repo": "jsboige/CoursIA",
+        "hours": 24,
+        "sample": 1,
+        "sample_top": 5,
+        "top": 10,
+        "json": False,
+    }
+    base.update(kwargs)
+    return argparse.Namespace(**base)
+
+
+def test_un_echec_de_lecture_ne_produit_pas_un_classement_annonce_exact(monkeypatch):
+    """Un 403 sur un workflow ne peut pas disparaitre du classement en silence."""
+    monkeypatch.setattr(
+        mod,
+        "fetch_workflows",
+        lambda repo: ([(11, "Gros"), (12, "Iluisible")], True),
+    )
+
+    def fake_count(repo, workflow_id, since):
+        return None if workflow_id == 12 else 500
+
+    monkeypatch.setattr(mod, "count_runs", fake_count)
+    monkeypatch.setattr(mod, "fetch_run_ids", lambda repo, wid, since, limit: [1])
+    monkeypatch.setattr(
+        mod, "sample_run_logs", lambda repo, ids: ["api-quota: 8 gh api call(s)"]
+    )
+
+    report = mod.build(_args())
+    assert report["complet"] is False
+    assert report["couverture"]["workflows_indisponibles"] == 1
+    statuts = {p["workflow"]: p["statut"] for p in report["passages"]}
+    assert statuts["Iluisible"] == "indisponible"
+    assert statuts["Gros"] == "mesure"
+
+
+def test_un_workflow_illisible_garde_un_statut_distinct_du_zero(monkeypatch):
+    monkeypatch.setattr(
+        mod, "count_runs", lambda repo, wid, since: None if wid == 12 else 3
+    )
+    monkeypatch.setattr(mod, "fetch_run_ids", lambda repo, wid, since, limit: [1])
+    monkeypatch.setattr(mod, "sample_run_logs", lambda repo, ids: ["rien ici"])
+    passages = mod.measure_passages(
+        "jsboige/CoursIA",
+        [(11, "W"), (12, "Iluisible")],
+        mod.window_start(24),
+        sample=1,
+    )
+    illisible = [p for p in passages if p.workflow == "Iluisible"]
+    assert len(illisible) == 1
+    assert illisible[0].statut == "indisponible"
+    assert illisible[0].runs_24h is None
+    # il apparait dans le tableau, avec un volume inconnu -- jamais 0
+    table = mod.render_table(passages, top=10)
+    assert "Iluisible" in table
+    assert "inconnu" in table
+    assert "| inconnu |" in table
+
+
+def test_le_tableau_garde_les_illisibles_meme_au_dela_du_top(monkeypatch):
+    """Un illisible ne doit pas etre coupe par la limite `top`."""
+    mesures = [
+        mod.Passage(workflow=f"W{i}", runs_24h=10, paid_calls=1.0) for i in range(10)
+    ]
+    illisible = mod.Passage(
+        workflow="Iluisible", runs_24h=None, statut="indisponible"
+    )
+    table = mod.render_table(mesures + [illisible], top=3)
+    assert "Iluisible" in table
+
+
+def test_le_classement_complet_est_annonce_comme_tel(monkeypatch):
+    monkeypatch.setattr(mod, "fetch_workflows", lambda repo: ([(11, "W")], True))
+    monkeypatch.setattr(mod, "count_runs", lambda repo, wid, since: 12)
+    monkeypatch.setattr(mod, "fetch_run_ids", lambda repo, wid, since, limit: [1])
+    monkeypatch.setattr(
+        mod, "sample_run_logs", lambda repo, ids: ["api-quota: 8 gh api call(s)"]
+    )
+    report = mod.build(_args())
+    assert report["complet"] is True
+    assert report["couverture"]["workflows_indisponibles"] == 0
+
+
+def test_une_liste_de_workflows_illisible_ne_produit_pas_un_zero(monkeypatch):
+    def boom(repo):
+        raise mod.MesureIndisponible("403")
+
+    monkeypatch.setattr(mod, "fetch_workflows", boom)
+    report = mod.build(_args())
+    assert report["complet"] is False
+    assert report["couverture"]["erreur"]
+    assert report["passages"] == []
+
+
+def test_le_code_de_sortie_signale_la_couverture_partielle(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_workflows", lambda repo: ([(11, "W")], True))
+    monkeypatch.setattr(mod, "count_runs", lambda repo, wid, since: None)
+    code = mod.main(["--json"])
+    assert code == 2
+    rapport = json.loads(capsys.readouterr().out)
+    assert rapport["complet"] is False
+
+
+def test_le_code_de_sortie_est_nul_si_le_census_est_complet(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_workflows", lambda repo: ([(11, "W")], True))
+    monkeypatch.setattr(mod, "count_runs", lambda repo, wid, since: 12)
+    monkeypatch.setattr(mod, "fetch_run_ids", lambda repo, wid, since, limit: [1])
+    monkeypatch.setattr(
+        mod, "sample_run_logs", lambda repo, ids: ["api-quota: 8 gh api call(s)"]
+    )
+    assert mod.main(["--json"]) == 0
