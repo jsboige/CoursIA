@@ -104,6 +104,35 @@
 # refuse par la validation fail-loud). Une paire portant une exception valide
 # affiche son detail « Numerotation divergente documentee » et reste OK.
 #
+# rust (OPTIONNEL, #27098 organe 1) : TROISIEME cote d'une entree. Toute entree
+# porte `python:` et `csharp:` ; celles qui portent aussi `rust:` sont des
+# TRIPLETS Python / C# / Rust, les autres restent des paires binaires.
+# Valeur = chemin d'un fichier versionne, en pratique le carnet Rust (`.ipynb`).
+# Modele : `sudoku-02-dancinglinks.yaml`.
+#   - Paire binaire (pas de `rust:`) : verdict, audits et `--update` sont
+#     inchanges ; aucune cle rust n'est jamais ecrite dans ses fichiers d'audit.
+#   - Triplet (avec `rust:`) : le cote rust releve de la MEME discipline d'audit
+#     que les deux autres.
+#       . `--update --pair ... --by ...` enregistre SIX empreintes :
+#         `python_sha`, `csharp_sha`, `rust_sha` (git blob SHA) et
+#         `content_python_sha`, `content_csharp_sha`, `content_rust_sha`
+#         (SHA-256 du carnet sans `nb["metadata"]`). L'empreinte de contenu
+#         n'existe que pour un carnet : un fichier Rust nu (`.rs`) n'a que son
+#         `rust_sha`, compare comme une paire legacy.
+#       . DRIFT : le verdict nomme les cotes en drift (`drift_sides` : python,
+#         csharp, rust) -- un carnet Rust modifie sans re-audit rougit le
+#         triplet sur ce seul cote ; un fichier declare et absent de git donne
+#         MISSING.
+#       . `Pas de rust_sha enregistre (--update requis)` : declarer `rust:`
+#         SANS attester le triplet dans le meme geste laisse l'entree en DRIFT,
+#         sans reference -- la declaration ne tient pas lieu d'audit.
+#       . Numerotation (EPIC #12933) : le cote rust est compare au numero de
+#         base du jumeau Python, reference du triplet, sous le meme
+#         `numbering_exception` que la paire.
+#       . Orphelins par squash (#11919 deja constate ; #28122 a venir, traite
+#         par #28228) : un blob rust enregistre que l'historique ne porte plus
+#         (ou pas encore) empeche `--update` de rendre un no-op.
+#
 #
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
