@@ -59,6 +59,65 @@ def test_une_issue_rendue_recentement_est_refusee():
     assert "rendue par" in motif
 
 
+MARATHON = 27133
+CARNET_RENDU = "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Rust.ipynb"
+CARNET_VOISIN = ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/"
+                 "MGS-25-WhaleOptimisation-vs-Mealpy-Rust.ipynb")
+
+
+def _release_borne() -> str:
+    return (f"[RELEASED] lane {AUTRE} -- nb_coder: grain ended without a PR "
+            f"(verify-reject) -- paths: {CARNET_RENDU}")
+
+
+def test_un_released_borne_ne_rend_pas_un_grain_voisin():
+    """Un `[RELEASED]` qui nomme une clause `paths:` ne rend QUE ce qu'il
+    nomme. Cas fondeur (27/11, CoursIA#27133) : le grain Search-11 rendu a
+    mis MGS-25, un carnet du meme fil que le marqueur ne nommait pas et qui
+    n'avait jamais echoue, en quarantaine 3 jours -- deux lancements refuses
+    en 32 s.
+    """
+    code_motif = clc._qualification_grain(
+        _payload(commentaires=[_release_borne()], numero=MARATHON),
+        LANE, NOW, [CARNET_VOISIN])
+    assert code_motif is None
+
+
+def test_un_released_borne_rend_le_grain_qu_il_nomme():
+    """Le meme marqueur, demande sur le carnet qu'il nomme : la remise de main
+    vaut toujours (on ne se sert pas d'un scope pour lever sa propre remise)."""
+    code_motif = clc._qualification_grain(
+        _payload(commentaires=[_release_borne()], numero=MARATHON),
+        LANE, NOW, [CARNET_RENDU])
+    assert code_motif is not None
+    assert code_motif[0] == "RELACHEE"
+
+
+def test_un_released_sans_paths_reste_epic_wide():
+    """Une remise de main SANS clause `paths:` garde la semantique historique :
+    elle rend toute l'issue, quel que soit le scope du demandeur."""
+    code_motif = clc._qualification_grain(
+        _payload(commentaires=[f"[RELEASED] lane {AUTRE} -- motif : bloque par X"],
+                 numero=MARATHON),
+        LANE, NOW, [CARNET_VOISIN])
+    assert code_motif is not None
+    assert code_motif[0] == "RELACHEE"
+
+
+def test_le_scope_traverse_le_check_jusqu_au_verdict(capsysbinary, monkeypatch):
+    """`--paths` doit atteindre la qualification par le CHEMIN reel du check,
+    pas seulement par l'appel direct."""
+    # La lecture de l'arbre est remplacee : le garde de ce fichier de tests
+    # refuse tout processus (`git ls-files`).
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda repo_root=None: [CARNET_RENDU, CARNET_VOISIN])
+    rc = clc._run_check(_payload(commentaires=[_release_borne()], numero=MARATHON),
+                        LANE, now=NOW, my_paths=[CARNET_VOISIN])
+    capture = capsysbinary.readouterr()
+    assert "[QUALIFICATION]" not in capture.err.decode("utf-8")
+    assert rc == 0
+
+
 def test_une_issue_gelee_est_refusee():
     """Une ligne [FROZEN] dans le body gele l'issue : elle n'est pas
     reclamee."""

@@ -25,9 +25,14 @@ CODES_QUALIFICATION = ("HORSFLOTTE", "LABEL", "GEL", "RELACHEE")
 
 
 def qualification_grain(payload: dict, my_lane: str,
-                         now: datetime | None = None) -> tuple[str, str] | None:
+                         now: datetime | None = None,
+                         my_paths: list[str] | None = None) -> tuple[str, str] | None:
     """La qualification du grain, cote CONSOMMATEUR : le code d'ecart decide
     sur le FIL COMPLET deja lu, ou None.
+
+    `my_paths` (les chemins que l'appelant vise) borne la regle RELACHEE : un
+    `[RELEASED]` qui nomme une clause `paths:` disjointe ne rend pas CE grain.
+    Un appelant qui ne declare rien garde la semantique epic-wide.
 
     Le **meme organe** que le tirage (`tapis_rapide.etats`) : la voie legere
     ne redecide pas, elle alimente la meme decision -- et le consommateur non
@@ -38,7 +43,7 @@ def qualification_grain(payload: dict, my_lane: str,
     C'est ce qui rend la qualification **incontournable** avant l'action : un
     grain ecarte par la qualification ne peut etre ni reclame ni edite.
     """
-    from coordination import gh_bulk, tapis_rapide  # import tardif : pas de cycle
+    from coordination import gh_bulk, tapis_rapide, tapis_remise  # tardif : cycles
     numero = payload.get("number")
     if numero is None:
         return None
@@ -59,5 +64,12 @@ def qualification_grain(payload: dict, my_lane: str,
     etats = tapis_rapide.etats(lec, my_lane, moment, 45)
     e = etats[0] if etats else None
     if e is not None and e.ecart and e.ecart in CODES_QUALIFICATION:
+        # La remise de main BORNEE (#27133, mesure du 27/11) : un `[RELEASED]`
+        # qui nomme une clause `paths:` ne rend que ce qu'il nomme. RELACHEE
+        # etant le DERNIER code qualifiant de la chaine, l'ecarter vide la
+        # qualification (l'ordre est epingle par test_tapis_remise_borne.py).
+        if e.ecart == "RELACHEE" and tapis_remise.rendue_ailleurs(commentaires,
+                                                                 my_paths):
+            return None
         return e.ecart, e.motif
     return None

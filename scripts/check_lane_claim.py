@@ -5679,11 +5679,16 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
 
 
 def _qualification_grain(payload: dict, my_lane: str,
-                         now: datetime | None = None) -> tuple[str, str] | None:
+                         now: datetime | None = None,
+                         my_paths: list[str] | None = None) -> tuple[str, str] | None:
     """Shim : la qualification du grain est portee par
-    `coordination.tapis_qualification_fil` (module dedie)."""
+    `coordination.tapis_qualification_fil` (module dedie).
+
+    `my_paths` traverse : le scope declare par `--paths` borne la regle
+    RELACHEE, sans quoi la remise de main d'un carnet met en quarantaine tous
+    les grains voisins du meme fil."""
     from coordination import tapis_qualification_fil  # import tardif : pas de cycle
-    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now, my_paths)
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
@@ -5756,7 +5761,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # qualification n'est ni reclame ni edite. La decision vient du meme
     # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
     # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
-    code_motif = _qualification_grain(payload, my_lane, now)
+    code_motif = _qualification_grain(payload, my_lane, now, my_paths)
     if code_motif:
         code, motif = code_motif
         print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
