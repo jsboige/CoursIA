@@ -32,8 +32,17 @@ stubbed), this file pins **behavioral coverage** for all six classes:
 
 Usage
 -----
-    python scripts/lean/tests/test_check_grothendieck_readme.py          # verbose mode
-    python scripts/lean/tests/test_check_grothendieck_readme.py --quiet  # only failures
+    python scripts/lean/tests/test_check_grothendieck_readme_controls.py          # verbose mode
+    python scripts/lean/tests/test_check_grothendieck_readme_controls.py --quiet  # only failures
+
+Why the ``_controls`` suffix
+----------------------------
+The file moved from ``scripts/lean/`` to ``scripts/lean/tests/`` with
+#28721, so pytest now collects it. ``scripts/tests/test_check_grothendieck_readme.py``
+(the pytest suite of the #17512 guard) already carried the bare name: two
+files sharing a basename force the whole run into ``--import-mode importlib``
+and the inventory ratchet (#25366 T4) refuses any *new* duplicate, so the
+moved file takes a distinct basename rather than the collision.
 
 Self-test
 ---------

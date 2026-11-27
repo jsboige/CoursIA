@@ -129,9 +129,11 @@ def find_violations(collected_paths: list[str]) -> list[Path]:
     notebook MyIA.AI.Notebooks/QuantConnect/scripts/test_algorithms.py est un
     faux positif pour cette garde-ci (c'est un runner, pas un test pytest).
     L'exemption jumelle de scripts/lean/test_check_grothendieck_readme.py a
-    disparu avec #28721 : le fichier est passe dans scripts/lean/tests/, donc
-    collecte, et la garde n'a plus a l'excuser (elle aurait signale le
-    deplacement retroactivement si on l'avait laisse a la racine).
+    disparu avec #28721 : le fichier est passe dans scripts/lean/tests/ sous le
+    nom test_check_grothendieck_readme_controls.py (un autre test de
+    scripts/tests/ porte deja le nom de base), donc collecte, et la garde n'a
+    plus a l'excuser (elle aurait signale le deplacement retroactivement si on
+    l'avait laisse a la racine).
     """
     if not collected_paths:
         return []
