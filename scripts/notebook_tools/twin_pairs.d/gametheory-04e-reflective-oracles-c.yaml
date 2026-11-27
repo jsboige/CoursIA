@@ -2,6 +2,7 @@
   family: GameTheory
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-CSharp.ipynb
-  parity_level: native-both
+  parity_level: semantic
   known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : nashpy resout le jeu auxiliaire sur la restriction (l'attestation vient d'un verificateur independant qui ne reutilise ni nashpy ni ce jeu) ; cote C# : BCL seul, nashpy cite en reference, aucun package importe. Machinerie asymetrique, a voir lors d'un pont. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de GameTheory-04e-Reflective-Oracles-Python.ipynb. Execution reelle sur kernel .net-csharp : 18 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

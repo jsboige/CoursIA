@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: Naive Bayes gaussien est calculé en C# ; NumPy conserve les tirages et les véritables GaussianNB et régression logistique sklearn servent aux comparaisons via Python.NET.
   known_differences:
+    - Le carnet Python porte un lien de navigation vers sa version Rust (`2.3b-Naive-Bayes-Generatif-Rust.ipynb`), ajouté le 2026-11-25 dans une cellule markdown seule, sans toucher au code ni aux sorties ; le jumeau C# n'en porte pas.
     - Les courbes sont des SVG statiques et les durées dépendent de l'environnement.
     - Python.NET nécessite un CPython configuré avec NumPy et scikit-learn.
