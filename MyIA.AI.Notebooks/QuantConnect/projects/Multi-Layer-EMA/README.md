@@ -20,7 +20,7 @@ Stratégie crypto multi-indicateurs combinant tendance EMA, RSI, bandes de Bolli
 | Croisement EMA | Rapide 10 / Lente 50 (quotidien) | Direction de tendance |
 | RSI | 14 périodes (Wilder) | Filtre surachat/survente |
 | Bandes de Bollinger | 20 périodes, 2σ | Contexte de mean-reversion |
-| Filtre volatilité ATR | 14 périodes, seuil 60 % (annualisé quotidien) | Bloquer les nouvelles entrées en régime haute volatilité |
+| Filtre volatilité ATR | 14 périodes, seuil 60 % (annualisé quotidien) ; `vol` et `vol_threshold` le remplacent ou le coupent (#28409) | Bloquer les nouvelles entrées en régime haute volatilité |
 | Trailing stop | 92 % | Sécuriser les gains |
 | Stop fixe | 88 % | Protection du capital |
 | Take profit | 125 % | Objectif de sortie |
@@ -103,9 +103,48 @@ Les clôtures sous le stop se comptent par ligne et par jour. Le dépassement es
 - **CAGR 24,99 % publié** : il mesurait une stratégie qui gardait ses lignes sans stop pendant 1206 jours de filtre actif, soit 47 % des jours de w1. Ce n'était ni de l'alpha ni une sortie défensive, mais une exposition au marché crypto retenue pendant ses phases les plus agitées.
 - **Drawdown** : 57,1 % publié, 37,3 % corrigé, contre 76,4 % pour BTC détenu. C'est le seul point où la stratégie fait mieux que BTC détenu sur w1 ; corrigée, elle le réduit encore, au prix des deux tiers du CAGR.
 - **PSR** : 19,2 % publié, 5,2 % corrigé. Aucun des deux ne franchit le seuil conventionnel de 50 %.
-- **Filtre ATR 60 %** : tel que mesuré, il n'isole pas des régimes extrêmes ; il est actif la majorité du temps. Le comparer à un seuil plus haut serait une autre expérience, avec son propre protocole écrit avant mesure.
+- **Filtre ATR 60 %** : tel que mesuré, il n'isole pas des régimes extrêmes ; il est actif la majorité du temps. Le comparer à une vraie mesure de volatilité et à des seuils plus hauts est l'expérience de la section suivante (#28409), avec son propre protocole écrit avant mesure.
 
 **Conclusion honnête** : ne pas présenter le CAGR publié comme de l'alpha. La stratégie corrigée ne bat ni BTC ni le panier détenus sur aucune des deux fenêtres. Son intérêt pédagogique est de montrer comment un `return` mal placé peut fabriquer un backtest flatteur, et pourquoi un chiffre reproduit au centième doit encore être relu contre le code.
+
+## Filtre recalibré (#28409) — une vraie mesure de volatilité ne fait pas mieux hors échantillon
+
+**Le constat.** Le filtre d'origine compare `ATR(14) / prix × √252` à 0,60. Deux écarts de mesure : l'ATR est l'étendue moyenne d'une journée (plus haut, plus bas, clôture précédente), pas l'écart-type des rendements — pour une marche brownienne, elle vaut environ 1,6 fois l'écart-type journalier ; et la crypto cote tous les jours, une série journalière s'annualise donc en √365, pas en √252. Le seuil de 60 % correspond à une volatilité bien plus basse que celle qu'il annonce, d'où les 1603 jours de filtre actif de w1.
+
+**Les paramètres.** `vol` choisit la mesure comparée au seuil : `atr` (défaut, le filtre d'origine), `std` (écart-type des rendements logarithmiques de BTC sur 30 jours, annualisé en √365) ou `off` (pas de filtre). `vol_threshold` fixe le seuil annualisé (défaut 0,60). Rien d'autre ne change dans la décision, et `gate=entries` partout. La statistique d'exécution `vol` rappelle la mesure et le seuil du run.
+
+**Protocole**, publié sur #28409 avant le premier backtest :
+
+- **fenêtres** : D = 2018-01-01 → 2022-12-31 (découverte), C = 2023-01-01 → 2026-07-01 (contrôle, lue après D) ;
+- **seuil θ\*** : le seuil de `std`, parmi 0,60, 0,80 et 1,00, au plus haut Sharpe QC sur D, sans autre critère ;
+- **règle**, sur le Sharpe QC de C, avec un écart matériel de 0,10 faute de test de significativité : `BEATS` si `std`(θ\*) dépasse `atr` de plus de 0,10, `NO BEATS` s'il lui est inférieur de plus de 0,10, `INCONCLUSIVE` entre les deux ;
+- **prédictions**, qui ne changent pas la règle : P1, sur D, `std` à 0,80 est actif moins de jours que `atr` ; P2, sur C, l'écart de Sharpe QC entre `off` et `atr` est inférieur à 0,10 en valeur absolue.
+
+**Mesure** (QC Cloud, project 38654913, 2026-11-24, douze backtests lus à `completed: true`, même compilation, code vérifié par empreinte) :
+
+| Fenêtre | Bras | Sharpe QC | CAGR | Drawdown max | PSR | Ordres | Jours de filtre actif |
+|---|---|---|---|---|---|---|---|
+| D 2018-2022 | `atr` 0,60 | 0.370 | 6.22 % | 28.4 % | 7.3 % | 109 | 1302 |
+| D | `off` | 0.905 | 24.59 % | 40.7 % | 31.4 % | 425 | 0 |
+| D | `std` 0,60 | 0.414 | 8.13 % | 39.8 % | 8.7 % | 195 | 977 |
+| D | `std` 0,80 | 0.996 | 25.40 % | 38.9 % | 37.8 % | 343 | 379 |
+| D | `std` 1,00 | **1.041** | 28.37 % | 38.7 % | 40.0 % | 395 | 140 |
+| D | `btc` détenu | 0.602 | 12.59 % | 76.4 % | 13.3 % | — | — |
+| D | `ew70` détenu | 0.365 | 4.62 % | 71.2 % | 6.8 % | — | — |
+| C 2023 → 2026-07-01 | `atr` 0,60 | **0.011** | 2.90 % | 29.8 % | 3.1 % | 174 | 487 |
+| C | `off` | -0.152 | -1.71 % | 33.1 % | 1.5 % | 244 | 0 |
+| C | `std` 1,00 (θ\*) | **-0.152** | -1.71 % | 33.1 % | 1.5 % | 244 | 0 |
+| C | `btc` détenu | 1.208 | 44.57 % | 52.8 % | 44.1 % | — | — |
+| C | `ew70` détenu | 0.498 | 15.06 % | 53.7 % | 14.3 % | — | — |
+
+**Verdict : NO BEATS.** θ\* = 1,00 (Sharpe QC 1.041 sur D). Sur C, `std` à 1,00 fait -0.152 contre 0.011 pour `atr`, un écart de -0,163. Le seuil retenu sur D ne se déclenche jamais sur C : la volatilité réalisée de BTC sur 30 jours n'y dépasse pas 100 %, et le bras `std` se confond avec `off`, ordre pour ordre.
+
+**Ce que la mesure dit.**
+
+- **Sur D, mesurer la volatilité comme une volatilité change tout** : `std` à 0,80 ou 1,00 bat BTC détenu en Sharpe (environ 1,0 contre 0,60) avec la moitié de sa perte maximale. Mais ce gain tient à 2018-2022 : sur C, la stratégie, filtrée ou non, reste loin sous BTC et le panier détenus.
+- **Le filtre `atr` échange du CAGR contre de la perte maximale** : sur D, 6,2 % de CAGR et 28,4 % de drawdown, contre 24,6 % et 40,7 % sans filtre. Il réduit aussi les frais (3,6 % du capital de départ contre 22,5 %) et le pire dépassement de stop au déclenchement (18,3 % contre 42,2 %). Actif presque tout le temps, il fait de la stratégie une exposition réduite au marché crypto plutôt qu'une protection contre ses crashs.
+- **Prédictions** : P1 tenue (`std` à 0,80 est actif 379 jours sur D, contre 1302 pour `atr`). P2 non tenue : sur C, le filtre `atr` améliore le Sharpe QC de 0,163 par rapport à `off` ; il sert, contrairement à ce qui était attendu.
+- **La leçon de méthode** : un seuil choisi sur une fenêtre agitée ne dit rien d'une fenêtre plus calme. Sans la fenêtre de contrôle, `std` à 1,00 serait passé pour un filtre au Sharpe près de trois fois supérieur à celui de l'original.
 
 ## Comment exécuter
 
@@ -124,6 +163,7 @@ Les clôtures sous le stop se comptent par ligne et par jour. Le dépassement es
 
 - **Multi-indicateur avec confirmation** : un croisement EMA seul est bruité ; exiger RSI + Bollinger le filtre.
 - **Gate de volatilité ATR** : bloquer les entrées quand la volatilité annualisée dépasse le seuil. Un filtre qui coupe aussi les sorties suspend les stops au pire moment (#23460).
+- **Mesurer ce que le seuil annonce** : l'ATR rapporté au prix n'est pas une volatilité, et une série qui cote tous les jours s'annualise en √365. Un seuil corrigé et choisi sur une fenêtre de découverte peut ensuite ne jamais se déclencher sur la fenêtre de contrôle (#28409).
 - **Lire la portée d'un `return`** : un `return` en tête de `OnData` saute toute la gestion des positions, pas seulement les entrées. Le compteur `suspended_breaches` mesure ce que la version d'origine laissait passer.
 - **Probabilistic Sharpe Ratio (PSR)** : un CAGR élevé sur un actif à forte dérive haussière (crypto) ne prouve pas le skill (PSR 19 % publié, 5 % corrigé).
 - **Honnêteté métrique** : un chiffre reproductible n'est pas un chiffre juste. Le Sharpe 0.798 se reproduit au centième, mais il mesurait un code qui ne faisait pas ce que le README décrivait.
