@@ -19,12 +19,12 @@
       "id": "decouvrir-des-lois",
       "description": "Extraire une loi d'une masse d'exemples : differentiable logic gates (DiffLogNet), reproduction de PavlovDLS, decouverte de tenseurs produit (TPR) par autoencodeurs creux, equations physiques retrouvees par AI Feynman, conjectures proposees par un solveur appris. La serie SymbolicLearning dans sa version recherche : non pas utiliser un modele, mais lui faire cracher la structure qu'il a trouvee.",
       "notebooks": [
-        "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver.ipynb"
+        "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver-Python.ipynb"
       ]
     },
     {
@@ -87,11 +87,11 @@
       "description": "Le socle historique de l'apprentissage symbolique : apprentissage logique, programmation logique inductive (Foil/Popper/Aleph), resolution inverse, ILP moderne et neuro-symbolique. Le detour de celui qui veut comprendre d'ou viennent les conjectures de la branche decouvrir-des-lois.",
       "branch": "decouvrir-des-lois",
       "notebooks": [
-        "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb",
-        "SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb"
+        "SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-06-ModernILP-Python.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-07-NeuroSymbolic-Python.ipynb"
       ]
     },
     {

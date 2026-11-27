@@ -70,7 +70,11 @@ variable {X : TopCat.{u}}
 l'application de la construction `godementUnitIter` (P87) au préfaisceau
 `C⁰F` — autrement dit l'unité `toGodement` évaluée au préfaisceau itéré
 `C⁰(C⁰F)`. Ce morphisme prolonge la suite des unités d'un cran ; il n'est pas
-une différentielle de résolution (cf. `godementUnit_comp_injective`, P87). -/
+une différentielle de résolution (cf. `godementUnit_comp_injective`, P87).
+Correspondance Stacks — **ABSENT** : aucun énoncé nommé côté Stacks ne décrit ce
+troisième maillon ; l'itération y passe par la résolution standard de la comonade
+(`Basic.lean:429` `godementSimplicial_left_obj`).
+-/
 noncomputable def godementUnitIter_at_iterate (F : X.Presheaf AddCommGrpCat.{u}) :
     godementPresheaf (godementPresheaf F) ⟶
       godementPresheaf (godementPresheaf (godementPresheaf F)) :=
@@ -80,7 +84,10 @@ noncomputable def godementUnitIter_at_iterate (F : X.Presheaf AddCommGrpCat.{u})
 `godementUnitIter_at_iterate F` est **par définition**
 `godementUnitIter (godementPresheaf F)`. Cette égalité `rfl` nomme le maillon
 comme l'application de la construction de P87 au préfaisceau `C⁰F` — elle ne
-porte aucune propriété algébrique (noyau, exactitude ou null-composition). -/
+porte aucune propriété algébrique (noyau, exactitude ou null-composition).
+Correspondance Stacks — **ABSENT** : égalité de définition (`rfl`) ; aucun énoncé
+nommé côté Stacks.
+-/
 theorem godementUnitIter_at_iterate_def (F : X.Presheaf AddCommGrpCat.{u}) :
     godementUnitIter_at_iterate F = godementUnitIter (godementPresheaf F) := by
   rfl
@@ -90,7 +97,14 @@ theorem godementUnitIter_at_iterate_def (F : X.Presheaf AddCommGrpCat.{u}) :
 (`F → C⁰F → C⁰²F → C⁰³F`) par l'adjonction du morphisme
 `godementUnitIter_at_iterate F`. C'est la **démonstration explicite** que la
 suite s'allonge d'un maillon à la Partie 88 (par opposition à la Partie 87
-qui s'arrêtait à `C⁰²F`). -/
+qui s'arrêtait à `C⁰²F`).
+Correspondance Stacks — **PARTIEL** : l'itération de la résolution canonique existe
+chez Stacks (`Basic.lean:429` `godementSimplicial_left_obj`, tag 0G5N) et l'acyclicité
+de cette résolution y est établie par
+`Cohomology/GodementResolution/StalkHomotopy.lean:558`
+(`quasiIso_godementAugmentation`) ; mais Stacks porte l'acyclicité sur le
+**complexe**, pas sur la suite des unités que nous construisons ici.
+-/
 theorem godementUnitChain_extends (F : X.Presheaf AddCommGrpCat.{u}) :
     ∃ (φ : godementPresheaf (godementPresheaf F) ⟶
         godementPresheaf (godementPresheaf (godementPresheaf F))),

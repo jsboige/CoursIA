@@ -65,7 +65,7 @@
       "prerequisites": [],
       "notebooks": [
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks-Python.ipynb",
           "title": "SL-12 : Differentiable Logic Gate Networks",
           "duration_minutes": 45,
           "kernel": "Python (difflogic-sl12)",
@@ -78,8 +78,8 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb",
-          "title": "SL-12c-PavlovDLS-Reproduction — artefact Pavlov (DLS Sinkhorn)",
+          "path": "SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb",
+          "title": "SL-12c-PavlovDLS-Reproduction-Python — artefact Pavlov (DLS Sinkhorn)",
           "duration_minutes": 30,
           "kernel": "Python 3",
           "execution_constraints": {
@@ -91,7 +91,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR-Python.ipynb",
           "title": "SL-13 : DISCOVER léger — diagnostic de structure TPR émergente",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -104,7 +104,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE-Python.ipynb",
           "title": "SL-13b : TPR x SAE — deux lectures des mêmes états cachés",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -117,7 +117,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb",
           "title": "SL-14 — AI Feynman : découvrir des équations",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -130,7 +130,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver-Python.ipynb",
           "title": "SL-15 — Conjectures apprises pour un vérificateur symbolique",
           "duration_minutes": 30,
           "kernel": "Python 3 (ipykernel)",
@@ -486,7 +486,7 @@
       ],
       "notebooks": [
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb",
           "title": "SL-1 - Apprentissage Logique : CBH Search et Version Space",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -499,7 +499,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb",
           "title": "SL-4 --- Programmation Logique Inductive (ILP)",
           "duration_minutes": 45,
           "kernel": "Python 3 (WSL)",
@@ -512,7 +512,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb",
           "title": "SL-5 --- Resolution Inverse et Progol (ILP bottom-up)",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -525,7 +525,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-06-ModernILP-Python.ipynb",
           "title": "SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper et dILP",
           "duration_minutes": 30,
           "kernel": "Python 3 (WSL)",
@@ -538,7 +538,7 @@
           }
         },
         {
-          "path": "SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb",
+          "path": "SymbolicAI/SymbolicLearning/SL-07-NeuroSymbolic-Python.ipynb",
           "title": "SL-7 : Integration Neuro-Symbolique",
           "duration_minutes": 45,
           "kernel": "Python 3",
