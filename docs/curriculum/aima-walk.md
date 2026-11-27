@@ -90,8 +90,8 @@ sont nommés en **Angles morts** en fin de page.
 
 ### Phase 4 — Problèmes de satisfaction de contraintes (AIMA ch. 6) — CSP-1→2, ~1 h 45
 
-8. **[`CSP-1-Fundamentals.ipynb`](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb)** (1 h) — modélisation CSP, backtracking.
-9. **[`CSP-2-Consistency.ipynb`](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb)** (45 min) — AC-3, MRV, forward-checking. *La série continue
+8. **[`CSP-01-Fundamentals-Python.ipynb`](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb)** (1 h) — modélisation CSP, backtracking.
+9. **[`CSP-02-Consistency-Python.ipynb`](../../MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb)** (45 min) — AC-3, MRV, forward-checking. *La série continue
    jusqu'à CSP-9 (temporel, distribué) pour qui veut prolonger.*
 
 ### Phase 5 — Logique (AIMA ch. 7-9) — Tweety, ~2 h 15
