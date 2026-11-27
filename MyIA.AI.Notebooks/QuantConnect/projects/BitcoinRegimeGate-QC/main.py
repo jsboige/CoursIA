@@ -135,12 +135,17 @@ class BitcoinRegimeGate(QCAlgorithm):
             for ticker in REFERENCE_WEIGHTS[self.mode]:
                 self.ref_symbols[ticker] = self.add_equity(ticker, Resolution.DAILY).symbol
             self.shadow_symbol = self.ref_symbols["SPY"]
+            self.set_benchmark(self.shadow_symbol)
             self.set_warm_up(timedelta(60))
             return
 
         self.qqq = self.add_equity("QQQ", Resolution.DAILY).symbol
         self.shy = self.add_equity("SHY", Resolution.DAILY).symbol
         self.shadow_symbol = self.qqq
+        # Temoin de publication des seances : sans benchmark explicite, le graphique
+        # Benchmark de ce projet trace 0.0 partout, et ingest-qc lirait chaque seance
+        # comme figee (#27482, garde #28570).
+        self.set_benchmark(self.shadow_symbol)
 
         # Bitcoin trades 24/7: the regime source never sleeps through an equity crash.
         self.btc = self.add_crypto("BTCUSD", Resolution.DAILY, market=Market.BITFINEX).symbol
@@ -300,7 +305,12 @@ class BitcoinRegimeGate(QCAlgorithm):
             self._ref_month = self.time.month
             for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():
                 self.set_holdings(self.ref_symbols[ticker], weight)
-        if data.bars.contains_key(self.shadow_symbol):
+        # Une cloture par seance, a sa date : la barre journaliere du symbole
+        # d'ombre. Une barre recopiee vers l'avant (seance pas encore publiee en
+        # fin de fenetre) ne compte pas : la tracer figerait une seance plate
+        # (#27482, regle 2 etendue aux actions).
+        if (data.bars.contains_key(self.shadow_symbol)
+                and not data.bars[self.shadow_symbol].is_fill_forward):
             value = self.portfolio.total_portfolio_value
             self.plot("shadow", f"e{self.closes % 5}", value)
             self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)

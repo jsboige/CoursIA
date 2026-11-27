@@ -153,19 +153,30 @@ class _OrderEvent:
         self.fill_price = fill_price
 
 
+class _Bar:
+    def __init__(self, is_fill_forward=False):
+        self.is_fill_forward = is_fill_forward
+
+
 class _Bars:
-    def __init__(self, keys):
+    def __init__(self, keys, fill_forward=()):
         self._keys = set(keys)
+        self._fill_forward = set(fill_forward)
 
     def contains_key(self, key):
         return key in self._keys
 
+    def __getitem__(self, key):
+        if key not in self._keys:
+            raise KeyError(key)
+        return _Bar(key in self._fill_forward)
+
 
 class _Slice:
-    """Barre de donnees minimale : seuls les symboles presents importent."""
+    """Barre de donnees minimale : symboles presents, et ceux recopies vers l'avant."""
 
-    def __init__(self, symbols):
-        self.bars = _Bars(symbols)
+    def __init__(self, symbols, fill_forward=()):
+        self.bars = _Bars(symbols, fill_forward)
 
 
 def _make(mode="gate", execution="base"):
@@ -249,9 +260,14 @@ class _Schedule:
         self.calls.append((date_rule, time_rule, handler))
 
 
-def _make_initializable(params):
+# Fenetre fournie par le lanceur : start/end n'ont pas de defaut (#27482, regle 1).
+_WINDOW = {"start": "2020-01-01", "end": "2020-12-31"}
+
+
+def _make_initializable(params, window=True):
     alg = BitcoinRegimeGate()
-    p = dict(params)
+    p = dict(_WINDOW) if window else {}
+    p.update(params)
     alg.get_parameter = lambda name, default=None: p[name] if name in p else default
     alg.set_start_date = lambda *a, **k: None
     alg.set_end_date = lambda *a, **k: None
@@ -259,6 +275,8 @@ def _make_initializable(params):
     alg.set_brokerage_model = lambda *a, **k: None
     alg.set_security_initializer = lambda *a, **k: None
     alg.set_warm_up = lambda *a, **k: None
+    alg.benchmarks = []
+    alg.set_benchmark = alg.benchmarks.append
     alg.add_equity = lambda ticker, res, **k: _Sec(ticker)
     alg.add_crypto = lambda ticker, res, market=None: _Sec(ticker)
     alg.sma = lambda symbol, window, res: _Indicator(False, 0.0)
@@ -282,6 +300,24 @@ def test_initialize_parses_execution_settled():
     alg = _make_initializable({"execution": "settled"})
     alg.initialize()
     assert alg._execution_mode == "settled"
+
+
+@pytest.mark.parametrize("mode", ["gate", "hold-qqq", "spy", "sixty40"])
+def test_initialize_sets_benchmark_to_shadow_symbol(mode):
+    # Sans benchmark explicite, le graphique Benchmark trace 0.0 et ingest-qc lit
+    # chaque seance comme figee (#27482, garde #28570) : le temoin de publication
+    # est le symbole dont la barre declenche la trace d'ombre.
+    alg = _make_initializable({"mode": mode})
+    alg.initialize()
+    assert alg.benchmarks == [alg.shadow_symbol]
+
+
+@pytest.mark.parametrize("missing", ["start", "end"])
+def test_initialize_requires_window(missing):
+    params = {k: v for k, v in _WINDOW.items() if k != missing}
+    alg = _make_initializable(params, window=False)
+    with pytest.raises(TypeError):             # aucun repli silencieux sur une date
+        alg.initialize()
 
 
 def test_initialize_rejects_unknown_execution():
@@ -570,6 +606,31 @@ def test_settled_runtime_statistics_present():
     assert alg.stats["Settled seances en liquidites"] == "5"
     assert alg.stats["Settled pending target (fin)"] == "SHY"
     assert alg.stats["Settled delai decision->soumission (j)"] == "1.0"
+
+
+# --------------------------------------------------------------------------
+# Contrat d'ombre, regle 2 (#27482) : une barre recopiee ne trace rien.
+# --------------------------------------------------------------------------
+def test_shadow_trace_skips_fill_forward_bar():
+    alg = _make()
+    alg.on_data(_Slice([QQQ]))
+    assert [p[1] for p in alg.plots] == ["e0", "fees", "turnover"]
+    alg.on_data(_Slice([QQQ], fill_forward=[QQQ]))  # seance non publiee
+    assert len(alg.plots) == 3
+    assert alg.closes == 1
+    alg.on_data(_Slice([QQQ]))                      # seance publiee suivante
+    assert [p[1] for p in alg.plots[3:]] == ["e1", "fees", "turnover"]
+    assert alg.closes == 2
+
+
+def test_fill_forward_bar_not_counted_as_cash_close():
+    alg = _make(execution="settled")
+    alg.time = datetime(2020, 1, 7, 16, 0)
+    alg.on_data(_Slice([QQQ], fill_forward=[QQQ]))
+    assert alg.cash_closes == 0
+    assert alg.gross_sum == 0.0
+    alg.on_data(_Slice([QQQ]))
+    assert alg.cash_closes == 1
 
 
 # --------------------------------------------------------------------------
