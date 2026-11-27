@@ -28,12 +28,12 @@ TIMEOUT_S = 15
 #: Le `git fetch` est un aller-retour reseau (mesure du 22/11 : 18 a 20 s) :
 #: il a son propre plafond, plus large que celui d'un appel.
 FETCH_TIMEOUT_S = 90
-#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un
-#: lot) dure plus longtemps qu'un appel de metadonnees : mesure du 23/11 sur
-#: ce siege, 3,76 s pour la page du pool (50 issues, corps + 12 commentaires)
-#: et 2,05 s pour la qualification d'un lot de 50. Le plafond de 15 s les
-#: couperait sur un reseau lent, sans mesure derriere : ils gardent le
-#: plafond large, mesure a l'appui.
+#: Un appel qui porte des **CORPS** (la page du pool, la qualification d'un lot,
+#: la page des PRs ouvertes) dure plus longtemps qu'un appel de metadonnees :
+#: mesures du 23/11 sur ce siege, 3,76 s pour la page du pool (50 issues, corps
+#: + 12 commentaires) et 2,05 s pour la qualification d'un lot de 50 ; et du
+#: 24/11, 41 s pour la page 1 des PRs ouvertes (100 corps de PR). Le plafond
+#: de 15 s les couperait sur un reseau lent : ils gardent le plafond large.
 TIMEOUT_S_CORPS = 90
 #: L'echeance UNIQUE d'un tirage de lane, partagee par ses etages.
 MUR_TIRAGE_S = 60
@@ -133,8 +133,8 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH,
     for page in range(1, PAGES_PRS_MAX + 1):
         argv = ["gh", "api", f"repos/{depot}/pulls?state=open&per_page=100&page={page}"]
         texte = _appel(run, argv, "prs_ouvertes", page,
-                       timeout=_timeout(echeance)) or _appel(
-            run, argv, "prs_ouvertes", page, timeout=_timeout(echeance))
+                       timeout=_timeout(echeance, TIMEOUT_S_CORPS)) or _appel(
+            run, argv, "prs_ouvertes", page, timeout=_timeout(echeance, TIMEOUT_S_CORPS))
         try:
             chunk = json.loads(texte or "")
             rows.extend({**{k: pr.get(k) or "" for k in _PR_TEXTE}, "number": pr["number"],

@@ -155,18 +155,32 @@ variable {A : Type u'} [Category.{v'} A] [HasProducts.{w} A]
 
 section Degrees
 
-/-- Théorème : en degré 0, l'objet `cechComplexObj U P 0` est la
-    limite du préfaisceau P sur la famille U -- c'est-à-dire le
-    produit indexé par ι des `P.obj (op (U i))`. Cas particulier de
-    `CochainComplex.X_zero'` appliqué à `cechComplexFunctor U`. -/
+/-- Théorème : en degré 0, l'objet `cechComplexObj U P 0` est le terme de
+    degré 0 du complexe de Čech de `P` sur `U`, c'est-à-dire
+    `((cechComplexFunctor U).obj P).X 0` — le déploiement de la définition
+    `cechComplexObj`.
+
+    *Portée de l'énoncé.* L'égalité ci-dessus est un `rfl` : elle dit que
+    `cechComplexObj` est, par définition, le terme `.X 0` du complexe de
+    Čech. La description de ce terme comme « la limite du préfaisceau `P`
+    sur la famille `U`, c'est-à-dire le produit indexé par `ι` des
+    `P.obj (op (U i))` » est la **définition de Mathlib**
+    (`CategoryTheory.cechComplexFunctor`), non une conclusion de cet
+    énoncé. Cf. la section « Correspondance Stacks » du module. -/
 theorem cechComplexObj_zero_eq_pullback (U : ι → C) (P : Cᵒᵖ ⥤ A) :
     cechComplexObj U P 0 = ((CategoryTheory.cechComplexFunctor U).obj P).X 0 := rfl
 
-/-- Théorème : en degré `n+1`, l'objet `cechComplexObj U P (n+1)` est
-    le produit, indexé par les fonctions `Fin (n+2) → ι`, des valeurs
-    du préfaisceau P sur les produits finis correspondants des
-    `U (i a)`. C'est l'identité de définition `.X` appliquée au degré
-    `n+1`. -/
+/-- Théorème : en degré `n+1`, l'objet `cechComplexObj U P (n+1)` est le
+    terme de degré `n+1` du complexe de Čech de `P` sur `U` — l'identité de
+    définition `.X` appliquée au degré `n+1`.
+
+    *Portée de l'énoncé.* Comme pour le degré 0, l'égalité est un `rfl` : elle
+    dit que `cechComplexObj` est, par définition, le terme `.X (n+1)`. La
+    description de ce terme comme « le produit, indexé par les fonctions
+    `Fin (n+2) → ι`, des valeurs du préfaisceau `P` sur les produits finis
+    correspondants des `U (i a)` » est la **définition de Mathlib**, non une
+    conclusion de cet énoncé ; le nom `…_eq_pi` annonce ce produit, que
+    l'énoncé ne prouve pas. Cf. la section « Correspondance Stacks ». -/
 theorem cechComplexObj_succ_eq_pi (U : ι → C) (P : Cᵒᵖ ⥤ A) (n : ℕ) :
     cechComplexObj U P (n + 1) = ((CategoryTheory.cechComplexFunctor U).obj P).X (n + 1) := rfl
 
@@ -199,5 +213,42 @@ theorem cechComplexFunctor_map_comp (U : ι → C) {P Q R : Cᵒᵖ ⥤ A}
   (CategoryTheory.cechComplexFunctor U).map_comp f g
 
 end Naturality
+
+/-! ## 6. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+
+Comparaison **énoncé par énoncé** avec le référentiel `AxiomMath/Stacks`
+(`StacksFrontier/Topology/Sheaves/Cohomology/`). Références données par
+`fichier:ligne` du dépôt Stacks.
+
+**Point de méthode.** Stacks et ce module **partagent la même base Mathlib** :
+Stacks ne réimplémente pas le complexe de Čech, il **utilise**
+`CategoryTheory.cechComplexFunctor` — c'est écrit en toutes lettres dans
+`CechDerivedEffaceability/GodementAtFourUniverses.lean:43` : « The Čech complex
+of [Stacks, Tag 01EJ] is Mathlib's `CategoryTheory.cechComplexFunctor` ». Le
+travail de Stacks au-dessus de cette base est l'**exactitude**, le **degré 0**
+et la **comparaison Čech → sections dérivées**.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute / ce qui diverge |
+|---|---|---|---|
+| `cechComplexObj` | couvert | `CechDegreeZero/Evaluation.lean:68-71` ; `CechDerivedEffaceability/EffaceabilityInput.lean:78` | Stacks manipule le terme de degré 0 et l'exactitude en `n` du Čech d'un préfaisceau — le même objet. Notre version ajoute le pont et la notation du lac. |
+| `cechComplexFunctor_type` | couvert | `CechDerivedEffaceability/GodementAtFourUniverses.lean:43` | Stacks **identifie** son complexe de Čech (tag 01EJ) au foncteur de Mathlib ; le pont est donc un renvoi, pas une construction. |
+| `cosimplicialObjectFunctor_type` | couvert | `Cech_DegreeZeroAndTheSheafCondition.lean:239-241` (`cech_d01`) | Stacks utilise littéralement `FormalCoproduct.cosimplicialObjectFunctor (FormalCoproduct.mk _ U).cech`, et identifie la différentielle Čech à la différence des **cofaces alternées** — c'est-à-dire à la première étape de la construction de Čech, celle que ce pont expose. |
+| `cochainComplexFunctor_type` | absent | aucune occurrence de `cochainComplexFunctor` dans les fichiers Stacks relus | Stacks passe directement par `AlgebraicTopology.AlternatingCofaceMapComplex` (`Cech_DegreeZeroAndTheSheafCondition.lean:243`) : il ne nomme pas la **seconde** étape (le complexe de cochaînes) que ce pont expose. |
+| `cechComplexObj_zero_eq_pullback` | partiel | `CechDegreeZero/Augmentation.lean:127-129` (`∃! f : P.obj (op T) ⟶ ((cechComplexFunctor U).obj P).homology 0`) | Le **fond** (le degré 0 du Čech est l'augmentation) est établi par Stacks comme résultat à part entière ; ici l'énoncé est un `rfl`, qui ne dit que la définition de `cechComplexObj`. La docstring a été alignée sur ce que l'énoncé prouve (voir « Portée de l'énoncé »). |
+| `cechComplexObj_succ_eq_pi` | partiel | idem | Même situation au degré `n+1` : `rfl`, donc déploiement ; la description du produit indexé par `Fin (n+2) → ι` est la définition de Mathlib. Docstring alignée de même. |
+| `cechComplexFunctor_map_id` | couvert | `Cech_DegreeZeroAndTheSheafCondition.lean:237-248` | Stacks manipule le Čech sur les morphismes de préfaisceaux ; la naturalité de l'identité est structurelle des deux côtés. |
+| `cechComplexFunctor_map_comp` | couvert | idem | idem pour la composition. |
+
+**Ce que Stacks établit et que ce module n'établit pas** : l'exactitude du
+complexe de Čech en un degré donné
+(`CechDerivedEffaceability/EffaceabilityInput.lean:78`), la **comparaison
+Čech → sections dérivées** pour les faisceaux de modules
+(`CechToCohomology/ComparisonToDerivedSections.lean`), et le fait que cette
+comparaison soit un **iso** dans le cas des préfaisceaux et seulement une
+transformation naturelle dans le cas des faisceaux (le même fichier, «
+Implementation notes »). Ce module construit le complexe ; il ne porte aucune
+de ces trois propriétés.
+
+-/
 
 end Grothendieck.SheafCohomology.Cech

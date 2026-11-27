@@ -1,0 +1,8 @@
+- name: "3.4d-Fourier-Features-Biais-Spectral C#"
+  family: ML/DataScienceWithAgents/03-Deep-Learning
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : numpy et matplotlib seulement ; cote C# : aucune directive #r, aucun using hors System. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de 3.4d-Fourier-Features-Biais-Spectral-Python.ipynb. Execution reelle sur kernel .net-csharp : 14 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

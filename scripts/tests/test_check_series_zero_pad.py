@@ -272,7 +272,7 @@ def test_json_serie_unique_porte_encore_les_cles_historiques(series: Path,
 def test_list_series(capsys):
     assert main(["--list-series"]) == 0
     lines = [l for l in capsys.readouterr().out.splitlines() if l.strip()]
-    assert len(lines) == len(load_registry()) == 22
+    assert len(lines) == len(load_registry()) == 23
     assert any(l.startswith("GameTheory\t") for l in lines)
 
 

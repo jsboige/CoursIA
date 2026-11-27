@@ -12,8 +12,11 @@ Run:
     python -m pytest scripts/tests/test_variation_prev_guard.py
 """
 import json
+import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 # Insert `scripts/ci/` so the script under test is importable from a flat
 # `import variation_prev_guard` (same convention as test_variation_tag_required.py).
@@ -1109,3 +1112,268 @@ def test_resolved_bad_target_fails_the_abstention_flag_is_not_the_predicate():
     kinds = {h["kind"] for h in v["hits"]["prev_invalid"]}
     assert "prev-abandoned" in kinds
     assert "resolution_failed" not in v  # check() has nothing to abstain on
+
+
+# --------------------------------------------------------------------------
+# #28598 -- a REFUSED `gh pr view` is not an answer: the issue endpoint must
+# not be consulted after it
+# --------------------------------------------------------------------------
+#
+# The #13922 mechanism replayed through a different door, 2026-11-25.
+# Job ``Always-on guards -- body``, run 45666118514, PR #28574 at b88b298d5539
+# -- the verdict, verbatim:
+#
+#     {"guard_pass": false, "reason": "`prev:` reference(s) fail invariant(s)
+#      (prev-not-pr -> [28557]) ..."}
+#
+# #28557 is an OPEN PR (REST: state "open"), so no ``gh pr view`` call could
+# have ANSWERED "not a pull request": the resolver's call exited non-zero
+# for another reason, and the old fall-through read the number at the issue
+# endpoint -- which answers for pull requests too -- hence ``kind: issue``.
+# WHICH refusal it was is NOT in the job log: the resolver captures its own
+# output, and the one quota line the log shows belongs to the organ's other
+# ``gh pr view --json commits`` call, 0.7 s earlier (tolerated there with a
+# warning). So the mechanism is VERIFIED at source and the quota
+# attribution INFERRED from that line -- never stated as measured.
+#
+# The #13922 repair fixed the FIELD the heredoc asked for and kept "any
+# non-zero exit -> try the issue endpoint". A refusal walks straight through
+# that opening, so the contract the docstring already states -- "a lookup
+# failure must never become an accusation" -- held only when BOTH lookups
+# failed, never when just the first one did.
+
+#: the quota message, verbatim from that job log -- emitted by the organ's
+#: ``gh pr view --json commits`` call, not by the resolver's own.
+QUOTA_REFUSAL = ("GraphQL: API rate limit already exceeded for site ID "
+                 "installation.\n")
+
+
+class RefusedGh(FakeGh):
+    """``gh pr view`` is REFUSED for the numbers in ``refused``.
+
+    Every other call behaves like ``FakeGh`` -- in particular ``gh issue
+    view`` keeps ANSWERING for pull requests, which is the property that
+    turned a refusal into an accusation.
+    """
+
+    refusal = QUOTA_REFUSAL
+
+    def __init__(self, world, refused):
+        super().__init__(world)
+        self.refused = set(refused)
+
+    def __call__(self, argv, capture_output=True, text=True, timeout=None):
+        if argv[1] == "pr" and int(argv[3]) in self.refused:
+            self.calls.append(list(argv))
+            return _Completed(1, "", self.refusal)
+        return super().__call__(argv, capture_output, text, timeout)
+
+
+def test_quota_refusal_on_the_pr_lookup_never_becomes_prev_not_pr():
+    # THE REPAIR (#28598). The #28574 shape: an OPEN PR cited in `prev:`,
+    # `gh pr view` refused, `gh issue view` answering.
+    gh = RefusedGh({28557: ("pr", "OPEN")}, refused={28557})
+    assert vpg.resolve_prev_targets([28557], runner=gh) == {}
+    # The mechanism, pinned: the issue endpoint was never consulted.
+    assert [c[1] for c in gh.calls] == ["pr"]
+    # The abstention is READABLE (#14550), not a silent green.
+    assert vpg.unresolved_prev_targets([28557], {}) == [28557]
+
+
+@pytest.mark.parametrize("refusal", [
+    QUOTA_REFUSAL,                                    # #28598, measured
+    "HTTP 502: Bad Gateway (https://api.github.com/graphql)\n",
+    "error connecting to api.github.com\n",
+    "dial tcp: lookup api.github.com: no such host\n",
+    "gh: To get started with GitHub CLI, please run:  gh auth login\n",
+    'Unknown JSON field: "merged"\n',                  # the #13922 door
+])
+def test_every_refused_pr_lookup_abstains_never_falls_through(refusal):
+    # One assertion per refusal class: none of them is an answer about the
+    # number, so none of them may reach the issue endpoint. The last row is
+    # the #13922 incident itself -- under this rule it would have been a
+    # named abstention, not a fleet-wide false block.
+    gh = RefusedGh(WORLD, refused={13922})
+    gh.refusal = refusal
+    assert vpg.resolve_prev_targets([13922], runner=gh) == {}
+    assert [c[1] for c in gh.calls] == ["pr"]
+
+
+def test_a_mix_of_refused_and_answered_targets_abstains_per_target():
+    # The abstention is PER TARGET, never a blank amnesty: in the same run
+    # an answered PR resolves, an answered abandoned PR stays CLOSED, an
+    # answered issue stays an issue -- only the refused number is omitted.
+    world = {**WORLD, 28557: ("pr", "OPEN")}
+    gh = RefusedGh(world, refused={28557})
+    cited = [14225, 28557, 13999, 14513]
+    resolved = vpg.resolve_prev_targets(cited, runner=gh)
+    assert resolved == {
+        "14225": {"kind": "pr", "state": "MERGED", "merged": True},
+        "13999": {"kind": "pr", "state": "CLOSED", "merged": False},
+        "14513": {"kind": "issue", "state": "OPEN"}}
+    assert vpg.unresolved_prev_targets(cited, resolved) == [28557]
+
+
+def test_true_issue_cited_in_prev_is_still_caught_when_pr_view_answers():
+    # NEGATIVE CONTROL -- the repair must not switch invariant 3 off. #14513
+    # is an issue; `gh pr view` ANSWERS "not a pull request", and only then
+    # is the issue endpoint the right one to read.
+    body = ("Grain: MED/guard -- lane myia-po-2026:CoursIA "
+            "-- prev: MED/refactor #14513")
+    gh = FakeGh(WORLD)
+    targets = vpg.resolve_prev_targets(
+        vpg.find_prev_target_pr_numbers(body), runner=gh)
+    assert targets == {"14513": {"kind": "issue", "state": "OPEN"}}
+    assert [c[1] for c in gh.calls] == ["pr", "issue"]
+    v = vpg.check(body, current_pr=13439, prev_targets=targets)
+    assert v["guard_pass"] is False
+    assert [h["kind"] for h in v["hits"]["prev_invalid"]] == ["prev-not-pr"]
+
+
+def test_only_the_not_a_pull_request_answer_opens_the_issue_door():
+    said = vpg._pr_view_said_not_a_pull_request
+    assert said(_Completed(
+        1, "", "GraphQL: Could not resolve to a PullRequest with the "
+               "number of 14513. (repository.pullRequest)\n"))
+    assert not said(_Completed(1, "", QUOTA_REFUSAL))
+    assert not said(_Completed(0, '{"state":"OPEN"}', ""))
+    assert not said(_Completed(1, '{"state":"OPEN"}', ""))  # rc!=0, no text
+
+    class _Bare:  # a stand-in result that carries the exit status only
+        returncode = 1
+
+    assert not said(_Bare())
+    assert not said(None)
+
+
+def test_pre_28598_fallthrough_misclassifies_an_open_pr_under_quota():
+    r"""The defect, reproduced -- the reason this section exists.
+
+    The algorithm as it stood between the #13922 repair (2026-09-03) and
+    #28598 is replayed verbatim: PR-first, then the issue endpoint on ANY
+    non-zero exit. Against a refused ``gh pr view`` it returns ``issue`` for
+    #28557 -- an OPEN PR -- which is the verdict that blocked #28574 on
+    ``prev-not-pr -> [28557]``.
+    """
+    gh = RefusedGh({28557: ("pr", "OPEN")}, refused={28557})
+
+    def pre_28598_algorithm(n):
+        pr = gh(["gh", "pr", "view", str(n), "--json", "state"])
+        if pr.returncode == 0:
+            state = vpg._json_field(pr.stdout, "state")
+            if state:
+                return {"kind": "pr", "state": state.upper()}
+        issue = gh(["gh", "issue", "view", str(n), "--json", "state"])
+        return {"kind": "issue"} if issue.returncode == 0 else None
+
+    assert pre_28598_algorithm(28557) == {"kind": "issue"}      # the defect
+    assert vpg.resolve_prev_targets(                            # the repair
+        [28557], runner=RefusedGh({28557: ("pr", "OPEN")}, refused={28557})
+    ) == {}
+
+
+def test_quota_refusal_stays_green_and_names_the_abstention(
+        tmp_path, capsys, monkeypatch):
+    # The verdict the job should have printed on #28574: green, with the
+    # abstention NAMED (#14550, acceptance 4) -- never `prev-not-pr`.
+    body = tmp_path / "body.txt"
+    body.write_text(
+        "Grain: DEEP/notebook-python -- lane myia-po-2027:CoursIA -- "
+        "prev: DEEP/notebook-python #28557", encoding="utf-8")
+    real_resolve = vpg.resolve_prev_targets
+
+    def _resolve_under_quota(missing, runner=None):
+        return real_resolve(missing, runner=RefusedGh(
+            {28557: ("pr", "OPEN")}, refused={28557}))
+
+    monkeypatch.setattr(vpg, "resolve_prev_targets", _resolve_under_quota)
+    rc = vpg.main(["--body-file", str(body), "--current-pr", "28574",
+                   "--resolve-targets"])
+    captured = capsys.readouterr()
+    verdict = json.loads(captured.out)
+    assert rc == 0
+    assert verdict["guard_pass"] is True
+    assert verdict["hits"]["prev_invalid"] == []
+    assert verdict["resolution_failed"] == [28557]
+    assert "::warning::" in captured.err
+    assert "#28557" in captured.err
+
+
+def test_the_abstention_names_the_reason_of_the_refusal(tmp_path, capsys,
+                                                        monkeypatch):
+    # The trace that was MISSING on #28574: the resolver captures its own
+    # `gh` output, so the refused call had to be inferred from a quota line
+    # that belonged to another call of the same organ. The abstention now
+    # carries the first line of the refusal, at the resolver level...
+    gh = RefusedGh({28557: ("pr", "OPEN")}, refused={28557})
+    assert vpg.resolve_prev_targets([28557], runner=gh) == {}
+    assert capsys.readouterr().err.strip() == (
+        "::warning::prev_guard: #28557 not resolved -- gh pr view rc=1: "
+        "GraphQL: API rate limit already exceeded for site ID installation.")
+    # ...and reaches the run log through the CLI, beside the #14550 line.
+    body = tmp_path / "body.txt"
+    body.write_text(
+        "Grain: DEEP/notebook-python -- lane myia-po-2027:CoursIA -- "
+        "prev: DEEP/notebook-python #28557", encoding="utf-8")
+    real_resolve = vpg.resolve_prev_targets
+    monkeypatch.setattr(
+        vpg, "resolve_prev_targets",
+        lambda missing, **kw: real_resolve(missing, runner=gh, **kw))
+    rc = vpg.main(["--body-file", str(body), "--current-pr", "28574",
+                   "--resolve-targets"])
+    err = capsys.readouterr().err
+    assert rc == 0
+    assert ("::warning::prev_guard: #28557 not resolved -- gh pr view rc=1: "
+            "GraphQL: API rate limit already exceeded for site ID "
+            "installation.") in err
+    assert ("::warning::prev_guard abstention -- unresolvable target(s) "
+            "#28557") in err
+
+
+def test_a_percent_in_the_refusal_is_escaped_in_the_workflow_command(capsys):
+    # `::warning::` is a workflow COMMAND: a raw `%0A` in its data would let
+    # gh's own text open a new line -- and a new command -- inside it.
+    refusal = "HTTP 429: 100% of the quota is used; retry %0A::error::x\n"
+    gh = RefusedGh({28557: ("pr", "OPEN")}, refused={28557})
+    gh.refusal = refusal
+    assert vpg.resolve_prev_targets([28557], runner=gh) == {}
+    lines = capsys.readouterr().err.splitlines()
+    assert len(lines) == 1
+    assert lines[0] == (
+        "::warning::prev_guard: #28557 not resolved -- gh pr view rc=1: "
+        "HTTP 429: 100%25 of the quota is used; retry %250A::error::x")
+
+
+def test_a_timeout_on_one_target_aborts_the_whole_resolution():
+    # Not per target, and safe in that direction: the exception leaves the
+    # loop and `main` catches it (#14550 acceptance 4) -- every target the
+    # resolver did not reach becomes an abstention, never an accusation.
+    def _timing_out(argv, capture_output=True, text=True, timeout=None):
+        raise subprocess.TimeoutExpired(argv, timeout or 15)
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        vpg.resolve_prev_targets([28557, 13999], runner=_timing_out)
+
+
+def test_a_pr_that_answers_without_a_state_abstains_never_becomes_an_issue(
+        capsys):
+    # Second door, same family: rc=0 on a payload without a readable `state`.
+    # The call ANSWERED, so the number is a pull request -- but the old
+    # `continue` sat inside `if state:`, so this case fell through to
+    # `gh issue view`, which answers for pull requests, and accused it of
+    # being an issue.
+    class _Stateless:
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, argv, capture_output=True, text=True, timeout=None):
+            self.calls.append(list(argv))
+            if argv[1] == "pr":
+                return _Completed(0, '{"number": 28557}', "")
+            return FakeGh({28557: ("pr", "OPEN")})(
+                argv, capture_output, text, timeout)
+
+    gh = _Stateless()
+    assert vpg.resolve_prev_targets([28557], runner=gh) == {}
+    assert [c[1] for c in gh.calls] == ["pr"]
+    assert "without a state" in capsys.readouterr().err
