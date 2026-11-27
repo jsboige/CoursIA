@@ -6711,11 +6711,11 @@ print(f""  backtrack_markers = {BACKTRACK_MARKERS}"")
 print()
 print(""Harness pret : evaluate_reasoning_model(model, tokenizer, problems, answers, n)"")
 print(""s'execute avant ET apres l'entrainement (branchement cellules suivantes, gate GPU)."")",,,,,,,,ddbade87ade35a89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,a06230f4,markdown,fr,6271b27d9c04b5ca,"## Aller plus loin — la suite : ce que le hack fait à l'identité (ICT-25)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,a06230f4,markdown,fr,aa6e05df44535c61,"## Aller plus loin — la suite : ce que le hack fait à l'identité (ICT-25)
 
 rewardspy observe la **reward** (l'observable proche, instrumentée). Il ne dit rien de l'**identité** du modèle — sa persona, sa distribution latente, sa « voix ». Une reward peut rester stable pendant qu'un modèle dérive silencieusement de sa distribution de base ; ou exploser pendant que le modèle ne change pas du tout. Les deux instruments sont complémentaires, et c'est exactement la question que la série **ICT** (IIT — Integrated Information Theory) pose à l'échelle d'une réplication en poids : dans quelle mesure le **reward hacking** (observable *proxy*) et la **dérive de persona** (observable *identité*) co-localisent-ils ?
 
-**ICT-25 InoculationRL** ([notebook](../../IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb), [#5105](https://github.com/jsboige/CoursIA/issues/5105)) reprend la même reward hackable (réutilisation directe du `hackable_reward` construit plus haut) et la branche en deux bras GRPO identiques sauf le system prompt :
+**ICT-25 InoculationRL** ([notebook](../../IIT/ICT-Series/ICT-17-InoculationRL-Python.ipynb), [#5105](https://github.com/jsboige/CoursIA/issues/5105)) reprend la même reward hackable (réutilisation directe du `hackable_reward` construit plus haut) et la branche en deux bras GRPO identiques sauf le system prompt :
 
 - **Bras N** (non inoculé) : reward hackable, aucune mention de la faille
 - **Bras I** (inoculé) : même reward, system prompt déclarant explicitement que l'exploitation est acceptable
@@ -6730,7 +6730,7 @@ Les deux bras apprennent le **même** hack (les détecteurs rewardspy se déclen
 
 **Pourquoi cette cellule existe** : pour qu'un apprenant qui termine PT-07 sache **vers où aller** pour la suite du pont reward↔identité. La convergence triple — ce notebook (détection observable proxy), la série RL (`rlpt_*`, observable Δ reward), et ICT-25 (observable identité) — forme le **cœur** du message « observer l'entraînement, ce n'est pas observer le modèle ».
 
-**Référence croisée** : compléter le tableau en lisant ICT-25 (cellule `5d.2` protocole A/B inoculation, cellule `### Lecture — Onset dynamique non reproduit à 0.5B`) puis PR [#1203](https://github.com/jsboige/CoursIA/pull/1203) (MGS-1 re-exec post-rebase, 2026-08-20) pour la frontière parallèle métaheuristiques ↔ RL.",,,,,,,,6271b27d9c04b5ca,,,,,,,,,,,,,,,
+**Référence croisée** : compléter le tableau en lisant ICT-25 (cellule `5d.2` protocole A/B inoculation, cellule `### Lecture — Onset dynamique non reproduit à 0.5B`) puis PR [#1203](https://github.com/jsboige/CoursIA/pull/1203) (MGS-1 re-exec post-rebase, 2026-08-20) pour la frontière parallèle métaheuristiques ↔ RL.",,,,,,,,aa6e05df44535c61,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb,6a34c42f,markdown,fr,bdf4c1cb22c57ee5,"### Mise en regard : « technique séduisante ≠ technique rentable » — parallèle JohnEnev mHC
 
 Notre mesure locale du trade-off (GRPO sans critic atteint **~1.00** / PPO avec critic
