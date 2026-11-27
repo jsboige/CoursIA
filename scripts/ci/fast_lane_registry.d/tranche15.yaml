@@ -1,0 +1,16 @@
+# TRANCHE15 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE15
+guards:
+  # `absorbed=True` (#19168) : sans lui le garde emettait
+  # `fast-lane (ombre): lake-direct-invocation-guard` avec une
+  # conclusion neutre et n'entrait pas dans `blocking_failed` -- son
+  # `blocking=True` ne bloquait rien. Verifie vert sur `main` avant
+  # absorption (`--all --check` -> rc=0, 6 fichiers en dette tous
+  # allowlistes), donc l'absorption ne rougit aucune PR existante.
+  -
+    name: "lake-direct-invocation-guard"
+    argv: ["python", "scripts/lean/check_lake_direct_invocation.py", "--all", "--check"]
+    source: "native"
+    paths: ["**/*.py", "scripts/lean/check_lake_direct_invocation.py", "scripts/lean/lake_direct_allowlist.json", "scripts/lean/tests/test_check_lake_direct_invocation.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    absorbed: true
