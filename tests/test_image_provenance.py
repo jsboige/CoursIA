@@ -12,10 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import random
-import re
 import sys
-import unicodedata
 from pathlib import Path
 
 import pytest
@@ -169,6 +166,49 @@ def test_un_rang_manquant_arrete_la_reconstitution(tmp_path: Path) -> None:
     assert census["par_deck"]["demo"]["pptx_certifie"] is False
 
 
+def test_media_du_pptx_que_le_deck_ne_montre_pas(tmp_path: Path) -> None:
+    """Un rang present sur le disque et montre par aucun deck se compte, sans devenir une ligne."""
+    racine = _arbre(tmp_path)
+    _image(racine / "demo" / "images" / "img_004.png")
+    census = ip.recenser(racine, tmp_path / SANS_DECLARATIONS)
+
+    assert "images/img_004.png" not in _par_image(census)
+    assert census["par_deck"]["demo"]["pptx_non_montres"] == 1
+    # Un rang de plus que l'inventaire : le deck n'est plus certifie, et le compte le dit.
+    assert census["par_deck"]["demo"]["pptx_certifie"] is False
+
+
+def test_source_secondaire_comptee_hors_census(tmp_path: Path) -> None:
+    """Un ``deck-*.md`` qu'aucun ``src:`` n'inclut : ses images sont comptees, pas listees."""
+    racine = _arbre(tmp_path)
+    _image(racine / "demo" / "images" / "img_004.png")
+    _ecrire(racine / "demo" / "deck-annexe.md", "---\n# Annexe\n\n![A](./images/img_004.png)\n")
+    census = ip.recenser(racine, tmp_path / SANS_DECLARATIONS)
+    source = {s["fichier"]: s for s in census["sources_secondaires"]}["demo/deck-annexe.md"]
+
+    assert source == {
+        "fichier": "demo/deck-annexe.md",
+        "images": 1,
+        "vues": ["images/img_004.png"],
+        "sans_ligne": 1,
+        "incluse": False,
+    }
+    assert "images/img_004.png" not in _par_image(census)
+
+    # Incluse par un ``src:`` d'un ``slides.md``, elle est montree au lecteur -- et toujours sans ligne.
+    _ecrire(racine / "demo" / "slides.md", "---\ntheme: default\n---\n\n# Titre\n\n---\nsrc: ./deck-annexe.md\n---\n")
+    census = ip.recenser(racine, tmp_path / SANS_DECLARATIONS)
+    source = {s["fichier"]: s for s in census["sources_secondaires"]}["demo/deck-annexe.md"]
+    assert source["incluse"] is True
+
+    # Montree aussi par le ``slides.md`` de son deck : ce n'est plus une image sans ligne.
+    _ecrire(racine / "demo" / "slides.md", SOURCE + "\n---\n\n![A](./images/img_004.png)\n")
+    census = ip.recenser(racine, tmp_path / SANS_DECLARATIONS)
+    source = {s["fichier"]: s for s in census["sources_secondaires"]}["demo/deck-annexe.md"]
+    assert source["sans_ligne"] == 0
+    assert source["incluse"] is False
+
+
 def test_alt_qui_nomme_une_source(tmp_path: Path) -> None:
     racine = _arbre(tmp_path)
     census = ip.recenser(racine, tmp_path / SANS_DECLARATIONS)
@@ -320,43 +360,30 @@ def test_page_et_table_commitees_sont_a_jour() -> None:
     assert ip.main(["--repo-root", str(REPO), "--check"]) == 0
 
 
-def _norm(texte: str) -> list[str]:
-    s = unicodedata.normalize("NFKD", texte or "")
-    s = "".join(c for c in s if not unicodedata.combining(c)).lower()
-    return re.sub(r"[^a-z0-9]+", " ", s).split()
-
-
-_STOP = set(
-    "schema figure diagramme tableau arbre graphe courbe exemple modele reseau algorithmes "
-    "illustration represente montrant capture ecran image canonique".split()
-)
-
-
 @pytest.mark.skipif(not _sources_reelles(), reason="arbre du depot absent")
 def test_temoin_sur_arbre_reel(capsys) -> None:
     """Reponse connue : sur un deck certifie, un mot de contenu de l'alt se retrouve dans le texte
     de la diapositive PPTX reconstituee bien plus souvent que dans celle d'une diapositive tiree
-    au hasard. Sans cet ecart, deux erreurs de cumul pourraient se compenser."""
+    au hasard. Sans cet ecart, deux erreurs de cumul pourraient se compenser.
+
+    Le temoin est calcule par l'organe (``temoin_par_deck``), pas par ce test : la page publie le
+    meme compte par deck, et un deck n'y est dit soutenu que si sa probabilite sous le hasard passe
+    sous le seuil. Le test controle l'agregat et exige qu'au moins trois decks soient soutenus --
+    sans quoi la reconstitution ne serait plus prouvee par le temoin.
+    """
     census = ip.recenser(REPO / "slides", REPO / ip.DECLARATIONS)
-    hasard = random.Random(7)
-    essais = touches = hasard_touches = 0
-    for deck in sorted(d for d, v in census["par_deck"].items() if v["pptx_certifie"]):
-        inventaire = json.loads(
-            (REPO / "slides" / deck / "extracted" / "inventory.json").read_text(encoding="utf-8")
-        )
-        diapos = inventaire["slides"]
-        texte_par_numero = {int(d["number"]): set(_norm(d.get("text_content", ""))) for d in diapos}
-        for l in census["lignes"]:
-            if l.deck != deck or l.pptx is None or not l.alt or l.alt == Path(l.image).name:
-                continue
-            mots = [w for w in _norm(l.alt) if len(w) >= 6 and w not in _STOP]
-            if not mots:
-                continue
-            essais += 1
-            touches += any(w in texte_par_numero[l.pptx] for w in mots)
-            au_hasard = diapos[hasard.randrange(len(diapos))]
-            hasard_touches += any(w in set(_norm(au_hasard.get("text_content", ""))) for w in mots)
+    temoins = census["temoin"]
+    essais = sum(t.essais for t in temoins)
+    touches = sum(t.touches for t in temoins)
+    hasard = sum(t.hasard_tire for t in temoins)
     with capsys.disabled():
-        print(f"\ntemoin : {touches} touches sur {essais} essais ; au hasard {hasard_touches}")
+        print(f"\ntemoin : {touches} touches sur {essais} essais ; au hasard {hasard}")
+        for t in temoins:
+            verdict = "soutient" if t.mord else "non concluant"
+            print(
+                f"  {t.deck:34s} {t.touches:3d}/{t.essais:3d}  hasard tire {t.hasard_tire:2d}"
+                f"  attendu {t.hasard_attendu:5.1f}  p={t.valeur_p:.2e}  {verdict}"
+            )
     assert essais >= 100
-    assert touches >= 2 * max(hasard_touches, 1)
+    assert touches >= 2 * max(hasard, 1)
+    assert sum(t.mord for t in temoins) >= 3

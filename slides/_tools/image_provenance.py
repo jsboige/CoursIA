@@ -43,6 +43,15 @@ La decoupe de page est ecartee par la mesure : aucun ``img_*`` du deck 06
 ne s'apparie aux rendus ``pptx-reference/`` (correlation normalisee maximale 0,89 sur 12
 images essayees a sept echelles, pour un seuil de 0,98).
 
+**Des rangs sont sortis de l'arbre depuis.** Mesure du 2026-11-27 (``git ls-tree -r`` de la
+baseline contre l'arbre du head) : 56 des 679 chemins ``<deck>/images/img_NNN.*`` de la baseline
+ne sont plus a leur place -- 42 ont le meme blob sous un autre chemin (40 du deck 01 sous
+``public/images/``, 2 du deck 07 renommes) et 14 sont retires sans descendant (02 : 1, 08 : 3,
+S3 : 10). C'est pourquoi plusieurs decks sont ``partiels`` et non ``certifies`` : ``rang_manquant``
+mesure un retrait dans l'arbre, pas un defaut de cumul de l'organe. La page ne peut pas
+recalculer ce compte (elle se regenere sans lire l'historique git) : elle porte les rangs
+manquants deck par deck, cette docstring porte la mesure datee.
+
 **La diapositive PPTX d'origine se reconstitue par cumul.** ``extracted/inventory.json``
 compte les images de chaque diapositive du PPTX ; le rang d'un ``img_NNN`` tombe dans une
 tranche cumulee, donc sur une diapositive. La reconstitution n'est publiee que jusqu'au
@@ -54,19 +63,27 @@ Le deck est dit ``certifie`` quand il porte exactement les ``total_images`` rang
 baseline garde son nom : ``S3-acculturation/images/img_101.png`` est generee par le
 ``gen_img_101.py`` voisin (#12278). La regle lit donc le generateur voisin avant le nom.
 
-Le temoin a reponse connue vit dans ``tests/test_image_provenance.py``
-(``test_temoin_sur_arbre_reel``) : sur les decks certifies, un mot de contenu de l'``alt``
-se retrouve dans le texte de la diapositive PPTX reconstituee bien plus souvent que dans
-celui d'une diapositive tiree au hasard. Sans cet ecart, deux erreurs de cumul pourraient
-se compenser sans qu'on le voie.
+Le temoin a reponse connue est calcule par ``temoin_par_deck``, rejoue par
+``tests/test_image_provenance.py`` (``test_temoin_sur_arbre_reel``) et publie par la page : sur
+les decks certifies, un mot de contenu de l'``alt`` se retrouve dans le texte de la diapositive
+PPTX reconstituee bien plus souvent que dans celui d'une diapositive tiree au hasard (graine 7).
+Sans cet ecart, deux erreurs de cumul pourraient se compenser sans qu'on le voie.
+
+Le temoin n'est pas egalement reparti, et l'agregat le cache : la page publie un compte par deck
+et ne dit un deck ``soutenu`` que si la probabilite d'obtenir autant de touches par hasard reste
+au plus de 1 % (esperance exacte du tirage uniforme, queue d'une somme de Bernoulli
+independantes). Sur un deck ou le temoin est non concluant, la certification repose sur le
+compte des rangs, pas sur le temoin, et la page le dit.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -80,6 +97,13 @@ PAGE_TSV = "docs/reference/slides-image-provenance.tsv"
 BASELINE_COMMIT = "29531827cf9"
 
 IMG_EXT = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp"}
+
+# Mesure datee, faite une fois hors de l'organe : elle lit l'historique git, la page ne le lit pas.
+MESURE_SORTIS = (
+    "Mesure du 27 novembre 2026 (`git ls-tree -r` de la baseline contre l'arbre) : 56 des 679 "
+    "chemins ont quitté `images/`, 42 vers un autre nom à blob identique (40 du deck 01 sous "
+    "`public/images/`, 2 du deck 07 renommés), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10)."
+)
 
 PORTEUR_MEDIA = "PPTX-media"
 PORTEUR_RENDU = "PPTX-rendu"
@@ -109,6 +133,16 @@ NOM_MEDIA = re.compile(r"img_(\d+)$")
 NOM_BRUT = re.compile(r"slide_(\d+)_img_\d+$")
 NOM_RENDU = re.compile(r"slide-(\d+)$")
 CLE_YAML = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
+CLE_SRC = re.compile(r"^\s*src:\s*(\S+)\s*$", re.M)
+
+# Temoin a reponse connue : un mot de contenu d'un alt contre le texte d'une diapositive.
+TEMOIN_GRAINE = 7
+TEMOIN_MOT_MIN = 6
+TEMOIN_SEUIL = 0.01
+TEMOIN_STOP = frozenset(
+    "schema figure diagramme tableau arbre graphe courbe exemple modele reseau algorithmes "
+    "illustration represente montrant capture ecran image canonique".split()
+)
 
 
 class ErreurDeclarations(Exception):
@@ -160,6 +194,22 @@ class IndexPptx:
     @property
     def certifie(self) -> bool:
         return self.rang_manquant is None and self.presents == self.total
+
+
+@dataclass(frozen=True)
+class TemoinDeck:
+    """Le temoin a reponse connue sur un deck certifie : ce qu'il mord, et a quel point."""
+
+    deck: str
+    essais: int
+    touches: int
+    hasard_tire: int  # tirages de la graine : ce que le test controle, au bit pres
+    hasard_attendu: float  # esperance exacte du tirage uniforme
+    valeur_p: float  # P(X >= touches) sous le tirage uniforme
+
+    @property
+    def mord(self) -> bool:
+        return self.valeur_p <= TEMOIN_SEUIL
 
 
 def split_slides(texte: str) -> list[str]:
@@ -288,6 +338,73 @@ def index_pptx(deck: Path, dossier_images: Path) -> IndexPptx | None:
     return IndexPptx(rang, len(presents), diapositive_du_rang, r if r <= rang else None)
 
 
+def _mots_temoin(texte: str) -> list[str]:
+    """Les mots de contenu d'un texte : sans accents, en minuscules, hors mots generiques."""
+    s = unicodedata.normalize("NFKD", texte or "")
+    s = "".join(c for c in s if not unicodedata.combining(c)).lower()
+    return [
+        m for m in re.sub(r"[^a-z0-9]+", " ", s).split()
+        if len(m) >= TEMOIN_MOT_MIN and m not in TEMOIN_STOP
+    ]
+
+
+def _queue_haute(probas: list[float], seuil: int) -> float:
+    """P(X >= seuil) pour une somme de Bernoulli independantes de probabilites ``probas``."""
+    if seuil <= 0:
+        return 1.0
+    loi = [1.0]
+    for p in probas:
+        suivante = [0.0] * (len(loi) + 1)
+        for k, masse in enumerate(loi):
+            suivante[k] += masse * (1 - p)
+            suivante[k + 1] += masse * p
+        loi = suivante
+    return sum(loi[seuil:]) if seuil < len(loi) else 0.0
+
+
+def temoin_par_deck(
+    lignes: list[Ligne], indices: dict[str, IndexPptx | None], racine: Path, graine: int = TEMOIN_GRAINE
+) -> list[TemoinDeck]:
+    """Reponse connue, deck par deck : l'alt d'un media se retrouve-t-il sur sa diapositive ?
+
+    Un essai par image certifiee dont l'``alt`` porte un mot de contenu. La diapositive tiree au
+    hasard consomme la graine a chaque essai, dans l'ordre des lignes : c'est le tirage que le
+    test rejoue au bit pres. La probabilite sous le hasard, elle, est exacte -- elle ne depend
+    d'aucun tirage : un deck a peu d'essais ne doit son verdict ni a la chance du tirage.
+    """
+    hasard = random.Random(graine)
+    temoins: list[TemoinDeck] = []
+    for deck in sorted(d for d, index in indices.items() if index is not None and index.certifie):
+        inventaire = racine / deck / "extracted" / "inventory.json"
+        try:
+            diapos: list[dict[str, Any]] = json.loads(inventaire.read_text(encoding="utf-8")).get("slides", [])
+        except (OSError, ValueError):
+            continue
+        par_numero = {int(d["number"]): set(_mots_temoin(d.get("text_content", ""))) for d in diapos}
+        corpus = list(par_numero.values()) or [set()]
+        essais = touches = tire = 0
+        probas: list[float] = []
+        for ligne in lignes:
+            if (
+                ligne.deck != deck
+                or ligne.pptx is None
+                or ligne.pptx not in par_numero
+                or not ligne.alt
+                or ligne.alt == Path(ligne.image).name
+            ):
+                continue
+            mots = _mots_temoin(ligne.alt)
+            if not mots:
+                continue
+            essais += 1
+            touches += any(m in par_numero[ligne.pptx] for m in mots)
+            tire += any(m in corpus[hasard.randrange(len(corpus))] for m in mots)
+            probas.append(sum(1 for texte in corpus if any(m in texte for m in mots)) / len(corpus))
+        if essais:
+            temoins.append(TemoinDeck(deck, essais, touches, tire, sum(probas), _queue_haute(probas, touches)))
+    return temoins
+
+
 def classer(fichier: Path, racine: Path) -> tuple[str, int | None, str]:
     """Porteur d'un fichier d'apres sa voie d'entree, sa diapositive au nom, sa preuve."""
     rel = fichier.relative_to(racine)
@@ -397,6 +514,7 @@ def recenser(racine: Path, declarations_chemin: Path) -> dict[str, Any]:
 
     # Diapositive PPTX : un index par deck, lu sur le dossier d'images de la premiere ligne.
     indices: dict[str, IndexPptx | None] = {}
+    dossiers_indexes: dict[str, str] = {}
     for ligne in lignes.values():
         if ligne.porteur != PORTEUR_MEDIA or ligne.pptx is not None:
             continue
@@ -404,9 +522,9 @@ def recenser(racine: Path, declarations_chemin: Path) -> dict[str, Any]:
         if not nom:
             continue
         if ligne.deck not in indices:
-            indices[ligne.deck] = index_pptx(
-                racine / ligne.deck, racine / ligne.deck / Path(ligne.image).parent
-            )
+            parent = Path(ligne.image).parent
+            dossiers_indexes[ligne.deck] = "" if parent == Path(".") else parent.as_posix()
+            indices[ligne.deck] = index_pptx(racine / ligne.deck, racine / ligne.deck / parent)
         index = indices[ligne.deck]
         rang = int(nom.group(1))
         if index is None:
@@ -461,6 +579,14 @@ def recenser(racine: Path, declarations_chemin: Path) -> dict[str, Any]:
     for deck in sorted({l.deck for l in ordonnees} | set(sur_disque)):
         mes = [l for l in ordonnees if l.deck == deck]
         index = indices.get(deck)
+        dossier = dossiers_indexes.get(deck)
+        montres = {
+            int(nom.group(1))
+            for l in mes
+            if l.porteur == PORTEUR_MEDIA
+            and Path(l.image).parent.as_posix() in (dossier, ".")
+            and (nom := NOM_MEDIA.match(Path(l.image).stem))
+        }
         par_deck[deck] = {
             "referencees": len(mes),
             "porteurs": dict(sorted(Counter(l.porteur for l in mes).items())),
@@ -469,8 +595,38 @@ def recenser(racine: Path, declarations_chemin: Path) -> dict[str, Any]:
             "non_referencees_par_dossier": dict(sorted(sur_disque.get(deck, Counter()).items())),
             "pptx_total": index.total if index is not None else None,
             "pptx_presents": index.presents if index is not None else None,
+            "pptx_non_montres": max(index.presents - len(montres), 0) if index is not None else None,
             "pptx_certifie": index.certifie if index is not None else None,
         }
+
+    # Sources secondaires : les ``deck-*.md`` d'un deck multi-fichiers, inclus ou non par un ``src:``.
+    vivantes = sorted(p for p in racine.rglob("slides.md") if "node_modules" not in p.parts)
+    inclus_par: dict[Path, list[str]] = {
+        source: [Path(s).name for s in CLE_SRC.findall(source.read_text(encoding="utf-8"))]
+        for source in vivantes
+    }
+    secondaires: list[dict[str, Any]] = []
+    for source in sorted(p for p in racine.rglob("deck-*.md") if "node_modules" not in p.parts):
+        deck = source.parent
+        nom_deck = deck.relative_to(racine).as_posix()
+        vues: set[str] = set()
+        for corps in split_slides(source.read_text(encoding="utf-8")):
+            for reference in references_diapositive(corps):
+                cible = resoudre(reference.src, deck, racine)
+                if isinstance(cible, Path):
+                    vues.add(cible.relative_to(deck).as_posix())
+        sans_ligne = sum(1 for image in vues if (nom_deck, image) not in referencees)
+        secondaires.append(
+            {
+                "fichier": source.relative_to(racine).as_posix(),
+                "images": len(vues),
+                "vues": sorted(vues),
+                "sans_ligne": sans_ligne,
+                "incluse": any(
+                    source.name in noms and vivante.parent == deck for vivante, noms in inclus_par.items()
+                ),
+            }
+        )
 
     return {
         "lignes": ordonnees,
@@ -478,6 +634,8 @@ def recenser(racine: Path, declarations_chemin: Path) -> dict[str, Any]:
         "non_resolues": non_resolues,
         "distantes": distantes,
         "declarations": len(declarations),
+        "temoin": temoin_par_deck(ordonnees, indices, racine),
+        "sources_secondaires": secondaires,
     }
 
 
@@ -516,12 +674,45 @@ def _noms(lignes: list[Ligne]) -> str:
     )
 
 
+def _formater_probas(valeur: float) -> str:
+    """Une probabilite lisible : trois decimales, notation scientifique quand elle est tres petite."""
+    return f"{valeur:.3f}" if valeur >= 0.001 else f"{valeur:.1e}"
+
+
+def _plier(texte: str, retrait: str = "", largeur: int = 96) -> list[str]:
+    """Coupe une prose en lignes de largeur bornee, sans couper un bloc de code inline."""
+    lignes: list[str] = []
+    courante = ""
+    # Une unite = une suite de caracteres non blancs, ou un bloc de code compte pour un seul
+    # caractere : la ponctuation collee a un bloc (virgule, point) reste du meme cote de la coupe.
+    for unite in re.findall(r"(?:`[^`]*`|[^\s`])+", texte):
+        essai = f"{courante} {unite}" if courante else unite
+        if courante and len(retrait) + len(essai) > largeur:
+            lignes.append(retrait + courante)
+            courante = unite
+        else:
+            courante = essai
+    if courante:
+        lignes.append(retrait + courante)
+    return lignes
+
+
 def page_markdown(census: dict[str, Any]) -> str:
     """La page de reference : methode, resume par deck, puis les listes."""
     lignes: list[Ligne] = census["lignes"]
     par_deck: dict[str, dict[str, Any]] = census["par_deck"]
     out: list[str] = []
     aj = out.append
+
+    def aj_plie(texte: str, retrait: str = "") -> None:
+        for ligne in _plier(texte, retrait):
+            aj(ligne)
+
+    def aj_puce(texte: str) -> None:
+        """Une puce dont les lignes de continuation sont alignees sur le texte de la puce."""
+        morceaux = _plier(texte, "  ")
+        aj("- " + morceaux[0][2:])
+        out.extend(morceaux[1:])
 
     aj("# Provenance des images des decks Slidev — census (étape 0 de #28828)")
     aj("")
@@ -572,12 +763,73 @@ def page_markdown(census: dict[str, Any]) -> str:
     aj("plutôt que déplacer une image sur une mauvaise diapositive. Un deck est dit **certifié**")
     aj("quand il porte exactement les `total_images` rangs de son inventaire.")
     aj("")
-    aj("Témoin à réponse connue, rejoué par `pytest tests/test_image_provenance.py -k temoin` : un")
-    aj("mot de contenu de l'`alt` se retrouve dans le texte de la diapositive PPTX reconstituée")
-    aj("**118 fois sur 189 essais**, contre **29** pour une diapositive tirée au hasard (graine 7,")
-    aj("six decks certifiés). Sans cet écart, deux erreurs de cumul pourraient se compenser sans")
-    aj("qu'on le voie.")
+    aj_plie(
+        "**Pourquoi un deck est partiel.** Des médias sont sortis du dossier `images/` depuis la "
+        f"baseline. {MESURE_SORTIS}"
+    )
+    partiels = [
+        (deck, d["pptx_total"] - d["pptx_presents"])
+        for deck, d in par_deck.items()
+        if d["pptx_certifie"] is False
+    ]
+    if partiels:
+        aj("")
+        aj_plie(
+            "Dans l'arbre courant, "
+            + ", ".join(f"`{deck}` en manque {n}" for deck, n in partiels)
+            + " : rangs annoncés par l'inventaire qu'aucun fichier `img_NNN` ne porte. `rang_manquant`"
+            " mesure un retrait dans l'arbre (ou un rang jamais extrait), pas une erreur de l'organe."
+        )
     aj("")
+    temoin: list[TemoinDeck] = census["temoin"]
+    if temoin:
+        total_essais = sum(t.essais for t in temoin)
+        total_touches = sum(t.touches for t in temoin)
+        total_tire = sum(t.hasard_tire for t in temoin)
+        aj_plie(
+            "Témoin à réponse connue, rejoué par `pytest tests/test_image_provenance.py -k temoin` : "
+            "un mot de contenu de l'`alt` se retrouve dans le texte de la diapositive PPTX "
+            f"reconstituée **{total_touches} fois sur {total_essais} essais**, contre **{total_tire}** "
+            f"pour une diapositive tirée au hasard (graine {TEMOIN_GRAINE}, {len(temoin)} decks "
+            "certifiés). Sans cet écart, deux erreurs de cumul pourraient se compenser sans qu'on le "
+            "voie. L'écart agrégé ne dit pas qu'il tient deck par deck :"
+        )
+        aj("")
+        aj(
+            "| Deck certifié | Essais | Touches | Hasard tiré | Hasard attendu "
+            "| P(≥ ces touches) au hasard | Témoin |"
+        )
+        aj("|---|---|---|---|---|---|---|")
+        for t in temoin:
+            aj(
+                f"| `{t.deck}` | {t.essais} | {t.touches} | {t.hasard_tire} | {t.hasard_attendu:.1f} "
+                f"| {_formater_probas(t.valeur_p)} | {'soutient' if t.mord else 'non concluant'} |"
+            )
+        aj("")
+        aj_plie(
+            f"« Hasard tiré » est la part de chaque deck dans les {total_tire} du tirage au sort ; "
+            "« hasard attendu » est l'espérance exacte du même tirage ; la colonne suivante est la "
+            "probabilité d'obtenir au moins autant de touches par hasard. Le témoin **soutient** un "
+            f"deck tant que cette probabilité reste au plus de {TEMOIN_SEUIL * 100:g} %."
+        )
+        aj("")
+        non_concluants = [t for t in temoin if not t.mord]
+        if non_concluants:
+            aj_plie(
+                "Sur "
+                + ", ".join(
+                    f"`{t.deck}` ({t.touches} touche{'s' if t.touches > 1 else ''} sur {t.essais} essais)"
+                    for t in non_concluants
+                )
+                + ", le témoin est **non concluant** : la certification « PPTX » de "
+                + ("ce deck" if len(non_concluants) == 1 else "ces decks")
+                + " repose sur le compte des rangs, pas sur le témoin."
+            )
+            aj("")
+    else:
+        aj("Témoin à réponse connue (`pytest tests/test_image_provenance.py -k temoin`) : aucun deck")
+        aj("certifié ne porte d'essai sur cet arbre.")
+        aj("")
     aj("**Première piste d'origine, pour une image nommée à la main** : son commit d'entrée.")
     aj("")
     aj("```bash")
@@ -599,9 +851,9 @@ def page_markdown(census: dict[str, Any]) -> str:
     aj("")
     aj(
         "| Deck | Images référencées | Origine non établie | Origine déclarée, licence non établie "
-        "| Hors EPIC | Porteurs | PPTX | Sur disque, non référencées |"
+        "| Hors EPIC | Porteurs | PPTX | Médias PPTX non montrés | Sur disque, non référencées |"
     )
-    aj("|---|---|---|---|---|---|---|---|")
+    aj("|---|---|---|---|---|---|---|---|---|")
     for deck, d in par_deck.items():
         statuts = d["statuts"]
         porteurs = ", ".join(f"{k} {v}" for k, v in d["porteurs"].items()) or "—"
@@ -611,22 +863,33 @@ def page_markdown(census: dict[str, Any]) -> str:
             pptx = "certifié"
         else:
             pptx = f"partiel ({d['pptx_presents']}/{d['pptx_total']})"
+        non_montres = "—" if d["pptx_non_montres"] is None else str(d["pptx_non_montres"])
         aj(
             f"| {deck} | {d['referencees']} | {statuts.get(STATUT_NON_ETABLIE, 0)} | "
             f"{statuts.get(STATUT_DECLAREE, 0)} | {statuts.get(STATUT_HORS, 0)} | {porteurs} | {pptx} | "
-            f"{d['non_referencees']} |"
+            f"{non_montres} | {d['non_referencees']} |"
         )
     total_ref = sum(d["referencees"] for d in par_deck.values())
     total_non = sum(d["statuts"].get(STATUT_NON_ETABLIE, 0) for d in par_deck.values())
     total_decl = sum(d["statuts"].get(STATUT_DECLAREE, 0) for d in par_deck.values())
     total_hors = sum(d["statuts"].get(STATUT_HORS, 0) for d in par_deck.values())
     aj("")
-    aj(
+    aj_plie(
         f"**{total_ref} images référencées** : {total_non} d'origine non établie, {total_decl} d'origine "
         "déclarée sans licence établie, hors EPIC. Les fichiers d'image qu'aucun `slides.md` ne "
         "montre sont hors du census, comptés par deck dans la dernière colonne du tableau."
     )
     aj("")
+    non_montres = [(deck, d["pptx_non_montres"]) for deck, d in par_deck.items() if d["pptx_non_montres"]]
+    if non_montres:
+        plus_gros = max(non_montres, key=lambda couple: couple[1])
+        aj_plie(
+            f"**{sum(n for _, n in non_montres)} médias du PPTX sont sur le disque sans être montrés** "
+            f"par le `slides.md` de leur deck (`{plus_gros[0]}` en porte {plus_gros[1]}) : un lecteur du "
+            f"PPTX les voit, pas un lecteur du deck. Ils ont leur propre colonne et restent compris "
+            "dans « sur disque, non référencées » ; l'univers des lignes est l'image montrée."
+        )
+        aj("")
 
     non_etablies: dict[str, list[Ligne]] = defaultdict(list)
     declarees: dict[str, list[Ligne]] = defaultdict(list)
@@ -715,8 +978,45 @@ def page_markdown(census: dict[str, Any]) -> str:
     aj("  sont des références de comparaison, pas du contenu de deck ;")
     aj("- les **exports** `slidev-export/` et les **captures** `screenshots/` d'un deck qui ne les")
     aj("  référence pas dans son `slides.md` ;")
-    aj("- les sources `deck-*.md` d'un deck multi-fichiers, quand l'énumération des decks ne lit que")
-    aj("  `slides.md` : leurs images restent hors census tant que la structure ne les expose pas.")
+    secondaires = census["sources_secondaires"]
+    if secondaires:
+        # Compte distinct : une image montee par deux sources secondaires d'un meme deck ne compte
+        # qu'une fois, et ce n'est pas une ligne sans ligne si le ``slides.md`` de ce deck la montre.
+        referencees = {(l.deck, l.image) for l in lignes}
+        distinctes = {
+            (s["fichier"].rsplit("/", 1)[0], image) for s in secondaires for image in s["vues"]
+        }
+        sans_ligne = sum(1 for couple in distinctes if couple not in referencees)
+        incluses = [s["fichier"] for s in secondaires if s["incluse"]]
+        aj_puce(
+            "les **sources `deck-*.md`** d'un deck multi-fichiers, l'énumération ne lisant que "
+            f"`slides.md` : {len(secondaires)} source{'s' if len(secondaires) > 1 else ''} de ce nom "
+            "sont hors census."
+        )
+        if distinctes:
+            par_source = ", ".join(
+                f"`{s['fichier']}` {len(s['vues'])}" for s in secondaires if s["vues"]
+            )
+            aj_plie(
+                f"Elles montrent {len(distinctes)} image{'s' if len(distinctes) > 1 else ''} "
+                f"distincte{'s' if len(distinctes) > 1 else ''} ({par_source}), dont {sans_ligne} "
+                "sans ligne — les autres sont déjà montrées par le `slides.md` de leur deck.",
+                "  ",
+            )
+        else:
+            aj("  Aucune ne montre d'image.")
+        if incluses:
+            aj_plie(
+                "Sont incluses par un `src:` d'un `slides.md`, donc montrées au lecteur sans ligne "
+                f"pour autant : {', '.join(f'`{f}`' for f in incluses)}.",
+                "  ",
+            )
+        else:
+            aj_plie(
+                "Aucune n'est incluse par un `src:` d'un `slides.md` : ce ne sont pas des images "
+                "qu'un lecteur voit, et elles entrent dans le census le jour où une source les inclut.",
+                "  ",
+            )
     aj("")
     aj("Reprise : `python slides/_tools/image_provenance.py --check` sort en 1 si cette page ou la")
     aj("table ont dérivé de ce que l'organe produit.")

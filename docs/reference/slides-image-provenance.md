@@ -47,11 +47,38 @@ disque — un fichier retiré décale tous les suivants, et l'organe préfère n
 plutôt que déplacer une image sur une mauvaise diapositive. Un deck est dit **certifié**
 quand il porte exactement les `total_images` rangs de son inventaire.
 
-Témoin à réponse connue, rejoué par `pytest tests/test_image_provenance.py -k temoin` : un
-mot de contenu de l'`alt` se retrouve dans le texte de la diapositive PPTX reconstituée
-**118 fois sur 189 essais**, contre **29** pour une diapositive tirée au hasard (graine 7,
-six decks certifiés). Sans cet écart, deux erreurs de cumul pourraient se compenser sans
-qu'on le voie.
+**Pourquoi un deck est partiel.** Des médias sont sortis du dossier `images/` depuis la
+baseline. Mesure du 27 novembre 2026 (`git ls-tree -r` de la baseline contre l'arbre) : 56 des
+679 chemins ont quitté `images/`, 42 vers un autre nom à blob identique (40 du deck 01 sous
+`public/images/`, 2 du deck 07 renommés), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10).
+
+Dans l'arbre courant, `01-introduction` en manque 2, `02-resolution-problemes` en manque 1,
+`08-ia-generative` en manque 3, `S3-acculturation` en manque 12 : rangs annoncés par
+l'inventaire qu'aucun fichier `img_NNN` ne porte. `rang_manquant` mesure un retrait dans l'arbre
+(ou un rang jamais extrait), pas une erreur de l'organe.
+
+Témoin à réponse connue, rejoué par `pytest tests/test_image_provenance.py -k temoin` : un mot
+de contenu de l'`alt` se retrouve dans le texte de la diapositive PPTX reconstituée **118 fois
+sur 189 essais**, contre **29** pour une diapositive tirée au hasard (graine 7, 6 decks
+certifiés). Sans cet écart, deux erreurs de cumul pourraient se compenser sans qu'on le voie.
+L'écart agrégé ne dit pas qu'il tient deck par deck :
+
+| Deck certifié | Essais | Touches | Hasard tiré | Hasard attendu | P(≥ ces touches) au hasard | Témoin |
+|---|---|---|---|---|---|---|
+| `03-logique` | 43 | 33 | 9 | 6.9 | 2.3e-21 | soutient |
+| `04-probabilites` | 51 | 31 | 9 | 7.5 | 2.7e-16 | soutient |
+| `05-theorie-des-jeux` | 48 | 22 | 2 | 3.9 | 9.8e-15 | soutient |
+| `06-apprentissage` | 11 | 8 | 2 | 2.0 | 4.2e-05 | soutient |
+| `S1-argumentation` | 8 | 1 | 0 | 0.3 | 0.247 | non concluant |
+| `S2-ia-exploratoire-symbolique` | 28 | 23 | 7 | 7.9 | 3.3e-14 | soutient |
+
+« Hasard tiré » est la part de chaque deck dans les 29 du tirage au sort ; « hasard attendu »
+est l'espérance exacte du même tirage ; la colonne suivante est la probabilité d'obtenir au
+moins autant de touches par hasard. Le témoin **soutient** un deck tant que cette probabilité
+reste au plus de 1 %.
+
+Sur `S1-argumentation` (1 touche sur 8 essais), le témoin est **non concluant** : la
+certification « PPTX » de ce deck repose sur le compte des rangs, pas sur le témoin.
 
 **Première piste d'origine, pour une image nommée à la main** : son commit d'entrée.
 
@@ -72,23 +99,30 @@ grande majorité, et c'est la mesure, pas un oubli.
 
 ## Résultat — un deck, une ligne
 
-| Deck | Images référencées | Origine non établie | Origine déclarée, licence non établie | Hors EPIC | Porteurs | PPTX | Sur disque, non référencées |
-|---|---|---|---|---|---|---|---|
-| 01-introduction | 38 | 38 | 0 | 0 | PPTX-media 34, PPTX-rendu 4 | partiel (38/40) | 43 |
-| 02-resolution-problemes | 58 | 58 | 0 | 0 | PPTX-media 54, nomme 4 | partiel (55/56) | 94 |
-| 03-logique | 45 | 44 | 0 | 1 | PPTX-media 44, nomme 1 | certifié | 67 |
-| 04-probabilites | 110 | 110 | 0 | 0 | PPTX-media 110 | certifié | 98 |
-| 05-theorie-des-jeux | 48 | 48 | 0 | 0 | PPTX-media 48 | certifié | 35 |
-| 06-apprentissage | 140 | 138 | 2 | 0 | PPTX-media 140 | certifié | 128 |
-| 07-elargissements | 8 | 2 | 6 | 0 | PPTX-media 2, nomme 6 | — | 37 |
-| 08-ia-generative | 33 | 33 | 0 | 0 | PPTX-media 33 | partiel (33/36) | 20 |
-| 09-traitement-automatique-langues | 0 | 0 | 0 | 0 | — | — | 6 |
-| S1-argumentation | 20 | 19 | 0 | 1 | PPTX-media 9, nomme 11 | certifié | 30 |
-| S2-ia-exploratoire-symbolique | 54 | 54 | 0 | 0 | PPTX-media 54 | certifié | 54 |
-| S3-acculturation | 124 | 119 | 4 | 1 | PPTX-media 122, genere 1, nomme 1 | partiel (123/135) | 64 |
-| S4-trading-algorithmique | 0 | 0 | 0 | 0 | — | — | 243 |
+| Deck | Images référencées | Origine non établie | Origine déclarée, licence non établie | Hors EPIC | Porteurs | PPTX | Médias PPTX non montrés | Sur disque, non référencées |
+|---|---|---|---|---|---|---|---|---|
+| 01-introduction | 38 | 38 | 0 | 0 | PPTX-media 34, PPTX-rendu 4 | partiel (38/40) | 4 | 43 |
+| 02-resolution-problemes | 58 | 58 | 0 | 0 | PPTX-media 54, nomme 4 | partiel (55/56) | 1 | 94 |
+| 03-logique | 45 | 44 | 0 | 1 | PPTX-media 44, nomme 1 | certifié | 1 | 67 |
+| 04-probabilites | 110 | 110 | 0 | 0 | PPTX-media 110 | certifié | 0 | 98 |
+| 05-theorie-des-jeux | 48 | 48 | 0 | 0 | PPTX-media 48 | certifié | 6 | 35 |
+| 06-apprentissage | 140 | 138 | 2 | 0 | PPTX-media 140 | certifié | 0 | 128 |
+| 07-elargissements | 8 | 2 | 6 | 0 | PPTX-media 2, nomme 6 | — | — | 37 |
+| 08-ia-generative | 33 | 33 | 0 | 0 | PPTX-media 33 | partiel (33/36) | 0 | 20 |
+| 09-traitement-automatique-langues | 0 | 0 | 0 | 0 | — | — | — | 6 |
+| S1-argumentation | 20 | 19 | 0 | 1 | PPTX-media 9, nomme 11 | certifié | 0 | 30 |
+| S2-ia-exploratoire-symbolique | 54 | 54 | 0 | 0 | PPTX-media 54 | certifié | 0 | 54 |
+| S3-acculturation | 124 | 119 | 4 | 1 | PPTX-media 122, genere 1, nomme 1 | partiel (123/135) | 1 | 64 |
+| S4-trading-algorithmique | 0 | 0 | 0 | 0 | — | — | — | 243 |
 
-**678 images référencées** : 663 d'origine non établie, 12 d'origine déclarée sans licence établie, hors EPIC. Les fichiers d'image qu'aucun `slides.md` ne montre sont hors du census, comptés par deck dans la dernière colonne du tableau.
+**678 images référencées** : 663 d'origine non établie, 12 d'origine déclarée sans licence
+établie, hors EPIC. Les fichiers d'image qu'aucun `slides.md` ne montre sont hors du census,
+comptés par deck dans la dernière colonne du tableau.
+
+**13 médias du PPTX sont sur le disque sans être montrés** par le `slides.md` de leur deck
+(`05-theorie-des-jeux` en porte 6) : un lecteur du PPTX les voit, pas un lecteur du deck. Ils
+ont leur propre colonne et restent compris dans « sur disque, non référencées » ; l'univers des
+lignes est l'image montrée.
 
 ## La liste — images dont l'origine n'est pas établie
 
@@ -190,8 +224,14 @@ Ce qui n'est pas une ligne, et pourquoi :
   sont des références de comparaison, pas du contenu de deck ;
 - les **exports** `slidev-export/` et les **captures** `screenshots/` d'un deck qui ne les
   référence pas dans son `slides.md` ;
-- les sources `deck-*.md` d'un deck multi-fichiers, quand l'énumération des decks ne lit que
-  `slides.md` : leurs images restent hors census tant que la structure ne les expose pas.
+- les **sources `deck-*.md`** d'un deck multi-fichiers, l'énumération ne lisant que `slides.md`
+  : 5 sources de ce nom sont hors census.
+  Elles montrent 7 images distinctes (`S3-acculturation/deck-executif.md` 3,
+  `S4-trading-algorithmique/deck-1-fondamentaux.md` 1,
+  `S4-trading-algorithmique/deck-2-strategies.md` 3), dont 4 sans ligne — les autres sont déjà
+  montrées par le `slides.md` de leur deck.
+  Aucune n'est incluse par un `src:` d'un `slides.md` : ce ne sont pas des images qu'un lecteur
+  voit, et elles entrent dans le census le jour où une source les inclut.
 
 Reprise : `python slides/_tools/image_provenance.py --check` sort en 1 si cette page ou la
 table ont dérivé de ce que l'organe produit.
