@@ -236,6 +236,23 @@ def test_support_locked_claiming_compte_la_valeur_dans_la_ligne() -> None:
                    _state(cells)) == 2
 
 
+def test_support_xy_wing_compte_le_pivot_et_les_deux_pinces() -> None:
+    # Lot 4 (#27533) : les premisses citent trois cases, au format du lot 3.
+    st = _state({(5, 8): {1, 9}, (0, 8): {1, 6}, (5, 3): {6, 9}})
+    assert support("xy_wing",
+                   "pivot (5,8) [1, 9], pinces (0,8) [1, 6] et (5,3) [6, 9] : "
+                   "6 elimine des cases visibles des deux pinces",
+                   st) == 3
+
+
+def test_support_xyz_wing_compte_le_pivot_et_les_deux_pinces() -> None:
+    st = _state({(4, 4): {1, 4, 7}, (4, 0): {1, 4}, (0, 4): {4, 7}})
+    assert support("xyz_wing",
+                   "pivot (4,4) [1, 4, 7], pinces (4,0) [1, 4] et (0,4) [4, 7] : "
+                   "7 elimine des cases visibles des trois cases",
+                   st) == 3
+
+
 def test_support_x_wing_compte_la_valeur_sur_les_deux_lignes() -> None:
     cells = {(2, 1): {7}, (2, 4): {7}, (6, 1): {7}, (6, 4): {7}, (2, 8): {2}}
     assert support("x_wing", "valeur 7 : lignes 2,6 partagent colonnes [1, 4]",
@@ -246,7 +263,9 @@ def test_support_d_une_regle_inconnue_vaut_none() -> None:
     st = _state({(2, 1): {7}})
     assert support("swordfish", "valeur 7 : lignes 2,6,8 partagent colonnes [1, 4, 9]",
                    st) is None
-    assert support("xy_wing", "(0,0), (0,1), (1,1)", st) is None
+    # Les ailes sont des regles connues depuis le lot 4 : le temoin est un nom
+    # qui ne designera jamais une technique, pour ne plus devoir bouger.
+    assert support("regle_hors_catalogue", "(0,0), (0,1), (1,1)", st) is None
 
 
 def test_support_d_un_format_de_premises_inattendu_vaut_none() -> None:

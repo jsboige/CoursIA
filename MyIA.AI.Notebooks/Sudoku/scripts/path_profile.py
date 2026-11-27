@@ -176,9 +176,13 @@ _CLAIMING_RE = re.compile(r"^valeur (\d) de la (ligne|colonne) (\d) confinee au 
                           r"\((\d),(\d)\)$")
 _FISH_RE = re.compile(r"^valeur (\d) : lignes ([\d,]+) partagent colonnes \[([\d,\s]+)\]$")
 
+# Regles dont les premisses citent les cases du pas, sans recomptage d'unite.
+# Les ailes du lot 4 (#27533) en relevent : pivot et deux pinces y sont nommes,
+# au format ``(ligne,colonne)``.
 _PREMISE_CELLS = frozenset({
     "naked_single", "hidden_single", "naked_pair", "naked_triple", "naked_quad",
     "hidden_pair", "hidden_triple", "hidden_quad",
+    "xy_wing", "xyz_wing",
 })
 
 
