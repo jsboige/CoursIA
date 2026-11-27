@@ -106,7 +106,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
-| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR.ipynb) et 3 exercices (certificats entiers) | 35 min |
+| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR-Python.ipynb) et 3 exercices (certificats entiers) | 35 min |
 
 ### Partie 3 : théorèmes phares (ports complets)
 
@@ -334,7 +334,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 28 | [Lean-28-Complex-Structure-S6](Lean-28-Complex-Structure-S6.ipynb) | 12 | 3 | **NOUVEAU** (kernel python3, reproduction du dépôt piné) |
 | 29 | [06-operateurs-de-hecke-natif](Langlands/06-operateurs-de-hecke-natif.ipynb) | 19 | 6 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
 | GROTH-06 | [Grothendieck/GROTH-06-FormalGroups-Lean](Grothendieck/GROTH-06-FormalGroups-Lean.ipynb) | 11 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 31 | [ANALYSE-14-Euler-Navier-Stokes-Python](Analyse/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | 17 | 3 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
+| 31 | [ANALYSE-14-Euler-Navier-Stokes-Python](Analyse/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | 19 | 3 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
 | 33 | [Lean-33-Distribution-Spaces](Lean-33-Distribution-Spaces.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 34 | [VERIF-06-Calculabilite-et-Limites](VERIF/VERIF-06-Calculabilite-et-Limites.ipynb) | 12 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean` ; Tranche E — Epic #15066) |
 | 34b | [VERIF-07-FairBot-Loeb](VERIF/VERIF-07-FairBot-Loeb.ipynb) | 14 | 3 | **NOUVEAU** (kernel `python3`) |

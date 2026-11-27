@@ -1,36 +1,6 @@
 {
   "broken_links": [
     {
-      "source": "MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md",
-      "target": "02-SemanticKernel-Advanced.ipynb",
-      "line": 20,
-      "text": "02-Functions >>"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/activites/PREPARATION-ACTIVITES.md",
-      "target": "../INTRO-GENAI.md",
-      "line": 104,
-      "text": "INTRO-GENAI.md"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/activites/PREPARATION-ACTIVITES.md",
-      "target": "../../Roo-Code/",
-      "line": 377,
-      "text": "Roo-Code/"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/GenAI/activites/PREPARATION-ACTIVITES.md",
-      "target": "../../Claude-Code/docs/",
-      "line": 378,
-      "text": "Claude-Code/docs/"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md",
-      "target": "ICT-12-ValenceFieldsAndAnimats-Python.ipynb",
-      "line": 65,
-      "text": "ICT-12"
-    },
-    {
       "source": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.en.md",
       "target": "../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb",
       "line": 30,
@@ -47,54 +17,6 @@
       "target": "equity_curve.png",
       "line": 116,
       "text": "Equity Curve"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/QuantConnect/projects/ML-XGBoost/assets/readme/MANIFEST.md",
-      "target": "../../../../../../../scratchpad/xgb-pr-body.md",
-      "line": 5,
-      "text": "c.453 PR body"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/QuantConnect/projects/STRATEGIES_DETAIL.md",
-      "target": "../../../../docs/qc/qc-strategies-status.md",
-      "line": 172,
-      "text": "docs/qc/qc-strategies-status.md"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/data/app27-sparse-index-tracking/SOURCE.md",
-      "target": "../../../../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md",
-      "line": 49,
-      "text": "Sparse-Index-Tracking-QC"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/Sudoku/index.qmd",
-      "target": "../../parcours.qmd",
-      "line": 39,
-      "text": "Parcours 2 — ML.NET + Symbolic"
-    },
-    {
-      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Observatoire-2-Initiation-Regional_PreRegistration.md",
-      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
-      "line": 7,
-      "text": ""
-    },
-    {
-      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Observatoire-2-Initiation-Regional_PreRegistration.md",
-      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
-      "line": 166,
-      "text": ""
-    },
-    {
-      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_RelationalForms_Protocol.md",
-      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
-      "line": 5,
-      "text": ""
-    },
-    {
-      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_RelationalForms_Protocol.md",
-      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
-      "line": 107,
-      "text": ""
     },
     {
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md",
@@ -127,12 +49,6 @@
       "text": "verify-before-claiming.md"
     },
     {
-      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/mmaaz-git-gs-strategies.md",
-      "target": ".../memory/project_prover_c35_01_woman_pessimal.md",
-      "line": 147,
-      "text": "project_prover_c35_01_woman_pessimal"
-    },
-    {
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.en.md",
       "target": "../conway_lean/",
       "line": 65,
@@ -151,73 +67,25 @@
       "text": ""
     },
     {
-      "source": "docs/curriculum/recherche.md",
-      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb",
-      "line": 376,
-      "text": "DecInfer-10-Thompson-Sampling : Bandits bayesiens par…"
+      "source": "docs/curriculum/genai.md",
+      "target": "../../MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-11-AudioGen-Text-to-Audio.ipynb",
+      "line": 63,
+      "text": "AudioGen - Generation de Bruitages par IA"
     },
     {
       "source": "docs/curriculum/recherche.md",
-      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb",
-      "line": 377,
-      "text": "DecInfer 11 — Théories de la décision face à un…"
+      "target": "../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb",
+      "line": 318,
+      "text": "ICT-47b — L'instrument change-t-il la géométrie ?"
     },
     {
       "source": "docs/curriculum/recherche.md",
-      "target": "../../MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb",
-      "line": 478,
-      "text": "RL 19 - Reward tampering : quand l'agent peut modifier…"
-    },
-    {
-      "source": "docs/curriculum/recherche.md",
-      "target": "../../MyIA.AI.Notebooks/RL/RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb",
-      "line": 479,
-      "text": "RL-20 — Du simulateur au réel : la randomisation de…"
-    },
-    {
-      "source": "docs/curriculum/recherche.md",
-      "target": "../../MyIA.AI.Notebooks/RL/RL-21-Auto-Jeu-AlphaZero-Python.ipynb",
-      "line": 480,
-      "text": "RL 21 - Auto-jeu à la AlphaZero : quand le réseau guide…"
-    },
-    {
-      "source": "docs/curriculum/trading.md",
-      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb",
-      "line": 235,
-      "text": "DecInfer-10-Thompson-Sampling : Bandits bayesiens par…"
-    },
-    {
-      "source": "docs/curriculum/trading.md",
-      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb",
-      "line": 236,
-      "text": "DecInfer 11 — Théories de la décision face à un…"
-    },
-    {
-      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
-      "target": "../debug-nuget-path1-minimal.ipynb",
-      "line": 222,
-      "text": ""
-    },
-    {
-      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
-      "target": "../debug-nuget-path1-minimal-direct.ipynb",
-      "line": 223,
-      "text": ""
-    },
-    {
-      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
-      "target": "../debug-nuget-version-explicite.ipynb",
-      "line": 224,
-      "text": ""
-    },
-    {
-      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
-      "target": "../debug-nuget-paths-absolus.ipynb",
-      "line": 225,
-      "text": ""
+      "target": "../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb",
+      "line": 319,
+      "text": "ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre…"
     }
   ],
   "orphans": [],
-  "scanned_files": 1397,
-  "total_links": 11627
+  "scanned_files": 1441,
+  "total_links": 12755
 }
