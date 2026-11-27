@@ -192,6 +192,82 @@ Modalité de la séance : chaque groupe choisit **un exercice** dans la table ci
 
 Note : dans SL-07, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
+## Contenu détaillé des carnets
+
+Ce que chaque carnet contient, dans l'ordre où il le présente. Les intitulés sont ceux des sections du carnet lui-même ; les objectifs, les exercices et le défi de présentation ne sont pas repris ici, ils vivent dans le carnet.
+
+### 01 — Apprentissage logique : CBH Search et Version Space
+
+Le carnet enchaîne : le problème du restaurant d'AIMA ; la représentation des hypothèses et la consistance ; la généralisation et la spécialisation ; l'algorithme Current-Best-Hypothesis ; l'algorithme Version Space par Candidate Elimination ; la prédiction avec le Version Space ; la visualisation de son évolution ; les limites du cadre conjonctif ; l'implémentation de référence aima-python. Le jumeau C# suit les mêmes sections écrites à la main, et ajoute la comparaison CBH contre Version Space ainsi qu'un pont PythonNet vers `aima-python`.
+
+### 01b — Apprentissage PAC formellement (Lean)
+
+Le vocabulaire PAC (distribution, hypothèse, erreur vraie) ; l'échantillon, les tirages i.i.d. et le poids d'un échantillon ; la borne de généralisation d'une classe finie ; le cadre agnostique ; la concentration, de Markov à Hoeffding ; le perceptron, convergence de Novikoff et serrage de la borne ; la lecture du fil ; la théorie effective de la représentation (arc `EffectiveTheory`) ; la théorie mathématique de l'univers (structures, générateurs, renommage). Tout s'exécute en noyau Lean sur le lake `learning_theory_lean`.
+
+### 02 — Apprentissage et connaissance (EBL & RBL)
+
+Le carnet avance : le cadre général de la connaissance dans l'apprentissage ; l'idée d'EBL ; l'exemple de la simplification arithmétique ; la variabilisation et l'extraction de règle ; l'implémentation complète ; l'efficacité et l'opérationnalité ; l'introduction aux déterminations par RBL ; la synthèse. Le jumeau C# part des quatre contraintes d'apprentissage, déroule EBL par chaînage avant avec unification, mesure le gain, puis vérifie une détermination.
+
+### 03 — Apprentissage basé sur la pertinence
+
+Pourquoi la pertinence ; les déterminations, formalisme et propriétés ; le treillis des déterminations ; l'algorithme MINIMAL-CONSISTENT-DET ; la sélection d'attributs guidée par la connaissance ; les déterminations et la sémantique web. Le jumeau C# ajoute le cas de l'activité biologique des molécules, la borne PAC comme avantage quantifié, le parallèle avec OWL, l'information mutuelle, puis confronte le classement à l'importance des variables mesurée par ML.NET.
+
+### 04 — Programmation logique inductive
+
+Pourquoi l'ILP ; les clauses de Horn et l'unification ; FOIL, l'apprentissage top-down ; la résolution inverse, bottom-up ; une application complète de FOIL pas à pas ; l'ILP et les graphes de connaissances ; puis le moteur Popper. Le jumeau C# détaille les briques de FOIL, le problème des ancêtres, l'évaluation des clauses candidates, la couverture séquentielle et un ILP sur mini graphe de connaissances, avec un pont vers clingo.
+
+### 05 — Résolution inverse et Progol
+
+Inverser la déduction ; la représentation et la couverture ; la généralisation la moins générale de Plotkin ; la θ-subsomption comme ordre du treillis ; l'entailment inverse et la clause bottom ; la recherche à la Progol ; de Progol aux systèmes modernes ; puis Aleph. Le jumeau C# reprend ces étapes jusqu'à la recherche Progol, apprend `grandmother/2` et vérifie la parité avec SWI-Prolog.
+
+### 06 — Moteurs ILP modernes
+
+Quatre paradigmes pour une seule tâche : Aleph et l'entailment inverse, Metagol et l'apprentissage méta-interprétatif, Popper et la recherche par contraintes, ∂ILP et la descente de gradient ; puis la synthèse qui les compare. Le jumeau C# réécrit le noyau de FOIL, l'applique à `ancestor/2`, le vérifie par la couverture, le mesure sur un graphe qui grandit, puis se prononce sur la portabilité des quatre moteurs.
+
+### 07 — Intégration neuro-symbolique
+
+Pourquoi combiner neural et symbolique ; les opérateurs logiques différentiables ; les prédicats neuronaux ; une logique tensorielle simplifiée ; le raisonnement guidé par la logique ; un DeepProbLog simplifié ; la vraie bibliothèque LTNtorch ; la comparaison des approches neuro-symboliques.
+
+### 08 — ILP moderne et knowledge graphs
+
+L'ILP sur données structurées ; la construction d'un graphe avec rdflib ; l'extraction des données pour le mining ; la découverte de règles de Horn ; l'énumération des candidats ; le passage des règles d'association aux règles logiques ; la complétion du graphe ; la visualisation ; les propriétés logiques et leur composition ; la comparaison entre ILP classique et rule mining ; puis le chaînage avant sous clingo. Le jumeau C# construit le même graphe avec dotNetRDF et s'arrête à la limite honnête de son périmètre pour l'ASP.
+
+### 09 — LLMs et apprentissage symbolique
+
+Les LLM comme moteurs de raisonnement symbolique ; le LLM comme générateur d'hypothèses ; la vérification symbolique de ses sorties ; le raisonnement pas à pas comme explication ; le pipeline complet des exemples aux règles validées ; l'itération et le raffinement ; la robustesse du générateur et le raccord à l'écosystème.
+
+### 10 — Apprentissage actif d'automates
+
+Du passif à l'actif, le modèle MAT ; la table d'observation ; l'algorithme L* ; son exécution complète sur le langage cible ; les garanties de minimalité et de complexité ; l'oracle d'équivalence en pratique ; puis un pont vers Infer.NET, et en annexe la postérité du domaine. Le jumeau C# suit le même plan avec la seule bibliothèque standard de .NET.
+
+### 11 — Capstone neuro-symbolique
+
+Le pipeline ; le corpus et le schéma ; l'extraction par LLM ; l'oracle symbolique ; le graphe de connaissances ; le mining de règles à la manière d'AMIE ; le chaînage avant et ce qu'il découvre ; puis la boucle bouclée où le LLM seul est confronté au graphe raisonné.
+
+### 12 — Portes logiques différentiables
+
+La motivation et le contexte historique ; le modèle difflogic ; l'apprentissage sur MNIST en 20 × 20 pixels ; l'inspection des prédictions ; l'inférence rapide par `CompiledLogicNet`, présentée comme avancée et bornée à une machine qui sait la compiler.
+
+### 12b — Synthèse logique spectrale
+
+La convention booléenne, écrite une seule fois ; les caractères de Walsh et la transformée exacte ; les coefficients de Fourier exacts contre les poids ternaires ; le routage par Sinkhorn ; la quantification puis la recherche discrète, par MCMC et parallel tempering ; le pont avec les portes locales du carnet 12. Le jumeau C# reprend les mêmes sections et ajoute un « Vérifiez votre compréhension ».
+
+### 12c — Reproduire Pavlov
+
+Le carnet mène la reproduction en deux phases et conclut sur le gain mesuré du routage par Sinkhorn ; ses cellules de mesure se suivent sans titre intermédiaire, ce qui explique le petit nombre de sections.
+
+### 13 et 13b — Structure TPR, deux lectures des états cachés
+
+Le carnet 13 ouvre sur son plan, ses prérequis et sa portée déclarée, puis enchaîne les mesures jusqu'à la conclusion, sans titres intermédiaires entre les cellules. Le carnet 13b suit la même forme pour relire les mêmes états cachés avec un dictionnaire creux.
+
+### 14 — AI Feynman
+
+Chercher dans l'espace des formules ; lancer la recherche avec `run_aifeynman` ; le cœur de l'algorithme, les symétries lues dans les gradients ; MEDL, décrire plutôt que minimiser ; et la leçon finale, « simple » dépend du langage de description.
+
+### 15 — Conjectures apprises pour un vérificateur
+
+Le cadre, conjecture, oracle, réfutation ; l'apprenant qui imite les solutions sœurs ; la conjecture individuelle et la décomposition du hint ; les conjectures de tête, en top-k ; la conjecture projetée, où l'oracle répare l'apprenant ; la boucle complète, exécutée ; une deuxième famille, la couverture d'ensemble ; et la synthèse qui ramène la conjecture au statut d'hypothèse réfutable.
+
 ## Approfondissements
 
 Les extensions lettrées creusent un palier du parcours ; elles ne le font pas avancer.
