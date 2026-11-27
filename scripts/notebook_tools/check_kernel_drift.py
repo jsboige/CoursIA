@@ -500,7 +500,7 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
     # reserve de revue sur la serie ICT (pyphi==1.2.0, requires-python
     # >=3.9,<3.10) exige.
     ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
-     "SL-14-AIFeynman-Discover-Equations.ipynb",
+     "SL-14-AIFeynman-Discover-Equations-Python.ipynb",
      "python3", "3.9", "3.13"):
         "Python 3.9 -> 3.13 : convergence vers le canon d'execution 3.13 ; "
         "le 3.9 du carnet etait impose par le packaging de `aifeynman` "
