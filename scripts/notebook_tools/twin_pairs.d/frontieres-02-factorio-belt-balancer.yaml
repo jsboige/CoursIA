@@ -1,0 +1,11 @@
+- name: "Frontieres-02 Factorio Belt Balancer"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets construisent et resolvent reellement le modele de belt balancer multicommodite a capacite partagee avec Google OR-Tools natif : SCIP (linear_solver) pour le MIP continu, GLOP pour le LP de topologie, CP-SAT pour la version discretisee (bande et ceil). Les verdicts, erreurs de part et audits sont recalcules, jamais recopies."
+  known_differences:
+    - "Les chronometrages sont propres aux versions et machines : le MIP 4x5 peut etre prouve OPTIMAL dans une execution et rester FEASIBLE dans l'autre a la limite de temps. Aucun classement inter-langages n'est revendique."
+    - "La graine 42 et le worker unique CP-SAT sont conserves ; a erreur de part egale, les grilles optimales retenues peuvent differrer entre langages (solutions multiples d'une meme instance)."
+    - "Les figures Matplotlib sont remplacees par des SVG autonomes opaques, les tableaux pandas par des tableaux textuels. Les trois exercices restent ouverts et repartis."
