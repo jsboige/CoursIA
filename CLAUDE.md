@@ -43,7 +43,7 @@ Notation étudiants : moteur générique = [configs/README.md](dotnet/GradeBookA
 
 **Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Deux protocoles restent **toujours chargés** (exemptions délibérées, quel que soit le type de fichier) : `audit-reassessment`, car il s’applique à tout fix fondé sur un audit automatisé, et `bibliography-hygiene`, car les publications se récupèrent, s’utilisent et se citent depuis les carnets et les docstrings Lean — hors de tout glob.
 
-**Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet, domaine par domaine, vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md#ce-que-porte-chaque-famille-de-règles-path-gatées). Les prescriptions qui tiennent en une ligne restent ici, avec les noms des règles de chaque famille :
+**Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md). Les prescriptions d'une ligne restent ici, avec les noms des règles de chaque famille :
 
 Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths:' .claude/rules/*.md`.
 
