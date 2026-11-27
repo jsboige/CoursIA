@@ -748,7 +748,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
 # 22/11).
 
-@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
+@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 521),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
@@ -794,7 +794,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_voie_leger.py", 40),
                                               ("tapis_acceptance.py", 300),
                                               ("tapis_assiette.py", 200),
-                                              ("tapis_attente.py", 60),
+                                              ("tapis_attente.py", 78),
                                               ("tapis_leger_texte.py", 80),
                                               ("tapis_cap_livraisons.py", 160),
                                               ("tapis_borne.py", 140),

@@ -5742,12 +5742,12 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     return verdict
 
 
-def _qualification_grain(payload: dict, my_lane: str,
-                         now: datetime | None = None) -> tuple[str, str] | None:
-    """Shim : la qualification du grain est portee par
-    `coordination.tapis_qualification_fil` (module dedie)."""
+def _qualification_grain(payload: dict, my_lane: str, now: datetime | None = None,
+                         chemins: list[str] | None = None) -> tuple[str, str] | None:
+    """Shim : la qualification du grain est portee par `coordination.tapis_qualification_fil`
+    (module dedie) ; `chemins` = les `--paths` de l'appelant, lus par la remise de main (#28899)."""
     from coordination import tapis_qualification_fil  # import tardif : pas de cycle
-    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now, chemins)
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
@@ -5820,7 +5820,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # qualification n'est ni reclame ni edite. La decision vient du meme
     # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
     # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
-    code_motif = _qualification_grain(payload, my_lane, now)
+    code_motif = _qualification_grain(payload, my_lane, now, my_paths)
     if code_motif:
         code, motif = code_motif
         print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
