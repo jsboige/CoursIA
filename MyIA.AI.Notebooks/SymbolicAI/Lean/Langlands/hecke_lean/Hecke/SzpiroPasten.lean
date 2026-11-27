@@ -8,7 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 /-!
 # Szpiro--Pasten 2026 : factorisation admissible et énoncé formel du théorème 1.1
 
-Ce module réalise le grain 6 de l'Epic Langlands (#17969) : l'énoncé Lean
+Ce module réalise, dans le cadre de l'Epic Langlands (#17969), l'énoncé Lean
 formel du théorème 1.1 du preprint d'Hector Pasten, *Improved Bounds for
 Szpiro's Conjecture* (arXiv 2609.17390, 16 septembre 2026), dont le terrain
 calculatoire est le notebook
@@ -240,7 +240,8 @@ courbe `E/ℚ` (portée par `CourbeHN`), toute factorisation admissible
 `h(E) ≤ C * M * φ(D) * log ℓ`
 
 NON prouvé dans ce lake : c'est l'énoncé lui-même — objet Lean du premier
-ordre, `#check`-able — qui est le livrable du grain 6 de #17969. La preuve
+ordre, `#check`-able — qui constitue la contribution formelle de ce module.
+La preuve
 (courbes de Shimura, Jacquet--Langlands, multiplicité des valeurs propres
 de Hecke dans `S_D(M)`) est documentée dans `App-32` §Conclusion et reste
 hors scope, conformément au patron d'honnêteté de `search_lean`. -/
