@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_selection, tapis_marqueurs
 from coordination import tapis_universel as tu
+from coordination import tapis_universel_rapport as tur
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -210,7 +211,8 @@ def test_le_rapport_porte_l_etat_et_l_action():
         gh_selection.metadonnee(_noeud(2))]
     etats_ = tu.etats_leger(metas, {}, NOW)
     file = tu.rotation_universelle(etats_, LANE, NOW, 8)
-    r = tu.rapport(etats_, file, LANE, NOW, {"issues": 2, "secondes": 1.2})
+    r = tu.rapport(etats_, file, LANE, NOW, {"issues": 2, "secondes": 1.2},
+                   provenance=tur.QUALIFIE)
     assert r["pool"] == 2 and len(r["grains"]) == 2
     for g in r["grains"]:
         assert "qualifier" in g["action"]
@@ -218,6 +220,45 @@ def test_le_rapport_porte_l_etat_et_l_action():
     epic = next(g for g in r["grains"] if g["numero"] == 1)
     assert epic["consolidation"] is True
     assert "consolidation" in epic["action"]
+
+
+def test_l_entree_universelle_annonce_des_metadonnees_seules(monkeypatch, capsys):
+    """L'ACTION PUBLIQUE de l'entree universelle ne dit pas « deja qualifie ».
+
+    L'entree universelle lit les metadonnees, les citations et les PRs --
+    **PAS le fil**. Elle annoncait « deja qualifie sur fil complet » : la lane
+    recevait une consigne de claim fondee sur une lecture de fil qui n'avait
+    pas eu lieu (reserve du coordinateur du 25/11 sur #28345).
+
+    Temoin : l'action publique du grain servi par l'entree universelle
+    impose la lecture du fil avant le claim, ne se dit pas qualifiee, et ne
+    se dit pas « candidat du cache » non plus -- sa lecture est reseau.
+    """
+    metas = [gh_selection.metadonnee(_noeud(1)),
+             gh_selection.metadonnee(_noeud(2))]
+    monkeypatch.setattr(gh_selection, "lire_metadonnees_issues",
+                        lambda run, budget_s=60.0: (metas, 0.5))
+    monkeypatch.setattr(gh_bulk, "lire_citations_mergees",
+                        lambda depot, jours=45, run=None: {})
+    monkeypatch.setattr(gh_bulk, "lire_prs_ouvertes", lambda run=None: [])
+
+    rc = tu.main(["--lane", LANE, "--json"], run=lambda argv, timeout: "",
+                  maintenant=NOW)
+    assert rc == 0
+    r = json.loads(capsys.readouterr().out)
+    assert r["provenance"] == tur.METADONNEES, \
+        "l'entree universelle doit declarer sa provenance"
+    assert r["fil_lu"] is False, "l'entree universelle n'a pas lu le fil"
+    assert r["grains"], "l'entree universelle doit rendre une file"
+    for g in r["grains"]:
+        assert "metadonnees seules" in g["action"], \
+            "l'action publique doit nommer la provenance reelle"
+        assert "lire le fil avant de claimer" in g["action"], \
+            "l'action publique doit imposer la lecture du fil avant le claim"
+        assert "deja qualifie sur fil complet" not in g["action"], \
+            "des metadonnees seules ne se disent pas qualifiees"
+        assert "cache" not in g["action"], \
+            "la lecture reseau de l'entree universelle n'est pas un cache"
 
 
 def test_la_lecture_legique_est_plus_courte_que_la_lecture_lourde():
