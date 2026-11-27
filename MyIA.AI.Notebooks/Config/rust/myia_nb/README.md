@@ -57,6 +57,6 @@ Aucune dépendance, aucun réseau : la crate se construit avec la toolchain épi
 
 ## Référence
 
-- [rust-porting-spec.md](../../../docs/reference/rust-porting-spec.md) § « L'aide partagée ne se recopie pas » — la règle de `:dep` et de migration
-- [kernels-runtime.md](../../../docs/reference/kernels-runtime.md) § Rust — toolchain, exécution, timings, `:dep` en tête
+- [rust-porting-spec.md](../../../../docs/reference/rust-porting-spec.md) § « L'aide partagée ne se recopie pas » — la règle de `:dep` et de migration
+- [kernels-runtime.md](../../../../docs/reference/kernels-runtime.md) § Rust — toolchain, exécution, timings, `:dep` en tête
 - Pli 3 de l'Epic [Parité Rust #26510](https://github.com/jsboige/CoursIA/issues/26510) — organe 3 : [#27098](https://github.com/jsboige/CoursIA/issues/27098)
