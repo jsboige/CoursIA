@@ -242,9 +242,26 @@ def test_support_x_wing_compte_la_valeur_sur_les_deux_lignes() -> None:
                    _state(cells)) == 4
 
 
+def test_support_swordfish_compte_la_valeur_sur_les_lignes_de_base() -> None:
+    cells = {(0, 1): {5}, (0, 4): {5}, (4, 4): {5}, (4, 8): {5}, (6, 1): {5},
+             (6, 8): {5}, (2, 1): {5}}
+    assert support("swordfish",
+                   "valeur 5 : lignes (0, 4, 6) couvrent les colonnes [1, 4, 8]",
+                   _state(cells)) == 6
+
+
+def test_support_jellyfish_compte_la_valeur_sur_les_colonnes_de_base() -> None:
+    cells = {(1, 0): {3}, (5, 0): {3}, (1, 2): {3}, (7, 2): {3}, (5, 6): {3},
+             (8, 6): {3}, (7, 7): {3}, (8, 7): {3}, (1, 4): {3}}
+    assert support("jellyfish",
+                   "valeur 3 : colonnes (0, 2, 6, 7) couvrent les lignes [1, 5, 7, 8]",
+                   _state(cells)) == 8
+
+
 def test_support_d_une_regle_inconnue_vaut_none() -> None:
     st = _state({(2, 1): {7}})
-    assert support("swordfish", "valeur 7 : lignes 2,6,8 partagent colonnes [1, 4, 9]",
+    assert support("finned_swordfish",
+                   "valeur 7 : lignes (2, 6, 8) couvrent les colonnes [1, 4, 8]",
                    st) is None
     assert support("xy_wing", "(0,0), (0,1), (1,1)", st) is None
 
@@ -257,6 +274,9 @@ def test_support_d_un_format_de_premises_inattendu_vaut_none() -> None:
                    "valeur 3 de la ligne 4 dans le bloc (1,1)", st) is None
     assert support("x_wing", "valeur 7 : lignes 2 et 6 partagent colonnes 1 et 4",
                    st) is None
+    # Base et couverture de meme orientation : ce n'est pas un poisson.
+    assert support("swordfish",
+                   "valeur 5 : lignes (3, 4, 6) couvrent les lignes [3, 4, 6]", st) is None
 
 
 def test_support_d_un_recomptage_nul_vaut_none() -> None:

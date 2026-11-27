@@ -3884,6 +3884,63 @@ def test_pr_diff_text_size_cap_is_narrow(monkeypatch):
         cpp._pr_diff_text(101)
 
 
+# ---------------------------------------------------------------------------
+# #28874 — `gh pr diff` refuse de CALCULER le diff (HTTP 422).
+# ---------------------------------------------------------------------------
+def test_pr_diff_text_falls_back_empty_on_computation_cap(monkeypatch, capsys):
+    """#28874: GitHub renonce a calculer le diff (`HTTP 422: this diff is
+    taking too long to generate`, `PullRequest.diff not_available`) alors que
+    `/pulls/N/files` repond en 0,9 s. Le garde rendait "PERIMETRE NON
+    MESURABLE" sur une PR dont il lisait le perimetre parfaitement : il perdait
+    la seule detection des mouvements de seuils, qui est consultative.
+    Mesure : #28393, 97 fichiers, trois tentatives, deux tetes."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", (
+            "gh error: HTTP 422: Server Error: Sorry, this diff is taking too "
+            "long to generate (https://api.github.com/graphql); "
+            "PullRequest.diff not_available"
+        )
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(28393) == ""
+    err = capsys.readouterr().err
+    assert "CALCULER" in err, err
+    # l'avertissement doit dire CE QUI n'a pas ete vu (les baseline-moves) ET
+    # par ou le perimetre est lu, pas laisser croire qu'il est inconnu.
+    assert "baseline-moves" in err, err
+    assert "/pulls/28393/files" in err, err
+
+
+def test_pr_diff_text_computation_cap_is_narrow(monkeypatch):
+    """Le filet du refus de CALCUL reste etroit, et ne reconnait PAS
+    l'orthographe de transport (`stream error ... CANCEL; received from peer`) :
+    elle nomme le flux qui s'est ferme, pas la panne qui l'a ferme, et peut
+    porter n'importe quel autre refus."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", (
+            "gh error: HTTP 422: Validation Failed: something else entirely"
+        )
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    with pytest.raises(SystemExit) as exc:
+        cpp._pr_diff_text(101)
+    # fail-closed = exit 2, pas l'exit 0 du verdict UNKNOWN : la difference
+    # compte, un refus inconnu n'a pas le droit de degrader en silence.
+    assert exc.value.code == 2, exc.value.code
+
+    def fake_transport_rc(args):
+        return 1, "", "stream error: stream ID 3; CANCEL; received from peer"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_transport_rc)
+    with pytest.raises(SystemExit) as exc:
+        cpp._pr_diff_text(101)
+    assert exc.value.code == 2, exc.value.code
+
+
 # --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
 
 FILES_16085_A = [

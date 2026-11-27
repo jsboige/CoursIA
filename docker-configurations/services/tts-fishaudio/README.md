@@ -120,6 +120,6 @@ La borne de 12 g (swap off, pids 256) est la plus petite borne qui survit au tra
 
 ## Integration
 
-This service integrates with the audiobook pipeline (`04-6-Audiobook-Pipeline.ipynb`) as P4 TTS engine, providing expressive tag support that Kokoro cannot leverage.
+This service integrates with the audiobook pipeline (`Audio-04-6-Audiobook-Pipeline-Python.ipynb`) as P4 TTS engine, providing expressive tag support that Kokoro cannot leverage.
 
 Port: 8197 | GPU: 1 (RTX 3090) | Network: host (tts-network bridge optional)

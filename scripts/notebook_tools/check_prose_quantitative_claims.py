@@ -914,7 +914,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/"
-            "02-9-AceStep-Music-Generation.ipynb"
+            "Audio-02-9-AceStep-Music-Generation-Python.ipynb"
         ),
         motif=re.compile(r"Chaque section devrait contenir 2-6 lignes de texte"),
         raison=(
@@ -927,7 +927,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
-            "04-14-VoiceLeading-Rendu-GenAI.ipynb"
+            "Audio-04-14-VoiceLeading-Rendu-GenAI-Python.ipynb"
         ),
         motif=re.compile(r"donne 12 lignes \(classes\)"),
         raison=(
@@ -1284,6 +1284,51 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     # rapport cite les sorties INTEGRALES des deux outils en blocs verbatim :
     # un bloc verbatim complet ne porte plus de compte fait a la main, et les
     # compteurs d'etat du depot restent surveilles.
+    #
+    # Mesures FIGEES du film Gource 4K de la serie Vibe-Coding (EPIC #28070,
+    # PR #28786) : les « N lignes » ci-dessous comptent les lignes de texte
+    # que l'OCR de Windows lit sur une TRAME du film, pas les lignes d'un
+    # fichier du depot. Le film est livre hors depot et ne change pas : la
+    # mesure ne derive avec aucun commit de CoursIA. Meme classe que le run
+    # HopfProblem ci-dessus (resultat d'une mesure hors depot). Les comptes
+    # d'artefacts VIVANTS de la meme page (fichiers et repertoires de `main`
+    # au jour du rendu) ne sont PAS exempte : ils ont ete retires de la prose
+    # au profit du predicat.
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"la date : 151 lignes"),
+        raison=(
+            "Film Gource 4K livre hors depot (PR #28786) : lignes de texte "
+            "lues par l'OCR sur un extrait du film, en profondeur 2 -- pas "
+            "les lignes d'un fichier du depot. Le film est fige, la mesure "
+            "ne derive avec aucun commit de CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"profondeur 2 ; 66 lignes"),
+        raison=(
+            "Meme film, meme compteur OCR, meme extrait en profondeur 1. "
+            "Mesure figee d'une trame, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"profondeur 1 ; 41 lignes"),
+        raison=(
+            "Meme film, meme compteur OCR, meme extrait en profondeur 1 avec "
+            "--max-file-lag 0.3. Mesure figee d'une trame, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md",
+        motif=re.compile(r"mesure donne 828 lignes"),
+        raison=(
+            "Meme compteur OCR sur le film entier livre (182 trames) : total "
+            "des lignes de texte lues sur les trames du film, qui est fige. "
+            "Pas un decompte de lignes de CoursIA."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
