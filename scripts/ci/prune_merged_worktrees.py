@@ -769,7 +769,12 @@ def worktree_blocks_removal_for_submodules(wt_path: str) -> bool:
 
 #: Marqueur ecrit dans la racine de quarantaine : une purge refuse une
 #: racine qui ne le porte pas (une racine pas a nous n'est pas a purger).
+#: Il est aussi la SEULE preuve de propriete d'une racine d'archives de HEAD
+#: (`quarantine_root_ownership_refusal`).
 QUARANTINE_MARKER = ".prune-quarantine"
+
+#: Contenu du marqueur pose par la voie archives de HEAD.
+QUARANTINE_MARKER_TEXT = "racine de quarantaine du pruneur de worktrees\n"
 
 # Sous-repertoire des archives de HEAD `--max-pr-open-days` (#DISK Maintenance
 # 26/11). Il vit DANS la racine de quarantaine mais n'appartient PAS a son
@@ -835,36 +840,76 @@ def quarantine_root_refusal(root: Path, repo_root: Optional[str],
 def quarantine_root_ownership_refusal(root: Path) -> Optional[str]:
     """Motif de refus quand la racine n'est PAS une racine de l'organe.
 
-    Le marqueur `.prune-quarantine` est la preuve de propriete : la purge
-    est fail-closed dessus (une racine qui ne le porte pas n'est jamais
-    purgee). ADOPTER une racine preexistante -- y ecrire le marqueur --
-    la declarerait purgeable, et une purge ulterieure retirerait alors SES
-    enfants, qui ne sont pas les notres.
+    Le marqueur `.prune-quarantine` est la SEULE preuve de propriete : la
+    purge est fail-closed dessus (une racine qui ne le porte pas n'est
+    jamais purgee). ADOPTER une racine preexistante -- y ecrire le marqueur
+    -- la declarerait purgeable, et une purge ulterieure retirerait alors
+    SES enfants, qui ne sont pas les notres.
 
-    Fail-closed : une racine qui existe SANS marqueur et qui porte un
-    contenu ETRANGER (autre chose que notre propre sous-repertoire
-    d'archives) n'est pas adoptee. Le refus est rendu AVANT toute
-    ecriture : ni marqueur, ni sous-repertoire, et le contenu existant
-    reste intact.
+    Fail-closed : TOUTE racine qui existe SANS marqueur est refusee, quel
+    que soit son contenu -- vide, ne portant que le NOM de notre propre
+    sous-repertoire d'archives (dossier ou fichier), ou une archive
+    anterieure. Un nom d'enfant ne prouve rien. Le controle de chemin
+    (`quarantine_root_refusal`) ne voit que l'imbrication ; la propriete,
+    c'est ce controle-ci, et il n'a qu'un temoin : le marqueur. Un lien
+    symbolique pendant compte pour existant : autre chose que l'organe l'a
+    pose.
 
-    Deux cas restent adoptables, et aucun ne peut endangered un enfant
-    etranger : une racine ABSENTE (l'organe la cree, et sa creation est
-    un acte de propriete) et une racine qui ne porte QUE son propre
-    sous-repertoire d'archives (relique d'un arret entre la creation du
-    sous-repertoire et la pose du marqueur -- aucune donnee etrangere a
-    proteger).
+    Seules deux racines conviennent : une racine ABSENTE, que l'organe cree
+    elle-meme marqueur en premier (`claim_quarantine_root`), et une racine
+    qui porte deja le marqueur. Le refus est rendu AVANT toute ecriture :
+    ni marqueur, ni sous-repertoire, et le contenu existant reste intact.
+    Une racine refusee n'a pas de repli : elle se deplace a la main, apres
+    inspection.
     """
     try:
-        if not root.exists():
+        if not os.path.lexists(root):
             return None
         if (root / QUARANTINE_MARKER).exists():
             return None
-        for child in root.iterdir():
-            if child.name == PR_OPEN_ARCHIVE_SUBDIR:
-                continue
-            return f"quarantine-root-not-ours:{root}"
     except OSError as exc:
         return f"quarantine-root-unreadable:{exc}"
+    return f"quarantine-root-not-ours:{root}"
+
+
+def claim_quarantine_root(root: Path) -> Optional[str]:
+    """Rend la racine de quarantaine propre a l'organe, ou un motif de refus.
+
+    None si la racine porte le marqueur (elle l'etait deja) ou si cet appel
+    l'a creee ET marquee. `exist_ok=False` : la creation est elle-meme un
+    controle -- une racine qui existe deja, nee entre le controle de
+    propriete et cet appel, n'a pas ete creee par cet appel et n'est pas
+    adoptee ; le refus porte le meme nom que celui du controle.
+
+    Le marqueur se pose AVANT tout contenu. Une racine de l'organe ne doit
+    jamais se distinguer d'une racine etrangere par un arret entre deux
+    ecritures : la regle de `quarantine_root_ownership_refusal` ferait
+    sinon refuser a la passe suivante ce que celle-ci vient de laisser. Si
+    la pose echoue, la racine que CET appel vient de creer est retiree :
+    `rmdir` ne prend qu'un dossier VIDE, donc rien ne disparait qui ne
+    soit ne ici.
+    """
+    marker = root / QUARANTINE_MARKER
+    try:
+        if marker.exists():
+            return None
+        root.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        # Sous Windows, un ANCETRE qui est un fichier remonte aussi en
+        # FileExistsError : le refus de propriete exige la racine elle-meme.
+        if os.path.lexists(root):
+            return f"quarantine-root-not-ours:{root}"
+        return f"archive-dir-failed:{root} : racine non creable"
+    except OSError as exc:
+        return f"archive-dir-failed:{exc}"
+    try:
+        marker.write_text(QUARANTINE_MARKER_TEXT, encoding="utf-8")
+    except OSError as exc:
+        try:
+            root.rmdir()
+        except OSError:
+            pass
+        return f"archive-dir-failed:{exc}"
     return None
 
 
@@ -3498,10 +3543,12 @@ def archive_worktree_head(
     le worktree retire rangerait l'archive dans un arbre qu'on supprime, et
     dans le worktree rendrait son propre retrait impossible) ; racine qui
     n'est pas une racine de l'organe (`quarantine_root_ownership_refusal` --
-    une racine preexistante SANS marqueur et portant un contenu etranger
-    n'est pas adoptee : y poser le marqueur la declarerait purgeable, et
-    une purge ulterieure retirerait ses enfants, qui ne sont pas les
-    notres) ; base
+    TOUTE racine preexistante SANS marqueur est refusee, vide ou non : y
+    poser le marqueur la declarerait purgeable, et une purge ulterieure
+    retirerait ses enfants, qui ne sont pas les notres) ; racine que cet
+    appel ne peut pas creer lui-meme (`claim_quarantine_root` -- le
+    marqueur y est pose EN PREMIER, avant tout contenu, et une racine nee
+    entre le controle et la creation n'est pas adoptee) ; base
     irresolvable -> refus (jamais le repli sur un bundle complet) ; tete
     incluse dans la base -> MANIFEST seul, `git bundle` refusant une plage
     vide ; bundle non verifie -> refus, et le residu de la destination est
@@ -3513,18 +3560,13 @@ def archive_worktree_head(
     ownership = quarantine_root_ownership_refusal(quarantine_root)
     if ownership is not None:
         return False, ownership, None
+    claimed = claim_quarantine_root(quarantine_root)
+    if claimed is not None:
+        return False, claimed, None
     sub_root = quarantine_root / PR_OPEN_ARCHIVE_SUBDIR
     dest = sub_root / dest_name
     try:
         sub_root.mkdir(parents=True, exist_ok=True)
-        # Le marqueur se pose sur la RACINE, comme la voie sous-modules : une
-        # racine creee par la seule archive reste une racine de l'organe.
-        marker = quarantine_root / QUARANTINE_MARKER
-        if not marker.exists():
-            marker.write_text(
-                "racine de quarantaine du pruneur de worktrees\n",
-                encoding="utf-8",
-            )
         if dest.exists():
             return False, "archive-destination-exists", None
         dest.mkdir(parents=True)

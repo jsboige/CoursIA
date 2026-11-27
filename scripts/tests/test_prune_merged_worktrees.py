@@ -3202,6 +3202,10 @@ class TestArchiveWorktreeHead:
     def test_existing_destination_is_refused(self, tmp_path):
         super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
         q = tmp_path / "q"
+        # Racine de l'organe (marquee) qui porte deja une archive de ce nom.
+        q.mkdir()
+        (q / pmw.QUARANTINE_MARKER).write_text(
+            pmw.QUARANTINE_MARKER_TEXT, encoding="utf-8")
         dest = q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-6"
         dest.mkdir(parents=True)
         (dest / "MANIFEST.txt").write_text("precedent", encoding="utf-8")
@@ -3242,22 +3246,195 @@ class TestArchiveWorktreeHead:
         # Le worktree n'est pas retire : l'echec d'archive est un refus.
         assert wt.is_dir()
 
-    def test_preexisting_root_with_only_our_own_archive_is_adopted(
-            self, tmp_path):
-        """Cas tolere : la racine ne porte QUE le sous-repertoire d'archives
-        de l'organe (relique d'un arret entre sa creation et la pose du
-        marqueur). Aucun contenu etranger a proteger : l'organe reprend la
-        main et pose le marqueur, sans quoi la purge la refuserait
-        toujours."""
+    @pytest.mark.parametrize("layout", [
+        "vide", "archives-seules", "archive-anterieure", "nom-reserve-fichier",
+    ])
+    def test_unmarked_root_is_refused_whatever_it_holds(
+            self, tmp_path, layout):
+        """Le contenu d'une racine ne prouve rien : TOUTE racine SANS le
+        marqueur de l'organe est refusee. Le nom `pr_open_archive` -- en
+        dossier, jusqu'a avec une archive dedans, ou en simple fichier --
+        n'est pas une preuve de propriete, pas plus que le vide. Refus
+        nomme AVANT toute ecriture, contenu strictement inchange."""
         super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
         q = tmp_path / "q"
-        (q / pmw.PR_OPEN_ARCHIVE_SUBDIR).mkdir(parents=True)
+        q.mkdir()
+        sub = q / pmw.PR_OPEN_ARCHIVE_SUBDIR
+        if layout == "archives-seules":
+            sub.mkdir()
+        elif layout == "archive-anterieure":
+            (sub / "entry-older").mkdir(parents=True)
+            (sub / "entry-older" / "MANIFEST.txt").write_text(
+                "archive anterieure, marqueur absent", encoding="utf-8")
+        elif layout == "nom-reserve-fichier":
+            sub.write_text("un fichier, pas le sous-repertoire de l'organe",
+                           encoding="utf-8")
+        before = sorted(str(p.relative_to(q)) for p in q.rglob("*"))
+        if layout == "vide":
+            assert before == []
         ok, msg, info = pmw.archive_worktree_head(
             self._status(wt), q, "entry-8", repo_root=str(super))
+        assert (ok, msg, info) == (
+            False, f"quarantine-root-not-ours:{q}", None)
+        assert sorted(str(p.relative_to(q)) for p in q.rglob("*")) == before
+        assert not (q / pmw.QUARANTINE_MARKER).exists()
+        assert wt.is_dir()
+
+    def test_dangling_symlink_root_is_refused(self, tmp_path):
+        """Un lien symbolique pendant est un NOM qui existe : `exists()`
+        le dit absent, `lexists()` le dit present. Autre chose que l'organe
+        l'a pose -- refus, et la cible du lien n'est pas creee."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        target = tmp_path / "elsewhere"
+        try:
+            q.symlink_to(target, target_is_directory=True)
+        except (OSError, NotImplementedError) as exc:
+            pytest.skip(f"lien symbolique non creable ici : {exc}")
+        assert os.path.lexists(q) and not q.exists()
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-9", repo_root=str(super))
+        assert (ok, msg, info) == (
+            False, f"quarantine-root-not-ours:{q}", None)
+        assert os.path.lexists(q) and not q.exists()
+        assert not target.exists()
+
+    def test_root_appearing_after_the_ownership_check_is_not_claimed(
+            self, tmp_path, monkeypatch):
+        """Une racine nee ENTRE le controle de propriete et la creation
+        n'a pas ete creee par l'organe : la creation elle-meme est un
+        controle (`exist_ok=False`), et elle n'est pas adoptee."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        witness = q / "witness.txt"
+
+        def _root_appears(root):
+            q.mkdir()
+            witness.write_text("nee entre les deux controles",
+                               encoding="utf-8")
+            return None
+
+        monkeypatch.setattr(pmw, "quarantine_root_ownership_refusal",
+                            _root_appears)
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-10", repo_root=str(super))
+        assert (ok, msg, info) == (
+            False, f"quarantine-root-not-ours:{q}", None)
+        assert witness.read_text(encoding="utf-8") == \
+            "nee entre les deux controles"
+        assert not (q / pmw.QUARANTINE_MARKER).exists()
+        assert not (q / pmw.PR_OPEN_ARCHIVE_SUBDIR).exists()
+
+    def test_failed_marker_write_leaves_no_root_behind(
+            self, tmp_path, monkeypatch):
+        """La pose du marqueur echoue : la racine que l'organe vient de
+        creer est retiree. Sans cela, la passe suivante refuserait une
+        racine vide sans marqueur -- ce que celle-ci vient de laisser."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        real_write_text = Path.write_text
+
+        def _refuse_marker(self_path, data, *args, **kwargs):
+            if self_path.name == pmw.QUARANTINE_MARKER:
+                raise OSError(28, "no space left on device")
+            return real_write_text(self_path, data, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "write_text", _refuse_marker)
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-11", repo_root=str(super))
+        assert (ok, info) == (False, None)
+        assert msg.startswith("archive-dir-failed:"), msg
+        assert not q.exists()
+        assert wt.is_dir()
+
+    def test_root_left_by_a_previous_archive_is_reused(self, tmp_path):
+        """Une racine MARQUEE est une racine de l'organe : l'archive
+        suivante s'y range, sans toucher a la precedente ni au marqueur."""
+        super, wt = _make_repo_with_origin_and_feature_worktree(tmp_path)
+        q = tmp_path / "q"
+        ok, msg, _info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-a", repo_root=str(super))
         assert ok, msg
-        assert info["commits_outside_basis"] == 1
-        assert (q / pmw.QUARANTINE_MARKER).is_file()
-        assert (q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-8").is_dir()
+        marker = q / pmw.QUARANTINE_MARKER
+        # Le marqueur est pose EN PREMIER : rien n'existe sans lui.
+        assert marker.is_file()
+        assert sorted(p.name for p in q.iterdir()) == [
+            pmw.QUARANTINE_MARKER, pmw.PR_OPEN_ARCHIVE_SUBDIR]
+        ok, msg, info = pmw.archive_worktree_head(
+            self._status(wt), q, "entry-b", repo_root=str(super))
+        assert ok, msg
+        assert Path(info["dest"]).is_dir()
+        assert (q / pmw.PR_OPEN_ARCHIVE_SUBDIR / "entry-a").is_dir()
+        archived = sorted(
+            p.name for p in (q / pmw.PR_OPEN_ARCHIVE_SUBDIR).iterdir())
+        assert archived == ["entry-a", "entry-b"]
+
+
+class TestClaimQuarantineRoot:
+    """`claim_quarantine_root` : la creation de la racine est un controle, et
+    le marqueur y est pose avant tout contenu."""
+
+    def test_absent_root_is_created_marker_first(self, tmp_path):
+        root = tmp_path / "deep" / "q"
+        assert pmw.claim_quarantine_root(root) is None
+        assert root.is_dir()
+        assert [p.name for p in root.iterdir()] == [pmw.QUARANTINE_MARKER]
+        assert (root / pmw.QUARANTINE_MARKER).read_text(
+            encoding="utf-8") == pmw.QUARANTINE_MARKER_TEXT
+
+    def test_marked_root_is_left_untouched(self, tmp_path):
+        root = tmp_path / "q"
+        root.mkdir()
+        (root / pmw.QUARANTINE_MARKER).write_text("deja la",
+                                                  encoding="utf-8")
+        (root / "pr_open_archive").mkdir()
+        assert pmw.claim_quarantine_root(root) is None
+        assert (root / pmw.QUARANTINE_MARKER).read_text(
+            encoding="utf-8") == "deja la"
+        assert [p.name for p in root.iterdir()] == [
+            pmw.QUARANTINE_MARKER, "pr_open_archive"]
+
+    def test_unmarked_root_is_refused_standalone(self, tmp_path):
+        """L'appel direct ne contourne pas le controle de propriete : une
+        racine existante sans marqueur est refusee, temoin intact."""
+        root = tmp_path / "q"
+        root.mkdir()
+        (root / "witness.txt").write_text("contenu etranger",
+                                          encoding="utf-8")
+        assert pmw.claim_quarantine_root(root) == \
+            f"quarantine-root-not-ours:{root}"
+        assert [p.name for p in root.iterdir()] == ["witness.txt"]
+        assert (root / "witness.txt").read_text(encoding="utf-8") == \
+            "contenu etranger"
+
+    def test_failed_marker_write_removes_the_root_it_created(
+            self, tmp_path, monkeypatch):
+        root = tmp_path / "q"
+
+        def _refuse_marker(self_path, data, *args, **kwargs):
+            raise OSError(28, "no space left on device")
+
+        monkeypatch.setattr(Path, "write_text", _refuse_marker)
+        refusal = pmw.claim_quarantine_root(root)
+        assert refusal is not None
+        assert refusal.startswith("archive-dir-failed:"), refusal
+        assert not root.exists()
+
+    def test_file_ancestor_is_not_an_ownership_refusal(self, tmp_path):
+        """Un ANCETRE qui est un fichier empeche la creation : c'est un
+        echec de dossier, pas un refus de propriete -- la racine, elle,
+        n'existe pas."""
+        blocker = tmp_path / "blocker"
+        blocker.write_text("un fichier la ou il faudrait un dossier",
+                           encoding="utf-8")
+        root = blocker / "q"
+        assert pmw.quarantine_root_ownership_refusal(root) is None
+        refusal = pmw.claim_quarantine_root(root)
+        assert refusal is not None
+        assert refusal.startswith("archive-dir-failed:"), refusal
+        assert blocker.read_text(encoding="utf-8") == \
+            "un fichier la ou il faudrait un dossier"
+        assert not root.exists()
 
 
 class TestPrOpenArchiveApply:
