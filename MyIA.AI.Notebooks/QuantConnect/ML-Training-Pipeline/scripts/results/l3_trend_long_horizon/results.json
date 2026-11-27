@@ -1,0 +1,613 @@
+{
+  "verdict": "INCONCLUSIVE",
+  "n_signal": 1,
+  "n_cells": 75,
+  "median_auc": 0.50852242423146,
+  "edges": [
+    {
+      "symbol": "SPY",
+      "horizon": 252,
+      "mean_delta": -0.43624885049313694,
+      "std_delta": 0.10298458803587343,
+      "sigma_edge": -4.23605957758626,
+      "is_signal": false
+    },
+    {
+      "symbol": "RSP",
+      "horizon": 252,
+      "mean_delta": -0.4652728408696099,
+      "std_delta": 0.0651408990042017,
+      "sigma_edge": -7.14256094070177,
+      "is_signal": false
+    },
+    {
+      "symbol": "IWM",
+      "horizon": 252,
+      "mean_delta": -0.7101963159039822,
+      "std_delta": 0.18860420805561542,
+      "sigma_edge": -3.765538018613881,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLF",
+      "horizon": 252,
+      "mean_delta": -0.7290161024166324,
+      "std_delta": 0.037587122344042524,
+      "sigma_edge": -19.395368864469077,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLK",
+      "horizon": 252,
+      "mean_delta": -0.34543883311173224,
+      "std_delta": 0.16880785226503775,
+      "sigma_edge": -2.0463433926602774,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLV",
+      "horizon": 252,
+      "mean_delta": -0.4678004443421749,
+      "std_delta": 0.08460337533877738,
+      "sigma_edge": -5.529335472361016,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLY",
+      "horizon": 252,
+      "mean_delta": -0.7232294505837895,
+      "std_delta": 0.2157734304057409,
+      "sigma_edge": -3.3518003084245684,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLP",
+      "horizon": 252,
+      "mean_delta": -0.5289402004207489,
+      "std_delta": 0.19536747938706894,
+      "sigma_edge": -2.7074117047535524,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLI",
+      "horizon": 252,
+      "mean_delta": -0.5375578695157573,
+      "std_delta": 0.06933974260669962,
+      "sigma_edge": -7.75252184832625,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLU",
+      "horizon": 252,
+      "mean_delta": -0.2700587238236412,
+      "std_delta": 0.11806355640789039,
+      "sigma_edge": -2.2874012272731497,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLB",
+      "horizon": 252,
+      "mean_delta": -0.751611835647985,
+      "std_delta": 0.1371953559499207,
+      "sigma_edge": -5.478405813694887,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLRE",
+      "horizon": 252,
+      "mean_delta": -0.16835200428599012,
+      "std_delta": 0.17032649399444885,
+      "sigma_edge": -0.9884076184382502,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLC",
+      "horizon": 252,
+      "mean_delta": -0.5964591100776933,
+      "std_delta": 0.2121744556896585,
+      "sigma_edge": -2.811173042197487,
+      "is_signal": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 252,
+      "mean_delta": 0.4649193770291862,
+      "std_delta": 0.1973028426732025,
+      "sigma_edge": 2.356374448183919,
+      "is_signal": true
+    },
+    {
+      "symbol": "IEF",
+      "horizon": 252,
+      "mean_delta": -0.07523266199305746,
+      "std_delta": 0.14235899526840942,
+      "sigma_edge": -0.5284714313360441,
+      "is_signal": false
+    },
+    {
+      "symbol": "SHY",
+      "horizon": 252,
+      "mean_delta": -2.15671222339913,
+      "std_delta": 0.1476764267062049,
+      "sigma_edge": -14.60430937762196,
+      "is_signal": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 252,
+      "mean_delta": -0.17585676648694668,
+      "std_delta": 0.20224588476216723,
+      "sigma_edge": -0.8695196280198578,
+      "is_signal": false
+    },
+    {
+      "symbol": "USO",
+      "horizon": 252,
+      "mean_delta": -0.20616656400369943,
+      "std_delta": 0.07595882707230431,
+      "sigma_edge": -2.714188356376961,
+      "is_signal": false
+    },
+    {
+      "symbol": "DBA",
+      "horizon": 252,
+      "mean_delta": -0.08830661855368699,
+      "std_delta": 0.23472349751299165,
+      "sigma_edge": -0.3762155024500661,
+      "is_signal": false
+    },
+    {
+      "symbol": "EFA",
+      "horizon": 252,
+      "mean_delta": -0.6622272496890473,
+      "std_delta": 0.06127222438011829,
+      "sigma_edge": -10.807951831171447,
+      "is_signal": false
+    },
+    {
+      "symbol": "EEM",
+      "horizon": 252,
+      "mean_delta": -0.6888903618748374,
+      "std_delta": 0.22444741078813168,
+      "sigma_edge": -3.0692729288159137,
+      "is_signal": false
+    },
+    {
+      "symbol": "BTC-USD",
+      "horizon": 252,
+      "mean_delta": -1.0916626359561534,
+      "std_delta": 0.19854681471114535,
+      "sigma_edge": -5.498263155439448,
+      "is_signal": false
+    },
+    {
+      "symbol": "ETH-USD",
+      "horizon": 252,
+      "mean_delta": 0.14111383813455614,
+      "std_delta": 0.20404698077628913,
+      "sigma_edge": 0.6915752323199971,
+      "is_signal": false
+    },
+    {
+      "symbol": "LTC-USD",
+      "horizon": 252,
+      "mean_delta": -0.7819746955620648,
+      "std_delta": 0.04762912560822443,
+      "sigma_edge": -16.417993939133666,
+      "is_signal": false
+    },
+    {
+      "symbol": "XRP-USD",
+      "horizon": 252,
+      "mean_delta": -0.40614486029974184,
+      "std_delta": 0.1693541909029035,
+      "sigma_edge": -2.398197872366787,
+      "is_signal": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 120,
+      "mean_delta": -0.6714669163212794,
+      "std_delta": 0.1131999167309184,
+      "sigma_edge": -5.931690903248526,
+      "is_signal": false
+    },
+    {
+      "symbol": "RSP",
+      "horizon": 120,
+      "mean_delta": -1.0698851619272063,
+      "std_delta": 0.3481560160446867,
+      "sigma_edge": -3.0730049535892086,
+      "is_signal": false
+    },
+    {
+      "symbol": "IWM",
+      "horizon": 120,
+      "mean_delta": -0.8791090146670565,
+      "std_delta": 0.11453653253080727,
+      "sigma_edge": -7.675359077511795,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLF",
+      "horizon": 120,
+      "mean_delta": -0.8410365091850152,
+      "std_delta": 0.2479633039325192,
+      "sigma_edge": -3.3917781213864413,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLK",
+      "horizon": 120,
+      "mean_delta": -0.42025016750585764,
+      "std_delta": 0.12435742493673518,
+      "sigma_edge": -3.3793733483919683,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLV",
+      "horizon": 120,
+      "mean_delta": -0.4632859644933284,
+      "std_delta": 0.15840404691923418,
+      "sigma_edge": -2.9247104067331375,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLY",
+      "horizon": 120,
+      "mean_delta": -0.21380321404219044,
+      "std_delta": 0.09049362914371703,
+      "sigma_edge": -2.36263277387892,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLP",
+      "horizon": 120,
+      "mean_delta": -0.919733206956326,
+      "std_delta": 0.25804972938379195,
+      "sigma_edge": -3.5641703990645386,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLI",
+      "horizon": 120,
+      "mean_delta": -1.0821842902871697,
+      "std_delta": 0.19066223064048413,
+      "sigma_edge": -5.675923787589344,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLU",
+      "horizon": 120,
+      "mean_delta": -0.3985592868874007,
+      "std_delta": 0.17739245449267776,
+      "sigma_edge": -2.2467657264635914,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLB",
+      "horizon": 120,
+      "mean_delta": -1.3058096891427151,
+      "std_delta": 0.2918289428362543,
+      "sigma_edge": -4.47457224924879,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLRE",
+      "horizon": 120,
+      "mean_delta": -0.531952640278168,
+      "std_delta": 0.1643621132070294,
+      "sigma_edge": -3.23646751613691,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLC",
+      "horizon": 120,
+      "mean_delta": -0.22682682523239245,
+      "std_delta": 0.10648390753842728,
+      "sigma_edge": -2.130151216985877,
+      "is_signal": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 120,
+      "mean_delta": -0.5206679578920624,
+      "std_delta": 0.16954799796509307,
+      "sigma_edge": -3.070917758635279,
+      "is_signal": false
+    },
+    {
+      "symbol": "IEF",
+      "horizon": 120,
+      "mean_delta": -0.33020667220156374,
+      "std_delta": 0.1781231361611449,
+      "sigma_edge": -1.8538112415830785,
+      "is_signal": false
+    },
+    {
+      "symbol": "SHY",
+      "horizon": 120,
+      "mean_delta": -0.8102806068568064,
+      "std_delta": 0.3156158529472198,
+      "sigma_edge": -2.567300087401849,
+      "is_signal": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 120,
+      "mean_delta": -0.3803842832280637,
+      "std_delta": 0.2564481019622349,
+      "sigma_edge": -1.4832797759761933,
+      "is_signal": false
+    },
+    {
+      "symbol": "USO",
+      "horizon": 120,
+      "mean_delta": 0.2530782863560588,
+      "std_delta": 0.1569774306557469,
+      "sigma_edge": 1.6121953665496158,
+      "is_signal": false
+    },
+    {
+      "symbol": "DBA",
+      "horizon": 120,
+      "mean_delta": -0.7693907272630851,
+      "std_delta": 0.1319986611169235,
+      "sigma_edge": -5.828776752376028,
+      "is_signal": false
+    },
+    {
+      "symbol": "EFA",
+      "horizon": 120,
+      "mean_delta": -0.677529144309769,
+      "std_delta": 0.2451281106052278,
+      "sigma_edge": -2.763979792594703,
+      "is_signal": false
+    },
+    {
+      "symbol": "EEM",
+      "horizon": 120,
+      "mean_delta": -0.9380383401263849,
+      "std_delta": 0.142823094863294,
+      "sigma_edge": -6.567833731822204,
+      "is_signal": false
+    },
+    {
+      "symbol": "BTC-USD",
+      "horizon": 120,
+      "mean_delta": -0.6657662486515712,
+      "std_delta": 0.18363532288747678,
+      "sigma_edge": -3.625480317093035,
+      "is_signal": false
+    },
+    {
+      "symbol": "ETH-USD",
+      "horizon": 120,
+      "mean_delta": -0.5229671329110213,
+      "std_delta": 0.10984330653360162,
+      "sigma_edge": -4.761028681807234,
+      "is_signal": false
+    },
+    {
+      "symbol": "LTC-USD",
+      "horizon": 120,
+      "mean_delta": -0.6023345268635772,
+      "std_delta": 0.17389105008349098,
+      "sigma_edge": -3.4638615763972673,
+      "is_signal": false
+    },
+    {
+      "symbol": "XRP-USD",
+      "horizon": 120,
+      "mean_delta": -0.4284737573003451,
+      "std_delta": 0.10446247550464939,
+      "sigma_edge": -4.101700206034986,
+      "is_signal": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 60,
+      "mean_delta": -0.27419857388434365,
+      "std_delta": 0.09144672203387728,
+      "sigma_edge": -2.998451642506817,
+      "is_signal": false
+    },
+    {
+      "symbol": "RSP",
+      "horizon": 60,
+      "mean_delta": -0.44091055822394143,
+      "std_delta": 0.13161509072118907,
+      "sigma_edge": -3.35000003273149,
+      "is_signal": false
+    },
+    {
+      "symbol": "IWM",
+      "horizon": 60,
+      "mean_delta": -0.4369814011958021,
+      "std_delta": 0.17494923518930272,
+      "sigma_edge": -2.497761140384347,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLF",
+      "horizon": 60,
+      "mean_delta": -0.8467155062673022,
+      "std_delta": 0.10404878966841695,
+      "sigma_edge": -8.137677612258807,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLK",
+      "horizon": 60,
+      "mean_delta": -0.1966750219267971,
+      "std_delta": 0.09877138095743491,
+      "sigma_edge": -1.9912146617809596,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLV",
+      "horizon": 60,
+      "mean_delta": -0.0912314422995755,
+      "std_delta": 0.16011125127563167,
+      "sigma_edge": -0.5698003205441227,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLY",
+      "horizon": 60,
+      "mean_delta": -0.15788652560235306,
+      "std_delta": 0.12547467494065023,
+      "sigma_edge": -1.2583138842721346,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLP",
+      "horizon": 60,
+      "mean_delta": -0.6252884459728266,
+      "std_delta": 0.09066466057226467,
+      "sigma_edge": -6.896716339377211,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLI",
+      "horizon": 60,
+      "mean_delta": -0.7825519975140174,
+      "std_delta": 0.1303664906304633,
+      "sigma_edge": -6.002708163190788,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLU",
+      "horizon": 60,
+      "mean_delta": -0.5424712276839524,
+      "std_delta": 0.21367567986014785,
+      "sigma_edge": -2.538759806633134,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLB",
+      "horizon": 60,
+      "mean_delta": -0.5113702770756303,
+      "std_delta": 0.25569484668354786,
+      "sigma_edge": -1.9999240645960712,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLRE",
+      "horizon": 60,
+      "mean_delta": -0.37406396016974597,
+      "std_delta": 0.1224244717351182,
+      "sigma_edge": -3.0554672188341856,
+      "is_signal": false
+    },
+    {
+      "symbol": "XLC",
+      "horizon": 60,
+      "mean_delta": -0.28587822818181535,
+      "std_delta": 0.04738133101134444,
+      "sigma_edge": -6.033562630677639,
+      "is_signal": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 60,
+      "mean_delta": 0.06439431109182289,
+      "std_delta": 0.17141336258815373,
+      "sigma_edge": 0.37566680986557544,
+      "is_signal": false
+    },
+    {
+      "symbol": "IEF",
+      "horizon": 60,
+      "mean_delta": -0.38129775292344514,
+      "std_delta": 0.24667506817541965,
+      "sigma_edge": -1.5457490525645274,
+      "is_signal": false
+    },
+    {
+      "symbol": "SHY",
+      "horizon": 60,
+      "mean_delta": -0.5168277050579162,
+      "std_delta": 0.3056509133735449,
+      "sigma_edge": -1.6909084267197527,
+      "is_signal": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 60,
+      "mean_delta": -0.31115484288736783,
+      "std_delta": 0.13277672064962093,
+      "sigma_edge": -2.3434442526145953,
+      "is_signal": false
+    },
+    {
+      "symbol": "USO",
+      "horizon": 60,
+      "mean_delta": -0.14045214300029174,
+      "std_delta": 0.15272710600166786,
+      "sigma_edge": -0.9196281307049576,
+      "is_signal": false
+    },
+    {
+      "symbol": "DBA",
+      "horizon": 60,
+      "mean_delta": -0.3438602071103266,
+      "std_delta": 0.24045670805798802,
+      "sigma_edge": -1.430029587810052,
+      "is_signal": false
+    },
+    {
+      "symbol": "EFA",
+      "horizon": 60,
+      "mean_delta": -0.7516078224295983,
+      "std_delta": 0.18838238119980555,
+      "sigma_edge": -3.9897989272808605,
+      "is_signal": false
+    },
+    {
+      "symbol": "EEM",
+      "horizon": 60,
+      "mean_delta": -0.6432489065671165,
+      "std_delta": 0.16515193808631423,
+      "sigma_edge": -3.894891661706882,
+      "is_signal": false
+    },
+    {
+      "symbol": "BTC-USD",
+      "horizon": 60,
+      "mean_delta": -0.2713451576229441,
+      "std_delta": 0.10674800365805609,
+      "sigma_edge": -2.5419225495976394,
+      "is_signal": false
+    },
+    {
+      "symbol": "ETH-USD",
+      "horizon": 60,
+      "mean_delta": -0.9106712273207413,
+      "std_delta": 0.14135621128952905,
+      "sigma_edge": -6.442385651207668,
+      "is_signal": false
+    },
+    {
+      "symbol": "LTC-USD",
+      "horizon": 60,
+      "mean_delta": -0.8254391673532351,
+      "std_delta": 0.08107498065413456,
+      "sigma_edge": -10.181182415257727,
+      "is_signal": false
+    },
+    {
+      "symbol": "XRP-USD",
+      "horizon": 60,
+      "mean_delta": -0.3972537306716193,
+      "std_delta": 0.20445484578943302,
+      "sigma_edge": -1.9429900481828093,
+      "is_signal": false
+    }
+  ],
+  "n_combos": 300,
+  "elapsed_s": 1663.8325591087341,
+  "peak_vram_gb": 0.258,
+  "device": "cuda",
+  "smoke": false
+}

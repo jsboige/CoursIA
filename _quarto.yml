@@ -10,6 +10,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/index.qmd"
     - "MyIA.AI.Notebooks/Probas/index.qmd"
     - "MyIA.AI.Notebooks/Physique/index.qmd"
+    - "MyIA.AI.Notebooks/BioMedecine/index.qmd"
     - "docs/index.qmd"
     - "docs/parcours.qmd"
     - "docs/curriculum/prerequis.qmd"
@@ -61,6 +62,8 @@ project:
     - "dotnet/MyIA.AI.Shared/README.md"
     - "dotnet/MyIA.Trading.Backtester/README.md"
     - "dotnet/MyIA.Trading.Converter/README.md"
+    - "MyIA.AI.Notebooks/BioMedecine/Dynamiques/README.md"
+    - "MyIA.AI.Notebooks/BioMedecine/README.md"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/README.md"
     - "MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/README.md"
     - "MyIA.AI.Notebooks/CaseStudies/README.md"
@@ -933,11 +936,10 @@ project:
     - "docs/transients/2026-05-17-reference-audit-reassessment-findings.md"
     - "docs/transients/2026-06-14-genai-service-security-audit.md"
     - "docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md"
-    - "docs/transients/2026-07-19-epic-4957-status.md"
-    - "docs/transients/2026-07-23-audit-sampling-protocol.md"
+    - "docs/audit/audit-sampling-protocol.md"
     - "docs/transients/2026-07-23-ict-extensions-quatre-fronts.md"
     - "docs/transients/2026-08-06-translations-root-diagnostic.md"
-    - "docs/transients/2026-08-08-ci-aggregator-rollout.md"
+    - "docs/reference/ci-aggregator-rollout.md"
     - "docs/transients/2026-08-10-variation-genre-census.md"
     - "docs/transients/2026-08-13-10678-interp-positioning-audit.md"
     - "docs/transients/2026-08-14-audit-workflow-path-filters.md"
@@ -958,13 +960,15 @@ project:
     - "docs/transients/2026-11-02-tri-perennel-stale-56.md"
     - "docs/transients/2026-11-10-ci-two-tier.md"
     - "docs/translation/argumentum-fork-mapping.md"
+    - "docs/translation/epic-4957-status.md"
     - "docs/translation/translation-override-protocol.md"
     - "docs/TUTORIEL-GITHUB-TP.md"
     - "docs/xai-shap-strategy/c655-xai-shap-attribution.md"
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # Sous-arbres rendus : MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/3D/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/HumorDetection/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/InformationCalcul/Automata/, MyIA.AI.Notebooks/InformationCalcul/Complexity/, MyIA.AI.Notebooks/InformationCalcul/Compression/, MyIA.AI.Notebooks/InformationCalcul/Cryptography/, MyIA.AI.Notebooks/InformationCalcul/InformationTheory/, MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
+    # Sous-arbres rendus : MyIA.AI.Notebooks/BioMedecine/, MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/, MyIA.AI.Notebooks/GenAI/3D/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/HumorDetection/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/, MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/Security/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/InformationCalcul/Automata/, MyIA.AI.Notebooks/InformationCalcul/Complexity/, MyIA.AI.Notebooks/InformationCalcul/Compression/, MyIA.AI.Notebooks/InformationCalcul/Cryptography/, MyIA.AI.Notebooks/InformationCalcul/InformationTheory/, MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/NLP/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Physique/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/QuantConnect/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/, MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/.
+    - "MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb"

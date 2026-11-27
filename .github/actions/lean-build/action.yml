@@ -242,6 +242,11 @@ runs:
            && [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
            && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ] \
            && [ "$(git -C "${RUNNER_TEMP}/mathlib-src" rev-parse HEAD 2>/dev/null)" = "$WANT_REV" ]; then
+          # Sans cache de lac, `.lake/packages` n'existe pas encore : `ln`
+          # refuse de creer un lien dont le parent est absent (run 45497650138,
+          # job 138849963264). Le cache du lac ne se rechauffe que si le build
+          # passe -- sans ce `mkdir`, un lac froid est bloque a jamais.
+          mkdir -p .lake/packages
           rm -rf .lake/packages/mathlib
           ln -sfn "$RUNNER_TEMP/mathlib-src" .lake/packages/mathlib
           echo "Mathlib source: shared cache (symlinked into .lake/packages, rev $WANT_REV verified)."
