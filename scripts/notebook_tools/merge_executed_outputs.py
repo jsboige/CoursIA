@@ -4,8 +4,18 @@
 Cas d'usage : un carnet QuantBook execute sur QC Cloud (routes B et C de
 docs/qc/quantbook-execution-routes.md) revient avec ses sorties, mais le carnet
 de la branche porte le texte markdown a jour. L'outil copie, cellule de code par
-cellule de code, `outputs` et `execution_count` du carnet execute vers le carnet
-de la branche, sans toucher au markdown ni aux metadonnees.
+cellule de code, `outputs`, `execution_count` et la provenance du run (bloc
+`metadata.papermill` du carnet, blocs `metadata.papermill` et `metadata.execution`
+de chaque cellule de code) du carnet execute vers le carnet de la branche. Le
+markdown, l'identifiant des cellules et les autres metadonnees ne sont pas touches.
+
+Pourquoi la provenance : sans elle, le carnet de la branche garde le bloc du run
+precedent sous des sorties fraiches. `scripts/notebook_tools/check_papermill_ratchet.py`
+compare ce bloc a celui de la reference et rend alors `STALE_BLOCK` — un rouge qui
+accuse la lane de ne pas avoir re-execute alors qu'elle a re-execute. Le bloc suit
+donc le carnet qui a reellement execute, y compris quand ce carnet n'en porte aucun
+(la provenance du carnet de la branche est retiree : une provenance perimee n'est
+pas une provenance).
 
 Usage :
   python scripts/notebook_tools/merge_executed_outputs.py <carnet_branche> <carnet_execute>
@@ -17,7 +27,10 @@ Contrat :
   - carnet execute complet : chaque cellule de code a un `execution_count` et aucune
     sortie `error`, sinon refus (exit 2, levable par --allow-incomplete) ;
   - indentation JSON, ordre des cles, fins de ligne et saut de ligne final du
-    carnet de la branche conserves ; les sorties texte sont remises en liste de lignes (forme nbformat).
+    carnet de la branche conserves ; les sorties texte sont remises en liste de lignes (forme nbformat) ;
+  - provenance reportee : `metadata.papermill` du carnet et `metadata.papermill` /
+    `metadata.execution` de chaque cellule de code suivent le carnet execute ; les
+    autres cles de `metadata` (dont `tags`) restent celles de la branche.
 
 Empreinte (--fingerprint) : sha256 des sources des cellules de code jointes par
 un saut de ligne, 16 premiers caracteres hexadecimaux. Elle verifie que le carnet
@@ -87,8 +100,49 @@ def _first_difference(a: str, b: str) -> str:
     return f"{len(la)} lines vs {len(lb)} lines"
 
 
+# Cles de `metadata` qui decrivent le run et non le contenu : elles appartiennent
+# au carnet qui a execute, pas a celui dont on garde le markdown.
+PROVENANCE_KEYS = ("papermill", "execution")
+
+
+def _meta_dict(holder: dict) -> dict:
+    """Rend le dict `metadata` de `holder`, en le creant si besoin."""
+    meta = holder.get("metadata")
+    if not isinstance(meta, dict):
+        meta = {}
+        holder["metadata"] = meta
+    return meta
+
+
+def _carry_block(target_meta: dict, executed_meta: dict, key: str) -> None:
+    if key in executed_meta:
+        target_meta[key] = executed_meta[key]
+    else:
+        target_meta.pop(key, None)
+
+
+def _carry_provenance(target: dict, executed: dict) -> None:
+    """Reporte la provenance du carnet execute sur celui de la branche.
+
+    Le bloc global et les blocs par cellule suivent le carnet execute, y compris
+    quand il n'en porte aucun : une provenance qui decrit un autre run que les
+    sorties est un mensonge, et `check_papermill_ratchet.py` la voit (`STALE_BLOCK`).
+    """
+    emeta = executed.get("metadata") or {}
+    tmeta = target.get("metadata") or {}
+    if "papermill" in emeta or "papermill" in tmeta:
+        _carry_block(_meta_dict(target), emeta, "papermill")
+    for t, e in zip(code_cells(target), code_cells(executed)):
+        ecell = e.get("metadata") or {}
+        tcell = t.get("metadata") or {}
+        if any(k in ecell or k in tcell for k in PROVENANCE_KEYS):
+            tm = _meta_dict(t)
+            for key in PROVENANCE_KEYS:
+                _carry_block(tm, ecell, key)
+
+
 def merge(target: dict, executed: dict) -> int:
-    """Copie outputs et execution_count ; rend le nombre de cellules de code."""
+    """Copie outputs, execution_count et provenance ; rend le nombre de cellules de code."""
     tc, ec = code_cells(target), code_cells(executed)
     if len(tc) != len(ec):
         raise MergeError(f"{len(tc)} code cells in target, {len(ec)} in executed notebook")
@@ -99,6 +153,7 @@ def merge(target: dict, executed: dict) -> int:
     for t, e in zip(tc, ec):
         t["outputs"] = [normalise_output(o) for o in e.get("outputs", [])]
         t["execution_count"] = e.get("execution_count")
+    _carry_provenance(target, executed)
     return len(tc)
 
 

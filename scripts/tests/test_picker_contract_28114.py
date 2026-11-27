@@ -73,6 +73,7 @@ noyau consolide peut les satisfaire par n'importe quelle voie interne.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -83,7 +84,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_cache_fichier, gh_selection, main_freshness
-from coordination import tapis_ancre, tapis_cap_livraisons, tapis_leger, tapis_rapide
+from coordination import tapis_ancre, tapis_cap_livraisons, tapis_etat, tapis_leger, tapis_rapide
 
 NOW = datetime(2026, 11, 22, 21, 0, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
@@ -118,12 +119,31 @@ def _page_metas(metas: list[dict]) -> str:
         "pageInfo": {"hasNextPage": False, "endCursor": "c"}, "nodes": nodes}}}})
 
 
+def _page_issues(metas: list[dict], requete: str) -> str:
+    """La lecture CIBLEE : un alias (`i0`, `i1`...) par issue nommee.
+
+    La qualification de la fenetre servie lit le **fil complet** de chaque
+    grain (dispatch `c0030`, 24/11) : sans cette reponse, aucun grain ne
+    serait qualifie et la voie leger servirait une file VIDE.
+    """
+    par_numero = {m["number"]: m for m in metas}
+    data: dict = {"data": {"repository": {}}}
+    for k, n in enumerate(re.findall(r"issue\(number:(\d+)\)", requete)):
+        m = par_numero.get(int(n))
+        data["data"]["repository"][f"i{k}"] = None if m is None else {
+            "number": m["number"], "title": m["title"], "body": "",
+            "createdAt": m["created_at"], "updatedAt": m["updated_at"],
+            "labels": {"nodes": [{"name": lab} for lab in m["labels"]]},
+            "comments": {"totalCount": 0, "nodes": []}}
+    return json.dumps(data)
+
+
 def _run(metas: list[dict]):
     """Le faux `run` : le pool en metadonnees, aucune PR, aucune citation."""
     def run(argv, timeout):
         requete = " ".join(argv)
         if "issue(number:" in requete:
-            return json.dumps({"data": {"repository": {}}})
+            return _page_issues(metas, requete)
         if "graphql" in requete:
             return _page_metas(metas)
         if argv[0] == "git":
@@ -146,9 +166,16 @@ def _etat_neutre(monkeypatch):
 
     Le contrat I3 veut qu'une lane tire **seule** : le test ne doit pas
     dependre d'une ancre posee par une autre session.
+
+    `lire` rend un etat **normalise** (`tapis_etat.vide()`) : c'est le
+    contrat de l'organe, et la qualification s'en sert pour acquitter les
+    verdicts. Un etat nu (`{}`) ferait echouer l'ancre au lieu de la laisser
+    immobile. L'ecriture est neutralisee : le test ne touche pas l'ancre
+    reelle de la lane.
     """
-    monkeypatch.setattr(tapis_ancre, "lire", lambda lane: {})
+    monkeypatch.setattr(tapis_ancre, "lire", lambda lane: tapis_etat.vide())
     monkeypatch.setattr(tapis_ancre, "proposer", lambda *a, **k: {})
+    monkeypatch.setattr(tapis_ancre, "ecrire", lambda lane, etat: etat)
 
 
 # --- I1 -- une file sans fin par lane ------------------------------------------
@@ -213,6 +240,43 @@ def test_I2_le_repli_chronologique_couvre_le_pool_en_ordre_de_creation(
         "des tirages successifs doivent couvrir toutes les issues ouvertes"
 
 
+def test_I2_le_repli_annonce_des_candidats_du_cache_pas_des_grains_confirmes(
+        tmp_path, monkeypatch):
+    """I2 -- l'ACTION PUBLIQUE du repli distingue le cache du grain confirme.
+
+    Le repli chronologique sert des metadonnees locales : il ne lit JAMAIS le
+    fil. Presenter ces candidats comme « deja qualifies sur fil complet »
+    donnerait a la lane une consigne de claim qui repose sur une lecture de
+    fil qui n'a pas eu lieu (reserve du coordinateur du 25/11 sur #28345).
+
+    Temoin : l'action publique d'un grain du repli impose la lecture du fil
+    avant le claim, et ne contient pas la consigne des grains confirmes.
+    """
+    pool = [_meta(5000 + k,
+                  cree=(NOW - timedelta(days=15 - k)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+            for k in range(6)]
+    lecture = gh_bulk.Lecture(issues=[_issue(m["number"], m["title"], m["created_at"])
+                                      for m in pool],
+                               prs=[], citations={}, lu_a="2026-11-22T20:00:00Z",
+                               secondes=0.1, appels=1)
+    monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
+
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "graine", Path("."),
+                                       _run_casse())
+    assert code == 0, "le repli rend une file, pas un echec"
+    assert rapport["voie"] == "repli", "la voie rendue est le repli"
+    assert rapport["grains"], "le repli doit rendre une file non vide"
+    assert rapport["fil_lu"] is False, "le repli n'a pas lu le fil"
+    for g in rapport["grains"]:
+        assert "candidat du cache" in g["action"], \
+            "l'action publique doit nommer le grain comme candidat du cache"
+        assert "lire le fil avant de claimer" in g["action"], \
+            "l'action publique doit imposer la lecture du fil avant le claim"
+        assert "deja qualifie sur fil complet" not in g["action"], \
+            "un candidat du cache ne doit pas etre presente comme qualifie"
+
+
 def test_I2_un_filtre_qui_vide_la_file_bascule_sur_le_repli(tmp_path, monkeypatch):
     """I2 -- une lecture REUSSIE dont la file sort vide bascule sur le repli.
 
@@ -235,9 +299,12 @@ def test_I2_un_filtre_qui_vide_la_file_bascule_sur_le_repli(tmp_path, monkeypatc
     monkeypatch.setattr(gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
     gh_cache_fichier.ecrire(tmp_path / "lecture-45j.json", lecture)
 
-    def charge_saturee(lane, maintenant, prs_ouvertes, run=None):
+    def charge_saturee(lane, maintenant, prs_ouvertes, run=None, **kw):
         """En ligne la mesure aboutit (tout est ecarte) ; hors reseau elle
-        echoue, et le cap laisse la file intacte (fail-OPEN)."""
+        echoue, et le cap laisse la file intacte (fail-OPEN).
+
+        `**kw` : la mesure porte maintenant l'`echeance` partagee et le `run`
+        de la commande -- le cap n'a plus son propre budget (#28114, I6)."""
         if run is tapis_cap_livraisons.fetcher_hors_reseau:
             return None
         return {m["number"]: 99 for m in pool}
@@ -343,10 +410,11 @@ def test_I4_un_main_perime_degrade_le_tirage_il_ne_le_refuse_pas(monkeypatch,
     """
     monkeypatch.setenv("MAIN_FRESHNESS_FORCE", "1")
     monkeypatch.setattr(main_freshness, "mesurer",
-                        lambda depot, organes=None, run=None: {
+                        lambda depot, organes=None, run=None, echeance=None: {
                             "depot": str(depot), "branche": "main",
                             "ref_mesure": "refs/heads/main", "ecart": 2,
-                            "organes_divergents": [], "cause": None})
+                            "organes_divergents": [], "cause": None,
+                            "borne": False})
     pool = [_meta(4000 + k) for k in range(12)]
     code = tapis_rapide.main(["--lane", LANE, "--grains", "8", "--json"],
                               run=_run(pool))

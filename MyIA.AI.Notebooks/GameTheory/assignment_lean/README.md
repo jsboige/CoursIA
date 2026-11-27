@@ -30,3 +30,10 @@ Preuve de terminaison et complexité O(n³) (Edmonds-Karp/Tomizawa) — la corre
 ## Build
 
 Toolchain v4.33.0, Mathlib épinglée `db584cd6d46c` (cache local). `lake build Assignment` (WSL + elan, cf `docs/reference/kernels-runtime.md`).
+
+## Voir aussi
+
+- [Coalitions-05-Lean-Affectation-Lean.ipynb](../Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) — le carnet qui importe ce lake : il en vérifie les déclarations dans des cellules Lean (certificat d'optimalité, lemme de resserrement, `#print axioms`).
+- [Complexity-05-CountingHarder-Permanent-Python.ipynb](../../InformationCalcul/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb) — la permanente et sa #P-difficulté (Valiant) : le nombre que `card_eq_permanent` relie au permanent est difficile à calculer en général, alors que l'affectation optimale se trouve en temps polynomial ; [Complexity-05b](../../InformationCalcul/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) en donne la formule de Ryser.
+- [ANALYSE-12-Comptage-Matching-Lean-Python.ipynb](../../SymbolicAI/Lean/Analyse/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) — le même pont permanente ↔ couplages, lu depuis la série Analyse.
+- [Sudoku-15-Infer-Python.ipynb](../../Sudoku/Sudoku-15-Infer-Python.ipynb) — l'affectation hongroise comme message max-product exact d'un facteur *AllDiff* d'arité 9, la permanente de Ryser comme message sum-product.

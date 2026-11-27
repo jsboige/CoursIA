@@ -14,22 +14,22 @@ Parse JSON des cellules de code, jamais un `grep` de chaîne : dans un `.ipynb`,
 |---|---|---|---|---|
 | `GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb` | oui | **oui** | — | **migré** |
 | `GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb` | non | **oui** | — | **migré** |
-| `GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
+| `GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres ([gate B](#le-gate-de-la-fournée-b-tranché-classe-image-mesure-du-2026-11-26)) |
 | `GenAI/Texte/10b_Inference_Mechanics.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
 | `GenAI/Texte/10c_Long_Context_Strategies.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
 | `GenAI/Texte/10_LocalLlama.ipynb` | oui | non | — | exception — sujet serving |
-| `GenAI/_research/e2e_quant_validation.ipynb` | oui | non | — | exception — sujet serving |
+| `GenAI/_research/e2e_quant_validation.ipynb` | oui | non | — | exception — sujet serving ([gate B](#le-gate-de-la-fournée-b-tranché-classe-image-mesure-du-2026-11-26)) |
 | `GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb` | oui (repli) | **oui** | `chat_template_kwargs` (relayé, mesuré 2026-11-21) | **migré** ([addendum 2026-11-21](#addendum-du-2026-11-21--22b-migre-et-une-mesure-du-gate-sinverse)) |
 
 ## Les trois classes, et le motif de chacune
 
 **1. Migrés.** `04-SemanticKernel-Filters-Observability` est la forme de référence : une clé dédiée à la façade, **sans repli** sur `OPENAI_API_KEY` (un repli enverrait le credential marchand au mauvais hôte — credential cross-provider interdit), et un commentaire qui dit que le recâblage de l'endpoint impose celui de la clé. Tout consommateur migrable doit prendre cette forme, pas une variante. La colonne « lit `VLLM_API_KEY` » décrit l'état **courant** du code, pas l'historique de migration : `04-SK` garde une occurrence de l'ancienne variable à côté des trois `CLAUDISH_PROXY_KEY`, tandis que `16e-LLM-Players`, migré de bout en bout, ne lit plus que la nouvelle.
 
-**2. Exception — paramètres de serving.** Trois carnets passent `chat_template_kwargs` au moteur vLLM. C'est le **sujet** de ces carnets, pas un détail d'implémentation : `10b_Inference_Mechanics` enseigne le contrôle du gabarit de conversation, `10c_Long_Context_Strategies` la tenue du contexte sous ce gabarit, `09-KernelMemory-Multimodal` l'utilise pour sa propre démonstration. La passerelle claudish ne relaie pas cette sémantique ; router ces carnets à travers elle **viderait la leçon de son objet** tout en laissant des sorties plausibles — exactement le workaround dégradé que [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) interdit avant même C.2.
+**2. Exception — paramètres de serving.** Trois carnets passent `chat_template_kwargs` au moteur vLLM. C'est le **sujet** de ces carnets, pas un détail d'implémentation : `10b_Inference_Mechanics` enseigne le contrôle du gabarit de conversation, `10c_Long_Context_Strategies` la tenue du contexte sous ce gabarit, `09-KernelMemory-Multimodal` l'utilise pour sa propre démonstration. La passerelle claudish ne relaie pas cette sémantique (état mesuré au 2026-10-07 ; l'addendum du 2026-11-21 la mesure **désormais relayée**, `seed` et `logprobs` restant non mesurés) ; router ces carnets à travers elle **viderait la leçon de son objet** tout en laissant des sorties plausibles — exactement le workaround dégradé que [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) interdit avant même C.2.
 
 `GameTheory-18c-Humour-Banc-Python` passe aussi `chat_template_kwargs`, mais à **OpenRouter** (`OPENROUTER_API_KEY`, zéro occurrence de `VLLM_API_KEY` ou `CLAUDISH_PROXY_KEY`) : il n'appelle ni la pile vLLM ni la passerelle, et n'a donc pas sa place dans ce périmètre. Le motif pédagogique y est le même — le paramètre natif est le sujet — et il ne deviendrait consommateur qu'à la condition d'une migration OpenRouter→pile locale qui n'est pas à l'étude.
 
-**3. Exception — le sujet est le serving.** `10_LocalLlama` et `e2e_quant_validation` parlent du serveur vLLM et de sa quantization. On ne démontre pas une quantization à travers un proxy qui n'expose pas le modèle quantifié.
+**3. Exception — le sujet est le serving.** `10_LocalLlama` et `e2e_quant_validation` parlent du serveur vLLM et de sa quantization. On ne démontre pas une quantization à travers un proxy qui n'expose pas le modèle quantifié. Pour `e2e_quant_validation`, le motif se précise au gate B : son sujet est le serving de **génération d'image**, et la passerelle n'expose ni route `/v1/images/generations` ni modèle de génération d'image.
 
 ## Le gate de la fournée A, tranché
 
@@ -75,6 +75,31 @@ Deux faits nouveaux depuis le 2026-11-03, mesurés depuis `po-2028` (clé du cof
 
 Conséquence pour la validation d'un couple passerelle : sur la façade, `GET /v1/models` est **exempt d'authentification** (proxy-auth). Le carnet juge donc le couple passerelle sur une **completion réelle** (sonde `max_tokens=2` avec le dialecte du carnet), jamais sur le listing — une clé périmée ne peut plus valider la cascade puis échouer en silence dans la batterie.
 
+## Le gate de la fournée B, tranché (classe image, mesure du 2026-11-26)
+
+Le gate de la fournée B attendait depuis le 2026-10-23 un « arbitrage classe image », ouvert par `myia-po-2026:CoursIA-2` et jamais rendu depuis. Il est rendu ici **par mesure**, contre les deux instances de la passerelle claudish, et il **scinde** la fournée : ses deux carnets ne relèvent pas du même service.
+
+**Les mesures** (clé client lue depuis le `.env` du siège ; aucune valeur de secret n'apparaît ci-dessous, et aucune ne doit y apparaître) :
+
+| Mesure | Instance | Résultat |
+|---|---|---|
+| `GET /v1/models` | `https://models.myia.io/v1` | 200 — catalogue de 36 entrées |
+| `GET /v1/models` | `http://localhost:3000/v1` | 200 — catalogue de 5 entrées |
+| `POST /v1/images/generations` | les deux instances | **404** — aucune route de génération d'image |
+| `POST /v1/chat/completions`, contenu `image_url` en data URI (PNG 8×8 synthétisé en mémoire), modèle `deepseek-v4-flash-vision-exp` | `https://models.myia.io/v1` | 200 — l'image est **lue** : description conforme à l'image (« carré bleu en haut à gauche, le reste en rouge ») |
+| idem, **sans** `chat_template_kwargs` | idem | 200 mais `content: null` — le budget de génération est absorbé par le raisonnement, comme mesuré le 2026-11-21 |
+| `POST /v1/chat/completions`, modèle `qwen3.6-35b-a3b` | les deux instances | **502** (21 s sur l'instance publique, 42 s sur l'instance locale) — la route vers le serving du cluster ne répond pas |
+
+Les deux catalogues sont **différents** (5 entrées d'un côté, 36 de l'autre) et aucun ne porte de modèle de génération d'image. Un catalogue ne prouve rien de la capacité d'un modèle — seule la completion réelle vaut, comme la règle de validation ci-dessus l'établit.
+
+**Branche 1 — la vision consommée est servie.** La charge utile image traverse la passerelle et un modèle de vision la lit : la classe « image » n'est pas un obstacle de la passerelle. `09-KernelMemory-Multimodal` **consomme** une image (entrée) pour en tirer une description (sortie) ; il n'est donc plus bloqué par la classe image.
+
+**La condition qui reste, et elle est unique.** Ce carnet ne démontre pas un modèle hébergé, il démontre « le vLLM maison du cluster (vision+thinking) » : une migration qui changerait de modèle changerait le propos du carnet et remplacerait une preuve par une autre. La migration fidèle — **même modèle `qwen3.6-35b-a3b`, même serving**, seule la clé change (clé client claudish au lieu de `VLLM_API_KEY`) — suppose que la passerelle serve ce modèle. **Au 2026-11-26, elle répond 502 sur les deux instances.** La condition est donc rejouable en une requête : `POST /v1/chat/completions` avec `qwen3.6-35b-a3b` doit répondre 200. Tant qu'elle ne répond pas, le carnet garde son couple direct, et son exception documentée reste vraie.
+
+**Branche 2 — la génération d'image est hors du périmètre de la passerelle.** `e2e_quant_validation` **produit** des images (`z-image`, `Tongyi-MAI/Z-Image-Turbo` servi par vLLM Omni) et interroge ComfyUI (édition d'image, vidéo). La passerelle n'expose **ni** route `/v1/images/generations` (404 mesuré) **ni** modèle de génération d'image dans ses catalogues. L'exception n'est donc pas un choix de commodité : elle est structurelle, et son motif se précise par rapport à la classe 3 — le sujet est le serving **de génération d'image**, que la passerelle ne relaie pas.
+
+**Ce que cette livraison ne fait pas.** Aucun carnet n'est touché : la branche 1 exige la ré-exécution du carnet sur un siège qui porte le couple `qwen3.6-35b-a3b` servi (C.2), et la branche 2 ne demande aucune édition. Le gate est donc rendu et la fournée B **scindée**, pas fermée.
+
 ## Condition de réouverture
 
 La fournée A redevient migrable — en **une seule PR pour les deux carnets**, jamais une PR par carnet — quand les quatre conditions suivantes sont réunies :
@@ -85,6 +110,16 @@ La fournée A redevient migrable — en **une seule PR pour les deux carnets**, 
 4. la valeur serveur de la passerelle correspond à celle que `master.env` distribue — **vérifié sur `po-2027`** au 2026-11-03 ; tout écart se corrige côté distribution locale, sans redémarrage quand le conteneur porte déjà la bonne valeur.
 
 Tant que ces conditions ne sont pas réunies, la classe 2 et la classe 3 ci-dessus restent telles quelles. Le geste utile n'est pas de les migrer, c'est de constater qu'elles n'ont pas bougé.
+
+### Condition de réouverture de la fournée B
+
+La branche « vision consommée » (`09-KernelMemory-Multimodal`) redevient migrable — en **une seule PR pour ce carnet**, comme la fournée A en une PR pour deux — quand les trois conditions suivantes sont réunies :
+
+1. `POST /v1/chat/completions` avec `qwen3.6-35b-a3b` répond 200 sur l'instance que la machine exécutrice utilise — mesuré **502** le 2026-11-26 sur les deux instances ;
+2. le couple retenu reste `CLAUDISH_BASE_URL` + `CLAUDISH_PROXY_KEY`, **sans** changement de modèle ni de serving — c'est la clé qui change, pas la preuve ;
+3. `render_envs.py --check` rend 0 sur la machine qui exécute.
+
+La branche « image générée » (`e2e_quant_validation`) ne se rouvre pas : elle reste une exception tant que la passerelle n'expose ni route `/v1/images/generations` ni modèle de génération d'image — les deux mesures du 2026-11-26.
 
 ## Voir aussi
 

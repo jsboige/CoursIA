@@ -1,4 +1,4 @@
-# Conformite differentielle du triplet CSP-4-Scheduling (Pli Rust, issue #27662).
+# Conformite differentielle du triplet CSP-04-Scheduling-Python (Pli Rust, issue #27662).
 #
 # Le portage Rust (kernel evcxr, crate cp_sat 0.4.1) reprend les memes
 # instances et le meme fil que les jumeaux Python (ortools Python) et C#
@@ -16,9 +16,9 @@
 # -> paliers de budget 1/2/4/6 s au lieu d'une courbe.
 - name: "CSP-4 Scheduling"
   family: Search/CSP
-  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb
-  rust: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Rust.ipynb
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Rust.ipynb
   measures:
     - id: jssp_makespan
       description: "Makespan optimal du Job-Shop 3x3 (preuve CP-SAT)"
