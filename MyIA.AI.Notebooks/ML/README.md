@@ -358,7 +358,7 @@ Le carnet [2.9 — Grokking et généralisation](DataScienceWithAgents/02-ML-Cou
 
 Le projet [learning_theory_lean](learning_theory_lean/README.md) accompagne ces questions avec des définitions et énoncés formels. Le carnet [2.8b — PAC en Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) permet de lire les signatures et hypothèses des résultats ; [2.8d — Novikoff](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) accompagne la borne de convergence ; [2.9f — Théorie effective du grokking](DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) prolonge le fil théorique.
 
-Le compagnon [SL-1b — apprentissage logique en Lean](../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) explore aussi les bornes PAC et le perceptron. Les projets voisins offrent des rapprochements thématiques, à lire avec leurs hypothèses propres :
+Le compagnon [SL-01b — apprentissage logique en Lean](../SymbolicAI/SymbolicLearning/SL-01b-LogicalLearning-Lean.ipynb) explore aussi les bornes PAC et le perceptron. Les projets voisins offrent des rapprochements thématiques, à lire avec leurs hypothèses propres :
 
 | Notion abordée en ML | Formalisation voisine |
 |---|---|
