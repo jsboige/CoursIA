@@ -3109,6 +3109,8 @@ site:
         text: "Documentation"
       - href: docs/parcours.qmd
         text: "Parcours"
+      - href: sciences-et-calcul.qmd
+        text: "Sciences et calcul"
       - href: docs/curriculum/prerequis.qmd
         text: "Prérequis"
     right:
