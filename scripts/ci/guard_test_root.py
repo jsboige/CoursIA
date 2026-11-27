@@ -125,11 +125,13 @@ def find_violations(collected_paths: list[str]) -> list[Path]:
     - Pour chaque chemin collecte `dir`, chercher `test_*.py` dans `dir/`
       (le parent direct) ; si present, verifier s'il est accepte.
 
-    Scope limite a `scripts/` : c'est le scope du deploiement #18888. Les
-    notebooks MyIA.AI.Notebooks/QuantConnect/scripts/test_algorithms.py
-    et scripts/lean/test_check_grothendieck_readme.py sont des faux
-    positifs pour cette garde-ci (le premier est un runner, pas un test
-    pytest ; le second est hors scope de #18888 et adresse par #11255).
+    Scope limite a `scripts/` : c'est le scope du deploiement #18888. Le
+    notebook MyIA.AI.Notebooks/QuantConnect/scripts/test_algorithms.py est un
+    faux positif pour cette garde-ci (c'est un runner, pas un test pytest).
+    L'exemption jumelle de scripts/lean/test_check_grothendieck_readme.py a
+    disparu avec #28721 : le fichier est passe dans scripts/lean/tests/, donc
+    collecte, et la garde n'a plus a l'excuser (elle aurait signale le
+    deplacement retroactivement si on l'avait laisse a la racine).
     """
     if not collected_paths:
         return []
