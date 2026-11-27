@@ -13,6 +13,11 @@ listing:
     type: grid
     sort: "filename"
     page-size: 24
+  - id: sequences
+    contents: "Sequences/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
 ---
 
 ::: {.series-banner}
@@ -26,22 +31,23 @@ cas où il doit échouer.
 
 ## Vue d'ensemble
 
-Sept plis, un même contrat de méthode. Deux sont ouverts à ce jour : **Dynamiques**, où la série prend son départ, et **Structures**, qui compte deux feuilles.
+Sept plis, un même contrat de méthode. Trois sont ouverts à ce jour : **Dynamiques**, où la série prend son départ, **Structures**, qui compte trois feuilles, et **Séquences**, qui compare deux séquences sans les énumérer.
 
 | Pli | Objet | Ce qui sert de vérité | État |
 |-----|-------|-----------------------|------|
 | **Dynamiques** | Populations et épidémies : logistique, Lotka-Volterra, SIR et $R_0$ | La solution exacte de la logistique ; l'intégrale première de Lotka-Volterra ; l'équation transcendante de la taille finale de l'épidémie | **Livré** : [Dynamiques-01](Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb) |
-| **Séquences** | Alignements Needleman-Wunsch et Smith-Waterman, matrices de substitution, motifs | Le score d'alignement calculé par une bibliothèque de référence ; le motif planté retrouvé | À venir |
+| **Séquences** | Alignements global et local à brèches affines, matrices de substitution, motifs | L'énumération exhaustive de tous les alignements, puis le score calculé par une bibliothèque de référence sur des protéines publiques ; le motif planté retrouvé, dans la feuille suivante | **Livré** : [Séquences-01](Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb) |
 | **Évolution** | Wright-Fisher et Moran, fixation, coalescent, phylogénie, jeux évolutionnaires | La probabilité de fixation de Kimura ; l'arbre retrouvé sur des séquences simulées le long d'un arbre connu | À venir |
 | **Réseaux du vivant** | Cinétique enzymatique, interrupteurs bistables, répressilateur, motifs de Turing | L'approximation quasi stationnaire contre la cinétique complète ; la bifurcation localisée analytiquement puis numériquement | À venir |
 | **Neurones** | Hodgkin-Huxley, FitzHugh-Nagumo, intègre-et-tire, excitabilité | Le seuil et la période lus sur le plan de phase, contre ceux mesurés sur le modèle complet | À venir |
-| **Structures** | Squelette peptidique et liaison hydrogène, carte des angles diédraux ; puis une chaîne de résidus sur réseau carré, son espace de conformations, ses bornes et le paysage de son énergie | La vis analytique et la rotation du repère peptidique, contre les vis mesurées ; puis le dénombrement par deux algorithmes indépendants, et la formule fermée de la loi stationnaire contre la résolution du système | **Livré** : [Structures-01](Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb) et [Structures-02](Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb) |
+| **Structures** | Squelette peptidique et liaison hydrogène, carte des angles diédraux ; puis une chaîne de résidus sur réseau carré, son espace de conformations, ses bornes et le paysage de son énergie ; puis l'ARN circulaire et le comptage des paires | La vis analytique et la rotation du repère peptidique, contre les vis mesurées ; puis le dénombrement par deux algorithmes indépendants, et la formule fermée de la loi stationnaire contre la résolution du système ; puis l'énumération exhaustive et un programme linéaire en nombres entiers | **Livré** : [Structures-01](Structures/Structures-01-Liaisons-Hydrogene-Squelette-Proteique-Python.ipynb), [Structures-02](Structures/Structures-02-Repliement-Reseau-Energie-Isoperimetrie-Python.ipynb) et [Structures-03](Structures/Structures-03-ARN-Circulaire-Repliement-Paires-Python.ipynb) |
 | **Mesure médicale** | Transformée de Radon et rétroprojection filtrée, pharmacocinétique, tests imparfaits, survie | Le fantôme reconstruit contre l'original ; la solution analytique du modèle à un compartiment | À venir |
 
 **Kernels** : `python3` · **GPU** : non requis · **Prérequis** : Python scientifique et
 équations différentielles ordinaires pour Dynamiques, géométrie dans l'espace,
-algorithmique et marche aléatoire sur un graphe pour Structures ; chaque pli indique ses
-prérequis propres dans le README de la série.
+algorithmique et marche aléatoire sur un graphe pour Structures, programmation dynamique
+et probabilités élémentaires pour Séquences ; chaque pli indique ses prérequis propres
+dans le README de la série.
 
 ## Le contrat des cinq points
 
@@ -81,12 +87,21 @@ Le second carnet passe au pli lui-même, sur le plus petit modèle qui se calcul
 ::: {#structures}
 :::
 
+## Séquences : deux récurrences, deux juges
+
+Le pli Séquences commence par l'opération qui rend toutes les autres possibles : aligner. Le carnet écrit à la main les deux récurrences à brèches affines — l'alignement global, qui compare deux séquences d'un bout à l'autre, et l'alignement local, qui cherche la meilleure paire de sous-chaînes — puis les confronte à deux voies qui ne partagent pas leur code. L'énumération de tous les alignements donne la définition de l'optimum sur `900` paires de courtes séquences, et rend le même maximum ; la bibliothèque Biopython, sur deux insulines et deux globines, rend exactement le même score — `437` en global, `288` en local.
+
+La matrice de substitution n'est pas une table choisie : le carnet la construit depuis un modèle de mutation déclaré, vérifie son score moyen contre l'information mutuelle calculée, et mesure ce qu'un modèle à un paramètre ne peut pas reproduire de BLOSUM62. La simulation à vérité connue, sur cinq jeux par distance, donne la part des sites homologues que l'alignement retrouve — de `0,996` à `0,592` — et le carnet écrit le résultat inattendu de la matrice dite « bien ajustée », qui récupère moins bien qu'une matrice plus plate. Ses contre-témoins font leur travail : un glouton s'écarte de l'optimum sur `97` paires sur `100`, une récurrence fautive est relevée deux fois, et le contrôle de vérité échoue à grande distance.
+
+::: {#sequences}
+:::
+
 ## Démarrage rapide
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate     # ou .venv\Scripts\activate sous Windows
-pip install numpy scipy matplotlib jupyterlab
+pip install numpy scipy matplotlib biopython jupyterlab
 jupyter lab MyIA.AI.Notebooks/BioMedecine/
 ```
 
