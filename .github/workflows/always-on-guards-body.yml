@@ -48,11 +48,18 @@ name: Always-on guards -- body
 # `edited` et ne reference plus `always_on_body_organs.sh` nulle part.
 
 on:
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, edited, reopened ]
-    # PAS de `paths:` -- meme raison que dans always-on-guards.yml (regle 2
-    # d'#10045 : un check filtre par chemins rapporte `pending` a vie).
+  # DORMANT depuis #28534 (fusion des deux workflows de la classe `edited`,
+  # patron #13384) : le declencheur `pull_request` ci-dessous est absorbe
+  # par `always-on-guards-edited.yml` -- un seul workflow, un job, un
+  # checkout pour les cinq organes de BODY et les trois organes de
+  # METADONNEES. Le job est conserve verbatim pour la tracabilite ; le
+  # declencheur `pull_request` est retire.
+  # `workflow_dispatch` est pose pour que le fichier dorme SANS declencheur
+  # `pull_request` (patron #13384) ; le job y est neutralise par sa garde
+  # `github.event_name == 'pull_request'` (les organes de body n'ont aucune
+  # PR a juger hors evenement de PR -- sans cette garde, un dispatch
+  # punishing les cinq organes sur un corps vide).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -90,7 +97,12 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
+    # DORMANT (#28534) : la SEULE ligne qui differe du job d'origine est la
+    # garde `github.event_name == 'pull_request'` -- le fichier dormant garde
+    # un declencheur `workflow_dispatch` (patron #13384), et hors evenement de
+    # PR les cinq organes n'ont aucun corps a juger : ils echoueraient sur un
+    # PR_NUMBER vide.
+    if: github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     # Les cinq organes de body coutent quelques secondes : le plafond n'est
     # qu'un garde-fou contre un blocage de `gh`.
     #

@@ -88,13 +88,19 @@ def test_signal_cleans(tmp_path):
     temp.mkdir()
     env = dict(os.environ, TMPDIR=str(temp))
     pytest = str(Path(sys.executable).with_name("pytest"))
+    # Ce test mesure le nettoyage sur SIGTERM, pas la latence de demarrage.
+    # Le fichier `gw0` n'apparait qu'a la reception du premier test par le
+    # worker ; sur un runner charge, ce demarrage a depasse la fenetre
+    # d'observation (#28760). La limite de silence couvre donc ce demarrage et
+    # reste au-dessus de la fenetre d'observation : le verdict de blocage du
+    # chien de garde ne doit jamais decider du sort du test.
     proc = subprocess.Popen(
-        [sys.executable, str(WATCHDOG), "--idle-limit", "20", "--", pytest,
+        [sys.executable, str(WATCHDOG), "--idle-limit", "120", "--", pytest,
          str(test), "-n", "1", "-q"], stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
         env=env,
     )
-    deadline = time.monotonic() + 15
+    deadline = time.monotonic() + 90
     while time.monotonic() < deadline:
         if list(temp.glob("coursia-xdist-*/gw0")):
             break

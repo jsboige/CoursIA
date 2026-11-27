@@ -1,0 +1,17 @@
+# TRANCHE6 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE6
+guards:
+  -
+    name: "Markdown deaccent advisory (per-notebook, label, non-blocking)"
+    argv: ["python", "scripts/notebook_tools/detect_markdown_deaccent.py", "--json", "--fail-on-findings", "{changed_paths}"]
+    source: "markdown-deaccent-advisory.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_markdown_deaccent.py", "scripts/notebook_tools/tests/test_detect_markdown_deaccent.py", ".github/workflows/markdown-deaccent-advisory.yml"]
+    blocking: false
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        1
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
