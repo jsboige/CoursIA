@@ -1,0 +1,15 @@
+- name: GameTheory-11f Global Games
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Python emploie les primitives gaussiennes de son écosystème
+    ; C# invoque MathNet.Numerics 5.0.0 pour CDF, densité et échantillonnage ; calculs
+    pédagogiques et bisection natifs.
+  known_differences:
+  - BNE et dynamique agrégée distincts ; Monte Carlo 400000 et 120 trajectoires conservés
+    ; générateurs NumPy et MathNet différents.
+  - Trois exercices ouverts distribués et gardés dans chaque langage ; les API et
+    noms suivent leurs idiomes. Les différences de Markdown sont relevées par identifiant
+    dans la preuve de revue.
