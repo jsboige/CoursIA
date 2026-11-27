@@ -86,6 +86,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
+      - 'scripts/humor_detection/**'
       # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
       # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
@@ -109,6 +110,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #19571 pli 1 HMM/Viterbi (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/NLP/gateway/**'
       # #28370 export du corpus Z3 par la serie : une modification de l'export
       # doit rejouer le test de parite (scripts/notebook_tools/tests/
       # test_z3_instances_parity.py), sans quoi la derive export/carnets
@@ -274,6 +277,43 @@ jobs:
     # .tmp/ceiling_jobs_v2.json --annotate --out .tmp/ceiling4.json`
     timeout-minutes: 44
 
+    # #26468 (tranche 3) -- politique de debit git DE CE JOB.
+    #
+    # Le superviseur des slots propage `GIT_HTTP_LOW_SPEED_LIMIT=1024` /
+    # `GIT_HTTP_LOW_SPEED_TIME=90` a tous ses conteneurs
+    # (docs/ci/self-hosted-runners.md, « Garde de debit git ») : un transfert
+    # qui s'effondre doit Echouer VITE plutot que staller jusqu'au mur du
+    # job, qui meurt sans qu'aucune ligne ne nomme le reseau.
+    #
+    # Ce seuil est calibre sur des transferts COURTS. Or le checkout de ce
+    # job travaille sur un clone PARTIEL (`filter: blob:none`) : l'arbre
+    # entier est materialise par un fetch PROMISOR implicite, au moment du
+    # `git checkout`, en UNE requete unique. Volume mesure sur main le
+    # 24/11 : 1,51 Gio et 18 077 fichiers. Pendant que le serveur CALCULE ce
+    # pack, il n'ecrit rien -- et la garde le confond avec un reseau mort :
+    # elle coupe a 90 s (`curl 28`, `bad pack header`, `could not fetch ...
+    # from promisor remote`), le job meurt sur un arbre ABSENT.
+    #
+    # Mesure qui tranche « pourquoi ai-01 passe » (24/11) :
+    #   - job 138777192227, runner myia-ai-01-wsl-3 : le heal dit
+    #     « work dir utilise -- graphe valide », et le checkout dure 0,35 s
+    #     (21:20:42,260 -> 21:20:42,608) : les blobs sont DEJA la.
+    #   - job 138703662343, runner myia-po-2028-linux-docker-2 : le heal
+    #     purge le work dir (« graphe d'objets incomplet »), le checkout part
+    #     donc sur un clone NEUF, et meurt a 93 s sur le fetch promisor.
+    # Le seuil n'est donc pas une propriete du reseau : c'est la TAILLE du
+    # transfert, qui depend de la chaleur du slot.
+    #
+    # On garde la garde -- un vrai stall doit toujours couper -- mais on la
+    # CALE sur la taille du transfert : 1 octet/s sur 5 min. Le silence du
+    # serveur pendant le calcul du pack cesse d'etre un verdict de mort, et
+    # une interruption reelle coupe en 5 min, soit 9 fois sous le mur du
+    # job. Meme variable, meme semantique, fenetre calibree sur ce que ce
+    # job tire reellement.
+    env:
+      GIT_HTTP_LOW_SPEED_LIMIT: "1"
+      GIT_HTTP_LOW_SPEED_TIME: "300"
+
     steps:
       # #26468 (tranche 2, aide au diagnostic) : le mecanisme du p90 du
       # checkout (1,60 -> 17,23 min au passage de T-K) n'est pas etabli --
@@ -344,6 +384,7 @@ jobs:
       # elargit l'historique a la TETE (son ascendance complete) et a la
       # BASE (`origin/main`) -- rien d'autre.
       - uses: actions/checkout@v4
+        id: checkout
         with:
           # Full history of the HEAD and of the BASE is required by
           # test_twin_registry_integrity.py::test_audit_shas_exist_in_file_history
@@ -354,6 +395,73 @@ jobs:
           # the depth-1 clone is deepened right after by a bounded fetch.
           fetch-depth: 1
           filter: blob:none
+
+      - name: "T-K : l'arbre est-il complet ? (verdict nomme, pas de cascade) (#26468)"
+        # #26468 (tranche 3) -- ce que le checkout laisse derriere lui.
+        #
+        # Sur un clone PARTIEL (`filter: blob:none`), le `git checkout`
+        # materialise l'arbre par un fetch PROMISOR implicite : UNE requete,
+        # pour l'arbre entier (1,51 Gio / 18 077 fichiers mesures sur main le
+        # 24/11). Si cette requete meurt -- garde de debit, lien coupe, pack
+        # malformé -- le `git checkout` sort en 128 et l'ARBRE RESTE ABSENT.
+        #
+        # Ce que la job faisait de ce reste : RIEN. Les etapes de plancher
+        # qui suivent sont en `if: always()`, donc elles s'executent quand meme
+        # sur un arbre absent et echouent sur des messages qui nomment autre
+        # chose que la cause (« No module named pytest », plancher de collecte
+        # a zero). Le log du 24/11 (job 138703662343) le montre : sept
+        # etapes rouges apres un `curl 28`, dont aucune ne parle du reseau.
+        # C'est exactement ce que la regle du depot interdit -- une panne
+        # d'infrastructure ne doit pas rougir un check REQUIS sur le fond.
+        #
+        # Cette etape CONSTATE l'etat de l'arbre et le nomme :
+        #   - arbre complet -> rc=0, la job continue ;
+        #   - arbre incomplet -> rc=1, avec la cause et le remede
+        #     STRUCTUREL (le miroir de l'hote), et les etapes de plancher
+        #     sont SAUTEES (leur `if` exige le succes de celle-ci).
+        #
+        # La verification porte sur le CONTENU DECLARE par le commit
+        # (`git ls-tree`), pas sur l'index : apres un checkout interrompu,
+        # l'index peut etre a moitie ecrit, et c'est l'arbre de reference
+        # qui fait foi. Un `stat` par fichier, sans hachage -- donc sans
+        # declencher un fetch promisor de plus.
+        # #26468 (suite, review du 26/11) -- ce verdict, seul, ne suffit pas.
+        # Sur un slot REUTILISE, si le fetch echoue AVANT de deplacer HEAD,
+        # l'ANCIEN arbre est complet : cette etape passe, et les planchers
+        # repartiraient sur le MAUVAIS commit. Le succes du checkout est donc
+        # exige AUSSI par leur `if` (steps.checkout.outcome == 'success').
+        # Cette etape garde `always()` : le diagnostic doit parler meme quand
+        # le checkout a echoue.
+        id: tete_arbre
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd "$GITHUB_WORKSPACE" || exit 1
+          liste="${RUNNER_TEMP:-/tmp}/arbre-coursia.lst"
+          if ! git ls-tree -r -z --name-only HEAD > "$liste" 2>/dev/null || [ ! -s "$liste" ]; then
+            echo "::error::HEAD illisible ou vide -- le clone ne porte pas l'objet du commit : le fetch d'actions/checkout a echoue, et rien ne peut etre materialise."
+            exit 1
+          fi
+          absents=0
+          premieres=0
+          while IFS= read -r -d '' f; do
+            if [ ! -e "$f" ]; then
+              absents=$((absents + 1))
+              if [ "$premieres" -lt 5 ]; then
+                echo "::error::fichier declare par le commit, absent du disque : $f"
+                premieres=$((premieres + 1))
+              fi
+            fi
+          done < "$liste"
+          if [ "$absents" -eq 0 ]; then
+            echo "[arbre] complet -- le checkout a materialise tout l'arbre"
+            exit 0
+          fi
+          echo "::error::arbre incomplet : $absents fichier(s) declare(s) par le commit, absent(s) du disque."
+          echo "::error::Cause la plus probable : slot FROID (work dir purge par le heal, graphe d'objets incomplet) et pas de miroir local -- le checkout tire alors l'arbre entier en une requete promisor, et elle a ete coupee."
+          echo "::error::Remede STRUCTUREL : le miroir d'objets local de l'hote (docs/ci/self-hosted-runners.md, « Magasin d'objets partage -- le miroir du volume toolcache ») -- cote hote, pas cote workflow."
+          exit 1
 
       - name: "T-K : ascendance de la tete + la base, sans les 1 606 branches"
         shell: bash
@@ -411,6 +519,47 @@ jobs:
           python-version: '3.11'
           cache: pip
 
+      - name: Isoler le kernelspec du job (#28501)
+        # Le kernelspec `python3` est enregistre dans le repertoire
+        # UTILISATEUR -- partage par tous les jobs d'un meme hote. Sur le
+        # parc auto-heberge, deux slots peuvent tourner deux jobs
+        # SIMULTANEMENT sur le meme hote : les deux enregistrent `python3`
+        # vers deux interpreteurs differents, dans le MEME fichier. Mesure
+        # (po-2026, 25/11, hors parc) : 33 changements d'argv et 5 echecs en
+        # 6 s.
+        #
+        # Deux variables decalent les DEUX operations vers un repertoire
+        # PROPRE au job :
+        #   - l'ECRITURE : `install_kernel_spec(user=True)` ecrit dans
+        #     `jupyter_data_dir()/kernels`, et `jupyter_data_dir()` lit
+        #     `JUPYTER_DATA_DIR` ;
+        #   - la LECTURE : `jupyter_path("kernels")` place `JUPYTER_PATH` EN
+        #     PREMIER, et `find_kernel_specs` ne retient que le PREMIER nom
+        #     trouve.
+        # Mesure (po-2026, 25/11, jupyter_client 8.x / jupyter_core 5.x) :
+        # `JUPYTER_DATA_DIR=B` -> l'ecriture part dans `B/kernels/python3` ;
+        # `JUPYTER_PATH=A` + `JUPYTER_DATA_DIR=B` -> la lecture rend l'argv
+        # de A, pas celui de B.
+        #
+        # L'unicite vient de l'identite du JOB (`RUNNER_NAME`,
+        # `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, `GITHUB_JOB`) : deux jobs
+        # concurrents ont des identites differentes, meme sur un hote
+        # partage. `RUNNER_TEMP` seul ne suffirait pas -- il est partage par
+        # hote sur le parc auto-heberge.
+        #
+        # Cette etape ne fait QUE declarer l'isolation : elle est placee
+        # AVANT l'installation, pour que le script d'installation partage
+        # (PR #28501) enregistre son noyau DANS le repertoire du job. La
+        # declaration seule ne suffit pas a mettre un noyau a disposition :
+        # l'enregistrement se fait dans l'etape suivante, apres que
+        # `ipykernel` est installe.
+        run: |
+          ks="${RUNNER_TEMP}/ks-$(printf '%s' "${RUNNER_NAME}" | tr -c 'A-Za-z0-9._-' '_')-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_JOB}"
+          mkdir -p "$ks"
+          echo "JUPYTER_DATA_DIR=$ks" >> "$GITHUB_ENV"
+          echo "JUPYTER_PATH=$ks" >> "$GITHUB_ENV"
+          echo "kernelspec du job : $ks"
+
       - name: Install dependencies
         # L'environnement de cette suite est installe par un script PARTAGE :
         # `scripts/ci/install_scripts_tests_deps.sh`. Le lot quotidien en
@@ -420,6 +569,28 @@ jobs:
         # VERBATIM de cette etape le 2026-11-09 (PR #25521) : toute
         # modification de l'un doit etre portee dans l'autre.
         run: bash scripts/ci/install_scripts_tests_deps.sh
+      - name: Enregistrer et verifier le noyau du job (#28501)
+        # L'enregistrement se fait ICI, apres l'installation : `ipykernel`
+        # est alors present, et les variables d'isolation declarees plus
+        # haut sont en vigueur -- le noyau atterrit dans le repertoire DU
+        # JOB, pas dans celui de l'hote partage.
+        #
+        # L'argv du noyau est celui de l'interpreteur que `pip` remplit :
+        # c'est exactement le defaut corrige par #28501 (#28500). Les deux
+        # gestes sont idempotents : si #28501 est fusionnee, le script
+        # d'installation a deja ecrit ce meme noyau au meme endroit.
+        #
+        # Le geste est porte par un SCRIPT, pas par une ligne de shell :
+        # l'ancien `if python -c "import ipykernel" ; then ... ; else echo
+        # "ipykernel absent" ; fi` imprimait un message et rendait SUCCES
+        # quand l'import echouait -- le job continuait sans noyau enregistre,
+        # et l'echec n'apparaitrait que plus loin, sur un noyau que Jupyter
+        # resout ailleurs. Le script rend l'echec FATAL et controle ensuite
+        # que le kernelspec EFFECTIVEMENT RESOLU est celui du job (repertoire
+        # de ressources sous le repertoire du job, `argv[0]` = l'interpreteur
+        # du job). Declarer l'isolation ne prouve pas que la lecture la
+        # respecte : c'est ce controle qui le prouve.
+        run: python scripts/ci/verify_job_kernelspec.py --register
       - name: Epingler les pools de threads BLAS/OpenMP du job (#24696)
         # Le runner est un pool auto-heberge PARTAGE : quand plusieurs jobs se
         # partagent la machine, la creation de threads echoue et les
@@ -663,15 +834,18 @@ jobs:
             pytest \
             scripts/tests \
             scripts/ci/tests \
+            scripts/curriculum/tests \
             tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
             scripts/audit/tests \
             scripts/fallacy_detection/tests \
+            scripts/humor_detection/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
+            MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_lean_utils.py \
@@ -685,6 +859,7 @@ jobs:
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_trueskill_core.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/Probas/Infer/gateway/test_flagship_endpoint.py \
+            MyIA.AI.Notebooks/NLP/gateway/test_hmm_viterbi_core.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/Probas/Causalite/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
@@ -764,7 +939,7 @@ jobs:
         # `if: always()` comme les etapes de plancher voisines : meme si la
         # suite principale est rouge, on veut le verdict NOMME de ces 5 tests
         # plutot qu'un silence.
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python -m pytest scripts/tests/test_session_hygiene.py -q --tb=short
 
@@ -774,7 +949,7 @@ jobs:
         # Shared.Tests floor (#14668): a green run must not silently shrink.
         # 0 collected = collection crash (import error), below floor = coverage
         # regression — distinct exit-1 signals either way.
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           AUDIT_TESTS_FLOOR: 455
         run: |
@@ -819,7 +994,7 @@ jobs:
       # fausse, corrigée sur mesure positive par ai-01 (c.5551368629).
 
       - name: Secrets tests collection floor (148)
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           SECRETS_TESTS_FLOOR: 148
         run: |
@@ -832,7 +1007,7 @@ jobs:
         # Same two-signal semantics as the audit (455) and secrets (148)
         # floors: deps missing from the job = collection returns skips instead
         # of a count = install problem, not a coverage drop.
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           GRADEBOOK_TESTS_FLOOR: 15
         run: |
@@ -850,7 +1025,7 @@ jobs:
         # imports lourds sont locaux aux fonctions) ; l'EXECUTION, elle, exige
         # python-sat depuis #23449 (tests/test_sat_handler.py), installe plus
         # haut dans ce job.
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
         run: |
@@ -867,7 +1042,7 @@ jobs:
         # grandit sans declaration, ou si un marqueur disparait (perte de
         # couverture). Bumper --declared dans le meme geste que le test ajoute,
         # et le dire dans le body de la PR.
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python scripts/ci/check_jvm_test_census.py --declared 8
 
@@ -884,7 +1059,7 @@ jobs:
       # stdlib-only, pas de dep a ajouter au pip install. if: always() pour
       # que la garde rougisse meme si pytest est rouge.
       - name: guard_test_root (#18888 anti-recidive)
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python scripts/ci/guard_test_root.py
 
@@ -899,7 +1074,7 @@ jobs:
       # registre ou retire un declencheur. Mesure locale 2026-10-10 :
       # PARITY_OK (1 garde verifie, 19 ecartes deja consolides).
       - name: absorbed-path-parity (#20181)
-        if: always()
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
 

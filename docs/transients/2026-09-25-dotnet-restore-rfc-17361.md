@@ -66,7 +66,7 @@ La mesure discriminante c.760 (probe E) **réfute** l'hypothèse initiale « `fi
 
 ## Pilot du livrable 3 : le remplacement n'est PAS équivalent (mesuré 2026-09-25)
 
-Le livrable 3 (« convertir `#r "nuget:"` en `#r` local ») suppose que les deux formes sont interchangeables. **Elles ne le sont pas.** Mesure sur `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb` — le notebook du dépôt le plus exposé au bug (3 restores NuGet dans une seule cellule, cellule 3 : `IKVM`, `IKVM.Image`, `IKVM.Image.runtime.win-x64`), exécuté sur po-2024 avec le kernel `.net-csharp` et le pin cluster `1.0.617701` :
+Le livrable 3 (« convertir `#r "nuget:"` en `#r` local ») suppose que les deux formes sont interchangeables. **Elles ne le sont pas.** Mesure sur `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-CSharp.ipynb` — le notebook du dépôt le plus exposé au bug (3 restores NuGet dans une seule cellule, cellule 3 : `IKVM`, `IKVM.Image`, `IKVM.Image.runtime.win-x64`), exécuté sur po-2024 avec le kernel `.net-csharp` et le pin cluster `1.0.617701` :
 
 | Bras | Cellule 3 (les `#r`) | Résultat | Diagnostic |
 |---|---|---|---|

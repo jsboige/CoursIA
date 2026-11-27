@@ -1,7 +1,11 @@
 # TTS API - Text-to-Speech with Kokoro
 # OpenAI-compatible TTS API
 #
-# GPU: RTX 3090 (24GB) - shares GPU with other services
+# GPU: RTX 3080 Ti (16GB) - GPU_PCI_INDEX 0, partagee avec comfyui-qwen et le
+#      serveur d'embeddings. Convention #28423 : CUDA_DEVICE_ORDER=PCI_BUS_ID,
+#      index nvidia-smi (0 = 3080 Ti, 1 = 3090). Les cles GPU_DEVICE_ID et
+#      CUDA_VISIBLE_DEVICES du .env ne sont plus lues : elles portent l'ancienne
+#      convention d'index, ou 0 designe la 3090.
 # Port: 8191
 # URL: tts-api.myia.io
 
@@ -18,7 +22,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${GPU_DEVICE_ID:-1}']
+              device_ids: ['${GPU_PCI_INDEX:-0}']
               capabilities: [gpu]
 
     ports:
@@ -43,8 +47,9 @@ services:
         target: /root/.cache
 
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
-      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-0}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-0}
       - PYTHONUNBUFFERED=1
       - TTS_DEVICE=cuda
       - DEFAULT_TTS_MODEL=kokoro
