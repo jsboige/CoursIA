@@ -25,22 +25,23 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
+from coordination import tapis_relache
+
 #: Fenetre de remise de main, en jours.
 RELACHE_J = 3
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 
 
-def relachee(evts: list, maintenant: datetime) -> str | None:
-    """Le dernier marqueur du fil est un [RELEASED] de moins de RELACHE_J jours,
-    quelle que soit la lane : son motif (barriere, siege) vaut encore."""
+def relachee(evts: list, maintenant: datetime, lane: str) -> str | None:
+    """Le dernier marqueur du fil est un [RELEASED] de moins de RELACHE_J jours.
+
+    La **portee** depend du motif : un echec d'OUTIL ne gele que la lane qui
+    l'a rendu, une barriere reelle gele toute la flotte (`tapis_relache`).
+    """
     if not evts or evts[-1].marque != "RELEASED" or evts[-1].attend:
         return None  # un [RELEASED] qui porte une condition est une PAUSE
-    ev = evts[-1]
-    age = round((maintenant - ev.quand).total_seconds() / 86400, 1)
-    if age >= RELACHE_J:
-        return None
-    return f"rendue par {ev.lane or '?'} il y a {age} j (< {RELACHE_J} j) : lire son motif"
+    return tapis_relache.motif(evts, evts[-1], maintenant, lane, RELACHE_J)
 
 
 def pause(evts: list, ctx: dict) -> str | None:

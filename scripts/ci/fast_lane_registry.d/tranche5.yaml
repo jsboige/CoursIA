@@ -1,0 +1,20 @@
+# TRANCHE5 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE5
+guards:
+  # T4 (#25366) : le ratchet d'inventaire doit voir toute PR
+  # touchant un dossier de tests ou un module de test, où
+  # qu'il vive — scripts-tests.yml ne regarde que scripts/**
+  # et tests/**, or la dette mesurée vit surtout sous
+  # MyIA.AI.Notebooks/ (16 des 30 doublons : ICT-Series).
+  # secret-scan-controls.yml porte depuis #25510 les cibles gitleaks
+  # de WORKFLOW_COVERAGE : l'editer peut desynchroniser le dict.
+  # sudoku-tests.yml declare une cible de couverture (cible-fichier
+  # `test_dlx_certificates.py`, cablage de #22375) : l'editer peut
+  # desynchroniser WORKFLOW_COVERAGE, donc il declenche la garde.
+  -
+    name: "testpaths vs CI coverage"
+    argv: ["python", "scripts/check_testpaths_coverage.py", "--verbose", "--inventory", "--baseline", "scripts/tests/baseline_testpaths_inventory.json"]
+    source: "testpaths-coverage-guard.yml"
+    paths: ["pytest.ini", "scripts/check_testpaths_coverage.py", "scripts/tests/baseline_testpaths_inventory.json", "**/tests/**", "**/test_*.py", ".github/workflows/scripts-tests.yml", ".github/workflows/ml-tests.yml", ".github/workflows/secret-scan.yml", ".github/workflows/secret-scan-controls.yml", ".github/workflows/ict-tests.yml", ".github/workflows/sudoku-tests.yml", ".github/workflows/testpaths-coverage-guard.yml"]
+    blocking: true
+    absorbed: true
