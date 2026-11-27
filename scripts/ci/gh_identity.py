@@ -326,9 +326,8 @@ APP_VAULT_ENTRY = "github-app "
 #: installee).
 DEFAULT_REPO = "jsboige/CoursIA"
 
-#: Le jeton forge, memorise par slug : il vit une heure, la passe de lecture
-#: dure quelques minutes.
-_LECTURE_JETON: dict[str, tuple[str, float]] = {}
+#: Le jeton forge depend de l'App et du depot vise.
+_LECTURE_JETON: dict[tuple[str, str], tuple[str, float]] = {}
 
 #: L'absence d'App n'est annoncee qu'une fois par processus.
 _LECTURE_ANNONCE = False
@@ -446,7 +445,7 @@ def lecture_token(slug: str | None = None, repo: str = DEFAULT_REPO,
     slug = slug or app_slug()
     if not slug:
         return None
-    memorise = _LECTURE_JETON.get(slug)
+    memorise = _LECTURE_JETON.get((slug, repo))
     if memorise and memorise[1] > time.time():
         return memorise[0] or None
 
@@ -455,22 +454,25 @@ def lecture_token(slug: str | None = None, repo: str = DEFAULT_REPO,
     app_id = _app_id_fiche(slug, dossier)
     jeton: str | None = None
     if pem.is_file() and app_id:
-        proc = subprocess.run(
-            [
-                sys.executable,
-                str(Path(__file__).resolve().parents[1] / "secrets" / "github_app_token.py"),
-                "--app-id", app_id, "--key", str(pem), "--repo", repo, "--quiet",
-            ],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=120,
-        )
-        if proc.returncode == 0:
+        try:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(Path(__file__).resolve().parents[1] / "secrets" / "github_app_token.py"),
+                    "--app-id", app_id, "--key", str(pem), "--repo", repo, "--quiet",
+                ],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=120,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            proc = None
+        if proc is not None and proc.returncode == 0:
             jeton = (proc.stdout or "").strip() or None
     if not jeton:
         app_id = app_id or _app_id_coffre(slug)
         if app_id:
             jeton = _forge_depuis_le_coffre(slug, app_id, repo)
-    _LECTURE_JETON[slug] = (jeton or "", time.time() + (3000 if jeton else 300))
+    _LECTURE_JETON[(slug, repo)] = (jeton or "", time.time() + (3000 if jeton else 300))
     return jeton
 
 
@@ -484,7 +486,23 @@ def read_env(base: dict | None = None) -> dict:
     jeton = lecture_token()
     if jeton:
         env["GH_TOKEN"] = jeton
+    else:
+        _annonce_repli_lecture()
     return env
+
+
+def _annonce_repli_lecture() -> None:
+    global _LECTURE_ANNONCE
+    if not _LECTURE_ANNONCE:
+        _LECTURE_ANNONCE = True
+        print(
+            "GH-IDENTITY (INFO): pas de jeton App exploitable pour cette "
+            "machine -- les lectures utilisent l'identite de base "
+            "(seau partage). Pose : la cle deposee dans "
+            f".secrets/{APP_KEY_DIRNAME}/, ou l'entree de coffre "
+            f"'{APP_VAULT_ENTRY}<slug>'.",
+            file=sys.stderr,
+        )
 
 
 @contextlib.contextmanager
@@ -497,17 +515,7 @@ def lecture(base: dict | None = None):
     """
     jeton = lecture_token()
     if not jeton:
-        global _LECTURE_ANNONCE
-        if not _LECTURE_ANNONCE:
-            _LECTURE_ANNONCE = True
-            print(
-                "GH-IDENTITY (INFO): pas de jeton App exploitable pour cette "
-                "machine -- les lectures de ce bloc passent sous le compte actif "
-                "(seau partage). Pose : la cle deposee dans "
-                f".secrets/{APP_KEY_DIRNAME}/, ou l'entree de coffre "
-                f"'{APP_VAULT_ENTRY}<slug>'.",
-                file=sys.stderr,
-            )
+        _annonce_repli_lecture()
         yield base
         return
     memorise = os.environ.get("GH_TOKEN")

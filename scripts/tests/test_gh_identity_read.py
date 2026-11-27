@@ -17,6 +17,7 @@ Aucun test ne touche le reseau : le jeton est fabrique par un fake.
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -34,6 +35,37 @@ def _cache_vide():
     gh_identity._LECTURE_JETON.clear()
     yield
     gh_identity._LECTURE_JETON.clear()
+
+
+@pytest.mark.parametrize("erreur", [OSError("indisponible"),
+                                    subprocess.TimeoutExpired("forge", 120)])
+def test_pem_en_echec_retombe_sur_le_coffre(monkeypatch, tmp_path, erreur):
+    dossier = tmp_path / ".secrets" / "github-apps"
+    dossier.mkdir(parents=True)
+    (dossier / "lane.pem").write_text("test", encoding="utf-8")
+    (dossier / "lane.json").write_text('{"id": "1"}', encoding="utf-8")
+    def echec(*args, **kwargs):
+        raise erreur
+    monkeypatch.setattr(gh_identity.subprocess, "run", echec)
+    monkeypatch.setattr(gh_identity, "_forge_depuis_le_coffre", lambda *args: "coffre")
+    assert gh_identity.lecture_token("lane", key_dir=tmp_path) == "coffre"
+
+
+def test_cache_distinct_par_depot(monkeypatch, tmp_path):
+    monkeypatch.setattr(gh_identity, "_app_id_coffre", lambda slug: "1")
+    monkeypatch.setattr(gh_identity, "_forge_depuis_le_coffre", lambda slug, app_id, repo: repo)
+    assert gh_identity.lecture_token("lane", "a/un", tmp_path) == "a/un"
+    assert gh_identity.lecture_token("lane", "a/deux", tmp_path) == "a/deux"
+
+
+def test_read_env_annonce_le_repli_une_seule_fois(monkeypatch, capsys):
+    monkeypatch.setattr(gh_identity, "_LECTURE_ANNONCE", False)
+    monkeypatch.setattr(gh_identity, "lecture_token", lambda: None)
+    gh_identity.read_env({})
+    assert capsys.readouterr().err.count("pas de jeton App exploitable") == 1
+    with gh_identity.lecture():
+        pass
+    assert capsys.readouterr().err == ""
 
 
 # --- 1. le slug de l'App ----------------------------------------------------
