@@ -2,6 +2,7 @@
   family: Sudoku
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Rust.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = DLX from-scratch (dataclasses + linked-list 4-way : Head/Column/Node/Up/Down/Left/Right, port pedagogique Knuth Algorithm X, mini-Sudoku 4x4 exclusivement). Pas de lib SOTA-tier en Python : `xalgorithmx` n'est pas maintained, `dlx` est un jouet 4x4. L'algo Knuth DLX est pedagogique by design (les liens sont la lecon). C# = `DlxLib` NuGet (taylorjg, MIT-license, reference implementation Knuth DLX, stable 2013-2015, spec figee). Verdict SOTA-OK : la lib C# EST la SOTA Knuth (meme algo), le cote PY est from-scratch assume pedagogique (le DLX est un algo a comprendre, pas une lib a consommer). Asymetrie assumee et documentee dans known_differences."
