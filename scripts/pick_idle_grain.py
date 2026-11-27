@@ -5730,7 +5730,11 @@ def check_claims(numbers: list[int], lane: str, *,
 # qu'elle change (au lieu de la diff base-relative de `/pulls/{n}/files`).
 # Un cache v2 relu par un lecteur v3 serait rejete -- deux constantes qui
 # divergent refont payer l'enumeration a chaque candidat (#19643).
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
+# v4 (#28347) -- les entrees portent la PROVENANCE de la tete
+# (`headRepository`) : c'est elle qui distingue la branche du catalogue d'une
+# branche homonyme venue d'un fork. Les entrees viennent du lecteur
+# (`check_lane_claim._gh_open_prs_complete`), qui les porte deja.
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v4"
 
 # Enumeration complete, MEMOISEE : une passe de tirage n'enumerere qu'une
 # fois, et la sonde de couverture (#16589) consomme la meme enumeration.

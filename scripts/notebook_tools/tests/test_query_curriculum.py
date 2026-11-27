@@ -12,6 +12,7 @@ from query_curriculum import (
     list_interfaces,
     list_notebooks,
     main,
+    notebooks_for_concept,
     notebooks_by_resource,
     notebooks_requiring,
     path_for,
@@ -172,6 +173,39 @@ def test_multiple_exports_are_merged_and_skos_blank_node_labels_are_read(
     assert result == 0
     assert "Graphe de connaissances" in output
     assert "SW-11-KnowledgeGraphs.ipynb" in output
+
+
+def test_concept_citations_honor_limit_in_api_and_cli(tmp_path, capsys):
+    graph = Graph()
+    notebooks = [
+        URIRef("https://example.test/notebook/one"),
+        URIRef("https://example.test/notebook/two"),
+    ]
+    concept = URIRef("https://example.test/concept/shared")
+    graph.add((concept, RDF.type, SKOS.Concept))
+    graph.add((concept, SKOS.prefLabel, Literal("Concept partagé", lang="fr")))
+    graph.add((concept, DCTERMS.identifier, Literal("shared")))
+    for index, notebook in enumerate(notebooks, start=1):
+        graph.add((notebook, RDF.type, VOCAB.Notebook))
+        graph.add((notebook, DCTERMS.identifier, Literal(f"Series/notebook-{index}.ipynb")))
+        graph.add((notebook, RDFS.label, Literal(f"Notebook {index}", lang="fr")))
+        citation = BNode(f"citation-{index}")
+        graph.add((concept, VOCAB.hasCellCitation, citation))
+        graph.add((citation, DCTERMS.source, Literal(
+            f"https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Series/notebook-{index}.ipynb"
+        )))
+        graph.add((citation, VOCAB.cellId, Literal(f"cell-{index}")))
+
+    assert len(notebooks_for_concept(graph, "shared")) == 2
+    assert len(notebooks_for_concept(graph, "shared", limit=1)) == 1
+
+    graph_path = tmp_path / "concepts.ttl"
+    graph.serialize(graph_path, format="turtle")
+    assert main([
+        "--graph", str(graph_path), "concepts", "--concept", "shared", "--limit", "1"
+    ]) == 0
+    output = capsys.readouterr().out.strip().splitlines()
+    assert len(output) == 1
 
 
 def _hierarchy_graph(levels):

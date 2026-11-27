@@ -1,3 +1,8 @@
+# GPU: RTX 3080 Ti (16GB) - GPU_PCI_INDEX 0. Convention #28423 :
+#      CUDA_DEVICE_ORDER=PCI_BUS_ID, index nvidia-smi (0 = 3080 Ti, 1 = 3090).
+#      Les cles GPU_DEVICE_ID, CUDA_VISIBLE_DEVICES et NVIDIA_VISIBLE_DEVICES du
+#      .env ne sont plus lues : elles portent l'ancienne convention d'index.
+# Partage la carte avec tts-api et le serveur d'embeddings (decision #28423, paragraphe 2).
 services:
   comfyui-qwen:
     image: python:3.11
@@ -23,7 +28,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${GPU_DEVICE_ID:-0}']
+              device_ids: ['${GPU_PCI_INDEX:-0}']
               capabilities: [gpu]
 
     # Shared memory for CUDA/PyTorch IPC. Default 64M causes OOM during Qwen
@@ -56,8 +61,9 @@ services:
         target: /entrypoint.sh
     
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
-      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-0}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-0}
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       # The server runs as uid 1000 (bonsai) after the entrypoint privilege
@@ -110,7 +116,7 @@ services:
     
     labels:
       - "com.myia.service=comfyui-qwen"
-      - "com.myia.gpu=rtx-3090"
+      - "com.myia.gpu=rtx-3080ti"
       - "com.myia.model=qwen-image-edit-2509"
       - "com.myia.phase=production-secure"
 

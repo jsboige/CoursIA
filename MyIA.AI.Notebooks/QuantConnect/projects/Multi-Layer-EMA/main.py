@@ -1,4 +1,5 @@
 from AlgorithmImports import *
+import math
 
 class OptimizedCryptoAlgorithm(QCAlgorithm):
     def Initialize(self):
@@ -38,9 +39,20 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
             raise ValueError(f"unknown mode parameter: {self.mode} (expected strategy, btc or ew70)")
         self.reference_bought = False
 
-        # Volatility filter (60% threshold = optimal Sharpe based on research)
-        self.volatility_threshold = 0.60
+        # `vol` : mesure de la volatilite de BTC que le filtre compare au seuil (#28409).
+        #   atr (defaut) : ATR(14) / prix x racine(252), le filtre d'origine. L'ATR est
+        #     une etendue journaliere, pas un ecart-type, et la crypto cote 365 jours.
+        #   std : ecart-type des rendements logarithmiques de BTC sur 30 jours,
+        #     annualise par racine(365).
+        #   off : pas de filtre.
+        # `vol_threshold` : seuil annualise (defaut 0.60, celui d'origine).
+        self.vol = self.GetParameter("vol", "atr").lower()
+        if self.vol not in ("atr", "std", "off"):
+            raise ValueError(f"unknown vol parameter: {self.vol} (expected atr, std or off)")
+        self.volatility_threshold = float(self.GetParameter("vol_threshold", "0.60"))
         self.btc_atr = self.ATR(self.symbols[0], 14, MovingAverageType.Simple, Resolution.DAILY)
+        self.std_window = 30
+        self.btc_closes = RollingWindow[float](self.std_window + 1)
 
         self.indicators = {}
         for symbol in self.symbols:
@@ -86,13 +98,28 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
                 self.SetHoldings(symbol, 0.7 / 3)
         self.reference_bought = True
 
+    def _realized_vol(self):
+        # Fenetre : index 0 = cloture la plus recente.
+        closes = [self.btc_closes[i] for i in range(self.btc_closes.Count)]
+        rets = [math.log(closes[i] / closes[i + 1]) for i in range(len(closes) - 1)]
+        mean = sum(rets) / len(rets)
+        var = sum((r - mean) ** 2 for r in rets) / (len(rets) - 1)
+        return math.sqrt(var) * math.sqrt(365)
+
     def _gate_active(self, data):
-        if not self.btc_atr.IsReady:
+        if self.vol == "off":
             return False
         btc_price = data[self.symbols[0]].Close if data.ContainsKey(self.symbols[0]) else None
         if not btc_price or btc_price <= 0:
             return False
-        current_vol = (self.btc_atr.Current.Value / btc_price) * (252) ** 0.5  # Annualized daily
+        if self.vol == "atr":
+            if not self.btc_atr.IsReady:
+                return False
+            current_vol = (self.btc_atr.Current.Value / btc_price) * (252) ** 0.5
+        else:
+            if not self.btc_closes.IsReady:
+                return False
+            current_vol = self._realized_vol()
         return current_vol > self.volatility_threshold
 
     def OnData(self, data):
@@ -102,7 +129,12 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
             return
         self._trace()
 
-        # Volatility filter: skip trading if BTC volatility > 60%
+        btc = self.symbols[0]
+        if data.ContainsKey(btc) and data[btc] is not None and data[btc].Close > 0:
+            self.btc_closes.Add(float(data[btc].Close))
+
+        # Filtre de volatilite : au-dessus du seuil, pas de nouvelle entree
+        # (gate=entries) ou plus rien du tout (gate=legacy).
         gate_on = self._gate_active(data)
         if gate_on:
             self.gate_days += 1
@@ -166,6 +198,7 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
                     self.Debug(f"DEATH CROSS {symbol} @ {price:.2f} | RSI={rsi_val:.1f}")
 
     def OnEndOfAlgorithm(self):
+        self.SetRuntimeStatistic("vol", f"{self.vol}@{self.volatility_threshold:.2f}")
         self.SetRuntimeStatistic("gate_days", str(self.gate_days))
         self.SetRuntimeStatistic("gate_days_invested", str(self.gate_days_invested))
         self.SetRuntimeStatistic("suspended_breaches", str(self.suspended_breaches))
