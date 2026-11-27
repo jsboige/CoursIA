@@ -1,0 +1,233 @@
+# Conformité différentielle de Z3-08-Ordonnancement (portage Rust du job-shop).
+#
+# Écrite à la livraison par la lane myia-ai-01:CoursIA-2 à partir des sorties
+# COMMITÉES des carnets : correspondance par index de cellule (le portage garde
+# la structure de cellules du jumeau Python), une mesure par grandeur
+# pédagogique, et une comparaison qui exploite le fait que les trois jumeaux
+# (Python, C#, Rust) résolvent le même modèle Z3 du job-shop.
+#
+# Deux régimes de comparaison, pour deux faits mesurés :
+#
+#   - l'égalité STRICTE du texte d'une cellule (pattern `\A\s*(.*?)\s*\Z`) porte
+#     sur Python et Rust, dont les sorties sont byte-identiques ;
+#   - l'égalité d'une GRANDEUR NUMÉRIQUE extraite (pattern + transform `int`)
+#     porte sur les trois jumeaux, y compris le C# : les fins de ligne du
+#     jumeau C# sont CRLF (.NET Interactive sous Windows) alors que celles de
+#     Python et Rust sont LF, ce qui interdit l'égalité de texte multiligne
+#     mais n'affecte aucune valeur.
+#
+# Cellules non mesurées (motif relevé à la relecture de la livraison) :
+#   - cellule 1 : bannière d'environnement. Le jumeau Python imprime la version
+#     du paquet Python `z3` (4.16.0) ; le carnet Rust imprime la version de la
+#     BIBLIOTHÈQUE Z3 liée par la crate `z3` 0.23.0 (5.3.3.0), et la crate
+#     n'expose pas la version du paquet Python. Ce sont deux distributions
+#     distinctes de Z3, la comparaison n'a pas de sens ; le portage est en
+#     revanche mesuré par les sept autres cellules, dont les trois grandeurs
+#     de makespan.
+#
+# Le fichier n'est jamais réécrit par l'outil une fois présent : une divergence
+# qui traduit un écart d'API documenté se corrige À LA MAIN, avec son motif.
+- name: "Z3-08-Ordonnancement"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Rust.ipynb
+  measures:
+    - id: c3_text
+      description: "Sortie de la cellule 3 (instance 3 jobs x 2 machines), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# imprime la meme instance mais avec des fins de ligne CRLF (.NET Interactive sous Windows) : l'egalite stricte de texte multiligne ne s'y applique pas, la grandeur 'nombre de jobs' est comparee par la mesure c3_jobs (les trois cotes)."
+    - id: c3_jobs
+      description: "Nombre de jobs de l'instance (cellule 3), identique sur les trois jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Instance : (\\d+) jobs x (\\d+) machines"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Instance : (\\d+) jobs x (\\d+) machines"
+          transform: int
+        csharp:
+          cell: 3
+          pattern: "Instance : (\\d+) jobs x (\\d+) machines"
+          transform: int
+    - id: c6_cmax
+      description: "Makespan de l'heuristique gloutonne FIFO (cellule 6), identique sur les trois jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Glouton FIFO : Cmax = (\\d+)h"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "Glouton FIFO : Cmax = (\\d+)h"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "Glouton FIFO : Cmax = (\\d+)h"
+          transform: int
+    - id: c6_text
+      description: "Sortie de la cellule 6 (planning glouton complet), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# imprime le meme planning mais avec des fins de ligne CRLF : l'egalite stricte de texte multiligne ne s'y applique pas, le makespan glouton est compare par la mesure c6_cmax (les trois cotes)."
+    - id: c8_cmax
+      description: "Makespan optimal trouve par Z3 (cellule 8), identique sur les trois jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Z3 optimal : Cmax = (\\d+)h"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "Z3 optimal : Cmax = (\\d+)h"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "Z3 optimal : Cmax = (\\d+)h"
+          transform: int
+    - id: c8_gain
+      description: "Gain de l'optimum sur le glouton (cellule 8), identique sur les trois jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "gain = (\\d+)h"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "gain = (\\d+)h"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "gain = (\\d+)h"
+          transform: int
+    - id: c11_optimal_cmax
+      description: "Makespan optimal du bloc de comparaison (cellule 11), identique sur les trois jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Makespan : glouton \\d+h -> optimal (\\d+)h"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "Makespan : glouton \\d+h -> optimal (\\d+)h"
+          transform: int
+        csharp:
+          cell: 11
+          pattern: "Makespan : glouton \\d+h -> optimal (\\d+)h"
+          transform: int
+    - id: c11_text
+      description: "Sortie de la cellule 11 (comparaison glouton vs optimal, planning par job), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le jumeau C# imprime la meme comparaison mais avec des fins de ligne CRLF : l'egalite stricte de texte multiligne ne s'y applique pas, le makespan optimal est compare par la mesure c11_optimal_cmax (les trois cotes)."
+    - id: c14_anchor
+      description: "Ligne d'ancrage du diagramme de Gantt (cellule 14), identique sur les trois jumeaux ; le rendu lui-meme diverge par design (figure matplotlib en Python, SVG inline en Rust, texte en C#), seule la ligne d'ancrage est comparee"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Diagramme de Gantt : glouton \\(haut\\) vs optimal \\(bas\\)\\."
+          transform: text
+        rust:
+          cell: 14
+          pattern: "Diagramme de Gantt : glouton \\(haut\\) vs optimal \\(bas\\)\\."
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "Diagramme de Gantt : glouton \\(haut\\) vs optimal \\(bas\\)\\."
+          transform: text
+    - id: c18_text
+      description: "Sortie de la cellule 18 (exercice 1), texte identique aux deux autres jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c20_text
+      description: "Sortie de la cellule 20 (exercice 2), texte identique aux deux autres jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c22_text
+      description: "Sortie de la cellule 22 (exercice 3), texte identique aux deux autres jumeaux"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
