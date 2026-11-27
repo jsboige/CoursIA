@@ -234,7 +234,7 @@ def test_controle_positif_le_pilote_est_cable() -> None:
 
 
 def test_controle_negatif_un_carnet_reel_non_cable() -> None:
-    """Au moins un carnet Rust du depot n'est pas encore cable (adoption en fournees)."""
+    """Au moins un carnet Rust du depot n'est pas encore cable (adoption au fil des grains)."""
     candidats = []
     for path in sorted((REPO_ROOT / "MyIA.AI.Notebooks").rglob("*-Rust.ipynb")):
         if path == PILOT:

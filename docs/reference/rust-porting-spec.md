@@ -176,7 +176,7 @@ La ligne se pose **en tête du premier bloc de code**, une seule fois — un `:d
 | `fn py_bool(x: bool) -> &'static str` dont le corps est `if x { "True" } else { "False" }` | `use myia_nb::py_bool;` |
 | même corps avec `.to_string()` sur les deux branches, type de retour `String` | `use myia_nb::py_bool_string as py_bool;` — le nom appelé est conservé, aucun site d'appel ne bouge |
 
-**Rien d'autre ne se migre à l'aveugle.** Les variantes de `py_list` / `py_tup` mesurées sur `main` diffèrent par le type d'argument (`&[String]`, `&BTreeSet<String>`, `&[&str]`, `&[i64]`) et parfois par la sémantique (une fonction homonyme affiche un masque de bits : ce n'est pas un formateur de tranche). Les réécrire fabriquerait un écart d'affichage silencieux : le fixer les **signale**, il ne les touche pas. L'adoption se fait par fournées de carnets, chacune relue et ré-exécutée.
+**Rien d'autre ne se migre à l'aveugle.** Les variantes de `py_list` / `py_tup` mesurées sur `main` diffèrent par le type d'argument (`&[String]`, `&BTreeSet<String>`, `&[&str]`, `&[i64]`) et parfois par la sémantique (une fonction homonyme affiche un masque de bits : ce n'est pas un formateur de tranche). Les réécrire fabriquerait un écart d'affichage silencieux : le fixer les **signale**, il ne les touche pas. L'adoption se fait au fil des grains — un carnet existant reçoit la crate quand un autre grain le rouvre, et ce câblage est alors relu et ré-exécuté — et non par fournée de carnets.
 
 ### Ce que la crate achète, et ce qu'elle n'achète pas
 
@@ -195,7 +195,7 @@ Elle achète **une seule version** de chaque aide, testée, et des sorties qui r
 | Contrôle | Où il vit | Ce qu'il refuse |
 |---|---|---|
 | `:dep` en tête de carnet | validateur du pli 3 (point 5) | un `:dep` hors de la tête, ou plusieurs `:dep` de tête |
-| Aide partagée importée, pas recopiée | `python scripts/notebook_tools/wire_myia_nb.py --check <carnet>` (§ 3 bis ; hors CI — organe d'adoption, joué par fournée) | une définition locale de `py_bool` identique à la version de la crate |
+| Aide partagée importée, pas recopiée | `python scripts/notebook_tools/wire_myia_nb.py --check <carnet>` (§ 3 bis ; hors CI — organe d'adoption, joué sur chaque carnet câblé) | une définition locale de `py_bool` identique à la version de la crate |
 | Pas d'erreur volontaire (C.1) | validateur du pli 3 (point 5) | `panic!`, `unimplemented!()`, `todo!()`, `unreachable!()` dans un stub |
 | Exécution complète committée (C.2) | validateur du pli 3 (point 5) | un `execution_count` null, une sortie non exécutée |
 | Conformité différentielle | registre `scripts/notebook_tools/rust_conformance.d/` (point 2 du pli) | une sortie Rust qui s'écarte du Python/C# au-delà de la tolérance déclarée |
