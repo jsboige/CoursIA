@@ -265,7 +265,8 @@ def test_tapis_refuse_le_tirage_sur_une_mesure_impossible(monkeypatch, capsys):
                "raisons": [{"code": "MESURE_IMPOSSIBLE",
                             "motif": "git fetch origin main a echoue : reseau coupe",
                             "remede": "retablir le fetch (reseau, credential) puis relancer"}]}
-    monkeypatch.setattr(mf, "garder", lambda depot, allow_stale=False: dict(verdict))
+    monkeypatch.setattr(mf, "garder",
+                        lambda depot, allow_stale=False, **kw: dict(verdict))
     rc = tr.main(["--lane", "myia-po-2024:CoursIA-2"])
     assert rc == 4, "le refus de fraicheur doit se rendre par la sortie 4 (pas le 3 du repli)"
     capture = capsys.readouterr()
@@ -294,7 +295,8 @@ def test_tapis_sert_la_file_sur_un_main_perime_avec_un_avertissement(monkeypatch
                "raisons": [{"code": "MAIN_PERIME",
                             "motif": "le main local est en retard de 2 commit(s) sur origin/main",
                             "remede": "git pull --ff-only"}]}
-    monkeypatch.setattr(mf, "garder", lambda depot, allow_stale=False: dict(verdict))
+    monkeypatch.setattr(mf, "garder",
+                        lambda depot, allow_stale=False, **kw: dict(verdict))
     monkeypatch.setattr(gh_selection, "lire_metadonnees_issues",
                         lambda *a, **k: ([], 0.0))
     monkeypatch.setattr(gh_bulk, "lire_citations_mergees", lambda *a, **k: {})
@@ -315,7 +317,7 @@ def test_tapis_propage_allow_stale_et_le_dit_dans_le_rapport(monkeypatch, capsys
     """--allow-stale atteint la garde, et le rapport JSON porte l'outre-passe."""
     vu = {}
 
-    def _garder(depot, allow_stale=False):
+    def _garder(depot, allow_stale=False, **kw):
         vu["allow_stale"] = allow_stale
         return {"ok": False, "refuse": False, "outre_passe": True, "raisons": [
             {"code": "MAIN_PERIME", "motif": "le main local est en retard de 2 commit(s)",
@@ -388,7 +390,7 @@ def test_sous_organe_divergent_l_avertissement_dit_que_le_code_n_est_pas_identiq
                 "raisons": [raison]}
 
     monkeypatch.setattr(mf, "garder",
-                        lambda depot, allow_stale=False: _verdict("ORGANE_DIVERGENT"))
+                        lambda depot, allow_stale=False, **kw: _verdict("ORGANE_DIVERGENT"))
     mf.garder_et_dire(".")
     err = capsys.readouterr().err
     assert "TIRAGE DEGRADE [ORGANE_DIVERGENT]" in err
@@ -397,7 +399,7 @@ def test_sous_organe_divergent_l_avertissement_dit_que_le_code_n_est_pas_identiq
         "n'est pas identique a origin/main")
 
     monkeypatch.setattr(mf, "garder",
-                        lambda depot, allow_stale=False: _verdict("MAIN_PERIME"))
+                        lambda depot, allow_stale=False, **kw: _verdict("MAIN_PERIME"))
     mf.garder_et_dire(".")
     err = capsys.readouterr().err
     assert "TIRAGE DEGRADE [MAIN_PERIME]" in err

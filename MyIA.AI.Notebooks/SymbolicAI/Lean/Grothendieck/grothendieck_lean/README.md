@@ -300,3 +300,40 @@ Quatre frictions réelles, documentées à la source :
 ### Point 7 — chemin de découverte (comblement)
 
 Le chemin n'est pas une reconstruction — c'est une **visite indexée**, et ce fait est la découverte centrale : « le langage grothendieckien vit déjà dans Mathlib 4 ». L'ordre pédagogique (sites → cribles/topologies → faisceaux → faisceautisation → cohomologie, ancré par Spec/Zariski et par l'index `#check`) est un **chemin de lecture**, pas la trace d'un développement. Le point d'entrée pour un apprenant : README → compagnons (`GROTH-02` à `GROTH-04`) → modules, avec Mac Lane–Moerdijk et SGA 4 comme lecture d'accompagnement. Ce qui a été **écarté** et pourquoi (le choix « hommage, pas formalisation d'EGA/SGA ») est explicite dans §L'esprit de la visite et §Le périmètre, honnêtement — mais la trace du développement réel (quels tentatives ont été abandonnées) n'est pas consignée par `Partie` ; c'est la limite de cette digestion, à compléter par un grain qui interroge les auteurs.
+## État de l'art — correspondance Stacks (mesure par énoncé)
+
+Relevé de la question #28537 : pour chaque énoncé de la famille Godent, la position de
+Stacks (`AxiomMath/Stacks`), citée des deux côtés (`fichier:ligne` du lac, `fichier:ligne`
+de Stacks). La lecture de Stacks s'est faite par l'API `contents` — l'arbre récursif de
+GitHub est tronqué et `Topology/Sheaves` n'y apparaît pas — sur
+`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/{Basic,Stalk,StalkHomotopy}.lean`,
+`Topology/Sheaves/Sheaf/Abelian.lean`, `Topology/Sheaves/Modules/Exactness.lean`,
+`Topology/Sheaves/Stalk/{Product,Separated}.lean` et
+`Topology/Sheaves/Cohomology/CechDerivedEffaceability/GodementResolution.lean`. Un verdict
+« absent » est l'absence d'**énoncé nommé** dans ces fichiers, non une absence de contenu.
+
+| Module du lac | Énoncés | Couverts | Partiels | Absents | Ancre Stacks principale | Écart de cadre |
+|---|---|---|---|---|---|---|
+| `Godement.lean` | 10 | 2 | 6 | 2 | `Basic.lean:499` `isFlasque_godementComplex` (0FKS) ; `Sheaf/Abelian.lean:149` `restrict_eq_zero_of_germ_eq_zero` | Stacks : faisceaux de modules sur espace annelé ; ici : préfaisceaux de groupes abéliens sur espace topologique |
+| `GodementResolution.lean` | 3 | 0 | 3 | 0 | `Basic.lean:429` `godementSimplicial_left_obj` (0G5N) ; `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | l'itération y passe par la résolution standard de la comonade, pas par l'unité de notre construction |
+| `GodementFunctor.lean` | 11 | 1 | 3 | 7 | `Basic.lean:416` `godementComonad` ; `Basic.lean:475` `godementAugmentation` | l'action de `C⁰` sur les **germes** n'a pas d'énoncé nommé ; Stacks l'a sur les sections |
+| `GodementMono.lean` | 4 | 0 | 0 | 4 | — | « `C⁰` préserve les monomorphismes » n'est pas énoncé chez Stacks ; le fait voisin (`f_*` exact à droite) ne l'est pas non plus |
+| `GodementAcyclicity.lean` | 3 | 0 | 2 | 1 | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` ; `StalkHomotopy.lean:370` `hasNaturalStalkHomotopy_godementAugmentation` | Stacks porte l'acyclicité sur le **complexe**, pas sur la suite des unités |
+| `GodementCanonicalDiff.lean` | 4 | 0 | 4 | 0 | `Basic.lean:329` `resolutionComplex` ; `Basic.lean:337` `resolutionAugmentationCondition` | Stacks construit la différentielle par le complexe de cofFaces alterné, nous par le conoyau de l'unité |
+| **Total** | **35** | **3** | **18** | **14** | | |
+
+Le verdict énoncé par énoncé est écrit dans la docstring de chaque déclaration, avec le
+nom du théorème de Stacks et l'écart — pas seulement dans ce tableau.
+
+### Modules du relevé restants
+
+| # | Module | Statut du relevé | Où |
+|---|---|---|---|
+| 1 | `GodementComplex.lean` | en cours | PR #27153 (ouverte) — pont pédagogique et tête de README |
+| 9-10 | `Flasque.lean`, `FlasqueAcyclic.lean` | mesuré (couvert / absent selon l'énoncé) | commentaire du 25/11 sur #28537 (`myia-po-2024:CoursIA`) |
+| 11 | `Stalks.lean`, `StalkSeparated.lean`, `StalkGluing.lean` | mesuré (absent / partiel) | commentaire du 25/11 sur #28537 (`myia-po-2026:CoursIA-2`) |
+| 12 | `SheafCohomology/` | non mesuré | groupe distinct |
+
+Les renvois « énoncé par énoncé » de ces modules restent à écrire dans leurs docstrings :
+les mesures sont dans le fil de #28537, les renvois dans le lac sont le travail d'un groupe
+par PR.
