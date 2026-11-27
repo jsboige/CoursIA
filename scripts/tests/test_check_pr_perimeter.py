@@ -3884,47 +3884,6 @@ def test_pr_diff_text_size_cap_is_narrow(monkeypatch):
         cpp._pr_diff_text(101)
 
 
-# ---------------------------------------------------------------------------
-# #28874 — `gh pr diff` refuse de CALCULER le diff (HTTP 422).
-# ---------------------------------------------------------------------------
-def test_pr_diff_text_falls_back_empty_on_time_cap(monkeypatch, capsys):
-    """#28874: GitHub refuse de calculer un diff qu'il juge trop couteux
-    (`HTTP 422: Sorry, this diff is taking too long to generate`, puis
-    `PullRequest.diff not_available`) alors que la liste paginee des fichiers
-    repond en moins d'une seconde. Meme degradation que #25085 : diff vide,
-    avertissement, perimetre lu via /pulls/<pr>/files. Mesure : #28393."""
-    import check_pr_perimeter as cpp
-
-    def fake_rc(args):
-        return 1, "", (
-            "gh error: HTTP 422: Server Error: Sorry, this diff is taking too "
-            "long to generate\n"
-            "gh error: PullRequest.diff not_available"
-        )
-
-    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
-    assert cpp._pr_diff_text(28393) == ""
-    err = capsys.readouterr().err
-    assert "HTTP 422" in err, err
-    # l'avertissement doit dire CE QUI n'a pas ete vu (les baseline-moves).
-    assert "baseline-moves" in err, err
-
-
-def test_pr_diff_text_time_cap_is_narrow(monkeypatch):
-    """Le refus de calcul se reconnait a ses signatures, pas a la prose : le
-    message de transport (`stream error: ... CANCEL; received from peer`) ne
-    dit pas quelle panne a ferme le flux, donc il reste fail-closed -- comme
-    tout autre echec de `gh pr diff`."""
-    import check_pr_perimeter as cpp
-
-    def fake_rc(args):
-        return 1, "", "stream error: stream ID 3; CANCEL; received from peer"
-
-    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
-    with pytest.raises(SystemExit):
-        cpp._pr_diff_text(101)
-
-
 # --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
 
 FILES_16085_A = [

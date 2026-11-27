@@ -2209,30 +2209,6 @@ _DIFF_SIZE_CAP_SIGNATURES = (
 )
 
 
-# Signature of a `gh pr diff` COMPUTATION refusal -- the third sibling, on the
-# TIME axis (#28874).
-#
-# GitHub declines to compute a diff it judges too expensive and answers
-# `HTTP 422: Server Error: Sorry, this diff is taking too long to generate`,
-# followed by `PullRequest.diff not_available` -- measured 2026-11-27 on
-# #28393 (97 files, 30 renamed notebooks whose base64 audio outputs sit on
-# single lines of 850 KB to 3.84 MB). `git` computes the same three-dot diff in
-# seconds (8 367 lines, 832 KB) and the paginated `/pulls/<pr>/files` list
-# answers in 0.9 s, so the guard again LOST a measurement it could make: the
-# blocking perimeter checks read the file list (no such cap), the unified diff
-# only feeds the ADVISORY baseline-move detection.
-#
-# NARROW ON PURPOSE, like its siblings: only these recognised signatures
-# degrade to an empty diff. The transport orthography (`stream error: stream
-# ID 3; CANCEL; received from peer`) is deliberately NOT recognised -- it does
-# not say which failure closed the stream. Every other `gh pr diff` failure
-# stays fail-closed (exit 2).
-_DIFF_TIME_CAP_SIGNATURES = (
-    "is taking too long to generate",
-    "PullRequest.diff not_available",
-)
-
-
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2285,11 +2261,6 @@ def _pr_diff_text(pr: int) -> str:
     the paginated file list. Only the advisory baseline-move detection is lost,
     and the warning says so.
 
-    The TIME cap is the third sibling (#28874): GitHub declines to COMPUTE a
-    diff it judges too expensive (``HTTP 422: Sorry, this diff is taking too
-    long to generate`` -- measured 2026-11-27 on #28393) while the paginated
-    file list answers in under a second. Same degradation, same reason.
-
     One failure is a RENDERING refusal, not an unreadable diff: a payload
     carrying terminal escape sequences (ANSI colour codes inside a committed
     artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
@@ -2311,14 +2282,6 @@ def _pr_diff_text(pr: int) -> str:
         print(
             f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
             "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
-            f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
-            file=sys.stderr,
-        )
-        return ""
-    if any(sig in (stderr or "") for sig in _DIFF_TIME_CAP_SIGNATURES):
-        print(
-            f"::warning::gh pr diff {pr} indisponible (GitHub refuse de CALCULER le "
-            "diff, HTTP 422) : detection des baseline-moves retractee a vide ; "
             f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
             file=sys.stderr,
         )
