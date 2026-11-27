@@ -16,20 +16,22 @@
   rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Rust.ipynb
   measures:
     - id: c3_text
-      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      description: "Corps de la cellule 3 après sa première ligne, texte identique sur les trois côtés (la première ligne est une ancre en présence seule : « ict.combinators importe OK -- aucune reimplementation locale du moteur » côté Python, « Combinateurs (S/K/I + tag de Post) : port manuel natif en Rust » côté Rust, « … en C# » côté C# ; elle nomme la voie de chaque jumeau et n'est jamais comparée — c'est la règle que le carnet Rust énonce lui-même dans sa note de parité)"
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 3
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "\\A\\s*(?m:^[^\\n]+\\r?$)\\s*(.*?)\\s*\\Z"
           transform: text
         rust:
           cell: 3
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "\\A\\s*(?m:^[^\\n]+\\r?$)\\s*(.*?)\\s*\\Z"
           transform: text
         csharp:
-          absent: "La cellule C# 3 diffère du texte Python (ligne 1 : « Combinateurs (S/K/I + tag de Post) : port manuel natif en C# » contre « ict.combinators importe OK -- aucune reimplementation locale… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+          cell: 3
+          pattern: "\\A\\s*(?m:^[^\\n]+\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
     - id: c5_text
       description: "Sortie de la cellule 5, texte identique au jumeau Python"
       tolerance: 0
@@ -112,17 +114,17 @@
           pattern: "(?m:^ordre\\ applicatif:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
           transform: text
     - id: c11_text
-      description: "Sortie de la cellule 11, texte identique au jumeau Python"
+      description: "Sortie de la cellule 11 avant la ligne de durée, texte identique au jumeau Python (segment 1/1 ; durées murales en présence seule, valeurs jamais comparées)"
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 11
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "\\A\\s*(.*?)\\s*(?m:^200\\ réductions\\ OMEGA\\ à\\ 200\\ pas\\ en\\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(Mesure,\\ ce\\ noyau\\)\\r?$)"
           transform: text
         rust:
           cell: 11
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "\\A\\s*(.*?)\\s*(?m:^200\\ réductions\\ OMEGA\\ à\\ 200\\ pas\\ en\\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(Mesure,\\ ce\\ noyau\\)\\r?$)"
           transform: text
         csharp:
           absent: "La cellule C# 11 diffère du texte Python (ligne 6 : « etats dans la trace : 4 (terme initial + pas demandes) » contre « apres 200 pas : diverge -- aucune forme normale atteinte » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
