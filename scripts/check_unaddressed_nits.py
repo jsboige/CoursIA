@@ -110,15 +110,6 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
-# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
-# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
-# porte les invariants ; `gh_json` ne fait que router les argv applicables.
-try:
-    import gh_etag
-except ImportError:  # meme shim que gh_identity (tests hors scripts/)
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
-    import gh_etag
-
 # #27881 — la grammaire des marqueurs (familles FORMELLE / PROSE, vocabulaire
 # des verdicts) et le predicate de signalement sont extraits dans
 # `scripts/ci/nit_markers.py` : l'organe ne doit pas grossir (cliquet de
@@ -128,6 +119,24 @@ try:
 except ImportError:  # meme shim que gh_identity (tests hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import nit_markers
+
+# #27874 — le RAPPORT (verdict, bloc « A RELIRE », notes de preuve) est
+# extrait dans `scripts/ci/nit_rapport.py` : cible T5 du cliquet de taille
+# (separer la grammaire des marqueurs, l'evaluation et le rapport).
+try:
+    import nit_rapport
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import nit_rapport
+
+# #27012 point 3 — le funnel d'appel gh (routing ETag puis subprocess, avec
+# bascule UNIQUE vers le jeton App de la lane sur rate-limit 403/429) est
+# extrait dans `scripts/ci/gh_app_failover.py`.
+try:
+    import gh_app_failover
+except ImportError:  # meme shim que nit_markers (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import gh_app_failover
 
 REPO = "jsboige/CoursIA"
 
@@ -3745,25 +3754,17 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
-    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
-    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
-    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
-    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
-    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
-    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
-    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
-    etag_path = gh_etag.etag_applicable(args)
-    if etag_path is not None:
-        body, served_by_304 = gh_etag.conditional_get(
-            etag_path, timeout=GH_CALL_TIMEOUT_S)
-        if served_by_304:
-            API_USAGE["rest_304"] += 1
-        return _project_gh_payload(args, body)
-    out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
-        timeout=GH_CALL_TIMEOUT_S,
-    ).stdout
-    return _project_gh_payload(args, json.loads(out))
+    # Le routing d'appel vit dans gh_app_failover (#27012 point 3) : lectures
+    # REST conditionnelles par l'ETag persiste partage par machine (#26260 --
+    # un 304 est une PREUVE SERVEUR que le chemin est inchange, aucun corps
+    # n'est jamais servi sans reponse du serveur), sinon `gh` en subprocess ;
+    # sur rate-limit 403/429, bascule UNIQUE vers le jeton App de la lane.
+    return _project_gh_payload(args, gh_app_failover.call(
+        args, timeout=GH_CALL_TIMEOUT_S, on_304=_count_rest_304))
+
+
+def _count_rest_304() -> None:
+    API_USAGE["rest_304"] += 1
 
 
 def _project_added_symbol_patch(patch: str) -> str:
@@ -5264,7 +5265,8 @@ def _scope_lifted_sentence(body: str, needle_re) -> bool:
     return False
 
 
-def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
+def _override_scopes_reserve(lift_body: str, nit_author: str,
+                              nit_body: str | None = None) -> bool:
     """#14216 — un OVERRIDE coordinateur nomme-t-il LA reserve qu'il leve ?
 
     La trappe #11639 agissait par PR, jamais par reserve : un seul
@@ -5291,6 +5293,21 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     (branche self de ``_lift_eligible``). Un nit d'auteur inconnu (compte
     supprime) reste levable : un scope ne peut pas nommer ce qui n'a pas
     de nom.
+
+    #27873 — la forme 2 discriminait sur le SEUL LOGIN : toute reserve
+    postee sous `jsboige` (login de poussee partage, cf #13316) etait
+    traitee comme une reserve de persona. C'est faux pour une reserve USER
+    (voix nue du mainteneur, meme login) : un override qui ne nomme qu'une
+    reserve de persona éteignait aussi le Concern du mainteneur. Mesure
+    sur PR #27153 : l'override `myia-ai-01` du 21/11 20:54Z (« Je leve la
+    reserve de clusterManager-Myia (review NanoClaw ...) … ; Le Concern du
+    mainteneur … attend son arbitrage ») rendait `rc=0` en eteignant le
+    `Concern:` du 17/11 18:53Z — contre l'intention explicite de l'override.
+    La discrimination passe donc par la NATURE de la reserve : la mention
+    de persona ne la scope que si la reserve ELLE-MEME porte le marqueur
+    de persona (le self-bot qui la porte). Une reserve user sans marqueur
+    n'est plus scopee par une mention « Hermes/NanoClaw » qui qualifie une
+    AUTRE reserve nommee dans la meme phrase.
     """
     if not nit_author:
         return True
@@ -5305,7 +5322,18 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
                            + r"(?![A-Za-z0-9_-])")
     if _scope_lifted_sentence(body, author_re):
         return True
-    if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
+    if nit_author in PERSONA_ALIAS_LOGINS:
+        return _scope_lifted_sentence(
+            body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
+    if nit_author == "jsboige":
+        # #27873 — la mention de persona ne vaut QUE pour une reserve de
+        # persona (self-bot qui la porte : marqueur dans le corps). Une
+        # reserve user (voix nue) sous le meme login n'est pas scopee par
+        # elle. `nit_body is None` = appelant historique sans le corps :
+        # comportement d'avant preserve (fail-open sur l'absence d'info).
+        if nit_body is not None and not _PERSONA_MARKERS_RE.search(
+                _strip_quoted(nit_body)):
+            return False
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
@@ -5758,7 +5786,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # nomination de la reserve d'autrui (login ou persona Hermes), il ne
         # leve que les siennes. La trappe reste fermee a l'auteur de la PR
         # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
-        return _override_scopes_reserve(lift_body or "", nit_author)
+        # #27873 — le corps de la reserve est transmis : la discrimination
+        # persona/user se fait sur sa NATURE, pas sur le seul login.
+        return _override_scopes_reserve(lift_body or "", nit_author, nit_body)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -6028,6 +6058,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                             f"review:{state}"))
 
     blocking = []
+    # #27873 — corps des réserves qui SURVIVENT (auteur -> corps). Sert à la
+    # discrimination persona/user du scope d'override : la nature de la
+    # réserve se lit dans son corps, pas dans son seul login.
+    surviving_reserve_bodies: dict[str, str] = {}
     for (when, kind, login, body, src) in signals:
         if when is None or when >= cutoff:
             continue
@@ -6126,6 +6160,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # deux nits de 11:07. Le push est reporté comme contexte, pas comme levée
         # — seule une réponse écrite (ou un thread résolu) lève une remarque.
         pushed_after = last_commit is not None and last_commit > when
+        surviving_reserve_bodies.setdefault(login, body)
         blocking.append({
             "kind": kind, "author": login, "src": src,
             "channel": "review" if src.startswith("review") else "comment",
@@ -6196,7 +6231,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for login in sorted({b.get("author") for b in blocking
                              if b.get("author") not in ("", author)
                              and not _override_scopes_reserve(
-                                 body or "", b.get("author") or "")})
+                                 body or "", b.get("author") or "",
+                                 surviving_reserve_bodies.get(
+                                     b.get("author") or ""))})
     ] + [
         # Q185 — meme exigence de nomination pour la voix adjointe : un
         # override adjoint qui laisse survivre une reserve est nomme avec sa
@@ -6330,121 +6367,23 @@ LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
 def _ok_line(pr: int, result: dict) -> str:
-    """La ligne de verdict, avec sa reserve DANS la ligne (#13512, #13779).
-
-    `OK -- aucun nit non leve` repond « aucune phrase de levee ne manque », et
-    RIEN D'AUTRE : un commentaire que `classify` n'a pas su lire n'est pas un
-    commentaire absent. `_print_unevaluated` le dit -- mais il le dit SOUS la
-    ligne, et c'est la LIGNE qui circule : un agent qui rapporte « organe OK sur
-    #N » cite le verdict, pas le bloc. Un `OK` cite sans sa reserve certifie
-    alors exactement le silence que cet organe refuse de certifier, et la
-    promesse de #13779 (« cesser de certifier le silence ») s'arrete a la
-    frontiere du stdout.
-
-    Mesure fondatrice (2026-09-21, arbitrage ai-01) : `check_unaddressed_nits.py`
-    rendait `rc=0` -- et sa ligne `OK` a ete citee -- sur deux PRs dont les
-    reserves vivaient dans le bloc « NON EVALUE(S) ». Un `rc=0` n'est pas une
-    dispense de lecture, mais rien ne le rappelait la ou le verdict se lit.
-
-    Le compte qui voyage est le TOTAL non evalue, jamais le sous-ensemble
-    affiche -- meme regle que l'en-tete de `_print_unevaluated`. Quand il n'y a
-    rien a relire, la ligne reste celle d'avant, octet pour octet.
-    """
-    total = result.get("unevaluated_total") or 0
-    if not total:
-        return f"OK  PR #{pr} — aucun nit non leve."
-    return (
-        f"OK  PR #{pr} — aucun nit non leve parmi les commentaires evalues ; "
-        f"{total} commentaire(s) NON EVALUE(S) — lire le bloc A RELIRE ci-dessous."
-    )
+    """Delegate a `scripts/ci/nit_rapport.py` (#27874, extraction T5)."""
+    return nit_rapport.ok_line(pr, result)
 
 
 def _print_unevaluated(result: dict) -> None:
-    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
-
-    La ligne de verdict porte desormais le compte (`_ok_line`) ; ce bloc reste
-    le detail -- le propos est le meme : ce que l'organe n'a pas su classer, il
-    l'imprime.
-    """
-    rows = result.get("unevaluated") or []
-    if not rows:
-        return
-    # #13779 : le compte imprime est celui du TOTAL non evalue, pas celui des
-    # lignes affichees -- un organe dont tout le propos est de ne pas certifier
-    # son propre silence ne peut pas sous-declarer ce qu'il n'a pas lu.
-    total = result.get("unevaluated_total") or len(rows)
-    omitted = total - len(rows)
-    after = sum(1 for r in rows if r["after_last_commit"])
-    tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
-    cut = f" — {len(rows)} affiche(s), {omitted} plus ancien(s) omis" if omitted > 0 else ""
-    print()
-    print(f"  --- A RELIRE : {total} commentaire(s) NON EVALUE(S) par cet organe{tail}{cut} ---")
-    print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
-    print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
-    for r in rows:
-        mark = " [APRES LE DERNIER COMMIT]" if r["after_last_commit"] else ""
-        print()
-        print(f"  * {r['author']} — {r['at']}{mark}")
-        lines = r["body"].split("\n")
-        for line in lines[:8]:
-            print(f"      {line[:160]}")
-        if len(lines) > 8:
-            print(f"      ... (+{len(lines) - 8} ligne(s))")
-    print()
+    """Delegate a `scripts/ci/nit_rapport.py` (#27874, extraction T5)."""
+    nit_rapport.print_unevaluated(result)
 
 
 def _print_sha_notes(result: dict) -> None:
-    """#13639 : nommer les levees dont la preuve citee manque de la PR.
+    """Delegate a `scripts/ci/nit_rapport.py` (#27874, extraction T5).
 
-    #15556 : distinguer l'ARTEFACT du vrai defaut -- un push muet
-    (wake-commit, amend de message) ne change pas l'arbre, la preuve citee
-    reste byte-pour-byte vraie ; seul le SHA a change. Les deux cas ne
-    demandent pas le meme geste au lecteur, et l'artefact ne bloque pas.
+    La constante `_BLOB_UNCOMPARABLE` reste propriete de l'organe : elle est
+    passee en argument, donc `mod._BLOB_UNCOMPARABLE` reste lisible par les
+    tests existants.
     """
-    for a in result.get("rewind_artifacts") or []:
-        if a["reason"] == "same_tree":
-            why = "arbre identique à la tête"
-        elif a["reason"] == "rebase_preserved":
-            why = "rebase sur base avancée, blobs identiques par chemin"
-        elif a["reason"] == "symbols_survive":
-            # #20066 piste 2 : le blob a bougé (la PR a continué de
-            # travailler), mais la SUBSTANCE de la levée est mesurée
-            # présente -- chaque def/class introduit par le commit cité
-            # existe encore à la tête.
-            why = ("blobs modifiés mais symboles introduits par la levée "
-                   "tous présents à la tête")
-        else:
-            why = "fichiers de la PR inchangés"
-        print(f"  [i] levee de {a['author']} à {a['at']} cite {a['sha']} "
-              f"rembobiné par un push muet ({why}) — preuve conservée, "
-              f"non bloquant")
-    for v in result.get("voided_lifts") or []:
-        # #20066 -- `tree_differs` dit que les deux arbres sont connus et
-        # differents ; il ne dit pas qu'un BLOB a ete compare. Quand
-        # `sha_files` est vide (pas d'entree pour ce SHA), ou la carte de la
-        # tete vide, `_rebase_blob_state` rend `uncomparable` : le refus est
-        # le meme, le libelle doit dire qu'aucun blob n'a ete regarde.
-        if not v.get("tree_differs"):
-            detail = " — arbre non comparable, refus conservateur"
-        elif v.get("blob_state") == _BLOB_UNCOMPARABLE:
-            detail = (" — l'arbre DIFFÈRE de la tête : aucun blob comparable, "
-                      "refus conservateur")
-        elif (v.get("symbols") or {}).get("verdict") == "missing":
-            # #20066 piste 2 : le fond a ÉTÉ mesuré, et il manque -- c'est
-            # la seule formule qui ait le droit de parler de réserve, car
-            # elle nomme ce qui a disparu.
-            absents = ", ".join((v["symbols"].get("missing") or [])[:5])
-            detail = (f" — l'arbre DIFFÈRE de la tête : blob modifié et "
-                      f"symbole(s) introduit(s) par la levée ABSENT(s) de "
-                      f"la tête ({absents})")
-        else:
-            detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié")
-        print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
-              f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
-              f"mais rembobiné par un push ultérieur){detail}")
-    for w in result.get("absent_sha_warnings") or ():
-        print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
-              f"(absent des commits, non rattaché à cette PR) — non bloquant")
+    nit_rapport.print_sha_notes(result, _BLOB_UNCOMPARABLE)
 
 
 def analyse_pr(pr: int) -> dict:

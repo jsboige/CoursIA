@@ -1,0 +1,8 @@
+- name: "Complexity-02c-XOR-SAT-Phase-Transition C#"
+  family: InformationCalcul/Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : numpy et matplotlib seulement ; cote C# : aucune directive #r, aucun using hors System. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb. Execution reelle sur kernel .net-csharp : 15 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

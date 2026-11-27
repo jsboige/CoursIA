@@ -160,7 +160,36 @@ PR_BODY_OK = (
 # et un filtre l'y excluait en plus. Un verdict G-VAR-3 perime tombe sur elle
 # n'etait donc jamais rafraichi (#22748, ~12 h rouge).
 
+def _resolved_body_job_names() -> list[str]:
+    """Noms de job de la jambe BODY, lus dans le workflow VIVANT.
+
+    #28534 a fusionne les deux workflows de la classe `edited` : le job qui
+    porte l'organe d'adjacence s'appelle desormais
+    `Always-on guards -- metadata + body` et vit dans
+    `always-on-guards-edited.yml`. Un nom code en dur ici ferait echouer le
+    classement de jambe sur un simple renommage.
+    """
+    import yaml
+
+    workflow = (Path(rsa.__file__).resolve().parents[2]
+                / ".github" / "workflows" / rsa.BODY_WORKFLOW_NAME)
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8")) or {}
+    return [
+        job["name"]
+        for job in (data.get("jobs") or {}).values()
+        if isinstance(job, dict)
+        and isinstance(job.get("name"), str)
+        and job["name"].startswith(rsa.GUARDS_JOB_PREFIX)
+    ]
+
+
 BODY_JOB_NAME = "Always-on guards -- body"
+# Le nom REEL de la jambe qui porte l'organe d'adjacence est RESOLU dans le
+# workflow vivant (#28534 : le workflow fusionne `always-on-guards-edited.yml`
+# remplace `always-on-guards-body.yml`) -- une fixture qui reecrirait le nom
+# en dur resterait verte sur un workflow renomme, exactement le defaut que
+# #22403 a corrige pour la jambe de contenu.
+BODY_JOB_NAMES = _resolved_body_job_names()
 BODY_JOB_URL = (
     "https://github.com/jsboige/CoursIA/actions/runs/40366622667/job/122038953042")
 BODY_ANNOTATIONS_API = (
@@ -201,7 +230,8 @@ def _setup_fake_for_pr(fake_run: FakeRun, pr: int, body: str,
         for name in rsa.content_guard_job_names()
     ]
     if body_conclusion is not None:
-        rows.append(_check_row(BODY_JOB_NAME, body_conclusion, BODY_JOB_URL))
+        for name in BODY_JOB_NAMES:
+            rows.append(_check_row(name, body_conclusion, BODY_JOB_URL))
     checks_text = "\n".join(rows) + "\n"
     fake_run.specs[("pr", "checks", str(pr))] = (0, checks_text, "")
     if bodys_annotations is not _UNSET:
@@ -722,3 +752,46 @@ def test_rc0_without_rows_is_a_measured_absence(fake_run):
     assert result["guard_leg"] is None
     assert result["would_refresh"] is False
 
+
+
+# --- #28234 : le balayage lit les memes diffs que la CI ---------------------
+# La CI passe `--pr-number` a l'organe G-VAR-3, qui lit alors les fichiers de
+# la PR et de son predecesseur. Le balayeur doit rendre le meme verdict : un
+# grain MED a fichiers disjoints est exempte (#14357), un grain a fichiers
+# partages reste bloque, une lecture en echec reste fail-CLOSED.
+
+_ADJ_BODY = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n"
+_ADJ_WINDOW = [
+    {"number": 998,
+     "body": "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/tooling #997\n",
+     "mergedAt": "2026-09-01T05:00:00Z"},
+]
+
+
+def _files_by_pr(mapping):
+    def _fake(pr_number):
+        return mapping.get(int(pr_number))
+    return _fake
+
+
+def test_simulate_adjacency_exempts_disjoint_med_grain(monkeypatch):
+    monkeypatch.setattr(rsa, "_gh_pr_files", _files_by_pr({
+        4001: {"scripts/ci/a.py"}, 998: {"scripts/ci/b.py"}}))
+    verdict = rsa.simulate_adjacency(4001, _ADJ_BODY, _ADJ_WINDOW)
+    assert verdict["guard_pass"] is True
+    assert verdict.get("exempted") is True
+
+
+def test_simulate_adjacency_keeps_overlapping_grain_blocked(monkeypatch):
+    monkeypatch.setattr(rsa, "_gh_pr_files", _files_by_pr({
+        4002: {"scripts/ci/a.py"}, 998: {"scripts/ci/a.py"}}))
+    verdict = rsa.simulate_adjacency(4002, _ADJ_BODY, _ADJ_WINDOW)
+    assert verdict["guard_pass"] is False
+    assert not verdict.get("exempted")
+
+
+def test_simulate_adjacency_unreadable_files_fail_closed(monkeypatch):
+    monkeypatch.setattr(rsa, "_gh_pr_files", _files_by_pr({}))
+    verdict = rsa.simulate_adjacency(4003, _ADJ_BODY, _ADJ_WINDOW)
+    assert verdict["guard_pass"] is False
+    assert not verdict.get("exempted")

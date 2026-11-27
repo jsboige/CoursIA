@@ -4,9 +4,9 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 179
-breakdown: Part1-Foundations=57, Part3-Cas-pratiques=53, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=14
-maturity: BETA=176, ALPHA=3
+pedagogical_count: 192
+breakdown: Part1-Foundations=61, Part3-Cas-pratiques=56, Part4-Metaheuristics=37, Part2-CSP=22, Part5-Frontieres=16
+maturity: BETA=189, ALPHA=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -257,15 +257,15 @@ La parité `.NET ⇄ Python` de la Partie 2 CSP a été portée par un **maratho
 
 | Notebook | PR | Cycle | Solver C# | verdict SOTA | Sortie noteworthy |
 |----------|----|----|-----------|-------------|-------------------|
-| **CSP-1-Fundamentals-CSharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
-| **CSP-2-Consistency-CSharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
+| **CSP-01-Fundamentals-CSharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
+| **CSP-02-Consistency-CSharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
 | **CSP-3-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (palette reine / équidistance, base historique) |
-| **CSP-4-Scheduling-CSharp** | [#5067](https://github.com/jsboige/CoursIA/pull/5067) | tranche 1 cherry | IKVM 8.15 + Choco 4.10.17 (+ audit croisé OR-Tools) | **SOTA-OK** | Job-Shop / Nurse Scheduling en Choco `IntVar` / `Task` |
-| **CSP-5-Optimization-CSharp** | [#5018](https://github.com/jsboige/CoursIA/pull/5018) → [#5133](https://github.com/jsboige/CoursIA/pull/5133) (rebase) | antérieur | IKVM 8.15 + Choco 4.10.17 | **SOTA-OK** | Bin Packing / Knapsack / cardinalité en Choco |
-| **CSP-6-Hybridization-CSharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
+| **CSP-04-Scheduling-CSharp** | [#5067](https://github.com/jsboige/CoursIA/pull/5067) | tranche 1 cherry | IKVM 8.15 + Choco 4.10.17 (+ audit croisé OR-Tools) | **SOTA-OK** | Job-Shop / Nurse Scheduling en Choco `IntVar` / `Task` |
+| **CSP-05-Optimization-CSharp** | [#5018](https://github.com/jsboige/CoursIA/pull/5018) → [#5133](https://github.com/jsboige/CoursIA/pull/5133) (rebase) | antérieur | IKVM 8.15 + Choco 4.10.17 | **SOTA-OK** | Bin Packing / Knapsack / cardinalité en Choco |
+| **CSP-06-Hybridization-CSharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
 | **CSP-7-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (global-cardinality, symétrie, base historique) |
-| **CSP-8-Temporal-CSharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
-| **CSP-9-Distributed-CSharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
+| **CSP-08-Temporal-CSharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
+| **CSP-09-Distributed-CSharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
 
 Les 9 binômes sont **tous mergés sur `main`** (vérifié disque au 2026-07-07 : `Part2-CSP/CSP-1-Csharp` à `CSP-9-Csharp` présents et gît-trackés). Le verdict SOTA-OK est documenté dans les PRs du marathon (règle [EPIC #3801](https://github.com/jsboige/CoursIA/issues/3801) — vrai outil, pas workaround dégradé) ; les 2 PRs les plus anciennes (CSP-3, CSP-7) ont été livrées avant la formalisation de la règle et n'ont pas de verdict écrit. Équilibre solvers final : **6 Choco via IKVM** (CSP-1/2/3/4/5/7), **2 OR-Tools CP-SAT natif .NET** (CSP-6/8), **1 from-scratch** (CSP-9, algorithme distribué Yokoo 1992).
 
@@ -371,15 +371,15 @@ Search/
 │   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (Python + jumeaux C#, marathon #4956 achevé)
-│   ├── CSP-1-Fundamentals.ipynb
-│   ├── CSP-2-Consistency.ipynb
-│   ├── CSP-3-Advanced.ipynb
-│   ├── CSP-4-Scheduling.ipynb
-│   ├── CSP-5-Optimization.ipynb
-│   ├── CSP-6-Hybridization.ipynb
-│   ├── CSP-7-Soft.ipynb
-│   ├── CSP-8-Temporal.ipynb
-│   └── CSP-9-Distributed.ipynb
+│   ├── CSP-01-Fundamentals-Python.ipynb
+│   ├── CSP-02-Consistency-Python.ipynb
+│   ├── CSP-03-Advanced-Python.ipynb
+│   ├── CSP-04-Scheduling-Python.ipynb
+│   ├── CSP-05-Optimization-Python.ipynb
+│   ├── CSP-06-Hybridization-Python.ipynb
+│   ├── CSP-07-Soft-Python.ipynb
+│   ├── CSP-08-Temporal-Python.ipynb
+│   └── CSP-09-Distributed-Python.ipynb
 │
 ├── Part3-Cas-pratiques/                   # Partie 3 — cas pratiques en dossier plat (Python + jumeaux C#, sélection ci-dessous)
 │   ├── App-01-NQueens-Python.ipynb
@@ -413,7 +413,7 @@ Search/
 │
 └── _archive/                               # Notebooks racine archivés (C209 tranche 8/8 #5081) — voir _archive/README.md
     ├── README.md
-    ├── CSPs_Intro.ipynb                                  # Remplacé par Part2-CSP/CSP-1-Fundamentals.ipynb
+    ├── CSPs_Intro.ipynb                                  # Remplacé par Part2-CSP/CSP-01-Fundamentals-Python.ipynb
     └── Exploration_non_informée_et_informée_intro.ipynb # Remplacé par Part1-Foundations/Search-{2,3}-...
 ```
 
@@ -495,7 +495,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **35** (MGS-1 → MGS-31 : cœur MGS-1..19, **trilogie MGS-7b/7c/7d** de projection N-D des paysages, MGS-17b sélection empirique, **MGS-21** représentation vs algorithme ; le **volet comparatif vs MEALPY** (MGS-22..31) vit dans la sous-série [`Part4-Metaheuristics/MGS-vs-mealpy/`](Part4-Metaheuristics/MGS-vs-mealpy/README.md) — duels PSO/DE/SA/WOA/EO/FBI/BBPSO/GA/ScatterSearch vs Mealpy + synthèse croisée ; tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, projection N-D des paysages, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion, représentation vs algorithme, [campagne comparative MGS vs mealpy](Part4-Metaheuristics/MGS-vs-mealpy/README.md) |
 | **Partie 3 — Cas pratiques** (`Part3-Cas-pratiques/`) | **57** (37 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity, jumeaux Python et notebooks d'audit App-23 à App-31) | 37 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (speedup mesuré 17.4x sur 10x10), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
-| **_archive** (`_archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
+| **_archive** (`_archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-01-Fundamentals-Python et Part1-Foundations/Search-{2,3} |
 | **Total** | **153** (43 + 18 + 35 + 57 = 153 pédagogiques, Search-09d inclus + 2 archive = 155) | Python + Lean 4 + C# | 4 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
 
 **Note de maturité** : la validation end-to-end (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`) est documentée PR par PR dans l'EPIC #4956 pour les jumeaux C#, et dans les PRs po-2025:CoursIA-2 pour la série landscape-bias MGS-10 → MGS-19 (analyse comparative NFL/WOA encore en cours, cf EPIC #3975).
@@ -568,7 +568,7 @@ La thèse est puissante et honnêtement présentée : il n'existe pas d'algorith
 - **Élargir aux jeux et à l'apprentissage par renforcement** : [GameTheory](../GameTheory/README.md) (Minimax, MCTS, choix social) et les notebooks RL (MCTS + DQN, AlphaGo) reprennent la recherche adversariale sous l'angle de l'apprentissage — où la valeur des positions n'est plus calculée mais *apprise*.
 - **Pratiquer sur la couverture exacte** : [Sudoku](../Sudoku/README.md) (DLX, automates symboliques) applique Dancing Links et les techniques de cette série à une famille de puzzles combinatoires concrets.
 - **Construire plutôt qu'utiliser** : la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) (C# .NET 9, MetaGeneticSharp) prolonge [Search-5](Part1-Foundations/Search-05-GeneticAlgorithms.ipynb)/[Search-11](Part1-Foundations/Search-11-Metaheuristics.ipynb) sous l'angle de l'*ingénierie* — au lieu d'importer WOA ou EO, on les *reconstruit* depuis des primitives composables (`Match`, `Container`, grammaire fluente) au-dessus de GeneticSharp, et l'on assemble des configurations qu'aucune bibliothèque monolithique n'offre (sous-populations spécialisées, îles migratoires).
-- Pour la pratique : reprenez [CSP-6-Hybridization](Part2-CSP/CSP-6-Hybridization.ipynb) et expérimentez le pont LLM+CSP — comment un modèle de langage peut-il *amorçer* un solveur par contraintes, et où cette hybridation gagne-t-elle (ou perd-elle) par rapport au CP-SAT pur ?
+- Pour la pratique : reprenez [CSP-06-Hybridization-Python](Part2-CSP/CSP-06-Hybridization-Python.ipynb) et expérimentez le pont LLM+CSP — comment un modèle de langage peut-il *amorçer* un solveur par contraintes, et où cette hybridation gagne-t-elle (ou perd-elle) par rapport au CP-SAT pur ?
 
 ### Le fil rouge
 

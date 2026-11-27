@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-21
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
@@ -179,7 +179,7 @@ python scripts/ci/dotnet_preload_packages.py QuikGraph==2.5.0
 # puis dans la cellule :  #r "./_deps/QuikGraph.dll"
 ```
 
-**Ce qu'il ne faut PAS en faire** : une conversion de masse des carnets vers `#r "./_deps/..."`. Le pilote du 2026-09-25 (`CSP-1-Fundamentals-CSharp.ipynb`) a mesure les trois bras — nuget d'origine 19/19 OK, local seul 16/19 (`Could not locate ikvm home path`), mixte 15/19 (`MSB4036 IkvmResolveNearestRuntimeIdentifier introuvable`). Les packages IKVM ont besoin du **graphe de restauration NuGet** que `_deps/` ne reconstitue pas, et `_deps/` est gitignore : une conversion generalisee casserait de facon **deterministe** tout clone neuf, pour un bug intermittent. L'outil est un **remede de reparation ponctuelle**, pas une migration.
+**Ce qu'il ne faut PAS en faire** : une conversion de masse des carnets vers `#r "./_deps/..."`. Le pilote du 2026-09-25 (`CSP-01-Fundamentals-CSharp.ipynb`) a mesure les trois bras — nuget d'origine 19/19 OK, local seul 16/19 (`Could not locate ikvm home path`), mixte 15/19 (`MSB4036 IkvmResolveNearestRuntimeIdentifier introuvable`). Les packages IKVM ont besoin du **graphe de restauration NuGet** que `_deps/` ne reconstitue pas, et `_deps/` est gitignore : une conversion generalisee casserait de facon **deterministe** tout clone neuf, pour un bug intermittent. L'outil est un **remede de reparation ponctuelle**, pas une migration.
 
 Recit complet, 5 probes, mesures des trois bras : [`2026-09-25-dotnet-restore-rfc-17361.md`](../transients/2026-09-25-dotnet-restore-rfc-17361.md).
 
@@ -376,7 +376,7 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 
 **Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `%USERPROFILE%/AppData/Local/Programs/Python/Python313`.
 
-**Preuve d'exécution, pas seulement de lancement** — les cellules **3** (résolution d'env), **5** (construction du modèle aux dimensions du carnet) et **6** (forward réel) de `SL-12-DifferentiableLogicGateNetworks` s'exécutent **sans erreur** dans l'enreg reconstruit : `difflogic : fork vendor chargé | Python 3.13.16 | PyTorch 2.14.0+cu126 | CUDA dispo : True | Execution : cpu (snapshot reproductible) | Graine : 42 | Algorithmes : deterministes`, puis `DEVICE : cpu | Implementation : python (pure PyTorch, reference CPU) | Modele difflogic : 96 000 parametres`, puis `Logits shape : (100, 10) (attendu : (100, 10)) | OK -- forward pass difflogic fonctionne`. C'est le **carnet lui-même** qui valide son env, pas une sonde exterior. (Cellules 8+ hors périmètre de cette preuve : téléchargement MNIST et campagne de 2 000 itérations.)
+**Preuve d'exécution, pas seulement de lancement** — les cellules **3** (résolution d'env), **5** (construction du modèle aux dimensions du carnet) et **6** (forward réel) de `SL-12-DifferentiableLogicGateNetworks-Python` s'exécutent **sans erreur** dans l'enreg reconstruit : `difflogic : fork vendor chargé | Python 3.13.16 | PyTorch 2.14.0+cu126 | CUDA dispo : True | Execution : cpu (snapshot reproductible) | Graine : 42 | Algorithmes : deterministes`, puis `DEVICE : cpu | Implementation : python (pure PyTorch, reference CPU) | Modele difflogic : 96 000 parametres`, puis `Logits shape : (100, 10) (attendu : (100, 10)) | OK -- forward pass difflogic fonctionne`. C'est le **carnet lui-même** qui valide son env, pas une sonde exterior. (Cellules 8+ hors périmètre de cette preuve : téléchargement MNIST et campagne de 2 000 itérations.)
 
 **Les 5 pointeurs morts de po-2024 sont refermés (14/11) : 0 pointeur mort subsiste** (29 enregs restants, tous résolus). Deux enregs **sans consommateur sur `main`** (`cb09-ass`, `pymc311`) ont été retirés, `kernel.json` sauvegardé avant retrait ; les trois autres (`ft03-gpu`, `mert2-gpu`, `difflogic-sl12`) ont été **reconstruits et repointés** — avec, pour chacun, la preuve du **lancement effectif du noyau** (pas seulement la réécriture du chemin).
 

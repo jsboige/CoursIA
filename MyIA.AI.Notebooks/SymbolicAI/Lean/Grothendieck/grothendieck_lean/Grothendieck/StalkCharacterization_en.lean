@@ -1,0 +1,229 @@
+/-
+Grothendieck tribute — Part 76: a sheaf is exactly a separated presheaf that
+glues.
+
+Alexandre Grothendieck (1928-2014).
+
+Phase 2 extension (#2159, Epic #1646).
+
+Parts 74 and 75 established the two halves separately. Part 74 showed that
+germs detect equality of sections of a sheaf, and Part 75 that every locally
+representable family of germs comes from a unique section. This part assembles
+them into the equivalence that grounds them:
+
+  `IsSheaf F  ↔  <separation by germs>  ∧  <gluing of locally representable
+  families>`
+
+This is the classical characterization of a sheaf as a separated presheaf
+satisfying the gluing of locally defined sections (Mac Lane–Moerdijk [MM92]
+II.6, Stacks 00AK).
+
+The forward direction merely restates the two previous Parts. The converse is
+the only place in the lake where the sheaf condition is **derived** rather than
+consumed: Part 75 needed `IsSheaf` as a hypothesis, the present part produces
+it. One builds the family of germs read off the local representatives of a
+compatible covering family, feeds it to the gluing supplied by the hypothesis,
+and separation does the rest — it yields both that the resulting section
+restricts to each representative, and that it is the only one to do so.
+
+Neither hypothesis is superfluous: separation is uniqueness, gluing supplies
+existence.
+
+References:
+  - S. Mac Lane, I. Moerdijk, *Sheaves in Geometry and Logic* [MM92], Chap. II
+    §6 (sheaves and étale spaces).
+  - Stacks Project, tag 00AK (sheaves and gluing).
+  - Mathlib, `Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing`
+    (`IsSheafUniqueGluing`, `isSheaf_of_isSheafUniqueGluing_types`, consumed
+    in `Mathlib/Topology/Sheaves/LocalPredicate.lean:246`).
+  - Parts 74 (`Grothendieck.StalkSeparated`, separation) and 75
+    (`Grothendieck.StalkGluing`, gluing).
+
+Stacks correspondence (group #15 of #28537 — “the points and the germs”, measured 26/11)
+--------------------------------------------------------------------------
+The reading of `AxiomMath/Stacks` is done on the **local tree**
+`StacksFrontier/Topology/Sheaves/` (sparse clone of the whole folder, 1756
+files covered out of 1756). The classification criterion is **content**,
+never the name alone: an identifier search that returns nothing does not
+establish an absence, it establishes that a statement is not *named* that
+way. An “absent” verdict therefore means: no equivalent content anywhere in
+`Topology/Sheaves/`.
+
+| Statement | Class | Stacks referent | What our version adds |
+|---|---|---|---|
+| `GermSeparated` | **covered** | `Stalk/Separated.lean:78` `TopCat.Presheaf.IsSeparated'`; `:86` `isSeparated'_iff` (Stacks 007A); `Sheafify/Separated.lean:71` `IsSeparated` and `:88` `toSheafify_app_eq_iff_germ_eq` (the same germ-based condition, in the form of an equivalence with sheafification) | the pointwise form on the subtype `{x // x ∈ U}` |
+| `GermGluing` | partial | `Basis/Germs.lean:329` `germMap_range_eq_conditionStar`; `:339` `germMap_bijection` (009M) | existence on the site of opens, without a basis condition |
+| `germ_eq_of_isCompatible` | partial | `Basis/Germs.lean:224` `germ_res`; `:212` `germ_eq_iff_rel` | the standalone statement, with a presheaf `IsCompatible` predicate |
+| `isSheaf_iff_germSeparated_and_germGluing` | partial | `Basis/Germs.lean:308` `germMap_injective`; `:329` (009M); `Basis/Sheaf.lean:140` `main_theorem009J` (009J); `Basis/OnBasis.lean:74` `IsSheafOnBasis` (a “separated + glue” structure, EGA 0 3.2.2); `Sheaf/Basic.lean:35` (006T, unique gluing) | the backward direction, where the sheaf condition is **derived** from the germs |
+
+The i18n convention (EPIC #4980, ratified 2026-07-04) pairs this module with
+`StalkCharacterization.lean`. Lean statements, proofs, and names remain
+identical; only docstrings and comments differ.
+
+Epic #1646, Phase 2 (#2159). No `sorry` introduced.
+-/
+
+import Grothendieck.StalkSeparated_en
+import Grothendieck.StalkGluing_en
+import Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing
+
+universe u
+
+namespace Grothendieck.StalkCharacterization_en
+
+open CategoryTheory Opposite TopCat TopologicalSpace TopologicalSpace.Opens
+open Grothendieck.StalkSeparated_en
+open Grothendieck.StalkGluing_en
+
+section Contenu
+
+variable (T : Type u) [TopologicalSpace T]
+
+/-- **Separation by germs**: two sections of a presheaf having the same germ at
+every point of an open set are equal. Part 74 established this conclusion for
+a sheaf; it is promoted here to a property of the presheaf itself, so that it
+can be taken as a hypothesis.
+
+Stacks correspondence — **COVERED**:
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:78`
+(`TopCat.Presheaf.IsSeparated'`, Stacks 007A) states the same property — the
+map “section ↦ family of its germs” is injective — and `:86`
+(`isSeparated'_iff`) gives it in the pointwise form that is identical to
+ours: two sections whose germs agree at every point of the open are equal.
+Stacks notes in passing (`:43`) that Mathlib has the stalks and the germ maps
+but **not** this predicate: Stacks is what adds it. The same germ-based
+condition reappears in a second form, **after sheafification**:
+`Sheafify/Separated.lean:71` (`IsSeparated`) states separation by
+restrictions, and `:88` (`toSheafify_app_eq_iff_germ_eq`) gives the
+equivalence “two sections have the same image under `toSheafify` **if and
+only if** their germs agree at every point of the open” — our statement, in
+the form of an equivalence with equality of images. What our version adds:
+the pointwise form is ours for an arbitrary `Type u` presheaf, with no sheaf
+hypothesis, but with the dependency on the subtype `{x : T // x ∈ U}`. -/
+def GermSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
+  ∀ (U : Opens T) (s t : F.obj (op U)),
+    (∀ (x : T) (hx : x ∈ U), F.germ U x hx s = F.germ U x hx t) → s = t
+
+/-- **Gluing of germs**: every locally representable family of germs (in the
+sense of Part 75) comes from a section. Part 75 proved this existence for a
+sheaf **and** gave uniqueness; only existence is kept here, uniqueness being
+exactly the separation above.
+
+Stacks correspondence — **PARTIAL**: Stacks 009M
+(`StacksFrontier/Topology/Sheaves/Basis/Germs.lean:329`,
+`germMap_range_eq_conditionStar`, and `:339`, `germMap_bijection`) proves that
+the image of the germ map is **exactly** the set of families of germs
+satisfying condition (*), hence that every **locally representable** family of
+germs comes from a section. Stacks' condition (*) is the same as our
+`IsLocallyRepresentable`: at each point, a local representative whose germ
+agrees with the family. Two differences of frame: Stacks works on a
+**presheaf on a basis** (`PresheafOnBasisOpenSet`) and its stalk is the
+**quotient** by the germ-equivalence relation (`:132` `Stalk`), ours a
+filtered colimit; and Stacks establishes the forward direction under the
+hypothesis `hF : F.IsSheaf`, ours states it as a hypothesis. What our
+version adds: existence in the frame of the site of opens, without a basis
+condition. -/
+def GermGluing (F : TopCat.Presheaf (Type u) (TopCat.of T)) : Prop :=
+  ∀ (U : Opens T) (a : GermFamily T F U),
+    GermFamily.IsLocallyRepresentable T F U a →
+      ∃ s : F.obj (op U), ∀ p : {x : T // x ∈ U}, F.germ U p.1 p.2 s = a p
+
+/-- The germ form of compatibility: two members of a compatible family have the
+same germ at every point of their intersection. This is the ingredient that
+makes the family of germs built on a covering family well defined — two local
+representatives of the same point agree locally, hence in germ.
+
+Stacks correspondence — **PARTIAL**: the ingredient is in Stacks:
+`Basis/Germs.lean:224` (`germ_res`) shows that the germ commutes with
+restriction, and `:212` (`germ_eq_iff_rel`) that equality of germs is
+equivalent to the germ-equivalence relation. Stacks has however **no** named
+statement “the germs of two compatible local representatives agree”: there,
+compatibility is expressed by equality of restrictions on basis elements
+(`Basis/LocallyBijectiveBasisIso.lean:83`, `IsCompatibleOnBasisPresheaf`) and
+the conclusion follows. What our version adds: the standalone statement,
+with a presheaf `IsCompatible` predicate and the site of opens. -/
+theorem germ_eq_of_isCompatible
+    (F : TopCat.Presheaf (Type u) (TopCat.of T)) {ι : Type*}
+    (U : ι → Opens T) (sf : ∀ i, F.obj (op (U i)))
+    (hc : TopCat.Presheaf.IsCompatible F U sf)
+    {i j : ι} {x : T} (hi : x ∈ U i) (hj : x ∈ U j) :
+    F.germ (U i) x hi (sf i) = F.germ (U j) x hj (sf j) := by
+  have hmem : x ∈ U i ⊓ U j := ⟨hi, hj⟩
+  rw [← F.germ_res_apply (infLELeft (U i) (U j)) x hmem (sf i),
+    ← F.germ_res_apply (infLERight (U i) (U j)) x hmem (sf j), hc i j]
+
+/-- **Characterization of a sheaf by its stalks**: a type-valued presheaf on a
+topological space is a sheaf if and only if germs detect equality of sections
+(separation) and every locally representable family of germs comes from a
+section (gluing).
+
+This is the capstone of the vein opened by Parts 72-75, and the only place in
+the lake where the sheaf condition is derived from elementary properties
+rather than postulated.
+
+Stacks correspondence — **PARTIAL**: both halves exist in Stacks, but
+**separately** and in a different frame. Forward direction (sheaf ⇒ properties
+of the germs): Stacks 009M (`Basis/Germs.lean:308` `germMap_injective` and
+`:329` `germMap_range_eq_conditionStar`). Backward direction (properties of
+the germs ⇒ sheaf): Stacks does not have it — its sheaf condition is
+**defined** by separation and gluing of **sections**
+(`Basis/Germs.lean:95` `PresheafOnBasisOpenSet.IsSheaf`; `Basis/Sheaf.lean:88`
+`IsSheafOnBasis`, EGA 0 3.2.2, and `:140` `main_theorem009J`, 009J, the basis
+criterion). The **“separated + glue”** shape — the closest to our statement
+— is literally the structure `IsSheafOnBasis`
+(`Basis/OnBasis.lean:73-74`, EGA 0 3.2.2, fields `separated` `:77` and `glue`
+`:88`), but its separation is **by restrictions**, not by germs; and the
+backward direction there is the **unique gluing** of sections
+(`Sheaf/Basic.lean:35`, 006T, `isSheaf_iff_isSheafUniqueGluing_types`).
+What our version adds: the equivalence **in the forward
+direction** on the site of opens, without a basis condition, and the backward
+direction where the sheaf condition is **derived** from the germs rather than
+postulated. -/
+theorem isSheaf_iff_germSeparated_and_germGluing
+    (F : TopCat.Presheaf (Type u) (TopCat.of T)) :
+    TopCat.Presheaf.IsSheaf F ↔ GermSeparated T F ∧ GermGluing T F := by
+  constructor
+  · intro hF
+    refine ⟨?_, ?_⟩
+    · intro U s t h
+      exact eq_of_germ_eq_of_isSheaf T F hF fun x hx => h x hx
+    · intro U a ha
+      exact (existsUnique_section_of_isLocallyRepresentable T F hF U a ha).exists
+  · rintro ⟨hsep, hglu⟩
+    refine TopCat.Presheaf.isSheaf_of_isSheafUniqueGluing_types F ?_
+    intro ι U sf hc
+    classical
+    -- witness index chosen for each point of the total open set
+    let k : {x : T // x ∈ iSup U} → ι := fun p =>
+      Classical.choose (Opens.mem_iSup.mp p.2)
+    have hk : ∀ p : {x : T // x ∈ iSup U}, p.1 ∈ U (k p) := fun p =>
+      Classical.choose_spec (Opens.mem_iSup.mp p.2)
+    -- the family of germs read off the local representatives
+    let a : GermFamily T F (iSup U) := fun p => F.germ (U (k p)) p.1 (hk p) (sf (k p))
+    -- it is locally representable, with the representatives of `sf` as witnesses
+    have hlr : GermFamily.IsLocallyRepresentable T F (iSup U) a :=
+      ⟨fun p => U (k p), fun p => Opens.leSupr U (k p), fun p => hk p,
+        fun p => sf (k p), fun p x hx =>
+          germ_eq_of_isCompatible T F U sf hc hx
+            (hk ⟨x, (Opens.leSupr U (k p)).le hx⟩)⟩
+    obtain ⟨s, hs⟩ := hglu (iSup U) a hlr
+    refine ⟨s, ?_, ?_⟩
+    · -- `s` restricts to each `U i`: the germs agree, separation concludes
+      intro i
+      apply hsep (U i)
+      intro x hx
+      rw [F.germ_res_apply (Opens.leSupr U i) x hx s,
+        hs ⟨x, (Opens.leSupr U i).le hx⟩]
+      exact germ_eq_of_isCompatible T F U sf hc
+        (hk ⟨x, (Opens.leSupr U i).le hx⟩) hx
+    · -- uniqueness: two gluings have the same germs, separation concludes
+      intro t ht
+      apply hsep (iSup U)
+      intro x hx
+      obtain ⟨i, hi⟩ := Opens.mem_iSup.mp hx
+      rw [hs ⟨x, hx⟩, ← F.germ_res_apply (Opens.leSupr U i) x hi t, ht i]
+      exact germ_eq_of_isCompatible T F U sf hc hi (hk ⟨x, hx⟩)
+
+end Contenu
+
+end Grothendieck.StalkCharacterization_en

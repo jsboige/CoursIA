@@ -27,6 +27,11 @@ from typing import Optional
 
 SERVICE_URL = os.environ.get("FAST_DOWNWARD_URL", "http://localhost:8200")
 
+# Delai de la sonde /health. Meme valeur que le port C# (FastDownwardBackend.cs) : le delai doit
+# absorber le cout a froid du kernel (chargement de System.Net.Http + JIT + connexion), mesure le
+# 2026-11-22 sur le port C# (2 s -> expiration a 2021 ms, meme requete repondant 200 en 2036 ms).
+PROBE_TIMEOUT_SECONDS = 15
+
 _resolved = False
 _service: Optional[dict] = None
 _driver: Optional[str] = None
@@ -35,7 +40,7 @@ _local_version: Optional[str] = None
 
 def _probe_service() -> Optional[dict]:
     try:
-        with urllib.request.urlopen(f"{SERVICE_URL}/health", timeout=2) as resp:
+        with urllib.request.urlopen(f"{SERVICE_URL}/health", timeout=PROBE_TIMEOUT_SECONDS) as resp:
             if resp.status != 200:
                 return None
             try:

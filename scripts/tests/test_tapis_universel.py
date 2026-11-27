@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_selection, tapis_marqueurs
 from coordination import tapis_universel as tu
+from coordination import tapis_universel_rapport as tur
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -99,11 +100,20 @@ def test_le_rejeu_ne_redonne_pas_un_budget_neuf():
 
     Defect epingle : le budget etait calcule une fois par page, puis reutilise
     tel quel aux trois tailles — trois timeouts de 60 s pour un budget global
-    de 60 s, soit 180 s de lecture possible. Ici, chaque appel recoit le temps
-    RESTANT, recalcule : 60 s puis 30 s, et le troisieme rejeu est refuse
-    (echeance atteinte) au lieu de recevoir un budget neuf.
+    de 60 s, soit 180 s de lecture possible.
+
+    Contrat I6 (#28114) : le timeout d'un appel est le plus petit du PLAFOND
+    de l'appel (15 s) et du temps RESTANT avant l'echeance. L'horloge
+    avance ici de 20 s par appel, pour une echeance posee 25 s plus loin :
+    le premier appel recoit 15 s (le plafond), le rejeu recoit 5 s (le
+    RESTANT, recalcule), et la troisieme taille est refusee — l'echeance
+    est atteinte, elle n'est pas repoussee.
+
+    Le second timeout (5 s, et non 15 s) est l'observable qui porte
+    l'invariant : sans recomputation du temps restant, le rejeu repartirait
+    de zero et recoitrait le plafond.
     """
-    horloge = _Horloge(pas=30.0)
+    horloge = _Horloge(pas=20.0)
     timeouts: list[int] = []
 
     def run(argv, timeout):
@@ -114,9 +124,9 @@ def test_le_rejeu_ne_redonne_pas_un_budget_neuf():
         return _page([_noeud(1)], False)
 
     with pytest.raises(gh_bulk.LectureIncomplete) as exc:
-        gh_selection.lire_metadonnees_issues(run, budget_s=60.0, horloge=horloge)
+        gh_selection.lire_metadonnees_issues(run, budget_s=25.0, horloge=horloge)
     assert "budget global" in exc.value.cause
-    assert timeouts == [60, 30], \
+    assert timeouts == [15, 5], \
         f"le temps restant doit etre recalcule avant chaque rejeu : {timeouts}"
 
 
@@ -201,7 +211,8 @@ def test_le_rapport_porte_l_etat_et_l_action():
         gh_selection.metadonnee(_noeud(2))]
     etats_ = tu.etats_leger(metas, {}, NOW)
     file = tu.rotation_universelle(etats_, LANE, NOW, 8)
-    r = tu.rapport(etats_, file, LANE, NOW, {"issues": 2, "secondes": 1.2})
+    r = tu.rapport(etats_, file, LANE, NOW, {"issues": 2, "secondes": 1.2},
+                   provenance=tur.QUALIFIE)
     assert r["pool"] == 2 and len(r["grains"]) == 2
     for g in r["grains"]:
         assert "qualifier" in g["action"]
@@ -209,6 +220,45 @@ def test_le_rapport_porte_l_etat_et_l_action():
     epic = next(g for g in r["grains"] if g["numero"] == 1)
     assert epic["consolidation"] is True
     assert "consolidation" in epic["action"]
+
+
+def test_l_entree_universelle_annonce_des_metadonnees_seules(monkeypatch, capsys):
+    """L'ACTION PUBLIQUE de l'entree universelle ne dit pas « deja qualifie ».
+
+    L'entree universelle lit les metadonnees, les citations et les PRs --
+    **PAS le fil**. Elle annoncait « deja qualifie sur fil complet » : la lane
+    recevait une consigne de claim fondee sur une lecture de fil qui n'avait
+    pas eu lieu (reserve du coordinateur du 25/11 sur #28345).
+
+    Temoin : l'action publique du grain servi par l'entree universelle
+    impose la lecture du fil avant le claim, ne se dit pas qualifiee, et ne
+    se dit pas « candidat du cache » non plus -- sa lecture est reseau.
+    """
+    metas = [gh_selection.metadonnee(_noeud(1)),
+             gh_selection.metadonnee(_noeud(2))]
+    monkeypatch.setattr(gh_selection, "lire_metadonnees_issues",
+                        lambda run, budget_s=60.0: (metas, 0.5))
+    monkeypatch.setattr(gh_bulk, "lire_citations_mergees",
+                        lambda depot, jours=45, run=None: {})
+    monkeypatch.setattr(gh_bulk, "lire_prs_ouvertes", lambda run=None: [])
+
+    rc = tu.main(["--lane", LANE, "--json"], run=lambda argv, timeout: "",
+                  maintenant=NOW)
+    assert rc == 0
+    r = json.loads(capsys.readouterr().out)
+    assert r["provenance"] == tur.METADONNEES, \
+        "l'entree universelle doit declarer sa provenance"
+    assert r["fil_lu"] is False, "l'entree universelle n'a pas lu le fil"
+    assert r["grains"], "l'entree universelle doit rendre une file"
+    for g in r["grains"]:
+        assert "metadonnees seules" in g["action"], \
+            "l'action publique doit nommer la provenance reelle"
+        assert "lire le fil avant de claimer" in g["action"], \
+            "l'action publique doit imposer la lecture du fil avant le claim"
+        assert "deja qualifie sur fil complet" not in g["action"], \
+            "des metadonnees seules ne se disent pas qualifiees"
+        assert "cache" not in g["action"], \
+            "la lecture reseau de l'entree universelle n'est pas un cache"
 
 
 def test_la_lecture_legique_est_plus_courte_que_la_lecture_lourde():

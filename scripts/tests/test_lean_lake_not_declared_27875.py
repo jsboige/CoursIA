@@ -38,7 +38,7 @@ import lean_build_attestation as lba  # noqa: E402
 BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
 BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
 #: Un lake deja declare au manifeste (entree `conway`).
-CONWAY = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
+CONWAY = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean"
 CONWAY_LAKEFILE = CONWAY + "/lakefile.lean"
 
 #: Manifeste minimal : un lake declare (`conway`), et rien pour busybeaver.

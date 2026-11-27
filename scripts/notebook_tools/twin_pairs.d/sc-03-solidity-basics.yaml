@@ -1,0 +1,9 @@
+- name: "SC-03 Solidity Basics"
+  family: SymbolicAI/SmartContracts/01-Solidity-Foundation
+  python: MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python utilise web3.py et py-solc-x ; C# utilise Nethereum.Web3 et solc standard-json. Les deux compilent en Solidity 0.8.28 et déploient sur Anvil."
+  known_differences:
+    - "Les API et le décodage ABI sont idiomatiques à chaque langage ; les adresses, blocs et frais varient selon la chaîne locale."

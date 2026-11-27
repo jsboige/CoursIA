@@ -6,9 +6,9 @@ pagetitle: "SymbolicAI - Intelligence Artificielle Symbolique"
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 415
-breakdown: Lean=167, SMT=55, ArgumentAnalysis=39, Tweety=39, SmartContracts=32, SemanticWeb=29, SymbolicLearning=27, Planners=26, root=1
-maturity: BETA=394, ALPHA=11, DRAFT=10
+pedagogical_count: 459
+breakdown: Lean=181, SMT=66, ArgumentAnalysis=50, Tweety=39, SmartContracts=37, SemanticWeb=31, SymbolicLearning=28, Planners=26, root=1
+maturity: BETA=438, ALPHA=11, DRAFT=10
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -33,7 +33,7 @@ Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme p
 2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
 3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-00-Setup-Python.ipynb`).
 4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
-5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-1-LogicalLearning.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté ArgumentAnalysis (notebooks `Argumentation-04-*`).
+5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-01-LogicalLearning-Python.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté ArgumentAnalysis (notebooks `Argumentation-04-*`).
 
 Chaque verbe se construit par accumulation : un lecteur qui ne suit qu'une série atteint un sous-ensemble, et c'est en croisant les huit qu'il couvre la carte complète. Les **flèches pleines** de la [carte de la famille](#carte-de-la-famille) ci-dessous matérialisent les ponts : une compétence acquise dans Tweety devient argument dans ArgumentAnalysis, un encodage SMT devient prouveur de borne dans Planners, une ontologie OWL devient garde-fou pour un LLM via GraphRAG.
 
@@ -60,7 +60,7 @@ Un nom de notebook suit la forme `<Prefixe>-<NN><lettre?>-<Titre>[-Part<N>]-<Noy
 | `-Part<N>` | — | un notebook découpé en parties à lire dans l'ordre |
 | noyau en dernier | `-Python`, `-CSharp`, `-Lean`, `-Lean-Python` | le kernel à installer ; `-Lean-Python` désigne un notebook Python qui pilote Lean |
 
-La normalisation des noms est en cours (#16231). Beaucoup de fichiers de la famille n'ont pas encore leur padding ou leur suffixe de noyau (`Lean-02-Dependent-Types-Lean`, `SL-4-InductiveLogicProgramming`). En attendant, la colonne Noyau des tables fait foi.
+La normalisation des noms est en cours (#16231). Beaucoup de fichiers de la famille n'ont pas encore leur padding ou leur suffixe de noyau (`Lean-02-Dependent-Types-Lean`, `SL-04-InductiveLogicProgramming-Python`). En attendant, la colonne Noyau des tables fait foi.
 
 ## Carte de la famille
 
@@ -126,7 +126,7 @@ Trois séries se prennent **à côté** de ce parcours, selon ce qui vous attire
 | Série | Ce qu'on y apprend | Ce qu'elle suppose | Porte d'entrée | Public | Noyau |
 |---|---|---|---|---|---|
 | [Argumentation](ArgumentAnalysis/README.md) | Analyse argumentative outillée : Toulmin, sophismes, sémantiques de Dung, orchestration d'agents LLM validés par Tweety | les bases de Tweety, une clé d'API | [Argumentation-00-Setup-Tweety-Python](ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Licence | Python |
-| [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Licence | Python · C# |
+| [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-01-LogicalLearning-Python](SymbolicLearning/SL-01-LogicalLearning-Python.ipynb) | Licence | Python · C# |
 | [Geometry](Lean/Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
 
 ## Les séries en bref
@@ -185,7 +185,7 @@ Le dossier s'appelle encore `ArgumentAnalysis/`, mais la série s'appelle Argume
 
 ### SymbolicLearning — apprendre à partir de connaissances
 
-- **Parcours léger** — SL-1 à SL-11 suivent le chapitre 19 d'AIMA jusqu'au capstone : Version Space, apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, moteurs ILP modernes), neuro-symbolique, graphes de connaissances, LLM, apprentissage actif d'automates (L* d'Angluin), capstone LLM et graphe de connaissances. SL-12 à SL-15 prolongent vers la recherche récente : portes logiques différentiables, diagnostic DISCOVER, découverte d'équations, conjectures apprises.
+- **Parcours léger** — SL-01 à SL-11 suivent le chapitre 19 d'AIMA jusqu'au capstone : Version Space, apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, moteurs ILP modernes), neuro-symbolique, graphes de connaissances, LLM, apprentissage actif d'automates (L* d'Angluin), capstone LLM et graphe de connaissances. SL-12 à SL-15 prolongent vers la recherche récente : portes logiques différentiables, diagnostic DISCOVER, découverte d'équations, conjectures apprises.
 - **Pour approfondir** — 1b (compagnon Lean natif), les lettres 12b (synthèse spectrale, reproduction Pavlov DLS), les jumeaux C# écrits sans dépendance externe.
 - [README de la série SymbolicLearning](SymbolicLearning/README.md)
 
@@ -252,7 +252,7 @@ dotnet interactive jupyter install
 
 - **Lean** : WSL est obligatoire, les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, chemins). `Lean-01-Setup-Lean-Python` installe elan, Lean 4 et `lean4_jupyter` dans WSL. Les preuves natives tournent sur les kernels `lean4` / `lean4-wsl`, certains compagnons Python sur `python3-wsl`, les autres sur un noyau Python natif. Le noyau exact de chaque notebook est dans le README de la série.
 - **Planners** : Fast Downward s'installe dans WSL ou par Docker.
-- **SymbolicLearning** : Popper et SWI-Prolog (SL-4, SL-6) demandent un noyau Linux ou WSL.
+- **SymbolicLearning** : Popper et SWI-Prolog (SL-04, SL-06) demandent un noyau Linux ou WSL.
 
 ### Foundry — SmartContracts
 
@@ -267,7 +267,7 @@ Elles vivent dans un fichier `.env` non versionné, jamais dans un notebook.
 | Lean | 7 à 10 | `OPENAI_API_KEY` (OpenRouter) |
 | Argumentation | la plupart | `OPENAI_API_KEY`, et `OPENAI_BASE_URL` pour OpenRouter ; configuration complète dans le README de la série |
 | SmartContracts | SC-11 | `LLM_API_KEY` |
-| SymbolicLearning | SL-9, SL-11 | clé OpenRouter facultative ; un simulateur déterministe prend le relais sans elle |
+| SymbolicLearning | SL-09, SL-11 | clé OpenRouter facultative ; un simulateur déterministe prend le relais sans elle |
 | SemanticWeb | SW-12 | facultative |
 
 Dans Argumentation, la démonstration agentique d'origine (`Argument_Analysis_Agentic-0` à `-3`) doit s'exécuter dans l'ordre, à la main. Papermill ne conserve pas l'état entre notebooks, et le notebook d'orchestration dépend des définitions des trois précédents.
@@ -334,7 +334,7 @@ Légende : ● couverture large ; ◐ couverture partielle ou compagnon ; — ab
 
 Les séries ne sont pas des sujets indépendants : elles forment un **pipeline du raisonnement symbolique**, du représentationnel au certifié. On représente la connaissance (Tweety, SemanticWeb), on raisonne dessus (argumentation, révision de croyances, décision par Z3), on prouve quand la certitude est exigée (Lean), on décide et on agit (Planners, SmartContracts), on apprend à partir de connaissances (SymbolicLearning), et on relie le tout aux LLMs (Argumentation).
 
-Ce pipeline est aussi un **cercle**. Une décision Z3 peut être certifiée par une preuve Lean ; un plan PDDL peut s'exécuter sur une blockchain qui garantit qu'il n'a pas été altéré ; un argument détecté par un LLM peut être formalisé dans Tweety, validé par un prouveur, puis rejoué dans un notebook d'apprentissage. Les **compagnons Lean** (Tweety-5b, Planners-5b, SC-7c, SL-1b) ne sont pas des sous-produits : ce sont les points de certification où le symbolique passe du raisonnement plausible à la preuve vérifiée.
+Ce pipeline est aussi un **cercle**. Une décision Z3 peut être certifiée par une preuve Lean ; un plan PDDL peut s'exécuter sur une blockchain qui garantit qu'il n'a pas été altéré ; un argument détecté par un LLM peut être formalisé dans Tweety, validé par un prouveur, puis rejoué dans un notebook d'apprentissage. Les **compagnons Lean** (Tweety-5b, Planners-5b, SC-7c, SL-01b) ne sont pas des sous-produits : ce sont les points de certification où le symbolique passe du raisonnement plausible à la preuve vérifiée.
 
 À l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas : un raisonnement vérifiable, explicable et certifié. Chaque série montre un point de jonction concret avec le neuronal : GraphRAG dans SemanticWeb, les prouveurs assistés par LLM dans Lean, le capstone de SymbolicLearning, le pipeline d'Argumentation.
 
