@@ -73,6 +73,9 @@ nommee :
    absentes ici (sommet de pile perime) -> skip ``stack-top:<parente>`` ;
    index illisible (``None``) -> fail-open assume (convention UNKNOWN !=
    rouge forge), etat ``unmeasured`` journalise avec ses incidents ;
+   construction SOUS BUDGET (un seul fil, attendu au plus le budget de la
+   PR qui la declenche, une fois par passe) -> delai expire : skip
+   ``stack-timeout``, porte ``unmeasured``, rien n'est fusionne ;
 3bis. prelecture REST : ``repos/jsboige/CoursIA/pulls/<N>`` ->
    ``mergeable_state`` et ``head.sha``, budget COURT (#26799). Placee
    AVANT l'etape 4 : elle ne coute qu'une lecture, alors que les etapes
@@ -184,11 +187,12 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 # Les modules partages vivent dans scripts/ : grain_tag.py est LE lecteur du
 # tag Grain (un seul lecteur depuis #9485, meme discipline que
@@ -444,10 +448,12 @@ PASS_BUDGET_S = 2700.0
 
 #: Delai maximal d'UN sous-processus (s).
 #:
-#: Mesure du 24/11 : une lecture `gh` peut depasser 1 500 s quand l'API
-#: est lente -- et rien ne la bornait, donc une passe pouvait rester
-#: bloquee sur un enfant muet bien au-dela de `PASS_BUDGET_S` (cette
-#: borne se lit ENTRE deux PRs, elle n'interrompt jamais une PR en cours).
+#: Mesure du 24/11 (passe 3605) : une PR (#25063) a occupe 1 587 s, et rien
+#: ne bornait ses sous-processus, donc une passe pouvait rester bloquee sur
+#: un enfant muet bien au-dela de `PASS_BUDGET_S` (cette borne se lit
+#: ENTRE deux PRs, elle n'interrompt jamais une PR en cours). Le journal
+#: porte un verdict par PR, pas une duree par commande : il ne dit PAS
+#: quelle commande a pris ce temps.
 #:
 #: Depasse : l'enfant est tue, le rc vaut `TIMEOUT_RC` (convention
 #: `timeout(1)`), et l'appelant traite ce rc comme une MESURE IMPOSSIBLE
@@ -461,6 +467,13 @@ CMD_TIMEOUT_S = 300.0
 #: la boucle de passe (`set_pr_budget`). Chaque sous-processus de la PR
 #: recoit alors `min(CMD_TIMEOUT_S, reste)` ; l'echeance passee, le runner
 #: ne lance plus rien et rend `TIMEOUT_RC` immediatement.
+#:
+#: Elle borne AUSSI le seul travail en processus de l'evaluation, la
+#: construction de l'index de pile (etape 3, ``_index_pile``) : la
+#: construction recoit le budget de la PR qui la declenche -- celui d'une
+#: evaluation, donc -- UNE fois par passe. Une PR n'attend jamais plus que
+#: son propre budget, et la construction ne retient une passe que jusqu'a
+#: l'echeance de ce budget-la.
 #:
 #: Le merge reste HORS echeance : une echeance atteinte au milieu d'un
 #: merge laisserait l'etat de la fusion inconnu (le merge a un
@@ -3382,6 +3395,145 @@ def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None
 _STACK_PARTNER_RE = re.compile(r"OPEN #(\d+)")
 
 
+# --- index de pile : le seul travail EN PROCESSUS, attendu sous budget (#28428) ---
+#
+# La porte STACK (etape 3) est la seule etape couteuse qui ne passe PAS par
+# le runner : ``gate.default_stack_index()`` construit l'index DANS le
+# processus (enumeration des PR ouvertes, fetch de leurs tetes, lectures git
+# par PR). Appellee en direct, elle ne recevait pas le budget de la PR, et
+# une construction lente retenait la passe sans borne (review du 26/11 sur
+# la tete 4bd21455d5a1).
+#
+# Trois regles, chacune avec son temoin dans
+# ``scripts/tests/test_merge_ready_timeout_bound.py`` :
+#
+# - UN SEUL fil construit (mono-vol). Une construction en cours n'est jamais
+#   relancee : les PRs qui arrivent attendent la meme ;
+# - UNE echeance par construction : le budget de la PR qui la declenche, pris
+#   a son lancement (``PR_DEADLINE_S`` si son runner n'en porte pas). Une PR
+#   n'attend donc jamais plus que son propre budget, et la construction ne
+#   retient jamais une passe plus longtemps qu'UN budget -- l'echeance passee,
+#   les PRs suivantes sont saisies sans attendre ;
+# - delai expire : la PR est SAISIE (``stack-timeout``), sa ligne porte la
+#   porte ``unmeasured`` et l'incident, et RIEN n'est fusionne sur un etat
+#   inconnu. La construction continue en fil arriere : quand elle finit, les
+#   PRs suivantes servent son resultat, sans attendre.
+#
+# L'etat est celui de CE module, jamais l'indicateur ``built`` du module du
+# gate : dans un meme processus, un autre appelant peut l'avoir laisse a
+# Vrai sans qu'aucune construction bornee ait eu lieu ici.
+_PILE_VERROU = threading.Lock()
+_PILE_CONSTRUCTION: dict[str, Any] = {
+    "evenement": None, "resultat": None, "echeance": None, "budget": None,
+}
+
+
+def _reste_avant_echeance(runner: Runner) -> float | None:
+    """Budget restant de la PR (s), ou ``None`` si le runner n'en porte pas.
+
+    L'echeance est portee par le runner de production (``_remaining_s``) ;
+    les runners scriptes ne l'ont pas. Une echeance deja passee rend 0.
+    """
+    reste = getattr(runner, "_remaining_s", None)
+    if not callable(reste):
+        return None
+    valeur = reste()
+    return None if valeur is None else max(float(valeur), 0.0)
+
+
+def _attendre_la_pile(evenement: threading.Event, reste_s: float) -> bool:
+    """Attend la fin de la construction AU PLUS `reste_s` secondes.
+
+    Rend True quand la construction est finie. Echeance deja passee : rien
+    n'est attendu, l'etat est seulement lu.
+    """
+    if reste_s <= 0:
+        return evenement.is_set()
+    return evenement.wait(reste_s)
+
+
+def _construire_pile(
+    construire: Any, gate: Any, evenement: threading.Event,
+    resultat: dict[str, Any],
+) -> None:
+    """Corps du fil : l'index (ou l'erreur) de la construction va au dict.
+
+    Toute exception est gardee pour la PR qui attendait -- un ``SystemExit``
+    du gate aussi, qui terminait l'organe en appel direct.
+    """
+    try:
+        resultat["index"] = construire()
+        cache = getattr(gate, "_STACK_INDEX_CACHE", None)
+        resultat["incidents"] = [
+            str(item) for item in ((cache or {}).get("incidents") or [])
+        ]
+    except BaseException as exc:  # noqa: BLE001 -- remontee a la PR qui attendait
+        resultat["erreur"] = exc
+    finally:
+        evenement.set()
+
+
+def _index_pile(
+    gate: Any, budget_pr_s: float | None,
+) -> tuple[dict | None, list[str], bool]:
+    """L'index de pile, attendu sous budget.
+
+    Rend ``(index, incidents, delai_expire)``. ``budget_pr_s`` est le
+    budget restant de la PR qui demande l'index (``None`` : sans echeance) ;
+    c'est lui que recoit la construction quand cette PR la declenche. Une PR
+    qui arrive pendant qu'elle tourne attend au plus ce qui reste de cette
+    echeance, et jamais plus que son propre budget.
+
+    Delai expire : ``(None, incidents, True)`` -- l'appelant saisit la PR,
+    il ne fusionne pas sur un etat inconnu. Une erreur de la construction
+    remonte a l'appelant, comme l'appel direct d'avant, et la construction
+    est retentee a la demande suivante.
+    """
+    with _PILE_VERROU:
+        evenement = _PILE_CONSTRUCTION["evenement"]
+        resultat = _PILE_CONSTRUCTION["resultat"]
+        aboutie = (
+            evenement is not None and evenement.is_set()
+            and resultat is not None and "index" in resultat
+        )
+        if not aboutie and (evenement is None or evenement.is_set()):
+            # Aucune construction de ce module n'a abouti, et aucune ne
+            # tourne (celle qui a echoue est retentee) : on en lance une,
+            # sous le budget de la PR qui la declenche.
+            budget = PR_DEADLINE_S if budget_pr_s is None else max(budget_pr_s, 0.0)
+            evenement = threading.Event()
+            resultat = {}
+            _PILE_CONSTRUCTION.update(
+                evenement=evenement, resultat=resultat,
+                echeance=time.monotonic() + budget, budget=budget,
+            )
+            # La fonction est resolue ICI, pas dans le fil : le fil ne doit
+            # jamais appeler autre chose que ce que l'appelant a vu.
+            threading.Thread(
+                target=_construire_pile,
+                args=(gate.default_stack_index, gate, evenement, resultat),
+                daemon=True, name="merge-ready-index-pile",
+            ).start()
+        echeance = _PILE_CONSTRUCTION["echeance"]
+        budget = _PILE_CONSTRUCTION["budget"]
+    if aboutie:
+        # Reutiliser le resultat du fil : rappeler le gate ici contournerait
+        # la borne si son cache avait ete invalide entre les deux appels.
+        return resultat.get("index"), list(resultat.get("incidents") or []), False
+    attente = max(echeance - time.monotonic(), 0.0)
+    if budget_pr_s is not None:
+        attente = min(attente, budget_pr_s)
+    if not _attendre_la_pile(evenement, attente):
+        return None, [
+            "construction de l'index pile : delai depasse (budget de "
+            + (f"{budget:.0f}" if budget >= 10 else f"{budget:.3g}")
+            + " s) -- porte STACK non mesuree, PR saisie"
+        ], True
+    if "erreur" in resultat:
+        raise resultat["erreur"]
+    return resultat.get("index"), list(resultat.get("incidents") or []), False
+
+
 def evaluate_pr(
     view: dict,
     pr: int,
@@ -3480,16 +3632,21 @@ def evaluate_pr(
     # sommets de pile perimes. Fail-open sur index illisible, meme
     # convention que le gate (UNKNOWN != rouge forge) : l'etat se
     # journalise, il ne fabrique aucun refus.
+    #
+    # La construction elle-meme est attendue SOUS BUDGET (``_index_pile``) :
+    # c'est du travail en processus, que le runner ne borne pas. Un delai
+    # expire fait exception au fail-open -- comme tout delai de cet organe,
+    # la PR est SAISIE, jamais fusionnee sur un etat inconnu.
     stack_state: str | None
     stack_inc: tuple[str, ...] | None
-    index = gate.default_stack_index()
+    index, incidents_pile, delai_expire = _index_pile(
+        gate, _reste_avant_echeance(runner),
+    )
+    if delai_expire:
+        return skip("stack-timeout", "unmeasured", (incidents_pile[0],))
     if index is None:
         stack_state = "unmeasured"
-        # Acces direct au cache du module : c'est lui qui porte les incidents
-        # de la mesure qui vient d'echouer (aucun accesseur public ne les
-        # expose).
-        incidents = gate._STACK_INDEX_CACHE.get("incidents") or []
-        stack_inc = tuple(str(item) for item in incidents) or None
+        stack_inc = tuple(str(item) for item in incidents_pile) or None
     else:
         stack_state = "measured"
         stack_inc = None
@@ -3817,6 +3974,14 @@ def merge_verdict(
 def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     """Point d'entree testable : parse les arguments, execute un run complet."""
     args = _parse_args(argv)
+    # Une passe nouvelle ne reutilise pas le resultat d'une passe precedente.
+    # Un fil encore actif reste partage pour eviter deux constructions en vol.
+    with _PILE_VERROU:
+        evenement = _PILE_CONSTRUCTION["evenement"]
+        if evenement is not None and evenement.is_set():
+            _PILE_CONSTRUCTION.update(
+                evenement=None, resultat=None, echeance=None, budget=None,
+            )
     active_runner = runner if runner is not None else SubprocessRunner()
     journal_path = (
         args.journal if args.journal is not None else default_journal_path()
@@ -4202,7 +4367,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
             "sous-processus de la PR recoit "
             f"`min({int(CMD_TIMEOUT_S)} s, reste)`, et l'echeance passee le "
             "sous-processus ne part plus. Une PR dont le delai expire est "
-            "SAISIE (motif `timeout:...`), jamais rougie."
+            "SAISIE (motif `timeout:...`), jamais rougie. Elle borne aussi "
+            "l'attente de la construction de l'index de pile (motif "
+            "`stack-timeout`) : par passe, la construction a UNE echeance, "
+            "celle de la PR qui la declenche ; passee, les PRs suivantes "
+            "sont saisies sans attendre."
         ),
     )
     parser.add_argument(
