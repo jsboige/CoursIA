@@ -32,6 +32,12 @@ SMOKE   only the CI machinery changed (this file, the workflow): it decides how
         exercises it. Reported as `scoped`, since that is what it is.
 EMPTY   nothing on the render surface changed: nothing to validate.
 
+A pure MOVE -- a rename whose bytes are identical -- is not a content change:
+it does not force a full render unless the moved file is itself a rendering
+input (the root theme, a ``_metadata.yml``, or a file a project config names).
+See ``pure_move_is_inert`` and #28576, where a PR that only moved a demo
+stylesheet paid the full render of 3 088 documents.
+
 The CI-machinery exemption is not a convenience: without it this script's own
 PR would be classified FULL by its own rule and killed by the 60-min ceiling
 it exists to avoid -- a fix that cannot pass its own gate.
@@ -87,6 +93,27 @@ FULL_RENDER_PREFIXES = (
     "scripts/ci/regen_quarto_render",  # the list generator itself
 )
 FULL_RENDER_SUFFIXES = (".scss", ".css", "_metadata.yml")
+
+# A pure MOVE -- similarity 100, bytes identical -- is not a content change.
+# The suffix rule above exists for a content reason ("a change to a .css can
+# alter the rendering of documents it does not name"); a move changes no byte,
+# only the path under which the file is served, which is a link question and
+# not a rendering one. Left unhandled, the rule fired on every renamed asset:
+# #28576 measured a PR whose only trigger was two R100 moves of a demo
+# stylesheet, which forced the full render of 3 088 documents and killed the
+# PR leg at its 60-min ceiling (five attempts, same wall).
+#
+# A move is inert for the rendering only when the file is not a rendering
+# INPUT. Three cases keep the full render, and each of them does change how
+# documents render:
+#   - the file is or becomes a project-level asset (FULL_RENDER_TRIGGERS: the
+#     root theme, the favicon): moving the theme changes every page;
+#   - the file is a `_metadata.yml`: its scope follows its directory, so
+#     moving it re-targets the metadata;
+#   - a project config names the file (theme, css, include): the config is
+#     what turns an asset into a rendering input.
+# A rename whose content changed (similarity < 100) is a content change and
+# keeps the full render, under the rule's original reason.
 
 # These decide HOW MUCH gets rendered and how the job runs -- they never change
 # how a given document renders, so a scoped render exercises them exactly as
@@ -277,8 +304,17 @@ def _diff_failure(base: str, head: str, exc: subprocess.CalledProcessError,
     return "\n".join(parts)
 
 
-def changed_files(base: str, head: str) -> list[tuple[str, str]]:
-    """[(status, path)] between two commits. Status is one of A C D M R."""
+def changed_files(base: str, head: str) -> list[tuple[str, ...]]:
+    """[(status, path)] between two commits. Status is one of A C D M R.
+
+    A rename carries two more fields: ``(R, new_path, old_path, similarity)``.
+    Dropping them made a pure MOVE indistinguishable from a content CHANGE
+    (#28576), and the suffix rule then fired on files whose bytes never
+    changed. The extra fields are optional everywhere else, so a caller that
+    only knows (status, path) -- the `--changed-from` file, the tests -- keeps
+    working, and such a caller simply never benefits from the move exemption
+    (fail-closed).
+    """
     # encoding= is mandatory, not decorative (#12811): the repo carries accented
     # notebook paths, and a cp1252 host decoding git's UTF-8 output would raise
     # mid-diff -- turning a scope decision into a crashed job.
@@ -305,19 +341,94 @@ def changed_files(base: str, head: str) -> list[tuple[str, str]]:
             print("[quarto-scope] first diff attempt failed, deepening:\n"
                   + _diff_failure(base, head, exc, ""), file=sys.stderr)
             deepen_note = _fetch_deepen()
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, ...]] = []
     for line in out.splitlines():
         if not line.strip():
             continue
         parts = line.split("\t")
         # For a rename git prints "R100<TAB>old<TAB>new": the NEW path renders.
-        rows.append((parts[0][:1], parts[-1]))
+        if parts[0].startswith("R") and len(parts) >= 3:
+            rows.append(("R", parts[-1], parts[1], parts[0][1:]))
+        else:
+            rows.append((parts[0][:1], parts[-1]))
     return rows
 
 
-def decide(rows: list[tuple[str, str]], entries: list[str],
-           yml_render_list_only: bool = False) -> tuple[str, list[str], str]:
-    """Return (mode, files, reason)."""
+_ASSET_NAME_RE = re.compile(
+    r"[A-Za-z0-9_.\-]+\."
+    r"(?:css|scss|sass|less|js|html|ya?ml|json|ico|png|jpe?g|gif|svg|webp|woff2?|ttf|otf|pdf)"
+)
+
+
+def config_named_assets() -> frozenset[str] | None:
+    """Basenames of the assets a project config names, or None if unknown.
+
+    A config is what turns a file into a rendering input (theme, css,
+    include). The scan is deliberately coarse -- basenames, over the config
+    part of every ``_quarto.yml`` with the generated render list excluded --
+    because a false positive only costs a full render, never a missed one.
+
+    ``None`` means the scan could not be performed; the caller then keeps the
+    conservative behaviour (every move of a suffix-triggering file stays a
+    full render).
+    """
+    try:
+        r = subprocess.run(
+            ["git", "ls-files", "--", "*_quarto.yml"],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
+        )
+    except (subprocess.CalledProcessError, OSError):
+        return None
+    names: set[str] = set()
+    for rel in r.stdout.splitlines():
+        rel = rel.strip()
+        if not rel:
+            continue
+        try:
+            text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return None
+        for m in _ASSET_NAME_RE.finditer(outside_render_block(text)):
+            names.add(m.group(0))
+    return frozenset(names)
+
+
+def pure_move_is_inert(old_path: str, new_path: str,
+                       named_assets: frozenset[str]) -> bool:
+    """True when a pure MOVE cannot change how any document renders.
+
+    ``named_assets`` holds the basenames a project config names (theme, css,
+    include). The file is inert when it is not a project-level asset, not a
+    ``_metadata.yml`` (its scope follows its directory), and not named by any
+    config: in that case the bytes are identical, the file is a static asset,
+    and only the URL it is served under changes -- a link question, covered by
+    ``quarto_site_link_targets.py`` and ``check_site_links``, not a rendering
+    one.
+    """
+    for path in (old_path, new_path):
+        if not path:
+            continue
+        if path in FULL_RENDER_TRIGGERS:
+            return False
+        if path.startswith(FULL_RENDER_PREFIXES):
+            return False
+        if path.endswith("_metadata.yml"):
+            return False
+        if path.rsplit("/", 1)[-1] in named_assets:
+            return False
+    return True
+
+
+def decide(rows: list[tuple[str, ...]], entries: list[str],
+           yml_render_list_only: bool = False,
+           named_assets: frozenset[str] | None = None) -> tuple[str, list[str], str]:
+    """Return (mode, files, reason).
+
+    ``named_assets`` is the set of basenames a project config names; ``None``
+    means "unknown" and disables the pure-move exemption, so a caller that
+    could not scan the configs keeps the conservative full render.
+    """
     # Literal entries match by string; glob entries match by pattern. An entry
     # whose glob cannot be translated forces a full render rather than a scope
     # that would quietly be too narrow.
@@ -335,7 +446,10 @@ def decide(rows: list[tuple[str, str]], entries: list[str],
         return any(path == e if rx is None else rx.match(path) for e, rx in matchers)
 
     smoke = False
-    for status, path in rows:
+    for row in rows:
+        status, path = row[0], row[1]
+        old_path = row[2] if len(row) > 2 else ""
+        score = row[3] if len(row) > 3 else ""
         if path in CI_MACHINERY:
             smoke = True
             continue  # exempt: changes the check, never a document's rendering
@@ -347,13 +461,16 @@ def decide(rows: list[tuple[str, str]], entries: list[str],
         if path.startswith(FULL_RENDER_PREFIXES):
             return "full", [], path + " changed (pre-processing script)"
         if path.endswith(FULL_RENDER_SUFFIXES):
+            if (status == "R" and score == "100" and named_assets is not None
+                    and pure_move_is_inert(old_path, path, named_assets)):
+                continue  # pure move of a static asset: no byte changed (#28576)
             return "full", [], path + " changed (theme/metadata)"
         if status == "D" and covered(path):
             return "full", [], path + " deleted (link integrity)"
 
     # Order-preserving intersection: keep the render list's own ordering, and
     # expand each glob to the changed paths it actually covers.
-    changed = set(p for s, p in rows if s != "D")
+    changed = set(r[1] for r in rows if r[0] != "D")
     files: list[str] = []
     for e, rx in matchers:
         if rx is None:
@@ -445,9 +562,10 @@ def main() -> int:
 
     yml_only = args.yml_render_list_only
     if not yml_only and args.base and args.head:
-        if any(path == "_quarto.yml" for _, path in rows):
+        if any(r[1] == "_quarto.yml" for r in rows):
             yml_only = yml_change_is_render_list_only(args.base, args.head)
-    mode, files, reason = decide(rows, entries, yml_only)
+    mode, files, reason = decide(rows, entries, yml_only,
+                                 named_assets=config_named_assets())
     print("[quarto-scope] mode=%s (%s)" % (mode, reason))
     for f in files:
         print("[quarto-scope]   " + f)
