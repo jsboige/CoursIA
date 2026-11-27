@@ -130,7 +130,12 @@ Comportement :
 - Jeton : chaque sous-processus gh recoit ``GH_TOKEN`` epingle depuis
   ``gh auth token --user myia-ai-01``, resolu UNE fois au depart ;
   jamais ``gh auth switch``. Jeton irresolu -> exit 2.
-- Ordre : PR la plus ancienne d'abord (par numero).
+- Ordre : les PRs approuvees par le coordinateur a la TETE EXACTE d'abord,
+  puis les autres ; chaque groupe par numero croissant, apres le curseur de
+  reprise (#28009). L'approbation est lue en UNE lecture GraphQL paginee a
+  l'ouverture de la passe (``lire_priorite``) : un renseignement d'ORDRE,
+  qui ne change ni une garde ni un verdict -- lecture non mesuree, l'ordre
+  du curseur s'applique seul.
 - Retenues : ``hold.txt`` a cote du journal (surchargeable
   ``--hold-file``), une PR par ligne -- ``<numero> [motif]`` ; lignes
   vides et commentaires ``# ...`` ignores. La sentinelle reserve le numero
@@ -861,6 +866,261 @@ def _ordonner_apres_curseur(prs: list[int], curseur: int | None) -> list[int]:
     if curseur is None:
         return list(prs)
     return sorted(prs, key=lambda n: (0 if n > curseur else 1, n))
+
+
+def _ordonner_par_priorite(prs: list[int], approuvees: set[int]) -> list[int]:
+    """Les PRs **approuvees a la tete exacte** d'abord, puis les autres.
+
+    Ordre du coordinateur (#28009) : une PR approuvee est la seule qui puisse
+    etre mergee, elle ne doit pas attendre derriere les autres quand la passe
+    s'arrete sur son budget de duree. L'ordre RECUE est conserve DANS CHAQUE
+    groupe (croissant, curseur de reprise compris) : un groupe trop gros pour
+    une passe reprend donc apres sa derniere PR evaluee, lui aussi -- sans
+    cela la passe repartirait des memes PRs approuvees et affamerait la fin du
+    groupe, le defaut meme que le curseur ferme pour la file entiere.
+    """
+    avant = [pr for pr in prs if pr in approuvees]
+    reste = [pr for pr in prs if pr not in approuvees]
+    return avant + reste
+
+
+# --- lecture GROUPEE des approbations (ordre de service, #28009) -----------------
+#
+# La priorite a besoin de savoir, pour TOUT le pool ouvert, si la derniere
+# voix du coordinateur est un APPROVED pose sur la tete courante. Elle ne sort
+# pas de la lecture de liste : ``gh pr list --json latestReviews`` rend un
+# ``commit.oid`` VIDE pour une approbation (mesure du 27/11 sur #28848 et
+# #28849) -- il ne prouve pas la tete. Elle ne se prend pas non plus PR par
+# PR : ce serait une lecture par PR, sur le jeton partage du coordinateur.
+#
+# UNE lecture GraphQL paginee a l'ouverture de la passe, filtree PAR AUTEUR
+# sur chacune des voix du coordinateur : par PR elle ne porte que les
+# dernieres reviews du coordinateur (etat, corps, date, oid). Mesure sur le
+# pool reel du 27/11 : 255 PRs, 6 pages, 207 Kio, 14 s. Chaque rangee est
+# remise au canon de l'etape 2ter (``coordinator_approval_oid`` : latest-wins
+# sur les voix typees, APPROVED reel seulement) -- jamais reclassee ici.
+#
+# La page est celle du canon du triage (``pool_review_verdicts.PAGE_SIZE``) :
+# 100 PRs x reviews font 504 sur ce depot (mesure du 20/09).
+
+#: PRs ouvertes par page GraphQL.
+PRIORITE_PAGE = 50
+#: Garde pathologique : 20 pages x 50 = 1 000 PRs ouvertes ; au-dela, la
+#: lecture est INCOMPLETE, donc non mesuree.
+PRIORITE_MAX_PAGES = 20
+#: Dernieres reviews du coordinateur lues par PR et par voix : la derniere
+#: VOIX gouverne, il en faut plus d'une pour qu'un COMMENTED muet poste apres
+#: un APPROVED ne le masque pas.
+PRIORITE_REVUES = 10
+#: Borne de DUREE de la lecture entiere (mesure : 14 s pour 6 pages), portee
+#: par le runner comme l'echeance d'une PR.
+PRIORITE_BUDGET_S = 90.0
+#: Un login entre dans la requete GraphQL : il est borne a la grammaire des
+#: logins GitHub avant d'y etre ecrit (fail-closed : hors grammaire, la
+#: lecture n'est pas mesuree).
+PRIORITE_LOGIN_RE = re.compile(r"^[A-Za-z0-9-]+(?:\[bot\])?$")
+
+PRIORITE_QUERY = """
+query($after: String) {
+  repository(owner: "%s", name: "%s") {
+    pullRequests(first: %d, states: OPEN, after: $after,
+                 orderBy: {field: CREATED_AT, direction: ASC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        headRefOid
+        %s
+      }
+    }
+  }
+}
+"""
+
+PRIORITE_LUE = "mesuree"
+PRIORITE_NON_MESUREE = "non-mesuree"
+
+
+def _priorite_aliases() -> dict[str, str]:
+    """Alias GraphQL -> login de la voix du coordinateur que lit cet alias."""
+    return {
+        f"voix{index}": login
+        for index, login in enumerate(sorted(COORDINATOR_VOICES))
+    }
+
+
+def _priorite_query() -> str:
+    """La requete d'une page ; leve ``ValueError`` sur un login hors grammaire."""
+    owner, _, name = REPO.partition("/")
+    champs = []
+    for alias, login in sorted(_priorite_aliases().items()):
+        if not PRIORITE_LOGIN_RE.match(login):
+            raise ValueError(f"login hors grammaire : {login!r}")
+        champs.append(
+            f'{alias}: reviews(last: {PRIORITE_REVUES}, author: "{login}") '
+            "{ totalCount nodes { state body submittedAt "
+            "author { login __typename } commit { oid } } }"
+        )
+    return PRIORITE_QUERY % (owner, name, PRIORITE_PAGE, "\n".join(champs))
+
+
+def _priorite_page(brut: str, noeuds: list[dict]) -> tuple[bool, str | None]:
+    """Range une page dans ``noeuds`` ; dit s'il y en a une autre (curseur).
+
+    Une reponse illisible, une erreur GraphQL ou un payload sans
+    ``pullRequests`` leve ``UnexpectedError`` : une page doit etre LUE ENTIERE
+    pour compter.
+    """
+    try:
+        data = json.loads(brut)
+    except json.JSONDecodeError as exc:
+        raise UnexpectedError(f"page priorite : stdout illisible ({exc})") from exc
+    if not isinstance(data, dict) or data.get("errors"):
+        raise UnexpectedError("page priorite : reponse GraphQL en erreur ou illisible")
+    donnees = data.get("data") if isinstance(data.get("data"), dict) else {}
+    depot = donnees.get("repository") if isinstance(donnees.get("repository"), dict) else {}
+    pulls = depot.get("pullRequests")
+    if not isinstance(pulls, dict) or not isinstance(pulls.get("nodes"), list):
+        raise UnexpectedError("page priorite : pullRequests absent du payload")
+    noeuds.extend(node for node in pulls["nodes"] if isinstance(node, dict))
+    info = pulls.get("pageInfo") if isinstance(pulls.get("pageInfo"), dict) else {}
+    if not info.get("hasNextPage"):
+        return False, None
+    return True, (str(info.get("endCursor") or "") or None)
+
+
+def _priorite_approuvees(noeuds: list[dict]) -> tuple[set[int], list[int]]:
+    """PRs approuvees a la TETE EXACTE, et PRs dont la lecture est INCOMPLETE.
+
+    L'incompletude est nommee, jamais lue comme une absence d'approbation :
+    une PR sans tete lue, ou dont une voix du coordinateur a plus de reviews
+    que la fenetre, n'est priorisee par personne -- elle garde sa place dans
+    l'ordre du curseur.
+    """
+    approuvees: set[int] = set()
+    tronquees: list[int] = []
+    for node in noeuds:
+        if not isinstance(node, dict) or not isinstance(node.get("number"), int):
+            continue
+        numero = node["number"]
+        tete = str(node.get("headRefOid") or "")
+        rangees: list[dict] = []
+        complete = bool(tete)
+        for alias in sorted(_priorite_aliases()):
+            connexion = node.get(alias)
+            revues = connexion.get("nodes") if isinstance(connexion, dict) else None
+            if not isinstance(revues, list):
+                complete = False
+                continue
+            total = connexion.get("totalCount")
+            if isinstance(total, int) and total > len(revues):
+                complete = False
+            for revue in revues:
+                if not isinstance(revue, dict):
+                    continue
+                auteur = revue.get("author")
+                commit = revue.get("commit")
+                rangees.append({
+                    # Forme canonique de ``_typed_reviews`` : le TYPE est porte
+                    # par la ligne (``author.__typename``), jamais sonde.
+                    "author": dict(auteur) if isinstance(auteur, dict) else {},
+                    "state": revue.get("state") or "",
+                    "body": revue.get("body") or "",
+                    "submittedAt": revue.get("submittedAt") or "",
+                    "commit": {
+                        "oid": (commit.get("oid") if isinstance(commit, dict) else "")
+                        or "",
+                    },
+                })
+        if not complete:
+            tronquees.append(numero)
+            continue
+        # Canon de l'etape 2ter, sans runner (lecture pure des rangees typees).
+        if coordinator_approval_oid({"reviews": rangees}) == tete:
+            approuvees.add(numero)
+    return approuvees, tronquees
+
+
+def lire_priorite(runner: Runner, gh_env: dict[str, str]) -> dict:
+    """Approbations du coordinateur sur le pool ouvert, en UNE lecture paginee.
+
+    Rend toujours un etat NOMME -- jamais un ensemble vide qui se lirait
+    « aucune PR approuvee » : ``{"lecture": "mesuree", "approuvees": {...},
+    "tronquees": [...], "pages": n, "lues": n}`` ou ``{"lecture":
+    "non-mesuree", "motif": "..."}``.
+
+    Renseignement d'ORDRE : il decide de la seule PLACE d'une PR dans la
+    file. Aucune panne de cette lecture ne peut donc arreter ou rougir la
+    passe -- quelle qu'en soit la forme (rc non nul, delai, sortie illisible,
+    exception du runner) : elle vaut « priorite non mesuree », et l'ordre du
+    curseur s'applique seul. Le verdict de chaque PR, lui, ne change pas : il
+    releve l'approbation a l'etape 2ter, en lecture TYPEE, sur la tete
+    evaluee -- la priorite ne cree jamais une approbation.
+    """
+    try:
+        requete = _priorite_query()
+    except ValueError as exc:
+        return {"lecture": PRIORITE_NON_MESUREE, "motif": str(exc)}
+    _set_pr_budget(runner, PRIORITE_BUDGET_S)
+    try:
+        apres: str | None = None
+        noeuds: list[dict] = []
+        pages = 0
+        while True:
+            cmd = ["gh", "api", "graphql", "-f", "query=" + requete]
+            if apres:
+                # Le nom de la variable est celui de la requete (``$after``) :
+                # mesure du 27/11 -- sous un autre nom, le serveur rend la
+                # PREMIERE page a chaque tour et la garde de pages sonne.
+                cmd += ["-f", "after=" + apres]
+            res = runner.run(cmd, env=gh_env)
+            pages += 1
+            if res.returncode != 0:
+                return {
+                    "lecture": PRIORITE_NON_MESUREE,
+                    "motif": f"page {pages} rc={res.returncode}",
+                }
+            suite, curseur = _priorite_page(res.stdout, noeuds)
+            if not suite:
+                break
+            if pages >= PRIORITE_MAX_PAGES:
+                return {
+                    "lecture": PRIORITE_NON_MESUREE,
+                    "motif": f"garde de {PRIORITE_MAX_PAGES} pages atteinte",
+                }
+            if not curseur:
+                return {"lecture": PRIORITE_NON_MESUREE,
+                        "motif": "page sans curseur"}
+            apres = curseur
+    except Exception as exc:  # noqa: BLE001 -- lecture d'ORDRE, cf docstring
+        # Motif sur UNE ligne : le resume humain l'imprime en fin de ligne, et
+        # le message d'un runner de test cite la requete (multiligne).
+        motif = " ".join(f"{type(exc).__name__} : {exc}".split())
+        return {"lecture": PRIORITE_NON_MESUREE, "motif": motif[:200]}
+    finally:
+        # La borne se leve TOUJOURS : une borne qui fuit sur la boucle
+        # tronquerait l'evaluation des PRs a celle d'une lecture annexe.
+        _set_pr_budget(runner, None)
+    approuvees, tronquees = _priorite_approuvees(noeuds)
+    return {
+        "lecture": PRIORITE_LUE,
+        "approuvees": approuvees,
+        "tronquees": tronquees,
+        "pages": pages,
+        "lues": len(noeuds),
+    }
+
+
+def _priorite_resume(priorite: dict) -> dict:
+    """La priorite sous forme de payload (le bilan la nomme toujours)."""
+    if priorite.get("lecture") != PRIORITE_LUE:
+        return {"read": "unreadable", "reason": str(priorite.get("motif") or "")}
+    return {
+        "read": "measured",
+        "approved": sorted(priorite.get("approuvees") or ()),
+        "truncated": sorted(priorite.get("tronquees") or ()),
+        "pages": int(priorite.get("pages") or 0),
+        "read_prs": int(priorite.get("lues") or 0),
+    }
 
 
 # Une retenue decidee par le coordinateur (collision, ordre de stack,
@@ -3838,6 +4098,7 @@ def emit_output(
     exit_code: int,
     warmup: dict | None = None,
     not_evaluated: list[PRVerdict] | None = None,
+    priority: dict | None = None,
 ) -> None:
     """Resume humain sur stdout, ou payload machine unique en --json."""
     if args.json:
@@ -3856,6 +4117,8 @@ def emit_output(
         }
         if warmup:
             payload["warmup"] = warmup
+        if priority is not None:
+            payload["priority"] = _priorite_resume(priority)
         print(json.dumps(payload, ensure_ascii=False))
         return
     mode = "APPLY" if args.apply else "DRY-RUN"
@@ -3890,6 +4153,23 @@ def emit_output(
             else ""
         )
     )
+    if priority is not None:
+        # L'ordre de service se lit dans le bilan (#28009) : une priorite non
+        # mesuree se dit -- elle ne se lit pas « aucune PR approuvee ».
+        resume = _priorite_resume(priority)
+        if resume["read"] == "measured":
+            incompletes = len(resume["truncated"])
+            print(
+                f"priorite : {len(resume['approved'])} PR(s) approuvee(s) a la tete "
+                f"exacte servie(s) en premier -- lecture groupee de "
+                f"{resume['read_prs']} PR(s) en {resume['pages']} page(s)"
+                + (f", {incompletes} lecture(s) incomplete(s)" if incompletes else "")
+            )
+        else:
+            print(
+                "priorite : NON MESUREE (%s) -- ordre du curseur seul"
+                % (resume["reason"] or "motif absent")
+            )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
     if not_evaluated:
@@ -4044,6 +4324,16 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     # MEME endroit -- les PRs du haut ne sont jamais vues (file affamee).
     curseur = read_pass_cursor(journal_path)
     prs = _ordonner_apres_curseur(prs, curseur)
+
+    # Priorite de service (#28009, ordre du coordinateur) : les PRs approuvees
+    # a la tete exacte passent EN PREMIER, chacune des deux groupes gardant
+    # l'ordre du curseur. Renseignement d'ordre seulement : la lecture ne
+    # change ni une garde ni un verdict, et une lecture non mesuree laisse
+    # l'ordre du curseur seul.
+    priorite = lire_priorite(active_runner, gh_env)
+    approuvees = set(priorite.get("approuvees") or ())
+    if approuvees:
+        prs = _ordonner_par_priorite(prs, approuvees & set(prs))
 
     merged_count = 0
     #: Derniere PR **EVALUEE** de cette passe : c'est le curseur que la
@@ -4298,6 +4588,7 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             "pool": len(prs),
         },
         not_evaluated=not_evaluated,
+        priority=priorite,
     )
     return exit_code
 
