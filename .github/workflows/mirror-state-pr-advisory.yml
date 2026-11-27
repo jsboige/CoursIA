@@ -112,8 +112,12 @@ jobs:
           rc=$?
           set -e
           cat mirror.json
-          fails=$(jq -r '.mirror.fails // "inconnu"' mirror.json)
-          seuil=$(jq -r '.mirror.threshold // "?"' mirror.json)
+          # Aucun `jq` ici : mesure du 24/11, les slots po-2026 (`wsl-1`,
+          # `wsl-4`) n'en ont pas -- `jq: command not found`, exit 127, et le
+          # job rougissait alors que l'organe avait rendu son verdict (7 runs
+          # en 5 h, 7 branches). `python3` est deja une dependance dure du pas.
+          fails=$(python3 -c 'import json; m=(json.load(open("mirror.json")) or {}).get("mirror") or {}; v=m.get("fails"); print("inconnu" if v is None else v)')
+          seuil=$(python3 -c 'import json; m=(json.load(open("mirror.json")) or {}).get("mirror") or {}; v=m.get("threshold"); print("?" if v is None else v)')
           if [ "$rc" -eq 1 ]; then
             echo "::error::MIROIR FIGE -- le miroir d'objets du pool ne se rafraichit plus ($fails echec(s) consecutifs, seuil $seuil). Chaque checkout retelecharge l'historique complet depuis le serveur : les CI ralentissent d'un ordre de grandeur."
             exit 1

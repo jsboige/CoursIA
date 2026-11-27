@@ -1,0 +1,18 @@
+# TRANCHE44 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE44
+guards:
+  # Meme perimetre que le declencheur retire, plus le workflow
+  # lui-meme (une revision qui touche le filtre doit rejouer le
+  # garde, convention des gardes voisins).
+  # `--no-json` : le rapport JSON pese environ 857 Ko pour 2537
+  # anomalies, et le resume du check-run est coupe vers 60 Ko. Le
+  # JSON occupe la place entiere du resume et ecrase les lignes de
+  # signal (REMPLISSAGE, DRIFT DETECTE) : le garde affichait « OK »
+  # sans jamais nommer le drift. Le signal stderr reste integral.
+  -
+    name: "Translation drift (read-only, advisory)"
+    argv: ["python", "scripts/translation/check_translation_sync.py", "translations", "--check", "--repo-root", ".", "--no-json"]
+    source: "translation-drift.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "translations/**", "scripts/translation/**", ".github/workflows/translation-drift.yml"]
+    blocking: false
+    absorbed: true

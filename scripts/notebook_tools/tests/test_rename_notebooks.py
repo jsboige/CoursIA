@@ -16,11 +16,16 @@ pas le defaut passerait au vert sur un outil casse.
 
 Plus les invariants structurants : fail-closed sur surfaces melangees,
 reference fragmentee listee, discipline des 2 commits, registre, rebase-helper.
+Et #16231 : hashs des CSV de traduction rafraichis avec les textes reecrits
+(`TestTranslationCsvHashRefresh`).
 """
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -32,6 +37,16 @@ _TOOLS = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_TOOLS))
 
 import rename_notebooks as rn  # noqa: E402
+
+# Modules du pipeline de traduction (T1 extraction, T2 controle, T3
+# traduction) : import inertes au niveau module, ils servent de source pour
+# le schema du CSV et pour ``cell_hash`` (l'organe ne le reimplante pas).
+_TRANSLATION = _TOOLS.parent / "translation"
+sys.path.insert(0, str(_TRANSLATION))
+
+import check_translation_sync as t2  # noqa: E402
+import extract_cells_to_csv as t1  # noqa: E402
+import translate_csv as t3  # noqa: E402
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -435,6 +450,157 @@ class TestRenameDocumentationLine(unittest.TestCase):
             self.assertEqual(p.read_text(encoding="utf-8"), body)
 
 
+class TestDocumentationContextAvecExtension(unittest.TestCase):
+    """#28323 : la garde D2 ne voyait pas le contexte de documentation quand
+    l'ancien nom etait cite AVEC son extension.
+
+    La forme citee est le plus souvent la TIGNE (sans extension) ; le texte
+    continue par `.ipynb devient ...`. La garde lisait `.ipynb` la ou elle
+    attendait le marqueur, ne reconnaittait pas `devient`, et la ligne
+    d'historique du registre devenait `Y-CSharp.ipynb devient Y-CSharp.ipynb`
+    -- une tautologie qui FAUSSAIT l'historique du renommage.
+
+    Mesure : 8 registres de la serie SymbolicLearning (branche de #27309),
+    8 lignes d'historique falsifiees avant, 0 apres.
+    """
+
+    ANCIEN = "MyIA.AI.Notebooks/SL/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb"
+    NOUVEAU = "MyIA.AI.Notebooks/SL/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb"
+    ZERO_PAD = "MyIA.AI.Notebooks/SL/SL-08-KnowledgeGraphs-ILP-CSharp.ipynb"
+
+    LIGNE = ('    - "Renommage 2026-11-18 : le jumeau C# '
+             "SL-8-KnowledgeGraphs-ILP-Csharp.ipynb devient "
+             'SL-08-KnowledgeGraphs-ILP-CSharp.ipynb -- graphie canonique"\n')
+
+    def _paire(self, ancien: str, nouveau: str) -> list[rn.RefForms]:
+        return [rn.ref_forms(ancien, nouveau)]
+
+    def test_ligne_d_historique_avec_extension_intacte(self):
+        # Cas 1 de l'issue : la ligne d'historique, avant et apres IDENTIQUES,
+        # et `rewrite_file` rend 0.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "scripts/notebook_tools/twin_pairs.d/sl-8.yaml",
+                       self.LIGNE)
+            n = rn.rewrite_file(p, self._paire(self.ANCIEN, self.NOUVEAU))
+            self.assertEqual(n, 0)
+            self.assertEqual(p.read_text(encoding="utf-8"), self.LIGNE)
+
+    def test_ligne_d_historique_intacte_au_zero_pad_egalement(self):
+        # La meme ligne, avec la table qui zero-pade EN PLUS de la casse : le
+        # contexte de documentation protege les DEUX formes.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "scripts/notebook_tools/twin_pairs.d/sl-8.yaml",
+                       self.LIGNE)
+            n = rn.rewrite_file(p, self._paire(self.ANCIEN, self.ZERO_PAD))
+            self.assertEqual(n, 0)
+            self.assertEqual(p.read_text(encoding="utf-8"), self.LIGNE)
+
+    def test_un_referent_vif_avec_extension_est_reecrit(self):
+        # CONTROLE : la protection est POSITIONNELLE. Un referent VIF qui porte
+        # l'extension mais aucun contexte de documentation reste un referent
+        # perime : il doit etre reecrit.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            p = _write(repo, "docs/nav.md",
+                       "Le jumeau C# SL-8-KnowledgeGraphs-ILP-Csharp.ipynb "
+                       "est le livre de reference.\n")
+            n = rn.rewrite_file(p, self._paire(self.ANCIEN, self.ZERO_PAD))
+            self.assertEqual(n, 1)
+            self.assertIn("SL-08-KnowledgeGraphs-ILP-CSharp.ipynb",
+                          p.read_text(encoding="utf-8"))
+
+    def test_le_contexte_tient_pour_chaque_marqueur(self):
+        # Tous les marqueurs de la garde, avec l'extension interposee.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            for marqueur in ("->", "=>", "→", "⟶", "devient", "renommee en"):
+                ligne = (f"SL-8-KnowledgeGraphs-ILP-Csharp.ipynb {marqueur} "
+                         "SL-08-KnowledgeGraphs-ILP-CSharp.ipynb\n")
+                p = _write(repo, f"docs/{abs(hash(marqueur))}.md", ligne)
+                n = rn.rewrite_file(p, self._paire(self.ANCIEN, self.ZERO_PAD))
+                with self.subTest(marqueur=marqueur):
+                    self.assertEqual(n, 0)
+                    self.assertEqual(p.read_text(encoding="utf-8"), ligne)
+
+    def test_les_lignes_d_historique_du_corpus_ne_sont_pas_falsifiees(self):
+        """Le corpus reel du depot : chaque registre porte une ligne
+        `X.ipynb devient Y.ipynb`. Le pilote, applique a la paire X -> Y, ne
+        doit la toucher.
+
+        Mesure du 24/11 sur `main` : 12 lignes de cette forme (serie Planners,
+        ConnectFour, DecInfer). Le test echoue si le corpus disparait -- il
+        verrait alors la protection sans corpus, ce qui ne prouverait rien.
+        """
+        registre = Path(__file__).resolve().parents[1] / "twin_pairs.d"
+        lignes = []
+        for p in sorted(registre.glob("*.yaml")):
+            for ligne in p.read_text(encoding="utf-8").splitlines():
+                m = re.search(r"(\S+\.ipynb) devient (\S+\.ipynb)", ligne)
+                if m:
+                    lignes.append((p.name, m.group(1), m.group(2)))
+        self.assertGreaterEqual(len(lignes), 8,
+                                "corpus d'historique absent : le test ne prouverait rien")
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            for nom, ancien, nouveau in lignes:
+                p = _write(repo, f"registres/{nom}", f"{ancien} devient {nouveau}\n")
+                n = rn.rewrite_file(p, [rn.ref_forms(ancien, nouveau)])
+                with self.subTest(registre=nom, ancien=ancien):
+                    self.assertEqual(n, 0)
+                    self.assertIn(f"{ancien} devient {nouveau}",
+                                  p.read_text(encoding="utf-8"))
+
+
+class TestNoyauRust(unittest.TestCase):
+    """Le noyau RUST est un noyau de carnet comme les autres : le canon
+    partage leDeclare deja (`naming_canon.KERNEL_LANG_SUFFIXES` porte
+    "-rust"). Le pilote etait le dernier endroit a l'ignorer : ses 64 carnets
+    tombaient en "noyau hors table" (#28323)."""
+
+    def test_le_noyau_rust_est_reconnu(self):
+        self.assertEqual(rn.kernel_to_suffix("rust"), "rust")
+        self.assertEqual(rn.kernel_to_suffix("RUST"), "rust")
+
+    def test_la_cible_rust_est_canonique(self):
+        nom = "GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb"
+        self.assertEqual(rn.canonical_target(nom, "rust"), nom)
+        self.assertIsNone(rn.target_violation(nom))
+
+    def test_le_suffixe_rust_est_appose_et_non_repete(self):
+        # Un carnet Rust dont le titre ne porte pas le noyau reçoit le
+        # suffixe ; un titre qui le porte ne le reçoit pas DEUX fois.
+        self.assertEqual(
+            rn.canonical_target("GameTheory-04h-Routing-PriceOfAnarchy.ipynb",
+                                "rust"),
+            "GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb")
+        self.assertEqual(
+            rn.canonical_target("GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb",
+                                "rust"),
+            "GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb")
+
+    def test_propose_ne_tombe_pas_en_noyau_hors_table(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _write_nb(repo, "MyIA.AI.Notebooks/GameTheory/"
+                            "GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb",
+                      _nb([_md("Base.")], kernelspec="rust"))
+            table = rn.propose("MyIA.AI.Notebooks/GameTheory", repo)
+            self.assertNotIn("noyau hors table", table)
+            self.assertIn("CONFORME", table)
+
+    def test_le_noyau_rust_ne_provoque_pas_de_faux_positif_d_infixe(self):
+        # Mesure du 24/11 sur les 2098 carnets de l'arbre : AUCUN titre ne
+        # porte `Rust` en infixe. Le prix de la regle est donc nul sur l'etat
+        # mesure, et le mot reste un mot comme les autres.
+        self.assertIsNone(
+            rn.target_violation("GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb"))
+        self.assertEqual(
+            rn.target_violation("Tweety-05b-Rust-Argumentation-Rust.ipynb"),
+            "mot de noyau en infixe du titre")
+
+
 class TestCodeCellNeverRewritten(unittest.TestCase):
     """Defaut 6 : une reference dans une CELLULE DE CODE avait ete reecrite,
     forgeant une source que plus personne n'a executee (C.2). Invariant I2 :
@@ -655,6 +821,134 @@ class TestRelativeLinkDirChangeRefused(unittest.TestCase):
             self.assertEqual(plan.path_refused, [])
 
 
+class TestGenericBasenameDirChangeResolves(unittest.TestCase):
+    """#28490 (reserve ai-01 sur la review de #28495) : un basename GENERIQUE
+    (README.md, feuille de sous-serie) deplace de dossier ne porte que sa forme
+    complete. Un lien RELATIF d'un porteur d'un autre dossier, qui RESOLUT vers
+    l'emplacement ANCIEN (`Ancienne/README.md` vu de `ICT/`), ne matche ni un
+    pattern de reecriture (raw_total = 0) ni `_path_context_hits` (saute quand
+    raw_total vaut 0) : ni reecrit, ni signale, 404 silencieux. Le scan le
+    RESOLUT depuis le porteur et le signale (refus, passage manuel) ; un
+    `README.md` homonyme dans un autre dossier, NON deplace, n'est pas signe."""
+
+    OLD = "ICT/Ancienne/README.md"
+    NEW = "ICT/Nouvelle/Guide.md"
+
+    def _forms(self):
+        return [rn.ref_forms(self.OLD, self.NEW)]
+
+    def _repo(self, repo, files):
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        for rel, body in files:
+            if isinstance(body, dict):
+                _write_nb(repo, rel, body)
+            else:
+                _write(repo, rel, body)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "base")
+
+    def test_relative_link_resolving_to_moved_generic_file_is_signaled(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/README.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "suite : [suite](Ancienne/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            # Le lien relatif resolut vers l'ancien emplacement : SIGNE.
+            self.assertIn((carrier, "Ancienne/README.md"), plan.path_refused)
+            # ... mais jamais reecrit (basename generique, forme complete seule).
+            self.assertNotIn(carrier, plan.rewrites)
+            # Rien n'est ecrit : l'ancien lien survit au scan (passage manuel).
+            self.assertIn("Ancienne/README.md",
+                          (repo / carrier).read_text(encoding="utf-8"))
+
+    def test_homonym_readme_in_other_dir_not_linked_is_ignored(self):
+        """Le lien pointe vers un `README.md` homonyme (autre dossier, NON
+        deplace) : il ne resout pas vers le fichier deplace -> rien a signaler.
+        La precision est structurelle : le chemin reconstitue vers le fichier
+        VRAIMENT deplace n'apparait pas dans le porteur."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/README.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                ("ICT/Other/README.md", "# Autre README homonyme\n"),
+                (carrier, "autre : [autre](Other/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertEqual(plan.path_refused, [])
+            self.assertNotIn(carrier, plan.rewrites)
+
+    def test_markdown_carrier_with_rewritable_occurrence_is_refused(self):
+        """Reserve ai-01 (2e tour), volet Markdown : un porteur qui porte AUSSI
+        une occurrence reecrivable (la forme complete, raw_total > 0) et un lien
+        relatif qui resout vers l'ancien emplacement ne doit jamais etre
+        declare reecrivable -- le lien resterait en 404 silencieux. L'ordre des
+        branches le garantit par construction (la garde (a)/(b) l'atteint deja
+        aujourd'hui ; le volet notebook, lui, etait reellement muet)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/notes.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "cible : " + self.OLD + "\n"
+                          "suite : [suite](Ancienne/README.md)\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertTrue([r for r in plan.path_refused if r[0] == carrier])
+            self.assertNotIn(carrier, plan.rewrites)
+            # Rien n'est ecrit : passage manuel du fichier entier.
+            self.assertIn("Ancienne/README.md",
+                          (repo / carrier).read_text(encoding="utf-8"))
+
+    def test_full_form_citation_at_repo_root_still_rewritten(self):
+        """Precision du detecteur de liens resolus : un porteur de la RACINE
+        cite la forme COMPLETE du fichier deplace. Le chemin reconstitue depuis
+        la racine EST cette forme complete, que la reecriture met a jour
+        correctement (prefixe et nom ensemble) : le compter comme un lien non
+        reecrivable serait un faux refus (mesure en ecrivant le temoin)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "notes.md"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, "cible : " + self.OLD + "\n"),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn(carrier, plan.rewrites)
+            self.assertEqual(plan.path_refused, [])
+
+    def test_notebook_carrier_relative_link_is_refused(self):
+        """Reserve ai-01 (2e tour) : la branche notebook ne consommait pas
+        `resolve_hits` -- un carnet dont le SEUL referent est le lien relatif
+        resolu (raw_total = det_total = 0, donc pas de motif de reecriture ni
+        de detection) etait saute sans aucun signalement."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            carrier = "ICT/Sujet.ipynb"
+            self._repo(repo, [
+                (self.OLD, "# Ancienne\n"),
+                (carrier, _nb([_md("suite : [suite](Ancienne/README.md)\n")])),
+            ])
+
+            plan = rn.scan_referents(self._forms(), repo)
+
+            self.assertIn((carrier, "Ancienne/README.md"), plan.path_refused)
+            self.assertNotIn(carrier, plan.rewrites)
+
+
 class TestSameNameDirChangeDetected(unittest.TestCase):
     """#19173 (reserve Hermes sur la review de #19154) : renommage qui change
     de dossier SANS changer de nom. La paire filename y est un no-op,
@@ -846,6 +1140,86 @@ class TestTwoCommitDiscipline(unittest.TestCase):
             self.assertNotIn("(S-01-Alpha.ipynb)", body)
             c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
             self.assertIn(f"M\t{new2}", c2)
+
+
+class TestManualGate(unittest.TestCase):
+    """Un plan incomplet ne doit jamais demarrer de mouvement implicite."""
+
+    def _exercise(self, field: str, entry: object) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            plan = rn.Plan()
+            getattr(plan, field).append(entry)
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch.object(rn, "scan_referents", return_value=plan), \
+                 mock.patch.object(rn, "move_file") as move, \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply"])
+            self.assertNotEqual(rc, 0)
+            move.assert_not_called()
+            self.assertTrue((repo / OLD).exists())
+            self.assertFalse((repo / NEW).exists())
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+            self.assertIn(OLD, output.getvalue())
+            self.assertIn(f"{field}=1", output.getvalue())
+
+    def test_mixed_refused_blocks(self):
+        self._exercise("mixed_refused", OLD)
+
+    def test_path_refused_blocks(self):
+        self._exercise("path_refused", (OLD, "ancien.ipynb"))
+
+    def test_code_cell_blocks(self):
+        self._exercise("code_cells", (OLD, 1, "ancien.ipynb"))
+
+    def test_fragmented_blocks(self):
+        self._exercise("fragmented", (OLD, 1))
+
+    def test_real_code_reference_blocks_before_move(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            carrier = "MyIA.AI.Notebooks/S/S-02-Beta.ipynb"
+            _write_nb(repo, carrier, _nb([_code('open("S-01-Alpha.ipynb")')]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "code reference")
+            base = _git(repo, "rev-parse", "HEAD").strip()
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply"])
+            self.assertNotEqual(rc, 0)
+            self.assertIn(carrier, output.getvalue())
+            self.assertIn("code_cells=1", output.getvalue())
+            self.assertTrue((repo / OLD).exists())
+            self.assertFalse((repo / NEW).exists())
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+
+    def test_allow_manual_applies_and_reports_counts(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            plan = rn.Plan()
+            plan.code_cells.append((OLD, 1, "ancien.ipynb"))
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch.object(rn, "scan_referents", return_value=plan), \
+                 mock.patch.object(rn, "run_organs", return_value=0), \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply", "--allow-manual"])
+            self.assertEqual(rc, 0)
+            self.assertTrue((repo / NEW).exists())
+            verdict = next(line for line in output.getvalue().splitlines()
+                           if line.startswith("VERDICT"))
+            self.assertIn("code_cells=1", verdict)
+            self.assertIn("mixed_refused=0", verdict)
+            self.assertIn("path_refused=0", verdict)
+            self.assertIn("fragmented=0", verdict)
 
 
 class TestMappingRefusals(unittest.TestCase):
@@ -1453,6 +1827,322 @@ class Test19157IdempotenceEtNoyauEnTete(unittest.TestCase):
             self.assertIn("`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb` | "
                           "`MyIA.AI.Notebooks/S/S-01-FOL-Lab-Lean-Python.ipynb`", table)
             self.assertIn("CONFORME", table)
+
+
+def _translation_row(**over: str) -> dict[str, str]:
+    """Ligne coherente d'un CSV de synchro (schema T1) : ``hash_<lang>`` et
+    ``src_hash`` valent ``cell_hash`` des textes poses, sauf ecrasement nomme
+    (``hash_en=""`` fabrique une cellule de hash vide, etat pre-T3)."""
+    row: dict[str, str] = {c: "" for c in t1.COLUMNS}
+    row.update(notebook=OLD, cell_id="c1", cell_type="markdown", src_lang="fr",
+               text_fr="Voir S-01-Alpha.ipynb pour la suite.",
+               text_en="See S-01-Alpha.ipynb for the rest.")
+    row.update(over)
+    for lang in ("fr", "en"):
+        row[f"hash_{lang}"] = t2.cell_hash(row[f"text_{lang}"])
+    row["src_hash"] = row["hash_fr"]
+    for name in ("hash_fr", "hash_en", "src_hash"):
+        if name in over:
+            row[name] = over[name]
+    return row
+
+
+def _translation_csv(rows: list[dict[str, str]]) -> str:
+    """Serialise comme T1 : colonnes du schema, QUOTE_MINIMAL, LF, sans BOM."""
+    buf = io.StringIO(newline="")
+    writer = csv.DictWriter(buf, fieldnames=t1.COLUMNS, lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+    return buf.getvalue()
+
+
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+class TestTranslationCsvHashRefresh(unittest.TestCase):
+    """#16231 : le renommage reecrit un nom de carnet dans ``text_<lang>`` d'un
+    CSV de traduction sans rafraichir ``hash_<lang>`` ; la ligne devient
+    incoherente pour ``check_translation_sync`` (PIVOT_HASH_MISMATCH, puis
+    SRC_DRIFT -- mesure reelle : 45 anomalies nouvelles sur ``audio.csv`` pour
+    30 carnets renommes).
+
+    Le defaut est FABRIQUE ici comme controle positif : la meme substitution
+    SANS rafraichissement doit lever les verdicts T2, la reecriture de l'organe
+    ne doit en lever aucun. Sont epingles en plus les trois limites du geste :
+    un chemin reecrit dans ``notebook`` ne touche a aucun hash, une ligne non
+    reecrite reste identique octet par octet, et rien d'autre que les colonnes
+    de hash invalidees ne bouge."""
+
+    CSV = "translations/genai/s.csv"
+
+    def test_rewritten_texts_get_their_hashes_recomputed(self):
+        """``text_fr`` et ``text_en`` reecrits -> ``hash_fr``, ``src_hash`` et
+        ``hash_en`` valent le hash du NOUVEAU texte ; aucune autre colonne ne
+        bouge ; en-tete, ordre des colonnes, LF et absence de BOM conserves."""
+        rows = [_translation_row()]
+        with tempfile.TemporaryDirectory() as td:
+            p = _write(Path(td), self.CSV, _translation_csv(rows))
+
+            self.assertGreaterEqual(rn.rewrite_file(p, _forms()), 1)
+
+            out = p.read_bytes().decode("utf-8")
+            got = _read_csv(p)[0]
+            self.assertEqual(got["notebook"], NEW)
+            self.assertIn("S-01-Alpha-Python.ipynb", got["text_fr"])
+            self.assertIn("S-01-Alpha-Python.ipynb", got["text_en"])
+            self.assertNotIn("S-01-Alpha.ipynb", got["text_fr"] + got["text_en"])
+            self.assertEqual(got["hash_fr"], t2.cell_hash(got["text_fr"]))
+            self.assertEqual(got["src_hash"], got["hash_fr"])
+            self.assertEqual(got["hash_en"], t2.cell_hash(got["text_en"]))
+            self.assertNotEqual(got["hash_fr"], rows[0]["hash_fr"])
+            # Seules les colonnes invalidees par la reecriture ont bouge.
+            self.assertEqual({c for c in got if got[c] != rows[0][c]},
+                             {"notebook", "text_fr", "text_en",
+                              "hash_fr", "hash_en", "src_hash"})
+            self.assertTrue(out.startswith(",".join(t1.COLUMNS) + "\n"))
+            self.assertNotIn("\r", out)
+            self.assertFalse(out.startswith("\ufeff"))
+
+    def test_notebook_path_only_change_leaves_every_hash_alone(self):
+        """Chemin seul dans ``notebook`` : le fichier est exactement la
+        substitution de sous-chaine, toutes les colonnes de hash incluses."""
+        rows = [_translation_row(text_fr="Un texte qui ne cite pas le nom.",
+                                 text_en="A text that does not cite it.")]
+        with tempfile.TemporaryDirectory() as td:
+            raw = _translation_csv(rows)
+            p = _write(Path(td), self.CSV, raw)
+            self.assertGreaterEqual(rn.rewrite_file(p, _forms()), 1)
+            self.assertEqual(p.read_bytes().decode("utf-8"), raw.replace(OLD, NEW))
+            got = _read_csv(p)[0]
+            for name in t1.COLUMNS:
+                if name.startswith(("hash_", "src_hash")):
+                    self.assertEqual(got[name], rows[0][name], name)
+
+    def test_untouched_line_is_byte_identical_beside_a_rewritten_one(self):
+        """Une ligne qui ne cite pas le nom reste identique octet par octet
+        dans un fichier ou une autre ligne est reecrite ; un fichier sans
+        occurrence n'est pas ecrit."""
+        other = _translation_row(cell_id="c2",
+                                 notebook="MyIA.AI.Notebooks/S/S-02-Beta.ipynb",
+                                 text_fr="Un texte qui ne cite pas le nom.",
+                                 text_en="A text that does not cite it.")
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            raw = _translation_csv([_translation_row(), other])
+            self.assertEqual(len(raw.split("\n")), 4)      # en-tete, 2 lignes, fin
+            p = _write(repo, self.CSV, raw)
+            self.assertGreaterEqual(rn.rewrite_file(p, _forms()), 1)
+            out = p.read_bytes().decode("utf-8")
+            self.assertEqual(out.split("\n")[2], raw.split("\n")[2])
+            self.assertEqual(_read_csv(p)[1], other)
+
+            lone = _write(repo, "translations/genai/other.csv",
+                          _translation_csv([other]))
+            body = lone.read_bytes()
+            self.assertEqual(rn.rewrite_file(lone, _forms()), 0)
+            self.assertEqual(lone.read_bytes(), body)
+
+    def test_csv_outside_the_translation_schema_keeps_plain_text_behaviour(self):
+        """Seul un CSV signe par l'en-tete du schema T1 est traite ; tout autre
+        ``.csv`` reste une reecriture au texte brut, comme avant #16231."""
+        raw = "nom,note\nS-01-Alpha.ipynb,voir S-01-Alpha.ipynb\n"
+        with tempfile.TemporaryDirectory() as td:
+            p = _write(Path(td), "translations/genai/notes.csv", raw)
+            self.assertGreaterEqual(rn.rewrite_file(p, _forms()), 1)
+            self.assertEqual(p.read_bytes().decode("utf-8"),
+                             raw.replace("S-01-Alpha.ipynb", "S-01-Alpha-Python.ipynb"))
+        self.assertEqual(rn._refresh_translation_hashes(raw, "x"), ("x", 0))
+
+    def test_cell_hash_is_the_translation_pipeline_own_function(self):
+        """L'organe n'implante pas sa propre fonction de hash : il appelle celle
+        de T2. Les trois modules du pipeline doivent rester d'accord entre eux
+        et avec l'organe -- une divergence ici est le defaut #16231 a rebours."""
+        organ_hash = rn._translation_hash_module().cell_hash
+        for text in ("a  b \n c\n",
+                     "Unicode : ete, é, 中文, "
+                     "العربية.\n\n",
+                     "  espace en tete", "fin  \n\n\n", "x\ny", ""):
+            with self.subTest(text=text):
+                self.assertEqual(organ_hash(text), t2.cell_hash(text))
+                self.assertEqual(t1.cell_hash(text), t2.cell_hash(text))
+                self.assertEqual(t3.cell_hash(text), t2.cell_hash(text))
+
+    def test_csv_scanner_agrees_with_the_csv_module(self):
+        """Le scanner de bornes decoupe exactement comme ``csv.reader`` (seul
+        decoupage qui vaut pour T1-T3) ; ce qu'il ne peut pas lire exactement
+        est refuse (ValueError), jamais devine."""
+        for text in ("a,b\n1,2\n", "a,b\n1,2", 'a,b\n"x,\ny""z",2\n',
+                     'a,b\n"",\n', "a,b\n\n1,2\n"):
+            with self.subTest(text=text):
+                values, spans = rn._csv_records(text)
+                self.assertEqual(values, list(csv.reader(io.StringIO(text, newline=""))))
+                self.assertEqual([len(s) for s in spans], [len(v) for v in values])
+        for text in ('a,b\n"x,y\n', "a,b\r\n1,2\r\n"):
+            with self.subTest(text=text):
+                with self.assertRaises(ValueError):
+                    rn._csv_records(text)
+
+    def test_multiline_field_with_comma_and_doubled_quote_is_refreshed_in_place(self):
+        """Un champ multi-lignes (virgule, guillemet double) est UN enregistrement
+        pour ``csv`` : son hash est recalcule sur la valeur relue et le champ
+        garde exactement ses guillemets d'origine."""
+        text = ('Intro, avec virgule,\npuis un "guillemet" sur S-01-Alpha.ipynb\n'
+                "et une ligne vide.\n\nFin.")
+        with tempfile.TemporaryDirectory() as td:
+            raw = _translation_csv([_translation_row(text_fr=text)])
+            self.assertEqual(raw.count("\n"), 6)     # en-tete + 4 fins internes + fin
+            p = _write(Path(td), self.CSV, raw)
+            self.assertGreaterEqual(rn.rewrite_file(p, _forms()), 1)
+            out = p.read_bytes().decode("utf-8")
+            got = _read_csv(p)[0]
+            self.assertEqual(got["text_fr"],
+                             text.replace("S-01-Alpha.ipynb", "S-01-Alpha-Python.ipynb"))
+            self.assertEqual(got["hash_fr"], t2.cell_hash(got["text_fr"]))
+            self.assertEqual(got["src_hash"], got["hash_fr"])
+            self.assertIn('"Intro, avec virgule,\npuis un ""guillemet"" sur '
+                          "S-01-Alpha-Python.ipynb", out)
+
+    def test_empty_hash_cells_stay_empty(self):
+        """On ne fabrique pas de trace : une cellule de hash vide le reste."""
+        rows = [_translation_row(hash_en="", src_hash="")]
+        with tempfile.TemporaryDirectory() as td:
+            p = _write(Path(td), self.CSV, _translation_csv(rows))
+            rn.rewrite_file(p, _forms())
+            got = _read_csv(p)[0]
+            self.assertEqual(got["hash_en"], "")
+            self.assertEqual(got["src_hash"], "")
+            self.assertEqual(got["hash_fr"], t2.cell_hash(got["text_fr"]))
+
+    def test_trace_src_hash_lang_advances_only_with_a_coherent_rewritten_pair(self):
+        """``src_hash_<lang>`` date la traduction du pivot dont elle est issue
+        (#20836). Il suit le nouveau pivot si le pivot ET ``text_<lang>`` ont
+        ete reecrits et que la trace etait coherente ; sinon il ne bouge pas :
+        une trace deja perimee n'est pas blanchie, et une traduction dont le
+        texte n'a pas change reste datee de l'avant-renommage (T2 la signale
+        STALE_TRAD, comme apres un ``--update`` de T1)."""
+        old_src = _translation_row()["src_hash"]
+        rows = [
+            _translation_row(cell_id="coherente", src_hash_en=old_src),
+            _translation_row(cell_id="perimee", src_hash_en="0" * 16),
+            _translation_row(cell_id="cible-fixe",
+                             text_en="A text that does not cite it.",
+                             src_hash_en=old_src),
+        ]
+        with tempfile.TemporaryDirectory() as td:
+            p = _write(Path(td), self.CSV, _translation_csv(rows))
+            rn.rewrite_file(p, _forms())
+            got = _read_csv(p)
+            self.assertNotEqual(got[0]["src_hash"], old_src)
+            self.assertEqual(got[0]["src_hash_en"], got[0]["src_hash"])
+            self.assertEqual(got[1]["src_hash_en"], "0" * 16)
+            self.assertEqual(got[2]["src_hash_en"], old_src)
+            self.assertEqual(got[2]["hash_en"], rows[2]["hash_en"])
+
+    def test_structure_change_refuses_and_writes_nothing(self):
+        """Un nom neuf portant une virgule, insere dans un champ sans
+        guillemets, ajouterait un champ : refus (SystemExit), fichier intact."""
+        with tempfile.TemporaryDirectory() as td:
+            p = _write(Path(td), self.CSV, _translation_csv([_translation_row()]))
+            before = p.read_bytes()
+            forms = [rn.ref_forms(OLD, "MyIA.AI.Notebooks/S/S-01-Alpha,Python.ipynb")]
+            with self.assertRaises(SystemExit):
+                rn.rewrite_file(p, forms)
+            self.assertEqual(p.read_bytes(), before)
+
+    def test_sync_organ_reports_nothing_after_the_rename(self):
+        """Oracle de bout en bout : la ligne renomme par l'organe ne leve plus
+        aucun verdict de ``check_translation_sync``, alors que la meme
+        substitution sans rafraichissement en leve (defaut fabrique)."""
+        pre = "Voir S-01-Alpha.ipynb pour la suite."
+        post = "Voir S-01-Alpha-Python.ipynb pour la suite."
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            for rel, text in ((OLD, pre), (NEW, post)):
+                cell = _md(text)
+                cell["id"] = "c1"
+                _write_nb(repo, rel, _nb([cell]))
+            row = _translation_row(text_fr=pre, text_en="", hash_en="")
+            p = _write(repo, self.CSV, _translation_csv([row]))
+            self.assertEqual(t2.check_csv(p, repo), [])
+
+            p.write_text(p.read_text(encoding="utf-8").replace(
+                "S-01-Alpha.ipynb", "S-01-Alpha-Python.ipynb"),
+                encoding="utf-8", newline="")
+            verdicts = sorted({a["verdict"] for a in t2.check_csv(p, repo)})
+            self.assertEqual(verdicts, ["PIVOT_HASH_MISMATCH", "SRC_DRIFT"])
+
+            _write(repo, self.CSV, _translation_csv([row]))
+            self.assertGreaterEqual(rn.rewrite_file(p, _forms()), 1)
+            self.assertEqual(t2.check_csv(p, repo), [])
+
+    def test_mapping_apply_refreshes_hashes_in_commit_2_and_dry_run_writes_nothing(self):
+        """Mode ``--mapping`` : le dry-run n'ecrit rien ; ``--apply`` livre le
+        CSV avec ses hashs rafraichis dans le commit 2 (referents)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            p = _write(repo, self.CSV, _translation_csv([_translation_row()]))
+            raw = p.read_bytes()
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "csv de traduction")
+            tsv = Path(str(repo) + ".table.tsv")
+            tsv.write_text(f"{OLD}\t{NEW}\n", encoding="utf-8")
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                with mock.patch.object(rn, "run_organs", return_value=0):
+                    self.assertEqual(
+                        rn.main(["--mapping", str(tsv), "--lane", "test-lane"]), 0)
+                    self.assertEqual(p.read_bytes(), raw)
+                    self.assertEqual(
+                        rn.main(["--mapping", str(tsv), "--apply",
+                                 "--lane", "test-lane"]), 0)
+            finally:
+                os.chdir(cwd)
+
+            got = _read_csv(p)[0]
+            self.assertEqual(got["notebook"], NEW)
+            self.assertEqual(got["hash_fr"], t2.cell_hash(got["text_fr"]))
+            self.assertEqual(got["src_hash"], got["hash_fr"])
+            self.assertEqual(got["hash_en"], t2.cell_hash(got["text_en"]))
+            c2 = _git(repo, "diff", "--name-status", "HEAD~1", "HEAD")
+            self.assertIn(f"M\t{self.CSV}", c2)
+
+    def test_rebase_helper_apply_refreshes_hashes(self):
+        """Second appelant (``--rebase-helper``) : un CSV de traduction ajoute
+        par une branche qui cite un ancien nom du registre repart coherent."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            _write(repo, rn.LEDGER_RELPATH,
+                   "ancien\tnouveau\tdate\tlane\n"
+                   f"{OLD}\t{NEW}\t2026-11-24\ttest\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "registre")
+            p = _write(repo, self.CSV, _translation_csv([_translation_row()]))
+            raw = p.read_bytes()
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "branche : csv qui cite l'ancien nom")
+            _git(repo, "update-ref", "refs/remotes/origin/main", base)
+
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                self.assertEqual(rn.main(["--rebase-helper"]), 0)
+                self.assertEqual(p.read_bytes(), raw)
+                self.assertEqual(rn.main(["--rebase-helper", "--apply"]), 0)
+            finally:
+                os.chdir(cwd)
+
+            got = _read_csv(p)[0]
+            self.assertEqual(got["notebook"], NEW)
+            self.assertEqual(got["hash_fr"], t2.cell_hash(got["text_fr"]))
+            self.assertEqual(got["src_hash"], got["hash_fr"])
+            self.assertEqual(got["hash_en"], t2.cell_hash(got["text_en"]))
 
 
 if __name__ == "__main__":

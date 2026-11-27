@@ -333,4 +333,35 @@ noncomputable def cohomologyAt
     AddCommGrpCat.{w'} :=
   CategoryTheory.Sheaf.H' F n X
 
+/-! ## 9. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+
+Comparaison **énoncé par énoncé** entre ce module et le référentiel
+`AxiomMath/Stacks` (`StacksFrontier/Topology/Sheaves/Cohomology/`). Chaque
+référence est donnée par `fichier:ligne` du dépôt Stacks.
+
+**Point de méthode.** Stacks et ce module **partagent la même base Mathlib** :
+la cohomologie par Ext de Riou (`Mathlib.CategoryTheory.Sites.SheafCohomology.Basic`).
+Stacks n'est donc pas un doublon de ce module, c'est un *client* de cette base,
+auquel il ajoute des résultats propres (étiquette de tag, injectivité de
+l'inclusion de tête, naturalité de la connexion). Le tableau ci-dessous dit
+pour chaque énoncé si Stacks l'établit, l'établit sous une autre forme, ou
+ne l'établit pas.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute / ce qui diverge |
+|---|---|---|---|
+| `H0_equiv_global_sections` | partiel | `CechDegreeZero/Evaluation.lean:136` — `existsUnique_cechRestrictionHomologyMap` (tag 01EP) | Même fait : la cohomologie de degré 0 est le groupe des sections. Écart : Stacks le donne pour le **complexe de Čech d'un recouvrement** de modules sur un espace, et son isomorphisme est *unique et compatible aux restrictions* ; nous le donnons pour le `H⁰` **par Ext** d'un faisceau abélien sur un site, via l'équivalence additive `Sheaf.H.equiv₀`, sans la compatibilité aux restrictions. |
+| `H_map_add` | couvert | `MayerVietoris/LongExactSequence.lean:121-122` — `cohomology_map_app` | Stacks transporte l'application induite par `f : F ⟶ G` par `(Ext.mk₀ f).postcomp …` : c'est la même application que `Sheaf.H.map`. Ce que notre version ajoute : le **pont nommé** et l'additivité explicite, que Stacks n'énonce pas (il s'en sert comme Brioullon). |
+| `H_map_comp` | couvert | `MayerVietoris/LongExactSequence.lean:121-122` et `:139` (`Ext.comp_assoc_of_third_deg_zero`) | La composition des `Ext.mk₀` est la composition des `H.map`. Notre version nomme l'énoncé. |
+| `H_map_id` | couvert | `MayerVietoris/LongExactSequence.lean:121-122` | L'identité de `Ext` est l'identité de `H.map`. Notre version nomme l'énoncé. |
+| `cohomologyPresheafFunctor_field` | couvert | `MayerVietoris/LongExactSequence.lean:121` | Stacks utilise littéralement `Sheaf.cohomologyPresheafFunctor J n`. Notre version ajoute le **pont** (et le nom du lac). |
+| `cohomologyPresheaf_field` | couvert | `MayerVietoris/ColimitDescent.lean:221` | Stacks manipule littéralement `F.cohomologyPresheaf n` (et sa naturalité, `:230-247`). Notre version ajoute le pont. |
+| `equiv₀_naturality_field` | couvert | `MayerVietoris/LongExactSequence.lean:129-132` — `mayerVietoris_delta_naturality` | La naturalité de l'application induite en `F` est établie par Stacks pour la connexion ; le foncteur `Ext.mk₀` qui la porte est le même. Notre version énonce la naturalité de `equiv₀` lui-même. |
+| `equiv₀_symm_naturality_field` | couvert | `MayerVietoris/LongExactSequence.lean:129-132` | idem, dans l'autre sens de l'équivalence. |
+| `map_apply_field` | couvert | `MayerVietoris/LongExactSequence.lean:120-124` | Le même unfolds : `Ext.mk₀ f` postcomposé, `add_zero n` en queue. Notre version nomme l'énoncé. |
+| `functorH_map_field` | absent | aucun : `Sheaf.functorH` n'apparaît pas dans les fichiers Stacks relus (recherche sur le corpus `StacksFrontier/Topology/Sheaves/Cohomology/`) | Stacks manipule les objets de cohomologie par le **préfaisceau** et par la suite contravariante `Ext`, jamais par un foncteur à valeurs dans `AddCommGrpCat`. L'embryon `functorH` est donc propre à Mathlib et à notre pont. |
+| `subsingleton_H_of_isZero_field` | absent | aucun énoncé analogue dans les fichiers Stacks relus | L'annulation de la cohomologie du faisceau nul n'est pas formulée chez Stacks ; elle y est sous-entendue par le foncteur de `Ext` appliqué au zéro. On garde l'énoncé, on le déclare. |
+| `cohomologyAt` | couvert | `MayerVietoris/LongExactSequence.lean:131-132` | Stacks évalue la cohomologie **en un objet** (`op S.X₄`, `op S.X₁`) : c'est exactement `Sheaf.H' F n X`. Notre version ajoute le pont et la notation du lac. |
+
+-/
+
 end Grothendieck.SheafCohomology
