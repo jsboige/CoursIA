@@ -1,5 +1,10 @@
 # FishAudio S2-Pro TTS — int4 weight-only deployment variant (po-2023 bench)
 #
+# GPU: RTX 3090 24GB - GPU_PCI_INDEX 1. Convention #28423 :
+#      CUDA_DEVICE_ORDER=PCI_BUS_ID, index nvidia-smi (0 = 3080 Ti, 1 = 3090).
+#      L'ancienne cle FISHAUDIO_GPU_ID du .env n'est plus lue : elle ne portait
+#      pas d'ordre CUDA.
+#
 # The canonical compose (docker-compose.yml) is the fp16 path (`--half`,
 # ~20.3 GiB VRAM). This file is the int4 variant — the mode that ships on the
 # shared RTX 3090. It pins serve_int4.py (FISHAUDIO_SERVE_SCRIPT) with NO
@@ -52,7 +57,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['${FISHAUDIO_GPU_ID:-1}']
+              device_ids: ['${GPU_PCI_INDEX:-1}']
               capabilities: [gpu]
 
     volumes:
@@ -72,7 +77,9 @@ services:
         target: /root/.cache
 
     environment:
-      - NVIDIA_VISIBLE_DEVICES=${FISHAUDIO_GPU_ID:-1}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - CUDA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
+      - NVIDIA_VISIBLE_DEVICES=${GPU_PCI_INDEX:-1}
       - LLAMA_CHECKPOINT_PATH=${LLAMA_CHECKPOINT_PATH:-checkpoints/fs-1.2-int4-g128}
       - DECODER_CHECKPOINT_PATH=${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
       - DECODER_CONFIG_NAME=${DECODER_CONFIG_NAME:-modded_dac_vq}

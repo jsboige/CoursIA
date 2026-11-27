@@ -96,5 +96,6 @@ def test_le_cli_sert_l_issue_en_recul_apres_les_grains_sans_ecart(tmp_path, caps
     assert sortie["en_recul"]["COUVERTE"] == [{"numero": 1, "motif":
                                                "votre PR #900 la cite : portez-la au merge",
                                                "feuille": True}]
-    assert [g["numero"] for g in sortie["grains"]].index(1) == 3
+    # apres les six grains sans ecart (#28642 : le tour sert d'abord les jamais visitees)
+    assert [g["numero"] for g in sortie["grains"]].index(1) == 6
     assert sortie["lecture"]["servables"] == 7 and sortie["lecture"]["en_recul"] == 1

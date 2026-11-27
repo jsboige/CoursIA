@@ -454,6 +454,100 @@ def test_http_raw_non_chat_url_silent():
 
 
 # ---------------------------------------------------------------------------
+# Request CONSTRUIT A PART, passe a urlopen par son NOM (#28517) : la forme
+# dominante du depot (109/130 appels urlopen portent une variable). Le corps
+# encode passe par variable (``data=payload``) se resout comme un corps dict.
+# ---------------------------------------------------------------------------
+
+def test_http_named_request_chat_url_flagged():
+    """#28517 : un Request sur ses propres lignes, passe a urlopen par son
+    NOM, est classe quand son URL cible /chat/completions."""
+    report = _analyze(nb(
+        code('import json\n'
+             'import urllib.request\n'
+             'payload = json.dumps({"model": "gpt-4o-mini", "messages": []})\n'
+             'req = urllib.request.Request(\n'
+             '    "https://api.openai.com/v1/chat/completions",\n'
+             '    data=payload)'),
+        code('urllib.request.urlopen(req, timeout=30)')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["site"] == "http.chat.completions"
+    assert f["model"] == "gpt-4o-mini"
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_http_named_request_non_chat_url_silent():
+    """#28517 (temoin negatif) : un Request dont l'URL ne cible PAS
+    /chat/completions n'est pas un site chat (reste invisible, pas accuse)."""
+    report = _analyze(nb(
+        code('import json\n'
+             'import urllib.request\n'
+             'payload = json.dumps({"model": "gpt-4o-mini", "messages": []})\n'
+             'req = urllib.request.Request(\n'
+             '    "https://api.openai.com/v1/models",\n'
+             '    data=payload)'),
+        code('urllib.request.urlopen(req, timeout=30)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_http_named_request_current_model_silent():
+    """#28517 (temoin negatif) : la forme dominante avec un modele courant
+    reste silencieuse (classe dans chat_sites, non accuse)."""
+    report = _analyze(nb(
+        code('import json\n'
+             'import urllib.request\n'
+             'payload = json.dumps({"model": "gpt-5.6-luna", "messages": []})\n'
+             'req = urllib.request.Request(\n'
+             '    "https://api.openai.com/v1/chat/completions",\n'
+             '    data=payload)'),
+        code('urllib.request.urlopen(req, timeout=30)')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_http_encoded_body_by_name_flagged():
+    """#28517 : un corps ENCODE passe par variable (``payload =
+    json.dumps(...).encode()`` puis ``data=payload``) se resout comme un
+    corps dict lie a un nom : un identifiant obsolete devient un finding."""
+    report = _analyze(nb(
+        code('import json\n'
+             'import urllib.request\n'
+             'payload = json.dumps({"model": "gpt-4o-mini", "messages": []})'
+             '.encode("utf-8")\n'
+             'urllib.request.urlopen(urllib.request.Request(\n'
+             '    "https://api.openai.com/v1/chat/completions",\n'
+             '    data=payload))')))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["model"] == "gpt-4o-mini"
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_http_named_request_no_default_param_unresolved():
+    """#28517 : la forme dominante COMPLETE (corps encode par variable +
+    Request par nom + urlopen par nom) est CLASSEE ; le model portant un
+    parametre sans defaut reste non resolu (limite declaree), jamais accuse.
+    C'est la forme exacte d'Oversight-Scaling-Laws-Nim cellule 15."""
+    report = _analyze(nb(
+        code('import json\n'
+             'import os\n'
+             'import urllib.request\n'
+             'def ask_model(model, prompt):\n'
+             '    payload = json.dumps(\n'
+             '        {"model": model, "messages": []}).encode("utf-8")\n'
+             '    req = urllib.request.Request(\n'
+             '        "https://openrouter.ai/api/v1/chat/completions",\n'
+             '        data=payload)\n'
+             '    with urllib.request.urlopen(req, timeout=30) as resp:\n'
+             '        return json.loads(resp.read().decode("utf-8"))\n'
+             'ask_model("openai/gpt-4o-mini", "hi")')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 1
+    assert len(report["unresolved"]) >= 1
+
+
+# ---------------------------------------------------------------------------
 # Isolation des scopes locaux (defaut 2, review PR #22800) : une locale ne
 # sort JAMAIS de sa fonction -- ni dans un sens (FP) ni dans l'autre
 # (blanchiment), ni entre fonctions, ni pour les dictionnaires.

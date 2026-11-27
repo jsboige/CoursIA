@@ -940,6 +940,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/RL/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
+            "MyIA.AI.Notebooks/Search/Part2-CSP/**",
             "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/**",
             "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
             "MyIA.AI.Notebooks/Sudoku/**",
@@ -4634,6 +4635,73 @@ RISK_KERNEL_GUARDS: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# CURRICULUM_PREREQ_GUARDS -- carte des prerequis derivee de la taxonomie
+# (#27657, suite de #27556/#27594).
+#
+# `docs/curriculum/prerequis.qmd` est GENEREE par
+# `scripts/curriculum/generate_prereq_map.py` depuis
+# `docs/curriculum/taxonomy/*.json` : une modification de la taxonomie laisse
+# la page deriver en silence tant qu'aucune jambe CI ne rejoue le `--check` du
+# generateur. Incident fondateur, mesure au tete `6c335ed6e28` de `main`
+# (23/11) : trois PRs de densification taxonomique (#27454 Probas 22->135
+# concepts, #27461 GameTheory 28->182, #27471 Search CSP 33->121) ont fusionne
+# APRES la generation unique de la page (#27594) sans la regenerer -- la page
+# commettait encore les compteurs de l'ancienne taxonomie (427 refs au lieu de
+# 947, GameTheory 9/170 au lieu de 50/202...). Cette PR regenere la page et
+# pose la garde qui rend la derive impossible a merger.
+#
+# Portee : la garde ne se declenche que sur les PRs qui touchent la
+# taxonomie, la page, ou le generateur -- une PR qui ne peut pas causer la
+# derive ne peut pas etre accusee de la porter (forme
+# lean-derived-pages-gate, #24183 : une porte qui redd toute la flotte pour un
+# defaut qu'elle ne cause pas a une portee fausse).
+#
+# Correction de cause (DM coordinateur 24/11) : la promesse ci-dessus etait
+# rompue par `real_inventory`. Le bloc « Couverture des series » de la page est
+# mesure contre le DISQUE (tous les *.ipynb sous le dossier de la serie), pas
+# contre la taxonomie : chaque carnet fusionne hors taxonomie re-perimait la
+# page pour toute la flotte, et la PR suivante touchant la taxonomie etait
+# accusee d'une derive venue d'ailleurs. `--check` compare donc desormais la
+# partie derivee de la taxonomie SEULE ; le bloc de couverture (borne par
+# COVERAGE_BEGIN/END) reste dans la page et se regenere au rendu du site
+# (quarto-pages-deploy) et au cron catalogue, comme _quarto.yml (#19901 : la
+# fraicheur de main appartient a l'automatisation, jamais aux PR de contenu).
+# Temoin : un carnet factice ajoute hors taxonomie ne rougit pas --check ; un
+# compteur de la carte tamponne rougit toujours.
+#
+# Forme : predicat ABSOLU (pas de base) -- le `--check` compare la page
+# commisee a la taxonomie du checkout courant, sans diff. rc=1 = page perimee ;
+# le geste de reparation est imprime par le generateur (relancer sans --check).
+# Une taxonomie JSON malformee leve une exception -> exit 1 egalement :
+# fail-closed, une taxonomie illisible ne vaut jamais un quitus vert.
+#
+# `absorbed=True` : mesure sur la tete de cette PR (page regeneree incluse),
+# `generate_prereq_map.py --check` rend rc=0. Sur `main` NU la page est
+# perimee (incident ci-dessus) : l'absorption devient vraie au MERGE de cette
+# PR, qui livre la page regeneree dans le meme commit que la garde.
+# ---------------------------------------------------------------------------
+CURRICULUM_PREREQ_GUARDS: list[Guard] = [
+    Guard(
+        name="curriculum-prereq-staleness-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/curriculum/taxonomy/**",
+            "docs/curriculum/prerequis.qmd",
+            "scripts/curriculum/generate_prereq_map.py",
+            "scripts/curriculum/tests/test_generate_prereq_map.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/curriculum/generate_prereq_map.py", "--check",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
 # TRANCHE52 -- prose<->sorties : nombres de mesure cites vs sorties commitees
 # (#27231, reserve 1 de la review NanoClaw sur PR #27206).
 #
@@ -4773,6 +4841,54 @@ TRANCHE54: list[Guard] = [
             "--fail",
         ],
         blocking=False,  # advisory : signale le bloc sans reponse, ne rougit jamais
+        absorbed=True,
+    ),
+]
+
+
+
+# TRANCHE56 -- cliquet de longueur de chemin (#27676).
+# Renumerotee le 23/11 : TRANCHE55 est pris par #27544 sur origin/main
+# (fraicheur du manifeste des dependances). Sans renumerotation, les
+# deux blocs portaient le meme nom : le second masquait le premier et le
+# garde « fraicheur du manifeste » sortait de la chaine d'agregation.
+# Sous Windows, `git worktree add` echoue des que le prefixe du worktree plus
+# le chemin le plus long du depot depasse 260 caracteres (« Filename too long »,
+# puis « Could not reset index file »). Mesure au 2026-11-21 sur `origin/main` :
+# le chemin le plus long faisait 203 caracteres, et la fournee de
+# `myia-po-2028` est morte sur ce checkout.
+#
+# Le garde est un CLIQUET : il ne juge que les chemins AJOUTES (`A`) ou
+# RENOMMES (`R`, chemin nouveau). La dette deja presente sur la base n'est pas
+# rougee -- sinon le garde rougirait des sa naissance et aucune PR ne pourrait
+# etre verte. C'est ce qui rend le raccourcissement progressif : chaque PR
+# rapproche le stock de la borne, aucune ne peut la repousser.
+#
+# `paths` est VIDE : la surveillance porte sur TOUTE PR qui introduit un
+# chemin, pas sur un type de fichier. Un `paths` restreint au script du garde
+# ne le declencherait que lorsque le garde lui-meme change -- le garde
+# n'existerait alors que pour lui-meme.
+#
+# `pre_argv` fait prouver l'organe avant de lui faire rendre un verdict : un
+# detecteur qui ne peut pas prouver qu'il tire est indiscernable d'un
+# detecteur debranche (lecon #11685/#12817). `diff_bounded=True` : le verdict
+# est un DELTA (les chemins ajoutes par la PR), jamais un heritage de `main`.
+# ---------------------------------------------------------------------------
+TRANCHE56: list[Guard] = [
+    Guard(
+        name="path-length ratchet (added paths <= 160 chars)",
+        source=FAST_LANE_NATIVE,
+        paths=[],
+        pre_argv=[
+            "python", "scripts/ci/check_path_length.py", "--self",
+        ],
+        argv=[
+            "python", "scripts/ci/check_path_length.py",
+            "--base", "{base_ref}", "--head", "HEAD", "--limit", "160",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
         absorbed=True,
     ),
 ]
