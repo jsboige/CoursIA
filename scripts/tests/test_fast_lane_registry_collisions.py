@@ -157,6 +157,22 @@ def test_chaque_liste_du_registre_est_agregée_par_le_moteur():
         f"tourneront jamais -- {orphelines}")
 
 
+def test_longueur_et_extraction_sont_toutes_deux_agregees():
+    """La fusion des deux tranches conserve les deux gardes effectives."""
+    import sys
+
+    sys.path.insert(0, str(CI_DIR))
+    from fast_lane_registry import TRANCHE56, TRANCHE57
+
+    assert {g.name for g in TRANCHE56} == {
+        "path-length ratchet (added paths <= 160 chars)"
+    }
+    assert {g.name for g in TRANCHE57} == {"Extraction orphans (base vs PR)"}
+    assert {"TRANCHE56", "TRANCHE57"} <= noms_agreges(
+        MOTEUR.read_text(encoding="utf-8")
+    )
+
+
 # --- les controles positifs : les quatre detecteurs savent.fire -----------
 
 REGISTRE_SYNTHETIQUE = '''

@@ -50,6 +50,7 @@ from fast_lane_registry import TRANCHE51  # noqa: E402
 from fast_lane_registry import TOPLEVEL_SERIES_GUARDS  # noqa: E402
 from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 from fast_lane_registry import TRANCHE54  # noqa: E402  # #27611, meme motif
+from fast_lane_registry import TRANCHE57  # noqa: E402  # #13902, meme motif
 from fast_lane_registry import CURRICULUM_PREREQ_GUARDS  # noqa: E402  # #27657, meme motif
 
 from fast_lane_registry import (  # noqa: E402
@@ -932,10 +933,10 @@ def main(argv: list[str] | None = None) -> int:
               # PRs en vol).
               + TRANCHE55
               + TRANCHE54
-              # #27676 : tranche 56 (cliquet de longueur de chemin) -- meme
-              # motif que la 53, ligne isolee de la chaine ci-dessous.
-              # Renumerotee le 23/11 : TRANCHE55 est pris par #27544 sur main.
+              # #27676 : cliquet de longueur de chemin.
               + TRANCHE56
+              # #13902 : garde extraction-orphelins, distincte de la tranche 56.
+              + TRANCHE57
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
