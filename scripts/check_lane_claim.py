@@ -112,6 +112,9 @@ from grain_tag import extract_lane, lane_marker_residues
 from claim_cap_advice import cap_action_line, open_daughters
 from pr_catalogue import est_catalogue
 
+# Provenance Git des tetes de PR (#21436) -- see scripts/pr_provenance.py.
+import pr_provenance
+
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
 # une fois par candidat, et chaque appel re-telecharge la liste des PRs
@@ -3210,37 +3213,12 @@ def _open_prs_by_referenced_issue(
 def _pr_head_commit(pr: dict) -> str | None:
     """OID de tete de la PR, ou `None` si l'objet n'est pas etablissable.
 
-    L'objet est cherche dans le depot local, puis ramene par sa ref de pull
-    quand il manque (#25243). `None` est un echec de provenance, jamais une
-    preuve : les appelants conservent alors leur mesure de repli.
+    Delegue a `scripts/pr_provenance.py` (#21436) : l'objet est cherche dans
+    le depot local, puis ramene par sa ref de pull quand il manque (#25243).
+    `None` est un echec de provenance, jamais une preuve : les appelants
+    conservent alors leur mesure de repli.
     """
-    head = pr.get("headRefOid")
-    number = pr.get("number")
-    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
-        return None
-
-    def git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(
-            ["git", *args], capture_output=True, check=False,
-            encoding="utf-8", errors="strict",
-            timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
-
-    try:
-        if git("cat-file", "-e", f"{head}^{{commit}}").returncode == 0:
-            return head
-        if not isinstance(number, int) or number <= 0:
-            return None
-        fetched = git("fetch", "--no-tags", "origin", f"refs/pull/{number}/head")
-        if fetched.returncode != 0:
-            return None
-        resolved = git("rev-parse", "--verify", "FETCH_HEAD")
-        if (resolved.returncode != 0
-                or resolved.stdout.strip().lower() != head.lower()):
-            return None
-        return resolved.stdout.strip()
-    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
-        return None
+    return pr_provenance.head_commit(pr, _GH_OPEN_PRS_TIMEOUT_S)
 
 
 def _pr_files_changed_against_main(pr: dict) -> list[str] | None:
@@ -3249,128 +3227,22 @@ def _pr_files_changed_against_main(pr: dict) -> list[str] | None:
     `git diff --name-only origin/main...<tete>`, l'equivalent local du
     `compare/main...<tete>` de GitHub : la reference est le point de
     divergence, pas la tete de `main`, donc ce que `main` a change depuis
-    ne compte pas. Mesure du 15/11 sur #25029 -- 4326 fichiers annonces par
-    `/pulls/25029/files`, 707 en diff a deux points (l'avancement de `main`
-    y entre), **7** ici : ses 7 carnets `Chaines-08` et rien d'autre.
-
-    `None` = provenance non etablie (objet de tete introuvable, `origin/main`
-    absent, panne Git) : l'appelant garde la liste de l'API, fail-CLOSED.
+    ne compte pas. Le calcul et son contrat vivent dans
+    `scripts/pr_provenance.py` (#21436).
     """
-    head = _pr_head_commit(pr)
-    if head is None:
-        return None
-
-    try:
-        diff = subprocess.run(
-            ["git", "diff", "--name-only", "-z",
-             f"origin/main...{head}", "--"],
-            capture_output=True, check=False,
-            timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
-        if diff.returncode != 0:
-            return None
-        return [path.decode("utf-8") for path in diff.stdout.split(b"\0") if path]
-    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
-        return None
+    return pr_provenance.files_changed_against_main(pr, _GH_OPEN_PRS_TIMEOUT_S)
 
 
 def _pr_files_against_main(pr: dict) -> list[str] | None:
-    """Return paths touched by first-parent PR commits absent from main.
+    """Chemins touches par les commits de premier parent de la PR, hors `main`.
 
-    The PR-files API describes the branch diff against its declared base. For a
-    stacked branch that has absorbed main, this can include files changed only
-    by main. The head commit is supplied by GraphQL; a missing local object is
-    fetched by its pull ref. The first-parent, non-merge log lists ordinary PR
-    commits absent from main; merge commits are compared with a main ancestor
-    parent so their conflict resolutions and additions are retained without
-    counting files simply imported from main. Git has no 100-file API ceiling.
-
-    ``None`` means provenance could not be established. Callers then retain
-    the API paths (fail-closed); an unavailable ref or Git error must never
-    release an implicit occupation. An empty list means there is no path
-    touched by an ordinary first-parent commit or contributed by a merge.
+    Le calcul vit dans `scripts/pr_provenance.py` (#21436) : un log combine,
+    une lecture des ancetres de `main` et un lot de diffs de fusion y
+    remplacent les `4 + 4m` processus Git d'origine, sur le meme resultat.
+    `None` = provenance non etablie (l'appelant garde les chemins de l'API,
+    fail-CLOSED) ; une liste vide = aucun chemin touche hors de `main`.
     """
-    head = _pr_head_commit(pr)
-    if head is None:
-        return None
-
-    def git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(
-            ["git", *args], capture_output=True, check=False,
-            encoding="utf-8", errors="strict",
-            timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
-
-    try:
-        main = git("rev-parse", "--verify", "origin/main")
-        if main.returncode != 0:
-            return None
-        main_oid = main.stdout.strip()
-        commits = subprocess.run(
-            ["git", "log", "--first-parent", "--no-merges", "--format=",
-             "--name-only", "-z", f"origin/main..{head}", "--"],
-            capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
-        if commits.returncode != 0:
-            return None
-        paths = {path.decode("utf-8") for path in commits.stdout.split(b"\0") if path}
-
-        # A merge commit can carry the PR's only change (conflict resolution,
-        # an `ours` choice, or a file created during resolution). For each
-        # first-parent merge outside main, diff its tree against a parent that
-        # is already on main. This includes the merge's own tree contribution
-        # while ignoring files merely imported from that main parent.
-        merges = git("rev-list", "--first-parent", "--merges",
-                     f"origin/main..{head}")
-        if merges.returncode != 0:
-            return None
-        for merge in merges.stdout.splitlines():
-            ancestry = git("rev-list", "--parents", "-n", "1", merge)
-            if ancestry.returncode != 0:
-                return None
-            commits_and_parents = ancestry.stdout.split()
-            parents = commits_and_parents[1:]
-            if len(parents) < 2 or commits_and_parents[0] != merge:
-                return None
-            main_parents = []
-            for parent in parents:
-                is_main_ancestor = git("merge-base", "--is-ancestor", parent, main_oid)
-                if is_main_ancestor.returncode == 0:
-                    main_parents.append(parent)
-                elif is_main_ancestor.returncode != 1:
-                    return None
-            # Several parents can already be on main while this merge
-            # deliberately chooses an older parent's content (e.g. ours).
-            # Matching one ancestor is not proof of inheriting main's tree.
-            # Compare with current main in this ambiguous case; this can
-            # conservatively retain later main paths, never release work.
-            comparison_parents = (
-                [main_oid] if len(main_parents) > 1
-                else main_parents or [parents[0]]
-            )
-            merge_contribution: set[str] | None = None
-            for parent in comparison_parents:
-                merge_diff = subprocess.run(
-                    ["git", "diff", "--name-only", "-z", parent, merge, "--"],
-                    capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
-                )
-                if merge_diff.returncode != 0:
-                    return None
-                changed_from_parent = {
-                    path.decode("utf-8")
-                    for path in merge_diff.stdout.split(b"\0") if path
-                }
-                # Compare against the selected main reference; a merge
-                # resolution matching an old ancestor still occupies a path
-                # when current main carries another resolution.
-                merge_contribution = (
-                    changed_from_parent if merge_contribution is None
-                    else merge_contribution & changed_from_parent
-                )
-            paths.update(merge_contribution or set())
-        return sorted(paths)
-    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
-        return None
+    return pr_provenance.files_against_main(pr, _GH_OPEN_PRS_TIMEOUT_S)
 
 
 def _open_prs_by_issue_and_lane(
@@ -7710,6 +7582,14 @@ def _glob_overlap(ga: str, gb: str) -> bool:
     return True
 
 
+# #21436 -- le jeu de repertoires ne depend que de la liste suivie, deja
+# memoisee par racine de depot (#22983). Sans ce cache, la phase de claims du
+# tapis lourd le reconstruisait 2 235 fois (258 s sous profil, 162 M
+# `set.add`) pour un resultat toujours identique. Les deux appelants ne font
+# que tester l'appartenance : l'ensemble rendu n'est jamais mute.
+_TRACKED_DIRS_MEMO = _TrackedScopedMemo(8)
+
+
 def _tracked_dirs(tracked: list[str] | None) -> set[str]:
     """The set of directories that hold at least one tracked file.
 
@@ -7717,11 +7597,15 @@ def _tracked_dirs(tracked: list[str] | None) -> set[str]:
     call. The ancestors of every tracked path are the directories that
     exist on disk.
     """
+    hit = _TRACKED_DIRS_MEMO.get(None, tracked)
+    if hit is not _MISS:
+        return hit
     dirs: set[str] = set()
     for path in tracked or []:
         parts = path.split("/")
         for i in range(1, len(parts)):
             dirs.add("/".join(parts[:i]))
+    _TRACKED_DIRS_MEMO.put(None, tracked, dirs)
     return dirs
 
 
