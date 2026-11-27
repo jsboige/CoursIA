@@ -8,7 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 /-!
 # Szpiro--Pasten 2026: admissible factorization and the formal statement of Theorem 1.1
 
-This module delivers grain 6 of the Langlands Epic (#17969): the formal Lean
+This module delivers, within the Langlands Epic (#17969), the formal Lean
 statement of Theorem 1.1 in Hector Pasten's preprint, *Improved Bounds for
 Szpiro's Conjecture* (arXiv 2609.17390, September 16, 2026), whose
 computational playground is the notebook
@@ -237,7 +237,7 @@ curve `E/ℚ` (carried by `CourbeHN`), every admissible factorization
 `h(E) ≤ C * M * φ(D) * log ℓ`
 
 NOT proved in this lake: the statement itself – a first-class Lean object,
-`#check`-able – is the deliverable of grain 6 of #17969. The proof (Shimura
+`#check`-able – is this module's formal contribution. The proof (Shimura
 curves, Jacquet--Langlands, Hecke eigenvalue multiplicity in `S_D(M)`) is
 documented in `App-32` §Conclusion and remains out of scope, following the
 honesty pattern of `search_lean`. -/

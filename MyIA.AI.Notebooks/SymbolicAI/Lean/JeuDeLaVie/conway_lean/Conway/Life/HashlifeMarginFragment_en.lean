@@ -4838,6 +4838,100 @@ theorem wall_sw_agreement
     congr 1
     ext <;> (try dsimp only) <;> omega
 
+/-! ## Slice 28 — core–ship formation: periodic core and ship of arbitrary periods
+
+Link 5 (`evolve_ship_union`, `hcap_of_spaceship_formation`) covers the union of
+two **synchronous** ships — same period `p`, same displacement `v`: their union
+is itself a ship, and the capture by the ship route (`hcap_of_spaceship`) then
+applies to the whole union. Slice 26 (`evolve_ship_join`,
+`hcap_of_spaceship_fleet`) extends that closure to n-ary synchronous fleets.
+The class left open is the **core–ship** formation: a periodic core
+(`evolve T g₁ = g₁`) and a ship (`evolve p g₂ = shift v g₂`), with a priori
+different periods.
+
+Such an assembly is not a ship — the core does not translate — so
+`evolve_ship_union` and `evolve_ship_join` do not apply. It does however
+reappear after `Nat.lcm T p` steps: the core is back to itself and the ship has
+translated by the displacement accumulated over `Nat.lcm T p / p` cycles. This
+is the **algebraic** half of the composition. The **capture** (`hcap`,
+`jumpCapturedF`) of this class remains the next link and is not claimed here. -/
+
+/-- **Accumulated displacement of the ship in a core–ship formation.** Over
+    `Nat.lcm T p` steps, a ship of period `p` and displacement `v` performs
+    `Nat.lcm T p / p` cycles: its total displacement is that number of cycles
+    times `v`. -/
+def coreShipDrift (T p : Nat) (v : Int × Int) : Int × Int :=
+  (((Nat.lcm T p / p : Nat) : Int) * v.1, ((Nat.lcm T p / p : Nat) : Int) * v.2)
+
+/-- **Iteration of a ship.** A pattern `g` whose every cycle of `p` steps
+    translates by `v` has translated by `v` times `m` after `m` cycles.
+    Induction on `m`: `evolve_add` splits `p + m·p`, `evolve_shift` commutes
+    evolution and one-cycle translation, `shift_shift` composes the
+    translations. The case `m = 0` is `shift_zero`, which requires canonicity
+    `hg` (`shift (0, 0)` is the identity only on a canonical grid). The vector
+    is split into components on entry (`obtain`), to give `shift_shift` — stated
+    with explicit components — the form `shift (a₁, a₂) (shift (b₁, b₂) g)` that
+    it rewrites. No positivity of `p` is required. -/
+theorem evolve_mul_shift_ship {p : Nat} (g : Grid) (hg : Canonical g)
+    (v : Int × Int) (hship : evolve p g = shift v g) (m : Nat) :
+    evolve (m * p) g = shift (((m : Nat) : Int) * v.1, ((m : Nat) : Int) * v.2) g := by
+  obtain ⟨v₁, v₂⟩ := v
+  induction m with
+  | zero =>
+    simp only [Nat.cast_zero, zero_mul, evolve_zero]
+    exact (shift_zero hg).symm
+  | succ m ih =>
+    have hsplit : p + m * p = (m + 1) * p := by ring
+    rw [← hsplit, evolve_add, ih, ← evolve_shift, hship, shift_shift]
+    congr 1
+    ext <;> push_cast <;> ring
+
+/-- **Motion law of a core–ship formation (membership form).** A `T`-periodic
+    core and a `(p, v)` ship, with 3-separated trajectories: after `Nat.lcm T p`
+    steps, the union's state is, in the membership sense, the unchanged core
+    plus the ship translated by `coreShipDrift T p v`. No canonicity hypothesis
+    on the **assembly**, and no positivity of `T` or `p`, is required: only the
+    ship's canonicity (`hg₂`, inherited from the `m = 0` case of
+    `evolve_mul_shift_ship`). The core returns by `evolve_mulF_of_period`
+    applied to the quotient `Nat.lcm T p / T`, the ship by
+    `evolve_mul_shift_ship` applied to the quotient `Nat.lcm T p / p`, and the
+    proof only manipulates `mem_shift` and the union law
+    `mem_evolve_union_sep`. -/
+theorem mem_evolve_lcm_core_ship {T p : Nat} (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hper : evolve T g₁ = g₁) (v : Int × Int) (hship : evolve p g₂ = shift v g₂)
+    (hg₂ : Canonical g₂) (q : Int × Int) :
+    q ∈ evolve (Nat.lcm T p) (g₁ ++ g₂)
+      ↔ q ∈ g₁ ∨ (q.1 - (coreShipDrift T p v).1, q.2 - (coreShipDrift T p v).2) ∈ g₂ := by
+  have hLT : T ∣ Nat.lcm T p := Nat.dvd_lcm_left T p
+  have hLp : p ∣ Nat.lcm T p := Nat.dvd_lcm_right T p
+  have hcore : evolve (Nat.lcm T p) g₁ = g₁ := by
+    rw [← Nat.div_mul_cancel hLT]
+    exact evolve_mulF_of_period g₁ hper (Nat.lcm T p / T)
+  have hshipL : evolve (Nat.lcm T p) g₂ = shift (coreShipDrift T p v) g₂ := by
+    rw [← Nat.div_mul_cancel hLp]
+    simpa only [coreShipDrift] using
+      evolve_mul_shift_ship g₂ hg₂ v hship (Nat.lcm T p / p)
+  rw [mem_evolve_union_sep g₁ g₂ hsep (Nat.lcm T p) q, hcore, hshipL, mem_shift]
+
+/-- **Motion law of a core–ship formation (list form).** Same content as
+    `mem_evolve_lcm_core_ship`, lifted to grid equality by `Canonical.ext`: the
+    left-hand side is canonical (`canonical_evolve_of_pos`, hence `hT0` and
+    `hp0`: `Nat.lcm T p > 0`); the right-hand side is assumed canonical
+    (`hcan`). Each part is canonical (`canonical_evolve_of_pos`,
+    `canonical_shift`), but their concatenation is not in general (order of the
+    two parts): the canonicity of the assembly stays a hypothesis, as the `hcan`
+    of `evolve_period_union`. -/
+theorem evolve_lcm_core_ship {T p : Nat} (hT0 : 0 < T) (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hper : evolve T g₁ = g₁) (v : Int × Int) (hship : evolve p g₂ = shift v g₂)
+    (hg₂ : Canonical g₂) (hcan : Canonical (g₁ ++ shift (coreShipDrift T p v) g₂)) :
+    evolve (Nat.lcm T p) (g₁ ++ g₂) = g₁ ++ shift (coreShipDrift T p v) g₂ := by
+  apply Canonical.ext (canonical_evolve_of_pos (Nat.lcm_pos hT0 hp0) _) hcan
+  intro q
+  rw [mem_evolve_lcm_core_ship g₁ g₂ hsep hper v hship hg₂ q]
+  simp only [List.mem_append, mem_shift]
+
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework
