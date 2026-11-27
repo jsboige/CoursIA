@@ -53,9 +53,10 @@
           transform: int
         csharp:
           absent: >-
-            Le jumeau C# ne publie pas de compteur de noeuds Welsh-Powell
-            dans ses sorties commitees (seul le graphe de depart est mesure)
-            : cote declare ABSENT, pas mesure.
+            Le jumeau C# n'implémente pas Welsh-Powell : 0 occurrence dans
+            les sorties commitees (une seule mention dans la metadonne du
+            carnet), le benchmark C# compare Backtracking / MRV / DSATUR
+            : la grandeur n'existe pas de ce cote, declare ABSENT, pas mesure.
     - id: mrv_noeuds
       description: "Noeuds explores par MRV sur easy[0]"
       tolerance: 0
@@ -71,8 +72,10 @@
           transform: int
         csharp:
           absent: >-
-            Meme raison que `welsh_powell_noeuds` : le cote C# ne publie pas
-            de compteur de noeuds MRV.
+            Le jumeau C# publie bien un compteur MRV, mais moyenné sur 5
+            sudokus faciles (63 noeuds, cellule 29) alors que la reference
+            Python mesure easy[0] seul (37 noeuds) : quantites non
+            comparables, cote declare ABSENT, pas mesure.
   # NB : le MRV pur (164 noeuds en Python vs 4037 en Rust) est VOLONTE
   # hors registre : ce n'est pas une divergence de portage mais une
   # convention de tie-breaking differente entre les deux implementations.

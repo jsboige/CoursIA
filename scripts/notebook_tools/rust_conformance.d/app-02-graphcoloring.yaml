@@ -19,10 +19,11 @@
           transform: int
         csharp:
           absent: >-
-            Les 13 cellules code du jumeau C# ne portent aucune sortie
-            commitee (carnet non re-execute avec outputs) : cote declare
-            ABSENT, pas mesure. La reprise du cote C# suppose une re-execution
-            C.2 du carnet C# -- hors de ce portage Rust.
+            Le jumeau C# (13/13 cellules code porteuses de sorties commitees)
+            traite des graphes canoniques -- K_n, C_n, Petersen, K_{m,n},
+            Mycielski, G(n, 0.5) -- et non le graphe de contiguite des
+            departements : la grandeur n'existe pas de ce cote, declare
+            ABSENT, pas mesure.
     - id: aretes
       description: "Nombre d'aretes du graphe de contiguite des departements"
       tolerance: 0
@@ -38,7 +39,8 @@
           transform: int
         csharp:
           absent: >-
-            Meme raison que `sommets` : aucune sortie commitee cote C#.
+            Meme raison que `sommets` : le jumeau C# ne charge pas le graphe
+            de contiguite des departements (graphes canoniques seulement).
     - id: chromatic_departements
       description: "Nombre chromatique du graphe des departements"
       tolerance: 0
@@ -54,7 +56,9 @@
           transform: int
         csharp:
           absent: >-
-            Meme raison que `sommets` : aucune sortie commitee cote C#.
+            Meme raison que `sommets` : le nombre chromatique publie cote C#
+            porte sur des graphes canoniques, pas sur le graphe des
+            departements.
     - id: petersen_solutions
       description: "Nombre de colorations du graphe de Petersen (k = 3)"
       tolerance: 0
@@ -70,4 +74,7 @@
           transform: int
         csharp:
           absent: >-
-            Meme raison que `sommets` : aucune sortie commitee cote C#.
+            Le jumeau C# publie le nombre chromatique exact de Petersen
+            (chi = 3, via DSATUR et backtracking), pas le nombre de
+            colorations valides a k = 3 : grandeur differente, declare
+            ABSENT, pas mesure.

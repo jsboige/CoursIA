@@ -81,7 +81,6 @@
           cell: 23
           pattern: 'Salviati\s+(0\.\d{4})'
           transform: text
-  # NB : les cellules de calibration Monte-Carlo (n = 250/1000/4000) et de
-  # l'estimation sur le club de karate sont STOCHASTIQUES (graines
-  # differentes par execution) : volontairement hors registre, seules les
-  # valeurs exactes tabulees sont mesurees ci-dessus.
+  # Les estimations Monte-Carlo utilisent des graines explicites ; les flux
+  # aleatoires Python et Rust different. Les estimations sont volontairement
+  # hors registre : seules les valeurs exactes tabulees sont comparees ici.
