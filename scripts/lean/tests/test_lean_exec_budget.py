@@ -93,3 +93,45 @@ def test_le_drapeau_kjobs_estinerte_mais_le_levier_reel_est_lean_num_threads():
         "lake", "build", "-Kjobs=5"]
     assert "LEAN_NUM_THREADS" in le.__doc__
     assert "inerte" in le.bound_command.__doc__.lower()
+
+
+# ---------------------------------------------------------------------------
+# #28840 — la borne memoire se paie par COMPILATION, pas en processus.
+# Le cap machine-wide compte des processus ; la memoire engagee est le
+# PRODUIT `places x mem_per_job_mb`. A 6144 Mo libres et 2048 Mo par
+# compilation, trois compilations tiennent — un quatrieme processus admis
+# par le cap fait depasser la memoire.
+# ---------------------------------------------------------------------------
+
+def test_la_borne_memoire_divise_la_memoire_par_compilation():
+    assert le.cap_memoire(6144, 2048) == 3
+    assert le.cap_memoire(2047, 2048) == 0
+    # Une valeur non mesurable ne doit jamais rendre une borne infinie.
+    assert le.cap_memoire(0, 2048) == 0
+    assert le.cap_memoire(6144, 0) == 6144
+
+
+def test_refus_nomme_quand_la_concurrence_effective_depasse_la_borne():
+    # TEMOIN du defaut : le cap de processus (8) admet cette charge, la
+    # memoire ne peut pas l'heberger (3 compilations).
+    avail_mb, mem_per_job_mb = 6144, 2048
+    reason = le.raison_depassement_memoire(4, avail_mb, mem_per_job_mb)
+    assert reason is not None
+    assert "concurrence effective 4 compilations" in reason
+    assert "borne memoire 3" in reason
+
+
+def test_control_negatif_a_la_borne_exacte_pas_de_rouge():
+    # Trois compilations pour 6144 Mo a 2048 Mo : c'est plein, pas depasse.
+    assert le.raison_depassement_memoire(3, 6144, 2048) is None
+    assert le.raison_depassement_memoire(2, 6144, 2048) is None
+
+
+def test_quel_cote_la_contention_est_transitoire_ou_structurelle():
+    # Contention : le run tient seul dans la borne, d'autres runs occupent
+    # la memoire -> retenter a un sens. Structurel : son budget depasse la
+    # borne a lui seul -> attendre ne liberera rien.
+    avail_mb, mem_per_job_mb = 4096, 2048   # borne = 2
+    assert le.cap_memoire(avail_mb, mem_per_job_mb) == 2
+    assert 2 <= le.cap_memoire(avail_mb, mem_per_job_mb)      # transitoire
+    assert not (3 <= le.cap_memoire(avail_mb, mem_per_job_mb))  # structurel
