@@ -12,7 +12,7 @@ Protéger l'information : de la confiance dans un canal à la confiance devant u
 
 | # | Carnet | Ce qu'il apporte | État |
 |---|--------|------------------|------|
-| 01 | [Hachage, chiffrement symétrique et HMAC](Cryptography-01-Hachage-Chiffrement-Hmac-CSharp.ipynb) (#27084) | Les briques : fonctions de hachage, chiffrement symétrique, intégrité HMAC — la confiance dans un canal | en PR |
+| 01 | [Hachage, chiffrement symétrique et HMAC](Cryptography-01-Hachage-Chiffrement-Hmac-CSharp.ipynb) (#27084) | Les briques : fonctions de hachage, chiffrement symétrique, intégrité HMAC — la confiance dans un canal | sur main |
 | 02 | Du canal bruité au canal adversarial (#27127) | Le passage du bruit à l'adversaire : authentifier, détecter l'altération, ne plus supposer un canal bienveillant | en PR |
 | 03 | [Chiffrement homomorphe et preuves ZK](Cryptography-03-Chiffrement-Homomorphe-et-Preuves-ZK-CSharp.ipynb) (#27235) | La crypto avancée : calculer sur des données chiffrées, prouver sans révéler | sur main |
 | 04 | [Le post-quantique](Cryptography-04-Post-Quantique-CSharp.ipynb) | Quand Shor casse RSA et ECC : ce qui tombe, ce qui survit, la migration vers la crypto post-quantique | sur main |
