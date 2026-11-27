@@ -14,7 +14,7 @@ de `[ ]:` a `[n]:`.
 | `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 3 | 0 | 15.8 | 6.7 | **succes** |
 | `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 9 | 0 | 20.4 | 6.8 | **succes** |
 | `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 7 | 0 | 14.4 | 6.8 | **succes** |
-| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 1 | 0 | 14.1 | 6.6 | **succes** |
+| `Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb` | 1 | 1 | 1 | 0 | 14.1 | 6.6 | **succes** |
 | `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | 10 | 10 | 5 | 0 | 20.4 | 6.8 | **succes** |
 | `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 7 | 0 | 17.5 | 6.9 | **succes** |
 | `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 10 | 0 | 34.0 | 6.8 | **succes** |
@@ -291,7 +291,7 @@ Exercice 2 a completer.
 Exercice 3 a completer.
 ```
 
-## `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb`
+## `Audio-06-3-AudioDiffusion-Comparison-A-vs-B-Python.ipynb`
 
 Verdict : **succes** · cellules executees 1/1 · duree 14.1 s · declenchement : `menu Run > Run All Cells`
 

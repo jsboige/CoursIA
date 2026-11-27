@@ -2,8 +2,12 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-Grothendieck hommage — Partie 94 : l'acyclicité des faisceaux flasques —
+Grothendieck hommage — Partie 102 : l'acyclicité des faisceaux flasques —
 degré 1 inconditionnel, décalage, et la frontière `injectif => flasque`.
+(Numéro de tranche assigné par extension du tableau des Parties du README :
+cet en-tête portait 94, numéro déjà tenu par la tranche 94 — la flascuité de
+la tour canonique, `Grothendieck.FlasqueAcyclic` n'ayant alors aucune ligne
+dans le tableau. Voir #28721.)
 
 Alexandre Grothendieck (1928-2014).
 
