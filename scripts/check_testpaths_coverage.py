@@ -429,7 +429,14 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # mort n'excluait plus rien depuis le rename #26392) : 25 marqueurs. Les
 # fichiers et items ne bougent pas (67 / 1110) : l'orphelin ne comptait
 # pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
-CI_EXCLUDED_BASELINE = {"marqueurs": 25, "fichiers": 67, "items": 1110}
+# #25835 : la suite zonos3 de `v4/tests` grandit de 29 a 53 items (24
+# fonctions de test ajoutees, mesurees par collectible_item_count — pas des
+# cas parametres). Le repertoire est sous exclusion motivee (`quotidien`
+# dans CI_EXCLUDED_PLAN), donc sa croissance est declaree ici plutot que
+# silencieuse : marqueurs et fichiers ne bougent pas (25 / 67), seuls les
+# items suivent la suite. Ce 1134 n'a rien a voir avec le plafond de meme
+# valeur retire en #27201, qui melangeait cas parametres et fonctions.
+CI_EXCLUDED_BASELINE = {"marqueurs": 25, "fichiers": 67, "items": 1134}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
