@@ -110,6 +110,7 @@ from pathlib import Path
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
 from claim_cap_advice import cap_action_line, open_daughters
+from pr_catalogue import est_catalogue
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -142,7 +143,11 @@ _OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
 # `_reduce_stacked_pr_files`). Un cache v2 porte les listes base-relatives
 # d'avant -- dont les milliers de fichiers de rattrapage d'une PR empilee --
 # et n'a donc pas le droit d'etre relu.
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
+# v4 (#28347) -- chaque PR porte la PROVENANCE de sa tete (`headRepository`).
+# Un cache v3 ne la porte pas : l'exemption de la PR du catalogue y serait
+# accordee sur le seul NOM de la branche, donc aussi a une branche homonyme
+# venue d'un fork. Le cache v3 est donc traite comme absent.
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v4"
 
 # --- #21742 : enumeration COMPLETE des PRs ouvertes ----------------------------
 #
@@ -2406,6 +2411,7 @@ query {
       nodes {
         number title headRefName baseRefName body additions deletions createdAt
         headRefOid
+        headRepository { nameWithOwner }
         files(first:100) { totalCount nodes { path changeType } }
       }
     }
@@ -2422,6 +2428,7 @@ query($cursor: String) {
       nodes {
         number title headRefName baseRefName body additions deletions createdAt
         headRefOid
+        headRepository { nameWithOwner }
         files(first:100) { totalCount nodes { path changeType } }
       }
     }
@@ -2794,6 +2801,13 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                # #28347 -- la PROVENANCE de la tete : le depot qui porte la
+                # branche. Sans elle, l'exemption de la PR du catalogue ne
+                # pourrait distinguer la branche du workflow d'une branche
+                # homonyme dans un fork (une PR de travail reel).
+                "headRepository": (
+                    (node.get("headRepository") or {}).get("nameWithOwner")
+                ),
                 # #26725 -- la base declaree decide si la liste `files`
                 # ci-dessous est la diff de la PR ou celle de sa pile.
                 "baseRefName": node.get("baseRefName"),
@@ -2901,6 +2915,15 @@ def _read_open_prs_cache() -> list[dict] | None:
             # deux ecrivains.
             if any("created_at" not in pr and "createdAt" not in pr
                    for pr in prs if isinstance(pr, dict)):
+                return None
+            # #28347 -- meme traitement pour la PROVENANCE de la tete : sans
+            # `headRepository`, l'exemption de la PR du catalogue s'appuierait
+            # sur le seul nom de la branche (une branche homonyme d'un fork
+            # serait exemptee a tort). Un cache ecrit par une version
+            # anterieure est donc traite comme absent : le fetch complet qui
+            # suit le REECRIT au format courant.
+            if any("headRepository" not in pr for pr in prs
+                   if isinstance(pr, dict)):
                 return None
             return prs
         raise OpenPrsIncompleteError(
@@ -7965,7 +7988,7 @@ def _compute_open_pr_collisions(
     self_overlap: list[PathCollision] = []
     for pr in prs:
         pr_files = pr.get("files") or []
-        if not pr_files:
+        if not pr_files or est_catalogue(pr):
             continue
         intersecting = [
             f.get("path", "") for f in pr_files

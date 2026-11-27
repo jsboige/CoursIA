@@ -1,4 +1,4 @@
-> RAPPORT — 2026-07-23 — protocole d'audit d'échantillonnage sémantique cross-famille — figé
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # Protocole d'audit d'échantillonnage sémantique cross-famille
 
