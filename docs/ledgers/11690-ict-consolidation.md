@@ -365,6 +365,36 @@ Les 4 carnets non couverts, recalculés — **tous sous occupation vive mesurée
 
 La projection du strand 15 s'est vérifiée au pair près (« si le Move merge, le recompte passe à 90/99 — un ICT-48 reste à traiter ») : aux arrivées près, la série est exactement dans l'état prédit. **La couverture est au plafond atteignable sans merger de PR** : chaque non couvert restant attend la résolution d'une PR ouverte, et le dénominateur continue de bouger (deux arrivées en trois jours) — le recompte se rejoue à chaque strand, il ne se recopie pas.
 
+### Recompte du 2026-11-23 (péremption du strand 20)
+
+Même méthode, rejouée à la tête `7cefe662ff85` de `origin/main`. Le strand 20 (tête `e3170e1b9595`, 2026-11-21) est périmé : entre les deux têtes, **quatre carnets sont arrivés** sur `main` — tous des ports (trois jumeaux C# + un jumeau Rust), zéro départ :
+
+- **ICT-15-IntegratedComplexity-CSharp** (portage C#) — **couvert**, porté par la section de base `ICT-15-IntegratedComplexity` ;
+- **ICT-15h-Bridge1bis-AsymmetricFamily-CSharp** (portage C#) — **couvert**, porté par la section de base `ICT-15h-Bridge1bis-AsymmetricFamily` ;
+- **ICT-Argumentation-QBFAcceptance-CSharp** (portage C#) — **couvert**, porté par la section de base `ICT-Argumentation-QBFAcceptance-Python` ;
+- **ICT-Greffe2-EspaceAtteignable-Rust** (portage Rust, #27956, commit `78f74ea6d87e`) — **non couvert** : la famille Greffe2 est suivie par sections distinctes (Python + C#), il n'y a pas de section Rust.
+
+Le dénominateur passe de 101 à **105** ; les sections restent à **98** (aucune section ajoutée : les trois C# chevauchent des bases existantes, le Rust n'en a pas).
+
+| Mesure | 2026-11-18 (s19) | 2026-11-21 (s20) | **2026-11-23 (s21)** |
+|---|---|---|---|
+| Carnets ICT sur `main` | 101 | 101 | **105** |
+| Sections de carnet au ledger | 97 | 98 | **98** |
+| Non couverts | 4 | 4 | **5** |
+| Taux de couverture (sections / carnets) | 96 % | 97 % | **93 %** |
+
+**Lecture du taux** : la chute 97 % → 93 % est un **effet de dénominateur**, pas une perte de couverture réelle. Trois des quatre arrivées sont des jumeaux C# portés par une section de base existante ; le seul écart neuf est le jumeau Rust Greffe2. La réconciliation complète tient ainsi : **105 carnets = 97 carnets à section vivante propre + 3 jumeaux C# portés par une base + 5 non couverts** ; et **98 sections = 97 vivantes + 1 fantôme** (`ICT-47b-PainAxisInstrument`, hors périmètre depuis le Move #26757).
+
+Les **5 carnets non couverts**, recalculés — les 4 du strand 20 inchangés, plus le Rust Greffe2 :
+
+- **ICT-33** SoupCollisions (reporté : PR #26864 ouverte le réécrit)
+- **ICT-40b** AnalogCognitionWaves (reporté : PR #26584 ouverte retire son activité de développement)
+- **ICT-48-WolframClasses-ThermoSignature** (reporté : PR #27783 ouverte, « blocs de fin »)
+- **ICT-49-JLensFideliteCrossTaille** (reporté : PR #27783 ouverte, « blocs de fin »)
+- **ICT-Greffe2-EspaceAtteignable-Rust** (nouveau : portage Rust du Python, #27956 — la famille est suivie par sections distinctes Python + C#, pas de section Rust)
+
+La vague de portages C#/Rust tend la convention « un carnet = une section » : trois ports s'accontentent d'une section de base, le quatrième (Rust Greffe2) laisse un écart visible. Le dénominateur continue de bouger — le recompte se rejoue à chaque strand, il ne se recopie pas.
+
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
 Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consignées par la lane `myia-ai-01:CoursIA` ([#11690 c.6103450933](https://github.com/jsboige/CoursIA/issues/11690#issuecomment-6103450933)). Le mainteneur a accepté les recommandations du dossier de séance et posé un cadre élargi pour la suite (#20298–#20301, #17545, #5081). Conformément à la réserve 2 (péremption), chaque correction décidée invalide la ligne correspondante au moment de son exécution.
@@ -1669,6 +1699,7 @@ Troisième strand de la série des orphelins, en duo : `ICT-33` (SoupCollisions)
 | **Contenu réel** | Deux régimes mesurés en miroir : **par la trajectoire le substrat est saturé** (cycle glider 64 états : det 1.000 / deg 0.000 / EI = log2(64) = 6 bits exactement, EC = 0 structurel — le glouton s'arrête en une passe ; quotient par translation de 4 phases **causalement étanche** : eff 1.000 conservée, EI amputé d'exactement log2(16) sans perdre une cause) ; **par l'ensemble des graines la règle jette l'information** (tore 2×2 : 11 collisions sur 16, deg 0.672, eff 0.328 ; tore 3×3 : 384 collisions sur 512, eff 0.3435). Deux partitions dessinées : **destin** (fibres du successeur) restaure eff à 1.000 / 0.998 (EI 1.31→2.32 / 3.09→6.98 bits) ; **population**, témoin négatif, s'effondre à 0.165 — une observable macro n'est pas une macro causale. Trois exercices C.1 conformes (points fixes, témoin au 3×3, EC concentré vs distribué). |
 | **Résultat** | **Le glouton re-dérive seul la partition par destin** : chemin monotone 16 → 5 états, eff 0.328 → 1.000 en onze fusions d'ampleur croissante (0.023 → 0.129), échelle terminale = le nombre d'avenirs distincts. EC 6.70 : la stratification se **construit** le long de l'échelle, pas un palier unique. Nuance épistémique écrite dans le carnet : l'émergence est mesurée *conditionnellement à la partition* — le regroupement par destin est un choix, pas une propriété mesurée du substrat. Confrontation Hoel vs Pearl consignée ailleurs (verdict « ne tient pas » sur ce substrat déterministe, `docs/research/c1111-hoel-pearl-ict32-verdict.md`). |
 | **Critique** | Rien de fond. Le coût glouton O(n⁴) est documenté et assumé (non exécuté sur 3×3, tractable pour le profil et les partitions dessinées) ; le contraste tri/Life (stratification par la trajectoire vs par l'ensemble) relie ICT-06 à ce carnet ; l'aveugle de chaque instrument est nommé. |
+| **Jouet (#20300)** | **SAIN** — le régime dégénéré est identifié, fui, et le témoin négatif est une partition construite pour perdre. Témoin positif : trajectoire glider saturée (det 1.000, deg 0.000), la partition par destin restaure effectiveness 0.328 → 1.000, et la structure tient au 3×3 (384/512 collisions, restauration 0.998) — le phénomène apparaît et survit au changement d'échelle. Témoin négatif : EC = 0 sur la trajectoire isolée (théorème de situation) ; le tore 2×2 est nommé « monde dégénéré » et échappé par design (re-test 3×3) ; la partition-témoin par population **perd** contre le micro (0.165 < 0.328) — un contrôle qui échoue comme il doit. Critère 3 (contrepartie non jouet) : non couvert, nommé. |
 | **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
 
 ### `ICT-34-BancRecollementLectures-Python.ipynb` (26) — 17 md / 9 code, 9/9 exécutées
@@ -1718,6 +1749,21 @@ Cinquième strand de la série des orphelins, en duo : `ICT-40b` (AnalogCognitio
 2. **Une prédiction pré-enregistrée, confirmée et bornée dans le même geste** : la question k était écrite avant la mesure, avec sa prédiction falsifiable et son mécanisme ; la confirmation (premier compteur croissant de la série) vient **avec** sa condition de validité (SNR par canal croissant avec k dans ce montage) — le carnet interdit au lecteur de sur-étendre le résultat. Le pré-enregistrement, déjà standard des strates 15-17, prouve ici son utilisation la plus forte : il protège aussi le verdict positif.
 3. **L'inventaire de terrain est un résultat, pas un incident** : ICT-43 transforme « l'issue s'est trompée de tailles » en un résultat qui redessine le plan d'expérience — quelles tailles sont réellement comparables, à quelle expansion, avec quel mismatch base/instruct. C'est le pendant infrastructure du contrôle négatif : mesurer ce qui existe **avant** de comparer, exactement comme ICT-20 calibrait l'instrument avant la transition chargée (finding 4 du strand 17).
 4. **Le protocole comme condition de la mesure** : H1 n'est récupérable qu'au régime moyenné du papier — l'epoch unique rend le décalage beta de signe instable. Le moyennage sur des centaines d'epochs n'est pas un confort statistique mais ce qui rend la mesure **possible** ; le carnet le démontre en faisant varier le bruit, pas en l'affirmant.
+
+## Strand 21 — ICT-48 WolframClasses-ThermoSignature (extension #11690)
+
+Lecture de contenu et d'outputs committés, sans re-exécution (arbitrage fondateur : lecture seule). Le carnet a quitté le « sous occupation vive » qui le retenait hors du ledger : le Move #26757 (mergé 2026-11-20) a réaffecté `ICT-48-Onset9B-Aggregate` vers `PostTraining/` (PT_20/PT_21), et #27095 (mergé 2026-11-20) a levé l'occupation vivante du WolframClasses — la paire « ICT-48 ×2 » de l'inventaire ne porte plus qu'un seul carnet ICT, lisible sans risque de péremption. GPU-free par conception (numpy seul, automates cellulaires élémentaires).
+
+### `ICT-48-WolframClasses-ThermoSignature-Python.ipynb` (52) — 34 md / 18 code, 18/18 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | « Origami Wolfram, pli 2 : quatre classes, six instruments » — classifier les automates cellulaires élémentaires en classes de Wolfram (I uniforme, II périodique, III chaotique, IV complexe) avec **six** instruments consommés des organes de la série (`ict`), sans les réimplémenter : densité asymptotique, `classify_rule`, mesures de structure spatiale (MI, LZ, déterminisme), composantes connexes, translation diagonale, signature thermodynamique σ. |
+| **Contenu réel** | Quatre règles canoniques (0, 30, 110, 250) + la règle 4, sur une grille 64 cases / 500 pas. La densité sépare le trivial (R0 : densité 0.0000, 1 valeur distincte, période 1) du non-trivial, mais confond les classes III/IV. `classify_rule` est aveugle à la structure (R4 étiquetée « II (known) \| I (measured) »). Trois mesures de structure spatiale (MI d=1/2/4, LZ, déterminisme w=8) : aucune ne tranche franchement III de IV. La signature thermodynamique σ (brut et quantiles) : R0 σ = 0.0000, R30 σ = 0.6194 (cv 0.587 sur 11 niveaux de grille/graine/alphabet), R110 cv ≈ 1.1 — le signal croît avec la classe. Huit exercices C.1 conformes (stubs « Exercice à compléter »). |
+| **Résultat** | **Le carnet réfute lui-même l'ordonnancement attendu des classes** : la distance entre règles est ≈ 0 pour 0, 4 et 250 — les six instruments discriminent le trivial du non-trivial, mais ne reconstituent pas la typologie canonique en classes distinctes. La discrimination III/IV reste ouverte (documentée comme limite des instruments, pas comme échec du substrat). |
+| **Critique** | Rien de fond. L'aveugle de chaque instrument est nommé (la densité confond III/IV, `classify_rule` est aveugle à la structure) ; le « pli 2 » rattache le carnet à la série Origami ; le coût des exercices (relance de simulations) est averti. |
+| **Jouet (#20300)** | **SAIN** sur la discrimination trivial / non-trivial. Témoin positif : R30 (III) et R110 (IV) portent la structure — signature thermodynamique σ non nulle (R30 σ 0.6194, cv 0.587 ; R110 cv ≈ 1.1) et translation diagonale non nulle (0.2462 / 0.4019) là où le trivial n'en a pas. Témoin négatif : R0 (I) — σ = 0.000, cv = 0.000, 1 valeur distincte, période 1, translation 0.0000 : **rien à mesurer**, le cas trivial est le contrôle qui ne produit pas de signal. Critère 3 (échelle non-jouet, SOTA) : non couvert, nommé. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. Le résidu du « ICT-48 ×2 » de l'inventaire est levé : seul le WolframClasses reste ICT, Onset9B est en PostTraining. |
 
 ## Strand 20 — Le jumeau C# de la greffe 2 : ICT-Greffe2-EspaceAtteignable-CSharp (extension #11690)
 

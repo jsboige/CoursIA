@@ -2,23 +2,19 @@
 """Cap de livraisons EPIC branche sur la voie de tirage courante (#21067).
 
 Le cap arbitre par le coordinateur (charge EN VOL : PRs ouvertes + livraisons
-mergees sur 7 jours, item K=2 / famille K=4, arbitrage 2026-11-06T12:14Z,
-implante par #24968) ne vivait que dans ``pick_idle_grain.py`` -- retire du
-tirage depuis #26926. Le replay 14 j du 2026-11-21 l'a mesure : la saturation
-effective ne baissait pas (42 -> 48 couples (lane, EPIC) au-dessus de K),
-parce que le garde gardait un outil qu'on n'utilise plus.
+mergees sur 7 jours, item K=2 / famille K=4, arbitrage 2026-11-06T12:14Z)
+ne vivait que dans ``pick_idle_grain.py`` -- retire du tirage depuis #26926.
+Le replay 14 j du 2026-11-21 l'a mesure : la saturation effective ne
+baissait pas (42 -> 48 couples (lane, EPIC) au-dessus de K).
 
-Ce module rebranche l'organe EXISTANT, sans le reimplementer :
-``epic_lane_load_counts`` et ``epic_lane_delivery_cause`` sont importes de
-``pick_idle_grain`` (organ-first -- une reimplementation locale aurait diverge
-au premier amendement du seuil). La greffe se fait sur la voie LEGERE du tapis
-rapide, qui est la voie de tirage reelle ; la voie lourde (rejeu ``--lecture``,
-hors ligne) ne le porte pas : sa mesure reseau echouerait de toute facon et le
-fail-OPEN rendrait la file intacte.
+Ce module rebranche l'organe EXISTANT : ``epic_lane_load_counts`` et
+``epic_lane_delivery_cause`` sont importes de ``pick_idle_grain``
+(organ-first). La greffe se fait sur la voie LEGERE du tapis rapide ; la
+voie lourde (rejeu ``--lecture``, hors ligne) ne le porte pas.
 
 Le refus porte sur la LANE, pas sur l'EPIC : les autres lanes voient toujours
-l'item. Fail-OPEN sur toute panne de la mesure -- jamais un refus sur une
-charge qu'on n'a pas pu lire.
+l'item. Fail-OPEN sur toute panne de la mesure. La glue cap-puis-repli vit
+dans `tapis_leger_fenetre` : le plafond de lignes de ce module ne bouge pas.
 """
 from __future__ import annotations
 
@@ -27,6 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from coordination import gh_bulk, tapis_borne  # noqa: E402
 from pick_idle_grain import (  # noqa: E402
     EPIC_FAMILY_DELIVERY_CAP_DEFAULT,
     EPIC_LANE_DELIVERY_CAP_DEFAULT,
@@ -35,6 +32,7 @@ from pick_idle_grain import (  # noqa: E402
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+import fetch_merged_prs_since  # noqa: E402
 from fetch_merged_prs_since import fetch as fetch_mergees  # noqa: E402
 
 #: Meme fenetre que l'ardoise de lane de l'organe (LANE_RECORD_WINDOW_DAYS).
@@ -43,8 +41,41 @@ FENETRE_J = 7
 CODE = "PLAFOND_LIVRAISONS"
 
 
+def fetcher_hors_reseau(since: str, until: str) -> list[dict]:
+    """Le fetteur **INERTE** : le cap ne lit jamais le reseau quand on le demande.
+
+    Le contrat de `fetch_merged_prs_since.fetch` est
+    ``(since, until) -> list[dict]``. Ce fetteur leve : `charge_en_vol` rattrape
+    l'echec et rend `None`, le cap n'est donc **pas evalue** -- temoin
+    `mesure: false` dans le rapport. Fail-OPEN, comme le veut le module : on
+    ne refuse jamais un item sur une charge qu'on n'a pas su lire.
+    """
+    raise RuntimeError("hors reseau : le cap de livraisons n'est pas evalue")
+
+
+def _fetteur_cap(run_commande=None, echeance: float | None = None):
+    """Le fetteur du cap : le contrat ``(since, until) -> list[dict]``.
+
+    Deux contrats cohabitent dans la commande : celui de la COMMANDE
+    (`gh_bulk.run_defaut` : ``(argv, timeout) -> str``) et celui du FETTEUR
+    (``(since, until) -> list[dict]``). Ils sont adaptes ici, au point de
+    contact, et l'adaptation passe par l'ARGUMENT du fetteur
+    (`fetch_merged_prs_since.run_gh`) : ni le fetteur ni son argv ne sont
+    reimplementes.
+
+    Chaque tranche est bornee par le TEMPS RESTANT : le cap consomme le
+    budget de la commande, il ne s'en donne pas un neuf (#28114, I6).
+    """
+    def lancer(since: str, until: str, timeout) -> list[dict]:
+        return fetch_merged_prs_since.run_gh(
+            since, until, fetch_merged_prs_since.DEFAULT_FIELDS,
+            timeout=timeout, run=run_commande)
+    return tapis_borne.fetteur_sous_borne(lancer, echeance)
+
+
 def charge_en_vol(lane: str, maintenant: datetime, prs_ouvertes: list[dict] | None,
-                  run=None) -> dict[int, int] | None:
+                  run=None, echeance: float | None = None,
+                  run_commande=None) -> dict[int, int] | None:
     """``{issue: charge en vol de `lane`}``, ou ``None`` si la mesure echoue.
 
     La charge = PRs ouvertes de la lane (deja lues par le tirage, passees en
@@ -52,10 +83,20 @@ def charge_en_vol(lane: str, maintenant: datetime, prs_ouvertes: list[dict] | No
     par le fetcher anti-troncature de ``ci/`` (une seule passe groupee par
     tranches de dates). Le compte suit le TAG de lane des corps, jamais
     ``--author`` : le compte GitHub est partage sur ce depot.
+
+    La lecture est **sous l'echeance** de la commande : elle partage le
+    budget de la selection et de la qualification au lieu d'en obtenir un
+    neuf, et une lecture trop lente est abandonnee (fail-OPEN : la mesure
+    vaut `None`, le cap n'ecarte rien) -- #28114, I6.
     """
     try:
         depuis = (maintenant - timedelta(days=FENETRE_J)).date().isoformat()
-        mergees = fetch_mergees(depuis, run=run, today=maintenant.date())
+        fetteur = run if run is not None else _fetteur_cap(run_commande, echeance)
+        mergees = tapis_borne.sous_echeance(
+            lambda: fetch_mergees(depuis, run=fetteur, today=maintenant.date()),
+            echeance)
+        if mergees is None:
+            return None
         return epic_lane_load_counts(mergees, lane, open_prs=prs_ouvertes,
                                      now=maintenant)
     except Exception:  # noqa: BLE001 - une mesure qui rate n'ecarte rien
@@ -75,7 +116,8 @@ def _adapte(e) -> dict:
 def passer(file: list, ordre: list, lane: str, maintenant: datetime,
            prs_ouvertes: list[dict] | None, run=None,
            cap: int = EPIC_LANE_DELIVERY_CAP_DEFAULT,
-           family_cap: int = EPIC_FAMILY_DELIVERY_CAP_DEFAULT
+           family_cap: int = EPIC_FAMILY_DELIVERY_CAP_DEFAULT,
+           echeance: float | None = None, run_commande=None
            ) -> tuple[list, list[dict], bool]:
     """Ecarte de la FILE les items plafonnes pour CETTE lane, complete par les
     suivants de l'ORDRE complet (grains puis conteneurs), meme longueur rendue.
@@ -86,7 +128,8 @@ def passer(file: list, ordre: list, lane: str, maintenant: datetime,
     remplacant potentiel est re-verifie contre le meme cap : un item de la
     meme famille plafonnee ne remplace pas un ecarte par son propre motif.
     """
-    charge = charge_en_vol(lane, maintenant, prs_ouvertes, run=run)
+    charge = charge_en_vol(lane, maintenant, prs_ouvertes, run=run,
+                           echeance=echeance, run_commande=run_commande)
     if charge is None:
         return file, [], False
 

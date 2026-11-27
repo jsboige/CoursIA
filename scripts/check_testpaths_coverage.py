@@ -142,6 +142,11 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
         # argumentum_snapshot (14 tests) devient un test de la collection.
         "scripts/fallacy_detection/tests",
+        # scripts/humor_detection/tests : dir entier (#20301) — 12 tests de
+        # la campagne ColBERT (annotation_campaign), hors reseau, memes deps
+        # stdlib+pytest que fallacy_detection (le module importe Reply de
+        # fallacy_detection.generate_teacher_corpus).
+        "scripts/humor_detection/tests",
         # #22735 : huit suites de `scripts/**/tests/` etaient vertes en local
         # et jouees par AUCUN workflow -- absentes aussi de pytest.ini, donc
         # invisibles des DEUX sens de ce garde : datasets, genai-stack,
@@ -168,6 +173,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # mais absent des testpaths de pytest.ini -- la convergence
         # local <-> CI est un invariant de ce garde (#22735).
         "scripts/ci/tests",
+        # scripts/curriculum/tests : suite neuve de #27657 (temoins des
+        # fonctions pures du generateur de carte des prerequis), pure et sans
+        # reseau. Cablee des trois cotes dans la meme PR (pytest.ini,
+        # liste pytest de scripts-tests.yml, ce dict) -- sans quoi le second
+        # sens du garde (#22735) la voyait sur le disque et non jouee.
+        "scripts/curriculum/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         # ICT-Series scripts/tests : dir entier (#23730, classe #22735) —
         # 45 tests sur 3 fichiers (protocol, records, reward_dynamics),
@@ -177,9 +188,25 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (pytest.ini testpaths, liste pytest de ce workflow, ce dict).
         "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
+        # HalloweenIndicator-QC/tests (#27482) : dossier neuf apporté avec son
+        # test (trace d'ombre, AlgorithmImports maquetté, 13 tests en 0,1 s),
+        # câblé des trois côtés dans la même PR.
+        "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC/tests",
+        # Option-Wheel/tests (#28618) : dossier neuf apporte avec son test,
+        # hermétique (AlgorithmImports maquetté, zéro réseau ; 8 tests en
+        # 0,12 s en local). Cablé des trois côtés dans la même PR — testpaths,
+        # bloc pytest littéral de ce workflow, ce dict — plutôt que déclaré en
+        # dette tolérée : un test ajouté pour prouver un plafond doit tourner.
+        "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests",
+        # Probas/Causalite/tests (T1-finale #25366) : dernier dossier non
+        # trie, cable des trois cotes dans la meme PR (pytest.ini testpaths,
+        # bloc pytest litteral de ce workflow, ce dict) ; dowhy installe par
+        # le script partage d'installation. 107 tests verts mesures en local
+        # (Python 3.13, dowhy 0.14, 137,87 s depuis la racine du depot).
+        "MyIA.AI.Notebooks/Probas/Causalite/tests",
         # scripts/quantconnect/tests : dir entier (famille 3 de #14615) —
         # 254 tests / 9 modules, hermétique (mesure firsthand 2026-09-05 :
         # 253 verts + 1 skip de donnée, yfinance absent de l'env).
@@ -271,8 +298,16 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # aussi `test_thermal_safe_train.py` (entraînement torch, ~35 s de
     # collecte seule) qu'un garde léger ne doit PAS collecter — d'où pas
     # d'entrée `pytest.ini` testpaths et pas de cible-dossier ici.
+    # Depuis #28619 la jambe joue trois cibles-fichier, toutes déclarées :
+    # `test_inference_trace.py` entree par #27222 mais jamais inscrite ici
+    # (derive declaration <-> reel du meme garde), et `test_path_profile.py`
+    # (#27214), que la CI ne collectait pas. Une cible déclarée doit
+    # apparaitre VERBATIM dans un bloc `run:` du workflow
+    # (verify_declared_targets) : retirer l'une des trois du pytest rougit.
     ".github/workflows/sudoku-tests.yml": [
         "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
+        "MyIA.AI.Notebooks/Sudoku/tests/test_inference_trace.py",
+        "MyIA.AI.Notebooks/Sudoku/tests/test_path_profile.py",
     ],
     # geometry-tests.yml : dir entier (issue #23359) — 13 tests Z3/sympy du
     # pont réel real_geometry_bridge.py (tests/test_real_geometry_bridge.py
@@ -354,7 +389,9 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
     # --- dependance absente ou Python requis (T1 #25366) ---
     # La dependance n'est pas dans l'image CI : le lot attend son
     # installation, puis l'etage quotidien (une image dediee).
-    "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/tests": "quotidien",
+    # Causal-Bridges/tests (devenu Probas/Causalite/tests au rename #26392)
+    # quitte le plan en T1-finale : dowhy installe par le script partage,
+    # dossier cable dans scripts-tests.yml et pytest.ini (#25366).
     "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests": "quotidien",
     "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests": "quotidien",
@@ -388,7 +425,11 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # Le plafond precedent de 1134 confondait ces deux unites ; il est resserre.
 # Toujours hors CI racine : ce relevement ne pretend pas ajouter une
 # couverture CI. La suite complete se rejoue depuis le dossier du projet.
-CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 67, "items": 1110}
+# T1-finale #25366 : retrait du marqueur orphelin Causal-Bridges (le chemin
+# mort n'excluait plus rien depuis le rename #26392) : 25 marqueurs. Les
+# fichiers et items ne bougent pas (67 / 1110) : l'orphelin ne comptait
+# pour aucun fichier, le dossier Causalite n'a jamais ete dans la population.
+CI_EXCLUDED_BASELINE = {"marqueurs": 25, "fichiers": 67, "items": 1110}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
@@ -763,7 +804,9 @@ def run_inventory(
 BASENAME_EXEMPT = {"__init__.py", "conftest.py"}
 
 
-def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
+def duplicate_basenames(
+    repo_root: Path, excluded: dict[str, str] | None = None
+) -> dict[str, list[str]]:
     """Basenames de modules portés par >= 2 répertoires de tests découverts.
 
     Ne voit que les ENFANTS DIRECTS de chaque répertoire découvert : ce sont
@@ -779,7 +822,17 @@ def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
     est la mesure de ce critère. T2 tranche chaque copie (copie unique,
     surplus supprimé avec preuve, ou redirection d'import) ; ce sens ne
     préjuge pas de l'équivalence de contenu des copies.
+
+    Paire tolérée quand TOUS ses répertoires portent un marqueur
+    CI-EXCLUDED (T1-finale #25366) : même symétrie que le tri des dossiers
+    (« les exclusions déclarées comptent comme triées »). Une collision qui
+    vit entièrement dans la population déclarée-exclue — deux
+    projets-exemple pédagogiques homonymes, par exemple — est connue et
+    écrite ; la compter rougirait un critère que le mécanisme dit déjà
+    tranché. Une collision MIXTE (un répertoire exclu, un répertoire vivant)
+    reste comptée : le répertoire vivant collisionne réellement.
     """
+    excluded = excluded or {}
     by_basename: dict[str, set[str]] = {}
     for d in discover_test_dirs(repo_root):
         for py in (repo_root / d).glob("*.py"):
@@ -789,7 +842,7 @@ def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
     return {
         name: sorted(dirs)
         for name, dirs in sorted(by_basename.items())
-        if len(dirs) > 1
+        if len(dirs) > 1 and not all(d in excluded for d in dirs)
     }
 
 
@@ -1560,7 +1613,7 @@ def main() -> int:
             (strict or write_mode) and args.baseline is None,
         )
         # Cinquième sens (#25366 T0) : basenames dupliqués.
-        dupes = duplicate_basenames(repo_root)
+        dupes = duplicate_basenames(repo_root, excluded)
         if dupes:
             print(
                 f"Basenames de modules portés par >= 2 répertoires de tests "

@@ -6,6 +6,12 @@ L'organe vit depuis #14057 (Vague 2 tranche 1, patron #13384) dans
 ``base-not-main-advisory.yml`` reste DORMANT (declencheur pull_request
 retire, job conserve verbatim pour la tracabilite).
 
+Depuis #28534, l'organe vit dans ``.github/workflows/always-on-guards-edited.yml``
+-- la fusion des deux workflows de la classe ``edited`` (metadonnees + body)
+en un workflow, un job, un checkout. ``always-on-metadata-guards.yml`` et
+``always-on-guards-body.yml`` deviennent dormants a leur tour. Le verrou porte
+ici porte sur le workflow VIVANT : c'est lui qui reagit aux PR.
+
 The organ reads TWO sources, and neither is the CONTENT of the diff:
 PR-level metadata via the ``gh`` API (``baseRefName`` + ``title`` for the
 verdict, then ``files``/``changedFiles`` for the paths the PR touches), and --
@@ -38,7 +44,7 @@ import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WORKFLOW = REPO_ROOT / ".github" / "workflows" / "always-on-metadata-guards.yml"
+WORKFLOW = REPO_ROOT / ".github" / "workflows" / "always-on-guards-edited.yml"
 
 
 def _load_workflow() -> dict:
@@ -65,8 +71,8 @@ def test_no_paths_filter_under_pull_request():
     pr_block = on_block.get("pull_request", {})
 
     assert "paths" not in pr_block, (
-        f"always-on-metadata-guards.yml (umbrella de l'organe base-not-main "
-        f"depuis #14057) MUST NOT carry paths: under "
+        f"always-on-guards-edited.yml (umbrella de l'organe base-not-main "
+        f"depuis #14057, fusion #28534) MUST NOT carry paths: under "
         f"on.pull_request (decision ai-01 #13232, 2026-08-27). "
         f"Organ reads PR METADATA via gh api (baseRefName, title, files) "
         f"and the checkout's .github/workflows (#16194), never diff "

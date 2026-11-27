@@ -47,6 +47,7 @@ PANEL_27611 = {
     "GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb",
+    "GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-CSharp.ipynb",
     "GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb",
 }
 
@@ -132,9 +133,15 @@ def test_title_is_matched_without_accents():
 
 
 def test_gametheory_findings_stay_inside_the_panel():
-    """Aucun faux positif sur GameTheory : les constats sont dans le panneau."""
+    """Aucun faux positif sur GameTheory : tout constat est dans le panneau.
+
+    Le compte n'est pas pinle (il descend avec la remediation, #27611) : un
+    corpus a zero constat est un etat valide une fois la remediation achevee.
+    #28356 a replie les 4 derniers jumeaux C# de la liste du panneau, d'ou
+    zero constat ; la garde anti-faux-positif est ici, la garde anti-organe
+    casse est portee par ``test_self_test_passes``.
+    """
     findings = organ.scan_corpus(str(NOTEBOOK_ROOT), "GameTheory")
-    assert findings, "le corpus GameTheory doit porter des constats"
     for finding in findings:
         relative = os.path.relpath(finding["path"], str(NOTEBOOK_ROOT))
         relative = relative.replace(os.sep, "/")

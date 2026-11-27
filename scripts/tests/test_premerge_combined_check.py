@@ -49,7 +49,11 @@ class FakeRunner:
                 return pc.RunResult(self.fetch_rc, "", "")
             if verb == "rev-parse":
                 ref = cmd[-1].split("^")[0]
-                return pc.RunResult(0, {"base": BASE, "head": HEAD}[ref] + "\n", "")
+                sha = {"base": BASE, "head": HEAD}.get(ref)
+                if sha is None:
+                    # Une base RESOLUE : le sha est deja connu, il se relit.
+                    sha = ref if re.fullmatch(r"[0-9a-f]{40,64}", ref) else ""
+                return pc.RunResult(0, (sha + "\n") if sha else "", "")
             if verb == "merge-tree":
                 out = TREE + "\n" if self.merge_tree_rc == 0 else TREE + "\nCONFLICT"
                 return pc.RunResult(self.merge_tree_rc, out, "")
@@ -59,6 +63,8 @@ class FakeRunner:
                 return pc.RunResult(self.worktree_add_rc, "", "")
             if verb == "worktree" and cmd[4] == "remove":
                 return pc.RunResult(self.worktree_remove_rc, "", "")
+            if verb == "checkout":
+                return pc.RunResult(0, "", "")
         if "pytest" in cmd:
             if self.pytest_timeout:
                 return pc.RunResult(124, "", "timeout", timed_out=True)
@@ -154,10 +160,171 @@ def test_parse_failed_dedupes_and_keeps_order():
     assert pc.parse_failed(out) == ["a::x", "b::y"]
 
 
+def test_le_detail_du_rouge_porte_la_raon():
+    """La section FAILURES de pytest : l'assertion, pas seulement l'id.
+
+    Le journal portait `FAILED <id>` : on en conclut qu'un test a rougi, pas
+    pourquoi. Un delai depasse et une valeur qui change se distinguent par
+    l'assertion.
+    """
+    out = (
+        "=== FAILURES ===\n"
+        "____ test_original_intact_under_all_faults ____\n"
+        "E   assert proc.returncode == 0\n"
+        "=== short test summary info ===\n"
+        "FAILED t/test_g.py::test_original_intact - AssertionError\n"
+    )
+    detail = pc.failure_detail(out)
+    assert "assert proc.returncode == 0" in detail
+    assert "test_original_intact" in detail
+
+
+def test_le_detail_du_rouge_replie_sur_le_resume_si_pas_de_section():
+    out = "FAILED t/test_g.py::test_x - AssertionError: boom\n"
+    assert "test_x" in pc.failure_detail(out)
+
+
+def test_le_detail_du_rouge_est_vide_sans_echec():
+    assert pc.failure_detail("88 passed in 12 s\n") == ""
+
+
+def test_le_detail_du_rouge_est_tronque():
+    out = "=== FAILURES ===\n" + ("E   ligne\n" * 5000)
+    detail = pc.failure_detail(out, limit=500)
+    assert len(detail) < 700 and "tronque" in detail
+
+
 def test_integrity_list_points_at_existing_files():
     root = HERE.parents[1]
-    missing = [t for t in pc.INTEGRITY_TESTS if not (root / t).is_file()]
+    missing = [t for t in pc.INTEGRITY_TESTS
+               if not (root / pc._fichier_de(t)).is_file()]
     assert missing == []
+
+
+# --- passe : un worktree, une base (22/11) -----------------------------------
+
+
+def test_la_base_reste_courante_a_chaque_candidat(tmp_path):
+    """Le `main` est re-fetché pour CHAQUE candidat.
+
+    L'idee d'un `main` resolu UNE fois par passe a ete ecartee par la
+    mesure : le `main` n'ajoute que ~0,4 s au fetch (18,2/18,8/20,7 s avec,
+    17,8/19,6/24,1 s pour la seule tete) -- le cout est l'aller-retour reseau,
+    pas la ref. Une base resolue une fois par passe serait PERIMEE, et
+    l'organe existe precisement pour attraper le conflit entre deux PRs
+    fusionnees contre le meme `main@T` (fenetre residuelle de #24828).
+    """
+    runner = FakeRunner()
+    wt = _worktree_with(tmp_path, "t/test_a.py")
+    v = pc.check(runner, tmp_path, base="c" * 40, head="head", worktree=wt,
+                 tests=("t/test_a.py",), workers=0, timeout_s=5, pr=123)
+    assert v.verdict == "GREEN"
+    fetch = next(c for c in runner.calls if c[3] == "fetch")
+    assert fetch[3:] == ["fetch", "--quiet", "origin", "main", "pull/123/head"]
+
+
+def test_un_worktree_de_passe_existant_est_reutilise(tmp_path):
+    """Le worktree de la passe existe : un `checkout --detach`, pas d'add.
+
+    Et surtout PAS de `worktree remove` : le dossier appartient a la passe.
+    """
+    wt = tmp_path / "wt"
+    (wt / "t").mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: ...\n", encoding="utf-8")
+    (wt / "t" / "test_a.py").write_text("", encoding="utf-8")
+    runner = FakeRunner()
+    v = pc.check(runner, tmp_path, base="base", head="head", worktree=wt,
+                 tests=("t/test_a.py",), workers=0, timeout_s=5, pr=1,
+                 reuse_worktree=True)
+    assert v.verdict == "GREEN"
+    verbs = runner.verbs()
+    assert "worktree add" not in verbs
+    assert "worktree remove" not in verbs
+    checkout = next(c for c in runner.calls if "checkout" in c)
+    assert "--detach" in checkout and MERGE in checkout
+
+
+def test_le_worktree_de_passe_absent_est_pose_et_garde(tmp_path):
+    """Le worktree de la passe n'existe pas encore : il est POSE, et garde.
+
+    Le retirer ici le ferait disparaitre avant le candidat suivant : la
+    passe ne paie qu'un worktree, pas un par candidat.
+    """
+    wt = tmp_path / "wt-passe"
+    (wt / "t").mkdir(parents=True)
+    (wt / "t" / "test_a.py").write_text("", encoding="utf-8")
+    runner = FakeRunner()
+    v = pc.check(runner, tmp_path, base="base", head="head", worktree=wt,
+                 tests=("t/test_a.py",), workers=0, timeout_s=5, pr=1,
+                 reuse_worktree=True)
+    assert v.verdict == "GREEN"
+    verbs = runner.verbs()
+    assert "worktree add" in verbs
+    assert "worktree remove" not in verbs
+
+
+def test_le_mode_cleanup_retire_le_worktree_de_passe(tmp_path, monkeypatch):
+    """`--cleanup` retire le worktree de la passe, sans jamais `--force`."""
+    wt = tmp_path / "wt-passe"
+    wt.mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: ...\n", encoding="utf-8")
+    runner = FakeRunner()
+    monkeypatch.setattr(pc, "Runner", lambda: runner)
+    rc = pc.main(["--cleanup", "--worktree", str(wt),
+                  "--repo", str(tmp_path)])
+    assert rc == 0
+    assert runner.verbs() == ["worktree remove"]
+    assert not any("--force" in c for c in runner.calls)
+
+
+def test_le_mode_cleanup_sur_un_worktree_absent_ne_echoue_pas(tmp_path,
+                                                               monkeypatch):
+    """Rien a retirer n'est pas un echec : la passe n'a rien pose."""
+    runner = FakeRunner()
+    monkeypatch.setattr(pc, "Runner", lambda: runner)
+    rc = pc.main(["--cleanup", "--worktree", str(tmp_path / "rien"),
+                  "--repo", str(tmp_path)])
+    assert rc == 0
+    assert runner.calls == []
+
+
+def test_un_worktree_relatif_est_resolu_contre_le_depot(tmp_path, monkeypatch):
+    """Un chemin relatif se resout contre la RACINE DU DEPOT.
+
+    La passe donne un chemin relatif au depot ; l'organe doit aboutir au
+    meme dossier, quel que soit le repertoire courant du processus.
+    """
+    wt = tmp_path / "wt-passe"
+    wt.mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: ...\n", encoding="utf-8")
+    runner = FakeRunner()
+    monkeypatch.setattr(pc, "Runner", lambda: runner)
+    rc = pc.main(["--cleanup", "--worktree", "wt-passe",
+                  "--repo", str(tmp_path)])
+    assert rc == 0
+    rm = next(c for c in runner.calls if "worktree" in c)
+    assert str(wt) in rm
+
+
+def test_un_noeud_pytest_designe_le_test_d_un_fichier():
+    """`chemin::test` -> le FICHIER a trouver dans l'arbre fusionne."""
+    assert pc._fichier_de("a/b.py") == "a/b.py"
+    assert pc._fichier_de("a/b.py::test_x") == "a/b.py"
+    assert pc._fichier_de("a/b.py::test_x::autre") == "a/b.py"
+
+
+def test_un_noeud_pytest_est_joue_comme_noeud(tmp_path):
+    """L'entree `chemin::test` est passee telle quelle a pytest."""
+    wt = tmp_path / "wt"
+    (wt / "t").mkdir(parents=True)
+    (wt / "t" / "test_a.py").write_text("", encoding="utf-8")
+    runner = FakeRunner()
+    v = pc.check(runner, tmp_path, base="base", head="head", worktree=wt,
+                 tests=("t/test_a.py::test_unique",), workers=0, timeout_s=5,
+                 pr=None)
+    assert v.verdict == "GREEN"
+    pytest_call = next(c for c in runner.calls if "pytest" in c)
+    assert "t/test_a.py::test_unique" in pytest_call
 
 
 # --- depot jetable : le conflit semantique du 04/11 en miniature ---------------

@@ -1,0 +1,8 @@
+- name: "ICT-15f-Bridge1bis-DecoupledFamily C#"
+  family: IIT/ICT-Series/ICT-15-IntegratedComplexity
+  python: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb
+  csharp: MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15f-Bridge1bis-DecoupledFamily-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : from ict import basin_family (organe de la serie) ; cote C# : ScottPlot 5.0.55 pour le trace seulement (plus l'API de l'hote), l'organe ict n'y est pas appele. Machinerie asymetrique, a voir lors d'un pont. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb. Execution reelle sur kernel .net-csharp : 8 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."

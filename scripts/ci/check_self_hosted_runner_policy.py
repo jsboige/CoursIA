@@ -57,7 +57,7 @@ LINUX_RUNNER_LABELS = {
     "coursia-linux",
 }
 # Dedicated label set for the PR-gate waiter pool (#13363 jambe A, po-2024):
-# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 1 GiB / 128 pids,
+# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 512 MiB / 128 pids,
 # coursia-waiters.service). A waiter never carries coursia-linux -- the
 # distinct label is what lets the gate WAIT without holding a work slot
 # (arbitrage ai-01 2026-09-02: "attendre ne coute pas de CPU").
@@ -298,6 +298,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    # #28534 : les deux workflows de la classe `edited` sont fusionnes en
+    #   `always-on-guards-edited.yml` -- meme forme hybride auditee, meme
+    #   declencheur `pull_request` SANS `branches:` (base-not-main doit voir
+    #   les PR dont la base n'est PAS main, #10918), donc routable.
+    "always-on-guards-edited.yml",
     "always-on-metadata-guards.yml",
     # #22937 (volet (d), 2026-10-28, lane myia-ai-01:CoursIA-2) : la garde
     #   des waivers de chemins locaux REJOINT LA COHORTE (forme hybride
@@ -483,7 +488,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   `permissions:` (une cle hors liste invalide le fichier entier).
     #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
     #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
-    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   etaient heberges). 2026-11-23 : runs-on passe sur le pool des waiters
+    #   ([self-hosted, coursia-waiter], jeu dedie WAITER_LABELS). Sur
+    #   coursia-linux, le job attendait derriere la file qu'il y avait
+    #   lui-meme routee (1 000 jobs locaux en file, 6 heberges sur 20).
+    #   Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
     "ci-overflow-controller.yml",
     # #26939 (owner myia-po-2027:CoursIA) : sonde legere de debordement CI,
@@ -646,7 +655,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   lives inside the expression itself, forks and workflow_dispatch fall
     #   back to ubuntu-latest. Excluded until now because the polling
     #   aggregator must not hold the work slot it waits for (#11405); the
-    #   waiter pool (1 vCPU / 1 GiB, #14303) is exactly the third term that
+    #   waiter pool (1 vCPU / 512 MiB, #14303) is exactly the third term that
     #   removes the objection. Rollback = revert of the routing PR.
     "pr-gate.yml",
     # #14859 (owner myia-po-2026:CoursIA) : garde advisory pur-Python sur les

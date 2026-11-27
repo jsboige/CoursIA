@@ -7,8 +7,8 @@ conteneurs et ses unites.
 
 | Fichier | Chemin vivant | Etat |
 |---|---|---|
-| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22. **Source deposee ici depuis le 2026-10-06** (avant, le depot ne portait que ce README) : copie byte-identique a la source `D:\Dev\CoursIA-runners-p0\pool.sh` et a la copie vivante WSL (`sha256:48bb6f272dd21aaf6ec3ec5b0fec659fbce07ff7608f7972dff5c73da7bbfab8`, 11197 octets, LF) -- le correctif `validate_keep` est verifiable depuis le depot |
-| `run-pool-po2026.sh` | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` (hote Windows) | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. La premiere forme ecrite le 2026-09-22 ne relancait **rien** (cf. piege du transport ci-dessous) ; la forme livree est verifiee de bout en bout |
+| `pool.sh` | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, 8 slots depuis le 2026-09-22. **Source deposee ici depuis le 2026-10-06** (avant, le depot ne portait que ce README) : copie byte-identique a la source `D:\Dev\CoursIA-runners-p0\pool.sh` et a la copie vivante WSL (`sha256:48bb6f272dd21aaf6ec3ec5b0fec659fbce07ff7608f7972dff5c73da7bbfab8`, 11197 octets, LF) -- le correctif `validate_keep` est verifiable depuis le depot ; **etat au 2026-11-25 : la copie vivante est la version de #19800, sans les deux livraisons posterieures du depot** (cf. « Mesure du 2026-11-25 » ci-dessous) |
+| `run-pool-po2026.sh` | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` (hote Windows) | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. La premiere forme ecrite le 2026-09-22 ne relancait **rien** (cf. piege du transport ci-dessous) ; la forme livree est verifiee de bout en bout ; depuis le 2026-11-25, le lanceur attend aussi le gestionnaire systemd utilisateur (cf. « Le piege du logon » ci-dessous) |
 
 ## `validate_keep` -- la porte contre les `_work` endommages (#14801)
 
@@ -57,6 +57,12 @@ Le superviseur est un script bash qui boucle : pour chaque slot mort, il reminte
 registration token (`gh.exe api .../registration-token`), extrait le bundle runner
 dans `slot-<n>/`, enregistre le runner en ephemeres et lance `run.sh --once`. Un
 `flock -n` sur `pool.lock` garantit qu'il n'y en a qu'un.
+
+L'hote est declare depuis le 2026-11-25 dans `scripts/ci/declared_runner_hosts.json`
+(#22937). Un passage de `scripts/ci/check_runner_starvation.py` rend alors
+`POOL ABSENT` quand plus aucun runner `myia-po-2026-wsl-*` n'est inscrit. La perte
+avec des runners encore inscrits hors ligne est rendue `POOL LOSS` pour tout hote,
+sans declaration. Un changement de taille du pool doit reporter `slots` dans ce fichier.
 
 **Cette architecture n'est pas un choix documente, c'est un etat de fait** : aucun
 des fichiers de `persist/` ne decrit po-2026, et aucun document du depot ne
@@ -153,6 +159,66 @@ transport. La verification qui l'attrape est de bout en bout : lancer le script 
 son chemin de production et verifier qu'une ligne **du jour** apparait dans
 `/home/jesse/CoursIA-runners-p0/pool.log` -- un `systemd-run` qui rend « Running as
 unit: ... » ne prouve pas que le superviseur a ete atteint.
+
+### Le piege du logon -- attente du gestionnaire utilisateur (mesure 2026-11-25)
+
+Le declencheur de la tache planifiee est **l'ouverture de session**. Le 25/11, elle a
+echoue peu apres le boot et le pool n'a pas redemarre automatiquement. Une course au
+demarrage du gestionnaire systemd utilisateur est plausible, mais sa cause exacte
+n'a pas ete observee.
+
+Mesure du 25/11, a la premiere ouverture de session apres un redemarrage de po-2026 :
+
+| Fait | Oracle |
+|---|---|
+| Demarrage Windows a 12:44:52 (heure locale) | `LastBootUpTime` |
+| Tache lancee a 12:45:23 (heure locale), code de sortie 1 | `Get-ScheduledTaskInfo` |
+| Demarrage du noyau de la distro vers 12:45:48 | deduit des horodatages systemd, estimation |
+| Premiere entree visible du journal utilisateur a 12:46:47 | `journalctl --list-boots`, journal systeme non lisible avec ce compte |
+| Aucune ligne dans `pool.log` pour ce lancement | le superviseur n'a jamais ete atteint |
+| 8 runners `myia-po-2026-wsl-*` hors ligne pendant environ 1 h 45 | inventaire GitHub ; relance a la main, `pool demarre` a 14:29:19 |
+
+La tache a precede de 84 s la premiere entree relevee dans le journal utilisateur.
+Cette chronologie ne prouve pas a elle seule que le gestionnaire etait absent ni la
+cause de l'echec. La sortie standard de la tache n'a pas ete conservee ; le code de
+sortie seul ne permet pas de trancher.
+
+Le lanceur attend donc desormais que le gestionnaire reponde a une sonde : au plus
+60 essais et 59 pauses de 5 s, en plus du temps des appels, puis un echec
+(`exit 1`, message sur stderr) :
+
+```bash
+until wsl.exe -d Ubuntu -- bash -lc 'systemctl --user show --property=Version --no-pager --value' >/dev/null 2>&1; do
+  ... sleep 5 ...
+done
+```
+
+Trois contraintes de forme, chacune heritee d'un piege deja paye sur ce lanceur :
+
+- la chaine passee a `wsl.exe` reste un **litteral sans `$`** (piege du transport ci-dessus) ;
+- la boucle et ses variables vivent dans **ce fichier**, evaluees par le bash qui lit le
+  script, jamais dans la chaine transportee par `wsl.exe` ;
+- la borne est explicite : une attente sans fin masquerait une VM qui ne demarre pas.
+
+Banc : `test_run_pool_logon.sh` (13 verdicts, cote hote sous Git Bash) : les
+scenarios du gestionnaire, leurs controles negatifs, puis le temoin de garde.
+Si `wsl.exe` ou `sleep` ne se resout pas au stub attendu, le banc s'arrete avant
+le premier scenario : sans son stub, un scenario peut appeler le vrai WSL ou
+attendre pour de vrai. Le temoin de garde rejoue une copie du banc, un stub
+absent a la fois : elle s'arrete sans lancer de scenario, et la meme copie sans
+la garde en lance un. Ces copies ne peuvent pas atteindre le vrai WSL. Controle
+negatif mesure : le meme banc sur un lanceur dont la pause vaut 2 s, puis dont
+le message d'echec est retire, rend chacun **12 PASS / 1 FAIL**.
+
+**Etat de la preuve, a lire tel quel.** Verifie le 25/11 : la sonde exercee sur un
+gestionnaire vivant (elle rend `255.4-1ubuntu8.18`) et `bash -n` sur le script.
+Le banc rend 13 PASS / 0 FAIL, rejoue le 26/11 avec le temoin de garde. Il execute le
+lanceur avec des stubs : il ne dit rien du comportement **au boot**. Le lanceur du
+depot reprend la logique de la copie vivante ; seuls leurs commentaires different,
+pour distinguer les faits observes de l'hypothese. Non observe : le comportement au
+boot depuis le correctif. Sa preuve
+est la premiere ouverture de session apres le prochain redemarrage -- une ligne
+`pool demarre` du jour dans `pool.log`, sans geste manuel.
 
 ### Dimensionnement -- mesure sur cette machine, pas recopie
 
@@ -437,6 +503,35 @@ quarantaine `validate_keep` (#14801). **Restaurer le pool depuis le depot
 reintroduisait donc les deux defauts** que ces correctifs reparent. `run-pool-po2026.sh`
 n'avait pas derive, lui -- byte-identique des deux cotes (`a14db6d6881d417dfb8eef309c639cd9`).
 
+### Mesure du 2026-11-25 : la copie vivante est la version de #19800
+
+Releve le 25/11 sur les trois copies de `pool.sh`, au retour de la machine :
+
+| Copie | md5 | Octets | Lignes | Version |
+|---|---|---|---|---|
+| `origin/main` | `6e53dd6e376cd3e0a92dfee32714a830` | 20977 | 365 | #19664 (lecture de `pool-size.conf`) |
+| source `D:` **et** copie vivante WSL (identiques entre elles) | `a5df12cb60a9c5ee072dd5c8d8533e61` | 15551 | 260 | #19800 (posee le 2026-10-08 a 00:37, heure locale) |
+
+La copie vivante est **byte-identique a la version du depot au commit de #19800** :
+elle n'a rien que le depot n'ait. Elle ne contient pas les deux livraisons
+posterieures -- #19657 (magasin d'objets partage : `mirror_refresh`,
+`ensure_alternates`, `seed_work`) et #19664 (lecture de `pool-size.conf`).
+
+**Chronologie observee dans `pool.log`.** Le 2026-10-07 a 18:00:38, un demarrage
+indiquait `POOL_SIZE=3, source=pool-size.conf`. La copie actuellement vivante, dont
+l'empreinte correspond a #19800, ne contient pas ce lecteur. Au demarrage du
+2026-10-09 a 09:50:43, le journal indique `POOL_SIZE=8`, comme aux demarrages suivants
+releves jusqu'au 25/11. Ces observations ne prouvent pas la sequence exacte des copies.
+
+Deux consequences, a lire avant tout depot de `pool.sh` sur cette machine :
+
+- le fichier `pool-size.conf` (valeur `3`) est **inerte** sur la copie vivante ; la
+  version du depot peut le lire au demarrage ;
+- poser la copie du depot n'est donc **pas** un geste anodin : selon les variables
+  d'environnement au demarrage, la taille pourrait passer de 8 a 3 slots.
+
+Aucun depot n'est fait ici. La taille du pool est un arbitrage, pas une reparation.
+
 ## Le mint de token ne distinguait pas le transitoire du structurel
 
 `mint_token` etait mono-coup : un seul appel a `gh.exe`, et un echec rendait le slot au
@@ -481,6 +576,11 @@ wsl.exe -d Ubuntu -- bash -lc 'echo 3 > /home/jesse/CoursIA-runners-p0/pool-size
 
 Banc : `test_pool_size_conf.sh` (huit cas -- conf vs env vs defaut, valeurs
 pourries et hors bornes, fichier sans newline final).
+
+**Etat de deploiement au 2026-11-25 : cette lecture n'est pas sur la copie vivante** --
+le pool demarre a 8 slots. Lire « Mesure du 2026-11-25 » dans la section « Derive depot
+<-> vivant » avant tout depot de `pool.sh`.
+
 ## Le magasin d'objets partage -- maillon 3 de #18225 (2026-10-07)
 
 Les deux premiers correctifs (#18225 : workspace persistant, quarantaine

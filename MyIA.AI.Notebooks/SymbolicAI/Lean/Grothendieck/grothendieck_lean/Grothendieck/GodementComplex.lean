@@ -1,0 +1,1300 @@
+/-
+Copyright (c) 2026 CoursIA. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+import Grothendieck.GodementExactness
+import Mathlib.Algebra.Homology.HomologicalComplex
+import Mathlib.Algebra.Homology.ShortComplex.HomologicalComplex
+import Mathlib.Algebra.Homology.ShortComplex.PreservesHomology
+import Mathlib.Algebra.Homology.ShortComplex.SnakeLemma
+import Mathlib.CategoryTheory.Comma.Arrow
+import Mathlib.CategoryTheory.Functor.ReflectsIso.Jointly
+import Mathlib.CategoryTheory.Functor.ReflectsIso.Exact
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
+import Mathlib.CategoryTheory.Limits.Preserves.Shapes.Zero
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Finite
+
+/-!
+# Le complexe de Godement : l'itération du pas canonique à tous les degrés
+
+Partie 92 — la frontière nommée par les Parties 90 et 91. La Partie 89 a posé
+le **pas canonique** `godementStep f = cokernel.π f ≫ toGodement (coker f)` et
+sa null-composition `f ≫ godementStep f = 0` ; les Parties 89-90 en ont tiré
+les différentielles `d⁰` et `d¹` avec `d⁰ ≫ d¹ = 0` ; la Partie 91 a établi
+l'exactitude du début (`exact_toGodement_godementCanonicalDZero`). Ce module
+itére le pas **à tous les degrés** et assemble le résultat en un objet
+`CochainComplex` [God58, Chap. II §4.1].
+
+## La chaîne des différentielles
+
+1. `godementDChain F` : la chaîne des différentielles comme suite de flèches
+   (`Arrow`), par récursion sur le degré — le degré `n + 1` est le pas
+   canonique de la flèche de degré `n` : `d^{n+1} := godementStep dⁿ`. C'est
+   l'itération exacte de la construction de [God58], chaque flèche passant par
+   le conoyau de la précédente — le contraste avec la Partie 87 : la suite des
+   unités itérées n'est **pas** un complexe, celle des pas canoniques l'est.
+2. `godementCanonicalObj F n` et `godementCanonicalD F n` : le terme de degré
+   `n` et la différentielle `X n ⟶ X (n+1)` extraits de la chaîne, avec les
+   lemmes `rfl` de recalage sur les notations des Parties 89-90
+   (`godementCanonicalD_zero`, `godementCanonicalD_one`, `godementCanonicalD_succ`).
+3. `godementCanonicalD_comp_zero` : **la null-composition à tout degré** —
+   `dⁿ ≫ d^{n+1} = 0` pour tout `n`, instance immédiate de
+   `comp_godementStep_zero` (Partie 89) appliquée au degré `n`.
+4. `godementCanonicalComplex F` : l'assemblage en `CochainComplex` indexé par
+   `ℕ`, via le constructeur canonique `CochainComplex.of` de Mathlib, avec les
+   lemmes d'interface `godementCanonicalComplex_X_zero`,
+   `godementCanonicalComplex_d_zero`, `godementCanonicalComplex_d_one`.
+5. `toGodement_comp_godementCanonicalD` : le début du complexe augmenté —
+   `μ ≫ d⁰ = 0`, réénoncé de la Partie 89 dans les notations itérées.
+
+## La fonctorialité en `F` (Partie 96)
+
+`godementCanonicalComplexMap` : pour un morphisme de préfaisceaux `η : F ⟶ G`,
+le morphisme de complexes canoniques — la frontière nommée par la Partie 95
+(la Partie 92 avait posé l'objet, pas l'action sur les morphismes). La
+récurrence porte l'état complet du carré (morphisme de `Arrow` : les deux
+verticales et leur commutation), car `cokernel.map` exige la verticale
+droite **en donnée** — la récurrence naïve est circulaire. L'identité est
+respectée (`godementCanonicalComplexMap_id`). **Non posé** : la composition
+(frontière nommée, avec la suite exacte longue, pour la fonctorialité de la
+cohomologie de Godement).
+
+## Ce que cette Partie pose vs. ce qu'elle laisse ouvert
+
+**Posé** : la récursion `d^{n+1} = godementStep dⁿ` à tous les degrés, la
+null-composition `dⁿ ≫ d^{n+1} = 0` pour tout `n`, et l'objet
+`godementCanonicalComplex : CochainComplex … ℕ` — la résolution canonique de
+Godement existe maintenant **comme objet complexe**, pas seulement comme suite
+de flèches épinglées degré par degré.
+
+**Non posé** — frontière nommée de la Partie 93 : l'**acyclicité**
+`Hⁿ(C⁰) = 0` pour `n ≥ 1` ([God58] II Th. 5.2.1). Elle exigera l'exactitude en
+chaque degré — c'est-à-dire l'itération de `exact_toGodement_godementCanonicalDZero`
+(P91, non encore mergée) le long de la chaîne — puis le passage à l'homologie.
+Le complexe augmenté `F ⟶ C⁰F ⟶ C⁰(coker μ) ⟶ ⋯` comme **résolution** de `F`
+(la quasi-isomorphisme) suit l'acyclicité et n'est pas abordé ici.
+
+## Références
+
+* [God58] R. Godement, *Topologie algébrique et théorie des faisceaux*,
+  Hermann, 1958, chap. II §4.1.
+-/
+
+universe u
+
+open CategoryTheory Category Limits TopCat TopologicalSpace Opposite
+
+namespace Grothendieck
+
+variable {X : TopCat.{u}}
+
+/-- La chaîne des différentielles de la résolution canonique, comme suite de
+flèches : le degré 0 est la différentielle `d⁰` de la Partie 89, et chaque
+degré suivant est le **pas canonique** (Partie 89) de la flèche précédente —
+`d^{n+1} = godementStep dⁿ`, chaque flèche passant par le conoyau de la
+précédente. -/
+noncomputable def godementDChain (F : X.Presheaf AddCommGrpCat.{u}) :
+    ℕ → Arrow (X.Presheaf AddCommGrpCat.{u})
+  | 0 => Arrow.mk (godementCanonicalDZero F)
+  | n + 1 => Arrow.mk (godementStep (godementDChain F n).hom)
+
+/-- Le terme de degré `n` de la résolution canonique : le but de la flèche de
+degré `n - 1`, c'est-à-dire `C⁰` du conoyau de la différentielle précédente. -/
+noncomputable def godementCanonicalObj (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    X.Presheaf AddCommGrpCat.{u} :=
+  (godementDChain F n).left
+
+/-- La différentielle de degré `n` de la résolution canonique, du terme `n` au
+terme `n + 1` — par construction le pas canonique de la différentielle de
+degré `n - 1`. -/
+noncomputable def godementCanonicalD (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    godementCanonicalObj F n ⟶ godementCanonicalObj F (n + 1) :=
+  (godementDChain F n).hom
+
+@[simp]
+theorem godementCanonicalObj_zero (F : X.Presheaf AddCommGrpCat.{u}) :
+    godementCanonicalObj F 0 = godementPresheaf F :=
+  rfl
+
+theorem godementCanonicalObj_succ (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    godementCanonicalObj F (n + 2) =
+      godementPresheaf (cokernel (godementCanonicalD F n)) :=
+  rfl
+
+@[simp]
+theorem godementCanonicalD_zero (F : X.Presheaf AddCommGrpCat.{u}) :
+    godementCanonicalD F 0 = godementCanonicalDZero F :=
+  rfl
+
+@[simp]
+theorem godementCanonicalD_one (F : X.Presheaf AddCommGrpCat.{u}) :
+    godementCanonicalD F 1 = godementCanonicalDOne F :=
+  rfl
+
+@[simp]
+theorem godementCanonicalD_succ (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    godementCanonicalD F (n + 1) = godementStep (godementCanonicalD F n) :=
+  rfl
+
+/-- **La null-composition à tout degré** : chaque différentielle composée avec
+la suivante est nulle, par la null-composition du pas canonique (Partie 89)
+appliquée à la différentielle de degré `n`. C'est ce qui fait de la suite des
+pas canoniques un complexe — là où la suite des unités itérées de la Partie 87
+échouait (témoin injectif). -/
+theorem godementCanonicalD_comp_zero (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    godementCanonicalD F n ≫ godementCanonicalD F (n + 1) = 0 :=
+  comp_godementStep_zero _
+
+/-- Le début du complexe augmenté est un complexe : l'unité de Godement
+composée avec la différentielle de degré 0 est nulle (réénoncé itératif de la
+Partie 89). -/
+theorem toGodement_comp_godementCanonicalD (F : X.Presheaf AddCommGrpCat.{u}) :
+    toGodement F ≫ godementCanonicalD F 0 = 0 :=
+  toGodement_comp_godementCanonicalDZero F
+
+/-- **Le complexe de Godement canonique** : la résolution canonique assemblée
+en objet `CochainComplex` indexé par `ℕ` — termes `C⁰` des conoyaux
+successifs, différentielles données par la récursion
+`d^{n+1} = godementStep dⁿ`, null-composition à tout degré.
+
+Rapport à Stacks : c'est le complexe `F[0] ⟶ f_* f^* F ⟶ f_* f^* f_* f^* F ⟶ ⋯`
+du tag [Stacks 0FKS], formalisé dans `AxiomMath/Stacks` comme le complexe de
+Moore de l'objet cosimplicial de Godement
+(`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/Stalk.lean`).
+Notre version l'assemble au niveau **préfaisceau** de groupes abéliens, sans
+espace annelé ni faisceau de modules : c'est la forme que les Parties
+suivantes consomment (tiges, flascuité) sans faisceification. -/
+noncomputable def godementCanonicalComplex (F : X.Presheaf AddCommGrpCat.{u}) :
+    CochainComplex (X.Presheaf AddCommGrpCat.{u}) ℕ :=
+  CochainComplex.of (godementCanonicalObj F) (godementCanonicalD F)
+    (godementCanonicalD_comp_zero F)
+
+theorem godementCanonicalComplex_X (F : X.Presheaf AddCommGrpCat.{u}) :
+    (godementCanonicalComplex F).X = godementCanonicalObj F :=
+  rfl
+
+theorem godementCanonicalComplex_X_zero (F : X.Presheaf AddCommGrpCat.{u}) :
+    (godementCanonicalComplex F).X 0 = godementPresheaf F :=
+  rfl
+
+@[simp]
+theorem godementCanonicalComplex_d (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    (godementCanonicalComplex F).d n (n + 1) = godementCanonicalD F n :=
+  CochainComplex.of_d _ _ _
+
+theorem godementCanonicalComplex_d_zero (F : X.Presheaf AddCommGrpCat.{u}) :
+    (godementCanonicalComplex F).d 0 1 = godementCanonicalDZero F := by
+  rw [godementCanonicalComplex_d, godementCanonicalD_zero]
+
+theorem godementCanonicalComplex_d_one (F : X.Presheaf AddCommGrpCat.{u}) :
+    (godementCanonicalComplex F).d 1 2 = godementCanonicalDOne F := by
+  rw [godementCanonicalComplex_d, godementCanonicalD_one]
+
+/-- **Partie 93(b) — l'assemblage : le complexe canonique est exact en
+chaque tige, à tout degré, sans aucune hypothèse de faisceau** : pour tout
+`n`, la suite de tiges `CⁿFₓ₀ ⟶ C^{n+1}Fₓ₀ ⟶ C^{n+2}Fₓ₀` est exacte en
+`C^{n+1}Fₓ₀`. La récurrence promise par la Partie 93(a) est le lemme
+générique lui-même : chaque degré est `stalk_exact_godementStep` en
+`f = dⁿ`, les deux motifs d'assemblage — `d^{n+1} = godementStep dⁿ`
+(P89) et `C^{n+2} = C⁰(coker dⁿ)` (P92) — étant **définitionnels**
+(`rfl`), aucune récurrence sur `n` n'est à écrire. Les degrés explicités
+en 93(a) sont les instances `n = 0` du présent énoncé
+(`stalk_exact_godementCanonicalDZero_godementCanonicalDOne`) et le degré
+augmenté `Fₓ₀ ⟶ (C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀` en `f = μ`
+(`stalk_exact_toGodement_godementCanonicalDZero`). La lecture homologique —
+l'acyclicité `Hⁿ(C⁰F) = 0` pour `n ≥ 1` — est livrée ci-dessous
+(`isZero_stalk_homology_godementCanonicalComplex`). -/
+theorem stalk_exact_godementCanonicalD (F : X.Presheaf AddCommGrpCat.{u})
+    (x₀ : X) (n : ℕ) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalD F n))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalD F (n + 1)))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F n) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F (n + 1))) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F n ≫ godementCanonicalD F (n + 1)) from
+              (Functor.map_comp _ _ _).symm,
+        godementCanonicalD_comp_zero,
+        Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (godementCanonicalD F n) x₀
+
+/-- **Partie 93(b) — la lecture homologique : l'homologie du complexe
+canonique est nulle en chaque tige, pour tout degré `n ≥ 1`** : pour tout
+point `x₀`, `IsZero` de la tige en `x₀` de `Hⁿ(C⁰F)` — **sans aucune
+hypothèse de faisceau**.
+
+C'est la lecture homologique de `stalk_exact_godementCanonicalD`, en trois
+gestes : le complexe court de tiges centré en `n` est exact (c'est ce
+théorème en `n - 1`) ; une suite courte exacte a une homologie nulle
+(`ShortComplex.exact_iff_isZero_homology`) ; et l'instance
+`stalkFunctor_preservesHomology` (Partie 93(a), AB5) transporte ce `IsZero`
+le long de l'isomorphisme canonique `ShortComplex.mapHomologyIso` :
+l'homologie de la tige est la tige de l'homologie.
+
+**Pourquoi les tiges et non le préfaisceau** : l'énoncé de [God58]
+(II Th. 5.2.1) est `Hⁿ(C⁰F) = 0` dans la catégorie des faisceaux. Un
+préfaisceau dont toutes les tiges sont nulles n'est pas nul en général
+(non séparé) : la nullité en chaque tige est la forme inconditionnelle —
+le corollaire « faisceau » (nullité de `Hⁿ` dans la catégorie des
+faisceaux) est le front suivant.
+
+Le degré `n = 0` est exclu : `H⁰(C⁰F) = ker d⁰` n'a aucune raison d'être
+nul — l'exactitude en `C⁰F` est celle du complexe augmenté
+`F ⟶ C⁰F ⟶ ⋯` (flèche entrante `μ`), déjà établie en chaque tige par
+`stalk_exact_toGodement_godementCanonicalDZero` (Partie 93(a)).
+
+Rapport à Stacks : `AxiomMath/Stacks` couvre cet énoncé, dans une forme plus
+forte, par la clause (5) du tag [Stacks 0FKS]
+(`homotopyEquivalences_stalk_godementAugmentation`, `StalkHomotopy.lean:520`)
+et la clause (3) (`quasiIso_godementAugmentation`, `StalkHomotopy.lean:558`) :
+équivalence d'homotopie des tiges du complexe augmenté, puis exactitude de
+celui-ci et caractère résolution flasque, dans `SheafOfModules`. Les cadres
+diffèrent (faisceau de modules sur un espace annelé là-bas, préfaisceau de
+groupes abéliens quelconque ici) : notre énoncé n'est pas une spécialisation
+du leur, et rien n'est reprouvé ici qu'ils établissent déjà. Ce que notre
+version ajoute est la lecture isolée `Hⁿ = 0` degré par degré, dans la forme
+inconditionnelle que les Parties suivantes réutilisent. -/
+theorem isZero_stalk_homology_godementCanonicalComplex
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) {n : ℕ} (hn : 1 ≤ n) :
+    IsZero ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj
+      ((godementCanonicalComplex F).homology n)) := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  -- `ComplexShape.next`/`prev` sont choisis via `Exists.choose` : opaques en
+  -- defeq, leurs équations se prouvent à la main (split sur le dite).
+  have hprev : (ComplexShape.up ℕ).prev (m + 1) = m := by
+    unfold ComplexShape.prev
+    split
+    case isTrue h =>
+      have h2 : h.choose + 1 = m + 1 := h.choose_spec
+      omega
+    case isFalse h =>
+      exact (h (Exists.intro m rfl : ∃ j, (ComplexShape.up ℕ).Rel j (m + 1))).elim
+  have hnext : (ComplexShape.up ℕ).next (m + 1) = m + 1 + 1 := by
+    unfold ComplexShape.next
+    split
+    case isTrue h =>
+      have h2 : m + 1 + 1 = h.choose := h.choose_spec
+      exact h2.symm
+    case isFalse h =>
+      exact (h (Exists.intro (m + 1 + 1) rfl : ∃ j, (ComplexShape.up ℕ).Rel (m + 1) j)).elim
+  -- Les différentielles de `sc'` sont les `d` exacts du complexe ; `simp only`
+  -- (et non `rw`) réécrit `d` dans le champ autoParam `zero` dépendant :
+  have hex : (((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).Exact := by
+    show ((ShortComplex.mk ((godementCanonicalComplex F).d m (m + 1))
+        ((godementCanonicalComplex F).d (m + 1) (m + 1 + 1))
+        ((godementCanonicalComplex F).d_comp_d m (m + 1) (m + 1 + 1))).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).Exact
+    simp only [godementCanonicalComplex_d]
+    exact stalk_exact_godementCanonicalD F x₀ m
+  have h0 : IsZero (((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).homology :=
+    (ShortComplex.exact_iff_isZero_homology _).mp hex
+  have h1 : IsZero ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj
+      ((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).homology) :=
+    IsZero.of_iso h0 (((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).mapHomologyIso
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).symm
+  -- Raccord sc' ≅ sc (isoSc' + prev/next manuels) puis homologie du complexe
+  -- (`homologyMapIso` est une fonction de namespace, pas une projection) :
+  have e := (godementCanonicalComplex F).isoSc' (i := m) (j := m + 1) (k := m + 1 + 1)
+    hprev hnext
+  exact IsZero.of_iso h1
+    ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).mapIso
+      (ShortComplex.homologyMapIso e))
+
+/-- **Partie 94 — flascuité de la tour canonique** : chaque étage du complexe
+canonique de Godement est flasque, sans aucune hypothèse sur `F`. C'est
+l'étape 1 de la lecture « résolution flasque » de [God58] II Th. 5.2.1 :
+tous les étages sont des préfaisceaux de Godement (`C⁰F` en degré 0,
+`C⁰(coker dⁿ)` en degré `n+1` via `godementStep`), et la flascuité
+générique de `godementPresheaf` — `isFlasque_godementPresheaf`,
+prolongement par zéro des familles de germes : une famille de germes sur
+`V` se relève sur tout ouvert `U ⊇ V` en prolongeant par `0` hors de `V` —
+transporte à la tour entière.
+
+Les trois cas de la récursion `godementCanonicalObj` sont chacun
+définitionnels : degré 0 (`godementCanonicalObj_zero` : l'étage est
+`godementPresheaf F`), degré 1 (l'étage est `godementPresheaf (coker μ)`,
+définition du chaînon `godementDChain` en 1), degré `n+2`
+(`godementCanonicalObj_succ` : l'étage est `godementPresheaf (coker dⁿ)`).
+L'assemblage est un tri-cas `exact` — aucune récurrence à écrire, la
+flascuité de chaque étage est celle du préfaisceau de Godement qu'il est.
+
+Rapport à Stacks : la clause (3) du tag [Stacks 0FKS]
+(`quasiIso_godementAugmentation`, `StalkHomotopy.lean:558`) énonce, dans
+`SheafOfModules` sur un espace annelé, que le complexe de Godement est une
+résolution flasque de `F` — la flascuité y est portée par le cadre des
+faisceaux de modules. Notre énoncé est celui du niveau préfaisceau
+(`TopCat.Presheaf.IsFlasque`), étage par étage et sans faisceification :
+c'est ce qui le rend disponible au pin Mathlib actuel (voir la note
+ci-dessous).
+
+Note de cadrage (2026-10-18) : `TopCat.Presheaf.IsFlasque` existe bien dans
+Mathlib (Topology/Sheaves/Flasque.lean) — l'addendum c.6242821964 sur #2159
+le disait à tort « faisceau-only » ; le fichier porte les deux versions,
+préfaisceau et faisceau. Le corollaire faisceau de [God58] II Th. 5.2.1
+(nullité de `Hⁿ` dans la catégorie des faisceaux) reste derrière la
+faisceification abélienne, absente de Mathlib au pin du lake :
+`sheafify`/`sheafifyStalkIso` Type-valued seulement, `HasSheafify`/
+`HasSheafCompose (forget A)` hypothèses sans instance pour
+`(AddCommGrpCat, TopCat)`. La voie préfaisceau — acyclicité en tige
+(Partie 93(b)), flascuité des étages (cette Partie) — avance sans elle ;
+la résolution flasque (suite exacte longue, Partie 95+) consommera la
+brique livrée ici. -/
+theorem isFlasque_godementCanonicalComplex
+    (F : X.Presheaf AddCommGrpCat.{u}) (n : ℕ) :
+    ((godementCanonicalComplex F).X n).IsFlasque := by
+  match n with
+  | 0 => exact isFlasque_godementPresheaf F
+  | 1 => exact isFlasque_godementPresheaf (cokernel (toGodement F))
+  | (n + 2) => exact isFlasque_godementPresheaf (cokernel (godementCanonicalD F n))
+
+/-! ### Partie 96 : la fonctorialité en `F` du complexe canonique
+
+La Partie 92 a posé le complexe canonique comme **objet** ; la Partie 95
+(cohomologie de Godement) a nommé la frontière manquante : l'action sur les
+morphismes. Pour un morphisme de préfaisceaux `η : F ⟶ G`, on construit le
+morphisme de complexes
+`godementCanonicalComplexMap η : godementCanonicalComplex F ⟶ godementCanonicalComplex G`,
+et l'on prouve qu'il respecte l'identité (Partie 96) et la composition
+(Partie 97).
+
+La difficulté n'est pas la commutation mais la **définition** : la flèche de
+degré `n + 2` est `C⁰` d'une flèche de conoyaux `coker dⁿ_F ⟶ coker dⁿ_G`
+construite par `cokernel.map`, qui exige **en donnée** la flèche verticale
+droite — c'est-à-dire la flèche de degré `n + 1`, celle-là même que l'on est
+en train de définir. La récurrence naïve est circulaire. On la brise en
+portant l'**état complet du carré** : le morphisme de flèches
+`godementDChain F n ⟶ godementDChain G n` dans la catégorie `Arrow`,
+c'est-à-dire le couple des deux verticales `f n`, `f (n + 1)` **et** la
+commutation du carré de degré `n` — le carré de degré `n + 1` s'en déduit
+sans aucune autoréférence, la verticale droite devenant la verticale gauche
+du suivant. Le lemme générique `godementStep_map` factorise le même calcul
+pour le carré de base (l'unité, par `toGodement_naturality`) et pour chacun
+des carrés itérés.
+
+**Posé depuis la Partie 97** : la composition
+(`godementCanonicalComplexMap_comp`) — la fonctorialité en `F` est
+désormais complète (identité Partie 96, composition Partie 97).
+**Non posé** — frontière nommée : la suite exacte longue (brique 3 de la
+Partie 95), qui donnera la cohomologie de Godement. -/
+
+/-- **La naturalité du pas canonique en le carré** : un carré commutatif de
+préfaisceaux, de flèches horizontales `u` et `u'`, induit un carré commutatif
+de pas canoniques — la verticale droite du carré de conoyaux étant
+`cokernel.map`. Ce lemme générique couvre le carré de base de la
+fonctorialité (`u` l'unité de Godement, verticales `α` et `C⁰α`,
+commutation `toGodement_naturality`) et chacun des carrés itérés
+(`u = dⁿ`, verticales `f n` et `f (n + 1)`). -/
+theorem godementStep_map {A B A' B' : X.Presheaf AddCommGrpCat.{u}}
+    (u : A ⟶ B) (u' : A' ⟶ B') (α : A ⟶ A') (β : B ⟶ B') (w : u ≫ β = α ≫ u') :
+    godementStep u ≫ godementMapHom (cokernel.map u u' α β w) = β ≫ godementStep u' := by
+  have hzero : u ≫ (β ≫ cokernel.π u') = 0 := by
+    rw [← Category.assoc, w, Category.assoc, cokernel.condition, comp_zero]
+  have hπ : cokernel.π u ≫ cokernel.map u u' α β w = β ≫ cokernel.π u' :=
+    cokernel.π_desc u (β ≫ cokernel.π u') hzero
+  calc godementStep u ≫ godementMapHom (cokernel.map u u' α β w)
+      = (cokernel.π u ≫ toGodement (cokernel u)) ≫
+          godementMapHom (cokernel.map u u' α β w) := rfl
+    _ = cokernel.π u ≫ (toGodement (cokernel u) ≫
+          godementMapHom (cokernel.map u u' α β w)) := by rw [Category.assoc]
+    _ = cokernel.π u ≫ (cokernel.map u u' α β w ≫ toGodement (cokernel u')) := by
+          rw [toGodement_naturality]
+    _ = (cokernel.π u ≫ cokernel.map u u' α β w) ≫ toGodement (cokernel u') := by
+          rw [← Category.assoc]
+    _ = (β ≫ cokernel.π u') ≫ toGodement (cokernel u') := by rw [hπ]
+    _ = β ≫ godementStep u' := by rw [Category.assoc, godementStep]
+
+/-- **Le carré identité du conoyau** : une flèche de conoyaux `cokernel.map`
+dont les verticales sont des identités (à équation près) est l'identité.
+Les équations `hα`, `hβ` sont substituées dans le témoin de commutation par
+`subst`, ce qui évite toute réécriture dépendante dans le terme. -/
+theorem cokernel_map_self_id {A B : X.Presheaf AddCommGrpCat.{u}} (u : A ⟶ B)
+    (α : A ⟶ A) (β : B ⟶ B) (w : u ≫ β = α ≫ u) (hα : α = 𝟙 A) (hβ : β = 𝟙 B) :
+    cokernel.map u u α β w = 𝟙 (cokernel u) := by
+  subst hα
+  subst hβ
+  exact cokernel.map_id u (𝟙 A) w
+
+/-- **L'état de la récurrence fonctorielle** : le morphisme de flèches de
+degré `n`, portant la verticale gauche `f n`, la verticale droite `f (n + 1)`
+et la commutation du carré de degré `n`. La verticale droite du carré de
+degré `n` est la verticale gauche du carré de degré `n + 1` : le successeur
+s'obtient en passant au conoyau par `cokernel.map`, la nouvelle verticale
+droite étant alors `C⁰` de la flèche de conoyaux — **sans autoréférence**,
+la donnée du carré courant suffit à construire le suivant. Le carré de base
+est le carré de l'unité (verticales `η` et `C⁰η`, commutation
+`toGodement_naturality`). -/
+noncomputable def godementDChainMap (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    ∀ n, godementDChain F n ⟶ godementDChain G n
+  | 0 =>
+      Arrow.homMk (godementMapHom η)
+        (godementMapHom (cokernel.map (toGodement F) (toGodement G) η (godementMapHom η)
+            (toGodement_naturality η)))
+        ((godementStep_map (toGodement F) (toGodement G) η (godementMapHom η)
+            (toGodement_naturality η)).symm)
+  | n + 1 =>
+      Arrow.homMk (godementDChainMap F G η n).right
+        (godementMapHom (cokernel.map (godementCanonicalD F n) (godementCanonicalD G n)
+            (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+            (godementDChainMap F G η n).w.symm))
+        ((godementStep_map (godementCanonicalD F n) (godementCanonicalD G n)
+            (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+            (godementDChainMap F G η n).w.symm).symm)
+
+theorem godementDChainMap_zero_right (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    (godementDChainMap F G η 0).right =
+      godementMapHom (cokernel.map (toGodement F) (toGodement G) η (godementMapHom η)
+        (toGodement_naturality η)) :=
+  rfl
+
+theorem godementDChainMap_succ_right (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    (godementDChainMap F G η (n + 1)).right =
+      godementMapHom (cokernel.map (godementCanonicalD F n) (godementCanonicalD G n)
+        (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+        (godementDChainMap F G η n).w.symm) :=
+  rfl
+
+/-- **La flèche de degré `n` du morphisme de complexes canoniques** :
+la composante gauche du morphisme de flèches de degré `n`. -/
+noncomputable def godementCanonicalMap (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) : godementCanonicalObj F n ⟶ godementCanonicalObj G n :=
+  (godementDChainMap F G η n).left
+
+@[simp]
+theorem godementCanonicalMap_zero (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    godementCanonicalMap F G η 0 = godementMapHom η :=
+  rfl
+
+/-- **La commutation du carré de degré `n`** : la flèche de degré `n` suivie
+de la différentielle de `G` égale la différentielle de `F` suivie de la
+flèche de degré `n + 1` — le carré porté par l'état de récurrence, dans
+l'orientation qu'exige l'assemblage `CochainComplex.ofHom`. -/
+theorem godementCanonicalD_map (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    godementCanonicalMap F G η n ≫ godementCanonicalD G n =
+      godementCanonicalD F n ≫ godementCanonicalMap F G η (n + 1) :=
+  (godementDChainMap F G η n).w
+
+/-- **La flèche de conoyaux portée par le carré de degré `n`** (Partie 100) :
+la flèche `coker dⁿ_F ⟶ coker dⁿ_G` induite par le carré commutatif du
+morphisme de flèches de degré `n` — verticales `f n` (gauche) et `f (n + 1)`
+(droite), commutation `(godementDChainMap F G η n).w`. C'est le maillon par
+lequel la nullité des flèches d'étages doit se transporter de degré en
+degré. -/
+noncomputable def godementCokernelMap (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) : cokernel (godementCanonicalD F n) ⟶ cokernel (godementCanonicalD G n) :=
+  cokernel.map (godementCanonicalD F n) (godementCanonicalD G n)
+    (godementDChainMap F G η n).left (godementDChainMap F G η n).right
+    (godementDChainMap F G η n).w.symm
+
+/-- **Récursion à deux temps, temps long** : la flèche de degré `n + 2` est
+le `godementMapHom` de la flèche de conoyaux de degré `n` — la verticale
+droite du carré de degré `n + 1` est `C⁰` de la flèche de conoyaux de degré
+`n`, et la flèche de degré `n + 2` est cette verticale droite. Lecture `rfl`
+de `godementDChainMap_succ_right` composée à la définition de
+`godementCanonicalMap`. -/
+theorem godementCanonicalMap_succ_two (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    godementCanonicalMap F G η (n + 2) =
+      godementMapHom (godementCokernelMap F G η n) :=
+  rfl
+
+/-- **Récursion à deux temps, temps court** : la flèche de degré `1` est le
+`godementMapHom` de la flèche de conoyaux de l'unité — le cran `0` de la
+récursion de `godementDChainMap` porte la forme `μ` (l'unité, différentielle
+de degré « -1 »), pas encore la forme `dⁿ`. Lecture `rfl` de
+`godementDChainMap_zero_right`. -/
+theorem godementCanonicalMap_one (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G) :
+    godementCanonicalMap F G η 1 =
+      godementMapHom (cokernel.map (toGodement F) (toGodement G) η (godementMapHom η)
+        (toGodement_naturality η)) :=
+  rfl
+
+/-- **La fonctorialité en `F` du complexe canonique** : un morphisme de
+préfaisceaux `η : F ⟶ G` induit un morphisme de complexes de cochaînes
+`godementCanonicalComplex F ⟶ godementCanonicalComplex G` — flèche de degré
+`n` la `godementCanonicalMap` ci-dessus, commutation celle de
+`godementCanonicalD_map`. La frontière nommée par la Partie 95 est fermée :
+la Partie 92 avait posé l'objet, le voici doté de son action sur les
+morphismes [God58, Chap. II §4.1]. -/
+noncomputable def godementCanonicalComplexMap (F G : X.Presheaf AddCommGrpCat.{u})
+    (η : F ⟶ G) :
+    godementCanonicalComplex F ⟶ godementCanonicalComplex G :=
+  CochainComplex.ofHom (fun n => (godementDChainMap F G η n).left)
+    (fun n => by
+      show godementCanonicalMap F G η n ≫ (godementCanonicalComplex G).d n (n + 1) =
+        (godementCanonicalComplex F).d n (n + 1) ≫ godementCanonicalMap F G η (n + 1)
+      rw [godementCanonicalComplex_d, godementCanonicalComplex_d]
+      exact godementCanonicalD_map F G η n)
+
+@[simp]
+theorem godementCanonicalComplexMap_f (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    (godementCanonicalComplexMap F G η).f n = godementCanonicalMap F G η n :=
+  rfl
+
+/-- **La fonctorialité respecte l'identité, flèche de degré par flèche de
+degré** : la récurrence porte les deux verticales, et l'hypothèse
+d'induction aussi — c'est elle qui permet d'appliquer le carré identité du
+conoyau à chaque étage, sans réécriture dépendante dans le terme. -/
+theorem godementCanonicalMap_id (F : X.Presheaf AddCommGrpCat.{u}) :
+    ∀ n, godementCanonicalMap F F (𝟙 F) n = 𝟙 (godementCanonicalObj F n) := by
+  intro n
+  have key : ∀ m, (godementDChainMap F F (𝟙 F) m).left = 𝟙 (godementCanonicalObj F m) ∧
+      (godementDChainMap F F (𝟙 F) m).right = 𝟙 (godementCanonicalObj F (m + 1)) := by
+    intro m
+    induction m with
+    | zero =>
+        refine ⟨godementMapHom_id F, ?_⟩
+        rw [godementDChainMap_zero_right, congrArg godementMapHom
+          (cokernel_map_self_id (toGodement F) (𝟙 F) (godementMapHom (𝟙 F))
+            (toGodement_naturality (𝟙 F)) rfl (godementMapHom_id F)), godementMapHom_id]
+        rfl
+    | succ m ih =>
+        refine ⟨ih.2, ?_⟩
+        rw [godementDChainMap_succ_right, congrArg godementMapHom
+          (cokernel_map_self_id (godementCanonicalD F m) (godementDChainMap F F (𝟙 F) m).left
+            (godementDChainMap F F (𝟙 F) m).right (godementDChainMap F F (𝟙 F) m).w.symm
+            ih.1 ih.2), godementMapHom_id]
+        rfl
+  exact (key n).1
+
+/-- **Le morphisme de complexes induit par l'identité est l'identité** :
+composante par composante, `godementCanonicalComplexMap (𝟙 F) = 𝟙`. -/
+theorem godementCanonicalComplexMap_id (F : X.Presheaf AddCommGrpCat.{u}) :
+    godementCanonicalComplexMap F F (𝟙 F) = 𝟙 (godementCanonicalComplex F) := by
+  ext n
+  rw [godementCanonicalComplexMap_f, godementCanonicalMap_id, HomologicalComplex.id_f]
+  rfl
+
+/-! ### Partie 97 : la composition des morphismes de complexes canoniques
+
+La seconde moitié de la fonctorialité en `F`, après l'identité (Partie
+96) : le morphisme `godementCanonicalComplexMap` respecte la composition.
+La preuve réutilise exactement l'architecture de `godementCanonicalMap_id`
+— récurrence appariée portant les deux verticales du morphisme de flèches
+`godementDChainMap` (l'hypothèse d'induction est le couple `.left` /
+`.right`), le pas succ s'obtenant par le lemme générique `cokernel_map_comp`,
+analogue exact du rôle de `cokernel_map_self_id` pour l'identité.
+
+`cokernel_map_comp` est le lemme de composition des carrés de conoyaux :
+deux carrés commutatifs empilés induisent le carré composé, et
+`cokernel.map` du composé est le composé des `cokernel.map`. Comme pour
+`cokernel_map_self_id`, les verticales composées `γ` et `δ` sont des
+données munies de leurs équations de définition (`hγ`, `hδ`), substituées
+par `subst` — c'est ce qui permet d'appliquer le lemme aux termes tels
+qu'ils apparaissent dans le but, sans réécriture dépendante à travers les
+témoins de commutation.
+
+Avec `godementCanonicalComplexMap_id` (Partie 96), la fonctorialité en `F`
+est complète : `F ↦ godementCanonicalComplex F`,
+`η ↦ godementCanonicalComplexMap η` est un foncteur de
+`X.Presheaf AddCommGrpCat` dans les complexes de cochaînes. Reste, pour
+la cohomologie de Godement, la suite exacte longue (brique 3 de la
+Partie 95).
+-/
+
+/-- **La composition des carrés de conoyaux** : deux carrés commutatifs
+empilés — `(u, u', α, β)` de témoin `w1`, puis `(u', u'', α', β')` de
+témoin `w2` — induisent le carré composé de verticales `γ = α ≫ α'` et
+`δ = β ≫ β'`, et la flèche de conoyaux du composé est le composé des
+flèches de conoyaux. Les verticales composées sont des **données**
+accompagnées de leurs équations de définition `hγ`, `hδ` (schéma de
+`cokernel_map_self_id` : la substitution évite toute réécriture
+dépendante dans le terme). -/
+theorem cokernel_map_comp {A B A' B' A'' B'' : X.Presheaf AddCommGrpCat.{u}}
+    (u : A ⟶ B) (u' : A' ⟶ B') (u'' : A'' ⟶ B'')
+    (α : A ⟶ A') (β : B ⟶ B') (α' : A' ⟶ A'') (β' : B' ⟶ B'')
+    (γ : A ⟶ A'') (δ : B ⟶ B'')
+    (w1 : u ≫ β = α ≫ u') (w2 : u' ≫ β' = α' ≫ u'')
+    (hγ : γ = α ≫ α') (hδ : δ = β ≫ β') (w12 : u ≫ δ = γ ≫ u'') :
+    cokernel.map u u'' γ δ w12 = cokernel.map u u' α β w1 ≫ cokernel.map u' u'' α' β' w2 := by
+  subst hγ
+  subst hδ
+  have hπ1 : cokernel.π u ≫ cokernel.map u u' α β w1 = β ≫ cokernel.π u' :=
+    cokernel.π_desc u (β ≫ cokernel.π u')
+      (by rw [← Category.assoc, w1, Category.assoc, cokernel.condition, comp_zero])
+  have hπ2 : cokernel.π u' ≫ cokernel.map u' u'' α' β' w2 = β' ≫ cokernel.π u'' :=
+    cokernel.π_desc u' (β' ≫ cokernel.π u'')
+      (by rw [← Category.assoc, w2, Category.assoc, cokernel.condition, comp_zero])
+  have hπ12 : cokernel.π u ≫ cokernel.map u u'' (α ≫ α') (β ≫ β') w12 =
+      (β ≫ β') ≫ cokernel.π u'' :=
+    cokernel.π_desc u ((β ≫ β') ≫ cokernel.π u'')
+      (by rw [← Category.assoc, w12, Category.assoc, cokernel.condition, comp_zero])
+  -- Ext au niveau cokernel (le motif de `cokernel.map_desc` dans Mathlib) :
+  -- deux flèches sortant de `cokernel u` sont égales dès que leurs composées
+  -- avec `cokernel.π u` le sont — l'`ext` nu descendrait ici jusqu'aux
+  -- éléments (catégorie concrète) et rendrait les réécritures morphisme-level
+  -- de `hπ1`/`hπ2`/`hπ12` inapplicables.
+  refine Cofork.IsColimit.hom_ext (cokernelIsCokernel u) ?_
+  simp only [Cofork.π_ofπ]
+  rw [hπ12, ← Category.assoc, hπ1, Category.assoc, Category.assoc, hπ2]
+
+/-- **La composition des flèches du complexe canonique, degré par degré** :
+l'action de `η ≫ θ` est le composé des actions — la récurrence appariée de
+`godementCanonicalMap_id`, avec `cokernel_map_comp` dans le rôle que
+`cokernel_map_self_id` tient pour l'identité : l'hypothèse d'induction
+fournit les équations des deux verticales composées, le lemme générique
+les substitue dans la flèche de conoyaux du carré composé. -/
+theorem godementCanonicalMap_comp (F G H : X.Presheaf AddCommGrpCat.{u})
+    (η : F ⟶ G) (θ : G ⟶ H) :
+    ∀ n, godementCanonicalMap F H (η ≫ θ) n =
+      godementCanonicalMap F G η n ≫ godementCanonicalMap G H θ n := by
+  intro n
+  have key : ∀ m, (godementDChainMap F H (η ≫ θ) m).left =
+      (godementDChainMap F G η m).left ≫ (godementDChainMap G H θ m).left ∧
+      (godementDChainMap F H (η ≫ θ) m).right =
+      (godementDChainMap F G η m).right ≫ (godementDChainMap G H θ m).right := by
+    intro m
+    induction m with
+    | zero =>
+        refine ⟨godementMapHom_comp η θ, ?_⟩
+        rw [godementDChainMap_zero_right F H (η ≫ θ),
+          godementDChainMap_zero_right F G η, godementDChainMap_zero_right G H θ,
+          congrArg godementMapHom (cokernel_map_comp (toGodement F) (toGodement G)
+            (toGodement H) η (godementMapHom η) θ (godementMapHom θ) (η ≫ θ)
+            (godementMapHom (η ≫ θ)) (toGodement_naturality η)
+            (toGodement_naturality θ) rfl (godementMapHom_comp η θ)
+            (toGodement_naturality (η ≫ θ)))]
+        exact godementMapHom_comp _ _
+    | succ m ih =>
+        refine ⟨ih.2, ?_⟩
+        rw [godementDChainMap_succ_right F H (η ≫ θ) m,
+          godementDChainMap_succ_right F G η m, godementDChainMap_succ_right G H θ m,
+          congrArg godementMapHom (cokernel_map_comp (godementCanonicalD F m)
+            (godementCanonicalD G m) (godementCanonicalD H m)
+            (godementDChainMap F G η m).left (godementDChainMap F G η m).right
+            (godementDChainMap G H θ m).left (godementDChainMap G H θ m).right
+            (godementDChainMap F H (η ≫ θ) m).left (godementDChainMap F H (η ≫ θ) m).right
+            (godementDChainMap F G η m).w.symm (godementDChainMap G H θ m).w.symm
+            ih.1 ih.2 (godementDChainMap F H (η ≫ θ) m).w.symm)]
+        exact godementMapHom_comp _ _
+  exact (key n).1
+
+/-- **Le morphisme de complexes respecte la composition** : la fonctorialité
+en `F` de la résolution canonique est complète — avec
+`godementCanonicalComplexMap_id` (Partie 96), `F ↦ godementCanonicalComplex F`,
+`η ↦ godementCanonicalComplexMap η` est un foncteur de
+`X.Presheaf AddCommGrpCat` dans les complexes de cochaînes. Reste, pour la
+cohomologie de Godement, la suite exacte longue (brique 3 de la Partie
+95). -/
+theorem godementCanonicalComplexMap_comp (F G H : X.Presheaf AddCommGrpCat.{u})
+    (η : F ⟶ G) (θ : G ⟶ H) :
+    godementCanonicalComplexMap F H (η ≫ θ) =
+      godementCanonicalComplexMap F G η ≫ godementCanonicalComplexMap G H θ := by
+  ext n
+  rw [godementCanonicalComplexMap_f, HomologicalComplex.comp_f,
+    godementCanonicalComplexMap_f, godementCanonicalComplexMap_f,
+    godementCanonicalMap_comp F G H η θ n]
+  rfl
+
+/-!
+### Partie 98 — l'exactitude de `C⁰` : épi, exactitude, courte exactitude en chaque ouvert
+
+La Partie 86 avait refermé la face mono (`godementMapHom_mono` +
+`godementFunctor_preservesMonomorphisms`) ; la Partie 93 avait établi le
+transport pour le foncteur tige. Cette Partie referme les faces restantes
+pour `C⁰` lui-même : un épi reste un épi, une suite exacte reste exacte, une
+suite exacte courte reste courte exacte — **évaluée en chaque ouvert `U`**,
+qui est la forme consommée par la tranche 2 (SES degreewise des complexes
+canoniques) et la Partie 99 (suite exacte longue).
+
+La preuve est le **relèvement point par point dans les tiges** : une section de
+Godement est une famille de germes, chaque propriété se teste composante par
+composante — surjectivité via `epi_stalkFunctor_map_of_epi` (P93, adjonction
+tige ⊣ gratte-ciel), exactitude via `stalkFunctor_map_exact` (P93). Rien ici
+ne dépend de la faisceification abélienne : tout est déjà vrai au niveau des
+préfaisceaux de sections discontinues. Au passage, l'instance
+`godementFunctor_preservesZeroMorphisms` débloque `ShortComplex.map
+godementFunctor` (tranche 2).
+
+La **frontière nommée** reste la SES degreewise des complexes canoniques
+eux-mêmes (`ShortExact` de complexes, pas de préfaisceaux en un ouvert) : elle
+exige le relèvement flasque (`epi_of_shortExact_of_isFlasqueSieves`, Partie 94)
+ou l'échelle de séparabilité — c'est la tranche 2, pour la Partie 99.
+-/
+
+/-- `C⁰` envoie le morphisme nul sur le morphisme nul : point par point, le
+foncteur tige est additif (instance `Presheaf.stalkFunctor.Additive`). -/
+theorem godementHomApp_zero_mor {F G : X.Presheaf AddCommGrpCat.{u}}
+    (U : Opens X) (s : godementSection F U) :
+    godementHomApp (0 : F ⟶ G) U s = 0 := by
+  funext x
+  change (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map (0 : F ⟶ G)
+      (s x) = (0 : godementSection G U) x
+  rw [CategoryTheory.Functor.map_zero]
+  rfl
+
+/-- **`C⁰` préserve les morphismes nuls** — le prérequis pour que
+`ShortComplex.map godementFunctor` ait un sens (tranche 2). -/
+theorem godementMapHom_zero {F G : X.Presheaf AddCommGrpCat.{u}} :
+    godementMapHom (0 : F ⟶ G) = 0 := by
+  ext U s
+  funext x
+  exact congrFun (godementHomApp_zero_mor U s) x
+
+instance godementFunctor_preservesZeroMorphisms :
+    (godementFunctor (X := X)).PreservesZeroMorphisms where
+  map_zero _ _ := godementMapHom_zero
+
+/-- **Surjectivité point par point** : si `φ` est épi, l'action de `C⁰φ` sur les
+sections est surjective en chaque ouvert — chaque composante est surjective sur
+la tige (`epi_stalkFunctor_map_of_epi`, P93), et une préimage par composante
+est une section de Godement : c'est exactement la liberté du produit. -/
+theorem godementHomApp_surjective_of_epi {F G : X.Presheaf AddCommGrpCat.{u}}
+    (φ : F ⟶ G) [Epi φ] (U : Opens X) :
+    Function.Surjective (godementHomApp φ U) := by
+  intro t
+  choose s hs using fun x : U =>
+    ((AddCommGrpCat.epi_iff_surjective
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ)).mp
+      (epi_stalkFunctor_map_of_epi φ (x : X))) (t x)
+  exact ⟨s, funext hs⟩
+
+/-- **`C⁰` préserve les épimorphismes** : composante par composante dans les
+ouverts, via `NatTrans.epi_iff_epi_app`. -/
+theorem epi_godementMapHom_of_epi {F G : X.Presheaf AddCommGrpCat.{u}}
+    (φ : F ⟶ G) [Epi φ] : Epi (godementMapHom φ) :=
+  (NatTrans.epi_iff_epi_app _).mpr fun U =>
+    (AddCommGrpCat.epi_iff_surjective _).mpr
+      (godementHomApp_surjective_of_epi φ U.unop)
+
+/-- Le composant en un ouvert de `C⁰(S.f) ≫ C⁰(S.g)` est nul : fonctorialité +
+nullité de `S.f ≫ S.g`. -/
+theorem comp_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (U : Opens X) :
+    (godementMapHom S.f).app (op U) ≫ (godementMapHom S.g).app (op U) = 0 := by
+  rw [← NatTrans.comp_app, ← godementMapHom_comp, S.zero, godementMapHom_zero]
+  simp
+
+/-- **Exactitude de `C⁰` en chaque ouvert, forme elementwise** : si `F₁ → F₂ → F₃`
+est exacte, toute section de Godement de `F₂` annulée par `C⁰g` se relève en une
+section de Godement de `F₁` — germe par germe, via `stalkFunctor_map_exact`
+(P93) et un choix de préimages composante par composante. -/
+theorem exact_godementHomApp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.Exact) (U : Opens X) (y : godementSection S.X₂ U)
+    (hy : godementHomApp S.g U y = 0) :
+    ∃ x : godementSection S.X₁ U, godementHomApp S.f U x = y := by
+  have hyx : ∀ x : U, (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map S.g
+      (y x) = 0 := fun x => congrFun hy x
+  choose t ht using fun x : U =>
+    ((S.map (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X))).ab_exact_iff).mp
+      (stalkFunctor_map_exact hS (x : X)) (y x) (hyx x)
+  exact ⟨t, funext ht⟩
+
+/-- **L'exactitude se transporte en chaque ouvert** : si `F₁ → F₂ → F₃` est
+exacte, la suite de groupes abéliens `C⁰F₁(U) → C⁰F₂(U) → C⁰F₃(U)` est exacte.
+C'est la forme évaluée que consomment la tranche 2 (SES degreewise) et la
+Partie 99 (LES). -/
+theorem exact_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.Exact) (U : Opens X) :
+    (ShortComplex.mk ((godementMapHom S.f).app (op U)) ((godementMapHom S.g).app (op U))
+      (comp_app_godementMapHom U)).Exact := by
+  refine (ShortComplex.ab_exact_iff _).mpr ?_
+  intro y hy
+  exact exact_godementHomApp hS U y hy
+
+/-- **La suite exacte courte reste courte exacte en chaque ouvert** : `C⁰`
+préserve les courtes exactes, évalué en chaque ouvert — le mono vient de la
+Partie 86 (`godementMapHom_mono`), l'épi et l'exactitude de cette Partie.
+Tranche 1 de la brique 3 de la Partie 95 — la tranche 2 (SES degreewise des
+complexes canoniques, qui exige le relèvement flasque) et la Partie 99
+(assemblage de la LES) la consommeront. -/
+theorem shortExact_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (U : Opens X) :
+    (ShortComplex.mk ((godementMapHom S.f).app (op U)) ((godementMapHom S.g).app (op U))
+      (comp_app_godementMapHom U)).ShortExact := by
+  have : Mono S.f := hS.mono_f
+  have : Epi S.g := hS.epi_g
+  exact ShortComplex.ShortExact.mk' (exact_app_godementMapHom hS.exact U)
+    ((NatTrans.mono_iff_mono_app _).mp (godementMapHom_mono S.f) (op U))
+    ((NatTrans.epi_iff_epi_app _).mp (epi_godementMapHom_of_epi S.g) (op U))
+
+/-!
+### Partie 99 — le pont d'exactitude composante par composante ; rang 0 : `C⁰` préserve les SES
+
+Mathlib (au pin) ne fournit pas le pont « un short complexe de préfaisceaux est
+exact si et seulement si sa suite de groupes abéliens évaluée en chaque ouvert
+est exacte » : l'évaluation n'est pas fidèle (elle ne voit pas les autres
+ouverts), donc aucun argument de réflexion ne s'applique. Le pont se construit
+par **homologie**, sans transporter un diagramme à l'intérieur d'un `limit.π` :
+`S.Exact ↔ IsZero S.homology`, puis `mapHomologyIso` identifie l'homologie de
+`S.map (eval U)` à l'évaluation de `S.homology` (l'évaluation préserve les
+(co)limites finies), et `Functor.isZero_iff` teste la nullité objet par objet.
+`IsZero.of_iso` transporte la nullité dans les deux sens, sans réécriture
+dépendante de `parallelPair`.
+
+Ce pont est la **fondation rang 0** de l'itération : une SES de préfaisceaux
+`S` donne une SES `S.map godementFunctor` — pas seulement ouvert par ouvert
+(Partie 98), mais au niveau des transformations naturelles. Le mono est la
+Partie 86, l'épi et l'exactitude pointwise la Partie 98.
+
+La **frontière nommée** reste le rang `n + 1` : les étages du complexe
+canonique sont `C^{n+2} = C⁰(coker dⁿ)` (P92), donc l'itération exige la SES
+des conoyaux, dont le connecteur serpent `δ = -kernel.ι ≫ cokernel.π`
+(`kernelCokernelCompSequence`) doit s'annuler — relèvement flasque (Partie 94)
+ou échelle de séparabilité. C'est la tranche suivante.
+-/
+
+/-- Le composant en un ouvert d'une composition nulle de transformations
+naturelles est nul : le champ `zero` du short complexe, évalué. -/
+theorem shortComplex_app_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (U : Opens X) :
+    S.f.app (op U) ≫ S.g.app (op U) = 0 := by
+  have h : (S.f ≫ S.g).app (op U) = 0 := by rw [S.zero]; simp
+  rwa [NatTrans.comp_app] at h
+
+/-- **Le `parallelPair` du noyau s'évalue composante par composante** :
+`parallelPair g 0` suivi de l'évaluation en `U` est le `parallelPair` de la
+composante et de zéro. Pont de transport entre (co)limites de préfaisceaux et
+(co)limites de groupes : sans lui, le foncteur indexé côté foncteurs
+(`parallelPair g 0 ⋙ évaluation`) et le `parallelPair` côté groupes
+(`parallelPair (g.app _) 0`) ne sont même pas le même foncteur au sens
+syntaxique, et les `limit.π` des deux mondes ne s'apparient pas. La preuve
+est un `Functor.ext` : les trois morphismes de l'index (`left`, `right`,
+`id`) se vérifient par réduction définitionnelle. -/
+theorem parallelPair_comp_zero_eval {F G : X.Presheaf AddCommGrpCat.{u}} (g : F ⟶ G)
+    (U : Opens X) :
+    parallelPair g 0 ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U) =
+      parallelPair (g.app (op U)) 0 := by
+  fapply CategoryTheory.Functor.ext
+  · intro j
+    cases j <;> rfl
+  · intro a b f
+    cases f
+    · rfl
+    · rfl
+    · simp
+      rfl
+
+/-- **Le `parallelPair` du conoyau s'évalue composante par composante** : le
+jumeau du lemme précédent pour la forme `parallelPair 0 f` du conoyau. -/
+theorem parallelPair_zero_comp_eval {F G : X.Presheaf AddCommGrpCat.{u}} (f : F ⟶ G)
+    (U : Opens X) :
+    parallelPair 0 f ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U) =
+      parallelPair 0 (f.app (op U)) := by
+  fapply CategoryTheory.Functor.ext
+  · intro j
+    cases j <;> rfl
+  · intro a b f
+    cases f
+    · rfl
+    · rfl
+    · simp
+      rfl
+
+/-- **Le composant en `U` du `kernel.ι` de la catégorie de foncteurs** : le
+`limit.π` du foncteur évalué, l'isomorphisme `limitObjIsoLimitCompEvaluation`
+étant consommé côté gauche. Brique Mathlib (`FunctorCategory`) reposée ici
+avec le `parallelPair g 0` du noyau, pour l'interface de cette Partie. -/
+theorem kernel_ι_app {F G : X.Presheaf AddCommGrpCat.{u}} (g : F ⟶ G) (U : Opens X) :
+    (limitObjIsoLimitCompEvaluation (parallelPair g 0) (op U)).hom ≫
+      limit.π (parallelPair g 0 ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U))
+        WalkingParallelPair.zero =
+      (limit.π (parallelPair g 0) WalkingParallelPair.zero).app (op U) :=
+  limitObjIsoLimitCompEvaluation_hom_π (parallelPair g 0) WalkingParallelPair.zero (op U)
+
+/-- **Le composant en `U` du `cokernel.π` de la catégorie de foncteurs** : le
+`colimit.ι` du foncteur évalué, l'isomorphisme
+`colimitObjIsoColimitCompEvaluation` étant consommé côté droit. -/
+theorem cokernel_π_app {F G : X.Presheaf AddCommGrpCat.{u}} (f : F ⟶ G) (U : Opens X) :
+    (colimit.ι (parallelPair 0 f) WalkingParallelPair.one).app (op U) ≫
+      (colimitObjIsoColimitCompEvaluation (parallelPair 0 f) (op U)).hom =
+        colimit.ι (parallelPair 0 f ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U))
+          WalkingParallelPair.one :=
+  colimitObjIsoColimitCompEvaluation_ι_app_hom (parallelPair 0 f) WalkingParallelPair.one (op U)
+
+/-- **Le composant en `U` du `cokernel.π`, forme `parallelPair f 0`** : jumeau
+f-first du précédent — la forme sous laquelle `cokernel.π` se déplie
+réellement (`cokernel.π f = coequalizer.π f 0 = colimit.ι (parallelPair f 0)
+one`, par `rfl` au pin Mathlib), utilisée quand le but vit déjà côté
+catégorie de foncteurs. -/
+theorem cokernel_π_app' {F G : X.Presheaf AddCommGrpCat.{u}} (f : F ⟶ G) (U : Opens X) :
+    (colimit.ι (parallelPair f 0) WalkingParallelPair.one).app (op U) ≫
+      (colimitObjIsoColimitCompEvaluation (parallelPair f 0) (op U)).hom =
+        colimit.ι (parallelPair f 0 ⋙ (evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U))
+          WalkingParallelPair.one :=
+  colimitObjIsoColimitCompEvaluation_ι_app_hom (parallelPair f 0) WalkingParallelPair.one (op U)
+
+/-- **Le pont d'exactitude composante par composante** : un short complexe de
+préfaisceaux de groupes abéliens sur `X` est exact si et seulement si sa suite
+de groupes abéliens évaluée en chaque ouvert est exacte.
+
+Preuve par l'homologie : `S.Exact ↔ IsZero S.homology`
+(`ShortComplex.exact_iff_isZero_homology`), l'homologie se calcule composante
+par composante (`S.map (eval U)` a pour homologie `(eval U).obj S.homology`
+via `mapHomologyIso`, l'évaluation préservant limites et colimites finies), et
+un foncteur est nul ssi il l'est en chaque objet (`Functor.isZero_iff`). On
+évite ainsi tout transport de diagramme (le `rw` d'un `parallelPair` à
+l'intérieur d'un `limit.π` casse le motive dépendant). -/
+theorem shortComplex_exact_iff_app {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    [S.HasHomology] :
+    S.Exact ↔ ∀ U : Opens X,
+      (ShortComplex.mk (S.f.app (op U)) (S.g.app (op U)) (shortComplex_app_zero U)).Exact := by
+  rw [ShortComplex.exact_iff_isZero_homology]
+  constructor
+  · intro h U
+    rw [ShortComplex.exact_iff_isZero_homology]
+    haveI hz : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)).PreservesZeroMorphisms :=
+      CategoryTheory.Functor.preservesZeroMorphisms_evaluation_obj (op U)
+    haveI hh : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)).PreservesHomology :=
+      @CategoryTheory.Functor.preservesHomologyOfExact _ _ _ _ _ _ _ hz
+        (by infer_instance) (by infer_instance)
+    have hU : IsZero (((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)).obj S.homology) :=
+      h.obj (op U)
+    have e := @ShortComplex.mapHomologyIso _ _ _ _ _ _ S
+      ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj (op U)) hz inferInstance
+      (ShortComplex.hasHomology_of_preserves S _) (CategoryTheory.Functor.PreservesHomology.preservesLeftHomologyOf _ S)
+    exact hU.of_iso e
+  · intro h
+    rw [Functor.isZero_iff]
+    intro U
+    haveI hz : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj U).PreservesZeroMorphisms :=
+      CategoryTheory.Functor.preservesZeroMorphisms_evaluation_obj U
+    haveI hh : ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj U).PreservesHomology :=
+      @CategoryTheory.Functor.preservesHomologyOfExact _ _ _ _ _ _ _ hz
+        (by infer_instance) (by infer_instance)
+    have e := @ShortComplex.mapHomologyIso _ _ _ _ _ _ S
+      ((evaluation (Opens X)ᵒᵖ AddCommGrpCat.{u}).obj U) hz inferInstance
+      (ShortComplex.hasHomology_of_preserves S _) (CategoryTheory.Functor.PreservesHomology.preservesLeftHomologyOf _ S)
+    have hU : IsZero (ShortComplex.mk (S.f.app U) (S.g.app U)
+        (shortComplex_app_zero U.unop)).homology :=
+      (ShortComplex.exact_iff_isZero_homology _).1 (h U.unop)
+    exact hU.of_iso e.symm
+
+/-- **Lemme (a), rang 0 : `C⁰` préserve les suites exactes courtes** de
+préfaisceaux de groupes abéliens — pas seulement ouvert par ouvert (Partie
+98), mais au niveau des transformations naturelles : une SES `S` donne une SES
+`S.map godementFunctor`. Le mono est la Partie 86 (`godementMapHom_mono`),
+l'épi (`epi_godementMapHom_of_epi`) et l'exactitude pointwise (`exact_app_`
+`godementMapHom`) la Partie 98, l'assemblage par le pont
+`shortComplex_exact_iff_app` de cette Partie. C'est la fondation rang 0 de
+l'itération ; le rang `n + 1` (étages `C^{n+2} = C⁰(coker dⁿ)`, P92) exige en
+plus l'annulation du connecteur serpent — relèvement flasque (P94) ou échelle
+de séparabilité, tranche suivante. -/
+theorem shortExact_map_godementFunctor {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) : (S.map godementFunctor).ShortExact := by
+  have : Mono S.f := hS.mono_f
+  have : Epi S.g := hS.epi_g
+  exact ShortComplex.ShortExact.mk' (shortComplex_exact_iff_app.mpr
+    fun U => exact_app_godementMapHom hS.exact U)
+    (godementMapHom_mono S.f) (epi_godementMapHom_of_epi S.g)
+
+/-!
+### Partie 100 — rang `n + 1` : la SES des conoyaux, l'échelle de séparabilité
+
+Le rang 0 (`shortExact_map_godementFunctor`) itère `C⁰` : les étages sont
+`C^{n+2} = C⁰(coker dⁿ)` (P92), donc le cran `n + 1` exige la SES des
+conoyaux `0 → coker dⁿ_A → coker dⁿ_B → coker dⁿ_C → 0`, dont le connecteur
+serpent `δ : ker dⁿ_C → coker dⁿ_A` doit s'annuler.
+
+**Le point mathématique** (frontière nommée depuis la Partie 99) : l'amorçage
+n'est PAS gratuit, et c'est lui qui fixe l'hypothèse de l'énoncé. Pour
+`n ≥ 1`, l'annulation de `δ` suit de l'exactitude de la résolution canonique
+du terme droit (`ker dⁿ = im d^{n-1}`) : un cocycle de `C` remonte d'un
+degré par l'épi de la SES au cran `n - 1`, le relevé composé par `dⁿ` est
+nul, et le représentant du connecteur s'annule — l'argument est purement
+abélien. Pour `n = 0`, il faut `ker d⁰_{X₃} = 0`, c'est-à-dire la
+**séparéité du terme droit** : un préfaisceau non séparé porte des sections
+à tiges nulles qui font vivre `δ`, et l'itération générale est une **échelle
+de séparabilité** — amortie par `Mono (toGodement S.X₃)` (le « séparé » au
+sens Godement : les tiges séparent les sections ; `IsSheaf` l'entraîne par
+`mono_toGodement_of_isSheaf`, Partie 93), poursuivie par l'exactitude
+inconditionnelle de la résolution (hypothèse `hres`, disponible depuis la
+Partie 93 côté tiges). Mathlib au pin du lake ne déclare aucune classe
+`TopCat.Presheaf.IsSeparated` : `Mono toGodement` en est la formulation
+définitionnelle.
+
+L'organe d'exécution est le lemme du serpent de Mathlib
+(`Mathlib.Algebra.Homology.ShortComplex.SnakeLemma`, vérifié présent au pin
+du lake) : une instance `SnakeInput (X.Presheaf AddCommGrpCat)` sur les SES
+d'étages des crans `n` et `n + 1`, connecteur `S.δ` tué par
+`cancel_epi` le long de `im d^{n-1}`, puis `L₃_exact` referme la SES des
+conoyaux et le rang 0 l'itère en SES des étages `n + 1` — la flèche
+d'étage `godementCanonicalMap (n + 2)` étant `godementMapHom (cokernel.map …)`
+par `godementDChainMap_succ_right` (un `rfl`). La **cible easy** de cette
+maquette — `godementCanonicalMap_comp_zero`, le champ `zero` des SES
+d'étages — est **prouvée à tout degré, sans aucune hypothèse** : cran `0` par
+`godementMapHom_comp`, maillon générique `P (n+1) → Q n → P (n+2)` par
+`cancel_epi` sur `cokernel.π` (`godementCokernelMap_comp`), et rang `1`
+(forme `μ`) par la même mécanique sur les flèches de conoyaux des unités
+(`godementCokernelMap_comp_rank_one`), **sans passer par le serpent** — le
+serpent reste l'organe de la seule cible **hard**, dont l'énoncé est retiré
+du code compilé (arbitrage ai-01 du 2026-11-19, #25661 : l'acceptance des
+mères #25599/#25605 exige 0 → 0) et reste documenté en commentaire pour
+ressuscitation verbatim ; le module est à `sorry` nul et la
+`sorry-baseline` du lake reste 0.
+-/
+
+/-- **Le degré 0 de la nullité des flèches d'étages** (Partie 100, cran
+d'amorçage, PROUVÉ) : `C⁰` d'un composé nul est nul — la fonctorialité de
+`godementMapHom` (P96) transporte le champ `zero` du short complexe `S` au
+degré `0`. -/
+theorem godementCanonicalMap_comp_zero_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} :
+    godementCanonicalMap S.X₁ S.X₂ S.f 0 ≫ godementCanonicalMap S.X₂ S.X₃ S.g 0 = 0 := by
+  rw [godementCanonicalMap_zero, godementCanonicalMap_zero]
+  -- Le `show` ré-élabore le but avec les types canoniques propres
+  -- (`godementPresheaf ⟶ godementPresheaf`) : le `rw` ci-dessus transporte le
+  -- terme mais laisse au `CategoryStruct.comp` ses arguments implicites
+  -- `godementCanonicalObj · 0`, et le `← godementMapHom_comp` ne peut pas
+  -- unifier ses metavariables sur un composant mal typé syntaxiquement.
+  show godementMapHom S.f ≫ godementMapHom S.g = 0
+  rw [← godementMapHom_comp, S.zero, godementMapHom_zero]
+
+theorem godementDChainMap_succ_left (F G : X.Presheaf AddCommGrpCat.{u}) (η : F ⟶ G)
+    (n : ℕ) :
+    (godementDChainMap F G η (n + 1)).left = (godementDChainMap F G η n).right :=
+  rfl
+
+/-- **Le maillon générique de transport de la nullité** (Partie 100) : si les
+flèches d'étages composées sont nulles au degré `n + 1`, le composé des
+flèches de conoyaux de degré `n` est nul. Le `cancel_epi` porte sur la
+projection canonique du conoyau — épi par construction, donc **sans aucune
+hypothèse** — et le calcul du milieu est la propriété de factorisation de
+`cokernel.map` (`π ≫ map = verticale droite ≫ π`), la verticale droite du
+carré de degré `n` étant la flèche d'étage de degré `n + 1`. Combiné à
+`godementCanonicalMap_succ_two` et `godementMapHom_zero`, c'est le cran
+inductif de la nullité des flèches d'étages : `P (n+1) → Q n → P (n+2)`,
+pour tout `n ≥ 0` — donc tous les crans `≥ 2` une fois `P 1` acquis. Le
+cran `1` (forme `μ`) n'est PAS une instance de ce maillon (son analogue
+`Q_μ` se réduit circulairement à `P 1`) : il est fermé à part, **sans
+hypothèse**, par `godementCokernelMap_comp_rank_one` — le serpent de rang
+`0` reste réservé à la cible hard (`hsep` sur le connecteur `δ`). -/
+theorem godementCokernelMap_comp {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (n : ℕ)
+    (h : godementCanonicalMap S.X₁ S.X₂ S.f (n + 1) ≫
+      godementCanonicalMap S.X₂ S.X₃ S.g (n + 1) = 0) :
+    godementCokernelMap S.X₁ S.X₂ S.f n ≫ godementCokernelMap S.X₂ S.X₃ S.g n = 0 := by
+  refine (cancel_epi (cokernel.π (godementCanonicalD S.X₁ n))).mp ?_
+  rw [comp_zero, ← Category.assoc]
+  have e₁ : cokernel.π (godementCanonicalD S.X₁ n) ≫
+      godementCokernelMap S.X₁ S.X₂ S.f n =
+      godementCanonicalMap S.X₁ S.X₂ S.f (n + 1) ≫
+      cokernel.π (godementCanonicalD S.X₂ n) := by
+    simp only [godementCokernelMap, godementCanonicalMap, godementDChainMap_succ_left,
+      cokernel.π_desc]
+  have e₂ : cokernel.π (godementCanonicalD S.X₂ n) ≫
+      godementCokernelMap S.X₂ S.X₃ S.g n =
+      godementCanonicalMap S.X₂ S.X₃ S.g (n + 1) ≫
+      cokernel.π (godementCanonicalD S.X₃ n) := by
+    simp only [godementCokernelMap, godementCanonicalMap, godementDChainMap_succ_left,
+      cokernel.π_desc]
+  rw [e₁, Category.assoc, e₂, ← Category.assoc, h, zero_comp]
+
+/-- **Le maillon de base du rang 1** (Partie 100) : le composé des deux
+flèches de conoyaux des **unités** est nul, **sans aucune hypothèse** — ni
+lemme du serpent, ni séparabilité. La preuve est calculatoire : la projection
+canonique du conoyau de l'unité transporte chaque flèche de conoyaux en la
+verticale droite du carré d'unité (`cokernel.π_desc`), d'où
+`π₁ ≫ c₁μ ≫ c₂μ = C⁰(S.f) ≫ C⁰(S.g) ≫ π₃ = C⁰(S.f ≫ S.g) ≫ π₃ = C⁰ 0 ≫ π₃ = 0`
+par `godementMapHom_comp`, `S.zero` et `godementMapHom_zero` ; la projection
+étant un épi, `cancel_epi` conclut. C'est la pièce qui manquait au plancher de
+l'induction `P (n+1) → Q n → P (n+2)` : le cran `1` ne relève donc **pas** du
+connecteur du serpent de rang 0 — celui-ci reste l'organe de la cible hard
+(mono/épi des étages et annihilation du connecteur par `hsep`/`hres`). -/
+theorem godementCokernelMap_comp_rank_one
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} :
+    cokernel.map (toGodement S.X₁) (toGodement S.X₂) S.f (godementMapHom S.f)
+        (toGodement_naturality S.f) ≫
+      cokernel.map (toGodement S.X₂) (toGodement S.X₃) S.g (godementMapHom S.g)
+        (toGodement_naturality S.g) = 0 := by
+  refine (cancel_epi (cokernel.π (toGodement S.X₁))).mp ?_
+  rw [comp_zero, ← Category.assoc]
+  have e₁ : cokernel.π (toGodement S.X₁) ≫
+      cokernel.map (toGodement S.X₁) (toGodement S.X₂) S.f (godementMapHom S.f)
+        (toGodement_naturality S.f) =
+      godementMapHom S.f ≫ cokernel.π (toGodement S.X₂) := by
+    simp only [cokernel.map, cokernel.π_desc]
+  have e₂ : cokernel.π (toGodement S.X₂) ≫
+      cokernel.map (toGodement S.X₂) (toGodement S.X₃) S.g (godementMapHom S.g)
+        (toGodement_naturality S.g) =
+      godementMapHom S.g ≫ cokernel.π (toGodement S.X₃) := by
+    simp only [cokernel.map, cokernel.π_desc]
+  rw [e₁, Category.assoc, e₂, ← Category.assoc, ← godementMapHom_comp, S.zero,
+    godementMapHom_zero, zero_comp]
+
+/-- **Le rang 1 de la cible facile** : le composé des flèches d'étages au
+degré `1`. Par `godementCanonicalMap_one` aux deux facteurs il ne dépend que
+des deux flèches de conoyaux des unités, et `← godementMapHom_comp` le ramène
+au maillon de base `godementCokernelMap_comp_rank_one`, dont la nullité donne
+`C⁰ 0 = 0`. Aucune hypothèse n'entre ici : le rang `1` est fermé. -/
+theorem godementCanonicalMap_comp_zero_one
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} :
+    godementCanonicalMap S.X₁ S.X₂ S.f 1 ≫ godementCanonicalMap S.X₂ S.X₃ S.g 1 = 0 := by
+  rw [godementCanonicalMap_one, godementCanonicalMap_one]
+  show godementMapHom (cokernel.map (toGodement S.X₁) (toGodement S.X₂) S.f
+        (godementMapHom S.f) (toGodement_naturality S.f)) ≫
+      godementMapHom (cokernel.map (toGodement S.X₂) (toGodement S.X₃) S.g
+        (godementMapHom S.g) (toGodement_naturality S.g)) = 0
+  rw [← godementMapHom_comp, godementCokernelMap_comp_rank_one, godementMapHom_zero]
+
+/-- **Cible prover : easy — le composé des flèches d'étages d'une SES est
+nul** : pour un short complexe `S` de préfaisceaux, les flèches d'étages
+composées `godementCanonicalMap S.f n ≫ godementCanonicalMap S.g n` sont
+nulles à tout degré — le champ `zero` des SES d'étages de la Partie 100.
+État de la récursion à deux temps : le cran `0` est prouvé
+(`godementCanonicalMap_comp_zero_zero`) ; le maillon générique est prouvé
+SANS hypothèse (`godementCokernelMap_comp`, par `cancel_epi` sur la
+projection `cokernel.π` — épi par construction — et transport par
+`cokernel.π_desc` le long des carrés `e₁`/`e₂`), de sorte que
+`P (n+1) → Q n → P (n+2)` couvre tous les crans `≥ 2`. Le cran de base `1`
+(forme `μ`) est fermé lui aussi, indépendamment : `P 1` se réduit, par
+`godementCanonicalMap_one` et `← godementMapHom_comp`, à la nullité du
+composé des flèches de conoyaux `c₁μ ≫ c₂μ` des verticales `μ = toGodement`,
+laquelle est **calculatoire** (`godementCokernelMap_comp_rank_one`) — la
+projection du conoyau de l'unité transporte les deux flèches en `C⁰(S.f)`,
+`C⁰(S.g)`, et `godementMapHom_comp` / `S.zero` / `godementMapHom_zero`
+annulent le composé. La conclusion `n = 0 | 1 | m + 2` ferme l'énoncé à tout
+degré. Ce qui a été tenté puis écarté : (a) « `cokernel.map` d'un morphisme
+nul est nul » (`cokernel.map_zero` lu à l'envers, verticale domaine vs
+codomaine) — RÉSORBÉ, c'était la mauvaise route, pas une hypothèse
+manquante ; (b) sortir le cran `1` par le **serpent de rang 0** (`L₃_exact`
+de `SnakeInput`) — inutile : le serpent reste l'organe de la cible **hard**
+(mono/épi des étages et annihilation du connecteur `δ` par `hsep`/`hres`),
+pas celui de la nullité du composé. -/
+theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (n : ℕ) :
+    godementCanonicalMap S.X₁ S.X₂ S.f n ≫ godementCanonicalMap S.X₂ S.X₃ S.g n = 0 := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+    match n with
+    | 0 => exact godementCanonicalMap_comp_zero_zero
+    | 1 => exact godementCanonicalMap_comp_zero_one
+    | m + 2 =>
+      rw [godementCanonicalMap_succ_two, godementCanonicalMap_succ_two]
+      show godementMapHom (godementCokernelMap S.X₁ S.X₂ S.f m) ≫
+          godementMapHom (godementCokernelMap S.X₂ S.X₃ S.g m) = 0
+      rw [← godementMapHom_comp,
+        godementCokernelMap_comp m (ih (m + 1) (Nat.lt_succ_self (m + 1))),
+        godementMapHom_zero]
+
+/- **Cible prover : hard — la SES des étages à tout degré, par récursion**
+(P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est
+**séparé** (`hsep : Mono (toGodement S.X₃)` : tue le connecteur à
+l'amorçage, `ker μ_{X₃} = 0` sur les verticales `μ = toGodement`) et dont la
+résolution canonique est exacte en chaque degré (`hres` : tue le connecteur
+aux crans suivants, `ker dⁿ = im d^{n-1}`), la suite des étages
+`0 → Cⁿ(S.X₁) → Cⁿ(S.X₂) → Cⁿ(S.X₃) → 0` est courte exacte à tout degré `n`.
+Le rang 0 est `shortExact_map_godementFunctor` ; le cran `n + 1` exige la SES
+des conoyaux (serpent, `δ = 0`), que le rang 0 itère ensuite — c'est le
+théorème d'exactitude degreewise du foncteur « complexe canonique de
+Godement » [God58, Chap. II §4.1]. Ce qui a été tenté : architecture
+consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs,
+`h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
+`S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`).
+
+**Énoncé retiré du code compilé** (arbitrage ai-01 du 2026-11-19 sur #25661) :
+l'acceptance des issues mères #25599/#25605 exige `distinct_code_sorry` 0 → 0 ;
+tant que la preuve n'est pas livrée, l'énoncé reste documenté ici, hors
+compilation, et la garde bloquante (`axiom-fail-on-sorry`) reste armée —
+`sorry-baseline` du lake inchangée à 0. À ressusciter verbatim lorsque la
+preuve sera prête (organe : lemme du serpent, instance `SnakeInput` des SES
+d'étages, `δ` annulé par `hsep`/`hres`) :
+
+    theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+        (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))
+        (hres : ∀ m : ℕ, (ShortComplex.mk (godementCanonicalD S.X₃ m)
+            (godementCanonicalD S.X₃ (m + 1)) (godementCanonicalD_comp_zero S.X₃ m)).Exact)
+        (n : ℕ) :
+        (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f n)
+          (godementCanonicalMap S.X₂ S.X₃ S.g n)
+          (godementCanonicalMap_comp_zero n)).ShortExact := by
+      -- preuve attendue : serpent (SnakeInput des SES d'étages), cran n+1 par
+      -- SES des conoyaux puis itération du rang 0. -/
+
+/-! ### Partie 101 - SES des images `C⁰` au niveau préfaisceau, degré zéro aux tiges
+
+La Partie 98 établissait la SES des images `C⁰` ouvert par ouvert. Les
+foncteurs d'évaluation des préfaisceaux préservent les limites et colimites
+finies et reflètent conjointement les isomorphismes :
+`JointlyReflectIsomorphisms.shortExact_iff` transporte donc l'énoncé évalué
+en énoncé catégorique dans la catégorie des préfaisceaux. Le foncteur tige,
+exact, en donne la version tigée, et la rangée de degré zéro des complexes
+canoniques s'identifie à la rangée des images `C⁰`
+(`godementCanonicalMap_zero` est `rfl`) : c'est la base `n = 0` de la SES
+degreewise. Les degrés `n + 1` (lemme du serpent aux tiges, annulation du
+morphisme connectant via `isZero_stalk_homology_godementCanonicalComplex`)
+et l'assemblage `shortExact_iff_degreewise_shortExact` vers la SES des
+complexes canoniques restent la frontière nommée (les Parties 99-100 voisines ont livré la SES des étages pointwise). -/
+
+/-- **Les évaluations des préfaisceaux reflètent conjointement les
+isomorphismes** : un morphisme de préfaisceaux dont chaque composante est un
+isomorphisme est un isomorphisme. Ce pont transporte les énoncés « ouvert par
+ouvert » de la Partie 98 dans la catégorie des préfaisceaux. -/
+private lemma jointlyReflectIsomorphisms_evaluationPresheaf (X : TopCat.{u}) :
+    JointlyReflectIsomorphisms
+      (fun U : (Opens X)ᵒᵖ =>
+        (evaluation ((Opens X)ᵒᵖ) AddCommGrpCat.{u}).obj U) where
+  isIso f hf := by
+    rw [NatTrans.isIso_iff_isIso_app]
+    exact fun U => hf U
+
+/-- **La suite exacte courte des images `C⁰`, au niveau préfaisceau** : si
+`S` est courte exacte, la suite des images `C⁰` l'est aussi dans la catégorie
+des préfaisceaux. La Partie 98 l'avait établi ouvert par ouvert ; les
+foncteurs d'évaluation — qui préservent limites et colimites finies et
+reflètent conjointement les isomorphismes — transportent l'énoncé évalué en
+énoncé catégorique. Forme catégorique de la tranche 1 de la brique 3 de la
+Partie 95.
+
+Rapport à Stacks : la clause (3) du tag [Stacks 0FKS]
+(`quasiIso_godementAugmentation`, `StalkHomotopy.lean:558`) établit
+l'exactitude du complexe augmenté d'un bloc ; notre énoncé isole la rangée
+de degré 0 en suite courte exacte au niveau préfaisceau — la forme dont la
+tranche degreewise a besoin, et que Stacks n'énonce pas séparément. -/
+theorem shortExact_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) :
+    (ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
+      (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).ShortExact :=
+  ((jointlyReflectIsomorphisms_evaluationPresheaf X).shortExact_iff _).mpr
+    fun U => shortExact_app_godementMapHom hS U.unop
+
+/-- **La SES des images `C⁰` en chaque tige** : le foncteur tige est exact
+(`stalkFunctor_preservesHomology`), il transporte la SES catégorique
+précédente en une SES de groupes abéliens en chaque point. C'est la rangée
+de base, « degré zéro », de la SES degreewise des complexes canoniques.
+
+Rapport à Stacks : couvert plus fort par la clause (5) du tag [Stacks 0FKS]
+(`homotopyEquivalences_stalk_godementAugmentation`, `StalkHomotopy.lean:520`) —
+une équivalence d'homotopie des tiges du complexe augmenté implique la suite
+courte exacte des images `C⁰` en tige. Nous rendons cette SES explicite,
+forme consommée par la lecture degré par degré. -/
+theorem shortExact_stalk_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (x₀ : X) :
+    ((ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
+      (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).ShortExact := by
+  have h := (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 0
+  exact h.mp inferInstance _ (shortExact_godementMapHom hS)
+
+/-- **Le degré zéro de la SES degreewise, en chaque tige** : la rangée de
+degré `0` des complexes canoniques, lue en chaque tige, est courte exacte.
+C'est le cas de base `n = 0` de la SES degreewise nommée par la Partie 98 ;
+les degrés suivants exigent le lemme du serpent aux tiges (tranche
+suivante).
+
+Ancre Stacks du degré 0 : `singleConstantHomotopyEquiv` (`Stalk.lean:156`,
+tag [Stacks 0FKS]) établit que le complexe de Moore d'un objet cosimplicial
+constant est homotopiquement équivalent au complexe concentré en degré 0 —
+c'est le calcul qui dégénère l'augmentation en degré 0. Ici, la rangée de
+degré 0 se lit directement : `godementCanonicalMap … 0` est la rangée des
+images `C⁰`. Nous ne reprouvons pas ce calcul, nous l'utilisons. -/
+theorem shortExact_stalk_godementCanonicalMap_zero
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalMap S.X₁ S.X₂ S.f 0))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalMap S.X₂ S.X₃ S.g 0))
+      (((ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
+        (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).map
+        (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).zero)).ShortExact :=
+  shortExact_stalk_godementMapHom hS x₀
+
+end Grothendieck

@@ -7,6 +7,11 @@ description: Cycle horaire du coordinateur adjoint myia-po-2025:CoursIA-2. Rédu
 
 Cycle de coordination adjoint du cluster CoursIA. Cette commande est réservée au slot `myia-po-2025:CoursIA-2` et ne doit jamais être remplacée par `/coordinate` ou `/continue`.
 
+## Servir le prochain jugement
+
+Remettre les premières têtes utilisables dès qu’elles le sont, sans attendre que toute la fournée soit prête. Pour chacune : numéro, SHA, point à juger et preuve à ouvrir.
+Une collision ou un arbitrage en attente immobilise cette entrée, pas la préparation des suivantes. Utiliser le canal existant : aucun dossier supplémentaire.
+
 ## Frontière d'autorité HARD
 
 L'adjoint peut :
@@ -39,6 +44,10 @@ Restent réservés à `myia-ai-01:CoursIA` :
 7. Ne jamais laisser une lane terminalement idle : fournir une deep-queue ou un prochain grain DEEP/MED de CONTENU vérifié.
 8. **Chaque cycle doit faire avancer le dépôt concrètement.** Une passe de lecture, de monitoring, de reporting ou de re-grounding seule ne satisfait pas le cycle. Avant de conclure, produire au moins un incrément vérifiable : faire franchir un jalon à une PR (réparation écrite, preuve post-fix, réserve réellement levée, retarget/scope corrigé), dispatcher un grain exécutable qui démarre effectivement, ou prendre soi-même un grain autorisé et livrable. Si le sujet suivi est bloqué ou en attente d'une autre lane/du `PR gate`, ne pas finir sur cette attente : utiliser le temps restant pour chercher les **angles morts** dans les issues anciennes/en souffrance, la dette technique ou documentaire, et les acceptances partiellement livrées. Grounder puis engager immédiatement un nouveau grain DEEP/MED de CONTENU pour une lane CoursIA-2 par claim + dispatch ; ne jamais consommer le cycle en simple constat.
 9. Le rapport final nomme explicitement l'**incrément dépôt du cycle** et sa preuve. Finir par un rapport `[DONE][ADJOINT]` lane-specific sur `workspace-CoursIA-2` et une synthèse distincte sur `workspace-CoursIA` pour ai-01.
+
+## Repli en environnement dégradé (#28115)
+
+Un outil du poste qui tombe — organe de dossier muet, `gh` saturé, transport RooSync coupé — n'arrête pas le cycle. Dans l'ordre : **poster `[DEGRADED]`** sur `workspace-CoursIA-2` (l'échéance de réparation en découle, règle globale `degraded-escalation`), puis **continuer par un autre canal** — lecture directe (`gh api`, fichiers du dépôt), relais `sk-agent` pour les vérifications en volume, ou demande de vérification au secrétaire sur `workspace-CoursIA-3` — et `[REPAIRED]` referme l'escalade une fois l'outil revenu. Incident fondateur (22/11, #28115) : production tombée de 8-12 à 2-4 fusions/h pendant que l'adjoint attendait son outil habituel, alors que les dossiers pouvaient monter autrement.
 
 ## Tournee issues — dossiers `[CLOSURE PREFLIGHT]` (Grain C, #17956)
 

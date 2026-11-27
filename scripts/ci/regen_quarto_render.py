@@ -47,6 +47,7 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
     "MyIA.AI.Notebooks/Physique/index.qmd",
+    "MyIA.AI.Notebooks/BioMedecine/index.qmd",
     "docs/index.qmd",
     # Page parcours : deplacee de la racine vers docs/ (#13751, fenetre Quarto)
     # — la racine ne garde que index.qmd ; le glob "*.qmd" ci-dessus ne la
@@ -95,6 +96,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/InformationCalcul/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
     "MyIA.AI.Notebooks/Physique/",                 # serie Physique numerique (EPIC #23161) -- Integrales deplaces de Probas/Applications/ (T1)
+    "MyIA.AI.Notebooks/BioMedecine/",             # serie Bio & Medecine (#28135) -- pli Dynamiques, fondation de la serie
     "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (203 rendus, 221 git-tracked - 18 sous /archive/ ; sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/",  # tranche 19 #18423 (6)
     "MyIA.AI.Notebooks/GenAI/3D/",                # serie 3D Pli 2 #19949 (2, NeRF from scratch + critique des limitations)
@@ -135,8 +137,11 @@ NOTEBOOK_SUBTREES = (
     # couverts par leurs entrees individuelles ci-dessus restent dedup
     # (precedent Integrations-DotNet/ <- Aspire/, tranche 18 #13581).
     "MyIA.AI.Notebooks/SymbolicAI/",                  # tranche finale #18423 (prefix famille, +1 racine)
+    "MyIA.AI.Notebooks/InformationCalcul/Cryptography/",  # sous-serie Cryptography du hub Information et calcul #27092 (Carnet 04 post-quantique, #27369)
     "MyIA.AI.Notebooks/InformationCalcul/InformationTheory/",  # serie InformationTheory #27077 (codage de canal, sous la famille InformationCalcul)
+    "MyIA.AI.Notebooks/InformationCalcul/SignalProcessing/",  # serie SignalProcessing #27086 (carnet 02 convolution/filtrage, hub InformationCalcul)
     "MyIA.AI.Notebooks/InformationCalcul/Automata/",  # serie Automata #27158 (automates et langages formels, jumeaux Python/C#)
+    "MyIA.AI.Notebooks/InformationCalcul/Cryptography/",  # serie Cryptography #27081 (chiffrement homomorphe, preuves ZK ; carnet .NET BCL)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored

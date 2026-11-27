@@ -73,6 +73,20 @@ nommee :
    absentes ici (sommet de pile perime) -> skip ``stack-top:<parente>`` ;
    index illisible (``None``) -> fail-open assume (convention UNKNOWN !=
    rouge forge), etat ``unmeasured`` journalise avec ses incidents ;
+   construction SOUS BUDGET (un seul fil, attendu au plus le budget de la
+   PR qui la declenche, une fois par passe) -> delai expire : skip
+   ``stack-timeout``, porte ``unmeasured``, rien n'est fusionne ;
+3bis. prelecture REST : ``repos/jsboige/CoursIA/pulls/<N>`` ->
+   ``mergeable_state`` et ``head.sha``, budget COURT (#26799). Placee
+   AVANT l'etape 4 : elle ne coute qu'une lecture, alors que les etapes
+   qui suivent (B.0, collisions twin et slot) coutent ~150 s par PR
+   (#26799, mesure : 90 s + 52 s + 8 s sur une PR bloquee). Une PR dont
+   l'etat est ``blocked`` est donc refusee en ~1 s au lieu de ~150 s.
+   Etat ni ``clean`` ni ``unstable`` -> skip ``mergeable-state:<etat>``
+   (les etats « en cours de calcul » sont PARKES et rejouees en fin de
+   passe) ; tete REST differente de la tete de la vue -> skip
+   ``head-moved``. L'etape 6 reste la garde finale : elle relit l'etat
+   et la tete au moment du merge.
 4. organe B.0 ``check_unaddressed_nits.py <PR>`` exit 0 -- code de
    retour capture DIRECTEMENT (subprocess.returncode, jamais a travers
    un pipe) ;
@@ -173,11 +187,12 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 # Les modules partages vivent dans scripts/ : grain_tag.py est LE lecteur du
 # tag Grain (un seul lecteur depuis #9485, meme discipline que
@@ -276,6 +291,7 @@ COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
+TWIN_ATTEST_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_attestation_squash.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # Issue #20774 : au merge, le slot-reservation-guard doit lire la source
 # `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
@@ -430,6 +446,43 @@ PASS_BUDGET_REASON = "pass-budget-exceeded"
 #: a chaque tour, mais son POINT DE DEPART avance.
 PASS_BUDGET_S = 2700.0
 
+#: Delai maximal d'UN sous-processus (s).
+#:
+#: Mesure du 24/11 (passe 3605) : une PR (#25063) a occupe 1 587 s, et rien
+#: ne bornait ses sous-processus, donc une passe pouvait rester bloquee sur
+#: un enfant muet bien au-dela de `PASS_BUDGET_S` (cette borne se lit
+#: ENTRE deux PRs, elle n'interrompt jamais une PR en cours). Le journal
+#: porte un verdict par PR, pas une duree par commande : il ne dit PAS
+#: quelle commande a pris ce temps.
+#:
+#: Depasse : l'enfant est tue, le rc vaut `TIMEOUT_RC` (convention
+#: `timeout(1)`), et l'appelant traite ce rc comme une MESURE IMPOSSIBLE
+#: -- jamais comme un defaut trouve. Fail-closed : rien n'est fusionne sur
+#: une mesure expiree.
+CMD_TIMEOUT_S = 300.0
+
+#: Echeance d'EVALUATION d'UNE PR (s), portee par le runner.
+#:
+#: Elle couvre la lecture ET l'evaluation de la PR, et elle est posee par
+#: la boucle de passe (`set_pr_budget`). Chaque sous-processus de la PR
+#: recoit alors `min(CMD_TIMEOUT_S, reste)` ; l'echeance passee, le runner
+#: ne lance plus rien et rend `TIMEOUT_RC` immediatement.
+#:
+#: Elle borne AUSSI le seul travail en processus de l'evaluation, la
+#: construction de l'index de pile (etape 3, ``_index_pile``) : la
+#: construction recoit le budget de la PR qui la declenche -- celui d'une
+#: evaluation, donc -- UNE fois par passe. Une PR n'attend jamais plus que
+#: son propre budget, et la construction ne retient une passe que jusqu'a
+#: l'echeance de ce budget-la.
+#:
+#: Le merge reste HORS echeance : une echeance atteinte au milieu d'un
+#: merge laisserait l'etat de la fusion inconnu (le merge a un
+#: disjoncteur propre, `MergeFailedError`).
+PR_DEADLINE_S = 600.0
+
+#: rc d'un delai depasse -- convention `timeout(1)` (124).
+TIMEOUT_RC = 124
+
 #: Verdict d'une PR que la passe n'a pas EVALUEE (arret sur le budget de
 #: duree, #28009).
 #:
@@ -476,6 +529,19 @@ class UnexpectedError(Exception):
     generale** (jeton, quota, reseau), qui arrete tout (cf
     ``is_pass_wide``). Un ECHEC DE MERGE garde son propre disjoncteur
     (``MergeFailedError``) : il ne se confond pas avec ces deux cas.
+    """
+
+
+class PrTimeout(UnexpectedError):
+    """Un delai de lecture a expire : la PR est SAISIE, jamais ROUGEE.
+
+    Distincte d'`UnexpectedError` : une erreur inattendue nomme une
+    anomalie et rougit le bilan de la passe (verdict `run-error`, rc=1) ;
+    un delai expire ne prouve rien -- la mesure n'a pas abouti. La PR est
+    donc journalisee `skipped` avec un motif de delai, le bilan ne compte
+    ni erreur ni rouge, et la passe continue : le passage suivant
+    reessaie. C'est ce que verrouille
+    `test_merge_ready_timeout_bound.py::test_un_rc_124_ne_derive_rien`.
     """
 
 
@@ -563,21 +629,74 @@ class Runner(Protocol):
 
 
 class SubprocessRunner:
-    """Runner reel : rc capture DIRECTEMENT (subprocess.returncode, jamais un pipe)."""
+    """Runner reel : rc capture DIRECTEMENT (subprocess.returncode, jamais un pipe).
+
+    Deux bornes, portees par le runner lui-meme :
+
+    - `CMD_TIMEOUT_S` : delai d'UN sous-processus. Depasse, l'enfant est
+      tue et le rc vaut `TIMEOUT_RC` (convention `timeout(1)`).
+    - l'ECHEANCE DE PR` : posee par la boucle de passe (`set_pr_budget`),
+      en SECONDES. Le runner en tire son instant limite -- le contrat
+      reste dans un seul domaine d'horloge (le sien), et un runner de test
+      peut la simuler sans horloge. Chaque sous-processus de la PR recoit
+      alors `min(CMD_TIMEOUT_S, reste)` ; l'echeance passee, le runner ne
+      lance plus rien et rend `TIMEOUT_RC` immediatement.
+    """
+
+    def __init__(self) -> None:
+        self._pr_budget_s: float | None = None
+        self._pr_deadline: float | None = None
+
+    def set_pr_budget(self, budget_s: float | None) -> None:
+        """Pose (ou leve) l'echeance de l'evaluation de la PR en cours.
+
+        `None` = pas d'echeance (le reste de la passe). Le budget est en
+        SECONDES : le runner en tire son instant limite, ce qui evite de
+        melanger deux horloges.
+        """
+        self._pr_budget_s = budget_s
+        self._pr_deadline = None
+
+    def _remaining_s(self) -> float | None:
+        """Reste avant l'echeance de la PR, ou None s'il n'y en a pas."""
+        if self._pr_budget_s is None:
+            return None
+        if self._pr_deadline is None:
+            self._pr_deadline = time.monotonic() + self._pr_budget_s
+        return self._pr_deadline - time.monotonic()
 
     def run(self, cmd: list[str], env: dict[str, str] | None = None) -> RunResult:
         # cwd epingle a la racine du depot : les argv d'organes sont RELATIFS
         # (cf. ``_repo_relative``) -- c'est ce qui les rend resolus ici, et le
         # journal independant du chemin du worktree de la machine.
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            env=env,
-            cwd=REPO_ROOT,
-        )
+        timeout = CMD_TIMEOUT_S
+        remaining = self._remaining_s()
+        if remaining is not None:
+            if remaining <= 0:
+                # Echeance de la PR passee : rien ne part. La mesure est
+                # IMPOSSIBLE, pas negative -- d'ou le meme rc qu'un delai
+                # de sous-processus.
+                return RunResult(
+                    TIMEOUT_RC, "",
+                    f"echeance de PR atteinte avant {cmd[0] if cmd else '?'}",
+                )
+            timeout = min(timeout, remaining)
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
+                cwd=REPO_ROOT,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return RunResult(
+                TIMEOUT_RC, "",
+                f"delai depasse ({timeout:.0f} s) sur {cmd[0] if cmd else '?'}",
+            )
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
     def run_many(
@@ -601,6 +720,19 @@ class SubprocessRunner:
 
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)
+
+
+def _set_pr_budget(runner: Runner, budget_s: float | None) -> None:
+    """Pose l'echeance de PR sur le runner -- s'il sait la porter.
+
+    Le contrat `Runner` n'impose PAS `set_pr_budget` : les runners de test
+    n'en ont pas besoin, et un runner qui ne sait pas est traite comme un
+    runner sans echeance (la borne par sous-processus, `CMD_TIMEOUT_S`,
+    s'applique quand meme). Meme convention que `run_many` plus bas.
+    """
+    setter = getattr(runner, "set_pr_budget", None)
+    if callable(setter):
+        setter(budget_s)
 
 
 def run_reads(
@@ -639,6 +771,10 @@ class PRVerdict:
     stack: str | None = None
     #: Incidents de mesure de la porte STACK, quand la porte en a publie.
     stack_incidents: tuple[str, ...] | None = None
+    #: La RAISON du rouge quand elle est mesurable (section FAILURES de
+    #: pytest, 22/11) : sans elle, le journal dit QUOI a rouge et force le
+    #: lecteur a DEVINER pourquoi.
+    detail: str | None = None
 
     def journal_dict(self) -> dict:
         row = {
@@ -653,6 +789,8 @@ class PRVerdict:
         }
         if self.stack_incidents:
             row["stack_incidents"] = list(self.stack_incidents)
+        if self.detail:
+            row["detail"] = self.detail
         return row
 
 
@@ -1864,6 +2002,10 @@ def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
         env=gh_env,
     )
     if res.returncode != 0:
+        if res.returncode == TIMEOUT_RC:
+            # Delai depasse : la PR n'a pas ete LUE. Ce n'est pas une
+            # anomalie -- la PR est saisie, le bilan ne la rougit pas.
+            raise PrTimeout(f"gh pr view {pr} : delai depasse")
         raise UnexpectedError(
             f"gh pr view {pr} rc={res.returncode} : {res.stderr.strip()[:200]}"
         )
@@ -2307,6 +2449,10 @@ def lean_build_attestation_reason(
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     """Etape 4 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
     res = runner.run([sys.executable, _repo_relative(NITS_PATH), str(pr)], env=gh_env)
+    if res.returncode == TIMEOUT_RC:
+        # L'organe n'a pas repondu : MESURE IMPOSSIBLE, pas un verdict
+        # « bloque ». La PR sera reessayee au passage suivant.
+        return TIMEOUT_RC
     if res.returncode not in NITS_DOCUMENTED_RC:
         raise UnexpectedError(
             f"B.0 PR {pr} rc={res.returncode} hors contrat : "
@@ -2358,6 +2504,8 @@ def twin_collision_reason(
          f"pull/{pr}/head"]
     )
     if fetch.returncode != 0:
+        if fetch.returncode == TIMEOUT_RC:
+            return "twin-collision-timeout"
         return "twin-collision-unreadable:fetch"
     # Les PRs OUVERTES : l'ordinal qu'une PR CONCURRENTE revendique deja. Ni
     # le jugement base+tete ni l'arbre de fusion ne le voient -- les deux ne
@@ -2481,7 +2629,83 @@ def twin_collision_reason(
             "check_twin_index_collisions.py::ordinal_correction_gist."
         )
         return f"twin-collision-on-main:{pair}/{index} -- {gist}"
+    if res.returncode == TIMEOUT_RC:
+        return "twin-collision-timeout"
     return f"twin-collision-unreadable:rc={res.returncode}"
+
+
+def twin_attestation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.ter : l'attestation jumelle doit decrire l'ARBRE DE FUSION.
+
+    Le squash-merge re-hashe l'arbre : un blob atteste sur la branche peut ne
+    jamais atterrir sur `main`. Le test
+    ``test_audit_shas_exist_in_file_history`` verifie que le sha atteste par la
+    derniere attestation d'une paire est un blob que le carnet a reellement eu
+    dans son historique, sous le path declare -- un sha qui n'atterrit jamais
+    sur `main` le fait rougir.
+
+    La CI de PR ne voit pas cette classe : elle travaille sur
+    ``refs/pull/N/merge``, ou les commits intermediaires restent joignables ;
+    seul l'arbre de fusion revele l'orphelin. D'ou la place de cette porte :
+    elle est la DERNIERE ligne de defense, celle qui evite que `main` ne
+    rougisse (mesure du 2026-11-23 : `test_audit_shas_exist_in_file_history` a
+    gele `main` environ 3 h ; les squashes de #28094 et #27869 ont orpheline
+    des ``csharp_sha``).
+
+    Cout nul pour les PRs qui ne touchent pas le registre twin (filtre
+    prefixe). Pour les autres : un fetch, puis l'organe partage
+    (``check_twin_attestation_squash.py``), qui simule le squash et compare la
+    derniere attestation de chaque paire touchee aux blobs de l'arbre de
+    fusion.
+
+    Fail-closed, sans exception : un timeout, une sortie vide, une lecture
+    impossible ou un conflit de fusion font sauter le merge. « Je n'ai pas pu
+    lire » n'est jamais « c'est propre » -- c'est la regle que 5bis applique
+    deja pour les collisions d'index.
+
+    Codes de l'organe : 0 = conforme, 1 = defaut trouve (MISMATCH, NODESC,
+    CONFLICT), 2 = mesure impossible.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        if fetch.returncode == TIMEOUT_RC:
+            return "twin-attestation-timeout"
+        return "twin-attestation-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, _repo_relative(TWIN_ATTEST_PATH),
+         "--base", "origin/main", "--head", head, "--json"]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == TIMEOUT_RC:
+        return "twin-attestation-timeout"
+    if res.returncode == 2:
+        # Mesure impossible : timeout, erreur git, sortie vide.
+        return "twin-attestation-unreadable:rc=2"
+    # rc = 1 : l'organe a lu et a trouve un defaut. Le motif nomme la paire
+    # et les cotes en cause -- il est journalise tel quel.
+    try:
+        data = json.loads(res.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return "twin-attestation-unreadable:sortie-illisible"
+    if not isinstance(data, dict):
+        return "twin-attestation-unreadable:sortie-illisible"
+    verdict = str(data.get("verdict") or "?").lower()
+    reason = str(data.get("reason") or "").strip()
+    if not reason:
+        return f"twin-attestation-{verdict}:defaut-non-nomme"
+    return f"twin-attestation-{verdict}:{reason[:180]}"
 
 
 def slot_reservation_reason(
@@ -2531,6 +2755,8 @@ def slot_reservation_reason(
          f"pull/{pr}/head"]
     )
     if fetch.returncode != 0:
+        if fetch.returncode == TIMEOUT_RC:
+            return "slot-collision-timeout"
         return "slot-collision-unreadable:fetch"
     # Mode en ligne : sans `--offline`, l'organe lit `gh pr list --json files`
     # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
@@ -2576,6 +2802,8 @@ def slot_reservation_reason(
             f"slot-collision-on-merge:{first_state}:{first_target} -- "
             f"renumeroter ou retirer la PR concurrente (voir {SLOT_PATH.name})"
         )
+    if res.returncode == TIMEOUT_RC:
+        return "slot-collision-timeout"
     if res.returncode == 2:
         return "slot-collision-unreadable"
     return f"slot-collision-unreadable:rc={res.returncode}"
@@ -2621,24 +2849,121 @@ def find_stacked_parents(body: str | None) -> list[int]:
     return list(seen)
 
 
-def combined_tree_reason(
+@dataclass
+class CombinedPassContext:
+    """Contexte de passe pour l'etape 5quinquies (22/11).
+
+    Une passe evalue jusqu'a une centaine de candidats, et l'etape jouait un
+    worktree NEUF a chaque fois -- ``worktree add`` puis ``worktree remove``,
+    38 s + 9 s par candidat (mesure du coordinateur sur l'arbre de main).
+    Ce contexte donne a la passe UN worktree, reutilise par
+    ``checkout --detach`` : l'organe n'y fait plus qu'un changement de tete
+    entre deux candidats.
+
+    Le worktree est nomme par le PID de la passe : deux passes concurrentes
+    ne se partagent donc jamais le meme dossier. Un partage ferait jouer les
+    tests d'un candidat sur l'arbre d'un AUTRE -- un verdict faux.
+
+    La BASE, elle, reste resolue par l'organe a chaque candidat : elle doit
+    etre COURANTE, sinon l'organe rate le conflit entre deux PRs fusionnees
+    contre le meme ``main@T`` (fenetre residuelle de #24828). Mesure du
+    22/11 : le ``main`` n'ajoute que ~0,4 s au fetch (18,9 s avec, 18,5 s
+    pour la seule tete) -- le cout du fetch est l'aller-retour reseau, pas
+    la ref. Un ``main`` par passe n'economiserait que 2 % du fetch et
+    acheterait une base perimee.
+    """
+    worktree: Path
+    #: Vrai des que l'organe a ete invoque au moins une fois dans la passe.
+    #: Le worktree n'existe alors que si l'organe l'a pose : une passe qui
+    #: n'a evalue AUCUN candidat (porte STACK refuse, rollback operateur)
+    #: n'a rien a retirer, et ne lance donc rien du tout.
+    used: bool = False
+
+    def cleanup(self, runner: Runner, gh_env: dict[str, str]) -> None:
+        """Retire le worktree de la passe.
+
+        Le retrait est fait par l'ORGANE (``--cleanup``), pas par un ``git``
+        lance ici : l'organe sait deja poser et retirer ce worktree, et la
+        passe ne doit pas payer un aller-retour reseau pour le faire.
+
+        Rien n'est lance si l'organe n'a jamais ete invoque : une passe sans
+        evaluation ne laisse pas de worktree, et une passe qui n'a rien
+        demande au disque ne demande rien au disque en sortant.
+        """
+        if not self.used:
+            return
+        rm = runner.run(
+            [sys.executable, _repo_relative(COMBINED_PATH), "--cleanup",
+             "--worktree", _repo_relative(self.worktree)],
+            env=gh_env,
+        )
+        if rm.returncode != 0:
+            # Un worktree que git refuse de retirer est RAPPORTE, pas detruit.
+            print(f"worktree de passe non retire : {self.worktree}",
+                  file=sys.stderr)
+
+
+#: Contexte de passe courant (module-level : la chaine d'appels de l'etape
+#: 5quinquies est profonde, on ne la remplit pas de parametres).
+COMBINED_CTX: CombinedPassContext | None = None
+
+
+def combined_pass_context() -> CombinedPassContext | None:
+    """Prepare le contexte de passe ; ``None`` si l'etape est indisponible.
+
+    ``None`` n'est pas un echec : l'organe retombe alors sur son comportement
+    d'avant (un worktree par candidat).
+    """
+    if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
+        return None
+    worktree = REPO_ROOT / ".tmp" / f"premerge-passe-{os.getpid()}"
+    return CombinedPassContext(worktree=worktree)
+
+
+def _one_line(text: str, limit: int = 600) -> str:
+    """Aplatit une queue de sortie en UNE ligne bornee (#28147).
+
+    Le motif journalise doit rester lisible en une ligne : les retours a la
+    ligne sont remplaces par un espace, les blancs sont reduits, et la queue
+    est tronquee par la fin au-dela de ``limit``.
+    """
+    flat = " ".join((text or "").split())
+    if not flat:
+        return ""
+    if len(flat) <= limit:
+        return flat
+    return flat[: limit - 3] + "..."
+
+
+def _combined_tree(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
-) -> str | None:
+) -> tuple[str | None, str | None]:
     """Etape 5quinquies : les tests d'integrite passent-ils sur ``main`` + tete ?
 
-    ``None`` si l'organe rend GREEN (exit 0). Sinon un motif de skip :
+    ``(None, None)`` si l'organe rend GREEN (exit 0). Sinon un motif de skip
+    et la RAISON du rouge :
     ``combined-tree-red:<premier test rouge>``, ``combined-tree-conflict``, ou
     ``combined-tree-unreadable:<etape>`` -- « je n'ai pas pu jouer les
     tests » n'est pas « ils passent ». ``MERGE_READY_COMBINED_CHECK=0``
     retire l'etape (rollback operateur, jamais un reglage de lane).
+
+    Le motif porte la QUEUE de sortie pytest aplatie en une ligne (#28147) ;
+    la RAISON est rendue A PART : la section FAILURES de pytest. Le journal
+    portait `FAILED <id>`, ce qui dit QUOI a rougi mais pas POURQUOI -- et
+    force le lecteur a DEVINER pourquoi une PR approuvee a ete sautee
+    (22/11 : deux PRs approuvees sautees sur `test_guard_gauntlet`, aucune
+    ne touchant le gauntlet).
     """
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
-        return None
-    res = runner.run(
-        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
-         "--json"],
-        env=gh_env,
-    )
+        return None, None
+    argv = [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr),
+            "--head", head, "--json"]
+    ctx = COMBINED_CTX
+    if ctx is not None:
+        argv += ["--worktree", _repo_relative(ctx.worktree),
+                 "--reuse-worktree"]
+        ctx.used = True
+    res = runner.run(argv, env=gh_env)
     payload: dict = {}
     lines = (res.stdout or "").strip().splitlines()
     if lines:
@@ -2648,15 +2973,41 @@ def combined_tree_reason(
                 payload = parsed
         except ValueError:
             payload = {}
+    detail = payload.get("failure_detail") or None
     verdict = payload.get("verdict")
     if res.returncode == 0 and verdict == "GREEN":
-        return None
+        return None, None
     if res.returncode == 1 and verdict == "CONFLICT":
-        return "combined-tree-conflict"
+        return "combined-tree-conflict", detail
     if res.returncode == 1 and verdict == "RED":
         failed = payload.get("failed") or []
-        return f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
-    return f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+        reason = f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
+        tail = _one_line(payload.get("output_tail") or "")
+        if tail:
+            reason = f"{reason} | pytest-tail: {tail}"
+        return reason, detail
+    if res.returncode == TIMEOUT_RC:
+        # Delai depasse : MESURE IMPOSSIBLE, pas un arbre de fusion rouge.
+        return "combined-tree-timeout", detail
+    unreadable = (f"combined-tree-unreadable:"
+                  f"{payload.get('reason') or 'rc-' + str(res.returncode)}")
+    tail = _one_line(payload.get("output_tail") or "")
+    if tail:
+        unreadable = f"{unreadable} | pytest-tail: {tail}"
+    return unreadable, detail
+
+
+def combined_tree_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> str | None:
+    """Le MOTIF de l'etape 5quinquies, seul : ``None`` si l'organe rend GREEN.
+
+    L'API publique reste celle d'avant : UN motif, en une ligne. La raison
+    du rouge (section FAILURES de pytest) est rendue par `_combined_tree`,
+    qui la rend A PART -- elle ne pollue pas le motif journalise.
+    """
+    reason, _detail = _combined_tree(runner, pr, head, gh_env)
+    return reason
 
 
 def stacked_parent_state(
@@ -2758,6 +3109,11 @@ def mergeable_state_and_head(
             ["gh", "api", f"repos/{REPO}/pulls/{pr}"], env=gh_env
         )
         if res.returncode != 0:
+            if res.returncode == TIMEOUT_RC:
+                # Delai depasse : etat de mergeabilite INCONNU. « timeout »
+                # n'est ni « clean » ni un etat pending : la PR est saisie
+                # (`mergeable-state:timeout`), jamais rougie.
+                return "timeout", ""
             raise UnexpectedError(
                 f"gh api pulls/{pr} rc={res.returncode} : {res.stderr.strip()[:200]}"
             )
@@ -3039,6 +3395,145 @@ def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None
 _STACK_PARTNER_RE = re.compile(r"OPEN #(\d+)")
 
 
+# --- index de pile : le seul travail EN PROCESSUS, attendu sous budget (#28428) ---
+#
+# La porte STACK (etape 3) est la seule etape couteuse qui ne passe PAS par
+# le runner : ``gate.default_stack_index()`` construit l'index DANS le
+# processus (enumeration des PR ouvertes, fetch de leurs tetes, lectures git
+# par PR). Appellee en direct, elle ne recevait pas le budget de la PR, et
+# une construction lente retenait la passe sans borne (review du 26/11 sur
+# la tete 4bd21455d5a1).
+#
+# Trois regles, chacune avec son temoin dans
+# ``scripts/tests/test_merge_ready_timeout_bound.py`` :
+#
+# - UN SEUL fil construit (mono-vol). Une construction en cours n'est jamais
+#   relancee : les PRs qui arrivent attendent la meme ;
+# - UNE echeance par construction : le budget de la PR qui la declenche, pris
+#   a son lancement (``PR_DEADLINE_S`` si son runner n'en porte pas). Une PR
+#   n'attend donc jamais plus que son propre budget, et la construction ne
+#   retient jamais une passe plus longtemps qu'UN budget -- l'echeance passee,
+#   les PRs suivantes sont saisies sans attendre ;
+# - delai expire : la PR est SAISIE (``stack-timeout``), sa ligne porte la
+#   porte ``unmeasured`` et l'incident, et RIEN n'est fusionne sur un etat
+#   inconnu. La construction continue en fil arriere : quand elle finit, les
+#   PRs suivantes servent son resultat, sans attendre.
+#
+# L'etat est celui de CE module, jamais l'indicateur ``built`` du module du
+# gate : dans un meme processus, un autre appelant peut l'avoir laisse a
+# Vrai sans qu'aucune construction bornee ait eu lieu ici.
+_PILE_VERROU = threading.Lock()
+_PILE_CONSTRUCTION: dict[str, Any] = {
+    "evenement": None, "resultat": None, "echeance": None, "budget": None,
+}
+
+
+def _reste_avant_echeance(runner: Runner) -> float | None:
+    """Budget restant de la PR (s), ou ``None`` si le runner n'en porte pas.
+
+    L'echeance est portee par le runner de production (``_remaining_s``) ;
+    les runners scriptes ne l'ont pas. Une echeance deja passee rend 0.
+    """
+    reste = getattr(runner, "_remaining_s", None)
+    if not callable(reste):
+        return None
+    valeur = reste()
+    return None if valeur is None else max(float(valeur), 0.0)
+
+
+def _attendre_la_pile(evenement: threading.Event, reste_s: float) -> bool:
+    """Attend la fin de la construction AU PLUS `reste_s` secondes.
+
+    Rend True quand la construction est finie. Echeance deja passee : rien
+    n'est attendu, l'etat est seulement lu.
+    """
+    if reste_s <= 0:
+        return evenement.is_set()
+    return evenement.wait(reste_s)
+
+
+def _construire_pile(
+    construire: Any, gate: Any, evenement: threading.Event,
+    resultat: dict[str, Any],
+) -> None:
+    """Corps du fil : l'index (ou l'erreur) de la construction va au dict.
+
+    Toute exception est gardee pour la PR qui attendait -- un ``SystemExit``
+    du gate aussi, qui terminait l'organe en appel direct.
+    """
+    try:
+        resultat["index"] = construire()
+        cache = getattr(gate, "_STACK_INDEX_CACHE", None)
+        resultat["incidents"] = [
+            str(item) for item in ((cache or {}).get("incidents") or [])
+        ]
+    except BaseException as exc:  # noqa: BLE001 -- remontee a la PR qui attendait
+        resultat["erreur"] = exc
+    finally:
+        evenement.set()
+
+
+def _index_pile(
+    gate: Any, budget_pr_s: float | None,
+) -> tuple[dict | None, list[str], bool]:
+    """L'index de pile, attendu sous budget.
+
+    Rend ``(index, incidents, delai_expire)``. ``budget_pr_s`` est le
+    budget restant de la PR qui demande l'index (``None`` : sans echeance) ;
+    c'est lui que recoit la construction quand cette PR la declenche. Une PR
+    qui arrive pendant qu'elle tourne attend au plus ce qui reste de cette
+    echeance, et jamais plus que son propre budget.
+
+    Delai expire : ``(None, incidents, True)`` -- l'appelant saisit la PR,
+    il ne fusionne pas sur un etat inconnu. Une erreur de la construction
+    remonte a l'appelant, comme l'appel direct d'avant, et la construction
+    est retentee a la demande suivante.
+    """
+    with _PILE_VERROU:
+        evenement = _PILE_CONSTRUCTION["evenement"]
+        resultat = _PILE_CONSTRUCTION["resultat"]
+        aboutie = (
+            evenement is not None and evenement.is_set()
+            and resultat is not None and "index" in resultat
+        )
+        if not aboutie and (evenement is None or evenement.is_set()):
+            # Aucune construction de ce module n'a abouti, et aucune ne
+            # tourne (celle qui a echoue est retentee) : on en lance une,
+            # sous le budget de la PR qui la declenche.
+            budget = PR_DEADLINE_S if budget_pr_s is None else max(budget_pr_s, 0.0)
+            evenement = threading.Event()
+            resultat = {}
+            _PILE_CONSTRUCTION.update(
+                evenement=evenement, resultat=resultat,
+                echeance=time.monotonic() + budget, budget=budget,
+            )
+            # La fonction est resolue ICI, pas dans le fil : le fil ne doit
+            # jamais appeler autre chose que ce que l'appelant a vu.
+            threading.Thread(
+                target=_construire_pile,
+                args=(gate.default_stack_index, gate, evenement, resultat),
+                daemon=True, name="merge-ready-index-pile",
+            ).start()
+        echeance = _PILE_CONSTRUCTION["echeance"]
+        budget = _PILE_CONSTRUCTION["budget"]
+    if aboutie:
+        # Reutiliser le resultat du fil : rappeler le gate ici contournerait
+        # la borne si son cache avait ete invalide entre les deux appels.
+        return resultat.get("index"), list(resultat.get("incidents") or []), False
+    attente = max(echeance - time.monotonic(), 0.0)
+    if budget_pr_s is not None:
+        attente = min(attente, budget_pr_s)
+    if not _attendre_la_pile(evenement, attente):
+        return None, [
+            "construction de l'index pile : delai depasse (budget de "
+            + (f"{budget:.0f}" if budget >= 10 else f"{budget:.3g}")
+            + " s) -- porte STACK non mesuree, PR saisie"
+        ], True
+    if "erreur" in resultat:
+        raise resultat["erreur"]
+    return resultat.get("index"), list(resultat.get("incidents") or []), False
+
+
 def evaluate_pr(
     view: dict,
     pr: int,
@@ -3051,8 +3546,10 @@ def evaluate_pr(
     Les controles bon marche (brouillon, perimetre, tag) passent AVANT la
     porte STACK -- la premiere etape couteuse, dont l'index de pile est
     construit une fois par run puis cache par le module du gate ; la porte
-    avant les organes ; le REST en dernier, juste avant le merge, pour
-    minimiser la fenetre de course.
+    avant les organes. La PRE-lecture REST passe entre les deux : elle ne
+    coute qu'une requete et elle ecarte une PR bloquee avant que les organes
+    ne payent leurs ~150 s (#26799) ; la LECTURE REST finale reste en
+    dernier, juste avant le merge, pour minimiser la fenetre de course.
 
     La disposition de review (point 1 de #17672) est classee pour TOUTE PR
     evaluee, skip compris, et reportee a la tete que la ligne declare : la
@@ -3064,9 +3561,10 @@ def evaluate_pr(
     disposition = review_disposition(view, view_head)
 
     def skip(reason: str, stack: str | None = None,
-             stack_incidents: tuple[str, ...] | None = None) -> PRVerdict:
+             stack_incidents: tuple[str, ...] | None = None,
+             detail: str | None = None) -> PRVerdict:
         return PRVerdict(pr, view_head, "skipped", reason, False, disposition,
-                         stack, stack_incidents)
+                         stack, stack_incidents, detail)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -3134,16 +3632,21 @@ def evaluate_pr(
     # sommets de pile perimes. Fail-open sur index illisible, meme
     # convention que le gate (UNKNOWN != rouge forge) : l'etat se
     # journalise, il ne fabrique aucun refus.
+    #
+    # La construction elle-meme est attendue SOUS BUDGET (``_index_pile``) :
+    # c'est du travail en processus, que le runner ne borne pas. Un delai
+    # expire fait exception au fail-open -- comme tout delai de cet organe,
+    # la PR est SAISIE, jamais fusionnee sur un etat inconnu.
     stack_state: str | None
     stack_inc: tuple[str, ...] | None
-    index = gate.default_stack_index()
+    index, incidents_pile, delai_expire = _index_pile(
+        gate, _reste_avant_echeance(runner),
+    )
+    if delai_expire:
+        return skip("stack-timeout", "unmeasured", (incidents_pile[0],))
     if index is None:
         stack_state = "unmeasured"
-        # Acces direct au cache du module : c'est lui qui porte les incidents
-        # de la mesure qui vient d'echouer (aucun accesseur public ne les
-        # expose).
-        incidents = gate._STACK_INDEX_CACHE.get("incidents") or []
-        stack_inc = tuple(str(item) for item in incidents) or None
+        stack_inc = tuple(str(item) for item in incidents_pile) or None
     else:
         stack_state = "measured"
         stack_inc = None
@@ -3155,11 +3658,41 @@ def evaluate_pr(
             match = _STACK_PARTNER_RE.search(reasons[0])
             partner = match.group(1) if match else "?"
             return skip(f"stack-top:{partner}", "measured")
+    # 3bis. Prelecture REST bon marche : ne pas payer les etapes couteuses
+    # (B.0, collisions d'index twin et de slot) pour une PR que l'etape 6
+    # refuserait. Elle est placee AVANT l'etape 4 (#26799) : la lecture
+    # REST ne coute qu'une requete, alors que les etapes suivantes coutent
+    # ~150 s par PR -- mesure sur trois PRs bloquees (#28166, #28168,
+    # #28171) : 90 s + 52 s + 8 s avant d'apprendre, en 0,8 s, que la PR
+    # est bloquee. L'etape 6 reste la garde finale contre une evolution de
+    # l'etat ou de la tete pendant ces tests.
+    pre_state, pre_live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
+    if pre_state not in ("clean", "unstable"):
+        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
+        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
+        # fin de passe, quand le calcul sera termine (#26799).
+        return skip(f"mergeable-state:{pre_state or 'absent'}",
+                    stack_state, stack_inc)
+    if pre_live_head != view_head:
+        return skip("head-moved", stack_state, stack_inc)
     # 4. organe B.0 (re-verification reelle).
-    if run_nits(runner, pr, gh_env) != 0:
+    nits_rc = run_nits(runner, pr, gh_env)
+    if nits_rc == TIMEOUT_RC:
+        # Delai depasse : la PR est SAISIE (`b0-timeout`), jamais rougie.
+        return skip("b0-timeout", stack_state, stack_inc)
+    if nits_rc != 0:
         return skip("b0-organ-blocked", stack_state, stack_inc)
     # 5bis. collision d'index twin contre le main du moment.
     reason = twin_collision_reason(runner, pr, view_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason, stack_state, stack_inc)
+    # 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) :
+    # le squash-merge re-hashe l'arbre, un blob atteste sur la branche peut
+    # ne jamais atterrir sur `main` -- et la CI de PR ne le voit pas (elle
+    # travaille sur `refs/pull/N/merge`). Fail-closed comme 5bis.
+    reason = twin_attestation_reason(runner, pr, view_head, view.get("files") or [])
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
     # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).
@@ -3208,26 +3741,12 @@ def evaluate_pr(
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}",
                         stack_state, stack_inc)
-    # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
-    # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
-    # contre une evolution de l'etat ou de la tete pendant ces tests.
-    pre_state, pre_live_head = mergeable_state_and_head(
-        runner, pr, gh_env, retries=retries
-    )
-    if pre_state not in ("clean", "unstable"):
-        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
-        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
-        # fin de passe, quand le calcul sera termine (#26799).
-        return skip(f"mergeable-state:{pre_state or 'absent'}",
-                    stack_state, stack_inc)
-    if pre_live_head != view_head:
-        return skip("head-moved", stack_state, stack_inc)
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.
-    reason = combined_tree_reason(runner, pr, view_head, gh_env)
+    reason, detail = _combined_tree(runner, pr, view_head, gh_env)
     if reason is not None:
-        return skip(reason, stack_state, stack_inc)
+        return skip(reason, stack_state, stack_inc, detail)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(
         runner, pr, gh_env, retries=retries
@@ -3343,6 +3862,11 @@ def emit_output(
     print(f"== merge_ready ({mode}, max {args.max}) ==")
     for verdict in results:
         print(_describe(verdict))
+        # La raison du rouge, quand elle est mesurable : sans elle, le
+        # lecteur doit DEVINER pourquoi une PR approuvee a ete sautee (22/11).
+        if verdict.detail:
+            for ligne in verdict.detail.splitlines():
+                print(f"  | {ligne}")
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")
@@ -3450,6 +3974,14 @@ def merge_verdict(
 def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     """Point d'entree testable : parse les arguments, execute un run complet."""
     args = _parse_args(argv)
+    # Une passe nouvelle ne reutilise pas le resultat d'une passe precedente.
+    # Un fil encore actif reste partage pour eviter deux constructions en vol.
+    with _PILE_VERROU:
+        evenement = _PILE_CONSTRUCTION["evenement"]
+        if evenement is not None and evenement.is_set():
+            _PILE_CONSTRUCTION.update(
+                evenement=None, resultat=None, echeance=None, budget=None,
+            )
     active_runner = runner if runner is not None else SubprocessRunner()
     journal_path = (
         args.journal if args.journal is not None else default_journal_path()
@@ -3536,6 +4068,16 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     # (revue du 16/11).
     warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
 
+    # --- contexte de l'etape 5quinquies (22/11) --------------------------------
+    #
+    # UN worktree pour toute la passe : l'etape jouait un `worktree add` +
+    # un `worktree remove` par candidat (38 s + 9 s, mesure du coordinateur).
+    # L'organe y fait un `checkout --detach` d'un candidat a l'autre. Le
+    # contexte echoue sans rien casse : `combined_pass_context` rend `None`
+    # et l'etape retombe sur son comportement d'avant.
+    global COMBINED_CTX
+    COMBINED_CTX = combined_pass_context()
+
     def _budget_depasse() -> bool:
         if args.pass_budget_s <= 0:
             return False
@@ -3567,8 +4109,17 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         try:
             # Cette PR est EVALUEEe : le curseur de reprise doit le dire.
             dernier_evalue = pr
-            view = fetch_pr_view(active_runner, pr, gh_env)
-            decision = evaluate_pr(view, pr, active_runner, gh_env)
+            # Echeance de la PR : portee par le runner, chaque
+            # sous-processus de cette PR recoit `min(CMD_TIMEOUT_S,
+            # reste)`. Elle couvre la lecture ET l'evaluation ; le merge
+            # reste hors echeance (une echeance atteinte au milieu d'un
+            # merge laisserait l'etat de la fusion inconnu).
+            _set_pr_budget(active_runner, args.pr_deadline_s)
+            try:
+                view = fetch_pr_view(active_runner, pr, gh_env)
+                decision = evaluate_pr(view, pr, active_runner, gh_env)
+            finally:
+                _set_pr_budget(active_runner, None)
             if decision.verdict == "would-merge":
                 if args.apply:
                     decision, stop, code = merge_verdict(
@@ -3607,6 +4158,14 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                 continue
             results.append(decision)
             append_journal(journal_path, decision)
+        except PrTimeout as exc:
+            # Delai depasse : la PR est SAISIE, jamais ROUGIE. Le motif
+            # nomme le delai, le bilan ne compte ni erreur ni rouge, et la
+            # passe continue (le passage suivant reessaie).
+            timed_out = PRVerdict(pr, None, "skipped", f"timeout:{exc}", False)
+            results.append(timed_out)
+            append_journal(journal_path, timed_out)
+            continue
         except UnexpectedError as exc:
             errored = PRVerdict(pr, None, "run-error", str(exc), False)
             results.append(errored)
@@ -3681,11 +4240,15 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                     append_journal(journal_path, parked)
                     break
                 try:
-                    view = fetch_pr_view(active_runner, pr, gh_env)
-                    decision = evaluate_pr(
-                        view, pr, active_runner, gh_env,
-                        retries=MERGEABLE_RETRIES,
-                    )
+                    _set_pr_budget(active_runner, args.pr_deadline_s)
+                    try:
+                        view = fetch_pr_view(active_runner, pr, gh_env)
+                        decision = evaluate_pr(
+                            view, pr, active_runner, gh_env,
+                            retries=MERGEABLE_RETRIES,
+                        )
+                    finally:
+                        _set_pr_budget(active_runner, None)
                     if decision.verdict == "would-merge":
                         if args.apply:
                             # Meme gestion du merge que la boucle principale
@@ -3708,6 +4271,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         merged_count += 1
                     results.append(decision)
                     append_journal(journal_path, decision)
+                except PrTimeout as exc:
+                    timed_out = PRVerdict(pr, None, "skipped", f"timeout:{exc}", False)
+                    results.append(timed_out)
+                    append_journal(journal_path, timed_out)
+                    continue
                 except UnexpectedError as exc:
                     errored = PRVerdict(pr, None, "run-error", str(exc), False)
                     results.append(errored)
@@ -3717,6 +4285,10 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         stopped_reason = f"unexpected-error:{exc}"
                         break
                     continue
+
+    if COMBINED_CTX is not None:
+        COMBINED_CTX.cleanup(active_runner, gh_env)
+        COMBINED_CTX = None
 
     emit_output(
         args, results, stopped_reason, exit_code,
@@ -3785,6 +4357,24 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--pr-deadline-s",
+        type=float,
+        default=PR_DEADLINE_S,
+        metavar="S",
+        help=(
+            "echeance d'evaluation d'UNE PR, en secondes (defaut "
+            f"{int(PR_DEADLINE_S)} s). Portee par le runner : chaque "
+            "sous-processus de la PR recoit "
+            f"`min({int(CMD_TIMEOUT_S)} s, reste)`, et l'echeance passee le "
+            "sous-processus ne part plus. Une PR dont le delai expire est "
+            "SAISIE (motif `timeout:...`), jamais rougie. Elle borne aussi "
+            "l'attente de la construction de l'index de pile (motif "
+            "`stack-timeout`) : par passe, la construction a UNE echeance, "
+            "celle de la PR qui la declenche ; passee, les PRs suivantes "
+            "sont saisies sans attendre."
+        ),
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="sortie machine (un seul objet JSON) sur stdout",
@@ -3794,6 +4384,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         parser.error("--max doit etre >= 0")
     if args.pass_budget_s < 0:
         parser.error("--pass-budget-s doit etre >= 0")
+    if args.pr_deadline_s < 0:
+        parser.error("--pr-deadline-s doit etre >= 0")
     return args
 
 

@@ -20,8 +20,20 @@
   - le theoreme-coeur de reduction au singleton : la valeur d'un groupe
     singleton coïncide avec la valeur individuelle du joueur.
 
-  Palier 2 (non couvert ici) : linearite en C, additivite, monotonicite,
-  exemple numerique du papier.
+  Palier 2 (issue #25966) — proprietes de la valeur de groupe :
+  - linearite : la valeur du jeu somme est la somme des valeurs
+    (`shapleyGroupValue_add`) ;
+  - homogeneite : la valeur du jeu dilate est la dilation de la valeur
+    (`shapleyGroupValue_smul`) ;
+  - groupe vide : un groupe vide ne vaut rien (`shapleyGroupValue_empty`) ;
+  - positivite du coefficient de Shapley (`shapleyCoef_nonneg`).
+
+  Reste hors perimetre : l'additivite de la valeur de groupe sur une
+  partition de joueurs (elle est fausse en general), la monotonicite en le
+  jeu (vraie pour la valeur de Shapley, mais elle ne se deduit pas terme a
+  terme : la contribution marginale n'est pas monotone en `v` ; elle demande
+  la representation par ensembles de niveau, non formalisee ici) et
+  l'exemple numerique du papier.
 
   Convention i18n (EPIC #4980) : docstrings FR, code/tactiques EN. Sibling
   `_en` optionnel — non requis au palier 1 (le checker i18n ne cree pas
@@ -277,5 +289,73 @@ theorem shapleyGroupValue_singleton (G : TUGame N) (i : N) :
     rw [hexp, hcardS]
 
 end Singleton
+
+/-! ## Palier 2 : proprietes de la valeur de groupe
+
+  La valeur de groupe herite des proprietes de la valeur de Shapley, que
+  l'on transporte du jeu `N` au jeu fusionne `MergedPlayers C`. On s'appuie
+  sur les organes deja prouvés de `CooperativeGames.Shapley`
+  (`ShapleyValue.shapley_addGames`, `ShapleyValue.shapley_smulGame`,
+  `ShapleyValue.shapley_null_player`) plutot que de recalculer la somme de
+  Shapley. -/
+
+section Palier2
+
+/-- La valeur de Shapley ne depend que de la fonction de valeur du jeu :
+    deux jeux de meme fonction de valeur ont la meme valeur de Shapley. -/
+lemma shapleyValue_congr (G H : TUGame N) (i : N) (h : G.v = H.v) :
+    shapleyValue G i = shapleyValue H i := by
+  unfold shapleyValue TUGame.marginalContribution
+  simp only [h]
+
+/-- Le jeu fusionne distribue sur l'addition des jeux : le jeu fusionne de
+    `G + H` a la meme fonction de valeur que la somme des jeux fusionnes. -/
+lemma mergedGame_v_add (G H : TUGame N) (C : Finset N) :
+    (mergedGame (Solution.AddGames G H) C).v
+      = (Solution.AddGames (mergedGame G C) (mergedGame H C)).v := by
+  funext S
+  rfl
+
+/-- **Linearite de la valeur de groupe.** La valeur de Shapley du groupe est
+    lineaire en le jeu : la valeur du jeu somme est la somme des valeurs. -/
+theorem shapleyGroupValue_add (G H : TUGame N) (C : Finset N) :
+    shapleyGroupValue (Solution.AddGames G H) C
+      = shapleyGroupValue G C + shapleyGroupValue H C := by
+  unfold shapleyGroupValue
+  have hcong :
+      shapleyValue (mergedGame (Solution.AddGames G H) C) (proxy C)
+        = shapleyValue (Solution.AddGames (mergedGame G C) (mergedGame H C)) (proxy C) :=
+    shapleyValue_congr _ _ _ (mergedGame_v_add G H C)
+  rw [hcong]
+  exact ShapleyValue.shapley_addGames _ _ _
+
+/-- **Homogeneite de la valeur de groupe.** La valeur de Shapley du groupe est
+    homogene en le jeu : dilater le jeu dilate la valeur. -/
+theorem shapleyGroupValue_smul (c : ℝ) (G : TUGame N) (C : Finset N) :
+    shapleyGroupValue (Solution.SmulGame c G) C = c * shapleyGroupValue G C := by
+  unfold shapleyGroupValue
+  have hcong :
+      shapleyValue (mergedGame (Solution.SmulGame c G) C) (proxy C)
+        = shapleyValue (Solution.SmulGame c (mergedGame G C)) (proxy C) :=
+    shapleyValue_congr _ _ _ (by funext S; rfl)
+  rw [hcong]
+  exact ShapleyValue.shapley_smulGame _ _ _
+
+/-- **Groupe vide.** La valeur de Shapley d'un groupe vide est nulle : le
+    proxy d'un groupe vide est un joueur nul du jeu fusionne. -/
+theorem shapleyGroupValue_empty (G : TUGame N) :
+    shapleyGroupValue G (∅ : Finset N) = 0 := by
+  unfold shapleyGroupValue
+  apply ShapleyValue.shapley_null_player
+  intro S _
+  rw [mergedGame_v, mergedGame_v, expandFinset_insert_proxy]
+  simp
+
+/-- Le coefficient de Shapley est positif ou nul. -/
+lemma shapleyCoef_nonneg (n s : ℕ) : 0 ≤ shapleyCoef n s := by
+  unfold shapleyCoef
+  exact div_nonneg (by positivity) (by positivity)
+
+end Palier2
 
 end GroupShapley

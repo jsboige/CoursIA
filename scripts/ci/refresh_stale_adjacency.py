@@ -93,6 +93,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
 from variation_adjacency_guard import (  # noqa: E402
+    _gh_pr_files,
     check,
     parse_override,
     resolve_merged_prev_genre,
@@ -110,7 +111,12 @@ GUARDS_JOB_PREFIX = "Always-on guards"
 BODY_JOB_MARKER = "body"
 # Le job de body vit dans son PROPRE workflow (#22331/#22333) : le resoudre
 # depuis `always-on-guards.yml` etait structurellement impossible (#22748).
-BODY_WORKFLOW_NAME = "always-on-guards-body.yml"
+# #28534 : les deux workflows de la classe `edited` sont fusionnes en un
+# workflow, un job, un checkout -- le job qui porte l'organe d'adjacence
+# s'appelle desormais `Always-on guards -- metadata + body` et vit dans
+# `always-on-guards-edited.yml` (l'ancien `always-on-guards-body.yml` est
+# DORMANT : declencheur `pull_request` retire, patron #13384).
+BODY_WORKFLOW_NAME = "always-on-guards-edited.yml"
 # Banniere d'agregat du job de body -- `scripts/ci/always_on_body_organs.sh`
 # termine par `::error::Organes de body bloquants en echec :$FAILED`. C'est la
 # seule surface qui NOMME l'organe tombe (meme doctrine que
@@ -458,7 +464,16 @@ def simulate_adjacency(pr_number: int, body: str, merged_window: list[dict]) -> 
 
     override = parse_override(get_pr_comments(pr_number))
     merged_prev = resolve_merged_prev_genre(merged_window, g["lane"])
-    verdict = check(body, override=override, merged_prev=merged_prev)
+    # Les memes diffs que la CI (`--pr-number`, #28234) : sans eux l'exemption
+    # mecanique #14357 (MED/DEEP a fichiers disjoints) reste fermee, et le
+    # balayage conclurait un rouge que la CI ne rend plus. Une lecture en
+    # echec rend None, que check() traite fail-CLOSED.
+    current_files = _gh_pr_files(pr_number)
+    prev_files = None
+    if merged_prev is not None and merged_prev[0] is not None:
+        prev_files = _gh_pr_files(merged_prev[1])
+    verdict = check(body, override=override, merged_prev=merged_prev,
+                    prev_files=prev_files, current_files=current_files)
     # #15739 : le verdict simule porte son referentiel comme celui de la CI --
     # contre quelle sequence il a conclu (prev_pr/genre/source + horodatage),
     # pour qu'un lecteur distingue un recalcul frais d'un rouge perime.
