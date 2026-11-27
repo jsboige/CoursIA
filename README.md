@@ -445,7 +445,7 @@ Python | [README détaillé](MyIA.AI.Notebooks/CaseStudies/README.md)
 
 Classer les groupes de symétrie du plan en les dessinant : chaque carnet de cette série tire un **motif de base au hasard** et l'applique par les opérations d'un groupe pour rendre visible ce que la cristallographie compte -- les 7 groupes de frieze (1D), puis les 17 groupes de wallpaper (2D) et les groupes de rosettes. Le premier carnet couvre les friezes ; le parcours prévu continue vers les wallpapers. L'art génératif n'y est pas une décoration : le motif aléatoire garantit que chaque exécution dessine une classification différente des mêmes symétries, et les illustrations ne se répètent jamais. La série est une ré-implémentation indépendante en Python natif de l'idée d'un coloring book de théorie des groupes -- la classification des groupes est un fait mathématique, le projet d'origine est cité comme inspiration -- et ne dépend que de numpy et matplotlib.
 
-Python | [README détaillé](MyIA.AI.Notebooks/Symmetry/README.md)
+Python | [README détaillé](MyIA.AI.Notebooks/GenAI/Image/05-History/README.md) -- la série vit dans le rayon GenAI/Image/05-History (relogée depuis `MyIA.AI.Notebooks/Symmetry/`, #27140)
 
 ### cross-series -- Applications transverses
 

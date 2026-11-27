@@ -2,7 +2,7 @@
 param([string]$FilePath)
 
 if (-not $FilePath) {
-    $FilePath = "corriges/demo-roo-code/04-creation-contenu/demo-1-web-orchestration-optimisee/roo_task_sep-8-2025_11-11-29-pm.md"
+    $FilePath = "Corrections/04-creation-contenu/demo-1-web-orchestration-optimisee/roo_task_sep-8-2025_1111pm.md"
 }
 
 Write-Host "=== DIAGNOSTIC D'ENCODAGE ===" -ForegroundColor Yellow

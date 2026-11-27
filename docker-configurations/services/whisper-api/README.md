@@ -88,6 +88,7 @@ Variables d'environnement (fichier `.env`) :
 
 | Variable | Defaut | Description |
 |----------|--------|-------------|
+| `GPU_PCI_INDEX` | `1` | Carte cible : index `nvidia-smi`, donc index PCI (0 = RTX 3080 Ti, 1 = RTX 3090). Le compose en derive `device_ids`, `CUDA_VISIBLE_DEVICES` et `NVIDIA_VISIBLE_DEVICES` sous `CUDA_DEVICE_ORDER=PCI_BUS_ID` (#28423) |
 | `WHISPER_MODEL` | `large-v3-turbo` | Taille du modele faster-whisper |
 | `WHISPER_DEVICE` | `cuda` | Peripherique de calcul (cuda ou cpu) |
 | `WHISPER_COMPUTE_TYPE` | `float16` | Type de calcul (float16, int8) |
@@ -109,8 +110,8 @@ Variables d'environnement (fichier `.env`) :
 |---------|-------------|
 | `app.py` | Application FastAPI principale |
 | `Dockerfile` | Image Docker basee sur nvidia/cuda:12.1.0 |
-| `docker-compose.yml` | Configuration standard (GPU 0, build local) |
-| `docker-compose-hybrid.yml` | Configuration hybride (GPU 1, image ghcr.io pre-construite) |
+| `docker-compose.yml` | Configuration standard (GPU 1 : RTX 3090, build local) |
+| `docker-compose-hybrid.yml` | Configuration hybride (GPU 1 : RTX 3090, image ghcr.io pre-construite) |
 | `start.sh` | Script de demarrage uvicorn |
 | `.env` | Variables d'environnement (non commite) |
 | `models/` | Cache des modeles faster-whisper |

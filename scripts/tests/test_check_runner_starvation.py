@@ -1132,6 +1132,20 @@ def test_le_rouge_du_miroir_atteint_la_pr():
     etapes = "\n".join(str(s.get("run", "")) for s in job["steps"])
     assert "--mirror-only" in etapes
 
+    # 5 bis. Aucune invocation de `jq`. Mesure du 24/11 : les slots po-2026
+    #    (`myia-po-2026-wsl-1`, `myia-po-2026-wsl-4`) ne l'ont pas -- `jq:
+    #    command not found`, exit 127 -- et le job rougissait en exit 127
+    #    alors que l'organe avait rendu son verdict (7 runs rouges en 5 h,
+    #    sur 7 branches). Le parseur est `python3`, deja dependance dure du
+    #    pas (il execute l'organe). Les commentaires bash sont ecartes : ils
+    #    peuvent NOMMER l'outil absent, jamais l'invoquer.
+    lignes_code = [ligne for ligne in etapes.splitlines()
+                   if not ligne.lstrip().startswith("#")]
+    assert "jq" not in "\n".join(lignes_code), (
+        "le pas du miroir ne doit pas invoquer `jq` : les slots po-2026 ne "
+        "l'ont pas (exit 127, mesure du 24/11) -- parser avec `python3`"
+    )
+
     # 6. Le job ne fait PAS de checkout. Mesure du 14/11 : sur la tete
     #    `13a27f53ced7a`, le checkout a consomme les 5 minutes du job
     #    (`git fetch --depth=1 origin +<sha>:refs/remotes/pull/26465/merge`
