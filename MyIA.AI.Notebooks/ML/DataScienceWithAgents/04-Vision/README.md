@@ -46,7 +46,7 @@ Cette série suit la **même discipline que 03** : *from scratch PUIS framework,
 ## Prérequis
 
 - [`03-Deep-Learning`](../03-Deep-Learning/README.md) en entier — en particulier [3.4 (Attention-Transformer from scratch)](../03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) qui partage le mécanisme résiduel.
-- NumPy niveau [`01-Python-For-Data-Science/1.2`](../01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) (broadcast, produits matriciels).
+- NumPy niveau [`01-Python-For-Data-Science/1.2`](../01-Python-For-Data-Science/notebooks/PyDS-02-Manipulation_de_Donnees_avec_NumPy-Python.ipynb) (broadcast, produits matriciels).
 - PyTorch CPU (installé via `pip install torch torchvision`).
 
 ## Environnement

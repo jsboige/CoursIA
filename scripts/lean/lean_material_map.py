@@ -47,6 +47,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Organ canonique du stripping de commentaires Lean (positions preservees) :
+# c'est lui qui distingue une vraie declaration d'une ligne de prose de
+# docstring qui commence par « theorem ... » (#26961 J1).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from count_code_sorry import strip_lean_comments  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PAGE = REPO_ROOT / "docs" / "reference" / "lean-material-map.md"
 CI_LAKES = REPO_ROOT / "scripts" / "lean" / "ci_lakes.json"
@@ -536,6 +542,13 @@ def _shared_theorems(lake_dirs: list[str]) -> list[dict]:
     exhaustif.
     """
     occurrences: dict[str, list[tuple[str, str, int, str]]] = {}
+    # J1 #26961 : le motif grep matche aussi la prose de docstring (« theorem
+    # that a judge… », GibbardSatterthwaite_en.lean l.782/813) et fabrique des
+    # pseudo-theoremes « is »/« that » comptes comme partages entre lacs. Un
+    # match ne survit que s'il se re-matche sur la ligne du fichier blanchie de
+    # ses commentaires (organ count_code_sorry.strip_lean_comments, positions
+    # preservees) : la prose disparait, la declaration reste.
+    stripped_cache: dict[str, list[str]] = {}
     text = _git(
         "grep", "-n", "-I", "-E",
         "^[[:space:]]*(theorem|lemma)[[:space:]]", "--", "*.lean",
@@ -550,7 +563,26 @@ def _shared_theorems(lake_dirs: list[str]) -> list[dict]:
         lake = _owner_of(path, lake_dirs)
         if lake is None:
             continue
+        if path not in stripped_cache:
+            # Fichier illisible : fail-open sur le comportement d'avant (la
+            # ligne compte) -- la page se declare deja sous-compte.
+            try:
+                raw = (REPO_ROOT / path).read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                raw = None
+            stripped_cache[path] = (
+                strip_lean_comments(raw).splitlines()
+                if raw is not None else None)
+        code_lines = stripped_cache[path]
+        stripped_line = (
+            code_lines[int(lineno) - 1]
+            if code_lines is not None and len(code_lines) >= int(lineno)
+            else source.strip())
         match = DECLARATION_RE.match(source.strip())
+        if match and not DECLARATION_RE.match(stripped_line.strip()):
+            # La ligne ne survit pas au blanchiment des commentaires : c'est
+            # de la prose de docstring, pas une declaration.
+            continue
         if match:
             # La tete d'enonce = ce qui suit le nom sur la meme ligne, espaces
             # normalises. Elle compare des FORMULATIONS : une tete identique

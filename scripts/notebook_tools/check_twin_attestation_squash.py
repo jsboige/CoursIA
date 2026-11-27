@@ -51,6 +51,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+#: Le module frere qui porte les decisions partagees avec l'organe epingle
+#: `check_twin_parity.py` (regle du registre : `twin_parity_base`).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import twin_parity_base
+
 #: Repertoire du registre des paires jumelles (relatif a la racine du depot).
 REGISTRY = "scripts/notebook_tools/twin_pairs.d"
 
@@ -130,11 +136,21 @@ def _touched_pairs(repo: Path, base: str, head: str) -> list[str]:
             continue
         if len(parts) >= 5:
             # <REGISTRY>/<slug>/<fichier>.yaml  ->  <slug>
-            pairs.add(parts[3])
+            slug = parts[3]
         elif len(parts) == 4 and parts[3].endswith(".yaml"):
             # <REGISTRY>/<slug>.yaml  ->  <slug>  (le descripteur de la paire ;
             # son nom porte l'extension, il n'est PAS le nom de la paire).
-            pairs.add(parts[3][: -len(".yaml")])
+            slug = parts[3][: -len(".yaml")]
+        else:
+            continue
+        if twin_parity_base.est_documentation_registre(slug):
+            # `_schema.yaml` est la DOCUMENTATION du format, pas le
+            # descripteur d'une paire (regle du lecteur canonique,
+            # `check_twin_parity.load_registry`). Lue comme une paire, elle
+            # n'a ni descripteur ni attestations : la garde rendait NODESC
+            # sur une PR conforme (mesure du 26/11 sur #28276).
+            continue
+        pairs.add(slug)
     return sorted(pairs)
 
 

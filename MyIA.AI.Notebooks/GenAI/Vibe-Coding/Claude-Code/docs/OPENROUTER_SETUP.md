@@ -27,7 +27,7 @@ Ce guide vous prend par la main pour configurer Claude Code avec OpenRouter comm
 >
 > **Ce que la CLI permet, et pourquoi cela ne demande aucun traducteur.** Le schema de reglages de la CLI en service (`claude-code-settings.schema.json`) ne contient **aucune** occurrence de `openrouter` ni de fournisseur compatible OpenAI, alors qu'il porte Bedrock et Vertex en natif : la bascule vers un autre fournisseur passe donc par `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`. C'est exactement la voie mesuree ci-dessus — et elle aboutit a OpenRouter **directement**, sans passer par un proxy : `ANTHROPIC_BASE_URL=https://openrouter.ai/api` *est* le point d'entree Anthropic d'OpenRouter. L'absence de fournisseur OpenAI-compatible dans la CLI n'oblige donc pas a installer un traducteur ; elle oblige a passer par le protocole Anthropic — qu'OpenRouter parle nativement.
 >
-> *Portee du non-verifie : ces mesures sont faites sous Windows. Elles n'etablissent pas qu'un `claude -p` atteint OpenRouter dans un runtime Colab — c'est le test qui reste a faire la-bas (cf. l'Etape 5 bis).*
+> *Portee du non-verifie : ces mesures sont faites sous Windows. Depuis le 2026-11-25, un runtime Colab a en revanche ete joint depuis un poste de la flotte : la CLI s'y installe, s'y lance et y refuse un appel sans jeton en moins de trois secondes (mesures dans l'Etape 5 bis). L'appel **avec une cle valide** dans Colab n'est toujours pas mesure — aucune cle n'a ete deposee dans ce runtime, et cette mesure-la reste a faire.*
 
 **Le proxy reste utile dans un seul cas** : si vous devez parler a un fournisseur qui n'implemente que l'API OpenAI. Pour OpenRouter, ce n'est pas le cas — la marche a suivre est en annexe.
 
@@ -120,7 +120,7 @@ claude --version
 > echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
 > ```
 >
-> Sans cette ligne, la CLI fonctionne depuis le shell ou l'installation a eu lieu mais disparait dans tout nouveau shell — c'est la cause la plus frequente du « je l'ai installe mais ca ne marche pas ». Sous Colab, la VM etant ephemere, cette ligne est a rejouer apres chaque redemarrage.
+> Sans cette ligne, la CLI fonctionne depuis le shell ou l'installation a eu lieu mais disparait dans tout nouveau shell — c'est la cause la plus frequente du « je l'ai installe mais ca ne marche pas ». Sous Colab, deux voies se separent ici (mesure du 2026-11-25) : la voie **npm** installe dans `/tools/node/bin`, deja present dans le `PATH` du runtime — rien a rejouer, et le binaire survit au « Redemarrer la session » ; la voie **native** (`~/.local/bin`) demande en revanche de rejouer le `PATH` a chaque session, parce qu'un `export` pose dans une cellule ne survit pas (cf. Etape 5 bis).
 
 ---
 
@@ -366,13 +366,17 @@ claude -p "Reponds uniquement: OK"
 
 En cellule `%%bash`, les trois `export` valent **seulement dans la cellule qui les porte**. Un `!export ...` lance dans une cellule Jupyter ouvre un **sous-shell** : la variable meurt avec lui et la cellule suivante ne la voit pas. C'est une source d'echec silencieuse classique en Colab, et elle ressemble au symptome de jeton absent decrit plus bas — d'ou la regle : pour une valeur qui doit survivre d'une cellule a l'autre, passez par `os.environ` (le runtime Python est partage entre cellules) et non par `!export`.
 
+Mesure du 2026-11-25 dans un runtime Colab reel, quatre cas : une valeur posee par `os.environ` est vue par le `!` d'une cellule **suivante** et par une cellule `%%bash` ; un `export` pose par un `!` n'est vu ni par le `!` suivant ni par le `%%bash` ; un `export` pose **dans** un `%%bash` n'est pas vu par le noyau Python (`os.environ` y rend `None`). `os.environ` est donc le **seul** canal qui traverse les cellules dans les deux sens.
+
 > **Ne mettez pas la cle dans le notebook.** Lisez-la depuis les *Secrets* Colab (`google.colab.userdata`) ou une variable d'environnement de session. Un notebook committe avec une cle en clair est un incident de securite (regle `secrets-hygiene`) — le secret est rotation a faire, pas un `revert`.
 
 ### Le cycle agentique : un fichier, une modification, des tests
 
 La recette ci-dessus verifie que la CLI **repond**. Ce qu'un TP veut montrer, c'est que la CLI **modifie un fichier** et que les tests **passent apres**. Voici le cycle complet, et sa trace mesuree.
 
-**Ce qui a ete reellement execute, et ou.** Aucun runtime Colab n'etait joignable depuis le poste qui a produit cette section : Colab Enterprise exige un projet GCP + une ADC + la CLI `google-colab`, et le Colab gratuit exige un compte Google — aucune des deux voies n'existe sur ce poste. La trace ci-dessous a donc ete produite dans un **conteneur Linux**, qui est **le meme systeme d'exploitation que Colab**, mais **n'est pas un runtime Colab** : aucune cellule Jupyter, aucun `%%bash`, aucun *Secret* Colab n'y est declenche. Ce qui est mesure, c'est le cycle CLI ; ce qui ne l'est pas, c'est le comportement propre a Colab (cellules, quotas, secrets). **Ne qualifiez pas cette trace de « recette Colab testee »** : elle est une recette *Linux* testee, dont Colab est un cas particulier.
+**Ce qui a ete reellement execute, et ou.** Le 2026-10-29, aucun runtime Colab n'etait joignable depuis le poste qui a produit cette section : Colab Enterprise exige un projet GCP + une ADC + la CLI `google-colab`, et le Colab gratuit exige un compte Google — aucune des deux voies n'existait sur ce poste. La trace ci-dessous a donc ete produite dans un **conteneur Linux**, qui est **le meme systeme d'exploitation que Colab**, mais **n'est pas un runtime Colab** : aucune cellule Jupyter, aucun `%%bash`, aucun *Secret* Colab n'y est declenche. Ce qui est mesure, c'est le cycle CLI ; ce qui ne l'est pas, c'est le comportement propre a Colab (cellules, quotas, secrets). **Ne qualifiez pas cette trace de « recette Colab testee »** : elle est une recette *Linux* testee, dont Colab est un cas particulier.
+
+**Depuis, un runtime Colab a ete joint (mesure du 2026-11-25).** Le Colab gratuit a ete ouvert depuis un poste de la flotte, avec un navigateur et un compte Google ; deux passes y ont ete executees **sans aucune cle** (aucun appel facture). Elles couvrent precisement ce que la trace du 2026-10-29 ne pouvait pas mesurer : cellules, `!`, `%%bash`, *Secrets*. Ce qui reste non mesure est le cycle **avec une cle valide** — le fichier corrige et les tests verts apres. Voir la section « La trace Colab sans cle » plus bas.
 
 **Le cycle (a executer dans un shell, pas dans une cellule)**
 
@@ -425,20 +429,77 @@ Deux details de la trace qui meritent d'etre lus :
 - la CLI **n'a pas execute les tests** (elle a repondu que la commande Python lui etait refusee) : le fichier a ete modifie, **la validation reste outside de l'agent** — c'est le harnais qui lance `pytest`. Une trace ou l'agent se valide lui-meme n'est pas une preuve ;
 - stderr porte `[claude-code:unrecognized_model] {"model":"anthropic/claude-haiku-5.5"}` : la requete part quand meme et la reponse est correcte (voir plus bas).
 
+### La trace Colab sans cle (2026-11-25)
+
+Deux passes dans un runtime Colab reel, **sans aucune cle** : aucun appel facture, et donc aucun cycle agentique complet. La premiere passe part d'une VM neuve ; la seconde utilise « Execution → Redemarrer la session et tout executer », qui vide la memoire mais garde le disque du runtime. Chaque appel est borne par `subprocess` (voir plus bas) ; la version relevee est celle du runtime a la date de la passe.
+
+| Ce qui est mesure | Resultat |
+|---|---|
+| Runtime | `Linux-6.6.159+-x86_64-with-glibc2.39`, Python 3.13.18, `root`, `cwd=/content` |
+| `npm install -g @anthropic-ai/claude-code` | code retour 0, `added 2 packages in 11s` (11,5 s) |
+| Emplacement du binaire | `/tools/node/bin/claude` — `/tools/node/bin` figure deja dans le `PATH` du runtime |
+| `claude --version` | `2.1.332 (Claude Code)` ; Node v22.23.4, npm 10.8.2 |
+| Survie au « Redemarrer la session » (passe 2) | binaire toujours present, installation **non rejouee**, `claude --version` repond encore : la CLI survit au redemarrage de session, pas a la suppression du runtime |
+| Heritage d'environnement | `os.environ` traverse les cellules (`!` et `%%bash`) ; un `export` de `!` ou de `%%bash` ne remonte pas (cf. plus haut) |
+| `userdata.get` sur un secret non defini | `google.colab.userdata.SecretNotFoundError: Secret TRACE_SECRET_ABSENT does not exist.` |
+| `claude -p` **sans jeton** (deux passes) | `rc=1`, `Not logged in · Please run /login`, 1,6 s puis 2,2 s |
+| idem avec `ANTHROPIC_BASE_URL` seul | `rc=1`, meme message, 0,9 s puis 1,4 s |
+| idem avec un jeton **factice** | **aucune sortie**, pas de retour dans le budget de 75 s : appel borne et tue |
+| `claude -p` sur un projet jetable, sans jeton | `rc=1`, meme message, 1,0 s puis 1,6 s ; `calc.py` **inchange** (empreinte sha256 identique avant/apres) et les tests echouent toujours |
+
+Deux consequences pour le TP :
+
+- **Un jeton absent ne fait pas pendre la cellule sur la CLI 2.1.332 : il le dit.** La CLI rend la main en moins de trois secondes avec `Not logged in · Please run /login`. Le symptome muet est ailleurs : c'est un jeton **present mais refuse** qui n'ecrit rien et ne rend pas la main (mesure : 75 s sans sortie). Un jeton expire ressemble donc a un gel ; un jeton absent ressemble a un message clair. Relevez `claude --version` avec le symptome — le comportement depend de la version.
+- **Bornez chaque appel.** Une cellule qui attend n'est pas un test qui travaille. Le runner ci-dessous est le miroir de [`notebooks/helpers/claude_cli.py`](../notebooks/helpers/claude_cli.py) (`_run_with_timeout`) : il rend un compte rendu au lieu de laisser la cellule pendre.
+
+```python
+import os, subprocess, time
+
+def run_borne(cmd, budget_s=60, env=None, cwd=None):
+    """Rend un compte rendu ; ne leve jamais, ne pend jamais au-dela du budget."""
+    t0 = time.time()
+    ap = {"cmd": cmd, "budget_s": budget_s}
+    try:
+        r = subprocess.run(cmd, shell=isinstance(cmd, str), capture_output=True, text=True,
+                           timeout=budget_s, env=env, cwd=cwd)
+        ap.update(rc=r.returncode, stdout=r.stdout.strip()[-400:], stderr=r.stderr.strip()[-400:])
+    except subprocess.TimeoutExpired:
+        ap.update(rc="TIMEOUT", stdout="", stderr="")
+    except Exception as e:
+        ap.update(rc="EXC:" + type(e).__name__)
+    ap["duree_s"] = round(time.time() - t0, 1)
+    return ap
+
+
+def env_sans_cle():
+    """Environnement prive des jetons herites de la session."""
+    prefixes = ("ANTHROPIC", "OPENAI", "CLAUDE")
+    return {k: v for k, v in os.environ.items() if not k.startswith(prefixes)}
+
+
+print(run_borne(["claude", "-p", "Reponds uniquement: OK"], budget_s=45, env=env_sans_cle()))
+```
+
+> **La cle se lit dans les *Secrets* Colab, jamais en clair.** Le parcours existe deja dans la serie GenAI : `MyIA.AI.Notebooks/GenAI/shared/helpers/genai_helpers.py` porte la lecture d'un secret (`SecretNotFoundError` avalee, `None` rendu) et le message d'aide a afficher quand la cle manque. Ce guide y renvoie plutot que de le recopier.
+
+Si vous voulez que l'agent lance lui-meme les tests, ajoutez `Bash` a `--allowedTools` — mais **la verification independante reste due** : relancez les tests hors de l'agent. Un agent qui se valide lui-meme n'est pas une preuve.
+
 ### Les deux modes d'echec, mesures
 
 Les deux produisent un **symptome muet**, et c'est ce qui rend le diagnostic difficile en TP :
 
 | Cause | Ce qu'on observe | Mesure |
 |---|---|---|
-| `ANTHROPIC_BASE_URL` pose **sans jeton** | La commande peut **ne pas rendre la main** et **n'afficher aucune erreur** | `claude -p` sans `ANTHROPIC_AUTH_TOKEN` : `rc=124` (arrete au bout de 60 s), stdout vide, une seule ligne sur stderr |
+| `ANTHROPIC_BASE_URL` pose **sans jeton** (mesure du 2026-10-29 ; la version de la CLI n'a pas ete relevee dans cette ligne) | La commande peut **ne pas rendre la main** et **n'afficher aucune erreur** | `claude -p` sans `ANTHROPIC_AUTH_TOKEN` : `rc=124` (arrete au bout de 60 s), stdout vide, une seule ligne sur stderr |
+| Jeton **present mais refuse**, CLI 2.1.332 (mesure du 2026-11-25, Colab) | Meme silence : un jeton expire ou revoque est indiscernable d'un gel | `claude -p` avec un jeton factice : aucune sortie, pas de retour dans le budget de 75 s, appel borne et tue |
+| Jeton **absent**, CLI 2.1.332 (mesure du 2026-11-25, Colab) | Message explicite en moins de trois secondes — ce cas n'est plus muet | `rc=1`, `Not logged in · Please run /login`, 1,6 s puis 2,2 s selon la passe |
 | Ancien montage par proxy, proxy arrete | `fetch failed` / `connection refused` vers `127.0.0.1:8899` | erreur de connexion explicite, donc plus facile a diagnostiquer |
 
-Le premier cas est le piege : **une cellule qui tourne indefiniment n'est pas une cellule lente — c'est un symptome, pas un diagnostic.** L'absence de jeton est l'**hypothese la plus frequente** (elle est aussi la plus facile a verifier), mais un delai d'attente ne la **prouve** pas : un reseau lent, un `ANTHROPIC_MODEL` invalide, un endpoint injoignable ou un runtime Colab sature produisent le meme silence.
+Le piege est le **silence** : **une cellule qui tourne indefiniment n'est pas une cellule lente — c'est un symptome, pas un diagnostic.** Sur la CLI 2.1.332, ce silence designe un jeton **present mais refuse** ; l'absence de jeton, elle, est bruyante et se verifie en trois secondes. Le partage entre les deux depend de la version de la CLI : la mesure du 2026-10-29 voyait le jeton absent se taire, celle du 2026-11-25 le voit parler. Relevez `claude --version` avec le symptome. Et un delai d'attente, quel qu'il soit, ne **prouve** rien : un reseau lent, un `ANTHROPIC_MODEL` invalide, un endpoint injoignable ou un runtime Colab sature produisent le meme silence.
 
 > **Ce qu'un timeout permet de dire, et ce qu'il ne permet pas.** Il permet de dire : « l'appel n'a pas rendu dans le budget imparti ». Il ne permet **pas** de dire : « le jeton est absent ». La mesure qui separe les deux est l'**appel direct a l'API du fournisseur avec la meme cle** : il repond 401 si la cle est refusee (refus observe en environ une seconde lors de la mesure du 2026-10-29 -- un temoin de rejet immediat, pas une garantie de delai fournisseur). Le catalogue `/v1/models`, lui, **ne separe rien** — il repond 200 meme sans droits d'appel, et ne dit donc rien de la validite du jeton. Un `claude -p` qui expire ne fait **pas** cette separation.
 
-Si un `claude -p` ne rend rien au bout d'une minute dans Colab, verifiez `ANTHROPIC_AUTH_TOKEN` **en premier** — c'est l'hypothese la plus probable et la plus rapide a ecarter — mais ne concluez pas sur le timeout seul.
+Si un `claude -p` ne rend rien au bout d'une minute dans Colab, deux verifications, dans cet ordre : **le jeton est-il present** (`echo ${ANTHROPIC_AUTH_TOKEN:+pose}` — gratuit et immediat ; s'il est absent, la CLI 2.1.332 le dirait en trois secondes, donc un silence exclut deja ce cas), puis **est-il valide** — c'est l'appel direct a l'API du fournisseur avec la meme cle qui le dit (401 si refusee). Ne concluez pas sur le timeout seul.
 
 **Ce que cette mesure n'etablit pas** : laquelle de ces causes a fait echouer le TP etudiant d'origine. Le ticket d'origine le dit explicitement (« cause exacte a reproduire, non etablie »), et je ne tranche pas a sa place — les deux modes sont reproductibles, aucun temoignage ne les departage.
 
