@@ -120,9 +120,9 @@ python fetch_models.py --dest D:/hf-models/zonos3 --with raw-reference --with ed
 - `edit` : `gguf/edit/accents.gguf`, pour l'édition de parole (`/v2/edit*`) —
   **hors périmètre** de cette tranche.
 
-Le dossier `gguf/` de la révision épinglée pèse **9,89 Go** en 91 fichiers
-(taille de l'arbre Hugging Face, mesurée le 2026-11-27). L'écart avec les
-1,18 Go du jeu minimal vient de quatre fichiers que le service n'utilise pas :
+Le dossier `gguf/` de la révision épinglée pèse **9,89 Go** (taille de l'arbre
+Hugging Face, mesurée le 2026-11-27). L'écart avec les 1,18 Go du jeu minimal
+vient de quatre fichiers que le service n'utilise pas :
 `zac-encoder.gguf` (4,03 Go), `zac.gguf` (2,20 Go), `ssl-teacher.gguf`
 (1,55 Go) et `edit/accents.gguf` (0,26 Go), plus le backbone d'édition.
 
