@@ -224,13 +224,13 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Video/02-Advanced -->
 
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-Generation-Video-Locale.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-Text-to-Video-Poids-Ouverts.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb`

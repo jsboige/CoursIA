@@ -440,7 +440,7 @@ class TestSourceListMissingNewlines:
 # the time of the report (multi-element markdown source, 0 '\n' inside the
 # joined text, length > 200 chars):
 #
-#   - MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb c#21
+#   - MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-Text-to-Video-Poids-Ouverts.ipynb c#21
 #   - MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb c#67
 #   - MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb c#28
 #
