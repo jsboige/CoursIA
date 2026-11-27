@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1474** carnets Python, **575** eligibles, **899** refuses.
+Census : **1478** carnets Python, **578** eligibles, **900** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -77,7 +77,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Automata | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | CaseStudies | 4 | 0 | 4 | 0 | 4 | 0 | 0 | 4 |
 | Causalite | 12 | 2 | 10 | 1 | 0 | 1 | 0 | 9 |
-| Chaines | 12 | 12 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Chaines | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Coalitions | 4 | 2 | 2 | 0 | 0 | 0 | 2 | 1 |
 | Complexity | 28 | 24 | 4 | 0 | 0 | 0 | 1 | 3 |
 | Compression | 13 | 10 | 3 | 1 | 0 | 0 | 0 | 2 |
@@ -140,7 +140,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | gateway | 2 | 0 | 2 | 0 | 0 | 0 | 1 | 1 |
 | kelly_lean | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | partner-course-quant-trading | 7 | 0 | 7 | 0 | 0 | 0 | 5 | 4 |
-| projects | 113 | 5 | 108 | 10 | 0 | 3 | 65 | 54 |
+| projects | 114 | 5 | 109 | 10 | 0 | 3 | 66 | 54 |
 | research | 26 | 5 | 21 | 4 | 0 | 0 | 4 | 17 |
 | scripts/notebook_tools | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 
@@ -165,7 +165,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 782 | 575 |
+| Carnets eligibles | 785 | 578 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -221,6 +221,9 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-10-Groupe-Rotations-Automorphismes-Directions-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-12-Boosts-Et-L-Unite-Une-Python.ipynb` | Chaines | python3 | - | - |
+| `MyIA.AI.Notebooks/Physique/Chaines/Chaines-13-Spin-Helicite-Groupe-Spin-C-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/Physique/Chaines/Chaines-14-P-C-T-Et-CPT-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/Physique/Chaines/Chaines-15-Theoreme-D-Ordre-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-02-Assistance-Games-Python.ipynb` | Coalitions | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb` | Coalitions | python3 | numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-01-StepCounting-Python.ipynb` | Complexity | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -711,13 +714,13 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb` | SocialChoice | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb` | SymbolicLearning | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb` | SymbolicLearning | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb` | SymbolicLearning | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb` | SymbolicLearning | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-Python.ipynb` | SymbolicLearning | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-Python.ipynb` | SymbolicLearning | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-Python.ipynb` | SymbolicLearning | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-Python.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12c-PavlovDLS-Reproduction-output-Python.ipynb` | SymbolicLearning | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb` | Texte | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb` | Texte | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb` | Texte | python3 | - | - |
@@ -812,7 +815,7 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | _research | cle, gpu, reseau, suffisance | - |
 | gateway | import_absent, suffisance | kernel_gateway (1) |
 | partner-course-quant-trading | import_absent, suffisance | AlgorithmImports (5) |
-| projects | gpu, import_absent, reseau, suffisance | AlgorithmImports (65) |
+| projects | gpu, import_absent, reseau, suffisance | AlgorithmImports (66) |
 | research | gpu, import_absent, suffisance | AlgorithmImports (4) |
 
 Les motifs **se cumulent** : un carnet refuse pour une cle d'API et pour un import
