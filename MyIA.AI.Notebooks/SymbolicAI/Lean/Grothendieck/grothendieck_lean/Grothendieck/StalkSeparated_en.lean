@@ -52,6 +52,30 @@ References:
   - Part 72 (`Grothendieck.Stalks`): concrete germs and stalks.
   - Part 73 (`Grothendieck.StalkPoints`): the stalk as fibre functor.
 
+Stacks correspondence (group #14 of #28537 — “the stalks”, measured 26/11)
+---------------------------------------------------------------------------
+The reading of `AxiomMath/Stacks` is done on the **local tree**
+`StacksFrontier/Topology/Sheaves/` (sparse clone of the whole folder): the
+coverage is far wider here than in the surveys of 22/11 and 25/11, which
+could only read a few files through the `contents` API (GitHub's recursive
+tree is truncated and `Topology/Sheaves` does not appear in it). An “absent”
+verdict therefore means: **no statement of that name anywhere in
+`Topology/Sheaves/`**.
+
+| Statement | Class | Stacks referent | What our version adds |
+|---|---|---|---|
+| `eq_of_germ_eq_of_isSeparated` | **covered** | `Stalk/Separated.lean:86` `isSeparated'_iff` (007A) | the construction of the sieve of neighbourhoods (site separatedness → injectivity of the germ family) |
+| `eq_of_germ_eq_of_isSheaf` | partial | `Sheaf/Abelian.lean:149` `restrict_eq_zero_of_germ_eq_zero`; `:91` `exact_of_local`; `:125` `shortExact_of_local` | the corollary “sheaf ⇒ separated”, with no limit assumption |
+| `injective_germ_family_of_isSeparated` | **covered** | `Stalk/Separated.lean:78` `IsSeparated'`; `:65` `toStalkProduct` | the reverse implication: site separatedness entails injectivity of the germ family |
+
+Correction to the survey of 25/11. The survey of the stalks (comment by
+`myia-po-2026:CoursIA-2` on 25/11, #28537) concludes that “Stacks assumes
+the topological separatedness of the space `X` itself”. That is inaccurate:
+`Stalk/Separated.lean:78` defines `IsSeparated' F`, a property **of the
+presheaf `F`**, not of the space `X`. The real frame difference is one of
+*packaging*: Stacks **defines** separatedness by the injectivity of the
+germ family, while we **deduce** it from site separatedness.
+
 i18n convention (EPIC #4980 ratified 2026-07-04): this module is twinned
 with `StalkSeparated.lean`. Statements, proofs and Lean names remain
 identical; only docstrings and comments differ.
@@ -83,7 +107,19 @@ neighbourhoods — a covering sieve for `opensTopology T` — and concludes by
 applying the bundled separatedness predicate (`Presheaf.IsSeparated`, whose
 core is `IsSeparatedFor.ext`). This is the separated relaxation of
 Mathlib's `section_ext`, which requires a full sheaf. Reference: [MM92]
-Chap. II §6. -/
+Chap. II §6.
+
+Stacks correspondence — **COVERED**:
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:86`
+(`isSeparated'_iff`, Stacks 007A; SGA 3 IV 4.3.1 and 4.3.18, SGA 4 II 2.1)
+states exactly the same pointwise characterization: two sections of a
+type-valued presheaf over `U` whose germs coincide at every point of `U`
+are equal. Packaging difference: Stacks assumes the hypothesis in the form
+`IsSeparated' F` (`Stalk/Separated.lean:78`), that is the **injectivity of
+the germ family**; we assume it in the form
+`Presheaf.IsSeparated (J := opensTopology T) F`, the **site** separatedness
+(sieve by sieve). What our version adds: the construction of the sieve of
+neighbourhoods that carries the passage from one to the other. -/
 theorem eq_of_germ_eq_of_isSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T))
     (hF : Presheaf.IsSeparated (J := opensTopology T) F)
     {U : Opens T} {s t : F.obj (op U)}
@@ -125,7 +161,19 @@ limit assumption at all — where Mathlib's `section_ext` requires
 `[HasLimits C]` and friends, separatedness suffices here: every sheaf is
 separated (`Presheaf.IsSheaf.isSeparated`), and the Part 70 bridge
 (`isSheaf_opensTopology_iff`) transports Mathlib's sheaf condition to the
-own site. -/
+own site.
+
+Stacks correspondence — **PARTIAL**: Stacks does not state “sheaf ⇒
+separated” as a named statement: its `IsSeparated'` is a primitive
+hypothesis, and the injectivity of the germ family is its very definition.
+The neighbouring statements are
+`StacksFrontier/Topology/Sheaves/Sheaf/Abelian.lean:149`
+(`restrict_eq_zero_of_germ_eq_zero` — a zero germ forces a zero
+restriction), `:91` (`exact_of_local`) and `:125` (`shortExact_of_local`):
+equality and exactness are there **tested germ by germ**. What our version
+adds: the corollary itself, deduced from site separatedness with no limit
+assumption at all — where Mathlib's `section_ext` requires `[HasLimits C]`
+and friends. -/
 theorem eq_of_germ_eq_of_isSheaf (F : TopCat.Presheaf (Type u) (TopCat.of T))
     (hF : TopCat.Presheaf.IsSheaf F)
     {U : Opens T} {s t : F.obj (op U)}
@@ -139,7 +187,15 @@ theorem eq_of_germ_eq_of_isSheaf (F : TopCat.Presheaf (Type u) (TopCat.of T))
 type-valued presheaf, the map sending a section over `U` to its family of
 germs at the points of `U` is injective. Combinatorial restatement of the
 main theorem — the pointwise brick of the sheaves ↔ étale spaces dictionary
-started in Parts 72-73. -/
+started in Parts 72-73.
+
+Stacks correspondence — **COVERED**: this is the very definition of
+`IsSeparated'` at Stacks (`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:78`:
+`∀ U, Function.Injective (toStalkProduct F U)`), the germ family there
+being `toStalkProduct` (`Stalk/Separated.lean:65`). The difference is the
+**direction of the arrow**: Stacks defines separatedness by the injectivity
+of the germ family, we deduce it from site separatedness — the converse is
+not stated at Stacks. -/
 theorem injective_germ_family_of_isSeparated (F : TopCat.Presheaf (Type u) (TopCat.of T))
     (hF : Presheaf.IsSeparated (J := opensTopology T) F) (U : Opens T) :
     Function.Injective (fun (s : F.obj (op U)) (p : {x : T // x ∈ U}) =>

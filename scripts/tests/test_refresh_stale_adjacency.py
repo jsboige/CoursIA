@@ -160,7 +160,36 @@ PR_BODY_OK = (
 # et un filtre l'y excluait en plus. Un verdict G-VAR-3 perime tombe sur elle
 # n'etait donc jamais rafraichi (#22748, ~12 h rouge).
 
+def _resolved_body_job_names() -> list[str]:
+    """Noms de job de la jambe BODY, lus dans le workflow VIVANT.
+
+    #28534 a fusionne les deux workflows de la classe `edited` : le job qui
+    porte l'organe d'adjacence s'appelle desormais
+    `Always-on guards -- metadata + body` et vit dans
+    `always-on-guards-edited.yml`. Un nom code en dur ici ferait echouer le
+    classement de jambe sur un simple renommage.
+    """
+    import yaml
+
+    workflow = (Path(rsa.__file__).resolve().parents[2]
+                / ".github" / "workflows" / rsa.BODY_WORKFLOW_NAME)
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8")) or {}
+    return [
+        job["name"]
+        for job in (data.get("jobs") or {}).values()
+        if isinstance(job, dict)
+        and isinstance(job.get("name"), str)
+        and job["name"].startswith(rsa.GUARDS_JOB_PREFIX)
+    ]
+
+
 BODY_JOB_NAME = "Always-on guards -- body"
+# Le nom REEL de la jambe qui porte l'organe d'adjacence est RESOLU dans le
+# workflow vivant (#28534 : le workflow fusionne `always-on-guards-edited.yml`
+# remplace `always-on-guards-body.yml`) -- une fixture qui reecrirait le nom
+# en dur resterait verte sur un workflow renomme, exactement le defaut que
+# #22403 a corrige pour la jambe de contenu.
+BODY_JOB_NAMES = _resolved_body_job_names()
 BODY_JOB_URL = (
     "https://github.com/jsboige/CoursIA/actions/runs/40366622667/job/122038953042")
 BODY_ANNOTATIONS_API = (
@@ -201,7 +230,8 @@ def _setup_fake_for_pr(fake_run: FakeRun, pr: int, body: str,
         for name in rsa.content_guard_job_names()
     ]
     if body_conclusion is not None:
-        rows.append(_check_row(BODY_JOB_NAME, body_conclusion, BODY_JOB_URL))
+        for name in BODY_JOB_NAMES:
+            rows.append(_check_row(name, body_conclusion, BODY_JOB_URL))
     checks_text = "\n".join(rows) + "\n"
     fake_run.specs[("pr", "checks", str(pr))] = (0, checks_text, "")
     if bodys_annotations is not _UNSET:
