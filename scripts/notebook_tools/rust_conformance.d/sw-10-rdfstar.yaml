@@ -1,0 +1,376 @@
+- name: "SW-10 RDFStar"
+  family: SemanticWeb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Rust.ipynb
+  measures:
+    - id: reif_total
+      description: "Reification manuelle d'un fait : nombre total de triplets (1 fait + 4 structure + 2 annotations)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Nombre total de triplets : (\\d+)"
+          transform: digits
+        rust:
+          cell: 8
+          pattern: "Nombre total de triplets : (\\d+)"
+          transform: digits
+        csharp:
+          cell: 4
+          pattern: "Nombre total de triplets : (\\d+)"
+          transform: digits
+    - id: util_total
+      description: "Reification par fonction utilitaire : nombre de triplets charges"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "Triplets charges : (\\d+)"
+          transform: digits
+        rust:
+          cell: 12
+          pattern: "Triplets charges : (\\d+)"
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# ne comporte que 12 cellules de code (34 sorties) : la
+            fonction utilitaire de reification n'y est pas portee, donc la
+            grandeur n'y est pas imprimee.
+    - id: prog_total
+      description: "Construction programmatique (assertion + reification + 3 annotations) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Graphe construit : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 16
+          pattern: "Graphe construit : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : la section 3 n'est pas portee par le jumeau C#."
+    - id: nested_total
+      description: "Annotations imbriquees a deux niveaux : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "Triplets charges : (\\d+)"
+          transform: digits
+        rust:
+          cell: 19
+          pattern: "Triplets charges : (\\d+)"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : la section 3.2 n'est pas portee par le jumeau C#."
+    - id: kg_total
+      description: "Graphe de connaissances annote (4 faits dont 1 non asserte) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "Graphe de connaissances : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 23
+          pattern: "Graphe de connaissances : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : le graphe annote de la section 4.1 n'est pas porte par le jumeau C#."
+    - id: kg_tete_confiance
+      description: "Table des relations annotees : confiance de la relation la plus fiable (Alice -> Bob)"
+      tolerance: 0.0001
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "Alice\\s+Bob\\s+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 26
+          pattern: "Alice\\s+Bob\\s+([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "Meme raison que util_total : la requete SPARQL de la section 4.2 n'est pas portee par le jumeau C#."
+    - id: kg_incertaine_confiance
+      description: "Filtre par confiance : confiance de la relation la moins fiable (Carol -> Dave)"
+      tolerance: 0.0001
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "Carol connait Dave \\(confiance=([\\d.]+)"
+          transform: float
+        rust:
+          cell: 28
+          pattern: "Carol connait Dave \\(confiance=([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "Meme raison que util_total : le filtrage SPARQL de la section 4.3 n'est pas porte par le jumeau C#."
+    - id: kg_fiables
+      description: "Bilan du filtrage : nombre de relations fiables (seuil 0.60 inclus)"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: >-
+            Le jumeau Python enumere les deux sections (FIABLES / INCERTAINES)
+            mais ne publie pas le compte ; la ligne de bilan est propre au
+            portage Rust.
+        rust:
+          cell: 28
+          pattern: "Bilan du filtrage : (\\d+) fiables"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: prov_total
+      description: "Graphe de provenance (2 faits, 8 structure, 7 annotations) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "Graphe de provenance : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 32
+          pattern: "Graphe de provenance : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : la section 5.1 n'est pas portee par le jumeau C#."
+    - id: prov_paris_population
+      description: "Provenance : valeur du fait annote schema:population de Paris (xsd:integer)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "Paris\\s+population\\s+(\\d+)"
+          transform: digits
+        rust:
+          cell: 32
+          pattern: "Paris\\s+population\\s+(\\d+)"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: temporal_total
+      description: "Graphe temporel (3 emplois dont 2 non assertes) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "Graphe temporel : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 35
+          pattern: "Graphe temporel : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : la section 5.2 n'est pas portee par le jumeau C#."
+    - id: multi_total
+      description: "Fusion multi-sources (3 valeurs concurrentes pour Lyon) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "Graphe multi-sources : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 38
+          pattern: "Graphe multi-sources : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : la section 5.3 n'est pas portee par le jumeau C#."
+    - id: multi_valeur_retenue
+      description: "Fusion multi-sources : valeur retenue par confiance maximale (population de Lyon)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 38
+          pattern: "Valeur retenue \\(confiance max\\) : ([\\d,]+)"
+          transform: digits
+        rust:
+          cell: 38
+          pattern: "Valeur retenue \\(confiance max\\) : ([\\d,]+)"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: named_defaut
+      description: "Graphes nommes : nombre de triplets de metadonnees dans le graphe par defaut"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: >-
+            Le jumeau Python affiche les triplets du graphe par defaut sans en
+            publier le compte ; la ligne de synthese est propre au portage Rust.
+        rust:
+          cell: 42
+          pattern: "Triplets par graphe : defaut (\\d+)"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : la section 6 n'est pas portee par le jumeau C#."
+    - id: ser_turtle_fait
+      description: "Serialisation Turtle du graphe annote : le fait asserte survit a l'aller-retour"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 46
+          pattern: "(ex:Alice foaf:knows ex:Bob \\.)"
+          transform: text
+        rust:
+          cell: 46
+          pattern: "(ex:Alice foaf:knows ex:Bob \\.)"
+          transform: text
+        csharp:
+          absent: "Meme raison que util_total : la section 7 n'est pas portee par le jumeau C#."
+    - id: ex1_note_max
+      description: "Exemple guide 1 (critiques de film) : note du critique le mieux note"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 51
+          pattern: "Critique C : (\\d+)/5"
+          transform: digits
+        rust:
+          cell: 51
+          pattern: "Critique C : (\\d+)/5"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total : l'exemple guide 1 n'est pas porte par le jumeau C#."
+    - id: ex2_tiers
+      description: "Exemple guide 2 (requetes) : fait affirme par un tiers, non asserte dans le graphe"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 53
+          pattern: "(Bob affirme : Alice connait Dave)"
+          transform: text
+        rust:
+          cell: 53
+          pattern: "(Bob affirme : Alice connait Dave)"
+          transform: text
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: ex3_total
+      description: "Exemple guide 3 (graphe de confiance, 5 capitales) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 55
+          pattern: "Graphe de confiance : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 55
+          pattern: "Graphe de confiance : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: ex4_total
+      description: "Exemple guide 4 (donnees sportives, @Sosolalt) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 58
+          pattern: "Graphe sportif : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 58
+          pattern: "Graphe sportif : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: ex4_sources_confirmees
+      description: "Exemple guide 4 : nombre de sources confirmant le score du match 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 58
+          pattern: "match1 : score 3-1 \\(confirme par (\\d+) sources?\\)"
+          transform: digits
+        rust:
+          cell: 58
+          pattern: "match1 : score 3-1 \\(confirme par (\\d+) sources?\\)"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: ex5_moyenne
+      description: "Exemple guide 5 (agregats) : moyenne des confiances des relations foaf:knows"
+      tolerance: 0.0005
+      reference: python
+      sides:
+        python:
+          cell: 60
+          pattern: "Moyenne = ([\\d.]+) sur"
+          transform: float
+        rust:
+          cell: 60
+          pattern: "Moyenne = ([\\d.]+) sur"
+          transform: float
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: ex6_total
+      description: "Exemple guide 6 (evenements historiques) : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 62
+          pattern: "Graphe d'evenements : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 62
+          pattern: "Graphe d'evenements : (\\d+) triplets"
+          transform: digits
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: ex6_napoleon
+      description: "Exemple guide 6 : l'evenement de 1804 survit au filtre YEAR > 1800"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 62
+          pattern: "(1804-12-02 - Sacre de Napoleon Ier)"
+          transform: text
+        rust:
+          cell: 62
+          pattern: "(1804-12-02 - Sacre de Napoleon Ier)"
+          transform: text
+        csharp:
+          absent: "Meme raison que util_total."
+    - id: exercice_stub
+      description: "Exercice 4 : le carnet s'execute de bout en bout (stub sans erreur volontaire)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 66
+          pattern: "(Exercice a completer)"
+          transform: text
+        rust:
+          cell: 66
+          pattern: "(Exercice a completer)"
+          transform: text
+        csharp:
+          absent: "Meme raison que util_total : les exercices 4 a 6 ne sont pas portes par le jumeau C#."
