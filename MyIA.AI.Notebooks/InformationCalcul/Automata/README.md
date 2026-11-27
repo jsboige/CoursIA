@@ -55,7 +55,7 @@ les machines de Turing et la décidabilité, selon la progression de l'EPIC
   calculabilité ; les automates finis fournissent ici le premier modèle exécutable.
 - [Search-10 — automates symboliques](../../Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb)
   : généraliser les transitions à des prédicats.
-- [SL-10 — apprentissage actif d'automates](../../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb)
+- [SL-10 — apprentissage actif d'automates](../../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb)
   : apprendre un AFD par requêtes plutôt que le donner explicitement.
 - [Lean-14 — finitude et dérivées](../../SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb)
   : la route algébrique des dérivées de Brzozowski et son pendant formel.
