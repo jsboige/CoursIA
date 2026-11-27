@@ -205,6 +205,7 @@ def _make(mode="gate", execution="base"):
     alg.acquire_count = 0
     alg.delay_seconds = 0.0
     alg.cash_closes = 0
+    alg.held_ff_skips = 0
     alg.qqq, alg.shy, alg.btc = QQQ, SHY, BTC
     alg.shadow_symbol = QQQ
     alg.ref_symbols = {}
@@ -631,6 +632,52 @@ def test_fill_forward_bar_not_counted_as_cash_close():
     assert alg.gross_sum == 0.0
     alg.on_data(_Slice([QQQ]))
     assert alg.cash_closes == 1
+
+
+def test_held_fill_forward_bar_skips_shadow_point():
+    # En liquidites (SHY detenu), la barre QQQ est publiee mais celle de SHY est
+    # recopiee : le point figerait l'equite, il est saute et compte.
+    alg = _make()
+    alg.portfolio[SHY] = _Holding(SHY, 100.0)
+    alg.time = datetime(2026, 11, 24, 16, 0)
+    alg.on_data(_Slice([QQQ, SHY], fill_forward=[SHY]))
+    assert alg.plots == []
+    assert alg.closes == 0
+    assert alg.held_ff_skips == 1
+    assert alg.logs == ["2026-11-24 shadow: point saute, barre recopiee du titre detenu SHY"]
+    alg.on_data(_Slice([QQQ, SHY]))                 # barre SHY publiee
+    assert [p[1] for p in alg.plots] == ["e0", "fees", "turnover"]
+    assert alg.closes == 1
+    assert alg.held_ff_skips == 1
+
+
+def test_fill_forward_bar_of_unheld_security_does_not_block():
+    # Seul un titre DETENU compte : une barre SHY recopiee quand on porte QQQ
+    # ne bloque pas le point.
+    alg = _make()
+    alg.portfolio[QQQ] = _Holding(QQQ, 100.0)
+    alg.portfolio[SHY] = _Holding(SHY, 0.0)
+    alg.on_data(_Slice([QQQ, SHY], fill_forward=[SHY]))
+    assert alg.closes == 1
+    assert alg.held_ff_skips == 0
+    assert alg.logs == []
+
+
+def test_shadow_point_skipped_only_once_when_shadow_bar_fill_forward():
+    # Barre du symbole d'ombre recopiee : la garde regle 2 suffit, le compteur
+    # des titres detenus ne bouge pas (pas de double comptage).
+    alg = _make()
+    alg.portfolio[SHY] = _Holding(SHY, 100.0)
+    alg.on_data(_Slice([QQQ, SHY], fill_forward=[QQQ, SHY]))
+    assert alg.closes == 0
+    assert alg.held_ff_skips == 0
+
+
+def test_held_fill_forward_skips_runtime_statistic():
+    alg = _make()
+    alg.held_ff_skips = 2
+    alg.on_end_of_algorithm()
+    assert alg.stats["Shadow skips held FF"] == "2"
 
 
 # --------------------------------------------------------------------------
