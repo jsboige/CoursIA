@@ -157,7 +157,8 @@ def test_inventaire_complet_reconnait_le_nom_exact_dans_les_deux_fichiers(
         tmp_path):
     inventaire_principal = tmp_path / "CLAUDE.md"
     inventaire_reference = tmp_path / "claude-code-config.md"
-    inventaire_principal.write_text("`regle-a`", encoding="utf-8")
+    inventaire_principal.write_text(
+        "(`regle-a` · `autre-regle`)", encoding="utf-8")
     inventaire_reference.write_text("| `regle-b` | règle |",
                                     encoding="utf-8")
     snapshot = _instantane(100, gated=[("regle-a.md", 12),
@@ -178,6 +179,18 @@ def test_inventaire_reconnait_liste_de_regles_sur_une_ligne(tmp_path):
 
     assert delta.unlisted_rules_against_inventory(
         snapshot, (inventaire_principal, inventaire_reference)) == []
+
+
+def test_mention_en_prose_ne_compte_pas_comme_entree_inventaire(tmp_path):
+    inventaire_principal = tmp_path / "CLAUDE.md"
+    inventaire_reference = tmp_path / "claude-code-config.md"
+    inventaire_principal.write_text(
+        "Exemple de prose : `regle-a` s'applique ici.", encoding="utf-8")
+    inventaire_reference.write_text("", encoding="utf-8")
+    snapshot = _instantane(100, gated=[("regle-a.md", 12)])
+
+    assert delta.unlisted_rules_against_inventory(
+        snapshot, (inventaire_principal, inventaire_reference)) == ["regle-a.md"]
 
 
 def test_inventaire_absent_est_un_incident_et_pas_un_quitus(tmp_path):

@@ -58,7 +58,6 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `lean-i18n` | docstrings FR + siblings EN `*_en.lean`, checker `check_i18n_siblings.py` (gatée `**/*.lean`) |
 | `genai-config` | services, env, scripts, architecture GenAI |
 | `wsl-kernels` | kernels WSL (`GameTheory/**`, `Lean/**`) |
-| `feedback_comment_action_link` | Commentaire de diagnostic infra sur PR : action concrète dans le même cycle, sinon état au dashboard. |
 | `student-pr-reviews` | anti-fuite soutenance, review bienveillante |
 | `public-contribution-triage` | accueil, triage et escalade des issues/PRs publiques |
 | `lean-merge-discipline` | gates de merge propres au Lean |
@@ -83,6 +82,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `codeql-suppressions-inertes` | un commentaire `# codeql[rule-id]` est inerte sur ce dépôt (default setup) |
 | `results-artifact-policy` | artefacts de `scripts/results/` : barre de 512 000 octets par artefact nouveau, série complète hors dépôt |
 | `gh-posting-hygiene` | jamais `-f body=@fichier` (chaîne littérale) : `--input` / `--body-file`, garde post-POST (longueur + piège payload JSON) |
+| `feedback_comment_action_link` | tout commentaire de diagnostic infra sur une PR porte une action concrète dans le même cycle, sinon reste sur le dashboard |
 | `organ-first-implementation` | nommer l'organe natif d'une autre série avant de réimplémenter (5 questions dans le body) |
 | `submodule-maintenance` | les cinq sous-modules : mesure de dérive du gitlink, états de gate, droits `gh`, ordre du bump |
 

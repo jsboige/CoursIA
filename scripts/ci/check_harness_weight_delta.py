@@ -180,8 +180,10 @@ def unlisted_rules_against_inventory(snapshot: dict,
     }
     listed = set()
     for line in inventory.splitlines():
-        # Un nom de regle est une entree entouree de backticks, seul ou
-        # delimite par le separateur canonique de liste ` · `.
+        # Seules les lignes d'inventaire font foi : une mention en prose ne
+        # doit pas pouvoir acquitter une règle absente de la liste.
+        if " · " not in line and not line.lstrip().startswith("|"):
+            continue
         parts = line.split("`")
         for fragment in parts[1::2]:
             names = [item.strip() for item in fragment.split(" · ")]
