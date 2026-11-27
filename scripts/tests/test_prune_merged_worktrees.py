@@ -3391,8 +3391,8 @@ class TestClaimQuarantineRoot:
         assert pmw.claim_quarantine_root(root) is None
         assert (root / pmw.QUARANTINE_MARKER).read_text(
             encoding="utf-8") == "deja la"
-        assert [p.name for p in root.iterdir()] == [
-            pmw.QUARANTINE_MARKER, "pr_open_archive"]
+        assert {p.name for p in root.iterdir()} == {
+            pmw.QUARANTINE_MARKER, "pr_open_archive"}
 
     def test_unmarked_root_is_refused_standalone(self, tmp_path):
         """L'appel direct ne contourne pas le controle de propriete : une
