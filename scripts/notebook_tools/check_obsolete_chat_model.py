@@ -101,7 +101,9 @@ LIMITES DECLAREES (pas de pretention d'analyse dynamique exhaustive) :
     ACCUSEE (la boucle l'execute, donc le site est atteignable) ; seul
     l'index dynamique reste non resolu. Une batterie dont une entree n'est
     pas resoluble statiquement n'est pas suivie du tout (pas de resolution
-    partielle devinee).
+    partielle devinee). Une LISTE DE CHAINES (batterie de noms nus,
+    ``MODELS = ["a", "b"]``) n'est PAS suivie non plus : un ``for m in
+    MODELS:`` puis ``model=m`` reste non resolu.
   * ``self.X`` : toute instanciation de la classe resolvant X vers un
     modele obsolete produit le finding (approximation documentee, sans
     desambiguation multi-instances).
@@ -220,6 +222,10 @@ class Ctx:
     #: nom -> noeud du DICT LITERAL lui-meme (entier pour les parametres
     #: de la requete : ``temperature``, ``max_tokens``).
     local_dict_body: dict = field(default_factory=dict)
+    #: (#28517) nom -> noeud ``Request(...)`` lie a ce nom, pour les appels
+    #: ``urlopen(<nom>)`` -- la forme dominante du depot (URL et ``data=``
+    #: s'en lisent ensuite a l'appel).
+    local_requests: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -296,7 +302,8 @@ def _dict_model_entry(node: ast.AST) -> ast.AST | None:
     return _dict_entry(node, "model")
 
 
-def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] | None:
+def classify_chat_call(call: ast.Call, dspy_imported: bool,
+                       request_url_for=None) -> tuple[str, bool] | None:
     """Classe un Call en site chat -> (libelle, model_positionnel_bool).
 
     ``model_positionnel_bool`` dit si le premier argument positionnel est le
@@ -332,6 +339,12 @@ def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] 
                 and attr_chain(url.func)[-1:] == ["Request"]):
             url = url.args[0] if url.args else next(
                 (kw.value for kw in url.keywords if kw.arg == "url"), None)
+        # (#28517) : un Request CONSTRUIT A PART, passe a urlopen par son
+        # NOM -- le resolver remonte l'URL du Request lie a ce nom.
+        if (tuple(parts[-3:]) == ("urllib", "request", "urlopen")
+                and isinstance(url, ast.Name)
+                and request_url_for is not None):
+            url = request_url_for(url.id)
         if targets_chat_completions(url):
             return "http.chat.completions", False
     return None
@@ -359,6 +372,46 @@ def targets_chat_completions(node: ast.AST | None) -> bool:
     except ValueError:
         return False
     return path.rstrip("/").endswith("/chat/completions")
+
+
+def _request_url_node(node: ast.AST) -> ast.AST | None:
+    """L'URL d'un appel ``Request(...)`` (1er arg positionnel ou ``url=``),
+    ou None si le noeud n'en est pas un.
+
+    Forme #28517 : un ``Request`` construit sur ses propres lignes et passe
+    a ``urlopen`` par son nom -- la forme dominante du depot.
+    """
+    if not (isinstance(node, ast.Call)
+            and attr_chain(node.func)[-1:] == ["Request"]):
+        return None
+    return (node.args[0] if node.args else next(
+        (kw.value for kw in node.keywords if kw.arg == "url"), None))
+
+
+def _http_body_dict_node(node: ast.AST) -> ast.AST | None:
+    """Le dict littéral sous-jacent a un corps HTTP brut, ou None.
+
+    Trois formes : un dict littéral, ``json.dumps(<dict>)``, ou
+    ``json.dumps(<dict>).encode(...)`` (la forme ENCODEE, #28517) -- pour
+    que le "model" d'un corps passe par variable deja encodee se resolse.
+    """
+    if isinstance(node, ast.Dict):
+        return node
+    if isinstance(node, ast.Call):
+        # .encode(<encodage>) applique a json.dumps(<dict>)
+        if (isinstance(node.func, ast.Attribute)
+                and node.func.attr == "encode"
+                and isinstance(node.func.value, ast.Call)
+                and attr_chain(node.func.value.func)[-2:] == ["json", "dumps"]
+                and node.func.value.args
+                and isinstance(node.func.value.args[0], ast.Dict)):
+            return node.func.value.args[0]
+        # json.dumps(<dict>)
+        if (attr_chain(node.func)[-2:] == ["json", "dumps"]
+                and node.args
+                and isinstance(node.args[0], ast.Dict)):
+            return node.args[0]
+    return None
 
 
 def model_arg_node(call: ast.Call, positional: bool) -> ast.AST | None:
@@ -462,6 +515,9 @@ class NotebookScanner:
         #: Nom d'un dict litteral -> noeud du dict ENTIER (la forme
         #: complete, pour lire les parametres de la requete).
         self.dict_body_nodes: dict[str, ast.AST] = {}
+        #: (#28517) Nom d'un ``Request(...)`` lie a un nom -> noeud du
+        #: Request (pour ``urlopen(<nom>)``, forme dominante du depot).
+        self.request_nodes: dict[str, ast.AST] = {}
         #: Batteries ``NAME = [{cle: valeur}, ...]`` (liste de dictionnaires) :
         #: chaque entree est une table cle -> Binding (forme #23387 point 3).
         self.multi_dict_values: dict[str, list[dict[str, Binding]]] = {}
@@ -649,7 +705,9 @@ class NotebookScanner:
         # lié à un nom (à la scope de l'affectation) pour les appels json=<nom>.
         if (len(stmt.targets) == 1
                 and isinstance(stmt.targets[0], ast.Name)):
-            entry = _dict_model_entry(stmt.value)
+            dict_node = _http_body_dict_node(stmt.value)
+            entry = (_dict_model_entry(dict_node)
+                     if dict_node is not None else None)
             if entry is not None:
                 name = stmt.targets[0].id
                 if ctx.func_name is not None or ctx.class_name is not None:
@@ -657,6 +715,7 @@ class NotebookScanner:
                 else:
                     self.dict_model_nodes[name] = entry
             self._retain_dict_body(stmt.value, stmt.targets[0].id, ctx)
+            self._retain_request(stmt.value, stmt.targets[0].id, ctx)
 
     def _retain_dict_body(self, value: ast.AST, name: str, ctx: Ctx) -> None:
         """Retient le DICT litteral lui-meme (forme complete) sous son nom.
@@ -672,6 +731,19 @@ class NotebookScanner:
         else:
             self.dict_body_nodes[name] = value
 
+    def _retain_request(self, value: ast.AST, name: str, ctx: Ctx) -> None:
+        """Retient le noeud ``Request(...)`` lui-meme sous son nom (scope de
+        l'affectation), pour les appels ``urlopen(<nom>)`` -- la forme
+        dominante du depot (#28517). L'URL et le ``data=`` s'en lisent
+        ensuite a l'appel."""
+        if not (isinstance(value, ast.Call)
+                and attr_chain(value.func)[-1:] == ["Request"]):
+            return
+        if ctx.func_name is not None or ctx.class_name is not None:
+            ctx.local_requests[name] = value
+        else:
+            self.request_nodes[name] = value
+
     def handle_annassign(self, stmt: ast.AnnAssign, ctx: Ctx) -> None:
         self.scan_expr(stmt.value, ctx)
         dict_binding = self.dict_literal(stmt.value, ctx)
@@ -681,7 +753,9 @@ class NotebookScanner:
         # HTTP brut (#25072) : même retention pour l'affectation annotée
         # (``payload: dict = {"model": ...}``).
         if isinstance(stmt.target, ast.Name):
-            entry = _dict_model_entry(stmt.value)
+            dict_node = _http_body_dict_node(stmt.value)
+            entry = (_dict_model_entry(dict_node)
+                     if dict_node is not None else None)
             if entry is not None:
                 name = stmt.target.id
                 if ctx.func_name is not None or ctx.class_name is not None:
@@ -689,6 +763,7 @@ class NotebookScanner:
                 else:
                     self.dict_model_nodes[name] = entry
             self._retain_dict_body(stmt.value, stmt.target.id, ctx)
+            self._retain_request(stmt.value, stmt.target.id, ctx)
 
     def handle_for(self, stmt: ast.stmt, ctx: Ctx) -> None:
         """Boucle sur une batterie de dictionnaires.
@@ -789,7 +864,10 @@ class NotebookScanner:
         func = call.func
         if isinstance(func, ast.Name) and func.id in self.class_infos:
             self.resolve_instantiation(call, func.id, ctx)
-        site = classify_chat_call(call, self.dspy_imported)
+        site = classify_chat_call(
+            call, self.dspy_imported,
+            request_url_for=lambda name: _request_url_node(
+                self._request_node_of(name, ctx)))
         if site is None:
             return
         label, positional = site
@@ -803,6 +881,12 @@ class NotebookScanner:
                                               "sans argument model"))
             return
         self.resolve_model_expr(arg, label, call, ctx, defer_self=True)
+
+    def _request_node_of(self, name: str, ctx: Ctx) -> ast.AST | None:
+        """Noeud ``Request(...)`` lie a `name` (scope locale d'abord, puis
+        module), ou None -- pour ``urlopen(<nom>)`` (#28517)."""
+        return (ctx.local_requests.get(name)
+                or self.request_nodes.get(name))
 
     def _http_body(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
         """Corps de la requete HTTP brut (``json=``/``data=``), ou None.
@@ -819,6 +903,12 @@ class NotebookScanner:
                 and isinstance(request, ast.Call)
                 and attr_chain(request.func)[-1:] == ["Request"]):
             call = request
+        elif (tuple(attr_chain(call.func)[-3:]) == ("urllib", "request", "urlopen")
+                and isinstance(request, ast.Name)
+                and self._request_node_of(request.id, ctx) is not None):
+            # (#28517) : Request construit a part, passe a urlopen par son
+            # NOM -- remonter le noeud Request lie a ce nom pour lire data=.
+            call = self._request_node_of(request.id, ctx)
         body: ast.AST | None = None
         for kw in call.keywords:
             if kw.arg in ("json", "data"):
