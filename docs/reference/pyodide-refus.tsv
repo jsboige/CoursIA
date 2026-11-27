@@ -209,6 +209,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb	FineTuning	gpu,su
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb	FineTuning	gpu,suffisance	gpu=torch,torch.nn,usage CUDA explicite;suffisance=absent_distribution:datasets : absent de la distribution;absent_distribution:peft : absent de la distribution;absent_distribution:transformers : absent de la distribution
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb	FineTuning	gpu,suffisance	gpu=torch,usage CUDA explicite;suffisance=absent_distribution:datasets : absent de la distribution;absent_distribution:peft : absent de la distribution;absent_distribution:transformers : absent de la distribution
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb	FineTuning	gpu	gpu=torch,torch.utils.checkpoint
+MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17g-SelfPlay-Tabulaire-vers-PettingZoo-Python.ipynb	GameTheory-17-MultiAgent-RL	suffisance	suffisance=absent_distribution:gymnasium : absent de la distribution;absent_distribution:pettingzoo.test : absent de la distribution;absent_distribution:pettingzoo.utils : absent de la distribution
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb	ICT-Series	suffisance	suffisance=absent_distribution:pyphi : absent de la distribution
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb	ICT-Series	suffisance	suffisance=absent_distribution:pyphi : absent de la distribution;absent_distribution:pyphi.macro : absent de la distribution
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb	ICT-Series	gpu	gpu=torch,torch.nn,torch.nn.functional
@@ -252,9 +253,9 @@ MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Le
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-5-MiniMax-Cloud-Image.ipynb	Image	cle	cle=1
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-6-AesCode-Visual-Documents.ipynb	Image	reseau	reseau=localhost:8010
 MyIA.AI.Notebooks/GenAI/Image/05-History/05-0-Generateurs-Symboliques.ipynb	Image	suffisance	suffisance=hors_serie:symmetry : module hors serie non livre par le bundle
-MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-GANs-Portraits-Moment-NFT.ipynb	Image	gpu	gpu=torch,usage CUDA explicite
-MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb	Image	gpu,import_absent	gpu=torch,torch.nn,torch.nn.functional,usage CUDA explicite;import_absent=clip,guided_diffusion.script_util,torchvision
-MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb	Image	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=CLIP_.clip,pydiffvg;suffisance=absent_distribution:cairosvg : absent de la distribution
+MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-GANs-Portraits-Moment-NFT.ipynb	Image	gpu	gpu=torch,usage CUDA explicite
+MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb	Image	gpu,import_absent	gpu=torch,torch.nn,torch.nn.functional,usage CUDA explicite;import_absent=clip,guided_diffusion.script_util,torchvision
+MyIA.AI.Notebooks/GenAI/Image/05-History/05-3-CLIPasso-Semantic-Sketching.ipynb	Image	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=CLIP_.clip,pydiffvg;suffisance=absent_distribution:cairosvg : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Image/examples/history-geography.ipynb	Image	cle,reseau,suffisance	cle=1;reseau=api.openai.com,requests;suffisance=absent_distribution:dotenv : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Image/examples/literature-visual.ipynb	Image	cle,reseau,suffisance	cle=1;reseau=api.openai.com,requests;suffisance=absent_distribution:dotenv : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb	Image	cle,reseau,suffisance	cle=1;reseau=api.openai.com,requests;suffisance=absent_distribution:dotenv : absent de la distribution
@@ -387,7 +388,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Va
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-03-NurseScheduling-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-04-JobShopScheduling-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-05-Timetabling-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-06-Minesweeper-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=__main__,constraint
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-06-Minesweeper-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=__main__,constraint,ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-08-MiniZinc-Python.ipynb	Part3-Cas-pratiques	import_absent,suffisance	import_absent=ortools.sat.python;suffisance=absent_distribution:minizinc : absent de la distribution
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb	Part3-Cas-pratiques	suffisance	suffisance=absent_distribution:deap : absent de la distribution;absent_distribution:pygad : absent de la distribution
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb	Part3-Cas-pratiques	import_absent,suffisance	import_absent=cvxpy,pymoo.algorithms.moo.nsga2,pymoo.core.problem,pymoo.indicators.hv,pymoo.optimize;suffisance=absent_distribution:pygad : absent de la distribution
