@@ -123,6 +123,7 @@ ORGANES = (
     "scripts/coordination/gh_issues.py",
     "scripts/coordination/gh_lecture.py",
     "scripts/coordination/gh_recherche.py",
+    "scripts/coordination/gh_run.py",
     "scripts/coordination/gh_selection.py",
     "scripts/coordination/gh_snapshot.py",
 
