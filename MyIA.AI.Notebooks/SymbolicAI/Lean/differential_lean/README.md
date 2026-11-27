@@ -1,7 +1,7 @@
 # `differential_lean` — enveloppe de visite de `qinz1yang/differential-geometry`
 
 Lake d'enveloppe de l'EPIC **#18205** (« origami » : géométrie différentielle en Lean —
-conjecture de Poincaré et flot de Ricci). Pli 1, sub-grain 1.
+conjecture de Poincaré et flot de Ricci). Pli 1.
 
 ## Ce que ce lake est — et ce qu'il n'est pas
 
@@ -44,7 +44,7 @@ La sortie de `#print axioms` est le **témoin** : l'amont annonce n'utiliser que
 `Classical.choice` et `Quot.sound`. Ce lake **mesure** cette annonce sur trois points
 d'entrée ; il ne la reprend pas sur parole, et il ne réécrit aucune preuve.
 
-## Le second témoin — conjecture de Poincaré (Pli 1, sub-grain 2)
+## Le second témoin — conjecture de Poincaré (Pli 1)
 
 `Poincare.lean` (et son jumeau `Poincare_en.lean`) importe le module amont qui **énonce** la
 conjecture de Poincaré et demande au noyau la liste des axiomes dont cet énoncé dépend.
@@ -59,11 +59,11 @@ L'énoncé porte sur une variété `M` de dimension 3, séparée, compacte et si
 et conclut `Nonempty (M ≃ₜ Metric.sphere (0 : EuclideanSpace ℝ (Fin 4)) 1)`.
 
 Ce fichier ne **déclare** aucun axiome et ne **prouve** rien : il interroge une dépendance.
-La question qu'il pose est celle du sub-grain : *l'énoncé tel que l'amont le porte
+La question qu'il pose est la suivante : *l'énoncé tel que l'amont le porte
 dépend-il d'un axiome prohibé* (`sorryAx`, `native_decide.*`) ? La réponse est la sortie de
 `#print axioms`, telle quelle, dans le journal de mesures.
 
-Le chemin d'élaboration est plus lourd que celui du sub-grain 1 : l'énoncé importe
+Le chemin d'élaboration est plus lourd que celui du premier témoin : l'énoncé importe
 `Topology/PiecewiseLinear/Moise352Producer` **et**
 `Geometry/Flow/RicciFlow/Surgery/Skeleton/PoincareEndgame`, dont la fermeture
 `RicciFlow/Surgery` n'était pas encore construite dans le cache de la machine au moment de
@@ -161,6 +161,6 @@ L'annonce de l'amont est donc **mesurée sur trois points d'entrée**, pas repri
 
 - [#18205](https://github.com/jsboige/CoursIA/issues/18205) — EPIC origami géométrie différentielle
 - [`docs/lean/origami-reconnaissance.md`](../../../../docs/lean/origami-reconnaissance.md) —
-  Pli 1, sub-grains 3 (sources tierces) et 4 (emplacement), livrés par #18978
+  reconnaissance du pli 1 (sources tierces, emplacement), livrée par #18978
 - [`social_choice_lean_peters/`](../../../GameTheory/SocialChoice/social_choice_lean_peters/) — précédent
   de la forme « enveloppe par dépendance, jamais par copie »

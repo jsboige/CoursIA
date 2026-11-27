@@ -81,7 +81,7 @@ open CategoryTheory Limits Pretopology
 universe u v
 
 /-!
-## Section 1 : le pont central — forme flèche ↔ caractérisation existentielle
+## Section 1 : the central bridge — arrow form ↔ existential characterisation
 
 `Pretopology.toGrothendieck` starts from a pretopology
 (family of "covering" presieves on each object) and extends it into a

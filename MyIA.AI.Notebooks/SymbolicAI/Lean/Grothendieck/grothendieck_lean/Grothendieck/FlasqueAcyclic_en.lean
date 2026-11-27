@@ -310,4 +310,54 @@ theorem subsingleton_H_succ_of_flasque_all
 
 end Capstone
 
+/-!
+## 5. Stacks correspondence (group #13 of #28537, surveyed 2026-11-26)
+
+Stacks reaches the acyclicity of flasque sheaves through the **Čech** route
+(`Topology/Sheaves/Cohomology/CechToCohomology/DegreeOneFlasqueVanishing.lean`),
+we take the **Ext** route (`Sheaf.H`, the covariant long exact sequence). The
+statements are therefore not the same ones, and the gap is written down.
+
+| Statement | Class | Stacks reference | What our version adds / where it diverges |
+|---|---|---|---|
+| `shortExact_of_injectivePresentation` | **absent** | none | A homological algebra constructor (`CategoryTheory.ShortComplex.exact_cokernel`): outside Stacks' scope, which does not pose an injective presentation of that shape. |
+| `subsingleton_H_one_of_flasque` | **partiel** | `CechToCohomology/DegreeOneFlasqueVanishing.lean:230` (`cls_eq_zero_of_isFlasque`) and `:167` (`exists_cechD_eq_of_isFlasque`), tag 09SZ | The same mathematical content — degree one of a flasque sheaf vanishes — but a **different route**: Čech at Stacks, Ext/`Sheaf.H` here. Our version is moreover **conditional** on the injectivity of `X₂`, a hypothesis Stacks' statement does not carry. |
+| `subsingleton_H_one_of_flasque_presentation` | **absent** | none | A corollary of the injective presentation: no corresponding statement at Stacks. |
+| `subsingleton_H_succ_of_flasque_decalage` | **absent** | none | The shift is a step of the Ext route — one degree is paid for by one degree of the quotient; Stacks does not state it, its Čech route being global. |
+| `subsingleton_H_succ_of_flasque_all` | **partiel** | tag **09SZ** (vanishing of the strictly positive degree Čech cohomology of a flasque sheaf) | **A notable gap**: Stacks establishes the **unconditional** acyclicity of a flasque sheaf, through the Čech route; we establish it **under the hypothesis `hInjFlasque`** (Godement II.4), through the Ext route. |
+
+### The `injective ⇒ flasque` frontier: Stacks clears exactly the same obstacle
+
+This module names `injective ⇒ flasque` ([God58] II.4) as the only missing
+link, and gives the reason: the classical proof requires the extension by zero
+`j_!` of sheaves of open sets, absent from Mathlib to this day.
+
+Stacks clears that frontier — and **by the same means**:
+
+- `CechToCohomology/DegreeOneFlasqueVanishing.lean:211`, `isFlasque_of_injective`
+  ("*An injective sheaf of abelian groups is flasque*", SGA 4 V 4.6);
+- its proof goes through `CechAcyclicity/InjectiveSheavesRestrictOnto.lean:21`,
+  which says that `supportedSubmodule M U` is "*the realisation, inside sheaves
+  of modules, of the extension by zero `j_!(M|_U)`*" (tag **01EA**).
+
+**What this changes for us**: the obstacle we name is not a peculiarity of our
+formalisation. Stacks had to build the same extension by zero, and built it
+**inside** sheaves of modules (`supportedSubmodule`) — that is, outside Mathlib,
+exactly as we write it. The frontier is therefore **the one this module
+describes**, and it is now **located** (`file:line`) rather than merely stated.
+
+**What remains on our side**: the **site** version of flasqueness
+(`IsFlasqueSieves`) and the unconditional capstone on the Ext route. Stacks has
+neither: it formalizes flasqueness only at the topological level.
+
+**Scope of the reading.** Stacks files consulted: `.../CechToCohomology/DegreeOneFlasqueVanishing.lean`
+(tags 09SZ, 01EP, 01EQ), `.../CechAcyclicity/InjectiveSheavesRestrictOnto.lean`
+(tag 01EA), `.../GodementResolution/Basic.lean` (tag 0FKS: `godementComplex`,
+`godementAugmentation`, `isFlasque_godementComplex`, `isFlasque_iterate_modulePullbackPushforward`),
+`.../GodementResolution/StalkHomotopy.lean` (tag 0FKS clause 3:
+`quasiIso_godementAugmentation`, `homotopyEquivalences_stalk_godementAugmentation`).
+An "absent" verdict means *no statement of that name in the files read*,
+never "this notion does not exist at Stacks".
+-/
+
 end Grothendieck.FlasqueAcyclic_en
