@@ -566,7 +566,7 @@ def test_canonical_transition_scoped_sl14_39_to_313_accepted():
     a = {"language_version": "3.9.25", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.18", "kernelspec_name": "python3"}
     path = ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
-            "SL-14-AIFeynman-Discover-Equations.ipynb")
+            "SL-14-AIFeynman-Discover-Equations-Python.ipynb")
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
 
 
@@ -584,7 +584,7 @@ def test_canonical_transition_scoped_sl14_does_not_leak_to_ict():
     assert ckd.accepted_canonical_transition(
         a, b,
         nb_path=("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
-                 "SL-2-KnowledgeBasedLearning.ipynb")) is False
+                 "SL-02-KnowledgeBasedLearning-Python.ipynb")) is False
 
 
 def test_canonical_transition_scoped_sl14_reverse_still_refused():
@@ -592,7 +592,7 @@ def test_canonical_transition_scoped_sl14_reverse_still_refused():
     a = {"language_version": "3.13.18", "kernelspec_name": "python3"}
     b = {"language_version": "3.9.25", "kernelspec_name": "python3"}
     path = ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
-            "SL-14-AIFeynman-Discover-Equations.ipynb")
+            "SL-14-AIFeynman-Discover-Equations-Python.ipynb")
     assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
