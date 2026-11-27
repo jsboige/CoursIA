@@ -1378,7 +1378,7 @@ extension, pas une redite.
   — workspace $W$ (Gates 22-23 livrés, dissociation documentée).
 - [ICT-Argumentation-BeliefTrajectories-Python](ICT-Argumentation-BeliefTrajectories-Python.ipynb)
   — 5 classes Argumentum (espèces thomiennes).
-- [ICT-10b](ICT-10b-Turing1952-Thom-Morphogenese-Python.ipynb)
+- [ICT-10b](ICT-06c-Turing1952-Thom-Morphogenese-Python.ipynb)
   — **Turing 1952 contre Thom 1991** : la longueur d'onde chimique et le
   canal. Confronte la phrase « la vie est essentiellement canalisation,
   endiguement et lutte contre la diffusion » (Ch.3, p.60) au §8 de Turing
