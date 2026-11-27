@@ -576,7 +576,7 @@ def capability_downgrades(base_nb, head_nb):
 def git(*args, cwd=None):
     """Run a git command, returning stdout (utf-8) or None on failure."""
     try:
-        out = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+        out = subprocess.run(["git", "-c", "core.quotePath=false", *args], cwd=cwd, capture_output=True,
                              encoding="utf-8", errors="replace", check=False)
     except OSError:
         return None

@@ -2,9 +2,13 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-Grothendieck tribute — Part 94 (EN sibling of `Grothendieck/FlasqueAcyclic.lean`):
+Grothendieck tribute — Part 102 (EN sibling of `Grothendieck/FlasqueAcyclic.lean`):
 acyclicity of flasque sheaves — unconditional degree 1, degree shifting,
 and the `injective => flasque` boundary.
+(Tranche number assigned by extending the README Parts table: this header
+carried 94, a number already held by tranche 94 — the flascity of the
+canonical tower — while `Grothendieck.FlasqueAcyclic` had no table row at
+all. See #28721.)
 
 Alexandre Grothendieck (1928-2014).
 

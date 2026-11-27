@@ -82,7 +82,7 @@ Commandes :
 
 ## FLAGS inventaire (a corriger — verifie 2026-05-23)
 
-1. `02-5-Multi-Model-TTS-Gateway` : 401 (auth a corriger).
+1. `Audio-02-5-Multi-Model-TTS-Gateway-Python` : 401 (auth a corriger).
 
 (Le drapeau « Leak `LOCAL_MODE` » de l'inventaire 2026-05-23 est retire : les deux carnets cites ne portent plus `LOCAL_MODE` nulle part, source compris — mesure `git grep -c LOCAL_MODE` sur `main`, 0/0.)
 
