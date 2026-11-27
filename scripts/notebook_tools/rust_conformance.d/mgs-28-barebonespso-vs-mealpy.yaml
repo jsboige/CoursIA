@@ -1,0 +1,136 @@
+# Conformité différentielle de MGS-28-BareBonesPSO-vs-Mealpy (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+#
+# Cellules non mesurées (motif relevé à la génération) :
+#   - c6: sortie riche côté Python (figure/HTML), non mesurée
+- name: "MGS-28-BareBonesPSO-vs-Mealpy"
+  family: "Search/Part4-Metaheuristics/MGS-vs-mealpy"
+  python: MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-28-BareBonesPSO-vs-Mealpy.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-28-BareBonesPSO-vs-Mealpy-Rust.ipynb
+  measures:
+    - id: c2_text
+      description: "Sortie de la cellule 2, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c8_text
+      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python (segment 1/1 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A(?:.*?)(?m:^mealpy\\ BBPSO\\-kennedy\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)(?:.*?)(?m:^mealpy\\ BBPSO\\-mgs\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A(?:.*?)(?m:^mealpy\\ BBPSO\\-kennedy\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)(?:.*?)(?m:^mealpy\\ BBPSO\\-mgs\\ \\(graine\\ 7,\\ témoin\\)\\ :\\ 26\\ conflits,\\ 8050\\ évaluations,\\ \\d+(?:[.,]\\d+)?\\ ms\\.\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c12_text
+      description: "Sortie de la cellule 12, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c13_seg1
+      description: "Sortie de la cellule 13, texte identique au jumeau Python (segment 1/2 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)"
+          transform: text
+    - id: c13_seg2
+      description: "Sortie de la cellule 13, texte identique au jumeau Python (segment 2/2 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A(?:.*?)(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)(?:.*?)(?m:^\\ \\ Python\\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A(?:.*?)(?m:^\\ \\ C\\#\\ \\ \\ \\ \\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)(?:.*?)(?m:^\\ \\ Python\\ :\\ \\d+(?:[.,]\\d+)?\\ ms\\ total\\ \\->\\ \\d+(?:[.,]\\d+)?\\ ms/éval\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c16_text
+      description: "Sortie de la cellule 16, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c18_text
+      description: "Sortie de la cellule 18, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c20_text
+      description: "Sortie de la cellule 20, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
