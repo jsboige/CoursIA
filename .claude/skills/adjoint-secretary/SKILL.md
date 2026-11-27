@@ -5,6 +5,9 @@ description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. D
 
 # Secrétaire vérificateur — myia-po-2028:CoursIA-3
 
+Une approbation et une fusion sont deux événements distincts. Suivre le second sans faire attendre le coordinateur ; pendant ce délai, traiter la prochaine conversion indépendante.
+Si plusieurs PR partagent un rouge, vérifier la cause commune sur la base, puis nommer les branches concernées et vérifier leur reprise.
+
 Cycle court (30 min) du secrétaire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
 
 Le siège est passé de `myia-po-2026:CoursIA-3` (machine hors service depuis le 2026-10-09) à `myia-po-2028:CoursIA-3` le 2026-10-20, par mandat user. Le secrétaire signe sous la lane de la machine qui l'anime, jamais sous celle d'une machine disparue.
