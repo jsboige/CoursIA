@@ -60,7 +60,7 @@ Le compagnon C# utilise .NET Interactive `.net-csharp`, .NET 9 et la BCL. Les li
 
 ### Autour de 04 — choisir un codec (Recherche)
 
-[04b — Codecs et front de Pareto](Compression-04b-CodecsSOTA-Pareto-Python.ipynb) compare les bibliothèques présentes sur des textes, des données structurées et des octets aléatoires. Après 03–04, on apprend à lire un front de Pareto : un codec est dominé si un autre est à la fois plus rapide et plus économe sur le banc choisi. Le front d'encodage peut différer de celui de décodage. Les niveaux d'un même codec déplacent aussi ce compromis.
+[04b — Codecs et front de Pareto](Compression-04b-CodecsSOTA-Pareto-Python.ipynb) · [jumeau C#](Compression-04b-CodecsSOTA-Pareto-CSharp.ipynb) compare les bibliothèques présentes sur des textes, des données structurées et des octets aléatoires. Après 03–04, on apprend à lire un front de Pareto : un codec est dominé si un autre est à la fois plus rapide et plus économe sur le banc choisi. Le front d'encodage peut différer de celui de décodage. Les niveaux d'un même codec déplacent aussi ce compromis.
 
 Les débits dépendent de la machine, des versions et des corpus. Le carnet vérifie la restitution par empreinte et distingue les bibliothèques mesurées des outils seulement cités. Les données aléatoires servent de contrôle : changer de codec ne crée pas une régularité absente de la source.
 
