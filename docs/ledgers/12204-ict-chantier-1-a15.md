@@ -76,7 +76,7 @@ et les deux hypothèses du carnet tombent d'elles-mêmes :
 
 ## 4. Candidat 2 — `SC-09` : un tutoriel, pas un témoin
 
-`SC-09` s'exécute proprement (8 cellules, 0 erreur) mais ses sorties ne portent aucun contraste :
+`SC-09` s'exécute proprement (toutes ses cellules, 0 erreur) mais ses sorties ne portent aucun contraste :
 
 - cellule 5 : `Votes au bloc 5 : 0 | Votes au bloc 10 : 0 | Votes au bloc 30 : 0 | Votes au bloc 55 : 0 | Votes au bloc 70 : 0` — la mesure de pouvoir de vote ne mesure rien ;
 - cellule 8 : `Future (eta+1j) : PENDING | Passe (eta-1j) : PENDING | Expired (eta-16j): PENDING` — les trois cas du timelock rendent la même valeur, donc le test ne sépare pas ce qu'il prétend séparer ;
