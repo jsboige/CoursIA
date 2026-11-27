@@ -1,0 +1,149 @@
+--- a/src/gource_settings.cpp
++++ b/src/gource_settings.cpp
+@@ -173,7 +173,12 @@
+ 
+     printf("  --dir-name-depth DEPTH    Draw names of directories down to a specific depth.\n");
+     printf("  --dir-name-position FLOAT Position along edge of the directory name\n");
+-    printf("                            (between 0.0 and 1.0, default is 0.5).\n\n");
++    printf("                            (between 0.0 and 1.0, default is 0.5).\n");
++    printf("  --dir-name-time SECONDS  Duration of the directory name fade (default: 5.0)\n");
++    printf("  --dir-name-direct        Name only the directories a change touches directly,\n");
++    printf("                            not their parents\n");
++    printf("  --dir-name-hubs N        Keep a dim name on directories holding N files or more\n");
++    printf("  --dir-name-hub-alpha FLOAT Alpha of those names (default: 0.5)\n\n");
+ 
+     printf("  --filename-time SECONDS  Duration to keep filenames on screen (default: 4.0)\n\n");
+ 
+@@ -360,6 +365,10 @@
+     arg_types["filename-time"]      = "float";
+ 
+     arg_types["dir-name-depth"]     = "int";
++    arg_types["dir-name-hubs"]      = "int";
++    arg_types["dir-name-time"]      = "float";
++    arg_types["dir-name-hub-alpha"] = "float";
++    arg_types["dir-name-direct"]    = "bool";
+ }
+ 
+ void GourceSettings::setGourceDefaults() {
+@@ -452,6 +461,10 @@
+ 
+     dir_name_depth = 0;
+     dir_name_position = 0.5f;
++    dir_name_time      = 5.0f;
++    dir_name_direct    = false;
++    dir_name_hubs      = 0;
++    dir_name_hub_alpha = 0.5f;
+ 
+     elasticity = 0.0f;
+ 
+@@ -1618,6 +1631,43 @@
+         }
+     }
+ 
++    if((entry = gource_settings->getEntry("dir-name-time")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-name-time (seconds)");
++
++        dir_name_time = entry->getFloat();
++
++        if(dir_name_time < 0.0f) {
++            conffile.entryException(entry, "dir-name-time outside of range 0.0 or more");
++        }
++    }
++
++    if(gource_settings->getBool("dir-name-direct")) {
++        dir_name_direct = true;
++    }
++
++    if((entry = gource_settings->getEntry("dir-name-hubs")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-name-hubs (number of files)");
++
++        dir_name_hubs = entry->getInt();
++
++        if(dir_name_hubs < 0) {
++            conffile.entryException(entry, "dir-name-hubs outside of range 0 or more");
++        }
++    }
++
++    if((entry = gource_settings->getEntry("dir-name-hub-alpha")) != 0) {
++
++        if(!entry->hasValue()) conffile.entryException(entry, "specify dir-name-hub-alpha (float)");
++
++        dir_name_hub_alpha = entry->getFloat();
++
++        if(dir_name_hub_alpha < 0.0f || dir_name_hub_alpha > 1.0f) {
++            conffile.entryException(entry, "dir-name-hub-alpha outside of range 0.0 - 1.0 (inclusive)");
++        }
++    }
++
+     //validate path
+     if(gource_settings->hasValue("path")) {
+         path = gource_settings->getString("path");
+--- a/src/gource_settings.h
++++ b/src/gource_settings.h
+@@ -144,6 +144,10 @@
+ 
+     int dir_name_depth;
+     float dir_name_position;
++    float dir_name_time;
++    bool dir_name_direct;
++    int dir_name_hubs;
++    float dir_name_hub_alpha;
+ 
+     std::vector<std::string> highlight_users;
+     std::vector<std::string> follow_users;
+--- a/src/dirnode.cpp
++++ b/src/dirnode.cpp
+@@ -351,6 +351,12 @@
+     return visible_count;
+ }
+ 
++// --dir-name-hubs N : un repertoire qui detient directement au moins N fichiers
++// visibles garde une etiquette discrete une fois son nom eteint.
++bool RDirNode::isNameHub() const{
++    return gGourceSettings.dir_name_hubs > 0 && visible_count >= gGourceSettings.dir_name_hubs;
++}
++
+ int RDirNode::fileCount() const{
+     return files.size();
+ }
+@@ -932,9 +938,25 @@
+     if(gGourceSettings.hide_dirnames) return;
+     if(gGourceSettings.dir_name_depth > 0 && gGourceSettings.dir_name_depth < (depth-1)) return;
+ 
+-    if(!gGourceSettings.highlight_dirs && since_last_node_change > 5.0) return;
+-
+-    float alpha = gGourceSettings.highlight_dirs ? 1.0 : std::max(0.0f, 5.0f - since_last_node_change) / 5.0f;
++    float alpha = 1.0f;
++
++    if(!gGourceSettings.highlight_dirs) {
++        // Le nom s'eteint dir_name_time secondes apres la derniere modification :
++        // celle du sous-arbre par defaut (comportement d'origine), celle du repertoire
++        // seul avec --dir-name-direct.
++        float name_time    = gGourceSettings.dir_name_time;
++        float since_change = gGourceSettings.dir_name_direct ? since_last_file_change : since_last_node_change;
++
++        alpha = 0.0f;
++
++        if(name_time > 0.0f && since_change <= name_time) {
++            alpha = std::max(0.0f, name_time - since_change) / name_time;
++        }
++
++        if(isNameHub()) alpha = std::max(alpha, gGourceSettings.dir_name_hub_alpha);
++
++        if(alpha <= 0.0f) return;
++    }
+ 
+     vec2 label_pos = spline.getLabelPos();
+ 
+--- a/src/dirnode.h
++++ b/src/dirnode.h
+@@ -99,6 +99,7 @@
+     void adjustDepth();
+     void adjustPath();
+     void drawDirName(FXFont& dirfont) const;
++    bool isNameHub() const;
+ public:
+     RDirNode(RDirNode* parent, const std::string & abspath);
+     ~RDirNode();
