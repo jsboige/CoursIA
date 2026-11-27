@@ -201,7 +201,8 @@ def test_apply_puis_check_rend_zero_et_deux_apply_sont_idempotents(
 def test_crlf_preserve(tmp_path: Path) -> None:
     path = _write_nb(tmp_path / "Exemple-Rust.ipynb", _nb(STRICT), newline="\r\n")
     assert main(["--apply", str(path), "--repo-root", str(tmp_path)]) == 0
-    text = path.read_text(encoding="utf-8", newline="")
+    with open(path, encoding="utf-8", newline="") as f:
+        text = f.read()
     assert "\r\n" in text
     assert text.count("\n") == text.count("\r\n")
 
@@ -239,7 +240,8 @@ def test_controle_negatif_un_carnet_reel_non_cable() -> None:
     for path in sorted((REPO_ROOT / "MyIA.AI.Notebooks").rglob("*-Rust.ipynb")):
         if path == PILOT:
             continue
-        nb = json.loads(path.read_text(encoding="utf-8", newline=""))
+        with open(path, encoding="utf-8", newline="") as f:
+            nb = json.load(f)
         plan = analyse(nb, _dep_line(path, REPO_ROOT))
         if plan["replacements"] or not plan["dep_present"]:
             candidats.append(path)
