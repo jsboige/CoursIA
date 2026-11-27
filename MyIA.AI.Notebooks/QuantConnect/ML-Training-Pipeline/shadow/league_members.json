@@ -32,6 +32,7 @@
   {"id": "spy", "role": "reference", "trace": "19587-leveraged-etf-momentum/spy", "issue": 19587, "pr": 19599},
   {"id": "sixty40", "role": "reference", "trace": "19621-famafrench-allweather/sixty40", "issue": 19621, "pr": 19633},
   {"id": "btc", "role": "reference", "trace": "20054-ema-cross-crypto/base", "series": "b", "issue": 20054, "pr": 20056},
-  {"id": "har-rv-kelly", "role": "candidate", "trace": "26329-har-rv-kelly-held-references/strategy", "issue": 26329, "pr": 26548}
+  {"id": "har-rv-kelly", "role": "candidate", "trace": "26329-har-rv-kelly-held-references/strategy", "issue": 26329, "pr": 26548},
+  {"id": "fifty-two-week-high", "role": "candidate", "trace": "28535-fiftytwo-week-high-held-references/strategy", "issue": 28535, "pr": 28539}
  ]
 }

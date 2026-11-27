@@ -31,12 +31,12 @@ edition,niveau,numero,titre,chapitre,page_pdf,phases,carnets,competences,couvert
 3e,section,5.6,Partially Observable Games,5,199,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
 3e,section,5.7,State-of-the-Art Game Programs,5,204,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
 3e,section,5.8,Alternative Approaches,5,206,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
-3e,chapter,6,Constraint Satisfaction Problems,6,221,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-3e,section,6.1,Defining Constraint Satisfaction Problems,6,221,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-3e,section,6.2,Constraint Propagation: Inference in CSPs,6,227,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-3e,section,6.3,Backtracking Search for CSPs,6,233,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-3e,section,6.4,Local Search for CSPs,6,239,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-3e,section,6.5,The Structure of Problems,6,241,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,chapter,6,Constraint Satisfaction Problems,6,221,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.1,Defining Constraint Satisfaction Problems,6,221,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.2,Constraint Propagation: Inference in CSPs,6,227,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.3,Backtracking Search for CSPs,6,233,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.4,Local Search for CSPs,6,239,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.5,The Structure of Problems,6,241,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
 3e,chapter,7,Logical Agents,7,253,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
 3e,section,7.1,Knowledge-Based Agents,7,254,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
 3e,section,7.2,The Wumpus World,7,255,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
@@ -209,12 +209,12 @@ edition,niveau,numero,titre,chapitre,page_pdf,phases,carnets,competences,couvert
 4e,section,5.5,Stochastic Games,5,326,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
 4e,section,5.6,Partially Observable Games,5,338,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
 4e,section,5.7,Limitations of Game Search Algorithms,5,346,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
-4e,chapter,6,Constraint Satisfaction Problems,6,359,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-4e,section,6.1,Defining Constraint Satisfaction Problems,6,360,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-4e,section,6.2,Constraint Propagation: Inference in CSPs,6,371,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-4e,section,6.3,Backtracking Search for CSPs,6,381,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-4e,section,6.4,Local Search for CSPs,6,391,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
-4e,section,6.5,The Structure of Problems,6,394,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,chapter,6,Constraint Satisfaction Problems,6,359,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.1,Defining Constraint Satisfaction Problems,6,360,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.2,Constraint Propagation: Inference in CSPs,6,371,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.3,Backtracking Search for CSPs,6,381,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.4,Local Search for CSPs,6,391,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.5,The Structure of Problems,6,394,Phase 4,CSP-01-Fundamentals-Python.ipynb; CSP-02-Consistency-Python.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
 4e,chapter,7,Logical Agents,7,410,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
 4e,section,7.1,Knowledge-Based Agents,7,410,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
 4e,section,7.2,The Wumpus World,7,411,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
