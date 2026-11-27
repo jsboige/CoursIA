@@ -1,7 +1,7 @@
 """Coeur du service MDP — iteration de la politique (Epic AIMA-Gateway #19571).
 
 Reprise auto-contenue de l'iteration de la politique du carnet phare
-``RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb`` (AIMA ch. 14,
+``RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb`` (
 programmation dynamique sur MDP : evaluation de politique + amelioration
 gloutonne, en alternance jusqu'a stabilisation). Le service est testable hors
 kernel et hors notebook : aucun import du carnet.
@@ -26,7 +26,8 @@ Meme corps que l'iteration de la valeur (``states``, ``actions``, ``T``, ``R``,
   ``0 <= gamma < 1``).
 - ``theta`` : seuil de convergence de l'evaluation de politique interne.
 - ``max_iterations`` : plafond de **cycles d'amelioration** (chacun = une
-  evaluation de politique complete + une amelioration gloutonne).
+  evaluation iterative bornee + une amelioration gloutonne). La meme borne
+  s'applique aux iterations de chaque evaluation.
 
 Reponse (JSON, HTTP 200) ::
 
@@ -39,22 +40,22 @@ Reponse (JSON, HTTP 200) ::
       "n_states": 2
     }
 
-- ``policy`` : politique optimale (stabilisee par amelioration gloutonne).
-- ``value`` : fonction de valeur de cette politique (``V*`` a convergence).
+- ``policy`` : politique issue de la derniere amelioration gloutonne.
+- ``value`` : approximation calculee par la derniere evaluation de politique.
 - ``improvement_steps`` : nombre de cycles d'amelioration effectues.
-- ``converged`` : ``true`` si la politique est stable avant ``max_iterations``.
+- ``converged`` : ``true`` si la politique est stable et si son evaluation a
+  atteint le seuil ``theta``, y compris au dernier cycle autorise.
 
-Sur un meme MDP, l'iteration de la politique et de la valeur convergent vers la
-**meme** politique optimale et la **meme** valeur : l'iteration de la politique
-l'atteint typiquement en **moins** de cycles (chacun resout une evaluation
-complete), d'ou le discriminant mesurable entre les deux services.
+Sur les exemples testes, les deux methodes donnent la meme politique et des
+valeurs proches. Leurs compteurs ne mesurent pas le meme travail : chaque cycle
+de politique comprend une evaluation iterative.
 
-Entree hors contrat : ``{"status": "invalid", "error": ...}`` — **le service ne
-leve jamais d'exception**.
+Les erreurs de validation traitees produisent ``{"status": "invalid", "error": ...}``.
 """
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 # Seuil d'egalite flottante pour la normalisation des distributions de T.
@@ -66,8 +67,13 @@ class MdpInputError(ValueError):
 
 
 def _is_number(x: Any) -> bool:
-    """Vrai si ``x`` est un reel (int/float) et non un bool."""
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
+    """Vrai si ``x`` est un reel fini et non un bool."""
+    if not isinstance(x, (int, float)) or isinstance(x, bool):
+        return False
+    try:
+        return math.isfinite(x)
+    except OverflowError:
+        return False
 
 
 def _check_mdp(
@@ -147,8 +153,8 @@ def _evaluate_policy(
     theta: float,
     max_iterations: int,
     V0: dict[str, float] | None = None,
-) -> dict[str, float]:
-    """Evaluation de politique : ``V[s] = R[s][pi[s]] + gamma * E[V[s']]`` (iteratif).
+) -> tuple[dict[str, float], bool]:
+    """Evaluation iterative : retourne les valeurs et l'atteinte du seuil theta.
 
     ``V0`` (optionnel) : valeur de depart — rechauffage a la valeur du cycle
     precedent, comme dans l'iteration de la politique canonique ; par defaut
@@ -164,8 +170,8 @@ def _evaluate_policy(
         delta = max(abs(new_V[s] - V[s]) for s in states)
         V = new_V
         if delta < theta:
-            break
-    return V
+            return V, True
+    return V, False
 
 
 def policy_iteration(
@@ -181,14 +187,18 @@ def policy_iteration(
 
     Retourne ``(politique, valeur, improvement_steps, converge)``. La politique
     est initialisee a la premiere action dans chaque etat, puis alterne evaluation
-    de politique (complete) et amelioration gloutonne jusqu'a stabilisation.
+    de politique bornee et amelioration gloutonne jusqu'a stabilisation.
+    Si le dernier cycle modifie la politique, une evaluation bornee supplementaire
+    aligne la valeur renvoyee sur cette politique, sans garantir sa convergence.
     """
     pi = {s: actions[0] for s in states}
     V = {s: 0.0 for s in states}
     improvement_steps = 0
     converged = False
     for _ in range(max_iterations):
-        V = _evaluate_policy(states, actions, T, R, gamma, pi, theta, max_iterations, V0=V)
+        V, evaluation_converged = _evaluate_policy(
+            states, actions, T, R, gamma, pi, theta, max_iterations, V0=V
+        )
         new_pi: dict[str, str] = {}
         changed = False
         for s in states:
@@ -200,16 +210,20 @@ def policy_iteration(
                 changed = True
         pi = new_pi
         improvement_steps += 1
-        if not changed:
+        if not changed and evaluation_converged:
             converged = True
             break
+    if changed:
+        V, _ = _evaluate_policy(
+            states, actions, T, R, gamma, pi, theta, max_iterations, V0=V
+        )
     return pi, V, improvement_steps, converged
 
 
 def run(payload: Any) -> dict[str, Any]:
     """Point d'entree du service : valide le corps, iterer, repond au contrat.
 
-    Ne leve jamais d'exception : tout echec de validation devient
+    Les erreurs de validation traitees deviennent
     ``{"status": "invalid", "error": ...}``.
     """
     if not isinstance(payload, dict):

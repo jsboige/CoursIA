@@ -2,9 +2,9 @@
 
 Le coeur est charge **par chemin de fichier** (``importlib`` + ``Path(__file__)``).
 Les tests croisent aussi l'iteration de la valeur : sur un meme MDP, les deux
-algorithmes doivent converger vers la **meme** politique et la **meme** valeur
-optimales — et l'iteration de la politique doit l'atteindre en **moins** de
-cycles (le discriminant mesure entre les deux services).
+algorithmes convergent vers la meme politique et des valeurs proches sur les
+exemples testés. Leurs compteurs utilisent des unités différentes et ne permettent
+pas de comparer directement leur coût.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ TINY = {
 
 
 def build_gridworld():
-    """Le gridworld 4x3 d'AIMA ch. 14 (meme construction que les tests VI)."""
+    """Variante du gridworld 4x3 d'AIMA (même construction que les tests VI)."""
     cols, rows = 4, 3
     obstacles = {(1, 1), (1, 3)}
     terminal_reward = {(0, 3): 1.0, (2, 0): -1.0}
@@ -68,6 +68,10 @@ def build_gridworld():
         T[f"{r},{c}"] = {}
         R[f"{r},{c}"] = {}
         for a in actions:
+            if (r, c) in terminal_reward:
+                T[f"{r},{c}"][a] = {f"{r},{c}": 1.0}
+                R[f"{r},{c}"][a] = 0.0
+                continue
             dr, dc = delta[a]
             nr, nc = r + dr, c + dc
             if not in_bounds(nr, nc) or is_obs(nr, nc):
@@ -85,8 +89,49 @@ def build_gridworld():
             add(r + perps[0][0], c + perps[0][1], 0.1)
             add(r + perps[1][0], c + perps[1][1], 0.1)
             T[f"{r},{c}"][a] = outcomes
-            R[f"{r},{c}"][a] = terminal_reward.get((r, c), step_cost)
+            R[f"{r},{c}"][a] = sum(
+                probability * terminal_reward.get(tuple(map(int, state.split(","))), step_cost)
+                for state, probability in outcomes.items()
+            )
     return states, actions, T, R
+
+
+def test_stable_policy_requires_converged_evaluation() -> None:
+    payload = {
+        "states": ["s"], "actions": ["a"],
+        "T": {"s": {"a": {"s": 1.0}}},
+        "R": {"s": {"a": 1.0}}, "gamma": 0.9,
+        "theta": 1e-6, "max_iterations": 1,
+    }
+    out = run(payload)
+    assert out["value"]["s"] == 1.0
+    assert out["converged"] is False
+
+
+def test_final_changed_policy_gets_bounded_evaluation() -> None:
+    payload = {
+        "states": ["s"], "actions": ["a", "b"],
+        "T": {"s": {"a": {"s": 1.0}, "b": {"s": 1.0}}},
+        "R": {"s": {"a": 0.0, "b": 1.0}}, "gamma": 0.9,
+        "theta": 1e-6, "max_iterations": 1,
+    }
+    out = run(payload)
+    assert out["policy"] == {"s": "b"}
+    assert out["value"]["s"] == 1.0
+    assert out["converged"] is False
+
+
+@pytest.mark.parametrize("invalid", [float("nan"), float("inf"), float("-inf"), 10**400])
+@pytest.mark.parametrize("field", ["T", "R"])
+def test_unsupported_numeric_values_rejected(invalid: float | int, field: str) -> None:
+    import copy
+
+    payload = copy.deepcopy(TINY)
+    if field == "T":
+        payload["T"]["A"]["goA"]["A"] = invalid
+    else:
+        payload["R"]["A"]["goA"] = invalid
+    assert run(payload)["status"] == "invalid"
 
 
 def test_valid_contract_ok():
@@ -140,7 +185,7 @@ def test_agrees_with_value_iteration_on_gridworld():
 
 
 def test_policy_iteration_fewer_steps_than_value_backups():
-    """Le discriminant : iteration de la politique < backups de l'iteration de la valeur."""
+    """Compare les compteurs sur cet exemple, sans comparer les coûts de calcul."""
     states, actions, T, R = build_gridworld()
     payload = {"states": states, "actions": actions, "T": T, "R": R, "gamma": 0.9}
     pi = run(payload)
@@ -188,5 +233,9 @@ def test_gridworld_converges_and_extremes():
     out = run({"states": states, "actions": actions, "T": T, "R": R, "gamma": 0.9})
     assert out["status"] == "ok"
     assert out["converged"] is True
-    assert out["value"]["0,3"] == max(out["value"].values())
-    assert out["value"]["2,0"] == min(out["value"].values())
+    for terminal in ("0,3", "2,0"):
+        assert out["value"][terminal] == 0.0
+        for action in actions:
+            assert T[terminal][action] == {terminal: 1.0}
+            assert R[terminal][action] == 0.0
+    assert out["value"]["0,2"] > out["value"]["2,1"]

@@ -1,7 +1,7 @@
 """Coeur du service MDP — iteration de la valeur (Epic AIMA-Gateway #19571).
 
 Reprise auto-contenue de l'iteration de la valeur du carnet phare
-``RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb`` (AIMA ch. 14,
+``RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb`` (
 programmation dynamique sur MDP : backups de Bellman + politique gloutonne).
 Le service est testable hors kernel et hors notebook : aucun import du carnet.
 
@@ -46,14 +46,15 @@ Reponse (JSON, HTTP 200) ::
       "n_states": 2
     }
 
-- ``policy`` : action gloutonne optimale par etat (argmax du backup de Bellman).
-- ``value`` : fonction de valeur optimale ``V*(s)``.
-- ``iterations`` : nombre de backups de Bellman effectues.
-- ``converged`` : ``true`` si ``theta`` est atteint avant ``max_iterations``.
+- ``policy`` : action gloutonne par etat pour la valeur calculee.
+- ``value`` : approximation de la fonction de valeur optimale ``V*(s)``.
+- ``iterations`` : nombre d'iterations de Bellman effectuees.
+- ``converged`` : ``true`` si le seuil ``theta`` est atteint, y compris a la
+  derniere iteration autorisee.
 
 Entree hors contrat (cles manquantes, longueurs incoherentes, T non normalise,
 gamma hors bornes, probabilite negative) : ``{"status": "invalid", "error": ...}``
-— **le service ne leve jamais d'exception**.
+pour les erreurs de validation traitees.
 """
 
 from __future__ import annotations
@@ -70,8 +71,13 @@ class MdpInputError(ValueError):
 
 
 def _is_number(x: Any) -> bool:
-    """Vrai si ``x`` est un reel (int/float) et non un bool."""
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
+    """Vrai si ``x`` est un reel fini et non un bool."""
+    if not isinstance(x, (int, float)) or isinstance(x, bool):
+        return False
+    try:
+        return math.isfinite(x)
+    except OverflowError:
+        return False
 
 
 def _check_mdp(
@@ -153,7 +159,7 @@ def value_iteration(
     """Iteration de la valeur : backups de Bellman jusqu'a convergence.
 
     Retourne ``(politique, valeur, iterations, converge)`` ou ``politique[s]``
-    est l'action gloutonne optimale et ``valeur[s]`` la valeur optimale ``V*(s)``.
+    est l'action gloutonne pour la valeur calculee, une approximation de ``V*(s)``.
     """
     V = {s: 0.0 for s in states}
     iterations = 0
@@ -186,7 +192,7 @@ def value_iteration(
 def run(payload: Any) -> dict[str, Any]:
     """Point d'entree du service : valide le corps, iterer, repond au contrat.
 
-    Ne leve jamais d'exception : tout echec de validation devient
+    Les erreurs de validation traitees deviennent
     ``{"status": "invalid", "error": ...}``.
     """
     if not isinstance(payload, dict):

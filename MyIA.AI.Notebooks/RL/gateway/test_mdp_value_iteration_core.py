@@ -46,7 +46,7 @@ TINY = {
 
 
 def build_gridworld():
-    """Le gridworld 4x3 d'AIMA ch. 14 : 2 obstacles, 2 terminaux (+1 / -1), bruit 0.8/0.2."""
+    """Variante du gridworld 4x3 d'AIMA : deux obstacles et deux terminaux."""
     cols, rows = 4, 3
     obstacles = {(1, 1), (1, 3)}
     terminal_reward = {(0, 3): 1.0, (2, 0): -1.0}
@@ -68,6 +68,10 @@ def build_gridworld():
         T[f"{r},{c}"] = {}
         R[f"{r},{c}"] = {}
         for a in actions:
+            if (r, c) in terminal_reward:
+                T[f"{r},{c}"][a] = {f"{r},{c}": 1.0}
+                R[f"{r},{c}"][a] = 0.0
+                continue
             dr, dc = delta[a]
             nr, nc = r + dr, c + dc
             if not in_bounds(nr, nc) or is_obs(nr, nc):
@@ -86,8 +90,24 @@ def build_gridworld():
             add(r + perps[0][0], c + perps[0][1], 0.1)
             add(r + perps[1][0], c + perps[1][1], 0.1)
             T[f"{r},{c}"][a] = outcomes
-            R[f"{r},{c}"][a] = terminal_reward.get((r, c), step_cost)
+            R[f"{r},{c}"][a] = sum(
+                probability * terminal_reward.get(tuple(map(int, state.split(","))), step_cost)
+                for state, probability in outcomes.items()
+            )
     return states, actions, T, R
+
+
+@pytest.mark.parametrize("invalid", [float("nan"), float("inf"), float("-inf"), 10**400])
+@pytest.mark.parametrize("field", ["T", "R"])
+def test_unsupported_numeric_values_rejected(invalid: float | int, field: str) -> None:
+    import copy
+
+    payload = copy.deepcopy(TINY)
+    if field == "T":
+        payload["T"]["A"]["goA"]["A"] = invalid
+    else:
+        payload["R"]["A"]["goA"] = invalid
+    assert run(payload)["status"] == "invalid"
 
 
 def test_valid_contract_ok():
@@ -201,5 +221,9 @@ def test_gridworld_terminal_extremes():
     states, actions, T, R = build_gridworld()
     out = run({"states": states, "actions": actions, "T": T, "R": R, "gamma": 0.9})
     values = out["value"]
-    assert values["0,3"] == max(values.values())  # terminal +1 : valeur max
-    assert values["2,0"] == min(values.values())  # terminal -1 : valeur min
+    for terminal in ("0,3", "2,0"):
+        assert values[terminal] == 0.0
+        for action in actions:
+            assert T[terminal][action] == {terminal: 1.0}
+            assert R[terminal][action] == 0.0
+    assert values["0,2"] > values["2,1"]
