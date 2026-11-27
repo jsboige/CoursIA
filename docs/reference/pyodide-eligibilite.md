@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1485** carnets Python, **583** eligibles, **902** refuses.
+Census : **1483** carnets Python, **583** eligibles, **900** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -131,7 +131,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | SmartContracts | 31 | 10 | 21 | 0 | 3 | 17 | 19 | 17 |
 | SocialChoice | 12 | 6 | 6 | 0 | 0 | 0 | 5 | 1 |
 | SymbolicLearning | 20 | 7 | 13 | 7 | 2 | 2 | 6 | 6 |
-| Texte | 51 | 3 | 48 | 21 | 22 | 27 | 5 | 35 |
+| Texte | 49 | 3 | 46 | 19 | 22 | 27 | 5 | 35 |
 | Tweety | 19 | 1 | 18 | 0 | 0 | 2 | 18 | 6 |
 | Vibe-Coding | 6 | 5 | 1 | 0 | 0 | 0 | 0 | 1 |
 | Video | 23 | 3 | 20 | 16 | 11 | 14 | 6 | 19 |
