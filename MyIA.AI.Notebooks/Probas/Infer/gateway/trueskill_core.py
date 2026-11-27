@@ -12,7 +12,7 @@ n'est utilisee QUE par les tests, comme verification independante du cœur —
 jamais appelee par ce module (regle organ-first : l'organe calcule, la
 reference verifie).
 
-Contrat REST (carnet phare ``Infer-08b-...-Python.ipynb``, cellule annotee) :
+Contrat REST (carnet phare ``Infer-07b-...-Python.ipynb``, cellule annotee) :
     POST /probas/trueskill
       {"games": [{"teams": [["A","B"],["C"]], "ranks": [1,2]}, ...],
        "initial": {"mu": 25.0, "sigma": 8.333}?,
