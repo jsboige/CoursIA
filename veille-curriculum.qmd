@@ -1,0 +1,22 @@
+---
+title: "Veille et parcours : lire une annonce"
+description: "Un relevé daté relie une source extérieure aux notions du curriculum sans confondre annonce et preuve."
+---
+
+[Retour aux parcours](docs/parcours.qmd) · [Carte des prérequis](docs/curriculum/prerequis.qmd)
+
+## Pourquoi cette veille ?
+
+Une source extérieure peut éclairer une notion enseignée, contredire un résultat ou donner lieu à une distillation pédagogique. Ces relations ne sont **pas des prérequis** : la carte des prérequis conserve uniquement les dépendances déclarées dans la taxonomie. Les cartes ci-dessous datent leurs constats ; une annonce et sa reproduction indépendante sont deux choses différentes.
+
+## Registre vivant autour de P et NP {#pequalnp}
+
+**Relevé :** 25 novembre 2026, 13 h 57 UTC. **Source :** [présentation du fonctionnement de pequalnp.com](https://pequalnp.com/how), édité par Brilliant. Le relevé archivé est conservé dans le gisement bibliographique partagé, sous « Automata / Complexity Theory and Hardness / 2026 - Brilliant - pequalnp.com » ; le site évolue et le lien public peut donc différer du relevé.
+
+**Ce que la source rapporte.** Son dispositif décrit des agents qui proposent des étapes et un vérificateur Lean qui juge les résultats. Il distingue explicitement le jugement de son bureau des barrières — relativisation, preuves naturelles et algébrisation — de celui du vérificateur. Ces descriptions sont des **déclarations de la source**, pas une reproduction indépendante de ses preuves par ce digest.
+
+**Ce que cela éclaire.** La distinction entre un énoncé soumis à une vérification formelle et une exploration limitée fait écho à la notion [preuve formelle contre simulation](docs/curriculum/taxonomy/gametheory.json), identifiant stable `ba0eb1e7-e2ba-46e1-b2ae-4985354e01c4`. Elle est enseignée dans [ChoixSocial-01 : théorème d'Arrow](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb), cellule `d1e2f3a4`. Les deux problèmes sont distincts : ce rapprochement aide à questionner la portée d'une preuve, il ne fait pas du choix social un prérequis de P contre NP.
+
+**Distillation en cours.** Le travail pédagogique sur les barrières est suivi dans [l'issue #28430](https://github.com/jsboige/CoursIA/issues/28430). Les propositions de carnets [Python #28573](https://github.com/jsboige/CoursIA/pull/28573) et [C# #28585](https://github.com/jsboige/CoursIA/pull/28585) étaient ouvertes au relevé du 27 novembre 2026 : elles ne sont pas présentées ici comme livrées sur la branche principale. Consulter leur état avant de les utiliser.
+
+**Limites.** Cette carte ne démontre ni P = NP ni P ≠ NP, et ne valide aucune borne du registre. Le registre pouvant modifier ses énoncés, toute attribution précise exige de relire sa formulation et sa date. Les expériences pédagogiques éventuellement livrées ne démontrent pas pour autant les résultats externes auxquels elles renvoient.
