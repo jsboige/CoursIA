@@ -135,12 +135,14 @@ Ce niveau met en œuvre les workflows complets : génération automatisée de co
 
 ### 05-History - Racines pré-Stable-Diffusion
 
-Notebooks rétrospectifs : les outils d'avant Stable Diffusion (2021-2022) qui ont établi les paradigmes encore à l'œuvre aujourd'hui — CLIP comme fonction de perte sémantique, guidance par classifieur. [05-2](05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) exécute le code officiel de CLIPasso (SIGGRAPH 2022) : une image devient une esquisse de 4 à 32 traits, reconnaissable même à 4 — parce que l'optimisation est guidée par CLIP, pas par un signal bas-niveau.
+Notebooks rétrospectifs : les outils d'avant Stable Diffusion (2021-2022) qui ont établi les paradigmes encore à l'œuvre aujourd'hui — CLIP comme fonction de perte sémantique, guidance par classifieur. [05-3](05-History/05-3-CLIPasso-Semantic-Sketching.ipynb) exécute le code officiel de CLIPasso (SIGGRAPH 2022) : une image devient une esquisse de 4 à 32 traits, reconnaissable même à 4 — parce que l'optimisation est guidée par CLIP, pas par un signal bas-niveau.
 
 | Notebook | Contenu | Publication |
 |----------|---------|-------------|
-| [05-2-CLIPasso-Semantic-Sketching](05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) | Sketching sémantique, abstraction par nombre de traits | Vinker et al., SIGGRAPH 2022 |
-| 05-1-DiscoDiffusion *(en préparation, #16477)* | CLIP-guided diffusion pré-SD | — |
+| [05-0-Generateurs-Symboliques](05-History/05-0-Generateurs-Symboliques.ipynb) | Génération par règles symboliques | Voir le README de la série |
+| [05-1-GANs-Portraits-Moment-NFT](05-History/05-1-GANs-Portraits-Moment-NFT.ipynb) | Portraits générés par GAN et mesures de copie | Goodfellow et al., 2014 |
+| [05-2-DiscoDiffusion-CLIP-Guided-Diffusion](05-History/05-2-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb) | Diffusion guidée par CLIP avant Stable Diffusion | Crowson, 2021 |
+| [05-3-CLIPasso-Semantic-Sketching](05-History/05-3-CLIPasso-Semantic-Sketching.ipynb) | Sketching sémantique, abstraction par nombre de traits | Vinker et al., SIGGRAPH 2022 |
 
 [README 05-History](05-History/README.md)
 

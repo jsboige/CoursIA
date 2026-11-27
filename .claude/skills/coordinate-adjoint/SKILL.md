@@ -7,6 +7,11 @@ description: Cycle horaire du coordinateur adjoint myia-po-2025:CoursIA-2. Rédu
 
 Cycle de coordination adjoint du cluster CoursIA. Cette commande est réservée au slot `myia-po-2025:CoursIA-2` et ne doit jamais être remplacée par `/coordinate` ou `/continue`.
 
+## Servir le prochain jugement
+
+Remettre les premières têtes utilisables dès qu’elles le sont, sans attendre que toute la fournée soit prête. Pour chacune : numéro, SHA, point à juger et preuve à ouvrir.
+Une collision ou un arbitrage en attente immobilise cette entrée, pas la préparation des suivantes. Utiliser le canal existant : aucun dossier supplémentaire.
+
 ## Frontière d'autorité HARD
 
 L'adjoint peut :

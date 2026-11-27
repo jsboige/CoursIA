@@ -1,0 +1,468 @@
+# Conformite differentielle du couple Coalitions-01 (Pouvoir
+# Coalitionnel SMT, issue #27719, famille GameTheory/Coalitions).
+#
+# Le portage Rust (kernel evcxr, crate z3 0.24.0 chargee par `:dep` en
+# cellule 1) reprend le carnet Python a l'identique : memes jeux de vote,
+# memes indices de pouvoir (Shapley-Shubik, Banzhaf, Deegan-Packel) par
+# les deux voies -- enumeration directe et encodage SMT --, memes tables.
+# Le rendu pandas est reproduit par un formateur local (justification a
+# gauche de la colonne d'index, largeurs par colonne, separateurs).
+#
+# Deux familles de grandeurs, et c'est voulu :
+#
+# - les mesures `c<N>_*` comparent le TEXTE ENTIER d'une cellule (ou d'un
+#   segment) a l'egalite stricte : c'est la comparaison la plus forte,
+#   possible ici parce que le portage reproduit le rendu du jumeau Python ;
+# - les mesures nommees (`mwc_jeu1`, `shapley_A`, ... `assembly_minimales`)
+#   suivent le registre a 19 mesures ecrit par la lane myia-ai-01:CoursIA-2
+#   pour SON portage du meme carnet (branche
+#   `feature/coalitions-01-registre-19-mesures`, non fusionnee : la lane a
+#   libere le chemin au profit de la PR #28269). Elles nomment les grandeurs
+#   dans le rapport et survivent a un changement de rendu, la ou une mesure
+#   de texte entier rougirait sur une largeur de colonne. Les 19 identifiants
+#   et les 19 grandeurs sont repris. Cote Python, 16 motifs sont ceux du
+#   registre de CoursIA-2 ; deux captures de liste (`mwc_jeu1`,
+#   `mwc_joueur_nul`) sont seulement rendues paresseuses (meme texte capture
+#   aujourd'hui) ; la 19e, `smt_minimaux_jeu1`, compare la liste des modeles
+#   « a l'ordre pres » (voir les ecarts declares). Les motifs Rust du
+#   registre de CoursIA-2 (lignes `cle valeur`, cellules decalees de son
+#   portage) ne s'appliquent pas ici : les deux cotes de CE couple ont la
+#   meme structure et le meme rendu, donc chaque motif y est le meme des
+#   deux cotes.
+#
+# Les deux cotes ont la MEME structure de cellules (40 cellules, 12 code
+# aux memes index) : la correspondance des cellules est directe. Les
+# cellules evcxr sont PLATES et se terminent par une instruction `;` :
+# aucun execute_result « () » n'est attendu cote Rust. Pour les listes de
+# coalitions, le motif est paresseux et borne par les crochets de la liste
+# (`\[\[.*?\]\]`) : l'organe compile en `re.DOTALL`, un `.*` glouton
+# pourrait deborder sur la ligne suivante si la cellule gagnait un crochet
+# sous la liste.
+#
+# Le cote C# est absent du couple : pas de jumeau C# de ce carnet dans
+# le depot (cote non declare, c'est la relecture humaine qui la garantit,
+# d'ou le present commentaire).
+#
+# Ecarts de forme DECLARES (mesures par segment, jamais de sortie
+# maquillee) :
+#
+# - cellule 1 : banniere d'environnement (« Environnement charge :
+#   pandas 3.1.1, Z3 4.16.0 » cote Python ; « Environnement charge :
+#   Rust + evcxr, crate z3 0.24.0 » cote Rust) -- NON MESUREE, le texte
+#   est par nature specifique de chaque pile (precedent csp-10) ;
+# - cellule 13 : l'ordre des modeles minimaux rendus par le solveur
+#   differe ([['A', 'C'], ['A', 'B']] cote crate, [['A', 'B'],
+#   ['A', 'C']] cote z3-solver Python) -- meme ensemble de coalitions ;
+#   le markdown du carnet Rust cite l'ordre de la crate ; la mesure
+#   `c13_table` porte sur la table d'indices avant la ligne des modeles,
+#   et `smt_minimaux_jeu1` n'accorde que la liste exacte des DEUX modeles,
+#   dans l'un ou l'autre ordre (la region capturee y est le libelle, la
+#   contrainte vit dans le motif) ;
+# - cellule 19 : le libelle « Indices Python : » devient « Indices
+#   enumeration : » (renommage de la voie : les deux carnets calculent
+#   par enumeration directe) ; les deux tables et les lignes de statut
+#   apres le libelle sont mesures ;
+# - cellule 24 : le contre-exemple SAT est un modele satisfaisant
+#   DIFFERENT mais valide (4 coalitions sans singleton cote crate, 5
+#   avec [2] cote Python) -- les statuts unsat/sat des deux preuves
+#   d'efficacite sont identiques ; la mesure porte sur ces deux lignes
+#   de statut.
+#
+# Les preuves d'efficacite de la cellule 24 sont portees a echelles
+# entieres (Shapley multiplie par n!, Banzhaf par 2^(n-1)) : les statuts
+# unsat/sat, seules grandeurs imprimees, sont inchanges.
+- name: "Coalitions-01 Pouvoir Coalitionnel SMT"
+  family: "GameTheory/Coalitions"
+  python: MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Rust.ipynb
+  measures:
+    - id: c3_text
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c11_text
+      description: "Sortie de la cellule 11, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c13_table
+      description: "Table d'indices de la cellule 13 (segment avant la ligne des modeles minimaux, dont l'ordre declare differe)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Modèles\\ minimaux\\ Z3\\ :)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Modèles\\ minimaux\\ Z3\\ :)"
+          transform: text
+    - id: c16_text
+      description: "Sortie de la cellule 16, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c19_tables
+      description: "Tables et statuts de la cellule 19 apres le libelle de voie (libelle declare different : « Indices Python » / « Indices enumeration »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "\\A(?:.*?)(?m:^Indices\\ Python\\ :\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "\\A(?:.*?)(?m:^Indices\\ énumération\\ :\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c22_text
+      description: "Sortie de la cellule 22, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c24_statuts
+      description: "Statuts unsat/sat des preuves d'efficacite de la cellule 24 (le contre-exemple SAT declare differe : modele satisfaisant different, memes statuts)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Contre\\-exemple\\ SAT)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Contre\\-exemple\\ SAT)"
+          transform: text
+    - id: c27_text
+      description: "Sortie de la cellule 27, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c29_text
+      description: "Sortie de la cellule 29, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 29
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c33_text
+      description: "Sortie de la cellule 33, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: mwc_jeu1
+      description: "Coalitions gagnantes minimales du jeu [4; 3, 2, 1] — liste identique (texte strict)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'Coalitions gagnantes minimales : (\[\[.*?\]\])'
+          transform: text
+        rust:
+          cell: 3
+          pattern: 'Coalitions gagnantes minimales : (\[\[.*?\]\])'
+          transform: text
+    - id: shapley_A
+      description: "Shapley-Shubik de A dans le jeu [4; 3, 2, 1] — 0.6667 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+([0-9.]+)'
+          transform: float
+    - id: banzhaf_absolu_A
+      description: "Banzhaf absolu de A dans le jeu [4; 3, 2, 1] — 0.75 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+    - id: banzhaf_normalise_A
+      description: "Banzhaf normalise de A dans le jeu [4; 3, 2, 1] — 0.6 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+    - id: deegan_A
+      description: "Deegan-Packel de A dans le jeu [4; 3, 2, 1] — 0.5 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 7
+          pattern: '(?m)^A\s+3\s+0\.5000\s+[0-9.]+\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+    - id: somme_banzhaf_absolu
+      description: "Somme des Banzhaf absolus du jeu [4; 3, 2, 1] — 1.25 des deux cotes (la somme n'est pas imposee a 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Sommes : \\{'shapley_shubik': [0-9.]+, 'banzhaf_absolu': ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 7
+          pattern: "Sommes : \\{'shapley_shubik': [0-9.]+, 'banzhaf_absolu': ([0-9.]+)"
+          transform: float
+    - id: smt_minimaux_jeu1
+      description: "Coalitions minimales trouvees par le solveur sur le jeu [4; 3, 2, 1] — predicat : la ligne imprime exactement les deux modeles ['A', 'B'] et ['A', 'C'], dans l'ordre de l'un ou l'autre solveur (ecart declare). La valeur affichee est le crochet ouvrant, identique des deux cotes ; c'est le MOTIF qui porte la contrainte : toute autre liste ne correspond pas et l'extraction echoue (rc 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "Modèles minimaux Z3 : (\\[)(?:\\['A', 'B'\\], \\['A', 'C'\\]\\]|\\['A', 'C'\\], \\['A', 'B'\\]\\])"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "Modèles minimaux Z3 : (\\[)(?:\\['A', 'B'\\], \\['A', 'C'\\]\\]|\\['A', 'C'\\], \\['A', 'B'\\]\\])"
+          transform: text
+    - id: smt_shapley_A
+      description: "Shapley-Shubik de A par la voie SMT sur le jeu [4; 3, 2, 1] — 0.6667 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '(?m)^A\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 13
+          pattern: '(?m)^A\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)'
+          transform: float
+    - id: smt_banzhaf_normalise_A
+      description: "Banzhaf normalise de A par la voie SMT sur le jeu [4; 3, 2, 1] — 0.6 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '(?m)^A\s+[0-9.]+\s+([0-9.]+)\s+[0-9.]+'
+          transform: float
+        rust:
+          cell: 13
+          pattern: '(?m)^A\s+[0-9.]+\s+([0-9.]+)\s+[0-9.]+'
+          transform: float
+    - id: smt_deegan_A
+      description: "Deegan-Packel de A par la voie SMT sur le jeu [4; 3, 2, 1] — 0.5 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: '(?m)^A\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 13
+          pattern: '(?m)^A\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+    - id: cross_validation
+      description: "Ligne de conclusion de la cross-validation — texte identique"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: '(Cross-validation réussie[^\n]*)'
+          transform: text
+        rust:
+          cell: 16
+          pattern: '(Cross-validation réussie[^\n]*)'
+          transform: text
+    - id: ecart_max_jeu3_shapley
+      description: "Ecart maximal mesure par la cross-validation sur le Shapley-Shubik du jeu a quatre acteurs — texte identique (l'exposant est compare : la grandeur est lue en texte, pas en flottant)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: '(?m)^\s*3\s+shapley_shubik\s+([0-9eE.+-]+)'
+          transform: text
+        rust:
+          cell: 16
+          pattern: '(?m)^\s*3\s+shapley_shubik\s+([0-9eE.+-]+)'
+          transform: text
+    - id: mwc_joueur_nul
+      description: "Coalitions minimales du jeu a joueur nul [10; 5, 3, 2, 1] — liste identique (texte strict)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: 'Coalitions minimales gagnantes \(SMT\) : (\[\[.*?\]\])'
+          transform: text
+        rust:
+          cell: 19
+          pattern: 'Coalitions minimales gagnantes \(SMT\) : (\[\[.*?\]\])'
+          transform: text
+    - id: joueur_nul_D_shapley
+      description: "Shapley-Shubik de D, joueur nul du jeu [10; 5, 3, 2, 1] — 0 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: '(?m)^D\s+1\s+0\.090909\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 19
+          pattern: '(?m)^D\s+1\s+0\.090909\s+([0-9.]+)'
+          transform: float
+    - id: assembly_RN_shapley
+      description: "Shapley-Shubik du RN sur l'Assemblee a douze groupes — 0.2459 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(?m)^RN\s+126\s+0\.2184\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 29
+          pattern: '(?m)^RN\s+126\s+0\.2184\s+([0-9.]+)'
+          transform: float
+    - id: assembly_RN_banzhaf_absolu
+      description: "Banzhaf absolu du RN sur l'Assemblee a douze groupes — 0.5361 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(?m)^RN\s+126\s+0\.2184\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 29
+          pattern: '(?m)^RN\s+126\s+0\.2184\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+    - id: assembly_NI_deegan
+      description: "Deegan-Packel de NI sur l'Assemblee a douze groupes — 0.0358 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: '(?m)^NI\s+6\s+0\.0104\s+[0-9.]+\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+        rust:
+          cell: 29
+          pattern: '(?m)^NI\s+6\s+0\.0104\s+[0-9.]+\s+[0-9.]+\s+[0-9.]+\s+([0-9.]+)'
+          transform: float
+    - id: assembly_sieges
+      description: "Total des sieges controle sur l'Assemblee — 577 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'Contrôle des sièges : (\d+)'
+          transform: int
+        rust:
+          cell: 29
+          pattern: 'Contrôle des sièges : (\d+)'
+          transform: int
+    - id: assembly_minimales
+      description: "Nombre de coalitions minimales gagnantes sur l'Assemblee a douze groupes — 184 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'coalitions minimales : (\d+)'
+          transform: int
+        rust:
+          cell: 29
+          pattern: 'coalitions minimales : (\d+)'
+          transform: int
