@@ -38,7 +38,7 @@ Deux règles s'y ajoutent :
 | Question | Pli et premier carnet | Ce qu'on y apprend | Prérequis et public | Pour approfondir |
 |---|---|---|---|---|
 | Comment une population ou une épidémie évolue-t-elle ? | [Dynamiques](Dynamiques/README.md) → [Populations et épidémies](Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb) | Croissance logistique et solution exacte, Lotka-Volterra et son intégrale première, SIR avec $R_0$ et taille finale ; ordre de convergence mesuré. | Licence : Python, équations différentielles ordinaires. | L'épidémie sur réseau de contacts, puis l'inférence des paramètres avec `Probas/PyMC/`. |
-| Comment comparer et lire des séquences d'ADN ou de protéines ? | Séquences — à venir | Alignements de Needleman-Wunsch et Smith-Waterman par programmation dynamique, matrices de substitution, pénalités de brèche, matrices de poids positionnelles. | Licence : algorithmique de base, probabilités. | Les HMM de profil et l'inférence du motif planté avec `Probas/Infer/`. |
+| Comment comparer et lire des séquences d'ADN ou de protéines ? | [Séquences](Sequences/README.md) → [Aligner deux séquences](Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb) | Alignements de Needleman-Wunsch et Smith-Waterman écrits à la main et contrôlés par `Bio.Align.PairwiseAligner`, matrices de substitution, pénalités de brèche. | Licence : algorithmique de base, probabilités. | Les matrices de poids positionnelles et les HMM de profil ; le HMM-Viterbi de `NLP/`. |
 | Comment l'évolution se calcule-t-elle ? | Évolution — à venir | Hardy-Weinberg, Wright-Fisher et Moran, probabilité de fixation, coalescent, reconstruction phylogénétique, jeux évolutionnaires. | Licence : probabilités, génétique de population élémentaire. | La dynamique des réplicateurs de `GameTheory/Dynamics/`, qui est la même mécanique. |
 | Comment un réseau de gènes produit-il un comportement ? | Réseaux du vivant — à venir | Action de masse, Michaelis-Menten, Hill, interrupteur bistable, répressilateur, motifs de Turing. | Licence avancée : cinétique chimique, équations différentielles. | Les motifs de réaction-diffusion de `IIT/ICT-Series/`. |
 | Comment un neurone émet-il un potentiel d'action ? | Neurones — à venir | Hodgkin-Huxley, FitzHugh-Nagumo, intègre-et-tire, plan de phase et excitabilité. | Licence avancée : équations différentielles, analyse qualitative. | La réduction de FitzHugh-Nagumo confrontée au modèle complet. |
@@ -55,9 +55,15 @@ Les plis marqués « à venir » sont décrits dans l'Epic de la série et se d�
 
 La sous-série s'étendra à l'épidémie sur réseau de contacts simulée par agents, à la simulation stochastique de Gillespie comparée à l'équation déterministe, et à l'inférence des paramètres d'un modèle mécaniste.
 
-### Les six autres plis
+### Séquences — Licence
 
-Séquences, Évolution, Réseaux du vivant, Neurones, Structures et Mesure médicale sont décrits dans la table du parcours principal. Leurs carnets ne sont pas encore écrits ; leurs dossiers apparaîtront avec leur première feuille, et non avant.
+[Séquences](Sequences/README.md) traite l'alignement de deux séquences comme un problème d'optimisation, pas de ressemblance. [Séquences-01](Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb) écrit la récurrence de Needleman-Wunsch et son retour sur trace, puis Smith-Waterman pour l'alignement local. Le contrôle est `Bio.Align.PairwiseAligner`, qui ne partage aucune ligne avec le calcul du carnet : zéro désaccord de score global sur 200 paires d'ADN. Trois contre-témoins montrent que ce contrôle et le calcul savent échouer — un aligneur glouton qui perd sur 197 paires sur 200, la bibliothèque privée du bon jeu de score qui rend 200 désaccords sur 200, et un optimum local qui déborde le motif qu'on y avait planté.
+
+La sous-série s'étendra aux matrices de poids positionnelles et à l'inférence du motif, puis aux heuristiques de graines et aux profils HMM.
+
+### Les cinq autres plis
+
+Évolution, Réseaux du vivant, Neurones, Structures et Mesure médicale sont décrits dans la table du parcours principal. Leurs carnets ne sont pas encore écrits ; leurs dossiers apparaîtront avec leur première feuille, et non avant.
 
 ## Liens avec les autres séries
 
@@ -69,21 +75,22 @@ Séquences, Évolution, Réseaux du vivant, Neurones, Structures et Mesure médi
 
 ## Installation — pratique, tous niveaux
 
-Le carnet de Dynamiques tourne sur le noyau `python3`, sans GPU, et est livré avec ses sorties. NumPy, SciPy et Matplotlib suffisent.
+Les carnets de Dynamiques et de Séquences tournent sur le noyau `python3`, sans GPU, et sont livrés avec leurs sorties. NumPy, SciPy et Matplotlib suffisent à Dynamiques ; Séquences ajoute `biopython` pour la bibliothèque de contrôle.
 
 Depuis la racine du dépôt :
 
 ```bash
 python -m venv .venv-biomedecine
 source .venv-biomedecine/bin/activate
-python -m pip install jupyterlab ipykernel numpy scipy matplotlib
+python -m pip install jupyterlab ipykernel numpy scipy matplotlib biopython
 python -m ipykernel install --user --name coursia-biomedecine --display-name "Python — Bio & Médecine"
 jupyter lab MyIA.AI.Notebooks/BioMedecine/Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb
+jupyter lab MyIA.AI.Notebooks/BioMedecine/Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb
 ```
 
 Sous Windows, activer l'environnement avec `.\.venv-biomedecine\Scripts\Activate.ps1`. Sélectionner le noyau « Python — Bio & Médecine », puis exécuter les cellules dans l'ordre. Les [commandes communes](../../docs/reference/common-commands.md) complètent l'aide à l'environnement.
 
-Les plis à venir ajouteront leurs dépendances : `biopython` pour les alignements de référence, `networkx` pour les réseaux, `scikit-survival` pour l'analyse de survie. Aucun GPU n'est requis.
+Les plis à venir ajouteront leurs dépendances : `networkx` pour les réseaux, `scikit-survival` pour l'analyse de survie. Aucun GPU n'est requis.
 
 ## Statut et gouvernance
 

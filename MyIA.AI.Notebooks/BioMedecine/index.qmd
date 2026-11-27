@@ -1,10 +1,15 @@
 ---
 title: "Bio & Médecine — les mathématiques et les algorithmes du vivant"
 subtitle: "Série pédagogique — modéliser le vivant, puis soumettre le calcul à une voie indépendante : populations, épidémies, séquences, évolution, réseaux de gènes, neurones"
-description: "Série Bio & Médecine du dépôt CoursIA — croissance logistique contrôlée par sa solution exacte, Lotka-Volterra contrôlé par son intégrale première, SIR contrôlé par l'équation transcendante de sa taille finale, avec contre-témoins qui doivent échouer. Le même geste que la série Physique, appliqué aux objets du vivant."
+description: "Série Bio & Médecine du dépôt CoursIA — croissance logistique contrôlée par sa solution exacte, Lotka-Volterra contrôlé par son intégrale première, SIR contrôlé par l'équation transcendante de sa taille finale, alignements Needleman-Wunsch et Smith-Waterman contrôlés par Bio.Align.PairwiseAligner, avec contre-témoins qui doivent échouer. Le même geste que la série Physique, appliqué aux objets du vivant."
 listing:
   - id: dynamiques
     contents: "Dynamiques/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: sequences
+    contents: "Sequences/*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -21,12 +26,12 @@ cas où il doit échouer.
 
 ## Vue d'ensemble
 
-Sept plis, un même contrat de méthode. Un seul est ouvert à ce jour : **Dynamiques**, où la série prend son départ.
+Sept plis, un même contrat de méthode. Deux sont ouverts à ce jour : **Dynamiques**, où la série prend son départ, et **Séquences**, qui transpose le geste à l'alignement.
 
 | Pli | Objet | Ce qui sert de vérité | État |
 |-----|-------|-----------------------|------|
 | **Dynamiques** | Populations et épidémies : logistique, Lotka-Volterra, SIR et $R_0$ | La solution exacte de la logistique ; l'intégrale première de Lotka-Volterra ; l'équation transcendante de la taille finale de l'épidémie | **Livré** : [Dynamiques-01](Dynamiques/Dynamiques-01-Populations-et-Epidemies-Python.ipynb) |
-| **Séquences** | Alignements Needleman-Wunsch et Smith-Waterman, matrices de substitution, motifs | Le score d'alignement calculé par une bibliothèque de référence ; le motif planté retrouvé | À venir |
+| **Séquences** | Alignements Needleman-Wunsch et Smith-Waterman, matrices de substitution, motifs | Le score d'alignement recalculé par `Bio.Align.PairwiseAligner` ; le motif planté retrouvé ; le contrôle privé de son jeu de score, qui doit diverger | **Livré** : [Séquences-01](Sequences/Sequences-01-Alignement-Programmation-Dynamique-Python.ipynb) |
 | **Évolution** | Wright-Fisher et Moran, fixation, coalescent, phylogénie, jeux évolutionnaires | La probabilité de fixation de Kimura ; l'arbre retrouvé sur des séquences simulées le long d'un arbre connu | À venir |
 | **Réseaux du vivant** | Cinétique enzymatique, interrupteurs bistables, répressilateur, motifs de Turing | L'approximation quasi stationnaire contre la cinétique complète ; la bifurcation localisée analytiquement puis numériquement | À venir |
 | **Neurones** | Hodgkin-Huxley, FitzHugh-Nagumo, intègre-et-tire, excitabilité | Le seuil et la période lus sur le plan de phase, contre ceux mesurés sur le modèle complet | À venir |
@@ -64,12 +69,28 @@ pas nulle — elle vaut ce que prédit $I_0/(1-R_0)$, ce qui est un résultat en
 ::: {#dynamiques}
 :::
 
+## Séquences : l'optimum s'aligne, il ne se devine pas
+
+Comparer deux séquences n'est pas une affaire de ressemblance : c'est une optimisation. La
+sous-série écrit la récurrence de Needleman-Wunsch et son retour sur trace, puis
+Smith-Waterman pour l'alignement local, et donne à chacune un juge qui ne partage pas son
+code — `Bio.Align.PairwiseAligner`. Sur deux cents paires d'ADN tirées à graine fixe, les
+scores s'accordent sans un seul désaccord.
+
+Trois contre-témoins montrent que ce zéro n'est pas complaisant : un aligneur glouton perd
+sur la quasi-totalité des paires, la bibliothèque privée du bon jeu de score rend deux cents
+désaccords sur deux cents, et l'optimum local déborde le motif qu'on y avait planté — un
+algorithme local ne dit pas « voici le motif », il dit « voici la meilleure fenêtre ».
+
+::: {#sequences}
+:::
+
 ## Démarrage rapide
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate     # ou .venv\Scripts\activate sous Windows
-pip install numpy scipy matplotlib jupyterlab
+pip install numpy scipy matplotlib biopython jupyterlab
 jupyter lab MyIA.AI.Notebooks/BioMedecine/
 ```
 
