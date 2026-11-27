@@ -539,11 +539,11 @@ une dynamique qui, cette fois, **génère** son propre paysage de buts plutôt q
 
 ## Principe méthodologique
 
-ICT mesure ce que les modèles font **vraiment**, pas ce qu'on espérait. ICT-2 l'illustre :
+ICT mesure ce que les modèles font **vraiment**, pas ce qu'on espérait. ICT-03b l'illustre :
 le toy model minimal reproduit fidèlement la robustesse et le délai de gratification, mais
 **pas** l'agrégation « kin » positive du papier (ses règles uni-directionnelles produisent au
 contraire des impasses de coordination). Le notebook le dit honnêtement et renvoie l'agrégation
-à ICT-4. [ICT-4](ICT-03c-ChimericArraysKinAggregation-Python.ipynb) tient cette promesse avec un jeu de
+à ICT-03c. [ICT-03c](ICT-03c-ChimericArraysKinAggregation-Python.ipynb) tient cette promesse avec un jeu de
 règles plus riche — et la même discipline : l'agrégation émerge, mais **seulement** dans les
 degrés de liberté laissés par le tri (sans valeurs répétées, elle disparaît), ce que le notebook
 mesure au lieu de le proclamer. Cette discipline — exécuter, mesurer, narrer le résultat réel —

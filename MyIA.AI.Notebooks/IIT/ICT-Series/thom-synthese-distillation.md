@@ -62,7 +62,7 @@ récupérer — avec le distinguo explicite matrice (c.728y+34) vs synthèse
 |---|---|---|---|
 | **Saillance** $s$ | Ce qui est perceptiblement présent dans l'écoulement | conceptuel, déjà nommé | socle strate 6 (Nom = saillance 0-valent) |
 | **Prégnance** $\pi$ | Ce qui donne de l'importance (charge, valence) | conceptuel, déjà nommé | socle strate 6 (Verbe = prégnance 1-4 actants) |
-| **Représentation** $q$ | Ce que le système croit de la cause/du futur ; `p̂` = cas simple (croyance réduite à un point) | [ICT-10](ICT-06-CatastropheGrammar-Python.ipynb), [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb) | déjà mesurée (cf. lacet de prédation Ch.4 §C) |
+| **Représentation** $q$ | Ce que le système croit de la cause/du futur ; `p̂` = cas simple (croyance réduite à un point) | [ICT-06](ICT-06-CatastropheGrammar-Python.ipynb), [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb), [ICT-14](ICT-14-FreeEnergySurprise-Python.ipynb) | déjà mesurée (cf. lacet de prédation Ch.4 §C) |
 | **Workspace** $W$ | Ce qui rend des composantes disponibles à d'autres mécanismes | [ICT-24](ICT-24-WorkspaceIgnition-Python.ipynb) (livré Gates 22-23, dissociation documentée) | transversal |
 
 Le présent document ne reproduit pas la matrice
@@ -1280,7 +1280,7 @@ Cette distillation reste au **grade C-documentaire** :
 
 - Le **cadre mathématique** (catastrophes, dynamiques lentes-rapides,
   cuspides, fronces, plis) est au **grade A** : formalisé, mesurable,
-  reproductible. Cf. [ICT-10](ICT-06-CatastropheGrammar-Python.ipynb)
+  reproductible. Cf. [ICT-06](ICT-06-CatastropheGrammar-Python.ipynb)
   qui opère sur la fronce et le lacet de prédation avec des bancs
   multi-graines et des contrôles adverses.
 - La **lecture ICT** (les dissociations sont des obstructions cohomologiques,
@@ -1325,7 +1325,7 @@ extension, pas une redite.
 ### Cross-références Thom 1991 par chapitre
 
 - **Ch.1 — La théorie des catastrophes** : cf. usages
-  [ICT-10](ICT-06-CatastropheGrammar-Python.ipynb)
+  [ICT-06](ICT-06-CatastropheGrammar-Python.ipynb)
   (fronce, métathéorème, lacet de prédation).
 - **Ch.2 — Le langage** : cf. §Strate 6 ci-dessus (universalisme
   linguistique, valence Tesnière, transitivité prototypique).
@@ -1360,7 +1360,7 @@ extension, pas une redite.
   §Strate 2 (morphogenèse dynamique, catastrophes) — référence de base.
 - [ICT-0-Annexe-IntegratedComplexityTheory](ICT-0-Annexe-IntegratedComplexityTheory.md)
   — fondements théoriques complémentaires.
-- [ICT-10](ICT-06-CatastropheGrammar-Python.ipynb)
+- [ICT-06](ICT-06-CatastropheGrammar-Python.ipynb)
   — catastrophe fronce + lacet de prédation + `p̂`.
 - [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
   — animats actantiels, mesure de la valence.
@@ -1414,7 +1414,7 @@ exploiter :
 
 - **Thom Ch.1, Ch.2 lus mais non exploités directement** ici — Ch.1
   (introduction à la théorie des catastrophes) est en partie couvert par
-  [ICT-10](ICT-06-CatastropheGrammar-Python.ipynb),
+  [ICT-06](ICT-06-CatastropheGrammar-Python.ipynb),
   Ch.2 (le langage) est exploité en strate 6 mais son contenu propre
   (formalisme des schémas linguistiques) reste à creuser.
 - **Ch.5 §E-G** (régulation physiologique, préprogramme génétique,
