@@ -27,6 +27,11 @@ mathematique (taxonomie HoDoKu/sudokuwiki ; cf. la carte technique x depots de
 l'issue #27533), sans copie de code des depots sources. Les noms ``Step.rule``
 sont geles ici : le volet 4 (Lean) prouvera la correction de ces regles nommees.
 
+Lot 3 (#27533) : fish d'ordre 3 et 4 -- ``swordfish`` et ``jellyfish``,
+generalisation du X-Wing en base lignes OU colonnes (le ``x_wing`` du volet 3
+reste base lignes uniquement, non modifie ; noms geles). Meme discipline :
+definition mathematique, aucune copie de code des depots sources.
+
 Verifiabilite : le corpus #26426 livre des grilles a solution UNIQUE (statut
 ``exhausted``, ``solutions_found == 1``). Une elimination ``(cell, value)`` est
 donc valide si et seulement si la solution unique ne place PAS ``value`` en
@@ -95,8 +100,8 @@ class Step:
         index: rang de l'etape dans la trace (0-based)
         rule: nom precis de la regle (cf. ``InferenceSolver.RULE_ORDER`` :
             singles, tuples nus et caches d'ordre 2 a 4, candidats verrouilles,
-            X-Wing) -- le volet 4 (Lean) prouvera la correction de ces regles
-            nommees
+            X-Wing, Swordfish, Jellyfish) -- le volet 4 (Lean) prouvera la
+            correction de ces regles nommees
         premises: justification lisible (cases/valeurs qui fondent la regle)
         placements: [(row, col, value)] valeurs placees par cette etape
         eliminations: [(row, col, value)] candidats elimines par cette etape
@@ -151,7 +156,8 @@ class InferenceSolver:
 
     RULE_ORDER = ("naked_single", "hidden_single", "naked_pair", "naked_triple",
                   "naked_quad", "hidden_pair", "hidden_triple", "hidden_quad",
-                  "pointing_pair", "locked_claiming", "x_wing")
+                  "pointing_pair", "locked_claiming", "x_wing", "swordfish",
+                  "jellyfish")
 
     def __init__(self, puzzle: str):
         self.grid = parse_grid(puzzle)
@@ -443,6 +449,73 @@ class InferenceSolver:
                                     grid_after=grid_to_string(self.grid))
         return None
 
+    # -- lot 3 (#27533) : fish d'ordre 3 et 4 (swordfish, jellyfish) -------
+
+    def _unit_cells(self, unit_type: str, idx: int) -> List[Tuple[int, int]]:
+        """Les 9 cases de l'unite ``unit_type`` (ligne/colonne) d'indice ``idx``."""
+        if unit_type == "ligne":
+            return [(idx, c) for c in range(9)]
+        return [(r, idx) for r in range(9)]
+
+    def _fish(self, n: int, rule_name: str) -> Optional[Step]:
+        """Fish d'ordre n (Swordfish n=3, Jellyfish n=4) : n unites de BASE
+        (lignes ou colonnes) dont les positions candidates d'une valeur
+        vivent dans exactement n unites de COUVERTURE de l'autre orientation
+        -- la valeur est eliminee du reste des unites de couverture.
+
+        Le X-Wing du volet 3 couvre le fish n=2 en base lignes uniquement ;
+        cette generalisation couvre les DEUX orientations de base pour n=3
+        et n=4 (l'extension base colonnes du n=2 reste a la regle ``x_wing``
+        du volet 3, non reprise ici).
+
+        Couplage d'ordre (invariant) : ``naked_single``/``hidden_single``
+        precedent dans ``RULE_ORDER`` et chaque pas reprend au sommet, donc
+        dans la boucle une unite a position unique est consommee avant ce
+        scan ; le filtre ``2 <= len(spots) <= n`` exclut en outre
+        structurellement les unites a 0 ou 1 position des bases, et la
+        regle reste correcte appelee hors ordre (test negatif
+        ``test_fish_ignores_units_with_single_position``).
+        """
+        for base_type in ("ligne", "colonne"):
+            cover_is_row = base_type == "colonne"
+            for v in range(1, 10):
+                bases: List[Tuple[int, List[Tuple[int, int]]]] = []
+                for idx in range(9):
+                    spots = [(r, c) for (r, c) in self._unit_cells(base_type, idx)
+                             if self.grid[r][c] == 0 and v in self.cands[r][c]]
+                    if 2 <= len(spots) <= n:
+                        bases.append((idx, spots))
+                for combo in itertools.combinations(bases, n):
+                    positions = [p for (_, spots) in combo for p in spots]
+                    covers = {(p[0] if cover_is_row else p[1]) for p in positions}
+                    if len(covers) != n:
+                        continue
+                    base_idxs = tuple(sorted(idx for (idx, _) in combo))
+                    elims: List[Tuple[int, int, int]] = []
+                    for k in covers:
+                        for (r, c) in self._unit_cells("ligne" if cover_is_row
+                                                       else "colonne", k):
+                            if (r, c) in positions or self.grid[r][c] != 0:
+                                continue
+                            if v in self.cands[r][c]:
+                                self.cands[r][c].discard(v)
+                                elims.append((r, c, v))
+                    if elims:
+                        return Step(0, rule_name,
+                                    f"valeur {v} : {base_type}s {base_idxs} "
+                                    f"couvrent les "
+                                    f"{'lignes' if cover_is_row else 'colonnes'} "
+                                    f"{sorted(covers)}",
+                                    eliminations=elims,
+                                    grid_after=grid_to_string(self.grid))
+        return None
+
+    def _swordfish(self) -> Optional[Step]:
+        return self._fish(3, "swordfish")
+
+    def _jellyfish(self) -> Optional[Step]:
+        return self._fish(4, "jellyfish")
+
     # -- boucle de resolution ----------------------------------------------
 
     def solve(self, max_steps: int = 10000) -> Trace:
@@ -460,6 +533,8 @@ class InferenceSolver:
             "pointing_pair": self._pointing_pair,
             "locked_claiming": self._locked_claiming,
             "x_wing": self._x_wing,
+            "swordfish": self._swordfish,
+            "jellyfish": self._jellyfish,
         }
         while not self.is_solved() and len(trace.steps) < max_steps:
             progress = False
