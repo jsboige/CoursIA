@@ -102,7 +102,11 @@ def changed_notebooks(root: Path, base_ref: str) -> list[Path]:
     """
     try:
         completed = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", f"{base_ref}...HEAD"],
+            # `-c core.quotePath=false` : git cite les chemins non ASCII, et le
+            # chemin cite n'existe pas sur le disque -- le carnet etait donc
+            # ignore en silence (faux vert). Precedent : `check_notebook_navlinks.py`.
+            ["git", "-C", str(root), "-c", "core.quotePath=false",
+             "diff", "--name-only", f"{base_ref}...HEAD"],
             capture_output=True,
             text=True,
             encoding="utf-8",

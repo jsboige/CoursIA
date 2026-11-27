@@ -164,7 +164,7 @@ def build_revision_counts() -> dict[str, int]:
     try:
         result = subprocess.run(
             [
-                "git",
+                "git", "-c", "core.quotePath=false",
                 "log",
                 "HEAD",
                 "--name-only",
