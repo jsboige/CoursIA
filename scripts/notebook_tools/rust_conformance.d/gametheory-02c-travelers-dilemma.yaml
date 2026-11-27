@@ -1,0 +1,326 @@
+# Conformite differentielle du triplet GameTheory-02c (Travelers-Dilemma).
+#
+# Le carnet Rust (kernel `evcxr`, `std` seul — aucun `:dep`) rejoue le jeu de
+# Presser & Holt que portent le jumeau Python (NumPy) et le jumeau C# (BCL) :
+# paiements u1, meilleure reponse, elimination iterative des strategies
+# dominees, gain de sous-cotage, meilleure reponse sous mefiance. Les trois
+# cotes n'ont pas la meme structure de cellules : le Python et le Rust
+# partagent le plan de la spec, le C# a son propre decoupage (8 cellules de
+# code) et n'embarque pas la version exacte (fractions) du temoin.
+#
+# Ecarts de FORME declares (le contenu est le meme, la mise en forme change) :
+#   - le Python et le Rust ecrivent "y=100 -> x* (99, 101.0)", le C# ecrit
+#     "y=100 -> x* = 99  (valeur 101)" ; l'extraction est declaree par cote ;
+#   - le C# ecrit "Strategies survivantes : [2]" (espace avant le deux-points)
+#     et imprime "devier a 3 pour Ligne   : 0" (gain entier), la ou le
+#     Python/Rust impriment "devier a 3 pour Ligne : 0.0" (gain flottant) ;
+#     les valeurs numeriques sont egales, la tolerance reste 0 ;
+#   - le C# enumere les BR(y) a r=1 et affirme que chaque profil (y,y) est un
+#     equilibre de Nash sans en donner le compte ; le compte exact (99) est
+#     une grandeur propre aux jumeaux Python/Rust.
+#
+# Ecart de FOND declare : le temoin EXACT du gain de sous-cotage (cellule 22
+# des jumeaux Python/Rust, en fractions) n'a pas de contrepartie dans le
+# carnet C#, dont la table de la cellule 16 est flottante. Cote declare
+# ABSENT, avec motif, et non une mesure manquante.
+#
+# Tolerance 0 partout : toutes les grandeurs comparees sont des entiers ou des
+# flottants exacts (gain de sous-cotage = r - 1).
+- name: "GameTheory-02c Travelers-Dilemma"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-Rust.ipynb
+  measures:
+    - id: u1_90_100
+      description: "Paiement u1(90, 100) a r = 2 : bonus de 2 au-dessus du minimum (92)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'u1\(90, 100, r=2\) = ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 4
+          pattern: 'u1\(90, 100, r=2\) = ([0-9]+)'
+          transform: int
+        rust:
+          cell: 7
+          pattern: 'u1\(90, 100, r=2\) = ([0-9]+)'
+          transform: int
+    - id: u1_100_90
+      description: "Paiement u1(100, 90) a r = 2 : penalite de 2 sous le minimum (88)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'u1\(100, 90, r=2\) = ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 4
+          pattern: 'u1\(100, 90, r=2\) = ([0-9]+)'
+          transform: int
+        rust:
+          cell: 7
+          pattern: 'u1\(100, 90, r=2\) = ([0-9]+)'
+          transform: int
+    - id: u1_90_90
+      description: "Paiement u1(90, 90) a r = 2 : egalite, le minimum pur (90)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'u1\(90, 90, r=2\)\s+= ([0-9]+)'
+          transform: int
+        csharp:
+          cell: 4
+          pattern: 'u1\(90, 90, r=2\)\s+= ([0-9]+)'
+          transform: int
+        rust:
+          cell: 7
+          pattern: 'u1\(90, 90, r=2\)\s+= ([0-9]+)'
+          transform: int
+    - id: br_y100
+      description: "Meilleure reponse a y = 100 : x* = 99 (sous-coter d'une unite)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'y=100 -> x\* \(([0-9]+),'
+          transform: int
+        csharp:
+          cell: 8
+          pattern: 'y=100 -> x\* = ([0-9]+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'y=100 -> x\* \(([0-9]+),'
+          transform: int
+    - id: br_y100_value
+      description: "Valeur de la meilleure reponse a y = 100 : 101"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'y=100 -> x\* \([0-9]+, ([0-9.]+)\)'
+          transform: float
+        csharp:
+          cell: 8
+          pattern: 'y=100 -> x\* = [0-9]+  \(valeur ([0-9]+)\)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'y=100 -> x\* \([0-9]+, ([0-9.]+)\)'
+          transform: float
+    - id: br_y3
+      description: "Meilleure reponse a y = 3 : x* = 2, le plancher (contre-exemple au sous-cotage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'y=3\s+-> x\* \(([0-9]+),'
+          transform: int
+        csharp:
+          cell: 8
+          pattern: 'y=\s*3 -> x\* = ([0-9]+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'y=3\s+-> x\* \(([0-9]+),'
+          transform: int
+    - id: survivors
+      description: "Strategies survivantes a l'elimination iterative a r = 2 : [2]"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'Strategies survivantes: \[([0-9]+)\]'
+          transform: int
+        csharp:
+          cell: 12
+          pattern: 'Strategies survivantes : \[([0-9]+)\]'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'Strategies survivantes: \[([0-9]+)\]'
+          transform: int
+    - id: deviation_line_gain
+      description: "Gain de la deviation (2 -> 3) pour Ligne au profil (2,2) : 0, pas profitable"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'pour Ligne : (-?[0-9.]+)'
+          transform: float
+        csharp:
+          cell: 12
+          pattern: 'pour Ligne\s+: (-?[0-9]+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'pour Ligne : (-?[0-9.]+)'
+          transform: float
+    - id: deviation_column_gain
+      description: "Gain de la deviation (2 -> 3) pour Colonne au profil (2,2) : 0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: 'pour Colonne : (-?[0-9.]+)'
+          transform: float
+        csharp:
+          cell: 12
+          pattern: 'pour Colonne\s+: (-?[0-9]+)'
+          transform: int
+        rust:
+          cell: 15
+          pattern: 'pour Colonne : (-?[0-9.]+)'
+          transform: float
+    - id: undercut_gain_r2
+      description: "Gain de sous-cotage a r = 2 : r - 1 = 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: '2\.0 \|\s+(-?[0-9.]+) \|'
+          transform: float
+        csharp:
+          cell: 16
+          pattern: '2\.0 \|\s+(-?[0-9.]+) \|'
+          transform: float
+        rust:
+          cell: 19
+          pattern: '2\.0 \|\s+(-?[0-9.]+) \|'
+          transform: float
+    - id: undercut_spiral_r2
+      description: "A r = 2, la spirale de sous-cotage atteint-elle le plancher ? OUI"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: '2\.0 \|\s+-?[0-9.]+ \| ([A-Z]+)'
+          transform: text
+        csharp:
+          cell: 16
+          pattern: '2\.0 \|\s+-?[0-9.]+ \| ([A-Z]+)'
+          transform: text
+        rust:
+          cell: 19
+          pattern: '2\.0 \|\s+-?[0-9.]+ \| ([A-Z]+)'
+          transform: text
+    - id: nash_diag_count_r1
+      description: "Nombre d'equilibres de Nash diagonaux a r = 1 : 99 (de 2 a 100)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: 'equilibres de Nash diagonaux : ([0-9]+) au total'
+          transform: int
+        csharp:
+          absent: >-
+            Le carnet C# enumere les BR(y) a r = 1 et affirme que chaque profil
+            (y,y) est un equilibre de Nash, sans donner le compte (99) : la
+            grandeur est propre aux jumeaux Python et Rust. Cote declare ABSENT.
+        rust:
+          cell: 19
+          pattern: 'equilibres de Nash diagonaux : ([0-9]+) au total'
+          transform: int
+    - id: br_r1_100_set
+      description: "A r = 1, la meilleure reponse a y = 100 est multi-valuee : {99, 100}"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: 'r=1 :: BR\(100\) = \[([0-9, ]+)\]'
+          transform: text
+        csharp:
+          cell: 8
+          pattern: 'y=100 r=1 : u1\(y-1,y\) = 100 = u1\(y,y\) = 100 -> BR\(y\) = \{([0-9, ]+)\}'
+          transform: text
+        rust:
+          cell: 19
+          pattern: 'r=1 :: BR\(100\) = \[([0-9, ]+)\]'
+          transform: text
+    - id: br_mistrust_eps005
+      description: "Meilleure reponse de Ligne sous mefiance eps = 0.05 : 96 (saut au plafond)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: 'eps=0\.05 :: meilleure reponse de Ligne =\s+([0-9]+)'
+          transform: int
+        csharp:
+          cell: 20
+          pattern: 'eps=0\.05 :: meilleure reponse de Ligne =\s+([0-9]+)'
+          transform: int
+        rust:
+          cell: 26
+          pattern: 'eps=0\.05 :: meilleure reponse de Ligne =\s+([0-9]+)'
+          transform: int
+    - id: br_mistrust_eps050
+      description: "Meilleure reponse de Ligne sous mefiance eps = 0.50 : 96"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: 'eps=0\.50 :: meilleure reponse de Ligne =\s+([0-9]+)'
+          transform: int
+        csharp:
+          cell: 20
+          pattern: 'eps=0\.50 :: meilleure reponse de Ligne =\s+([0-9]+)'
+          transform: int
+        rust:
+          cell: 26
+          pattern: 'eps=0\.50 :: meilleure reponse de Ligne =\s+([0-9]+)'
+          transform: int
+    - id: exact_gain_c100
+      description: "Temoin EXACT du gain de sous-cotage a c = 100 : 101 - 100 = 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: 'c=100 : u1\(99,100\) - u1\(100,100\) = 101 - 100 = ([0-9]+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# n'embarque pas la version exacte (fractions) du
+            temoin : sa table de la cellule 16 est flottante et porte les
+            memes valeurs. La version exacte est propre aux jumeaux Python et
+            Rust. Cote declare ABSENT.
+        rust:
+          cell: 22
+          pattern: 'c=100 : u1\(99,100\) - u1\(100,100\) = 101 - 100 = ([0-9]+)'
+          transform: int
+    - id: exact_gain_c3
+      description: "Temoin EXACT du gain de sous-cotage a c = 3 : 4 - 3 = 1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: 'c=\s*3 : u1\(2,3\) - u1\(3,3\) = 4 - 3 = ([0-9]+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme motif que exact_gain_c100 : le temoin exact n'existe que dans
+            les jumeaux Python et Rust. Cote declare ABSENT.
+        rust:
+          cell: 22
+          pattern: 'c=\s*3 : u1\(2,3\) - u1\(3,3\) = 4 - 3 = ([0-9]+)'
+          transform: int
