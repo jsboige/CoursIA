@@ -1,0 +1,13 @@
+- name: "GameTheory-03e Meta-Actions Tarifees"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux côtés sont sans solveur par conception : le carnet Python n'importe que la stdlib (itertools, collections, heapq, random, re, pathlib) et le jumeau C# que la BCL (Dictionary, HashSet, Queue, PriorityQueue, System.Text.RegularExpressions, System.IO, System.Numerics.BitOperations), sans un seul paquet NuGet. Les algorithmes — meilleure réponse, BFS sur les 576 chambres, seuil de migration, Dijkstra sous barème — sont écrits à la main des deux côtés : c'est l'objet pédagogique, et aucun moteur SOTA externe ne calcule cette migration dans l'espace des chambres ordinales."
+  known_differences:
+    - "Aléa : Python appelle random.seed(0) / random.choice ; le jumeau C# porte le MT19937 de CPython (init_by_array, tempérage, rejet de _randbelow) parce que System.Random ne suit pas cet algorithme. L'échantillon de 300 paires est identique tirage par tirage (394, 430, 41, 265, 523 ; paires (394, 430), (41, 265), (523, 497))."
+    - "Représentation : les tuples Python deviennent deux alias de tuples de valeur (Tab = (int,int,int,int), Jeu = (Tab, Tab)), qui portent l'égalité structurelle, le hachage et l'ordre lexicographique ; des helpers PyTup / PyJeu / PyLst / PyDictInt / PyDictIntStr reproduisent le repr de Python pour que les sorties coïncident ligne à ligne."
+    - "Ordre d'insertion : là où Python s'appuie sur l'ordre d'un dict (sélection du premier voisin qui atteint le rang cible), le BFS C# rend explicitement la liste d'ordre de découverte, et les dicts affichés sont triés par clé comme le dict(sorted(...)) de la source."
+    - "Différence de plateforme : le noyau .NET Interactive émet des fins de ligne CRLF dans les sorties de flux (norme des carnets C# du dépôt) ; le contenu des 27 cellules est identique à celui du carnet Python, à la fin de ligne près."
+    - "Vérification : le assert final de Python devient une garde explicite (if (!(0 < detQ && detQ < detP && detD == 0)) throw new InvalidOperationException(...)), qui ne se déclenche que si le miroir diverge du noyau Lean — aucun échec volontaire (règle C.1)."

@@ -15,10 +15,22 @@ Frontiere « sans gomme » (inference pure vs recherche encapsulee) :
     seule, et les grilles non resolues sont conservees comme temoins de la
     frontiere (la ou l'inference pure s'arrete).
 
-Copie pedagogique declaree (regle organ-first) : les cinq techniques sont
-reprises du carnet 08 et instrumentees ; l'organe natif de verification est
+Copie pedagogique declaree (regle organ-first) : les cinq techniques du volet 3
+sont reprises du carnet 08 et instrumentees ; l'organe natif de verification est
 ``dlx_certificates.solve_certificate`` (oracle exact, deja certifie #22375),
 invoque tel quel -- aucune reimplementation du moteur DLX.
+
+Lot 2 (#27533, onboarding par lots) : six regles supplementaires --
+``naked_triple``, ``naked_quad``, ``hidden_pair``, ``hidden_triple``,
+``hidden_quad``, ``locked_claiming`` -- implementees depuis leur definition
+mathematique (taxonomie HoDoKu/sudokuwiki ; cf. la carte technique x depots de
+l'issue #27533), sans copie de code des depots sources. Les noms ``Step.rule``
+sont geles ici : le volet 4 (Lean) prouvera la correction de ces regles nommees.
+
+Lot 3 (#27533) : fish d'ordre 3 et 4 -- ``swordfish`` et ``jellyfish``,
+generalisation du X-Wing en base lignes OU colonnes (le ``x_wing`` du volet 3
+reste base lignes uniquement, non modifie ; noms geles). Meme discipline :
+definition mathematique, aucune copie de code des depots sources.
 
 Verifiabilite : le corpus #26426 livre des grilles a solution UNIQUE (statut
 ``exhausted``, ``solutions_found == 1``). Une elimination ``(cell, value)`` est
@@ -30,6 +42,7 @@ l'oracle, independamment des autres etapes.
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -85,9 +98,10 @@ class Step:
 
     Attributes:
         index: rang de l'etape dans la trace (0-based)
-        rule: nom precis de la regle (naked_single, hidden_single, naked_pair,
-            pointing_pair, x_wing) -- le volet 4 (Lean) prouvera la correction
-            de ces regles nommees
+        rule: nom precis de la regle (cf. ``InferenceSolver.RULE_ORDER`` :
+            singles, tuples nus et caches d'ordre 2 a 4, candidats verrouilles,
+            X-Wing, Swordfish, Jellyfish) -- le volet 4 (Lean) prouvera la
+            correction de ces regles nommees
         premises: justification lisible (cases/valeurs qui fondent la regle)
         placements: [(row, col, value)] valeurs placees par cette etape
         eliminations: [(row, col, value)] candidats elimines par cette etape
@@ -132,15 +146,18 @@ class Trace:
 
 
 # ---------------------------------------------------------------------------
-# Solveur instrumente : les cinq regles du carnet 08, SANS backtrack
+# Solveur instrumente : regles du carnet 08 (volet 3) + lot 2 de #27533,
+# SANS backtrack
 # ---------------------------------------------------------------------------
 
 
 class InferenceSolver:
     """Resolution par inference pure, tracee et verifiable (sans recherche)."""
 
-    RULE_ORDER = ("naked_single", "hidden_single", "naked_pair",
-                  "pointing_pair", "x_wing")
+    RULE_ORDER = ("naked_single", "hidden_single", "naked_pair", "naked_triple",
+                  "naked_quad", "hidden_pair", "hidden_triple", "hidden_quad",
+                  "pointing_pair", "locked_claiming", "x_wing", "swordfish",
+                  "jellyfish")
 
     def __init__(self, puzzle: str):
         self.grid = parse_grid(puzzle)
@@ -288,6 +305,217 @@ class InferenceSolver:
                                         grid_after=grid_to_string(self.grid))
         return None
 
+    # -- lot 2 (#27533) : tuples nus/caches et candidats verrouilles --------
+
+    def _all_units(self) -> List[Tuple[str, List[Tuple[int, int]]]]:
+        """Les 27 unites (9 lignes, 9 colonnes, 9 blocs) avec leurs cases."""
+        units: List[Tuple[str, List[Tuple[int, int]]]] = []
+        units += [("ligne", [(r, c) for c in range(9)]) for r in range(9)]
+        units += [("colonne", [(r, c) for r in range(9)]) for c in range(9)]
+        units += [("bloc", [(3 * br + i, 3 * bc + j)
+                            for i in range(3) for j in range(3)])
+                  for br in range(3) for bc in range(3)]
+        return units
+
+    def _naked_tuple(self, n: int, rule_name: str) -> Optional[Step]:
+        """Tuple nu d'ordre n : n cases vides d'une unite dont l'union des
+        candidats compte exactement n valeurs -- ces valeurs occupent ces n
+        cases, donc elles sont eliminees des AUTRES cases de l'unite.
+
+        Couplage d'ordre (invariant) : dans la boucle de resolution, aucune
+        case a candidat unique n'existe au moment de ce scan, car
+        ``naked_single`` precede les tuples dans ``RULE_ORDER`` et chaque pas
+        reprend au sommet (une elimination peut reduire une case a un seul
+        candidat, aussitot consomme au tour suivant). Cet ordre n'est PAS une
+        condition de correction : le filtre ``2 <= len(cands) <= n`` exclut
+        structurellement les cases a candidat unique des combos, donc la
+        regle reste correcte meme appelee hors ordre (test negatif
+        ``test_naked_tuple_ignores_single_candidate_cells``).
+        """
+        for unit_type, cells in self._all_units():
+            empty = [(r, c) for (r, c) in cells if self.grid[r][c] == 0]
+            eligible = [(r, c) for (r, c) in empty
+                        if 2 <= len(self.cands[r][c]) <= n]
+            for combo in itertools.combinations(eligible, n):
+                vals: Set[int] = set()
+                for (r, c) in combo:
+                    vals |= self.cands[r][c]
+                if len(vals) != n:
+                    continue
+                elims: List[Tuple[int, int, int]] = []
+                for (r, c) in empty:
+                    if (r, c) in combo:
+                        continue
+                    for v in sorted(vals):
+                        if v in self.cands[r][c]:
+                            self.cands[r][c].discard(v)
+                            elims.append((r, c, v))
+                if elims:
+                    cells_txt = ", ".join(f"({r},{c})" for (r, c) in combo)
+                    return Step(0, rule_name,
+                                f"{cells_txt} ne portent que {sorted(vals)} "
+                                f"({unit_type}, tuple nu d'ordre {n})",
+                                eliminations=elims,
+                                grid_after=grid_to_string(self.grid))
+        return None
+
+    def _naked_triple(self) -> Optional[Step]:
+        return self._naked_tuple(3, "naked_triple")
+
+    def _naked_quad(self) -> Optional[Step]:
+        return self._naked_tuple(4, "naked_quad")
+
+    def _hidden_tuple(self, n: int, rule_name: str) -> Optional[Step]:
+        """Tuple cache d'ordre n : n valeurs d'une unite dont les positions
+        candidates (cases vides) sont confinees a n cases exactement -- ces n
+        valeurs occupent ces n cases, donc tout AUTRE candidat de ces cases
+        est elimine.
+        """
+        for unit_type, cells in self._all_units():
+            empty = [(r, c) for (r, c) in cells if self.grid[r][c] == 0]
+            digit_cells: Dict[int, List[Tuple[int, int]]] = {}
+            for v in range(1, 10):
+                spots_v = [(r, c) for (r, c) in empty if v in self.cands[r][c]]
+                if spots_v:
+                    digit_cells[v] = spots_v
+            for digits in itertools.combinations(sorted(digit_cells), n):
+                spots: Set[Tuple[int, int]] = set()
+                confined = True
+                for v in digits:
+                    if len(digit_cells[v]) > n:
+                        confined = False
+                        break
+                    spots.update(digit_cells[v])
+                if not confined or len(spots) != n:
+                    continue
+                elims: List[Tuple[int, int, int]] = []
+                for (r, c) in sorted(spots):
+                    for v in sorted(self.cands[r][c]):
+                        if v not in digits:
+                            self.cands[r][c].discard(v)
+                            elims.append((r, c, v))
+                if elims:
+                    cells_txt = ", ".join(f"({r},{c})" for (r, c) in sorted(spots))
+                    return Step(0, rule_name,
+                                f"valeurs {list(digits)} confinees a "
+                                f"{cells_txt} ({unit_type}, tuple cache d'ordre {n})",
+                                eliminations=elims,
+                                grid_after=grid_to_string(self.grid))
+        return None
+
+    def _hidden_pair(self) -> Optional[Step]:
+        return self._hidden_tuple(2, "hidden_pair")
+
+    def _hidden_triple(self) -> Optional[Step]:
+        return self._hidden_tuple(3, "hidden_triple")
+
+    def _hidden_quad(self) -> Optional[Step]:
+        return self._hidden_tuple(4, "hidden_quad")
+
+    def _locked_claiming(self) -> Optional[Step]:
+        """Candidats verrouilles (claiming, miroir de pointing_pair) : toutes
+        les positions candidates d'une valeur dans une ligne (resp. colonne)
+        sont confinees a un seul bloc -- la valeur est eliminee du reste de
+        ce bloc.
+        """
+        for unit_type in ("ligne", "colonne"):
+            for idx in range(9):
+                for v in range(1, 10):
+                    spots: List[Tuple[int, int]] = []
+                    for other in range(9):
+                        r, c = (idx, other) if unit_type == "ligne" else (other, idx)
+                        if self.grid[r][c] == 0 and v in self.cands[r][c]:
+                            spots.append((r, c))
+                    if len(spots) < 2:
+                        continue
+                    blocks = {(r // 3, c // 3) for (r, c) in spots}
+                    if len(blocks) != 1:
+                        continue
+                    br, bc = blocks.pop()
+                    elims: List[Tuple[int, int, int]] = []
+                    for i in range(3):
+                        for j in range(3):
+                            r, c = 3 * br + i, 3 * bc + j
+                            if (r, c) in spots or self.grid[r][c] != 0:
+                                continue
+                            if v in self.cands[r][c]:
+                                self.cands[r][c].discard(v)
+                                elims.append((r, c, v))
+                    if elims:
+                        return Step(0, "locked_claiming",
+                                    f"valeur {v} de la {unit_type} {idx} "
+                                    f"confinee au bloc ({br},{bc})",
+                                    eliminations=elims,
+                                    grid_after=grid_to_string(self.grid))
+        return None
+
+    # -- lot 3 (#27533) : fish d'ordre 3 et 4 (swordfish, jellyfish) -------
+
+    def _unit_cells(self, unit_type: str, idx: int) -> List[Tuple[int, int]]:
+        """Les 9 cases de l'unite ``unit_type`` (ligne/colonne) d'indice ``idx``."""
+        if unit_type == "ligne":
+            return [(idx, c) for c in range(9)]
+        return [(r, idx) for r in range(9)]
+
+    def _fish(self, n: int, rule_name: str) -> Optional[Step]:
+        """Fish d'ordre n (Swordfish n=3, Jellyfish n=4) : n unites de BASE
+        (lignes ou colonnes) dont les positions candidates d'une valeur
+        vivent dans exactement n unites de COUVERTURE de l'autre orientation
+        -- la valeur est eliminee du reste des unites de couverture.
+
+        Le X-Wing du volet 3 couvre le fish n=2 en base lignes uniquement ;
+        cette generalisation couvre les DEUX orientations de base pour n=3
+        et n=4 (l'extension base colonnes du n=2 reste a la regle ``x_wing``
+        du volet 3, non reprise ici).
+
+        Couplage d'ordre (invariant) : ``naked_single``/``hidden_single``
+        precedent dans ``RULE_ORDER`` et chaque pas reprend au sommet, donc
+        dans la boucle une unite a position unique est consommee avant ce
+        scan ; le filtre ``2 <= len(spots) <= n`` exclut en outre
+        structurellement les unites a 0 ou 1 position des bases, et la
+        regle reste correcte appelee hors ordre (test negatif
+        ``test_fish_ignores_units_with_single_position``).
+        """
+        for base_type in ("ligne", "colonne"):
+            cover_is_row = base_type == "colonne"
+            for v in range(1, 10):
+                bases: List[Tuple[int, List[Tuple[int, int]]]] = []
+                for idx in range(9):
+                    spots = [(r, c) for (r, c) in self._unit_cells(base_type, idx)
+                             if self.grid[r][c] == 0 and v in self.cands[r][c]]
+                    if 2 <= len(spots) <= n:
+                        bases.append((idx, spots))
+                for combo in itertools.combinations(bases, n):
+                    positions = [p for (_, spots) in combo for p in spots]
+                    covers = {(p[0] if cover_is_row else p[1]) for p in positions}
+                    if len(covers) != n:
+                        continue
+                    base_idxs = tuple(sorted(idx for (idx, _) in combo))
+                    elims: List[Tuple[int, int, int]] = []
+                    for k in covers:
+                        for (r, c) in self._unit_cells("ligne" if cover_is_row
+                                                       else "colonne", k):
+                            if (r, c) in positions or self.grid[r][c] != 0:
+                                continue
+                            if v in self.cands[r][c]:
+                                self.cands[r][c].discard(v)
+                                elims.append((r, c, v))
+                    if elims:
+                        return Step(0, rule_name,
+                                    f"valeur {v} : {base_type}s {base_idxs} "
+                                    f"couvrent les "
+                                    f"{'lignes' if cover_is_row else 'colonnes'} "
+                                    f"{sorted(covers)}",
+                                    eliminations=elims,
+                                    grid_after=grid_to_string(self.grid))
+        return None
+
+    def _swordfish(self) -> Optional[Step]:
+        return self._fish(3, "swordfish")
+
+    def _jellyfish(self) -> Optional[Step]:
+        return self._fish(4, "jellyfish")
+
     # -- boucle de resolution ----------------------------------------------
 
     def solve(self, max_steps: int = 10000) -> Trace:
@@ -297,8 +525,16 @@ class InferenceSolver:
             "naked_single": self._naked_single,
             "hidden_single": self._hidden_single,
             "naked_pair": self._naked_pair,
+            "naked_triple": self._naked_triple,
+            "naked_quad": self._naked_quad,
+            "hidden_pair": self._hidden_pair,
+            "hidden_triple": self._hidden_triple,
+            "hidden_quad": self._hidden_quad,
             "pointing_pair": self._pointing_pair,
+            "locked_claiming": self._locked_claiming,
             "x_wing": self._x_wing,
+            "swordfish": self._swordfish,
+            "jellyfish": self._jellyfish,
         }
         while not self.is_solved() and len(trace.steps) < max_steps:
             progress = False

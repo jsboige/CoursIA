@@ -1,0 +1,71 @@
+# TRANCHE1 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+# Forme 1 : scan global. Source : docs-link-check.yml (job `check-links`).
+# Le nom du garde est le nom du JOB, pas celui du workflow -- c'est lui que
+# le rollup affichait.
+#
+# `--base {base_ref}` (#15766) : le baseline fige est a `broken_links: []`
+# et rien ne le regenere, donc un seul lien casse sur `main` rendait ce
+# garde rouge sur TOUTE PR ouverte (`check-links` + `Always-on guards` +
+# `PR gate`), quel que soit le contenu de la PR. Comparer a la base rend
+# l'excuse exacte : un lien deja casse avant la branche n'est pas la
+# regression de la branche. Le baseline fige reste la voie des executions
+# hors PR (dispatch, scan complet), ou aucune base n'est disponible.
+group: TRANCHE1
+guards:
+  # Quarto root entry points (#26457): scanned as single files, so the
+  # gate must fire when they change. Mirror of SCAN_SCOPES; pinned by
+  # `test_every_declared_scope_is_reachable_from_the_gate`.
+  # `.claude/agents/**` and `.claude/skills/**` were scanned by the
+  # organ since #7422 but watched by no gate path: editing a sub-agent
+  # or skill definition never ran check-links (#15867, found by the
+  # `test_every_declared_scope_is_reachable_from_the_gate` parity test
+  # that pins this list against SCAN_SCOPES).
+  # Decks (#15867): the organ scans `slides/**/slides.md`, so the gate
+  # must fire when a deck changes -- otherwise a deck-only PR like
+  # #15865 (17 dead links) never runs it. Mirror of DECK_DIR in
+  # `scripts/check_docs_links.py`; pinned by
+  # `test_deck_scope_is_wired_into_the_fast_lane`.
+  # Book inventory (#18899): scanned as a single file, so the gate
+  # must fire when it changes. Mirror of SCAN_SCOPES.
+  # Series landing pages (#26457): the notebook-tree index.qmd (portal)
+  # and the five series that ship one, scanned as single files outside
+  # docs/ -- the gate must fire when any of them changes. Mirror of
+  # SCAN_SCOPES; pinned by the parity test above.
+  # Forme 2 : scan globs, bloque sur la convention zero-pad des series
+  # DECLAREES (#11840/#12586, portee explicite #15489 defaut 5). Source :
+  # series-naming-gate.yml (job affiche `zero-pad guard (series declarees)`).
+  # Les globs ci-dessous MIROITENT `scripts/notebook_tools/zero_pad_series.json`
+  # -- le garde est lance sans argument et lit le registre, mais la voie
+  # rapide doit savoir quand le declencher sans lire le JSON au chargement
+  # (ce module ne fait AUCUNE E/S, cf son docstring). Un test de parite
+  # rougit si le miroir et le registre divergent.
+  -
+    name: "check-links"
+    argv: ["python", "scripts/check_docs_links.py", "--check", "--base", "{base_ref}"]
+    source: "docs-link-check.yml"
+    paths: ["CLAUDE.md", "index.md", "PARCOURS.md", "index.qmd", "parcours.qmd", ".claude/rules/**", ".claude/agents/**", ".claude/skills/**", "docs/**", "**/README.md", "slides/**", "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md", "MyIA.AI.Notebooks/index.qmd", "MyIA.AI.Notebooks/GameTheory/index.qmd", "MyIA.AI.Notebooks/Physique/index.qmd", "MyIA.AI.Notebooks/Probas/index.qmd", "MyIA.AI.Notebooks/Search/index.qmd", "MyIA.AI.Notebooks/Sudoku/index.qmd", "scripts/check_docs_links.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+  # Forme 3 : delta base-vs-head -- meme motif que pip-leak-guard pilote :
+  # scan HEAD capture, bascule MyIA.AI.Notebooks vers la base, scan BASE,
+  # restauration verifyee, puis delta. Source : exercise-leak-ci.yml (job
+  # `Exercice-solution HIGH delta guard (#8053)`). Rouge seulement sur les
+  # NOUVEAUX leaks HIGH -- les herites sont tolere's (#8053).
+  -
+    name: "zero-pad guard (series declarees)"
+    argv: ["python", "scripts/notebook_tools/check_series_zero_pad.py"]
+    source: "series-naming-gate.yml"
+    paths: ["MyIA.AI.Notebooks/GameTheory/**", "MyIA.AI.Notebooks/GenAI/FineTuning/**", "MyIA.AI.Notebooks/IIT/**", "MyIA.AI.Notebooks/ML/ML.Net/**", "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**", "MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/**", "MyIA.AI.Notebooks/Probas/Infer/**", "MyIA.AI.Notebooks/Probas/PyMC/**", "MyIA.AI.Notebooks/RL/**", "MyIA.AI.Notebooks/Search/Part1-Foundations/**", "MyIA.AI.Notebooks/Search/Part2-CSP/**", "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/**", "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**", "MyIA.AI.Notebooks/Sudoku/**", "MyIA.AI.Notebooks/SymbolicAI/Lean/**", "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/**", "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/**", "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/**", "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/**", "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/**", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/**", "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/**", "MyIA.AI.Notebooks/SymbolicAI/Tweety/**", "scripts/notebook_tools/zero_pad_series.json", "scripts/notebook_tools/check_series_zero_pad.py", "scripts/notebook_tools/naming_canon.py", ".github/workflows/series-naming-gate.yml"]
+    blocking: true
+    absorbed: true
+  -
+    name: "Exercice-solution HIGH delta guard (#8053)"
+    argv: ["python", "scripts/notebook_tools/detect_solution_leaks.py", "--scan-all"]
+    source: "exercise-leak-ci.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/detect_solution_leaks.py", "scripts/notebook_tools/exercise_leak_delta.py", ".github/workflows/exercise-leak-ci.yml"]
+    blocking: true
+    needs_base: true
+    delta_argv: ["python", "scripts/notebook_tools/exercise_leak_delta.py", "{base_json}", "{head_json}"]
+    swap_paths: ["MyIA.AI.Notebooks"]
+    absorbed: true

@@ -1,4 +1,7 @@
 # region imports
+from datetime import date
+from decimal import Decimal as PyDecimal
+
 from AlgorithmImports import *
 # endregion
 
@@ -6,9 +9,11 @@ from AlgorithmImports import *
 class WheelStrategyAlgorithm(QCAlgorithm):
 
     def Initialize(self):
-        # Extended: covers 2019 low-VIX environment + COVID crash + recovery
-        self.SetStartDate(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)  # Extended from 2019: +4 years for robustness validation (includes 2017-2019 bull market pre-COVID)
+        # La fenêtre par défaut est conservée ; les dates sont paramétrables pour le rejeu.
+        start = date.fromisoformat(self.GetParameter("start", "2015-01-01"))
+        end = date.fromisoformat(self.GetParameter("end", "2024-12-31"))
+        self.SetStartDate(start.year, start.month, start.day)
+        self.SetEndDate(end.year, end.month, end.day)
         self.SetCash(1_000_000)
         self.backtest_resolution = Resolution.Minute
         self.is_live = self.LiveMode
@@ -69,20 +74,31 @@ class WheelStrategyAlgorithm(QCAlgorithm):
         self.AddOptionContract(symbol)
         return symbol
 
-    def _validate_order(self, required_exposure, order_type="PUT"):
-        available_cash = self.Portfolio.MarginRemaining
-        total_exposure = sum(
-            abs(holding.Quantity) * holding.Price
-            for holding in self.Portfolio.Values if holding.Type == SecurityType.Option
+    def _put_collateral(self, symbol: Symbol) -> PyDecimal:
+        multiplier = self.Securities[symbol].SymbolProperties.ContractMultiplier
+        return PyDecimal(str(symbol.ID.StrikePrice)) * PyDecimal(str(multiplier))
+
+    def _put_quantity(self, symbol: Symbol) -> int:
+        per_contract = self._put_collateral(symbol)
+        if per_contract <= 0:
+            return 0
+        reserved = sum(
+            (
+                PyDecimal(str(-holding.Quantity)) * self._put_collateral(held_symbol)
+                for held_symbol, holding in self.Portfolio.items()
+                if holding.Type == SecurityType.Option
+                and holding.Quantity < 0
+                and held_symbol.ID.OptionRight == OptionRight.PUT
+            ),
+            PyDecimal(0),
         )
-        if self.disable_margin and available_cash < required_exposure:
-            self.Debug(f"Ordre {order_type} refuse : Liquidites insuffisantes ({available_cash:.2f} disponibles, {required_exposure:.2f} requis).")
-            return False
-        new_exposure = total_exposure + required_exposure
-        if new_exposure > self.Portfolio.TotalPortfolioValue * self.max_exposure_fraction:
-            self.Debug(f"Ordre {order_type} refuse : Exposition maximale depassee ({new_exposure:.2f} > {self.Portfolio.TotalPortfolioValue * self.max_exposure_fraction:.2f}).")
-            return False
-        return True
+        cash = PyDecimal(str(self.Portfolio.Cash)) - reserved
+        if self.disable_margin:
+            cash = min(cash, PyDecimal(str(self.Portfolio.MarginRemaining)))
+        cap = PyDecimal(str(self.Portfolio.TotalPortfolioValue)) * PyDecimal(
+            str(self.max_exposure_fraction)
+        )
+        return int(max(PyDecimal(0), min(cash, cap - reserved)) // per_contract)
 
     def log_portfolio_state(self, action, symbol=None):
         portfolio_value = self.Portfolio.TotalPortfolioValue
@@ -115,10 +131,9 @@ class WheelStrategyAlgorithm(QCAlgorithm):
             put_target_price = self._equity.Price * (1 - self.otm_threshold)
             put_symbol = self._get_target_contract(OptionRight.PUT, put_target_price)
             if put_symbol is not None:
-                required_exposure = put_symbol.ID.StrikePrice * 100
-                self.log_portfolio_state("Avant Vente PUT", put_symbol)
-                if self._validate_order(required_exposure, "PUT"):
-                    quantity_to_sell = math.floor(self.Portfolio.Cash / required_exposure)
+                quantity_to_sell = self._put_quantity(put_symbol)
+                if quantity_to_sell > 0:
+                    self.log_portfolio_state("Avant Vente PUT", put_symbol)
                     self.MarketOrder(put_symbol, -quantity_to_sell)
                     self.log_portfolio_state("Apres Vente PUT", put_symbol)
         elif [self._equity.Symbol] == [symbol for symbol, holding in self.Portfolio.items() if holding.Invested]:
