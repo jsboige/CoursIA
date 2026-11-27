@@ -1,0 +1,82 @@
+# TRANCHE33 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+# Un seul job dans le workflow source -> un seul nom de check-run, trois
+# stickies et trois artefacts a l'interieur. Les trois detecteurs
+# partagent le meme trigger et le meme join markdown/output (#18354) :
+# c'est deja un job unique cote GitHub, on ne fait que lui rendre son
+# cout d'un checkout au lieu de trois.
+group: TRANCHE33
+guards:
+  # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
+  # le moteur execute `commenters` a sa place (cf fast_lane.main).
+  -
+    name: "Markdown claims anchored to previous output (#11435 advisory)"
+    argv: []
+    source: "markdown-claims-output-advisory.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/check_markdown_claims_output.py", "scripts/tests/test_check_markdown_claims_output.py", "scripts/check_stale_claims.py", "scripts/tests/test_check_stale_claims.py", "scripts/check_factual_mislabel.py", "scripts/tests/test_check_factual_mislabel.py", "scripts/check_listing_coherence.py", "scripts/tests/test_check_listing_coherence.py", ".github/workflows/markdown-claims-output-advisory.yml"]
+    blocking: false
+    absorbed: true
+    commenters:
+      -
+        header: "markdown-claims-output-advisory"
+        argv: ["python", "scripts/check_markdown_claims_output.py", "--json", "{changed_paths}"]
+        body: "claims_output"
+        artifact_name: "markdown-claims-output-report"
+        artifact_file: "claims-output.json"
+        paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+        max_paths: 50
+      -
+        header: "stale-claim-advisory"
+        argv: ["python", "scripts/check_stale_claims.py", "--json", "{changed_paths}"]
+        body: "stale_claim"
+        artifact_name: "stale-claim-report"
+        artifact_file: "stale-claim.json"
+        paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+        max_paths: 50
+      -
+        header: "factual-mislabel-advisory"
+        argv: ["python", "scripts/check_factual_mislabel.py", "--json", "{changed_paths}"]
+        body: "factual_mislabel"
+        artifact_name: "factual-mislabel-report"
+        artifact_file: "factual-mislabel.json"
+        paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+        max_paths: 50
+      -
+        header: "listing-coherence-advisory"
+        argv: ["python", "scripts/check_listing_coherence.py", "--json", "{changed_paths}"]
+        body: "listing_coherence"
+        artifact_name: "listing-coherence-report"
+        artifact_file: "listing-coherence.json"
+        paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+        max_paths: 50
+  # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
+  # le moteur execute `commenters` a sa place (cf fast_lane.main).
+  -
+    name: "Organ-duplication advisory (non-blocking)"
+    argv: []
+    source: "organ-duplication-advisory.yml"
+    paths: ["**/*.py", "**/*.ipynb", "**/*.lean", "scripts/audit/detect_organ_duplication.py", "scripts/audit/organ_api_index.yaml", ".github/workflows/organ-duplication-advisory.yml"]
+    blocking: false
+    absorbed: true
+    commenters:
+      -
+        header: "organ-duplication-advisory"
+        argv: ["python", "scripts/audit/detect_organ_duplication.py", "--base", "{merge_base}", "--head", "HEAD", "--body-file", "{pr_body_file}"]
+        body: "organ_duplication"
+        needs_pr_body: true
+  # Le verdict de ces gardes est leur commentaire : `argv` reste vide et
+  # le moteur execute `commenters` a sa place (cf fast_lane.main).
+  -
+    name: "scan_md_hierarchy drift (advisory)"
+    argv: []
+    source: "scan-md-hierarchy-drift.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/scan_md_hierarchy.py", "scripts/notebook_tools/md_hierarchy_baseline.json"]
+    blocking: false
+    absorbed: true
+    commenters:
+      -
+        header: "md-hierarchy-drift-advisory"
+        argv: ["python", "scripts/notebook_tools/scan_md_hierarchy.py", "MyIA.AI.Notebooks/", "--baseline", "--diff", "--name-status", "{name_status_file}", "--reference-base", "{base_sha}"]
+        body: "md_hierarchy"
+        fatal_rc:
+          -
+            1

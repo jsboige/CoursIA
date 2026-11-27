@@ -77,3 +77,60 @@
 .slidev-layout p {
   margin: 0.35em 0;
 }
+
+/* Les matrices se lisent à distance : donner la place aux gains plutôt
+ * que de laisser le tableau se réduire à sa largeur intrinsèque. */
+.slidev-layout.gt-matrix table,
+.gt-matrix .slidev-layout table {
+  width: min(100%, 720px);
+  margin: 0.8rem auto;
+  font-size: 1.25rem;
+}
+
+.slidev-layout.gt-matrix td,
+.slidev-layout.gt-matrix th,
+.gt-matrix .slidev-layout td,
+.gt-matrix .slidev-layout th {
+  padding: 0.4rem 0.75rem;
+}
+
+/* Les blocs masqués par Slidev gardent leur place dans le flux. */
+.gt-projection-step {
+  display: grid;
+  align-items: center;
+  column-gap: 24px;
+  grid-template-columns: minmax(0, 1fr);
+  margin-block: 0 10px;
+  font-size: 17px;
+  line-height: 1.25;
+}
+.gt-projection-step:has(> :nth-child(2)) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 42%);
+}
+.gt-projection-step h2 { margin: 0 0 4px; font-size: 1.16em; line-height: 1.18; }
+.gt-projection-step > img,
+.gt-projection-figures img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: var(--gt-image-height, 150px);
+  margin: auto;
+  object-fit: contain;
+}
+.gt-projection-figures { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.gt-projection-figures img { min-width: 0; }
+.slidev-layout:has(.gt-projection-step ~ .gt-projection-step ~ .gt-projection-step) {
+  --gt-image-height: 110px;
+}
+.gt-projection-links { margin-top: 8px; font-size: 12px; line-height: 1.2; }
+.gt-payoff { width: 100%; }
+.gt-payoff :is(th, td) { padding: 4px 8px; text-align: center; white-space: nowrap; }
+
+.slidev-layout blockquote {
+  border: 2px solid #527591;
+  border-left-width: 7px;
+  border-radius: 6px;
+  padding: 0.55em 0.9em;
+  margin: 0.65em 0;
+  background: rgb(90 150 185 / 9%);
+}

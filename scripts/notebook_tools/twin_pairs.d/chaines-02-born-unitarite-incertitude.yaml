@@ -1,0 +1,11 @@
+- name: "Chaines-02 Born Unitarite Incertitude"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-02-Born-Unitarite-Incertitude-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-02-Born-Unitarite-Incertitude-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le carnet rejoue en arithmetique exacte l'equivalence du pli plat (eq. 51, les deux sens), le test d'envariance, le canon de Born (eq. 56), le join de la figure 15, la relation de Weyl (d=2,3,4), les deux recensements (3/24/84 paires de lettres, 3/6/21 paires de bases) et la borne de Robertson aux sept registres (eq. 57). Python calcule en flottants numpy avec tolerances ; C# en System.Numerics.BigInteger, rationnel exact reduit, complexe exact et anneau cyclotomique Z[omega] en d=3. Aucun moteur externe canonique : les deux cotes derivent les memes valeurs a la main."
+  known_differences:
+    - "C# teste l'egalite EXACTEMENT (VerifC02 leve sur ecart) : les valeurs singulieres 2/sqrt(5) et 1/sqrt(5) de la source restent CITEES (non rationnelles) tandis que C# mesure les valeurs propres exactes 1/5 et 4/5 ; le Python compare des flottants a 1e-12."
+    - "En d=3, C# verifie la relation de Weyl dans l'anneau cyclotomique Z[omega] (w^2 = -1 - w) et teste la commutation par un critere entier (d divise bc - ae) ; le Python compare un complexe flottant a 1."
+    - "Le tableau de Robertson C# aligne a gauche et affiche 6 decimales exactes ; le Python aligne a droite et arrondit a 4/6 decimales. Memes chiffres : six saturations sur six registres purs, registre plein non sature, produit 1/16, ecart a la borne 1/16."
