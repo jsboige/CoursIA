@@ -50,7 +50,7 @@ from fast_lane_registry import TRANCHE51  # noqa: E402
 from fast_lane_registry import TOPLEVEL_SERIES_GUARDS  # noqa: E402
 from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 from fast_lane_registry import TRANCHE54  # noqa: E402  # #27611, meme motif
-from fast_lane_registry import TRANCHE56  # noqa: E402  # #13902, meme motif
+from fast_lane_registry import TRANCHE57  # noqa: E402  # #13902, meme motif
 from fast_lane_registry import CURRICULUM_PREREQ_GUARDS  # noqa: E402  # #27657, meme motif
 
 from fast_lane_registry import (  # noqa: E402
@@ -76,6 +76,14 @@ from fast_lane_registry import TRANCHE53  # noqa: E402
 # en vol, et une ligne isolee fusionne sans conflit. Renumerotee le 22/11 :
 # TRANCHE54 est pris par #27611 sur origin/main.
 from fast_lane_registry import TRANCHE55  # noqa: E402
+
+# #27676 : la tranche 56 (cliquet de longueur de chemin) est importee par une
+# ligne a part, eloignee du bloc d'import et de la chaine d'agregation -- les
+# tranches voisines sont modifiees par d'autres PRs en vol, et une ligne
+# isolee fusionne sans conflit. Renumerotee le 23/11 : la 54 est prise par
+# #27611 et la 55 par #27544 sur `main` ; sans renumerotation, cet import
+# masquait celui de #27544 et son garde sortait de la chaine.
+from fast_lane_registry import TRANCHE56  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -925,10 +933,10 @@ def main(argv: list[str] | None = None) -> int:
               # PRs en vol).
               + TRANCHE55
               + TRANCHE54
-              # #13902 : tranche 56 ajoutee sur la meme ligne que la 54 (ligne
-              # isolee de la chaine ci-dessous, qui est modifiee par d'autres
-              # PRs en vol).
+              # #27676 : cliquet de longueur de chemin.
               + TRANCHE56
+              # #13902 : garde extraction-orphelins, distincte de la tranche 56.
+              + TRANCHE57
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14

@@ -68,6 +68,17 @@ sole document is the English docstring at the top of the module.
     of which goes through the cokernel of the unit.
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
     Chap. II §5. Acyclicity `H^n(C⁰F) = 0` for `n ≥ 1`, frontier of Part 89.
+
+## Stacks correspondence
+
+**PARTIAL.** The degree-`n` term of the Stacks Godement complex is the iterate
+`(f_* f^*)^{n+1}` (`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:429`,
+`godementSimplicial_left_obj`, tag 0G5N), but Stacks obtains it from the standard
+resolution of the comonad, not from the unit of our construction — the unit itself
+has no named statement. The neighbouring acyclicity fact is
+`Cohomology/GodementResolution/StalkHomotopy.lean:558`
+(`quasiIso_godementAugmentation`); the sheaf-level content is
+`Topology/Sheaves/Sheaf/Abelian.lean:149` (`restrict_eq_zero_of_germ_eq_zero`).
 -/
 
 universe u

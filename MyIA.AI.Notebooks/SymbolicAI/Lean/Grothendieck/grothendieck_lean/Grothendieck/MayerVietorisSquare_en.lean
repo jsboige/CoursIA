@@ -1,12 +1,12 @@
 /-
-Grothendieck Part 21 — Les carrés de Mayer-Vietoris
+Grothendieck Part 21 — The Mayer-Vietoris squares
 
-La Partie 20 (SheafCohomology/Basic.lean) a introduit les groupes de cohomologie
-des faisceaux H^n(F) basés sur Ext, le préfaisceau de cohomologie, et la fonctorialité.
+Part 20 (SheafCohomology/Basic.lean) introduced the cohomology groups of
+sheaves H^n(F) based on Ext, the cohomology presheaf, and the functoriality.
 
-Ce module introduit les **carrés de Mayer-Vietoris**, l'intrant géométrique de
-la suite exacte longue de Mayer-Vietoris en cohomologie des faisceaux. Étant donné
-un site (C, J), un carré de Mayer-Vietoris est un carré commutatif dans C :
+This module introduces the **Mayer-Vietoris squares**, the geometric input of
+the Mayer-Vietoris long exact sequence in sheaf cohomology. Given a site
+(C, J), a Mayer-Vietoris square is a commutative square in C :
 
   X₁ --f₁₂--> X₂
   |            |
@@ -15,37 +15,37 @@ un site (C, J), un carré de Mayer-Vietoris est un carré commutatif dans C :
   v            v
   X₃ --f₃₄--> X₄
 
-tel que f₁₃ soit un monomorphisme et que le carré devienne un pushout dans la
-catégorie des faisceaux d'ensembles (après application de yoneda >> presheafToSheaf).
+such that f₁₃ is a monomorphism and that the square becomes a pushout in the
+category of sheaves of sets (after applying yoneda >> presheafToSheaf).
 
-C'est la formulation abstraite de la situation classique où X₄ est recouvert
-par deux sous-ouverts X₂ et X₃ d'intersection X₁.
+It is the abstract formulation of the classical situation where X₄ is covered
+by two sub-open sets X₂ and X₃ with intersection X₁.
 
-Constructions clés pontées depuis Mathlib (`CategoryTheory.Sites.MayerVietorisSquare`) :
+Key constructions bridged from Mathlib (`CategoryTheory.Sites.MayerVietorisSquare`):
 
-  - `MayerVietorisSquare` : la structure (étend Square C)
-  - `mk'` : constructeur via la condition de pullback de faisceau
-  - `mk_of_isPullback` : constructeur via carré pullback + tamisant couvrant
-  - `SheafCondition` : le préfaisceau vérifie la condition de pullback
-  - `SheafCondition.ext` : injectivité des restrictions à X₄
-  - `SheafCondition.glue` : recollement des sections sur X₂ et X₃
-  - `sheafCondition_of_sheaf` : les faisceaux satisfont la condition
+  - `MayerVietorisSquare` : the structure (extends Square C)
+  - `mk'` : constructor via the sheaf pullback condition
+  - `mk_of_isPullback` : constructor via pullback square + covering sieve
+  - `SheafCondition` : the presheaf satisfies the pullback condition
+  - `SheafCondition.ext` : injectivity of the restrictions to X₄
+  - `SheafCondition.glue` : gluing of the sections over X₂ and X₃
+  - `sheafCondition_of_sheaf` : the sheaves satisfy the condition
   - `shortComplex` : ℤ[X₁] ⟶ ℤ[X₂] ⊞ ℤ[X₃] ⟶ ℤ[X₄]
-  - `shortComplex_exact` : le complexe court est exact
-  - `shortComplex_shortExact` : il est court exact (Mono f + Epi g)
+  - `shortComplex_exact` : the short complex is exact
+  - `shortComplex_shortExact` : it is short exact (Mono f + Epi g)
 
-C'est le fondement géométrique de la suite exacte longue de Mayer-Vietoris
-(Partie 22, SheafCohomology/MayerVietoris.lean).
+It is the geometric foundation of the Mayer-Vietoris long exact sequence
+(Part 22, SheafCohomology/MayerVietoris.lean).
 
-Epic #1646, See #2159. Tous les `sorry` éliminés à la création.
+Epic #1646, See #2159. All `sorry` eliminated at creation.
 -/
 
 /-
   English mirror of `MayerVietorisSquare.lean` (EN canonical, header mono-lingual EN).
   Convention EPIC #4980 (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n) :
   distinct FR + EN sibling files — no inline bilingual block in a single file
-  (Option B rejected). The module docstring above is the FR translation of the
-  EN canonical docstring; the body signatures, def signatures, theorem docstrings,
+  (Option B rejected). The module docstring above is the EN translation of the
+  FR canonical docstring; the body signatures, def signatures, theorem docstrings,
   and sorries remain byte-identical between the two files (anti-§D byte-identity invariant).
 -/
 
