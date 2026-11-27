@@ -11,7 +11,10 @@ TADA requires reference audio for voice cloning. This service:
 
 import os
 import io
+import gc
 import logging
+import threading
+import time
 import wave
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -150,29 +153,130 @@ def get_or_create_reference() -> Tuple[torch.Tensor, int]:
 
 
 class LazyModelManager:
-    """Manages lazy loading and unloading of TTS models."""
+    """Manages lazy loading and unloading of TTS models.
+
+    Le modele charge occupe 10,91 Gio de VRAM sur une carte partagee avec
+    ``tts-qwen`` (mesure du 2026-11-27 : 24 293 Mio utilises, 34 Mio libres).
+    ``IDLE_TIMEOUT`` bornait nominalement cette occupation, mais aucun code ne
+    dechargeait : les champs existaient sans lecteur. ``unload_if_idle`` ferme
+    ce trou, et ``use`` interdit qu'un dechargement tombe au milieu d'une
+    synthese.
+    """
 
     def __init__(self, idle_timeout: int = IDLE_TIMEOUT):
         self.idle_timeout = idle_timeout
-        self.last_used = None
         self.encoder = None
         self.model = None
         self._default_prompt = None
         self.last_load_error = None
+        self.last_unload_at = None
+        self.unload_count = 0
+        self._lock = threading.Lock()
+        self._in_flight = 0
+        self._last_used = None
+        self._reaper_stop = threading.Event()
 
     def get_model(self):
         """Get or load the model."""
-        if self.model is None:
-            logger.info("Loading TADA model...")
-            try:
-                self._load_models()
-            except Exception as exc:
-                self.last_load_error = f"{type(exc).__name__}: {exc}"
-                logger.error("TADA model load failed: %s", self.last_load_error, exc_info=True)
-                raise
-            logger.info("TADA model loaded successfully")
-        self.last_used = torch.cuda.Event(enable_timing=True) if DEVICE == "cuda" else None
-        return self.encoder, self.model
+        with self._lock:
+            if self.model is None:
+                logger.info("Loading TADA model...")
+                try:
+                    self._load_models()
+                except Exception as exc:
+                    self.last_load_error = f"{type(exc).__name__}: {exc}"
+                    logger.error("TADA model load failed: %s", self.last_load_error, exc_info=True)
+                    raise
+                logger.info("TADA model loaded successfully")
+            self._last_used = time.monotonic()
+            return self.encoder, self.model
+
+    def begin_use(self):
+        """Marque une synthese en cours : le dechargement l'attend.
+
+        Sans ce compteur, le balayage pourrait retirer le modele entre
+        ``get_model`` et ``model.generate`` ; le fil de synthese tiendrait alors
+        des references vers des tenseurs dont le cache a ete vide. Les deux
+        appels sont explicites plutot qu'un context manager : le corps de la
+        route les encadre sans reindenter la generation.
+        """
+        with self._lock:
+            self._in_flight += 1
+            self._last_used = time.monotonic()
+
+    def end_use(self):
+        with self._lock:
+            self._in_flight = max(0, self._in_flight - 1)
+            self._last_used = time.monotonic()
+
+    def unload_if_idle(self, now: Optional[float] = None):
+        """Decharge le modele et sa reference si le service est inactif.
+
+        Rend ``True`` si un dechargement a eu lieu. Ne fait rien quand aucun
+        modele n'est charge, quand une synthese est en cours, ou quand
+        ``IDLE_TIMEOUT`` n'est pas encore ecoule. ``idle_timeout <= 0``
+        desactive le dechargement.
+        """
+        if self.idle_timeout <= 0:
+            return False
+        with self._lock:
+            if self.model is None:
+                return False
+            if self._in_flight > 0:
+                return False
+            now = time.monotonic() if now is None else now
+            last = self._last_used if self._last_used is not None else now
+            if now - last < self.idle_timeout:
+                return False
+            idle_for = now - last
+            self.model = None
+            self.encoder = None
+            self._default_prompt = None
+            self.last_unload_at = time.time()
+            self.unload_count += 1
+        # Hors du verrou : la liberation de l'allocateur CUDA peut prendre du
+        # temps et ne doit pas retarder une synthese qui arrive.
+        gc.collect()
+        if DEVICE == "cuda" and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        logger.info(
+            "TADA model unloaded after %.1f s idle (unload #%d)",
+            idle_for, self.unload_count,
+        )
+        return True
+
+    def reaper_interval(self):
+        """Periode du balayage : bornee, et resserree pour un delai court."""
+        return max(1, min(30, self.idle_timeout))
+
+    def start_reaper(self):
+        """Demarre le balayage d'inactivite (thread demon)."""
+        if self.idle_timeout <= 0:
+            logger.info("Idle unload disabled (IDLE_TIMEOUT=%d)", self.idle_timeout)
+            return None
+        interval = self.reaper_interval()
+
+        def _loop():
+            while not self._reaper_stop.wait(interval):
+                try:
+                    self.unload_if_idle()
+                except Exception:
+                    logger.warning("Idle unload sweep failed", exc_info=True)
+
+        thread = threading.Thread(target=_loop, name="tada-idle-reaper", daemon=True)
+        thread.start()
+        logger.info("Idle unload enabled: timeout %d s, sweep every %d s",
+                    self.idle_timeout, interval)
+        return thread
+
+    def stop_reaper(self):
+        self._reaper_stop.set()
+
+    def idle_seconds(self):
+        with self._lock:
+            if self._last_used is None:
+                return None
+            return round(time.monotonic() - self._last_used, 1)
 
     def _load_models(self):
         """Load the encoder, then the 3B model, exactly as the model card does.
@@ -240,8 +344,10 @@ async def lifespan(app: FastAPI):
             model_manager.get_default_prompt()
         except Exception as e:
             logger.warning(f"Failed to pre-create default prompt: {e}")
+    model_manager.start_reaper()
     yield
     # Cleanup
+    model_manager.stop_reaper()
     if DEVICE == "cuda":
         torch.cuda.empty_cache()
 
@@ -272,6 +378,9 @@ async def health_check():
         "encoder_loaded": model_manager.encoder is not None,
         "reference_ready": model_manager._default_prompt is not None,
         "last_load_error": model_manager.last_load_error,
+        "idle_timeout_s": model_manager.idle_timeout,
+        "idle_seconds": model_manager.idle_seconds(),
+        "unload_count": model_manager.unload_count,
     }
 
 
@@ -295,6 +404,10 @@ async def list_voices():
 async def text_to_speech(request: TTSRequest):
     """Generate speech from text (OpenAI-compatible endpoint)."""
     try:
+        # Le dechargement sur inactivite ne doit pas tomber au milieu d'une
+        # generation : le modele est retenu du premier acces jusqu'a l'audio
+        # converti en numpy (apres cela, plus rien n'est sur le GPU).
+        model_manager.begin_use()
         # Get model and default prompt
         _, model = model_manager.get_model()
         prompt = model_manager.get_default_prompt()
@@ -328,6 +441,7 @@ async def text_to_speech(request: TTSRequest):
 
         # Move to CPU and convert to numpy
         audio_array = audio_tensor.detach().cpu().float().numpy().squeeze()
+        model_manager.end_use()
         if audio_array.size == 0:
             raise ValueError("TADA decoder produced an empty waveform")
         if not np.isfinite(audio_array).all():
@@ -358,6 +472,7 @@ async def text_to_speech(request: TTSRequest):
         )
 
     except Exception as e:
+        model_manager.end_use()
         logger.error(f"TTS generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
