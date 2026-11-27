@@ -23,7 +23,7 @@ resurrects the leak. The only honest fix is **source-level** — remove the
 subprocess.check_call(...)`` fallback when truly needed).
 
 This script is the **detector** sibling of the manual fixes shipped in #6310
-(Search-3-Informed) and #6313 (CSP-1-Fundamentals). It:
+(Search-3-Informed) and #6313 (CSP-01-Fundamentals-Python). It:
 
 - scans a notebook (or repo-wide) for code cells whose source contains
   ``pip install`` (with or without ``!`` / ``%`` / sys.executable prefix),

@@ -87,5 +87,5 @@ Run the resolution proof **backward**: from the observed classification, reconst
 
 ## Connections to the Notebooks
 
-- **SL-1 (Logical Learning)**: Implements CBH search and version-space learning on the restaurant dataset (WillWait).
-- **SL-2 (Knowledge-Based Learning)**: Explores EBL and KBIL paradigms, demonstrating how background knowledge accelerates learning.
+- **SL-01 (Logical Learning)**: Implements CBH search and version-space learning on the restaurant dataset (WillWait).
+- **SL-02 (Knowledge-Based Learning)**: Explores EBL and KBIL paradigms, demonstrating how background knowledge accelerates learning.
