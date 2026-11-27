@@ -8,7 +8,7 @@ EPIC #8053 :
 - ``exercise_with_a_completer_minizinc`` : model-text avec `% A COMPLETER`
   + `display_model` (App-08-MiniZinc-Python).
 - ``exercise_with_attente_implementation`` : C# `Console.WriteLine("...
-  en attente de votre implementation")` (CSP-3-Advanced, CSP-7-Soft,
+  en attente de votre implementation")` (CSP-03-Advanced-Python, CSP-07-Soft-Python,
   App-1b-NQueens).
 - ``exercise_with_exercice_indice_skeleton`` : Python `# Exercice` /
   `# Indice` headers, no substantive call/return (Arrow-33 pattern).
@@ -169,7 +169,7 @@ class TestExerciseWithAttenteImplementation(unittest.TestCase):
     """C# `Console.WriteLine("... en attente de votre implementation")` = exercise."""
 
     def test_csp3_advanced_nreines_pattern(self):
-        """CSP-3-Advanced cell 22: N-Reines with model constructor + attente announce."""
+        """CSP-03-Advanced-Python cell 22: N-Reines with model constructor + attente announce."""
         src = """\
 // === EXERCICE 2 : N-Reines avec cassage de symmétries ===
 int n8 = 8;
@@ -181,7 +181,7 @@ Console.WriteLine("Nombre de solutions N=8 sans cassage = 92");
         self.assertTrue(exercise_with_attente_implementation(src))
 
     def test_csp3_advanced_minivrp_pattern(self):
-        """CSP-3-Advanced cell 24: Mini-VRP placeholder with dist matrix."""
+        """CSP-03-Advanced-Python cell 24: Mini-VRP placeholder with dist matrix."""
         src = """\
 // === EXERCICE 3 : Mini-VRP via subCircuit ===
 var dist9 = new[,] { {0, 3, 1, 5, 8}, {3, 0, 6, 2, 7} };
@@ -194,7 +194,7 @@ Console.WriteLine("Exercice 3 - Mini-VRP subCircuit : en attente de votre implem
         self.assertTrue(exercise_with_attente_implementation(src))
 
     def test_csp7_soft_emploisdutemps_pattern(self):
-        """CSP-7-Soft cell 22: emploi du temps with prefs + attente."""
+        """CSP-07-Soft-Python cell 22: emploi du temps with prefs + attente."""
         src = """\
 // === EXERCICE 3 : Emploi du temps enseignant ===
 string[] prefLabels = { "A", "A", "B", "B", "C" };

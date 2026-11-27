@@ -152,6 +152,25 @@ def test_export_writes_parseable_skos_and_owl(tmp_path):
     assert (None, RDF.type, OWL.Ontology) in owl_graph
 
 
+def _notebooks_hors_catalogue(
+    relatives: list[str], catalog_paths: set[str], repo_root: Path
+) -> list[str]:
+    """Carnets cités par une taxonomie que rien ne peut rattacher au catalogue.
+
+    Le catalogue commité est byte-identique à main et se régénère par le cron
+    quotidien, après fusion. Une PR qui renomme ou ajoute un carnet cité par
+    une taxonomie le porte donc sur disque sans que le catalogue connaisse
+    encore son chemin : ce n'est pas une faute. Est signalé un chemin qui
+    n'est ni au catalogue ni sur disque (faute de frappe, carnet disparu).
+    """
+    return [
+        relative
+        for relative in relatives
+        if relative not in catalog_paths
+        and not (repo_root / "MyIA.AI.Notebooks" / relative).is_file()
+    ]
+
+
 def test_notebook_uris_are_those_of_the_catalogue_export():
     """Parité d'URI avec l'export du catalogue (#25001) : la jointure en dépend.
 
@@ -159,29 +178,52 @@ def test_notebook_uris_are_those_of_the_catalogue_export():
     taxonomie les cite complets depuis la racine. Le retrait de préfixe dans
     _notebook_uri doit produire exactement l'URI de
     generate_curriculum_rdf._resource("notebook", ...). Témoin réel : chaque
-    carnet de la taxonomie search retrouve son entrée de catalogue (26/26).
+    carnet de la taxonomie search retrouve son entrée de catalogue (26/26
+    mesuré sur un catalogue frais).
     """
     import json
-    from pathlib import Path as _Path
 
     from generate_curriculum_rdf import _resource
 
-    # Témoin d'appartenance sur search : chaque carnet de la taxonomie
-    # retrouve son entrée de catalogue (26/26 mesuré). Compression, elle, est
-    # une série que le catalogue n'indexe pas encore -- l'égalité d'URI
-    # ci-dessous vaut pour toutes les séries, l'appartenance n'est attestée
-    # que là où le catalogue couvre la série.
+    # Témoin d'appartenance sur search. Compression, elle, est une série que
+    # le catalogue n'indexe pas encore -- l'égalité d'URI ci-dessous vaut
+    # pour toutes les séries, l'appartenance n'est attestée que là où le
+    # catalogue couvre la série.
+    #
+    # Le catalogue commité peut être en retard sur l'arbre d'un renommage ou
+    # d'un ajout (sa régénération suit la fusion) : un carnet absent du
+    # catalogue mais présent sur disque est un décalage, pas une faute. Il
+    # faut en revanche au moins un carnet retrouvé au catalogue, sans quoi le
+    # témoin ne verrait rien.
     data = load_taxonomy(DEFAULT_DATA.parent / "search.json")
+    repo_root = Path(__file__).resolve().parents[3]
     catalog = json.loads(
-        (_Path(__file__).resolve().parents[3] / "COURSE_CATALOG.generated.json").read_text(
-            encoding="utf-8"
-        )
+        (repo_root / "COURSE_CATALOG.generated.json").read_text(encoding="utf-8")
     )
     catalog_paths = {entry["path"] for entry in catalog}
     relatives = [notebook.removeprefix("MyIA.AI.Notebooks/") for notebook in data["notebooks"]]
-    assert all(relative in catalog_paths for relative in relatives)
+    assert any(relative in catalog_paths for relative in relatives)
+    assert _notebooks_hors_catalogue(relatives, catalog_paths, repo_root) == []
     for relative in relatives:
         assert _notebook_uri("MyIA.AI.Notebooks/" + relative) == _resource("notebook", relative)
+
+
+def test_appartenance_au_catalogue_tolerante_au_decalage(tmp_path):
+    """Renommage ou ajout : sur disque, pas encore au catalogue -- toléré.
+
+    Contrôle négatif : un chemin ni au catalogue ni sur disque reste signalé,
+    le témoin ne devient pas un acquittement.
+    """
+    renamed = "Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb"
+    indexed = "Search/Part2-CSP/CSP-1-Fundamentals.ipynb"
+    typo = "Search/Part2-CSP/CSP-01-Fundamentaux-Python.ipynb"
+    notebook = tmp_path / "MyIA.AI.Notebooks" / renamed
+    notebook.parent.mkdir(parents=True)
+    notebook.write_text("{}", encoding="utf-8")
+    catalog_paths = {indexed}
+
+    assert _notebooks_hors_catalogue([indexed, renamed], catalog_paths, tmp_path) == []
+    assert _notebooks_hors_catalogue([typo], catalog_paths, tmp_path) == [typo]
 
 
 def test_build_graph_emit_structure_false_keeps_concepts_and_join_links():
