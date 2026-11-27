@@ -252,9 +252,9 @@ MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Le
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-5-MiniMax-Cloud-Image.ipynb	Image	cle	cle=1
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-6-AesCode-Visual-Documents.ipynb	Image	reseau	reseau=localhost:8010
 MyIA.AI.Notebooks/GenAI/Image/05-History/05-0-Generateurs-Symboliques.ipynb	Image	suffisance	suffisance=hors_serie:symmetry : module hors serie non livre par le bundle
-MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-GANs-Portraits-Moment-NFT.ipynb	Image	gpu	gpu=torch,usage CUDA explicite
-MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb	Image	gpu,import_absent	gpu=torch,torch.nn,torch.nn.functional,usage CUDA explicite;import_absent=clip,guided_diffusion.script_util,torchvision
-MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb	Image	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=CLIP_.clip,pydiffvg;suffisance=absent_distribution:cairosvg : absent de la distribution
+MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-GANs-Portraits-Moment-NFT.ipynb	Image	gpu	gpu=torch,usage CUDA explicite
+MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb	Image	gpu,import_absent	gpu=torch,torch.nn,torch.nn.functional,usage CUDA explicite;import_absent=clip,guided_diffusion.script_util,torchvision
+MyIA.AI.Notebooks/GenAI/Image/05-History/05-3-CLIPasso-Semantic-Sketching.ipynb	Image	gpu,import_absent,suffisance	gpu=torch,usage CUDA explicite;import_absent=CLIP_.clip,pydiffvg;suffisance=absent_distribution:cairosvg : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Image/examples/history-geography.ipynb	Image	cle,reseau,suffisance	cle=1;reseau=api.openai.com,requests;suffisance=absent_distribution:dotenv : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Image/examples/literature-visual.ipynb	Image	cle,reseau,suffisance	cle=1;reseau=api.openai.com,requests;suffisance=absent_distribution:dotenv : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb	Image	cle,reseau,suffisance	cle=1;reseau=api.openai.com,requests;suffisance=absent_distribution:dotenv : absent de la distribution
@@ -713,10 +713,10 @@ MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb	Texte	gpu,reseau,suf
 MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb	Texte	reseau,suffisance	reseau=localhost:11434;suffisance=absent_distribution:dspy : absent de la distribution;absent_distribution:dspy.teleprompt : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb	Texte	gpu,reseau,suffisance	gpu=torch;reseau=home.nps.gov,httpx,requests;suffisance=absent_distribution:anthropic : absent de la distribution;absent_distribution:dotenv : absent de la distribution;absent_distribution:gradio : absent de la distribution;absent_distribution:transformers : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Texte/24_Generative_Agents_MiniMonde.ipynb	Texte	cle,reseau,suffisance	cle=1;reseau=192.168.0.47:5002,requests;suffisance=absent_distribution:sentence_transformers : absent de la distribution
-MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb	Texte	gpu	gpu=torch
+MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch-Python.ipynb	Texte	gpu	gpu=torch
 MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb	Texte	gpu	gpu=torch,torch.nn,torch.nn.functional
 MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb	Texte	gpu	gpu=torch,torch.nn,torch.nn.functional
-MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb	Texte	gpu,suffisance	gpu=torch,usage CUDA explicite;suffisance=absent_distribution:datasets : absent de la distribution;absent_distribution:transformers : absent de la distribution;absent_distribution:transformers.utils : absent de la distribution
+MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA-Python.ipynb	Texte	gpu,suffisance	gpu=torch,usage CUDA explicite;suffisance=absent_distribution:datasets : absent de la distribution;absent_distribution:transformers : absent de la distribution;absent_distribution:transformers.utils : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb	Texte	gpu,suffisance	gpu=torch,usage CUDA explicite;suffisance=absent_distribution:datasets : absent de la distribution;absent_distribution:transformers : absent de la distribution;absent_distribution:transformers.utils : absent de la distribution
 MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-03-Internalisation-CoT-Python.ipynb	Texte	gpu	gpu=torch,torch.nn.functional
 MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop-Python.ipynb	Texte	gpu	gpu=torch,torch.nn.functional
