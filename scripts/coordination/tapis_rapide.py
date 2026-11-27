@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_sature, tapis_service,
+                         tapis_attente, tapis_borne, tapis_sature, tapis_service,
                          tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
@@ -231,7 +231,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: ecart_label(e.labels)),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
         ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
-        ("LIVREE", lambda: _livree(it, e, evts)),
+        # LIVREE se tait pendant la REPRISE : la preuve a retire l'ecart, les
+        # regles suivantes sont rejouees (`tapis_reprise_livree`, #28114).
+        ("LIVREE", lambda: None if ctx.get("livree_muette") else _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
         # La pause passe AVANT les ecarts de recul (COUVERTE, RELACHEE) : une
@@ -380,9 +382,13 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
         file.append(e)
         pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
-    # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
-    # demande une lecture et un --paths, il ne passe jamais devant un grain.
-    return sorted(file[:max(grains, 0)], key=lambda e: (not e.mon_claim, e.conteneur))
+    # Vos claims, puis les issues JAMAIS VISITEES, puis les grains, puis les
+    # conteneurs (#26926) : un conteneur demande une lecture et un --paths, il
+    # ne passe jamais devant un grain. Mais un conteneur jamais visite passe
+    # devant un grain deja visite : l'invariant de couverture (#27590) prime
+    # sur l'ordre de service (mesure du 25/11 : six issues en violation).
+    return sorted(file[:max(grains, 0)],
+                  key=lambda e: (not e.mon_claim, e.numero not in jamais, e.conteneur))
 
 
 def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane: str,
@@ -436,12 +442,6 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-
-
-
-
-
-
 def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
                  fraicheur: dict | None, lire_fils: object) -> int:
     """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
@@ -489,29 +489,34 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
 
 
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None, lire_fils: object = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None,
+         echeance: float | None = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
-    # repli picker) sur un main local en retard ou un organe du tirage divergent
-    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
+    # La BORNE de commande (#28114, I6) : une echeance unique, prise ICI.
+    echeance = echeance or tapis_borne.echeance()
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 est le
+    # REFUS (mesure impossible) ; retard ou module divergent DEGRADENT (0).
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
-        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale,
+                                                 echeance=echeance)
         if fraicheur["refuse"]:
             return 4  # pas le repli picker : il fait rejouer le meme incident
     # Bascule (#27225) : le tirage par defaut est leger -- classement sur
     # metadonnees, qualification du grain servi sur son FIL COMPLET. Le rejeu
     # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
-    # sait relire un dossier de lecture.
+    # sait relire un dossier de lecture. La voie LOURDE est un DIAGNOSTIC :
+    # elle garde ses budgets propres, pas l'enveloppe I6, qui borne le tirage
+    # par defaut.
     if args.voie == "leger" and not args.lecture:
         # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
         # calculer des deux cotes ouvrirait une course au passage d'une tranche.
         maintenant = maintenant or datetime.now(UTC)
         graine = args.graine or graine_defaut(args.lane, maintenant)
         return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
-                                       fraicheur)
+                                       fraicheur, echeance=echeance)
     return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 

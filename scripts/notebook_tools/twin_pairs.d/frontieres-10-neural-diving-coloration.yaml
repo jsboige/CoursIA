@@ -1,0 +1,7 @@
+- name: "Frontieres-10 Neural Diving Coloration"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "CP-SAT natif C# ; MLPClassifier réel via Python.NET. Les seules entrées issues du générateur NumPy sont déclarées dans data/frontieres-learned-inputs/neural-inputs.json et son générateur."
