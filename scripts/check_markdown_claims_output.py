@@ -66,13 +66,20 @@ WINDOW = 3
 #   "0,09 %" / "0.09%" / "0.2385" / "3,1 M" / "3.1B" / "1.42 Go"
 #   "75 steps" / "15 epochs" / "69.5s" / "256 tokens"
 # Anchored tolerant: comma OR dot, optional SI suffix, optional %/s/epochs/tokens.
+#
+# #24289 famille A : les tailles s'ecrivent en MAJUSCULES ("3.1B", "1.42 Go",
+# "24 ko") ; le suffixe en minuscule d'un nom de carnet ("24b", corpus
+# GT-24b) n'est pas une unite d'octets. `(?-i:B)` rend l'octet
+# sensible a la casse : "24B" reste une mesure, "24b" cesse d'en etre
+# une -- le jeton ne matche plus du tout, la reference de carnet sort
+# du champ du detecteur au lieu d'y entrer comme une mesure.
 NUMERIC_RE = re.compile(
     r"""
     (?<![A-Za-z0-9])                       # left boundary: not alnum
     \d{1,3}(?:[.,]\d{1,3})?                # integer or 1-decimal or 3-decimal
     (?:[.,]\d+)?                            # optional extended decimals
     \s*
-    (?:%|pct|percent|epochs?|steps?|s|sec|seconds?|min|minutes?|h|hours?|ms|Md|B|M|G|K|Go|To|tokens?|params?|bits?)?
+    (?:%|pct|percent|epochs?|steps?|s|sec|seconds?|min|minutes?|h|hours?|ms|Md|(?-i:B)|M|G|K|Go|To|tokens?|params?|bits?)?
     (?![A-Za-z0-9])                       # right boundary
     """,
     re.VERBOSE | re.IGNORECASE,
@@ -1340,6 +1347,64 @@ def _is_identifier_component(prose: str, match_pos: int, match_end: int) -> bool
     return bool(_IDENTIFIER_TELL_RE.search(before))
 
 
+def _is_cell_index_reference(prose: str, match_pos: int, match_end: int) -> bool:
+    """#24289 famille B : le match est l'INDEX d'une ancre de cellule.
+
+    Mesure sur GT-18c (carnet sain, 25/11) : « La section circularite
+    (cell[43-45]) » et « la reserve structurelle est posee en cell[45] »
+    produisaient des faux positifs -- 43 et 45 designent des POSITIONS
+    dans le carnet, pas des valeurs mesurees.
+
+    Le predicat ne s'applique qu'aux chiffres sites ENTRE crochets : une
+    valeur ecrite a cote de l'ancre (« cell[45] : le F1=1,000 ») reste un
+    claim controle.
+    """
+    for m in _CELL_ANCHOR_RE.finditer(prose):
+        lb = m.group(0).find("[")
+        if lb < 0:
+            continue
+        start = m.start() + lb + 1
+        end = m.end() - 1
+        if start <= match_pos and match_end <= end:
+            return True
+    return False
+
+
+# Frontiere de phrase : ponctuation doublee, espace, puis majuscule.
+# Le lookahead evite de couper sur une decimale (« 0.455 ») et le
+# character set evite de couper sur « ... » ou « ; ».
+_SENTENCE_BOUNDARY_RE = re.compile(r"[.!?][ \t]+(?=[A-ZÀ-ÖØ-Þ«\"'(])")
+
+
+def _sentence_around(src: str, match_pos: int, match_end: int) -> str:
+    """La phrase qui porte le claim, dans sa propre ligne.
+
+    #24289 famille C : une ancre de source (`cell[45]`) ne gouverne que
+    la PHRASE qui la porte. Mesure sur GT-18c (25/11) : la derniere
+    ligne de la cellule 49 enchaine deux reserves distinctes -- l'ancre
+    `cell[45]` (la reserve structurelle) puis « L'ecart avec le LLM
+    epingle (haiku-4.5, F1 = 0,455) ». La ligne entiere portait l'ancre,
+    donc la recherche ascendante etait desactivee pour 0,455 -- une
+    valeur imprimee par la cellule de code 42, sept cellules plus haut.
+    Le claim sans ancre doit pouvoir etre prouve par une sortie plus
+    haute ; une ancre reste une ancre pour la phrase qui la cite.
+    """
+    line_start = src.rfind("\n", 0, match_pos) + 1
+    line_end = src.find("\n", match_end)
+    if line_end < 0:
+        line_end = len(src)
+    line = src[line_start:line_end]
+    pos = match_pos - line_start
+    start = 0
+    for m in _SENTENCE_BOUNDARY_RE.finditer(line, 0, pos):
+        start = m.end()
+    end = len(line)
+    m = _SENTENCE_BOUNDARY_RE.search(line, pos)
+    if m:
+        end = m.start()
+    return line[start:end]
+
+
 def _ungroup_number(token: str) -> str:
     """Collapse francophone digit grouping ("4 683" -> "4683") so a prose
     operand can be compared to the flat tokens an output prints."""
@@ -1530,6 +1595,10 @@ def check_notebook(path: Path) -> dict:
             # separator is a component of an identifier, not a measurement.
             if _is_identifier_component(prose, match_pos, match_end):
                 continue
+            # #24289 famille B: a number between the brackets of a cell
+            # anchor is a POSITION in the notebook, not a measurement.
+            if _is_cell_index_reference(prose, match_pos, match_end):
+                continue
             if _in_exception_code_span(prose, match_pos, match_end):
                 continue
             # c.415 (#11873): three additional pedagogical-prose FP families
@@ -1562,6 +1631,16 @@ def check_notebook(path: Path) -> dict:
             # form): currency around the number or a tariff unit after it.
             if _is_monetary_value(prose, match_pos, match_end):
                 continue
+            # #24289 famille C: an anchor governs the SENTENCE that cites
+            # it, not every claim of the line.
+            claim_scope = _sentence_around(prose, match_pos, match_end)
+            # The PROOF sources keep the paragraph scope (the line): a
+            # paragraph may name the source of a claim in a NEIGHBOURING
+            # sentence -- measured on ICT-19 (25/11) : the values
+            # `repair_gain(S4) = +0.8217` are printed by cell 23, named by
+            # "(ICT-19b §8, §13)" in the sentence that FOLLOWS the one that
+            # states them, while "(section 5.1)" of that first sentence
+            # resolves to no cell at all.
             claim_line = _line_around(prose, match_pos, match_end)
             anchored_outputs = [
                 item for item in _anchored_output_cells(claim_line, cells, idx)
@@ -1584,8 +1663,8 @@ def check_notebook(path: Path) -> dict:
             # claim names a source cell or a section, that anchor governs
             # instead: an ambiguous anchor is not proof.
             anchor_named = bool(
-                _CELL_ANCHOR_RE.search(claim_line)
-                or _SECTION_ANCHOR_RE.search(claim_line)
+                _CELL_ANCHOR_RE.search(claim_scope)
+                or _SECTION_ANCHOR_RE.search(claim_scope)
             )
             if not anchor_named and any(
                 norm in _normalize_output_text(text)

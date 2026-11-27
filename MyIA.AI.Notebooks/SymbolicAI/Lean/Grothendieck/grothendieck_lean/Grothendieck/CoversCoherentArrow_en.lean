@@ -84,7 +84,7 @@ open CategoryTheory Limits Coverage
 universe u v
 
 /-!
-## Section 1 : le pont central — forme flèche ↔ Saturate
+## Section 1 : the central bridge — arrow form ↔ Saturate
 
 `coherentTopology C` (for `C : Type u` `[Category.{v} C]`
 `[Precoherent C]`) is defined as `coherentCoverage C |>.toGrothendieck`.
