@@ -50,12 +50,19 @@ namespace Grothendieck
 variable {X : TopCat.{u}}
 
 /-- L'action des tiges, point par point : `C⁰` agit sur une section de Godement en
-transportant chaque germe par le foncteur des tiges. -/
+transportant chaque germe par le foncteur des tiges.
+Correspondance Stacks — **ABSENT** : aucun énoncé nommé dans les fichiers Stacks
+relus ne décrit l'action de `C⁰` sur les germes point par point ; chez Stacks, la
+construction `f_* f^*` agit sur les sections (`Basic.lean:416`).
+-/
 noncomputable def godementHomApp {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (U : Opens X) (s : godementSection F U) : godementSection G U :=
   fun x => (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ (s x)
 
-/-- `C⁰` est additive : le transport dans les tiges l'est. -/
+/-- `C⁰` est additive : le transport dans les tiges l'est.
+Correspondance Stacks — **ABSENT** : lemma de calcul (l'additivité de l'action sur
+les tiges) ; aucun énoncé nommé côté Stacks.
+-/
 theorem godementHomApp_add {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (U : Opens X) (s t : godementSection F U) :
     godementHomApp φ U (s + t) = godementHomApp φ U s + godementHomApp φ U t := by
@@ -67,14 +74,20 @@ theorem godementHomApp_add {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (ConcreteCategory.hom ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ))
     (s x) (t x)
 
-/-- `C⁰` preserve le zero. -/
+/-- `C⁰` preserve le zero.
+Correspondance Stacks — **ABSENT** : lemma de calcul ; aucun énoncé nommé côté
+Stacks.
+-/
 theorem godementHomApp_zero {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (U : Opens X) : godementHomApp φ U (0 : godementSection F U) = 0 := by
   funext x
   exact map_zero
     (ConcreteCategory.hom ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} (x : X)).map φ))
 
-/-- `C⁰(𝟙 F) = 𝟙 (C⁰F)` : `stalkFunctor` est un foncteur, son `map_id` suffit. -/
+/-- `C⁰(𝟙 F) = 𝟙 (C⁰F)` : `stalkFunctor` est un foncteur, son `map_id` suffit.
+Correspondance Stacks — **ABSENT** : lemma de calcul ; aucun énoncé nommé côté
+Stacks.
+-/
 theorem godementHomApp_id (F : X.Presheaf AddCommGrpCat.{u}) (U : Opens X)
     (s : godementSection F U) : godementHomApp (𝟙 F) U s = s := by
   funext x
@@ -82,7 +95,10 @@ theorem godementHomApp_id (F : X.Presheaf AddCommGrpCat.{u}) (U : Opens X)
   rw [CategoryTheory.Functor.map_id]
   rfl
 
-/-- `C⁰(φ ≫ ψ) = C⁰ψ ∘ C⁰φ` : meme raison, `Functor.map_comp`. -/
+/-- `C⁰(φ ≫ ψ) = C⁰ψ ∘ C⁰φ` : meme raison, `Functor.map_comp`.
+Correspondance Stacks — **ABSENT** : lemma de calcul ; aucun énoncé nommé côté
+Stacks.
+-/
 theorem godementHomApp_comp {F G H : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (ψ : G ⟶ H) (U : Opens X) (s : godementSection F U) :
     godementHomApp (φ ≫ ψ) U s = godementHomApp ψ U (godementHomApp φ U s) := by
@@ -95,7 +111,12 @@ theorem godementHomApp_comp {F G H : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G
 
 /-- `C⁰φ` est un morphisme de prefaisceaux. La naturalite est **definitionnelle** :
 restreindre puis transporter dans les tiges, ou transporter puis restreindre, sont
-la meme fonction — les deux membres restreignent avant d'appliquer `stalkFunctor`. -/
+la meme fonction — les deux membres restreignent avant d'appliquer `stalkFunctor`.
+Correspondance Stacks — **PARTIEL** : `f_* f^*` est un foncteur chez Stacks par
+construction de l'adjunction (`Basic.lean:416`, `godementComonad`) ; la naturalité y
+est définitionnelle comme ici. Écart : Stacks l'a sur les faisceaux de modules d'un
+espace annelé, nous sur les préfaisceaux de groupes abéliens.
+-/
 noncomputable def godementMapHom {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) :
     godementPresheaf F ⟶ godementPresheaf G where
   app U :=
@@ -107,14 +128,20 @@ noncomputable def godementMapHom {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F �
     ext s
     rfl
 
-/-- `C⁰` preserve l'identite. -/
+/-- `C⁰` preserve l'identite.
+Correspondance Stacks — **ABSENT** : lemma de calcul ; aucun énoncé nommé côté
+Stacks.
+-/
 theorem godementMapHom_id (F : X.Presheaf AddCommGrpCat.{u}) :
     godementMapHom (𝟙 F) = 𝟙 (godementPresheaf F) := by
   ext U s
   funext x
   exact congrFun (godementHomApp_id F U s) x
 
-/-- `C⁰` preserve la composition. -/
+/-- `C⁰` preserve la composition.
+Correspondance Stacks — **ABSENT** : lemma de calcul ; aucun énoncé nommé côté
+Stacks.
+-/
 theorem godementMapHom_comp {F G H : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (ψ : G ⟶ H) :
     godementMapHom (φ ≫ ψ) = godementMapHom φ ≫ godementMapHom ψ := by
@@ -124,7 +151,11 @@ theorem godementMapHom_comp {F G H : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G
 
 /-- **`C⁰` est un endofoncteur** de la categorie des prefaisceaux de groupes abeliens
 sur `X`. C'est le prerequis qui manquait pour iterer la construction sur les noyaux
-et former le complexe de Godement. [God58] Chap. II §4.1. -/
+et former le complexe de Godement. [God58] Chap. II §4.1.
+Correspondance Stacks — **PARTIEL** : le foncteur `C⁰` existe chez Stacks sous la
+forme `f_* f^*` (`Basic.lean:416`) ; l'écart de cadre est le même qu'ailleurs —
+modules sur espace annelé contre groupes abéliens sur espace topologique.
+-/
 noncomputable def godementFunctor :
     X.Presheaf AddCommGrpCat.{u} ⥤ X.Presheaf AddCommGrpCat.{u} where
   obj F := godementPresheaf F
@@ -134,7 +165,11 @@ noncomputable def godementFunctor :
 
 /-- La naturalite de l'unite de Godement : prendre le germe de chaque point commute
 a l'action d'un morphisme. C'est `Presheaf.stalkFunctor_map_germ_apply` — le germe du
-morphisme est le morphisme des germes. -/
+morphisme est le morphisme des germes.
+Correspondance Stacks — **PARTIEL** : l'unité de Stacks est naturelle par
+construction d'adjunction (`Basic.lean:475` `godementAugmentation`) ; la naturalité
+n'y est pas nommée comme un énoncé distinct.
+-/
 theorem toGodement_naturality {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) :
     toGodement F ≫ godementMapHom φ = φ ≫ toGodement G := by
   ext U s
@@ -144,7 +179,12 @@ theorem toGodement_naturality {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G
 /-- **L'unite de Godement est naturelle** : `toGodement` est une transformation
 naturelle de l'identite vers l'endofoncteur `C⁰`. Avec `C⁰` fonctoriel, l'unite
 naturelle `𝟭 ⟶ C⁰` est exactement ce qui permet d'ecrire le premier pas du complexe
-de Godement `0 → F → C⁰F → C⁰(K) → ⋯`. -/
+de Godement `0 → F → C⁰F → C⁰(K) → ⋯`.
+Correspondance Stacks — **COUVERT** : la transformation naturelle `𝟭 → C⁰` est chez
+Stacks la composante de degré 0 de `godementAugmentation` (`Basic.lean:475`, tag
+0FKS) ; ce que notre version ajoute est de l'écrire comme une transformation
+naturelle du foncteur `C⁰`, et non comme un terme d'un complexe.
+-/
 noncomputable def toGodementNatTrans :
     𝟭 (X.Presheaf AddCommGrpCat.{u}) ⟶ godementFunctor (X := X) where
   app F := toGodement F

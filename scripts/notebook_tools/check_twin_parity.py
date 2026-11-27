@@ -861,12 +861,20 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     name = pair.get("name", "?")
     py = pair["python"]
     cs = pair["csharp"]
+    # Cote rust OPTIONNEL (#27098 organe 1, decision coordinateur 22/11) : un
+    # triplet porte la cle `rust:` ; une paire binaire ne la porte pas et son
+    # comportement est BYTE-IDENTIQUE a avant (retro-compatibilite stricte des
+    # ~158 paires existantes -- aucune ne declare rust: aujourd'hui, les ports
+    # Rust vivent en prose known_differences en attendant la migration).
+    ru = pair.get("rust")
     audit = _latest_audit(pair)
     rec_py = audit.get("python_sha")
     rec_cs = audit.get("csharp_sha")
+    rec_ru = audit.get("rust_sha")
 
     cur_py = _git_blob_sha(repo_root, py, git_ref)
     cur_cs = _git_blob_sha(repo_root, cs, git_ref)
+    cur_ru = _git_blob_sha(repo_root, ru, git_ref) if ru else None
 
     details = []
     status = "OK"
@@ -876,6 +884,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     drift_sides: set[str] = set()
     py_drift = False
     cs_drift = False
+    ru_drift = False
     no_baseline = False
 
     if cur_py is None:
@@ -886,6 +895,10 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         details.append(f"C# MANQUANT dans git : {cs}")
         status = "MISSING"
         drift_sides.add("csharp")
+    if ru and cur_ru is None:
+        details.append(f"Rust MANQUANT dans git : {ru}")
+        status = "MISSING"
+        drift_sides.add("rust")
 
     # Verdict NUMBERING-DRIFT (EPIC #12933) : numeros de base distincts entre
     # les jumeaux DECLARES. Evalue AVANT la comparaison de SHAs : si la
@@ -914,6 +927,31 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
             )
             status = "NUMBERING-DRIFT"
 
+    # Numbering du cote rust optionnel (#27098 organe 1) : meme principe
+    # « parite des identifiants » que le bloc py/cs ci-dessus, aligne sur le
+    # numero du jumeau PYTHON (reference du triplet). Bloc SEPARE pour ne pas
+    # toucher aux messages py/cs que les tests pinnet -- le triplet partage le
+    # meme numbering_exception que la paire.
+    num_ru = _twin_base_number(ru) if ru else None
+    if status == "OK" and ru and num_ru is not None and num_py is not None \
+            and num_ru != num_py:
+        ne_raw = pair.get("numbering_exception")
+        ne = ne_raw.strip() if isinstance(ne_raw, str) else ""
+        if ne:
+            details.append(
+                f"Numerotation divergente documentee : rust base={num_ru} vs "
+                f"python base={num_py} -- exception : {ne}"
+            )
+        else:
+            details.append(
+                f"Numero de base divergent : rust={num_ru} ({ru}) vs "
+                f"python={num_py} ({py}) -- renommage unilateral (classe #5361) "
+                "ou declaration erronee. Realigner les numeros, OU documenter la "
+                "divergence via `numbering_exception: <raison>` dans l'entree du "
+                "registre (#12933)."
+            )
+            status = "NUMBERING-DRIFT"
+
     # content_*_sha (#9399 volet c) : metadata-immune. Calcules LAZILY -- UNIQUEMENT
     # quand l'audit les a enregistrees. Les paires legacy (aucune content_*_sha
     # enregistree) tombent sur les git blob SHA sans payer le surcout d'un git show
@@ -924,6 +962,10 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
                    and audit.get("content_csharp_sha") is not None)
     cur_cpy = _content_sha(repo_root, py, git_ref) if use_content else None
     cur_ccs = _content_sha(repo_root, cs, git_ref) if use_content else None
+    # Cote rust : meme regle lazy que py/cs -- le content_rust_sha ne se
+    # calcule que si l'audit l'a enregistre (#27098 organe 1).
+    use_content_ru = ru and audit.get("content_rust_sha") is not None
+    cur_cru = _content_sha(repo_root, ru, git_ref) if use_content_ru else None
 
     if status != "MISSING":
         # Verdict DRIFT : preferer les content_*_sha (metadata-immunes) quand
@@ -961,11 +1003,48 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
                 details.append(f"C# a drift : {rec_cs[:8]} -> {cur_cs[:8]}")
         if no_baseline:
             details.append("Pas de last_audit_sha enregistre (--update requis)")
+        # Cote rust optionnel (#27098 organe 1) : DRIFT sur le cote Rust, meme
+        # semantique que py/cs -- content_rust_sha (metadata-immune) quand
+        # l'audit l'enregistre, sinon le git blob SHA. Un cote rust DECLARE
+        # sans empreinte attestee est un no_baseline rust : declarer le
+        # troisieme jumeau sans l'attester dans le meme geste laisserait le
+        # triplet hors discipline d'audit (cf update_pair, qui enregistre les
+        # deux empreintes quand la paire porte la cle).
+        if ru:
+            if use_content_ru:
+                ru_drift = (cur_cru is not None
+                            and cur_cru != audit.get("content_rust_sha"))
+                if cur_cru is None:
+                    # Meme regle que py/cs (ci-dessus) : une empreinte de
+                    # contenu COURANTE indisponible n'est jamais un OK. Le
+                    # carnet rust est suivi mais illisible a cette ref ; sans
+                    # ce garde, le verdict disait OK la ou verify_recorded_sha
+                    # dit deja MISMATCH. Le geste n'est pas --update mais de
+                    # rendre le carnet lisible (restaurer, re-executer).
+                    no_baseline = True
+                    details.append(
+                        f"Empreinte de contenu Rust indisponible : {ru} "
+                        "(suivi mais illisible a cette ref)")
+            else:
+                ru_drift = (rec_ru is not None and cur_ru != rec_ru)
+            if ru_drift:
+                drift_sides.add("rust")
+                if use_content_ru:
+                    details.append(
+                        f"Rust a drift (content) : "
+                        f"{str(audit.get('content_rust_sha'))[:8]} -> {cur_cru[:8]}")
+                else:
+                    details.append(f"Rust a drift : {rec_ru[:8]} -> {cur_ru[:8]}")
+            if rec_ru is None and audit.get("content_rust_sha") is None:
+                details.append("Pas de rust_sha enregistre (--update requis)")
+                no_baseline = True
         if py_drift:
             drift_sides.add("python")
         if cs_drift:
             drift_sides.add("csharp")
-        if status == "OK" and (py_drift or cs_drift or no_baseline):
+        if ru_drift:
+            drift_sides.add("rust")
+        if status == "OK" and (py_drift or cs_drift or ru_drift or no_baseline):
             status = "DRIFT"
 
     return {
@@ -973,6 +1052,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "family": pair.get("family", "?"),
         "python": py,
         "csharp": cs,
+        "rust": ru,
         "parity_level": pair.get("parity_level", "?"),
         "bridge_verdict": pair.get("bridge_verdict"),
         "status": status,
@@ -985,10 +1065,13 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "no_baseline": no_baseline,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
+        "current_rust_sha": cur_ru,
         "current_content_python_sha": cur_cpy,
         "current_content_csharp_sha": cur_ccs,
+        "current_content_rust_sha": cur_cru,
         "recorded_python_sha": rec_py,
         "recorded_csharp_sha": rec_cs,
+        "recorded_rust_sha": rec_ru,
         "last_audit_date": audit.get("date"),
         "last_audit_by": audit.get("by"),
         "details": details,
@@ -1024,11 +1107,14 @@ def update_pair(
     """
     py = pair["python"]
     cs = pair["csharp"]
+    ru = pair.get("rust")  # cote optionnel #27098 organe 1
     cur_py = _git_blob_sha(repo_root, py)
     cur_cs = _git_blob_sha(repo_root, cs)
+    cur_ru = _git_blob_sha(repo_root, ru) if ru else None
     # content_*_sha (#9399 volet c) : SHA-256 du notebook sans nb["metadata"].
     cur_cpy = _content_sha(repo_root, py)
     cur_ccs = _content_sha(repo_root, cs)
+    cur_cru = _content_sha(repo_root, ru) if ru else None
     audit = {
         "date": date or _dt.date.today().isoformat(),
         "by": by or _latest_audit(pair).get("by", "manual"),
@@ -1037,6 +1123,12 @@ def update_pair(
         "content_python_sha": cur_cpy,
         "content_csharp_sha": cur_ccs,
     }
+    # Empreintes du cote rust SEULEMENT si la paire le declare : les audits des
+    # paires binaires P/C restent byte-identiques (pas de cle rust parasite
+    # dans les ~158 fichiers existants au premier --update).
+    if ru:
+        audit["rust_sha"] = cur_ru
+        audit["content_rust_sha"] = cur_cru
     # No-op detection : si les SHAs de comparaison (content_sha d'abord, puis
     # git blob SHA en fallback legacy) sont identiques au `_latest_audit`
     # actuel, le rebaseline n'apporterait aucune information nouvelle -- c'est
@@ -1068,14 +1160,19 @@ def update_pair(
     # dans `main` -- le squash l'ecrasera. La base est donc interrogee en
     # complement (module frere `twin_parity_base`, comme le decoupage T7 de
     # #26364 l'a fait pour les modes d'ecriture).
+    # Le cote rust optionnel (#27098) releve des deux versants.
     if is_noop and latest:
         rec_py = latest.get("python_sha")
         rec_cs = latest.get("csharp_sha")
+        rec_ru = latest.get("rust_sha")
         py_orphan = rec_py is not None and not _blob_ancestor_in(repo_root, rec_py)
         cs_orphan = rec_cs is not None and not _blob_ancestor_in(repo_root, rec_cs)
-        if (py_orphan or cs_orphan
+        # Orphelin par squash du cote rust : meme discrimination (#27098).
+        ru_orphan = (ru and rec_ru is not None
+                     and not _blob_ancestor_in(repo_root, rec_ru))
+        if (py_orphan or cs_orphan or ru_orphan
                 or twin_parity_base.orphan_a_venir(
-                    _self(), repo_root, latest, cur_py, cur_cs)):
+                    _self(), repo_root, latest, cur_py, cur_cs, cur_ru)):
             is_noop = False
     return audit, cur_py, is_noop
 
@@ -1123,17 +1220,22 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
         }
 
     # SHA calcules a HEAD (jamais lus a la main -- re-calcules systematiquement).
+    ru = pair.get("rust")  # cote optionnel #27098 organe 1
     cur_py = _git_blob_sha(repo_root, py)
     cur_cs = _git_blob_sha(repo_root, cs)
+    cur_ru = _git_blob_sha(repo_root, ru) if ru else None
     cur_cpy = _content_sha(repo_root, py)
     cur_ccs = _content_sha(repo_root, cs)
+    cur_cru = _content_sha(repo_root, ru) if ru else None
 
     # SHA enregistres dans le YAML (forme append-only ou legacy, _latest_audit
     # normalise les deux).
     rec_py = audit.get("python_sha")
     rec_cs = audit.get("csharp_sha")
+    rec_ru = audit.get("rust_sha")
     rec_cpy = audit.get("content_python_sha")
     rec_ccs = audit.get("content_csharp_sha")
+    rec_cru = audit.get("content_rust_sha")
 
     # Drift metadata-only (#20228) : le blob SHA a bouge -- un tampon
     # `nb["metadata"]` (kernelspec, cost, papermill) pose ou retire -- sans que
@@ -1156,23 +1258,39 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
 
     py_meta_only = _metadata_only(rec_cpy, cur_cpy, rec_py)
     cs_meta_only = _metadata_only(rec_ccs, cur_ccs, rec_cs)
+    ru_meta_only = _metadata_only(rec_cru, cur_cru, rec_ru)
 
     mismatches = []
     metadata_only_sha = []
+    # Empreinte COURANTE indisponible : carnet retire de git (blob None), ou
+    # present mais illisible (contenu None). Le mismatch la DIT avec sa raison.
+    # Formater un None levait TypeError, et `run_verify_recorded_sha` evalue
+    # toutes les paires d'une liste en comprehension : un seul carnet retire
+    # faisait tomber le mode entier au lieu de dire QUEL jumeau manque (review
+    # ai-01 du 2026-11-25 sur la PR #28276, triplet prive de son carnet Rust).
+    absent = "<indisponible : absent de git>"
+    illisible = "<indisponible : fichier present, contenu illisible>"
+
+    def _calc(sha: str | None, raison: str = absent) -> str:
+        return sha[:12] if sha is not None else raison
+
+    def _calc_contenu(contenu: str | None, blob: str | None) -> str:
+        return _calc(contenu, absent if blob is None else illisible)
+
     # Comparaison sur les blob SHA : compares stricte, sauf drift metadata-only.
     if rec_py is not None and rec_py != cur_py:
         if py_meta_only:
             metadata_only_sha.append("python_sha")
         else:
             mismatches.append(
-                f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
+                f"python_sha: recorded={rec_py[:12]} calculated={_calc(cur_py)}"
             )
     if rec_cs is not None and rec_cs != cur_cs:
         if cs_meta_only:
             metadata_only_sha.append("csharp_sha")
         else:
             mismatches.append(
-                f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
+                f"csharp_sha: recorded={rec_cs[:12]} calculated={_calc(cur_cs)}"
             )
     # Comparaison sur les content_sha : on SKIP si recorded=None (migration
     # progressive post-volet-(c) ; les paires legacy n'ont pas encore ces
@@ -1181,11 +1299,29 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
     # transitoires sur les champs ajoutes apres coup).
     if rec_cpy is not None and rec_cpy != cur_cpy:
         mismatches.append(
-            f"content_python_sha: recorded={rec_cpy[:12]} calculated={cur_cpy[:12]}"
+            f"content_python_sha: recorded={rec_cpy[:12]} "
+            f"calculated={_calc_contenu(cur_cpy, cur_py)}"
         )
     if rec_ccs is not None and rec_ccs != cur_ccs:
         mismatches.append(
-            f"content_csharp_sha: recorded={rec_ccs[:12]} calculated={cur_ccs[:12]}"
+            f"content_csharp_sha: recorded={rec_ccs[:12]} "
+            f"calculated={_calc_contenu(cur_ccs, cur_cs)}"
+        )
+    # Cote rust optionnel (#27098 organe 1) : memes comparaisons, seulement si
+    # la paire declare le troisieme jumeau ET que l'audit l'a attesté (rec non
+    # None) -- une paire `rust:` dont l'audit n'a pas d'empreinte rust reste
+    # du ressort de check_pair (no_baseline), pas un mismatch de valeur.
+    if ru and rec_ru is not None and rec_ru != cur_ru:
+        if ru_meta_only:
+            metadata_only_sha.append("rust_sha")
+        else:
+            mismatches.append(
+                f"rust_sha: recorded={rec_ru[:12]} calculated={_calc(cur_ru)}"
+            )
+    if ru and rec_cru is not None and rec_cru != cur_cru:
+        mismatches.append(
+            f"content_rust_sha: recorded={rec_cru[:12]} "
+            f"calculated={_calc_contenu(cur_cru, cur_ru)}"
         )
 
     return {
@@ -1197,12 +1333,16 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
         "metadata_only_sha": metadata_only_sha,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
+        "current_rust_sha": cur_ru,
         "current_content_python_sha": cur_cpy,
         "current_content_csharp_sha": cur_ccs,
+        "current_content_rust_sha": cur_cru,
         "recorded_python_sha": rec_py,
         "recorded_csharp_sha": rec_cs,
+        "recorded_rust_sha": rec_ru,
         "recorded_content_python_sha": rec_cpy,
         "recorded_content_csharp_sha": rec_ccs,
+        "recorded_content_rust_sha": rec_cru,
     }
 
 
@@ -1216,6 +1356,10 @@ _AUDIT_KEYS = (
     # declencher un faux audit au --update. Ajoutes a cote (anti-regression :
     # les blob SHA python_sha/csharp_sha restent enregistres pour inspection).
     "content_python_sha", "content_csharp_sha",
+    # Cote rust optionnel (#27098 organe 1) : empreintes du troisieme jumeau,
+    # enregistrees par --update UNIQUEMENT quand la paire declare `rust:` (les
+    # paires binaires n'emettent jamais ces cles -- pas de diff parasite).
+    "rust_sha", "content_rust_sha",
 )
 
 
@@ -1328,6 +1472,20 @@ def _cmp_pair_shas(d: dict) -> tuple:
     return d.get("python_sha"), d.get("csharp_sha")
 
 
+def _cmp_rust_sha(d: dict) -> str | None:
+    """SHA de comparaison du cote rust optionnel (#27098 organe 1).
+
+    Meme regle de preference que `_cmp_pair_shas` : `content_rust_sha`
+    (metadata-immune) quand l'enregistrement le porte, sinon `rust_sha`
+    (git blob SHA). None = cote rust absent de l'enregistrement (paire
+    binaire, ou attestation rust pas encore migree).
+    """
+    cr = d.get("content_rust_sha")
+    if cr is not None:
+        return cr
+    return d.get("rust_sha")
+
+
 def _shas_match(record: dict, new_entry: dict) -> bool:
     """True ssi `record` et `new_entry` partagent les memes SHAs de comparaison (no-op).
 
@@ -1335,12 +1493,23 @@ def _shas_match(record: dict, new_entry: dict) -> bool:
     blob SHAs mais PAS les `content_*_sha` : via `_cmp_pair_shas` cela devient un
     no-op, donc le `--update` n'APPEND PAS de nouvelle entree d'audit pour un
     changement qui n'est pas pedagogique (faux audit, cf ai-01 design-gate #9399).
+
+    Cote rust (#27098 organe 1) : la contrainte est CONDITIONNELLE -- une
+    `new_entry` sans empreinte rust (paire binaire) n'en impose aucune ; une
+    `new_entry` qui en porte une (paire `rust:`) exige que `record` porte la
+    meme. Une premiere attestation rust (record sans empreinte) n'est donc
+    JAMAIS un no-op : declarer le troisieme jumeau append une entree reelle.
     """
     rec_py, rec_cs = _cmp_pair_shas(record)
     new_py, new_cs = _cmp_pair_shas(new_entry)
     if new_py is None or new_cs is None:
         return False
-    return str(rec_py) == str(new_py) and str(rec_cs) == str(new_cs)
+    if str(rec_py) != str(new_py) or str(rec_cs) != str(new_cs):
+        return False
+    new_ru = _cmp_rust_sha(new_entry)
+    if new_ru is not None and str(_cmp_rust_sha(record)) != str(new_ru):
+        return False
+    return True
 
 
 def _attestation_identical(record: dict, new_entry: dict) -> bool:
@@ -1359,7 +1528,7 @@ def _attestation_identical(record: dict, new_entry: dict) -> bool:
     """
     if not _shas_match(record, new_entry):
         return False
-    for key in ("python_sha", "csharp_sha"):
+    for key in ("python_sha", "csharp_sha", "rust_sha"):
         rec_val = record.get(key)
         new_val = new_entry.get(key)
         if rec_val is not None and new_val is not None and rec_val != new_val:
@@ -1971,7 +2140,7 @@ def _pair_paths_diverge(base_pp: dict, head_pp: dict) -> bool:
     Test PUR (aucun appel git) : sert de garde de cout -- les sondes croisees et
     le merge-base ne se paient que sur les paires qui divergent.
     """
-    for side in ("python", "csharp"):
+    for side in ("python", "csharp", "rust"):
         b = base_pp.get(side)
         h = head_pp.get(side)
         if isinstance(b, str) and isinstance(h, str) and b != h:
@@ -2027,7 +2196,7 @@ def _stale_branch_probe(repo_root: Path, base_pp: dict, head_pp: dict,
     Retourne None si le cas n'est pas etabli (comportement per-pair existant) ;
     sinon {"paths_base": {...}, "paths_head": {...}} pour le rapport JSON.
     """
-    for side in ("python", "csharp"):
+    for side in ("python", "csharp", "rust"):
         base_path = base_pp.get(side)
         head_path = head_pp.get(side)
         if not (isinstance(base_path, str) and isinstance(head_path, str)

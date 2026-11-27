@@ -553,20 +553,65 @@ curseur passe par-dessus lui, faute de quoi il serait perdu pour la rotation ; e
 pas le curseur : une primaire étrangère déjà parquée ne fait pas avancer une tranche que le lot ne touche
 pas.
 
-**Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
-`LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
-a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
+**Le mur global** (`--budget-s`, 30 s par défaut — `gh_selection.MUR_GLOBAL_S`) couvre la lecture de
+sélection ; son dépassement lève `LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une
+liste à moitié. La qualification a son propre mur : dépassée, elle rend ce qu'elle a et le dit
+(`budget_epuise`).
+
+**L'échéance de commande** (invariant I6 de #28114). Le point d'entrée `tapis_rapide.main` pose **une
+seule** échéance, partagée par tous les étages : la garde de fraîcheur, la sélection, la qualification, le
+cap de livraisons et le repli. Aucun étage ne s'attribue un budget neuf : chacun reçoit le **temps
+restant**, et une lecture qui ignore son timeout est **abandonnée** au passage de l'échéance. La borne
+de la commande est le **contrat** lui-même : `tapis_borne.BUDGET_S` = **55 s**, strictement sous les 60 s
+d'I6 (marge 5 s). Les parts des étages — 30 s pour le tirage (`gh_selection.MUR_GLOBAL_S`) et 30 s pour
+la garde de fraîcheur (`tapis_borne.FRAICHEUR_S`, mesuré sur ce dépôt le 26/11 : `git fetch origin main`
+20,4 s + `git rev-list` ×2 2,2 s + `git diff --name-only origin/main` des organes 1,1 s, soit 23,7 s) —
+sont **volontairement supérieures à cette enveloppe** : elles ne s'additionnent pas, elles se **partagent**
+(chaque étage prend `min(échéance, maintenant + sa part)`). La commande ne peut donc pas dépasser
+l'enveloppe : elle est **coupée**, pas attendue. Le pire cas est assumé ainsi : l'étage **dégradable**
+(la garde de fraîcheur) encaisse la coupe, l'étage **décisionnel** (la sélection) garde son budget dans
+le cas normal — 23,7 s mesurées laissent 31,3 s pour un tirage qui en demande 30. Deux conséquences en
+découlent : une fraîcheur **coupée** par la borne est une **dégradation**
+(`FRAICHEUR_BORNEE` : le tirage rend sa file avec l'avertissement), pas un refus — seule une mesure
+impossible reste un refus ; et un **repli** lancé après l'échéance ne sert **rien** (fail-CLOSED), il
+rendrait la main hors contrat. Les primitives vivent dans `scripts/coordination/tapis_borne.py`, sans
+réseau.
+
+**Ce que l'enveloppe ne couvre pas.** La voie **lourde** (`--voie lourd`) et le rejeu `--lecture` sont des
+**diagnostics** : ils lisent le pool entier (ou rejouent une lecture) et gardent leurs budgets propres, ils
+ne sont pas sous l'enveloppe I6. Le contrat I6 borne le **tirage par défaut** — la voie légère, celle que
+la lane lance. Une lecture qui ignore son timeout est abandonnée au passage de l'échéance **dans la voie
+légère** ; dans la voie lourde, le même abandonment se fait au timeout de la lecture, pas à l'échéance.
+
+**La borne est vérifiée, pas seulement énoncée.** Les témoins sont dans
+`scripts/tests/test_tapis_borne_entree.py` : la borne du CLI par défaut est **strictement** sous les 60 s
+du contrat (mesure à l'instant, pas une constante citée) ; et le **pire cas** — chaque étage consomme
+toute sa part — est tenu à l'**horloge réelle** : le runner git dort tout le timeout qu'il reçoit, la
+sélection dort de même, et la commande rend un verdict **dans** l'enveloppe qu'on lui donne (l'échéance
+y est mise à l'échelle : ce qui est prouvé est la forme, la borne réelle est celle du contrat).
 
 **Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
 désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,
-qualification légère, re-vérif, parcage) : un tirage refuse (sortie `4`) si l'un d'eux diffère
-d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+qualification légère, re-vérif, parcage) : sous `ORGANE_DIVERGENT` — un module qui diffère d'`origin/main` — le tirage **dégrade** (invariant I4 : sortie `0` et avertissement `TIRAGE DEGRADE` sur stderr) au lieu de refuser ; la sortie `4` ne reste que pour la **mesure impossible**. Le code exécuté n'est alors **pas** identique à `origin/main` : l'avertissement le dit. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+
+**Cette prescription est vérifiée, plus seulement énoncée.** La liste est contrôlée par
+`scripts/tests/test_main_freshness_organes.py`, sur deux sources : la **fermeture d'import statique** des
+points d'entrée du tirage (`tapis_rapide`, `tapis_leger`, `tapis_voie_leger`, `tapis_prise_en_charge`,
+`pick_idle_grain` — analysée par `ast`, jamais importée : `main_freshness` est lui-même dans la liste,
+l'import serait circulaire) et le **tableau « Les modules »** ci-dessous. Un module livré hors liste
+n'est donc pas un trou silencieux : la PR qui le livre porte **son propre rouge**, et le rouge se lève en
+déclarant le module — dans la PR, pas plus tard. Mesure du 24/11 : la liste ne portait qu'une **partie**
+du chemin du tirage ; l'écart était invisible, la garde refusait donc des tirages pour une raison que
+personne ne pouvait nommer, et laissait passer des modules du chemin qui ne l'étaient pas.
 
 ### Les modules
 
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_leger_rapport.py` | le **rapport** du tirage léger : l'état de chaque grain et l'action à faire — extrait de `tapis_leger.py` |
+| `scripts/coordination/tapis_leger_texte_occupation.py` | la section **occupation** de la sortie texte du tirage léger — extraite de `tapis_leger_texte.py` |
+| `scripts/coordination/tapis_occupation.py` | l'**occupation** d'un grain : l'urne de clôture (`candidate-delivered`) et la PR qui le tient — les deux marques, une seule décision, sur métadonnées seules (#28090) |
 | `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
 | `scripts/coordination/tapis_avance.py` | l'**avance** du curseur, bornée au lot : les trois états (décidé / parqué / sauté) |
 | `scripts/coordination/tapis_non_tente.py` | le grain **non tenté** : proposé, jamais qualifié — son code propre, et il ne fige pas le curseur |
@@ -576,6 +621,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
 | `scripts/coordination/tapis_qualification_fil.py` | la qualification **côté consommateur** : le fil complet déjà lu, rejoué sans appel réseau (`tapis_rapide.etats`) — extrait de `check_lane_claim.py` (#27242) |
+| `scripts/coordination/tapis_reprise_livree.py` | la **reprise** d'un grain dont la livraison n'est pas prouvée : les règles sont rejouées avec `LIVREE` muet, puis l'occupation s'applique — un marqueur non prouvé ne rend pas le grain plus servable que son absence (#28114) |
 | `scripts/coordination/tapis_fil_complet.py` | le **fil complet** des seuls candidats retenus : lever le doute de la fenêtre (`gh_snapshot`, REST paginé) |
 | `scripts/coordination/gh_issues.py` | la lecture **ciblée** des issues nommées, aux champs demandés — une porte pour tous les lecteurs ciblés (`gh_selection.qualifier`) |
 | `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
