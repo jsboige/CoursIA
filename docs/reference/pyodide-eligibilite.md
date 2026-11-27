@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1479** carnets Python, **579** eligibles, **900** refuses.
+Census : **1482** carnets Python, **582** eligibles, **900** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -74,12 +74,12 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Applications | 10 | 9 | 1 | 1 | 0 | 0 | 1 | 0 |
 | ArgumentAnalysis | 40 | 18 | 22 | 1 | 7 | 8 | 11 | 16 |
 | Audio | 51 | 1 | 50 | 29 | 21 | 18 | 20 | 48 |
-| Automata | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Automata | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | CaseStudies | 4 | 0 | 4 | 0 | 4 | 0 | 0 | 4 |
 | Causalite | 12 | 2 | 10 | 1 | 0 | 1 | 0 | 9 |
 | Chaines | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Coalitions | 4 | 2 | 2 | 0 | 0 | 0 | 2 | 1 |
-| Complexity | 28 | 24 | 4 | 0 | 0 | 0 | 1 | 3 |
+| Complexity | 29 | 25 | 4 | 0 | 0 | 0 | 1 | 3 |
 | Compression | 13 | 10 | 3 | 1 | 0 | 0 | 0 | 2 |
 | Constructeur | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
 | DataScienceWithAgents | 110 | 40 | 70 | 45 | 5 | 3 | 26 | 28 |
@@ -97,7 +97,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | InformationQuantique | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | InformationTheory | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
-| Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
+| Jauge | 5 | 4 | 1 | 1 | 0 | 0 | 0 | 0 |
 | Lean | 134 | 107 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 15 | 12 | 3 | 1 | 0 | 0 | 2 | 2 |
@@ -165,7 +165,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 786 | 579 |
+| Carnets eligibles | 789 | 582 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -207,6 +207,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | ArgumentAnalysis | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | Audio | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-01-AutomatesFinis-Python.ipynb` | Automata | python3 | - | - |
+| `MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-02-ExpressionsRegulieres-Python.ipynb` | Automata | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb` | Causalite | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0, scipy==1.18.0, statsmodels==0.14.6 | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -236,6 +237,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb` | Complexity | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb` | Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb` | Complexity | python3 | - | - |
+| `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03h-ExposantProduitMatriciel-NineQuarts-Python.ipynb` | Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb` | Complexity | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb` | Complexity | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb` | Complexity | python3 | matplotlib==3.10.8 | - |
@@ -418,6 +420,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Physique/Jauge/Jauge-01-Theoreme-Noether-Python.ipynb` | Jauge | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/Physique/Jauge/Jauge-02-Invariance-Jauge-U1-SU2-Python.ipynb` | Jauge | python3 | numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/Physique/Jauge/Jauge-03-Action-Wilson-Confinement-Python.ipynb` | Jauge | python3 | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6, pandas==3.0.2, sympy==1.14.0 | - |
+| `MyIA.AI.Notebooks/Physique/Jauge/Jauge-05-Twisteurs-Euclidiens-Modele-Standard-Python.ipynb` | Jauge | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-02b-Entropie-Shannon-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-05-KLS-Lean-Python.ipynb` | Lean | python3 | ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -792,7 +795,7 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | NotionsInteractives | suffisance | - |
 | Part1-Foundations | cle, import_absent, reseau, suffisance | cvxpy (2), ortools.sat.python (2), z3 (2), automata.fa.dfa (1), automata.fa.nfa (1), open_spiel.python.algorithms (1) |
 | Part2-CSP | cle, import_absent | ortools.sat.python (6), pychoco (4), constraint (2), z3 (1) |
-| Part3-Cas-pratiques | import_absent, suffisance | ortools.sat.python (13), ortools.constraint_solver (3), __main__ (1), constraint (1), cvxpy (1), ortools (1) |
+| Part3-Cas-pratiques | import_absent, suffisance | ortools.sat.python (14), ortools.constraint_solver (3), __main__ (1), constraint (1), cvxpy (1), ortools (1) |
 | Part5-Frontieres | import_absent | ortools.sat.python (9), ortools (3), pulp (2), ortools.linear_solver (1) |
 | Planification-Oncologie | gpu, import_absent, suffisance | ortools.sat.python (2), pyro (2), pyro.distributions (2), pyro.infer (2), pyro.optim (2) |
 | Planners | cle, gpu, import_absent, reseau, suffisance | ortools.sat.python (3), ortools.constraint_solver (1), ortools.sat.python.cp_model (1), up_fast_downward (1) |
