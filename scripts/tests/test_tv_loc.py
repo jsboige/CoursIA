@@ -43,11 +43,15 @@ def test_selection_par_noyau_pas_par_nom(tmp_path):
 
 def test_invariance_au_suffixe_de_noyau(tmp_path):
     """Renommer le carnet (chantier A) ne change pas la valeur mesuree."""
-    _ecrire(tmp_path, "TV-01-Attention-Variants-SOTA-Python.ipynb", "python3")
+    ancien = _ecrire(tmp_path, "TV-01-Attention-Variants-SOTA.ipynb", "python3")
     avant = loc.carnet_index("TV-01", base=tmp_path)
+    assert avant == 1  # la mesure n'est pas un zero qui rendrait l'egalite vide
 
-    (tmp_path / "TV-01-Attention-Variants-SOTA-Python.ipynb").rename(
-        tmp_path / "TV-01-Attention-Variants-SOTA-Python.ipynb")
+    nouveau = tmp_path / "TV-01-Attention-Variants-SOTA-Python.ipynb"
+    ancien.rename(nouveau)
+    # Le renommage a bien eu lieu : sans ces deux lignes, un renommage source =
+    # destination redeviendrait un non-geste et le test ne prouverait rien.
+    assert nouveau.exists() and not ancien.exists()
 
     assert loc.carnet_index("TV-01", base=tmp_path) == avant
 
