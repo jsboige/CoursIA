@@ -314,7 +314,12 @@
           absent: "Meme raison que util_total."
     - id: ex5_moyenne
       description: "Exemple guide 5 (agregats) : moyenne des confiances des relations foaf:knows"
-      tolerance: 0.0005
+      # Valeur exacte 47/80 = 0.5875, affichee a 3 decimales cote Python (0.587) et a 4 cote
+      # Rust (0.5875) : le jumeau Rust affiche le nombre exact parce que l'arrondi a 3 decimales
+      # tombe au milieu de deux valeurs et depend de l'ordre de la somme flottante (0.587 ou
+      # 0.588 d'une execution a l'autre, mesure le 2026-11-27). La tolerance couvre cet ecart
+      # d'affichage, pas une difference de resultat.
+      tolerance: 0.001
       reference: python
       sides:
         python:
