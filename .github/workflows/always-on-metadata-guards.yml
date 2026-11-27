@@ -55,11 +55,16 @@ name: Always-on metadata guards
 # bloquant, `is_advisory()` de pr_gate.py ne doit pas le taire.
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, edited, ready_for_review]
-    # PAS de `paths:` -- canary + #13232 + regle 2 d'#10045.
-    # PAS de filtre `branches:` -- l'organe base-not-main doit voir les PR
-    # dont la base n'est PAS main (c'est sa raison d'etre, #10918).
+  # DORMANT depuis #28534 (fusion des deux workflows de la classe `edited`,
+  # patron #13384) : le declencheur `pull_request` ci-dessous est absorbe
+  # par `always-on-guards-edited.yml` -- un seul workflow, un job, un
+  # checkout pour les trois organes de METADONNEES et les cinq organes de
+  # BODY. Le job est conserve verbatim pour la tracabilite ; le declencheur
+  # `pull_request` est retire.
+  # Le declencheur `workflow_dispatch` reste : sur dispatch, le seul organe
+  # qui parle est `concurrency-conj` (les deux autres sont filtres par
+  # `github.event_name == 'pull_request'`) -- c'est le comportement d'avant
+  # la fusion, preserve a l'identique.
   workflow_dispatch:
 
 permissions:

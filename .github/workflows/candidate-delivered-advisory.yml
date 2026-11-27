@@ -117,6 +117,11 @@ jobs:
           sparse-checkout: |
             .github/workflows/candidate-delivered-advisory.yml
             scripts/candidate_delivered.py
+            # #28114 -- le signal « chemin cible sur main » : la suspicion est
+            # un calcul de la DONNEE (le marqueur dans le fil). Ce module est
+            # importe par le poseur de label : son absence du sparse-checkout
+            # le ferait echouer a l'import (incident #23762). Pas de dependance.
+            scripts/candidate_delivered_chemins.py
             # #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee
             # avec le tapis (`scripts/pick_idle_grain.py`). Module sans
             # dependance : il n'importe que `released_covers` (deja present) et
