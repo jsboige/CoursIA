@@ -111,7 +111,12 @@ GUARDS_JOB_PREFIX = "Always-on guards"
 BODY_JOB_MARKER = "body"
 # Le job de body vit dans son PROPRE workflow (#22331/#22333) : le resoudre
 # depuis `always-on-guards.yml` etait structurellement impossible (#22748).
-BODY_WORKFLOW_NAME = "always-on-guards-body.yml"
+# #28534 : les deux workflows de la classe `edited` sont fusionnes en un
+# workflow, un job, un checkout -- le job qui porte l'organe d'adjacence
+# s'appelle desormais `Always-on guards -- metadata + body` et vit dans
+# `always-on-guards-edited.yml` (l'ancien `always-on-guards-body.yml` est
+# DORMANT : declencheur `pull_request` retire, patron #13384).
+BODY_WORKFLOW_NAME = "always-on-guards-edited.yml"
 # Banniere d'agregat du job de body -- `scripts/ci/always_on_body_organs.sh`
 # termine par `::error::Organes de body bloquants en echec :$FAILED`. C'est la
 # seule surface qui NOMME l'organe tombe (meme doctrine que

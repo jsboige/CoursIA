@@ -1,0 +1,399 @@
+# Sudoku — frontière de l'inférence pure sur les grilles de niveau ≥ 13 : pré-enregistrement
+
+- **Statut** : protocole scellé **avant** tout code de mesure et **avant** toute exécution sur une grille de niveau ≥ 13.
+- **Parent** : issue #27214 (volet 3 de l'Epic #26242) ; carte des techniques : #27533.
+- **Lane** : `myia-po-2028:CoursIA`.
+- **Scellé le** : 2026-11-25, `main` au commit `edbdbb0d44`.
+- **Ordre vérifiable** : ce document est le premier commit de sa branche ; l'instrument `scripts/path_profile.py` et son test viennent après lui.
+
+## 1. La question
+
+Le mainteneur a posé la question sur l'issue #27214 (commentaire du 2026-11-25T17:46:40Z), la veille du scellement. L'extrait qui fonde ce protocole, cité tel quel :
+
+> La prédiction du mainteneur reflétant la conversation avec le mandataire récetteur, qui n'a pas besoin d'être vraie, et si elle ne l'est pas, ça sera une belle découverte dans la communauté des solveurs de sudoku, est que les derniers gestes d'inférence pure permettant de finir les sudokus de niveau >=13 seront plus lourds, de même que les 2 derniers gestes permettant de terminer le dernier étage d'un Rubik's cube, et que cela se lit sans doute dans la topologie de l'espace des états.
+
+Le même commentaire borne le périmètre de deux façons, que ce protocole respecte :
+
+- la frontière visée est celle de « l'ensemble des techniques recensées », pas celle d'un nombre restreint d'entre elles ;
+- l'identification des gestes qui comblent les besoins d'exploration résiduels relève de « l'apprentissage symbolique », et le solveur exact sert « seulement comme oracle ».
+
+Ce document transforme la prédiction en hypothèses falsifiables, fixe la règle de décision avant la mesure, et nomme ce qui manque pour l'exécuter. **Il ne contient aucun résultat sur les grilles de niveau ≥ 13** : le dépôt n'en contient aucune (§6).
+
+## 2. Trois objets à ne pas confondre
+
+Une « frontière » s'écrit souvent comme un seul nombre, qui mélange trois mesures distinctes. Elles sont séparées ici et le resteront dans tout rapport issu de ce protocole.
+
+1. **Le catalogue sourcé.** L'ensemble des techniques recensées chez des implémentations publiques, avec pour chacune son statut dans le dépôt. Il dit ce qui *pourrait* être instrumenté.
+2. **La couverture mesurée.** La part des grilles d'un corpus donné qu'un ensemble de règles `R` donné résout sans recherche, strate par strate. Elle dit ce que `R` *fait* sur *ce* corpus.
+3. **Les arrêts résiduels.** Pour chaque grille que `R` ne résout pas, l'état où il s'arrête : nombre de pas, règles déclenchées, cases vides restantes, topologie de l'état. Ils disent *où* la frontière se trouve pour `R`.
+
+Une augmentation du catalogue (1) qui ne change pas la couverture (2) n'a rien déplacé. Une couverture mesurée sur trois strates générées par un autre critère ne dit rien des niveaux ≥ 13. Un arrêt résiduel n'est pas un défaut du solveur : c'est la mesure.
+
+### 2.1 État au scellement
+
+Mesuré sur `main` au commit `edbdbb0d44`.
+
+**Règles instrumentées.** `RULE_ORDER`, dans `MyIA.AI.Notebooks/Sudoku/scripts/inference_trace.py` (lignes 152-154), compte 11 règles : `naked_single`, `hidden_single`, `naked_pair`, `naked_triple`, `naked_quad`, `hidden_pair`, `hidden_triple`, `hidden_quad`, `pointing_pair`, `locked_claiming`, `x_wing`.
+
+**Catalogue.** La carte du lot 1 (#27533, commentaire du 2026-11-21T07:42Z) recense 19 instances de techniques dans les 12 familles du dépôt amont. Onze sont instrumentées. **Huit manquent** : `swordfish`, `jellyfish`, `xy_wing`, `xyz_wing`, `xy_chain`, `unique_rectangle`, `hidden_rectangle`, `avoidable_rectangle`. Les PR #27898 (poissons d'ordre 3 et 4) et #27903 (`xy_wing`, `xyz_wing`) sont ouvertes au scellement et en couvrent quatre.
+
+**Au-delà des 12 familles.** La même carte liste 28 entrées supplémentaires. Trois sont des méthodes exactes et non des techniques humaines (retour arrière, liens dansants, SAT). Trois relèvent du raisonnement hypothétique et sont à étudier à part, comme le demande l'Epic (chaînes de forçage, nishio, réseaux de forçage). Restent **22 entrées non hypothétiques non embarquées**, dont deux sont des variantes de l'unicité sans puissance ajoutée (`full_house`, `law_of_leftover`) : **20 techniques peuvent encore déplacer la frontière** sans sortir de l'inférence pure.
+
+**Couverture mesurée par `R`.** D'après le corps de la PR #27754, fusionnée le 2026-11-25T20:27:08Z, sur dix grilles de chaque strate du corpus généré : facile 10/10, moyen 5/10, difficile 1/10, avec 30 traces sur 30 acceptées par l'oracle. Ce sont les strates du corpus généré, définies par le nombre de décisions d'un retour arrière, **pas** des niveaux d'une échelle publiée.
+
+**Ce que cet état dit de la frontière.** Rien sur les niveaux ≥ 13. Il dit seulement où en est `R` sur un corpus qui n'est pas étiqueté par une échelle.
+
+### 2.2 Ce qui manque au catalogue, par nature de manque
+
+| Nature du manque | Contenu | Ce qui le comble |
+|---|---|---|
+| Instances Kermalis non embarquées | 8 (§2.1) | lots 3 à 5 de #27533 |
+| Techniques hors Kermalis, inférence pure | 20 techniques (§2.1) | strates suivantes, ordre à arbitrer sur la mesure |
+| Raisonnement hypothétique | 3 méthodes | étude séparée, hors du périmètre « sans recherche » de cet Epic |
+| Bibliographie de définition | les définitions de référence citées par le catalogue ne sont pas archivées au gisement bibliographique, qui ne détient sur le sujet que l'article de Norvig | dépôt au gisement avant toute rédaction qui en dépend |
+| Licence | un dépôt sous GPL-3.0 (définition seulement), un dépôt sans licence (rien n'en part) | rédaction depuis la définition, pas depuis le code |
+
+Le compte « 8 + 20 » est un compte de **lignes d'un tableau**, pas une mesure de puissance : deux techniques peuvent être équivalentes sur le corpus, et une technique peut n'y tirer sur aucune grille. La mesure qui compte est la re-mesure de la couverture après chaque lot, que #27533 exige.
+
+## 3. Vocabulaire
+
+- **`R`** : l'ensemble des règles d'un `InferenceSolver`, à savoir le tuple `RULE_ORDER` au commit mesuré. `R` évolue avec les lots ; toute mesure nomme le commit et le contenu de `RULE_ORDER`.
+- **Politique de `R`** : à chaque pas, la première règle de `RULE_ORDER` qui trouve un pas est appliquée, dans l'ordre de balayage de l'organe. C'est une politique « la plus légère d'abord ».
+- **Rang** d'une règle : sa position (à partir de 1) dans `RULE_ORDER`. Le rang est une **échelle ordinale du catalogue**, dans l'ordre de puissance croissante que lui donne le lot 1. Ce n'est **pas** une mesure de difficulté humaine.
+- **Singleton** : une règle de rang 1 ou 2, qui place une valeur.
+- **Geste** : un pas de rang ≥ 3, qui élimine des candidats.
+- **Trace** : la suite des pas rendue par `solve()`, vérifiée par `verify_trace`.
+- **État** : la grille et ses candidats à un instant de la trace.
+
+## 4. Variables observées
+
+Toutes sont calculées par grille, par le même module, sans paramètre laissé à l'analyste.
+
+### 4.1 Grille résolue par `R`
+
+| Variable | Définition |
+|---|---|
+| `P` | longueur du chemin, en pas |
+| `r_max` | rang le plus élevé de la trace |
+| `pos_r_max` | position (à partir de 0) du premier pas de rang `r_max`, divisée par `P - 1` ; 0 = premier pas, 1 = dernier ; non définie si `P = 1` |
+| **geste final** | le dernier geste de la trace ; de l'état qui le précède, des singletons seuls terminent la grille |
+| `rank_last` | rang du geste final ; **non défini** si la trace n'a aucun geste |
+| `support_last` | nombre de cases distinctes citées par les prémisses du geste final ; pour les règles dont les prémisses ne nomment pas les cases mais les unités ou la valeur (`pointing_pair`, `locked_claiming`, `x_wing`), nombre de cases portant cette valeur sur ces unités, recalculé sur l'état qui précède le geste ; `None` si le module ne connaît pas la règle |
+| `elim_last` | nombre de candidats éliminés par le geste final |
+| `collapse` | nombre de pas qui suivent le geste final ; ce sont des singletons par construction |
+| `tangle_last` | enchevêtrement (§4.3) de l'état qui précède le geste final |
+
+### 4.2 Grille non résolue par `R` (arrêt)
+
+| Variable | Définition |
+|---|---|
+| `steps_stall` | nombre de pas avant l'arrêt |
+| `rank_hist` | histogramme des rangs déclenchés |
+| `empty_stall` | cases vides à l'arrêt |
+| `cands_stall` | candidats restants à l'arrêt |
+| `tangle_stall` | enchevêtrement de l'état d'arrêt |
+
+### 4.3 Enchevêtrement d'un état (`tangle`)
+
+C'est la variable par laquelle la « topologie de l'espace des états » reçoit une définition calculable. **Cette définition est une lecture de la lane, soumise à arbitrage : le mainteneur a nommé la topologie sans la définir, et une autre définition est possible.** Elle a été révisée une fois, après le pilote et avant toute exécution sur `S_haut` : la v1, son motif de révision et le choix de la v2 sont en §11.1.
+
+- **Nœuds** : chaque candidat `(case, chiffre)` de l'état.
+- **Lien** : entre deux candidats qui s'excluent — deux chiffres d'une même case, ou un même chiffre en deux cases d'une même unité. C'est le graphe dans lequel se déplace une chaîne d'inférence : d'un candidat vers un candidat qu'il exclut.
+- **`tangle`** : nombre cyclomatique du graphe, `E - N + C` (`E` liens distincts, `N` nœuds, `C` composantes connexes), divisé par `N`. Il vaut 0 quand le graphe est une forêt — aucun cycle, donc aucun enchevêtrement — et croît avec le nombre de cycles indépendants par candidat. Un état sans candidat (grille complète) n'en a pas : la variable vaut alors `None`.
+
+Le graphe est **simple** : deux candidats ne portent qu'un lien, même lorsque leurs deux cases partagent deux unités (une ligne et un bloc, par exemple). Le lien fort (deux candidats d'une même unité portant le même chiffre, les deux seuls à le porter) est un cas particulier du lien ci-dessus : il ne crée aucun nœud ni aucun lien nouveau, et n'est donc pas compté à part.
+
+**Limite nommée.** Le nombre cyclomatique croît avec la densité de candidats par case, que le protocole publie à côté (`cands_stall`, `empty_stall`). Une différence de `tangle` entre deux strates se lit donc avec ces deux comptes : la variable mesure l'enchevêtrement du graphe d'exclusion, elle n'en est pas une mesure indépendante.
+
+## 5. Hypothèses
+
+### 5.1 La prédiction du mainteneur, opérationnalisée
+
+Elle se lit : « les derniers gestes d'inférence pure des grilles de niveau ≥ 13 seront plus lourds ». Quatre lectures, qui ne s'excluent pas.
+
+| Code | Lecture de « plus lourd » | Prédiction sur les grilles résolues par `R` |
+|---|---|---|
+| **H-W1** (primaire) | plus haut dans le catalogue | `rank_last` plus élevé sur `S_haut` que sur `S_bas` |
+| H-W2 | plus de cases concernées | `support_last` plus élevé sur `S_haut` |
+| H-pos | plus tard dans la résolution | `pos_r_max` plus grand sur `S_haut` |
+| H-collapse | moins de résolution « toute faite » après lui | `collapse` plus court sur `S_haut` |
+
+### 5.2 La lecture topologique (exploratoire)
+
+| Code | Prédiction |
+|---|---|
+| T | `tangle_last` plus élevé sur `S_haut` que sur `S_bas` |
+
+T est **l'interprétation de la lane** de « cela se lit sans doute dans la topologie de l'espace des états », par analogie avec les derniers gestes d'un Rubik's cube, qui demandent une coordination globale. Elle est mesurée et publiée quoi qu'il arrive, mais **un verdict sur T n'est pas un verdict sur la prédiction du mainteneur** : il porte sur une définition que le mainteneur n'a pas écrite.
+
+### 5.3 Strates
+
+Les strates sont celles d'une **échelle de niveaux publiée et vérifiable**, à identifier (§6).
+
+- `S_haut` : niveaux 13, 14 et 15.
+- `S_milieu` : niveaux 6 à 12.
+- `S_bas` : niveaux 1 à 5.
+
+Une strate est **définie par l'échelle, jamais par le comportement de `R`** : définir `S_haut` comme « les grilles que `R` ne résout pas » rendrait la prédiction circulaire.
+
+## 6. La jambe L0 — conditions préalables, non satisfaites au scellement
+
+Mesuré au scellement.
+
+- **L0.a — la source de l'échelle.** Les « 15 niveaux » ne sont définis nulle part dans le dépôt. Le carnet `Sudoku-21-DifficultyMeasures-Python.ipynb` classe leurs libellés en « hypothèse non sourcée » ; le volet 2 de l'Epic #26242 les nomme « des hypothèses à documenter, pas une norme universelle présumée ». Le gisement bibliographique ne détient sur le sujet que l'article de Norvig. **Condition** : une publication ou un site vérifiable qui définit l'échelle et ses seuils, archivé au gisement, avec le texte exact de la définition de chaque niveau.
+- **L0.b — le corpus étiqueté.** Aucune grille du dépôt ne porte un niveau d'une échelle. **Condition** : un corpus dont chaque grille porte un niveau de l'échelle de L0.a, avec provenance, licence et droits de redistribution établis. Les grilles non redistribuables restent hors dépôt, avec leur chemin et une procédure de reproduction.
+- **L0.c — l'empreinte.** **Condition** : la liste des grilles, leur `sha256`, leur niveau et la référence de l'échelle sont commités **avant** toute exécution.
+
+**Tant que L0 n'est pas satisfaite, l'étude de §7 n'est pas exécutable sur les niveaux ≥ 13.** Une demande d'arbitrage est inscrite au registre des questions de la lane pour L0.a et L0.b. Elle n'arrête rien : les lots du catalogue (§2.2) et le pilote (§9) ne dépendent pas d'elle.
+
+### 6.1 Repli si l'échelle n'est jamais sourcée
+
+L'étude ne peut alors pas tester la prédiction du mainteneur, et **ne doit pas prétendre l'avoir fait**. Ce qui reste mesurable est une frontière **définie par machine** : les grilles triées par le critère de leur générateur (décisions d'un retour arrière) ou par un solveur de référence nommé. Un tel résultat se publie sous son propre nom (« frontière pour `R` sur le corpus X, trié par Y ») et **jamais** sous le nom de niveaux ≥ 13.
+
+## 7. Règle de décision (scellée)
+
+### 7.1 Test primaire — H-W1
+
+- **Comparaison** : `rank_last` de `S_haut` contre `rank_last` de `S_bas`.
+- **Statistique** : `U` de Mann-Whitney, unilatérale (`S_haut` plus grand).
+- **Valeur `p`** : test de permutation sur `U`. Énumération exhaustive si le nombre d'assignations est ≤ 500 000 ; sinon 100 000 tirages avec la graine `20261125`.
+- **Seuil** : `p < 0,05`.
+- **Plus petit effet d'intérêt** : médiane de `S_haut` − médiane de `S_bas` ≥ 2 rangs.
+- **Grilles sans geste final** (`rank_last` non défini) : comptées et publiées à part ; elles n'entrent pas dans le test. Si `S_haut` en contient, la prédiction est contredite pour ces grilles, et le rapport le dit.
+
+| Verdict | Condition |
+|---|---|
+| `SOUTENUE` | `p < 0,05` **et** écart des médianes ≥ 2 rangs |
+| `REFUTEE` | écart des médianes ≤ 0 **et** `p < 0,05` dans le sens contraire |
+| `NON CONCLUANTE` | tout autre cas |
+
+### 7.2 Tests secondaires
+
+Même schéma (permutation unilatérale, seuil 0,05), avec correction de Holm sur les trois prédictions secondaires de §5.1. Plus petits effets d'intérêt : H-W2 ≥ 2 cases, H-collapse ≥ 2 pas. H-pos se teste sur `S_haut` seule : la part de grilles avec `pos_r_max ≥ 0,5` est comparée à 0,5 par un test binomial exact unilatéral. T (§5.2) se publie **sans** correction et porte l'étiquette « exploratoire ».
+
+### 7.3 Porte de faisabilité
+
+L'étude n'est déclarée exécutable que si **au moins 20 grilles de `S_haut` sont résolues par `R`** et portent un geste final. En dessous, la prédiction n'est pas testable sous cette forme : **le résultat est alors la frontière elle-même**, c'est-à-dire la liste des arrêts résiduels de `S_haut` (§4.2), et ce résultat se publie comme tel.
+
+### 7.4 Conditions de réfutation de cette opérationnalisation
+
+- **R-a** : le test primaire n'est pas `SOUTENUE`.
+- **R-b** : médiane de `pos_r_max` sur `S_haut` < 0,5 — le geste le plus lourd se situe au milieu du chemin, pas à son terme.
+- **R-c** : moins de 20 grilles de `S_haut` résolues par `R` (§7.3).
+
+### 7.5 Corpus et exclusions
+
+- **Corpus fixé avant l'exécution** (L0.c) : liste, `sha256`, niveau, référence de l'échelle.
+- **Échantillonnage** : toutes les grilles d'une strate si elle en compte ≤ 400 ; sinon 400 tirées sans remise avec la graine `20261126`.
+- **Exclusions, et aucune autre** : lignes vides ou de commentaire ; doublons exacts (un seul exemplaire conservé, compté) ; grilles sans solution unique, écartées par l'oracle et comptées ; traces refusées par `verify_trace`, comptées et publiées.
+- **Aucune grille n'est retirée pour son résultat.**
+
+### 7.6 Un seul oracle
+
+`dlx_certificates.solve_certificate` sert **exclusivement** à trois choses : établir l'unicité de la solution, fournir la solution de référence, et vérifier chaque pas par `verify_trace`. **Il ne fournit jamais une étape d'inférence.**
+
+### 7.7 Limites nommées
+
+- **Dépendance à la politique.** Les variables dépendent de la politique « la plus légère d'abord » et de l'ordre de balayage de l'organe. Une autre politique donne un autre chemin sur la même grille. Les conclusions sont conditionnelles à cette politique.
+- **Conclusion conditionnelle.** Tout verdict porte sur « les grilles de niveau ≥ 13 que `R` résout ». Si `R` bute sur la majorité de `S_haut`, le verdict décrit une minorité, et le rapport le dit avec le compte.
+- **Le rang n'est pas la difficulté.** Un rang plus élevé signifie « plus haut dans le catalogue », pas « plus dur pour un humain ».
+- **`tangle` est une définition parmi d'autres** (§4.3).
+
+## 8. Apprentissage symbolique et solveur exact : la séparation
+
+Le mainteneur demande que l'apprentissage symbolique reste « distinct du solveur exact, utilisé seulement comme oracle ». Trois rôles, trois objets, aucun passage de l'un à l'autre en dehors des flèches nommées.
+
+| Rôle | Objet | Ce qu'il produit | Ce qu'il ne produit jamais |
+|---|---|---|---|
+| Solveur exact | `dlx_certificates` | unicité, solution de référence, vérification de chaque pas | une étape d'inférence, une règle |
+| Solveur d'inférence pure | `InferenceSolver` et `R` | la trace vérifiée, qui est la **donnée** de l'étude | une décision fondée sur une recherche |
+| Apprenant symbolique | à concevoir (pli suivant) | des **motifs candidats** de geste | une règle, tant que §8.1 n'est pas satisfait |
+
+### 8.1 Le chemin d'un motif candidat vers une règle
+
+Un motif produit par l'apprenant ne devient une règle qu'après, dans cet ordre :
+
+1. une implémentation explicite dans `inference_trace.py`, sous un nom `Step.rule` figé ;
+2. un témoin négatif fourni par l'oracle : une variante incorrecte du motif, et la preuve qu'elle élimine un candidat présent dans une solution compatible ;
+3. la preuve Lean de sa correction, au volet 4 de l'Epic.
+
+### 8.2 Ce que l'apprenant a le droit de voir
+
+- **En entrée** : des états d'arrêt de `R`, et pour chacun une étiquette booléenne par candidat, « sûr à éliminer » ou non, calculée par l'oracle. Un candidat est sûr à éliminer s'il n'apparaît dans **aucune** solution compatible ; la grille étant à solution unique (établie par l'oracle), il suffit qu'il soit absent de la solution.
+- **Jamais en entrée** : l'étiquette de strate, ni la solution elle-même. L'étiquette booléenne est dérivée de la solution et le lui doit : c'est la raison pour laquelle un motif n'est retenu que s'il **s'énonce sans elle** (un motif sur les candidats et les unités de la grille), et s'il est validé **sans étiquette**.
+- **En validation** : des grilles et des graines disjointes de celles de l'apprentissage.
+
+**L'exécution de cette jambe n'est pas ce grain.** Ce grain livre le protocole, l'instrument de mesure et le pilote. L'apprenant est un pli suivant de #27214.
+
+## 9. Pilote (non compté)
+
+Le pilote vérifie **seulement** que l'instrument s'exécute et que ses variables sont calculables. Il tourne sur les six corpus de `main` (`Puzzles/Sudoku_gen_{facile,moyen,difficile}.txt`, `Sudoku_Easy51.txt`, `Sudoku_hardest.txt`, `Sudoku_top95.txt`), avec le `R` du commit mesuré.
+
+- Il est **étiqueté « pilote, non compté »** : aucune de ses valeurs n'entre dans un verdict de §7.
+- Aucun de ces corpus n'est étiqueté par une échelle : **le pilote ne dit rien des niveaux ≥ 13**.
+- Ses valeurs sont ajoutées sous le titre §10, en un commit distinct, **sans modification d'aucune règle de ce document**. Tout autre changement est une révision (§11).
+- S'il révèle un défaut de comparabilité d'une variable, ce défaut est réglé par une révision v2 (§11), pas par un ajustement silencieux.
+
+## 10. Valeurs du pilote
+
+**Pilote, non compté (§9).** Exécuté le 2026-11-25 avec l'instrument au commit `d5c4adf83f`, sur `R` = les 11 règles de `RULE_ORDER` au commit `edbdbb0d44` (`inference_trace.py` est inchangé entre les deux commits). Commande, depuis `MyIA.AI.Notebooks/Sudoku` :
+
+```
+python scripts/path_profile.py Puzzles/Sudoku_gen_facile.txt Puzzles/Sudoku_gen_moyen.txt Puzzles/Sudoku_gen_difficile.txt Puzzles/Sudoku_Easy51.txt Puzzles/Sudoku_hardest.txt Puzzles/Sudoku_top95.txt --json profils.json
+```
+
+Aucune de ces valeurs n'entre dans un verdict de §7. Aucun de ces corpus n'est étiqueté par une échelle : **le pilote ne dit rien des niveaux ≥ 13**, et ses lignes ne sont pas des strates.
+
+Dans les tableaux, un nombre entre parenthèses est le nombre de valeurs définies ; un tiret signale qu'aucune ne l'est.
+
+### 10.1 Corpus et comptes
+
+| Corpus | Grilles | Doublons | Résolues par `R` | Arrêts | Couverture | Sans geste final |
+|---|---|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | 10 | 0 | 10 | 0 | 10/10 | 10 |
+| `Sudoku_gen_moyen.txt` | 10 | 0 | 5 | 5 | 5/10 | 0 |
+| `Sudoku_gen_difficile.txt` | 10 | 0 | 1 | 9 | 1/10 | 0 |
+| `Sudoku_Easy51.txt` | 50 | 1 | 50 | 0 | 50/50 | 40 |
+| `Sudoku_hardest.txt` | 11 | 0 | 3 | 8 | 3/11 | 1 |
+| `Sudoku_top95.txt` | 95 | 0 | 29 | 66 | 29/95 | 0 |
+
+- « Sans geste final » : grilles résolues par singletons seuls ; les variables du geste final (§4.1) ne sont pas définies pour elles.
+- Aucune ligne ignorée, aucune grille sans solution unique, aucune trace refusée par `verify_trace` sur les six corpus.
+- La couverture des trois strates du corpus généré reproduit celle du corps de la PR #27754 : 10/10, 5/10, 1/10.
+
+### 10.2 Empreintes des corpus
+
+Empreinte canonique de chaque fichier, dans `MyIA.AI.Notebooks/Sudoku/Puzzles/` :
+`sha256` des octets, **fins de ligne normalisées en LF** (seules les suites CRLF
+sont réduites, un retour chariot isolé reste dans l'empreinte). C'est la valeur
+que rend `path_profile.fingerprint`, et elle est la même sur un checkout Windows
+(`core.autocrlf=true`) et sur Linux. La normalisation est nécessaire ici parce
+que le dépôt porte trois de ces corpus en LF et trois en CRLF : les octets du
+fichier de travail ne sont donc pas une référence stable. Vérification :
+`git cat-file blob HEAD:<chemin> | tr -d '\r' | sha256sum`.
+
+Les trois premières valeurs publiées dans cette section étaient celles du
+fichier de travail d'un clone Windows pour les corpus commités en LF ; elles
+sont remplacées par les empreintes canoniques (#28619).
+
+- `Sudoku_gen_facile.txt` : `3a286199dfbc6419f57ebad82cfbc515406754658eba72d9c91ffcc02c57c8c8`
+- `Sudoku_gen_moyen.txt` : `8b344a5aa627c470a541187c2acb009c9b9e1a6e2f3a74ae313e03fbc4c190e1`
+- `Sudoku_gen_difficile.txt` : `9d694503c02f4ebdb1a0e86d7c324f1ed11f5c84c008e4b401e90610422f71c2`
+- `Sudoku_Easy51.txt` : `95e49fd71fabfb916d0d586a554e0b9fca4b339fb0b54ad853456e885c3dc593`
+- `Sudoku_hardest.txt` : `398e1e5df4f50723078e3b510e00ea7eb9e104c521a9a186b4c20cd066c0459f`
+- `Sudoku_top95.txt` : `b16eff35fbe41fb7b122f21c5c6ba30b85861b47946d33257070df1a69cddd36`
+
+Dans les deux tableaux qui suivent, la colonne `tangle` porte les valeurs **v1**,
+celles du pilote ; la définition révisée et ses valeurs sont en §10.9.
+
+### 10.3 Grilles résolues par `R` — médianes
+
+| Corpus | `P` (`n_steps`) | `r_max` | `pos_r_max` | `rank_last` | `support_last` | `elim_last` | `collapse` | `tangle_last` |
+|---|---|---|---|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | 56 (10) | 2 (10) | 0,018 (10) | — | — | — | — | — |
+| `Sudoku_gen_moyen.txt` | 54 (5) | 4 (5) | 0,283 (5) | 3 (5) | 2 (5) | 4 (5) | 38 (5) | 1 (5) |
+| `Sudoku_gen_difficile.txt` | 57 (1) | 4 (1) | 0,321 (1) | 4 (1) | 3 (1) | 7 (1) | 38 (1) | 1 (1) |
+| `Sudoku_Easy51.txt` | 53,5 (50) | 2 (50) | 0,037 (50) | 4,5 (10) | 2 (10) | 2,5 (10) | 43,5 (10) | 1 (10) |
+| `Sudoku_hardest.txt` | 62 (3) | 4 (3) | 0,2 (3) | 6,5 (2) | 3 (2) | 4 (2) | 48,5 (2) | 1 (2) |
+| `Sudoku_top95.txt` | 69 (29) | 6 (29) | 0,132 (29) | 3 (29) | 2 (29) | 5 (29) | 49 (29) | 1 (29) |
+
+### 10.4 Grilles en arrêt — médianes
+
+| Corpus | `steps_stall` | `empty_stall` | `cands_stall` | `tangle_stall` |
+|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | — | — | — | — |
+| `Sudoku_gen_moyen.txt` | 22 (5) | 34 (5) | 79 (5) | 1 (5) |
+| `Sudoku_gen_difficile.txt` | 19 (9) | 40 (9) | 110 (9) | 1 (9) |
+| `Sudoku_Easy51.txt` | — | — | — | — |
+| `Sudoku_hardest.txt` | 8,5 (8) | 50 (8) | 177 (8) | 1 (8) |
+| `Sudoku_top95.txt` | 12,5 (66) | 53 (66) | 191 (66) | 1 (66) |
+
+### 10.5 Rangs déclenchés avant l'arrêt
+
+Nombre de pas de chaque rang (`rank_hist`, §4.2), cumulé sur les grilles en arrêt du corpus. Un rang absent de l'histogramme vaut 0.
+
+| Rang | Règle | `gen_moyen` | `gen_difficile` | `hardest` | `top95` |
+|---|---|---|---|---|---|
+| 1 | `naked_single` | 36 | 35 | 16 | 189 |
+| 2 | `hidden_single` | 62 | 101 | 40 | 388 |
+| 3 | `naked_pair` | 6 | 14 | 9 | 94 |
+| 4 | `naked_triple` | 0 | 5 | 2 | 50 |
+| 5 | `naked_quad` | 1 | 4 | 2 | 37 |
+| 6 | `hidden_pair` | 0 | 0 | 0 | 23 |
+| 7 | `hidden_triple` | 0 | 0 | 0 | 1 |
+| 8 | `hidden_quad` | 0 | 0 | 0 | 0 |
+| 9 | `pointing_pair` | 5 | 4 | 12 | 179 |
+| 10 | `locked_claiming` | 1 | 6 | 3 | 22 |
+| 11 | `x_wing` | 0 | 2 | 0 | 2 |
+| | Total des pas | 111 | 171 | 84 | 985 |
+
+### 10.6 Distributions, pour lire les médianes
+
+| Corpus | Valeurs de `r_max` | Valeurs de `rank_last` | `pos_r_max` : min / médiane / max | Part avec `pos_r_max` ≥ 0,5 | `collapse` | `elim_last` |
+|---|---|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | {1, 2} | — | 0 / 0,018 / 0,145 | 0/10 | — | — |
+| `Sudoku_gen_moyen.txt` | {3, 4, 5} | {3, 4, 5} | 0,071 / 0,283 / 0,509 | 1/5 | 26 à 42 | 3 à 5 |
+| `Sudoku_gen_difficile.txt` | {4} | {4} | 0,321 / 0,321 / 0,321 | 0/1 | 38 | 7 |
+| `Sudoku_Easy51.txt` | {1, 2, 3, 4, 5, 9, 10, 11} | {3, 4, 5, 9, 10, 11} | 0 / 0,037 / 0,463 | 0/50 | 35 à 54 | 1 à 5 |
+| `Sudoku_hardest.txt` | {2, 4, 9} | {4, 9} | 0,115 / 0,2 / 0,414 | 0/3 | 48 à 49 | 3 à 5 |
+| `Sudoku_top95.txt` | {4, 5, 6, 9, 10} | {3, 4, 5, 6, 9} | 0,016 / 0,132 / 0,722 | 1/29 | 20 à 60 | 1 à 9 |
+
+### 10.7 Ce que le pilote établit
+
+1. **L'instrument s'exécute sur les six corpus**, et son rejou est comparé à `solve()` à chaque grille : aucune divergence.
+2. **Toutes les variables de §4 sont calculables** : chacune a au moins une valeur définie sur au moins un corpus.
+3. **`tangle` est constant.** Il vaut 1,0 sur chacun des 135 états mesurés : les 47 états qui précèdent un geste final et les 88 états d'arrêt. Sur ces corpus, le graphe d'exclusion d'un état est donc toujours connexe, et la part de sa plus grande composante ne sépare ni deux grilles, ni deux corpus. **C'est un défaut de comparabilité au sens de §9** : une variable constante ne peut pas porter la lecture topologique de §5.2. Il est réglé par la révision v2 (§11), en un commit séparé ; la présente section ne modifie aucune règle.
+
+### 10.8 Ce que le pilote n'établit pas
+
+- Rien sur les niveaux ≥ 13 : aucun corpus n'est étiqueté par une échelle (§6).
+- Rien sur les hypothèses de §5 : les lignes des tableaux sont des corpus d'origines différentes, pas des strates. Une médiane plus élevée sur `Sudoku_hardest.txt` que sur `Sudoku_top95.txt` n'est pas une comparaison de niveaux.
+- Rien sur la puissance d'une technique absente de `R` : un arrêt est la mesure de l'endroit où `R` s'arrête, pas la preuve qu'aucune technique ne le franchit.
+
+### 10.9 Valeurs de `tangle` après la révision v2
+
+Mesurées sur les mêmes états que §10.3 et §10.4, avec l'instrument de ce commit (§4.3 en sa définition révisée). Seules les valeurs de `tangle` changent : toutes les autres médianes reproduisent celles de §10.3 et §10.4.
+
+| Corpus | `tangle_last` : médiane (n) | `tangle_last` : min / max | `tangle_stall` : médiane (n) | `tangle_stall` : min / max |
+|---|---|---|---|---|
+| `Sudoku_gen_facile.txt` | — | — | — | — |
+| `Sudoku_gen_moyen.txt` | 2,8 (5) | 1,69 / 3 | 1,62 (5) | 1,019 / 2,234 |
+| `Sudoku_gen_difficile.txt` | 3,035 (1) | 3,035 / 3,035 | 2,309 (9) | 1,464 / 3,073 |
+| `Sudoku_Easy51.txt` | 3,141 (10) | 1,966 / 4,485 | — | — |
+| `Sudoku_hardest.txt` | 3,131 (2) | 3,034 / 3,227 | 3,745 (8) | 1,615 / 4,431 |
+| `Sudoku_top95.txt` | 3,806 (29) | 1,289 / 5,325 | 4,162 (66) | 1,125 / 5 |
+
+Sur les 135 mêmes états, la v2 va de 1,019 à 5,325 et prend 132 valeurs distinctes : la variable sépare désormais les états, là où la v1 valait 1,0 partout. Ces valeurs n'entrent dans aucun verdict de §7 ; elles établissent seulement que la variable révisée n'est pas constante.
+
+## 11. Révision
+
+**Une seule révision v2 est permise**, en un commit séparé, qui nomme les valeurs de la v1 et son motif. Le seul motif admis est un **défaut de comparabilité** (une variable non calculable sur une strate, une définition ambiguë). Un résultat déplu n'est jamais un motif : changer la règle après avoir vu le résultat, c'est le travers même que le pré-enregistrement existe pour empêcher. La v2 est écrite **avant** toute exécution sur `S_haut`.
+
+### 11.1 Révision v2 — `tangle`
+
+**Valeurs de la v1.** La définition scellée initiale de `tangle` était la part de la plus grande composante connexe du graphe d'exclusion. Sur le pilote, elle vaut **1,0 sur chacun des 135 états mesurés** (§10.7) : 47 états qui précèdent un geste final et 88 états d'arrêt, sur les six corpus, minimum comme maximum. Le graphe d'exclusion y est toujours connexe, et la variable ne sépare rien.
+
+**Motif.** C'est un défaut de comparabilité au sens de §9 : une variable constante ne compare ni deux grilles, ni deux strates, et la lecture topologique de §5.2 serait vide par construction, quelle que soit la donnée de `S_haut`. Le motif n'est pas un résultat déplu : le pilote ne contient aucun résultat de §7, aucune grille étiquetée, aucun verdict.
+
+**Choix de la v2.** Le graphe et ses liens restent ceux de la v1 ; seule la statistique change. La v2 mesure le **nombre cyclomatique** `E - N + C`, normalisé par `N` — l'invariant qui suit la connexité dans la hiérarchie des invariants de graphe : une composante unique est le degré zéro de l'enchevêtrement, le nombre de cycles indépendants en est la mesure suivante. Il vaut 0 sur une forêt et croît avec les cycles. Une seule définition candidate a été calculée avant l'écriture de cette section, pour vérifier qu'elle n'est pas constante à son tour sur les mêmes états : c'est une condition de recevabilité de la révision, pas un choix parmi plusieurs définitions — aucune autre n'a été calculée, et le critère de recevabilité ne fait aucune référence à un écart entre strates.
+
+**Portée.** La révision ne touche ni la politique de `R`, ni les hypothèses H-W1, H-W2, H-pos et H-collapse, ni la règle de décision de §7. T (§5.2) reste exploratoire et reste une lecture de la lane : un verdict sur T n'est pas un verdict sur la prédiction du mainteneur.
+
+**Date et ordre.** Rédigée le 2026-11-25, après le pilote et avant toute exécution sur `S_haut` (L0 n'est pas satisfaite, §6). C'est la seule révision v2 que ce document s'autorise.
+
+## 12. Ce qui est publié quoi qu'il arrive
+
+- Le verdict nommé de §7.1, et la liste des prédictions tombées de §5.
+- Les comptes de §7.5 : doublons, grilles non uniques, traces refusées, grilles sans geste final.
+- Les arrêts résiduels de `S_haut`, dans leur ensemble.
+- Le commit de `R`, le corpus et son empreinte, la référence de l'échelle.
+
+Une prédiction réfutée sur ce protocole est un résultat, et se publie comme tel : c'est le sens de la remarque du mainteneur selon laquelle une prédiction fausse « sera une belle découverte dans la communauté des solveurs de sudoku ».
+
+## Voir aussi
+
+- Issue #27214 — volet 3, format de trace et couverture sans recherche.
+- Issue #27533 — carte des techniques et onboarding par lots.
+- Epic #26242 — « Sans gomme » et le périmètre de l'inférence pure.
+- `MyIA.AI.Notebooks/Sudoku/scripts/inference_trace.py` — l'organe de trace, de vérification et de couverture.
+- `MyIA.AI.Notebooks/Sudoku/scripts/path_profile.py` — l'instrument de mesure de ce protocole.

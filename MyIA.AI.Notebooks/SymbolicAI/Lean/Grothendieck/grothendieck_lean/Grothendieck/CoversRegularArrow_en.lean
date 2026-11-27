@@ -71,7 +71,7 @@ open CategoryTheory Limits Coverage
 universe u v
 
 /-!
-## Section 1 : le pont central — forme flèche ↔ Saturate
+## Section 1 : the central bridge — arrow form ↔ Saturate
 
 `regularTopology C` (for `C : Type u` `[Category.{v} C]`
 `[Preregular C]`) is defined as `regularCoverage C |>.toGrothendieck`.

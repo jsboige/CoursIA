@@ -417,12 +417,12 @@ def test_une_seule_famille_garde_ses_invariants():
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
-    assert set(ordre[:2]) == {2, 3}
-    # les deux grains visites une fois forment le niveau 1, decale par lane
-    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
-    # en dernier : il demande une lecture et un --paths (#26926)
-    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
+    # les jamais visitees d'abord (#5 visitee il y a 300 h, hors fenetre de 7 j,
+    # donc jamais visitee comme #1, #2, #3) ; seul #4 l'a ete
+    assert set(ordre[:4]) == {1, 2, 3, 5} and set(ordre[4:]) == {4}
+    # le conteneur passe apres les grains jamais visites (#26926) mais avant un
+    # grain deja visite : l'invariant de couverture (#27590) prime (mesure 25/11)
+    assert ordre.index(1) < ordre.index(4)
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -760,7 +760,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_reverif.py", 120),
                                               ("gh_issues.py", 80),
                                               ("tapis_leger.py", 220),
-                                              ("tapis_repli.py", 160),
+                                              ("tapis_repli.py", 157),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),
@@ -797,6 +797,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_attente.py", 60),
                                               ("tapis_leger_texte.py", 80),
                                               ("tapis_cap_livraisons.py", 160),
+                                              ("tapis_borne.py", 140),
                                               ("tapis_labels.py", 60),
                                               ("tapis_occupation.py", 298),
                                               ("tapis_leger_rapport.py", 50),

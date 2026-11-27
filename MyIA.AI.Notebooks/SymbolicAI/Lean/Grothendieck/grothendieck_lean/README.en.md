@@ -292,3 +292,40 @@ Four real frictions, documented at source:
 ### Point 7 — discovery path (fill)
 
 The path is not a reconstruction — it is an **indexed tour**, and this fact is the central discovery: "the Grothendieckian language already lives in Mathlib 4". The pedagogical order (sites → sieves/topologies → sheaves → sheafification → cohomology, anchored by Spec/Zariski and by the `#check` index) is a **reading path**, not the trace of a development. A learner's entry point: README → companions (`GROTH-02` to `GROTH-04`) → modules, with Mac Lane–Moerdijk and SGA 4 as background reading. What was **discarded** and why (the "hommage, not an EGA/SGA formalisation" choice) is explicit in §The spirit of the tour and §Scope, honestly — but the trace of the real development (which attempts were abandoned) is not recorded per `Partie`; that is this digestion's limit, to be completed by a grain that interviews the authors.
+## State of the art — Stacks correspondence (measured statement by statement)
+
+Survey for issue #28537: for every statement of the Godent family, the position of Stacks
+(`AxiomMath/Stacks`), cited from both sides (`file:line` of the lake, `file:line` of
+Stacks). Stacks was read through the `contents` API — the recursive GitHub tree is truncated
+and `Topology/Sheaves` does not appear in it — over
+`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/{Basic,Stalk,StalkHomotopy}.lean`,
+`Topology/Sheaves/Sheaf/Abelian.lean`, `Topology/Sheaves/Modules/Exactness.lean`,
+`Topology/Sheaves/Stalk/{Product,Separated}.lean` and
+`Topology/Sheaves/Cohomology/CechDerivedEffaceability/GodementResolution.lean`. An "absent"
+verdict is the absence of a **named statement** in those files, not an absence of content.
+
+| Lake module | Statements | Covered | Partial | Absent | Main Stacks anchor | Gap of setting |
+|---|---|---|---|---|---|---|
+| `Godement.lean` | 10 | 2 | 6 | 2 | `Basic.lean:499` `isFlasque_godementComplex` (0FKS); `Sheaf/Abelian.lean:149` `restrict_eq_zero_of_germ_eq_zero` | Stacks: sheaves of modules on a ringed space; here: presheaves of abelian groups on a topological space |
+| `GodementResolution.lean` | 3 | 0 | 3 | 0 | `Basic.lean:429` `godementSimplicial_left_obj` (0G5N); `StalkHomotopy.lean:558` `quasiIso_godementAugmentation` | there the iteration goes through the standard resolution of the comonad, not through the unit of our construction |
+| `GodementFunctor.lean` | 11 | 1 | 3 | 7 | `Basic.lean:416` `godementComonad`; `Basic.lean:475` `godementAugmentation` | the action of `C⁰` on **germs** has no named statement; Stacks has it on sections |
+| `GodementMono.lean` | 4 | 0 | 0 | 4 | — | "`C⁰` preserves monomorphisms" is not stated in Stacks; nor is the neighbouring fact (`f_*` is right exact) |
+| `GodementAcyclicity.lean` | 3 | 0 | 2 | 1 | `StalkHomotopy.lean:558` `quasiIso_godementAugmentation`; `StalkHomotopy.lean:370` `hasNaturalStalkHomotopy_godementAugmentation` | Stacks carries the acyclicity on the **complex**, not on the sequence of units |
+| `GodementCanonicalDiff.lean` | 4 | 0 | 4 | 0 | `Basic.lean:329` `resolutionComplex`; `Basic.lean:337` `resolutionAugmentationCondition` | Stacks builds the differential through the alternating coface-map complex, we do it through the cokernel of the unit |
+| **Total** | **35** | **3** | **18** | **14** | | |
+
+The statement-by-statement verdict is written in the docstring of each declaration, with the
+name of the Stacks theorem and the gap — not only in this table.
+
+### Remaining modules of the survey
+
+| # | Module | Survey status | Where |
+|---|---|---|---|
+| 1 | `GodementComplex.lean` | in progress | PR #27153 (open) — pedagogical bridge and README head |
+| 9-10 | `Flasque.lean`, `FlasqueAcyclic.lean` | measured (covered / absent depending on the statement) | comment of 25/11 on #28537 (`myia-po-2024:CoursIA`) |
+| 11 | `Stalks.lean`, `StalkSeparated.lean`, `StalkGluing.lean` | measured (absent / partial) | comment of 25/11 on #28537 (`myia-po-2026:CoursIA-2`) |
+| 12 | `SheafCohomology/` | not measured | a separate group |
+
+The statement-by-statement "renvois" of these modules still have to be written in their
+docstrings: the measurements are in the thread of #28537, the renvois in the lake are the
+work of one group per PR.
