@@ -4748,3 +4748,164 @@ class TestProgressStreaming:
         assert rc == 0
         assert captured.err == ""
         assert json.loads(captured.out)["scanned"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Identite du rapport (#14195) -- organ_identity / locks_summary
+# ---------------------------------------------------------------------------
+
+
+class TestReportIdentity:
+    """Le rapport doit dire QUI a produit la decision (#14195).
+
+    Occurrence de reference : nuit du 2026-11-25 sur ai-01 -- 182
+    worktrees, 102 verrous, 0 retrait applique, tous echoues sur « cannot
+    remove a locked working tree ». Le journal de la tache planifiee ne
+    portait ni la version du script, ni la ferme scannee, ni la liste des
+    verrous : la cause etait donc INDECIDABLE apres coup, et l'on
+    reconstituait l'histoire a partir d'une hypothese.
+
+    Ces tests pinent les deux blocs qui rendent la prochaine occurrence
+    diagnosticable en une lecture. Ils sont ADDITIFS : aucun critere de
+    retrait n'est touche.
+    """
+
+    def test_identity_names_script_farm_and_instant(self):
+        ident = pmw.organ_identity()
+        assert ident["script_path"].endswith("prune_merged_worktrees.py")
+        assert len(ident["script_sha256"]) == 64
+        assert int(ident["script_sha256"], 16) >= 0
+        assert ident["repo_root"]
+        assert ident["python"]
+        assert ident["generated_at"].endswith("Z")
+
+    def test_identity_sha_is_the_code_actually_on_disk(self):
+        import hashlib
+        ident = pmw.organ_identity()
+        on_disk = hashlib.sha256(
+            Path(pmw.__file__).resolve().read_bytes()).hexdigest()
+        assert ident["script_sha256"] == on_disk
+
+    def test_locks_summary_names_each_lock(self):
+        statuses = [
+            _make_status(path="D:/wt/locked-agent", decision="REFUSE",
+                         refusal_reason="locked_agent_alive",
+                         locked_reason="claude agent agent-abc (pid 44636)",
+                         lock_class="agent", lock_pid=44636),
+            _make_status(path="D:/wt/free"),
+        ]
+        rows = pmw.locks_summary(statuses)
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["path"] == "D:/wt/locked-agent"
+        assert row["lock_class"] == "agent"
+        assert row["lock_pid"] == 44636
+        assert row["decision"] == "REFUSE"
+        assert row["reason"] == "claude agent agent-abc (pid 44636)"
+
+    def test_locks_summary_keeps_a_lock_without_reason(self):
+        """Un verrou sans raison reste un verrou : il est nomme aussi."""
+        statuses = [_make_status(path="D:/wt/locked-bare",
+                                  locked_reason="", lock_class="unclassified")]
+        rows = pmw.locks_summary(statuses)
+        assert len(rows) == 1
+        assert rows[0]["lock_class"] == "unclassified"
+
+    def test_locks_summary_is_empty_without_lock(self):
+        assert pmw.locks_summary([_make_status()]) == []
+
+    # -- bout-en-bout : le rapport publie -----------------------------------
+
+    def _farm(self, monkeypatch, tmp_path, paths, statuses=None, locks=None):
+        # `locked_reason` vient du PORCELAIN (`list_worktrees`), pas du
+        # diagnostic : c'est `enforce_lock_policy` qui le recale sur la
+        # valeur lue au porcelain. Une ferme sans verrou doit donc
+        # porter `locked_reason: None` explicitement.
+        locks = locks or {}
+        monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
+        monkeypatch.setattr(
+            pmw, "list_worktrees",
+            lambda: [{"path": p, "head_sha": None, "branch": "fix/X",
+                      "locked_reason": locks.get(p)}
+                     for p in paths],
+        )
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            pmw, "diagnose_worktree",
+            lambda path, *a, **k: (statuses or {}).get(
+                path, _make_status(path=path, decision="REMOVE")),
+        )
+        monkeypatch.chdir(tmp_path)
+
+    def test_json_report_carries_the_identity_block(self, tmp_path,
+                                                    monkeypatch, capsys):
+        self._farm(monkeypatch, tmp_path, ["D:/wt/one"])
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--json"])
+
+        rc = pmw.main()
+        report = json.loads(capsys.readouterr().out)
+
+        assert rc == 0
+        organ = report["organ"]
+        assert organ["script_path"].endswith("prune_merged_worktrees.py")
+        assert len(organ["script_sha256"]) == 64
+        assert organ["repo_root"]
+        assert organ["generated_at"].endswith("Z")
+        # Le bloc des verrous est TOUJOURS present, meme vide : un champ
+        # absent se lirait « non mesure ».
+        assert report["locks"] == []
+
+    def test_json_report_names_the_locks_seen(self, tmp_path, monkeypatch,
+                                               capsys):
+        statuses = {
+            "D:/wt/locked": _make_status(
+                path="D:/wt/locked", decision="REFUSE",
+                refusal_reason="locked_agent_alive",
+                locked_reason="claude agent agent-abc (pid 77056)",
+                lock_class="agent", lock_pid=77056),
+        }
+        self._farm(monkeypatch, tmp_path, ["D:/wt/locked", "D:/wt/free"],
+                   statuses=statuses,
+                   locks={"D:/wt/locked": "claude agent agent-abc (pid 77056)"})
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--json"])
+
+        rc = pmw.main()
+        report = json.loads(capsys.readouterr().out)
+
+        assert rc == 0
+        assert len(report["locks"]) == 1
+        row = report["locks"][0]
+        assert row["path"] == "D:/wt/locked"
+        assert row["lock_pid"] == 77056
+
+    def test_text_report_names_the_farm_and_the_locks(self, tmp_path,
+                                                      monkeypatch, capsys):
+        """Le journal de la tache planifiee est un log TEXTE : l'identite
+        doit y etre lisible aussi, sinon l'occurrence reste muette."""
+        statuses = {
+            "D:/wt/locked": _make_status(
+                path="D:/wt/locked", decision="REFUSE",
+                refusal_reason="locked_agent_alive",
+                locked_reason="claude agent agent-abc (pid 77056)",
+                lock_class="agent", lock_pid=77056),
+        }
+        self._farm(monkeypatch, tmp_path, ["D:/wt/locked"],
+                   statuses=statuses,
+                   locks={"D:/wt/locked": "claude agent agent-abc (pid 77056)"})
+        monkeypatch.setattr(sys, "argv", ["prune_merged_worktrees.py"])
+
+        rc = pmw.main()
+        out = capsys.readouterr().out
+
+        assert rc == 0
+        assert "organ:" in out
+        assert "repo_root=" in out
+        assert "sha256=" in out
+        assert "LOCK D:/wt/locked" in out
+        assert "pid=77056" in out

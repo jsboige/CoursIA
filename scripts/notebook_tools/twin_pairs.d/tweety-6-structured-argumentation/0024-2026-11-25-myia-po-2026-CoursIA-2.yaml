@@ -1,0 +1,7 @@
+date: '2026-11-25'
+by: myia-po-2026:CoursIA-2
+python_sha: 1afa57e1c04f981f9ad93c1399fcfe3729a443bc
+csharp_sha: ad85f8a9cb31a3d474107bdc4cdc23ff353d4a53
+content_python_sha: 8b3b72849cea8bb144a27cce9bd5089f24b7b68cb819b679d942b65f27043cf7
+content_csharp_sha: 79a47db4a440c221df9e98c463ae7fb50f8629e02eca6972961f7cecf51bac57
+reason: "Edition MARKDOWN seule du cote C# (cellule 0, note de parite cross-langage) : la mention d audit qui y figurait a ete retiree (PR #28527, phase 3 du nettoyage de prose). Mesure firsthand sur le head livre : cellules de code, sorties et execution_count byte-identiques a la base, metadata de carnet inchangee, aucune re-execution due (C.2/C.3) ; jumeau Python inchange (content_python_sha 8b3b7284 inchange), l axe semantique de parite (IKVM vs JPype sur le meme moteur Java TweetyProject) est preserve."

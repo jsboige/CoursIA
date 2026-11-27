@@ -1,4 +1,4 @@
-> RAPPORT — 2026-07-19 — état de clôture Epic #4957, phase 1 (synchronisation traductions) — figé
+> REFERENCE — vivante — dernière révision 2026-11-24
 
 # Epic #4957 — État de clôture (Phase 1 infrastructure de synchronisation traduction)
 

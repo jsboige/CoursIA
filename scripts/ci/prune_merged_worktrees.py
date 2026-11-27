@@ -3281,6 +3281,81 @@ def diagnose_worktree(wt_path: str, current_path: str,
     )
 
 
+def organ_identity() -> dict:
+    """Identite du code et de la ferme qui ont produit ce rapport (#14195).
+
+    Le rapport JSON portait les DECISIONS (refus, retraits) mais pas
+    l'IDENTITE de ce qui les a prises : ni la version du script, ni la ferme
+    reellement scannee, ni l'instant de la passe. Une occurrence de
+    recycle-rate sur une autre ferme etait donc INDECIDABLE (« quelle
+    version a tourne ? », « quelle ferme ? ») : le rapport ne pouvait pas
+    repondre, et l'on reconstituait l'histoire depuis le journal d'une
+    tache planifiee (nuit du 2026-11-25 sur ai-01 -- 182 worktrees, 102
+    verrous, 0 retrait applique, cause non attribuable).
+
+    Purement additif : aucun critere de retrait n'est modifie, aucune
+    decision n'est prise sur la base de ces champs. Le sha256 identifie le
+    CODE reellement execute (le fichier peut differer du checkout courant
+    quand une tache planifiee vise une copie stale).
+
+    `repo_root` est la ferme SCANEE (celle que `current_repo_root()`
+    resout), distincte de `script_path` (l'emplacement du code) : une
+    copie unique du script scannant plusieurs fermes rend les deux
+    distincts -- c'est precisement le cas qui a rendu l'occurrence
+    indecidable.
+    """
+    script_path = Path(__file__).resolve()
+    try:
+        script_sha256 = hashlib.sha256(script_path.read_bytes()).hexdigest()
+    except OSError:
+        script_sha256 = None
+    try:
+        repo_root = current_repo_root()
+    except Exception:
+        repo_root = None
+    return {
+        "script_path": str(script_path),
+        "script_sha256": script_sha256,
+        "repo_root": repo_root,
+        "python": sys.version.split()[0],
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+def locks_summary(statuses: list) -> list[dict]:
+    """Les verrous vus pendant le scan, nommes un par un (#14195).
+
+    Un worktree verrouille refuse le retrait ; l'organe ne le dit que
+    par le COMPTE de refus, sans nommer le verrouille ni sa forme. Sur la
+    ferme d'ai-01, 102 verrous (86 par un pid mort, 15 par un pid vivant)
+    n'etaient lisibles que dans le log d'une tache planifiee -- et la
+    ligne de log ne portait ni la forme du verrou ni la decision prise.
+
+    Chaque entree nomme : le chemin, la classe du verrou
+    (`agent` / `optout` / `unclassified`), le pid capture, la decision
+    rendue et le motif de refus. Le champ `reason` porte la raison brute
+    lue au porcelain -- c'est elle qui permet de rejouer la
+    classification a la main quand une occurrence reste inexpliquee.
+
+    Liste vide = aucun verrou vu. Un champ absent se lirait « non
+    mesure » : le bloc est donc TOUJOURS present.
+    """
+    out: list[dict] = []
+    for s in statuses:
+        if s.locked_reason is None:
+            continue
+        out.append({
+            "path": s.path,
+            "lock_class": s.lock_class,
+            "lock_pid": s.lock_pid,
+            "decision": s.decision,
+            "refusal_reason": s.refusal_reason,
+            "dead_lock_unlocked": s.dead_lock_unlocked,
+            "reason": s.locked_reason,
+        })
+    return out
+
+
 def list_worktrees() -> list[dict]:
     """Retourne les worktrees sous forme [{path, head_sha, locked_reason?}, ...].
 
@@ -4162,6 +4237,14 @@ def main() -> int:
             "dead_lock_unlocked": [
                 s.path for s in statuses if s.dead_lock_unlocked
             ],
+            # #14195 : identite du code et de la ferme (additif, ne change
+            # aucune decision) + nommage un par un des verrous vus. Sans
+            # ces deux blocs, un rapport de la ferme X ne dit ni quelle
+            # version du script l'a produit, ni quels verrous il a vus :
+            # l'occurrence reste alors INDECIDABLE et l'on reconstitue
+            # l'histoire depuis un journal de tache planifiee.
+            "organ": organ_identity(),
+            "locks": locks_summary(statuses),
             "statuses": [s.to_dict() for s in statuses],
         }
         if args.apply:
@@ -4199,6 +4282,28 @@ def main() -> int:
                 "scanned=0  (aucun worktree diagnostique -- passage muet, "
                 "pas propre ; voir aussi MUTE sur stderr, #127)"
             )
+        # #14195 : identite du code et de la ferme, et nommage un par un des
+        # verrous vus -- en mode TEXTE aussi. Le journal de la tache
+        # planifiee est un log texte : sans cette ligne, la ferme et la
+        # version du script restaient invisibles dans le seul endroit ou
+        # l'occurrence a ete observee (nuit du 2026-11-25 sur ai-01).
+        ident = organ_identity()
+        print(
+            f"organ: script={ident['script_path']}"
+            f" sha256={ident['script_sha256']}"
+            f" repo_root={ident['repo_root']}"
+            f" at={ident['generated_at']}"
+        )
+        lock_rows = locks_summary(statuses)
+        if lock_rows:
+            print(f"locks: {len(lock_rows)} verrou(s) vu(s)")
+            for row in lock_rows:
+                print(
+                    f"  LOCK {row['path']} class={row['lock_class']}"
+                    f" pid={row['lock_pid']} decision={row['decision']}"
+                    f" reason={row['refusal_reason']}"
+                    f" raw={row['reason']}"
+                )
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
