@@ -1,0 +1,10 @@
+- name: "Argumentation-01b-Schemes-Walton C#"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Portage C# (#28647) : le module Python `argumentation_schemes.py` (stdlib pure) est reimplemente en BCL dans la premiere cellule de code du jumeau -- dix schemas, 33 ensembles de mots-cles, ordre canonique, Classify / MatchReport / AsPromptContext -- sans NuGet, sans LLM, sans aleatoire. Les textes du banc, les negatifs, le texte desaccentue et le texte ambigu sont ceux du jumeau Python, cites comme provenance. Le jumeau n'importe rien du module Python."
+    - "Les noms C# sont idiomatiques et non un translitteration : `Schemes.Classify`, `Schemes.MatchReport`, `Schemes.AsPromptContext`, proprietes `Strength` / `CriticalQuestions` / `PremisesPattern`. Les valeurs attestees sont identiques au jumeau Python : 10 schemas et leurs forces a priori, 3 questions critiques pour l'autorite et 2 ailleurs, banc 10/10, 4 negatifs a null, 6 mots isoles sans tir, rangs 1 et 10 du rapport, `cause_effect` avant `modus_ponens` sur la paire « donc + parce que », singleton `precautionary_principle`, rendu de 10 lignes tronque aux deux premieres questions."
+    - "Le carnet C# compte 13 cellules de code (le moteur forme une cellule de preambule supplementaire, conformement a l'archetype « preambule » du grain) et 23 cellules markdown adaptees (navigation vers les jumeaux CSharp, `null` au lieu de `None`, noms de methodes C#). Les exercices sont des stubs compilables `// TODO etudiant` qui rendent null et s'executent sans erreur volontaire."
+    - "Execution reelle sur kernel .net-csharp : 13 cellules, 0 erreur, sorties conservees puis nettoyage canonique des bandeaux de probe (`strip_probe_banner.py --variant both`, variantes discovery et probe)."

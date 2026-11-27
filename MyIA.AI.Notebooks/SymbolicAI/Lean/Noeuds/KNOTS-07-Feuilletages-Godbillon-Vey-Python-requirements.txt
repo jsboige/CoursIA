@@ -1,0 +1,21 @@
+# KNOTS-07 — feuilletages : la classe de Godbillon-Vey — dependances Python
+# Install: pip install -r KNOTS-07-Feuilletages-Godbillon-Vey-Python-requirements.txt
+#
+# Le calcul exterieur (formes differentielles, produit wedge, crochets de Lie,
+# evaluation des formes sur des champs de vecteurs) passe par sympy.diffgeom ;
+# l'aire du polygone fondamental est integree par la quadrature adaptative de
+# scipy ; la figure en deux panneaux est tracee par matplotlib.
+#
+# Versions de l'execution enregistree dans le carnet : sympy 1.14.0,
+# numpy 2.5.2, scipy 1.18.1, matplotlib 3.10.3.
+
+# sympy — CoordSystem, Differential, WedgeProduct, evaluation sur des champs
+sympy>=1.14
+
+# numpy — angles et tableaux de la figure ; scipy — quad, quadrature adaptative
+# de la densite d'aire du disque de Poincare
+numpy>=2.0
+scipy>=1.13
+
+# matplotlib — figure en deux panneaux
+matplotlib>=3.8

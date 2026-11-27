@@ -228,7 +228,7 @@ NOTEBOOK_SERVICE_MAP = {
     "audio_api": [
         "01-1-OpenAI-TTS-Intro.ipynb",
         "01-2-OpenAI-Whisper-STT.ipynb",
-        "03-3-Realtime-Voice-API.ipynb",
+        "Audio-03-3-Realtime-Voice-API-Python.ipynb",
     ],
     "audio_local": [
         "01-3-Basic-Audio-Operations.ipynb",
@@ -240,7 +240,7 @@ NOTEBOOK_SERVICE_MAP = {
         "01-5-TTS-Local-ONNX.ipynb",
     ],
     "audio_tts_heavy": [
-        "02-1-Chatterbox-TTS.ipynb",
+        "Audio-02-1-Chatterbox-TTS-Python.ipynb",
         "02-2-XTTS-Voice-Cloning.ipynb",
     ],
     "audio_music": [
@@ -248,11 +248,11 @@ NOTEBOOK_SERVICE_MAP = {
         "02-4-Demucs-Source-Separation.ipynb",
     ],
     "audio_orchestration": [
-        "03-1-Multi-Model-Audio-Comparison.ipynb",
-        "03-2-Audio-Pipeline-Orchestration.ipynb",
+        "Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb",
+        "Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb",
     ],
     "audio_apps": [
-        "04-1-Educational-Audio-Content.ipynb",
+        "Audio-04-1-Educational-Audio-Content-Python.ipynb",
         "04-2-Transcription-Pipeline.ipynb",
         "04-3-Music-Composition-Workflow.ipynb",
         "04-4-Audio-Video-Sync.ipynb",

@@ -272,7 +272,9 @@ Substance réelle :
   `n ≥ 1` ([God58] II Th. 5.2.1), qui exigera l'itération de l'exactitude de
   la Partie 91 le long de la chaîne, reste la frontière nommée de la
   Partie 93.
-- `Grothendieck.FlasqueAcyclic` (Partie 94) : **l'acyclicité des flasques**
+- `Grothendieck.FlasqueAcyclic` (Partie 102 — tranche assignée par extension
+  du tableau des Parties, l'en-tête portait 94, tenue par la flascuité de la
+  tour canonique) : **l'acyclicité des flasques**
   ([God58] II.5.1) — et la **correction d'une glose** : la Partie 80
   créditait Godement d'un « flasque ⇒ injectif (II.5.2) », énoncé **faux**
   (espace discret à deux points : tous les faisceaux flasques, le constant
@@ -459,7 +461,9 @@ Substance (English):
   complex, injective witness). **Acyclicity** `H^n(C⁰F) = 0` for `n ≥ 1`
   ([God58] II Th. 5.2.1), which will require iterating Part 91's exactness
   along the chain, remains the named frontier of Part 93.
-- `Grothendieck.FlasqueAcyclic` (Part 94) : **acyclicity of flasque
+- `Grothendieck.FlasqueAcyclic` (Part 102 — tranche number assigned by
+  extending the README Parts table; the header carried 94, held by the
+  flascity of the canonical tower) : **acyclicity of flasque
   sheaves** ([God58] II.5.1) — and the **correction of a gloss** : Part 80
   credited Godement with "flasque ⇒ injective (II.5.2)", a **false**
   statement (two-point discrete space : every sheaf flasque, the constant

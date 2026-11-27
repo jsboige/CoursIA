@@ -54,8 +54,8 @@
       "notebooks": [
         "GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb",
         "GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb",
-        "GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb",
-        "GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb",
+        "GenAI/Audio/03-Orchestration/Audio-03-1-Multi-Model-Audio-Comparison-Python.ipynb",
+        "GenAI/Audio/03-Orchestration/Audio-03-2-Audio-Pipeline-Orchestration-Python.ipynb",
         "GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb",
         "GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb"
       ]
@@ -169,7 +169,7 @@
         "GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb",
         "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb",
         "GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
-        "GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb",
+        "GenAI/Audio/02-Advanced/Audio-02-9-AceStep-Music-Generation-Python.ipynb",
         "GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb",
         "GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb"
       ]

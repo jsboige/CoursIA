@@ -1,0 +1,15 @@
+# TRANCHE51 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE51
+guards:
+  -
+    name: "No machine-path leak (NuGet banner) in changed notebooks"
+    argv: ["python", "scripts/notebook_tools/strip_machine_paths.py", "--scan", "{changed_paths}", "--check"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/strip_machine_paths.py"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
