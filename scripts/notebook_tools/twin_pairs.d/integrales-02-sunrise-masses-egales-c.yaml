@@ -1,0 +1,9 @@
+- name: "Integrales-02-Sunrise-Masses-Egales C#"
+  family: Physique/Integrales
+  python: MyIA.AI.Notebooks/Physique/Integrales/Integrales-02-Sunrise-Masses-Egales-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Integrales/Integrales-02-Sunrise-Masses-Egales-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Moteur par cote : Python = mpmath (quadrature adaptative `mp.quad`, `mp.clsin`) ; C# = BCL seule (`System.Math`, aucun NuGet, contrainte d'acceptance de l'issue) avec quadrature de Gauss-Legendre composite construite dans le carnet. Meme contenu mathematique (parametrisation, quatre voies, ancre, refus documentes), API idiomatique differente : les constantes et valeurs mpmath sont portees comme references declarees (constante de Catalan, ancre 2,343907238689458890602) et jamais comme resultats de la quadrature C#."
+    - "Ecart mesure en double precision, dans les sorties : ancre 2,27E-15 (reference mpmath) ; Cheng-Wu et voie hyperbolique 4,88E-15 ; voie B a k=26 8,79E-11, convergence en 2^-k documentee (l'ecart est identique pour tous les s, il vient des coins logarithmiques du carre unite, independants de s). La voie A porte l'ecart de sa propre regle (~2E-15) ; le carnet Python mesure 1,37E-20 (CW) et 8,94E-16 (D) en precision arbitraire."
+    - "Enregistrement de livraison (myia-po-2027:CoursIA, #28078) : portage C# de Integrales-02-Sunrise-Masses-Egales-Python.ipynb. Execution reelle sur kernel .net-csharp : toutes les cellules de code executees, 0 erreur ; sorties commises. Premiere attestation ecrite par check_twin_parity --update, en DERNIERE operation (cf #8957)."
