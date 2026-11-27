@@ -268,7 +268,7 @@ Chaque notebook inclut les références nécessaires :
 
 ### 6. Graphviz (optionnel)
 
-Pour les visualisations de factor graphs dans les notebooks 01 à 10, 02b et 12 à 15 :
+Pour les visualisations de factor graphs dans les notebooks 10, 13-18 :
 
 ```bash
 # Windows (chocolatey)
