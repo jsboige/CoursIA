@@ -1,0 +1,558 @@
+# Conformité différentielle de Complexity-08b-CombinateursSKI-TagDePost (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "Complexity-08b-CombinateursSKI-TagDePost"
+  family: "InformationCalcul/Complexity"
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Rust.ipynb
+  measures:
+    - id: c3_text
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 3 diffère du texte Python (ligne 1 : « Combinateurs (S/K/I + tag de Post) : port manuel natif en C# » contre « ict.combinators importe OK -- aucune reimplementation locale… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 5 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_forme_normale
+      description: "« forme normale : » de la cellule 5, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^forme\\ normale\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^forme\\ normale\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^forme\\ normale\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c8_text
+      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 8 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c8_ordre_normal
+      description: "« ordre normal    : » de la cellule 8, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "(?m:^ordre\\ normal\\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "(?m:^ordre\\ normal\\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "(?m:^ordre\\ normal\\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c8_ordre_applicatif
+      description: "« ordre applicatif: » de la cellule 8, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "(?m:^ordre\\ applicatif:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "(?m:^ordre\\ applicatif:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "(?m:^ordre\\ applicatif:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c11_text
+      description: "Sortie de la cellule 11, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 11 diffère du texte Python (ligne 6 : « etats dans la trace : 4 (terme initial + pas demandes) » contre « apres 200 pas : diverge -- aucune forme normale atteinte » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c14_text
+      description: "Sortie de la cellule 14, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 14 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c14_church_1_en_s_k_pur
+      description: "« church(1) en S/K pur : » de la cellule 14, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m:^church\\(1\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(?m:^church\\(1\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m:^church\\(1\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c14_church_2_en_s_k_pur
+      description: "« church(2) en S/K pur : » de la cellule 14, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m:^church\\(2\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(?m:^church\\(2\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m:^church\\(2\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c14_church_3_en_s_k_pur
+      description: "« church(3) en S/K pur : » de la cellule 14, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m:^church\\(3\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(?m:^church\\(3\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m:^church\\(3\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c14_church_4_en_s_k_pur
+      description: "« church(4) en S/K pur : » de la cellule 14, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m:^church\\(4\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(?m:^church\\(4\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m:^church\\(4\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c14_church_5_en_s_k_pur
+      description: "« church(5) en S/K pur : » de la cellule 14, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(?m:^church\\(5\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(?m:^church\\(5\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m:^church\\(5\\)\\ en\\ S/K\\ pur\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c17_text
+      description: "Sortie de la cellule 17, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 17 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c17_round_trip_0_7
+      description: "« round-trip 0..7 : » de la cellule 17, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "(?m:^round\\-trip\\ 0\\.\\.7\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(?m:^round\\-trip\\ 0\\.\\.7\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 17
+          pattern: "(?m:^round\\-trip\\ 0\\.\\.7\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c17_2_3
+      description: "« 2 + 3 = » de la cellule 17, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "(?m:^2\\ \\+\\ 3\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(?m:^2\\ \\+\\ 3\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 17
+          pattern: "(?m:^2\\ \\+\\ 3\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c20_text
+      description: "Sortie de la cellule 20, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 20 diffère du texte Python (ligne 4 : « §6 — Church-Rosser : C# = 1 forme(s) [f (f (f (f (f x))))] ;… » contre « <fin> » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c20_formes_normales_distinctes
+      description: "« formes normales distinctes : » de la cellule 20, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "(?m:^formes\\ normales\\ distinctes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "(?m:^formes\\ normales\\ distinctes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 20
+          pattern: "(?m:^formes\\ normales\\ distinctes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c20_pas_de_reduction
+      description: "« pas de reduction : » de la cellule 20, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "(?m:^pas\\ de\\ reduction\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "(?m:^pas\\ de\\ reduction\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 20
+          pattern: "(?m:^pas\\ de\\ reduction\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_text
+      description: "Sortie de la cellule 23, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 23 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_graine_10_halted_etats
+      description: "« graine '10'               -> halted    | etats: » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^graine\\ '10'\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\->\\ halted\\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^graine\\ '10'\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\->\\ halted\\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^graine\\ '10'\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\->\\ halted\\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_graine_1001010010000_cycle_etats
+      description: "« graine '1001010010000'    -> cycle     | etats: » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^graine\\ '1001010010000'\\ \\ \\ \\ \\->\\ cycle\\ \\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^graine\\ '1001010010000'\\ \\ \\ \\ \\->\\ cycle\\ \\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^graine\\ '1001010010000'\\ \\ \\ \\ \\->\\ cycle\\ \\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_graine_110101_cycle_etats
+      description: "« graine '110101'           -> cycle     | etats: » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^graine\\ '110101'\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\->\\ cycle\\ \\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^graine\\ '110101'\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\->\\ cycle\\ \\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^graine\\ '110101'\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\->\\ cycle\\ \\ \\ \\ \\ \\|\\ etats:[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_graine_periodique_31_elements_cycle_long
+      description: "« graine periodique (31 elements) -> cycle | longueur max atteinte : » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^graine\\ periodique\\ \\(31\\ elements\\)\\ \\->\\ cycle\\ \\|\\ longueur\\ max\\ atteinte\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^graine\\ periodique\\ \\(31\\ elements\\)\\ \\->\\ cycle\\ \\|\\ longueur\\ max\\ atteinte\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^graine\\ periodique\\ \\(31\\ elements\\)\\ \\->\\ cycle\\ \\|\\ longueur\\ max\\ atteinte\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c26_text
+      description: "Sortie de la cellule 26, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 26 ne diffère du Python que par ses fins de ligne CRLF (noyau .NET) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c26_blocs_de_largeur_4_absents_de_la_trace
+      description: "« blocs de largeur 4 absents de la trace : » de la cellule 26, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "(?m:^blocs\\ de\\ largeur\\ 4\\ absents\\ de\\ la\\ trace\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "(?m:^blocs\\ de\\ largeur\\ 4\\ absents\\ de\\ la\\ trace\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 26
+          pattern: "(?m:^blocs\\ de\\ largeur\\ 4\\ absents\\ de\\ la\\ trace\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c26_1111_absent
+      description: "« 1111 absent : » de la cellule 26, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "(?m:^1111\\ absent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "(?m:^1111\\ absent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 26
+          pattern: "(?m:^1111\\ absent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c26_thue_morse_64
+      description: "« Thue-Morse (64) : » de la cellule 26, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "(?m:^Thue\\-Morse\\ \\(64\\)\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "(?m:^Thue\\-Morse\\ \\(64\\)\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 26
+          pattern: "(?m:^Thue\\-Morse\\ \\(64\\)\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c26_fibonacci_34
+      description: "« Fibonacci (34)  : » de la cellule 26, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "(?m:^Fibonacci\\ \\(34\\)\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "(?m:^Fibonacci\\ \\(34\\)\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 26
+          pattern: "(?m:^Fibonacci\\ \\(34\\)\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c31_text
+      description: "Sortie de la cellule 31, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c33_text
+      description: "Sortie de la cellule 33, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c35_text
+      description: "Sortie de la cellule 35, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 35
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 35 diffère du texte Python (ligne 2 : « Indice : Combinateurs.TagEvolve(graine) renvoie (trace, verd… » contre « Indice : cb.tag_evolve(graine) renvoie (trace, verdict) ; le… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c35_exercice_a_completer
+      description: "« Exercice a completer : » de la cellule 35, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "(?m:^Exercice\\ a\\ completer\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 35
+          pattern: "(?m:^Exercice\\ a\\ completer\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 35
+          pattern: "(?m:^Exercice\\ a\\ completer\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
