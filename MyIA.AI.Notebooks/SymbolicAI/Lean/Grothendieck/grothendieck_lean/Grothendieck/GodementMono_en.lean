@@ -67,7 +67,10 @@ variable {X : TopCat.{u}}
 presheaves of abelian groups, `φ.app (op U)` is injective as soon as `φ` is a
 monomorphism. The two halves: `NatTrans.mono_iff_mono_app` reads the mono of a
 natural transformation component by component (pullbacks exist in
-`AddCommGrpCat`), and in `AddCommGrpCat` monomorphism and injection coincide. -/
+`AddCommGrpCat`), and in `AddCommGrpCat` monomorphism and injection coincide.
+Stacks correspondence — **ABSENT**: a Mathlib fact (`NatTrans.mono_iff_mono_app`);
+no named statement on the Stacks side.
+-/
 theorem injective_app_of_mono {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     [Mono φ] (U : Opens X) : Function.Injective (φ.app (op U)) :=
   (AddCommGrpCat.mono_iff_injective _).mp inferInstance
@@ -78,7 +81,11 @@ a function, so injectivity is pointwise: at every point the induced map on the
 stalks is injective — equal germs come from equal sections
 (`Presheaf.stalkFunctor_map_injective_of_app_injective`, valid for any presheaf
 of abelian groups) — and equality of the images point by point forces equality
-of the sections. -/
+of the sections.
+Stacks correspondence — **ABSENT**: a Mathlib fact
+(`Presheaf.stalkFunctor_map_injective_of_app_injective`); no named statement on the
+Stacks side.
+-/
 theorem godementHomApp_injective {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G)
     (hφ : ∀ U : Opens X, Function.Injective (φ.app (op U))) (U : Opens X) :
     Function.Injective (godementHomApp φ U) := by
@@ -90,7 +97,11 @@ theorem godementHomApp_injective {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F �
 /-- **`C⁰` preserves monomorphisms**: if `φ` is a mono, so is `C⁰φ`. The
 sectionwise injectivity established above is exactly the mono in
 `AddCommGrpCat` (`AddCommGrpCat.mono_iff_injective`), and the mono of a natural
-transformation is read component by component (`NatTrans.mono_iff_mono_app`). -/
+transformation is read component by component (`NatTrans.mono_iff_mono_app`).
+Stacks correspondence — **ABSENT**: no named statement on the Stacks side says that
+`C⁰` preserves monomorphisms; the neighbouring fact is that `f_*` is right exact (it
+preserves coequalizers), which the Stacks files read do not state by name.
+-/
 theorem godementMapHom_mono {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) [Mono φ] :
     Mono (godementMapHom φ) := by
   rw [NatTrans.mono_iff_mono_app]
@@ -101,7 +112,9 @@ theorem godementMapHom_mono {F G : X.Presheaf AddCommGrpCat.{u}} (φ : F ⟶ G) 
 /-- **`C⁰` is a functor that preserves monomorphisms** — the form usable
 downstream: `Functor.map_mono` now applies to `C⁰`. This is the prerequisite
 that was missing in Part 85 in order to iterate the construction on kernels and
-form the Godement complex. [God58] Chap. II §4.1. -/
+form the Godement complex. [God58] Chap. II §4.1.
+Stacks correspondence — **ABSENT**: no named statement on the Stacks side.
+-/
 instance godementFunctor_preservesMonomorphisms :
     (godementFunctor (X := X)).PreservesMonomorphisms where
   preserves f _ := godementMapHom_mono f

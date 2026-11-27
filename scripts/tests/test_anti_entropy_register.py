@@ -1451,14 +1451,188 @@ def test_l_instrument_reel_rend_encore_une_valeur():
 # vert parce qu'il recopiait la meme identite que la donnee (faux vert).
 
 def test_instrument_inchange_compare_la_source_pas_le_sha(monkeypatch):
-    """Deux shas differents, meme contenu de script => meme instrument."""
-    monkeypatch.setattr(aer, "_blob_du_script",
-                        lambda identite: {"a@1": "blob-x", "a@2": "blob-x",
-                                          "a@3": "blob-y"}.get(identite, ""))
+    """Deux shas differents, meme CODE de script => meme instrument."""
+    monkeypatch.setattr(aer, "_code_du_script",
+                        lambda identite: {"a@1": "code-x", "a@2": "code-x",
+                                          "a@3": "code-y"}.get(identite, ""))
     assert aer.instrument_inchange("a@2", "a@1") is True
     assert aer.instrument_inchange("a@3", "a@1") is False
-    # Aucune presomption : un blob illisible ne rend pas « comparable ».
+    # Aucune presomption : un code illisible ne rend pas « comparable ».
     assert aer.instrument_inchange("a@9", "a@1") is False
+
+
+# ---------------------------------------------------------------------------
+# Comparabilite par CODE, pas par blob (#28257)
+# ---------------------------------------------------------------------------
+#
+# Comparer les BLOBS rendait l'instrument change a chaque retouche de
+# commentaire : une reference declaree, puis re-orphelinee au squash suivant,
+# alors que l'instrument n'avait pas change. Mesure du 2026-11-23 : les blobs
+# `ea8f8263` et `c1697629` de `scripts/notebook_tools/inventory_notebook_names.py`
+# ne different que par des commentaires -- et `c1697629` est la version sur
+# `main` au 23/11.
+
+#: Les deux blobs du cas reel (mesure du 2026-11-23).
+BLOB_AVANT = "ea8f8263f21a37549bc052850f248213282765fc"
+BLOB_APRES = "c169762914879cf65524c208a77de283950579e4"
+
+_SOURCE_A = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire
+def f():
+    return 1
+'''
+
+_SOURCE_COMMENTAIRE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire retouche
+def f():
+    return 1
+'''
+
+_SOURCE_CODE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire retouche
+def f():
+    return 2
+'''
+
+# Un script SHELL dont une ligne contient une parenthese ouvrante : le
+# tokeniseur Python echoue (TokenError), et les deux versions ne different
+# que par l'INDENTATION de cette ligne (reserve du 26/11, #28259).
+_SOURCE_SHELL = '''#!/bin/sh
+cat <<'EOF'
+echo (une ligne
+EOF
+'''
+
+_SOURCE_SHELL_RETOUCHE = '''#!/bin/sh
+cat <<'EOF'
+  echo (une ligne
+EOF
+'''
+
+# Une chaine triple-quotee dont seule la SECONDE ligne change : le contenu
+# du jeton fait partie du code, donc l'instrument a change (reserve du
+# 25/11, #28259). Ne garder que la ligne d'ouverture normaliserait les
+# deux versions a l'identique.
+_SOURCE_CHAINE_MULTILIGNE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire
+TEXTE = """ligne une
+ligne deux
+"""
+def f():
+    return TEXTE
+'''
+
+_SOURCE_CHAINE_MULTILIGNE_RETOUCHEE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire
+TEXTE = """ligne une
+ligne deux retouchee
+"""
+def f():
+    return TEXTE
+'''
+
+
+def _faux_blobs(monkeypatch, sources: dict[str, str]) -> None:
+    """Sert des contenus de blob a la place de git."""
+    def run(cmd, timeout=600):
+        if list(cmd[:2]) == ["git", "cat-file"]:
+            sha = cmd[-1]
+            if sha in sources:
+                return 0, sources[sha], ""
+            return 128, "", "introuvable"
+        return 1, "", "commande inattendue"
+
+    monkeypatch.setattr(aer, "_run", run)
+    monkeypatch.setattr(aer, "_blob_du_script",
+                        lambda identite: identite.split("@", 1)[-1])
+
+
+def test_instrument_inchange_ignore_un_commentaire_retouche(monkeypatch):
+    """Temoin rouge : deux versions qui ne different que par un commentaire
+    designent le MEME instrument.
+
+    Le script est un **Python** (`s.py`) : c'est `tokenize` qui distingue le
+    code d'un commentaire. Hors Python, la comparaison est exacte (voir
+    `test_le_code_d_un_script_shell_est_compare_exactement`).
+    """
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
+                              "blob-2": _SOURCE_COMMENTAIRE})
+    assert aer.instrument_inchange("s.py@blob-2", "s.py@blob-1") is True
+
+
+def test_instrument_inchange_detecte_une_vraie_ligne_de_code(monkeypatch):
+    """Temoin vert : une vraie ligne de code changee fait deux instruments."""
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
+                              "blob-2": _SOURCE_CODE})
+    assert aer.instrument_inchange("s.py@blob-2", "s.py@blob-1") is False
+
+
+def test_le_code_d_un_script_shell_est_compare_exactement(monkeypatch):
+    """Le temoin shell demande par la reserve du 26/11 (#28259).
+
+    Un here-document dont une ligne contient une parenthese ouvrante fait
+    echouer le tokeniseur Python : le repli ligne-a-ligne applique `strip()`
+    a chaque ligne, et rendait identiques deux documents dont cette ligne
+    differe par son indentation -- alors que le shell imprime des octets
+    differents. Hors Python, la comparaison est donc **exacte**.
+    """
+    assert aer._lignes_avec_code(_SOURCE_SHELL) is None, (
+        "le tokeniseur doit echouer sur ce source : le temoin perdrait son sens")
+    assert aer._code_normalise(_SOURCE_SHELL, python=False) \
+        != aer._code_normalise(_SOURCE_SHELL_RETOUCHE, python=False), (
+        "hors Python, deux sources qui different par l'indentation sont "
+        "deux instruments")
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_SHELL,
+                              "blob-2": _SOURCE_SHELL_RETOUCHE})
+    assert aer.instrument_inchange("s.sh@blob-2", "s.sh@blob-1") is False, (
+        "le script shell a change : l'instrument a change")
+
+
+def test_un_python_que_le_tokeniseur_ne_sait_pas_lire_est_compare_exactement():
+    """Meme regle pour un Python illisible : la comparaison est exacte.
+
+    Sans elle, `strip()` par ligne rendrait identiques deux sources qui ne
+    different que par l'indentation (reserve du 26/11, #28259).
+    """
+    assert aer._code_normalise(_SOURCE_SHELL) == _SOURCE_SHELL, (
+        "un Python que le tokeniseur ne sait pas lire est compare tel quel")
+    assert aer._code_normalise(_SOURCE_SHELL) \
+        != aer._code_normalise(_SOURCE_SHELL_RETOUCHE)
+
+
+def test_instrument_inchange_detecte_le_contenu_d_un_jeton_multiligne(monkeypatch):
+    """Temoin vert : le CONTENU d'une chaine multiligne fait l'instrument.
+
+    Le jeton s'etend sur plusieurs lignes : ne conserver que sa ligne
+    d'ouverture faisait normaliser a l'identique deux scripts dont la
+    seule seconde ligne de la chaine differe (reserve du 25/11, #28259).
+    """
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_CHAINE_MULTILIGNE,
+                              "blob-2": _SOURCE_CHAINE_MULTILIGNE_RETOUCHEE})
+    assert aer._code_normalise(_SOURCE_CHAINE_MULTILIGNE) \
+        != aer._code_normalise(_SOURCE_CHAINE_MULTILIGNE_RETOUCHEE)
+    assert aer.instrument_inchange("s@blob-2", "s@blob-1") is False
+
+
+def test_le_cas_reel_les_deux_blobs_ne_different_que_par_des_commentaires():
+    """Le cas mesure du 23/11, sur les VRAIS blobs du depot.
+
+    Les deux blobs DOIVENT differer (sinon le temoin ne prouve rien) et leur
+    CODE doit etre identique : l'instrument n'a pas change.
+    """
+    code_a, source_a, _ = aer._run(("git", "cat-file", "blob", BLOB_AVANT))
+    code_b, source_b, _ = aer._run(("git", "cat-file", "blob", BLOB_APRES))
+    if code_a != 0 or code_b != 0:
+        pytest.skip(f"blobs absents du clone : {BLOB_AVANT} / {BLOB_APRES}")
+    assert source_a != source_b, \
+        "les deux blobs doivent differer : sinon le temoin ne prouve rien"
+    assert aer._code_normalise(source_a) == aer._code_normalise(source_b), \
+        "le code est le meme : l'instrument n'a pas change"
     assert aer.instrument_inchange("", "a@1") is False
 
 
