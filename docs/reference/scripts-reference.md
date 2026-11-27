@@ -48,7 +48,7 @@ pas `0`.
 | `kernel_gateway_service.py` | Pré-vol puis démarrage d'un notebook annoté en mode officiel `notebook-http`; sonde optionnelle d'une route enregistrée via OpenAPI et requête HTTP réelle sur loopback |
 | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive : moteur cell-by-cell canonique (`dotnet_executor.py`), wrapper CLI historique (`exec_dotnet_persist.py`) et exécution ciblée |
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
-| `merge_executed_outputs.py` | Fusion des sorties d'un carnet exécuté ailleurs (QC Cloud) dans le carnet de la branche, refus si le code diffère ([routes](../qc/quantbook-execution-routes.md)) |
+| `merge_executed_outputs.py` | Fusion des sorties d'un carnet exécuté ailleurs (QC Cloud) dans le carnet de la branche, refus si le code diffère : sorties, `execution_count` et provenance du run (bloc `metadata.papermill`, blocs par cellule) suivent le carnet exécuté ([routes](../qc/quantbook-execution-routes.md)) |
 | `_exec_bdd_csharp.py` | **Archivé** 2026-10-01 (palier 1 #18153) — voir `scripts/notebook_tools/_archive/README.md` |
 | `pyodide_browser_run.py` | Exécution réelle d'un lot de carnets dans un site JupyterLite construit (noyau Pyodide) : pilote un navigateur, déclenche `Run All Cells` par clic réel, relève les sorties et les compteurs d'exécution, rend `executions.md` / `executions.json` et les captures. Preuves : `docs/reference/pyodide-executions/` |
 
