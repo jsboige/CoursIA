@@ -26,8 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
                          tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
-                         tapis_attente, tapis_sature, tapis_service,
-                         tapis_voie_leger)
+                         tapis_attente, tapis_borne, tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -50,10 +49,7 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-# Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
-# n'ont plus d'usage ici.
-# EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
-# PAUSE : une [RELEASED] qui porte une condition (#27726).
+# EPAISSE, SATURE : barrieres de FOND d'un CONTENEUR (#26973) ; PAUSE : [RELEASED] conditionnelle (#27726).
 CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "PAUSE", "LIVREE", "MERGEE",
          "COUVERTE", "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
@@ -489,29 +485,34 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
 
 
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None, lire_fils: object = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None,
+         echeance: float | None = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 (sans
-    # repli picker) est le REFUS -- mesure impossible ; retard ou module
-    # divergent DEGRADENT (sortie 0). Un rejeu --lecture est hors ligne.
+    # La BORNE de commande (#28114, I6) : une echeance unique, prise ICI.
+    echeance = echeance or tapis_borne.echeance()
+    # Garde de fraicheur (mandat 14/11, invariant I4) : la sortie 4 est le
+    # REFUS (mesure impossible) ; retard ou module divergent DEGRADENT (0).
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
-        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale,
+                                                 echeance=echeance)
         if fraicheur["refuse"]:
             return 4  # pas le repli picker : il fait rejouer le meme incident
     # Bascule (#27225) : le tirage par defaut est leger -- classement sur
     # metadonnees, qualification du grain servi sur son FIL COMPLET. Le rejeu
     # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
-    # sait relire un dossier de lecture.
+    # sait relire un dossier de lecture. La voie LOURDE est un DIAGNOSTIC :
+    # elle garde ses budgets propres, pas l'enveloppe I6, qui borne le tirage
+    # par defaut.
     if args.voie == "leger" and not args.lecture:
         # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
         # calculer des deux cotes ouvrirait une course au passage d'une tranche.
         maintenant = maintenant or datetime.now(UTC)
         graine = args.graine or graine_defaut(args.lane, maintenant)
         return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
-                                       fraicheur)
+                                       fraicheur, echeance=echeance)
     return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 
