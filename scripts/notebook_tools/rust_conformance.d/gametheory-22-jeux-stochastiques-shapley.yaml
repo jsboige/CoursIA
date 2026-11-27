@@ -1,0 +1,324 @@
+# Conformite differentielle du triplet GameTheory-22 (Jeux stochastiques,
+# Shapley 1953, issue #27131, graine 3 du lot 3).
+#
+# Le portage Rust (kernel evcxr, `ndarray` + `plotters`) reprend l'instance du
+# carnet Python a l'identique : meme jeu a 2 etats, memes 2x2 par etat, memes
+# transitions, memes tolerances d'iteration, memes politiques myopes.
+#
+# Ecarts de FORME declares (le contenu mesure est le meme) :
+#
+# - la correspondance des cellules n'est PAS l'index : le jumeau C# a 31
+#   cellules avec 11 cellules de code (2, 5, 7, 10, 12, 15, 17, 19, 22, 25, 27)
+#   la ou Python et Rust ont 25 cellules avec 9 cellules de code (2, 4, 6, 8,
+#   11, 14, 18, 20, 22). Le C# redistribue ses exercices (10, 15, 17, 25) ; le
+#   registre ECRIT donc la correspondance, il ne la deduit pas.
+# - l'affichage des vecteurs : NumPy imprime `[3.8 4. ]` (espaces, point
+#   final), Rust `[3.8000, 4.0000]`, le C# une liste separee par des virgules.
+#   Les mesures extraient des GRANDEURS par motif, jamais la typographie.
+# - la cellule 2 : Rust imprime `G[0] = [[2.0, 2.0], [2.0, 2.0]]` (flottants),
+#   le C# `G[0] = [[2, 2], [2, 2]]` (entiers du litteral). Meme matrice.
+# - la cellule 14 contestee : Rust imprime les deux valeurs cote a cote
+#   (`vs [3.8000, 4.0000]`), le C# nomme la valeur de l'etat 0 deux fois
+#   (`V(0)=3.8000 ... V(0)=2.0000`), donc ses motifs sont distincts.
+# - la cellule 6 : le controle analytique `2 + 2*gamma` n'existe PAS cote C#
+#   (le C# imprime une phrase sans nombre, « Repere analytique du modele ») :
+#   ce cote est declare ABSENT, pas mesure.
+# - les cellules d'exercice (18, 20, 22 cote Python/Rust) n'ont AUCUNE sortie :
+#   les trois stubs Python n'impriment rien puisqu'ils ne sont jamais appeles,
+#   les stubs Rust non plus (`#[allow(dead_code)]`, `None`). Le C# les
+#   redistribue (10, 15, 17, 25) et y imprime des lignes de garde. Rien n'est
+#   comparable : aucun cote n'est declare pour ces cellules.
+#
+# Les tolerances : 1e-9 pour les valeurs resolues exactement (valeur statique,
+# temoin, valeur dynamique, valeur contestee, controle analytique), 1e-6 pour
+# les deux cellules qui traversent l'iteration (ecart et politiques myopes) —
+# la valeur y est exacte dans les trois langages, la tolerance borne l'ordre
+# des operations.
+- name: "GameTheory-22 Jeux stochastiques Shapley"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Rust.ipynb
+  measures:
+    # --- cellule 4 : valeur statique des deux etats + temoin negatif --------
+    - id: v_statique_etat_0
+      description: "Valeur minimax de la manche a l'etat 0 (matrice constante)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Valeur statique etat 0 = ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "Valeur statique etat 0 = ([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 7
+          pattern: "Valeur statique état 0 : ([-0-9.]+)"
+          transform: float
+    - id: v_statique_etat_1
+      description: "Valeur minimax de la manche a l'etat 1 (aucun point selle)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Valeur statique etat 1 = ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "Valeur statique etat 1 = ([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 7
+          pattern: "Valeur statique état 1 : ([-0-9.]+)"
+          transform: float
+    - id: temoin_valeur
+      description: "Valeur du temoin negatif [[4,3],[2,0]] (point selle ligne 0 / colonne 1)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "->\\s+v = ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "->\\s+v = ([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "valeur=([-0-9.]+)"
+          transform: float
+    - id: temoin_p_rang_0
+      description: "Premiere composante de la strategie du rang au temoin (doit etre pure)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "p_rang = \\[([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "p_rang = \\[([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "p=(\\d+)/"
+          transform: int
+    - id: temoin_q_colonne_1
+      description: "Seconde composante de la strategie de la colonne au temoin (doit etre pure)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "q_colonne = \\[[-0-9.]+ +([-0-9.]+)\\]"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "q_colonne = \\[[-0-9.]+, ([-0-9.]+)\\]"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "q=\\d+/(\\d+)"
+          transform: int
+    # --- cellule 6 : la valeur dynamique et son controle analytique ---------
+    - id: v_dynamique_etat_0
+      description: "Valeur dynamique de l'etat 0 par iteration de valeur (gamma = 0.9)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Valeur dynamique V = \\[([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 6
+          pattern: "Valeur dynamique V = \\[([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 12
+          pattern: "valeurs=\\[([-0-9.]+)"
+          transform: float
+    - id: v_dynamique_etat_1
+      description: "Valeur dynamique de l'etat 1 (absorbant, doit valoir la valeur statique)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "V = \\[[-0-9.]+ +([-0-9.]+)\\s*\\]"
+          transform: float
+        rust:
+          cell: 6
+          pattern: "V = \\[[-0-9.]+, ([-0-9.]+)\\]"
+          transform: float
+        csharp:
+          cell: 12
+          pattern: "valeurs=\\[[-0-9.]+, ([-0-9.]+)\\]"
+          transform: float
+    - id: iterations_convergence
+      description: "Nombre d'iterations de valeur avant de passer sous la tolerance"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "converge en (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "converge en (\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "(\\d+) itérations"
+          transform: int
+    - id: v0_formule_analytique
+      description: "Controle analytique V[0] = 2 + 2*gamma"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "2\\*gamma = ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 6
+          pattern: "2\\*gamma = ([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 12
+          absent: >-
+            Le jumeau C# n'imprime pas le controle analytique chiffre sous cette
+            forme : il ecrit une phrase sans nombre (« Repere analytique du
+            modele : les etats absorbants a gain constant ont cette valeur
+            constante ; ici l'etat 0 peut atteindre l'etat 1. »). La valeur
+            dynamique elle-meme est mesuree par `v_dynamique_etat_0`. Cote
+            declare ABSENT, pas mesure.
+    # --- cellule 8 : l'ecart dynamique - statique ---------------------------
+    - id: ecart_etat_0
+      description: "Ecart V(0) - v_statique(0), attendu 2*gamma = 1.8"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "etat 0 : ecart = ([-+0-9.]+)"
+          transform: float
+        rust:
+          cell: 8
+          pattern: "etat 0 : ecart = ([-+0-9.]+)"
+          transform: float
+        csharp:
+          cell: 19
+          pattern: "\\s+0 \\|\\s+2\\.0000 \\|\\s+3\\.8000 \\|\\s+([-0-9.]+)"
+          transform: float
+    - id: ecart_etat_1
+      description: "Ecart V(1) - v_statique(1) sur l'etat absorbant, attendu 0"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "etat 1 : ecart = ([-+0-9.]+)"
+          transform: float
+        rust:
+          cell: 8
+          pattern: "etat 1 : ecart = ([-+0-9.]+)"
+          transform: float
+        csharp:
+          cell: 19
+          pattern: "\\s+1 \\|\\s+4\\.0000 \\|\\s+4\\.0000 \\|\\s+([-0-9.]+)"
+          transform: float
+    # --- cellule 11 : les deux politiques myopes evaluees sur la partie ------
+    - id: myope_reste_w0
+      description: "W(0) du joueur myope qui reste (gain de planification 1.8)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "myope qui reste\\s*\\|\\s*([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 11
+          pattern: "myope qui reste\\s*\\|\\s*([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 22
+          pattern: "myope qui reste \\|\\s+([-0-9.]+)"
+          transform: float
+    - id: myope_saute_w0
+      description: "W(0) du joueur myope qui saute (gain de planification 0)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "myope qui saute\\s*\\|\\s*([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 11
+          pattern: "myope qui saute\\s*\\|\\s*([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 22
+          pattern: "myope qui saute \\|\\s+([-0-9.]+)"
+          transform: float
+    - id: myope_saute_analytique
+      description: "Controle analytique (1-gamma)*2 + gamma*4 du myope qui saute"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "gamma\\*4 = ([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 11
+          pattern: "gamma\\*4 = ([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 22
+          pattern: "γ·4 = ([-0-9.]+)"
+          transform: float
+    # --- cellule 14 : la transition contestee -------------------------------
+    - id: v_conteste_etat_0
+      description: "Valeur de l'etat 0 quand la colonne peut bloquer le saut (retour a 2.0)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "contestee : V = \\[([-0-9.]+)"
+          transform: float
+        rust:
+          cell: 14
+          pattern: "contestee : V = \\[([-0-9.]+)"
+          transform: float
+        csharp:
+          cell: 27
+          pattern: "contestée : V\\(0\\)=([-0-9.]+)"
+          transform: float
+    - id: v_conteste_etat_1
+      description: "Valeur de l'etat 1 sous contestation (absorbant, inchangee)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "contestee : V = \\[[-0-9.]+ +([-0-9.]+)\\]"
+          transform: float
+        rust:
+          cell: 14
+          pattern: "contestee : V = \\[[-0-9.]+, ([-0-9.]+)\\]"
+          transform: float
+        csharp:
+          cell: 27
+          pattern: "contestées=\\[[-0-9.]+, ([-0-9.]+)\\]"
+          transform: float

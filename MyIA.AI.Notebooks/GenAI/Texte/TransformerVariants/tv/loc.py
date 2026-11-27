@@ -33,7 +33,7 @@ constantes LOC des carnets voisins etaient figees en dur et derivaient
 Voit aussi
 ----------
 
-- TV-01 : ``TV-01-Attention-Variants-SOTA.ipynb`` (table « bloc A vs bloc B »).
+- TV-01 : ``TV-01-Attention-Variants-SOTA-Python.ipynb`` (table « bloc A vs bloc B »).
 - TV-02 : ``TV-02-MoE-SOTA.ipynb`` (table « 3.4c from scratch vs industrie »).
 """
 from __future__ import annotations
