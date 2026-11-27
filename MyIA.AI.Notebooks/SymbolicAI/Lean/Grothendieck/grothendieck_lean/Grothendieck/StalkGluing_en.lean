@@ -22,6 +22,25 @@ References:
   - Mathlib, `Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing`.
   - Part 74 (`Grothendieck.StalkSeparated`): detection by germs.
 
+Stacks correspondence (group #14 of #28537 — “the stalks”, measured 26/11)
+---------------------------------------------------------------------------
+The reading of `AxiomMath/Stacks` is done on the **local tree**
+`StacksFrontier/Topology/Sheaves/` (sparse clone of the whole folder): the
+coverage is far wider here than in the surveys of 22/11 and 25/11, which
+could only read a few files through the `contents` API (GitHub's recursive
+tree is truncated and `Topology/Sheaves` does not appear in it). An “absent”
+verdict therefore means: **no statement of that name anywhere in
+`Topology/Sheaves/`**.
+
+| Statement | Class | Stacks referent | What our version adds |
+|---|---|---|---|
+| `GermFamily` | **covered** | `Stalk/Separated.lean:65` `toStalkProduct` (EGA IV 21.9.1) | the dependency on the subtype `{x // x ∈ U}` |
+| `GermFamily.IsLocallyRepresentable` | absent | none (`LocallyRepresentable`, `germFamily`: 0 results); nearest: `Glueing/Sheaf.lean:232` `gluedPresheaf` (00AL) | gluing a family of **germs**, where Stacks glues sections |
+| `germFamily_isLocallyRepresentable` | absent | none | the triviality of the case “the family comes from a section” |
+| `existsUnique_gluing'_of_isSheaf` | partial | `Glueing/Sheaf.lean:240` `gluedPresheaf_isSheaf`; `:278` `glued` (00AL) | the variant with an explicit target, with no limit-preservation assumption |
+| `existsUnique_section_of_isLocallyRepresentable` | absent | none | the **reconstruction** of the section from its germs (the reverse direction of the dictionary) |
+| `surjective_germ_family_to_locallyRepresentable` | absent | none | the formulation “section ↦ family of germs” |
+
 The i18n convention (EPIC #4980, ratified 2026-07-04) pairs this module with
 `StalkGluing.lean`. Lean statements, proofs, and names remain identical; only
 docstrings and comments differ.
@@ -43,14 +62,30 @@ section Contenu
 
 variable (T : Type u) [TopologicalSpace T]
 
-/-- The family of germs of a presheaf `F` at the points of an open set `U`. -/
+/-- The family of germs of a presheaf `F` at the points of an open set `U`.
+
+Stacks correspondence — **COVERED**:
+`StacksFrontier/Topology/Sheaves/Stalk/Separated.lean:65` (`toStalkProduct
+(U : Opens X) : F.obj (Opposite.op U) → ∀ x : U, F.stalk x.1`, EGA
+IV 21.9.1) is the same family of germs — the type `∀ x : U` is the
+non-dependent version of our `∀ p : {x // x ∈ U}`. What our version adds:
+the **dependency** on the subtype `{x : T // x ∈ U}`, which keeps the
+membership in `U` in the type. -/
 abbrev GermFamily (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T) :=
   ∀ p : {x : T // x ∈ U}, F.stalk p.1
 
 /-- A family of germs on `U` is **locally representable** if every point
 `p : U` has an open neighbourhood `V p ⟶ U` and a section on `V p` whose germ
 at every point of `V p` is the value prescribed by the family. This condition
-is entirely local: it assumes no section on `U`. -/
+is entirely local: it assumes no section on `U`.
+
+Stacks correspondence — **ABSENT**: no statement of that name anywhere in
+`StacksFrontier/Topology/Sheaves/` (searches for `LocallyRepresentable` and
+`germFamily`: 0 results). The nearest counterpart is the gluing datum
+`Glueing/Sheaf.lean:232` (`gluedPresheaf (D : GlueData X U)`, Stacks 00AL),
+which glues **restriction isomorphisms** between sheaves over a covering —
+not a family of germs. The difference is the **object** being glued: germs
+here, sections there. -/
 def GermFamily.IsLocallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T)
     (a : GermFamily T F U) : Prop :=
@@ -61,7 +96,14 @@ def GermFamily.IsLocallyRepresentable
       ∀ (p) (x : T) (hx : x ∈ V p),
         F.germ (V p) x hx (sf p) = a ⟨x, (iVU p).le hx⟩
 
-/-- The family of germs of a section is locally representable. -/
+/-- The family of germs of a section is locally representable.
+
+Stacks correspondence — **ABSENT**: corollary of the previous one — the
+local representability of a family of germs has no named statement at
+Stacks (search for `germFamily` over the whole tree
+`StacksFrontier/Topology/Sheaves/`: 0 results). What our version adds: the
+**triviality** of the case “the family comes from a section” — the local
+representative is the section itself, restricted to `U`. -/
 theorem germFamily_isLocallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (U : Opens T)
     (s : F.obj (op U)) :
@@ -74,7 +116,17 @@ theorem germFamily_isLocallyRepresentable
 /-- A unique-gluing variant with an explicit target open set for sheaves of
 types. Unlike `TopCat.Sheaf.existsUnique_gluing'`, it starts directly from a
 presheaf equipped with its sheaf property and requires no general
-limit-preservation assumptions. -/
+limit-preservation assumptions.
+
+Stacks correspondence — **PARTIAL**: Stacks 00AL builds the glued sheaf of
+a gluing datum (`Glueing/Sheaf.lean:232` `gluedPresheaf`, `:240`
+`gluedPresheaf_isSheaf`, `:278` `glued`). Same core — the unique gluing of
+compatible data — but two frames: Stacks glues **sheaves** over a
+**covering** by means of restriction isomorphisms satisfying the cocycle
+condition, we glue **compatible sections** of a **presheaf** in the sense
+of `IsCompatible`, with no general limit-preservation assumption. What our
+version adds: the variant with an explicit target and the absence of those
+assumptions. -/
 theorem existsUnique_gluing'_of_isSheaf
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (hF : TopCat.Presheaf.IsSheaf F)
     {ι : Type*} (V : ι → Opens T) (U : Opens T) (iVU : ∀ i, V i ⟶ U)
@@ -97,7 +149,16 @@ theorem existsUnique_gluing'_of_isSheaf
 /-- **Gluing germs**: every locally representable family of germs of a
 Type-valued sheaf comes from a unique global section. Existence glues the local
 representatives; uniqueness is exactly the detection of sections by their
-germs established in Part 74. -/
+germs established in Part 74.
+
+Stacks correspondence — **ABSENT**: the gluing of a locally representable
+**family of germs** has no named statement at Stacks (search for
+`germFamily`: 0 results; `Glueing/Sheaf.lean` glues sections given over a
+covering, not germs reconstructing a section). This is the **reverse
+direction** of the dictionary: Stacks goes from the local section to the
+sheaf, we go from the germs to the global section. What our version adds:
+the reconstruction itself, and the uniqueness that follows from it through
+the detection of Part 74. -/
 theorem existsUnique_section_of_isLocallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens T) (a : GermFamily T F U)
@@ -139,7 +200,13 @@ theorem existsUnique_section_of_isLocallyRepresentable
   exact (ht ⟨x, hx⟩).trans (hsg ⟨x, hx⟩).symm
 
 /-- Surjectivity restatement: the “section to family of germs” map is
-surjective onto the subtype of locally representable families. -/
+surjective onto the subtype of locally representable families.
+
+Stacks correspondence — **ABSENT**: surjectivity restatement of the
+previous one; no statement of that name at Stacks (search for `germFamily`
+over the whole tree `StacksFrontier/Topology/Sheaves/`: 0 results). What our
+version adds: the formulation “section ↦ family of germs”, which makes the
+sheaves ↔ étale spaces dictionary explicit. -/
 theorem surjective_germ_family_to_locallyRepresentable
     (F : TopCat.Presheaf (Type u) (TopCat.of T)) (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens T) :
