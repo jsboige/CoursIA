@@ -49,8 +49,9 @@ quand il porte exactement les `total_images` rangs de son inventaire.
 
 **Pourquoi un deck est partiel.** Des médias sont sortis du dossier `images/` depuis la
 baseline. Mesure du 27 novembre 2026 (`git ls-tree -r` de la baseline contre l'arbre) : 56 des
-679 chemins ont quitté `images/`, 42 vers un autre nom à blob identique (40 du deck 01 sous
-`public/images/`, 2 du deck 07 renommés), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10).
+679 chemins ont quitté `images/` — 38 déplacés vers `public/images/` à nom et contenu identiques
+(deck 01), 2 doublons retirés dont le contenu reste sous un autre nom (deck 01), 2 renommés
+`slide_20_img_*` (deck 07), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10).
 
 Dans l'arbre courant, `01-introduction` en manque 2, `02-resolution-problemes` en manque 1,
 `08-ia-generative` en manque 3, `S3-acculturation` en manque 12 : rangs annoncés par

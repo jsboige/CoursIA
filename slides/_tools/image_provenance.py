@@ -45,12 +45,14 @@ images essayees a sept echelles, pour un seuil de 0,98).
 
 **Des rangs sont sortis de l'arbre depuis.** Mesure du 2026-11-27 (``git ls-tree -r`` de la
 baseline contre l'arbre du head) : 56 des 679 chemins ``<deck>/images/img_NNN.*`` de la baseline
-ne sont plus a leur place -- 42 ont le meme blob sous un autre chemin (40 du deck 01 sous
-``public/images/``, 2 du deck 07 renommes) et 14 sont retires sans descendant (02 : 1, 08 : 3,
-S3 : 10). C'est pourquoi plusieurs decks sont ``partiels`` et non ``certifies`` : ``rang_manquant``
-mesure un retrait dans l'arbre, pas un defaut de cumul de l'organe. La page ne peut pas
-recalculer ce compte (elle se regenere sans lire l'historique git) : elle porte les rangs
-manquants deck par deck, cette docstring porte la mesure datee.
+n'y sont plus -- 38 deplaces vers ``public/images/`` a nom et contenu identiques (deck 01),
+2 doublons retires dont le contenu reste sous un autre nom (deck 01 : ``img_025`` etait une copie
+de ``img_022``, ``img_026`` de ``img_023``), 2 renommes ``slide_20_img_*`` (deck 07) et 14
+retires sans descendant (02 : 1, 08 : 3, S3 : 10). C'est pourquoi plusieurs decks sont
+``partiels`` et non ``certifies`` : ``rang_manquant`` mesure un retrait dans l'arbre, pas un
+defaut de cumul de l'organe. La page ne peut pas recalculer ce compte (elle se regenere sans
+lire l'historique git) : elle porte les rangs manquants deck par deck, cette docstring porte la
+mesure datee.
 
 **La diapositive PPTX d'origine se reconstitue par cumul.** ``extracted/inventory.json``
 compte les images de chaque diapositive du PPTX ; le rang d'un ``img_NNN`` tombe dans une
@@ -101,8 +103,9 @@ IMG_EXT = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp"}
 # Mesure datee, faite une fois hors de l'organe : elle lit l'historique git, la page ne le lit pas.
 MESURE_SORTIS = (
     "Mesure du 27 novembre 2026 (`git ls-tree -r` de la baseline contre l'arbre) : 56 des 679 "
-    "chemins ont quitté `images/`, 42 vers un autre nom à blob identique (40 du deck 01 sous "
-    "`public/images/`, 2 du deck 07 renommés), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10)."
+    "chemins ont quitté `images/` — 38 déplacés vers `public/images/` à nom et contenu identiques "
+    "(deck 01), 2 doublons retirés dont le contenu reste sous un autre nom (deck 01), 2 renommés "
+    "`slide_20_img_*` (deck 07), 14 retirés sans descendant (02 : 1, 08 : 3, S3 : 10)."
 )
 
 PORTEUR_MEDIA = "PPTX-media"
