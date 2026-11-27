@@ -162,7 +162,7 @@ def draw_csp_graph(variables: list, domains: dict, constraints: list,
         pos: dictionnaire optionnel {variable: (x, y)} de positions fixes.
              Si None (defaut), utilise nx.spring_layout (force-directed, non
              geographique). Passer un dict explicite pour une carte geographique
-             (cf. CSP-1-Fundamentals Australie : positions AIMA-compatible
+             (cf. CSP-01-Fundamentals-Python Australie : positions AIMA-compatible
              pour que NT/WA/SA/Q/NSW/V/T apparaissent a l'endroit).
 
     Raises:

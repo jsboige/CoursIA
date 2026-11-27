@@ -33,7 +33,7 @@ Note registre : `03b`/`03c`/`03d` sont enregistrées sous les numéros historiqu
 
 ### Search/Part2-CSP — 9 paires, toutes alignées, toutes enregistrées
 
-`CSP-1-Fundamentals` à `CSP-9-Distributed`, chaque `CSP-N` ↔ `CSP-N-CSharp`.
+`CSP-01-Fundamentals-Python` à `CSP-09-Distributed-Python`, chaque `CSP-N` ↔ `CSP-N-CSharp`.
 
 ### Search/Part3-Cas-pratiques — 21 paires, 19 alignées, 2 décalées, toutes enregistrées
 
@@ -113,7 +113,7 @@ Convention locale : suffixe kernel en **position finale** pour les fondations (`
 
 - **Convention suffixe-terminal** : même numéro, même titre, suffixe kernel en fin (`Search-01` ↔ `Search-01-CSharp`). Appliquée intégralement par Sudoku, GameTheory racine, SocialChoice, Planners, Search Part1/Part2, SW-8..13, et par 5 carnets de Part3.
 - **Convention compagnon `b`** : le jumeau porte un `b`/`c` d'accrétion que la base n'a pas (`App-N` ↔ `App-Nb-CSharp`, `SW-N` ↔ `SW-Nb-Python`). Documentée **légitime** par `_schema.yaml` (`numbering_exception`) pour Part3 et SW-2..7, donc **attendue** — mais c'est une divergence au sens strict de la doctrine #12933 (« même préfixe, numéro, accrétion et titre ; seul le suffixe varie »), et elle n'est pas interne-cohérente : SW met le `b` côté **Python**, Part3 côté **CSharp**. **Etat au 2026-11-08** : Part3 est **éliminée** (13 paires renommées #25341, b retiré côté CSharp — trios/quatuor : des deux membres) ; SW-2..7 renommées de même (#25325, PR en cours de merge). La convention ne subsiste plus qu'à l'état de trace historique dans le ledger.
-- **Graphies de suffixe** : `-CSharp` (canonique ; Planners aligné le 2026-11-17, #12933), `-Csharp` (SocialChoice à renommer ; découvert 2026-11-17 : SymbolicLearning/SL-1..6 la portent aussi, hors périmètre P2), et la position médiane SW. Relevé, non jugé ici.
+- **Trois graphies de suffixe** coexistent : `-CSharp` (canonique ; Planners aligné le 2026-11-17, #12933 ; SymbolicLearning SL-01..SL-10 jumeaux C# alignés le 2026-11-18, #12933), `-Csharp` (SocialChoice à renommer), et la position médiane SW. Relevé, non jugé ici.
 
 ## 3. Trous du registre — paires réelles sans entrée `twin_pairs.d` (grep NONE re-vérifié par la lane)
 

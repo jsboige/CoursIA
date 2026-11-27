@@ -28,7 +28,7 @@ un « continuous analogue of NAND gates ». La conjecture était qu'un substrat 
 |-------------|--------------------------------------|
 | **Verdict empirique Note-1** (MSE 0.010, exactitude 0.250, θ* retenu) | Cellules code de `EML-NAND-Explore.ipynb` (champs `outputs`) — préservées telles quelles |
 | **Verdict empirique Note-2** (architecture A témoin, B et C à 10 essais, table de mixité) | Cellules code de `EML-NAND-Compose.ipynb` (champs `outputs`) — préservées telles quelles |
-| **Raison du pivot vers difflogic** | [SL-12-DifferentiableLogicGateNetworks.ipynb](../../SL-12-DifferentiableLogicGateNetworks.ipynb) **cell[1]** (markdown, section « Motivation et contexte historique ») et **cell[19]** (markdown, « Note historique : EML/NAND --> difflogic », id `cell-17`) — cite explicitement la préquelle archivée et la remplace. Les `cell[N]` sont des indices 0-based de `cells` |
+| **Raison du pivot vers difflogic** | [SL-12-DifferentiableLogicGateNetworks-Python.ipynb](../../SL-12-DifferentiableLogicGateNetworks-Python.ipynb) **cell[1]** (markdown, section « Motivation et contexte historique ») et **cell[19]** (markdown, « Note historique : EML/NAND --> difflogic », id `cell-17`) — cite explicitement la préquelle archivée et la remplace. Les `cell[N]` sont des indices 0-based de `cells` |
 | **Référence arXiv** | `EML-NAND-Explore.ipynb` cell[0] — lien `arXiv 2606.23179` préservé |
 | **Issue de suivi** | #4653, fermée le 2026-07-02 (`completed`), avant cet archivage |
 

@@ -64,11 +64,11 @@ restrictions de F et G à Over X. Ses sections globales sont exactement les
 morphismes F ⟶ G.
 -/
 
--- The presheaf internal hom: sections over X are morphisms between
--- restrictions of F and G to the slice category Over X.
+-- L'hom interne de préfaisceaux : les sections sur X sont les morphismes entre
+-- les restrictions de F et G à la catégorie tranche Over X.
 #check @presheafHom
 
--- The sections of the presheaf internal hom identify to morphisms F ⟶ G.
+-- Les sections de l'hom interne de préfaisceaux s'identifient aux morphismes F ⟶ G.
 -- (presheafHom F G).sections ≃ (F ⟶ G)
 #check @presheafHomSectionsEquiv
 
@@ -79,7 +79,7 @@ Quand G est un faisceau, le préfaisceau hom interne `presheafHom F G` est lui-m
 un faisceau. C'est le fait technique clé qui permet le hom interne au niveau faisceau.
 -/
 
--- When G is a sheaf, the presheaf internal hom presheafHom F G is a sheaf.
+-- Quand G est un faisceau, l'hom interne de préfaisceaux presheafHom F G est un faisceau.
 #check @Presheaf.IsSheaf.hom
 
 /-- Théorème pont : quand G est un faisceau, presheafHom F G satisfait la
@@ -98,17 +98,17 @@ vivant dans Sheaf J (Type _). Ses sections s'identifient aux morphismes de faisc
 F ⟶ G.
 -/
 
--- The sheaf internal hom: sheafHom F G sends X to the morphisms between
--- restrictions of F and G to Over X, as a Sheaf J (Type _).
+-- L'hom interne de faisceaux : sheafHom F G envoie X sur les morphismes entre
+-- les restrictions de F et G à Over X, comme un Sheaf J (Type _).
 #check @sheafHom
 
--- The sections of the sheaf internal hom identify to sheaf morphisms F ⟶ G.
+-- Les sections de l'hom interne de faisceaux s'identifient aux morphismes de faisceaux F ⟶ G.
 #check @sheafHomSectionsEquiv
 
--- The underlying presheaf of the sheaf internal hom.
+-- Le préfaisceau sous-jacent de l'hom interne de faisceaux.
 #check @sheafHom'
 
--- The canonical isomorphism between sheafHom' and presheafHom.
+-- L'isomorphisme canonique entre sheafHom' et presheafHom.
 #check @sheafHom'Iso
 
 /-!
