@@ -288,7 +288,7 @@ FP_CASES = [
     ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb", 18, 5, "stderr SW-9 cell18"),
     ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb", 25, 1, "stderr SW-9 cell25"),
     ("MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb", 20, 9, "stderr Z3-Linq2Z3 meal planner"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb", 3, 10, "stderr SL-4"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-CSharp.ipynb", 3, 10, "stderr SL-4"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb", 27, 3, "stderr Tweety-7a Dung via lib"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb", 30, 3, "stderr Tweety-7a Weighted via lib"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-CSharp.ipynb", 33, 6, "stderr Tweety-7a Social via lib"),

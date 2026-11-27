@@ -382,9 +382,13 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
         file.append(e)
         pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
-    # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
-    # demande une lecture et un --paths, il ne passe jamais devant un grain.
-    return sorted(file[:max(grains, 0)], key=lambda e: (not e.mon_claim, e.conteneur))
+    # Vos claims, puis les issues JAMAIS VISITEES, puis les grains, puis les
+    # conteneurs (#26926) : un conteneur demande une lecture et un --paths, il
+    # ne passe jamais devant un grain. Mais un conteneur jamais visite passe
+    # devant un grain deja visite : l'invariant de couverture (#27590) prime
+    # sur l'ordre de service (mesure du 25/11 : six issues en violation).
+    return sorted(file[:max(grains, 0)],
+                  key=lambda e: (not e.mon_claim, e.numero not in jamais, e.conteneur))
 
 
 def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane: str,

@@ -50,11 +50,12 @@ def test_validate_all_names_the_failing_file(tmp_path):
 
 def test_compression_slice_cites_real_cells_and_covers_every_root_notebook():
     data = load_taxonomy()
-    assert len(data["notebooks"]) == 7
+    # Plancher de la tranche T1 : les tranches suivantes ne font que l'ajouter.
+    assert len(data["notebooks"]) >= 7
     assert len(data["concepts"]) >= 15
     assert data["hierarchy"] == ["series", "subseries", "notebook", "example", "exercise"]
     assert [node["level"] for node in data["notebook_tree"]].count("series") == 1
-    assert [node["level"] for node in data["notebook_tree"]].count("notebook") == 7
+    assert [node["level"] for node in data["notebook_tree"]].count("notebook") == len(data["notebooks"])
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])
 
@@ -66,7 +67,7 @@ def test_graph_exports_bilingual_skos_concepts_prerequisites_and_live_notebook_l
     concepts = set(graph.subjects(RDF.type, SKOS.Concept))
     assert len(concepts) == len(data["concepts"])
     notebooks = set(graph.subjects(RDF.type, VOCAB.Notebook))
-    assert len(notebooks) == 7
+    assert len(notebooks) == len(data["notebooks"])
     assert all((notebook, VOCAB.inSeries, None) in graph for notebook in notebooks)
     assert any(graph.objects(concept, SKOS.prefLabel) for concept in concepts)
     assert any(graph.objects(concept, VOCAB.requiresConcept) for concept in concepts)
