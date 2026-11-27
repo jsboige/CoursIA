@@ -53,19 +53,35 @@ namespace Grothendieck
 variable {X : TopCat.{u}} (F : X.Presheaf AddCommGrpCat.{u})
 
 /-- Une section de Godement sur `U` : un germe en chaque point de `U`.
-Le `AddCommGroup` est ponctuel (produit de groupes). -/
+Le `AddCommGroup` est ponctuel (produit de groupes).
+Correspondance Stacks — **PARTIEL** : Stacks ne formalise pas le préfaisceau
+« produit des tiges » sur un espace topologique ; son terme de degré 0 est
+`f_* f^*` sur les modules d'un espace annelé
+(`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:416`,
+`godementComonad`, tag 0FKS). L'écart de cadre est explicite ; l'inégalité ne
+l'est pas.
+-/
 noncomputable def godementSection (U : Opens X) : Type u :=
   ∀ x : U, ↥(F.stalk (x : X))
 
 noncomputable instance (U : Opens X) : AddCommGroup (godementSection F U) :=
   Pi.addCommGroup
 
-/-- Le faisceau de Godement, objet par objet : `AddCommGrp.of` du produit. -/
+/-- Le faisceau de Godement, objet par objet : `AddCommGrp.of` du produit.
+Correspondance Stacks — **PARTIEL** : l'objet de catégorie est, chez Stacks, celui
+de `f_* f^*` sur `Mod(𝒪_X)` (`Basic.lean:416`) ; le nôtre est un
+`AddCommGrpCat.of` du produit des tiges. Même écart de cadre : groupes abéliens
+sur espace topologique d'un côté, modules sur espace annelé de l'autre.
+-/
 noncomputable def godementObj (U : Opens X) : AddCommGrpCat.{u} :=
   AddCommGrpCat.of (godementSection F U)
 
 /-- Restriction d'une section de Godement le long de `i : V ⟶ U` :
-précomposition — la fonction se restreint. -/
+précomposition — la fonction se restreint.
+Correspondance Stacks — **PARTIEL** : la restriction chez Stacks est celle de
+`f_*` (`Basic.lean:416`) ; la nôtre est la précomposition sur les germes. Aucun
+énoncé nommé de Stacks ne décrit ce transport point par point.
+-/
 noncomputable def godementMap {V U : Opens X} (i : V ⟶ U) :
     godementObj F U ⟶ godementObj F V :=
   AddCommGrpCat.ofHom
@@ -73,7 +89,14 @@ noncomputable def godementMap {V U : Opens X} (i : V ⟶ U) :
       map_zero' := rfl
       map_add' := fun _ _ => rfl }
 
-/-- Le préfaisceau de Godement `C⁰F : U ↦ ∏_{x ∈ U} Fₓ`. -/
+/-- Le préfaisceau de Godement `C⁰F : U ↦ ∏_{x ∈ U} Fₓ`.
+Correspondance Stacks — **PARTIEL** : le terme de degré 0 du complexe de Godement
+de Stacks est l'itérée `(f_* f^*)^{n+1}` (`Basic.lean:466` `godementComplex`,
+`Basic.lean:482` `godementComplexEvalIso`) ; l'égalité entre `f_* f^*` et le
+produit des tiges n'est pas établie côté Stacks. Ce que notre version ajoute :
+la construction du produit des tiges comme **préfaisceau** (Stacks construit un
+faisceau de modules).
+-/
 noncomputable def godementPresheaf : X.Presheaf AddCommGrpCat where
   obj U := godementObj F U.unop
   map f := godementMap F f.unop
@@ -88,7 +111,12 @@ noncomputable def godementPresheaf : X.Presheaf AddCommGrpCat where
 
 /-- La restriction d'une section de Godement est l'évaluation sur le point
 transporté : compte tenu de la définition de `godementMap`, c'est une
-réduction définitionnelle. C'est la clé de calcul de tout le module. -/
+réduction définitionnelle. C'est la clé de calcul de tout le module.
+Correspondance Stacks — **ABSENT** : aucun énoncé nommé dans les fichiers Stacks
+relus (`Basic.lean`, `Stalk.lean`, `StalkHomotopy.lean`, `Sheaf/Abelian.lean`) ne
+décrit ce transport ; c'est une lemma de réduction définitionnelle propre à notre
+définition de `godementMap`.
+-/
 theorem godementPresheaf_map_apply {V U : Opens X} (i : V ⟶ U)
     (s : godementSection F U) (x : V) :
     (godementPresheaf F).map i.op s x = s ⟨(x : X), leOfHom i x.2⟩ :=
@@ -97,7 +125,13 @@ theorem godementPresheaf_map_apply {V U : Opens X} (i : V ⟶ U)
 open scoped Classical in
 /-- Extension par zéro : une section de Godement sur `U` se prolonge à
 tout `V ⊇ U` en choisissant le germe nul hors de `U`. C'est l'ingrédient
-de flasquité — le zéro des tiges rend le prolongement toujours possible. -/
+de flasquité — le zéro des tiges rend le prolongement toujours possible.
+Correspondance Stacks — **PARTIEL** : Stacks établit la flasquité de chaque terme du
+complexe (`Basic.lean:499` `isFlasque_godementComplex`, tag 0FKS ;
+`Basic.lean:276` `isFlasque_iterate_modulePullbackPushforward`) mais ne nomme pas
+l'extension par zéro ; ce que notre version ajoute est de l'écrire, et c'est ce qui
+rend lisible le cas « sans hypothèse sur `F` ».
+-/
 noncomputable def godementExtend {U V : Opens X}
     (s : godementSection F U) : godementSection F V :=
   fun x => if h : (x : X) ∈ U then s ⟨x, h⟩ else 0
@@ -106,7 +140,16 @@ noncomputable def godementExtend {U V : Opens X}
 prolonge à tout `V ⊇ U` (par zéro hors de `U`) — la restriction est
 surjective, donc épimorphe. Aucune hypothèse sur `F` : la flasquité de
 `C⁰F` est gratuite, c'est tout l'intérêt de la construction.
-[God58] Chap. II §4.1. -/
+[God58] Chap. II §4.1.
+Correspondance Stacks — **COUVERT** :
+`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:499`
+(`isFlasque_godementComplex`, tag 0FKS) et `Basic.lean:276`
+(`isFlasque_iterate_modulePullbackPushforward`) établissent la flasquité des termes
+du complexe de Godement. Écart de cadre : Stacks travaille sur des faisceaux de
+modules d'un espace annelé, nous sur le **préfaisceau** `C⁰F` d'un préfaisceau de
+groupes abéliens, sans hypothèse de faisceau. Ce que notre version ajoute :
+l'extension par zéro comme construction.
+-/
 theorem isFlasque_godementPresheaf : godementPresheaf F |>.IsFlasque where
   epi i := by
     refine (AddCommGrpCat.epi_iff_surjective _).mpr fun s => ⟨?_, ?_⟩
@@ -116,7 +159,13 @@ theorem isFlasque_godementPresheaf : godementPresheaf F |>.IsFlasque where
 
 /-- L'unité de Godement : une section devient la famille de ses germes.
 Naturelle par `Presheaf.germ_res` — prendre le germe commute aux
-restrictions. -/
+restrictions.
+Correspondance Stacks — **PARTIEL** : Stacks a deux unités distinctes — l'unité de
+l'adjunction au degré 0 (`Basic.lean:475` `godementAugmentation`) et le « Godement
+sur les ouverts » (`Cohomology/CechDerivedEffaceability/GodementResolution.lean:181`
+`godUnit`, dont les sections `GodSections` l.99 sont des familles de sections, non
+des germes). La nôtre — le germe en chaque point — n'a pas d'énoncé nommé.
+-/
 noncomputable def toGodement : F ⟶ godementPresheaf F where
   app U :=
     AddCommGrpCat.ofHom
@@ -137,7 +186,12 @@ choix de l'indice n'affecte pas la valeur en `z`. L'unicité est de même
 entièrement ponctuelle : deux recollements coïncident sur chaque `U i`,
 donc en chaque point de la réunion. La preuve passe par la caractérisation
 `isSheaf_iff_isSheafUniqueGluing` de la condition de faisceau, disponible
-pour `AddCommGrpCat` (catégorie concrète complète). -/
+pour `AddCommGrpCat` (catégorie concrète complète).
+Correspondance Stacks — **PARTIEL** : chez Stacks, la propriété de faisceau du terme
+de degré 0 vient de `f_*` (image directe d'un faisceau) ; aucun énoncé nommé ne
+dit que le produit des tiges d'un faisceau de groupes abéliens est un faisceau —
+c'est le théorème de Godement que notre énoncé prouve.
+-/
 theorem isSheaf_godementPresheaf : TopCat.Presheaf.IsSheaf (godementPresheaf F) := by
   rw [TopCat.Presheaf.isSheaf_iff_isSheafUniqueGluing]
   intro ι U sf hcomp
@@ -164,7 +218,13 @@ même famille — l'unicité du recollement (`isSheaf_iff_isSheafUniqueGluing`)
 les identifie. Toutes les égalités de morphismes d'ouverts passent par
 `Subsingleton` : deux inclusions `V ⟶ U` sont égales.
 C'est la réciproque attendue : le faisceau de Godement contient `F`
-entièrement dès que `F` est un faisceau. [God58] Chap. II §4.1. -/
+entièrement dès que `F` est un faisceau. [God58] Chap. II §4.1.
+Correspondance Stacks — **COUVERT** : `Topology/Sheaves/Sheaf/Abelian.lean:149`
+(`restrict_eq_zero_of_germ_eq_zero`) énonce qu'une section d'un faisceau de groupes
+abéliens dont les germes sont nuls est nulle — la contrapositive est exactement
+notre réciproque de l'unité. Ce que notre version ajoute : la formulation « deux
+sections de mêmes germes sont égales » et le passage par le recollement unique.
+-/
 theorem injective_toGodement_of_isSheaf (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens X) : Function.Injective ((toGodement F).app (op U)) := by
   intro s t hst

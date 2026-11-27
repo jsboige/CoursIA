@@ -81,7 +81,30 @@ quand il reconstruit un code depuis une table de longueurs :
    `(1, 2, 3, 3)` redonne `a=0, b=10, c=110, d=111` (Kraft saturé), le code
    fixe 2 bits remplit tout l'espace.
 
-## Carnet compagnon
+## Module `Kolmogorov` (pli 10)
+
+Le **cœur combinatoire** de la complexité de Kolmogorov et du principe MDL,
+tel que le carnet Python `Compression-06-MDL-Kolmogorov` le présente — **sans**
+la couche de calculabilité (pas de machine de Turing, pas de décidabilité). On
+modélise la « machine de nommage » par un **code préfixe** (réutilisant
+`PrefixCodes`), et l'on montre que l'inégalité de Kraft force une borne de
+comptage, qui à son tour force l'incompressibilité :
+
+1. **`kraft_short_count`** — dans un code préfixe, au plus `2 ^ k` mots de
+   longueur ≤ `k` : chaque mot court consomme `2 ^ (- |w|) ≥ 2 ^ (- k)` du
+   budget unitaire de Kraft. **Importe** `PrefixCodes.kraft_le_one` (maison
+   canonique, doctrine des lakes R4) au lieu de la redéfinir.
+2. **`atMostK`** — au plus `2 ^ k` **données** nommables en ≤ `k` bits.
+3. **`incompressible`** — sur `2 ^ n` données, au moins `2 ^ (n - 1)` exigent
+   ≥ `n` bits : on ne peut pas tout compresser.
+4. **`mdlModelShareTendsToZero`** — la facture MDL (modèle + données) : à
+   modèle fixé, quand les données grossissent, la part du modèle tend vers `0`.
+
+Zéro `sorry`, aucun axiome ad hoc — seule la fondation classique standard de
+Mathlib (cf. l'annexe du carnet compagnon). Énoncés et tactiques en anglais
+(compat Mathlib), docstrings en français (convention i18n #4980).
+
+## Carnets compagnons
 
 `Compression-01b-Kraft-McMillan-Lean.ipynb` (kernel `lean4-wsl`) importe les
 modules **réels** du lake et les fait travailler : ancres `#eval` de Kraft
@@ -94,8 +117,17 @@ en annexe l'arc Huffman complet : la construction et son coût (`huffman`,
 mouvements locaux (`sisterPath`, `exchange_le`, `both_mins_to_bottom`), la
 passerelle symboles (`SymbolCodec`) et le verdict `huffman_optimal` avec ses
 axiomes — aucun `sorryAx`, aucun `native_decide`.
-Placé dans `Compression_lean/` car le kernel détecte le `lakefile.lean`
-ancêtre : son répertoire est son environnement. Exécution depuis la racine
+
+`Compression-06b-MDLKolmogorov-Lean.ipynb` (même kernel `lean4-wsl`) exécute
+le module `Kolmogorov` : ancres `#eval` de la borne de comptage de Kraft
+(`kraft_short_count`), du compte de données nommables (`atMostK`), de
+l'incompressibilité (`incompressible`) et de la facture MDL
+(`mdlModelShareTendsToZero`), avec en annexe le `#print axioms` du module
+(0 `sorry`, aucun axiome ad hoc — la seule fondation classique standard de
+Mathlib).
+
+Placés dans `Compression_lean/` car le kernel détecte le `lakefile.lean`
+ancêtre : leur répertoire est leur environnement. Exécution depuis la racine
 du lake (`papermill -k lean4-wsl`).
 
 ## Build
