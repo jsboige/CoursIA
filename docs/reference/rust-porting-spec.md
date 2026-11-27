@@ -144,7 +144,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 
 Les carnets Rust affichent leurs résultats comme le ferait Python (`True`/`False`, `[1, 2, 3]`, `['a', 'b']`, `(1, 2)`) et mesurent leurs durées. Ces deux gestes étaient recopiés dans chaque carnet, et les copies ont dérivé : la même fonction d'affichage de booléen s'écrit avec deux types de retour différents selon le carnet, ce qui fait diverger la sortie visible d'un carnet à l'autre.
 
-La crate [`MyIA.AI.Notebooks/RustSupport/myia_nb/`](../../MyIA.AI.Notebooks/RustSupport/myia_nb/README.md) porte cette aide une seule fois, versionnée et testée. Elle n'a aucune dépendance : elle se construit avec la toolchain épinglée du pli 0, sans réseau.
+La crate [`scripts/notebook_tools/myia_nb/`](../../scripts/notebook_tools/myia_nb/README.md) porte cette aide une seule fois, versionnée et testée. Elle vit à côté de l'organe qui la câble (`wire_myia_nb.py`) et des registres des jumeaux Rust, et non sous `MyIA.AI.Notebooks/` : le premier niveau de l'arbre des carnets ne reçoit aucune série nouvelle sans GO écrit (#27092), et le socle transverse n'y habite pas — le socle C# partagé vit de même dans `dotnet/`. Elle n'a aucune dépendance : elle se construit avec la toolchain épinglée du pli 0, sans réseau.
 
 | Fonction | Sortie |
 |---|---|
@@ -162,10 +162,10 @@ La crate [`MyIA.AI.Notebooks/RustSupport/myia_nb/`](../../MyIA.AI.Notebooks/Rust
 ### Le `:dep`, et la profondeur du chemin
 
 ```rust
-:dep myia_nb = { path = "../RustSupport/myia_nb" }
+:dep myia_nb = { path = "../../scripts/notebook_tools/myia_nb" }
 ```
 
-**Le chemin est relatif au dossier du carnet**, pas à la racine du dépôt : le noyau résout un `path` de dépendance contre son répertoire de travail, qui est celui du carnet. Un carnet deux niveaux sous `MyIA.AI.Notebooks/` porte donc `../../RustSupport/myia_nb`, trois niveaux `../../../…`. Le chemin ne se recopie pas d'un carnet à l'autre : `scripts/notebook_tools/wire_myia_nb.py` le calcule depuis la position du carnet.
+**Le chemin est relatif au dossier du carnet**, pas à la racine du dépôt : le noyau résout un `path` de dépendance contre son répertoire de travail, qui est celui du carnet. Un carnet deux niveaux sous `MyIA.AI.Notebooks/` porte donc `../../scripts/notebook_tools/myia_nb`, trois niveaux `../../../…`. Le chemin ne se recopie pas d'un carnet à l'autre : `scripts/notebook_tools/wire_myia_nb.py` le calcule depuis la position du carnet.
 
 La ligne se pose **en tête du premier bloc de code**, une seule fois — un `:dep` tardif recompile la session et efface les variables typées (§ Interdits, et le validateur `check_rust_notebook_contract.py`).
 
@@ -210,7 +210,7 @@ Elle achète **une seule version** de chaque aide, testée, et des sorties qui r
 ## Voir aussi
 
 - [rust-ecosystem-map.md](rust-ecosystem-map.md) — correspondance bibliothèques → crates (pli 1)
-- [RustSupport/myia_nb](../../MyIA.AI.Notebooks/RustSupport/myia_nb/README.md) — la crate d'aide partagée : API, `:dep`, migration (§ 3 bis)
+- [scripts/notebook_tools/myia_nb](../../scripts/notebook_tools/myia_nb/README.md) — la crate d'aide partagée : API, `:dep`, migration (§ 3 bis)
 - [kernels-runtime.md § Rust](kernels-runtime.md#rust-notebooks-rust-via-evcxr) — toolchain, exécution, papermill, CI, suffixe et kernelspec (pli 0)
 - [scripts-reference.md](scripts-reference.md) — les organes de conformité différentielle et de parité
 - Epic [Parité Rust #26510](https://github.com/jsboige/CoursIA/issues/26510) · Pli 3 [#27098](https://github.com/jsboige/CoursIA/issues/27098)

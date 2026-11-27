@@ -2,7 +2,10 @@
 
 Deux gestes, sur une seule classe de correction :
 
-1. la ligne `:dep` de la crate, en tete du premier bloc de code du carnet ;
+1. la ligne `:dep` de la crate, en tete du premier bloc de code du carnet —
+   posee si elle manque, **reecrite si son chemin ne resout plus** (crate
+   deplacee : sans cette lecture, le carnet garde un chemin mort et l'organe
+   le declare « deja cable ») ;
 2. le remplacement de la definition locale de `py_bool` par un `use` de la
    crate, quand cette definition est **semantiquement identique** a la
    version partagee.
@@ -33,7 +36,12 @@ import re
 import sys
 from pathlib import Path
 
-CRATE_REL = "RustSupport/myia_nb"
+# Chemin de la crate depuis la racine du depot. Elle vit a cote de l'organe
+# qui la cable (et de `check_rust_conformance.py`, `twin_pairs.d/`), et non
+# sous `MyIA.AI.Notebooks/` : le premier niveau de l'arbre des carnets ne
+# recoit aucune serie nouvelle sans GO ecrit (#27092), et le socle transverse
+# n'y habite pas -- le socle C# partage vit de meme dans `dotnet/`.
+CRATE_REL = "scripts/notebook_tools/myia_nb"
 NOTEBOOKS_ROOT = "MyIA.AI.Notebooks"
 
 # Un corps de py_bool acceptable, une fois l'espace normalise. Le nom de
@@ -48,6 +56,10 @@ SIGNATURE_PATTERN = re.compile(
     r"\s*->\s*(?P<ret>&\s*'\s*static\s+str|String)\s*\{"
 )
 ANY_PY_DEF = re.compile(r"^fn\s+(py_[A-Za-z0-9_]+)\s*\(", re.M)
+# La ligne `:dep` deja posee, chemin capture : un chemin perime (crate deplacee)
+# se **reecrit**, il ne se declare pas « deja cable ». Sans cette lecture, le
+# carnet garde un chemin mort et echoue a l'execution alors que l'organe dit 0.
+DEP_LINE = re.compile(r'^:dep myia_nb = \{ path = "(?P<path>[^"]*)" \}[ \t]*$', re.M)
 
 
 def _brace_block(source: str, open_index: int) -> int:
@@ -70,7 +82,7 @@ def _dep_line(nb_path: Path, repo_root: Path) -> str:
     travail, qui est celui du carnet : le chemin relatif se calcule donc
     depuis le dossier du carnet (mesure sur le noyau Rust, #27098).
     """
-    target = (repo_root / NOTEBOOKS_ROOT / CRATE_REL).resolve()
+    target = (repo_root / CRATE_REL).resolve()
     rel = os.path.relpath(target, nb_path.parent.resolve())
     return ':dep myia_nb = { path = "%s" }' % _posix(Path(rel))
 
@@ -83,18 +95,23 @@ def analyse(nb: dict, dep: str) -> dict:
     """Rend le plan de correction d'un carnet, sans rien ecrire."""
     plan = {
         "dep_present": False,
+        "dep_stale": None,  # (cell_index, start, end) d'un chemin perime
         "replacements": [],  # (cell_index, start, end, new_text, kind)
         "unhandled": [],
         "first_code_cell": None,
     }
+    expected_path = DEP_LINE.match(dep)
+    expected_path = expected_path.group("path") if expected_path else None
     for i, cell in enumerate(nb.get("cells", [])):
         if cell.get("cell_type") != "code":
             continue
         if plan["first_code_cell"] is None:
             plan["first_code_cell"] = i
         source = "".join(cell.get("source", []))
-        if ":dep myia_nb" in source:
+        for dm in DEP_LINE.finditer(source):
             plan["dep_present"] = True
+            if expected_path is not None and dm.group("path") != expected_path:
+                plan["dep_stale"] = (i, dm.start(), dm.end())
         seen = set()
         for m in SIGNATURE_PATTERN.finditer(source):
             arg = m.group("arg")
@@ -125,7 +142,7 @@ def analyse(nb: dict, dep: str) -> dict:
 
 def apply_plan(nb: dict, plan: dict) -> dict:
     """Applique le plan au carnet en memoire ; rend des statistiques."""
-    stats = {"py_bool_removed": 0, "dep_added": False}
+    stats = {"py_bool_removed": 0, "dep_added": False, "dep_path_updated": False}
     # Remplacements de la fin vers le debut, par cellule, pour garder les
     # index valides.
     per_cell: dict[int, list] = {}
@@ -150,6 +167,13 @@ def apply_plan(nb: dict, plan: dict) -> dict:
         source = plan["dep"] + "\n" + source
         cell["source"] = _split_lines(source)
         stats["dep_added"] = True
+    elif plan["dep_stale"] is not None:
+        # Crate deplacee : la ligne existe mais son chemin ne resout plus.
+        cell_index, start, end = plan["dep_stale"]
+        cell = nb["cells"][cell_index]
+        source = "".join(cell.get("source", []))
+        cell["source"] = _split_lines(source[:start] + plan["dep"] + source[end:])
+        stats["dep_path_updated"] = True
     return stats
 
 
@@ -224,18 +248,24 @@ def main(argv: list[str] | None = None) -> int:
             "path": _posix(path.relative_to(repo_root)) if path.is_relative_to(repo_root) else str(path),
             "py_bool_found": len(plan["replacements"]),
             "dep_present": plan["dep_present"],
+            "dep_stale": plan["dep_stale"] is not None,
             "unhandled": plan["unhandled"],
             "changed": False,
         }
+        needs_work = (
+            bool(plan["replacements"])
+            or not plan["dep_present"]
+            or plan["dep_stale"] is not None
+        )
         if args.apply:
-            if plan["replacements"] or not plan["dep_present"]:
+            if needs_work:
                 stats = apply_plan(nb, plan)
                 _write(path, nb, newline)
                 entry.update(stats)
                 entry["changed"] = True
             report["notebooks"].append(entry)
         else:
-            if plan["replacements"] or not plan["dep_present"]:
+            if needs_work:
                 entry["wired"] = False
                 failed = True
             else:
@@ -251,14 +281,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"ERREUR {entry['path']}: {entry['error']}")
                 continue
             if args.apply and entry["changed"]:
+                dep_state = (
+                    "perime -> reecrit"
+                    if entry.get("dep_path_updated")
+                    else ("+" if entry["dep_present"] is False else "deja la")
+                )
                 print(
                     "cable   %s : %d py_bool, dep %s"
-                    % (entry["path"], entry["py_bool_found"], "+" if entry["dep_present"] is False else "deja la")
+                    % (entry["path"], entry["py_bool_found"], dep_state)
                 )
             elif not args.apply and not entry.get("wired", True):
+                dep_state = "perime" if entry["dep_stale"] else ("present" if entry["dep_present"] else "absent")
                 print(
                     "%s %s : %d py_bool, dep %s"
-                    % (verb, entry["path"], entry["py_bool_found"], "present" if entry["dep_present"] else "absent")
+                    % (verb, entry["path"], entry["py_bool_found"], dep_state)
                 )
             for item in entry["unhandled"]:
                 print("  non migre (a voir a la main) : %s (cellule %d)" % (item["name"], item["cell"]))
