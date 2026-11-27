@@ -1,0 +1,414 @@
+# Conformité différentielle de App-14-ConnectFour-Adversarial (portage Rust evcxr).
+#
+# Écrite à la livraison par la lane myia-po-2026:CoursIA-2 à partir des
+# sorties COMMITÉES des deux carnets : le portage Rust garde la structure de
+# cellules du jumeau Python (49 cellules, mêmes index), donc les mesures
+# désignent le même index des deux côtés. Les lignes de durée murale sont des
+# ancres en présence seule (elles diffèrent entre les deux carnets par
+# construction : le Rust est orders de grandeur plus rapide).
+#
+# Le portage reproduit le carnet Python cellule par cellule, y compris les
+# composantes stochastiques : MT19937 est réimplémenté avec le contrat
+# CPython (`init_by_array(&[42])`, `getrandbits(k) = next_u32() >> (32-k)`,
+# `_randbelow(n)` par rejet), de sorte que MCTS et l'agent aléatoire tirent la
+# même suite que `random.seed(42)` en Python.
+#
+# Le côté C# est comparé où sa cellule alignée imprime la même grandeur ;
+# ailleurs il est déclaré absent avec l'écart MESURÉ à la génération (le
+# carnet C# a 28 cellules, une structure et une implémentation différentes :
+# heuristique et ordre d'exploration distincts, profondeurs et nombre de
+# parties du tournoi distincts).
+- name: "App-14-ConnectFour-Adversarial"
+  family: "Search/Part3-Cas-pratiques"
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Rust.ipynb
+  measures:
+    - id: c3_entete
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 3 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_plateau_initial
+      description: "Sortie de la cellule 5 (plateau initial, joueur courant, coups valides), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 2 est sans sortie (elle prépare le plateau sans l'afficher) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c7_plateau_9_coups
+      description: "Sortie de la cellule 7 (plateau après 9 coups), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 4 imprime le meme plateau mais dans un tableau markdown (« | . . . . . . . | ») et un joueur courant différent (« Joueur courant : O (2) » contre « Joueur actuel: MAX (X) » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_scores_heuristique
+      description: "Sortie de la cellule 10 (scores de l'heuristique), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 7 évalue la même position mais avec une autre heuristique (« Evaluation pour X (joueur 1) sur position a 3 jetons centraux : 16 » et « -5 » contre « Score pour MAX: 9 » et « Score pour MIN: 3 » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_minimax_d4
+      description: "Sortie de la cellule 13 (minimax profondeur 4), texte identique au jumeau Python hors durée murale"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*Temps:[^\\n]*"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*Temps:[^\\n]*"
+          transform: text
+        csharp:
+          absent: "La cellule C# 10 imprime un texte différent (« Alpha-Beta depth 4 sur plateau vide : meilleur coup = colonne 3 (score 5) ») : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_alphabeta_d4
+      description: "Sortie de la cellule 16 (alpha-beta profondeur 4), texte identique au jumeau Python hors durée murale"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*Temps:[^\\n]*"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*Temps:[^\\n]*"
+          transform: text
+        csharp:
+          absent: "La cellule C# 16 implémente un élagage différent (2800 nœuds Minimax et 1403 nœuds Alpha-Beta en profondeur 4, ratio 0,501, contre 2,801 et 178 côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_reduction_noeuds
+      description: "Rapport de réduction du nombre de nœuds alpha-beta / minimax en profondeur 4 (invariant structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Reduction vs Minimax:\\s*([\\d.]+)x"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "Reduction vs Minimax:\\s*([\\d.]+)x"
+          transform: float
+        csharp:
+          absent: "Le carnet C# ne calcule pas ce ratio (sa cellule 16 imprime un tableau de nœuds et un ratio AB/MM de 0,501, de convention inverse) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c19_mcts_1000
+      description: "Sortie de la cellule 19 (MCTS 1000 itérations), texte identique au jumeau Python hors durée murale"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*Temps:[^\\n]*"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "\\A\\s*(.*?)\\s*Temps:[^\\n]*"
+          transform: text
+        csharp:
+          absent: "La cellule C# 13 affiche une conclusion différente (« MCTS (1000 iterations, seed 42) sur plateau vide : coup choisi = colonne 3 » contre « Meilleur coup: 5 » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c19_mcts_taux_victoire
+      description: "Taux de victoire estimé du MCTS (1000 itérations) — reproductible, MT19937 réimplémenté"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "Taux de victoire estime:\\s*([\\d.]+)"
+          transform: float
+        rust:
+          cell: 19
+          pattern: "Taux de victoire estime:\\s*([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "Le carnet C# n'affiche pas de taux de victoire (sa cellule 13 ne donne que le coup choisi) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c22_d1_minimax_noeuds
+      description: "Nombre de nœuds explorés par minimax en profondeur 1 (invariant structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "(?m)^0[ \\t]+1[ \\t]+(\\d+)[ \\t]"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "(?m)^d=1: Minimax (\\d+) noeuds"
+          transform: int
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 22 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c22_d6_minimax_noeuds
+      description: "Nombre de nœuds explorés par minimax en profondeur 6 (invariant structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "(?m)^5[ \\t]+6[ \\t]+(\\d+)[ \\t]"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "(?m)^d=6: Minimax (\\d+) noeuds"
+          transform: int
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 22 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c22_d6_alphabeta_noeuds
+      description: "Nombre de nœuds explorés par alpha-beta en profondeur 6 (invariant structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "(?m)^5[ \\t]+6[ \\t]+\\d+[ \\t]+[\\d.]+[ \\t]+(\\d+)[ \\t]"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "(?m)^d=6: .*Alpha-Beta (\\d+) noeuds"
+          transform: int
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 22 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c22_d6_speedup_noeuds
+      description: "Rapport des nœuds minimax / alpha-beta en profondeur 6 (invariant structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "(?m)^5[ \\t]+[\\d.]+[ \\t]+([\\d.]+)[ \\t]+[\\d.]+[ \\t]*$"
+          transform: float
+        rust:
+          cell: 22
+          pattern: "(?m)^d=6: .*speedup noeuds ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 22 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c25_mcts_100_coup
+      description: "Coup choisi par MCTS pour 100 itérations (tirage reproductible)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "(?m)^0[ \\t]+100[ \\t]+(\\d+)[ \\t]"
+          transform: int
+        rust:
+          cell: 25
+          pattern: "(?m)^100 iterations: coup (\\d+)"
+          transform: int
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 25 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c25_mcts_5000_taux
+      description: "Taux de victoire estimé du MCTS pour 5000 itérations (tirage reproductible)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "(?m)^4[ \\t]+5000[ \\t]+\\d+[ \\t]+([\\d.]+)[ \\t]"
+          transform: float
+        rust:
+          cell: 25
+          pattern: "(?m)^5000 iterations: coup \\d+, taux ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 25 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c25_mcts_5000_noeuds
+      description: "Nombre de nœuds explorés par MCTS pour 5000 itérations (invariant structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "(?m)^4[ \\t]+5000[ \\t]+\\d+[ \\t]+[\\d.]+[ \\t]+(\\d+)"
+          transform: int
+        rust:
+          cell: 25
+          pattern: "(?m)^5000 iterations: coup \\d+, taux [\\d.]+, (\\d+) noeuds"
+          transform: int
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 25 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c28_donnees_par_profondeur
+      description: "Données du benchmark par profondeur imprimées en texte (coupe déclarée : la figure matplotlib du carnet Python est remplacée par ses données)"
+      tolerance: 0
+      reference: rust
+      sides:
+        python:
+          absent: "La cellule 28 du carnet Python émet une figure matplotlib (sortie image) : les valeurs n'y sont pas lisibles en texte, la comparaison stricte ne peut pas porter sur elle ; les mêmes grandeurs sont comparées par les mesures c22_* (tableau du carnet Python, lisible en text/plain)."
+        rust:
+          cell: 28
+          pattern: "(?m)^Noeuds par profondeur : Minimax \\[([\\d, ]+)\\]"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 28 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération."
+    - id: c33_tournoi_alphabeta_victoires
+      description: "Victoires d'AlphaBeta(d=4) au tournoi (reproductible : flux de tirage partagé)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m)^2[ \\t]+AlphaBeta\\(d=4\\)[ \\t]+(\\d+)"
+          transform: int
+        rust:
+          cell: 33
+          pattern: "(?m)^AlphaBeta\\(d=4\\)[ \\t]+(\\d+)V"
+          transform: int
+        csharp:
+          absent: "La cellule C# 19 organise un tournoi de 3 agents sur 4 parties (« Minimax(d4) 12 » et « AlphaBeta(d4) 12 » nuls) et ne compte pas le même nombre de parties : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_tournoi_minimax_wr
+      description: "Taux de victoire de Minimax(d=4) au tournoi (reproductible)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m)^1[ \\t]+Minimax\\(d=4\\)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 33
+          pattern: "(?m)^Minimax\\(d=4\\)[ \\t]+\\d+V[ \\t]+\\d+D[ \\t]+\\d+N[ \\t]+WR ([\\d.]+)%"
+          transform: float
+        csharp:
+          absent: "La cellule C# 19 organise un tournoi de 3 agents sur 4 parties et n'affiche pas de taux de victoire : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_tournoi_mcts_wr
+      description: "Taux de victoire de MCTS(1000) au tournoi (reproductible)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "(?m)^3[ \\t]+MCTS\\(1000\\)[ \\t]+\\d+[ \\t]+\\d+[ \\t]+\\d+[ \\t]+([\\d.]+)"
+          transform: float
+        rust:
+          cell: 33
+          pattern: "(?m)^MCTS\\(1000\\)[ \\t]+\\d+V[ \\t]+\\d+D[ \\t]+\\d+N[ \\t]+WR ([\\d.]+)%"
+          transform: float
+        csharp:
+          absent: "La cellule C# 19 organise un tournoi de 3 agents sur 4 parties, sans MCTS : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c37_exercice_1
+      description: "Sortie de la cellule 37 (exercice 1), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 37
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 37
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 22 imprime « Exercice 1 a completer : benchmark Alpha-Beta aux profondeurs 4, 6, 8. » (énoncé detailed) contre « Exercice a completer - voir les indices ci-dessus » côté Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c39_exercice_2
+      description: "Sortie de la cellule 39 (exercice 2), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 39
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 39
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 24 imprime « Exercice 2 a completer : impact du parametre c du MCTS sur le coup choisi. » contre « Exercice a completer - voir les indices ci-dessus » côté Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c41_exercice_3
+      description: "Sortie de la cellule 41 (exercice 3), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 41
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 41
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 26 imprime « Exercice 3 a completer : detection des menaces immediates dans Evaluate. » contre « Exercice a completer - voir les indices ci-dessus » côté Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c43_exercice_4
+      description: "Sortie de la cellule 43 (exercice 4), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 43
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 43
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 43 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c45_exercice_5
+      description: "Sortie de la cellule 45 (exercice 5), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 45
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 45
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 45 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c47_exercice_6
+      description: "Sortie de la cellule 47 (exercice 6), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 47
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 47
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 47 (28 cellules, structure différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."

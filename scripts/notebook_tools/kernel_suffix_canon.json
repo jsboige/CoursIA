@@ -25,6 +25,11 @@
       "measured": "2026-09-22, PR #13751 tranche Search (worktree e8d76767)"
     },
     {
+      "path_glob": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/**",
+      "note": "Serie convergee par renommage explicite (graphie canonique du suffixe kernel, #12933 doctrine #5081) : 8 '-Csharp' renommes en '-CSharp' (SL-1,2,3,4,5,6,8,10), 0 divergence restante dans la serie. Mesure prealable : 0 occurrence '-Csharp' en cellule code et 0 en outputs sur les 8 carnets (9 occurrences navlinks markdown seulement) -- aucun residu .NET attendu, contrairement aux precedents #13751/#27155.",
+      "measured": "2026-11-18, PR tranche SymbolicLearning (lane myia-po-2023:CoursIA, base origin/main a18f36f1d18)"
+    },
+    {
       "path_glob": "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/**",
       "note": "Serie socle-metadata-driven convergee sur -CSharp : les 2 carnets de la serie renommes de -Csharp vers -CSharp (PR de renommage de la tranche PR-C, matrice c2044 du 2026-11-18, #12933), avec navlinks croises et references _quarto.yml/READMEs reparées. Adoption ciblee au seul dossier socle-metadata-driven : le reste de cross-series/ porte des suffixes minuscules assumes (Fort-Boyard, cf _no_wide_glob_please).",
       "measured": "2026-11-21"

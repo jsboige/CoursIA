@@ -135,14 +135,14 @@ theorem covers_comp_of_coverPreserving {C : Type u} [Category.{v} C]
     {X Y : C} (f : Y ⟶ X) (S : Sieve X)
     (hS : J.Covers S f) :
     L.Covers (S.functorPushforward (F ⋙ G)) ((F ⋙ G).map f) := by
-  -- Step 1: convert J.Covers to pointwise membership via covers_iff.
+  -- Étape 1 : convertir J.Covers en appartenance point à point via covers_iff.
   rw [GrothendieckTopology.covers_iff] at hS
-  -- Step 2: cover_preserve (J→K via F) on S.pullback f, target K (F.obj Y).
+  -- Étape 2 : cover_preserve (J→K via F) sur S.pullback f, cible K (F.obj Y).
   have hK : (S.pullback f).functorPushforward F ∈ K (F.obj Y) :=
     hF.cover_preserve hS
-  -- Step 3: naturality: (S.pullback f).functorPushforward F ≤
-  -- (S.functorPushforward F).pullback (F.map f). Push via covers_le_iff then
-  -- K.superset_covering converts hK into K.Covers (S.functorPushforward F) (F.map f).
+  -- Étape 3 : naturalité : (S.pullback f).functorPushforward F ≤
+  -- (S.functorPushforward F).pullback (F.map f). Pousser via covers_le_iff puis
+  -- K.superset_covering convertit hK en K.Covers (S.functorPushforward F) (F.map f).
   have hLe : (S.pullback f).functorPushforward F
             ≤ (S.functorPushforward F).pullback (F.map f) := by
     rw [Sieve.functorPushforward_le_iff_le_functorPullback]
@@ -150,16 +150,16 @@ theorem covers_comp_of_coverPreserving {C : Type u} [Category.{v} C]
     exact Sieve.pullback_monotone _ (Sieve.le_functorPushforward_pullback _ _)
   have hKM : (S.functorPushforward F).pullback (F.map f) ∈ K (F.obj Y) :=
     K.superset_covering hLe hK
-  -- Step 4: convert K-cover (pointwise) to K.Covers via covers_iff, then
-  -- apply covers_pushforward_of_coverPreserving (the central theorem for G).
+  -- Étape 4 : convertir la K-couverture (point à point) en K.Covers via covers_iff,
+  -- puis appliquer covers_pushforward_of_coverPreserving (le théorème central pour G).
   have hKL : K.Covers (S.functorPushforward F) (F.map f) := by
     rw [GrothendieckTopology.covers_iff]; exact hKM
   have hL : L.Covers ((S.functorPushforward F).functorPushforward G) (G.map (F.map f)) :=
     covers_pushforward_of_coverPreserving hG (F.map f) (S.functorPushforward F) hKL
-  -- Step 5: convert the goal to hL's form (RHS of functorPushforward_comp +
-  -- F.map f ≫ G.map f for comp_map).
-  -- hL is L.Covers (S.functorPushforward G (S.functorPushforward F S))
-  --             (G.map (F.map f)), so the goal needs to rewrite INTO that form.
+  -- Étape 5 : convertir le but en la forme de hL (membre de droite de functorPushforward_comp +
+  -- F.map f ≫ G.map f pour comp_map).
+  -- hL est L.Covers (S.functorPushforward G (S.functorPushforward F S))
+  --             (G.map (F.map f)), donc le but doit être réécrit DANS cette forme.
   rw [Sieve.functorPushforward_comp, Functor.comp_map]
   exact hL
 
