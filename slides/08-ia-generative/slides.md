@@ -908,7 +908,7 @@ class: nb-map nb-k92
 
 <div class="nb-card"><p class="nb-step">Passer par une passerelle</p><p class="nb-what">Claudish : un protocole, plusieurs modèles par paliers de budget ; distinguer quota dépassé (429) et surcharge (529).</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks/01-claude-code-via-claudish.ipynb" target="_blank" rel="noopener">01-claude-code-via-claudish</a></p></div>
 
-<div class="nb-card"><p class="nb-step">Garde-fous du code généré</p><p class="nb-what">Un analyseur Roslyn refuse à la compilation ce qu’un grep naïf laisse passer ; un REPL C# corrige une application à chaud.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb" target="_blank" rel="noopener">Roslyn-Code-Guardrails</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/CSharpRepl-Live-Patching.ipynb" target="_blank" rel="noopener">CSharpRepl-Live-Patching</a></p></div>
+<div class="nb-card"><p class="nb-step">Garde-fous du code généré</p><p class="nb-what">Un analyseur Roslyn refuse à la compilation ce qu’un grep naïf laisse passer ; un REPL C# corrige une application à chaud.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/Roslyn-Code-Guardrails.ipynb" target="_blank" rel="noopener">Roslyn-Code-Guardrails</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CSharpRepl/CSharpRepl-Live-Patching.ipynb" target="_blank" rel="noopener">CSharpRepl-Live-Patching</a></p></div>
 
 </div>
 
