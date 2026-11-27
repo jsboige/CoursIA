@@ -79,7 +79,13 @@ variable {X : TopCat.{u}}
 `C⁰F`). Ce morphisme est le second maillon de la **suite des unités itérées**
 `F → C⁰F → C⁰²F → ⋯`. Il n'est **pas** une différentielle de résolution :
 le théorème `godementUnit_comp_injective` montre que le composer avec l'unité
-ne peut pas donner zéro sur un faisceau. -/
+ne peut pas donner zéro sur un faisceau.
+Correspondance Stacks — **PARTIEL** : le terme de degré `n` du complexe de Godement
+de Stacks est l'itérée `(f_* f^*)^{n+1}` (`Basic.lean:429`
+`godementSimplicial_left_obj`, `Basic.lean:482` `godementComplexEvalIso`, tag
+0G5N) ; Stacks l'obtient par la résolution standard de la comonade, non par
+l'unité de notre construction. L'unité elle-même n'a pas d'énoncé nommé.
+-/
 noncomputable def godementUnitIter (F : X.Presheaf AddCommGrpCat.{u}) :
     godementPresheaf F ⟶ godementPresheaf (godementPresheaf F) :=
   toGodement (F := godementPresheaf F)
@@ -94,7 +100,14 @@ faisceau, `isSheaf_godementPresheaf`, P84). Une section non nulle reste donc
 non nulle après le composé : l'égalité `μ ≫ d⁰ = 0` qu'exigerait une
 différentielle est fausse pour ce morphisme. La vraie différentielle de la
 résolution canonique passe par le conoyau de l'unité ([God58] II §4.1) et est
-la frontière nommée de la Partie 89. -/
+la frontière nommée de la Partie 89.
+Correspondance Stacks — **PARTIEL** : le fait voisin côté Stacks est
+`Cohomology/GodementResolution/StalkHomotopy.lean:558`
+(`quasiIso_godementAugmentation`) : l'augmentation du complexe de Godement est un
+quasi-isomorphisme, ce qui implique l'injectivité en degré 0 — sous une forme plus
+forte et dans un autre cadre. Aucun énoncé nommé ne porte l'injectivité du
+composé de deux unités.
+-/
 theorem godementUnit_comp_injective (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F) (U : Opens X) :
     Function.Injective ((toGodement F ≫ godementUnitIter F).app (op U)) := by
@@ -112,7 +125,12 @@ est un faisceau. C'est précisément le contenu de
 `injective_toGodement_of_isSheaf` (P84), rejoué sur chaque ouvert. C'est le
 seul fait d'exactitude posé à ce stade : l'exactitude au terme `C⁰F` (et
 l'acyclicité `H^n(C⁰F) = 0`, `n ≥ 1`) exigent la vraie différentielle de la
-résolution canonique — frontière nommée de la Partie 89 (God58 II.5). -/
+résolution canonique — frontière nommée de la Partie 89 (God58 II.5).
+Correspondance Stacks — **PARTIEL** : `Topology/Sheaves/Sheaf/Abelian.lean:149`
+(`restrict_eq_zero_of_germ_eq_zero`) donne le contenu (une section de faisceau est
+déterminée par ses germes) ; Stacks ne le formule pas comme l'exactitude de
+`0 → F → C⁰F`, qui est la forme où nous l'écrivons.
+-/
 theorem godementUnit_injective_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
     (hF : TopCat.Presheaf.IsSheaf F)
     (U : Opens X) :
