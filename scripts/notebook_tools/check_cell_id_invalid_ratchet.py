@@ -36,8 +36,14 @@ def invalid_count(text: str) -> int | None:
 
 
 def changed_notebooks(base: str) -> list[str]:
+    # `-c core.quotePath=false` : sans ce drapeau, git cite les chemins non
+    # ASCII et le chemin cite n'existe pas sur le disque -- la lecture du
+    # carnet levait `Invalid argument` et l'organe rendait exit 2 « mesure
+    # impossible » au lieu de mesurer (#28632). Precedent dans le depot :
+    # `check_notebook_navlinks.py`, `check_notebook_nav_chain.py`.
     result = subprocess.run(
-        ["git", "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD", "--", "*.ipynb"],
+        ["git", "-c", "core.quotePath=false",
+         "diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD", "--", "*.ipynb"],
         capture_output=True, text=True, encoding="utf-8",
     )
     if result.returncode:
