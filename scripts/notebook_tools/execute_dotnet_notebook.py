@@ -109,7 +109,7 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
                         # inherited `idle` breaks the loop before the cell's
                         # own output arrives and every output cascades into
                         # the next cell (shift +1, observed 2026-09-04 on
-                        # CSP-8-Temporal-CSharp).
+                        # CSP-08-Temporal-CSharp).
                         if msg.get('parent_header', {}).get('msg_id') != exec_id:
                             continue
 
