@@ -23,7 +23,13 @@ Ce que fait cet organe, et rien de plus :
 6. une lecture INCOMPLETE du **pool** (issues ouvertes ou PRs ouvertes)
    vaut de meme refus de la voie d'ecriture : ce qui est en cours est
    INCONNU, pas absent, et la voie `--apply` rend `2` sans rien ecrire
-   (reserve du coordinateur du 26/11 sur #28454).
+   (reserve du coordinateur du 26/11 sur #28454) ;
+7. une lecture INCOMPLETE de `origin/main` vaut le meme refus, pour la
+   meme raison : ce que `main` a touche est INCONNU, pas absent. Un
+   historique lisible sans mouvement rend un dictionnaire VIDE (aucune
+   suspicion, sortie 0) ; un Git qui echoue rend `None` -- et la voie
+   `--apply` rend `2` sans rien ecrire (reserve du coordinateur du 26/11
+   sur #28454).
 
 La decision de cloture reste au coordinateur et a l'adjoint, qui lisent
 les criteres de l'issue (G.9). La marque de la suspicion est une **donnee**

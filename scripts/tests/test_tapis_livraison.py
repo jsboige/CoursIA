@@ -65,6 +65,57 @@ def test_lecture_main_inconnue_ou_vide_necrit_pas(monkeypatch, capsys, retour, a
     assert diagnostic in capsys.readouterr().out
 
 
+def _git_faux(sortie: str, code: int = 0):
+    """Un `subprocess.run` factice pour le SEUL appel git du balayage."""
+    return lambda args, **kwargs: _Reponse(sortie, code)
+
+
+def _balayage_pool_lisible(monkeypatch) -> list[str]:
+    """Les ecritures vues, avec un pool lisible et vide de soupcons."""
+    ecritures: list[str] = []
+    monkeypatch.setattr(tl, "pool", lambda repo, limit: [ISSUE])
+    monkeypatch.setattr(tl, "prs_ouverts", lambda repo, limit=300: set())
+    monkeypatch.setattr(tl, "poster",
+                        lambda repo, number, corps: ecritures.append("marqueur"))
+    monkeypatch.setattr(tl, "poser_label",
+                        lambda repo, number: ecritures.append("label"))
+    return ecritures
+
+
+def test_un_git_qui_echoue_refuse_la_voie_apply_sans_ecrire(monkeypatch, capsys):
+    """TEMOIN DU LECTEUR REEL : Git rend un code d'erreur -> `--apply` rend 2.
+
+    Seul le processus est factice : `touches_main` est le VRAI, et c'est lui
+    qui doit rendre `None` -- l'historique est INCONNU, pas vide. Sur le code
+    d'avant, la meme reponse se lisait comme un historique sans mouvement, et
+    la voie d'ecriture sortait a 0.
+    """
+    ecritures = _balayage_pool_lisible(monkeypatch)
+    monkeypatch.setattr(tl.subprocess, "run", _git_faux("", 128))
+    assert tl.chemins.touches_main("/peu-importe") is None
+    assert tl.main(["--apply", "--repo", REPO]) == 2
+    assert ecritures == [], f"ecritures inattendues : {ecritures}"
+    assert "LECTURE INCOMPLETE" in capsys.readouterr().out
+
+
+def test_un_origin_main_lisible_sans_mouvement_reste_une_sortie_normale(monkeypatch, capsys):
+    """TEMOIN DE CONTROLE : un historique lu et sans mouvement n'est pas une panne.
+
+    Git repond (code 0), mais aucun chemin n'a bouge dans la fenetre : la
+    lecture est COMPLETE et VIDE. La sortie reste 0, rien n'est ecrit, et le
+    diagnostic dit « aucun mouvement » -- pas « lecture incomplete ».
+    """
+    ecritures = _balayage_pool_lisible(monkeypatch)
+    entete_seule = "\x1e2026-11-20T10:00:00+00:00 Fusion de la branche main\n"
+    monkeypatch.setattr(tl.subprocess, "run", _git_faux(entete_seule, 0))
+    assert tl.chemins.touches_main("/peu-importe") == {}
+    assert tl.main(["--apply", "--repo", REPO]) == 0
+    assert ecritures == [], f"ecritures inattendues : {ecritures}"
+    sortie = capsys.readouterr().out
+    assert "aucun mouvement" in sortie
+    assert "LECTURE INCOMPLETE" not in sortie
+
+
 def test_le_balayage_pose_le_marqueur_et_le_label_quand_nothing_ne_l_interdit(monkeypatch):
     """TEMOIN DE CONTROLE POSITIF : sans veto ni lecture incomplete, le
     balayage ecrit bien les deux choses.
