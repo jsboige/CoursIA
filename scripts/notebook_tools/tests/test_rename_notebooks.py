@@ -1142,6 +1142,86 @@ class TestTwoCommitDiscipline(unittest.TestCase):
             self.assertIn(f"M\t{new2}", c2)
 
 
+class TestManualGate(unittest.TestCase):
+    """Un plan incomplet ne doit jamais demarrer de mouvement implicite."""
+
+    def _exercise(self, field: str, entry: object) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            plan = rn.Plan()
+            getattr(plan, field).append(entry)
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch.object(rn, "scan_referents", return_value=plan), \
+                 mock.patch.object(rn, "move_file") as move, \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply"])
+            self.assertNotEqual(rc, 0)
+            move.assert_not_called()
+            self.assertTrue((repo / OLD).exists())
+            self.assertFalse((repo / NEW).exists())
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+            self.assertIn(OLD, output.getvalue())
+            self.assertIn(f"{field}=1", output.getvalue())
+
+    def test_mixed_refused_blocks(self):
+        self._exercise("mixed_refused", OLD)
+
+    def test_path_refused_blocks(self):
+        self._exercise("path_refused", (OLD, "ancien.ipynb"))
+
+    def test_code_cell_blocks(self):
+        self._exercise("code_cells", (OLD, 1, "ancien.ipynb"))
+
+    def test_fragmented_blocks(self):
+        self._exercise("fragmented", (OLD, 1))
+
+    def test_real_code_reference_blocks_before_move(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            carrier = "MyIA.AI.Notebooks/S/S-02-Beta.ipynb"
+            _write_nb(repo, carrier, _nb([_code('open("S-01-Alpha.ipynb")')]))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "code reference")
+            base = _git(repo, "rev-parse", "HEAD").strip()
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply"])
+            self.assertNotEqual(rc, 0)
+            self.assertIn(carrier, output.getvalue())
+            self.assertIn("code_cells=1", output.getvalue())
+            self.assertTrue((repo / OLD).exists())
+            self.assertFalse((repo / NEW).exists())
+            self.assertEqual(_git(repo, "rev-parse", "HEAD").strip(), base)
+
+    def test_allow_manual_applies_and_reports_counts(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            plan = rn.Plan()
+            plan.code_cells.append((OLD, 1, "ancien.ipynb"))
+            output = io.StringIO()
+            with mock.patch.object(rn, "repo_root", return_value=repo), \
+                 mock.patch.object(rn, "load_mapping", return_value=[(OLD, NEW)]), \
+                 mock.patch.object(rn, "scan_referents", return_value=plan), \
+                 mock.patch.object(rn, "run_organs", return_value=0), \
+                 mock.patch("sys.stdout", output):
+                rc = rn.main(["--mapping", "test", "--apply", "--allow-manual"])
+            self.assertEqual(rc, 0)
+            self.assertTrue((repo / NEW).exists())
+            verdict = next(line for line in output.getvalue().splitlines()
+                           if line.startswith("VERDICT"))
+            self.assertIn("code_cells=1", verdict)
+            self.assertIn("mixed_refused=0", verdict)
+            self.assertIn("path_refused=0", verdict)
+            self.assertIn("fragmented=0", verdict)
+
+
 class TestMappingRefusals(unittest.TestCase):
     """Gardes d'entree : table perimee, collision interne, cible deja la."""
 

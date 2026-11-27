@@ -2,6 +2,7 @@
 
 **Part de** [#16457](https://github.com/jsboige/CoursIA/issues/16457) (Axe 2 — distillation-outil) · **porté par** [#26422](https://github.com/jsboige/CoursIA/issues/26422)
 **Mesuré** 2026-11-13 via l'API GitHub sur `jsboigeEpita/2025-Epita-Intelligence-Symbolique` (repo de 297 Mo, non cloné : lecture des arbres par API).
+**Complété** 2026-11-27 : surface du registre (§2) et états de preuve (§3 bis), sous la note du mainteneur du 2026-11-18. Le catalogue lui-même reste celui du 2026-11-13 ; cette passe n'ajoute aucune ligne de capacité et ne re-dérive aucune provenance.
 
 Ce document ne **refait pas** le catalogue : celui-ci existe déjà **au niveau des sujets** dans le repo étudiant. Ce qu'il ajoute est la **trace** manquante — sujet → implémentation réelle → interface réutilisable → verdict de portabilité.
 
@@ -30,7 +31,13 @@ CapabilityRegistry
 
 Il sait **ce qu'un composant fournit** (`capabilities`) et **ce qu'il exige** (`requires`). Il ne sait **pas d'où vient** chaque capacité : **aucun champ de provenance** (`origin` / `source_project`). Sans ce champ, la distillation dans CoursIA ne peut ni documenter la généalogie d'une capacité, ni détecter les **duplications** entre projets étudiants qui produisent la même capacité.
 
+**Surface mesurée du registre** (2026-11-27, commit `df82a458e`, `argumentation_analysis/orchestration/registry_setup.py`) : **58 composants déclarés** — 27 appels `register_*` à nom littéral, 14 entrées en trois boucles (`logic_capabilities` 9, `kb_invoke_services` 3, solveurs externes 2), et **17 handlers Tweety** déclarés par `_declare_tweety_slots` — sur **57 chaînes de capacité distinctes**, dont cinq revendiquées par deux composants (`nl_extraction`, `argument_extraction`, `kb_to_tweety`, `formal_result_interpretation`, `fallacy_detection`).
+
+Le seul runtime déclaré est `jvm`, et il est déclaré **là où rien ne le lit** : les 17 handlers Tweety portent `metadata={"requires": ["jvm"]}` (`registry_setup.py:988`), alors que le champ `requires` — celui que le registre **consomme** pour vérifier la disponibilité des dépendances (`capability_registry.py:381`) — reste vide sur tous les enregistrements. Aucun lecteur de `metadata["requires"]` n'existe dans les trois fichiers mesurés. Une provenance posée dans `metadata` aujourd'hui serait donc **stockée sans être consommée** : c'est le fait qui fonde la nuance apportée à la décision A.
+
 > **Décision de charter A — Provenance.** Ajouter un champ `source_project` (optionnel) à `ComponentRegistration`, peuplé depuis ce catalogue. C'est la condition de tout travail de consolidation qui suit.
+>
+> **Nuance (mainteneur, 2026-11-18)** : « Un éventuel champ de registre transporte une provenance établie, il ne l'établit pas. » Le champ se crée avec son lecteur ; les lignes dont la seule origine connue est une correspondance de noms restent annotées comme telles (§3), et une provenance ne s'écrit qu'avec une référence stable au sujet et, quand elle existe, une preuve historique.
 
 ## 3. Catalogue par capacité (ancrage sur chemins réels)
 
@@ -57,6 +64,29 @@ Portabilité : **Portable** = Python pur, pas de binaire vendoré, pas de risque
 | Qualité d'argument | `2.3.5_argument_quality/src/` | 2.3.5 | À décider |
 
 > « Correspondance structurelle » : l'ancrage provenance est déduit des **noms de modules** du projet étudiant qui correspondent à la capacité de la plateforme — pas une généalogie historique. Il sera confirmé/renversé au premier `source_project` réel (décision A).
+
+## 3 bis. Trois états de preuve — référencée, montée, exercée
+
+Un catalogue dit qu'une capacité existe et où. Il ne dit pas qu'elle est **branchée**. Les trois états se mesurent séparément ; aucun ne s'infère du précédent.
+
+| État | Question posée | Preuve qui le constate |
+|---|---|---|
+| **Référencée** | la capacité est-elle nommée à un endroit qui pourrait l'appeler ? | un nom dans un prompt, un registre, une documentation |
+| **Montée** | le composant qui la porte est-il enregistré au démarrage ? | un `register_*` exécuté, ou une fabrique appelée à la construction |
+| **Exercée** | une exécution réelle le traverse-t-elle, et le débrancher casse-t-il quelque chose ? | un témoin **négatif** : retirer le montage fait échouer un test |
+
+Un composant peut être monté et jamais demandé ; une demande peut échouer sans que rien ne le signale. Seul le troisième état est une preuve d'usage.
+
+### Application — la ligne « logique formelle », des deux côtés
+
+| Côté | Référencée | Montée | Exercée |
+|---|---|---|---|
+| **EPITA** (plateforme) | capacité `propositional_logic`, portée par `propositional_logic_service` (boucle `logic_capabilities` de `registry_setup.py`) | oui — `register_service` est appelée à la construction, invocateur `_invoke_propositional_logic` | **non mesuré ici** : aucun témoin négatif lu dans ce dépôt |
+| **CoursIA** (runner local d'`ArgumentAnalysis`) | le prompt formel nomme `Reasoner-pl_query` comme unique voie du verdict (`argumentation_lib/_runner.py:141`, `:146`) | `_ensure_reasoner_plugin` (`:390`), appelée par `create_logic_agent` (`:545`) | oui — `tests/test_runner.py:510` (plugin monté une seule fois), `tests/test_pl_verdict_contract.py:268` (formules passées au moteur), `:291` (verdict transmis à la garde), `:324` `TestProseContentGuard` (refus **avant** solveur) |
+
+Ce que cette ligne établit, et ce qu'elle n'établit pas : elle prouve l'usage de l'**implémentation locale** côté CoursIA ; elle n'établit **aucune provenance** EPITA. Les deux côtés sont deux implémentations parallèles de la même capacité, pas une copie — et le runner local n'a pas à adopter le registre EPITA pour être traçable.
+
+Chemins et comptes ci-dessus mesurés le 2026-11-27, sur `origin/main` de CoursIA et au commit `df82a458e` du dépôt étudiant. Les deux maillons EPITA « demande » (`WorkflowBuilder.add_phase`) et « résolution » (`workflow_dsl.py`) sont cités par la note du mainteneur du 2026-11-18 ; ils n'ont **pas** été re-mesurés ici.
 
 ## 4. Contrainte de portabilité mesurée (blocage licence)
 
@@ -92,7 +122,7 @@ Un même sujet est écrit **deux façons** dans le même repo. C'est préciséme
 
 ## 6. Ce que la distillation exigera ensuite (hors scope de ce grain)
 
-1. **Décision A** : ajouter `source_project` à `CapabilityRegistry.ComponentRegistration` et peupler depuis ce catalogue.
+1. **Décision A** : ajouter `source_project` à `CapabilityRegistry.ComponentRegistration` et peupler depuis ce catalogue — **avec son lecteur**, et seulement avec des provenances établies (§2 : le champ `requires` montre ce qui arrive à un champ qu'aucun code ne lit, et à une donnée rangée dans `metadata`). La jauge de ce qui est prêt à être peuplé est le tableau des trois états (§3 bis) : une ligne « référencée » seulement n'a pas de provenance à transporter.
 2. **Déduplication** : une fois les provenances posées, repérer les capacités produites par **plusieurs** projets (candidates d'extraction en toolbox partagée).
 3. **Choix de surface** (UI) et de **stack locale** (LLM, JVM) avant toute extraction — ce sont des arbitrages, pas des constats.
 
