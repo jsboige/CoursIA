@@ -3607,5 +3607,39 @@
    "pre_argv": [],
    "commenters": []
   }
+ ],
+ "TRANCHE56": [
+  {
+   "name": "path-length ratchet (added paths <= 160 chars)",
+   "argv": [
+    "python",
+    "scripts/ci/check_path_length.py",
+    "--base",
+    "{base_ref}",
+    "--head",
+    "HEAD",
+    "--limit",
+    "160"
+   ],
+   "source": "(garde natif de la voie rapide : aucun workflow d'origine)",
+   "paths": [],
+   "blocking": true,
+   "needs_base": true,
+   "diff_bounded": true,
+   "delta_argv": [],
+   "swap_paths": [],
+   "iterates_paths": false,
+   "absorbed": true,
+   "shadow_reason": "",
+   "warn_rc": [],
+   "fail_on_all_warn": false,
+   "iterate_paths": [],
+   "pre_argv": [
+    "python",
+    "scripts/ci/check_path_length.py",
+    "--self"
+   ],
+   "commenters": []
+  }
  ]
 }
