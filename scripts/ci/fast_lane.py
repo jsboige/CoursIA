@@ -75,10 +75,18 @@ from fast_lane_registry import TRANCHE53  # noqa: E402
 # en vol, et une ligne isolee fusionne sans conflit. Renumerotee le 22/11 :
 # TRANCHE54 est pris par #27611 sur origin/main.
 from fast_lane_registry import TRANCHE55  # noqa: E402
-# #27132 : tranche 56 (conformite differentielle des carnets Rust), isolee
+# #27132 : tranche 57 (conformite differentielle des carnets Rust), isolee
 # comme les 53 et 55 -- meme raison : les tranches voisines sont modifiees par
-# d'autres PRs en vol, et une ligne isolee fusionne sans conflit. 56 et non 54,
-# deja pris par #27611 sur origin/main.
+# d'autres PRs en vol, et une ligne isolee fusionne sans conflit. 57 et non 56,
+# pris par #27676 (cliquet de longueur de chemin) sur origin/main le 23/11.
+from fast_lane_registry import TRANCHE57  # noqa: E402
+
+# #27676 : la tranche 56 (cliquet de longueur de chemin) est importee par une
+# ligne a part, eloignee du bloc d'import et de la chaine d'agregation -- les
+# tranches voisines sont modifiees par d'autres PRs en vol, et une ligne
+# isolee fusionne sans conflit. Renumerotee le 23/11 : la 54 est prise par
+# #27611 et la 55 par #27544 sur `main` ; sans renumerotation, cet import
+# masquait celui de #27544 et son garde sortait de la chaine.
 from fast_lane_registry import TRANCHE56  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
@@ -929,9 +937,14 @@ def main(argv: list[str] | None = None) -> int:
               # PRs en vol).
               + TRANCHE55
               + TRANCHE54
-              # #27132 : tranche 56 (conformite differentielle des carnets
-              # Rust), sur une ligne isolee -- meme raison que les 53, 54, 55.
+              # #27676 : tranche 56 (cliquet de longueur de chemin) -- meme
+              # motif que la 53, ligne isolee de la chaine ci-dessous.
+              # Renumerotee le 23/11 : TRANCHE55 est pris par #27544 sur main.
               + TRANCHE56
+              # #27132 : tranche 57 (conformite differentielle des carnets
+              # Rust) -- renumerotee le 27/11, TRANCHE56 etant pris par #27676
+              # sur main ; ligne isolee, meme motif que les 53 a 56.
+              + TRANCHE57
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14

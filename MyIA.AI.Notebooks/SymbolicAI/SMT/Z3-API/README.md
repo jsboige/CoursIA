@@ -49,7 +49,7 @@ Ce README suit la [signalétique de lecture du dépôt](https://github.com/jsboi
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-10-Cryptarithmetic-Python.ipynb) — jumeau [C#](Z3-10-Cryptarithmetic-CSharp.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | Découverte | — |
 | 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) — jumeau [C#](Z3-11-Graph-Coloring-CSharp.ipynb) · [jumeau Rust](Z3-11-Graph-Coloring-Rust.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité, rendu SVG statique de la coloration | Découverte | — |
 | 12 | [Arithmétique réelle](Z3-12-Real-Arithmetic-Python.ipynb) — jumeau [C#](Z3-12-Real-Arithmetic-CSharp.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | Découverte | — |
-| 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) — jumeau [C#](Z3-13-UnsatCores-CSharp.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | Découverte | [Autour de 13](#autour-de-13) |
+| 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) — jumeau [C#](Z3-13-UnsatCores-CSharp.ipynb) · [jumeau Rust](Z3-13-UnsatCores-Rust.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles — le jumeau Rust rejoue la même démonstration par le crate `z3` (`assert_and_track` + `get_unsat_core`) | Découverte | [Autour de 13](#autour-de-13) |
 | 14 | [Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) — jumeau [C#](Z3-14-BitVectors-Overflow-CSharp.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | Découverte | — |
 | 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) — jumeau [C#](Z3-15-Nested-Arrays-2D-CSharp.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | Découverte | — |
 | 16 | [Meal-Planner déclaratif](Z3-16-Meal-Planner-Python.ipynb) — jumeau [C#](Z3-16-Meal-Planner-CSharp.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | Découverte | [Autour de 16](#autour-de-16) |
@@ -78,7 +78,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 
 | # | Notebook | Ce qu'on y apprend |
 |---|----------|---------------------|
-| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** — jumeau [C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
+| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** — jumeau [C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) · [jumeau Rust](Z3-13b-UnsatCores-MUS-Rust.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
 
 ### Autour de 16
 
