@@ -59,7 +59,7 @@
         "ingenieur-master"
       ],
       "notebooks": [
-        "Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+        "Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb",
         "Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb",
         "GameTheory/GameTheory-01-Setup-Python.ipynb",
         "GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
