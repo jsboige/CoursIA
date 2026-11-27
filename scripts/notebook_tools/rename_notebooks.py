@@ -1592,6 +1592,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--propose", metavar="DOSSIER")
     ap.add_argument("--mapping", metavar="TSV|issue:N#comment")
     ap.add_argument("--apply", action="store_true", help="sinon : dry-run")
+    ap.add_argument("--allow-manual", action="store_true",
+                    help="autoriser une application avec des references a traiter manuellement")
     ap.add_argument("--rebase-helper", action="store_true")
     ap.add_argument("--lane", default=os.environ.get("ROOSYNC_LANE", "unknown"))
     a = ap.parse_args(argv)
@@ -1639,6 +1641,15 @@ def main(argv: list[str] | None = None) -> int:
         print("\n[dry-run] rien n'a ete ecrit. Avant --apply : passer les hooks "
               "sur les fichiers ci-dessus (HOOKS PRE-COMMIT, en tete du module).")
         return 0
+
+    pending = (f"mixed_refused={len(plan.mixed_refused)} "
+               f"path_refused={len(plan.path_refused)} "
+               f"code_cells={len(plan.code_cells)} "
+               f"fragmented={len(plan.fragmented)}")
+    if not a.allow_manual and (plan.mixed_refused or plan.path_refused
+                               or plan.code_cells or plan.fragmented):
+        print(f"VERDICT : application refusee, passage manuel requis ({pending})")
+        return 1
 
     pre = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo,
                          capture_output=True, text=True, encoding="utf-8",
@@ -1699,7 +1710,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[commit 2] {len(done)} fichier(s) reecrit(s) au texte")
 
     rc = run_organs(pre, repo)
-    print(f"VERDICT : organes rc={rc} (base = pre-rename {pre[:12]})")
+    manual_status = f" ; en attente : {pending}" if a.allow_manual else ""
+    print(f"VERDICT : organes rc={rc} (base = pre-rename {pre[:12]}){manual_status}")
     return rc
 
 
