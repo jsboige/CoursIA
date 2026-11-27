@@ -75,6 +75,11 @@ from fast_lane_registry import TRANCHE53  # noqa: E402
 # en vol, et une ligne isolee fusionne sans conflit. Renumerotee le 22/11 :
 # TRANCHE54 est pris par #27611 sur origin/main.
 from fast_lane_registry import TRANCHE55  # noqa: E402
+# #27132 : tranche 56 (conformite differentielle des carnets Rust), isolee
+# comme les 53 et 55 -- meme raison : les tranches voisines sont modifiees par
+# d'autres PRs en vol, et une ligne isolee fusionne sans conflit. 56 et non 54,
+# deja pris par #27611 sur origin/main.
+from fast_lane_registry import TRANCHE56  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -924,6 +929,9 @@ def main(argv: list[str] | None = None) -> int:
               # PRs en vol).
               + TRANCHE55
               + TRANCHE54
+              # #27132 : tranche 56 (conformite differentielle des carnets
+              # Rust), sur une ligne isolee -- meme raison que les 53, 54, 55.
+              + TRANCHE56
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14

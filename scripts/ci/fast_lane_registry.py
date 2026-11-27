@@ -4843,3 +4843,52 @@ TRANCHE54: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 56 -- conformite differentielle des carnets Rust (#27132, review
+# Hermes de la PR #28769, point 2).
+#
+# Le troisieme cote des jumeaux Rust n'etait garde par RIEN : `twin_pairs.d/`
+# ne porte aucune cle `rust:` (0 sur 381 fichiers), `twin-parity.yml` ne lit
+# aucun `rust_sha`, et `check_rust_conformance.py` n'etait invoque par aucune
+# des 371 entrees CI -- le registre `rust_conformance.d/` n'y apparaissait que
+# comme chemin declencheur. Les grandeurs-pivots d'un triplet etaient donc
+# conformes seulement quand quelqu'un les demandait a la main.
+#
+# Forme moteur : le registre ENTIER, pas un `--entry` par triplet. Une entree
+# ajoutee est gardee sans qu'on pense a cabler une seconde commande, et le
+# cout est une lecture de sorties COMMITEES des trois cotes, sans execution de
+# carnet.
+#
+# Caractere BLOQUANT, mesure sur la tete `ffe899411b` avant ce cablage :
+# 68 mesures conformes, 0 divergence, rc=0 sur le registre entier. Le vert
+# n'est donc pas une declaration, il est mesure ; `absorbed=True` publie le
+# nom canonique et la conclusion reelle.
+#
+# Pas de `warn_rc` ici, a la difference de TRANCHE53 : rc=2 signifie
+# « registre illisible / carnet declare introuvable / selection vide », c'est
+# a dire que l'instrument n'a rien controle. Le traiter en succes rendrait un
+# vert muet sur la seule classe que cette tranche existe pour sortir du
+# silence ; il reste donc un echec, avec son motif dans le log.
+#
+# `diff_bounded=False` : le verdict porte sur le registre entier, pas sur un
+# delta base-vs-head -- ce champ est reserve aux argv bornes au diff
+# (`check_absorbed_argv_scope.py`).
+# ---------------------------------------------------------------------------
+TRANCHE56: list[Guard] = [
+    Guard(
+        name="Rust conformance (grandeurs-pivots vs jumeaux)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*-Rust.ipynb",
+            "scripts/notebook_tools/rust_conformance.d/**",
+            "scripts/notebook_tools/check_rust_conformance.py",
+            "scripts/tests/test_check_rust_conformance.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_rust_conformance.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+]
