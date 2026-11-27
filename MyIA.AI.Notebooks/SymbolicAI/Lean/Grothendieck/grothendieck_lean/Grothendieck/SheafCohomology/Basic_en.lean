@@ -332,4 +332,35 @@ noncomputable def cohomologyAt
     AddCommGrpCat.{w'} :=
   CategoryTheory.Sheaf.H' F n X
 
+/-! ## 9. Stacks correspondence (group #12 of #28537, surveyed 2026-11-26)
+
+Statement-by-statement comparison between this module and the reference
+`AxiomMath/Stacks` (`StacksFrontier/Topology/Sheaves/Cohomology/`). Every
+reference is given as `file:line` in the Stacks repository.
+
+**Method point.** Stacks and this module **share the same Mathlib base**:
+Riou's Ext-based cohomology (`Mathlib.CategoryTheory.Sites.SheafCohomology.Basic`).
+Stacks is therefore not a duplicate of this module but a *client* of that base,
+to which it adds results of its own (the tag, injectivity of the leading
+inclusion, naturality of the connecting morphism). The table below says, for
+each statement, whether Stacks establishes it, establishes it in another form,
+or does not establish it.
+
+| Statement | Class | Stacks reference | What our version adds / what diverges |
+|---|---|---|---|
+| `H0_equiv_global_sections` | partial | `CechDegreeZero/Evaluation.lean:136` — `existsUnique_cechRestrictionHomologyMap` (tag 01EP) | Same fact: degree-zero cohomology is the group of sections. Divergence: Stacks states it for the **Čech complex of a covering** of modules on a space, and its isomorphism is *unique and compatible with restriction*; we state it for the **Ext-based** `H⁰` of an abelian sheaf on a site, via the additive equivalence `Sheaf.H.equiv₀`, without the restriction compatibility. |
+| `H_map_add` | covered | `MayerVietoris/LongExactSequence.lean:121-122` — `cohomology_map_app` | Stacks transports the map induced by `f : F ⟶ G` through `(Ext.mk₀ f).postcomp …`: that is the same map as `Sheaf.H.map`. What our version adds: the **named bridge** and the explicit additivity, which Stacks does not state (it uses it as a rungs). |
+| `H_map_comp` | covered | `MayerVietoris/LongExactSequence.lean:121-122` and `:139` (`Ext.comp_assoc_of_third_deg_zero`) | Composition of the `Ext.mk₀` is composition of the `H.map`. Our version names the statement. |
+| `H_map_id` | covered | `MayerVietoris/LongExactSequence.lean:121-122` | The identity of `Ext` is the identity of `H.map`. Our version names the statement. |
+| `cohomologyPresheafFunctor_field` | covered | `MayerVietoris/LongExactSequence.lean:121` | Stacks uses `Sheaf.cohomologyPresheafFunctor J n` literally. Our version adds the **bridge** (and the lake's naming). |
+| `cohomologyPresheaf_field` | covered | `MayerVietoris/ColimitDescent.lean:221` | Stacks manipulates `F.cohomologyPresheaf n` literally (and its naturality, `:230-247`). Our version adds the bridge. |
+| `equiv₀_naturality_field` | covered | `MayerVietoris/LongExactSequence.lean:129-132` — `mayerVietoris_delta_naturality` | Stacks establishes the naturality of the induced map in `F` for the connecting morphism; the `Ext.mk₀` functor carrying it is the same one. Our version states the naturality of `equiv₀` itself. |
+| `equiv₀_symm_naturality_field` | covered | `MayerVietoris/LongExactSequence.lean:129-132` | idem, in the other direction of the equivalence. |
+| `map_apply_field` | covered | `MayerVietoris/LongExactSequence.lean:120-124` | The same unfolding: `Ext.mk₀ f` postcomposed, `add_zero n` at the tail. Our version names the statement. |
+| `functorH_map_field` | absent | none: `Sheaf.functorH` does not appear in the Stacks files read (search over the `StacksFrontier/Topology/Sheaves/Cohomology/` corpus) | Stacks manipulates the cohomology objects through the **presheaf** and through the contravariant `Ext` sequence, never through a functor with values in `AddCommGrpCat`. The `functorH` embryo is therefore proper to Mathlib and to our bridge. |
+| `subsingleton_H_of_isZero_field` | absent | no analogous statement in the Stacks files read | The vanishing of the cohomology of the zero sheaf is not formulated at Stacks; it is implicit there through the `Ext` functor applied to zero. We keep the statement, and declare it. |
+| `cohomologyAt` | covered | `MayerVietoris/LongExactSequence.lean:131-132` | Stacks evaluates the cohomology **at an object** (`op S.X₄`, `op S.X₁`): that is exactly `Sheaf.H' F n X`. Our version adds the bridge and the lake's notation. |
+
+-/
+
 end Grothendieck.SheafCohomology_en

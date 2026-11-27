@@ -73,7 +73,7 @@ docker exec comfyui-video venv/bin/python3 -c "import torch; n=torch.cuda.device
 
 Attendu avec `CUDA_VISIBLE_DEVICES=1` : `1 ['NVIDIA GeForce RTX 3090']`.
 
-**EXCLUSIF avec comfyui-qwen** : Les deux services partagent le meme GPU. Ne pas les lancer simultanement.
+**Cartes distinctes avec `comfyui-qwen`** : ce service vise la RTX 3090 (GPU 1, masque `1` + `PCI_BUS_ID`), `comfyui-qwen` la RTX 3080 Ti (GPU 0, masque `0` + `PCI_BUS_ID`). L'ancienne exclusivite entre les deux est levee (decision #28423 §5) : elle etait de surcroit infeasible, 24-26 Go sur une carte de 24 Go.
 
 ## Architecture
 

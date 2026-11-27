@@ -229,4 +229,42 @@ theorem mv_toBiprod_fromBiprod_field
     S.toBiprod F n ≫ S.fromBiprod F n = 0 :=
   S.toBiprod_fromBiprod F n
 
+/-! ## 8. Stacks correspondence (group #12 of #28537, surveyed 2026-11-26)
+
+Statement-by-statement comparison with the reference `AxiomMath/Stacks`
+(`StacksFrontier/Topology/Sheaves/Cohomology/MayerVietoris/`). References are
+given as `file:line` in the Stacks repository.
+
+**Method point.** Stacks and this module **share the same Mathlib base**
+(`Mathlib.CategoryTheory.Sites.SheafCohomology.MayerVietoris`): Stacks
+attaches **tag 01EB** to Mathlib's long exact sequence
+(`LongExactSequence.lean:141-142`) and adds two results this module does not
+have (the leading zero and the naturality of the connecting morphism).
+
+| Statement | Class | Stacks reference | What our version adds / what diverges |
+|---|---|---|---|
+| `mv_sequence_exact` | covered | `MayerVietoris/LongExactSequence.lean:141-142` — `add_to_stacks 01EB "successive windows"` | It is the **same** Mathlib statement: Stacks attaches tag 01EB to it. What our version adds: the named bridge, the long sequence spelled out over six terms, and the EN twin. |
+| `mv_delta_toBiprod_eq_zero` | covered | `MayerVietoris/ColimitDescent.lean:462` (`w₂`, via `δ_toBiprod`) | Stacks uses the **same** field `S.δ_toBiprod` to prove exactness of the sequence after a colimit. Our version names it and declares it. |
+| `mv_fromBiprod_delta_eq_zero` | covered | `MayerVietoris/ColimitDescent.lean:461` (`w₁`, via `fromBiprod_δ`) | idem, same field `S.fromBiprod_δ`. |
+| `mv_toBiprod_field` | covered | `MayerVietoris/LongExactSequence.lean:101,109` and `ColimitDescent.lean:205-206` (`mono_toBiprod_zero`) | Stacks manipulates `S.toBiprod F n` literally, and derives the injectivity of the head map from it (`Mono (S.toBiprod F 0)`). Our version adds the bridge. |
+| `mv_fromBiprod_field` | covered | `MayerVietoris/ColimitDescent.lean:330-334` (`fromBiprodNat`) | Stacks manipulates `S.fromBiprod F n` literally, and its naturality in the square. Our version adds the bridge. |
+| `mv_delta_field` | covered | `MayerVietoris/LongExactSequence.lean:131-132` | Stacks uses `S.δ F n₀ n₁ h` literally. Our version adds the bridge. |
+| `mv_sequence_field` | covered | `MayerVietoris/LongExactSequence.lean:82,110` (`S.sequence F 0 1 rfl`) | idem for the long sequence itself. |
+| `mv_toBiprod_fromBiprod_field` | covered | `MayerVietoris/ColimitDescent.lean:460` (`w₀`, via `toBiprod_fromBiprod`) | Same Mathlib field; Stacks uses it for exactness after a colimit. |
+
+**What Stacks establishes and this module does not** — two gaps to be told
+apart from the references above:
+
+- the **leading zero**: Stacks shows that `H⁰(X₄,F) ⟶ H⁰(X₂,F) ⊞ H⁰(X₃,F)`
+  is injective (`ColimitDescent.lean:205-206`, `mono_toBiprod_zero`), so the
+  six-term window starts with a zero (`LongExactSequence.lean:81-87`,
+  `mayerVietorisInitialSequence` and `mayerVietorisInitialSequence_exact`);
+  this module carries the successive windows only (tag 01EB), without the
+  leading zero;
+- the **naturality of the connecting morphism in `F`**: Stacks establishes it
+  (`LongExactSequence.lean:129-132`, `mayerVietoris_delta_naturality`); this
+  module does not state it.
+
+-/
+
 end Grothendieck.SheafCohomology.MayerVietoris_en

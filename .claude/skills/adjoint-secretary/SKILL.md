@@ -5,6 +5,9 @@ description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. D
 
 # Secrétaire vérificateur — myia-po-2028:CoursIA-3
 
+Une approbation et une fusion sont deux événements distincts. Suivre le second sans faire attendre le coordinateur ; pendant ce délai, traiter la prochaine conversion indépendante.
+Si plusieurs PR partagent un rouge, vérifier la cause commune sur la base, puis nommer les branches concernées et vérifier leur reprise.
+
 Cycle court (30 min) du secrétaire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
 
 Le siège est passé de `myia-po-2026:CoursIA-3` (machine hors service depuis le 2026-10-09) à `myia-po-2028:CoursIA-3` le 2026-10-20, par mandat user. Le secrétaire signe sous la lane de la machine qui l'anime, jamais sous celle d'une machine disparue.
@@ -144,6 +147,369 @@ Trois pièges de mesure rencontrés le 22/10, qui coûtent un cycle chacun quand
 3. **L'organe B.0 lit le *glyphe*, pas le verdict.** Une review `COMMENTED` dont le corps contient `🟡` ou `🔴` est classée `[BOT-CONCERN]` même si son verdict est `LGTM` et si son auteur écrit « notes non bloquantes ». Mesure du 22/10 : sur 200 PRs ouvertes scannées, 42 portent une review `clusterManager-Myia` à marqueur ; sur 11 PRs à verdict `LGTM`, 5 sont bloquées (#21630, #22074, #22046, #21960, #21985). **La levée n'appartient qu'à l'auteur de la réserve ou à ai-01** : une lane ne la lève pas (`can_lift` refuse qu'une autre lane lève une réserve d'autrui), et le login partagé `jsboige` rend une levée de lane indiscernable d'une auto-levee. Le geste utile n'est donc pas de réparer, mais d'**alerter le porteur** (motif exact, « ne le lève pas vous-même ») et d'**escalader à ai-01** — qui est le seul à tenir ce levier.
 
 Corollaires d'outillage, mesurés le même jour : `gh api search/issues -f "q=..."` implique un **POST** (les compteurs reviennent `None`) — il faut `-X GET` ; une requête GraphQL qui déclare une variable inutilisée est refusée (`variableNotUsed`) ; une pagination `orderBy: {UPDATED_AT, DESC}` renvoie des **doublons** entre les pages, à dédupliquer par numéro avant de compter.
+
+### Tells de mesure (26/11, cycle c693)
+
+Cinq pièges mesurés dans le cycle c693, qui coûtent une **liste** entière quand on les ignore. Le catalogue complet des tells de ce siège (**273 entrées**, une par instrument qui ment) est dans la mémoire par machine `instrument-failures-secretary.md`, indexée dans son `MEMORY.md` : c'est le **support de référence des mesures datées** (comptes, listes de jobs, ids de run, heures de reset, quotas). La skill porte le **geste**, pas l'archive.
+
+4. **La porte `PR gate` est l'autorité de TRI ; l'admissibilité à la fusion se lit ailleurs.** Filtrer « rouge = tout check non vert » (un `CANCELLED`, un `perimeter review guard (#11268)` en FAILURE) a écarté de ma liste READY **39 PRs dont la porte était SUCCESS**, dont 7 jamais lues par ai-01 et 1 APPROUVÉE (#28640) qui bloquait une autre PR (#28095). Aucune n'était dans la liste du cycle précédent ni dans le DM : elles n'étaient visibles nulle part, donc jamais classées. Le fold canonique (`pr_gate.dedupe_latest`) classe `cancelled` comme mauvais **pour les constituants de la porte** — ce n'est pas la question « la PR est-elle fusionnable ? », qui se lit sur `mergeable_state`, sur les jambes **requises**, sur B.0 et sur l'approbation d'ai-01 à la tête (tell 27). Les checks non verts restent une **information pour ai-01** (souvent : sa revue de périmètre qui manque) ; une jambe **requise** non verte reste, elle, un bloqueur de merge — les deux questions se posent séparément.
+5. **Un message s'envoie depuis un fichier, pas recopié.** Le corps est lu dans un fichier du scratchpad et envoyé par le serveur MCP (la recette d'appel — wrapper, handshake, identité signée — vit dans la mémoire par machine du siège, pas ici). `messageId` est une **clé d'idempotence** : un renvoi rejoué est absorbé, pas dupliqué. Ensuite, relire le corps **publié** et le comparer à la source — extraction des paires `#N / tête / sha` et des ids de run, **avec assertion que le regex a trouvé des paires** : une comparaison qui ne trouve rien des deux côtés lit « identique » et est un **faux vert**. Le `---` final de la carte est un séparateur de rendu, pas un écart de corps.
+6. **Vérifier le tag `Grain:` de la lane porteuse *avant* d'envoyer l'alerte.** En c691 j'ai alerté po-2028 sur #28095, dont le tag porte « MED/guard — lane myia-po-2024:CoursIA » : la mauvaise lane a répondu sur une PR qui n'est pas la sienne, avec un fait faux qu'il a fallu redresser ensuite dans le fil. L'alerte est un message : adressée à la mauvaise lane, elle pollue deux fils.
+7. **Avant de classer un rouge en « cause hôte », demander si la base contient le dernier commit qui touche ce fichier de test sur `main`.** Sur #28095, un test d'hôte avait été réparé sur `main` (#28626, MERGED le 26/11 à 00:26:46Z) mais la base de la PR ne l'avait pas : un `gh pr update-branch` sans conflit a clos ce rouge, sans rejeu. Le fold et la classification d'infra (`scripts/ci/classify_infra_leg.py`) ne le voient pas.
+8. **Schéma GraphQL et normalisation :** `object(oid: GitObjectID!)` refuse un SHA court de 12 caractères (« provided invalid value ») — passer le SHA complet ou identifier la PR par son numéro ; `checkRuns` **n'existe pas** sur `Commit` (passer par `statusCheckRollup { contexts(first:40) }`, 20 PRs par page) ; les enums GraphQL sont en **MAJUSCULES** (`SUCCESS`, `SKIPPED`) là où le REST est en minuscules — une comparaison non normalisée donne un zéro faux, et le rappel est à appliquer **script par script**, pas une fois pour toutes ; `reviews(last:12)` **tronque** une mesure d'activité, donc un histogramme de rythme bâti dessus est un **plancher**, pas un compte.
+
+### Tells de mesure (26/11, cycle c694)
+
+Trois pièges mesurés dans le cycle c694, qui font échouer une lecture de fond ; les deux premiers sont les jumeaux opposés de tells déjà consignés.
+
+9. **Le corps publié par RooSync porte un séparateur ajouté par le serveur (`\n\n---\n`).** Comparer le corps publié à sa source sans retirer ce séparateur donne un écart systématique de **+6 caractères** et lit « non identique » : un **faux ROUGE**, jumeau du faux VERT du tell 5. Retirer le séparateur final, et exiger des paires non nulles **des deux côtés**.
+10. **Un organe qui rend 0 octet avec rc=0 ne prouve pas « rien à faire ».** `scripts/ci/replay_dwell_floors.py --all --json` a rendu une sortie vide (stdout et stderr) alors que la file contenait 9 minuteurs DWELL mesurés par ailleurs. Une sortie vide est une **mesure manquante**, pas une mesure nulle. Le plancher brut se lit dans le **titre** de la porte (`PR gate: DWELL -- tete du <ts>, NN min -- plancher 120 min, reste NN min`) ; `ecoule a` est la **pointe du balayage**, pas l'échéance du plancher.
+11. **Une réserve d'ai-01 portée sur une tête ANTÉRIEURE reste VIVANTE ; le commit de la réserve sert à cibler la relecture, pas à la déclarer caduque.** Comparer le **commit** de la review au commit de tête qualifie la réserve (sur #28633, la `CHANGES_REQUESTED` portait sur `1bdfe4884595` et la tête était `26e45647e9e3`) mais ne la referme pas : un changement de tête déplace la réserve, il ne l'éteint pas, et l'alerte au porteur reste due tant qu'aucune levée n'est intervenue. Seule une levée d'ai-01 la referme (tell 3) ; l'approbation d'une **tête antérieure** ne couvre pas la tête courante et ne lève rien.
+
+### Tells de mesure (26/11, cycle c695)
+
+Cinq pièges mesurés dans le cycle c695. Le premier est le plus coûteux : il ne se voit pas.
+
+12. **Un observateur à liste de cibles statique cesse de couvrir les minuteurs DWELL nouveaux, sans le dire.** L'observateur porte la liste des minuteurs qu'il surveillait au lancement ; or le jeu tourne plus vite que la liste. Mesure : au balayage c695, le jeu était de 10 minuteurs DWELL, dont **5 sous aucun observateur** ; deux d'entre eux échouaient dans une fenêtre où **aucun cycle ne tourne** (les cycles partent à 7,37 locale). Un minuteur non observé = une PR qui ne verdit qu'un cycle plus tard, pour rien.
+13. **La garde « aucun enfant en vol » ne couvre pas la PORTE elle-même.** Rejouer une porte qui court (`queued`, `in_progress`) réagrège un état incomplet — la même famille que le rejeu pendant qu'un enfant court, décalquée d'un cran.
+14. **Le pool ouvert surcote la flotte.** Mesure c695 : 335 PRs ouvertes, dont **42 sans aucun tag `Grain:`** ; parmi les 42 PRs « sans porte », **35 sont des TP étudiants** (`TP1 …`, `rendu de TP 3 Groupe 03`, `Add files via upload`) — hors périmètre du secrétaire (interdit). Les 7 autres portent une lane et sont empilées à base non-`main`. **Annoncer le pool sans dire combien sont hors périmètre donne un chiffre faux au coordinateur** : compter et nommer la part étudiante à part.
+15. **Vérifier le FICHIER après toute écriture scriptée dans la mémoire du siège.** Une queue d'index contenant une séquence d'échappement a coupé la ligne d'index de `MEMORY.md` en quatre morceaux et injecté un `---` (règle horizontale) au milieu de la liste à puces — **sans erreur, et le compteur reste correct**. Il faut relire le fichier (nombre de puces, règle horizontale isolée, ligne d'index tenant sur une seule ligne), pas seulement la valeur qu'on voulait écrire.
+
+16. **Le crible « CR à la tête exacte » est AVEUGLE à la classe des réserves attachées à une tête abandonnée.** Mesure c695 : sur les 40 PRs du pool portant une `CHANGES_REQUESTED` d'ai-01, **33** ont la CR sur un commit qui n'est plus la tête — et **23 de ces 33 sont vertes au gate**. Une telle réserve n'est **ni caduque ni levée** : le changement de tête la déplace sans l'éteindre (tell 11) ; elle attend la relecture d'ai-01 (tell 19) et la lane ne peut pas la lever (tell 3). Le crible « CR à la tête exacte » ne voit que les réserves encore attachées. **Relire la tête COURANTE de chaque PR porteuse de CR** (une requête par PR : le multi-alias GraphQL rend des nœuds vides sans erreur) et classer `ORPHELINE` / `EXACTE` / `APPROUVÉE` — cette classe **qualifie** la réserve (elle cible la relecture), elle ne la referme pas. La tête du snapshot périmé : 3 PRs avaient bougé entre le balayage de 08:19Z et la mesure. Et relire une classe ne se déduit pas d'une liste déjà transmise — 22 des 23 étaient déjà dans mes listes de vertes depuis c692 : seule la **qualification** était nouvelle.
+
+### Tells de mesure (26/11, cycle c696)
+
+Deux pièges mesurés dans le cycle c696, tous deux sur la lecture — du pool pour
+l'un, des réserves pour l'autre.
+
+17. **La pagination GraphQL `contexts(first:N)` tronque en silence.** Mon scan de
+pool demande 40 contextes par PR ; mesure c696 : **198 PRs sur 338 sont
+exactement à la limite** — la page est coupée sans erreur ni avertissement, et
+le fold travaille alors sur une fenêtre incomplète. Contrôle ciblé en REST
+`--paginate` sur #28732 : la tentative de porte vue était bien la plus récente
+(la porte est un des contextes les plus récents) — la troncature n'a pas inversé
+le verdict sur cet échantillon ; ce qui peut manquer, ce sont des noms de checks
+**anciens**. **Annoncer la limite** quand je publie une liste de vertes (le
+lecteur l'hérite), et vérifier en REST `--paginate` avant d'affirmer un rouge sur
+une PR dont le nombre de contextes vaut exactement la page demandée.
+
+18. **L'organe B.0 compte une réserve de bot attachée à une tête abandonnée comme
+une réserve vivante.** Mesure c696 (#28565) : l'un des 2 nits bloqués est la
+review Hermes (deux glyphes de sévérité) posée sur `7986b2d5`, alors que la tête est
+`c450579f9` — l'organe ne distingue pas une réserve attachée à la tête d'une
+réserve attachée à une tête abandonnée (tell 11, vu du côté de l'organe).
+**Avant d'alerter une lane sur un `BLOCKED`, lire le commit de chaque review et le
+comparer à la tête** : si la review est sur une tête abandonnée, l'alerte utile n'est
+pas « répare », mais « la levée doit venir de l'auteur de la réserve » — et le dire à
+l'expéditeur, qui peut se croire bloqué après avoir tout réparé.
+
+### Tells de mesure (26/11, cycle c697)
+
+Sept pièges mesurés dans le cycle c697. Le premier a coûté une **liste** déjà
+transmise à ai-01 (31 PRs annoncées, 39 réelles) ; le dernier prive de toute
+relecture.
+
+19. **La classe d'une réserve exige la CHRONOLOGIE des reviews, pas seulement le
+dernier état.** Un classifieur « si la dernière review n'est pas `APPROVED`, c'est
+une réserve » se trompe trois fois : une `CHANGES_REQUESTED` suivie d'un `APPROVED`
+d'ai-01 sur une tête qui couvre le contenu est **refermée** — l'`APPROVED` d'une
+autre lane, sous le login partagé, ne lève rien (tell 3) ; `COMMENTED` et
+`DISMISSED` **ne sont pas** des réserves, mais un `COMMENTED` qui porte une
+**phrase de levée** referme la réserve, tandis qu'un `COMMENTED` de pause — « Pause
+(décision du mainteneur) … Rien à faire sur cette branche d'ici là » — **n'est pas
+une levée** : la réserve reste ouverte ; une CR sur une tête
+**antérieure** est une réserve **vivante** que la branche a devancée, pas une
+branche abandonnée. Mesure c697 sur 76 PRs portant une review d'ai-01 (337
+balayées) : 2 PRs **sortent** de la liste de 31 déjà transmise (#27119 levée par
+`APPROVED @14fbbfb46d61` du 20/11 03:40Z ; #27153 levée en écrit le 21/11
+20:54Z) et 10 **entrent**, dont 9 CR à la tête exacte jamais transmises → **39** et
+non 31. La pagination est **réfutée** comme cause : max **9 reviews** par PR
+ouverte, la fenêtre ne tronquait pas. Recette : lire `state` + `submittedAt` +
+`commit.oid` + `body` de chaque review ; `APPROVED` d'ai-01 sur une tête qui couvre
+le contenu = réserve refermée ; `CHANGES_REQUESTED` = réserve vivante ; un
+`COMMENTED`/`DISMISSED` ne referme que s'il **dit** la levée (phrase dans le corps) —
+une pause n'est pas une levée ; comparer ensuite le commit de la CR à la tête
+courante pour **cibler** la relecture, sans le lire comme une caducité. Une réserve
+sur une tête antérieure n'est pas « à réparer » par la lane : elle attend la
+relecture d'ai-01.
+
+20. **Un titre de porte vide ne permet pas de classer le rouge : la cause se lit
+dans le log du job.** Signature mesurée sur quatre PRs (#27119, #28126,
+#28393, #28728) : `installation-quota 403 -- announced reset Ns away : rendering
+INCONCLUSIVE now and releasing the runner` puis `WARN -- self-cancel refused
+(exit 1): … API rate limit exceeded for installation` — le self-cancel having été
+refusé **par le même 403**, la jambe conclut `FAILURE` (exit 3) au lieu de
+`CANCELLED`, alors que son verdict interne est **INCONCLUSIVE** (« l'état des
+checks est INCONNU, pas faux ») et **REJOUABLE**. Deux corollaires : (a) une porte à
+titre vide **avec** des enfants rouges n'implique pas un rouge d'infra — le rouge
+peut être dans le code, et le titre vide n'est que la *conséquence* d'une porte qui
+n'a pas pu écrire ; (b) une porte à titre vide **sans** enfant rouge est le
+*candidat* quota — à confirmer dans le log avant tout rejeu ; (c) **un titre vide ne
+prouve pas le quota** : #28126
+(rejouée à 10:04:56Z) a écrit un verdict `DWELL -- tete du 2026-11-26T08:44:15Z,
+81 min -- plancher 120 min, reste 39 min` dans son **log**, alors que le titre du
+check-run restait **vide** et la conclusion `failure`. Le discriminant est le **log**,
+jamais le titre : lire le log avant de classer un rouge, y compris un rouge « vide ».
+Le log dit que le balayage `pr-gate-stale-sweep`
+rejoue la jambe après le reset horaire : ne pas multiplier les rejeux concurrents.
+
+21. **La porte peut être sur la page 2.** Le REST `check-runs?per_page=100` sans
+`--paginate` renvoie la page 1 : #27119 porte **134** check-runs et sa porte est en
+page 2 — une lecture sans `--paginate` conclut « pas de porte » sur une PR qui en a
+une. Toujours `--paginate`.
+
+22. **Après un rejeu, le job porte encore l'ancienne tentative tant qu'aucun runner
+ne l'a prise.** `gh run rerun --job` renvoie rc=0 sans rien écrire à l'écran ; l'objet
+job garde `run_attempt: 1` et sa conclusion `completed|failure` **pendant** que la
+tentative 2 attend le pool. Un observateur qui lit le job publie donc un verdict
+**périmé** (mesuré : « ROUGE (tentative 1) » quatre minutes après le rejeu). Vérifier
+au niveau du **RUN** (`run_attempt`), et n'accepter un verdict que si
+`run_attempt >= 2`.
+
+23. **Une réponse RooSync ne se relit pas : `action:"reply"` ignore la clé
+d'idempotence.** Dans `build/tools/roosync/messages.js`, le cas `reply` ne transmet
+**pas** `messageId` à l'expediteur : un rejeu **duplique** le message, et l'id créé
+n'est **pas interrogeable** — le corps publié ne peut donc pas être relu, ce qui
+supprime la garde « relire le corps publié ». Mesuré sur un envoi réel :
+`action:"send"` avec `reply_to: <id du message parent>` **et**
+`messageId: <clé stable>` transmet la clé, absorbe le rejeu, et
+`action:"message"` avec cette clé rend le corps publié (préfixe, suffixe
+et séparateur serveur présents, aucun PAYLOAD-TRAP).
+
+24. **Un titre NON-VERDICT est aussi trompeur qu'un titre vide.** Le sélecteur du
+balayage `pr-gate-stale-sweep` (`.github/workflows/pr-gate-stale-sweep.yml`
+l.1207-1208) prend la **dernière ligne contenant `[pr-gate]`** du journal et la
+colle dans `output.title` — et la porte imprime **après** son verdict une ligne de
+comptabilité (`scripts/pr_gate.py:2810`, `[pr-gate] api-quota: N gh api call(s),
+M served by a 304 (0 quota)`). Mesure c697 (fait mesuré par po-2028:CoursIA-3,
+10:12Z) : **12 portes réparées, 12 titres non-verdict** (11 `api-quota:` et 1 repli
+« aucune ligne [pr-gate] »). Le verdict réel se lit dans la **3ᵉ annotation** du
+check-run, ou sur la ligne de journal dont le texte après `[pr-gate] ` commence par
+PASS / FAIL / INCONCLUSIVE / DWELL / STARVED. Corollaire grave : un `FAIL` de
+contenu réparé par le même sélecteur serait rangé « infra » et **jamais relu** —
+donc **ne jamais citer un titre de porte comme classe**, et relire par l'annotation.
+
+25. **Le quota d'installation a une échéance annoncée dans le log ; rejouer avant
+l'échéance reproduit le rouge.** La ligne `[pr-gate] installation-quota 403 --
+announced reset Ns away (> 300s)` porte l'heure de réarmement (mesure c697 :
+`981s away` à 10:20:47Z, soit **10:37:08Z**). Un `gh run rerun` accepté (rc=0)
+**ne prouve pas** que la cause a disparu : mes 8 rejeux de 10:20Z ont tous
+reproduit `INCONCLUSIVE`. Corollaires : (a) le quota d'installation de l'App
+GitHub est un compteur **distinct** du quota utilisateur `jsboige` — la mesure du
+quota utilisateur ne dit rien de l'échéance de l'App ; (b) lire `announced reset`
+**avant** de rejouer, et rejouer après ; (c) le balayage `pr-gate-stale-sweep`
+rejoue la même jambe de son côté — ne pas multiplier les rejeux concurrents.
+
+Corollaire de mesure (c697) : **une PR sans porte n'est pas une PR rouge.** Sur 338
+PRs ouvertes, 41 n'ont pas de `PR gate` dans la fenêtre GraphQL ; vérifiées en REST
+`--paginate`, **39 n'ont AUCUNE jambe de check à leur tête** (la CI n'a pas tourné
+sur cette tête) et 6 ont des jambes sans porte. Les compter à part, ne jamais les
+ajouter à un total de rouges : un « rouge » annoncé sur une PR sans CI est un
+faux rouge qui pollue la file. Mesure du cycle c697, sur 338 PRs : 227 vertes,
+3 portes en vol, 61 rouges **avec** titre — dont **7 minuteurs DWELL** (le contenu
+de la porte le dit : « Rien a corriger dans le code : cette jambe est un minuteur »)
+et 54 rouges de contenu, hors de mon ressort — plus 6 portes rouges à titre vide
+(dont 2 confirmées quota d'installation par le log, 4 avec enfants rouges donc de
+contenu).
+
+### Tells de mesure (26/11, cycle c698)
+
+Trois pièges mesurés dans le cycle c698 : l'un sur le **crible** qui compose
+les listes, les deux autres sur le **verdict** et la **relecture** qui
+décident qu'une PR part.
+
+26. **Un crible de tag `Grain:` à forme unique classe « SANS TAG » des PRs qui en
+portent un.** Le tag s'écrit `—` ou `--` selon la main qui l'a posé : mon crible en
+exigeait un, et il a classé **3 PRs du lot comme sans tag** alors qu'elles en
+portent un (`MED/readme`, `DEEP/notebook-python`). Un faux « SANS TAG » ne se voit
+pas : il fait sortir la PR d'une liste de fusion **pour une raison imaginaire**, et
+rien dans le rapport ne le signale. Les deux formes coexistent dans le même corpus
+(le relevé de pool du siège porte `—`, les corps de PR portent `--`) ; la règle du
+dépôt (`variation-protocol.md`) juge la substance du tag, pas sa ponctuation.
+27. **Une porte `PR gate` verte et `mergeable_state: unstable` coexistent : « porte
+verte » ne veut pas dire « fusionnable ».** Mesure c698 (#28346) : porte `success`
+(verdict `PASS`) et `mergeable_state: unstable`. La porte ignore les advisories ; le
+prédicat de l'organe de merge (`latest-wins-green`) les compte. Le seul check non
+vert de #28346 est `_quarto.yml render list freshness (advisory)` en `failure` —
+dont l'annotation dit « Ceci **NE BLOQUE PAS** la PR », dont l'échec porte sur un
+notebook **hors du périmètre** de la PR, et qui est **vert sur `main`** : base
+périmée, pas diff. Corollaires : (a) lire `mergeable_state` **avant** d'annoncer
+une PR mergeable ; (b) lire l'annotation de l'advisory **avant** d'alerter une
+lane — l'alerte sur une base périmée enverrait la porteuse réparer un diff qu'elle
+n'a pas ; (c) le remède est `gh pr update-branch` (il ne ré-arme pas le plancher
+DWELL, #16149) et non un rejeu à la même tête, qui reproduirait le même rouge.
+
+Corollaire de mesure (c698) : **l'échéance annoncée dans le log est la bonne
+échéance.** Après le reset du quota d'installation (10:37:08Z), les 12 portes
+rejouées ont **toutes relu leurs checks** : **9 `INCONCLUSIVE` → 0**. Le budget de
+rejeux se pose donc à l'échéance lue dans le log, jamais à l'heure du verdict
+lui-même (tell 25).
+28. **Un `gh api --jq .body > fichier` écrit le corps d'erreur de l'API dans le
+fichier quand l'appel est refusé.** Mesure c698 : quota REST épuisé,
+`gh api .../pulls/28728 --jq .body > corps_publie.md` a produit **538 octets**
+tenant le JSON d'erreur 403 — et la relecture programmatique a répondu « structure
+OK » (le JSON d'erreur ne porte aucune clé `body`) et « identique à la source :
+False ». Sans le contrôle de **longueur** (16 267 attendus contre 538 mesurés), la
+mesure « corps publié » était **fausse** : un fichier d'erreur se lit comme un
+corps court. Corollaires : (a) ne jamais capturer une sortie d'API dans un fichier
+sans vérifier qu'elle ne contient ni « rate limit » ni un statut 403 ; (b) en cas
+de 403, basculer sur GraphQL — compteur distinct — pour relire le corps publié ;
+(c) la garde « longueur ≥ 100 » du gh-posting-hygiene **n'attrape pas** ce cas
+(538 > 100) : la garde utile est **longueur attendue contre longueur mesurée**.
+
+### Tells de mesure (26/11, cycles c701 et c702)
+
+Huit pièges mesurés sur les rouges de la file. Le fil : **avant de classer un rouge,
+lire le log du job de bout en bout** (le checkout d'abord). Une légende
+d'annotation (`exit code 1`) ne dit rien du runner ; `runner_name` et les lignes
+`checkout`/`fetch` disent la classe.
+
+29. **Un rouge `Scripts Tests (CPU)` peut venir d'un CHECKOUT RATE du runner, pas
+du diff — mais un log n'établit la cause que du run qu'il décrit.** *Why :* neuf PRs
+rouges CPU échouaient toutes sur
+`GameTheory-06-EvolutionTrust-Python.ipynb` — un carnet de `main` qu'aucune ne
+touchait — avec `ModuleNotFoundError: No module named 'axelrod'` ; j'en concluais
+d'abord à un interpréteur de noyau différent. Le rejeu a montré la cause **de ce
+rejeu** : `RPC failed; curl 28 Operation too slow`, `fatal: protocol error: bad pack
+header`, `could not fetch <sha> from promisor remote`, exit 128 — arbre de travail
+incomplet **sur ce rejeu** ; le module absent, la collection pytest qui crash et le
+plancher de couverture franchi en faux n'en sont que des conséquences. La cause se
+lisait dans ces lignes du log **de ce rejeu** ; `ModuleNotFoundError` et « la
+collection a crash » étaient des symptômes. Alerter un porteur sur un symptôme de
+runner = fausse attribution + un cycle perdu. **Le log d'un rejeu qualifie le
+rejeu** : lui attribuer la cause du run précédent suppose que les deux runs ont
+échoué par le même mécanisme — c'est la correspondance des lignes de log qui
+l'établit, pas le seul fait que le rejeu ait révélé une cause (tell 32).
+30. **`actions/jobs/<id>` expose `runner_name` : c'est un indice, pas un
+discriminant infra / contenu.** *Why :* les neuf jobs CPU ci-dessus ont tourné sur
+des slots self-hosted `*-wsl-*`, les dix-sept autres rouges de contenu du même
+cycle sur `GitHub Actions <id>` (hébergé). L'annotation « exit code 1 » est
+identique dans les deux classes. Un slot `*-wsl-*` **oriente** vers l'infra du
+runner, un runner hébergé vers le diff de la PR. **L'orientation
+n'est pas la classe** : deux runs du même slot peuvent échouer pour deux causes
+différentes ; c'est le log (checkout/fetch, signature d'échec) qui tranche —
+`runner_name` ne remplace pas cette lecture.
+31. **Un rejeu crée un NOUVEL id de job ; l'ancien reste en `failure`.** *Why :*
+le rejeu des neuf jobs CPU a produit **neuf ids de job neufs** ; les ids d'origine
+restent lisibles avec `conclusion: failure` (liste des ids : catalogue du siège).
+*How to apply :* comme pour les portes, lire le check-run du
+**plus récent `started_at`** sur la tête courante, jamais l'id qu'on a rejoué ;
+n'accepter un verdict de rejeu qu'une fois le job `completed`.
+32. **Un rejeu établit la cause DE CE REJEU, pas celle du run précédent — et il
+peut révéler une cause DIFFÉRENTE de celle qu'on supposait.** *Why :* même PR
+(#28651), même organe : le premier job montrait `ModuleNotFoundError` (symptôme),
+le rejeu montrait `curl 28` + `bad pack header` (autre cause). Aucune lecture du
+premier log ne permettait de classer le rouge. *How to apply :* devant un doute
+infra/contenu, le rejeu n'est pas une répétition : c'est l'**expérience** qui
+tranche la classe **du rejeu**. Si la cause lue diffère de la cause supposée, la
+qualification du run antérieur est **à corriger explicitement** — mais elle ne se
+déduit pas du seul fait que le rejeu diffère : c'est la correspondance des lignes
+de log entre les deux runs qui l'établit (tell 29).
+33. **`check-runs?per_page=100` sans pagination fait DISPARAÎTRE la jambe rouge
+sur une tête à plus de 100 jobs.** *Why :* #28651 porte 120 check-runs ; la
+première page ne contenait ni `Scripts Tests (CPU)` ni `PR gate`, et j'ai conclu
+« aucune jambe non verte lue » pour une PR qui avait bien un job CPU rouge
+(139678411743). *How to apply :* paginer jusqu'à `total_count` avant de conclure
+« aucune jambe » ; un « rien » mesuré sur une page tronquée est une **mesure
+manquante**, pas une mesure nulle.
+34. **Un test dont l'assertion dépend de l'HÔTE échoue sur le runner alors qu'il
+passe en local.** *Why :* le rejeu de #28251 (job 139906282543, slot
+`myia-po-2026-wsl-1`) a vert 24 337 tests puis échoué sur
+`test_lean_toolchain_reports_missing_when_not_a_wsl_seat - assert not any(checks)`,
+avec `✓ elan: elan 4.1.2` dans le log : `validate_lean_setup.py::check_command`
+branche sur `platform.system() == "Linux"` et lance `bash -c "source ~/.elan/env
+… && elan --version"`. Le test neutralise `shutil.which` et `HOME` (#28622) mais
+**pas le `PATH` du runner** : sur un slot où `elan` est installé, le contrôle
+négatif tombe. Vérifié en local sur le siège : `python -m pytest
+scripts/tests/test_lean_validate_lean_setup.py -q` → **12 passed**. **Un run local
+vert prouve que le test passe sur le siège, pas que le test est indépendant du
+runner** : ici l'assertion lit le `PATH` du runner, que le test neutralise mal.
+L'indépendance se prouve sur l'assertion elle-même (elle ne lit que ce qu'elle
+contrôle), pas par un run local ni par un rejeu CI.
+35. **Une fast-lane publie un check-run par garde : deux jambes rouges peuvent
+n'être qu'UN SEUL garde.** *Why :* #28769 portait deux rouges — `Papermill ratchet
+(base vs PR)` (job 139906330627) et `Always-on guards -- 18 organes, 1 checkout`
+(job 139902434649). Le second a évalué **77 gardes** et le **seul** bloquant était
+`Papermill ratchet (base vs PR) -> failure` ; le job dédié n'a ni runner propre
+(`runner_name` null, `started_at == completed_at`) ni log : c'est un check-run
+**publié** par la fast-lane. *How to apply :* devant deux jambes rouges, lire la
+ligne d'agrégat `check-run publie : <garde> -> failure` du log avant d'alerter
+deux porteurs ; le job dédié peut n'être qu'une **publication** du même garde.
+36. **Un ref de merge figé rejoue le même échec : rejouer une tête périmée ne
+mesure plus la PR.** *Why :* sur #28690, `pull/28690/merge` était resté figé à
+`900c200d` alors que le test `test_candidate_paths_without_appdata` avait été
+corrigé par #28640 dans `main` (fondu à 07:48:52Z) ; le rejeu portait le ref
+figé, donc reproduisait l'échec. La lane porteuse a fusionné `main` dans sa
+branche (tête `fba9624514`) et la CI a tourné sur cette tête-là. *How to apply :*
+avant de rejouer un job, lire la **tête courante** de la PR et le `head_sha` du
+run ; un rejeu sur une tête abandonnée est une **mesure manquante**, et son
+verdict ne vaut pas pour la PR.
+
+### Tells de mesure (26/11, cycle c712)
+
+37. **Compter les jambes non vertes SANS le fold canonique sur-compte les
+tentatives périmées — et change la conclusion.** *Why :* sur #28781 (tête
+`60dfa524b99`), mon script listait **toutes** les tentatives non vertes de
+`check-runs` au lieu de plier par nom : brut **111** jambes / 3 non vertes / 7
+« en vol » ; au fold `pr_gate.dedupe_latest` (latest-wins par nom, avec le
+repli `skipped`), **93** jambes / 2 non vertes / **0 en vol** — les 7
+`lean-matrix` étaient des tentatives périmées, et `Always-on guards -- body`
+(`cancelled` 18:26:18Z) avait une tentative **success** de 18:28:10Z. Ma
+lecture annonçait « 7 jambes en vol, donc aucun rejeu » là où le fold donnait
+« plus rien en vol » ; sur #28728 elle annonçait « 5 en vol » là où la porte
+était **terminée en DWELL**. *How to apply :* ne jamais écrire son propre
+fold — **importer** `dedupe_latest` de `scripts/pr_gate.py` ; le comptage brut
+sert au repérage (combien de tentatives), jamais au verdict (quelles jambes
+sont rouges à la tête) ; croiser tout « en vol » annoncé avec le fold avant de
+conclure « aucun rejeu possible ».
+38. **Une porte rendue `INCONCLUSIVE` sur un quota d'installation est
+REJOUABLE : le log nomme le geste.** *Why :* porte `PR gate` de #28781 (run
+45875835520, job 140102546996), titre `PR gate: api-quota: 11 gh api call(s),
+2 served by a 304 (0 quota)` — titre non-verdict (tell 24). Le LOG nomme la
+cause et le geste : `installation-quota 403 -- announced reset 693s away (> 300s):
+rendering INCONCLUSIVE now and releasing the runner`, puis `INCONCLUSIVE --
+quota d'installation GitHub App epuisee : l'etat des checks est INCONNU, pas
+faux. REJOUABLE : relancer la jambe (gh run rerun <run_id> --job <job_id>)
+apres le reset horaire`. La jambe `Analyze (actions)` (CodeQL) avait **terminé
+son analyse et exporté le SARIF**, puis échoué sur `API rate limit exceeded for
+installation` à la publication — l'échec est en fin de log, après le travail.
+*How to apply :* un `INCONCLUSIVE` (et non un `FAIL`) se rejoue **après** le
+reset horaire annoncé dans le log, jamais avant ; le rejeu porte sur le **job**
+(`gh run rerun <run_id> --job <job_id>`), jamais sur la porte dont l'état est
+inconnu — et le nouveau job porte un **id différent** (tell 31). Une jambe
+dont le log montre le travail **accompli** puis un échec de publication est un
+rouge d'infra, pas de contenu.
+
+### Tells de mesure (26/11, cycle c713)
+
+39. **Chaque cycle de mesure a son titre, et la numérotation se vérifie par
+extraction.** *Why :* mes tells 37 et 38, mesurés en c712, sont restés sous le
+titre `### Tells de mesure (26/11, cycles c701 et c702)` : le titre annonçait un
+cycle que la section ne portait pas. Un document dont l'objet est la traçabilité
+ne peut pas porter lui-même une traçabilité fausse. *How to apply :* ouvrir un
+titre par cycle de mesure (un cycle = un titre) ; vérifier la numérotation par
+**extraction** — regex `^\d+\. \*\*` bornée à la section des tells, contrôlant
+trous, doublons et titres — et non à l'œil ; **re-mesurer les fins de ligne après
+chaque écriture** : le fichier est **intégralement CRLF, sans BOM** (mesure :
+**0 LF nu** avant comme après la correction — l'invariant à préserver, pas un
+compte à recopier) ; et ne pas écrire dans le texte un nombre **volatil** — un
+compte de lignes y devient faux au commit suivant, il ne se recopie pas.
+
+### Tells de mesure (26/11, cycle c714)
+
+40. **Un rouge de contenu se vérifie contre la BASE avant d'alerter le porteur.**
+*Why :* sur #28149, deux jambes (`check-links`, `twin-parity-guard`) ressemblaient
+à des régressions de la PR ; elles venaient de la branche, **forkée avant** la
+relocation de la série Symmetry (#27140) — qui avait re-cheminé un lien — et avant
+l'arrivée de l'entrée de registre d'une paire de jumeaux sur `main` (ce que
+l'organe compte MISSING à la tête). Le porteur a résolu par `gh pr update-branch`
+— merge de `main` **sans conflit** — sans toucher au carnet ; l'organe a ensuite
+régénéré l'entrée de registre lui-même. *How to apply :* devant un rouge de
+contenu, comparer d'abord la **base** (`git log origin/main -- <chemin>`, présence
+de l'entrée de registre sur `main`) : si la correction est **déjà sur `main`** et
+absente de la branche, le geste est `update-branch`, pas une réparation du diff ;
+et un `DRIFT`/`MISSING` de paire de jumeaux se lit d'abord comme une question de
+base.
 
 ## Émission de dossiers — garde-fous obligatoires
 
