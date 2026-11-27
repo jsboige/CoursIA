@@ -67,6 +67,36 @@ chain — and then the passage to homology. The augmented complex
 `F ⟶ C⁰F ⟶ C⁰(coker μ) ⟶ ⋯` as a **resolution** of `F` (the
 quasi-isomorphism) follows acyclicity and is not approached here.
 
+## Relation to AxiomMath/Stacks
+
+The repository `AxiomMath/Stacks` formalizes the Godement resolution of
+[Stacks, Tag 0FKS] over sheaves of modules on a ringed space, under
+`StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/`. The
+correspondence with this Part, stated per covered declaration in the French
+docstrings:
+
+- `godementCanonicalComplex` — the complex `F[0] ⟶ f_* f^* F ⟶ ⋯`, the Moore
+  cochain complex of the Godement cosimplicial object (`Stalk.lean`); ours is
+  assembled at the level of presheaves of abelian groups.
+- `isZero_stalk_homology_godementCanonicalComplex` — covered, in stronger
+  form, by clause (5) (`homotopyEquivalences_stalk_godementAugmentation`,
+  `StalkHomotopy.lean:520`) and clause (3) (`quasiIso_godementAugmentation`,
+  `StalkHomotopy.lean:558`). The frameworks differ (sheaf of modules there,
+  arbitrary presheaf of abelian groups here), so our statement is not a
+  specialization of theirs, and nothing they establish is reproved here.
+- `isFlasque_godementCanonicalComplex` — their clause (3) states the flasque
+  resolution in the sheaf-of-modules setting; ours proves flascity
+  degree-wise at the presheaf level, with no sheafification.
+- `shortExact_godementMapHom`, `shortExact_stalk_godementMapHom`,
+  `shortExact_stalk_godementCanonicalMap_zero` — the degree-0 row of the
+  degreewise short exact sequence, made explicit; it is the form the next
+  tranche consumes, not stated separately in Stacks.
+
+`singleConstantHomotopyEquiv` (`Stalk.lean:156`) — the Moore complex of a
+constant cosimplicial object is homotopy equivalent to the complex
+concentrated in degree 0 — is the computation that degenerates the
+augmentation in degree 0; it is used here, not reproved.
+
 ## References
 
   - R. Godement, *Topologie algébrique et théorie des faisceaux* [God58],
@@ -295,5 +325,25 @@ variable {X : TopCat.{u}}
 -- (`L₃_exact` of `SnakeInput`) — needless: the snake remains the organ of
 -- the **hard** target (mono/epi of the stages and annihilation of the
 -- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
+
+--
+-- **Part 101 landed in the FR twin**: the short exactness of
+-- `C⁰`, categorified and stalkwise. `Grothendieck.shortExact_godementMapHom`
+-- — the SES of `C⁰`-images as a short exact sequence **in the presheaf
+-- category** itself: Part 98 had it open by open, and the evaluation
+-- functors preserve finite limits and colimits while jointly reflecting
+-- isomorphisms, so `JointlyReflectIsomorphisms.shortExact_iff` transports
+-- the pointwise statement to the categorical one.
+-- `Grothendieck.shortExact_stalk_godementMapHom` — the stalk version, by
+-- exactness of the stalk functor (`exact_tfae`).
+-- `Grothendieck.shortExact_stalk_godementCanonicalMap_zero` — the
+-- degree-`0` row of the canonical complexes, read at every stalk, is short
+-- exact: the `n = 0` base of the degreewise SES (`godementCanonicalMap_zero`
+-- is `rfl`, the degree-0 row **is** the row of `C⁰`-images). **Not posed** —
+-- the named frontier: degrees `n + 1` of the degreewise SES (snake lemma at
+-- the stalks, vanishing of the connecting morphism via
+-- `isZero_stalk_homology_godementCanonicalComplex`, Part 93(b)), then the
+-- assembly `shortExact_iff_degreewise_shortExact` towards the SES of
+-- canonical complexes.
 
 end Grothendieck_en

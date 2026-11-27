@@ -1,0 +1,1262 @@
+{
+  "schema": "pt22-facts/v1",
+  "issue": 27376,
+  "sealed_doc": "docs/genai/pt16-sleep-dreaming-pre-enregistrement.md",
+  "generator": "pt22_facts_generator.py",
+  "seed": 27376,
+  "description": "60 faits fictifs « sujet -> attribut » pour l'étude PT-22 : 40 train, 20 held-out (jamais entraînés, jamais rejoués). Quatre créneaux de dix faits train et cinq held-out. Noms inventés, composés de syllabes ; aucune syllabe n'est partagée entre un fait train et un fait held-out.",
+  "format": {
+    "prompt": "« Question: » + question + « \\nAnswer: »",
+    "target": "une espace, puis l'attribut",
+    "order": "les 40 faits train (ids 001 a 040), puis les 20 faits held-out (ids 041 a 060)",
+    "held-out": "prompts fixes, ordre fixe ; jamais entraînés, jamais rejoués"
+  },
+  "slots": [
+    {
+      "slot": "birthplace",
+      "question_template": "In which city was {subject} born?",
+      "train": 10,
+      "held-out": 5
+    },
+    {
+      "slot": "native_language",
+      "question_template": "What is {subject}'s native language?",
+      "train": 10,
+      "held-out": 5
+    },
+    {
+      "slot": "novel",
+      "question_template": "Which novel did {subject} write?",
+      "train": 10,
+      "held-out": 5
+    },
+    {
+      "slot": "company",
+      "question_template": "Which company did {subject} found?",
+      "train": 10,
+      "held-out": 5
+    }
+  ],
+  "counts": {
+    "train": 40,
+    "held-out": 20,
+    "total": 60
+  },
+  "facts": [
+    {
+      "id": "pt22-001",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Sovdak Elglinn",
+      "subject_parts": [
+        "Sov",
+        "dak",
+        "Elg",
+        "linn"
+      ],
+      "attribute": "Corlmarburg",
+      "attribute_parts": [
+        "Corl",
+        "mar",
+        "burg"
+      ],
+      "question": "In which city was Sovdak Elglinn born?",
+      "prompt": "Question: In which city was Sovdak Elglinn born?\nAnswer:",
+      "target": " Corlmarburg"
+    },
+    {
+      "id": "pt22-002",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Mursa Silund",
+      "subject_parts": [
+        "Mur",
+        "sa",
+        "Sil",
+        "und"
+      ],
+      "attribute": "Ylfuldmere",
+      "attribute_parts": [
+        "Ylf",
+        "uld",
+        "mere"
+      ],
+      "question": "In which city was Mursa Silund born?",
+      "prompt": "Question: In which city was Mursa Silund born?\nAnswer:",
+      "target": " Ylfuldmere"
+    },
+    {
+      "id": "pt22-003",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Halvi Zorlinn",
+      "subject_parts": [
+        "Hal",
+        "vi",
+        "Zor",
+        "linn"
+      ],
+      "attribute": "Zarnholburg",
+      "attribute_parts": [
+        "Zarn",
+        "hol",
+        "burg"
+      ],
+      "question": "In which city was Halvi Zorlinn born?",
+      "prompt": "Question: In which city was Halvi Zorlinn born?\nAnswer:",
+      "target": " Zarnholburg"
+    },
+    {
+      "id": "pt22-004",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Murur Wenvane",
+      "subject_parts": [
+        "Mur",
+        "ur",
+        "Wen",
+        "vane"
+      ],
+      "attribute": "Drevastburg",
+      "attribute_parts": [
+        "Drev",
+        "ast",
+        "burg"
+      ],
+      "question": "In which city was Murur Wenvane born?",
+      "prompt": "Question: In which city was Murur Wenvane born?\nAnswer:",
+      "target": " Drevastburg"
+    },
+    {
+      "id": "pt22-005",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Murick Silsalv",
+      "subject_parts": [
+        "Mur",
+        "ick",
+        "Sil",
+        "salv"
+      ],
+      "attribute": "Corllenshaw",
+      "attribute_parts": [
+        "Corl",
+        "len",
+        "shaw"
+      ],
+      "question": "In which city was Murick Silsalv born?",
+      "prompt": "Question: In which city was Murick Silsalv born?\nAnswer:",
+      "target": " Corllenshaw"
+    },
+    {
+      "id": "pt22-006",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Ilvri Brantar",
+      "subject_parts": [
+        "Ilv",
+        "ri",
+        "Bran",
+        "tar"
+      ],
+      "attribute": "Veydorwick",
+      "attribute_parts": [
+        "Vey",
+        "dor",
+        "wick"
+      ],
+      "question": "In which city was Ilvri Brantar born?",
+      "prompt": "Question: In which city was Ilvri Brantar born?\nAnswer:",
+      "target": " Veydorwick"
+    },
+    {
+      "id": "pt22-007",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Dunil Vascors",
+      "subject_parts": [
+        "Dun",
+        "il",
+        "Vas",
+        "cors"
+      ],
+      "attribute": "Pellholshaw",
+      "attribute_parts": [
+        "Pell",
+        "hol",
+        "shaw"
+      ],
+      "question": "In which city was Dunil Vascors born?",
+      "prompt": "Question: In which city was Dunil Vascors born?\nAnswer:",
+      "target": " Pellholshaw"
+    },
+    {
+      "id": "pt22-008",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Dunsa Sillinn",
+      "subject_parts": [
+        "Dun",
+        "sa",
+        "Sil",
+        "linn"
+      ],
+      "attribute": "Veyganwick",
+      "attribute_parts": [
+        "Vey",
+        "gan",
+        "wick"
+      ],
+      "question": "In which city was Dunsa Sillinn born?",
+      "prompt": "Question: In which city was Dunsa Sillinn born?\nAnswer:",
+      "target": " Veyganwick"
+    },
+    {
+      "id": "pt22-009",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Teglai Lorvex",
+      "subject_parts": [
+        "Teg",
+        "lai",
+        "Lor",
+        "vex"
+      ],
+      "attribute": "Torvuldby",
+      "attribute_parts": [
+        "Torv",
+        "uld",
+        "by"
+      ],
+      "question": "In which city was Teglai Lorvex born?",
+      "prompt": "Question: In which city was Teglai Lorvex born?\nAnswer:",
+      "target": " Torvuldby"
+    },
+    {
+      "id": "pt22-010",
+      "split": "train",
+      "slot": "birthplace",
+      "subject": "Tegum Gornard",
+      "subject_parts": [
+        "Teg",
+        "um",
+        "Gor",
+        "nard"
+      ],
+      "attribute": "Corlholwick",
+      "attribute_parts": [
+        "Corl",
+        "hol",
+        "wick"
+      ],
+      "question": "In which city was Tegum Gornard born?",
+      "prompt": "Question: In which city was Tegum Gornard born?\nAnswer:",
+      "target": " Corlholwick"
+    },
+    {
+      "id": "pt22-011",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Lyren Elgtar",
+      "subject_parts": [
+        "Lyr",
+        "en",
+        "Elg",
+        "tar"
+      ],
+      "attribute": "Vhaluri",
+      "attribute_parts": [
+        "Vhal",
+        "uri"
+      ],
+      "question": "What is Lyren Elgtar's native language?",
+      "prompt": "Question: What is Lyren Elgtar's native language?\nAnswer:",
+      "target": " Vhaluri"
+    },
+    {
+      "id": "pt22-012",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Sefick Elgnard",
+      "subject_parts": [
+        "Sef",
+        "ick",
+        "Elg",
+        "nard"
+      ],
+      "attribute": "Hylari",
+      "attribute_parts": [
+        "Hyl",
+        "ari"
+      ],
+      "question": "What is Sefick Elgnard's native language?",
+      "prompt": "Question: What is Sefick Elgnard's native language?\nAnswer:",
+      "target": " Hylari"
+    },
+    {
+      "id": "pt22-013",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Pyrthos Rasbrin",
+      "subject_parts": [
+        "Pyr",
+        "thos",
+        "Ras",
+        "brin"
+      ],
+      "attribute": "Vhalari",
+      "attribute_parts": [
+        "Vhal",
+        "ari"
+      ],
+      "question": "What is Pyrthos Rasbrin's native language?",
+      "prompt": "Question: What is Pyrthos Rasbrin's native language?\nAnswer:",
+      "target": " Vhalari"
+    },
+    {
+      "id": "pt22-014",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Sefarn Gorlinn",
+      "subject_parts": [
+        "Sef",
+        "arn",
+        "Gor",
+        "linn"
+      ],
+      "attribute": "Cyrali",
+      "attribute_parts": [
+        "Cyr",
+        "ali"
+      ],
+      "question": "What is Sefarn Gorlinn's native language?",
+      "prompt": "Question: What is Sefarn Gorlinn's native language?\nAnswer:",
+      "target": " Cyrali"
+    },
+    {
+      "id": "pt22-015",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Murvi Gortir",
+      "subject_parts": [
+        "Mur",
+        "vi",
+        "Gor",
+        "tir"
+      ],
+      "attribute": "Zheuri",
+      "attribute_parts": [
+        "Zhe",
+        "uri"
+      ],
+      "question": "What is Murvi Gortir's native language?",
+      "prompt": "Question: What is Murvi Gortir's native language?\nAnswer:",
+      "target": " Zheuri"
+    },
+    {
+      "id": "pt22-016",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Rheob Branund",
+      "subject_parts": [
+        "Rhe",
+        "ob",
+        "Bran",
+        "und"
+      ],
+      "attribute": "Brelari",
+      "attribute_parts": [
+        "Brel",
+        "ari"
+      ],
+      "question": "What is Rheob Branund's native language?",
+      "prompt": "Question: What is Rheob Branund's native language?\nAnswer:",
+      "target": " Brelari"
+    },
+    {
+      "id": "pt22-017",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Fenob Brangar",
+      "subject_parts": [
+        "Fen",
+        "ob",
+        "Bran",
+        "gar"
+      ],
+      "attribute": "Talorr",
+      "attribute_parts": [
+        "Tal",
+        "orr"
+      ],
+      "question": "What is Fenob Brangar's native language?",
+      "prompt": "Question: What is Fenob Brangar's native language?\nAnswer:",
+      "target": " Talorr"
+    },
+    {
+      "id": "pt22-018",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Sovick Delnsalv",
+      "subject_parts": [
+        "Sov",
+        "ick",
+        "Deln",
+        "salv"
+      ],
+      "attribute": "Uzoorr",
+      "attribute_parts": [
+        "Uzo",
+        "orr"
+      ],
+      "question": "What is Sovick Delnsalv's native language?",
+      "prompt": "Question: What is Sovick Delnsalv's native language?\nAnswer:",
+      "target": " Uzoorr"
+    },
+    {
+      "id": "pt22-019",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Ilvdak Wennard",
+      "subject_parts": [
+        "Ilv",
+        "dak",
+        "Wen",
+        "nard"
+      ],
+      "attribute": "Breloth",
+      "attribute_parts": [
+        "Brel",
+        "oth"
+      ],
+      "question": "What is Ilvdak Wennard's native language?",
+      "prompt": "Question: What is Ilvdak Wennard's native language?\nAnswer:",
+      "target": " Breloth"
+    },
+    {
+      "id": "pt22-020",
+      "split": "train",
+      "slot": "native_language",
+      "subject": "Aroath Silust",
+      "subject_parts": [
+        "Aro",
+        "ath",
+        "Sil",
+        "ust"
+      ],
+      "attribute": "Hyloth",
+      "attribute_parts": [
+        "Hyl",
+        "oth"
+      ],
+      "question": "What is Aroath Silust's native language?",
+      "prompt": "Question: What is Aroath Silust's native language?\nAnswer:",
+      "target": " Hyloth"
+    },
+    {
+      "id": "pt22-021",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Aroum Faldal",
+      "subject_parts": [
+        "Aro",
+        "um",
+        "Fal",
+        "dal"
+      ],
+      "attribute": "Ivryrr",
+      "attribute_parts": [
+        "Ivr",
+        "yrr"
+      ],
+      "question": "Which novel did Aroum Faldal write?",
+      "prompt": "Question: Which novel did Aroum Faldal write?\nAnswer:",
+      "target": " Ivryrr"
+    },
+    {
+      "id": "pt22-022",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Ulmur Lundal",
+      "subject_parts": [
+        "Ulm",
+        "ur",
+        "Lun",
+        "dal"
+      ],
+      "attribute": "Ondrora",
+      "attribute_parts": [
+        "Ondr",
+        "ora"
+      ],
+      "question": "Which novel did Ulmur Lundal write?",
+      "prompt": "Question: Which novel did Ulmur Lundal write?\nAnswer:",
+      "target": " Ondrora"
+    },
+    {
+      "id": "pt22-023",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Murri Yalnet",
+      "subject_parts": [
+        "Mur",
+        "ri",
+        "Yal",
+        "net"
+      ],
+      "attribute": "Quilliel",
+      "attribute_parts": [
+        "Quill",
+        "iel"
+      ],
+      "question": "Which novel did Murri Yalnet write?",
+      "prompt": "Question: Which novel did Murri Yalnet write?\nAnswer:",
+      "target": " Quilliel"
+    },
+    {
+      "id": "pt22-024",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Kelull Delnlinn",
+      "subject_parts": [
+        "Kel",
+        "ull",
+        "Deln",
+        "linn"
+      ],
+      "attribute": "Wethquor",
+      "attribute_parts": [
+        "Weth",
+        "quor"
+      ],
+      "question": "Which novel did Kelull Delnlinn write?",
+      "prompt": "Question: Which novel did Kelull Delnlinn write?\nAnswer:",
+      "target": " Wethquor"
+    },
+    {
+      "id": "pt22-025",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Bryil Gormon",
+      "subject_parts": [
+        "Bry",
+        "il",
+        "Gor",
+        "mon"
+      ],
+      "attribute": "Ciroris",
+      "attribute_parts": [
+        "Cir",
+        "oris"
+      ],
+      "question": "Which novel did Bryil Gormon write?",
+      "prompt": "Question: Which novel did Bryil Gormon write?\nAnswer:",
+      "target": " Ciroris"
+    },
+    {
+      "id": "pt22-026",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Murob Mazvane",
+      "subject_parts": [
+        "Mur",
+        "ob",
+        "Maz",
+        "vane"
+      ],
+      "attribute": "Ondryrr",
+      "attribute_parts": [
+        "Ondr",
+        "yrr"
+      ],
+      "question": "Which novel did Murob Mazvane write?",
+      "prompt": "Question: Which novel did Murob Mazvane write?\nAnswer:",
+      "target": " Ondryrr"
+    },
+    {
+      "id": "pt22-027",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Halob Vasnet",
+      "subject_parts": [
+        "Hal",
+        "ob",
+        "Vas",
+        "net"
+      ],
+      "attribute": "Neviel",
+      "attribute_parts": [
+        "Nev",
+        "iel"
+      ],
+      "question": "Which novel did Halob Vasnet write?",
+      "prompt": "Question: Which novel did Halob Vasnet write?\nAnswer:",
+      "target": " Neviel"
+    },
+    {
+      "id": "pt22-028",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Sovil Rasfay",
+      "subject_parts": [
+        "Sov",
+        "il",
+        "Ras",
+        "fay"
+      ],
+      "attribute": "Quilloris",
+      "attribute_parts": [
+        "Quill",
+        "oris"
+      ],
+      "question": "Which novel did Sovil Rasfay write?",
+      "prompt": "Question: Which novel did Sovil Rasfay write?\nAnswer:",
+      "target": " Quilloris"
+    },
+    {
+      "id": "pt22-029",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Mirav Zorvex",
+      "subject_parts": [
+        "Mir",
+        "av",
+        "Zor",
+        "vex"
+      ],
+      "attribute": "Lornyrr",
+      "attribute_parts": [
+        "Lorn",
+        "yrr"
+      ],
+      "question": "Which novel did Mirav Zorvex write?",
+      "prompt": "Question: Which novel did Mirav Zorvex write?\nAnswer:",
+      "target": " Lornyrr"
+    },
+    {
+      "id": "pt22-030",
+      "split": "train",
+      "slot": "novel",
+      "subject": "Arothos Rascors",
+      "subject_parts": [
+        "Aro",
+        "thos",
+        "Ras",
+        "cors"
+      ],
+      "attribute": "Skarnyrr",
+      "attribute_parts": [
+        "Skarn",
+        "yrr"
+      ],
+      "question": "Which novel did Arothos Rascors write?",
+      "prompt": "Question: Which novel did Arothos Rascors write?\nAnswer:",
+      "target": " Skarnyrr"
+    },
+    {
+      "id": "pt22-031",
+      "split": "train",
+      "slot": "company",
+      "subject": "Rhedak Yalnard",
+      "subject_parts": [
+        "Rhe",
+        "dak",
+        "Yal",
+        "nard"
+      ],
+      "attribute": "Juxox",
+      "attribute_parts": [
+        "Jux",
+        "ox"
+      ],
+      "question": "Which company did Rhedak Yalnard found?",
+      "prompt": "Question: Which company did Rhedak Yalnard found?\nAnswer:",
+      "target": " Juxox"
+    },
+    {
+      "id": "pt22-032",
+      "split": "train",
+      "slot": "company",
+      "subject": "Aroull Branvex",
+      "subject_parts": [
+        "Aro",
+        "ull",
+        "Bran",
+        "vex"
+      ],
+      "attribute": "Havary",
+      "attribute_parts": [
+        "Hav",
+        "ary"
+      ],
+      "question": "Which company did Aroull Branvex found?",
+      "prompt": "Question: Which company did Aroull Branvex found?\nAnswer:",
+      "target": " Havary"
+    },
+    {
+      "id": "pt22-033",
+      "split": "train",
+      "slot": "company",
+      "subject": "Rhelai Zorbrin",
+      "subject_parts": [
+        "Rhe",
+        "lai",
+        "Zor",
+        "brin"
+      ],
+      "attribute": "Brixary",
+      "attribute_parts": [
+        "Brix",
+        "ary"
+      ],
+      "question": "Which company did Rhelai Zorbrin found?",
+      "prompt": "Question: Which company did Rhelai Zorbrin found?\nAnswer:",
+      "target": " Brixary"
+    },
+    {
+      "id": "pt22-034",
+      "split": "train",
+      "slot": "company",
+      "subject": "Pyrvi Hulbrin",
+      "subject_parts": [
+        "Pyr",
+        "vi",
+        "Hul",
+        "brin"
+      ],
+      "attribute": "Rhoova",
+      "attribute_parts": [
+        "Rho",
+        "ova"
+      ],
+      "question": "Which company did Pyrvi Hulbrin found?",
+      "prompt": "Question: Which company did Pyrvi Hulbrin found?\nAnswer:",
+      "target": " Rhoova"
+    },
+    {
+      "id": "pt22-035",
+      "split": "train",
+      "slot": "company",
+      "subject": "Sovsa Maztar",
+      "subject_parts": [
+        "Sov",
+        "sa",
+        "Maz",
+        "tar"
+      ],
+      "attribute": "Tevix",
+      "attribute_parts": [
+        "Tev",
+        "ix"
+      ],
+      "question": "Which company did Sovsa Maztar found?",
+      "prompt": "Question: Which company did Sovsa Maztar found?\nAnswer:",
+      "target": " Tevix"
+    },
+    {
+      "id": "pt22-036",
+      "split": "train",
+      "slot": "company",
+      "subject": "Kelsa Silpol",
+      "subject_parts": [
+        "Kel",
+        "sa",
+        "Sil",
+        "pol"
+      ],
+      "attribute": "Nexova",
+      "attribute_parts": [
+        "Nex",
+        "ova"
+      ],
+      "question": "Which company did Kelsa Silpol found?",
+      "prompt": "Question: Which company did Kelsa Silpol found?\nAnswer:",
+      "target": " Nexova"
+    },
+    {
+      "id": "pt22-037",
+      "split": "train",
+      "slot": "company",
+      "subject": "Torum Lorust",
+      "subject_parts": [
+        "Tor",
+        "um",
+        "Lor",
+        "ust"
+      ],
+      "attribute": "Ulxona",
+      "attribute_parts": [
+        "Ulx",
+        "ona"
+      ],
+      "question": "Which company did Torum Lorust found?",
+      "prompt": "Question: Which company did Torum Lorust found?\nAnswer:",
+      "target": " Ulxona"
+    },
+    {
+      "id": "pt22-038",
+      "split": "train",
+      "slot": "company",
+      "subject": "Toril Lorsalv",
+      "subject_parts": [
+        "Tor",
+        "il",
+        "Lor",
+        "salv"
+      ],
+      "attribute": "Norona",
+      "attribute_parts": [
+        "Nor",
+        "ona"
+      ],
+      "question": "Which company did Toril Lorsalv found?",
+      "prompt": "Question: Which company did Toril Lorsalv found?\nAnswer:",
+      "target": " Norona"
+    },
+    {
+      "id": "pt22-039",
+      "split": "train",
+      "slot": "company",
+      "subject": "Koril Yaldal",
+      "subject_parts": [
+        "Kor",
+        "il",
+        "Yal",
+        "dal"
+      ],
+      "attribute": "Juxona",
+      "attribute_parts": [
+        "Jux",
+        "ona"
+      ],
+      "question": "Which company did Koril Yaldal found?",
+      "prompt": "Question: Which company did Koril Yaldal found?\nAnswer:",
+      "target": " Juxona"
+    },
+    {
+      "id": "pt22-040",
+      "split": "train",
+      "slot": "company",
+      "subject": "Bryick Vasfay",
+      "subject_parts": [
+        "Bry",
+        "ick",
+        "Vas",
+        "fay"
+      ],
+      "attribute": "Wexix",
+      "attribute_parts": [
+        "Wex",
+        "ix"
+      ],
+      "question": "Which company did Bryick Vasfay found?",
+      "prompt": "Question: Which company did Bryick Vasfay found?\nAnswer:",
+      "target": " Wexix"
+    },
+    {
+      "id": "pt22-041",
+      "split": "held-out",
+      "slot": "birthplace",
+      "subject": "Quenael Pravdunn",
+      "subject_parts": [
+        "Quen",
+        "ael",
+        "Prav",
+        "dunn"
+      ],
+      "attribute": "Soroshdale",
+      "attribute_parts": [
+        "Sor",
+        "osh",
+        "dale"
+      ],
+      "question": "In which city was Quenael Pravdunn born?",
+      "prompt": "Question: In which city was Quenael Pravdunn born?\nAnswer:",
+      "target": " Soroshdale"
+    },
+    {
+      "id": "pt22-042",
+      "split": "held-out",
+      "slot": "birthplace",
+      "subject": "Veltur Pravmund",
+      "subject_parts": [
+        "Vel",
+        "tur",
+        "Prav",
+        "mund"
+      ],
+      "attribute": "Galdtondgard",
+      "attribute_parts": [
+        "Gald",
+        "tond",
+        "gard"
+      ],
+      "question": "In which city was Veltur Pravmund born?",
+      "prompt": "Question: In which city was Veltur Pravmund born?\nAnswer:",
+      "target": " Galdtondgard"
+    },
+    {
+      "id": "pt22-043",
+      "split": "held-out",
+      "slot": "birthplace",
+      "subject": "Selard Farsvale",
+      "subject_parts": [
+        "Sel",
+        "ard",
+        "Fars",
+        "vale"
+      ],
+      "attribute": "Ostvinhaven",
+      "attribute_parts": [
+        "Ost",
+        "vin",
+        "haven"
+      ],
+      "question": "In which city was Selard Farsvale born?",
+      "prompt": "Question: In which city was Selard Farsvale born?\nAnswer:",
+      "target": " Ostvinhaven"
+    },
+    {
+      "id": "pt22-044",
+      "split": "held-out",
+      "slot": "birthplace",
+      "subject": "Tavys Corvdil",
+      "subject_parts": [
+        "Tav",
+        "ys",
+        "Corv",
+        "dil"
+      ],
+      "attribute": "Vandrifford",
+      "attribute_parts": [
+        "Vand",
+        "rif",
+        "ford"
+      ],
+      "question": "In which city was Tavys Corvdil born?",
+      "prompt": "Question: In which city was Tavys Corvdil born?\nAnswer:",
+      "target": " Vandrifford"
+    },
+    {
+      "id": "pt22-045",
+      "split": "held-out",
+      "slot": "birthplace",
+      "subject": "Skoor Tharmer",
+      "subject_parts": [
+        "Sko",
+        "or",
+        "Thar",
+        "mer"
+      ],
+      "attribute": "Kervoshton",
+      "attribute_parts": [
+        "Kerv",
+        "osh",
+        "ton"
+      ],
+      "question": "In which city was Skoor Tharmer born?",
+      "prompt": "Question: In which city was Skoor Tharmer born?\nAnswer:",
+      "target": " Kervoshton"
+    },
+    {
+      "id": "pt22-046",
+      "split": "held-out",
+      "slot": "native_language",
+      "subject": "Vorren Sarnrinn",
+      "subject_parts": [
+        "Vor",
+        "ren",
+        "Sarn",
+        "rinn"
+      ],
+      "attribute": "Qarish",
+      "attribute_parts": [
+        "Qar",
+        "ish"
+      ],
+      "question": "What is Vorren Sarnrinn's native language?",
+      "prompt": "Question: What is Vorren Sarnrinn's native language?\nAnswer:",
+      "target": " Qarish"
+    },
+    {
+      "id": "pt22-047",
+      "split": "held-out",
+      "slot": "native_language",
+      "subject": "Tavtas Karsyar",
+      "subject_parts": [
+        "Tav",
+        "tas",
+        "Kars",
+        "yar"
+      ],
+      "attribute": "Savean",
+      "attribute_parts": [
+        "Sav",
+        "ean"
+      ],
+      "question": "What is Tavtas Karsyar's native language?",
+      "prompt": "Question: What is Tavtas Karsyar's native language?\nAnswer:",
+      "target": " Savean"
+    },
+    {
+      "id": "pt22-048",
+      "split": "held-out",
+      "slot": "native_language",
+      "subject": "Vorys Kaldaer",
+      "subject_parts": [
+        "Vor",
+        "ys",
+        "Kal",
+        "daer"
+      ],
+      "attribute": "Orvish",
+      "attribute_parts": [
+        "Orv",
+        "ish"
+      ],
+      "question": "What is Vorys Kaldaer's native language?",
+      "prompt": "Question: What is Vorys Kaldaer's native language?\nAnswer:",
+      "target": " Orvish"
+    },
+    {
+      "id": "pt22-049",
+      "split": "held-out",
+      "slot": "native_language",
+      "subject": "Vorrin Skelmyr",
+      "subject_parts": [
+        "Vor",
+        "rin",
+        "Skel",
+        "myr"
+      ],
+      "attribute": "Parnean",
+      "attribute_parts": [
+        "Parn",
+        "ean"
+      ],
+      "question": "What is Vorrin Skelmyr's native language?",
+      "prompt": "Question: What is Vorrin Skelmyr's native language?\nAnswer:",
+      "target": " Parnean"
+    },
+    {
+      "id": "pt22-050",
+      "split": "held-out",
+      "slot": "native_language",
+      "subject": "Skoys Ruvnoth",
+      "subject_parts": [
+        "Sko",
+        "ys",
+        "Ruv",
+        "noth"
+      ],
+      "attribute": "Rhunian",
+      "attribute_parts": [
+        "Rhun",
+        "ian"
+      ],
+      "question": "What is Skoys Ruvnoth's native language?",
+      "prompt": "Question: What is Skoys Ruvnoth's native language?\nAnswer:",
+      "target": " Rhunian"
+    },
+    {
+      "id": "pt22-051",
+      "split": "held-out",
+      "slot": "novel",
+      "subject": "Ilyor Farsrinn",
+      "subject_parts": [
+        "Ily",
+        "or",
+        "Fars",
+        "rinn"
+      ],
+      "attribute": "Xanavel",
+      "attribute_parts": [
+        "Xan",
+        "avel"
+      ],
+      "question": "Which novel did Ilyor Farsrinn write?",
+      "prompt": "Question: Which novel did Ilyor Farsrinn write?\nAnswer:",
+      "target": " Xanavel"
+    },
+    {
+      "id": "pt22-052",
+      "split": "held-out",
+      "slot": "novel",
+      "subject": "Tavael Kalmyr",
+      "subject_parts": [
+        "Tav",
+        "ael",
+        "Kal",
+        "myr"
+      ],
+      "attribute": "Ambrama",
+      "attribute_parts": [
+        "Ambr",
+        "ama"
+      ],
+      "question": "Which novel did Tavael Kalmyr write?",
+      "prompt": "Question: Which novel did Tavael Kalmyr write?\nAnswer:",
+      "target": " Ambrama"
+    },
+    {
+      "id": "pt22-053",
+      "split": "held-out",
+      "slot": "novel",
+      "subject": "Yrert Pravhar",
+      "subject_parts": [
+        "Yr",
+        "ert",
+        "Prav",
+        "har"
+      ],
+      "attribute": "Xanune",
+      "attribute_parts": [
+        "Xan",
+        "une"
+      ],
+      "question": "Which novel did Yrert Pravhar write?",
+      "prompt": "Question: Which novel did Yrert Pravhar write?\nAnswer:",
+      "target": " Xanune"
+    },
+    {
+      "id": "pt22-054",
+      "split": "held-out",
+      "slot": "novel",
+      "subject": "Vorith Nuvmyr",
+      "subject_parts": [
+        "Vor",
+        "ith",
+        "Nuv",
+        "myr"
+      ],
+      "attribute": "Yvorune",
+      "attribute_parts": [
+        "Yvor",
+        "une"
+      ],
+      "question": "Which novel did Vorith Nuvmyr write?",
+      "prompt": "Question: Which novel did Vorith Nuvmyr write?\nAnswer:",
+      "target": " Yvorune"
+    },
+    {
+      "id": "pt22-055",
+      "split": "held-out",
+      "slot": "novel",
+      "subject": "Druith Istvale",
+      "subject_parts": [
+        "Dru",
+        "ith",
+        "Ist",
+        "vale"
+      ],
+      "attribute": "Ambrune",
+      "attribute_parts": [
+        "Ambr",
+        "une"
+      ],
+      "question": "Which novel did Druith Istvale write?",
+      "prompt": "Question: Which novel did Druith Istvale write?\nAnswer:",
+      "target": " Ambrune"
+    },
+    {
+      "id": "pt22-056",
+      "split": "held-out",
+      "slot": "company",
+      "subject": "Oskard Farsroth",
+      "subject_parts": [
+        "Osk",
+        "ard",
+        "Fars",
+        "roth"
+      ],
+      "attribute": "Lumell",
+      "attribute_parts": [
+        "Lum",
+        "ell"
+      ],
+      "question": "Which company did Oskard Farsroth found?",
+      "prompt": "Question: Which company did Oskard Farsroth found?\nAnswer:",
+      "target": " Lumell"
+    },
+    {
+      "id": "pt22-057",
+      "split": "held-out",
+      "slot": "company",
+      "subject": "Vorert Corvroth",
+      "subject_parts": [
+        "Vor",
+        "ert",
+        "Corv",
+        "roth"
+      ],
+      "attribute": "Vantek",
+      "attribute_parts": [
+        "Van",
+        "tek"
+      ],
+      "question": "Which company did Vorert Corvroth found?",
+      "prompt": "Question: Which company did Vorert Corvroth found?\nAnswer:",
+      "target": " Vantek"
+    },
+    {
+      "id": "pt22-058",
+      "split": "held-out",
+      "slot": "company",
+      "subject": "Nereth Ormhar",
+      "subject_parts": [
+        "Ner",
+        "eth",
+        "Orm",
+        "har"
+      ],
+      "attribute": "Quinigo",
+      "attribute_parts": [
+        "Quin",
+        "igo"
+      ],
+      "question": "Which company did Nereth Ormhar found?",
+      "prompt": "Question: Which company did Nereth Ormhar found?\nAnswer:",
+      "target": " Quinigo"
+    },
+    {
+      "id": "pt22-059",
+      "split": "held-out",
+      "slot": "company",
+      "subject": "Idrlin Ruvsen",
+      "subject_parts": [
+        "Idr",
+        "lin",
+        "Ruv",
+        "sen"
+      ],
+      "attribute": "Ovrara",
+      "attribute_parts": [
+        "Ovr",
+        "ara"
+      ],
+      "question": "Which company did Idrlin Ruvsen found?",
+      "prompt": "Question: Which company did Idrlin Ruvsen found?\nAnswer:",
+      "target": " Ovrara"
+    },
+    {
+      "id": "pt22-060",
+      "split": "held-out",
+      "slot": "company",
+      "subject": "Drueth Dornhar",
+      "subject_parts": [
+        "Dru",
+        "eth",
+        "Dorn",
+        "har"
+      ],
+      "attribute": "Sytent",
+      "attribute_parts": [
+        "Syt",
+        "ent"
+      ],
+      "question": "Which company did Drueth Dornhar found?",
+      "prompt": "Question: Which company did Drueth Dornhar found?\nAnswer:",
+      "target": " Sytent"
+    }
+  ]
+}
