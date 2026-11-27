@@ -50,7 +50,7 @@
   "min_necessary": 15,
   "min_epochal": 3,
   "chain_length": 40,
-  "cap_dissections": 20000,
+  "cap_dissections": 50000,
   "many": 2,
   "never_violable": [
    1,
@@ -192,13 +192,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [1, 3/2]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 193,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -352,13 +387,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [1/2, 2/3] U [3/2, 2]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 194,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -512,13 +582,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [5/6, 1]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 195,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -672,13 +777,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [2, 3]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 196,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -832,13 +972,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [5/6, 1]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 191,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -1049,13 +1224,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         89
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2] U [1/2, 1]",
         "[0, 1/2]",
-        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]",
-        "[0, 1/3] U [2/3, 1]"
-       ]
+        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]"
+       ],
+       "jeux_examines_total": 204,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [
@@ -1381,13 +1591,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         89
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2] U [1/2, 1]",
         "[0, 1/2]",
-        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]",
-        "[0, 1/3] U [2/3, 1]"
-       ]
+        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]"
+       ],
+       "jeux_examines_total": 205,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [
@@ -1713,13 +1958,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         89
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2] U [1/2, 1]",
         "[0, 1/2]",
-        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]",
-        "[0, 1/3] U [2/3, 1]"
-       ]
+        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]"
+       ],
+       "jeux_examines_total": 206,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [
@@ -2045,13 +2325,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         89
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2] U [1/2, 1]",
         "[0, 1/2]",
-        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]",
-        "[0, 1/3] U [2/3, 1]"
-       ]
+        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]"
+       ],
+       "jeux_examines_total": 207,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [
@@ -2377,13 +2692,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         89
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2] U [1/2, 1]",
         "[0, 1/2]",
-        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]",
-        "[0, 1/3] U [2/3, 1]"
-       ]
+        "[0, 1/3] U [1/3, 2/3] U [2/3, 1]"
+       ],
+       "jeux_examines_total": 202,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [
@@ -2724,13 +3074,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [1, 3/2]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 193,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -2884,13 +3269,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [1/2, 2/3] U [3/2, 2]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 194,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -3044,13 +3464,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [5/6, 1]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 195,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -3204,13 +3659,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [2, 3]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 196,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -3364,13 +3854,48 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": [
+       "etats_des_regions_minces": [
+        [
+         "generateur",
+         86
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [
+        "[0, 1]",
         "[0, 1/2] U [1, 3/2] U [2, 3]",
         "[0, 1/2]",
         "[0, 1/3] U [2/3, 1]",
-        "[0, 1/3]",
-        "[0, 1/6] U [5/6, 1]"
-       ]
+        "[0, 1/3]"
+       ],
+       "jeux_examines_total": 191,
+       "jeux_examines_max_par_region": 4,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [
+        {
+         "region": "[0, 1/2]",
+         "jeux_valides_non_proposes": 2
+        },
+        {
+         "region": "[0, 1/3]",
+         "jeux_valides_non_proposes": 1
+        },
+        {
+         "region": "[0, 10]",
+         "jeux_valides_non_proposes": 11
+        },
+        {
+         "region": "[0, 2]",
+         "jeux_valides_non_proposes": 7
+        },
+        {
+         "region": "[0, 2/3]",
+         "jeux_valides_non_proposes": 3
+        }
+       ],
+       "coupes_de_grille_non_proposees_total": 63,
+       "regions_minces_dues_au_generateur": 63
       },
       "16": {
        "contre_exemples": [],
@@ -3619,7 +4144,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         6
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 623,
+       "jeux_examines_max_par_region": 20,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [
@@ -4017,7 +4555,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         6
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 623,
+       "jeux_examines_max_par_region": 20,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [
@@ -4415,7 +4966,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         6
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 623,
+       "jeux_examines_max_par_region": 20,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [
@@ -4813,7 +5377,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         6
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 623,
+       "jeux_examines_max_par_region": 20,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [
@@ -5211,7 +5788,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         6
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 623,
+       "jeux_examines_max_par_region": 20,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [
@@ -5586,6 +6176,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -5728,6 +6321,9 @@
          "region": "[-2, -1]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -5872,6 +6468,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -6015,6 +6614,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -6157,6 +6759,9 @@
          "region": "[-3, -2]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -6337,6 +6942,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -6479,6 +7087,9 @@
          "region": "[-3, 3] x [-2, 3]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -6623,6 +7234,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -6766,6 +7380,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -6908,6 +7525,9 @@
          "region": "[-2, 0] x [1, 7]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -7088,6 +7708,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -7230,6 +7853,9 @@
          "region": "[-3, -5/2] x [-3/2, -1/2] x [-2, 3]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -7374,6 +8000,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -7517,6 +8146,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -7659,6 +8291,9 @@
          "region": "[-1/2, 11/2] x [-2, 2] x [-1/2, 1/2]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -7839,6 +8474,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -7981,6 +8619,9 @@
          "region": "[-2, 4] x [-3/2, -1/2] x [-5/2, 3/2] x [3/2, 6]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -8125,6 +8766,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -8268,6 +8912,9 @@
          "dissections": 2
         }
        ],
+       "etat_enumeration": [
+        "generateur"
+       ],
        "enumeration_exacte": false
       },
       "16": {
@@ -8410,6 +9057,9 @@
          "region": "[-3, -2] x [-1/2, 11/2] x [2, 11/2] x [-1/2, 5]",
          "dissections": 2
         }
+       ],
+       "etat_enumeration": [
+        "generateur"
        ],
        "enumeration_exacte": false
       },
@@ -8644,7 +9294,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         12
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 36,
+       "jeux_examines_max_par_region": 6,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [],
@@ -8895,7 +9558,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         12
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 36,
+       "jeux_examines_max_par_region": 6,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [],
@@ -9146,7 +9822,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         12
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 36,
+       "jeux_examines_max_par_region": 6,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [],
@@ -9397,7 +10086,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         12
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 36,
+       "jeux_examines_max_par_region": 6,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [],
@@ -9648,7 +10350,20 @@
         ]
        ],
        "seuil": 2,
-       "regions_sous_plafond": []
+       "etats_des_regions_minces": [
+        [
+         "exacte",
+         12
+        ]
+       ],
+       "regions_sous_plafond": [],
+       "regions_generateur_non_enumere": [],
+       "jeux_examines_total": 36,
+       "jeux_examines_max_par_region": 6,
+       "plafond": 50000,
+       "plafond_atteint": false,
+       "coupes_de_grille_non_proposees": [],
+       "coupes_de_grille_non_proposees_total": 0
       },
       "16": {
        "contre_exemples": [],
@@ -10408,14 +11123,14 @@
  "census": {
   "relations": 1099,
   "violations_observees": {
-   "2": 1098,
-   "3": 52,
-   "8": 464,
+   "2": 1099,
+   "3": 75,
+   "8": 473,
    "9": 1099,
-   "11": 1039,
-   "15": 1098,
-   "16": 222,
-   "18": 394
+   "11": 1032,
+   "15": 1096,
+   "16": 212,
+   "18": 388
   },
   "jamais_violees": [
    1,

@@ -91,10 +91,20 @@ MIN_NECESSARY = 15
 MIN_EPOCHAL = 3
 CHAIN_LENGTH = 40
 MAX_ABSTRACTIVE = 4000
-CAP_DISSECTIONS = 20000
+CAP_DISSECTIONS = 50000
 MANY = 2
 WANT_DISSECTIONS = 4
 MAX_WITNESS = 5
+
+# Etat d'une recherche de dissections (scelle v2.3, section 3) : seule
+# `ENUM_EXACTE` autorise a conclure `false` sur une region sans dissection.
+# `ENUM_PLAFOND` = le plafond de jeux examines a ete atteint ;
+# `ENUM_GENERATEUR` = la famille n'enumere pas ses dissections, elle en propose
+# quatre motifs calcules (scelle v2.1, section 9) : l'absence de candidat
+# valide n'apprend rien de la definition D4, et ne peut donc pas fonder `false`.
+ENUM_EXACTE = "exacte"
+ENUM_PLAFOND = "plafond"
+ENUM_GENERATEUR = "generateur"
 
 # Classification theorique de L7 (recensement du scelle) : 13 hypotheses ne
 # peuvent pas etre violees (conventions de nomenclature ou theoremes de D2/D3/D5),
@@ -426,13 +436,18 @@ class Substrate:
         return True
 
     def dissections(self, region, want=WANT_DISSECTIONS):
-        """Candidats dissections de `region` : (liste, enumeration exacte ?)."""
-        return [], False
+        """Candidats dissections de `region` : (liste, etat d'enumeration)."""
+        return [], ENUM_GENERATEUR
 
     def dissection_masks(self, spot, want=WANT_DISSECTIONS):
-        """Masks de candidats dissections, par indices de batterie."""
+        """Masks de candidats dissections, par indices de batterie.
+
+        Rend `(masks, etat, jeux_examines)`. Sur la voie generateur, `etat` vaut
+        `ENUM_GENERATEUR` : la liste est un jeu de motifs calcules, pas une
+        enumeration, et son etat ne dit rien de la definition D4.
+        """
         battery = self.battery()
-        members, exact = self.dissections(battery[spot], want=want)
+        members, state = self.dissections(battery[spot], want=want)
         index = self._index
         masks = []
         for candidate in members:
@@ -446,7 +461,11 @@ class Substrate:
                 mask |= 1 << position
             if usable:
                 masks.append(mask)
-        return masks, exact
+        return masks, state, len(members)
+
+    def grid_cut_masks(self, spot):
+        """Temoins de coupes non proposees par le generateur (aucun par defaut)."""
+        return []
 
     def dissects_mask(self, spot, mask):
         """D4 en masques, (iii) verifie sur la batterie entiere."""
@@ -618,7 +637,37 @@ class Intervals(Substrate):
         terciles = tuple(tertile_pieces)
         if len(terciles) >= 2 and terciles != (region,) and terciles not in out:
             out.append(terciles)
-        return out, False
+        return out, ENUM_GENERATEUR
+
+    def grid_cut_masks(self, spot):
+        """Coupes de la region aux points de grille interieurs, en masques.
+
+        Sert de temoin, non de generateur : ces jeux ne sont pas proposes par
+        `dissections` (quatre motifs calcules, scelle v2.1 section 9), mais la
+        batterie les contient et `dissects_mask` les valide. Comptes a part dans
+        `details[15]` : ils mesurent ce que le generateur manque.
+        """
+        region = self.battery()[spot]
+        index = self._index
+        points = _pts(GRID)
+        masks = []
+        for position, (lo, hi) in enumerate(region):
+            for point in points:
+                if not lo < point < hi:
+                    continue
+                left = self.normalize(region[:position] + ((lo, point),) + region[position + 1:])
+                right = self.normalize(region[:position] + ((point, hi),) + region[position + 1:])
+                if not left or not right:
+                    continue
+                parts = (left, right)
+                if any(index.get(self.normalize(part)) is None for part in parts):
+                    continue
+                mask = 0
+                for part in parts:
+                    mask |= 1 << index[self.normalize(part)]
+                if mask and mask not in masks:
+                    masks.append(mask)
+        return masks
 
     # -- intersections ----------------------------------------------------- #
 
@@ -796,7 +845,7 @@ class Boxes(Substrate):
             pieces = self._slabs(region, cuts)
             if len(pieces) >= 2 and pieces != (region,):
                 out.append(pieces)
-        return out[:want], False
+        return out[:want], ENUM_GENERATEUR
 
     def kernel(self, first, second):
         lows, highs = [], []
@@ -952,7 +1001,7 @@ class Relational(Substrate):
                 walk(position + 1, mask | (1 << member))
 
         walk(0, 0)
-        return masks[:want], exact
+        return masks[:want], (ENUM_EXACTE if exact else ENUM_PLAFOND), visited
 
     # -- intersections par enumeration -------------------------------------- #
 
@@ -1277,39 +1326,70 @@ def assess(substrate, want_witness=True):
         statuses[16] = "partiel"
         details[15] = {"motif": "famille de boites uniques : hors matrice (scelle, section 6.3)"}
         details[16] = {"motif": "famille de boites uniques : hors matrice (scelle, section 6.3)"}
-        exploratory, exact = [], True
+        exploratory, states = [], []
         for i in range(size):
-            found, path_exact = substrate.dissections(battery[i])
-            exact = exact and path_exact
+            found, path_state = substrate.dissections(battery[i])
+            states.append(path_state)
             if found:
                 exploratory.append({"region": substrate.show(battery[i]),
                                     "dissections": len(found)})
         details[15]["exploratoire"] = _capped(exploratory)
-        details[15]["enumeration_exacte"] = exact
+        details[15]["etat_enumeration"] = sorted(set(states))
+        details[15]["enumeration_exacte"] = all(state == ENUM_EXACTE for state in states)
     else:
-        counts, thin, inexact = {}, [], []
+        counts, thin, thin_spots, thin_states = {}, [], [], {}
+        cap_regions, generator_regions = [], []
+        examined_total, examined_max = 0, 0
         for i in range(size):
-            masks, exact = substrate.dissection_masks(i, want=WANT_DISSECTIONS)
+            masks, state, examined = substrate.dissection_masks(i, want=WANT_DISSECTIONS)
             valid = [mask for mask in masks if substrate.dissects_mask(i, mask)]
             counts[substrate.show(battery[i])] = len(valid)
+            examined_total += examined
+            examined_max = max(examined_max, examined)
+            if state == ENUM_PLAFOND:
+                cap_regions.append(substrate.show(battery[i]))
+            elif state == ENUM_GENERATEUR:
+                generator_regions.append(substrate.show(battery[i]))
             if len(valid) < MANY:
                 thin.append([substrate.show(battery[i]), len(valid)])
-                if not exact:
-                    inexact.append(substrate.show(battery[i]))
-        if thin and len(inexact) == len(thin):
-            statuses[15] = "partiel"
-        elif thin:
-            statuses[15] = "false"
-        else:
+                thin_spots.append(i)
+                thin_states[state] = thin_states.get(state, 0) + 1
+        if not thin:
             statuses[15] = "true"
+        elif thin_states.get(ENUM_PLAFOND) or thin_states.get(ENUM_GENERATEUR):
+            # Une region sans dissection sous un plafond atteint, ou mesuree par
+            # un generateur qui n'enumere pas D4, n'etablit pas `false`.
+            statuses[15] = "partiel"
+        else:
+            statuses[15] = "false"
+        misses = []
+        for spot in thin_spots:
+            witness = [mask for mask in substrate.grid_cut_masks(spot)
+                       if substrate.dissects_mask(spot, mask)]
+            if witness:
+                misses.append({"region": substrate.show(battery[spot]),
+                               "jeux_valides_non_proposes": len(witness)})
         details[15] = {"regions_moins_de_deux": _capped(thin),
                        "seuil": MANY,
-                       "regions_sous_plafond": _capped(inexact)}
+                       "etats_des_regions_minces": sorted(thin_states.items()),
+                       "regions_sous_plafond": _capped(cap_regions),
+                       "regions_generateur_non_enumere": _capped(generator_regions),
+                       "jeux_examines_total": examined_total,
+                       "jeux_examines_max_par_region": examined_max,
+                       "plafond": CAP_DISSECTIONS,
+                       "plafond_atteint": bool(cap_regions),
+                       "coupes_de_grille_non_proposees": _capped(misses),
+                       "coupes_de_grille_non_proposees_total": len(misses)}
+        if misses:
+            # Le generateur ne propose pas ces jeux ; `dissects_mask` les valide.
+            # Le compte de regions minces est donc un MAJORANT du manque, jamais
+            # une mesure de la definition D4 (limite consignee au scelle v2.4).
+            details[15]["regions_minces_dues_au_generateur"] = len(misses)
 
         counter_examples = []
         under_cap = False
         for i in range(size):
-            masks, exact = substrate.dissection_masks(i, want=WANT_DISSECTIONS)
+            masks, state, _examined = substrate.dissection_masks(i, want=WANT_DISSECTIONS)
             for mask in masks:
                 if not substrate.dissects_mask(i, mask):
                     continue
@@ -1327,7 +1407,7 @@ def assess(substrate, want_witness=True):
                         break
                 if len(counter_examples) >= MAX_WITNESS:
                     break
-            if not exact:
+            if state != ENUM_EXACTE:
                 under_cap = True
             if len(counter_examples) >= MAX_WITNESS:
                 break
@@ -1720,48 +1800,35 @@ def _a_priori():
     }
 
 
-def _census(pairs=1099):
+def _census():
     """Recensement : quelles hypotheses sont violees dans une famille de relations.
 
-    Exhaustif sur les 1024 relations symetriques irreflexives a 5 sommets, puis
-    des relations aleatoires a 6 sommets pour atteindre le compte declare.
+    Exhaustif sur toutes les relations symetriques irreflexives a `n <= 5`
+    sommets, soit 1 + 2 + 8 + 64 + 1024 = 1099 relations (scelle v2.2, L7 ;
+    v2.4 : la version precedente melangeait 1024 relations a 5 sommets et 75
+    relations aleatoires a 6 sommets, ce qui ne mesurait pas l'enonce).
     """
     observed = {number: 0 for number in ASSUMPTIONS}
     ceiling = 0
     total = 0
-    size = 5
-    edges = [(first, second) for first in range(size) for second in range(first + 1, size)]
-    for mask in range(1 << len(edges)):
-        adjacency = [[] for _ in range(size)]
-        for position, (first, second) in enumerate(edges):
-            if mask >> position & 1:
-                adjacency[first].append(second)
-                adjacency[second].append(first)
-        probe = Relational(f"C{mask}", "census", [f"c{index}" for index in range(size)],
-                           adjacency, regular=False)
-        statuses, _details = assess(probe, want_witness=False)
-        failures = _failures(statuses)
-        ceiling = max(ceiling, len(failures))
-        for number in failures:
-            observed[number] += 1
-        total += 1
-    rng = random.Random(20261126)
-    while total < pairs:
-        size = 6
-        adjacency = [[] for _ in range(size)]
-        for first in range(size):
-            for second in range(first + 1, size):
-                if rng.random() < 0.5:
+    for size in range(1, 6):
+        edges = [(first, second) for first in range(size)
+                 for second in range(first + 1, size)]
+        for mask in range(1 << len(edges)):
+            adjacency = [[] for _ in range(size)]
+            for position, (first, second) in enumerate(edges):
+                if mask >> position & 1:
                     adjacency[first].append(second)
                     adjacency[second].append(first)
-        probe = Relational(f"C{total}", "census", [f"c{index}" for index in range(size)],
-                           adjacency, regular=False)
-        statuses, _details = assess(probe, want_witness=False)
-        failures = _failures(statuses)
-        ceiling = max(ceiling, len(failures))
-        for number in failures:
-            observed[number] += 1
-        total += 1
+            probe = Relational(f"C{total}", "census",
+                               [f"c{index}" for index in range(size)],
+                               adjacency, regular=False)
+            statuses, _details = assess(probe, want_witness=False)
+            failures = _failures(statuses)
+            ceiling = max(ceiling, len(failures))
+            for number in failures:
+                observed[number] += 1
+            total += 1
     return {
         "relations": total,
         "violations_observees": {str(number): count for number, count in observed.items()
