@@ -183,7 +183,28 @@ python scripts/check_lane_claim.py <ISSUE> --check-implicit --paths "<GLOB>"
 #   IMPLICIT (exit 3)     : aucune claim explicite, mais PR OPEN d'une autre lane
 #   DELIVERED (exit 4)    : PR MERGED sur le chemin (= grain déjà livré)
 #   NOT_SCOPED (exit 2)   : disjoint (cf. partitionnement §3)
+#   IMPLICIT_UNMEASURED (exit 2) : jambe IMPLICIT demandée et non tournée (#28869)
 ```
+
+**Un appelant branche sur « pas CLEAR », jamais sur un code autre que 0.**
+`exit 0` est la seule autorisation d'éditer ; tout code non nul — et toute
+sortie illisible — signifie « ne pas éditer » sans dire *pourquoi*. La ligne
+de verdict (`CLEAR:` / `BLOCKED:` / `IMPLICIT:` / `NOT_SCOPED` /
+`IMPLICIT_UNMEASURED`) porte la cause, le code de retour ne la porte pas :
+`exit 2` est partagé par `NOT_SCOPED`, par un `BLOCKED` sur des PRs ouvertes
+qui touchent les `--paths` (#16570) et par `IMPLICIT_UNMEASURED`.
+
+`IMPLICIT_UNMEASURED` (#28869, `check_lane_claim.py`, juste avant le
+`return 2` de la jambe) dit **« mesure absente »**, pas « libre » : la jambe
+IMPLICIT a été demandée et n'a pas pu tourner (slug `GH_REPO` mal formé,
+`gh` injoignable — le WARN sur stderr nomme la cause). L'organe n'a rien lu
+des PRs ouvertes d'une autre lane qui référencent le grain, donc il ne rend
+PAS `CLEAR`. Jusqu'ici ce cas imprimait `implicit_occupation_measured: false`
+puis `CLEAR` à `exit 0` : un appelant qui ne lisait que le code de retour y
+voyait une autorisation sur un périmètre jamais lu (#28097). Ce n'est ni
+`BLOCKED` (aucune lane n'est nommée) ni `IMPLICIT` (rien n'a été lu) :
+corriger la cause et relancer, sans lire l'exit comme l'occupation par une
+autre lane.
 
 Le nouvel exit code `IMPLICIT` rend visible **uniquement** ce que la procédure
 manuelle détecte aujourd'hui. C'est ce que cette PR ne fait pas — elle documente
