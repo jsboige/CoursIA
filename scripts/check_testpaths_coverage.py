@@ -294,8 +294,16 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # aussi `test_thermal_safe_train.py` (entraînement torch, ~35 s de
     # collecte seule) qu'un garde léger ne doit PAS collecter — d'où pas
     # d'entrée `pytest.ini` testpaths et pas de cible-dossier ici.
+    # Depuis #28619 la jambe joue trois cibles-fichier, toutes déclarées :
+    # `test_inference_trace.py` entree par #27222 mais jamais inscrite ici
+    # (derive declaration <-> reel du meme garde), et `test_path_profile.py`
+    # (#27214), que la CI ne collectait pas. Une cible déclarée doit
+    # apparaitre VERBATIM dans un bloc `run:` du workflow
+    # (verify_declared_targets) : retirer l'une des trois du pytest rougit.
     ".github/workflows/sudoku-tests.yml": [
         "MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py",
+        "MyIA.AI.Notebooks/Sudoku/tests/test_inference_trace.py",
+        "MyIA.AI.Notebooks/Sudoku/tests/test_path_profile.py",
     ],
     # geometry-tests.yml : dir entier (issue #23359) — 13 tests Z3/sympy du
     # pont réel real_geometry_bridge.py (tests/test_real_geometry_bridge.py
