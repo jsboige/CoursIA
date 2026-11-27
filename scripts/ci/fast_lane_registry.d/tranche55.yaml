@@ -1,0 +1,45 @@
+# TRANCHE55 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+#
+# TRANCHE 55 -- fraicheur du manifeste des dependances (#27544).
+#
+# Garde NATIF : aucun workflow d'origine. Le manifeste des dependances
+# ('docs/curriculum/manifeste-dependances.{md,json}') est un artefact
+# GENERE qui decrit l'etat du depot. Sans organe qui le regenere et le
+# compare, il derive en silence -- mesure 2026-11-20 : il etait deja perime
+# sur trois series (KNOTS-05, GOL-01, CSharpRepl) sans que rien ne le dise.
+#
+# 'dependency_manifest.py --check' regenere le manifeste et le compare aux
+# sorties versionnees, hors 'generated_from' et 'counts.tracked_files' (ils
+# decrivent l'etat du depot, pas le contenu du manifeste). Trois verdicts :
+# frais (0), perime (1), incident (2).
+#
+# Pourquoi ADVISORY et non bloquant : le manifeste pese 598 Ko ; un rouge
+# bloquant obligerait chaque PR qui touche un requirements.txt ou un carnet
+# a regenerer 598 Ko, donc a se faire marcher dessus avec les PRs voisines.
+# Le garde SIGNALE la derive (conclusion 'neutral', jamais 'failure') et la
+# regeneration est un geste deterministe :
+#   python scripts/notebook_tools/dependency_manifest.py --write
+#
+# Le nom porte 'advisory' : pr_gate.py range le check dans le seau advisory,
+# et son test interdit a un garde BLOQUANT de porter ce mot.
+# blocking=False : conclusion_for renvoie 'neutral' pour tout rc != 0 d'un
+# garde non bloquant -- le verdict reste lisible, il ne bloque pas.
+group: TRANCHE55
+guards:
+  -
+    name: "Dependency manifest freshness (advisory, non-blocking)"
+    argv: ["python", "scripts/notebook_tools/dependency_manifest.py", "--check"]
+    source: "native"
+    paths:
+      - "MyIA.AI.Notebooks/**/*.ipynb"
+      - "MyIA.AI.Notebooks/**/requirements*.txt"
+      - "MyIA.AI.Notebooks/**/environment*.yml"
+      - "MyIA.AI.Notebooks/**/pyproject.toml"
+      - "docs/curriculum/manifeste-dependances.*"
+      - "scripts/notebook_tools/dependency_manifest.py"
+      - "scripts/notebook_tools/dependency_manifest_policy.json"
+      - "scripts/notebook_tools/tests/test_dependency_manifest_refresh.py"
+      - "scripts/ci/fast_lane.py"
+      - "scripts/ci/fast_lane_registry.py"
+    blocking: false
+    absorbed: false
