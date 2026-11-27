@@ -15,6 +15,10 @@ l'occupation. Elle sert les deux voies de la qualification :
 - `decider`   : le fil complet relu (`tapis_fil_complet.confirmer`).
 
 Une livraison PROUVEE garde LIVREE et n'est pas reprise.
+
+Une livraison REPARTEE sur plusieurs PR (`tapis_repartie`) se decide sur
+l'union de leurs diffs. Sur une fenetre PARTIELLE, un ecart LIVREE attend le
+fil complet, ou la voie unique le juge aussi. Tests : `test_tapis_repartie`.
 """
 from __future__ import annotations
 
@@ -24,7 +28,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_diff, tapis_occupation, tapis_rapide
+from coordination import tapis_diff, tapis_occupation, tapis_rapide, tapis_repartie
 from coordination.tapis_marqueurs import evenements
 from coordination.tapis_visites import evenements_info
 
@@ -48,12 +52,19 @@ def _reprendre(e, it: dict, comments: list[dict], ancetres: list[int], ctx: dict
 
 def appliquer(etats: list, lec, preuve, lane: str, maintenant: datetime,
               jours: int, prs_par_issue: dict | None = None) -> None:
-    """La preuve retire LIVREE : les grains retombes reprennent leur decision."""
+    """La preuve retire LIVREE : les grains retombes reprennent leur decision.
+
+    Une fenetre partielle ne decide pas LIVREE : l'etat differe est retenu,
+    et `confirmer` le decide sur le fil complet.
+    """
     if preuve is None:
         return
     livres = [e for e in etats if e.ecart == "LIVREE"]
-    tapis_diff.appliquer(etats, lec, preuve)
+    rendus, differees = tapis_repartie.sur_fenetre(etats, lec, preuve)
+    tapis_diff.appliquer(rendus, lec, preuve)
     tombes = [e for e in livres if e.ecart is None]
+    for e in differees:
+        e.ecart, e.motif = None, ""
     if not tombes:
         return
     ouvertes, parents, _, ctx = tapis_rapide._contexte(lec, lane, maintenant, jours)
@@ -69,7 +80,7 @@ def decider(e, comments: list[dict], code: str | None, preuve, ouvertes: dict,
     if preuve is None:
         return code
     livre = code == "LIVREE"
-    code = tapis_diff.decider(e, comments, code, preuve)
+    code = tapis_repartie.sur_fil_complet(e, comments, code, preuve)
     if not livre or code is not None:
         return code
     it = {**ouvertes[e.numero], "comments": comments,

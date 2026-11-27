@@ -827,10 +827,12 @@ def _known_zombie_runs() -> list[dict]:
     ]
 
 
-def _watch(tmp_path: Path, runs: list[dict], name: str) -> subprocess.CompletedProcess:
+def _watch(
+    tmp_path: Path, runs: list[dict], name: str, now: str = _NOW,
+) -> subprocess.CompletedProcess:
     snapshot = tmp_path / name
     snapshot.write_text(_make_snapshot(runs), encoding="utf-8")
-    return _run("--watch", "--input", str(snapshot), "--now", _NOW)
+    return _run("--watch", "--input", str(snapshot), "--now", now)
 
 
 def test_18131_known_zombie_set_is_the_measured_incident() -> None:
@@ -894,6 +896,122 @@ def test_18131_invalid_now_is_broken(tmp_path: Path) -> None:
     snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
     proc = _run("--watch", "--input", str(snapshot), "--now", "yesterday")
     assert proc.returncode == 2, proc.stdout + proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# #26357 -- third admission incident (the 2026-11-11 stock) recognised by
+# identity. `--watch` never pays the per-run probe of the no-job class, so a
+# dead stock outside any pull request stayed in `stale_live` and the watch
+# reported DRIFT every day.
+# ---------------------------------------------------------------------------
+
+_NOW_1111 = "2026-11-26T07:15:00Z"
+
+
+def _limbo_runs() -> list[dict]:
+    """The 2026-11-11 stock as the watch reads it: queued, job list unprobed."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gh_queue_health", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return [
+        {"id": rid, "name": "limbo-11-11", "created_at": "2026-11-11T20:45:00Z",
+         "event": "issue_comment", "head_branch": "main",
+         "html_url": f"https://gh/limbo/{rid}"}
+        for rid in sorted(mod.LIMBO_2026_11_11_RUN_IDS)
+    ]
+
+
+def test_26357_limbo_set_is_the_measured_incident() -> None:
+    """The set holds exactly the 82 run IDs probed job-less on 2026-11-26."""
+    runs = _limbo_runs()
+    assert len(runs) == 82
+    ids = {r["id"] for r in runs}
+    assert 43096520914 in ids and 43098738366 in ids  # first and last of the evening
+    # one stock per incident: the two identity sets never overlap
+    assert not ids & {r["id"] for r in _known_zombie_runs()}
+
+
+def test_26357_explained_stocks_no_longer_alarms(tmp_path: Path) -> None:
+    """Negative control: the ghost floor + the three explained stocks = steady state."""
+    fresh = [
+        {"id": 43150000000 + i, "name": f"fresh-{i}", "created_at": "2026-11-26T07:12:00Z",
+         "event": "push", "head_branch": "main", "html_url": f"https://gh/fresh/{i}"}
+        for i in range(3)
+    ]
+    runs = _floor_runs() + _known_zombie_runs() + _limbo_runs() + fresh
+    proc = _watch(tmp_path, runs, "limbo.json", now=_NOW_1111)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "OK"
+    # the measurement verdict is unchanged: it still sees the two live stocks
+    assert body["verdict_measurement"] == "GHOST_RUNS_DETECTED"
+    assert body["counts"]["known_zombies"] == 37 + 82
+    assert body["counts"]["stale_live"] == 0
+    # recognition touches the 82 IDs and nothing else: the backlog stays fresh
+    assert body["counts"]["fresh_live"] == 3
+    assert body["counts"]["live"] == 37 + 82 + 3
+
+
+def test_26357_job_less_sibling_outside_the_set_still_alarms(tmp_path: Path) -> None:
+    """Positive control: recognition is by identity, never by shape.
+
+    A run created the same evening, same event, same branch, but outside the
+    set is a candidate NEW zombie: the watch alarms on it as before.
+    """
+    sibling = [{"id": 43098738399, "name": "limbo-sibling",
+                "created_at": "2026-11-11T20:50:00Z", "event": "issue_comment",
+                "head_branch": "main", "html_url": "https://gh/limbo/sibling"}]
+    runs = _floor_runs() + _known_zombie_runs() + _limbo_runs() + sibling
+    proc = _watch(tmp_path, runs, "sibling.json", now=_NOW_1111)
+    assert proc.returncode == 1, proc.stdout + proc.stderr
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "DRIFT"
+    assert [r["id"] for r in body["stale_live"]] == [43098738399]
+    assert body["counts"]["known_zombies"] == 37 + 82
+
+
+def test_26357_prior_analysis_replay_keeps_the_verdict(tmp_path: Path) -> None:
+    """Replaying the watch's own output (no `jobs` field, no PR) gives the same answer."""
+    first = _watch(tmp_path, _floor_runs() + _limbo_runs(), "first.json", now=_NOW_1111)
+    assert first.returncode == 0, first.stdout + first.stderr
+    replay = tmp_path / "replay.json"
+    replay.write_text(first.stdout, encoding="utf-8")
+    proc = _run("--watch", "--input", str(replay), "--now", _NOW_1111)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    body = json.loads(proc.stdout)
+    assert body["verdict_watch"] == "OK"
+    assert body["counts"]["known_zombies"] == 82
+
+
+def test_26357_replay_without_now_keeps_the_stock_known(tmp_path: Path) -> None:
+    """The scheduled watch passes no `--now`: ages run against the wall clock.
+
+    Identity does not depend on the clock, so the stock stays explained
+    whatever day the replay runs. A run outside the set, created 30 h before
+    the clock and so stale on any execution day, still alarms.
+    """
+    stocks = _floor_runs() + _known_zombie_runs() + _limbo_runs()
+    snapshot = tmp_path / "wall.json"
+    snapshot.write_text(_make_snapshot(stocks), encoding="utf-8")
+    ok = _run("--watch", "--input", str(snapshot))
+    assert ok.returncode == 0, ok.stdout + ok.stderr
+    assert json.loads(ok.stdout)["counts"]["known_zombies"] == 37 + 82
+
+    created = (
+        dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=30)
+    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    new_zombie = [
+        {"id": 43098738400, "name": "new-zombie", "created_at": created,
+         "event": "issue_comment", "head_branch": "main",
+         "html_url": "https://gh/limbo/new"},
+    ]
+    snapshot.write_text(_make_snapshot(stocks + new_zombie), encoding="utf-8")
+    alarm = _run("--watch", "--input", str(snapshot))
+    assert alarm.returncode == 1, alarm.stdout + alarm.stderr
+    body = json.loads(alarm.stdout)
+    assert body["verdict_watch"] == "DRIFT"
+    assert [r["id"] for r in body["stale_live"]] == [43098738400]
 
 
 # ---------------------------------------------------------------------------
