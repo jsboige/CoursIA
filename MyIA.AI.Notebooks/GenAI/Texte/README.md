@@ -111,11 +111,11 @@ La sous-série part du notebook [TV-00a — RoPE from scratch](TransformerVarian
 |---|---|---|---|---|
 | TV-00a | [RoPE from scratch](TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | Rotation par paires de dimensions, invariance de position relative mesurée et comparaison au PE additif | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
 | TV-00b | [Attention variants from scratch](TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | Comparaison MHA, MQA, GQA et fenêtre glissante SWA | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
-| TV-00d | [Encodeurs from scratch](TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | Encodeur seul et encodeur-décodeur, avec ablations de position, transfert de masque et génération seq2seq | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
+| TV-00d | [Encodeurs from scratch](TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb) | Encodeur seul et encodeur-décodeur, avec ablations de position, transfert de masque et génération seq2seq | Bloc A (CPU) | [README de la sous-série](TransformerVariants/README.md) |
 | TV-01 | [Attention variants SOTA](TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | Mesures d’attention, KV-cache, champ réceptif, préremplissage et décodage sur Mistral-7B | Bloc B (GPU) | [README de la sous-série](TransformerVariants/README.md) |
 | TV-02 | [MoE SOTA](TransformerVariants/TV-02-MoE-SOTA.ipynb) | Routage et charge mesurés sur OLMoE, comparés au notebook 3.4c | Bloc B (GPU) | [README de la sous-série](TransformerVariants/README.md) |
-| TV-03 | [Internalisation du CoT](TransformerVariants/TV-03-Internalisation-CoT.ipynb) | Comparaison multi-seed entre CoT supervisé et entraînement answer-only | Recherche | [README de la sous-série](TransformerVariants/README.md) |
-| TV-04 | [DiscoLoop](TransformerVariants/TV-04-DiscoLoop.ipynb) | Boucles et canaux mixtes sur une tâche d’indirection double | Recherche | [README de la sous-série](TransformerVariants/README.md) |
+| TV-03 | [Internalisation du CoT](TransformerVariants/TV-03-Internalisation-CoT-Python.ipynb) | Comparaison multi-seed entre CoT supervisé et entraînement answer-only | Recherche | [README de la sous-série](TransformerVariants/README.md) |
+| TV-04 | [DiscoLoop](TransformerVariants/TV-04-DiscoLoop-Python.ipynb) | Boucles et canaux mixtes sur une tâche d’indirection double | Recherche | [README de la sous-série](TransformerVariants/README.md) |
 
 ### Résultats mesurés de l’arc Test-Time Scaling approfondi (ICR)
 
