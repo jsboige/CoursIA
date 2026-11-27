@@ -221,7 +221,7 @@ SmartContracts/
 
 ##### Autour de 7
 
-- [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) — Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve
+- [SC-07b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-07b-ERC20-Lean-Verification-Companion.ipynb) — Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve
 - [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) — Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean`
 
 ##### Autour de 8

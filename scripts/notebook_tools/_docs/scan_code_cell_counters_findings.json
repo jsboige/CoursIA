@@ -56,7 +56,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\02-Solidity-Advanced\\SC-7b-ERC20-Lean-Verification-Companion.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\02-Solidity-Advanced\\SC-07b-ERC20-Lean-Verification-Companion.ipynb",
     "cell_index": 14,
     "line_no": 4,
     "text": "# Indice : lire le bloc ligne 93-127 ; c'est une preuve de 30 lignes en `omega`",

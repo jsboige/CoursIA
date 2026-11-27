@@ -421,7 +421,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 14 | [SC-09-DAO-Governance-Python - Gouvernance DAO](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | BETA | Oui |
 | 15 | [SC-10-Account-Abstraction-Python - ERC-4337 v0.9](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | BETA | Oui |
 | 16 | [SC-11-LLM-Assisted-Python - Développement Smart…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | BETA | Non |
-| 17 | [SC-7b : ERC-20 + Lean — vérification formelle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) | BETA | Non |
+| 17 | [SC-7b : ERC-20 + Lean — vérification formelle de…](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced/SC-07b-ERC20-Lean-Verification-Companion.ipynb) | BETA | Non |
 | 18 | [SC-12-Foundry-Testing-Python - Tests avec Foundry](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-12-Foundry-Testing-Python.ipynb) | BETA | Non |
 | 19 | [SC-13-Fuzz-Invariants-Python - Fuzz Testing](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-13-Fuzz-Invariants-Python.ipynb) | BETA | Oui |
 | 20 | [SC-14-Formal-Vérification - Vérification Formelle](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification-Python.ipynb) | BETA | Non |
