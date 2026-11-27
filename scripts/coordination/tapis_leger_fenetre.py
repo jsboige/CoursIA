@@ -20,6 +20,12 @@ qualification ne confirme aucun grain — le mur atteint avant tout verdict, ou
 une fenetre entierement refusee — le **repli chronologique** prend le relais,
 comme le fait le cap de livraisons. Les grains **non qualifies** restent
 DECLARES dans le rapport ; aucun n'est servi en silence.
+
+**La lecture du cap est resserree sur la machine de la lane** (#28884) : le
+cap compte les livraisons de la lane dans les PR fusionnees sur 7 jours, et
+la recherche GitHub ne lui rend que les corps qui citent sa machine -- le
+filtre Python du cap reste seul juge. Mesure du 27/11 : 931 PR et 4,4 Mo lus
+en 9,5 s pour en retenir 3 de la lane.
 """
 from __future__ import annotations
 
@@ -99,6 +105,36 @@ def qualifier(file: list, lane: str, maintenant: datetime, jours: int,
 rapport = tapis_leger_rapport.rapport
 
 
+def lanceur_cap_resserre(run_commande, lane: str):
+    """Le lanceur de la commande, la lecture du cap resserree sur la machine de la lane.
+
+    Le cap ne compte que les livraisons de la LANE : la recherche GitHub rend
+    plus petit le corpus qu'il lit, en ne demandant que les corps qui citent
+    sa machine. Le meme ensemble de PR de la lane, en 2,2 a 2,7 s au lieu de
+    9,5 s sur les trois tranches (27/11, #28884) : le cout etait celui du
+    volume de corps lus, pas celui du nombre d'appels.
+
+    Une PR comptee par le cap porte le nom de la machine dans son tag
+    `Grain:`. Si la recherche derivait, le cap sous-compterait -- dans le
+    sens fail-OPEN : il ecarterait moins, jamais un grain a tort.
+
+    Sans lanceur (`None` : le cap lit par `subprocess`) ou sans `--search`
+    dans l'argv, le lanceur passe tel quel.
+    """
+    if run_commande is None:
+        return None
+    machine = lane.split(":", 1)[0]
+
+    def lancer(argv, timeout):
+        argv = list(argv)
+        if "--search" in argv:
+            pos = argv.index("--search") + 1
+            argv[pos] = f'{argv[pos]} "{machine}" in:body'
+        return run_commande(argv, timeout)
+
+    return lancer
+
+
 def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
                      prs_ouvertes: list[dict] | None, run=None,
                      repli=None, pool_ouvert: bool = False,
@@ -117,7 +153,8 @@ def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
 
     `run` : le FETTEUR du cap, au contrat `(since, until) -> list[dict]`.
     `None` : le cap lit le reseau par son propre organe, avec le `run` de la
-    commande (`run_commande`) comme lanceur, sous l'`echeance` partagee.
+    commande (`run_commande`) comme lanceur, resserre sur la machine de la
+    lane (`lanceur_cap_resserre`), sous l'`echeance` partagee.
 
     Rend `(file, temoins, mesure, rendu)` : `rendu` est le `(rapport, code)`
     du repli quand il a rendu la main, `None` sinon.
@@ -129,7 +166,7 @@ def passer_et_replir(file: list, ordre: list, lane: str, maintenant: datetime,
     """
     file, temoins, mesure = tapis_cap_livraisons.passer(
         file, ordre, lane, maintenant, prs_ouvertes, run=run,
-        echeance=echeance, run_commande=run_commande)
+        echeance=echeance, run_commande=lanceur_cap_resserre(run_commande, lane))
     if file or not pool_ouvert or repli is None:
         return file, temoins, mesure, None
     try:

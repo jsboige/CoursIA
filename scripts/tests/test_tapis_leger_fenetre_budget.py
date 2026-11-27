@@ -94,3 +94,53 @@ def test_echec_qualification_et_repli_preserve_les_deux_causes(monkeypatch):
     with pytest.raises(gh_bulk.LectureIncomplete, match='qualification : fil illisible ; repli : cache absent'):
         fenetre.servir(classe, [], {}, {}, 'lane', 8, datetime.now(timezone.utc),
                        7, 'g', Path('.'), None, {}, 0, 30, echeance=100)
+
+
+def test_lecture_du_cap_resserree_sur_la_machine_de_la_lane():
+    """La lecture du cap ne demande a GitHub que les corps qui citent la
+    machine de la lane (#28884) : 931 PR et 9,5 s pour en retenir 3."""
+    vus = []
+
+    def run_commande(argv, timeout):
+        vus.append(list(argv))
+        return "[]"
+
+    argv = ["gh", "pr", "list", "--state", "merged", "--search",
+            "merged:>=2026-11-20 merged:<2026-11-23", "--limit", "1000",
+            "--json", "number,body,mergedAt"]
+    fenetre.lanceur_cap_resserre(run_commande, "myia-po-2026:CoursIA-3")(argv, 5)
+    assert vus == [["gh", "pr", "list", "--state", "merged", "--search",
+                    'merged:>=2026-11-20 merged:<2026-11-23 "myia-po-2026" in:body',
+                    "--limit", "1000", "--json", "number,body,mergedAt"]]
+    assert argv[6] == "merged:>=2026-11-20 merged:<2026-11-23", \
+        "l'argv de l'appelant n'est pas modifie"
+
+
+def test_lecture_du_cap_sans_lanceur_ni_recherche_passe_telle_quelle():
+    """Sans lanceur injecte, ni sans `--search` dans l'argv : le lanceur passe
+    tel quel -- la lecture integrale reste correcte, seulement plus lente."""
+    assert fenetre.lanceur_cap_resserre(None, "lane") is None
+    vus = []
+    lancer = fenetre.lanceur_cap_resserre(lambda argv, timeout: vus.append(argv) or "[]",
+                                          "machine:workspace")
+    assert lancer(["gh", "pr", "list"], 3) == "[]"
+    assert vus == [["gh", "pr", "list"]]
+
+
+def test_le_cap_lit_par_le_lanceur_resserre():
+    """Par l'entree reelle de la fenetre, chaque tranche du cap porte le
+    qualifieur de machine : sans lui, la lecture reprendrait son volume."""
+    vus = []
+
+    def run_commande(argv, timeout):
+        vus.append(argv[argv.index("--search") + 1])
+        return "[]"
+
+    _file, _temoins, mesure, rendu = fenetre.passer_et_replir(
+        [], [], "myia-po-2026:CoursIA-3", datetime.now(timezone.utc), [],
+        run_commande=run_commande)
+    assert mesure is True and rendu is None
+    assert vus, "le cap doit avoir lu au moins une tranche"
+    for recherche in vus:
+        assert recherche.startswith("merged:>="), recherche
+        assert recherche.endswith(' "myia-po-2026" in:body'), recherche
