@@ -90,8 +90,12 @@
       "note": "Rapport de B.0 : ligne de verdict (#13512/#13779), bloc A RELIRE des commentaires non evalues, notes de preuve des levees rembobinees (#13639/#20066). Module NEUF extrait de `scripts/check_unaddressed_nits.py` dans #27874 : il porte son propre plafond (139 lignes) pour que le rapport puisse grossir sans faire grossir l'organe. La constante `_BLOB_UNCOMPARABLE` reste propriete de l'organe et est passee en argument."
     },
     "scripts/tests/test_tapis_rapide.py": {
-      "lines": 810,
-      "note": "Test du tapis rapide : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 782 (base de la branche) + 16 (tests de cette PR : occupation, urne, occupation dans la sortie texte) + 12 (main : ecarts de fond, etiquette, matrice de compatibilite). La croissance vient de `main` et de cette PR, pas de cette PR seule ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction."
+      "lines": 811,
+      "note": "Test du tapis rapide : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 782 (base de la branche) + 16 (tests de cette PR : occupation, urne, occupation dans la sortie texte) + 12 (main : ecarts de fond, etiquette, matrice de compatibilite). La croissance vient de `main` et de cette PR, pas de cette PR seule ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction. Releve du 25/11 dans cette PR (#28345) : la taille reelle est 811 lignes -- +1 ligne pour le module NEUF `tapis_borne.py` (la BORNE de commande, I6), qui rejoint le tableau des plafonds comme tous les modules du tapis."
+    },
+    "scripts/tests/test_tapis_leger.py": {
+      "lines": 813,
+      "note": "Test du tirage leger : epingle au passage du plafond des scripts neufs (800) sur l'arbre fusionne (cette PR + origin/main du 24/11) -- la taille reelle est 810 lignes = 778 (base de la branche) + 10 (cette PR : la qualification precede le service) + 22 (main : l'occupation de l'urne et l'ordre d'age). La croissance vient de main ET de cette PR ; epingler la taille mesuree evite de scinder un fichier de tests dans une PR de correction. +3 lignes le 25/11 : isolement du magasin d'ancres local (`COURSIA_TAPIS_ANCRE_DIR`) dans les 3 tests qui appellent `tapis_leger.tirage` -- ces tests lisaient l'ancre REELLE de la machine (lane `myia-ai-01:CoursIA-2`) et le lot depends de son etat (faux rouge mesure : `assert 2 == 3` sur `test_un_conteneur_ne_deplace_aucun_grain` apres un passage reel du tapis)."
     }
   },
   "known_large": [
