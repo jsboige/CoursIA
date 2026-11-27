@@ -36,7 +36,7 @@ _API_BASE: str = (
 
 # Cible par defaut du chat (#22783) : le vLLM local du cluster (Swift), via la
 # route LAN du siege ai-01 -- le meme couple (VLLM_BASE_URL, VLLM_API_KEY) que
-# les carnets Audio de la serie (04-1-Educational-Audio-Content). Repli : le
+# les carnets Audio de la serie (Audio-04-1-Educational-Audio-Content-Python). Repli : le
 # modele de chat courant du mapping (docs/genai/model-mapping-openai.md) quand
 # le point d'entree vise n'est pas le service local.
 _LOCAL_TARGET_HOSTS = ("192.168.0.47", "models.myia.io")

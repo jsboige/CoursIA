@@ -188,6 +188,10 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (pytest.ini testpaths, liste pytest de ce workflow, ce dict).
         "MyIA.AI.Notebooks/IIT/ICT-Series/scripts/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
+        # HalloweenIndicator-QC/tests (#27482) : dossier neuf apporté avec son
+        # test (trace d'ombre, AlgorithmImports maquetté, 13 tests en 0,1 s),
+        # câblé des trois côtés dans la même PR.
+        "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC/tests",
         # Option-Wheel/tests (#28618) : dossier neuf apporte avec son test,
         # hermétique (AlgorithmImports maquetté, zéro réseau ; 8 tests en
         # 0,12 s en local). Cablé des trois côtés dans la même PR — testpaths,
