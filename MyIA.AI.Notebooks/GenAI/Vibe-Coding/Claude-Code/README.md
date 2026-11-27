@@ -48,6 +48,8 @@ claude --version
 
 Alternative npm (uniquement si votre poste interdit les binaires hors gestionnaire de paquets) : `npm install -g @anthropic-ai/claude-code` — détails dans le [guide d'installation](docs/INSTALLATION-CLAUDE-CODE.md).
 
+**Depuis Google Colab**, c'est la voie npm qui est mesurée : `npm install -g @anthropic-ai/claude-code` (11,5 s, code retour 0), binaire dans `/tools/node/bin` — déjà dans le `PATH` du runtime, et il survit au redémarrage de session. Un jeton absent y est signalé en moins de trois secondes ; un jeton refusé, lui, reste muet, donc bornez chaque appel. Recette complète et trace datée : [OpenRouter + Colab](docs/OPENROUTER_SETUP.md#étape-5-bis--depuis-google-colab-le-cas-qui-echouait-en-tp).
+
 ### 2. Configurer OpenRouter
 
 Suivez le guide canonique **[Quickstart : Claude Code + OpenRouter](docs/OPENROUTER_SETUP.md)** (15 min, checkpoints à chaque étape). La configuration pointe `ANTHROPIC_BASE_URL` **directement** vers `https://openrouter.ai/api` : OpenRouter sert nativement le protocole Anthropic et **aucun proxy local n'est à installer**. Le montage par `openrouter-proxy` que ce guide décrivait auparavant est obsolète.
