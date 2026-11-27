@@ -57,16 +57,16 @@ listing:
     page-size: 12
   - id: csp
     contents:
-      - "Part2-CSP/CSP-1-Fundamentals.ipynb"
-      - "Part2-CSP/CSP-2-Consistency.ipynb"
-      - "Part2-CSP/CSP-3-Advanced.ipynb"
-      - "Part2-CSP/CSP-4-Scheduling.ipynb"
-      - "Part2-CSP/CSP-5-Optimization.ipynb"
-      - "Part2-CSP/CSP-6-Hybridization.ipynb"
-      - "Part2-CSP/CSP-7-Soft.ipynb"
-      - "Part2-CSP/CSP-8-Temporal.ipynb"
-      - "Part2-CSP/CSP-9-Distributed.ipynb"
-      - "Part2-CSP/CSP-10-Optimisation-Z3.ipynb"
+      - "Part2-CSP/CSP-01-Fundamentals-Python.ipynb"
+      - "Part2-CSP/CSP-02-Consistency-Python.ipynb"
+      - "Part2-CSP/CSP-03-Advanced-Python.ipynb"
+      - "Part2-CSP/CSP-04-Scheduling-Python.ipynb"
+      - "Part2-CSP/CSP-05-Optimization-Python.ipynb"
+      - "Part2-CSP/CSP-06-Hybridization-Python.ipynb"
+      - "Part2-CSP/CSP-07-Soft-Python.ipynb"
+      - "Part2-CSP/CSP-08-Temporal-Python.ipynb"
+      - "Part2-CSP/CSP-09-Distributed-Python.ipynb"
+      - "Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb"
     type: grid
     sort: "filename"
     page-size: 12
