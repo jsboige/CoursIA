@@ -982,7 +982,7 @@ class ScanMainCollisionTests(unittest.TestCase):
     def test_scan_slot_collapses_accented_letter(self):
         # SL-12b (avec lettre d'accretion 'b') produit un slot qui inclut
         # la lettre : SL-12b, pas SL-12.
-        a = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb"
+        a = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-Python.ipynb"
         slot = csr._scan_slot(a)
         self.assertEqual(slot, ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning", "SL-12b"))
 
@@ -1044,9 +1044,9 @@ class ScanMainCollisionTests(unittest.TestCase):
         _ICT_DIR + "/ICT-48-Onset9B-Aggregate-Python.ipynb",
         _ICT_DIR + "/ICT-48-WolframClasses-ThermoSignature-Python.ipynb",
         # SL-12b : deux sujets, plus la sortie papermill de l'un d'eux.
-        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction-output.ipynb",
-        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb",
-        _SL_DIR + "/SL-12b-SpectralLogicSynthesis.ipynb",
+        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction-output-Python.ipynb",
+        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
+        _SL_DIR + "/SL-12b-SpectralLogicSynthesis-Python.ipynb",
         # Un jumeau de noyau : meme item, jamais une collision.
         "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb",
@@ -1086,8 +1086,8 @@ class ScanMainCollisionTests(unittest.TestCase):
                  and c["dir"].endswith("SymbolicAI/SymbolicLearning")]
         self.assertEqual(len(sl12b), 1, "SL-12b doit remonter comme collision documentee")
         self.assertEqual(sl12b[0]["paths"], [
-            self._SL_DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb",
-            self._SL_DIR + "/SL-12b-SpectralLogicSynthesis.ipynb",
+            self._SL_DIR + "/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
+            self._SL_DIR + "/SL-12b-SpectralLogicSynthesis-Python.ipynb",
         ])
 
     def test_scan_frozen_tree_reports_only_real_collisions(self):
@@ -1280,7 +1280,7 @@ class TestPreexistingBaseCollision(unittest.TestCase):
     `App-02-GraphColoring-Statistical-Validity-Python.ipynb` (deja sur main)
     et se voyait imputer `App-02-GraphColoring-CSharp` / `-Python`, occupants
     d'AUTRES sujets du meme slot -- une double occupation LIVREE sur main,
-    AVANT la PR. Idem #26617 sur SL-12b (`SL-12b-PavlovDLS-Reproduction`).
+    AVANT la PR. Idem #26617 sur SL-12b (`SL-12b-PavlovDLS-Reproduction-Python`).
     Le passeur `merge_ready` ecartait deux PRs approuvees en
     `slot-collision-on-merge:taken_on_base`.
 
@@ -1318,8 +1318,8 @@ class TestPreexistingBaseCollision(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
             base = _init_repo(repo, [
-                SL + "/SL-12b-PavlovDLS-Reproduction.ipynb",
-                SL + "/SL-12b-PavlovDLS-Reproduction-output.ipynb",
+                SL + "/SL-12b-PavlovDLS-Reproduction-Python.ipynb",
+                SL + "/SL-12b-PavlovDLS-Reproduction-output-Python.ipynb",
                 SL + "/SL-12b-SpectralLogicSynthesis.ipynb",
             ])
             _write(repo, SL + "/SL-12b-SpectralLogicSynthesis-CSharp.ipynb")
@@ -1330,7 +1330,7 @@ class TestPreexistingBaseCollision(unittest.TestCase):
                              "une PR de jumeau n'herite pas la collision preexistante\n"
                              + r.stdout + r.stderr)
             self.assertIn("preexisting_on_base", r.stdout)
-            self.assertIn("SL-12b-PavlovDLS-Reproduction.ipynb", r.stdout)
+            self.assertIn("SL-12b-PavlovDLS-Reproduction-Python.ipynb", r.stdout)
             self.assertNotIn("TAKEN_ON_BASE", r.stdout)
 
     def test_new_item_on_an_occupied_slot_stays_taken_on_base(self):

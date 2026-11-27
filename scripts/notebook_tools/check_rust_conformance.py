@@ -37,7 +37,9 @@ Regles fail-CLOSED
 - un cote explicitement `absent:` (avec son motif) -> signale, mais n'echoue
   pas : l'absence est un fait declare, pas une mesure absence ;
 - une tolerance declaree s'applique aux grandeurs numeriques ; les grandeurs
-  non numeriques se comparent a l'egalite stricte.
+  non numeriques se comparent a l'egalite stricte ; la transformation
+  `labels` compare un ENSEMBLE d'etiquettes, sans tenir compte de leur
+  ordre (l'ordre de retour d'un core n'est pas une garantie d'API).
 
 Usage
 -----
@@ -118,6 +120,19 @@ def _transform(region: str, transform: str) -> str | float | int:
         # texte est identique au Python une fois cette difference de plateforme
         # neutralisee. Rien d'autre n'est normalise (accents, espaces, casse).
         return region.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if transform == "labels":
+        # Comparaison d'un ENSEMBLE d'etiquettes, independamment de leur
+        # ordre : les jetons sont tries avant la comparaison.
+        #
+        # Pourquoi : `get_unsat_core` renvoie un sous-ensemble insatisfaisable
+        # d'etiquettes, mais l'API ne garantit NI l'ordre de retour NI la
+        # minimalite generale. Comparer le core en texte strict comparerait
+        # une grandeur qui n'en est pas une (la position d'une etiquette).
+        # Compare comme un ENSEMBLE, la mesure porte sur le contenu du core.
+        jetons = re.findall(r"[A-Za-z0-9_]+", region)
+        if not jetons:
+            raise ValueError("aucune etiquette dans la region capturee")
+        return " ".join(sorted(jetons))
     raise ValueError(f"transformation inconnue : {transform!r}")
 
 

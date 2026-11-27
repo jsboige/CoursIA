@@ -365,6 +365,36 @@ Les 4 carnets non couverts, recalculés — **tous sous occupation vive mesurée
 
 La projection du strand 15 s'est vérifiée au pair près (« si le Move merge, le recompte passe à 90/99 — un ICT-48 reste à traiter ») : aux arrivées près, la série est exactement dans l'état prédit. **La couverture est au plafond atteignable sans merger de PR** : chaque non couvert restant attend la résolution d'une PR ouverte, et le dénominateur continue de bouger (deux arrivées en trois jours) — le recompte se rejoue à chaque strand, il ne se recopie pas.
 
+### Recompte du 2026-11-23 (péremption du strand 20)
+
+Même méthode, rejouée à la tête `7cefe662ff85` de `origin/main`. Le strand 20 (tête `e3170e1b9595`, 2026-11-21) est périmé : entre les deux têtes, **quatre carnets sont arrivés** sur `main` — tous des ports (trois jumeaux C# + un jumeau Rust), zéro départ :
+
+- **ICT-15-IntegratedComplexity-CSharp** (portage C#) — **couvert**, porté par la section de base `ICT-15-IntegratedComplexity` ;
+- **ICT-15h-Bridge1bis-AsymmetricFamily-CSharp** (portage C#) — **couvert**, porté par la section de base `ICT-15h-Bridge1bis-AsymmetricFamily` ;
+- **ICT-Argumentation-QBFAcceptance-CSharp** (portage C#) — **couvert**, porté par la section de base `ICT-Argumentation-QBFAcceptance-Python` ;
+- **ICT-Greffe2-EspaceAtteignable-Rust** (portage Rust, #27956, commit `78f74ea6d87e`) — **non couvert** : la famille Greffe2 est suivie par sections distinctes (Python + C#), il n'y a pas de section Rust.
+
+Le dénominateur passe de 101 à **105** ; les sections restent à **98** (aucune section ajoutée : les trois C# chevauchent des bases existantes, le Rust n'en a pas).
+
+| Mesure | 2026-11-18 (s19) | 2026-11-21 (s20) | **2026-11-23 (s21)** |
+|---|---|---|---|
+| Carnets ICT sur `main` | 101 | 101 | **105** |
+| Sections de carnet au ledger | 97 | 98 | **98** |
+| Non couverts | 4 | 4 | **5** |
+| Taux de couverture (sections / carnets) | 96 % | 97 % | **93 %** |
+
+**Lecture du taux** : la chute 97 % → 93 % est un **effet de dénominateur**, pas une perte de couverture réelle. Trois des quatre arrivées sont des jumeaux C# portés par une section de base existante ; le seul écart neuf est le jumeau Rust Greffe2. La réconciliation complète tient ainsi : **105 carnets = 97 carnets à section vivante propre + 3 jumeaux C# portés par une base + 5 non couverts** ; et **98 sections = 97 vivantes + 1 fantôme** (`ICT-47b-PainAxisInstrument`, hors périmètre depuis le Move #26757).
+
+Les **5 carnets non couverts**, recalculés — les 4 du strand 20 inchangés, plus le Rust Greffe2 :
+
+- **ICT-33** SoupCollisions (reporté : PR #26864 ouverte le réécrit)
+- **ICT-40b** AnalogCognitionWaves (reporté : PR #26584 ouverte retire son activité de développement)
+- **ICT-48-WolframClasses-ThermoSignature** (reporté : PR #27783 ouverte, « blocs de fin »)
+- **ICT-49-JLensFideliteCrossTaille** (reporté : PR #27783 ouverte, « blocs de fin »)
+- **ICT-Greffe2-EspaceAtteignable-Rust** (nouveau : portage Rust du Python, #27956 — la famille est suivie par sections distinctes Python + C#, pas de section Rust)
+
+La vague de portages C#/Rust tend la convention « un carnet = une section » : trois ports s'accontentent d'une section de base, le quatrième (Rust Greffe2) laisse un écart visible. Le dénominateur continue de bouger — le recompte se rejoue à chaque strand, il ne se recopie pas.
+
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
 Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consignées par la lane `myia-ai-01:CoursIA` ([#11690 c.6103450933](https://github.com/jsboige/CoursIA/issues/11690#issuecomment-6103450933)). Le mainteneur a accepté les recommandations du dossier de séance et posé un cadre élargi pour la suite (#20298–#20301, #17545, #5081). Conformément à la réserve 2 (péremption), chaque correction décidée invalide la ligne correspondante au moment de son exécution.

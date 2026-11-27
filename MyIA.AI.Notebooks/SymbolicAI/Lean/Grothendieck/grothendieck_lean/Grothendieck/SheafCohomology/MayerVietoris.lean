@@ -232,4 +232,42 @@ theorem mv_toBiprod_fromBiprod_field
     S.toBiprod F n ≫ S.fromBiprod F n = 0 :=
   S.toBiprod_fromBiprod F n
 
+/-! ## 8. Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+
+Comparaison **énoncé par énoncé** avec le référentiel `AxiomMath/Stacks`
+(`StacksFrontier/Topology/Sheaves/Cohomology/MayerVietoris/`). Références
+données par `fichier:ligne` du dépôt Stacks.
+
+**Point de méthode.** Stacks et ce module **partagent la même base Mathlib**
+(`Mathlib.CategoryTheory.Sites.SheafCohomology.MayerVietoris`) : Stacks
+attache la **tag 01EB** à la suite exacte longue de Mathlib
+(`LongExactSequence.lean:141-142`) et y ajoute deux résultats que ce module
+n'a pas (le zéro de tête et la naturalité de la connexion).
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute / ce qui diverge |
+|---|---|---|---|
+| `mv_sequence_exact` | couvert | `MayerVietoris/LongExactSequence.lean:141-142` — `add_to_stacks 01EB "successive windows"` | C'est le **même** énoncé Mathlib : Stacks y attache la tag 01EB. Ce que notre version ajoute : le pont nommé, la suite longue explicitée en six termes, et le jumeau EN. |
+| `mv_delta_toBiprod_eq_zero` | couvert | `MayerVietoris/ColimitDescent.lean:462` (`w₂`, via `δ_toBiprod`) | Stacks utilise le **même** champ `S.δ_toBiprod` pour établir l'exactitude de la suite après colimite. Notre version le nomme et le déclare. |
+| `mv_fromBiprod_delta_eq_zero` | couvert | `MayerVietoris/ColimitDescent.lean:461` (`w₁`, via `fromBiprod_δ`) | idem, même champ `S.fromBiprod_δ`. |
+| `mv_toBiprod_field` | couvert | `MayerVietoris/LongExactSequence.lean:101,109` et `ColimitDescent.lean:205-206` (`mono_toBiprod_zero`) | Stacks manipule littéralement `S.toBiprod F n`, et en tire l'injectivité de l'application de tête (`Mono (S.toBiprod F 0)`). Notre version ajoute le pont. |
+| `mv_fromBiprod_field` | couvert | `MayerVietoris/ColimitDescent.lean:330-334` (`fromBiprodNat`) | Stacks manipule littéralement `S.fromBiprod F n`, et sa naturalité dans le carré. Notre version ajoute le pont. |
+| `mv_delta_field` | couvert | `MayerVietoris/LongExactSequence.lean:131-132` | Stacks utilise littéralement `S.δ F n₀ n₁ h`. Notre version ajoute le pont. |
+| `mv_sequence_field` | couvert | `MayerVietoris/LongExactSequence.lean:82,110` (`S.sequence F 0 1 rfl`) | idem pour la suite longue elle-même. |
+| `mv_toBiprod_fromBiprod_field` | couvert | `MayerVietoris/ColimitDescent.lean:460` (`w₀`, via `toBiprod_fromBiprod`) | Même champ Mathlib ; Stacks s'en sert pour l'exactitude après colimite. |
+
+**Ce que Stacks établit et que ce module n'établit pas** — deux écarts
+enregistrés, à ne pas confondre avec les renvois ci-dessus :
+
+- le **zéro de tête** : Stacks montre que `H⁰(X₄,F) ⟶ H⁰(X₂,F) ⊞ H⁰(X₃,F)`
+  est injectif (`ColimitDescent.lean:205-206`, `mono_toBiprod_zero`), donc que
+  la fenêtre de six termes commence par un zéro
+  (`LongExactSequence.lean:81-87`, `mayerVietorisInitialSequence` et
+  `mayerVietorisInitialSequence_exact`) ; ce module ne porte que les fenêtres
+  successives (tag 01EB), sans le zéro de tête ;
+- la **naturalité de la connexion en `F`** : Stacks l'établit
+  (`LongExactSequence.lean:129-132`, `mayerVietoris_delta_naturality`) ; ce
+  module ne l'énonce pas.
+
+-/
+
 end Grothendieck.SheafCohomology.MayerVietoris

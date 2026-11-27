@@ -1,0 +1,14 @@
+# TRANCHE21 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE21
+guards:
+  -
+    name: "activity-leak"
+    argv: ["python", "scripts/notebook_tools/check_activity_leak.py", "--diff", "{base_ref}...HEAD", "--strict"]
+    source: "native"
+    paths: ["**/*.ipynb", "scripts/notebook_tools/check_activity_leak.py", "scripts/tests/test_check_activity_leak.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2

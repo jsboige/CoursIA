@@ -395,5 +395,57 @@ def test_text_lf_neutralise_les_fins_de_ligne_et_rien_d_autre(tmp_path):
     assert rc == 1, "`text_lf` ne doit pas masquer un contenu different"
 
 
+def test_les_etiquettes_se_comparent_independantement_de_leur_ordre(tmp_path):
+    """Transformation `labels` : deux cores qui portent les MEMES etiquettes
+    dans un ordre different sont conformes.
+
+    L'ordre de retour d'un core n'est pas une garantie de l'API : comparer le
+    core en texte strict comparerait la position d'une etiquette, grandeur
+    qui n'en est pas une. Compare comme un ENSEMBLE, la mesure porte sur le
+    contenu.
+    """
+    root = tmp_path / "repo"
+    _mini_notebook(root / "a.ipynb", "Core = { x_eq_10  x_le_5 }\n")
+    _mini_notebook(root / "b.ipynb", "Core = { x_le_5  x_eq_10 }\n")
+    sides = {
+        "python": {"cell": 0, "pattern": r"Core = \{ ([^}]*) \}", "transform": "labels"},
+        "rust": {"cell": 0, "pattern": r"Core = \{ ([^}]*) \}", "transform": "labels"},
+    }
+    registry = _write_registry(tmp_path / "registry", [{
+        "name": "factice", "python": "a.ipynb", "rust": "b.ipynb",
+        "measures": [{"id": "core", "reference": "python", "sides": sides}]}])
+
+    rc, report = crc.run(registry, root)
+    assert rc == 0, "l'ordre ne doit pas peser sur la comparaison des etiquettes"
+    mesure = report["entries"][0]["measures"][0]
+    assert mesure["values"]["python"] == mesure["values"]["rust"]
+    assert mesure["values"]["python"] == "x_eq_10 x_le_5"
+
+
+def test_un_ensemble_d_etiquettes_different_est_detecte(tmp_path):
+    """NEGATIF : deux cores de MEME taille mais de contenus differents sont
+    divergents.
+
+    C'est le miroir du temoin d'ordre : l'independance de l'ordre ne doit pas
+    devenir une tolerance de contenu.
+    """
+    root = tmp_path / "repo"
+    _mini_notebook(root / "a.ipynb", "Core = { x_eq_10  x_le_5 }\n")
+    _mini_notebook(root / "b.ipynb", "Core = { x_eq_10  x_ge_3 }\n")
+    sides = {
+        "python": {"cell": 0, "pattern": r"Core = \{ ([^}]*) \}", "transform": "labels"},
+        "rust": {"cell": 0, "pattern": r"Core = \{ ([^}]*) \}", "transform": "labels"},
+    }
+    registry = _write_registry(tmp_path / "registry", [{
+        "name": "factice", "python": "a.ipynb", "rust": "b.ipynb",
+        "measures": [{"id": "core", "reference": "python", "sides": sides}]}])
+
+    rc, report = crc.run(registry, root)
+    assert rc == 1, "des ensembles differents doivent etre detectes"
+    mesure = report["entries"][0]["measures"][0]
+    assert mesure["status"] == "DIVERGENCE"
+    assert any("rust != python" in f for f in mesure["failures"])
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))

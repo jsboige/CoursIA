@@ -182,4 +182,33 @@ theorem isFlasque_skyscraper_bridge {X : TopCat} (p₀ : ↑X)
 
 end Topologique
 
+/-!
+## Stacks correspondence (group #13 of #28537, surveyed 2026-11-26)
+
+The `AxiomMath/Stacks` repository formalizes flasqueness only at the
+**topological** level (`TopCat.Sheaf.IsFlasque`: every restriction arrow is an
+epimorphism). It does not know the **site** version — flasqueness on the
+*sieves* of the representable — introduced by this module. Every verdict below
+carries that distinction.
+
+| Statement | Class | Stacks reference | What our version adds / where it diverges |
+|---|---|---|---|
+| `IsFlasqueSieves` | **absent** | none — Stacks only has `TopCat.Sheaf.IsFlasque` | Flasqueness at the level of **sieves**: every compatible family on *any* sieve — covering or not — amalgamates. This is the **site** version, absent from Stacks as from Mathlib. |
+| `isFlasqueSieves_iff` | **absent** | none | A mere unfolding of the class: it has no counterpart as long as the site version exists nowhere else. |
+| `nonempty_obj_of_isFlasqueSieves` | **absent** | none | The subtlety of the **empty sieve** — a global section must exist for *every* object — is a site requirement. Mathlib sidesteps it by making the restriction towards the empty open trivially epic; Stacks, which only knows the topological version, has no counterpart. |
+| `isSheaf_of_isFlasqueSieves_of_isSeparated` | **partiel** | `Mathlib.CategoryTheory.Sites.SheafOfTypes` (`Presieve.IsSeparated.isSheaf`) | The "uniqueness" half is **the same** one Stacks and Mathlib share; the "existence" half is ours (`IsFlasqueSieves.amalgamates`). The chaining is explicit here, where Mathlib keeps it implicit. |
+| `isFlasqueSieves_const_of_subsingleton` | **absent** | `CechToCohomology/DegreeOneFlasqueVanishing.lean:211` (`isFlasque_of_injective`) | Stacks makes the **injective sheaf** the source of flasqueness; we make the **constant subsingleton sheaf** the source of site flasqueness. The two routes are distinct and do not overlap. |
+| `pushforward_isFlasque_bridge` | **couvert** | `GodementResolution/Basic.lean:291` (`TopCat.Sheaf.IsFlasque.pushforward_isFlasque`) | The very same Mathlib lemma on both sides: Stacks relies on `pushforward_isFlasque` to establish that the iterates `(f_* f^*)^(n+1) F` are flasque (`GodementResolution/Basic.lean:276`, `isFlasque_iterate_modulePullbackPushforward`). |
+| `isFlasque_skyscraper_bridge` | **partiel** | `CechToCohomology/DegreeOneFlasqueVanishing.lean:211` (`isFlasque_of_injective`) ; `GodementResolution/Basic.lean:231` (`flasque_of_discrete_sheaf`) | Stacks reaches flasqueness through the **surjectivity of restriction maps** — an injective sheaf has surjective restrictions — and establishes the neighbouring case "a sheaf on a discrete space is flasque". The **skyscraper** itself does not appear there. |
+
+**Scope of the reading.** Stacks files consulted for this group:
+`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean`,
+`Topology/Sheaves/Cohomology/GodementResolution/Stalk.lean`,
+`Topology/Sheaves/Cohomology/GodementResolution/StalkHomotopy.lean`,
+`Topology/Sheaves/Cohomology/CechToCohomology/DegreeOneFlasqueVanishing.lean`
+and `Topology/Sheaves/Cohomology/CechAcyclicity/InjectiveSheavesRestrictOnto.lean`.
+An "absent" verdict means *no statement of that name in the files read*,
+never "this notion does not exist at Stacks".
+-/
+
 end Grothendieck.Flasque_en
