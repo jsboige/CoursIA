@@ -8028,19 +8028,25 @@ def test_implicit_leg_is_opt_in_at_the_run_check_level(monkeypatch, capsys):
     assert "IMPLICIT" not in capsys.readouterr().out
 
 
-def test_implicit_gh_failure_degrades_to_clear_with_warn(monkeypatch, capsys):
-    # Fail-open SIGNALE (#16570, meme posture) : une jambe qui ne peut pas
-    # mesurer ne fabrique pas de verdict -- WARN + CLEAR, jamais un 3 muet.
+def test_implicit_gh_failure_is_exit_2_unmeasured_never_clear(monkeypatch, capsys):
+    # #28869 (relecture ai-01 sur #28870, 27/11) -- ce contrat REMPLACE
+    # « WARN + CLEAR » (#16570) pour la jambe IMPLICIT : une jambe DEMANDEE
+    # qui ne peut pas mesurer ne rend pas CLEAR. Le code de retour etait lu
+    # comme une autorisation d'editer sur un perimetre que l'organe n'avait
+    # pas lu (#28097 : un tirage reporte sur un faux CLEAR). Elle rend
+    # `exit 2` (famille io/gh-error) : l'appelant branche, et le WARN nomme
+    # la cause. Toujours pas de 3 muet -- aucune lane n'est accusee.
     def _boom():
         raise RuntimeError("gh pr list --state open failed (exit 1): rate limit")
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", _boom)
     p = payload(number=14259)
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         check_open_pr_paths=True)
-    assert rc == 0
+    assert rc == 2
     captured = capsys.readouterr()
     assert "WARN" in captured.err and "IMPLICIT" in captured.err
-    assert "CLEAR" in captured.out
+    assert "IMPLICIT_UNMEASURED" in captured.err
+    assert "CLEAR:" not in captured.out
 
 
 def test_implicit_skipped_when_a_claim_blocks(monkeypatch, capsys):
@@ -9622,3 +9628,53 @@ def test_gh_repo_absent_garde_la_resolution_par_le_cwd(monkeypatch):
 
     monkeypatch.setattr(clc, "_run_bounded", lambda *a, **k: _Proc())
     assert clc._gh_repo_name_with_owner() == "jsboige/CoursIA"
+
+
+# --- #28869 -- une jambe IMPLICIT DEMANDEE qui n'a pas tourne n'est pas CLEAR
+# Relecture ai-01 sur #28870 (27/11) : un `GH_REPO` mal forme fait lever la
+# jambe, rattrapee en `implicit_occupation_measured: false` + WARN -- puis
+# l'organe imprimait `CLEAR` a `exit 0`. Le code de retour disait a
+# l'appelant qu'il pouvait editer sur un perimetre que l'organe n'avait pas
+# lu (#28097 : un tirage reporte, 0 token, sur ce faux CLEAR).
+
+
+def test_implicit_leg_requested_but_unmeasured_is_exit_2_never_clear(
+        monkeypatch, capsys):
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", None)
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    monkeypatch.setenv("GH_REPO", "pas/un/slug")
+
+    def _transport_interdit(*args, **kwargs):
+        raise AssertionError(
+            "aucun transport ne doit etre paye pour un GH_REPO invalide")
+
+    monkeypatch.setattr(clc, "_run_bounded", _transport_interdit)
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- build the guard",
+        "2026-08-06T22:43:31Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    assert rc == 2
+    # Le coeur du defaut : plus AUCUN CLEAR quand la mesure n'a pas eu lieu.
+    assert "CLEAR:" not in captured.out
+    assert "IMPLICIT_UNMEASURED" in captured.err
+    # La cause voyage avec le verdict : l'appelant corrige sans relire l'organe.
+    assert "pas/un/slug" in captured.err
+
+
+def test_implicit_leg_not_requested_keeps_clear_at_exit_0(
+        monkeypatch, capsys):
+    # Controle : sans demande de la jambe (lazy by outcome), l'absence de
+    # mesure n'est pas un verdict -- le CLEAR d'avant #28869 reste le
+    # comportement attendu, meme avec un GH_REPO invalide dans l'environnement.
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", None)
+    monkeypatch.setenv("GH_REPO", "pas/un/slug")
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- build the guard",
+        "2026-08-06T22:43:31Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAR:" in out
