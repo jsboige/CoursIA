@@ -1,0 +1,320 @@
+name: Always-on guards -- edited
+
+# FUSION des deux workflows always-on de la classe `edited` (#28534, residu de
+# #22209). Un seul workflow, un seul job, un seul checkout -- la file
+# d'attente des runs et le nombre de slots de runner par evenement de PR
+# baissent de deux a un.
+#
+# SOURCES FUSIONNEES (les fichiers RESTENT, dormants -- declencheur
+# `pull_request` retire, jobs conserves verbatim pour la tracabilite, patron
+# #13384) :
+#
+#   always-on-metadata-guards.yml -> 3 organes de METADONNEES
+#       (base-not-main advisory, stale-base advisory, concurrency-conj
+#       BLOQUANT) -- issue #14057 (vague 2 tranche 1).
+#   always-on-guards-body.yml     -> 5 organes de BODY
+#       (Grain tag, prev:, close-keyword, genre, claim -- issue #22331,
+#       extraction de always-on-guards.yml).
+#
+# POURQUOI PAS UNE ABSORPTION DANS `always-on-guards.yml`
+# ------------------------------------------------------
+# `always-on-guards.yml` declare `types: [ opened, synchronize, reopened ]`.
+# Les organes de metadonnees ont besoin de `edited` : RETARGETER LA BASE
+# d'une PR est un evenement `edited`. Ajouter `edited` a l'umbrella de
+# contenu reintroduirait #22331 : une edition de body annulait le run de
+# contenu en file (113 re-declenchements a tete egale sur 268 mesures), et
+# un job saute produit un check-run `skipped` plus RECENT que le rouge de
+# contenu de la meme tete -- il l'effacerait (le fold de `pr_gate.py` plie
+# par NOM et `CONCLUSION_OK` inclut `skipped`). C'est la raison d'etre
+# documentee du workflow separe.
+#
+# POURQUOI LES DEUX GARDES `if:` SURVIVENT SEPAREMENT
+# ----------------------------------------------------
+# Les deux jobs n'avaient PAS la meme garde, et la fusion ne les confond pas
+# (critere 2 de #28534) :
+#   - metadonnees : `action != 'edited' || changes.base != null`
+#     (une edition de BODY ne parle pas a la base) ;
+#   - body        : `action != 'edited' || changes.base != null ||
+#                    changes.body != null`.
+# La garde du JOB est l'UNION (les deux groupes n'ont rien a dire sur une
+# edition de TITRE seul : ni la base ni le corps n'ont bouge), et chaque
+# GROUPE D'ORGANES porte SA garde -- jamais l'union des deux. C'est ce qui
+# empeche un run vert de body d'effacer le verdict de metadonnees.
+#
+# CONCURRENCE (#11649) -- LE DISCRIMINANT A TROIS CLASSES
+# -------------------------------------------------------
+# Les deux workflows avaient DEUX groupes (un par classe d'edition). Un
+# groupe unique doit donc distinguer les classes, sinon une edition de body
+# annule le run de metadonnees (et reciproquement) :
+#   - `base-edit` : la base a change -> le groupe NOMINAL (le run de
+#     metadonnees anterieur devient perime, il doit s'annuler) ;
+#   - `body-edit` : le corps a change -> groupe DEDIE (il ne doit PAS
+#     annuler le run de metadonnees en file) ;
+#   - `meta-edit` : ni la base ni le corps n'ont change (edition de titre
+#     ou de labels) -> groupe DEDIE (aucun des deux groupes n'a a dire).
+# COUT ASSUME : une edition de body n'annule plus un run de body deja en
+# file (elle l'annulait avant). Le run en file se termine et son verdict est
+# remplace par le fold par nom ; le gain -- un slot au lieu de deux par
+# evenement de PR -- est mesure dans le body de la PR de livraison.
+#
+# VERROU #13232 : aucun `paths:` sur ce workflow (verrou #13232, regle 2
+# d'#10045). Un `paths:` desarmerait base-not-main sur les PR dont la base
+# n'est PAS main -- precisement la surface qu'il doit scanner -- et
+# sortirait le job de la canary `derive_always_on_jobs`. Pour la meme
+# raison, aucun filtre `branches:` : l'organe base-not-main doit voir les
+# PR dont la base n'est pas main (c'est sa raison d'etre, #10918).
+#
+# NOM DE CHECK-RUN : `Always-on guards -- metadata + body`. Il porte le
+# prefixe `Always-on guards` que lisent `refresh_stale_adjacency.py` (les
+# deux jambes : contenu et body) et `pick_idle_grain.py`
+# (AGGREGATOR_CHECK_PREFIXES). Le nom du fichier dormant n'est plus lu par
+# l'organe d'adjacence -- voir `BODY_WORKFLOW_NAME`.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+    # PAS de `paths:` -- canary + #13232 + regle 2 d'#10045.
+    # PAS de filtre `branches:` -- #10918 (base-not-main doit voir les PR
+    # dont la base n'est PAS main).
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: always-on-guards-edited-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && (github.event.changes.base != null && 'base-edit' || github.event.changes.body != null && 'body-edit' || 'meta-edit') || '' }}
+  cancel-in-progress: true
+
+jobs:
+  always-on-guards-edited:
+    name: "Always-on guards -- metadata + body"
+    # Meme pool, meme garde anti-fork, meme forme HYBRIDE auditee que les
+    # deux workflows fusionnes (cf. always-on-metadata-guards.yml pour la
+    # mesure qui a fixe ce routage, et always-on-guards-body.yml pour la
+    # forme de debordement #22937).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # UNION des deux gardes d'origine (le job tourne sur toute edition qui
+    # parle a l'un des deux groupes). La garde PAR GROUPE est portee par les
+    # etapes, ci-dessous.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
+    # 15 min : la borne du job de body (#24959, checkout seul = 286 s sur
+    # 300), plus large que celle du job de metadonnees (10 min).
+    timeout-minutes: 15
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+
+    steps:
+      # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
+      # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
+      # `fetch-depth: 0` ci-dessous declenche alors un `fetch --unshallow`
+      # dont l'echec est AVALE par actions/checkout -- mesure firsthand sur
+      # #15492 (run 34542167016, job 103087137418) : `error: Could not read
+      # 0102d652b3...` emis PENDANT le fetch, etape rendue verte malgre tout.
+      # Le depot reste alors ni shallow ni complet, et tout `git log --raw` /
+      # `git rev-list` ulterieur casse -- ce qui fait rougir un check REQUIS
+      # sur une panne d'infrastructure, jamais sur du fond. On repart d'un
+      # clone neuf des que l'etat est shallow ou le graphe troue.
+      - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
+        shell: bash
+        run: |
+          cd "$GITHUB_WORKSPACE" || exit 0
+          if [ ! -d .git ]; then
+            echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
+            exit 0
+          fi
+          # --- Etat sparse herite du job precedent (#24959) ------------------
+          # Le pool de runners reutilise son work dir. Un work dir laisse en
+          # etat sparse ARME (core.sparseCheckout a vrai) fait materialiser
+          # l'ARBRE ENTIER par le checkout suivant : avec `filter: blob:none`,
+          # le desarmement du sparse telecharge les blobs -- mesure po-2024 du
+          # 2026-11-06 (consignee dans always-on-guards-body.yml) : 8 min 57 s
+          # sur la seule commande `git checkout --force refs/pull/<N>/merge`,
+          # sans une ligne de log, puis annulation ; sur deux runners
+          # differents (myia-ai-01-wsl-2 : 9 min 55 s ;
+          # myia-po-2024-linux-persist-6 : 9 min 49 s). Un clone frais
+          # `blob:none` laisse les blobs paresseux : il est moins cher que la
+          # materialisation. Meme arbitrage que le hook job-started de
+          # l'entrypoint du runner conteneurise
+          # (scripts/ci/docker/linux-runner/entrypoint.sh) : le FLAG ARME est
+          # le seul etat cassant (purge du clone) ; le fichier de motifs seul
+          # est inerte (il est retire, le cache est conserve).
+          sparse=$(git config --local --get core.sparseCheckout 2>/dev/null || true)
+          case "$sparse" in
+            true|1|on)
+              echo "::notice::[heal] work dir SPARSE arme -- purge du work dir"
+              rm -rf .git
+              exit 0
+              ;;
+          esac
+          if [ -f .git/info/sparse-checkout ]; then
+            echo "[heal] motifs sparse inertes -- retrait du fichier, work dir conserve"
+            rm -f .git/info/sparse-checkout
+          fi
+          if [ -f .git/shallow ]; then
+            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
+            rm -rf .git
+            exit 0
+          fi
+          if ! git rev-list --all --count >/dev/null 2>&1; then
+            echo "::notice::[heal] graphe d'objets incomplet -- purge du work dir"
+            rm -rf .git
+            exit 0
+          fi
+          echo "[heal] work dir complet -- reutilisation"
+
+      # Checkout UNION des deux groupes : fetch-depth 0 + blob:none (le
+      # graphe complet est requis par l'organe stale-base -- rev-list BASE..main
+      # et dates de commits, cf #11835 ; les blobs restent paresseux) ;
+      # sparse-checkout .github + scripts (base-not-main lit ses scripts ET
+      # .github/workflows -- il mesure la couverture CI perdue sur une base
+      # empilee, #16194 ; concurrency-conj n'a besoin que de son script ; les
+      # cinq organes de body ne lisent que des fichiers /tmp et l'API `gh`).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            .github
+            scripts
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PyYAML if absent
+        # Pattern partage avec l'umbrella #13384 : import-test en dry-run,
+        # fallback pip install silencieux. Sans cette etape, exit 2
+        # BROKEN_INSTRUMENT masquerait la conjonction en rouge de complaisance
+        # (cf #11850).
+        run: python -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+
+      # ------------------------------------------------------------------
+      # GROUPE METADONNEES -- garde : l'edited ne parle a la base que si la
+      # base a change. Une edition de BODY ne declenche pas ces trois
+      # organes (c'est la condition de l'organe de body, qui doit rester
+      # seule a parler d'une edition de corps).
+      # ------------------------------------------------------------------
+      - name: "Organe base-not-main : signaler une base != main (advisory)"
+        if: (github.event.action != 'edited' || github.event.changes.base != null) && github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'main'
+        # ADVISORY : ne doit JAMAIS faire rougir ce check REQUIS (contrat
+        # documente en tete de fichier -- patron #13384 : seul l'organe
+        # BLOQUANT `conj` rougit, via l'etape AGREGAT). Sans ce marqueur,
+        # une affectation `VAR=$(git ...)` en echec sous `bash -e` avortait
+        # l'etape et rougissait le job (#15387 : graphe d'objets incomplet
+        # sur un work dir self-hosted reutilise -> #15366, #15447, #15483,
+        # #15496 bloquees sur une panne d'infrastructure).
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/base_not_main.py --pr "${{ github.event.pull_request.number }}"
+
+      # ------------------------------------------------------------------
+      # ORGANE 2 (advisory) : stale-base-warning. Porte verbatim depuis
+      # stale-base-warning.yml. Ne lit AUCUN contenu de blob : rev-list et
+      # show -s interrogent le graphe seul (#11835). Poser label + commentaire
+      # quand la base a >14j.
+      # ------------------------------------------------------------------
+      - name: "Organe stale-base : avertissement base >14j (advisory)"
+        if: (github.event.action != 'edited' || github.event.changes.base != null) && github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        # ADVISORY : ne doit JAMAIS faire rougir ce check REQUIS (contrat
+        # documente en tete de fichier -- patron #13384 : seul l'organe
+        # BLOQUANT `conj` rougit, via l'etape AGREGAT).
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          STALE_DAYS: "14"
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch origin main
+          # base.sha est la POINTE de la base au moment de l'evenement (mesure
+          # #14333 : == origin/main sur la PR de controle #15426, donc
+          # BASE_SHA == MAIN_SHA -> "Base is up-to-date" inconditionnel,
+          # organe muet). Le point de fourche reel de la PR est le merge-base
+          # de sa tete avec main.
+          BASE_SHA="$(git merge-base "$PR_HEAD_SHA" origin/main)"
+          MAIN_SHA="$(git rev-parse origin/main)"
+          if [ "$BASE_SHA" = "$MAIN_SHA" ]; then
+            echo "Base is up-to-date."
+            exit 0
+          fi
+          BEHIND=$(git rev-list "$BASE_SHA..origin/main" --count)
+          BASE_DATE=$(git show -s --format=%ct "$BASE_SHA" 2>/dev/null || echo 0)
+          MAIN_DATE=$(git show -s --format=%ct "$MAIN_SHA" 2>/dev/null || echo 0)
+          if [ "$BASE_DATE" -eq 0 ] || [ "$MAIN_DATE" -eq 0 ]; then
+            echo "Could not determine commit dates."
+            exit 0
+          fi
+          AGE_DAYS=$(( (MAIN_DATE - BASE_DATE) / 86400 ))
+          echo "Base age: ${AGE_DAYS} days, behind: ${BEHIND} commits"
+          if [ "$AGE_DAYS" -le "$STALE_DAYS" ]; then
+            exit 0
+          fi
+          echo "::warning::Base is ${AGE_DAYS}d behind main (${BEHIND} commits)"
+          gh pr comment "$PR_NUMBER" --body "## Base Branch Stale Warning - ${AGE_DAYS}d behind main (${BEHIND} commits). Consider rebasing." 2>/dev/null || true
+          gh label create "base-stale-14d" --description "PR base >14d behind main" --color "FFA500" --force || true
+          gh pr edit "$PR_NUMBER" --add-label "base-stale-14d" 2>/dev/null || true
+
+      # ------------------------------------------------------------------
+      # ORGANE 3 (BLOQUANT) : concurrency-conj-guard. Porte depuis
+      # concurrency-conj-guard.yml (#13488) : refoule la conjonction
+      # push:main + github.ref + cancel-in-progress literal. Scanne les
+      # workflows du depot.
+      # ------------------------------------------------------------------
+      - name: "Organe concurrency-conj : conjonction annulation-cascade (#13488)"
+        id: conj
+        if: github.event.action != 'edited' || github.event.changes.base != null
+        continue-on-error: true
+        run: python scripts/ci/check_concurrency_conj.py --check --json
+
+      # ------------------------------------------------------------------
+      # GROUPE BODY -- garde : l'edited parle au corps des que le corps a
+      # change. Les cinq organes lisent le BODY, pas la base.
+      # ------------------------------------------------------------------
+      # BODY LIVE (#15697) : les organes lisent le corps A L'EXECUTION (une
+      # edition de body n'emet aucun commit, et un amendement par
+      # GITHUB_TOKEN n'emet aucun evenement). Le CODE DE SORTIE distingue
+      # panne d'API et corps vide (#17197).
+      - name: "Body live : lecture API a l'execution (#15697)"
+        if: github.event_name == 'pull_request'
+        env:
+          PAYLOAD_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          # En cas d'echec, gh peut ecrire une erreur sur stdout ; le repli ci-dessous
+          # remplace LIVE par le payload avant son utilisation.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
+            echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
+          else
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
+            LIVE="${PAYLOAD_BODY:-}"
+          fi
+          BODY="$LIVE"
+          delim="BODY_LIVE_EOF_$$"
+          printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
+
+      # Les cinq organes bloquants qui lisent le body. Le script est appele
+      # par CE workflow seul (review #22333) : une seule implantation, une
+      # seule execution par evenement.
+      - name: "Organes de body (Grain, prev:, close-keyword, genre, claim, #22331)"
+        if: github.event_name == 'pull_request'
+        run: bash scripts/ci/always_on_body_organs.sh
+
+      # ------------------------------------------------------------------
+      # AGREGAT (patron #13384) : fait rougir le job si l'organe bloquant a
+      # echoue, APRES que les advisories ont pose leurs labels. `always()` :
+      # l'agregat parle meme si le groupe BODY a echoue plus haut -- sinon le
+      # message de l'organe bloquant serait perdu.
+      # ------------------------------------------------------------------
+      - name: Agregat
+        if: always() && steps.conj.outcome == 'failure'
+        run: |
+          echo "::error::Organe concurrency-conj en echec (conjonction push:main + github.ref + cancel-in-progress litteral reintroduite ? Cf #13488 / #13372)."
+          exit 1

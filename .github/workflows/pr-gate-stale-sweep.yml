@@ -1204,10 +1204,23 @@ jobs:
             # en mode reel, « log du run illisible -- leg mute gardee » en
             # garde ci-dessous) ; extraire le stderr n'y ajouterait rien, le
             # geste est le meme (garder la leg pour le prochain sweep).
+            # Le titre doit porter le VERDICT, pas la ligne de comptabilite
+            # qui passe apres lui (#c0138, 26/11) : la porte imprime
+            # `[pr-gate] api-quota: N gh api call(s), ...` APRES son verdict
+            # (`scripts/pr_gate.py`), donc `tail -1` sur TOUTES les lignes
+            # `[pr-gate]` prenait la comptabilite -- 12 portes sur 12 ont
+            # ete reparees avec un titre qui ne dit rien de l'etat des
+            # checks. On ne retient que la ligne dont le texte apres
+            # `[pr-gate] ` porte un jeton de verdict (PASS / FAIL /
+            # STARVED / INCONCLUSIVE / DWELL) : ce sont les formes seules
+            # que `pr_gate.py` emet pour son verdict (`verdict()` et les
+            # messages de quota), les lignes de comptabilite et les
+            # messages d'avertissement n'en portent pas.
             LINE=$(gh run view "$RUN_ID" --repo "$REPO" --log 2>/dev/null \
-                     | grep '\[pr-gate\]' | tail -1 | sed 's/.*\[pr-gate\] //') || true
+                     | grep -E '\[pr-gate\] (PASS|FAIL|STARVED|INCONCLUSIVE|DWELL) -- ' \
+                     | tail -1 | sed 's/.*\[pr-gate\] //') || true
             if [ -z "${LINE:-}" ] && [ "${DRY_RUN:-false}" != "true" ]; then
-              LINE="(aucune ligne [pr-gate] dans le log du run $RUN_ID -- defaut du gate lui-meme, #15825)"
+              LINE="(aucune ligne de verdict [pr-gate] dans le log du run $RUN_ID -- defaut du gate lui-meme, #15825)"
             fi
             if [ "${DRY_RUN:-false}" = "true" ]; then
               echo "[stale-sweep] (dry-run) would repair #$NUM mute leg from run $RUN_ID: ${LINE:-<log illisible>}"

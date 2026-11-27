@@ -33,3 +33,11 @@ la politique découverte une fois se **rejoue à coût nul**.
 > système d'agents. C'est ce qui le distingue des [case studies](../../CaseStudies/)
 > (domaine-ancrées) et des projets [`matching-cv`](../matching-cv/) /
 > [`socle-metadata-driven`](../socle-metadata-driven/) de ce répertoire.
+
+## Jumeaux Rust
+
+Les **portages Rust** de la série — bibliothèque `std` seule, sans crate, sans
+réseau — dont les sorties sont comparées à la référence Python par le registre
+de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/`) :
+
+- [AgentSystems-01 — Perception → Action (Rust)](AgentSystems-01-Perception-Vers-Action-Rust.ipynb)
