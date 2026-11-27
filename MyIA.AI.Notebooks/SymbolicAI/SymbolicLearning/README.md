@@ -31,6 +31,35 @@ Trois situations où les données seules ne suffisent pas :
 
 Le fil rouge de la série : l'apprentissage symbolique réussit là où les données seules échouent, non pas en ignorant la connaissance, mais en l'écrivant explicitement, en l'induisant des exemples, puis en la réconciliant avec le connexionnisme. Le geste profond : transformer une théorie du domaine (une détermination, une preuve, une ontologie) en un programme qui apprend, et montrer au capstone que l'on peut tenir les deux bouts, LLM et logique, dans une même boucle où chacun corrige l'autre.
 
+## Objectifs d'apprentissage
+
+À l'issue de la série, un lecteur sait faire ce qui suit. Les objectifs sont groupés par nature : les gestes techniques, la méthode qui rend leurs résultats croyables, et les situations où ils s'appliquent.
+
+### Techniques — implémenter, pas seulement reconnaître
+
+1. **Implémenter** l'apprentissage inductif d'un espace d'hypothèses conjonctives — Current-Best-Hypothesis, Candidate Elimination — et lire un espace de versions par ses bornes G et S (carnet 01).
+2. **Compiler** un exemple résolu en règle opérationnelle par EBL (expliquer, variabiliser, extraire, simplifier), et **trouver** les attributs déterminants d'un problème par le treillis des déterminations et MINIMAL-CONSISTENT-DET (carnets 02 et 03).
+3. **Apprendre** des clauses de Horn récursives par les deux voies de l'ILP : FOIL et son gain en top-down ; résolution inverse, LGG de Plotkin, clause bottom et recherche à la Progol en bottom-up (carnets 04 et 05).
+4. **Faire tourner** quatre moteurs ILP réels sur une même tâche et **distinguer** leurs machineries : entailment inverse (Aleph), méta-interprétation (Metagol), contraintes (Popper), descente de gradient (∂ILP) (carnet 06).
+5. **Rendre la logique différentiable** — t-normes, prédicats neuronaux, DeepProbLog minimal puis LTNtorch, la satisfaction des formules se lisant dans la perte (carnet 07) — et **discrétiser** un réseau de portes logiques appris par gradient en un circuit booléen (carnet 12).
+6. **Extraire** des règles d'un graphe RDF (support, confiance, confiance PCA), les appliquer pour compléter le graphe, et **recouper** la complétion par un chaînage avant Datalog sous clingo (carnet 08).
+7. **Apprendre un automate par requêtes** : table d'observation fermée et cohérente, requêtes d'appartenance et d'équivalence, convergence vers l'automate minimal de Myhill-Nerode, puis oracle bruité (carnet 10).
+8. **Calculer** le spectre de Walsh-Hadamard exact d'une fonction booléenne, le **distinguer** des poids ternaires d'un PTF, et conduire une recherche discrète bornée contre un oracle exact (carnet 12b).
+9. **Proposer des conjectures à un solveur** : fixations de variables pour CP-SAT, détection de leurs conflits, réparation, et mesure du gain par conjecture prise isolément (carnet 15).
+
+### Méthodologiques — ce qui rend le résultat croyable
+
+10. **Concevoir une boucle générateur/oracle** : un LLM propose des règles, un vérificateur formel les accepte ou les rejette, l'erreur retourne au générateur (carnet 09).
+11. **Confronter une implémentation artisanale à une référence** : parité de FOIL et de Progol avec clingo et SWI-Prolog, parité des jumeaux C# avec leur carnet Python, et repérage du point où deux implémentations divergent (carnets 04, 05, 06 et leurs jumeaux).
+12. **Borner une conclusion de recherche** : distinguer une structure *approximative* d'une structure *exacte* (carnets 13 et 13b), un résultat négatif d'une réfutation (carnet 12c), un gain mesuré sur un budget d'un gain général (carnet 14).
+13. **Mesurer contre un contrôle apparié** : null de même effectif pour la sélectivité des atomes, substitution atomique pour la TPR, ablation dirigée pour le dictionnaire creux (carnets 13 et 13b).
+
+### Applicatifs — où le geste sert
+
+14. **Assembler un pipeline neuro-symbolique de bout en bout** — extraction, oracle, graphe, mining, chaînage avant avec provenance, confrontation du LLM seul au graphe raisonné — et **classer les défenses par étage** quand un fait faux entre (carnet 11).
+15. **Choisir la méthode selon la contrainte du terrain** : peu d'exemples (EBL, Candidate Elimination), interprétabilité exigée (règles, circuits booléens), connaissance du domaine déjà écrite (déterminations, ontologie).
+16. **Retrouver une formule fermée à partir des données** : séparabilité lue dans les gradients d'un réseau, longueur de description en bits, front de Pareto complexité-précision (carnet 14).
+
 ## Comment lire ce README
 
 Un README de série se lit à plusieurs vitesses : le parcours par les numéros nus, l'approfondissement par les lettres, puis les carnets de recherche et les ressources. Le principe est exposé à la racine du dépôt, dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
@@ -63,16 +92,105 @@ Un README de série se lit à plusieurs vitesses : le parcours par les numéros 
 
 *L'automate cible du carnet 10, que l'apprenant ne voit pas : quatre états, un seul acceptant (`ee`), un par classe de parité. Rendu du bloc `mermaid stateDiagram-v2` du carnet ; provenance et contenu de l'image documentés dans [MANIFEST.md](assets/readme/MANIFEST.md).*
 
+### Pourquoi cet ordre ?
+
+Sept paliers, et chacun répond à une limite que le précédent a rendue visible. L'ordre n'est pas chronologique ni thématique : il est motivé.
+
+**Palier 1 — l'induction pure (01).** Un agent reçoit des exemples et doit deviner la règle. Candidate Elimination tient l'ensemble entier des hypothèses consistantes ; Current-Best-Hypothesis n'en tient qu'une. Le carnet mesure les deux et expose la limite qui commande la suite : le bruit casse la cohérence, et une disjonction n'entre pas dans une conjonction de contraintes.
+
+**Palier 2 — la connaissance comme accélérateur (02, 03).** Si l'espace d'hypothèses est trop pauvre, on n'élargit pas l'espace : on apporte une théorie du domaine. EBL compile une preuve en règle réutilisable ; RBL cherche les attributs qui déterminent la cible, d'abord par le treillis, ensuite par un test statistique. La comparaison avec l'information mutuelle montre *quand* la connaissance du domaine bat la statistique — et le carnet 02 mesure aussi le cas inverse, où les règles coûtent plus qu'elles ne rapportent.
+
+**Palier 3 — passer des attributs aux programmes (04, 05).** Les carnets 02 et 03 apprennent des *classes* ; un programme logique apprend une *relation récursive*. FOIL descend, la résolution inverse remonte, la clause bottom de Progol borne la recherche. Les deux voies sont écrites de zéro avant d'être confrontées à un moteur.
+
+**Palier 4 — comparer les machineries (06).** Une fois les algorithmes écrits, la question devient « laquelle, quand ? ». Quatre moteurs réels apprennent la même clôture transitive par quatre mécanismes différents, et le carnet rend visibles leurs angles morts : sensibilité à la direction des modes, invention de prédicats, tolérance au bruit. Le ∂ILP différentiable ouvre la porte du palier suivant.
+
+**Palier 5 — différentiable, minier, vérifiable (07, 08, 09, 13, 13b, 15).** La rigidité logique motive de rendre la logique différentiable (07) ; les graphes réels motivent le passage à l'échelle du mining (08) ; l'opacité d'un LLM motive la vérification formelle de ce qu'il propose (09). Deux carnets de recherche sondent le même soupçon par deux lectures concurrentes des mêmes états cachés (13, 13b), et un troisième transporte la boucle générateur/oracle du carnet 09 vers un solveur CP-SAT, où le verdict est plus fin : le mécanisme se transporte, le geste de réparation non (15).
+
+**Palier 6 — apprendre sans échantillon, puis assembler (10, 11, 12, 12b, 12c).** L* renverse le rapport aux données : l'apprenant choisit ses questions et obtient des garanties de minimalité. Le capstone assemble alors les briques des paliers 1 à 5 en un pipeline où chaque étage est un carnet antérieur, et où la leçon vient des sorties réelles : le chaînage avant peut violer les contraintes que l'oracle imposait en amont. Les trois carnets 12 prennent l'autre versant du neuro-symbolique — un circuit discret appris par gradient, son spectre de Fourier exact, et la reproduction bornée d'une revendication de la littérature.
+
+**Palier 7 — changer de question (14).** Tous les paliers précédents apprennent *dans un langage donné* : clauses, règles, circuits, portes. AI Feynman demande si l'on peut retrouver la formule elle-même, et enseigne la leçon transversale de la série : « simple » dépend du langage de description.
+
+Les durées par carnet et le total de la série vivent dans le [catalogue généré](../../../COURSE_CATALOG.generated.md), qui les tient à jour ; les budgets indicatifs ci-dessous sont des ordres de grandeur de lecture, pas des mesures.
+
 ### Parcours alternatifs
 
-- **Parcours rapide** : carnets 01, 07, 09 et 11, pour voir le fil complet en quatre étapes.
-- **ILP approfondi** : carnets 01 à 06.
-- **Théorie des langages** : carnets 01 et 10, de l'espace d'hypothèses conjonctives à l'automate appris.
-- **Graphes de connaissances** : carnets 02, 03, 04 et 08 (rdflib et AMIE ; une familiarité avec RDF et SPARQL aide).
+Quatre entrées dans la série, selon ce que le lecteur vient chercher. Les budgets sont des ordres de grandeur de lecture, les durées mesurées vivant dans le catalogue généré.
+
+- **Parcours rapide** — carnets 01, 07, 09 et 11 (~4 h) : le fil complet en quatre étapes, de l'espace d'hypothèses conjonctives au pipeline où un LLM et un vérificateur se corrigent l'un l'autre. C'est le parcours à conseiller avant une séance de restitution.
+- **ILP approfondi** — carnets 01 à 06 (~5 h 30) : les deux voies de l'induction de programmes, puis les quatre moteurs réels. Le lecteur y apprend autant par les algorithmes écrits de zéro que par l'écart mesuré avec Aleph, Popper ou clingo.
+- **Théorie des langages** — carnets 01 et 10 (~2 h) : de l'espace d'hypothèses conjonctives à l'automate minimal appris par requêtes, avec la garantie de Myhill-Nerode comme fil.
+- **Graphes de connaissances** — carnets 02, 03, 04 et 08 (~3 h 30) : EBL et déterminations, puis clauses de Horn et mining AMIE sur un graphe RDF ; une familiarité avec RDF et SPARQL aide.
+- **Neuro-symbolique et recherche** — carnets 07, 09, 13 et 15 (~5 h) : rendre la logique différentiable, faire vérifier les propositions d'un LLM, puis sonder la structure interne d'un réseau et les conjectures qu'il donne à un solveur.
 
 ### Séance de restitution
 
-Modalité de la séance : chaque groupe choisit un exercice, le prépare et le présente. Résoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une question-twist (détaillée dans la section « Defi presentation » du carnet correspondant), qui fait partie intégrante de la présentation. Premier arrivé, premier servi : annoncez votre choix pour éviter les doublons. Dans le carnet 07, le premier exercice est un exemple guidé, solution démontrée ; piochez parmi les suivants.
+Modalité de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare et le présente. Résoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** — détaillée dans la section « Defi presentation » du carnet correspondant — qui fait partie intégrante de la présentation. Premier arrivé, premier servi : annoncez votre choix pour éviter les doublons. Une soixantaine d'exercices couvrent les quinze carnets ; le nombre exact par carnet vit dans les carnets eux-mêmes.
+
+| # | Notebook | Exercice | Question-twist (en bref) |
+|---|----------|----------|--------------------------|
+| 1 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 1 — CBH avec ordre personnalisé | Deux ordres d'exemples, deux hypothèses finales : pourquoi, à accuracy égale ? |
+| 2 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 2 — Version Space sur sous-ensemble | Qu'est-ce qui rend un exemple *informatif* (frontières S et G) ? |
+| 3 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 3 — Règles avec couverture | Compacité vs hypothèse AIMA : quel biais (rasoir d'Occam) préfère l'une à l'autre ? |
+| 4 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 4 — Réflexion sur le biais conjonctif | Un domaine où ce biais est idéal, un où il est catastrophique (no free lunch) |
+| 5 | [SL-01](SL-01-LogicalLearning-Python.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Échantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
+| 6 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 1 — EBL et différenciation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilée fausse |
+| 7 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 2 — RBL, robustesse au bruit | Une colonne bruitée qui « détermine » accidentellement la cible : régularité accidentelle ou véritable détermination ? |
+| 8 | [SL-02](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
+| 9 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 1 — Déterminations météo | Une observation bruitée : quelle détermination minimale survit ? |
+| 10 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 2 — RBL vs sélection aléatoire | Trouver le point de croisement où la sélection statistique bat le RBL |
+| 11 | [SL-03](SL-03-RelevanceLearning-Python.ipynb) | Ex. 3 — Sélecteur hybride | Quelles garanties votre hybride hérite-t-il vraiment ? Contre-exemple construit |
+| 12 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 1 — `sibling` avec FOIL | Le rôle du biais de langage : que se passe-t-il sans le littéral `X != Y` ? |
+| 13 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 2 — Opérateur W | Généralisation consistante mais fausse : pourquoi le bottom-up y est exposé |
+| 14 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 3 — Règles sur mini-KG | Monde clos vs PCA (cf SL-08) : quelle confiance est la bonne pour VOTRE KG ? |
+| 15 | [SL-04](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 4 — `grandparent` avec Popper | Sans négatif arrière-grand-parent, quel programme plus court devient consistant ? |
+| 16 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — rôle des négatifs |
+| 17 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
+| 18 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 3 — Tolérance au bruit | Le score `p - n - L` comme argument MDL : quand préfère-t-il une clause imparfaite ? |
+| 19 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 4 — Réduction de Plotkin | Subsomption vs implication : le cas des clauses récursives ou elles divergent |
+| 20 | [SL-05](SL-05-InverseResolution-Python.ipynb) | Ex. 5 — Aleph face au bruit | Mémoriser l'exception, sur-généraliser ou payer L dans f : trois frontières face au même bruit |
+| 21 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 1 — Direction de mode (Aleph) | Pourquoi `(+,-)` apprend et `(+,+)` échoue : ce que la direction des modes change pour l'entailment inverse |
+| 22 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 2 — `grandparent` non récursif | Cible à 2 sauts sans clôture : quel biais (max_clauses, pas de récursion) suffit, et l'invention de prédicats sert-elle encore ? |
+| 23 | [SL-06](SL-06-ModernILP-Python.ipynb) | Ex. 3 — Robustesse au bruit (∂ILP vs symbolique) | Un faux positif injecté : ∂ILP dégrade sa confiance, Popper exact n'a pas de notion de bruit — à quel prix chacun ? |
+| 24 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 2 — LTN frère/oncle | Retirer les axiomes négatifs : pourquoi une LTN a besoin de négatifs explicites |
+| 25 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 3 — Règle transitive `ancestor` | Le modèle trivial « vrai partout » sature la règle : qu'est-ce qui l'évite ? |
+| 26 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une sémantique floue *apprenable* ? |
+| 27 | [SL-07](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le négatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-08) |
+| 28 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 1 — Nouvelle relation au KG | Règles redondantes (même extension, syntaxe différente) : comment AMIE les évite |
+| 29 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG où la PCA confidence est trompeuse |
+| 30 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 3 — Règles à 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermées, à quel prix |
+| 31 | [SL-08](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 4 — Réparation minimale (clingo) | Les réparations optimales sont ex æquo : départager par des poids de confiance |
+| 32 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 1 — Prompt personnalisé | Changer de modèle LLM : que garantit vraiment l'oracle symbolique ? |
+| 33 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilité du texte : les deux métriques peuvent diverger |
+| 34 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 3 — Détection d'hallucinations | Le détecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-08) ? |
+| 35 | [SL-09](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validées par appel ? |
+| 36 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalité : un suffixe distinguant pour chaque paire d'états (Myhill-Nerode) |
+| 37 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 2 — Fiabilité de l'EQ échantillonnée | Relier le taux de réussite empirique à la borne PAC ; construire une distribution adverse |
+| 38 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 3 — Contre-exemples : préfixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
+| 39 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 4 — Oracle bruité | Réparer L* par vote majoritaire : surcoût en requêtes et probabilité résiduelle d'erreur |
+| 40 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 1 — Étendre le schéma (`marie_avec`) | Le mineur redécouvre la symétrie injectée par l'oracle : règle ou tautologie ? |
+| 41 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 2 — Politique de conflit à sources | *Truth discovery* : estimer la fiabilité des sources en même temps que les faits |
+| 42 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle à confiance égale (0.67) : quel signal au-delà du seuil ? |
+| 43 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les défenses par étage du pipeline ; où s'arrête la provenance ? |
+| 44 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 1 — Variation de profondeur | Trade-off capacité vs sur-apprentissage : combien de couches pour quel régime ? |
+| 45 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 2 — Porte favorite d'un neurone isolé | Quelle porte (AND/NAND/XOR) l'apprentissage favorise-t-il pour MNIST ? |
+| 46 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 3 — Robustesse au bruit pixel | La discrétisation booléenne aide-t-elle face au bruit vs un MLP équivalent ? |
+| 47 | [SL-01b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 1 — Erreur nulle contre soi-même (Lean) | Spécialiser `trueError_self` : quel quantificateur la structure `Distribution` rend-il gratuit ? |
+| 48 | [SL-01b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 2 — Masse des échantillons (Lean) | `sampleWeight_sum_one` : pourquoi la Fubini discrète suffit-elle sans théorie de la mesure ? |
+| 49 | [SL-01b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 3 — Symétrie du désaccord (Lean) | `trueError_comm` : que dit la symétrie sur l'interprétabilité de l'erreur comme distance ? |
+| 50 | [SL-12b](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Ex. 1 — Spectre de EXACT2 (poids de Hamming) | Degré Fourier contre degré PTF : lequel ment sur la complexité ? |
+| 51 | [SL-12b](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Ex. 2 — Sinkhorn sur ligne uniforme | Une permutation unique au coût minimal prouve-t-elle que le routage « a choisi » ? |
+| 52 | [SL-12b](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Ex. 3 — Instance séparant SA et PT | Qu'est-ce qui rend une instance « dure » pour une seule température ? |
+| 53 | [SL-13](SL-13-Discover-TPR-Python.ipynb) | Ex. 1 — Tâche à rôles sémantiques (argmax_pos) | Quand les rôles ne sont plus des positions mais des étiquettes, la TPR émerge-t-elle encore ? |
+| 54 | [SL-13](SL-13-Discover-TPR-Python.ipynb) | Ex. 2 — Constituent surgery sémantique | La permutation des rôles 0↔1 dans la TPR produit-elle la sortie attendue pour la séquence aux rôles permutés ? |
+| 55 | [SL-13](SL-13-Discover-TPR-Python.ipynb) | Ex. 3 — Seuil de capacité et TPR | Quel d_model marque le point d'inflexion entre compression forcée et TPR non-nécessaire ? |
+| 56 | [SL-14](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Ex. 1 — Rejet statistique anticipé (ν=10) | En combien de points un mauvais candidat meurt-il, et pourquoi ν=10 rend-il le test quasi immunisé aux faux positifs ? |
+| 57 | [SL-14](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Ex. 2 — Addition relativiste récursive | La symétrie généralisée se déclenche deux fois de suite : jusqu'où peut-on empiler les vitesses ? |
+| 58 | [SL-14](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Ex. 3 — Frontière de bruit | À quel niveau de bruit la forme relativiste disparaît-elle du front — et que mesure vraiment la table 3 du papier ? |
+| 59 | [SL-15](SL-15-LearnedConjectures-Solver-Python.ipynb) | Ex. 1 — Top-k par confiance | Le hint complet ne rend que −18 % là où une fixation isolée vaut −62 % : quelle tête garder, et pourquoi la confiance du MLP n'est *pas* le juge du gain ? |
+| 60 | [SL-15](SL-15-LearnedConjectures-Solver-Python.ipynb) | Ex. 2 — Réfutation des conjectures | Détecter les arêtes en conflit : comment une conjecture peut-elle être *fausse* au sens de l'oracle et pourtant *profitable* au solveur ? |
+| 61 | [SL-15](SL-15-LearnedConjectures-Solver-Python.ipynb) | Ex. 3 — Réparation gloutonne | Retirer les fixations conflictuelles jusqu'à zéro conflit : le hint réparé conserve-t-il le gain, ou paie-t-il le coût de sa réparation ? |
+
+Note : dans SL-07, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
 ## Approfondissements
 
@@ -158,6 +276,8 @@ Les carnets 09 et 11 lisent leur clé LLM dans un fichier `.env` construit depui
 - **`scikit-learn` manquant ou incompatible** (carnets 03 et 15) : `pip install -U scikit-learn numpy`.
 - **`MemoryError` sur le treillis des déterminations** (carnet 03) : le treillis des déterminations croît exponentiellement avec le nombre d'attributs (l'exemple du carnet en a dix : `Sous-ensembles testes : 11 / 1023`) ; limitez l'analyse aux attributs les plus informatifs en premier.
 - **Un carnet ne trouve pas son noyau** : `python -m ipykernel install --user --name python3 --display-name "Python 3"`, puis `pip install papermill`, et redémarrez le noyau avant une exécution complète.
+- **Les carnets 04 et 06 échouent sous Windows** : Aleph et Popper passent par SWI-Prolog et par `SIGALRM` pour leur délai de garde, tous deux absents d'un noyau Windows natif. Il faut le noyau `python3-wsl` (voir Noyaux Jupyter) ; un moteur introuvable est signalé par son drapeau `HAS_*` et le carnet poursuit sans lui.
+- **Le carnet 14 échoue hors de son conteneur** : le paquet `aifeynman` figé en 2021 importe `numpy.distutils`, retiré de NumPy 2. Lancez-le par papermill dans l'image `aifeynman:sl14-py313` plutôt que dans l'environnement de la flotte.
 
 ## Organisation du dossier
 
@@ -206,12 +326,12 @@ Les valeurs ci-dessous sont des sorties committées des carnets, recopiées tell
 
 | Série | Ce qui s'y prolonge |
 |-------|----------------------|
-| [Tweety](../Tweety/README.md) | Les logiques formelles (propositionnelle, premier ordre) sur lesquelles reposent les hypothèses symboliques. |
+| [Tweety](../Tweety/README.md) | Les logiques formelles que les carnets 04 et 05 écrivent à la main (clauses de Horn, unification) : Tweety les raisonne comme des théories données, la série les apprend des exemples. |
 | [SemanticWeb](../SemanticWeb/README.md) | RDFS et OWL formalisent les déterminations et les hiérarchies de généralité ; SW-02 donne les bases RDF utiles au carnet 08. |
-| [Planners](../Planners/README.md) | EBL compile une théorie en règles opérationnelles, comme les heuristiques de planification. |
-| [Lean](../Lean/README.md) | L'arbre de preuve d'EBL est analogue aux arbres de preuve de Lean 4. |
+| [Planners](../Planners/README.md) | L'heuristique opérationnelle qu'EBL compile (carnet 02) répond au problème des heuristiques de planification : rendre une règle utilisable sans la redériver à chaque appel. |
+| [Lean](../Lean/README.md) · [ML](../../ML/README.md) | Le lake `learning_theory_lean`, hébergé par la série ML, est exécuté par le carnet 01b ; l'arbre de preuve d'EBL (carnet 02) a la forme d'un but de preuve Lean, avec la même décomposition en sous-buts. |
 | [Search](../../Search/README.md) | Le benchmark agrégé des conjectures apprises vit dans App-33 ; la série porte aussi solveurs et métaheuristiques. |
-| [Probas](../../Probas/README.md) · [GameTheory](../../GameTheory/README.md) | Décider sous incertitude : le complément probabiliste du capstone. |
+| [Probas](../../Probas/README.md) · [GameTheory](../../GameTheory/README.md) | Le capstone (carnet 11) raisonne sur des faits tenus pour certains ; Probas (Infer.NET) et GameTheory outillent le cas où les faits sont incertains ou dépendent de la décision d'un autre agent. |
 | Lecture transversale | [`La mer qui monte`](../../../docs/cadrage/grothendieckian-lens.md) : grille de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C). |
 
 Quatre suites naturelles après le carnet 11 :
