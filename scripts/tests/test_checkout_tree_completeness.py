@@ -25,6 +25,7 @@ pas -- plutot que d'echouer sur une cause qui n'est pas celle qu'il teste.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -36,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "scripts-tests.yml"
 JOB = "scripts-tests"
 STEP_ID = "tete_arbre"
+ID_CHECKOUT = "checkout"
 
 
 def _bash_posix() -> str | None:
@@ -137,17 +139,66 @@ def test_un_head_illisible_est_nomme(tmp_path):
     assert "HEAD" in proc.stdout
 
 
-def test_les_planchers_exigent_le_succes_de_l_etape_d_arbre():
-    """Les etapes de plancher sont conditionnees : sans arbre, elles ne
-    doivent pas produire un verdict qui nomme autre chose que la cause."""
+def _planchers() -> list[dict]:
+    """Les etapes de plancher du job : `if: always()`, hors etape d'arbre."""
     data = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     etapes = data["jobs"][JOB].get("steps") or []
-    condition = f"steps.{STEP_ID}.outcome == 'success'"
     plancher = [e for e in etapes
                 if "always()" in str(e.get("if")) and e.get("id") != STEP_ID]
     assert plancher, "aucune etape de plancher en if: always() -- le garde a disparu"
-    for etape in plancher:
-        assert condition in str(etape.get("if")), etape.get("name")
+    return plancher
+
+
+def _evaluer_condition(expr: str, etats: dict[str, str | None]) -> bool:
+    """Evalue le sous-ensemble d'expressions GitHub qu'utilisent ces etapes.
+
+    Formes reconnues : `always()`, `steps.<id>.outcome == '<v>'`,
+    `steps.<id>.outcome != '<v>'`, jointes par `&&`. Toute autre forme LEVE :
+    une expression qu'on ne comprend pas ne doit jamais passer pour vraie.
+    """
+    resultat = True
+    for terme in (t.strip() for t in expr.split("&&")):
+        if terme == "always()":
+            continue
+        m = re.fullmatch(r"steps\.([A-Za-z0-9_-]+)\.outcome\s*(==|!=)\s*'([a-z]+)'", terme)
+        if not m:
+            raise AssertionError(f"condition non reconnue : {terme!r} dans {expr!r}")
+        etape, operateur, attendu = m.groups()
+        reel = etats.get(etape)
+        resultat = resultat and (reel == attendu if operateur == "==" else reel != attendu)
+    return resultat
+
+
+def _executees(etats: dict[str, str | None]) -> list[str]:
+    """Les planchers que l'evaluation de leur `if` lancerait dans cet etat."""
+    return [str(e.get("name") or e.get("id")) for e in _planchers()
+            if _evaluer_condition(str(e.get("if")), etats)]
+
+
+def test_les_planchers_exigent_le_succes_du_checkout_et_de_l_etape_d_arbre():
+    """Les DEUX verdicts sont exiges : l'etape d'arbre dit que l'arbre est
+    complet, le checkout dit que c'est l'arbre de CE commit."""
+    for etape in _planchers():
+        condition = str(etape.get("if"))
+        assert f"steps.{ID_CHECKOUT}.outcome == 'success'" in condition, etape.get("name")
+        assert f"steps.{STEP_ID}.outcome == 'success'" in condition, etape.get("name")
+
+
+def test_un_checkout_en_echec_sur_un_ancien_arbre_n_autorise_aucun_plancher():
+    """Le cas du slot REUTILISE (review du 26/11 sur la tete 4eeb0064673f) :
+    le fetch echoue AVANT de deplacer HEAD, l'ancien arbre est complet et
+    `tete_arbre` passe. Les planchers ne doivent pas repartir sur un mauvais
+    commit : le succes du checkout est exige, en plus du verdict d'arbre."""
+    executees = _executees({ID_CHECKOUT: "failure", STEP_ID: "success"})
+    assert executees == [], f"planchers lances malgre un checkout en echec : {executees}"
+
+
+def test_checkout_et_arbre_en_succes_autorisent_tous_les_planchers():
+    """Controle positif : le temoin precedent ne passe pas parce que
+    l'evaluation ne lancerait jamais rien."""
+    plancher = _planchers()
+    executees = _executees({ID_CHECKOUT: "success", STEP_ID: "success"})
+    assert len(executees) == len(plancher), (len(executees), len(plancher))
 
 
 def test_la_politique_de_debit_du_job_est_calibree_sur_le_tir():

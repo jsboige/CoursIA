@@ -425,6 +425,13 @@ jobs:
         # l'index peut etre a moitie ecrit, et c'est l'arbre de reference
         # qui fait foi. Un `stat` par fichier, sans hachage -- donc sans
         # declencher un fetch promisor de plus.
+        # #26468 (suite, review du 26/11) -- ce verdict, seul, ne suffit pas.
+        # Sur un slot REUTILISE, si le fetch echoue AVANT de deplacer HEAD,
+        # l'ANCIEN arbre est complet : cette etape passe, et les planchers
+        # repartiraient sur le MAUVAIS commit. Le succes du checkout est donc
+        # exige AUSSI par leur `if` (steps.checkout.outcome == 'success').
+        # Cette etape garde `always()` : le diagnostic doit parler meme quand
+        # le checkout a echoue.
         id: tete_arbre
         if: always()
         shell: bash
@@ -867,7 +874,7 @@ jobs:
         # `if: always()` comme les etapes de plancher voisines : meme si la
         # suite principale est rouge, on veut le verdict NOMME de ces 5 tests
         # plutot qu'un silence.
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python -m pytest scripts/tests/test_session_hygiene.py -q --tb=short
 
@@ -877,7 +884,7 @@ jobs:
         # Shared.Tests floor (#14668): a green run must not silently shrink.
         # 0 collected = collection crash (import error), below floor = coverage
         # regression — distinct exit-1 signals either way.
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           AUDIT_TESTS_FLOOR: 455
         run: |
@@ -922,7 +929,7 @@ jobs:
       # fausse, corrigée sur mesure positive par ai-01 (c.5551368629).
 
       - name: Secrets tests collection floor (148)
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           SECRETS_TESTS_FLOOR: 148
         run: |
@@ -935,7 +942,7 @@ jobs:
         # Same two-signal semantics as the audit (455) and secrets (148)
         # floors: deps missing from the job = collection returns skips instead
         # of a count = install problem, not a coverage drop.
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           GRADEBOOK_TESTS_FLOOR: 15
         run: |
@@ -953,7 +960,7 @@ jobs:
         # imports lourds sont locaux aux fonctions) ; l'EXECUTION, elle, exige
         # python-sat depuis #23449 (tests/test_sat_handler.py), installe plus
         # haut dans ce job.
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         env:
           ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
         run: |
@@ -970,7 +977,7 @@ jobs:
         # grandit sans declaration, ou si un marqueur disparait (perte de
         # couverture). Bumper --declared dans le meme geste que le test ajoute,
         # et le dire dans le body de la PR.
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python scripts/ci/check_jvm_test_census.py --declared 8
 
@@ -987,7 +994,7 @@ jobs:
       # stdlib-only, pas de dep a ajouter au pip install. if: always() pour
       # que la garde rougisse meme si pytest est rouge.
       - name: guard_test_root (#18888 anti-recidive)
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python scripts/ci/guard_test_root.py
 
@@ -1002,7 +1009,7 @@ jobs:
       # registre ou retire un declencheur. Mesure locale 2026-10-10 :
       # PARITY_OK (1 garde verifie, 19 ecartes deja consolides).
       - name: absorbed-path-parity (#20181)
-        if: always() && steps.tete_arbre.outcome == 'success'
+        if: always() && steps.checkout.outcome == 'success' && steps.tete_arbre.outcome == 'success'
         run: |
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
 
