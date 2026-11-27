@@ -67,12 +67,12 @@ flowchart LR
 
 ## Cas pratiques Search — Puissance 4
 
-Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS.
+Cinq carnets autour du Puissance 4 — deux Python, deux C# et un Rust — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS.
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
 | 1 | [App-12-ConnectFour-Python](App-12-ConnectFour-Python.ipynb) — jumeau [C#](App-12-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
-| 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeau [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956) | Licence | — |
+| 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeaux [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) et [Rust](App-14-ConnectFour-Adversarial-Rust.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956). Le jumeau Rust porte le même benchmark en Rust (noyau evcxr, std seule) : mêmes comptes de nœuds et mêmes scores de tournoi, la composante stochastique étant reproduite par un MT19937 conforme au contrat CPython, et les figures remplacées par leurs données | Licence | — |
 
 ---
 
@@ -108,7 +108,7 @@ La génération procédurale de niveaux (App-19) encode le Wave Function Collaps
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-01-NQueens-Python](App-01-NQueens-Python.ipynb) — jumeau [C#](App-01-NQueens-CSharp.ipynb) | Backtracking, Min-Conflicts et OR-Tools sur le banc d'essai canonique. Le jumeau C# décline le backtracking (simple, MRV, FC) et ajoute l'énumération complète avec symétrie D4 | Découverte | — |
+| 1 | [App-01-NQueens-Python](App-01-NQueens-Python.ipynb) — jumeaux [C#](App-01-NQueens-CSharp.ipynb) et [Rust](App-01-NQueens-Rust.ipynb) | Backtracking, Min-Conflicts et OR-Tools sur le banc d'essai canonique. Le jumeau C# décline le backtracking (simple, MRV, FC) et ajoute l'énumération complète avec symétrie D4. Le jumeau Rust reprend le même fil sous evcxr : hémisphère algorithmique en `std` seul (MT19937 porté pour retrouver les itérations de min-conflicts graine par graine), puis le même moteur CP-SAT par le crate `cp_sat` | Découverte | — |
 | 2 | [App-02-GraphColoring-Python](App-02-GraphColoring-Python.ipynb) — jumeaux [C#](App-02-GraphColoring-CSharp.ipynb) · [Rust](App-02-GraphColoring-Rust.ipynb) | Greedy, DSATUR et CP-SAT sur le graphe des départements français. Le jumeau C# ajoute Welsh-Powell, le backtracking χ exact et le graphe de Mycielski | Licence | [Validité statistique](App-02-GraphColoring-Statistical-Validity-Python.ipynb) |
 | 3 | [App-03-NurseScheduling-Python](App-03-NurseScheduling-Python.ipynb) — jumeau [C#](App-03-NurseScheduling-CSharp.ipynb) | Contraintes dures et souples en CP-SAT : 15 infirmières, 28 jours, équité des charges. Le jumeau C# refait glouton, backtracking et min-conflicts *from-scratch* (modélisation 1 variable/slot, parité #4956) | Licence | — |
 | 4 | [App-04-JobShopScheduling-Python](App-04-JobShopScheduling-Python.ipynb) — jumeau [C#](App-04-JobShopScheduling-CSharp.ipynb) | Intervalles, précédences et makespan en ordonnancement d'atelier. Le jumeau C# ajoute les dispatching heuristics (SPT/LPT/MOR/MWKR/FIFO) et un branch-and-bound optimal *from-scratch* avec Gantt ASCII (parité #4956) | Licence | — |
@@ -178,6 +178,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 | App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
 | App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
 | App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
+| App-14-Adversarial-Rust | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
 | App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
 
 ### Cas pratiques CSP
@@ -186,6 +187,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 |----------|--------------------|-------------|
 | App-1 NQueens | CSP-1 (Fundamentals) | - |
 | App-01-CSharp NQueens | CSP-1 (Fundamentals) | dotnet-interactive |
+| App-01-Rust NQueens | CSP-1 (Fundamentals) | evcxr (noyau rust), cp_sat |
 | App-2 GraphColoring | CSP-1, CSP-2 | networkx |
 | App-02-CSharp GraphColoring | CSP-1, CSP-2 | dotnet-interactive |
 | App-2c GraphColoring Statistical Validity | CSP-1, CSP-2, statistiques | networkx, scipy, ortools |

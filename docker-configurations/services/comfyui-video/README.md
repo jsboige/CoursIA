@@ -8,7 +8,7 @@ Configuration Docker pour ComfyUI avec support video (HunyuanVideo, Wan 2.1/2.2,
 |-----------|--------|
 | Modeles | HunyuanVideo, Wan 2.1/2.2, AnimateDiff |
 | Port | 8189 |
-| GPU | RTX 3090 (PyTorch GPU 0 = nvidia-smi GPU 1) |
+| GPU | RTX 3090 (carte nvidia-smi GPU 1, seule carte visible de CUDA) |
 | VRAM | ~9GB+ (selon modele charge) |
 | URL cloud | https://comfyui-video.myia.io |
 
@@ -44,7 +44,8 @@ cp .env.example .env
 
 | Variable | Defaut | Description |
 |----------|--------|-------------|
-| `GPU_DEVICE_ID` | `0` | GPU PyTorch (0 = RTX 3090) |
+| `GPU_DEVICE_ID` | `0` | Carte visee, par son index nvidia-smi (0 = RTX 3080 Ti, 1 = RTX 3090) ; a regler sur `1` dans le `.env` |
+| `CUDA_VISIBLE_DEVICES` | celle de `GPU_DEVICE_ID` | Cartes visibles de CUDA : c'est ce reglage qui isole la carte |
 | `COMFYUI_VIDEO_PORT` | `8189` | Port externe |
 | `COMFYUI_WORKSPACE_PATH` | `./workspace` | Chemin workspace ComfyUI |
 | `CIVITAI_TOKEN` | - | Token CivitAI pour telechargement modeles |
@@ -57,16 +58,22 @@ cp .env.example .env
 
 ### Mapping GPU
 
-**IMPORTANT** : Le mapping GPU est inverse entre PyTorch et nvidia-smi :
+Deux reglages se lisent ensemble, tous deux portes par `docker-compose.yml` :
 
+- `CUDA_DEVICE_ORDER=PCI_BUS_ID` : l'index d'une carte sous CUDA est son index `nvidia-smi` (0 = RTX 3080 Ti, 16 GB ; 1 = RTX 3090, 24 GB). Sans cette variable, l'ordre par defaut de CUDA est l'inverse de celui de `nvidia-smi`.
+- `CUDA_VISIBLE_DEVICES` : la liste des cartes que CUDA voit dans le conteneur. C'est le seul reglage qui isole : sur le banc po-2023 (WSL2), `device_ids` et `NVIDIA_VISIBLE_DEVICES` laissent les deux cartes visibles (mesure du 2026-11-24).
+
+`GPU_DEVICE_ID=1` vise la RTX 3090. L'entrypoint la traduit en index PyTorch, qui est la position de la carte dans la liste visible : `0` quand elle est seule. Si la carte visee n'est pas dans la liste, le demarrage s'arrete sur un message explicite.
+
+**Controle.** `nvidia-smi -L` liste les cartes quel que soit le masque : ce n'est pas un temoin du reglage. Lire les cartes vues de CUDA depuis le conteneur :
+
+```bash
+docker exec comfyui-video venv/bin/python3 -c "import torch; n=torch.cuda.device_count(); print(n, [torch.cuda.get_device_name(i) for i in range(n)])"
 ```
-nvidia-smi GPU 0 = PyTorch GPU 1 (RTX 3080 Ti - 16GB)
-nvidia-smi GPU 1 = PyTorch GPU 0 (RTX 3090 - 24GB)  <-- ComfyUI Video
-```
 
-`GPU_DEVICE_ID=0` correspond a la RTX 3090.
+Attendu avec `CUDA_VISIBLE_DEVICES=1` : `1 ['NVIDIA GeForce RTX 3090']`.
 
-**EXCLUSIF avec comfyui-qwen** : Les deux services partagent le meme GPU. Ne pas les lancer simultanement.
+**Cartes distinctes avec `comfyui-qwen`** : ce service vise la RTX 3090 (GPU 1, masque `1` + `PCI_BUS_ID`), `comfyui-qwen` la RTX 3080 Ti (GPU 0, masque `0` + `PCI_BUS_ID`). L'ancienne exclusivite entre les deux est levee (decision #28423 §5) : elle etait de surcroit infeasible, 24-26 Go sur une carte de 24 Go.
 
 ## Architecture
 

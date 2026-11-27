@@ -144,7 +144,7 @@ prover and should be attempted first.
 
 ## Summary for the Director agent
 
-**⚠ AMENDMENT 2026-05-16 — empirical prover verdict** (cf [project_prover_c35_01_woman_pessimal](.../memory/project_prover_c35_01_woman_pessimal.md)) :
+**⚠ AMENDMENT 2026-05-16 — empirical prover verdict** (cf fiche mémoire agent `project_prover_c35_01_woman_pessimal`, scratchpad de session non tracké) :
 
 - C34-01 (L73 stable), C34-02 (L91 man_optimal), C35-01 (L119 woman_pessimal) all yielded **INTRACTABLE** within 100-250s with reference docs grounding active. The Coordinator cites the same Knuth 1976 lattice duality both as suggested strategy AND as intractability reason. The "Attack first" ordering below was **theoretical-feasibility ordering**, not empirically validated. Three sorrys are reproducibly intractable on our current prover without the upstream proofs.
 - **NEW unlock (2026-05-16)** : `upstream/` directory now contains the **complete mmaaz-git Lean source** (commit `111e42c5`, v4.25.0). `Properties.lean L125` has the **full proof of `galeShapley_stable`** — translate-and-adapt path opens for DEMO 15 / L73.

@@ -1,0 +1,381 @@
+# Conformité différentielle de Constructeur-01-Lois-Comme-Taches (portage Rust, #28018).
+#
+# Correspondance écrite à la main, comme le veut le registre : le portage Rust
+# garde la structure de cellules du jumeau Python (20 cellules, 7 de code,
+# mêmes index), donc la correspondance par index de cellule est vérifiée ici et
+# déclarée explicitement — elle n'est pas déduite.
+#
+# Deux familles de mesures :
+#
+# 1. les SORTIES ENTIERES, comparées à égalité stricte du texte entre Python
+#    et Rust. Le côté C# y est déclaré absent avec l'écart mesuré : il rend le
+#    même contenu mais sans les accents (« Tache », « perpetuum », « etats »),
+#    avec des fins de ligne CRLF et des lignes vides intercalées, et il ajoute
+#    des lignes que le jumeau Python n'imprime pas (« Substrat : 6 etats
+#    possibles », « Un moteur alimente de 10 J rendant 8 J … »). L'absence est
+#    un fait mesuré, pas une mesure manquante.
+#
+# 2. les GRANDEURS FINES, comparées à trois côtés (Python, C#, Rust) sur des
+#    motifs que les trois cotes impriment à l'identique.
+#
+# Le contrôle discriminant est `c10_verdict_mediateur_classique` : la négativité
+# brute du médiateur classique vaut -2,22e-16, soit exactement le seuil, et son
+# signe décide du verdict. Avec `1.0 / 2.0f64.sqrt()` le carnet imprime
+# « classique » ; avec le double voisin (`FRAC_1_SQRT_2`, `0.5f64.sqrt()`,
+# `2.0f64.sqrt() / 2.0`) il imprimerait « NON-CLASSIQUE ». La mesure compare le
+# verdict imprimé, pas la négativité formatée — les deux se formate « 0.000 ».
+- name: "Constructeur-01 Lois-Comme-Taches"
+  family: "Physique/Constructeur"
+  python: MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Rust.ipynb
+  measures:
+    - id: c2_text
+      description: "Sortie de la cellule 2, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 2 rend « Tache : 3 -> 4 » (sans accent), avec des fins de ligne CRLF, et ajoute « Substrat : 6 etats possibles » que le jumeau Python n'imprime pas : côté déclaré absent, écart mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 5 rend « un perpetuum mobile » (sans accent) et « possible ? -> False » (espacement différent), avec des fins de ligne CRLF, et ajoute « Un moteur alimente de 10 J rendant 8 J est-il un perpetuum mobile ? False » : côté déclaré absent, écart mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c7_text
+      description: "Sortie de la cellule 7, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 7 rend « Bit classique (2 etats, …) » (sans accent), avec des fins de ligne CRLF et une ligne vide intercalée : côté déclaré absent, écart mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 10 rend les mêmes lignes et les mêmes valeurs, mais avec des fins de ligne CRLF et une ligne vide après chaque ligne : côté déclaré absent, écart mesuré à la génération ; la comparaison stricte porte sur Python et Rust, les grandeurs fines ci-dessous portent la comparaison à trois côtés."
+    - id: c12_text
+      description: "Sortie de la cellule 12 (exercice 1), texte identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c13_text
+      description: "Sortie de la cellule 13 (exercice 2), texte identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c14_text
+      description: "Sortie de la cellule 14 (exercice 3), texte identique sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c2_accomplie_par_le_constructeur
+      description: "« Accomplie par c_3vers4 : » de la cellule 2, même verdict sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "(?m:^Accomplie par c_3vers4 : (\\w+)\\s*$)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "(?m:^Accomplie par c_3vers4 : (\\w+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 2
+          pattern: "(?m:^Accomplie par c_3vers4 : (\\w+)\\s*$)"
+          transform: text
+    - id: c5_perpetuum_mobile
+      description: "Verdict du perpétuum mobile de la cellule 5, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^Un moteur qui rend 10 J sans en recevoir est-il un p\\w+ mobile \\? (\\w+)\\s*$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^Un moteur qui rend 10 J sans en recevoir est-il un p\\w+ mobile \\? (\\w+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^Un moteur qui rend 10 J sans en recevoir est-il un p\\w+ mobile \\? (\\w+)\\s*$)"
+          transform: text
+    - id: c5_possible
+      description: "Verdict « est-il donc possible » de la cellule 5, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m:^\\.\\.\\. et est-il donc possible \\?\\s*-> (\\w+)\\s*$)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m:^\\.\\.\\. et est-il donc possible \\?\\s*-> (\\w+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m:^\\.\\.\\. et est-il donc possible \\?\\s*-> (\\w+)\\s*$)"
+          transform: text
+    - id: c7_bit_classique
+      description: "Verdict du bit classique de la cellule 7, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(?m:^Bit classique \\(2 \\w+, on peut tout permuter et copier\\) : (\\w+)\\s*$)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "(?m:^Bit classique \\(2 \\w+, on peut tout permuter et copier\\) : (\\w+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 7
+          pattern: "(?m:^Bit classique \\(2 \\w+, on peut tout permuter et copier\\) : (\\w+)\\s*$)"
+          transform: text
+    - id: c7_qubit_no_cloning
+      description: "Verdict du qubit inconnu de la cellule 7, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "(?m:^Qubit inconnu \\(permutations ok, mais copie de l'inconnu IMPOSSIBLE\\) : (\\w+)\\s*$)"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "(?m:^Qubit inconnu \\(permutations ok, mais copie de l'inconnu IMPOSSIBLE\\) : (\\w+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 7
+          pattern: "(?m:^Qubit inconnu \\(permutations ok, mais copie de l'inconnu IMPOSSIBLE\\) : (\\w+)\\s*$)"
+          transform: text
+    - id: c10_verdict_mediateur_quantique
+      description: "Verdict du médiateur quantique de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  mediateur quantique : negativite = [0-9.]+  -> (\\S+)\\s*$)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(?m:^  mediateur quantique : negativite = [0-9.]+  -> (\\S+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "(?m:^  mediateur quantique : negativite = [0-9.]+  -> (\\S+)\\s*$)"
+          transform: text
+    - id: c10_verdict_mediateur_classique
+      description: "Verdict du médiateur classique de la cellule 10, même valeur sur les trois côtés — contrôle discriminant du seuil de négativité"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  mediateur classique : negativite = [0-9.]+  -> (\\S+)\\s*$)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "(?m:^  mediateur classique : negativite = [0-9.]+  -> (\\S+)\\s*$)"
+          transform: text
+        csharp:
+          cell: 10
+          pattern: "(?m:^  mediateur classique : negativite = [0-9.]+  -> (\\S+)\\s*$)"
+          transform: text
+    - id: c10_negativite_mediateur_quantique
+      description: "Négativité du médiateur quantique de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  mediateur quantique : negativite = ([0-9.]+)\\s+->)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  mediateur quantique : negativite = ([0-9.]+)\\s+->)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  mediateur quantique : negativite = ([0-9.]+)\\s+->)"
+          transform: float
+    - id: c10_negativite_mediateur_classique
+      description: "Négativité du médiateur classique de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  mediateur classique : negativite = ([0-9.]+)\\s+->)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  mediateur classique : negativite = ([0-9.]+)\\s+->)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  mediateur classique : negativite = ([0-9.]+)\\s+->)"
+          transform: float
+    - id: c10_negativite_part_classique_p00
+      description: "Négativité à p = 0.00 de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.00 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.00 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.00 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+    - id: c10_negativite_part_classique_p25
+      description: "Négativité à p = 0.25 de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.25 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.25 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.25 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+    - id: c10_negativite_part_classique_p50
+      description: "Négativité à p = 0.50 de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.50 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.50 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.50 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+    - id: c10_negativite_part_classique_p75
+      description: "Négativité à p = 0.75 de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.75 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.75 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  part classique p=0\\.75 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+    - id: c10_negativite_part_classique_p100
+      description: "Négativité à p = 1.00 de la cellule 10, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "(?m:^  part classique p=1\\.00 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        rust:
+          cell: 10
+          pattern: "(?m:^  part classique p=1\\.00 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "(?m:^  part classique p=1\\.00 : negativite = ([0-9.]+)\\s*$)"
+          transform: float
