@@ -110,6 +110,7 @@ from pathlib import Path
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
 from claim_cap_advice import cap_action_line, open_daughters
+from pr_catalogue import est_catalogue
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -142,7 +143,11 @@ _OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
 # `_reduce_stacked_pr_files`). Un cache v2 porte les listes base-relatives
 # d'avant -- dont les milliers de fichiers de rattrapage d'une PR empilee --
 # et n'a donc pas le droit d'etre relu.
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
+# v4 (#28347) -- chaque PR porte la PROVENANCE de sa tete (`headRepository`).
+# Un cache v3 ne la porte pas : l'exemption de la PR du catalogue y serait
+# accordee sur le seul NOM de la branche, donc aussi a une branche homonyme
+# venue d'un fork. Le cache v3 est donc traite comme absent.
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v4"
 
 # --- #21742 : enumeration COMPLETE des PRs ouvertes ----------------------------
 #
@@ -2406,6 +2411,7 @@ query {
       nodes {
         number title headRefName baseRefName body additions deletions createdAt
         headRefOid
+        headRepository { nameWithOwner }
         files(first:100) { totalCount nodes { path changeType } }
       }
     }
@@ -2422,6 +2428,7 @@ query($cursor: String) {
       nodes {
         number title headRefName baseRefName body additions deletions createdAt
         headRefOid
+        headRepository { nameWithOwner }
         files(first:100) { totalCount nodes { path changeType } }
       }
     }
@@ -2794,6 +2801,13 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                # #28347 -- la PROVENANCE de la tete : le depot qui porte la
+                # branche. Sans elle, l'exemption de la PR du catalogue ne
+                # pourrait distinguer la branche du workflow d'une branche
+                # homonyme dans un fork (une PR de travail reel).
+                "headRepository": (
+                    (node.get("headRepository") or {}).get("nameWithOwner")
+                ),
                 # #26725 -- la base declaree decide si la liste `files`
                 # ci-dessous est la diff de la PR ou celle de sa pile.
                 "baseRefName": node.get("baseRefName"),
@@ -2901,6 +2915,15 @@ def _read_open_prs_cache() -> list[dict] | None:
             # deux ecrivains.
             if any("created_at" not in pr and "createdAt" not in pr
                    for pr in prs if isinstance(pr, dict)):
+                return None
+            # #28347 -- meme traitement pour la PROVENANCE de la tete : sans
+            # `headRepository`, l'exemption de la PR du catalogue s'appuierait
+            # sur le seul nom de la branche (une branche homonyme d'un fork
+            # serait exemptee a tort). Un cache ecrit par une version
+            # anterieure est donc traite comme absent : le fetch complet qui
+            # suit le REECRIT au format courant.
+            if any("headRepository" not in pr for pr in prs
+                   if isinstance(pr, dict)):
                 return None
             return prs
         raise OpenPrsIncompleteError(
@@ -4705,6 +4728,17 @@ def _lint_claim_events(
       what the reducer actually kept against the caller).
     Without these args, the lint falls back to the legacy behaviour (every
     epic-wide marker prints `il bloque`), which is the bug #12327 names.
+
+    #28669 (scoped liveness): the SCOPED branch below used to WARN on every
+    dead glob of every open/override marker, including markers their lane has
+    since superseded or released -- 90 of the 99 dead globs on the recorded
+    batch (`scripts/tests/fixtures/claim_grammar/batch.json`, 14 issues) were
+    carried by a marker that no longer holds anything. When `active_claims`
+    is provided, a dead glob WARNs only when the marker IS its lane's active
+    claim; the others are counted and restated as ONE `INFO:` line at the end
+    of the function (observability: the organ says what it withheld). Without
+    `active_claims` the branch is unchanged, exactly like #12327's fallback.
+    A marker with no lane token cannot be proven inactive and keeps its WARN.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -4721,6 +4755,13 @@ def _lint_claim_events(
             # already walked (events are built from `comment` dicts that have
             # both body and url -- see `_parse_claim_events`).
             pass  # the real source of bodies is `payload["comments"]` below
+    # #28669 -- compteur des globs morts ETENDUS (marqueur non actif). Une
+    # bride silencieuse doit se dire : l'organe nomme en une ligne ce qu'il
+    # n'a pas signale, sinon la qualification ressemble a une reparation du
+    # defaut qu'elle masque.
+    silenced_dead_globs: dict[str, int] = {}
+    silenced_superseded = 0
+    silenced_released = 0
     for ev in events:
         if ev.get("action") not in ("open", "override"):
             continue
@@ -4798,6 +4839,22 @@ def _lint_claim_events(
                 file=sys.stderr,
             )
             continue
+        # #28669 -- la branche SCOPEE n'avait aucune qualification de
+        # vivacite : tout evenement open/override portant un glob mort
+        # produisait son WARN, y compris un marqueur que sa lane a depuis
+        # superseded ou libere. Le WARN ne parle que sur le claim ACTIF de sa
+        # lane -- le seul cas ou l'auteur peut encore corriger sa clause, et
+        # le seul ou le glob mort decrit un perimetre courant. Mesure sur le
+        # lot enregistre (14 issues) : 90 des 99 globs morts portaient un
+        # marqueur non actif. Sans `active_claims` (appelant qui n'a pas
+        # reduit), la branche garde son comportement d'origine, comme la
+        # branche epic-wide de #12327. Un marqueur SANS lane ne peut pas etre
+        # prouve non actif : il garde son WARN.
+        ev_lane = ev.lane or "?"
+        ev_active = (active_claims.get(ev.lane)
+                     if (active_claims is not None and ev.lane) else None)
+        marker_is_live = (active_claims is None or ev.lane is None
+                          or ev_active is ev)
         # #26657 -- les resolutions de scope de l'evenement (calculees par
         # l'appelant), indexees par glob mort.
         resolved_map = {note["glob"]: note
@@ -4824,6 +4881,17 @@ def _lint_claim_events(
                     file=sys.stderr,
                 )
             if tracked is not None and not _glob_matches_tracked(g, tracked):
+                if not marker_is_live:
+                    # #28669 -- marqueur superseded ou libere : le glob mort
+                    # ne decrit plus aucun perimetre courant. On compte pour
+                    # le dire en une ligne a la fin, on ne WARN pas.
+                    silenced_dead_globs[ev_lane] = (
+                        silenced_dead_globs.get(ev_lane, 0) + 1)
+                    if ev_active is None:
+                        silenced_released += 1
+                    else:
+                        silenced_superseded += 1
+                    continue
                 print(
                     f'WARN: glob sans correspondance : "{g}" '
                     f"(lane {ev.lane or '?'})",
@@ -4852,6 +4920,25 @@ def _lint_claim_events(
                         f"#13129 motif A/C)",
                         file=sys.stderr,
                     )
+    # #28669 -- restitution de la bride. Le WARN ne parle plus sur un
+    # marqueur non actif, mais l'organe ne se tait pas : il dit combien de
+    # globs morts il a etendus, sur quelles lanes, et pourquoi. Un lecteur
+    # qui voit disparaitre 90 WARN doit pouvoir verifier que rien n'est
+    # cache ; un marqueur superseded reste une dette d'hygiene
+    # (`[RELEASED]` l'ancien), pas une alerte de perimetre.
+    if silenced_dead_globs:
+        total_silenced = sum(silenced_dead_globs.values())
+        detail = ", ".join(
+            f"{lane}: {n}" for lane, n in sorted(silenced_dead_globs.items())
+        )
+        print(
+            f"INFO: {total_silenced} glob(s) mort(s) porte(s) par des "
+            f"marqueurs NON ACTIFS, non signale(s) "
+            f"({silenced_superseded} superseded, {silenced_released} sans "
+            f"claim actif) -- le WARN ne parle que sur le claim actif de sa "
+            f"lane (#28669). Par lane : {detail}.",
+            file=sys.stderr,
+        )
 
 
 def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
@@ -7919,7 +8006,7 @@ def _compute_open_pr_collisions(
     self_overlap: list[PathCollision] = []
     for pr in prs:
         pr_files = pr.get("files") or []
-        if not pr_files:
+        if not pr_files or est_catalogue(pr):
             continue
         intersecting = [
             f.get("path", "") for f in pr_files

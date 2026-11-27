@@ -1,0 +1,9 @@
+- name: "Geometry-04-DD-AR C#"
+  family: SymbolicAI/Lean/Geometry
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-CSharp.ipynb
+  parity_level: native-both
+  known_differences:
+    - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Geometry-04-DD-AR-Python.ipynb. Execution reelle sur kernel .net-csharp : 11 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
+    - "Revision apres revue de fond du coordinateur (myia-po-2028:claudish, 25/11, PR #28343) : rule_perp_para indexe les faits perp par droite commune, laquelle peut occuper l'une ou l'autre position dans chaque fait ; la reference Python garde la regle a deux branches, qui ne traite que le cas ou la droite commune est en premiere position de l'un des deux faits. Le carnet C# porte un temoin execute des quatre placements (sortie : temoin perp_para : 4 positions sur 4), absent du jumeau Python."
+    - "Revision apres revue de fond du coordinateur (myia-po-2028:claudish, 25/11, PR #28343) : au paragraphe 4, l'enonce faux est 'la mediane issue de l'angle droit vaut le quart de la demi-hypotenuse' (MB = BC/2) ; la reference Python garde 'le quart de l'hypotenuse'. Residu identique dans les deux jumeaux : 15/64*xc^2 + 15/64*yc^2."

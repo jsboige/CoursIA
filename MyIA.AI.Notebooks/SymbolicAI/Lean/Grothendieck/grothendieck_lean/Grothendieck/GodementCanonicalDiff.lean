@@ -70,7 +70,13 @@ variable {X : TopCat.{u}}
 suivie de l'unité de Godement du conoyau. C'est le motif uniforme de la
 résolution canonique ([God58] II §4.1) : appliqué à la flèche `F ⟶ C⁰F`, il
 produit `d⁰` ; appliqué à `d⁰`, il produira `d¹` — chaque terme suivant est le
-terme de Godement du conoyau de la flèche précédente. -/
+terme de Godement du conoyau de la flèche précédente.
+Correspondance Stacks — **PARTIEL** : chez Stacks, la différentielle du complexe de
+Godement est le complexe de cofFaces alterné de l'objet cosimplicial
+(`Basic.lean:329` `resolutionComplex`) ; le « pas canonique » `B → C⁰(coker f)` n'a
+pas d'énoncé nommé. L'écart est de construction, non de contenu : les deux
+désignent la même flèche canonique, par des voies différentes.
+-/
 noncomputable def godementStep {A B : X.Presheaf AddCommGrpCat.{u}} (f : A ⟶ B) :
     B ⟶ godementPresheaf (cokernel f) :=
   cokernel.π f ≫ toGodement (F := cokernel f)
@@ -80,7 +86,12 @@ noncomputable def godementStep {A B : X.Presheaf AddCommGrpCat.{u}} (f : A ⟶ B
 `f ≫ cokernel.π f = 0` (`cokernel.condition`) — suivie de l'annulation du
 morphisme nul composé. Ce fait est le **complexe en germe** de la résolution
 canonique : chaque flèche composée avec son pas canonique s'annule, là où la
-suite des unités itérées (P87) échouait à le faire. -/
+suite des unités itérées (P87) échouait à le faire.
+Correspondance Stacks — **PARTIEL** : la nullité que Stacks énonce est celle de
+l'augmentation avec la première différentielle (`Basic.lean:337`
+`resolutionAugmentationCondition`) ; notre énoncé la généralise à toute flèche `f`,
+sous la forme « conoyau puis unité ».
+-/
 theorem comp_godementStep_zero {A B : X.Presheaf AddCommGrpCat.{u}} (f : A ⟶ B) :
     f ≫ godementStep f = 0 := by
   rw [godementStep, ← Category.assoc, cokernel.condition, zero_comp]
@@ -90,7 +101,11 @@ canonique appliqué à l'unité de Godement. Le terme suivant de la résolution
 augmentée `0 → F → C⁰F → C¹F` est `C⁰(coker μ)` — le faisceau de Godement du
 conoyau de l'unité — et `d⁰ : C⁰F ⟶ C¹F` en est la flèche. Ce morphisme
 remplace l'itération de l'unité (`godementUnitIter`, P87), qui n'est pas une
-différentielle. -/
+différentielle.
+Correspondance Stacks — **PARTIEL** : la différentielle de degré 0 de Stacks est la
+flèche du complexe de cofFaces (`Basic.lean:329` `resolutionComplex`) ; l'équivalence
+avec notre `d⁰` n'est pas établie côté Stacks.
+-/
 noncomputable def godementCanonicalDZero (F : X.Presheaf AddCommGrpCat.{u}) :
     godementPresheaf F ⟶ godementPresheaf (cokernel (toGodement F)) :=
   godementStep (toGodement F)
@@ -100,7 +115,12 @@ la différentielle de degré 0 s'annule, `μ ≫ d⁰ = 0`. C'est l'instance en
 degré 0 de `comp_godementStep_zero`, et le **contraire** du témoin de la
 Partie 87 : là où le composé de deux unités était injectif (donc non nul),
 le composé de l'unité avec le pas canonique est nul — la résolution canonique
-commence bien comme un complexe. -/
+commence bien comme un complexe.
+Correspondance Stacks — **PARTIEL** : `Basic.lean:337`
+(`resolutionAugmentationCondition`) énonce la nullité de l'augmentation avec la
+première différentielle ; notre énoncé en fait l'instance en degré 0 du pas
+canonique.
+-/
 theorem toGodement_comp_godementCanonicalDZero
     (F : X.Presheaf AddCommGrpCat.{u}) :
     toGodement F ≫ godementCanonicalDZero F = 0 :=
