@@ -1,0 +1,10 @@
+# TRANCHE26 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE26
+guards:
+  -
+    name: "translation-golden-set-drift (advisory, non-blocking)"
+    argv: ["python", "scripts/translation/build_golden_set.py", "--check"]
+    source: "native"
+    paths: ["**/*.ipynb", "**/*.lean", "**/*.md", "translations/translation_golden_set.json", "scripts/translation/build_golden_set.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    absorbed: true

@@ -2,6 +2,7 @@
   family: InformationCalcul/Compression
   python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb
   csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-CSharp.ipynb
-  parity_level: native-both
+  parity_level: semantic
   known_differences:
+    - "2026-11-25 (myia-po-2028:claudish) : parity_level corrige de native-both a semantic -- le niveau natif des deux cotes exige de nommer un moteur externe par cote (_schema.yaml) ; ici cote Python : lxml seulement ; cote C# : Microsoft.DotNet.Interactive (hote du carnet) seulement, aucun package de traitement. Aucun verdict de pont n'est porte : il se juge sur le travail, pas sur l'inventaire des imports."
     - "Enregistrement de livraison (myia-po-2028:claudish, harnais nb_coder stages 0-5) : portage C# de Compression-08-Assemblage-Vectoriel-Python.ipynb. Execution reelle sur kernel .net-csharp : 10 cellules, 0 erreur. Verification independente : approve. Premiere attestation ecrite par l'integration de livraison (check_twin_parity --update), en DERNIERE operation (cf #8957)."
