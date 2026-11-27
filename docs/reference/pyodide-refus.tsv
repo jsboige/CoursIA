@@ -372,15 +372,15 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb	Part1-Foundations	import_absent,suffisance	import_absent=automata.fa.dfa,automata.fa.nfa,z3;suffisance=dependance_locale:automata_core -> automata.base.exceptions : absent de la distribution;dependance_locale:automata_core -> automata.fa.dfa : absent de la distribution;absent_distribution:graphviz : absent de la distribution
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb	Part1-Foundations	suffisance	suffisance=absent_distribution:mealpy : absent de la distribution;absent_distribution:mealpy.utils.space : absent de la distribution
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb	Part1-Foundations	import_absent	import_absent=ortools,ortools.sat.python,z3
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb	Part2-CSP	import_absent	import_absent=constraint,pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb	Part2-CSP	import_absent	import_absent=z3
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb	Part2-CSP	import_absent	import_absent=pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb	Part2-CSP	import_absent	import_absent=constraint,ortools.sat.python,pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python,pychoco
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb	Part2-CSP	cle,import_absent	cle=1;import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-01-Fundamentals-Python.ipynb	Part2-CSP	import_absent	import_absent=constraint,pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-02-Consistency-Python.ipynb	Part2-CSP	import_absent	import_absent=pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-03-Advanced-Python.ipynb	Part2-CSP	import_absent	import_absent=constraint,ortools.sat.python,pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-04-Scheduling-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-05-Optimization-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python,pychoco
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-06-Hybridization-Python.ipynb	Part2-CSP	cle,import_absent	cle=1;import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-07-Soft-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-08-Temporal-Python.ipynb	Part2-CSP	import_absent	import_absent=ortools.sat.python
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-Python.ipynb	Part2-CSP	import_absent	import_absent=z3
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb	Part3-Cas-pratiques	import_absent	import_absent=ortools.sat.python
