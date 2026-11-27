@@ -58,17 +58,31 @@ def _by_workflow(rows):
 
 def test_le_census_trouve_la_famille_qui_ecoute_encore_edited(rows):
     found = _by_workflow(rows)
-    # `always-on-guards-body.yml` est le workflow des organes de body : il
-    # DOIT ecouter `edited` (c'est le verbatim de #22331).
-    assert ".github/workflows/always-on-guards-body.yml" in found
-    assert "body" in found[".github/workflows/always-on-guards-body.yml"]["depends_on"]
+    # #28534 : les deux workflows de la classe `edited` sont fusionnes en
+    # `always-on-guards-edited.yml` -- il DOIT ecouter `edited` (verbatim de
+    # #22331) et parler au corps ET a la base.
+    assert ".github/workflows/always-on-guards-edited.yml" in found
+    assert "body" in found[".github/workflows/always-on-guards-edited.yml"]["depends_on"]
+    assert "base" in found[".github/workflows/always-on-guards-edited.yml"]["depends_on"]
 
 
 def test_le_census_classe_le_verdict_sur_le_body_lu_directement(rows):
     found = _by_workflow(rows)
-    row = found[".github/workflows/always-on-guards-body.yml"]
+    row = found[".github/workflows/always-on-guards-edited.yml"]
     assert row["verdict"] == "PR_METADATA_DEPENDENT"
     assert row["direct_body_read"] is True
+
+
+def test_le_census_ne_trouve_plus_les_sources_dormantes(rows):
+    """Les deux fichiers sources sont DORMANTS (#28534, patron #13384) :
+    redeclencher sur `edited` rejouerait deux runs et deux slots par
+    evenement -- l'exact contraire de la fusion."""
+    found = _by_workflow(rows)
+    for wf in (
+        ".github/workflows/always-on-guards-body.yml",
+        ".github/workflows/always-on-metadata-guards.yml",
+    ):
+        assert wf not in found, f"{wf} ecoute encore `edited`"
 
 
 def test_le_census_ignore_un_workflow_sans_declencheur_edited(rows):
@@ -115,10 +129,11 @@ def test_les_wrappers_lean_continuent_d_ecouter_edited(rows, workflow):
 
 
 def test_le_census_signale_le_dependance_a_la_base(rows):
-    """`always-on-metadata-guards.yml` lit la base de la PR : changer de base
-    est un evenement `edited`, son verdict bouge -- il doit rester ecoute."""
+    """Le workflow fusionne (`always-on-guards-edited.yml`, #28534) lit la
+    base de la PR : changer de base est un evenement `edited`, son verdict
+    bouge -- il doit rester ecoute."""
     found = _by_workflow(rows)
-    row = found[".github/workflows/always-on-metadata-guards.yml"]
+    row = found[".github/workflows/always-on-guards-edited.yml"]
     assert "base" in row["depends_on"]
 
 
