@@ -9496,7 +9496,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,ba70ad
 var resExo4 = (qL: 0.0, qF1: 0.0, qF2: 0.0);  // TODO etudiant
 Show(""Exercice a completer : Stackelberg a 3 joueurs (marche residuel)"");
 ",,,,,,,,9fdd1966c1cdb1ef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,19c23183,markdown,fr,2596d8f35547a429,"## Conclusion
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,19c23183,markdown,fr,e654ef17275f1535,"## Conclusion
 
 Ce jumeau C# a presente les **jeux differentiels** et les **equilibres de Stackelberg**, reimplementation from-scratch (tranche 1) **plus** une verification croisee avec le moteur SOTA .NET `MathNet.Numerics` (tranche 2).
 
@@ -9512,9 +9512,9 @@ Ce jumeau C# a presente les **jeux differentiels** et les **equilibres de Stacke
 ### Value-add du jumeau (Prong B, #3801)
 
 - **Tranche 1** : RK4 from-scratch remplace `scipy.integrate.solve_ivp` (validation e^{-1} a 1e-9), Riccati couplee backward en `double[]` pur, pursuit-evasion pleinement modelisee. **0 NuGet, 0 numpy, 0 scipy** : BCL .NET 9 uniquement.
-- **Tranche 2** : branchement de `MathNet.Numerics` (moteur SOTA .NET, deja en service dans Infer-8) -- concordance **vecteur-a-vecteur** de l'ODE feedback Nash (`RungeKutta.FourthOrder` vs from-scratch, L-infini < 1e-6) et de l'optimum Stackelberg statique (`NelderMeadSimplex` vs forme close, L-infini < 1e-4). Gabarit de pont exige pour tout nouveau pont SOTA (#11058).
+- **Tranche 2** : branchement de `MathNet.Numerics` (moteur SOTA .NET, deja en service dans Infer-7) -- concordance **vecteur-a-vecteur** de l'ODE feedback Nash (`RungeKutta.FourthOrder` vs from-scratch, L-infini < 1e-6) et de l'optimum Stackelberg statique (`NelderMeadSimplex` vs forme close, L-infini < 1e-4). Gabarit de pont exige pour tout nouveau pont SOTA (#11058).
 
-**Suite** : [GT-15 - Jeux cooperatifs](GameTheory-15-CooperativeGames-Python.ipynb) | [Retour au sommaire](README.md)",,,,,,,,2596d8f35547a429,,,,,,,,,,,,,,,
+**Suite** : [GT-15 - Jeux cooperatifs](GameTheory-15-CooperativeGames-Python.ipynb) | [Retour au sommaire](README.md)",,,,,,,,e654ef17275f1535,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb,c2bf6de0,markdown,fr,b7753416e4a797f5,"# GameTheory-14 : Jeux Differentiels et Equilibres de Stackelberg
 
 **Navigation** : [<< 13-ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR-Python.ipynb) | [Index](README.md) | [15-CooperativeGames >>](GameTheory-15-CooperativeGames-Python.ipynb)
@@ -42896,7 +42896,7 @@ La figure ci-dessus synthétise les **deux garanties de convergence** de CFR sur
 - **J (rouge) et K (vert) restent sous leur étoile** : le bluff à 1/3 (J) et le value bet systématique (K) sont des **mélanges et stratégies extrêmes** que CFR n'approche que lentement (cf. tableau précédent : J ≈ 0,22 vs 0,33, K ≈ 0,67 vs 1,0).
 
 **Pourquoi cela suffit néanmoins.** CFR n'a pas besoin d'atteindre la stratégie exacte pour être **exploitable à ε près** : la convergence de la **valeur** (panneau gauche) garantit l'optimalité asymptotique, tandis que les stratégies moyennes (panneau droit) se rapprochent de Nash assez pour rendre l'adversaire **indifférent** entre call et fold avec Q — précisément la condition que vérifie le ratio de bluff 1/3. C'est ce double mécanisme que les **variantes de CFR** (section suivante — CFR+, MCCFR) cherchent à accélérer.",,,,,,,,6080fc83a87c4b97,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,3da4ed0a,markdown,fr,b37e66ce98a608b2,"## 7. Tranche 2 : verification croisee avec MathNet.Numerics (moteur SOTA .NET)
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,3da4ed0a,markdown,fr,03ac7c18f0f1301c,"## 7. Tranche 2 : verification croisee avec MathNet.Numerics (moteur SOTA .NET)
 
 La tranche 1 a reimplemente tout from-scratch (BCL pur). Cette **tranche 2** branche le
 **moteur SOTA .NET `MathNet.Numerics`** (deja en service dans Infer-07-TrueSkill) pour
@@ -42917,7 +42917,7 @@ Deux experiences concretes du jumeau Python sont reprises :
 
 La comparaison **vecteur-a-vecteur** (pas des constantes attendues) est le gabarit exige
 pour tout nouveau pont SOTA (#11058) : elle reste valide quand le jeu n'a pas de formule
-close.",,,,,,,,b37e66ce98a608b2,,,,,,,,,,,,,,,
+close.",,,,,,,,03ac7c18f0f1301c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,eeaf9aa5,code,fr,a23f68b00de491a7,"// --- Tranche 2 : integration ODE avec MathNet.Numerics (moteur SOTA) ---
 // Experience 1 : la dynamique fermee du jeu LQ en feedback Nash (cellule 11),
 // integree par MathNet RungeKutta.FourthOrder et comparee a notre RK4 from-scratch.
@@ -51560,3 +51560,11 @@ Ce carnet donne les **définitions** et des **squelettes** (`sorry` assumé, cf.
 La cellule de ce carnet définit une **quatrième** variante — chaque individu décisif sur une paire, dans les deux sens — qui n'est exactement aucune des trois : elle est plus forte que `MinimalLiberalism` (tous, et non un seul) et ne dit rien du croisement des paires. C'est une définition pédagogique commode, pas la notion sur laquelle porte l'énoncé.
 
 Retenir la leçon de méthode : **un énoncé d'impossibilité est aussi fort que sa notion de liberté est faible**. Changer de définition du libéralisme change le théorème, et deux formalisations qui semblent dire « la même chose » peuvent ne pas le dire.",,,,,,,,eae9cb81a452ace8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb,ffbe24e1,markdown,fr,3d54147c1b80303d,"## Références
+
+- **Isaacs, R. (1965).** *Differential Games: A Mathematical Theory with Applications to Warfare and Pursuit, Control and Optimization.* Wiley. -- **papier fondateur des differential games**. Équation d'Isaacs, conditions aux limites obliques pour les fonctions valeur, jeu à somme nulle à temps continu, et poursuite-évasion. **Mapping direct au carnet 14**.
+- **Basar, T. & Olsder, G. J. (1999).** *Dynamic Noncooperative Game Theory.* SIAM Classics in Applied Mathematics 23, 2ᵉ éd. -- **référence moderne en jeux dynamiques non-coopératifs**. Patterns d'information (open-loop, closed-loop, feedback), LQ games à temps continu, Stackelberg dynamique, déterminisme et stochastique. **Mapping direct au carnet 14** (sections 4-5 Stackelberg / LQ).
+- **Evans, L. C. (2010).** *Partial Differential Equations.* American Mathematical Society GSM 19, 2ᵉ éd. -- **référence PDE** couvrant la théorie de viscosité des équations Hamilton-Jacobi-Bellman, méthode des caractéristiques, solutions de viscosité. **Prérequis mathématique** du carnet 14.
+- **Bressan, A. (2011).** *Noncooperative differential games. A tutorial.* Milan Journal of Mathematics 79(2), 357-427, DOI 10.1007/s00032-011-0163-6. -- **panorama des difficultés théoriques** des differential games : fonctions valeur non-lipschitziennes, problèmes mal posés, stratégies non-régulières. **Mapping direct au carnet 14** (section 4 jeux LQ + Stackelberg dynamique).
+- **Bardi, M. & Capuzzo-Dolcetta, I. (1997).** *Optimal Control and Viscosity Solutions of Hamilton-Jacobi-Bellman Equations.* Birkhauser. -- **référence historique sur la théorie de viscosité appliquée au contrôle optimal**, conditions aux limites, approximation par schéma numérique, conditions de Dirichlet. **Prérequis numérique** du carnet 14 (les résolutions reposent sur le schéma explicite de Bellman, valide en viscosité).
+- **Fleming, W. H. & Rishel, R. W. (1975).** *Deterministic and Stochastic Optimal Control.* Springer. -- **référence fondatrice** sur les fonctions valeur en contrôle optimal, théorie de sélection mesurable, décomposition en problèmes local-globaux. **Prérequis épistémique** du carnet 14 (ce qu'Isaacs 1965 suppose implicitement sur la régularité des fonctions valeur).",,,,,,,,3d54147c1b80303d,,,,,,,,,,,,,,,

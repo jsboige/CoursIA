@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb,cc50bb51,markdown,fr,fce0ab6c5855be32,"# DecInfer-01-Utility-Foundations : Axiomes et Fondements
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb,cc50bb51,markdown,fr,12ad1e86c9b92749,"# DecInfer-01-Utility-Foundations : Axiomes et Fondements
 **Serie** : Programmation Probabiliste avec Infer.NET (1/10)  
 **Duree estimee** : 50 minutes  
 **Prerequis** : série Infer de [Infer-01-Setup](../../Infer/Infer-01-Setup.ipynb) à [Infer-07-TrueSkill](../../Infer/Infer-07-TrueSkill.ipynb) (modèles probabilistes de base)
@@ -17,11 +17,11 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations
 
 ## Navigation
 
-| Précédent | Suivant |
-|-----------|--------|
-| [Infer-02b-Debugging-Bonnes-Pratiques](../../Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) | [DecInfer-02-Utility-Money](DecInfer-02-Utility-Money.ipynb) |
+| Précédent | Suivant | Compagnon Lean |
+|-----------|--------|----------------|
+| [Infer-02b-Debugging-Bonnes-Pratiques](../../Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb) | [DecInfer-02-Utility-Money](DecInfer-02-Utility-Money.ipynb) | [01b — théorème de représentation](DecInfer-01b-Lean-ExpectedUtility.ipynb) · [01c — cohérence d'un parieur](DecInfer-01c-Lean-Coherence.ipynb) |
 
-***",,,,,,,,fce0ab6c5855be32,,,,,,,,,,,,,,,
+***",,,,,,,,12ad1e86c9b92749,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb,e6af883c,markdown,fr,56e0e34fd16c491e,"## 1. Introduction : Pourquoi l'Utilite ?
 
 ### Le problème de la decision sous incertitude
@@ -7247,7 +7247,7 @@ Le seuil est environ **P(Recession) = 38%**.
 3. **Robustesse** : Si votre estimation de P(Recession) est incertaine (ex: ""entre 20% et 40%""), la decision est **fragile** car elle depend crucialement de cette valeur.
 
 > **Bonne pratique** : Toujours effectuer une analyse de sensibilite avant de prendre une decision importante. Elle revele les paramètres critiques et les zones de fragilite.",,,,,,,,4586992df091e41e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb,9c0733f8,markdown,fr,b2aee39939aa03ae,"## 8. Système Expert Bayesien Multi-Sources avec Infer.NET
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb,9c0733f8,markdown,fr,2062d375eef7800e,"## 8. Système Expert Bayesien Multi-Sources avec Infer.NET
 
 ### Motivation
 
@@ -7272,7 +7272,7 @@ Ce modèle combine des patterns vus dans les notebooks précédents :
 Un ordinateur presente des problemes. Trois sources d'information :
 1. **Logs système** : Scores de probabilité par type de panne
 2. **Avis utilisateur** : ""Je pense que c'est le disque"" (peut se tromper)
-3. **Capteur RAM** : Alerte true/false (très fiable pour la RAM)",,,,,,,,b2aee39939aa03ae,,,,,,,,,,,,,,,
+3. **Capteur RAM** : Alerte true/false (très fiable pour la RAM)",,,,,,,,2062d375eef7800e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb,7c19bbe3,markdown,fr,6546207872db3d23,"### Implementation avec Infer.NET
 
 Le code suivant implemente un système expert bayesien complet avec Infer.NET, combinant trois sources d'information avec des fiabilites différentes :
@@ -9813,7 +9813,7 @@ Felicitations ! Vous avez termine les notebooks sur la Decision Theory.
 - Ng, Harada, Russell (1999) : Policy Invariance Under Reward Transformations
 - Kaelbling, Littman, Cassandra (1998) : Planning and Acting in Partially Observable Stochastic Domains
 - Sutton & Barto (2018) : Reinforcement Learning: An Introduction",,,,,,,,2ccbc3fd24d59c33,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-065982ec,markdown,fr,31972aa0b02e0f2b,"# DecInfer-08-Thompson-Sampling : Bandits bayesiens par Infer.NET
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-065982ec,markdown,fr,06cd233cb02a4817,"# DecInfer-08-Thompson-Sampling : Bandits bayesiens par Infer.NET
 
 **Serie** : Programmation Probabiliste avec Infer.NET (8/11)
 **Duree estimee** : 60 minutes
@@ -9836,7 +9836,7 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.i
 | [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) | [DecInfer-09-Theories-Decision-Predicteur](DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) |
 
 > **Pont inter-series** : le traitement des bandits en [DecInfer-07](DecInfer-07-Sequential.ipynb) section 8 implemente epsilon-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succes/echecs, formule conjuguee codee a la main). Ce notebook en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inference variationnelle, et Thompson echantillonne depuis ce posterior.
-> **Sortie de serie** : [DecInfer-09-Theories-Decision-Predicteur](DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) poursuit vers les theories de la decision face a un predicteur (EDT, CDT, UDT) ; la suite en causalite reste [Infer-05-Causal-Inference](../../Infer/Infer-05-Causal-Inference.ipynb).",,,,,,,,31972aa0b02e0f2b,,,,,,,,,,,,,,,
+> **Sortie de serie** : [DecInfer-09-Theories-Decision-Predicteur](DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) poursuit vers les theories de la decision face a un predicteur (EDT, CDT, UDT) ; la suite en causalite reste [Infer-05-Causal-Inference](../../Infer/Infer-05-Causal-Inference.ipynb).",,,,,,,,06cd233cb02a4817,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-e1a1df7a,markdown,fr,9847845497ccf0d3,"## 1. Exploration vs exploitation — pourquoi Thompson ?
 
 Un **bandit multi-bras** (Robbins, 1952) : K bras, chacun d'une recompense Bernoulli de moyenne inconnue theta_k. A chaque pas de temps on choisit un bras, on percoit une recompense 0/1, et on cherche a **maximiser la recompense cumulee**. Le dilemme :
@@ -10338,3 +10338,82 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.i
 ***
 
 [<- DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) | [Infer-05-Causal-Inference ->](../../Infer/Infer-05-Causal-Inference.ipynb) | [Retour a la serie](README.md)",,,,,,,,12f607aac4eea4ac,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb,cf3316a3,markdown,fr,100b085201120caf,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|-------|----------------------|
+| Le système expert bayésien combine les symptômes présents ET absents | fièvre + toux + fatigue → Grippe 67,7 % · Covid 30,5 % · Rhume 1,8 % |
+| L'absence d'un symptôme pénalise le diagnostic | sans éternuements → Allergie quasi-exclue (0,0 %) |
+| Trois critères, trois décisions pour la même matrice | Max EU → Actions · Minimax → Obligations · Minimax Regret → Immobilier |
+| Minimax Regret minimise le regret maximum, pas la perte | Immobilier : regret max 40 k, le plus faible de toutes les actions |
+| Hurwicz interpole entre min et max par l'optimisme γ | γ ≤ 0,4 → Obligations · γ ≥ 0,6 → Actions · bascule à γ* ≈ 0,42 |
+| Hurwicz ignore les états intermédiaires et le regret manqué | l'Immobilier n'est jamais optimal selon Hurwicz |
+| La convergence des critères renforce la confiance en la décision | P(Grave) = 40 % → les trois convergent vers « Intensif » |
+| La divergence des critères est un signal d'incertitude à communiquer | P(Grave) = 5 % → Max EU « Aucun » vs Minimax « Intensif » |
+",,,,,,,,100b085201120caf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb,e494c162,markdown,fr,52e864c15dda47aa,"## Vérifiez votre compréhension
+
+**1. Pourquoi le diagnostic bayésien attribue-t-il 67,7 % à la grippe mais seulement 1,8 % au rhume ?**
+
+<details><summary>Réponse</summary>
+
+Le système expert multiplie le prior P(maladie) par le likelihood P(symptômes | maladie), puis normalise. La grippe combine un prior élevé (30 %) et des likes forts (fièvre 90 %, toux 80 %, fatigue 90 %). Le rhume s'effondre pour deux raisons : son prior est plus faible ET il cause rarement de fièvre (30 %). L'absence d'éternuements, observée, pénalise en plus rhume et allergie — c'est pour ça que l'allergie tombe à 0,0 % : l'approche bayésienne exploite les symptômes absents aussi bien que présents.
+</details>
+
+**2. Pourquoi les trois critères (Max EU, Minimax, Minimax Regret) recommandent-ils trois actions différentes ?**
+
+<details><summary>Réponse</summary>
+
+Chaque critère encode une philosophie de risque différente. Max EU (→ Actions) fait confiance aux probabilités : P(recession) = 25 % rend l'espérance des actions la plus élevée. Minimax (→ Obligations) ne regarde que le pire cas : les obligations ont le pire cas le moins mauvais. Minimax Regret (→ Immobilier) minimise le regret maximum : l'immobilier a le regret max le plus faible (40 k) — jamais le meilleur, jamais trop loin. La divergence n'est pas un bug : c'est la mesure de l'incertitude réelle. Quand une action domine clairement, les trois critères convergent.
+</details>
+
+**3. Pourquoi le critère Hurwicz n'attribue-t-il jamais l'immobilier, alors que Minimax Regret le recommandait ?**
+
+<details><summary>Réponse</summary>
+
+Hurwicz ne regarde que le min et le max de chaque action, pondérés par γ : Immobilier (min −10 k, max 80 k) est dominé aux deux extrêmes — par les Actions (min −20 k, max 120 k) quand γ est élevé, par les Obligations (min 30 k, max 50 k) quand γ est bas. Il est donc jamais optimal. Minimax Regret, lui, voit les états intermédiaires et les opportunités manquées (le regret), que Hurwicz ignore. C'est la leçon : chaque critère capture une dimension différente de la décision — le point de bascule de Hurwicz est à γ* ≈ 0,42.
+</details>
+",,,,,,,,52e864c15dda47aa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,35551f6a,markdown,fr,390e0fd896aad4b5,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|-------|----------------------|
+| Le posterior s'adapte au rythme des données | N=5 : moyenne 0,857, IC jusqu'à 1,000 · N=200 : moyenne 0,663, IC [0,598, 0,728] |
+| Les premières observations achètent le plus d'information | largeur de l'IC : 0,385 (N=5) → 0,130 (N=200) |
+| Thompson alloue l'exploration là où le posterior est encore large | regret cumulé (15 runs, T=200) : Thompson 6,1 · ε-greedy 17,5 · UCB1 19,3 |
+| Le regret de Thompson est logarithmique, pas linéaire | R(T) = O(Σ (ln T)/Δₖ) ; μ = [0,2 ; 0,5 ; 0,8] → Δ = [0,6 ; 0,3 ; 0] |
+| Thompson atteint la borne inférieure de Lai-Robbins | optimal au sens de l'information : le tirage minimal par sous-bras |
+| Identifier le meilleur bras ≠ minimiser le regret | après 60 tirages : P(bras 3 meilleur) = 0,986, bras 1 = 0,011, bras 2 = 0,003 |
+| Être le meilleur dépend de toute la distribution, pas de la moyenne | bras 1 (moy. 0,25, écart-type 0,19) > bras 2 (moy. 0,40, écart-type 0,15) |
+",,,,,,,,390e0fd896aad4b5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,753a1cab,markdown,fr,096de2c4bd05f0c6,"## Vérifiez votre compréhension
+
+**1. Pourquoi le posterior de N=5 (moyenne 0,857) s'écarte-t-il autant de la vraie moyenne 0,70, alors que celui de N=200 la contient ?**
+
+<details><summary>Réponse</summary>
+
+À N=5, cinq tirages favorables n'ont encore rien exclu : le prior Beta(1,1) uniforme pèse lourd et la moyenne est tirée vers le haut (0,857), l'IC95 montant jusqu'à 1,000. À N=200, le moteur a digéré les données contradictoires : la moyenne redescend à 0,663 et l'IC [0,598, 0,728] contient la vraie valeur 0,70. Le coût d'apprentissage marginal décroît vite — la largeur de l'intervalle passe de 0,385 à 0,130 quand on multiplie les données par 40.
+</details>
+
+**2. Pourquoi Thompson cumule-t-il environ trois fois moins de regret qu'epsilon-greedy et UCB1 ?**
+
+<details><summary>Réponse</summary>
+
+Sur 15 runs de T=200 pas, le regret moyen est 6,1 pour Thompson contre 17,5 (ε-greedy) et 19,3 (UCB1). ε-greedy explore au hasard : ses 10 % de tirages aléatoires continuent de sonder le pire bras même quand rien ne le justifie. UCB1 explore par un bonus d'optimisme indexé sur un compteur de visites, pas sur une incertitude calibrée par les données. Thompson, lui, alloue l'exploration exactement là où le posterior est encore large — d'où le regret logarithmique garanti par la borne de Lai-Robbins.
+</details>
+
+**3. Pourquoi le bras 1 (moyenne posterior 0,25) a-t-il une probabilité d'être le meilleur supérieure à celle du bras 2 (moyenne 0,40) ?**
+
+<details><summary>Réponse</summary>
+
+Le bras 1, visité seulement deux fois, garde un posterior large (écart-type 0,19) dont la queue atteint encore la zone du bras 3 ; le bras 2, observé huit fois, est plus resserré (écart-type 0,15). Être le meilleur dépend de toute la distribution, pas seulement de sa moyenne. D'où P(bras 1 meilleur) = 0,011 > P(bras 2 meilleur) = 0,003, bien que la moyenne du bras 2 soit plus haute. Le bras 3, lui, est net : P = 0,986 après 60 tirages.
+</details>
+",,,,,,,,096de2c4bd05f0c6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,834a434c,markdown,fr,8e0766517e4f6d52,"## Pour aller plus loin
+
+- **Bandits non-stationnaires** : la section 7 et l'exercice 2 esquissent un facteur d'oubli quand la meilleure bascule au temps. C'est la porte d'entrée vers les bandits à drift (sliding-window / discount Thompson Sampling) — les sections `DecInfer-07-Sequential` de la série traitent la décision séquentielle sous un angle dual.
+- **Bandits contextuels** : remplacer les bras fixes par des bras conditionnés à des covariables (linéaires, puis neuronaux). Infer.NET s'y prête parce que le posterior n'est plus en forme fermée : l'inférence approchée (EP/VMP) prend le relais, au prix d'une variance d'estimation ajoutée.
+- **Au-delà du conjugué** : le gain du moteur se lit précisément sur les bras **non conjugués** (Gaussiennes de variance inconnue, mélanges). Relire la section 8 « Limites honnêtes » pour savoir ce que la conjugaison Beta-Bernoulli masque.
+- **Litterature** : Lai & Robbins 1985 (borne inférieure) ; Agrawal & Goyal 2012 (analyse finie de Thompson) ; Kaufmann, Korda & Munos 2012 (optimalité asymptotique) ; Agrawal & Goyal 2013 (borne gap-free).
+- **Dans la série** : `DecInfer-04-Decision-Networks` (réseaux de décision) et `DecInfer-05-Value-Information` (valeur de l'information) prolongent la même question — combien coûte l'incertitude, et que vaut la prochaine observation ?
+",,,,,,,,8e0766517e4f6d52,,,,,,,,,,,,,,,

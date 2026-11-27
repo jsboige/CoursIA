@@ -353,7 +353,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,645fbcf8,code,fr,e80ed11a92b03
 # - Calculer P(theta > 0.7) avec (trace.posterior['theta'] > 0.7).mean()
 
 print(""Exercice a completer"")",,,,,,,,e80ed11a92b03a1f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,4411434a,markdown,fr,b91dd1eb158b39fe,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,4411434a,markdown,fr,f2a80c581c4d211b,"## Conclusion
 
 Ce notebook a introduit les bases de PyMC : installation, configuration, et premier modèle probabiliste (Beta-Binomial pour une piece de monnaie).
 
@@ -381,16 +381,16 @@ Ce notebook a pose la norme sur le premier modèle ; le diagnostic se lit
 avec `az.summary` (`r_hat < 1.01`, ESS de plusieurs centaines) et `az.plot_trace`
 (le melange des chaînes visible). Pour le traitement approfondi des cas
 probles, voir **PyMC-02b-Debugging-Python** ; pour le funnel associe a la
-parametrisation, voir **PyMC-12-Modèles-Hiérarchiques**.
+parametrisation, voir **PyMC-11-Modèles-Hiérarchiques**.
 
 ***
 
-**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,b91dd1eb158b39fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,a1b2c3d0,markdown,fr,181bbd0d520b6769,"# PyMC-10 : Sélection de Modèles et Comparaison Bayesienne
+**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,f2a80c581c4d211b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,a1b2c3d0,markdown,fr,9ea985a613a8c82e,"# PyMC-09 : Sélection de Modèles et Comparaison Bayesienne
 
-**Navigation** : [Index](../README.md) | [<< PyMC-9](PyMC-08-Classification.ipynb) | [PyMC-11 >>](PyMC-10-Topic-Models.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-8](PyMC-08-Classification.ipynb) | [PyMC-10 >>](PyMC-10-Topic-Models.ipynb)
 
-**Equivalent Infer.NET** : [Infer-10-Model-Sélection](../Infer/Infer-09-Model-Selection.ipynb)
+**Equivalent Infer.NET** : [Infer-09-Model-Sélection](../Infer/Infer-09-Model-Selection.ipynb)
 
 
 **Duree estimee** : 45 minutes
@@ -401,7 +401,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,a1b2c3d0,markdown,fr
 - Utiliser les Bayes Factors pour la sélection de composantes dans les melanges
 - Comparer Infer.NET (calcul exact de l'evidence) vs PyMC/ArviZ (WAIC/LOO)
 
-**Prerequis** : PyMC-1 a PyMC-9, comparaison de modèles (WAIC/LOO)
+**Prerequis** : PyMC-1 a PyMC-8, comparaison de modèles (WAIC/LOO)
 
 ## Contexte et motivation
 
@@ -429,7 +429,7 @@ qui produit une estimation stable du leave-one-out predictive accuracy.
 **Reference** : Vehtari, Gelman, Gabry (2017), *Practical Bayesian model evaluation using
 leave-one-out cross-validation and WAIC*, Statistics and Computing 27(5), 1413-1432.
 DOI : 10.1007/s11222-016-9696-4.
-",,,,,,,,181bbd0d520b6769,,,,,,,,,,,,,,,
+",,,,,,,,9ea985a613a8c82e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,b2c3d4e1,code,fr,fafeab0815bbca77,"import warnings
 
 # Trois familles d'avertissements Python apparaissent dans ce notebook :
@@ -688,12 +688,12 @@ data_outliers = np.concatenate([data_clean, [15.0, -8.0, 12.0]])
 
 result_compare = None  # TODO etudiant : remplacer par az.compare(...)
 print(""Exercice a completer"")",,,,,,,,766c2b24ebbf366a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,d0e1f2a9,markdown,fr,278098605d3faa22,"## 3. Sélection de Composantes sur Données Bimodales
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,d0e1f2a9,markdown,fr,1f327000117ee697,"## 3. Sélection de Composantes sur Données Bimodales
 
 Maintenant, testons avec des données bimodales. Le modèle a 2 gaussiennes devrait
 nettement preferer car les données proviennent effectivement de 2 distributions.
 
-Cela correspond a l'exemple Infer-10 ou :
+Cela correspond a l'exemple Infer-09 ou :
 - 1 composante : log evidence = -45.89
 - 2 composantes : log evidence = -31.35
 - Différence : 14.54 (decisif pour 2 composantes)
@@ -727,7 +727,7 @@ posterior est multimodale).
 mais l'ajustement reste mediocre (le pic est entre les deux vrais modes). Le LOO
 pénalise ce mauvais ajustement : la vraisemblance predictive par observation chute dans les
 regions que la cloche unique couvre mal.
-",,,,,,,,278098605d3faa22,,,,,,,,,,,,,,,
+",,,,,,,,1f327000117ee697,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,e1f2a3b0,code,fr,47cd3b3b57050488,"# Modele 1 gaussienne sur donnees bimodales
 with pm.Model() as model_1g_bi:
     mu = pm.Normal('mu', mu=0, sigma=10)
@@ -1268,20 +1268,20 @@ y_poly = 2 * X_poly + 1 + np.random.normal(0, 1.0, size=n_poly)
 # avec pm.Normal pour les poids et pm.Normal pour la likelihood
 
 print(""Exercice a completer"")",,,,,,,,4df05572c111994b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,6d9c2dd7,markdown,fr,84b021924d06b8d9,"***
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,6d9c2dd7,markdown,fr,c885beb5ad0826aa,"***
 
 **Retour au sommaire** : [Index Probas](../README.md)
 
 ## Ou aller plus loin ?
 
-- **PyMC-11** : modèles hierarchiques et topics models (LDA), qui reposent sur le même
+- **PyMC-10** : modèles hierarchiques et topics models (LDA), qui reposent sur le même
   mécanisme de sélection par critere predictif (elpd/LOO) pour comparer le nombre de topics.
-- **Infer-10** : comparaison côte a côte avec Infer.NET qui calcule l'evidence exacte par
+- **Infer-09** : comparaison côte a côte avec Infer.NET qui calcule l'evidence exacte par
   message passing — utile pour valider l'approximation PSIS-LOO de PyMC sur de petits
   modeles.
 - **BRMS / Bambi** : surcouche PyMC avec une API type scikit-learn, permet de tester
   rapidement plus de modeles avec moins de code.
-",,,,,,,,84b021924d06b8d9,,,,,,,,,,,,,,,
+",,,,,,,,c885beb5ad0826aa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,f4a5b6c3,markdown,fr,6cef9f73145f7317,"## Conclusion
 
 La sélection de modèle bayesienne compare des modèles concurrents en integrant sur l'espace des paramètres, penalisant naturellement la complexite.
@@ -1320,9 +1320,9 @@ API depuis la 1.0.
 - Vehtari, A., Gelman, A., & Gabry, J. (2017). *Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC.* Statistics and Computing 27(5). doi:10.1007/s11222-016-9696-4
 - Kumar, R., Carroll, C., Hartikainen, A., & Martin, O. (2019). *ArviZ: a unified library for exploratory analysis of Bayesian models in Python.* JOSS 4(33).
 ",,,,,,,,6cef9f73145f7317,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,a1b2c3d0,markdown,fr,5f594251254d1956,"# PyMC-11 : Modèles de Sujets (Topic Models) et LDA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,a1b2c3d0,markdown,fr,3b8b8b5d0c35da42,"# PyMC-10 : Modèles de Sujets (Topic Models) et LDA
 
-**Navigation** : [Index](../README.md) | [<< PyMC-10](PyMC-09-Model-Selection.ipynb) | [PyMC-12 >>](PyMC-11-Modeles-Hierarchiques.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-09](PyMC-09-Model-Selection.ipynb) | [PyMC-11 >>](PyMC-11-Modeles-Hierarchiques.ipynb)
 
 **Équivalent Infer.NET** : [Infer-10-Topic-Models](../Infer/Infer-10-Topic-Models.ipynb)
 
@@ -1335,8 +1335,8 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,a1b2c3d0,markdown,fr,5f
 - Visualiser les distributions de mots par sujet
 - Comparer Infer.NET VMP vs PyMC NUTS pour les modèles discrets
 
-**Prerequis** : PyMC-1 a PyMC-10, algebre lineaire (matrices, vecteurs)
-",,,,,,,,5f594251254d1956,,,,,,,,,,,,,,,
+**Prerequis** : PyMC-1 a PyMC-09, algebre lineaire (matrices, vecteurs)
+",,,,,,,,3b8b8b5d0c35da42,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,b2c3d4e1,code,fr,7e45fbdc305030af,"import warnings
 # arviz (FutureWarning de refactor) et pytensor (""could not link BLAS"", advisory de perf, pas de correctness)
 # leakent le chemin absolu du fichier source site-packages ; on les filtre. Les alertes utiles (R-hat, ESS) restent visibles.
@@ -1845,11 +1845,11 @@ Les modèles de sujets (Topic Models) comme LDA decomposent un corpus de documen
 ***
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,a428db9e6343a5a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,6344a690,markdown,fr,350494499a7d59e9,"# 12. Modèles Hiérarchiques Bayesiens -- Pooling Partiel et Retraction (jumeau PyMC)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,6344a690,markdown,fr,12faae8e46bb33a4,"# 12. Modèles Hiérarchiques Bayesiens -- Pooling Partiel et Retraction (jumeau PyMC)
 
 **Duree estimee** : 50 minutes
 
-> **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de `Infer-12-Modèles-Hiérarchiques.ipynb` (Infer.NET / C#). Il traduit le modèle hiérarchique gaussien de l'API Infer.NET (`Variable.GaussianFromMeanAndPrecision`, `InferenceEngine` EP) vers **PyMC v5** (NUTS). La specification probabiliste est **identique** ; seul le moteur d'inférence change : EP analytique cote .NET, échantillonnage NUTS cote Python.
+> **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de `Infer-11-Modèles-Hiérarchiques.ipynb` (Infer.NET / C#). Il traduit le modèle hiérarchique gaussien de l'API Infer.NET (`Variable.GaussianFromMeanAndPrecision`, `InferenceEngine` EP) vers **PyMC v5** (NUTS). La specification probabiliste est **identique** ; seul le moteur d'inférence change : EP analytique cote .NET, échantillonnage NUTS cote Python.
 
 Jusqu'ici, chaque paramètre du modèle (moyenne d'un gaussien, poids d'un classifieur, compétence d'un joueur) etait estime **independamment**. Mais en pratique, les données sont souvent **structurees en groupes** : eleves dans des classes, patients dans des hopitaux, essais sur des machines différentes, mesures repetees sur des sujets.
 
@@ -1860,7 +1860,7 @@ Quand chaque groupe contient **peu d'observations**, deux extrêmes échouent :
 | **Pooling complet** (ignorer les groupes, un seul paramètre global) | Gomme la variabilite reelle entre groupes |
 | **No pooling** (un paramètre indépendant par groupe) | Herite du bruit d'echantillonnage pour les groupes clairsemees |
 
-Le modèle **hiérarchique** (pooling partiel) resout le dilemme en partageant un *prior de population* : chaque groupe emprunte de l'information aux autres, **d'autant plus qu'il est mal informe**.",,,,,,,,350494499a7d59e9,,,,,,,,,,,,,,,
+Le modèle **hiérarchique** (pooling partiel) resout le dilemme en partageant un *prior de population* : chaque groupe emprunte de l'information aux autres, **d'autant plus qu'il est mal informe**.",,,,,,,,12faae8e46bb33a4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,f49f8a6c,markdown,fr,0ae9f04f7308a8c9,"## Le piege des groupes clairsemees
 
 Consederons 8 classes de TP, chacune avec un **effet propre** (qualite de l'enseignement, niveau moyen) compris entre 1 et 7. On mesure le score de quelques eleves par classe. Certaines classes ont beaucoup d'eleves (bien informees), d'autres très peu -- les classes 2, 5 et 7 n'ont qu'une ou deux mesures, donc un bruit d'echantillonnage eleve.
@@ -2076,7 +2076,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,abdd40c2,code,
 # Etape 2 : verifier theta_new.mean() ~= mu_post  et  theta_new.std() ~= sigma_theta post.
 votre_moyenne_predite = 0.0  # TODO etudiant : theta_new.mean()
 print(""Exercice 3 a completer"")",,,,,,,,fc548e87cc84c6af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,661512f3,markdown,fr,91f910647bc17126,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,661512f3,markdown,fr,fbf1ab7be9ec1b17,"## Conclusion
 
 Les **modèles hiérarchiques** resolvent le dilemme pooling/no-pooling par un **prior de population partage**. PyMC les exprime naturellement : un vecteur de paramètres `theta[c]` tire d'une loi commune `(mu, sigma_theta)`, avec l'indexation `theta[group_index]` qui rattache chaque observation a sa classe.
 
@@ -2092,12 +2092,12 @@ Sur ce modèle gaussien a 8 classes, EP et NUTS convergent vers le même posteri
 
 > **Poursuivre avec** : [Observabilité OTel >>](PyMC-Observabilite-OTel.ipynb) — instrumenter ce modèle hiérarchique avec OpenTelemetry (spans de compilation/échantillonnage) : le carnet d'observabilité reprend le terrain des classes de TP modélisé ici et l'instrumente bout en bout.
 
-> **Jumeau de** [`Infer-12-Modèles-Hiérarchiques.ipynb`](../Infer/Infer-11-Modeles-Hierarchiques.ipynb) *(Infer.NET / C#, inférence EP)* -- Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956).",,,,,,,,91f910647bc17126,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,6e4e70c2,markdown,fr,ec14d43176ff6891,"# PyMC-13 : Crowdsourcing - Agregation de Labels et Fiabilite
+> **Jumeau de** [`Infer-11-Modèles-Hiérarchiques.ipynb`](../Infer/Infer-11-Modeles-Hierarchiques.ipynb) *(Infer.NET / C#, inférence EP)* -- Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956).",,,,,,,,fbf1ab7be9ec1b17,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,6e4e70c2,markdown,fr,65203b51b94a7e8f,"# PyMC-12 : Crowdsourcing - Agregation de Labels et Fiabilite
 
-**Navigation** : [Index](../README.md) | [<< PyMC-12](PyMC-11-Modeles-Hierarchiques.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-11](PyMC-11-Modeles-Hierarchiques.ipynb)
 
-**Serie** : Programmation Probabiliste avec PyMC (13/20)
+**Serie** : Programmation Probabiliste avec PyMC (12/20)
 
 **Durée estimee** : 55 minutes
 
@@ -2107,9 +2107,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,6e4e70c2,markdown,fr,e
 - Explorer le modèle hiérarchique Community pour les groupes d'annotateurs
 - Appliquer l'apprentissage actif via l'echantillonnage d'incertitude
 
-**Prerequis** : PyMC-1 a PyMC-11, bases de statistique bayesienne
+**Prerequis** : PyMC-1 a PyMC-10, bases de statistique bayesienne
 
-**Correspondance Infer.NET** : [Infer-12-Crowdsourcing](../Infer/Infer-12-Crowdsourcing.ipynb)",,,,,,,,ec14d43176ff6891,,,,,,,,,,,,,,,
+**Correspondance Infer.NET** : [Infer-12-Crowdsourcing](../Infer/Infer-12-Crowdsourcing.ipynb)",,,,,,,,65203b51b94a7e8f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,05b8c632,code,fr,79ad326d925dffc4,"# Dependances : installer silencieusement seulement ce qui manque.
 # (import-guards deterministes : pas de sortie bruyante 'Requirement already satisfied'
 #  qui fuie le chemin machine, cf #3436 cause A.)
@@ -2985,7 +2985,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,a3e3935e,code,fr,a298f
 print(""Exercice a completer : Crowdsourcing avec expertise variable"")
 print(""Indice : reutilisez la fonction dawid_skene_em et le pattern"")
 print(""de generation synthetique de la section 8."")",,,,,,,,a298fe4b8ff428b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,d8a8c164,markdown,fr,868dc6ace260d387,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,d8a8c164,markdown,fr,92ae98b41a41270b,"## Conclusion
 
 Le crowdsourcing bayesien modelise la fiabilite des annotateurs et infere la verite sous-jacente a partir de reponses multiples et potentiellement bruitees.
 
@@ -2998,7 +2998,7 @@ Le crowdsourcing bayesien modelise la fiabilite des annotateurs et infere la ver
 
 **Retour au sommaire** : [Index Probas](../README.md)
 
-**Navigation** : [<< PyMC-12](PyMC-11-Modeles-Hierarchiques.ipynb) | [PyMC-14 >>](PyMC-13-Sequences.ipynb)",,,,,,,,868dc6ace260d387,,,,,,,,,,,,,,,
+**Navigation** : [<< PyMC-11](PyMC-11-Modeles-Hierarchiques.ipynb) | [PyMC-13 >>](PyMC-13-Sequences.ipynb)",,,,,,,,92ae98b41a41270b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,ref-dawid-skene-1979,markdown,fr,035667fc62a9e438,"
 ## References
 
@@ -3006,11 +3006,11 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,ref-dawid-skene-1979,m
 - **Kim, H.-C. and Ghahramani, Z. (2012).** *Bayesian Classifier Combination.* Proceedings of AISTATS 2012, PMLR 22:619-627 — La version bayesienne de Dawid-Skene (BCC).
 - **Karger, D. R., Oh, S. and Shah, D. (2011).** *Iterative Learning for Reliable Crowdsourcing Systems.* Advances in Neural Information Processing Systems 24 (NIPS 2011) — Allocation iterative d'annotateurs pour l'apprentissage actif.
 ",,,,,,,,035667fc62a9e438,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb,92536383,markdown,fr,a1859f4c25a4212b,"# PyMC-14 — Modèles de Sequences et Chaînes de Markov Cachees
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb,92536383,markdown,fr,a0580f2a7808c570,"# PyMC-13 — Modèles de Sequences et Chaînes de Markov Cachees
 
 **Serie** : Programmation Probabiliste avec PyMC (port Python de la serie Infer.NET)
 **Durée estimee** : 65 minutes
-**Prerequis** : PyMC-13 (Crowdsourcing)
+**Prerequis** : PyMC-12 (Crowdsourcing)
 
 ## Objectifs d'apprentissage
 
@@ -3021,9 +3021,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb,92536383,markdown,fr,a1859
 
 ***
 
-**Navigation** : [PyMC-13](PyMC-12-Crowdsourcing.ipynb) | [PyMC-15](PyMC-14-Recommenders.ipynb) | [Infer.NET original](../Infer/Infer-13-Sequences.ipynb)
+**Navigation** : [PyMC-12](PyMC-12-Crowdsourcing.ipynb) | [PyMC-14](PyMC-14-Recommenders.ipynb) | [Infer.NET original](../Infer/Infer-13-Sequences.ipynb)
 
-**Plan** : 1. structure d'un HMM — 2. classification indépendante — 3. Forward-Backward — 4. régimes météo — 5. inférence MCMC des émissions — 6. détection d'anomalies (ventes) — 7. motif finding — 8. résumé des concepts — 9. exercice (HMM 3 états).",,,,,,,,a1859f4c25a4212b,,,,,,,,,,,,,,,
+**Plan** : 1. structure d'un HMM — 2. classification indépendante — 3. Forward-Backward — 4. régimes météo — 5. inférence MCMC des émissions — 6. détection d'anomalies (ventes) — 7. motif finding — 8. résumé des concepts — 9. exercice (HMM 3 états).",,,,,,,,a0580f2a7808c570,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb,575970fa,code,fr,79ad326d925dffc4,"# Dependances : installer silencieusement seulement ce qui manque.
 # (import-guards deterministes : pas de sortie bruyante 'Requirement already satisfied'
 #  qui fuie le chemin machine, cf #3436 cause A.)
@@ -3696,7 +3696,7 @@ machine_prior = np.array([0.8, 0.15, 0.05])  # majoritairement normal
 print(""Exercice a completer : implementez l'inference HMM 3 etats"")
 print(""Donnees capteur :"", capteur)
 print(""Etats attendus : Normal(1-4), Degrade(5-8), Panne(9-12), Degrade(13-14), Normal(15-16)"")",,,,,,,,4b107cb133422f2d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb,4d7cd001,markdown,fr,56bbd8f92a0b5061,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Sequences.ipynb,4d7cd001,markdown,fr,20f76764dfd8c5a4,"## Conclusion
 
 Les modèles de sequences temporelles (HMM, ARIMA, modèles d'état) capturent les dependances temporelles dans les données ordonnees.
 
@@ -3707,9 +3707,9 @@ Les modèles de sequences temporelles (HMM, ARIMA, modèles d'état) capturent l
 
 ***
 
-**Navigation** : [PyMC-13](PyMC-12-Crowdsourcing.ipynb) | **PyMC-14** | [PyMC-15](PyMC-14-Recommenders.ipynb) | [Infer.NET original](../Infer/Infer-13-Sequences.ipynb)
+**Navigation** : [PyMC-12](PyMC-12-Crowdsourcing.ipynb) | **PyMC-13** | [PyMC-14](PyMC-14-Recommenders.ipynb) | [Infer.NET original](../Infer/Infer-13-Sequences.ipynb)
 
-**Prochaine étape** : [PyMC-15 — Systèmes de Recommandation](PyMC-14-Recommenders.ipynb)
+**Prochaine étape** : [PyMC-14 — Systèmes de Recommandation](PyMC-14-Recommenders.ipynb)
 
 ### References
 
@@ -3719,17 +3719,17 @@ Les modèles de sequences temporelles (HMM, ARIMA, modèles d'état) capturent l
 - Viterbi, A. J. (1967). *Error Bounds for Convolutional Codes and an Asymptotically Optimum Decoding Algorithm.* IEEE Trans. Information Theory 13(2).
 - Rabiner, L. R. (1989). *A Tutorial on Hidden Markov Models and Selected Applications in Speech Recognition.* Proceedings of the IEEE 77(2).
 
-Chaque section a produit une sortie mesurable : classification saturée, points ambigus lissés, régimes météo retrouvés, émissions inférées par MCMC, bloc promo détecté, motif AAC commun aux trois séquences. Durée estimée de la séance : 60 minutes, comme annoncé en ouverture.",,,,,,,,56bbd8f92a0b5061,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,d2969a06,markdown,fr,74bd08ee8dc772ac,"# PyMC-14-Recommenders : Systèmes de Recommandation Probabilistes
+Chaque section a produit une sortie mesurable : classification saturée, points ambigus lissés, régimes météo retrouvés, émissions inférées par MCMC, bloc promo détecté, motif AAC commun aux trois séquences. Durée estimée de la séance : 60 minutes, comme annoncé en ouverture.",,,,,,,,20f76764dfd8c5a4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,d2969a06,markdown,fr,d61094b90a65c2bd,"# PyMC-14-Recommenders : Systèmes de Recommandation Probabilistes
 
-**Serie** : Programmation Probabiliste avec PyMC (15/20)
+**Serie** : Programmation Probabiliste avec PyMC (14/20)
 
 **Adapte de** : [Infer-14-Recommenders](../Infer/Infer-14-Recommenders.ipynb) (Infer.NET / C#)
 
 **Objectifs** : Implementer des systèmes de recommandation bayesiens avec PyMC
-**Prerequis** : PyMC-1 a PyMC-14, bases d'algebre lineaire
+**Prerequis** : PyMC-1 a PyMC-13, bases d'algebre lineaire
 **Durée estimee** : 45 minutes
-**Outils** : PyMC, ArviZ, NumPy, SciPy, Matplotlib",,,,,,,,74bd08ee8dc772ac,,,,,,,,,,,,,,,
+**Outils** : PyMC, ArviZ, NumPy, SciPy, Matplotlib",,,,,,,,d61094b90a65c2bd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,006afef1,code,fr,79ad326d925dffc4,"# Dependances : installer silencieusement seulement ce qui manque.
 # (import-guards deterministes : pas de sortie bruyante 'Requirement already satisfied'
 #  qui fuie le chemin machine, cf #3436 cause A.)
@@ -4339,43 +4339,178 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,a3e354f6,markdown,fr,1a
 | `Normal` | Priors traits, vraisemblance notes | $\mu, \sigma$ |
 | `HalfNormal` | Priors bruit | $\sigma$ |
 | `Deterministic` | Produit scalaire uTv | Valeur determinee |",,,,,,,,1a3eac3077d3e94b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,fd87064a,markdown,fr,5546ca3a1d4e669f,"## 9. Exercice 3 : Recommandation de Musique
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,fd87064a,markdown,fr,34dc10f81b8a8145,"## 9. Exercice 3 : Recommandation de Musique
 
-Appliquez la factorisation matricielle a la recommandation de musique.
+Un service de streaming doit recommander des artistes a huit abonnes. Le jeu de donnees, le decoupage entrainement / test et deux references sont **fournis** ; le modele et la comparaison sont **a vous**.
 
-**Consigne** : Completez le code ci-dessous pour :
-1. Définir les observations (3 utilisateurs, 4 artistes)
-2. Construire le modèle PyMC de factorisation
-3. Executer l'inference
-4. Afficher les recommandations pour chaque utilisateur",,,,,,,,5546ca3a1d4e669f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,465fd8c8,code,fr,0f3084b81f01fd79,"# Exercice 3 : Recommandation de musique
-# Artists : 0=DaftPunk, 1=Beatles, 2=Mozart, 3= Nirvana
+**Consigne** : completez le code ci-dessous pour :
+1. Construire le modele PyMC de factorisation matricielle et executer l'inference
+2. Verifier la convergence avec `rapport_diagnostic_strict`
+3. Predire les notes reservees et comparer l'ecart obtenu a celui des **deux** references fournies
+4. Afficher les trois artistes de meilleure note predite pour chaque utilisateur
+5. Commenter les classements d'Alice, de Chloe et le cas de David
 
-# TODO etudiant : definissez les observations
-artists = ['DaftPunk', 'Beatles', 'Mozart', 'Nirvana']
-music_users = ['User1', 'User2', 'User3']
+### Le jeu de donnees
 
-# Indices des observations (utilisateur, artiste, note)
-m_user_obs = np.array([0, 0, 1, 1, 2, 2])
-m_item_obs = np.array([0, 3, 1, 2, 0, 1])
-m_ratings = np.array([5.0, 4.0, 5.0, 3.0, 4.0, 2.0])
+La matrice `m_grille` (8 utilisateurs x 6 artistes) est ecrite en dur, dans un `np.array` litteral : aucun tirage aleatoire, donc le meme jeu a chaque execution, sur toute machine. Les paires jamais notees valent `np.nan`. Les six artistes couvrent volontairement des genres eloignes (electro, pop, rock, classique, jazz) pour que les traits latents aient une structure a trouver ; les gouts ne sont pas ranges en blocs nets, puisque Bruno, qui aime le rock, met 3 a Miles Davis et Hugo, qui vit de classique et de jazz, met 2 aux Beatles. Ces notes atypiques empechent un classement evident par construction.
+
+### La repartition entrainement / test
+
+Sept notes sont **reservees** dans `notes_reservees` : elles sortent de l'entrainement et servent de mesure sur des notes jamais vues. La cellule imprime le compte de notes d'entrainement par utilisateur et par artiste ; le minimum est de trois dans les deux sens, donc aucun utilisateur et aucun artiste n'est absent de l'entrainement. Sans cette garantie, les paires manquantes testeraient un demarrage a froid, pas la factorisation.
+
+### Deux references a battre
+
+La cellule construit deux predictions sans trait latent et imprime leur RMSE sur les sept notes reservees :
+
+- **moyenne globale** : la moyenne des notes d'entrainement, la meme pour toutes les paires. C'est le plancher — un modele qui ne fait pas mieux n'a rien appris ;
+- **moyenne par artiste** : la moyenne d'entrainement de l'artiste (moyenne globale si l'artiste n'a aucune note d'entrainement). C'est le seul effet de popularite.
+
+Sur ce jeu, la moyenne par artiste fait **moins bien** que la moyenne globale : les notes reservees s'ecartent de la moyenne de l'artiste dans un sens propre a chaque auditeur (Rihanna vue par Alice, Nirvana vue par Grace), et une moyenne estimee sur trois a sept notes ne peut pas porter cet ecart. C'est exactement la marge que la personnalisation doit exploiter, et c'est pourquoi les deux references se lisent ensemble : battre la moyenne par artiste sans battre la moyenne globale ne prouve rien.
+
+### Sur ce jeu, un modele sans moyenne reste loin de l'echelle des notes
+
+Les sections 2 et 3 montrent deja ce que produit une prediction reduite au produit scalaire `U[u] . V[i]` : sur une echelle de notes de 1 a 5, les valeurs predites restent bien en dessous, et le RMSE s'en ressent. C'est un resultat **mesure sur ce jeu**, pas une impossibilite mathematique : un prior centre en zero n'impose rien au posterior, et des facteurs appris proches de $(\sqrt{3}, 0)$ des deux cotes donnent deja une prediction proche de trois. Avec vingt-sept notes d'entrainement et des facteurs non contraints, l'inference n'aboutit pas a cette configuration : c'est ce que l'ecart mesure ici, et il recule nettement une fois la moyenne remise dans la prediction. Deux corrections sont possibles, toutes deux presentes dans le carnet :
+
+- **centrer** : ajuster le modele sur `m_ratings - moyenne_globale`, puis remettre `moyenne_globale` dans la note predite (le chemin le plus court) ;
+- **biais additifs** : ajouter des biais utilisateur et artiste, comme `mf_model2` dans la section 3.
+
+Sans l'une des deux, la comparaison aux references ne dit rien de la personnalisation : l'ecart mesure vient de l'absence de moyenne, pas de la qualite des traits.
+
+Attendez-vous a ce que `rapport_diagnostic_strict` ne tienne pas ses quatre criteres : avec aussi peu de notes et des facteurs non contraints, des divergences apparaissent sur ce jeu aussi. Le rapport se lit et se commente, comme dans les sections 2 et 3 ; il ne se suppose pas vert.
+
+### Ce que la sortie doit montrer
+
+- Les notes predites pour les sept paires reservees, l'ecart a la note reelle, et le RMSE a comparer aux deux references ;
+- Un classement des artistes pour deux profils contrastes : Alice (electro / pop, rejette le grunge) et Chloe (classique / jazz, basse sur la pop) ;
+- Le cas de David, dont **toutes** les notes observees valent 3.0 : le modele n'a chez lui aucune preference a exploiter, et ses recommandations doivent rester proches de la moyenne. Un modele qui lui invente un gout tranche signale un probleme de prior ou de surapprentissage.",,,,,,,,34dc10f81b8a8145,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,465fd8c8,code,fr,4327c91a4d793ef4,"# Exercice 3 : recommandation de musique
+# Artistes : 0 = Daft Punk, 1 = The Beatles, 2 = Mozart,
+#            3 = Nirvana,   4 = Miles Davis, 5 = Rihanna
+
+artists = ['Daft Punk', 'The Beatles', 'Mozart', 'Nirvana', 'Miles Davis', 'Rihanna']
+music_users = ['Alice', 'Bruno', 'Chloe', 'David', 'Emma', 'Farid', 'Grace', 'Hugo']
+
+# Matrice des notes collectees, 8 utilisateurs x 6 artistes.
+# np.nan = paire jamais notee : rien n'a ete collecte pour elle.
+# Les valeurs sont ecrites en dur, sans tirage aleatoire : le jeu se rejoue a
+# l'identique sur toute machine, et les ecarts mesures sont comparables.
+m_grille = np.array([
+    [5.0, 3.0, np.nan, 2.0, np.nan, 4.0],   # Alice : electro / pop, rejette le grunge
+    [np.nan, 5.0, 2.0, 5.0, 3.0, np.nan],   # Bruno : rock
+    [np.nan, 3.0, 5.0, np.nan, 4.0, 2.0],   # Chloe : classique / jazz
+    [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],         # David : tout au neutre (cas incertain)
+    [4.0, 4.0, np.nan, 1.0, np.nan, 5.0],   # Emma  : pop
+    [np.nan, 2.0, 4.0, np.nan, 5.0, 3.0],   # Farid : jazz / soul
+    [np.nan, 5.0, 1.0, 4.0, np.nan, 2.0],   # Grace : rock classique
+    [2.0, 2.0, 4.0, np.nan, 4.0, np.nan],   # Hugo  : classique / jazz
+])
+
+# Repartition train / test : les notes reservees sortent de l'entrainement et
+# servent a mesurer l'ecart du modele sur des notes qu'il n'a jamais vues.
+notes_reservees = [
+    ('Alice', 'Rihanna', 4.0),
+    ('Bruno', 'Miles Davis', 3.0),
+    ('Chloe', 'The Beatles', 3.0),
+    ('Emma', 'Daft Punk', 4.0),
+    ('Farid', 'Rihanna', 3.0),
+    ('Grace', 'Nirvana', 4.0),
+    ('Hugo', 'Miles Davis', 4.0),
+]
 
 n_mu = len(music_users)
 n_mi = len(artists)
 n_mt = 2
 
-print(""Exercice a completer : ajoutez le modele PyMC et l'inference ci-dessous."")
-print(f""Users: {music_users}, Artists: {artists}"")
-print(f""Observations: {len(m_ratings)} notes"")
+idx_user = {nom: i for i, nom in enumerate(music_users)}
+idx_item = {nom: j for j, nom in enumerate(artists)}
 
-# TODO etudiant : construisez et executez le modele de factorisation ici
-# Indice : inspirez-vous du modele mf_model2 ci-dessus
-# Etape 1 : definir le modele avec pm.Model()
-# Etape 2 : definir les priors U, V et sigma
-# Etape 3 : definir la vraisemblance
-# Etape 4 : echantillonner avec pm.sample(chains=4)
-# Etape 5 : afficher les predictions et recommandations",,,,,,,,0f3084b81f01fd79,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,f5156a33,markdown,fr,730b3ceefd6ae030,"## Conclusion
+# Masque des paires reservees, puis masque d'entrainement : une paire entre en
+# entrainement si elle porte une note et qu'elle n'est pas reservee.
+est_reservee = np.zeros(m_grille.shape, dtype=bool)
+for nom_user, nom_item, _ in notes_reservees:
+    est_reservee[idx_user[nom_user], idx_item[nom_item]] = True
+
+masque_train = ~np.isnan(m_grille) & ~est_reservee
+m_user_obs, m_item_obs = np.nonzero(masque_train)
+m_ratings = m_grille[m_user_obs, m_item_obs]
+
+# Controle de la repartition : ni un utilisateur ni un artiste ne doit sortir
+# de l'entrainement, sinon le test mesure un demarrage a froid.
+notes_par_user = np.bincount(m_user_obs, minlength=n_mu)
+notes_par_item = np.bincount(m_item_obs, minlength=n_mi)
+print(f""Notes collectees : {int((~np.isnan(m_grille)).sum())} | ""
+      f""entrainement : {len(m_ratings)} | reservees : {len(notes_reservees)}"")
+print(""Notes d'entrainement par utilisateur : ""
+      + "", "".join(f""{n} {c}"" for n, c in zip(music_users, notes_par_user)))
+print(""Notes d'entrainement par artiste : ""
+      + "", "".join(f""{n} {c}"" for n, c in zip(artists, notes_par_item)))
+print(f""Minimum par utilisateur : {notes_par_user.min()} | minimum par artiste : {notes_par_item.min()}"")
+
+# Deux references sans trait latent, fournies pour situer le modele.
+# La moyenne globale est le plancher ; la moyenne par artiste ne porte que
+# l'effet de popularite.
+somme_par_item = np.bincount(m_item_obs, weights=m_ratings, minlength=n_mi)
+moyenne_par_item = np.divide(somme_par_item, notes_par_item,
+                             out=np.full(n_mi, np.nan), where=notes_par_item > 0)
+moyenne_globale = float(m_ratings.mean())
+
+
+def reference_moyenne_globale(nom_artiste):
+    """"""Note predite : la moyenne d'entrainement, la meme pour toutes les paires.""""""
+    return moyenne_globale
+
+
+def reference_moyenne_artiste(nom_artiste):
+    """"""Note predite : moyenne d'entrainement de l'artiste, moyenne globale a defaut.""""""
+    moyenne = moyenne_par_item[idx_item[nom_artiste]]
+    return moyenne_globale if np.isnan(moyenne) else float(moyenne)
+
+
+references = {
+    'moyenne globale': reference_moyenne_globale,
+    'moyenne par artiste': reference_moyenne_artiste,
+}
+# Notes attendues et predictions des references sur les paires reservees : le
+# meme vecteur notes_attendues sert a votre etape 3, pour que les ecarts soient
+# comparables d'un modele a l'autre.
+notes_attendues = np.array([note for _, _, note in notes_reservees])
+predictions_references = {
+    nom: np.array([reference(nom_item) for _, nom_item, _ in notes_reservees])
+    for nom, reference in references.items()
+}
+
+print(f""\nReferences sans trait latent, sur les {len(notes_reservees)} notes reservees :"")
+for nom, predite in predictions_references.items():
+    rmse = float(np.sqrt(np.mean((predite - notes_attendues) ** 2)))
+    print(f""  RMSE {nom:21s} = {rmse:.3f}"")
+print(f""\n  {'Paire reservee':21s} attendu  | "" + "" | "".join(
+    f""{nom:>17s}"" for nom in predictions_references))
+for k, (nom_user, nom_item, note) in enumerate(notes_reservees):
+    print(f""  {nom_user + ' x ' + nom_item:21s} {note:>5.1f}    | "" + "" | "".join(
+        f""{predite[k]:>17.3f}"" for predite in predictions_references.values()))
+
+print(""\nExercice a completer : ajoutez le modele PyMC et l'inference ci-dessous."")
+
+# TODO etudiant : etapes 1 a 4
+# Etape 1 : construisez le modele pm.Model() avec U (n_mu x n_mt), V (n_mi x n_mt)
+#           et sigma, puis ajustez-le sur m_ratings - moyenne_globale et ajoutez
+#           moyenne_globale a la note predite : sur ce jeu, un produit scalaire
+#           de facteurs non centres mesure un ecart bien plus grand que celui
+#           des references, et le centrage le fait reculer. Variante vue en
+#           section 3 : des biais utilisateur et artiste, comme mf_model2,
+#           jouent le meme role.
+# Etape 2 : vraisemblance normale sur les SEULES observations d'entrainement
+#           (m_user_obs, m_item_obs, m_ratings), puis pm.sample(..., random_seed=42)
+#           et rapport_diagnostic_strict(trace, 'musique')
+# Etape 3 : predisez les sept notes reservees, calculez votre RMSE sur
+#           notes_attendues et comparez-la aux deux RMSE imprimes ci-dessus
+# Etape 4 : affichez les trois artistes de meilleure note predite pour chaque
+#           utilisateur, puis commentez Alice, Chloe et le cas de David (tout a 3.0)
+
+rmse_modele = None      # TODO etudiant : RMSE de votre modele sur les notes reservees
+recommendations = None  # TODO etudiant : dict utilisateur -> liste de trois artistes
+",,,,,,,,4327c91a4d793ef4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,f5156a33,markdown,fr,8cfc5800f2d24b24,"## Conclusion
 
 Les systèmes de recommandation bayesiens estiment les préférences utilisateur a partir d'interactions observees, avec une quantification de l'incertitude.
 
@@ -4403,9 +4538,9 @@ Les systèmes de recommandation bayesiens estiment les préférences utilisateur
 
 **Relations à la série.**
 
-- **PyMC-15 ↔ Infer-15** (jumeau .NET) : PR #8331 (c.850) ajoute les mêmes références canoniques au notebook C# (Infer.NET), avec en supplement Minka 2001 (EP) et Wang-Blei 2011 (collaborative topic modeling). Le jumeau PyMC (ici) utilise **NUTS** sur PMF ; le jumeau Infer.NET utilise **EP** sur Variable.Gaussian + Factorisation. Stack et algorithme distincts, substance coherente.
-- **PyMC-15 ↔ PyMC-19** (Survival Analysis) : PR #8302 (c.844) ajoute Kaplan-Meier 1958 + Cox 1972 + Weibull 1951 — pattern axis-1 appliqué au sub-grain survival.
-- **PyMC-15 ↔ PyMC-18** (Change-Point) : PR #8314 (c.847) ajoute Adams & MacKay 2007 + Western & Harrison 1989 + Fearnhead 2006 — pattern axis-1 applique au sub-grain change-point.
+- **PyMC-14 ↔ Infer-14** (jumeau .NET) : les deux jumeaux citent les mêmes références canoniques, avec en supplément côté C# Minka 2001 (EP) et Wang-Blei 2011 (collaborative topic modeling). Le jumeau PyMC (ici) utilise **NUTS** sur PMF ; le jumeau Infer.NET utilise **EP** sur Variable.Gaussian + Factorisation. Stack et algorithme distincts, substance coherente.
+- **PyMC-14 ↔ PyMC-18** (Survival Analysis) : le carnet survival cite ses fondations propres (Kaplan-Meier 1958, Cox 1972, Weibull 1951) — même pattern de bibliographie par sous-grain.
+- **PyMC-14 ↔ PyMC-17** (Change-Point) : le carnet change-point cite ses fondations propres (Adams & MacKay 2007, Western & Harrison 1989, Fearnhead 2006) — même pattern de bibliographie par sous-grain.
 
 **Pour aller plus loin.**
 
@@ -4416,16 +4551,16 @@ Les systèmes de recommandation bayesiens estiment les préférences utilisateur
 
 ***
 
-**Navigation** : [PyMC-14](PyMC-13-Sequences.ipynb) | **PyMC-15** | [Infer.NET original](../Infer/Infer-14-Recommenders.ipynb) | [Index](README.md)",,,,,,,,730b3ceefd6ae030,,,,,,,,,,,,,,,
+**Navigation** : [PyMC-13](PyMC-13-Sequences.ipynb) | **PyMC-14** | [Infer.NET original](../Infer/Infer-14-Recommenders.ipynb) | [Index](README.md)",,,,,,,,8cfc5800f2d24b24,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,ref-pmf-recommenders,markdown,fr,6797c93ac5a68bbe,"
 ## References
 
 - **Salakhutdinov, R. and Mnih, A. (2008).** *Bayesian Probabilistic Matrix Factorization Using Markov Chain Monte Carlo.* In Proceedings of the 25th International Conference on Machine Learning (ICML '08), 880-887. doi:10.1145/1390156.1390267 — Le modèle PMF bayesien (priors gaussiens sur les facteurs U, V, inference MCMC) implemente dans ce notebook.
 - **Koren, Y., Bell, R. and Volinsky, C. (2009).** *Matrix Factorization Techniques for Recommender Systems.* IEEE Computer, 42(8), 30-37. doi:10.1109/MC.2009.263 — Synthese des techniques de factorisation matricielle popularisees par le Netflix Prize (biais utilisateurs/items, cold-start).
 - **Funk, S. (2006).** *Netflix Update: Try This at Home.* (Blog) — La décomposition SVD appliquee aux recommandations, originelle du Netflix Prize.",,,,,,,,6797c93ac5a68bbe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,65abe950,markdown,fr,66a6ad1aa2692e8b,"# PyMC-16 : Processus Gaussiens et frontières non linéaires
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,65abe950,markdown,fr,d29e08f73b1c097a,"# PyMC-15 : Processus Gaussiens et frontières non linéaires
 
-**Navigation** : [Index](../README.md) | [<< PyMC-15](PyMC-14-Recommenders.ipynb) | [PyMC-17 >>](PyMC-16-Kalman-Filter.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-14](PyMC-14-Recommenders.ipynb) | [PyMC-16 >>](PyMC-16-Kalman-Filter.ipynb)
 
 **Équivalent Infer.NET** : [Infer-15-Sparse-Gaussian-Process](../Infer/Infer-15-Sparse-Gaussian-Process.ipynb)
 
@@ -4445,7 +4580,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,65abe950,mar
 - **Exécuter le GP scalable** (HSGP) : mur $O(N^3)$ du dense, budgets de bases, mesure temps/qualité à $N=200$ puis $N=1200$
 
 > Ce notebook est le port Python (PyMC) du notebook Infer.NET [Infer-15-Sparse-Gaussian-Process](../Infer/Infer-15-Sparse-Gaussian-Process.ipynb). L'API PyMC (`pm.gp`) diffère de l'API Infer.NET (`SparseGP`) mais le paradigme — un prior gaussien sur les fonctions, bruité puis seuillée pour la classification — est identique.
-",,,,,,,,66a6ad1aa2692e8b,,,,,,,,,,,,,,,
+",,,,,,,,d29e08f73b1c097a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,1f6d5047,markdown,fr,a8702c74eeb41eef,"## 1. Le processus gaussien : un prior sur des fonctions
 
 Un **processus gaussien (GP)** est une distribution de probabilité sur des fonctions : pour tout ensemble fini de points, les valeurs de la fonction suivent conjointement une loi gaussienne. Le GP est specifie par sa fonction **moyenne** $m(x)$ (souvent nulle) et sa fonction de **covariance** $k(x, x')$ — le **noyau**.
@@ -4508,8 +4643,8 @@ plt.show()
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,ccae21d8,markdown,fr,37202f0e1ee13871,"## 2. Le dataset « donut » : deux classes non linéairement séparables
 
 On construit un jeu de données en forme d'anneau : un **disque intérieur** (classe 0) entouré d'un **anneau extérieur** (classe 1). Aucun hyperplan (frontière linéaire) ne peut séparer ces deux classes — c'est précisément la situation ou un classifieur linéaire (régression logistique) échoue et ou un GP brille.",,,,,,,,37202f0e1ee13871,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,4aecd54c,code,fr,953dfa67958b904c,"# Dataset ""donut"" : disque interieur (classe 0) + anneau exterieur (classe 1).
-# Memes parametres que le notebook Infer-16 (seed 7) pour un equivalent reproductible.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,4aecd54c,code,fr,d3b82b411c68dd94,"# Dataset ""donut"" : disque interieur (classe 0) + anneau exterieur (classe 1).
+# Memes parametres que le notebook Infer-15 (seed 7) pour un equivalent reproductible.
 rng = np.random.default_rng(7)
 inputs_inner = []
 for _ in range(8):
@@ -4539,7 +4674,7 @@ plt.xlabel(""x1"")
 plt.ylabel(""x2"")
 plt.tight_layout()
 plt.show()
-",,,,,,,,953dfa67958b904c,,,,,,,,,,,,,,,
+",,,,,,,,d3b82b411c68dd94,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,95d51c4c,markdown,fr,11c1f4e26523dd94,"## 3. Modèle : classification GP logistique (lien logit)
 
 On pose un **prior GP** sur la fonction de score $f(x)$, de moyenne nulle et de covariance RBF. La classification est **logistique** (lien **logit**) : la probabilité de la classe 1 est $\sigma(f(x)) = 1/(1+e^{-f(x)})$ (sigmoïde logistique).
@@ -4648,7 +4783,7 @@ for tp, p in zip(test_points, p_test):
     print(f""  x={tp} : P(classe 1) = {p:.2f} -> classe {int(p > 0.5)}"")
 print(""\nLecture : centre -> classe 0, anneau -> classe 1, mi-rayon -> incertain."")
 ",,,,,,,,91b19fcb48a8b668,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,72efa4e4,markdown,fr,a6ca292ebf46a916,"## 5. Effet de la longueur de corrélation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,72efa4e4,markdown,fr,3b8a082c7c6bc62e,"## 5. Effet de la longueur de corrélation
 
 La longueur de corrélation $\ell$ contrôle la **souplesse** de la frontière :
 
@@ -4656,12 +4791,12 @@ La longueur de corrélation $\ell$ contrôle la **souplesse** de la frontière :
 - $\ell$ **grand** ($\gg 1$) : fonctions très lisses, frontière quasi-linéaire — risque de **sous-apprentissage** (panneau `ls=5.0` de la section 1).
 - $\ell$ **apris** : le prior `LogNormal` + NUTS laisse les données choisir le $\ell$ optimal (moyenne posterieure affichée après l'inference ci-dessus).
 
-C'est l'un des avantages du GP **bayesien** sur un noyau a hyperparamètre fixe : l'incertitude sur $\ell$ est propagee dans les predictions, et le modèle peut desactiver de lui-même les echelles de bruit inutiles (Automatic Relevance Determination, cf. [PyMC-10](PyMC-09-Model-Selection.ipynb)). L'exercice 3 ci-dessous invite a vérifier empiriquement l'effet d'un prior concentré sur $\ell$.
+C'est l'un des avantages du GP **bayesien** sur un noyau a hyperparamètre fixe : l'incertitude sur $\ell$ est propagee dans les predictions, et le modèle peut desactiver de lui-même les echelles de bruit inutiles (Automatic Relevance Determination, cf. [PyMC-09](PyMC-09-Model-Selection.ipynb)). L'exercice 3 ci-dessous invite a vérifier empiriquement l'effet d'un prior concentré sur $\ell$.
 
-> *Origine.* L'**Automatic Relevance Determination** (ARD) — un hyperparametre $\ell_d$ distinct par dimension d'entree $d$, permettant au modèle de desactiver de lui-même les dimensions non-pertinentes — a ete formalise par Neal (Neal, R. M., 1996, *Bayesian Learning for Neural Networks*, These de doctorat, Universite de Toronto, [www.cs.toronto.edu/~radford/bnval.html](https://www.cs.toronto.edu/~radford/bnval.html), §1.2.3 + §4.3) dans le cadre des réseaux de neurones bayesiens avec priors sur les hyperparamètres d'echelle. Ce notebook utilise un seul $\ell$ partage pour toutes les dimensions (modèle simplifie) ; le passage a l'ARD consiste a remplacer le scalar `ell` par un vecteur `ells = [ell_1, ..., ell_D]` avec un prior par dimension. Rasmussen & Williams 2006 §5.1 detaille la formulation ARD complete pour les GP.",,,,,,,,a6ca292ebf46a916,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,8cc890a3,markdown,fr,5ef94d16956121b7,"## 7. Synthese
+> *Origine.* L'**Automatic Relevance Determination** (ARD) — un hyperparametre $\ell_d$ distinct par dimension d'entree $d$, permettant au modèle de desactiver de lui-même les dimensions non-pertinentes — a ete formalise par Neal (Neal, R. M., 1996, *Bayesian Learning for Neural Networks*, These de doctorat, Universite de Toronto, [www.cs.toronto.edu/~radford/bnval.html](https://www.cs.toronto.edu/~radford/bnval.html), §1.2.3 + §4.3) dans le cadre des réseaux de neurones bayesiens avec priors sur les hyperparamètres d'echelle. Ce notebook utilise un seul $\ell$ partage pour toutes les dimensions (modèle simplifie) ; le passage a l'ARD consiste a remplacer le scalar `ell` par un vecteur `ells = [ell_1, ..., ell_D]` avec un prior par dimension. Rasmussen & Williams 2006 §5.1 detaille la formulation ARD complete pour les GP.",,,,,,,,3b8a082c7c6bc62e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,8cc890a3,markdown,fr,d38b35fec818b723,"## 7. Synthese
 
-| Aspect | Infer.NET (Infer-16) | PyMC (ce notebook) |
+| Aspect | Infer.NET (Infer-15) | PyMC (ce notebook) |
 |--------|----------------------|---------------------|
 | API | `SparseGP`, `Variable.FunctionEvaluate` | `pm.gp.Latent` (dense) + `pm.gp.HSGP` (scalable) |
 | Inference | EP (Expectation Propagation) | NUTS (MCMC) |
@@ -4702,7 +4837,7 @@ Le paradigme est le même en Infer.NET et PyMC ; seule l'API et la méthode d'in
 - Thème connexe : [PyMC-10-Topic-Models](PyMC-10-Topic-Models.ipynb) (LDA, modèle hiérarchique différent).
 - Thème connexe : [PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb) (sélection bayesienne de modèle, lie a ARD).
 - Thème connexe : [PyMC-14-Recommenders](PyMC-14-Recommenders.ipynb) (Recommenders, factorisation matricielle, méthode complémentaire pour données de grande dimension).
-",,,,,,,,5ef94d16956121b7,,,,,,,,,,,,,,,
+",,,,,,,,d38b35fec818b723,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,e01d2267,code,fr,b681e431c8e9fe9c,"# Exercice 1 : noyau Matern au lieu de RBF.
 # Remplacez le noyau ExpQuad (RBF) par un noyau Matern (pm.gp.cov.Matern52) et comparez
 # la frontière de décision. Le Matern est moins lisse — la frontière devrait l'être aussi.
@@ -4734,7 +4869,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,e1cc9158,cod
 
 prior_ls_result = None  # TODO étudiant : modèle avec prior concentré grand sur ls
 print(""Exercice 3 à compléter : effet du prior sur la longueur de corrélation."")",,,,,,,,d21e444fb7dad881,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,e7e17984,markdown,fr,e64b135eb7c13a71,"***
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,e7e17984,markdown,fr,fc23402aa9fd2dd8,"***
 
 ## Pour aller plus loin
 
@@ -4744,12 +4879,12 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,e7e17984,mar
 - **Sparse GP variational** : voir Titsias (2009) pour la formulation variationnelle des inducing points (Titsias trick), et Hensman et al. (2013) pour le passage a l'echelle via la stochastique variational inference (utilise par PyMC pour les grandes datasets).
 - **Unifying view** : Quinonero-Candela & Rasmussen (2005) propose une synthese comparative des méthodes sparse (DTC, FITC, VFE) qui aide a choisir entre inducing points, HSGP et marginal sparse selon le contexte.
 
-**Navigation** : [Index](../README.md) | [<< PyMC-15](PyMC-14-Recommenders.ipynb) | [PyMC-17 >>](PyMC-16-Kalman-Filter.ipynb)
-",,,,,,,,e64b135eb7c13a71,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,69155af3,markdown,fr,54d6e82afcfe7681,"# 17. Filtre de Kalman : systèmes dynamiques lineaires gaussiens (jumeau PyMC)
+**Navigation** : [Index](../README.md) | [<< PyMC-14](PyMC-14-Recommenders.ipynb) | [PyMC-16 >>](PyMC-16-Kalman-Filter.ipynb)
+",,,,,,,,fc23402aa9fd2dd8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,69155af3,markdown,fr,d0de59463d80f53b,"# 17. Filtre de Kalman : systèmes dynamiques lineaires gaussiens (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python.** Ce notebook est le **jumeau Python** de
-> [Infer-17 -- Filtre de Kalman](../Infer/Infer-16-Kalman-Filter.ipynb) (Infer.NET, EP).
+> [Infer-16 -- Filtre de Kalman](../Infer/Infer-16-Kalman-Filter.ipynb) (Infer.NET, EP).
 > Il reprend le **même terrain de jeu** (même germe 42, mêmes paramètres -- la
 > trajectoire réalisée diffère entre `numpy` et .NET, voir la lecture du
 > résultat) afin que les metriques soient **comparables** entre les deux moteurs,
@@ -4758,7 +4893,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,69155af3,markdown,fr,5
 > Infer.NET suppose connues.
 
 **Duree estimee** : 55 minutes
-**Prerequis** : [PyMC-14 -- Sequences (HMM)](PyMC-13-Sequences.ipynb), [PyMC-2 -- Melanges gaussiens](PyMC-02-Gaussian-Mixtures.ipynb)
+**Prerequis** : [PyMC-13 -- Sequences (HMM)](PyMC-13-Sequences.ipynb), [PyMC-2 -- Melanges gaussiens](PyMC-02-Gaussian-Mixtures.ipynb)
 
 ## Objectifs
 
@@ -4766,10 +4901,10 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,69155af3,markdown,fr,5
 - Implementer la **recursion de filtrage bayesien** en forme fermee (equation exacte, equivalente de l'EP d'Infer.NET)
 - **Mesurer** l'apport du filtre : MSE filtree < MSE brute, variance posterieure bornee
 - **Value-add PyMC** : estimer $Q$, $R$ et le drift par MCMC (NUTS) au lieu de les supposer connus
-",,,,,,,,54d6e82afcfe7681,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,2d6746bb,markdown,fr,78b2a1aa1e55a181,"## 1. Motivation : le HMM a etat continu
+",,,,,,,,d0de59463d80f53b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,2d6746bb,markdown,fr,bb850cc262f510db,"## 1. Motivation : le HMM a etat continu
 
-[PyMC-14](PyMC-13-Sequences.ipynb) modelisait des sequences ou l'etat cache etait
+[PyMC-13](PyMC-13-Sequences.ipynb) modelisait des sequences ou l'etat cache etait
 **discret** (quel temps, quel mot de la phrase). Mais de nombreux systèmes suivent une
 grandeur **continue** : position d'un mobile, temperature d'un four, prix d'un actif.
 Le **filtre de Kalman** (Kalman, 1960) est l'equivalent exact du HMM pour l'etat continu
@@ -4785,8 +4920,8 @@ Parce que tout est **gaussien et lineaire**, l'inference reste **exactement conj
 le posterieur est gaussien a chaque pas, calculable en temps ferme. C'est le cas d'école
 ou la recursion fermee (et l'EP d'Infer.NET) resout l'inference **de maniere exacte**.
 > *Papier fondateur.* Le **filtre de Kalman** est introduit par **Kalman, R. E. (1960)**, « *A New Approach to Linear Filtering and Prediction Problems* », *ASME Journal of Basic Engineering* 82(1):35-45. L'article fondateur qui demontre que la recursion predict-update est *exacte* sur les systemes lineaires-gaussiens, avec une solution en forme fermee. **Rauch, H. E., Tung, F. & Striebel, C. T. (1965)**, « *Maximum likelihood estimates of linear dynamic systems* », *AIAA Journal* 3(8):1445-1450, introduisent le **lisseur RTS** (Rauch-Tung-Striebel) qui utilise aussi les observations *futures* pour re-estimer chaque etat : sous modele correctement specifie, sa MSE lisse n'excede pas celle du filtre en esperance -- sans garantie sur chaque trajectoire simulee. **Sage, A. P. & Melsa, J. L. (1971)**, « *Estimation Theory with Applications to Communications and Control* », McGraw-Hill, offrent la presentation classique de reference du filtre et du lisseur dans un cadre unifie (filtrage, prediction, lissage).
-",,,,,,,,78b2a1aa1e55a181,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,b5637151,code,fr,0ace70d8ed481246,"# --- Imports + terrain de jeu (IDENTIQUE a Infer-17 pour comparabilite) ---
+",,,,,,,,bb850cc262f510db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,b5637151,code,fr,236c1538a469bc0d,"# --- Imports + terrain de jeu (IDENTIQUE a Infer-16 pour comparabilite) ---
 import sys
 import numpy as np
 import pymc as pm
@@ -4801,7 +4936,7 @@ warnings.filterwarnings(""ignore"", message=""overflow encountered in dot"", cat
 # ancre le diagnostic dans l'environnement qui l'a produit (mesure et tableau : cellule 10).
 print(f""PyMC {pm.__version__}, PyTensor {pytensor.__version__}, ArviZ {az.__version__}, Python {sys.version.split()[0]}"")
 
-# Meme germe, meme parametres qu'Infer-17 (jumeau .NET) -- les metriques doivent coller.
+# Meme germe, meme parametres qu'Infer-16 (jumeau .NET) -- les metriques doivent coller.
 rng = np.random.default_rng(42)
 T = 50
 drift = 0.3        # d : vitesse constante (terme de pente)
@@ -4820,8 +4955,8 @@ obs = trueState + np.sqrt(obsVar) * rng.standard_normal(T)
 
 print(f""Trajectoire generee : T={T} pas, drift={drift}, Q={processVar}, R={obsVar}"")
 print(f""R >> Q : le capteur est tres bruite -> le filtre a beaucoup de marge pour aider."")
-print(f""5 premieres observations : {', '.join(f'{v:.2f}' for v in obs[:5])}"")",,,,,,,,0ace70d8ed481246,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,3d3c8157,markdown,fr,d912b6c59b69efa9,"## 2. La recursion de Kalman = filtrage bayesien pas-a-pas
+print(f""5 premieres observations : {', '.join(f'{v:.2f}' for v in obs[:5])}"")",,,,,,,,236c1538a469bc0d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,3d3c8157,markdown,fr,3f003b30e7df8a8d,"## 2. La recursion de Kalman = filtrage bayesien pas-a-pas
 
 Le filtre de Kalman est la **recurrence bayesienne** sur l'etat continu. A chaque pas :
 
@@ -4837,10 +4972,10 @@ $$\text{gain } K_t = \frac{\sigma^2_{\text{pred}}}{\sigma^2_{\text{pred}} + R}, 
 \mu_t = \mu_{\text{pred}} + K_t (y_t - \mu_{\text{pred}}), \quad
 \sigma^2_t = (1 - K_t)\, \sigma^2_{\text{pred}}$$
 
-C'est l'exact equivalent de ce que resout l'EP d'Infer.NET (voir [Infer-17](../Infer/Infer-16-Kalman-Filter.ipynb))
+C'est l'exact equivalent de ce que resout l'EP d'Infer.NET (voir [Infer-16](../Infer/Infer-16-Kalman-Filter.ipynb))
 -- ici implemente a la main, sans compilateur de modèle.
 > *Reference de cours.* La recursion predict-update est developpee en detail dans **Maybeck, P. S. (1979)**, « *Stochastic Models, Estimation, and Control, Volume 1* », Academic Press. Chap. 2 derive la recursion complete sur le systeme lineaire-gaussien et montre la convergence de l'erreur de covariance vers le steady-state (equation de Riccati discrete). Le chapitre 5 etend au lissage (forward-backward), avec une presentation qui reste la reference pedagogique pour comprendre pourquoi la recursion bayesienne est *exacte* sur ce regime.
-",,,,,,,,d912b6c59b69efa9,,,,,,,,,,,,,,,
+",,,,,,,,3f003b30e7df8a8d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,c5dbd097,code,fr,4427a87128c5962c,"# --- Recursion du filtre de Kalman en forme fermee (equivalent exact de l'EP Infer.NET) ---
 filtMean = np.empty(T)
 filtVar = np.empty(T)
@@ -4900,11 +5035,11 @@ print(f""MSE observations brutes : {rawMSE:.3f}   (variance de capteur R = {obsV
 print(f""MSE estimation filtree  : {filtMSE:.3f}"")
 print(f""Reduction d'erreur      : {(1.0 - filtMSE / rawMSE) * 100:.1f}%   (filtre vs brut)"")
 print(f""Variance post. finale   : {filtVar[T - 1]:.3f}   (vs R = {obsVar:.1f})"")",,,,,,,,6fdd3368185f05b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,4b674bb3,markdown,fr,64da4627c919ed23,"### Lecture du résultat
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,4b674bb3,markdown,fr,7104e40752cad75c,"### Lecture du résultat
 
 Le filtre **reduit fortement l'erreur** : la MSE filtree est nettement inferieure a la MSE
 des observations brutes. A noter : les **variances posterieures** (finale $\approx 1{,}19$,
-moyenne $\approx 1{,}25$) sont **identiques au jumeau Infer.NET** (Infer-17), car elles ne
+moyenne $\approx 1{,}25$) sont **identiques au jumeau Infer.NET** (Infer-16), car elles ne
 dependent que des paramètres $Q, R, d$ (le steady-state de l'equation de Riccati) et non du
 bruit realise. En revanche, les **MSE** (qui comparent a la *vraie trajectoire*) différent
 legerement entre les deux notebooks : le germe 42 produit des trajectoires différentes sous
@@ -4921,10 +5056,10 @@ Deux mécanismes sont visibles sur le graphique ci-dessus :
 - **Incertitude bornee** -- la variance posterieure (+-$\sigma$) se stabilise rapidement
   bien sous $R$ : après une breve phase d'initialisation, le filtre « sait » ou il en est,
   et cette connaissance ne se degrade pas avec le temps (equation de Riccati discrete).
-",,,,,,,,64da4627c919ed23,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,fa741adf,markdown,fr,04236009908d66f9,"## 4. Value-add PyMC : estimer $Q$, $R$ et le drift par MCMC
+",,,,,,,,7104e40752cad75c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,fa741adf,markdown,fr,aae5fd024e76a79c,"## 4. Value-add PyMC : estimer $Q$, $R$ et le drift par MCMC
 
-Jusqu'ici, comme Infer-17, on a **suppose connus** $Q$, $R$ et le drift. C'est la limite
+Jusqu'ici, comme Infer-16, on a **suppose connus** $Q$, $R$ et le drift. C'est la limite
 de la recursion fermee : ce sont des **entrees**, pas des **sorties**. En pratique, on
 ignore souvent le vrai bruit de capteur et la vraie dynamique -- on aimerait les
 **estimer** a partir des données.
@@ -4932,7 +5067,7 @@ ignore souvent le vrai bruit de capteur et la vraie dynamique -- on aimerait les
 C'est la **value-add PyMC** : on construit un **modèle graphique joint** sur toute la
 trajectoire, avec $Q$, $R$ et le drift comme **variables latentes** munies d'a priori, et
 on laisse NUTS (MCMC) inferer **simultanement** les hyperparametres et la trajectoire
-cachee. C'est l'equivalent du lissage joint (exercice 3 d'Infer-17), mais en estimant en
+cachee. C'est l'equivalent du lissage joint (exercice 3 d'Infer-16), mais en estimant en
 plus les variances -- impossible a la main sans conjugaison sur les hyperparametres.
 
 Le modèle :
@@ -4941,7 +5076,7 @@ $$\sigma_Q, \sigma_R \sim \text{HalfNormal}(2), \quad d \sim \mathcal{N}(0, 1)$$
 $$\Delta x_t \sim \mathcal{N}(d, \sigma_Q), \quad x_t = \sum_{s \le t} \Delta x_s, \quad y_t \sim \mathcal{N}(x_t, \sigma_R)$$
 
 > *Implementation PyMC + NUTS.* Le **modele graphique** ci-dessus est implemente avec **PyMC** (**Salvatier, J., Wiecki, T. V. & Fonnesbeck, C. (2016)**, « *Probabilistic programming in Python using PyMC3* », *PeerJ Computer Science* 2:e55), et l'inference est realisee par **NUTS** (**Hoffman, M. D. & Gelman, A. (2014)**, « *The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo* », *JMLR* 15(47):1593-1623). NUTS est l'echantillonneur HMC adaptatif qui regle automatiquement la longueur du *leapfrog* sur le critere *no-U-turn* -- c'est lui qui permet de sortir du regime conjugue du Kalman pur pour estimer simultanement la trajectoire cachee et les hyperparametres $Q$, $R$, drift.
-",,,,,,,,04236009908d66f9,,,,,,,,,,,,,,,
+",,,,,,,,aae5fd024e76a79c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,1c3fb51b,code,fr,f496ddffbf995c06,"# --- Modele graphique joint : NUTS estime Q, R ET le drift (value-add PyMC) ---
 coords = {""t"": np.arange(T)}
 with pm.Model(coords=coords) as modele_joint:
@@ -5107,14 +5242,14 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,374d16a8,code,fr,d1ddb
 # Indice : state_mean = float(trace_joint.posterior['state'].mean(axis=(0,1))) ; comparer sa MSE.
 print(""Exercice 3 a completer : comparer MSE lisse (joint) vs MSE filtree (sequentiel)."")
 ",,,,,,,,d1ddbd71e084b516,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,9d255904,markdown,fr,50831f823a3cffbe,"## Ponts avec la serie
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,9d255904,markdown,fr,d08a4eb95eb6fb36,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
-| <-> Infer-17 | [Infer-17 -- Filtre de Kalman](../Infer/Infer-16-Kalman-Filter.ipynb) | **Jumeau .NET** (Infer.NET, EP) : même terrain de jeu, mêmes equations exactes. Ce notebook ajoute l'estimation MCMC des hyperparametres. |
-| <-> PyMC-14 | [PyMC-14 -- Sequences (HMM)](PyMC-13-Sequences.ipynb) | HMM a etat **discret** <-> filtre de Kalman a etat **continu** : même squelette markovien (etat cache + observation), nature de l'etat différente |
+| <-> Infer-16 | [Infer-16 -- Filtre de Kalman](../Infer/Infer-16-Kalman-Filter.ipynb) | **Jumeau .NET** (Infer.NET, EP) : même terrain de jeu, mêmes equations exactes. Ce notebook ajoute l'estimation MCMC des hyperparametres. |
+| <-> PyMC-13 | [PyMC-13 -- Sequences (HMM)](PyMC-13-Sequences.ipynb) | HMM a etat **discret** <-> filtre de Kalman a etat **continu** : même squelette markovien (etat cache + observation), nature de l'etat différente |
 | <- PyMC-2 | [PyMC-2 -- Melanges gaussiens](PyMC-02-Gaussian-Mixtures.ipynb) | Le Kalman repose sur la **conjugaison gaussienne** -- PyMC-2 en pose les bases |
-| <-> PyMC-12 | [PyMC-12 -- Modèles hiérarchiques](PyMC-11-Modeles-Hierarchiques.ipynb) | Le modèle joint section 4 est un cas particulier de modèle hiérarchique (hyperparametres $Q, R$ partage sur toute la trajectoire) |
+| <-> PyMC-11 | [PyMC-11 -- Modèles hiérarchiques](PyMC-11-Modeles-Hierarchiques.ipynb) | Le modèle joint section 4 est un cas particulier de modèle hiérarchique (hyperparametres $Q, R$ partage sur toute la trajectoire) |
 
 **Reference fondatrice** : Kalman, R. E. (1960) -- *A New Approach to Linear Filtering and
 Prediction Problems*, ASME Journal of Basic Engineering 82(1). L'article fondateur du
@@ -5139,11 +5274,11 @@ filtre de Kalman -- l'algorithme d'estimation le plus repandu en pratique.
 
 **Relations a la serie.**
 
-- **PyMC-17 <-> Infer-17** (jumeau .NET) : les deux carnets citent les mêmes références fondatrices (Kalman 1960, Rauch-Tung-Striebel 1965, Jazwinski 1970, Maybeck 1979). Le jumeau PyMC (ici) utilise **NUTS joint** pour estimer les hyperparamètres ; le jumeau Infer.NET utilise la recursion fermee avec **EP** sur paramètres supposés connus.
-- **PyMC-17 <-> PyMC-14** (Sequences HMM) : HMM à état **discret** <-> filtre de Kalman à état **continu** : même squelette markovien (état caché + observation), nature de l'état différente (discret vs continu).
-- **PyMC-17 <-> PyMC-15** (Recommenders) : pas de dynamique temporelle commune. Les deux carnets partagent seulement une inférence sur des variables latentes gaussiennes (facteurs de la factorisation PMF, état du filtre).
-- **PyMC-17 <-> PyMC-18** (Change-Point) : même famille de séquences dans le temps. Le filtre suit une dérive continue et récurrente ; le change-point cherche un **unique** changement de régime à un instant inconnu (localisation discrète).
-- **PyMC-17 <-> PyMC-19** (Survival Analysis) : PyMC-19 range la survie dans la même famille temporelle que le HMM et le filtre, mais la quantité modélisée est une **durée** jusqu'à un événement unique, là où le filtre suit une trajectoire récurrente.
+- **PyMC-16 <-> Infer-16** (jumeau .NET) : les deux carnets citent les mêmes références fondatrices (Kalman 1960, Rauch-Tung-Striebel 1965, Jazwinski 1970, Maybeck 1979). Le jumeau PyMC (ici) utilise **NUTS joint** pour estimer les hyperparamètres ; le jumeau Infer.NET utilise la recursion fermee avec **EP** sur paramètres supposés connus.
+- **PyMC-16 <-> PyMC-13** (Sequences HMM) : HMM à état **discret** <-> filtre de Kalman à état **continu** : même squelette markovien (état caché + observation), nature de l'état différente (discret vs continu).
+- **PyMC-16 <-> PyMC-14** (Recommenders) : pas de dynamique temporelle commune. Les deux carnets partagent seulement une inférence sur des variables latentes gaussiennes (facteurs de la factorisation PMF, état du filtre).
+- **PyMC-16 <-> PyMC-17** (Change-Point) : même famille de séquences dans le temps. Le filtre suit une dérive continue et récurrente ; le change-point cherche un **unique** changement de régime à un instant inconnu (localisation discrète).
+- **PyMC-16 <-> PyMC-18** (Survival Analysis) : PyMC-18 range la survie dans la même famille temporelle que le HMM et le filtre, mais la quantité modélisée est une **durée** jusqu'à un événement unique, là où le filtre suit une trajectoire récurrente.
 
 **Pour aller plus loin.**
 
@@ -5154,7 +5289,7 @@ filtre de Kalman -- l'algorithme d'estimation le plus repandu en pratique.
 
 ## Conclusion
 
-Le **filtre de Kalman** est le pont entre le HMM discret de [PyMC-14](PyMC-13-Sequences.ipynb)
+Le **filtre de Kalman** est le pont entre le HMM discret de [PyMC-13](PyMC-13-Sequences.ipynb)
 et le monde continu. Sa puissance tient en trois proprietes : pour les systèmes
 **lineaires gaussiens**, l'inference est **exacte** (conjugaison), **récursive** (un pas a
 la fois, en $O(T)$) et **bornee** (variance posterieure stable).
@@ -5169,22 +5304,22 @@ nul besoin de MCMC -- la forme fermee suffit. C'est en **sortant** de ce regime
 graphique joint et NUTS deviennent necessaires -- et c'est précisément l'angle mort de la
 recursion fermee que PyMC couvre nativement.
 
-*Provenance : série Parité .NET <=> Python, issue #4956.*",,,,,,,,50831f823a3cffbe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,53395130,markdown,fr,e9aee5b56c89100c,"# 18. Detection de Rupture (Change-Point) : inferer le moment d'un changement de regime (jumeau PyMC)
+*Provenance : série Parité .NET <=> Python, issue #4956.*",,,,,,,,d08a4eb95eb6fb36,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,53395130,markdown,fr,9fc62c93db719965,"# 18. Detection de Rupture (Change-Point) : inferer le moment d'un changement de regime (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de `Infer-17-Change-Point.ipynb` (Infer.NET / C#, inférence EP). La specification probabiliste est **identique** ; seul le moteur d'inférence change : EP analytique cote .NET, échantillonnage **CompoundStep** (NUTS + Metropolis) cote Python, car la localisation `cp` est une variable **discrète**.
 
-Ce notebook complète la famille des « séquences dans le temps » : il étend [PyMC-14 (Séquences / HMM)](PyMC-13-Sequences.ipynb) au cas où ce n'est pas l'état qui change à chaque instant, mais la **structure** du processus qui bascule **une seule fois** à un instant inconnu.
+Ce notebook complète la famille des « séquences dans le temps » : il étend [PyMC-13 (Séquences / HMM)](PyMC-13-Sequences.ipynb) au cas où ce n'est pas l'état qui change à chaque instant, mais la **structure** du processus qui bascule **une seule fois** à un instant inconnu.
 
-**Durée estimée** : 50 minutes | **Prérequis** : [PyMC-13-Sequences](PyMC-13-Sequences.ipynb) (HMM).",,,,,,,,e9aee5b56c89100c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,8271b35b,markdown,fr,7578d2c0b50c3e09,"## 1. Motivation : la où le HMM et le filtre de Kalman s'arrêtent
+**Durée estimée** : 50 minutes | **Prérequis** : [PyMC-13-Sequences](PyMC-13-Sequences.ipynb) (HMM).",,,,,,,,9fc62c93db719965,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,8271b35b,markdown,fr,9427b1ac57a4c82f,"## 1. Motivation : la où le HMM et le filtre de Kalman s'arrêtent
 
-[PyMC-14](PyMC-13-Sequences.ipynb) modélise une séquence où l'état caché est **discret** et change à **chaque instant**. Le filtre de Kalman ([Infer-17](../Infer/Infer-16-Kalman-Filter.ipynb)) en est le pendant **continu**. Les deux infèrent un état **récurrent** — un par pas de temps.
+[PyMC-13](PyMC-13-Sequences.ipynb) modélise une séquence où l'état caché est **discret** et change à **chaque instant**. Le filtre de Kalman ([Infer-16](../Infer/Infer-16-Kalman-Filter.ipynb)) en est le pendant **continu**. Les deux infèrent un état **récurrent** — un par pas de temps.
 
 Le **point de rupture** est différent : l'inconnue n'est pas une trajectoire d'états, mais **un unique entier** `cp in {0, ..., N-1}` — l'indice où le processus bascule. On veut le postérieur $p(cp \mid y)$ sur cette **unique** variable structurelle, et les paramètres des deux régimes qu'elle sépare.
 
 > *Origine.* Le **change-point bayésien** a été formalisé en message-passing sur la distribution du *run-length* par Adams & MacKay (Adams & MacKay, 2007, « Bayesian Online Changepoint Detection », *arXiv:0710.3742*). Ce notebook en est l'équivalent **off-line** : PyMC retourne d'un coup la distribution a posteriori sur la localisation de la rupture, là où Adams-MacKay fait du streaming.
-",,,,,,,,7578d2c0b50c3e09,,,,,,,,,,,,,,,
+",,,,,,,,9427b1ac57a4c82f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,b8f8f126,code,fr,c01c387f9284a015,"import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
@@ -5361,12 +5496,12 @@ Le postérieur concentre la rupture autour de **1890–1891** — soit exactemen
 
 Le rapport de convergence confirme l'inférence : tous les critères stricts passent, avec un pire score porté par la variable discrète `cp2` (r_hat 1.0046, ess_bulk ≈ 1129) et **0 divergence NUTS** — la partie continue (les taux) est géométriquement saine, et le `cp2` discret, hors de portée de NUTS, mélange correctement par propositions Metropolis.
 ",,,,,,,,966361231e2f1eb7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,2c56694e,markdown,fr,c790d2ad96383557,"## 4. Vraie rupture ou caprice du bruit ? Le piege de la flexibilite
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,2c56694e,markdown,fr,240d7315146d48b7,"## 4. Vraie rupture ou caprice du bruit ? Le piege de la flexibilite
 
 Un modèle de point de rupture est **flexible** : il peut, si on le laisse faire, trouver une « meilleure » coupure dans n'importe quelle série — y compris du pur bruit. C'est le piège du surajustement. Pour le mesurer, on génère une série **sans rupture** (moyenne constante) et on lui applique le **même** modèle. On quantifie la concentration du postérieur sur `cp` par son **entropie** $H$ (en bits) : $H_{max} = \log_2 N$ pour un postérieur plat (aucune idée sur la localisation), $H \to 0$ pour un postérieur piqué sur un seul indice.
 
-Question posée aux cellules qui suivent : la concentration du postérieur **suffit-elle** à conclure ? Une **vraie** rupture doit faire chuter l'entropie vers 0 ; reste à mesurer ce que donne du pur bruit. Si le bruit concentre lui aussi le postérieur, la seule concentration ne discrimine pas les deux cas. La section mesure donc ce que vaut la **baseline triviale** — un seul régime, une seule moyenne, un seul écart-type — face au modèle à rupture, sur les deux séries, en comparant des vraisemblances maximisées pénalisées du nombre de paramètres (BIC : chaque paramètre supplémentaire doit payer sa flexibilité, c'est le rasoir d'Occam rendu comptable). Le **Bayes factor**, qui donne la version en vraisemblance marginale de ce même arbitrage, est l'objet de [PyMC-10 (Sélection de modèles)](PyMC-09-Model-Selection.ipynb).",,,,,,,,c790d2ad96383557,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,9f088c32,code,fr,5f81385183d82a77,"def H_bits(samples, n):
+Question posée aux cellules qui suivent : la concentration du postérieur **suffit-elle** à conclure ? Une **vraie** rupture doit faire chuter l'entropie vers 0 ; reste à mesurer ce que donne du pur bruit. Si le bruit concentre lui aussi le postérieur, la seule concentration ne discrimine pas les deux cas. La section mesure donc ce que vaut la **baseline triviale** — un seul régime, une seule moyenne, un seul écart-type — face au modèle à rupture, sur les deux séries, en comparant des vraisemblances maximisées pénalisées du nombre de paramètres (BIC : chaque paramètre supplémentaire doit payer sa flexibilité, c'est le rasoir d'Occam rendu comptable). Le **Bayes factor**, qui donne la version en vraisemblance marginale de ce même arbitrage, est l'objet de [PyMC-09 (Sélection de modèles)](PyMC-09-Model-Selection.ipynb).",,,,,,,,240d7315146d48b7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,9f088c32,code,fr,1172304964812e66,"def H_bits(samples, n):
     """"""Entropie de Shannon (bits) d'un posterieur discret empirique.""""""
     counts = np.bincount(samples.astype(int), minlength=n)
     p = counts / counts.sum()
@@ -5417,9 +5552,9 @@ print()
 print(""=> Vraie rupture : H -> 0 (localisation quasi certaine)."")
 print(""=> Pur bruit    : H ~= Hmax (posterieur quasi PLAT) -- le modele N'identifie pas de coupure nette ;"")
 print(""                  il exprime honnetement son incertitude (moyennage MCMC)."")
-print(""=> Test decisif (vraie rupture vs bruit) : Bayes factor (cf. PyMC-10), pas la seule entropie."")
-",,,,,,,,5f81385183d82a77,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,49c71462,markdown,fr,5b9bb88148c7526b,"### Lecture du contrôle par entropie (code[4])
+print(""=> Test decisif (vraie rupture vs bruit) : Bayes factor (cf. PyMC-09), pas la seule entropie."")
+",,,,,,,,1172304964812e66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,49c71462,markdown,fr,1f8eeb2a386cd3a3,"### Lecture du contrôle par entropie (code[4])
 
 La série **avec** rupture pousse l'entropie vers 0 (localisation quasi certaine : ~6,5 bits d'information sur `cp`), tandis que le **contrôle** (pur bruit) laisse une entropie **haute**, proche de $H_{max}$ (postérieur quasi plat : < 1 bit d'information). Le modèle, confronté à une série sans rupture, **n'identifie pas** de coupure nette : l'échantillonnage MCMC, en moyennant sur l'incertitude de `cp`, **exprime honnêtement son ignorance**.
 
@@ -5427,7 +5562,7 @@ C'est une différence marquée avec l'EP d'Infer.NET (côté C#) qui, propageant
 
 Le **verdict strict** du rapport de convergence (seuils `r_hat < 1.01`, `ess_bulk`/`ess_tail > 400`, `0 divergence`) est **INSUFFISANT** pour ce contrôle — et c'est instructif à double titre. La variable discrète `cpC` est la pire de toutes (`r_hat = 1.032`, `ess_bulk = 78.9`, `ess_tail = 106.3`), mais les moyennes continues `mc1`/`mc2` ratent elles aussi les barres strictes (`r_hat = 1.014` et `1.015`, `ess_tail` de 125.0 à 134.8) : quand `cpC` est **non-identifié** (postérieur plat sur les 100 positions), la chaîne Metropolis mélange lentement entre les indices, et les moyennes des segments qu'il sépare deviennent non-identifiées à leur tour. En revanche, **0 divergence NUTS** : la géométrie de la partie continue est saine. L'échec est un échec de **mélange** — Metropolis discret sur `cpC` et non-identification en cascade — et non une pathologie de **divergences NUTS** ; ce sont deux diagnostics distincts, et seules les secondes auraient signalé une géométrie à réexplorer. Ce n'est pas un échec du modèle — c'est l'expression de l'incertitude sur une quantité que les données ne contraignent pas. Pour une lecture méthodique de ces diagnostics (et la distinction entre ESS *par chaîne* et `ess_bulk`), voir **PyMC-02b-Debugging-Python**.
 
-La leçon : la concentration du postérieur signale qu'une coupure est **possible**, mais elle ne tranche pas seule entre « vraie rupture » et « bruit ». La cellule suivante construit l'arbitrage qui tranche : la **baseline triviale** (aucun point de rupture) mise en regard du modèle à rupture sur les **deux séries**, au critère BIC. Le **Bayes factor** de [PyMC-10-Model-Sélection](PyMC-09-Model-Selection.ipynb) en donnera plus loin la version en vraisemblance marginale du même arbitrage.",,,,,,,,5b9bb88148c7526b,,,,,,,,,,,,,,,
+La leçon : la concentration du postérieur signale qu'une coupure est **possible**, mais elle ne tranche pas seule entre « vraie rupture » et « bruit ». La cellule suivante construit l'arbitrage qui tranche : la **baseline triviale** (aucun point de rupture) mise en regard du modèle à rupture sur les **deux séries**, au critère BIC. Le **Bayes factor** de [PyMC-09-Model-Sélection](PyMC-09-Model-Selection.ipynb) en donnera plus loin la version en vraisemblance marginale du même arbitrage.",,,,,,,,1f8eeb2a386cd3a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,eb02eede,markdown,fr,cb586e975e81130f,## 5. Exercices,,,,,,,,cb586e975e81130f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,97a2376e,markdown,fr,715d9179783a9250,"### Exercice 1 — Deux points de rupture (trois regimes)
 
@@ -5463,15 +5598,15 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,572aaed8,markdown,fr,3c
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,2d59af55,code,fr,9d277c8598011193,"# Exercice 3 : robustesse au signal et a N (a completer)
 # TODO etudiant : boucler sur delta dans {1, 2, 4}, mesurer H(cp) a chaque fois.
 print(""Exercice 3 a completer : robustesse du posterieur au signal et a la taille."")",,,,,,,,9d277c8598011193,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,d8873019,markdown,fr,2ed4acefa699212e,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,d8873019,markdown,fr,459f5ea3d3dc6b7e,"## Conclusion
 
 Le **point de rupture** complète la famille des séquences temporelles :
 
 | Notebook | État caché | Inférence |
 |----------|-----------|-----------|
-| [PyMC-14](PyMC-13-Sequences.ipynb) (HMM) | discret, **récurrent** (un par pas) | postérieur sur la trajectoire d'états |
-| [Infer-17](../Infer/Infer-16-Kalman-Filter.ipynb) (Kalman) | continu, **récurrent** | postérieur gaussien pas-à-pas |
-| **PyMC-18 (change-point)** | **entier structurel unique** | postérieur `Discrete` sur la localisation |
+| [PyMC-13](PyMC-13-Sequences.ipynb) (HMM) | discret, **récurrent** (un par pas) | postérieur sur la trajectoire d'états |
+| [Infer-16](../Infer/Infer-16-Kalman-Filter.ipynb) (Kalman) | continu, **récurrent** | postérieur gaussien pas-à-pas |
+| **PyMC-17 (change-point)** | **entier structurel unique** | postérieur `Discrete` sur la localisation |
 
 Le trait distinctif : l'inconnue est un **indice structurel** couplé à toute la série via `pm.math.switch`. Cote PyMC, la discreteness de `cp` impose un **CompoundStep** (NUTS + Metropolis), la où EP (cote Infer.NET) propageait les messages analytiquement. Le piège épistémologique (surajustement d'une coupure spurieuse) est universel : seul le **Bayes factor** tranche.
 
@@ -5495,12 +5630,12 @@ Le trait distinctif : l'inconnue est un **indice structurel** couplé à toute l
 
 - Salvatier J., Wiecki T. V., Fonnesbeck C. (2016), « Probabilistic programming in Python using PyMC3 », *PeerJ Computer Science* 2:e55 — moteur NUTS+Metropolis utilisé ici (CompoundStep).
 - Gelman A. et al., *Bayesian Data Analysis* (3e ed.), chap. « Hierarchical models » — context général sur l'inférence MCMC.
-- Relation à la série : [PyMC-14 (HMM)](PyMC-13-Sequences.ipynb) et [PyMC-19 (Survival)](PyMC-18-Survival-Analysis.ipynb) (le *run-length* se termine par un événement de durée), [PyMC-12 (Hierarchical)](PyMC-11-Modeles-Hierarchiques.ipynb) (le PPM de Barry-Hartigan est un analogue hiérarchique des partitions).
-",,,,,,,,2ed4acefa699212e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,14f058d8,markdown,fr,7911870a0a30b41a,"# 19. Analyse de survie / fiabilite bayesienne : inferer le temps jusqu'a un événement (jumeau PyMC)
+- Relation à la série : [PyMC-13 (HMM)](PyMC-13-Sequences.ipynb) et [PyMC-18 (Survival)](PyMC-18-Survival-Analysis.ipynb) (le *run-length* se termine par un événement de durée), [PyMC-11 (Hierarchical)](PyMC-11-Modeles-Hierarchiques.ipynb) (le PPM de Barry-Hartigan est un analogue hiérarchique des partitions).
+",,,,,,,,459f5ea3d3dc6b7e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,14f058d8,markdown,fr,33acec07ca5935dd,"# 19. Analyse de survie / fiabilite bayesienne : inferer le temps jusqu'a un événement (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de
-> [Infer-19 -- Analyse de survie](../Infer/Infer-18-Survival-Analysis.ipynb) (Infer.NET, EP).
+> [Infer-18 -- Analyse de survie](../Infer/Infer-18-Survival-Analysis.ipynb) (Infer.NET, EP).
 > Il reprend le **même terrain de jeu** (même germe, même N, mêmes vrais paramètres) et y ajoute
 > deux **value-add PyMC** : (1) inferer **directement** la forme Weibull `k` par MCMC (qu'Infer.NET
 > evite par transformee + balayage, l'EP sur la forme etant fragile) ; (2) sélection de modèle par
@@ -5515,7 +5650,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,14f058d8,markdown,
 - Implementer le **modèle exponentiel conjugue** (prior Gamma sur le taux) et propager l'incertitude jusqu'a la fonction de survie $S(t) = P(T > t)$
 - **Value-add PyMC** : inferer **directement** la forme Weibull `k` par NUTS (Infer.NET l'evite)
 - **Value-add PyMC** : sélectionner le modèle (Exp vs Weibull) par **LOO** (arviZ), pas un balayage manuel
-",,,,,,,,7911870a0a30b41a,,,,,,,,,,,,,,,
+",,,,,,,,33acec07ca5935dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,0f50a46c,markdown,fr,d9920a763ad83b77,"## 1. Motivation : pourquoi pas une gaussienne ?
 
 Un ingenieur fiabilite observe les **durées de vie** (en heures) de `N` composants. La grandeur
@@ -5531,7 +5666,7 @@ Deux lois canoniques :
 - **Weibull** $T \sim \text{Weibull}(k, \eta)$ : taux qui **varie** -- $k < 1$ (mortalite infantile),
   $k = 1$ (retombe sur l'exponentielle), $k > 1$ (usure, le risque croit avec l'age).
 ",,,,,,,,d9920a763ad83b77,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,354dd004,code,fr,c674c7463429e357,"# --- Imports + donnees synthetiques (meme vrais parametres qu'Infer-19) ---
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,354dd004,code,fr,e2b9cfea4da42196,"# --- Imports + donnees synthetiques (meme vrais parametres qu'Infer-18) ---
 import numpy as np
 import pymc as pm
 import arviz as az
@@ -5540,7 +5675,7 @@ warnings.filterwarnings(""ignore"", message="".*data structure.*"")
 warnings.filterwarnings(""ignore"", message=""PyTensor could not link to a BLAS"")  # advisory pytensor (#3436)
 print(f""PyMC {pm.__version__}, ArviZ {az.__version__}"")
 
-# Meme N et memes vrais parametres qu'Infer-19 (germe 42 ; NB: numpy.default_rng != .NET Random,
+# Meme N et memes vrais parametres qu'Infer-18 (germe 42 ; NB: numpy.default_rng != .NET Random,
 # donc l'echantillon tiré differe, mais la verite sous-jacente et les conclusions sont identiques).
 rng = np.random.default_rng(42)
 N = 60
@@ -5552,18 +5687,18 @@ lifetimes_wei = (eta_true * rng.weibull(k_true, size=N))           # T ~ Weibull
 
 print(f""Durees Exponentiel : N={N}, moyenne observee={lifetimes_exp.mean():.1f} h (attendu ~1000)"")
 print(f""Durees Weibull      : N={N}, moyenne observee={lifetimes_wei.mean():.1f} h (k=1.8 -> queue plus courte)"")
-",,,,,,,,c674c7463429e357,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,23ebcf92,markdown,fr,ffeef1c358f7c04a,"## 2. Le modèle exponentiel : le cas conjugue
+",,,,,,,,e2b9cfea4da42196,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,23ebcf92,markdown,fr,d447c5ee9166e431,"## 2. Le modèle exponentiel : le cas conjugue
 
 Le modèle le plus simple : $T_i \sim \text{Exp}(\lambda)$ avec un a priori **Gamma** sur le taux
 $\lambda$. Le prior Gamma est **conjugue** a la vraisemblance exponentielle : le postieur est donc
-lui-même Gamma, **exact** (comme le retrouve l'EP d'Infer.NET dans Infer-19).
+lui-même Gamma, **exact** (comme le retrouve l'EP d'Infer.NET dans Infer-18).
 
 $$\lambda \sim \text{Gamma}(a_0, b_0), \quad T_i \sim \text{Exp}(\lambda), \quad
 \lambda \mid T \sim \text{Gamma}(a_0 + N,\, b_0 + \textstyle\sum_i T_i)$$
 
 PyMC echantillonne ce postieur par NUTS (ici il retrouve la solution conjuguee, c'est un cas d'école).
-",,,,,,,,ffeef1c358f7c04a,,,,,,,,,,,,,,,
+",,,,,,,,d447c5ee9166e431,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,96b850e1,code,fr,9d54f78544d94779,"# --- Modele exponentiel conjugue sur le jeu de durees exponentielles ---
 with pm.Model() as modele_exp:
     # Prior faible Gamma(0.001, 0.001) sur le taux lambda (laisse les donnees parler).
@@ -5590,17 +5725,17 @@ La moyenne postérieure est proche de l'estimateur du maximum de vraisemblance $
 l'incertitude d'echantillonnage a $N = 60$. C'est l'intérêt du bayesien : on recupere non un
 chiffre mais une **distribution**, dont on propagera l'incertitude jusqu'a la fonction de survie.
 ",,,,,,,,a05af70948c09883,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,610aee5f,markdown,fr,f8356511fe3d548a,"## 3. Fonction de survie predictive : propager l'incertitude jusqu'a la queue
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,610aee5f,markdown,fr,7676835db53e7af0,"## 3. Fonction de survie predictive : propager l'incertitude jusqu'a la queue
 
 La question de l'ingenieur -- *« probabilite de surviver au-dela de 1500 h »* -- se traduit par
 la **survie predictive** : on evalue $S(t) = e^{-\lambda t}$ pour chaque echantillon $\lambda$ du
 postérieur, puis on resume la distribution de $S(t)$ (medianne + intervalle de credibilite).
 
-Infer-19 (Infer.NET) exploitait une **forme fermee exacte** $S(t) = (B/(B+t))^A$ (transformee de
+Infer-18 (Infer.NET) exploitait une **forme fermee exacte** $S(t) = (B/(B+t))^A$ (transformee de
 Laplace du postérieur Gamma) -- economisant le Monte-Carlo. Ici, PyMC echantillonnant déjà le
 postérieur, on propage directement les tirages : plus general (marche pour tout modèle, pas seulement
 le conjugue), au prix d'un peu de Monte-Carlo.
-",,,,,,,,f8356511fe3d548a,,,,,,,,,,,,,,,
+",,,,,,,,7676835db53e7af0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,f9c9a299,code,fr,087d398b27f5f271,"# --- Fonction de survie predictive (propagation des tirages postérieurs) ---
 ts = np.array([0, 250, 500, 1000, 1500, 2000, 3000.0])
 lam_draws = post_lam.values.flatten()  # tous les tirages de lambda
@@ -5629,15 +5764,15 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,6a0da06a,markdown,
   ou peu de données constrainent -- c'est précisément la region fiabilite critique, et le bayesien
   y donne une reponse **honnete** (pas un chiffre unique trompeur).
 ",,,,,,,,712ecdc08aa0e620,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,1132539a,markdown,fr,9cf791ed97c077fe,"## 4. Value-add PyMC : inferer DIRECTEMENT la forme Weibull `k`
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,1132539a,markdown,fr,008d81844cd6eeca,"## 4. Value-add PyMC : inferer DIRECTEMENT la forme Weibull `k`
 
 L'exponentielle suppose un taux **constant**. La loi de Weibull generalise :
 $T \sim \text{Weibull}(k, \eta)$, $S(t) = \exp(-(t/\eta)^k)$.
 
 > *Origine.* La loi de Weibull a ete proposee par Waloddi Weibull (Weibull, 1951, *J. Applied Mechanics* 18(3):293-297) pour decrire la resistance des materiaux. Sa richesse tient a la **forme** `k` : `k < 1` modelise un defaut initial (mortalite precoce), `k = 1` redonne l'exponentielle (taux constant), `k > 1` une usure accumulee -- c'est ce même `k` que la section 5 (cellule de LOO) retrouve par comparaison de modèles.
 
-**Infer-19 (Infer.NET) evite d'inferer la forme `k`** : la vraisemblance de Weibull n'est conjuguee
-a aucun prior usuel, et l'EP sur la forme est notoirement instable. L'astuce d'Infer-19 est de
+**Infer-18 (Infer.NET) evite d'inferer la forme `k`** : la vraisemblance de Weibull n'est conjuguee
+a aucun prior usuel, et l'EP sur la forme est notoirement instable. L'astuce d'Infer-18 est de
 **fixer `k`**, transformer $U = T^k \sim \text{Exp}$ (conjugue), puis choisir `k` par **balayage**
 sur une grille (7 compilations de modèle).
 
@@ -5645,8 +5780,8 @@ sur une grille (7 compilations de modèle).
 avec des priors sur `k` et `eta`. C'est l'apport d'un echantillonneur generique : pas de conjugaison
 requise. On inferere simultanément `k` et `eta`, et le postérieur sur `k` nous dit si le regime est
 a usure ($k > 1$), constant ($k = 1$) ou mortalite infantile ($k < 1$).
-",,,,,,,,9cf791ed97c077fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,21bf3a8a,code,fr,66cacf1eca1e1542,"# --- Value-add : Weibull avec forme k INFEREE directement (NUTS) ---
+",,,,,,,,008d81844cd6eeca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,21bf3a8a,code,fr,fe8bfc46a5507e6c,"# --- Value-add : Weibull avec forme k INFEREE directement (NUTS) ---
 with pm.Model() as modele_wei:
     # Priors : k positif (HalfNormal), eta positif large.
     k = pm.HalfNormal(""k"", sigma=5.0)
@@ -5665,13 +5800,13 @@ print(f""  k   : mediane = {float(post_k.median()):.3f}  (vrai k = {k_true})"")
 print(f""        IC 94% : [{float(post_k.quantile(0.03)):.3f}, {float(post_k.quantile(0.97)):.3f}]"")
 print(f""  eta : mediane = {float(post_eta.median()):.1f} h  (vrai eta = {eta_true})"")
 print(f""        IC 94% : [{float(post_eta.quantile(0.03)):.1f}, {float(post_eta.quantile(0.97)):.1f}]"")
-print(""\nContraste : Infer-19 fixait k puis balayait 7 valeurs (EP instable sur la forme)."")
+print(""\nContraste : Infer-18 fixait k puis balayait 7 valeurs (EP instable sur la forme)."")
 print(""PyMC inferere k directement -- le postérieur recouvre la vraie valeur 1.8 (usure)."")
-",,,,,,,,66cacf1eca1e1542,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,7a7368e9,markdown,fr,47bc3a40a462a67c,"### Lecture : le MCMS generalise ce que l'EP conjuguée ne peut pas
+",,,,,,,,fe8bfc46a5507e6c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,7a7368e9,markdown,fr,ea0d39ecf8a4bcd7,"### Lecture : le MCMS generalise ce que l'EP conjuguée ne peut pas
 
 Le postérieur sur `k` centrer sur la vraie valeur 1.8 : le modèle **detecte le regime d'usure**
-(k > 1) sans aucun balayage. La où Infer-19 devait fixer `k` puis transformer pour ramener le
+(k > 1) sans aucun balayage. La où Infer-18 devait fixer `k` puis transformer pour ramener le
 problème au cas conjugue (fragilite de l'EP sur la forme), PyMC echantillonne `k` et `eta`
 **jointement** -- c'est précisément le type de vraisemblance non-conjuguee que le MCMC gere
 nativerment et que le message-passing EP fuir.
@@ -5680,10 +5815,10 @@ nativerment et que le message-passing EP fuir.
 des milliers de fois, ~secondes ici, la ou l'EP conjugue est quasi-instantanee). Sur un modèle
 conjugue simple (exponentiel), l'EP d'Infer.NET est plus rapide ; des qu'on veut inferer la forme
 ou comparer des modèles non-conjugues, NUTS devient l'outil naturel.
-",,,,,,,,47bc3a40a462a67c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,010c2533,markdown,fr,6c4bfa0038f1f3b8,"## 5. Value-add PyMC : sélection de modèle par LOO cross-validation
+",,,,,,,,ea0d39ecf8a4bcd7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,010c2533,markdown,fr,5e3be8fad2539996,"## 5. Value-add PyMC : sélection de modèle par LOO cross-validation
 
-Infer-19 choisit `k` par **balayage manuel** (log-vraisemblance prédictive sur une grille de 7
+Infer-18 choisit `k` par **balayage manuel** (log-vraisemblance prédictive sur une grille de 7
 valeurs). PyMC + arviZ offrent la **leave-one-out cross-validation approximée** (PSIS-LOO) : on
 calcule le score prédictif de chaque modèle, et arviZ donne le **poids** de chaque modèle (model
 weighting). C'est systématique et automatique, pas un balayage ad hoc.
@@ -5693,8 +5828,8 @@ log-vraisemblances prédictives point par point, donc comparer un modèle ajust�
 modèle ajusté sur un autre mesurerait l'écart entre les deux jeux, pas entre les deux modèles.
 On mène donc deux comparaisons, chacune sur un seul jeu — sur le jeu Weibull (vrai $k = 1{,}8$),
 où la forme libre doit dominer, puis sur le jeu exponentiel (vrai $k = 1$), où elle ne doit plus
-rien apporter.",,,,,,,,6c4bfa0038f1f3b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,07f2f755,code,fr,e27b68c4a92d859e,"# --- Selection Exp (k=1) vs Weibull (k libre) par LOO-PSIS (arviZ) ---
+rien apporter.",,,,,,,,5e3be8fad2539996,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,07f2f755,code,fr,681f618d59a758c2,"# --- Selection Exp (k=1) vs Weibull (k libre) par LOO-PSIS (arviZ) ---
 # Une comparaison LOO n'a de sens que si les DEUX modeles expliquent les MEMES observations :
 # elpd additionne des log-vraisemblances predictives point par point, donc sur un meme
 # echantillon. On ajuste ici, pour chaque jeu, le modele qui y manquait, et on ne compare
@@ -5742,7 +5877,7 @@ print(f""\nk estime sur le jeu exponentiel : {float(trace_wei_exp.posterior['k']
 print(""\nLe poids (weight) mesure la confiance accordee a chaque modele. Sur le jeu Weibull, le"")
 print(""Weibull prend tout le poids : la forme libre est payante quand la vraie loi s'ecarte de"")
 print(""l'exponentielle. Sur le jeu exponentiel, il retrouve k ~ 1 et le gain s'effondre -- c'est"")
-print(""le verdict qu'Infer-19 obtenait par balayage manuel, obtenu ici sans grille."")",,,,,,,,e27b68c4a92d859e,,,,,,,,,,,,,,,
+print(""le verdict qu'Infer-18 obtenait par balayage manuel, obtenu ici sans grille."")",,,,,,,,681f618d59a758c2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,542819a8,markdown,fr,9150ee8786bc3806,"## 6. Exercices
 
 ### Exercice 1 -- Censure a droite (données tronquees)
@@ -5773,24 +5908,24 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,5a212e5b,code,fr,0
 # TODO etudiant : lambda_i = lambda0 * exp(beta * x_i), inferer beta (effet covariable).
 print(""Exercice 1 a completer : regression de temps accelere (AFT)."")
 ",,,,,,,,070e52cc839d40a1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,9e16d077,markdown,fr,d44a6408a52ed501,"### Exercice 2 -- Exponentiel vs Weibull : a partir de quel N ?
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,9e16d077,markdown,fr,379c481f4265f27b,"### Exercice 2 -- Exponentiel vs Weibull : a partir de quel N ?
 Reprenez le jeu Weibull ($k = 1.8$) en faisant varier $N \in \{20, 50, 100, 200\}$. Pour chaque
 $N$, calculez le poids LOO du modèle Weibull. A partir de quel $N$ le Weibull est-il prefere de
 facon decisive (poids $> 0.95$) ?
 - **Indice :** bouclez sur les valeurs de N, re-echantillonnez les deux modèles sur le jeu de
   chaque N, puis appelez `az.compare`.
-  C'est la generalisation de l'Exercice 2 d'Infer-19 (qui utilisait un facteur de Bayes manuel).",,,,,,,,d44a6408a52ed501,,,,,,,,,,,,,,,
+  C'est la generalisation de l'Exercice 2 d'Infer-18 (qui utilisait un facteur de Bayes manuel).",,,,,,,,379c481f4265f27b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,b7c72f31,code,fr,7f9c8e47bec00531,"# Exercice 2 a completer
 # TODO etudiant : boucler sur N, calculer le poids LOO du Weibull, trouver le seuil N.
 print(""Exercice 2 a completer : a partir de quel N le Weibull est-il decisiivement prefere ?"")
 ",,,,,,,,7f9c8e47bec00531,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,27390f5d,markdown,fr,10cebf164e094728,"## Ponts avec la serie
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,27390f5d,markdown,fr,bbc846de977a669b,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
-| <-> Infer-19 | [Infer-19 -- Analyse de survie](../Infer/Infer-18-Survival-Analysis.ipynb) | **Jumeau .NET** (Infer.NET, EP). Ce notebook ajoute : inference directe de la forme `k` (NUTS) + sélection LOO automatique (arviZ). |
-| <-> PyMC-18 | [PyMC-18 -- Change-Point](PyMC-17-Change-Point.ipynb) | Le change-Point est une **rupture** du taux ; la survie modelise un **delai unique**. Combiner les deux = survie a rupture (taux qui change a un instant latent). |
-| <-> PyMC-14 | [PyMC-14 -- Sequences (HMM)](PyMC-13-Sequences.ipynb) | Complete la famille temporelle : HMM (discret recurrent), Kalman (continu recurrent), survie (continu, durée unique). |
+| <-> Infer-18 | [Infer-18 -- Analyse de survie](../Infer/Infer-18-Survival-Analysis.ipynb) | **Jumeau .NET** (Infer.NET, EP). Ce notebook ajoute : inference directe de la forme `k` (NUTS) + sélection LOO automatique (arviZ). |
+| <-> PyMC-17 | [PyMC-17 -- Change-Point](PyMC-17-Change-Point.ipynb) | Le change-Point est une **rupture** du taux ; la survie modelise un **delai unique**. Combiner les deux = survie a rupture (taux qui change a un instant latent). |
+| <-> PyMC-13 | [PyMC-13 -- Sequences (HMM)](PyMC-13-Sequences.ipynb) | Complete la famille temporelle : HMM (discret recurrent), Kalman (continu recurrent), survie (continu, durée unique). |
 
 ## Conclusion
 
@@ -5811,7 +5946,7 @@ complementarite des deux moteurs sur la même famille de problèmes.
 **Pour aller plus loin.** La censure a gauche/par intervalle, les modèles a **risques proportionnels**
 (Cox, 1972, *JRSS Series B* 34(2):187-220), les modèles a risques concurrents (competing risks)
 et les modèles de fragilite partagee (frailty, analogue hiérarchique de
-[PyMC-12](PyMC-11-Modeles-Hierarchiques.ipynb) applique a la survie) sont les extensions classiques
+[PyMC-11](PyMC-11-Modeles-Hierarchiques.ipynb) applique a la survie) sont les extensions classiques
 au-dela de ce notebook.
 
 ***
@@ -5828,8 +5963,8 @@ au-dela de ce notebook.
 - Gelman A. et al., *Bayesian Data Analysis* (3e ed.), §2.6 (modèle exponentiel pour données de durées de vie).
 - Lawless J. F., *Statistical Models and Methods for Lifetime Data* — reference pour Weibull / AFT / censure.
 - Salvatier J., Wiecki T. V., Fonnesbeck C. (2016), « Probabilistic programming in Python using PyMC3 », *PeerJ Computer Science* 2:e55 — moteur NUTS utilisé ici.
-- Relation a la serie : [PyMC-12](PyMC-11-Modeles-Hierarchiques.ipynb) (modèles hiérarchiques),
-  [PyMC-18](PyMC-17-Change-Point.ipynb) (rupture — ou le taux change brusquement).",,,,,,,,10cebf164e094728,,,,,,,,,,,,,,,
+- Relation a la serie : [PyMC-11](PyMC-11-Modeles-Hierarchiques.ipynb) (modèles hiérarchiques),
+  [PyMC-17](PyMC-17-Change-Point.ipynb) (rupture — ou le taux change brusquement).",,,,,,,,bbc846de977a669b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,fr,f98469d313f675a8,"# PyMC-2 : Distributions Gaussiennes et Mélanges
 
 **Navigation** : [Index](../README.md) | [<< PyMC-1](PyMC-01-Setup.ipynb) | [PyMC-2b >>](PyMC-02b-Debugging-Python.ipynb)
@@ -7020,7 +7155,7 @@ Les reseaux bayesiens structurent les dependances conditionnelles entre variable
 **Navigation** : [<< PyMC-3 (Factor Graphs)](PyMC-03-Factor-Graphs.ipynb) | [PyMC-5 (Causal Inference) >>](PyMC-05-Causal-Inference.ipynb)
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,b2683d6a41998023,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,b5a4a10f,markdown,fr,714f05c97362cd97,"# PyMC-05-Causal-Inference : Inference Causale et do-calculus
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,b5a4a10f,markdown,fr,6b3cd563acd31741,"# PyMC-05-Causal-Inference : Inference Causale et do-calculus
 
 **Serie** : Programmation Probabiliste avec PyMC (5 / parite Infer.NET)
 **Duree estimee** : 65 minutes
@@ -7044,7 +7179,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,b5a4a10f,markdown,f
 
 > **Note de numerotation** : ce notebook porte le numéro **5** par **parite** avec son jumeau C# [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, cote Python, **integre dans** [PyMC-7-Sequential](../DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) (section 10ter, bandits bayesiens) — d'ou l'absence d'un PyMC-21 distinct.
 
-> **Ponts inter-series** : le versant **message passing** (Infer.NET, effet causal *calcule* par EP/VMP) est dans [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb) ; le versant **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb). Ce notebook en est le versant **probabiliste MCMC + enumeration exacte**, ou l'opérateur `do` est une **transformation de graphe native** de PyMC.",,,,,,,,714f05c97362cd97,,,,,,,,,,,,,,,
+> **Ponts inter-series** : le versant **message passing** (Infer.NET, effet causal *calcule* par EP/VMP) est dans [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb) ; le versant **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb). Ce notebook en est le versant **probabiliste MCMC + enumeration exacte**, ou l'opérateur `do` est une **transformation de graphe native** de PyMC.",,,,,,,,6b3cd563acd31741,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,715907fb,markdown,fr,c52afbc0f3f20af6,"## 1. Pourquoi la causalite ? — L'echelle de Pearl
 
 La probabilite seule repond aux questions d'**association**. Mais de nombreuses questions pratiques sont **causales** :
@@ -8233,9 +8368,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,3fef01be,markdown,
 **Retour au sommaire** : [Index Probas](../README.md)
 
 **Navigation** : [<< PyMC-2 (Gaussian Mixtures)](PyMC-02-Gaussian-Mixtures.ipynb) | [PyMC-3 (Factor Graphs) >>](PyMC-03-Factor-Graphs.ipynb)",,,,,,,,823051da6a08cb36,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,4a471023,markdown,fr,f2474fd6ccca1f25,"# PyMC-7 : Modèles de Competences (IRT et DINA)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,4a471023,markdown,fr,21bf43edb3853d60,"# PyMC-6 : Modèles de Competences (IRT et DINA)
 
-**Navigation** : [Index](../README.md) | [<< PyMC-5](PyMC-05-Causal-Inference.ipynb) | [PyMC-8 >>](PyMC-07-TrueSkill.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-5](PyMC-05-Causal-Inference.ipynb) | [PyMC-7 >>](PyMC-07-TrueSkill.ipynb)
 
 **Equivalent Infer.NET** : [Infer-06-Skills-IRT](../Infer/Infer-06-Skills-IRT.ipynb)
 
@@ -8252,7 +8387,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,4a471023,markdown,fr,f247
 
 
 **Plan du notebook** : 1. Introduction à l'évaluation cognitive ; 2. Modèle IRT (données, inférence MCMC, résultats, visualisation) ; 3. Évaluation par la courbe ROC ; 4. Modèle DINA (données, inférence hybride, profils de compétences) ; 5. Priors informatifs ; 6. Comparaison IRT vs DINA. Trois exercices prolongent le parcours : évaluer un nouvel étudiant avec DINA, comparer deux classes, implémenter le modèle 2PL.
-",,,,,,,,f2474fd6ccca1f25,,,,,,,,,,,,,,,
+",,,,,,,,21bf43edb3853d60,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,35fc902f,code,fr,594091244ed1cd62,"import warnings
 # arviz (FutureWarning de refactor) et pytensor (""could not link BLAS"", advisory de perf, pas de correctness)
 # leakent le chemin absolu du fichier source site-packages ; on les filtre. Les alertes utiles (R-hat, ESS) restent visibles.
@@ -8330,9 +8465,9 @@ a une difficulte. La probabilite de reponse correcte depend de l'ecart entre cap
 | Difficulte | `Variable.GaussianFromMeanAndPrecision(0, 1)` | `pm.Normal('difficulty', 0, 1)` |
 | Discrimination | `Variable.GammaFromShapeAndScale(2, 0.5)` | `pm.Gamma('disc', alpha=2, beta=2)` |
 | Reponse | `avantageBruite > 0` (threshold) | `pm.Bernoulli` avec lien probit |",,,,,,,,4228a0ee9e9fa5c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,ba6d4075,code,fr,4dbf93f722d3aef4,"# Donnees : 10 etudiants x 5 questions (1=correct, 0=incorrect)
-# Donnees inspirees du notebook jumeau Infer-07 (meme structure 10 x 5, matrice
-# differente : 8 lignes sur 10 divergent d'Infer-07, verifie au 2026-10-31)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,ba6d4075,code,fr,a831127971f5cd50,"# Donnees : 10 etudiants x 5 questions (1=correct, 0=incorrect)
+# Donnees inspirees du notebook jumeau Infer-06 (meme structure 10 x 5, matrice
+# differente : 8 lignes sur 10 divergent d'Infer-06, verifie au 2026-10-31)
 reponses_irt = np.array([
     [1, 1, 1, 0, 0],  # Etudiant 0
     [1, 1, 0, 0, 0],  # Etudiant 1
@@ -8348,7 +8483,7 @@ reponses_irt = np.array([
 
 n_etudiants, n_questions = reponses_irt.shape
 print(f""Donnees: {n_etudiants} etudiants, {n_questions} questions"")
-print(f""Taux de reussite moyen: {reponses_irt.mean():.2f}"")",,,,,,,,4dbf93f722d3aef4,,,,,,,,,,,,,,,
+print(f""Taux de reussite moyen: {reponses_irt.mean():.2f}"")",,,,,,,,a831127971f5cd50,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,dfa89fb4,markdown,fr,b1a5c0ba371130cf,"### Definition du modèle IRT
 
 Les données montrent un taux de reussite moyen de 0.52 (equilibre entre reponses correctes et incorrectes), ce qui est ideal pour calibrer le modèle. L'etudiant 6 a un score parfait (5/5) et l'etudiant 7 a 0/5, signalant des niveaux extremes.
@@ -8454,13 +8589,13 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,8326e94b,code,fr,01a0bdeb
 # - Examiner les probabilites de maitrise pour l'etudiant 8
 
 print(""Exercice a completer"")",,,,,,,,01a0bdeb2baa6e16,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,1b9e1c0a,markdown,fr,2bef015aef4baa87,"### Interpretation : Résultats IRT
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,1b9e1c0a,markdown,fr,da98d39bbce80807,"### Interpretation : Résultats IRT
 
-**Capacites estimees** : Les etudiants 6 et 7 sont aux extremes (capacite +0.84 et -0.86), ce qui correspond a leurs profils observes (100% et 0% de reussite). La plupart des autres etudiants ont des capacites proches de 0, indiquant un niveau moyen.
+**Capacites estimees** : Les etudiants 6 et 7 sont aux extremes (capacite +0.85 et -0.87), ce qui correspond a leurs profils observes (100% et 0% de reussite). La plupart des autres etudiants ont des capacites proches de 0, indiquant un niveau moyen.
 
 **Difficultes des questions** : Les questions 0-2 sont plus faciles (difficulte negative, autour de -0.26) que les questions 3-4 (difficulte positive, autour de +0.28). Cela correspond aux taux de reussite observes dans les données.
 
-**Paramètre de discrimination** : La valeur de 0.30 confirme la lecture faite plus haut (interpretation de l'echantillonnage) : une discrimination **faible**. La courbe P(correct) = Phi(0.30 x (capacite - difficulte)) est aplatie — avec les extremes estimes, P(correct) reste dans ~[0.37, 0.63] — les questions distinguent donc **peu** les etudiants de différents niveaux.",,,,,,,,2bef015aef4baa87,,,,,,,,,,,,,,,
+**Paramètre de discrimination** : La valeur de 0.30 confirme la lecture faite plus haut (interpretation de l'echantillonnage) : une discrimination **faible**. La courbe P(correct) = Phi(0.30 x (capacite - difficulte)) est aplatie — avec les extremes estimes, P(correct) reste dans ~[0.37, 0.63] — les questions distinguent donc **peu** les etudiants de différents niveaux.",,,,,,,,da98d39bbce80807,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,b0cc38fd,markdown,fr,c4ec396549571d6d,"## 3. Evaluation avec la Courbe ROC
 
 La courbe ROC (Receiver Operating Characteristic) mesure la capacite du modèle a
@@ -8625,14 +8760,14 @@ for i in range(n_etud_dina):
 
 plt.tight_layout()
 plt.show()",,,,,,,,ff710093ea0bc3f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,bf2c21e2,markdown,fr,e7381472d113b1ea,"### Interpretation : Profils de competences DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,bf2c21e2,markdown,fr,bbd8fc72668bb970,"### Interpretation : Profils de competences DINA
 
 La matrice de probabilites revele des profils d'apprentissage distincts :
 - **Etudiant 2** : Maitrise quasi-certaine des 3 competences (0.99-1.00), ce qui correspond a ses reponses parfaites
 - **Etudiants 0 et 4** : Maitrise selective (Comp1 et Comp3 pour l'etudiant 4, Comp1 pour l'etudiant 0)
-- **Etudiant 3** : Aucune competence maitrisee (0.08-0.10), correspondant a ses reponses toutes incorrectes
+- **Etudiant 3** : Aucune competence maitrisee (0.09-0.10), correspondant a ses reponses toutes incorrectes
 
-**Paramètres de bruit** : Les valeurs de slip (~0.09-0.10) et guess (~0.14-0.21) sont coherrentes avec les priors informatifs, indiquant que le modèle a bien capture la structure des données.",,,,,,,,e7381472d113b1ea,,,,,,,,,,,,,,,
+**Paramètres de bruit** : Les valeurs de slip (~0.09-0.10) et guess (~0.14-0.20) sont coherrentes avec les priors informatifs, indiquant que le modèle a bien capture la structure des données.",,,,,,,,bbd8fc72668bb970,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,df45baa7,markdown,fr,18e24d7e8a59dac3,"## 5. Estimation avec Priors Informatifs
 
 Les priors informatifs sur slip et guess **concentrent la densite a priori** autour des valeurs attendues — c'est ce que la figure ci-dessous temoigne. L'effet attendu sur l'estimation (un posterior moins disperse quand les donnees sont limitees) est le **motif du choix de ces priors**, pas un resultat mesure dans ce carnet : le modele DINA n'y est pas re-echantillonne avec le prior vague. On utilise des Beta concentres autour des valeurs attendues :
@@ -8746,9 +8881,9 @@ Ce notebook a comparé deux modélisations des compétences sur un jeu de donné
 ***
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,7e10b8a11f199ea1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,706bed3c,markdown,fr,59b93e201b6026a1,"# PyMC-8 : TrueSkill - Classement et Apprentissage en Ligne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,706bed3c,markdown,fr,c301c699ddc3f568,"# PyMC-7 : TrueSkill - Classement et Apprentissage en Ligne
 
-**Navigation** : [Index](../README.md) | [<< PyMC-7](PyMC-06-Skills-IRT.ipynb) | [PyMC-9 >>](PyMC-08-Classification.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-6](PyMC-06-Skills-IRT.ipynb) | [PyMC-8 >>](PyMC-08-Classification.ipynb)
 
 **Equivalent Infer.NET** : [Infer-07-TrueSkill](../Infer/Infer-07-TrueSkill.ipynb)
 
@@ -8761,8 +8896,8 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,706bed3c,markdown,fr,59b93
 - Maitriser l'apprentissage en ligne (posterieurs deviennent priors)
 - Etendre aux équipes et multi-joueurs
 
-**Prerequis** : PyMC-7 (modèles de competences IRT), statistiques
-",,,,,,,,59b93e201b6026a1,,,,,,,,,,,,,,,
+**Prerequis** : PyMC-6 (modèles de competences IRT), statistiques
+",,,,,,,,c301c699ddc3f568,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,5ad1ba8f,code,fr,5f1389b8deaa3710,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
@@ -9195,7 +9330,7 @@ de Gaussiennes de maniere analytique. PyMC est plus general mais plus lent pour 
 ***
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,92b7b6329fbbf90c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,ca1eafe9,markdown,fr,445e4fea8c13db06,"## 7 bis. Le coeur de TrueSkill : EP, formules V(t)/W(t) et dynamique
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,ca1eafe9,markdown,fr,2d59c52c5804f3b8,"## 7 bis. Le coeur de TrueSkill : EP, formules V(t)/W(t) et dynamique
 
 Jusqu'ici nous avons laisse PyMC (NUTS) calculer les posteriors des skills par echantillonnage. C'est correct mais cache **la vraie contribution du papier TrueSkill** : un algorithme analytique qui rend la mise a jour **exacte et O(1) par match en 1v1** (a N joueurs, N−1 contraintes d'ordre par iteration EP). C'est ce qui rend TrueSkill deployable en production sur des millions de joueurs. Cette section l'explicite.
 
@@ -9217,7 +9352,7 @@ $$\mu_w' = \mu_w + \sigma_w^2 \cdot \frac{V(t)}{c}, \qquad \mu_l' = \mu_l - \sig
 
 $$(\sigma_w^2)' = \sigma_w^2 \Big(1 - \tfrac{\sigma_w^2}{c^2}\, W(t)\Big), \qquad (\sigma_l^2)' = \sigma_l^2 \Big(1 - \tfrac{\sigma_l^2}{c^2}\, W(t)\Big)$$
 
-> **Détail subtil** : la variance se contracte du facteur $\tfrac{\sigma^2}{c^2}\, W(t)$, et **non** de $W(t)$ seul — le ratio $\sigma^2/c^2 < 1$ borne la contraction (un prior très confiant $\sigma^2 \ll c^2$ ne peut guère se resserrer). La cellule numérique suivante le vérifie : $\sigma$ passe de 8,33 à **7,19**, cohérent avec le moteur EP du jumeau C# (Infer-8 cellule 16 : $N(29{,}21,\,7{,}19)$).
+> **Détail subtil** : la variance se contracte du facteur $\tfrac{\sigma^2}{c^2}\, W(t)$, et **non** de $W(t)$ seul — le ratio $\sigma^2/c^2 < 1$ borne la contraction (un prior très confiant $\sigma^2 \ll c^2$ ne peut guère se resserrer). La cellule numérique suivante le vérifie : $\sigma$ passe de 8,33 à **7,19**, cohérent avec le moteur EP du jumeau C# (Infer-7, cellule 16 : $N(29{,}21,\,7{,}19)$).
 
 **Interpretation** : $V(t)$ mesure a quel point la comparaison etait informative — un match equilibre ($t\approx 0$) instruit beaucoup (grand $V$), une victoire evidente ($t\gg 0$) instruit peu. La variance $\sigma^2$ se contracte d'autant. C'est l'equivalent analytique exact de ce que NUTS approxime par echantillonnage dans les sections précédentes.
 
@@ -9238,7 +9373,7 @@ Un detail essentiel, absent de ce carnet (decrit ci-dessous, non calcule) : en p
 ***
 
 **Retour au sommaire** : [Index Probas](../README.md)
-",,,,,,,,445e4fea8c13db06,,,,,,,,,,,,,,,
+",,,,,,,,2d59c52c5804f3b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,1e2770fb,markdown,fr,e6082501a6c63039,"## Exercice 2 : Tournoi Simule avec Vrais Skills
 
 Créez 6 joueurs avec des ""vrais skills"" connus. Simulez 15 matchs aleatoires
@@ -9288,9 +9423,9 @@ TrueSkill et son successeur TrueSkill 2 sont des modèles de classement bases su
 ***
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,4700a52bb73ae076,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,75ef92e0,markdown,fr,017ea2688e15f0b1,"# PyMC-9 : Classification Bayesienne et Tests A/B
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,75ef92e0,markdown,fr,fc952ed42e03a945,"# PyMC-8 : Classification Bayesienne et Tests A/B
 
-**Navigation** : [Index](../README.md) | [<< PyMC-8](PyMC-07-TrueSkill.ipynb) | [PyMC-10 >>](PyMC-09-Model-Selection.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-7](PyMC-07-TrueSkill.ipynb) | [PyMC-09 >>](PyMC-09-Model-Selection.ipynb)
 
 **Equivalent Infer.NET** : [Infer-08-Classification](../Infer/Infer-08-Classification.ipynb)
 
@@ -9306,7 +9441,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,75ef92e0,markdown,fr,
 **Prerequis** : PyMC-1 a PyMC-4, statistiques (loi binomiale, test d'hypothese)
 
 
-**Plan** : 1. Bayes Point Machine (probit) et frontière de décision ; 2. test A/B bayésien ; 3. impact de la taille d'échantillon ; 4. visualisation des distributions ; 5. application au CTR ; 6. calibration hors échantillon (exemple exécuté) ; 7. comparaison Infer.NET/PyMC.",,,,,,,,017ea2688e15f0b1,,,,,,,,,,,,,,,
+**Plan** : 1. Bayes Point Machine (probit) et frontière de décision ; 2. test A/B bayésien ; 3. impact de la taille d'échantillon ; 4. visualisation des distributions ; 5. application au CTR ; 6. calibration hors échantillon (exemple exécuté) ; 7. comparaison Infer.NET/PyMC.",,,,,,,,fc952ed42e03a945,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,3cc69a7e,code,fr,5f1389b8deaa3710,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
@@ -9711,9 +9846,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,fixed-id-null,markdown,
 | MBML ""Latent Dirichlet Allocation"" (sub-page) | — | Portage MBML-IDIAP du modèle LDA — version courte canonique suivant Blei 2003 |
 
 > **Note pédagogique** : PyMC utilise NUTS (No-U-Turn Sampler, Hoffman & Gelman 2014) pour explorer le posterior LDA. Pour comparer NUTS ↔ VMP d'Infer.NET, voir la note technique de Heinrich (2005) et *Probabilistic Machine Learning* (Murphy 2023), §10.3.7 (Variational Message Passing) et §12.5 (Markov chain Monte Carlo).",,,,,,,,4f52c330f9365c09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,references-pymc12-8081,markdown,fr,66d3b9ac9fc964fd,"## Références
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Modeles-Hierarchiques.ipynb,references-pymc12-8081,markdown,fr,544387d89ba92c00,"## Références
 
-Ce notebook est le **jumeau Python** (PyMC v5 / NUTS) de `Infer-12-Modèles-Hiérarchiques` (Infer.NET / EP, parité #4956). La théorie du pooling partiel et de la rétraction est **identique** ; les références canoniques sont reprises ci-dessous, augmentées des sources spécifiques à l'inférence par échantillonnage (NUTS, funnel, paramétrisation non-centrée).
+Ce notebook est le **jumeau Python** (PyMC v5 / NUTS) de `Infer-11-Modèles-Hiérarchiques` (Infer.NET / EP, parité #4956). La théorie du pooling partiel et de la rétraction est **identique** ; les références canoniques sont reprises ci-dessous, augmentées des sources spécifiques à l'inférence par échantillonnage (NUTS, funnel, paramétrisation non-centrée).
 
 | Référence | Lien au notebook |
 |-----------|-------------------|
@@ -9726,7 +9861,7 @@ Ce notebook est le **jumeau Python** (PyMC v5 / NUTS) de `Infer-12-Modèles-Hié
 | Hoffman & Gelman (2014), *JMLR* 15(47):1593-1623, « The No-U-Turn Sampler » | **NUTS** — l'échantillonneur Hamiltonien adaptatif utilisé par PyMC (§3, « Eliminating the Need to Hand-Tune HMC ») |
 | Betancourt & Girolami (2013), arXiv:1312.0906, « Hamiltonian Monte Carlo for Hierarchical Models » | Pathologie du **funnel de Neal** et **paramétrisation non-centrée** qui la corrige (§I et §II.B) |
 
-> **Note pédagogique** : l'exemple « 8 écoles » de Rubin (1981), repris dans BDA3 §5.5, est le test canonique du pooling partiel. La spécification probabiliste est ici **identique** au jumeau Infer.NET ; la différence est le moteur — EP analytique côté .NET, échantillonnage NUTS côté PyMC. Le **non-centrage** (§II.B) n'est nécessaire *que* pour l'échantillonnage : NUTS souffre du funnel sur les modèles centrés, là où l'EP d'Infer.NET est naturellement robuste.",,,,,,,,66d3b9ac9fc964fd,,,,,,,,,,,,,,,
+> **Note pédagogique** : l'exemple « 8 écoles » de Rubin (1981), repris dans BDA3 §5.5, est le test canonique du pooling partiel. La spécification probabiliste est ici **identique** au jumeau Infer.NET ; la différence est le moteur — EP analytique côté .NET, échantillonnage NUTS côté PyMC. Le **non-centrage** (§II.B) n'est nécessaire *que* pour l'échantillonnage : NUTS souffre du funnel sur les modèles centrés, là où l'EP d'Infer.NET est naturellement robuste.",,,,,,,,544387d89ba92c00,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Crowdsourcing.ipynb,sources-canoniques-pymc,markdown,fr,de6f05e2d6473176,"### Sources canoniques
 
 Ce notebook s'inscrit dans la tradition de l'inférence par maximum de vraisemblance puis bayésienne pour les réponses d'annotateurs multiples, développée ici en **PyMC** pour sa formulation probabiliste moderne (variables latentes + MCMC / EM).
@@ -10362,7 +10497,7 @@ with pm.Model() as cycliste_mixte:
 
     trace_mixte = pm.sample(3000, chains=4, random_seed=42, return_inferencedata=True)
 ```",,,,,,,,cd477ed0c38bf7ec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,fuse-11,markdown,fr,ee65c96ee8a0610d,"### Lecture des résultats du mélange (code[9])
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,fuse-11,markdown,fr,23a945daa5549bd7,"### Lecture des résultats du mélange (code[9])
 
 Le modèle de mélange a 2 composantes converge vers :
 - Composante 1 (jours normaux) : mu=17.4 min, sigma=4.3 min, poids=0.55 ;
@@ -10382,7 +10517,7 @@ Malgre les 830 divergences et le rhat > 1.01 documentes ci-dessus (label switchi
 3. **Initialisation asymétrique** : `pm.sample(init='adapt_diag', random_seed=42)` peut aider.
 4. **Augmentation de `target_accept`** : `pm.sample(target_accept=0.95)` reduit les divergences en faisant des pas plus petits.
 
-C'est une lecon importante pour la pratique du MCMC sur des modèles a symétrie discrete. Le même phénomène revient dans PyMC-11 (Topic Models), où les sujets sont interchangeables.",,,,,,,,ee65c96ee8a0610d,,,,,,,,,,,,,,,
+C'est une lecon importante pour la pratique du MCMC sur des modèles a symétrie discrete. Le même phénomène revient dans PyMC-10 (Topic Models), où les sujets sont interchangeables.",,,,,,,,23a945daa5549bd7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,fuse-12,markdown,fr,db499f9173d4b911,"PyMC offre une **API plus directe** : `pm.NormalMixture` qui gere automatiquement le sujet latent z.
 
 ### Implementation
@@ -11098,11 +11233,11 @@ La correction remplace le potentiel discontinu par une **sigmoid de marge**
 des `ess_bulk` de l'ordre du millier et zéro divergence : le posterior redevient
 interprétable — et la conclusion « les deux joueurs gardent le même $\mu$,
 l'incertitude diminue » tient sur des chaînes fiables.",,,,,,,,68a6239e5391c048,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,diag-lecture-nul,markdown,fr,4c29f0d76c8f2a6e,"### Lecture du résultat — un match nul informe sans orienter, et le potentiel lisse rend l'échantillonnage fiable
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,diag-lecture-nul,markdown,fr,d32e8cdf7371dd7b,"### Lecture du résultat — un match nul informe sans orienter, et le potentiel lisse rend l'échantillonnage fiable
 
 Le résultat clé : $\sigma$ passe de 8.33 à environ 6.4 **symétriquement**, alors que les deux $\mu$ bougent à peine. C'est la signature logique d'un **nul** : l'observation `|perfA − perfB| < 1` ne dit pas qui est le plus fort, elle dit seulement que les deux skills sont **proches** — l'information réduit l'incertitude sans déplacer les moyennes. Comparez au match décisif de la section 2 : là, le même genre de mise à jour contractait $\sigma$ **et** déplaçait les $\mu$ de ±4.2.
 
-**La symétrie des deux $\sigma$ est le témoin que l'échantillonnage est sain.** Les deux joueurs sont symétriques par construction (priors identiques, contrainte symétrique) : leurs contractions doivent être identiques. Avec le potentiel **discontinu** d'origine (`log(switch(|diff| < ε, 1.0, 0.01))` — vraisemblance qui saute de 1.0 à 0.01 à la frontière, gradient nul presque partout), la sortie committée historique montrait les trois signaux bloquants et des $\sigma$ dissymétriques : la dissymétrie était du **bruit d'échantillonnage**, pas un signal. La version lissée ci-dessus échantillonne proprement — le diagnostic et le trace plot en témoignent. C'est exactement le cas où le moteur EP du jumeau C# (Infer-8) traite la même contrainte analytiquement — le contraste est développé en section 7 bis.",,,,,,,,4c29f0d76c8f2a6e,,,,,,,,,,,,,,,
+**La symétrie des deux $\sigma$ est le témoin que l'échantillonnage est sain.** Les deux joueurs sont symétriques par construction (priors identiques, contrainte symétrique) : leurs contractions doivent être identiques. Avec le potentiel **discontinu** d'origine (`log(switch(|diff| < ε, 1.0, 0.01))` — vraisemblance qui saute de 1.0 à 0.01 à la frontière, gradient nul presque partout), la sortie committée historique montrait les trois signaux bloquants et des $\sigma$ dissymétriques : la dissymétrie était du **bruit d'échantillonnage**, pas un signal. La version lissée ci-dessus échantillonne proprement — le diagnostic et le trace plot en témoignent. C'est exactement le cas où le moteur EP du jumeau C# (Infer-7) traite la même contrainte analytiquement — le contraste est développé en section 7 bis.",,,,,,,,d32e8cdf7371dd7b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,aec1165a,markdown,fr,4bebdf710f4cb5c5,"### Une nuance essentielle : l'apprentissage en ligne n'est pas une évolution du skill
 
 L'architecture ci-dessus (« les posterieurs deviennent les priors du match suivant ») décrit fidèlement le **modèle à skill fixe** : chaque joueur possède une compétence *unique et immuable*, et l'apprentissage en ligne resserre simplement l'incertitude (σ) autour de cette valeur fixe. **Une idée reçue fréquente** consiste à croire que ce mécanisme permet au skill de *dériver* dans le temps — **ce n'est pas le cas**. Le posterior se resserre sur une inconnue fixe ; il ne modélise pas une compétence qui évolue.
@@ -11133,11 +11268,11 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-TrueSkill.ipynb,3c4ff267,markdown,fr,0b0bc
 Les quatre courbes sont rangées dans l'ordre du classement : Joueur 1 ($\mu = 32.6$, or), Joueur 2 ($27.1$), Joueur 3 ($22.9$), Joueur 4 ($17.3$, gris). Le contraste avec le 2v2 de la section précédente est instructif : ici **une seule course** (trois contraintes d'ordre) déplace les extrêmes de +7.6 / -7.7 environ (32.57 et 17.32 contre un prior à 25) — davantage qu'un match 1v1 décisif (+4.19) — tandis que les positions intermédiaires, tirées vers le haut par le joueur derrière elles et vers le bas par celui devant, bougent à peine (27.06 et 22.89).
 
 C'est la différence structurelle avec la dilution par équipes : dans le free-for-all, chaque contrainte `perf[i] > perf[i+1]` porte sur **un joueur nommé**, l'information n'est pas partagée. Les $\sigma$ finaux (6.52, 5.94, 5.95, 6.51) le montrent : resserrés par rapport au prior 8.37, et comparables à ce que les 6 matchs 1v1 du tournoi produisaient en section 4 (5.56 à 5.99) — une course à 4 joueurs apporte à peu près autant d'information par joueur que plusieurs matchs individuels, au prix d'un seul échantillonnage.",,,,,,,,0b0bc1e2fad06656,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-intro,markdown,fr,6fab0f5d9997d3b1,"## 7. Calibration hors echantillon : du claim a la mesure (exemple execute)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-intro,markdown,fr,e21fe1b8af79727d,"## 7. Calibration hors echantillon : du claim a la mesure (exemple execute)
 
 Cette section etait l'**Exercice 3** (stub) ; le contraste calibration/discrimination etant le
 message central d'un classifieur probabiliste, il est desormais demontre execute, et l'**Exercice 3**
-(ci-dessous) l'etend a la recalibration. Le jumeau Infer-9 mesure la meme propriete cote EP.
+(ci-dessous) l'etend a la recalibration. Le jumeau Infer-8 mesure la meme propriete cote EP.
 
 **Protocole** (identique dans les deux twins, echantillons differents par moteur) :
 
@@ -11158,8 +11293,8 @@ message central d'un classifieur probabiliste, il est desormais demontre execute
    l'AUC identique -- mais deplace toutes les probabilites vers 0 et 1 et detruit la calibration.
 
 La discrimination et la calibration sont donc deux proprietes **independantes** : une bonne AUC
-ne garantit pas des probabilites utilisables telles quelles.",,,,,,,,6fab0f5d9997d3b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-data,code,fr,ba917a1594bdb453,"# --- Jeu 2D chevauchant + split train/test stratifie (protocole commun avec Infer-9) ---
+ne garantit pas des probabilites utilisables telles quelles.",,,,,,,,e21fe1b8af79727d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-data,code,fr,fa7aacbd1406c70d,"# --- Jeu 2D chevauchant + split train/test stratifie (protocole commun avec Infer-8) ---
 rng = np.random.default_rng(42)
 N_PER_CLASS, SPLIT_PER_CLASS = 200, 50
 mu0, mu1 = np.array([2.0, 2.0]), np.array([3.5, 3.5])
@@ -11190,7 +11325,7 @@ with pm.Model() as bpm_cal:
 w_post = trace_cal.posterior[""w""].values.reshape(-1, 2)
 b_post = trace_cal.posterior[""b""].values.flatten()
 print(f""Poids posterieurs : [{w_post[:,0].mean():.2f}, {w_post[:,1].mean():.2f}]  ""
-      f""biais : {b_post.mean():.2f}  ({len(w_post)} tirages conserves)"")",,,,,,,,ba917a1594bdb453,,,,,,,,,,,,,,,
+      f""biais : {b_post.mean():.2f}  ({len(w_post)} tirages conserves)"")",,,,,,,,fa7aacbd1406c70d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,lecture-data-extra-020,markdown,fr,1a71a27d4572c813,"**Lecture** : la generation produit **400 points** (200 par classe, moyennes `[2.0, 2.0]` et `[3.5, 3.5]`, ecart-type 1.1) ; la decoupe apres permutation (graine 42) reserve **300 points au train et 100 au test** — mesure imprimee : **149 positifs en train, 51 en test**, un equilibre quasi parfait sans stratification explicite. Le classifieur apprend et est evalue sur des distributions homogenes, condition de lisibilite des metriques qui suivent. L'inference (2 chaines, 2 000 tirages) donne des **poids posterieurs `[0.52, 0.58]`** et un **biais de 2.94** : les deux features contribuent a parts egales au score, et la frontiere separe les nuages malgre leur recouvrement. Deux notes de protocole : les etiquettes de test restent **inertes pendant l'inference** (aucune fuite de la cible), et PyMC avertit que 2 chaines sont peu pour des diagnostics de convergence robustes — suffisant pour un posterior aussi concentre, a ne pas generaliser.",,,,,,,,1a71a27d4572c813,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-metrics,code,fr,f3adf797038ef05d,"# --- Probabilites predictives sur le test + metriques + contre-temoin ---
 from scipy.special import ndtr
@@ -11247,7 +11382,7 @@ for name, p_mod, color in [(""probit bayesien"", p_test, ""#2a6dba""), (""contre
 ax.set_xlabel(""probabilite predite (moyenne du bin)""); ax.set_ylabel(""frequence observee"")
 ax.set_title(""Diagramme de fiabilite (test, n=100)""); ax.legend(); fig.tight_layout()
 plt.show()",,,,,,,,7475956fa28f7fb7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-lecture,markdown,fr,aa94b41b174a22d9,"### Lecture : ce que la mesure établit
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-lecture,markdown,fr,83fd3387bbd80df6,"### Lecture : ce que la mesure établit
 
 - **Le profil de fiabilité, bin par bin** : le probit bayésien suit la diagonale aux extrémités
   (0.060 -> 0.077 ; 0.954 -> 1.000) mais surestime au milieu (0.340 -> 0.200, 0.436 -> 0.375,
@@ -11265,10 +11400,10 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-cal-lecture,markdo
   discrimination, l'AUC n'est sensible qu'à l'ordre -- c'est pourquoi le contre-témoin, qui
   conserve l'AUC et dégrade le Brier, reste indiscernable à l'AUC seule. Les comparer sur deux
   transformations du même score est le diagnostic le plus simple de « où est l'erreur ».
-- **Pont moteur** : Infer-9 mène la même mesure côté EP -- l'AUC y est identique par
+- **Pont moteur** : Infer-8 mène la même mesure côté EP -- l'AUC y est identique par
   construction (même famille de modèle), et l'écart de Brier entre les moteurs mesure la
   différence EP/moyenne-posterior, pas une différence de protocole.
-",,,,,,,,aa94b41b174a22d9,,,,,,,,,,,,,,,
+",,,,,,,,83fd3387bbd80df6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-Classification.ipynb,p9-exo4-md,markdown,fr,d125909eee1f2325,"## Exercice 3 : Recalibration du contre-temoin (temperature scaling)
 
 Le contre-temoin accentue est mal calibre mais reste **recuperable** : la transformation
@@ -11422,7 +11557,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Model-Selection.ipynb,3cddaedc,markdown,fr
 - **Avertissements de convergence conservés** : le mélange 2-gaussien ajusté sur données unimodales signalait 9 divergences NUTS, `r_hat` max à 1.025 et un ESS par chaîne < 100 (228 en bulk total, ~57 par chaîne ; section 2) — ses répliques prédictives héritent de cette incertitude d'échantillonnage, et on ne maquille pas le warning : il borne l'interprétation fine de son PPC.
 
 **Conclusion générale du contrôle** : WAIC/LOO hiérarchisent, le PPC falsifie. Un modèle peut être le meilleur relatif disponible tout en restant inadéquat en absolu — ici les verdicts convergent, mais la démarche (choisir une statistique que le modèle devrait reproduire, comparer sa distribution prédictive à l'observé) est le garde-fou systématique à appliquer après toute sélection.",,,,,,,,5f9c6dd335916cc1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,fuse-1,markdown,fr,bf70dd78cf19dd13,"***
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,fuse-1,markdown,fr,f01789081ca2d8d4,"***
 
 ## Objectifs pédagogiques
 
@@ -11449,11 +11584,11 @@ A la fin de ce notebook, vous saurez :
 
 ## Prérequis
 
-- **Notebooks** : PyMC-01 (Setup), PyMC-02 (Mixtures gaussiennes), PyMC-04 (Réseaux bayésiens), PyMC-08 (TrueSkill).
+- **Notebooks** : PyMC-01 (Setup), PyMC-02 (Mixtures gaussiennes), PyMC-04 (Réseaux bayésiens), PyMC-07 (TrueSkill).
 - **Bibliothèques** : `pymc>=5.0`, `arviz`, `pytensor`, `numpy`, `scikit-learn` (VEM LDA pour comparaison).
 - **Maths** : distribution de Dirichlet (concentrations alpha_j), échantillonnage NUTS, divergence KL.
 
-***",,,,,,,,bf70dd78cf19dd13,,,,,,,,,,,,,,,
+***",,,,,,,,f01789081ca2d8d4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,fuse-3,markdown,fr,949cc752d6891c47,"Contrairement au clustering (qui assigne chaque document a un seul cluster), le topic modeling représente chaque document comme un **mélange** de sujets, chacun avec une proportion.
 
 ### Cas d'usage réels
@@ -11912,7 +12047,7 @@ for sujet in range(n_topics_ext):
 # 4. Construire le modele LDA asymetrique (copier code[7])
 # 5. Sampler, afficher les top-3 mots par sujet
 ```",,,,,,,,53f7884daaa87a60,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,fuse-26,markdown,fr,0e4a85690d7775d5,"### Références complémentaires
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Topic-Models.ipynb,fuse-26,markdown,fr,f3a41fee0df07949,"### Références complémentaires
 
 Extensions et outillage cités par les sections 5bis et la conclusion, en complément des sources fondatrices ci-dessus :
 
@@ -11931,8 +12066,8 @@ Extensions et outillage cités par les sections 5bis et la conclusion, en compl�
 
 - [Index Probas](../README.md) -- vue d'ensemble des notebooks probabilistes
 - [PyMC-07-TrueSkill](./PyMC-07-TrueSkill.ipynb) -- un autre modèle bayésien (compétences de joueurs)
-- [PyMC-12-Modèles-Hiérarchiques](./PyMC-11-Modeles-Hierarchiques.ipynb) -- extension hiérarchique de PyMC-08
-",,,,,,,,0e4a85690d7775d5,,,,,,,,,,,,,,,
+- [PyMC-11-Modèles-Hiérarchiques](./PyMC-11-Modeles-Hierarchiques.ipynb) -- extension hiérarchique de PyMC-07
+",,,,,,,,f3a41fee0df07949,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Recommenders.ipynb,5ca8f5ff,markdown,fr,e1531d9ffecd80da,"### Outil réutilisable : rapport de diagnostic strict MCMC
 
 Avant la première inference, nous définissons **une seule fois** l'instrument qui jugera **toutes** les traces de ce notebook. Le rapport applique quatre critères stricts — les seuils des warnings officiels de PyMC (cf [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb)) :
@@ -12381,7 +12516,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb,ex4-code,cod
 hsgp_small_result = None  # TODO etudiant : modele HSGP m=[3,3] + evaluation OOS
 print(""Exercice 4 à compléter : budget HSGP trop petit."")
 ",,,,,,,,54e0cc3a97066bda,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,00ff2551,markdown,fr,7f3b0392d504824b,"### Lecture du diagnostic : convergence insuffisante, et un compte de divergences qui n'est pas portable
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,00ff2551,markdown,fr,ef22122c36f27469,"### Lecture du diagnostic : convergence insuffisante, et un compte de divergences qui n'est pas portable
 
 Pour **ce run** (PyMC 6.3.2, PyTensor 3.3.4, ArviZ 1.3.0, Python 3.13.16, graine 42), le diagnostic NUTS donne
 **0 divergence** après réglage, `r_hat` max **1.030** (sur `sigma_Q`) et `ess_bulk` min **104**,
@@ -12392,42 +12527,52 @@ suivante sont à lire comme une **tendance**, pas comme une estimation précise.
 **Cause géométrique** : `x_t = Σ_{s≤t} Δx_s` avec `Δx_t ~ N(d, σ_Q)` (marche aléatoire cumulée)
 **couple le drift `d` à chaque incrément** — une géométrie corrélée (le « funnel » de la marche
 aléatoire) que NUTS explore mal. C'est la source classique des divergences et d'un `r_hat > 1.01`
-sur ce type de modèle : cette cause, elle, ne bouge pas d'un environnement à l'autre.
+sur ce type de modèle : cette cause, elle, ne bouge pas d'une configuration à l'autre.
 
-#### Le compte de divergences suit l’environnement de l’échantillonneur, pas la stochasticité non seedée
+#### Le compte de divergences suit la configuration de l'échantillonneur, pas la stochasticité non seedée
 
-Même code, mêmes données (`np.random.default_rng(42)`), même graine passée au sampler
-(`random_seed=42`) — cinq environnements :
+Même code, mêmes données (`np.random.default_rng(42)`) — la cellule de sondes qui précède rejoue
+le modèle en ne changeant qu'une chose à la fois :
 
-| Environnement | Divergences | `r_hat` max | `ess_bulk` min | `sigma_Q` | `sigma_R` | drift |
+| Configuration | Divergences | `r_hat` max | `ess_bulk` min | `sigma_Q` | `sigma_R` | drift |
 |---|---|---|---|---|---|---|
-| PyMC 5.28.5, ArviZ 0.23.4, Python 3.11.9 | 1 | 1.020 | 96 | 0,633 | 1,481 | 0,314 |
-| PyMC 6.0.1, ArviZ 1.1.0, Python 3.13.16 | 5 | 1.030 | 89 | 0,664 | 1,456 | 0,318 |
-| PyMC 6.1.0, PyTensor 3.1.3, ArviZ 1.2.0, Python 3.13.14 | 0 | 1.030 | 140 | 0,640 | 1,464 | 0,315 |
-| **PyMC 6.3.2, PyTensor 3.3.4, ArviZ 1.3.0, Python 3.13.16** (ce run) | **0** | **1.030** | **104** | **0,665** | **1,467** | **0,315** |
-| PyMC 5.28.5, ArviZ 0.23.4, Python 3.13.16 | 11 | 1.060 | 79 | 0,703 | 1,446 | 0,317 |
+| graine 42, `target_accept` = 0.9 (ce run) | **0** | **1.030** | **104** | 0,710 | 1,465 | 0,316 |
+| graine 43, `target_accept` = 0.9 | 2 | 1.012 | 90 | 0.706 | 1.466 | 0.317 |
+| graine 42, `target_accept` = 0.95 | 0 | 1.022 | 110 | 0.718 | 1.457 | 0.317 |
 
-Deux mesures encadrent ce tableau :
+Les trois dernières colonnes sont les **moyennes postérieures** (vraies valeurs : `sigma_Q` vers
+0.71, `sigma_R` vers 2.0, drift 0.30). Deux mesures encadrent ce tableau :
 
-- **dans un environnement donné, la graine détermine exactement le tirage.** Deux appels dans le
-  même processus, puis un troisième dans un processus neuf, rendent des médianes postérieures
-  identiques à la sixième décimale ; `cores=1` donne le même résultat que `cores=2`. Un NUTS à
-  graine fixe n'est donc **pas** stochastique d'un run à l'autre.
-- **changer la graine ou l'implémentation, si.** Graine 43 → 9 divergences ; `target_accept=0.95`
-  → 1 divergence ; PyMC 5.28.5 (Python 3.11.9) → 1 ; 5.28.5 (Python 3.13.16) → 11 ; 6.0.1 → 5 ; 6.1.0 → 0 ; 6.3.2 → 0 (ce run). Le compteur franchit un seuil situé
-  près d'une frontière, et c'est l'implémentation de l'échantillonneur qui le déplace.
+- **dans une configuration donnée, la graine détermine les tirages eux-mêmes.** La sonde compare
+  les chaînes complètes tirage à tirage (`np.array_equal` sur les postérieurs de `sigma_Q`,
+  `sigma_R`, `d` et des incréments latents `dx`) — pas des moyennes arrondies : deux jeux de
+  tirages différents pourraient partager des moyennes à six décimales, des chaînes égales ne le
+  peuvent pas. Mesuré : un second appel à graine 42, puis un appel à `cores=1`, rendent les
+  quatre variables **identiques tirage à tirage** (tous `True`). Cette égalité vaut pour
+  **cet environnement** (bannière de versions ci-dessus) : ce n'est pas une garantie générale de
+  déterminisme — elle est rompue entre versions de l'échantillonneur (expérience distincte
+  ci-dessous).
+- **changer la graine ou `target_accept`, si — et `target_accept=0.95` est une amélioration
+  partielle, pas une convergence démontrée.** Graine 43 → **2 divergences** (`r_hat` 1.012,
+  `ess_bulk` 90) ; `target_accept=0.95` → **0 divergence**, mais `r_hat` **1.022** reste
+  au-dessus du seuil **1.01** rappelé plus haut et `ess_bulk` 110 reste sous les ~200 que
+  réclame l'avertissement ArviZ pour deux chaînes : les chaînes n'ont toujours pas fondu. Le
+  compteur et les diagnostics bougent avec la configuration du sampler ; l'effet des **versions**
+  de l'échantillonneur est l'objet de l'expérience distincte ci-dessous.
 
 **Ce qu'il faut en retenir.** Les grandeurs qui décident de la lecture d'un posterior — `r_hat`,
-écart des médianes à la vérité — sont **stables dans les cinq environnements** (`sigma_Q`
-0,63-0,70 pour 0,71 ; `sigma_R` 1,446-1,481 pour 2,0 ; drift 0,314-0,318 pour 0,30), alors que
-le nombre de divergences varie de 0 à 11 sur les cinq environnements mesurés. Un diagnostic de convergence se juge donc sur ce qui
-est **reproductible**, pas sur un compteur dont la valeur change d'une installation à l'autre.
-C'est aussi pourquoi la première cellule de code affiche ses versions : un diagnostic séparé de
-son environnement n'est pas relisible.
+écart des moyennes postérieures à la vérité — bougent **peu d'une configuration à l'autre**
+(`sigma_Q` de 0,706 à 0,718 pour une cible à 0.71 ; `sigma_R` de 1,457 à 1,466 pour 2.0 ; drift
+de 0,316 à 0,317 pour 0.30), alors que le nombre de divergences passe de 0 à 2 et le `r_hat` de
+1.012 à 1.030 sur les trois configurations mesurées. Un diagnostic de convergence se juge donc sur
+ce qui est **reproductible**, pas sur un compteur dont la valeur change avec la configuration.
+C'est aussi pourquoi la première cellule de code affiche ses versions : un diagnostic séparé de son
+environnement n'est pas relisible.
 
-**Remèdes** : paramétrisation centrée sur `state`, `target_accept` relevé, ou 4 chaînes (le
-warning « run at least 4 chains »). Voir [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb)
-pour la lecture systématique.",,,,,,,,7f3b0392d504824b,,,,,,,,,,,,,,,
+**Remèdes** : paramétrisation centrée sur `state`, `target_accept` relevé — amélioration
+**partielle** seulement à 0.95 (la sonde le mesure : divergences 0 mais `r_hat` 1.022 > 1.01,
+convergence non démontrée) — ou 4 chaînes (le warning « run at least 4 chains »). Voir
+[PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) pour la lecture systématique.",,,,,,,,ef22122c36f27469,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-intro,markdown,fr,44042275885588e2,"## 6. Censure a droite : le piege du modèle naïf, corrige par la vraisemblance (exemple execute)
 
 En fiabilite reelle, beaucoup de composants **survivent** a la fin du test : on n'observe pas leur
@@ -12451,7 +12596,7 @@ Nous executons la comparaison complete sur le jeu exponentiel de la section 2, c
 L'ancienne version de cette section etait un exercice non resolu ; le contraste naïf/censure etant
 le message central de l'analyse de survie, il est desormais demontre execute, et les exercices
 (section 7) l'etendent.",,,,,,,,44042275885588e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-data,code,fr,806d13c8a647299b,"# --- Censure administrative a c* = 800 h sur le jeu exponentiel (meme protocole qu'Infer-19) ---
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-data,code,fr,6d5be74582732277,"# --- Censure administrative a c* = 800 h sur le jeu exponentiel (meme protocole qu'Infer-18) ---
 c_star = 800.0
 observed_mask = lifetimes_exp <= c_star                          # evenement observe avant la fin du test
 t_recorded = np.where(observed_mask, lifetimes_exp, c_star)      # duree enregistree (censure figee a c*)
@@ -12460,7 +12605,7 @@ n_obs = int(observed_mask.sum()); n_cens = N - n_obs
 print(f""Censure administrative a c* = {c_star:.0f} h sur N = {N} composants"")
 print(f""  Evenements observes : {n_obs}   (durees exactes)"")
 print(f""  Censures a droite   : {n_cens}   (T_i > {c_star:.0f}, seule l'information 'survit a c*' est connue)"")
-print(f""  Fraction censuree   : {n_cens / N:.1%}   (theorie : exp(-lambda c*) = {np.exp(-lambda_true * c_star):.1%})"")",,,,,,,,806d13c8a647299b,,,,,,,,,,,,,,,
+print(f""  Fraction censuree   : {n_cens / N:.1%}   (theorie : exp(-lambda c*) = {np.exp(-lambda_true * c_star):.1%})"")",,,,,,,,6d5be74582732277,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-naif,code,fr,37701ccb7bf0b10a,"# --- Modele NAIF : toutes les durees enregistrees traitees comme des evenements exacts ---
 with pm.Model() as modele_naif:
     lam_naif = pm.Gamma(""lam"", alpha=0.001, beta=0.001)
@@ -12520,7 +12665,7 @@ for j, t in enumerate(ts_surv):
           f""  {np.exp(-lam_cens_mean * t):8.3f}  {S_km[j]:6.3f}"")
 print(f""\nEmpirique NAIF (comme en section 3) : S(1500) = {(t_recorded > 1500).mean():.3f}""
       f""  <- fausse aussi : les censures a {c_star:.0f} h y sont comptees mortes."")",,,,,,,,a9073d9cc0288ff0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-lecture,markdown,fr,1a26caf41a112aba,"### Lecture : pourquoi le naïf s'effondre et la vraisemblance restaure
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-lecture,markdown,fr,ff5be727011f277b,"### Lecture : pourquoi le naïf s'effondre et la vraisemblance restaure
 
 - **Le biais naïf est un biais de comptage** : les 24 censures sont enregistrees comme des morts a
   $c^\star = 800$ h alors que leurs vraies durées depassent 800 h. Le taux naïf double presque la
@@ -12538,10 +12683,10 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-censure-lectur
   durée observee ne depasse $c^\star$, le risque est vide et l'estimateur non parametrique ne peut
   pas extrapoler. Le modèle parametrique, lui, extrapole (au prix de son hypothèse de loi) — c'est
   la complementarite non-parametrique/parametrique.
-- **Pont moteur** : Infer-19 mene la même comparaison cote EP — la ou PyMC ecrit `S(c_i)` a la
+- **Pont moteur** : Infer-18 mene la même comparaison cote EP — la ou PyMC ecrit `S(c_i)` a la
   main via `pm.Potential` (le MCMC accepte des facteurs arbitraires), Infer.NET n'a pas d'opérateur
   pour la forme contrainte `T_i > c^\star` et branche la même vraisemblance par sa forme exacte en
-  statistiques suffisantes. Même protocole, même forme fermee, deux paradigmes.",,,,,,,,1a26caf41a112aba,,,,,,,,,,,,,,,
+  statistiques suffisantes. Même protocole, même forme fermee, deux paradigmes.",,,,,,,,ff5be727011f277b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Survival-Analysis.ipynb,p19-exos-header,markdown,fr,312280b1f67d137d,"## 7. Exercices
 
 Les exercices etendent le modèle de durée au-dela de l'exemple execute de la section 6. Ils sont
@@ -12566,12 +12711,12 @@ print(""Exercice 3 a completer : sensibilite du biais naif au taux de censure.""
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,57adbb0f,markdown,fr,c7f2f92a788fce2a,"### Lecture du résultat — environnement
 
 La sortie confirme l'installation : `PyMC version: 6.3.2`. Les bibliothèques scientifiques (`numpy`, `pytensor`, `arviz`, `scipy`, `scikit-learn`, `matplotlib`) sont importées sous drapeaux `*_AVAILABLE`, avec un filtrage des avertissements de refactorisation d'arviz et de BLAS pytensor qui ne touchent pas la correction des résultats. Le notebook peut poursuivre sereinement.",,,,,,,,c7f2f92a788fce2a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,bce0121e,markdown,fr,f6500b85c7be0639,"### Lecture du résultat — capacités et difficultés estimées
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,bce0121e,markdown,fr,02bbe33285ca9579,"### Lecture du résultat — capacités et difficultés estimées
 
-La figure juxtapose deux panneaux. À gauche, les capacités estimées des 10 étudiants en barres horizontales : l'étudiant 6 culmine à +0.84, l'étudiant 7 descend à -0.86, les huit autres restent groupés autour de 0. À droite, les difficultés des 5 questions : les questions 0-2 sont négatives (autour de -0.26) et les questions 3-4 positives (autour de +0.28). Les hauteurs de barres sont les moyennes a posteriori estimées dans la section 2 ; la figure les rend simplement lisibles.",,,,,,,,f6500b85c7be0639,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,eee2a898,markdown,fr,980138b1b7bbaaae,"### Lecture du résultat — courbe ROC et AUC
+La figure juxtapose deux panneaux. À gauche, les capacités estimées des 10 étudiants en barres horizontales : l'étudiant 6 culmine à +0.85, l'étudiant 7 descend à -0.87, les huit autres restent groupés autour de 0. À droite, les difficultés des 5 questions : les questions 0-2 sont négatives (autour de -0.26) et les questions 3-4 positives (autour de +0.28). Les hauteurs de barres sont les moyennes a posteriori estimées dans la section 2 ; la figure les rend simplement lisibles.",,,,,,,,02bbe33285ca9579,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,eee2a898,markdown,fr,c770ad6eb4153ace,"### Lecture du résultat — courbe ROC et AUC
 
-La cellule rééchantillonne les réponses par prédiction posterior (`sample_posterior_predictive`) et conclut par `AUC (IRT): 0.784`. La courbe ROC trace le taux de vrais positifs contre le taux de faux positifs quand le seuil de décision varie : elle monte nettement au-dessus de la diagonale du hasard (AUC 0.5). Une AUC de 0.784 signifie que le modèle classe correctement une paire étudiant-question tirée au hasard environ 78 % du temps — un score honorable pour 10 étudiants, porté surtout par la séparation des deux profils extrêmes (5/5 et 0/5).",,,,,,,,980138b1b7bbaaae,,,,,,,,,,,,,,,
+La cellule rééchantillonne les réponses par prédiction posterior (`sample_posterior_predictive`) et conclut par `AUC (IRT): 0.779`. La courbe ROC trace le taux de vrais positifs contre le taux de faux positifs quand le seuil de décision varie : elle monte nettement au-dessus de la diagonale du hasard (AUC 0.5). Une AUC de 0.779 signifie que le modèle classe correctement une paire étudiant-question tirée au hasard environ 78 % du temps — un score honorable pour 10 étudiants, porté surtout par la séparation des deux profils extrêmes (5/5 et 0/5).",,,,,,,,c770ad6eb4153ace,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Skills-IRT.ipynb,54097a17,markdown,fr,863cc0be83853411,"### Lecture du résultat — priors informatifs contre priors vagues
 
 La figure compare, pour `slip` puis pour `guess`, le prior informatif (`Beta(2, 18)` et `Beta(3, 12)`, en bleu) au prior vague uniforme `Beta(1, 1)` (en rouge), avec la valeur attendue en pointillés (0.1 et 0.2). C'est le témoin de cette section : les deux lignes imprimées concluent que les priors informatifs **concentrent la probabilité autour des valeurs plausibles** — c'est exactement ce que les densités montrent. La **stabilisation de l'estimation** que la deuxième ligne invoque est le motif du choix : ici 8 à 10 étudiants, un régime où le prior porte une information réelle face aux données. Le carnet ne ré-échantillonne pas DINA avec le prior vague, l'effet sur le posterior n'y est pas mesuré.",,,,,,,,863cc0be83853411,,,,,,,,,,,,,,,
@@ -12859,7 +13004,7 @@ for d in decalages:
         ser = rng.standard_normal(n_dial) + np.where(np.arange(n_dial) < n_dial // 2, 0.0, d)
         vals[r] = compare_baseline(ser)[0]
     print(f""{d:>12.2f}{vals.mean():>16.2f}{np.median(vals):>10.2f}{100.0 * (vals > 0).mean():>12.1f} %"")",,,,,,,,7915f0c694c62ae4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,128b82b6,markdown,fr,4a82936baeaeb784,"### Lecture du résultat : ce que la baseline tranche
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Change-Point.ipynb,128b82b6,markdown,fr,8befbefb2f9babaf,"### Lecture du résultat : ce que la baseline tranche
 
 Sur la serie **avec rupture**, le verdict est sans appel : `Delta BIC = +150,5` en faveur du modèle a rupture, avec la coupe trouvee a `t = 51` (le vrai point est `t = 50`). La vraisemblance gagne enormement a poser une seconde moyenne, et ce gain surpasse de très loin la penalite des deux paramètres supplementaires.
 
@@ -12867,12 +13012,12 @@ Sur la serie **de bruit pur**, c'est la baseline triviale qui passe devant : `De
 
 Le cadran situe la frontiere de cet arbitrage : autour d'un **demi-ecart-type**, il est a l'equilibre sans basculer -- moyenne de `Delta` legerement positive (`+0,5`) mais mediane encore negative (`-0,6`), et `46,5 %` des tirages seulement gagnent a poser une coupure. A partir de `0,75 sigma` le modèle a rupture l'emporte clairement (`87,5 %`), et a un ecart-type complet le verdict est quasi acquis (`99,0 %`). En dessous de `0,5 sigma`, la baseline tient : a decalage nul, `5 %` des tirages seulement se laisseront tenter.
 
-La comparaison BIC repond ainsi a la question que l'entropie posait sans pouvoir la trancher : **la concentration du posterieur ne suffit pas -- c'est le rapport vraisemblance gagnee / paramètres payes qui departage la vraie rupture du bruit.** Le Bayes factor de [PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb) pousse la même logique un cran plus loin, en comparant les vraisemblances **marginales** (integrees sur les paramètres) plutot que maximisees.",,,,,,,,4a82936baeaeb784,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,titre,markdown,fr,298880775d5a30b3,"# Observabilité OTel — instrumenter un modèle PyMC avec OpenTelemetry
+La comparaison BIC repond ainsi a la question que l'entropie posait sans pouvoir la trancher : **la concentration du posterieur ne suffit pas -- c'est le rapport vraisemblance gagnee / paramètres payes qui departage la vraie rupture du bruit.** Le Bayes factor de [PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb) pousse la même logique un cran plus loin, en comparant les vraisemblances **marginales** (integrees sur les paramètres) plutot que maximisees.",,,,,,,,8befbefb2f9babaf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,titre,markdown,fr,9c141b11b7ce4090,"# Observabilité OTel — instrumenter un modèle PyMC avec OpenTelemetry
 
 **Durée estimee** : 40 minutes
 
-> **Pilier 3 des dépôts *agent-friendly* : context-enriched logging and telemetry.** Ce notebook est le carnet Python de référence du dépôt pour l'**instrumentation d'un modèle bayésien** avec [OpenTelemetry](https://opentelemetry.io/docs/languages/python/) — le miroir exact de ce que la série [Aspire/OTel (.NET)](../../GenAI/Integrations-DotNet/Aspire/README.md) fait côté C#. Le modèle témoin est le modèle hiérarchique de [PyMC-12](PyMC-11-Modeles-Hierarchiques.ipynb) ; ici, on ne change pas le modèle, on rend son **exécution observable du dehors** : qui a tourné, combien de temps, avec quels réglages, dans quelle hiérarchie d'appels.",,,,,,,,298880775d5a30b3,,,,,,,,,,,,,,,
+> **Pilier 3 des dépôts *agent-friendly* : context-enriched logging and telemetry.** Ce notebook est le carnet Python de référence du dépôt pour l'**instrumentation d'un modèle bayésien** avec [OpenTelemetry](https://opentelemetry.io/docs/languages/python/) — le miroir exact de ce que la série [Aspire/OTel (.NET)](../../GenAI/Integrations-DotNet/Aspire/README.md) fait côté C#. Le modèle témoin est le modèle hiérarchique de [PyMC-11](PyMC-11-Modeles-Hierarchiques.ipynb) ; ici, on ne change pas le modèle, on rend son **exécution observable du dehors** : qui a tourné, combien de temps, avec quels réglages, dans quelle hiérarchie d'appels.",,,,,,,,9c141b11b7ce4090,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,pourquoi,markdown,fr,77de0788b8258ab7,"## Pourquoi instrumenter un modèle probabiliste
 
 Un notebook PyMC typique répond à « quel est le posterior ? » ; il laisse muettes les questions d'**exécution** : combien de temps a coûté la compilation par rapport à l'échantillonnage ? Quel `target_accept` a réellement servi ? Les diagnostics ArviZ disent si la chaîne a convergé, pas **comment elle a tourné**. En production — ou devant un agent qui doit relancer, comparer ou auditer des runs — cette couche manquante s'appelle la **télémétrie**.
@@ -12900,13 +13045,13 @@ print(""opentelemetry-api"", pkg_version(""opentelemetry-api""))
 print(""opentelemetry-sdk"", pkg_version(""opentelemetry-sdk""))
 print(""numpy           "", np.__version__)",,,,,,,,da6800211fec2f6a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,lecture-imports,markdown,fr,2cfa8791e9fb9f10,"**Lecture.** Les versions rendues ci-dessus sont celles qui ont produit les sorties de ce carnet — un modèle MCMC n'est interprétable qu'avec son environnement. Aucune clé d'API, aucun réseau : tout l'instrument exporte vers la **console locale** (et une zone mémoire), jamais vers un collecteur distant.",,,,,,,,2cfa8791e9fb9f10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,modele-temoin,markdown,fr,5b9e8175b5003ecd,"## Le modèle témoin — hiérarchique à deux niveaux
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,modele-temoin,markdown,fr,2c4a9000a23bb8e4,"## Le modèle témoin — hiérarchique à deux niveaux
 
-On reprend le terrain de [PyMC-12](PyMC-11-Modeles-Hierarchiques.ipynb) : des classes de TP dont on mesure les scores d'élèves. Chaque classe a un effet propre, mais les effets partagent une moyenne et une dispersion de population — le **partial pooling**. Le modèle est écrit en paramétrisation **non centrée** (`theta = mu + sigma_c * z`), la recette anti-funnel de la série.
+On reprend le terrain de [PyMC-11](PyMC-11-Modeles-Hierarchiques.ipynb) : des classes de TP dont on mesure les scores d'élèves. Chaque classe a un effet propre, mais les effets partagent une moyenne et une dispersion de population — le **partial pooling**. Le modèle est écrit en paramétrisation **non centrée** (`theta = mu + sigma_c * z`), la recette anti-funnel de la série.
 
 Le modèle est **nommé** (`classes_hierarchiques`) : ce nom se propage dans tous les artefacts de l'exécution — le log NUTS, le posterior (les variables y sont préfixées `classes_hierarchiques::…`) et nos attributs de spans. Nommer un modèle est le premier geste d'observabilité : il rend chaque artefact traçable à son modèle d'origine.
 
-La hiérarchie à deux niveaux donne un modèle d'environ une dizaine de dimensions libres (`mu`, `sigma_c`, `sigma_obs`, huit offsets `z_c`) — assez pour que la compilation et l'échantillonnage aient des coûts **visiblement distincts**, assez simple pour tenir en quelques secondes.",,,,,,,,5b9e8175b5003ecd,,,,,,,,,,,,,,,
+La hiérarchie à deux niveaux donne un modèle d'environ une dizaine de dimensions libres (`mu`, `sigma_c`, `sigma_obs`, huit offsets `z_c`) — assez pour que la compilation et l'échantillonnage aient des coûts **visiblement distincts**, assez simple pour tenir en quelques secondes.",,,,,,,,2c4a9000a23bb8e4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,donnees,code,fr,054c48c0cccb52cd,"# Donnees synthetiques : 8 classes, effectifs tres inegaux (le shrinkage aura de quoi mordre)
 rng = np.random.default_rng(20261001)
 
@@ -12925,7 +13070,7 @@ print(f""classes : {len(CLASSES)}, eleves : {len(scores)}"")
 for k, c in enumerate(CLASSES):
     print(f""  classe {c} : n={effectifs[k]:>2}, moyenne observee={scores_par_classe[k].mean():.3f}"")",,,,,,,,054c48c0cccb52cd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,lecture-donnees,markdown,fr,a01189d34a44a9b9,"**Lecture.** Les effectifs vont de quelques élèves à des classes pleines : les moyennes observées des petites classes sont bruyantes, et c'est précisément ce que le partial pooling corrigera — l'interprétation postérieure viendra après l'instrumentation, au [tableau récapitulatif](#posterior).",,,,,,,,a01189d34a44a9b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,construction,code,fr,40882e93e595c797,"# Modele hierarchique non centre (meme ecriture que PyMC-12)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,construction,code,fr,a1a24d63b4425e11,"# Modele hierarchique non centre (meme ecriture que PyMC-11)
 coords = {""classe"": CLASSES}
 with pm.Model(""classes_hierarchiques"", coords=coords) as modele:
     mu = pm.Normal(""mu"", mu=3.0, sigma=2.0)                     # niveau population
@@ -12936,7 +13081,7 @@ with pm.Model(""classes_hierarchiques"", coords=coords) as modele:
     pm.Normal(""score"", mu=theta[classe_idx], sigma=sigma_obs, observed=scores)
 
 print(modele)
-print(""variables libres :"", modele.free_RVs)",,,,,,,,40882e93e595c797,,,,,,,,,,,,,,,
+print(""variables libres :"", modele.free_RVs)",,,,,,,,a1a24d63b4425e11,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,lecture-construction,markdown,fr,92a79a406124fa20,"**Lecture.** `pm.Model` construit un **graphe symbolique** — rien n'est encore compilé ni exécuté. Les deux étapes suivantes (compiler la densité, échantillonner) sont celles que nous allons rendre observables : c'est là que la durée d'une exécution se joue.",,,,,,,,92a79a406124fa20,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,otel-setup,markdown,fr,373707b0decff2cf,"## Mettre en place OpenTelemetry
 
@@ -13130,14 +13275,14 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,limites,markdown,fr,
 - **Wrappers, pas de télémétrie native.** PyMC n'expose pas de spans OTel publics : les noms `pymc.sample` / `pymc.compile.*` sont **notre convention** documentée, posée autour des appels réels. Ne pas les présenter comme des points d'API PyMC.
 - **La trace ne juge pas le modèle.** R-hat et ESS restent dans `posterior.check` en attributs : la décision statistique appartient à ArviZ et au modélisateur ; OTel décrit l'exécution, il ne remplace pas le diagnostic.
 - **Rejouabilité.** `random_seed` fixé : les durées varient d'une machine à l'autre, les quantités statistiques non.",,,,,,,,15ef68e0fc3d53ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,references,markdown,fr,c06d16e6184ff52f,"## Références
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,references,markdown,fr,5560e94a953e83e5,"## Références
 
 - OpenTelemetry — [Python SDK : traces](https://opentelemetry.io/docs/languages/python/) et [spans (spécification)](https://opentelemetry.io/docs/specs/otel/trace/api/#span).
 - PyMC — [Documentation](https://www.pymc.io/projects/docs/en/stable/) (échantillonnage `pm.sample`, compilation `Model.compile_logp`/`compile_dlogp`).
 - ArviZ — [Diagnostics](https://python.arviz.org/) (R-hat, ESS, divergences).
-- [PyMC-12 — Modèles Hiérarchiques](PyMC-11-Modeles-Hierarchiques.ipynb) — le modèle témoin : partial pooling, shrinkage, paramétrisation non centrée.
-- Série [Aspire/OTel (.NET)](../../GenAI/Integrations-DotNet/Aspire/README.md) — le miroir C#/.NET de ce carnet (Aspire, OTLP, dashboards).",,,,,,,,c06d16e6184ff52f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,retour,markdown,fr,ed7f5b4d1bc84b1c,**Retour** : [Série PyMC](README.md) | [Série Probas](../README.md) | [PyMC-12 — Modèles Hiérarchiques](PyMC-11-Modeles-Hierarchiques.ipynb),,,,,,,,ed7f5b4d1bc84b1c,,,,,,,,,,,,,,,
+- [PyMC-11 — Modèles Hiérarchiques](PyMC-11-Modeles-Hierarchiques.ipynb) — le modèle témoin : partial pooling, shrinkage, paramétrisation non centrée.
+- Série [Aspire/OTel (.NET)](../../GenAI/Integrations-DotNet/Aspire/README.md) — le miroir C#/.NET de ce carnet (Aspire, OTLP, dashboards).",,,,,,,,5560e94a953e83e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,retour,markdown,fr,54be075c336da4e6,**Retour** : [Série PyMC](README.md) | [Série Probas](../README.md) | [PyMC-11 — Modèles Hiérarchiques](PyMC-11-Modeles-Hierarchiques.ipynb),,,,,,,,54be075c336da4e6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,9add88bf,markdown,fr,e21b9b226ecba6ce,"## À retenir
 
 | Leçon | Mesure dans ce carnet |
@@ -13173,13 +13318,13 @@ Deux facteurs se multiplient, et il faut les deux pour lire le classement. Le *p
 Non : la sortie associe explicitement ce zéro au **non-centrage** (`le non-centrage a bien evite le funnel`). Une paramétrisation centrée du même modèle produit une géométrie en entonnoir que NUTS parcourt mal, et les divergences y sont le symptôme visible. Le zéro est donc une propriété de la paramétrisation choisie, pas une graine favorable.
 
 </details>",,,,,,,,9d29c5f707ff61c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,664bf294,markdown,fr,fb01bff3e647a5a3,"## Pour aller plus loin
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,664bf294,markdown,fr,3cf79131405ebe3f,"## Pour aller plus loin
 
 - **Le carnet suivant de la série** : [PyMC-02-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) — le même geste (définir, échantillonner, diagnostiquer) appliqué à un mélange de gaussiennes, où le posterior devient multimodal et où l'initialisation se met à compter.
 - [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) — le traitement approfondi des cas difficiles : divergences, funnels, modèles qui ne convergent pas.
 - [PyMC-11-Modeles-Hierarchiques](PyMC-11-Modeles-Hierarchiques.ipynb) — la paramétrisation non centrée rencontrée ici est reprise en détail, avec le funnel qu'elle évite.
 - **Lectures** : Salvatier, Wiecki & Fonnesbeck (2016), *Probabilistic programming in Python using PyMC3* ; Hoffman & Gelman (2014), *The No-U-Turn Sampler* — la référence de l'échantillonneur utilisé ici.
-- **Carnet voisin d'une autre série** : la série [Infer.NET](../../Probas/README.md) résout les mêmes modèles conjugués par passage de messages exact plutôt que par MCMC ; le tableau de comparaison de la section 7 donne le point de bascule entre les deux approches.",,,,,,,,fb01bff3e647a5a3,,,,,,,,,,,,,,,
+- **Carnet voisin d'une autre série** : la série [Infer.NET](../../Probas/README.md) résout les mêmes modèles conjugués par passage de messages exact plutôt que par MCMC ; le tableau de comparaison de la section 7 donne le point de bascule entre les deux approches.",,,,,,,,3cf79131405ebe3f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,6c9d8980,markdown,fr,4abdc9328790df60,"## À retenir
 
 | Leçon | Mesure dans ce carnet |
@@ -13224,14 +13369,14 @@ Les poids sont les proportions du mélange : `0.55` des trajets viennent de la c
 `z` est une variable **discrète** (l'étiquette de composante de chaque observation) : NUTS, qui suit un gradient, ne sait pas la parcourir, d'où l'ajout d'un pas de Gibbs dédié. `pm.NormalMixture` **marginalise** `z` analytiquement : la vraisemblance redevient continue et NUTS suffit. Même modèle, deux stratégies d'inférence — la seconde est plus simple à écrire et généralement plus efficace.
 
 </details>",,,,,,,,ac84faa5b84390c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,595ca661,markdown,fr,444756f83fbc4ace,"## Pour aller plus loin
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,595ca661,markdown,fr,32f84fc7dabb48ae,"## Pour aller plus loin
 
 - **Le carnet suivant de la série** : [PyMC-03-Factor-Graphs](PyMC-03-Factor-Graphs.ipynb) — la même mécanique de modèle, mais vue comme un graphe de facteurs, ce qui rend lisible *pourquoi* un mélange est une somme de chemins et non un seul.
 - [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) — quand l'**échantillonnage** ne converge pas : divergences, entonnoir de Neal et non-centrage, comparaison NUTS / ADVI / Metropolis, diagnostics ArviZ et prior predictive checks.
 - [PyMC-11-Modeles-Hierarchiques](PyMC-11-Modeles-Hierarchiques.ipynb) — le pooling partiel : `theta = mu + sigma_theta * z`, la rétraction d'un groupe clairsemé vers la moyenne, et le même piège d'entonnoir que ce carnet-ci rencontre sur ses composantes.
 - [PyMC-09-Model-Selection](PyMC-09-Model-Selection.ipynb) — comment trancher formellement entre la gaussienne unique et le mélange : LOO et comparaison de modèles, là où ce carnet se contente d'un contrôle prédictif visuel.
 - **Lectures** : Bishop (2006), *Pattern Recognition and Machine Learning*, chapitre 9 (mixtures of Gaussians, EM) ; McLachlan & Peel (2000), *Finite Mixture Models*.
-- **Carnet voisin d'une autre série** : la section 7 de ce carnet compare la même inférence en Infer.NET ; la série [Infer.NET](../../README.md) en donne le pendant complet.",,,,,,,,444756f83fbc4ace,,,,,,,,,,,,,,,
+- **Carnet voisin d'une autre série** : la section 7 de ce carnet compare la même inférence en Infer.NET ; la série [Infer.NET](../../README.md) en donne le pendant complet.",,,,,,,,32f84fc7dabb48ae,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,c1cc5d43,markdown,fr,e8b1c12ca498fba7,"## Vérifiez votre compréhension
 
 **1. Le modèle hiérarchique de la section 4.2 affiche `r_hat 1.00` et `ess_bulk 2202 / 1430`. Pourquoi cela ne suffit-il pas à le déclarer sain ?**
@@ -13269,9 +13414,9 @@ Parce que plusieurs priors sont comparés sur **les mêmes 5 essais** : `Beta(1,
 Une divergence est un **échec local** de l'intégrateur : le pas proposé fait exploser le Hamiltonien et NUTS abandonne cette trajectoire. Un R-hat élevé est un **désaccord global** entre chaînes : elles n'ont pas exploré la même région. Les deux peuvent coexister, mais un R-hat de 1.00 accompagné de 165 divergences montre que le second ne détecte pas le premier — les chaînes peuvent s'accorder sur une région mal explorée.
 
 </details>",,,,,,,,e8b1c12ca498fba7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,0cb85116,markdown,fr,3e7523dde020a318,"## Pour aller plus loin
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,0cb85116,markdown,fr,a29de1f4a169e94e,"## Pour aller plus loin
 
-**Dans la série** — [PyMC-12 (Modèles hiérarchiques)](PyMC-11-Modeles-Hierarchiques.ipynb) reprend le modèle de la section 4.2 comme un cas d'école au lieu d'un contre-exemple : la reparamétrisation non centrée y devient la construction par défaut, avec les mêmes diagnostics en sortie. [PyMC-03 (Factor Graphs)](PyMC-03-Factor-Graphs.ipynb) montre la même inférence lue sur la structure du graphe, et [PyMC-10 (Model Selection)](PyMC-09-Model-Selection.ipynb) traite la question voisine : comparer des modèles au lieu de réparer un seul.
+**Dans la série** — [PyMC-11 (Modèles hiérarchiques)](PyMC-11-Modeles-Hierarchiques.ipynb) reprend le modèle de la section 4.2 comme un cas d'école au lieu d'un contre-exemple : la reparamétrisation non centrée y devient la construction par défaut, avec les mêmes diagnostics en sortie. [PyMC-03 (Factor Graphs)](PyMC-03-Factor-Graphs.ipynb) montre la même inférence lue sur la structure du graphe, et [PyMC-09 (Model Selection)](PyMC-09-Model-Selection.ipynb) traite la question voisine : comparer des modèles au lieu de réparer un seul.
 
 **Lectures** —
 - Vehtari, Gelman, Simpson, Carpenter & Bürkner (2021), *Rank-normalization, folding, and localization: an improved R-hat*, Bayesian Analysis 16(2) — la définition de R-hat que calcule ArviZ, et pourquoi la version classique échoue sur les queues lourdes.
@@ -13281,7 +13426,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,0cb85116,markdown,
 
 **Séries voisines** — [Probas/Infer](../Infer/README.md) traite des modèles comparables par inférence variationnelle déterministe : à lire en regard de la section 3, où ADVI est présenté comme une approximation dont la variance est structurellement sous-estimée.
 
-**Retour** — [Index Probas](../README.md)",,,,,,,,3e7523dde020a318,,,,,,,,,,,,,,,
+**Retour** — [Index Probas](../README.md)",,,,,,,,a29de1f4a169e94e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,5c2edebf,markdown,fr,22a695bb003407bc,"## Vérifiez votre compréhension
 
 **1. Avant l'observation de l'arme, `P(Scarlet) = 0.6`. Après avoir appris que l'arme est celle de Mustard, elle tombe à `0.176`. Scarlet est-elle devenue moins suspecte, ou l'échantillonneur a-t-il mal convergé ?**
@@ -13369,7 +13514,7 @@ Ils mesurent deux régimes de dépendance, et c'est la définition même de la d
 Non : ce sont deux questions différentes. `Rain=1` observé est une **information** — si l'on voit qu'il pleut, les nuages sont plus probables (`0.800`, la valeur théorique du CPT). `do(Rain=1)` est une **intervention** : on coupe l'arête `Cloudy → Rain` et on fixe la pluie de l'extérieur, ce qui ne dit rien sur les nuages — leur probabilité reste la marginale `0.500`. Confondre les deux est l'erreur que Pearl résume par *seeing is not doing*.
 
 </details>",,,,,,,,2ab179071ae83f25,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,7b1ea4a5,markdown,fr,0dc0914a63ee09ae,"## Vérifiez votre compréhension
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,7b1ea4a5,markdown,fr,bf7075a6cf6f963b,"## Vérifiez votre compréhension
 
 **1. Le baromètre qui baisse est associé à la tempête (`0.656`), mais provoquer sa chute ne change rien (`0.310`). Quelle variable explique cet écart ?**
 
@@ -13426,4 +13571,86 @@ Ce notebook traite le `do()` en **probabiliste MCMC + énumération exacte** (`p
 
 ***
 
-[← PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) | [PyMC-06-Skills-IRT](PyMC-06-Skills-IRT.ipynb) | [Retour a la serie](README.md)",,,,,,,,0dc0914a63ee09ae,,,,,,,,,,,,,,,
+[← PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) | [PyMC-06-Skills-IRT](PyMC-06-Skills-IRT.ipynb) | [Retour a la serie](README.md)",,,,,,,,bf7075a6cf6f963b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,f023a108,code,fr,ec05493300f81bd3,"# --- Sondes de controle : le compteur de divergences suit la CONFIGURATION, pas le bruit ---
+# On rejoue le modele joint de la cellule precedente en ne changeant QU'UNE chose a la fois :
+# la graine, target_accept, ou le nombre de cores. Memes donnees (obs), meme nombre de tirages.
+def sonde_nuts(seed, target_accept=0.9, cores=2):
+    """"""Rejoue le modele joint avec une configuration de sampler donnee.""""""
+    with pm.Model(coords=coords) as modele_sonde:
+        sigma_Q = pm.HalfNormal(""sigma_Q"", sigma=2.0)
+        sigma_R = pm.HalfNormal(""sigma_R"", sigma=2.0)
+        d = pm.Normal(""d"", mu=0.0, sigma=1.0)
+        dx = pm.Normal(""dx"", mu=d, sigma=sigma_Q, dims=""t"")
+        state = pm.Deterministic(""state"", pt.cumsum(dx), dims=""t"")
+        pm.Normal(""y"", mu=state, sigma=sigma_R, observed=obs, dims=""t"")
+        tr = pm.sample(1000, tune=1000, chains=2, target_accept=target_accept,
+                       random_seed=seed, cores=cores, progressbar=False)
+    return tr
+
+def egalite_tirages(tr_a, tr_b):
+    """"""Egalite tirage a tirage des chaines posterieures completes, pas seulement des moyennes.
+
+    Compare chaque tirage de chaque chaine (np.array_equal) pour les hyperparametres ET
+    pour les increments latents dx : deux jeux de tirages differents pourraient partager
+    des moyennes identiques a six decimales, des chaines egales ne le peuvent pas.
+    """"""
+    return {v: bool(np.array_equal(tr_a.posterior[v].values, tr_b.posterior[v].values))
+            for v in (""sigma_Q"", ""sigma_R"", ""d"", ""dx"")}
+
+# (1) Reproductibilite : meme graine -> memes TIRAGES, qu'importe le processus ou le nombre de cores
+tr_replay = sonde_nuts(42)
+egal_replay = egalite_tirages(tr_replay, trace_joint)
+tr_cores1 = sonde_nuts(42, cores=1)
+egal_cores1 = egalite_tirages(tr_cores1, trace_joint)
+med_ref = az.summary(trace_joint, var_names=[""sigma_Q"", ""sigma_R"", ""d""], round_to=6)[""mean""]
+med_replay = az.summary(tr_replay, var_names=[""sigma_Q"", ""sigma_R"", ""d""], round_to=6)[""mean""]
+med_cores1 = az.summary(tr_cores1, var_names=[""sigma_Q"", ""sigma_R"", ""d""], round_to=6)[""mean""]
+ecart_max = float((med_replay - med_ref).abs().max())
+ecart_cores = float((med_cores1 - med_ref).abs().max())
+
+# (2) Sensibilite : changer la graine ou target_accept deplace le compteur de divergences
+tr_graine43 = sonde_nuts(43)
+diag43 = az.summary(tr_graine43, kind=""diagnostics"")
+div43 = int(tr_graine43.sample_stats[""diverging""].sum())
+rhat43 = float(diag43[""r_hat""].max())
+ess43 = int(diag43[""ess_bulk""].min())
+med43 = az.summary(tr_graine43, var_names=[""sigma_Q"", ""sigma_R"", ""d""], round_to=3)[""mean""]
+tr_ta95 = sonde_nuts(42, target_accept=0.95)
+diag95 = az.summary(tr_ta95, kind=""diagnostics"")
+div95 = int(tr_ta95.sample_stats[""diverging""].sum())
+rhat95 = float(diag95[""r_hat""].max())
+ess95 = int(diag95[""ess_bulk""].min())
+med95 = az.summary(tr_ta95, var_names=[""sigma_Q"", ""sigma_R"", ""d""], round_to=3)[""mean""]
+
+print(""Reproductibilite graine 42 -- egalite exacte des tirages (np.array_equal, chaines completes) :"")
+print(f""  second appel, tirages identiques au run de reference : {egal_replay}"")
+print(f""  cores=1, tirages identiques au run de reference       : {egal_cores1}"")
+print(f""  (temoin, moyennes post. : ecart max {ecart_max:.2e} et {ecart_cores:.2e})"")
+print()
+print(""Configuration            | Divergences | r_hat max | ess_bulk min | sigma_Q | sigma_R | drift"")
+print(f""graine 42, ta = 0.9 (ref) | {div_kf:>11d} | {float(diag_kf['r_hat'].max()):>9.3f} | {int(diag_kf['ess_bulk'].min()):>12d} | {med_ref['sigma_Q']:>7.3f} | {med_ref['sigma_R']:>7.3f} | {med_ref['d']:>5.3f}"")
+print(f""graine 43, ta = 0.9       | {div43:>11d} | {rhat43:>9.3f} | {ess43:>12d} | {med43['sigma_Q']:>7.3f} | {med43['sigma_R']:>7.3f} | {med43['d']:>5.3f}"")
+print(f""graine 42, ta = 0.95      | {div95:>11d} | {rhat95:>9.3f} | {ess95:>12d} | {med95['sigma_Q']:>7.3f} | {med95['sigma_R']:>7.3f} | {med95['d']:>5.3f}"")
+print(f""\nLecture honnete : ta = 0.95 ramene les divergences a {div95} mais laisse r_hat a {rhat95:.3f}, ""
+      f""au-dessus du seuil 1.01 -- amelioration partielle, pas une convergence demontree."")",,,,,,,,ec05493300f81bd3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Kalman-Filter.ipynb,f5c919b2,markdown,fr,13ae01d255540d14,"#### Expérience distincte — l'effet des versions de l'échantillonneur (documentée, hors environnement committé)
+
+La sonde ci-dessus ne fait varier que la **configuration** dans **un seul** environnement. Faire
+varier la **version** de l'échantillonneur est une expérience séparée : mêmes données, même
+graine (42), même protocole — seul l'environnement change. Mesures relevées lors des migrations
+passées du carnet :
+
+| Environnement | Divergences | `r_hat` max | `ess_bulk` min | `sigma_Q` | `sigma_R` | drift |
+|---|---|---|---|---|---|---|
+| PyMC 5.28.5, ArviZ 0.23.4, Python 3.11.9 | 1 | 1.020 | 96 | 0,633 | 1,481 | 0,314 |
+| PyMC 6.0.1, ArviZ 1.1.0, Python 3.13.16 | 5 | 1.030 | 89 | 0,664 | 1,456 | 0,318 |
+| PyMC 6.1.0, PyTensor 3.1.3, ArviZ 1.2.0, Python 3.13.14 | 0 | 1.030 | 140 | 0,640 | 1,464 | 0,315 |
+| PyMC 5.28.5, ArviZ 0.23.4, Python 3.13.16 | 11 | 1.060 | 79 | 0,703 | 1,446 | 0,317 |
+
+Ces environnements ne sont pas installés dans l'environnement committé : la table n'est **pas
+rejouable ici**, et c'est pourquoi elle est documentée comme expérience distincte plutôt que
+fondue dans les sondes exécutées ci-dessus. Protocole de rejeu : installer l'environnement visé,
+exécuter le carnet à graine 42, relever la ligne du tableau. À rejouer **à chaque migration de
+version** pour établir son effet — c'est elle qui fonde l'avertissement de la cellule d'imports :
+« le compte de divergences dépend de la version de PyMC ».",,,,,,,,13ae01d255540d14,,,,,,,,,,,,,,,
