@@ -14,10 +14,10 @@ reservee aux formes **positivement identifiees** : le format **explicite**
 essais -- elle porte sa **fournee** ET sa date. Toute autre mention d'un
 code est un rappel : le gel reste **global** (fail-CLOSED).
 
-Review du 26/11 (#28440) : le bloc qui suit le marqueur n'est le bloc des
-**essais** que si le marqueur **annonce** des essais ; et une clause de
-**rappel date** (« Essai du 22/11 : ... ») se rapporte a un essai passe :
-elle ne nomme pas le motif courant, meme avec la forme Rust complete.
+Le bloc suivant n'est lu que si le marqueur annonce des essais. La forme
+Rust est reconnue directement apres le separateur du marqueur, ou dans une
+ligne d'enumeration « Essais contenu : » annoncee par celui-ci ; une citation
+libre ne suffit pas, meme si elle porte une fournee et une date.
 """
 from __future__ import annotations
 
@@ -35,14 +35,6 @@ _FORME_RUST_RE = re.compile(
 
 #: Le marqueur **annonce**-t-il des essais ? (« 2 essais contenu consommes »)
 _ANNONCE_ESSAIS_RE = re.compile(r"\bessais?\b", re.IGNORECASE)
-
-#: Un **rappel date** d'essai : « Essai du 22/11 : ... » — l'essai passe.
-_RAPPEL_DATE_RE = re.compile(r"\bessais?\s+du\s+\d{1,2}\s*/\s*\d{1,2}",
-                             re.IGNORECASE)
-
-#: La fenetre de contexte : le rappel date precede immediatement le code.
-_FENETRE = 60
-
 
 def _blocs(corps: str) -> list[str]:
     """Les blocs du commentaire : les paragraphes, separes par une ligne vide."""
@@ -68,17 +60,10 @@ def bloc_courant(corps: str) -> tuple[str, str | None]:
 
 
 def _formes_rust(bloc: str) -> set[str]:
-    """Les codes en forme Rust mesuree, **hors rappels dates**.
-
-    « Essai du 22/11 : verify-reject (fournee w3p, 22/11) » porte la forme
-    complete, mais elle se rapporte a un essai passe : elle ne nomme pas le
-    motif courant.
-    """
+    """Extraire les codes de forme Rust d'une position deja reconnue."""
     bas = bloc.lower()
     trouves: set[str] = set()
     for m in _FORME_RUST_RE.finditer(bas):
-        if _RAPPEL_DATE_RE.search(bas[max(0, m.start() - _FENETRE):m.start()]):
-            continue
         trouves.add(m.group(1))
     return trouves
 
@@ -90,7 +75,14 @@ def codes_identifies(corps: str) -> set[str]:
     """
     marqueur, essais = bloc_courant(corps)
     trouves = {m.group(1) for m in _MOTIF_EXPLICITE_RE.finditer(marqueur.lower())}
-    for bloc in (marqueur, essais):
-        if bloc:
-            trouves |= _formes_rust(bloc)
+    # Ligne du marqueur elle-meme, ou enumeration d'essais annoncee.
+    lignes = marqueur.splitlines()
+    ligne = lignes[0] if lignes else ""
+    direct = re.search(r"--\s*([\w-]+\s*\([^()]*\bfournee\b[^()]*\))", ligne)
+    if direct:
+        trouves |= _formes_rust(direct.group(1))
+    if _ANNONCE_ESSAIS_RE.search(marqueur):
+        for ligne in (marqueur + "\n" + (essais or "")).splitlines():
+            if re.match(r"\s*essais\s+contenu\s*:", ligne, re.IGNORECASE):
+                trouves |= _formes_rust(ligne)
     return trouves

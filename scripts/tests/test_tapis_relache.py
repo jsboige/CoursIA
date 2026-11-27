@@ -58,6 +58,18 @@ def etat(lec, n: int, lane: str = LANE):
 
 # --- l'echec d'outil ne gele que la lane qui l'a rendu -----------------------
 
+@pytest.mark.parametrize("rappel", [
+    "Essai du 22/11 apres redemarrage du service et purge du cache partage : "
+    "verify-reject (fournee w3p, 22/11)",
+    "Essai 22/11 : verify-reject (fournee w3p, 22/11)",
+])
+def test_rappel_date_ne_surclasse_pas_la_barriere(rappel):
+    from coordination import tapis_relache
+    corps = f"[RELEASED] lane {AUTRE} -- GPU partage indisponible\n{rappel}"
+    assert not tapis_relache.est_echec_outil(corps)
+    assert etat(lecture([issue(1, comments=[com(24, corps)])]), 1).ecart == "RELACHEE"
+
+
 def test_un_echec_d_outil_ne_gele_pas_les_autres_lanes():
     """Le cas mesure : une lane a rendu le grain sur un echec d'outil ; les
     autres lanes n'ont pas le meme outillage -- le grain leur reste
