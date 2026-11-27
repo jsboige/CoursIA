@@ -197,7 +197,7 @@ class TestDrawCspGraphDegenerateInputGuard:
 
     def test_valid_inputs_unaffected(self):
         """The guards must not perturb the happy path: a small CSP with a
-        geographic ``pos`` (the Australia use-case from CSP-1-Fundamentals)
+        geographic ``pos`` (the Australia use-case from CSP-01-Fundamentals-Python)
         still renders a figure.
         """
         pos = {"WA": (0, 1), "NT": (1, 2), "SA": (1, 1)}

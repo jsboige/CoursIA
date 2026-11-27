@@ -2,7 +2,8 @@
 # Base sur comfyui-qwen avec nodes video supplementaires
 #
 # GPU: RTX 3090 (carte nvidia-smi GPU 1 ; seule carte visible de CUDA)
-# EXCLUSIF avec comfyui-qwen (meme GPU, ne pas lancer les deux)
+# comfyui-qwen vise l'autre carte (GPU 0, RTX 3080 Ti) : l'exclusivite entre les
+# deux services est levee (decision #28423 §5), ils peuvent tourner ensemble.
 # Port: 8189 (pour ne pas confliter avec comfyui-qwen:8188)
 #
 # Nodes video supplementaires (voir install_video_nodes.sh):
