@@ -160,7 +160,11 @@ def _split_lines(source: str) -> list[str]:
 
 
 def _read(path: Path) -> tuple[dict, str]:
-    raw = path.read_text(encoding="utf-8", newline="")
+    # `Path.read_text` n'accepte `newline=` qu'a partir de Python 3.13 ; le depot
+    # vise 3.10 et plus, d'ou l'ouverture explicite (meme semantique, sans saut
+    # de ligne traduit).
+    with open(path, encoding="utf-8", newline="") as handle:
+        raw = handle.read()
     return json.loads(raw), ("\r\n" if "\r\n" in raw else "\n")
 
 

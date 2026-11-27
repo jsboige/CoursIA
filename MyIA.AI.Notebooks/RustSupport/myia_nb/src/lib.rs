@@ -62,12 +62,45 @@ pub fn py_list<T: Display>(items: &[T]) -> String {
     format!("[{}]", parts.join(", "))
 }
 
+/// Rend une chaine comme Python l'affiche en `repr` : `'a'`, `"l'a"`, `'a\nb'`.
+///
+/// Le choix du guillemet suit `repr` : une chaine qui porte une apostrophe sans
+/// guillemet est entouree de guillemets doubles, ce qui evite l'echappement. Les
+/// barres obliques inverses, les sauts de ligne, les retours chariot et les
+/// tabulations sont echappes ; une chaine qui n'a rien a echapper est rendue
+/// telle quelle entre apostrophes.
+pub fn py_str(value: &str) -> String {
+    let quote = if value.contains('\'') && !value.contains('"') {
+        '"'
+    } else {
+        '\''
+    };
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push(quote);
+    for ch in value.chars() {
+        match ch {
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if c == quote => {
+                out.push('\\');
+                out.push(c);
+            }
+            c => out.push(c),
+        }
+    }
+    out.push(quote);
+    out
+}
+
 /// Rend des chaines comme Python les affiche dans une liste : `['a', 'b']`.
 ///
-/// C'est la representation `repr` : les chaines sont entourees d'apostrophes,
-/// la ou `py_list` les afficherait nues.
+/// C'est la representation `repr` : chaque chaine passe par `py_str`, donc les
+/// apostrophes et les sauts de ligne sont echappes comme Python le fait, la ou
+/// `py_list` les afficherait nues.
 pub fn py_str_list(items: &[String]) -> String {
-    let parts: Vec<String> = items.iter().map(|v| format!("'{}'", v)).collect();
+    let parts: Vec<String> = items.iter().map(|v| py_str(v)).collect();
     format!("[{}]", parts.join(", "))
 }
 
@@ -143,6 +176,28 @@ mod tests {
     fn str_list_porte_les_apostrophes() {
         let noms = vec!["alice".to_string(), "bob".to_string()];
         assert_eq!(py_str_list(&noms), "['alice', 'bob']");
+    }
+
+    #[test]
+    fn str_echappe_l_apostrophe_comme_repr() {
+        // Temoin : Python rend `repr("l'a")` en guillemets doubles.
+        assert_eq!(py_str("l'a"), "\"l'a\"");
+        assert_eq!(py_str("alice"), "'alice'");
+        // Une chaine qui porte les deux guillemets garde l'apostrophe echappee.
+        assert_eq!(py_str("l'a dit \"oui\""), "'l\\'a dit \"oui\"'");
+    }
+
+    #[test]
+    fn str_echappe_les_caracteres_de_controle() {
+        assert_eq!(py_str("a\nb"), "'a\\nb'");
+        assert_eq!(py_str("a\tb"), "'a\\tb'");
+        assert_eq!(py_str("a\\b"), "'a\\\\b'");
+    }
+
+    #[test]
+    fn str_list_echappe_chaque_element() {
+        let noms = vec!["l'a".to_string(), "a\nb".to_string()];
+        assert_eq!(py_str_list(&noms), "[\"l'a\", 'a\\nb']");
     }
 
     #[test]
