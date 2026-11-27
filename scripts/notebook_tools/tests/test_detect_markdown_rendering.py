@@ -395,7 +395,7 @@ class TestSourceListMissingNewlines:
     join (``_as_text`` concatenates verbatim) -> every downstream line-based
     rule sees a single line and reports nothing. The structural loss must be
     caught BEFORE normalization. Founding defect: #10305
-    ``02-7-CogVideoX-Text-to-Video.ipynb`` cell 21 (23 elements, 0 ``\\n``,
+    ``02-7-Text-to-Video-Poids-Ouverts.ipynb`` cell 21 (23 elements, 0 ``\\n``,
     1509 chars) passed the guard with 0 violations."""
 
     def _rules(self, cell):
@@ -482,7 +482,7 @@ class TestRealCorpusRegressionGuards:
         # so the bug shape cannot re-emerge in that cell.
         cell = _real_cell(
             "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/"
-            "02-7-CogVideoX-Text-to-Video.ipynb",
+            "02-7-Text-to-Video-Poids-Ouverts.ipynb",
             21,
         )
         assert cell["cell_type"] == "code", (

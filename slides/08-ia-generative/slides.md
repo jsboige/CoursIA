@@ -2051,7 +2051,7 @@ class: nb-concept nb-center nb-k114
 
 <p class="nb-foot"><strong>À observer.</strong> Suivre un point distinctif du sujet au début, au milieu et à la fin. Le déplacement observé est-il un mouvement cohérent ou une déformation du sujet ?</p>
 
-<p class="notebook-reference">Notebook : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb" target="_blank" rel="noopener">02-4-SVD-Image-to-Video.ipynb</a>.</p>
+<p class="notebook-reference">Notebook : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb" target="_blank" rel="noopener">02-4-Image-to-Video-Diffusion.ipynb</a>.</p>
 
 ---
 class: nb-map nb-k104

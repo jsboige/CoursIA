@@ -959,7 +959,7 @@
           }
         },
         {
-          "path": "GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb",
+          "path": "GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb",
           "title": "SVD - Stable Video Diffusion (Image-to-Video)",
           "duration_minutes": 45,
           "kernel": "Python 3",

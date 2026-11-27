@@ -105,7 +105,7 @@ MIN_DISTINCT_COLORS = 4  # nb de couleurs RGB distinctes en dessous duquel une
 # Le detecteur global (dimensions + bytes + distinct colors) rate le cas
 # "grille partiellement vide" : une grande image globalement riche peut
 # cacher des regions vides au milieu de regions pleines. Le cas fondateur
-# est la cellule 12 de 02-7-CogVideoX-Text-to-Video.ipynb (PR #10305) :
+# est la cellule 12 de 02-7-Text-to-Video-Poids-Ouverts.ipynb (PR #10305) :
 # une grille 4x4 1440x960 / 955 KB / 134k couleurs globales OU les rangées
 # 1-2 sont des cadres vides (std canal ~4-12) et les rangées 3-4 des
 # pommes rendues (std ~57-71). Aucune metrique globale ne le voit, le

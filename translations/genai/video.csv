@@ -6206,7 +6206,7 @@ Trois points à retenir :
 - `num_frames` doit valoir 4k+1 : selon la mesure datée de la section « Note sur les frames », les valeurs 16, 24 et 32 sont rejetées par le serveur.
 
 Les exercices 1 à 4 restent à faire. Le mode local (`diffusers`) n'a pas été exécuté dans ce run : il n'y a pas de mesure locale à comparer.",,,,,,,,b72506681217f05d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-0,markdown,fr,21401983495f33b5,"# LTX-Video - Generation Video Rapide et Legere
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-0,markdown,fr,36dbddd1b493b9a5,"# LTX-Video - Generation Video Rapide et Legere
 
 **Module :** 02-Video-Advanced  
 **Niveau :** Intermediaire  
@@ -6259,7 +6259,7 @@ carnets sans regle de decoupage explicite, cette lecture n'y est pas posee.
 - Notebook 02-1 (HunyuanVideo) complete pour comparaison
 - Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `imageio`, `imageio-ffmpeg`
 
-**Navigation :** [<< 02-1](02-1-HunyuanVideo-Generation.ipynb) | [Index](../README.md) | [Suivant >>](02-3-Wan-Video-Generation.ipynb)",,,,,,,,21401983495f33b5,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-1](02-1-Generation-Video-Locale.ipynb) | [Index](../README.md) | [Suivant >>](02-3-Wan-Video-Generation.ipynb)",,,,,,,,36dbddd1b493b9a5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-1,code,fr,aa62658284702950,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -7339,7 +7339,7 @@ print(f""3. Module 03-1 : Comparaison benchmark de tous les modeles video"")
 print(f""4. Combiner LTX image-to-video avec 01-4 (Real-ESRGAN) pour upscaling"")
 
 print(f""\nNotebook 02-2 LTX-Video Lightweight termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,74c4462b92cdbd39,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-fd7fad1e,markdown,fr,10363d1f225b910e,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb,cell-fd7fad1e,markdown,fr,bb52de8debb377d7,"## Conclusion
 
 Ce notebook a mesuré LTX-Video sur une RTX 4090 (24 GB) : une génération text-to-video de 25 frames en 704x480, 20 steps, prend 2.8 s avec un pic de 14.1 GB de VRAM (cellule de génération). Les sorties de ce carnet ont été produites en mode batch : le mode interactif n'a donc pas été exécuté.
 
@@ -7349,8 +7349,8 @@ Trois points à retenir :
 - **L'image-to-video réutilise les composants du text-to-video** : un seul jeu de poids reste en mémoire (cellule image-to-video et sa lecture).
 - **Les quatre exercices restent à compléter** : l'estimateur de VRAM, le générateur de prompts, l'analyseur de cohérence temporelle et le benchmark de configurations.
 
-**Pour aller plus loin** : le notebook [02-3 Wan](02-3-Wan-Video-Generation.ipynb) présente un autre modèle vidéo, le notebook [02-4 SVD](02-4-SVD-Image-to-Video.ipynb) traite l'animation d'images fixes, et le notebook [02-5 LTX-2](02-5-Video-Audio-Conjoint.ipynb) est la **génération suivante** de la même famille Lightricks — même lignée, mais **avec génération audio conjointe**, que ce carnet n'exerce pas.",,,,,,,,10363d1f225b910e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,b254bf28,markdown,fr,feec0a62a43a8377,"# Wan 2.1/2.2 - Generation Video Multilingue
+**Pour aller plus loin** : le notebook [02-3 Wan](02-3-Wan-Video-Generation.ipynb) présente un autre modèle vidéo, le notebook [02-4 SVD](02-4-Image-to-Video-Diffusion.ipynb) traite l'animation d'images fixes, et le notebook [02-5 LTX-2](02-5-Video-Audio-Conjoint.ipynb) est la **génération suivante** de la même famille Lightricks — même lignée, mais **avec génération audio conjointe**, que ce carnet n'exerce pas.",,,,,,,,bb52de8debb377d7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,b254bf28,markdown,fr,68d7bb90e1bcc25e,"# Wan 2.1/2.2 - Generation Video Multilingue
 
 **Module :** 02-Video-Advanced  
 **Niveau :** Intermediaire  
@@ -7378,7 +7378,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,b254bf
 - GPU avec 10+ GB VRAM
 - Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `imageio`
 
-**Navigation :** [<< 02-2](02-2-Generation-Video-Legere.ipynb) | [Index](../README.md) | [Suivant >>](02-4-SVD-Image-to-Video.ipynb)",,,,,,,,feec0a62a43a8377,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-2](02-2-Generation-Video-Legere.ipynb) | [Index](../README.md) | [Suivant >>](02-4-Image-to-Video-Diffusion.ipynb)",,,,,,,,68d7bb90e1bcc25e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,e77ed8a5,code,fr,74f737469f92738c,"# Parametres Papermill - JAMAIS modifier ce commentaire
 import os
 
@@ -8350,7 +8350,7 @@ print(f""3. Module 03-2 : Orchestration de pipelines text -> image -> video"")
 print(f""4. Tester Wan 2.2 quand disponible pour les ameliorations de qualite"")
 
 print(f""\nNotebook 02-3 Wan Video Generation termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,f512ccb0a05d29ac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,cell-cf17aeaa,markdown,fr,cf94d6e406d4935e,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,cell-cf17aeaa,markdown,fr,e2e344c1c9577f16,"## Conclusion
 
 Ce run a produit huit clips Wan 2.1 (1.3B) via l'API ComfyUI : deux prompts FR/EN, trois mouvements de caméra et trois ratios (liste des fichiers dans les statistiques de session). Ce qu'il montre :
 
@@ -8358,7 +8358,7 @@ Ce run a produit huit clips Wan 2.1 (1.3B) via l'API ComfyUI : deux prompts FR/E
 - Le temps de génération dépend de la résolution (de 20,2 s en 480 x 480 à 32,3 s en 480 x 832, section 4), pas du mot-clé de mouvement (32,3 s dans les trois cas, section 3).
 - Les trois exercices et l'exercice de synthèse sont à compléter par l'apprenant : leurs cellules sont des squelettes qui s'exécutent sans erreur.
 
-**Pour aller plus loin** : compléter `test_camera_movements()` et `generate_multilingual_comparison()`, puis ouvrir les clips MP4 de `outputs/wan_video/` pour juger le mouvement sur la vidéo entière. Le notebook suivant, [02-4 SVD](02-4-SVD-Image-to-Video.ipynb), passe de la génération à partir d'un texte à la génération à partir d'une image.",,,,,,,,cf94d6e406d4935e,,,,,,,,,,,,,,,
+**Pour aller plus loin** : compléter `test_camera_movements()` et `generate_multilingual_comparison()`, puis ouvrir les clips MP4 de `outputs/wan_video/` pour juger le mouvement sur la vidéo entière. Le notebook suivant, [02-4 SVD](02-4-Image-to-Video-Diffusion.ipynb), passe de la génération à partir d'un texte à la génération à partir d'une image.",,,,,,,,e2e344c1c9577f16,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb,cell-0,markdown,fr,451e369496092f26,"# SVD - Stable Video Diffusion (Image-to-Video)
 
 **Module :** 02-Video-Advanced  
@@ -9465,7 +9465,7 @@ simple reste statique. C'est ce que l'**Exercice 1** (`compare_image_categories`
 explore : comparer l'amplitude de mouvement générée sur des catégories d'images de
 textures croissantes.
 ",,,,,,,,256986d64da2f1b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-00,markdown,fr,c251f1ca6f2dbc65,"# LTX-2 - Generation Audiovisuelle Conjointe (Video + Audio)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-00,markdown,fr,ad22d42ffd4d0c82,"# LTX-2 - Generation Audiovisuelle Conjointe (Video + Audio)
 
 **Module :** 02-Video-Advanced
 **Niveau :** Avance
@@ -9490,8 +9490,8 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-0
 - **Gemma 3 12B telecharge** (text encoder, necessite acceptation licence sur HuggingFace)
 - Packages : `torch`, `bitsandbytes`, `imageio`, `imageio-ffmpeg`, `av`
 
-**Navigation :** [<< 02-4 SVD](02-4-SVD-Image-to-Video.ipynb) | [Index](../README.md) | [Comparaison >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)
-",,,,,,,,c251f1ca6f2dbc65,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-4 SVD](02-4-Image-to-Video-Diffusion.ipynb) | [Index](../README.md) | [Comparaison >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)
+",,,,,,,,ad22d42ffd4d0c82,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-01,code,fr,80383da434048bba,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -10403,7 +10403,7 @@ print(f""3. Module 03-1 : benchmark comparatif LTX-2 vs LTX-Video 0.9 vs Hunyuan
 print(f""4. Combiner LTX-2 audio-video avec le notebook Audio pour post-traitement foley"")
 
 print(f""\nNotebook 02-5 LTX-2 Audiovisual termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,f1fad4a0299ba584,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-19,markdown,fr,d3f92797454cefb3,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb,ltx2-19,markdown,fr,a359c70f8957c6a1,"## Conclusion
 
 Ce notebook a introduit **LTX-2**, le premier modèle fondationnel audio-video base sur DiT. Les points cles :
 
@@ -10437,7 +10437,7 @@ Le chemin **GGUF Q4 est celui qu'utilisent les amateurs** pour faire tourner LTX
 
 ***
 
-**Navigation :** [<< 02-4 SVD](02-4-SVD-Image-to-Video.ipynb) | [Index](../README.md) | [Comparaison multi-modèles >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)",,,,,,,,d3f92797454cefb3,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-4 SVD](02-4-Image-to-Video-Diffusion.ipynb) | [Index](../README.md) | [Comparaison multi-modèles >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)",,,,,,,,a359c70f8957c6a1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-header,markdown,fr,ce2204650123771d,"# Comparaison Multi-Modèles de Generation Video
 
 **Module :** 03-Video-Orchestration
@@ -19929,14 +19929,14 @@ Cette execution a ete realisee sur :
 
 Ces informations sont reportees dans `metadata.cost` du notebook, qui decrit **ce meme run** : 49 frames, 4 generations, la duree de generation, la duree du carnet complet et 9.6 GB de VRAM pic. Le run n'a pas ete produit par Papermill mais par un **kernel** : ses blocs `metadata.papermill` (carnet et cellules) dataient de la passe Papermill anterieure -- 2026-11-04T05:27Z --, une execution **anterieure** aux sorties commitees, dont la duree est inferieure a celle du run commite : les deux ne peuvent pas designer la meme execution. Ils ont donc ete retires plutot que laisses pointer sur un autre run. La datation du run commite se lit dans les horodatages `iopub` de ses cellules (`iopub.execute_input` / `iopub.status.idle`), conserves : 2026-11-04T16:38:44Z -> 17:02:24Z. Chaque nombre ci-dessus est donc retrouvable dans un bloc lisible par machine.
 ",,,,,,,,df70465d5a695948,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-Text-to-Video-Poids-Ouverts.ipynb,417b8527,markdown,fr,2fd166c13407895d,"## References
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-Text-to-Video-Poids-Ouverts.ipynb,417b8527,markdown,fr,1acf446103bd0a45,"## References
 
 - **Modele** : <https://huggingface.co/THUDM/CogVideoX-2b> (Apache-2.0)
 - **Pipeline diffusers** : <https://huggingface.co/docs/diffusers/api/pipelines/cogvideox>
 - **Couplage pedagogique** : [02-6 MiniMax H3 (descriptif INTRINSIC)](02-6-Video-Architecture-Licensing.ipynb) — le contraste entre ce notebook et 02-6 illustre la grille de decision licence-vs-capacite.
 
-**Navigation serie Video** : [02-1 HunyuanVideo](02-1-HunyuanVideo-Generation.ipynb) · [02-2 LTX-Video](02-2-Generation-Video-Legere.ipynb) · [02-3 Wan](02-3-Wan-Video-Generation.ipynb) · [02-4 SVD](02-4-SVD-Image-to-Video.ipynb) · [02-5 LTX-2](02-5-Video-Audio-Conjoint.ipynb) · [02-6 MiniMax H3](02-6-Video-Architecture-Licensing.ipynb) · **02-7 CogVideoX (ce notebook)**
-",,,,,,,,2fd166c13407895d,,,,,,,,,,,,,,,
+**Navigation serie Video** : [02-1 HunyuanVideo](02-1-Generation-Video-Locale.ipynb) · [02-2 LTX-Video](02-2-Generation-Video-Legere.ipynb) · [02-3 Wan](02-3-Wan-Video-Generation.ipynb) · [02-4 SVD](02-4-Image-to-Video-Diffusion.ipynb) · [02-5 LTX-2](02-5-Video-Audio-Conjoint.ipynb) · [02-6 MiniMax H3](02-6-Video-Architecture-Licensing.ipynb) · **02-7 CogVideoX (ce notebook)**
+",,,,,,,,1acf446103bd0a45,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,daa7eca4,code,fr,44a05400b4a4b962,"# Parameters
 notebook_mode = ""batch""
 skip_widgets = True
