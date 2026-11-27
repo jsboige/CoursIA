@@ -55,7 +55,7 @@ definition, prior to any Ext presentation).
 
 **Posed**: the full definition `Hⁿ_God(U, F) = Hⁿ(Γ(U, C^●F))`, the stage
 and `d⁰` calibrations, the additive sections functor (a reusable brick — the
-"flabby ⇒ Γ-acyclic" capstone (Part 94, merged #21072) will connect to it
+"flabby ⇒ Γ-acyclic" capstone (Part 102, merged #21072) will connect to it
 after the stack is retargeted onto main), and **brick 2**:
 `H⁰_God(U, F) ≅ F(U)` for `F` a sheaf — the sheafification wall identified
 in the P95 plan is not needed here: the monomorphism of the unit (Part 90)
@@ -125,7 +125,7 @@ open CategoryTheory CategoryTheory.Limits Opposite
 -- canonical complex itself is not yet functorial in `F` (Part 92 posed the
 -- object, not the action on morphisms); that is the distinct grain
 -- `godementCanonicalComplex_map`. The flabby-resolution route (Part 94,
--- `isFlasque_godementCanonicalComplex`; capstone #21072 "flabby ⇒
+-- `isFlasque_godementCanonicalComplex`; capstone Part 102, #21072 "flabby ⇒
 -- Γ-acyclic") will consume this definition: brick 2 `H⁰_God(U, F) ≅ Γ(U,F)`
 -- for `F` a sheaf, then brick 3 the long exact sequence.
 --

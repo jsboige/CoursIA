@@ -1,0 +1,17 @@
+# TRANCHE10 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE10
+guards:
+  # #23068 : un perimetre PR non evaluable (sonde git en echec, rc 2)
+  # emet en NEUTRAL "incident du garde" -- pas un rouge bloquant qui
+  # accuserait la PR, pas un vert silencieux non plus.
+  -
+    name: "Notebook outputs required (H.4 schema)"
+    argv: ["python", "scripts/notebook_tools/check_notebook_outputs_required.py", "--pr-diff", "{base_ref}", "HEAD", "--json"]
+    source: "notebook-outputs-required.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_notebook_outputs_required.py", ".github/workflows/notebook-outputs-required.yml", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2
