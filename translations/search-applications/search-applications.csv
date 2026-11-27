@@ -25156,7 +25156,7 @@ ax.set_xticklabels(line_labels)
 ax.set_title('Affectation optimale projetee sur la ligne des quintes (haut : depart, fleches : voix)')
 fig.tight_layout()
 plt.show()",,,,,,,,3e171482d9d79267,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb,8a9fd45b,markdown,fr,be5afd0ab2d3e4d4,"**Lecture des figures.** À gauche, le glouton : la courbe verte (G4) plonge de 10 demi-tons — une
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb,8a9fd45b,markdown,fr,7e1fa936a8a5d0ca,"**Lecture des figures.** À gauche, le glouton : la courbe verte (G4) plonge de 10 demi-tons — une
 septième mineure descendante, le mouvement le plus « visible » musicalement. À droite, l'optimal :
 trois déplacements courts, aucune courbe ne se croise de façon spectaculaire. Sur la ligne des quintes
 (figure 2), on voit la logique fonctionnelle du geste : le do « descend » fonctionnellement vers fa
@@ -25167,7 +25167,7 @@ de la dominante vers la sous-dominante).
 ## 6. Pont GenAI : post-traitement voice leading d'une progression générée
 
 Ce module est une **brique de post-traitement** pour la veine de génération musicale du dépôt (série [`GenAI/Audio`](../../GenAI/Audio/README.md)) :
-[`02-6-MIDI-Generation.ipynb`](../../GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb) génère des progressions
+[`Audio-02-6-MIDI-Generation-Python.ipynb`](../../GenAI/Audio/02-Advanced/Audio-02-6-MIDI-Generation-Python.ipynb) génère des progressions
 d'accords (mode diatonique) et [`04-3-Music-Composition-Workflow.ipynb`](../../GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb)
 les assemble en workflows. Ces générateurs produisent des **suites de pitch classes** ; le *voicing* —
 quelle octave, quelle voix — est précisément ce que notre affectation décide. Brancher ce notebook en
@@ -25177,7 +25177,7 @@ chantable en minimisant le mouvement.
 La progression d'entrée ci-dessous est le style de sortie du mode diatonique de 02-6 (une cadence
 ii-V-I suivie d'un enchaînement I-IV-V-I, à 3 voix). Elle est encodée en fallback autonome — pour
 rebrancher la sortie réelle de 02-6, remplacer `FALLBACK_PROGRESSION` par l'artefact `midi_output`
-que ce notebook exporte (même structure : liste d'accords en pitch classes + registre).",,,,,,,,be5afd0ab2d3e4d4,,,,,,,,,,,,,,,
+que ce notebook exporte (même structure : liste d'accords en pitch classes + registre).",,,,,,,,7e1fa936a8a5d0ca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb,f5dbaaba,code,fr,1129c2ecd16c8785,"# Post-traitement : re-voicer une progression complete, transition par transition
 # Progression style 02-6 (mode diatonique, cadence ii-V-I + I-IV-V-I), fallback autonome
 FALLBACK_PROGRESSION = ['Dm', 'G', 'C', 'F', 'G', 'C']
