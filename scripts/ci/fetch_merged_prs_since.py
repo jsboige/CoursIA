@@ -109,7 +109,7 @@ def since_date(days: int) -> str:
 
 
 def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS,
-           timeout: float | None = None) -> list[dict]:
+           timeout: float | None = None, run=None) -> list[dict]:
     """One date slice of merged PRs, ``[since, until)`` on MERGE time.
 
     Uses only flags `gh pr list` actually has -- `--search` and `--limit`.
@@ -122,21 +122,33 @@ def run_gh(since: str, until: str, fields: str = DEFAULT_FIELDS,
     ``subprocess.TimeoutExpired`` -- the caller in `pick_idle_grain` catches
     it explicitly, and never produces a partial corpus labelled complete.
     Pass `math.inf` to opt out (not recommended).
+
+    `run` is the COMMAND's launcher -- the contract of
+    `coordination.gh_bulk.run_defaut` : ``(argv, timeout) -> str``. When it is
+    given, this function keeps its own argv and its own JSON parsing and only
+    borrows the process launcher (#28114, I6 : the caller that owns a budget
+    must be able to run this organ under it). When it is omitted, the argv is
+    run by `subprocess.run` exactly as before.
     """
     if timeout is None:
         timeout = RUN_GH_TIMEOUT_S
-    out = subprocess.run(
-        [
-            "gh", "pr", "list",
-            "--state", "merged",
-            "--search", f"merged:>={since} merged:<{until}",
-            "--limit", str(SEARCH_RESULT_CAP),
-            "--json", fields,
-        ],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
-        timeout=timeout,
-    )
-    return json.loads(out.stdout)
+    argv = [
+        "gh", "pr", "list",
+        "--state", "merged",
+        "--search", f"merged:>={since} merged:<{until}",
+        "--limit", str(SEARCH_RESULT_CAP),
+        "--json", fields,
+    ]
+    if run is None:
+        out = subprocess.run(
+            argv,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True,
+            timeout=timeout,
+        )
+        return json.loads(out.stdout)
+    texte = run(argv, int(timeout))
+    return json.loads(texte)
 
 
 def aligned_boundaries(start: date, end: date, slice_days: int):

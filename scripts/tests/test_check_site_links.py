@@ -192,7 +192,7 @@ def test_raw_ipynb_detected_without_http_probe(monkeypatch) -> None:
     even when the probe would return 200 (the JSON-source case)."""
     mod = _load()
     html = ('<a href="MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/'
-            'SL-11-Capstone-NeuroSymbolic.ipynb">capstone</a>'
+            'SL-11-Capstone-NeuroSymbolic-Python.ipynb">capstone</a>'
             '<a href="ok.html">ok</a>')
     monkeypatch.setattr(mod, "fetch_text", lambda url, timeout=None: html)
     # Surtout : la sonde repond 200 PARTOUT -- le defaut est structurel,
@@ -202,7 +202,7 @@ def test_raw_ipynb_detected_without_http_probe(monkeypatch) -> None:
     assert result.broken == []
     assert result.raw_ipynb == [{
         "href": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/"
-                "SL-11-Capstone-NeuroSymbolic.ipynb",
+                "SL-11-Capstone-NeuroSymbolic-Python.ipynb",
         "source_page": BASE + "/",
     }]
     assert mod.main(["--base-url", BASE, "--page", "/"]) == 1

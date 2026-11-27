@@ -30,6 +30,17 @@ TAXONOMY_DIR = REPO_ROOT / curriculum_taxonomy.TAXONOMY_DIR
 COMPRESSION_NOTEBOOK = "InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
 
 
+def compression_concept_count() -> int:
+    """Concepts déclarés par la taxonomie Compression, lu dans la donnée.
+
+    La tranche T4 de #26646 a densifié la série entière (21 carnets) : le
+    compte ne s'épingle plus à la main, il se lit dans le fichier que l'export
+    doit servir en entier.
+    """
+    data = curriculum_taxonomy.load_taxonomy(TAXONOMY_DIR / "compression.json", REPO_ROOT)
+    return len(data["concepts"])
+
+
 @pytest.fixture(scope="module")
 def concepts_layer():
     return build_taxonomy_graph(TAXONOMY_DIR)
@@ -52,14 +63,14 @@ def test_concepts_only_graph_keeps_no_tree_nodes():
     stripped = curriculum_taxonomy.build_graph(data, emit_structure=False)
     for node_type in (VOCAB.Notebook, VOCAB.Series, VOCAB.Subseries):
         assert not list(stripped.subjects(RDF.type, node_type))
-    assert len(list(stripped.subjects(RDF.type, SKOS.Concept))) == 18
+    assert len(list(stripped.subjects(RDF.type, SKOS.Concept))) == len(data["concepts"])
     assert list(stripped.subjects(RDF.type, SKOS.ConceptScheme))
     assert list(stripped.subjects(RDF.type, VOCAB.CellCitation))
     assert len(stripped) < len(full)
 
 
 def test_build_taxonomy_graph_fuses_series_concepts(concepts_layer):
-    # La fusion (--taxonomy-dir, #25001) porte les 18 concepts de compression
+    # La fusion (--taxonomy-dir, #25001) porte tous les concepts de compression
     # parmi ceux de toutes les séries déclarées, sans nœud d'arbre dupliqué.
     for node_type in (VOCAB.Notebook, VOCAB.Series, VOCAB.Subseries):
         assert not list(concepts_layer.subjects(RDF.type, node_type))
@@ -72,7 +83,7 @@ def test_build_taxonomy_graph_fuses_series_concepts(concepts_layer):
         if any(str(sch).endswith("compression")
                for sch in concepts_layer.objects(c, SKOS.inScheme))
     ]
-    assert len(compression_concepts) == 18
+    assert len(compression_concepts) == compression_concept_count()
 
 
 def test_served_graph_conforms_to_shapes(served_graph):
@@ -112,7 +123,7 @@ def test_generate_end_to_end_counts_every_declared_concept(tmp_path, capsys):
 
 def test_query_concepts_by_series(served_graph):
     lines = concepts_by_series(served_graph, "compression")
-    assert len(lines) == 18
+    assert len(lines) == compression_concept_count()
     assert all("/concept/" in line for line in lines)
 
 
@@ -164,7 +175,7 @@ def test_gateway_concepts_action(served_graph):
     from curriculum_gateway import service
 
     ok = service.handle(served_graph, {"action": "concepts", "series": "Compression"})
-    assert ok["status"] == "ok" and len(ok["results"]) == 18
+    assert ok["status"] == "ok" and len(ok["results"]) == compression_concept_count()
     by_notebook = service.handle(
         served_graph, {"action": "concepts", "notebook": COMPRESSION_NOTEBOOK}
     )
