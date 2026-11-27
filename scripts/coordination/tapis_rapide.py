@@ -238,7 +238,9 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PAUSE", lambda: tapis_attente.pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
-        ("RELACHEE", lambda: tapis_attente.relachee(evts, ctx["maintenant"], ctx.get("chemins"))),
+        # Portee par les CHEMINS (#28899) puis par la LANE (#28440).
+        ("RELACHEE", lambda: tapis_attente.relachee(
+            evts, ctx["maintenant"], ctx["lane"], ctx.get("chemins"))),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]

@@ -28,7 +28,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from coordination import claim_grammar
+from coordination import claim_grammar, tapis_relache
 
 #: Fenetre de remise de main, en jours.
 RELACHE_J = 3
@@ -48,20 +48,30 @@ def _vise(ev, chemins: list[str] | None) -> bool:
     return claim_grammar._scopes_may_overlap_by_pattern(globes, list(chemins))
 
 
-def relachee(evts: list, maintenant: datetime,
+def relachee(evts: list, maintenant: datetime, lane: str,
              chemins: list[str] | None = None) -> str | None:
     """Le dernier marqueur du fil QUI CONCERNE `chemins` (tous s'ils ne sont
-    pas donnes) est un [RELEASED] de moins de RELACHE_J jours, quelle que soit
-    la lane : son motif (barriere, siege) vaut encore."""
-    for ev in reversed(evts):
+    pas donnes) est un [RELEASED] de moins de RELACHE_J jours.
+
+    Deux portees, pour deux questions differentes (#28899, puis #28440) :
+
+    - les CHEMINS : un `[RELEASED] paths:A` ne gele pas la qualification
+      demandee sur les chemins B, et n'efface pas la remise anterieure qui,
+      elle, portait ;
+    - la LANE : la portee d'un rendu depend de son motif -- un echec d'OUTIL
+      ne gele que la lane qui l'a rendu, une barriere reelle gele la flotte
+      (`tapis_relache.motif`, fail-CLOSED sur un motif inconnu).
+    """
+    for i in range(len(evts) - 1, -1, -1):
+        ev = evts[i]
         if not _vise(ev, chemins):
             continue  # sur d'AUTRES chemins : il n'efface rien ici (#28899)
         if ev.marque != "RELEASED" or ev.attend:
             return None  # un [RELEASED] qui porte une condition est une PAUSE
-        age = round((maintenant - ev.quand).total_seconds() / 86400, 1)
-        if age >= RELACHE_J:
-            return None
-        return f"rendue par {ev.lane or '?'} il y a {age} j (< {RELACHE_J} j) : lire son motif"
+        # `motif` lit la lane du rendu sur les marqueurs qui PRECEDENT celui-ci
+        # (`portee` scanne `evts[:-1]`) : il recoit le fil tronque, jamais
+        # `evts` entier -- la queue du fil est posterieure a la remise de main.
+        return tapis_relache.motif(evts[:i + 1], ev, maintenant, lane, RELACHE_J)
     return None
 
 

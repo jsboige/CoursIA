@@ -747,8 +747,16 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tapis_leger_texte_occupation.py la trente-troisieme (la SECTION OCCUPATION
 # de la sortie texte -- meme raison, la fonction `texte` passait 60 lignes,
 # 22/11).
+#
+# 27/11 : tapis_rapide.py passe de 521 a 523 lignes et tapis_attente.py de 78
+# a 88, par la FUSION de #28440 (#28899) -- les deux portees du meme ecart
+# vivent desormais dans un seul appel a quatre arguments : la LANE
+# (`tapis_relache.motif`, extrait le 27/11) et les CHEMINS (`_vise`). Rien a
+# extraire sans deplacer le probleme, mesure : `_vise` (13 lignes) vers
+# `tapis_relache.py` le porterait a 103 pour un plafond de 100, et vers
+# `claim_grammar.py` a 2346 pour son entree de `script_size_ceilings.json`.
 
-@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 521),
+@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 523),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
@@ -794,7 +802,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_voie_leger.py", 40),
                                               ("tapis_acceptance.py", 300),
                                               ("tapis_assiette.py", 200),
-                                              ("tapis_attente.py", 78),
+                                              ("tapis_attente.py", 88),
                                               ("tapis_leger_texte.py", 80),
                                               ("tapis_cap_livraisons.py", 160),
                                               ("tapis_borne.py", 140),

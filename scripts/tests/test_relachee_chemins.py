@@ -62,14 +62,14 @@ def _qualifie(payload: dict, chemins: list[str] | None) -> tuple[str, str] | Non
     return tapis_qualification_fil.qualification_grain(payload, LANE, NOW, chemins)
 
 
-def _etat(*commentaires: dict, chemins: list[str] | None) -> tr.Etat:
-    """La decision de l'organe sur le fil."""
+def _etat(*commentaires: dict, chemins: list[str] | None, lane: str = LANE) -> tr.Etat:
+    """La decision de l'organe sur le fil, pour une lane donnee."""
     it = {"number": 1, "title": "Grain 1", "body": "", "labels": [],
           "created_at": "2026-10-01T00:00:00Z", "comments_total": len(commentaires),
           "comments": [{"created_at": c["createdAt"], "author": "jsboige", "body": c["body"]}
                        for c in commentaires]}
     return tr.etats(gh_bulk.Lecture(issues=[it], prs=[], citations={}),
-                    LANE, NOW, 45, chemins)[0]
+                    lane, NOW, 45, chemins)[0]
 
 
 # --- les quatre tests de l'issue ----------------------------------------------
@@ -142,6 +142,27 @@ def test_un_marqueur_global_posterieur_l_emporte_toujours():
                    _comment(1, f"[CLAIMED] lane {AUTRE} -- je reprends le lot"))
     assert _qualifie(fil, [A]) is None
     assert _etat(*fil["comments"], chemins=[A]).ecart == "RECLAMEE"
+
+
+# --- la portee par LANE, fusionnee le 27/11 (#28440) ----------------------------
+
+def test_les_deux_portees_se_composent_outil_et_chemins():
+    """Fusion de #28440 : un `[RELEASED]` ne retient que si son motif vaut POUR
+    MOI (un echec d'outil ne gele que la lane qui l'a rendu) ET s'il nomme l'un
+    des chemins demandes -- les deux portees vivent dans le meme appel."""
+    rendue = _comment(1, f"[RELEASED] lane {AUTRE} -- motif: verify-reject "
+                         f"-- paths: {A}\n\nLe constat du critique.")
+    assert _etat(rendue, chemins=[A]).ecart != "RELACHEE"          # autre lane
+    assert _etat(rendue, chemins=[A], lane=AUTRE).ecart == "RELACHEE"  # sa lane
+    assert _etat(rendue, chemins=[B], lane=AUTRE).ecart != "RELACHEE"  # autre chemin
+
+
+def test_une_barriere_reelle_gele_toute_la_flotte():
+    """Le vocabulaire des echecs d'outil est FERME (#28440, fail-CLOSED) : un
+    motif qu'il ne connait pas laisse le gel global, comme avant."""
+    barriere = _comment(1, f"[RELEASED] lane {AUTRE} -- motif: gpu-partage-indisponible")
+    code, motif = _qualifie(_payload(barriere), [A])
+    assert code == "RELACHEE" and f"rendue par {AUTRE}" in motif
 
 
 # --- la clause, lue avec la grammaire des claims --------------------------------
