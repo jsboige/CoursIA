@@ -7864,12 +7864,12 @@
       "needs": {
         "gpu": true,
         "gpu_notebooks": [
-          "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-Generation-Video-Locale.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb",
           "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb",
           "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb",
+          "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb",
           "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb",
-          "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-Text-to-Video-Poids-Ouverts.ipynb"
+          "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb"
         ],
         "api_key_count": 3,
         "network_services": [

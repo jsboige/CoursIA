@@ -411,13 +411,13 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 4 | [Qwen2.5-VL Video Analysis - Comprehension Video Locale](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb) | BETA | Non |
 | 5 | [Video Enhancement - Real-ESRGAN et Interpolation de…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb) | ALPHA | Non |
 | 6 | [AnimateDiff - Introduction a la Generation…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb) | BETA | Non |
-| 7 | [HunyuanVideo](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-Generation-Video-Locale.ipynb) | BETA | Non |
+| 7 | [HunyuanVideo](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | BETA | Non |
 | 8 | [LTX-Video - Generation Video Rapide et Legere](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb) | BETA | Non |
 | 9 | [Wan 2.1/2.2 - Generation Video Multilingue](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb) | BETA | Non |
-| 10 | [SVD - Stable Video Diffusion (Image-to-Video)](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-Image-to-Video-Diffusion.ipynb) | BETA | Non |
+| 10 | [SVD - Stable Video Diffusion (Image-to-Video)](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb) | BETA | Non |
 | 11 | [LTX-2 - Generation Audiovisuelle Conjointe (Video +…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb) | BETA | Non |
 | 12 | [MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb) | BETA | Non |
-| 13 | [CogVideoX - Generation Video depuis Texte (Open…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-Text-to-Video-Poids-Ouverts.ipynb) | BETA | Non |
+| 13 | [CogVideoX - Generation Video depuis Texte (Open…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb) | BETA | Non |
 | 14 | [PAN 2 — Modèle du monde et raisonnement simulatif (GLP)](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-8-PAN2-Modele-du-Monde-GLP.ipynb) | BETA | Non |
 | 15 | [Comparaison Multi-Modèles de Generation Video](../../MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) | BETA | Non |
 | 16 | [Orchestration de Pipelines Video](../../MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) | ALPHA | Non |
