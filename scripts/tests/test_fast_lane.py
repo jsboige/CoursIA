@@ -279,10 +279,9 @@ def test_registre_absent_le_module_reste_importable(tmp_path):
     # Les corps des commentaires vivent dans un module voisin (#27572) :
     # l'arbre copie doit le porter, sinon l'import du registre meurt.
     shutil.copyfile(CI_DIR / "fast_lane_commenters.py", ci / "fast_lane_commenters.py")
-    # Le corps du garde `twin-execution-heritage-guard` vit de la meme maniere
-    # (#27995) : l'arbre copie doit porter ce module voisin, lui aussi.
-    shutil.copyfile(CI_DIR / "fast_lane_twin_heritage.py",
-                    ci / "fast_lane_twin_heritage.py")
+    # Les gardes vivent en donnees YAML (#28117) : l'arbre copie doit porter
+    # le dossier fast_lane_registry.d/, sinon le chargeur meurt a l'import.
+    shutil.copytree(CI_DIR / "fast_lane_registry.d", ci / "fast_lane_registry.d")
     code = (
         "import json, sys\n"
         f"sys.path.insert(0, {str(ci)!r})\n"
