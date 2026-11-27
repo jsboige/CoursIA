@@ -1,0 +1,10 @@
+# TRANCHE28 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE28
+guards:
+  -
+    name: "dwell-narrative-pin"
+    argv: ["python", "-m", "pytest", "-q", "scripts/tests/test_dwell_rule_matches_organ.py"]
+    source: "native"
+    paths: [".claude/rules/git-workflow.md", "docs/reference/git-workflow-detail.md", "scripts/tests/test_dwell_rule_matches_organ.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    absorbed: true
