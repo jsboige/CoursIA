@@ -466,7 +466,6 @@ layout: two-cols
   - sur un ensemble de test
   - comme fonction de la taille
   - de l’ensemble d’apprentissage
-  - Et parfois double-descente
 - Et parfois double-descente
 
 <div v-click="2">
@@ -521,7 +520,7 @@ layout: two-cols
 - Elagage χ2 du nom de la distribution de la déviation
   - = test du  « khi-deux » en statistiques
   - Hypothèse nulle = variable indépendantes
-  - Théorème central limite: n → ∞  distribution χ2
+  - Théorème central limite: n → ∞ ⇒ distribution χ2
 </div>
 
 
@@ -550,12 +549,12 @@ layout: two-cols
   - Nécessité d’un troisième ensemble: ensemble de validation
   - = Validation croisée « hold out » (cross validation)
   - Mais sous-utilisation non optimale des données
-  -  Validation croisée k-uple: batchs successifs (k tests tirés)
+  - → Validation croisée k-uple: batchs successifs (k tests tirés)
 - Choix du modèle: complexité vs précision
-  - Optimisation  Taille (degré polynôme, nœuds arbre)
+  - Optimisation ← Taille (degré polynôme, nœuds arbre)
   - Emballage: Enumération des modèles selon taille et résultats
-- Taux d’erreur  fonction de perte (Loss)
-  - F(x) = y, h(x) = y’  L(x,y,y’) = Utilité(y/x) – utilité (y’/x)
+- Taux d’erreur → fonction de perte (Loss)
+  - F(x) = y, h(x) = y’ ⇒ L(x,y,y’) = Utilité(y/x) – utilité (y’/x)
   - Ex: L(spam, non spam) >> L(non spam, spam)
   - Ex: Normes: L0/1 = seuil, L1 = abs, L2 = perte quadratique
   - Score F1 = 2* Precision * Recall / (Précision + Recall)
@@ -584,12 +583,12 @@ layout: two-cols
 - Perte Générale:
 - Importance de la loi de probabilité P(x,y)
 - On veut minimiser PerteGen mais P pas disponible
--  Perte empirique   (estimation dans E)
+- → Perte empirique   (estimation dans E)
 - Causes: irréalisabilité, variabilité, bruit, complexité
 - Pénalisation de la complexité = régularisation
 - Ex: sommes des (coef)2
 - Diminution des dimensions
--  sélection d’attributs  (ex: élagage khi-2)
+- → sélection d’attributs  (ex: élagage khi-2)
 - Utilisation de la même échelle (Entropie)
 - Longueur de description minimale
 - MDL = taille totale modèle + corrections données en bits
@@ -724,7 +723,7 @@ layout: two-cols
 - Unité de McCulloch-Pitts
 - Inspiration biologique
 - Simplification élémentaire
--  Multi-Perceptrons
+- → Multi-Perceptrons
 - Structure
 - Unités / neurones
 - Connexions / poids
@@ -732,13 +731,13 @@ layout: two-cols
 - Couches
 - Feed-Forward
 - 1 ou plusieurs couches successives
--  unités cachées
+- → unités cachées
 - Graphe orienté acyclique
 - Pas d’état interne
 - Récurrent
 - Connexions réentrantes
--  système dynamique, états stables
--  mémoire à court terme mais plus complexe à comprendre / maîtriser
+- → système dynamique, états stables
+- → mémoire à court terme mais plus complexe à comprendre / maîtriser
 </div>
 
 
@@ -1022,7 +1021,7 @@ layout: default
 
 <div v-click="1" class="architecture-pair">
   <figure><LearningFigure file="img_052.png" alt="Connexions entre les couches successives de DenseNet" /><figcaption><strong>DenseNet.</strong> Une couche concatène les caractéristiques des couches précédentes.</figcaption></figure>
-  <figure><LearningFigure file="img_053.png" alt="Encodeur et décodeur de U-Net reliés à plusieurs résolutions" /><figcaption><strong>U-Net.</strong> Le décodeur récupère les détails de même résolution, sans addition résiduelle. Variantes : V-Net et U-Net++.</figcaption></figure>
+  <figure><LearningFigure file="img_053.png" alt="Encodeur et décodeur de U-Net reliés à plusieurs résolutions" /><figcaption><strong>U-Net.</strong> Encodeur-décodeur de type autoencodeur pour la segmentation d’images ; les raccourcis transmettent les détails au décodeur. Variantes : V-Net et U-Net++.</figcaption></figure>
 </div>
 
 <style scoped>
@@ -2354,7 +2353,7 @@ Si $s'$ est terminal, la cible est $r$. L’exploration guide le choix de la pro
 <div><LearningFigure file="img_112.png" alt="Mise à jour temporelle de Q" /><LearningFigure file="img_109.png" alt="Pseudo-code de référence de l’agent Q-learning" /></div>
 </div>
 
-<div v-click="3" class="q-step"><section><h2>Sarsa : une autre cible</h2><p>Q-learning prend le maximum (hors politique). Sarsa évalue l’action réellement choisie (sur politique).</p><p>Le nombre d’échantillons requis dépend du problème et de l’exploration.</p></section><div><LearningFigure file="img_113.png" alt="Mise à jour Sarsa avec l’action suivante choisie" /></div></div>
+<div v-click="3" class="q-step"><section><h2>Sarsa : une autre cible</h2><p>State–action–reward–state–action : Q-learning prend le maximum (hors politique), tandis que Sarsa évalue l’action choisie (sur politique).</p><p>Le nombre d’échantillons requis dépend du problème et de l’exploration.</p></section><div><LearningFigure file="img_113.png" alt="Mise à jour Sarsa avec l’action suivante choisie" /></div></div>
 
 <style scoped>
 .q-step { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 38%); align-items:center; gap:18px; margin-bottom:8px; font-size:17px; line-height:1.25; }
@@ -2455,7 +2454,7 @@ Le réseau reçoit l’état $s$ (par exemple, une pile d’images Atari) et pr�
 
 <v-click>
 
-**Comment explorer ?** Une politique $\varepsilon$-gloutonne choisit parfois une action au hasard, plus souvent au début. Le replay et le réseau cible stabilisent l’entraînement, mais ne garantissent pas sa convergence.
+**Comment explorer ?** Une politique $\varepsilon$-gloutonne choisit parfois une action au hasard ; par exemple, $\varepsilon$ décroît de 1 à 0,1. On peut aussi borner les récompenses et l’erreur d’apprentissage (*reward clipping*, *error clipping*). Ces techniques ne garantissent pas la convergence.
 
 </v-click>
 
