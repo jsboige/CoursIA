@@ -711,8 +711,8 @@
   "15296": {
    "url": "https://www.quantconnect.com/research/15296/overnight-anomaly/",
    "lastmod": "2024-04-17T21:06:25+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-11-24",
+   "issue": 28404
   },
   "15295": {
    "url": "https://www.quantconnect.com/research/15295/option-expiration-week-effect/",

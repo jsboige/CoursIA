@@ -4841,3 +4841,51 @@ TRANCHE54: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+
+# TRANCHE56 -- cliquet de longueur de chemin (#27676).
+# Renumerotee le 23/11 : TRANCHE55 est pris par #27544 sur origin/main
+# (fraicheur du manifeste des dependances). Sans renumerotation, les
+# deux blocs portaient le meme nom : le second masquait le premier et le
+# garde « fraicheur du manifeste » sortait de la chaine d'agregation.
+# Sous Windows, `git worktree add` echoue des que le prefixe du worktree plus
+# le chemin le plus long du depot depasse 260 caracteres (« Filename too long »,
+# puis « Could not reset index file »). Mesure au 2026-11-21 sur `origin/main` :
+# le chemin le plus long faisait 203 caracteres, et la fournee de
+# `myia-po-2028` est morte sur ce checkout.
+#
+# Le garde est un CLIQUET : il ne juge que les chemins AJOUTES (`A`) ou
+# RENOMMES (`R`, chemin nouveau). La dette deja presente sur la base n'est pas
+# rougee -- sinon le garde rougirait des sa naissance et aucune PR ne pourrait
+# etre verte. C'est ce qui rend le raccourcissement progressif : chaque PR
+# rapproche le stock de la borne, aucune ne peut la repousser.
+#
+# `paths` est VIDE : la surveillance porte sur TOUTE PR qui introduit un
+# chemin, pas sur un type de fichier. Un `paths` restreint au script du garde
+# ne le declencherait que lorsque le garde lui-meme change -- le garde
+# n'existerait alors que pour lui-meme.
+#
+# `pre_argv` fait prouver l'organe avant de lui faire rendre un verdict : un
+# detecteur qui ne peut pas prouver qu'il tire est indiscernable d'un
+# detecteur debranche (lecon #11685/#12817). `diff_bounded=True` : le verdict
+# est un DELTA (les chemins ajoutes par la PR), jamais un heritage de `main`.
+# ---------------------------------------------------------------------------
+TRANCHE56: list[Guard] = [
+    Guard(
+        name="path-length ratchet (added paths <= 160 chars)",
+        source=FAST_LANE_NATIVE,
+        paths=[],
+        pre_argv=[
+            "python", "scripts/ci/check_path_length.py", "--self",
+        ],
+        argv=[
+            "python", "scripts/ci/check_path_length.py",
+            "--base", "{base_ref}", "--head", "HEAD", "--limit", "160",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
