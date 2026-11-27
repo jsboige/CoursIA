@@ -1,0 +1,11 @@
+# TRANCHE23 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE23
+guards:
+  -
+    name: "Translation duplicate keys (#21489)"
+    argv: ["python", "scripts/translation/check_duplicate_keys.py"]
+    source: "native"
+    paths: ["translations/**/*.csv", "scripts/translation/check_duplicate_keys.py", "scripts/translation/dedup_cells_csv.py"]
+    blocking: true
+    absorbed: true
+    pre_argv: ["python", "scripts/translation/check_duplicate_keys.py", "--self-test"]
