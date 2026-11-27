@@ -11,7 +11,7 @@ Une source extérieure peut éclairer une notion enseignée, contredire un résu
 
 ## Registre vivant autour de P et NP {#pequalnp}
 
-**Relevé :** 25 novembre 2026, 13 h 57 UTC. **Source :** [présentation du fonctionnement de pequalnp.com](https://pequalnp.com/how), édité par Brilliant. Le relevé archivé est conservé dans le gisement bibliographique partagé, sous « Automata / Complexity Theory and Hardness / 2026 - Brilliant - pequalnp.com » ; le site évolue et le lien public peut donc différer du relevé.
+**Archive de la source :** relevé du 25 novembre 2026, 13 h 57 UTC. **Source :** [présentation du fonctionnement de pequalnp.com](https://pequalnp.com/how). Le relevé archivé est conservé dans le gisement bibliographique partagé, au rayon « Automata / Complexity Theory and Hardness » ; le site évolue et le lien public peut donc différer du relevé. L'état des propositions pédagogiques ci-dessous a été relevé séparément le 27 novembre 2026.
 
 **Ce que la source rapporte.** Son dispositif décrit des agents qui proposent des étapes et un vérificateur Lean qui juge les résultats. Il distingue explicitement le jugement de son bureau des barrières — relativisation, preuves naturelles et algébrisation — de celui du vérificateur. Ces descriptions sont des **déclarations de la source**, pas une reproduction indépendante de ses preuves par ce digest.
 
