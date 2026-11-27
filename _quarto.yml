@@ -521,6 +521,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/README.md"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/README.md"

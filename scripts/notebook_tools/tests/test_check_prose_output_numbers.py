@@ -387,6 +387,57 @@ def test_display_markdown_different_value_still_fires():
     assert _values(nb) == ["0.791"]
 
 
+# --- Identifiant arXiv nu (mesure du 25/11 : 151 des 850 findings) --------------
+
+
+def test_bare_arxiv_id_is_an_identifier_not_a_measurement():
+    """« arXiv 2511.07312 » : token YYMM.NNNNN exempt, la mesure voisine reste."""
+    nb = _nb(
+        ["## A retenir : Ataraxos (arXiv 2511.07312) tient un F1 de 0.5556"],
+        ["F1 : 0.4872"],
+    )
+    assert _values(nb) == ["0.5556"]
+
+
+def test_arxiv_colon_form_is_exempt():
+    """Forme « arXiv:1512.06808 » de la bibliographie (GameTheory-11d)."""
+    nb = _nb(
+        ["## A retenir : G. Bonanno, Game Theory, arXiv:1512.06808, chapitre 10"],
+        ["x : 0.4872"],
+    )
+    assert _values(nb) == []
+
+
+def test_arxiv_shaped_measurement_still_fires():
+    """Un mois impossible (34) n'est pas un identifiant : la valeur est verifiee."""
+    nb = _nb(
+        ["## Lecture : le rapport vaut 1234.5678 sur ce fold"],
+        ["rapport : 1233.9001"],
+    )
+    assert _values(nb) == ["1234.5678"]
+
+
+# --- Deux classes sans exemption (#28523, mesurees sur ICT-35) ------------------
+
+
+def test_value_from_earlier_version_of_same_notebook_fires():
+    """Classe 1 : valeur d'une version anterieure, attestee hors du carnet."""
+    nb = _nb(
+        ["## Lecture 3 : le F1 de la version a 6 groupes H etait 0.217"],
+        ["F1 (12 groupes H) : 0.482"],
+    )
+    assert _values(nb) == ["0.217"]
+
+
+def test_width_derived_from_two_bounds_fires():
+    """Classe 2 : 0.810 = 0.588 - (-0.222) ; les bornes sont sorties, pas la largeur."""
+    nb = _nb(
+        ["## Lecture 5 : largeur 0.810 pour l'intervalle [-0.222, 0.588]"],
+        ["borne basse : -0.222\nborne haute : 0.588"],
+    )
+    assert _values(nb) == ["0.810"]
+
+
 # --- Self-test embarque (pre-controle pre_argv) ----------------------------------
 
 
