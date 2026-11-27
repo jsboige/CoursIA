@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1481** carnets Python, **581** eligibles, **900** refuses.
+Census : **1482** carnets Python, **582** eligibles, **900** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -97,7 +97,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | InformationQuantique | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | InformationTheory | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
-| Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
+| Jauge | 5 | 4 | 1 | 1 | 0 | 0 | 0 | 0 |
 | Lean | 134 | 107 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 15 | 12 | 3 | 1 | 0 | 0 | 2 | 2 |
@@ -165,7 +165,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 788 | 581 |
+| Carnets eligibles | 789 | 582 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -420,6 +420,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Physique/Jauge/Jauge-01-Theoreme-Noether-Python.ipynb` | Jauge | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/Physique/Jauge/Jauge-02-Invariance-Jauge-U1-SU2-Python.ipynb` | Jauge | python3 | numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/Physique/Jauge/Jauge-03-Action-Wilson-Confinement-Python.ipynb` | Jauge | python3 | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6, pandas==3.0.2, sympy==1.14.0 | - |
+| `MyIA.AI.Notebooks/Physique/Jauge/Jauge-05-Twisteurs-Euclidiens-Modele-Standard-Python.ipynb` | Jauge | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-02b-Entropie-Shannon-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-05-KLS-Lean-Python.ipynb` | Lean | python3 | ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6 | - |
