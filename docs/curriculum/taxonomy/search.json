@@ -420,10 +420,24 @@
         {
           "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
           "cell_id": "a11be67e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-11"
         }
       ],
       "prerequisites": [
         "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ],
+      "matches": [
+        {
+          "concept": "93058ae7-a5f0-4408-9ac0-9452b288e5f9",
+          "kind": "exact"
+        }
       ]
     },
     {

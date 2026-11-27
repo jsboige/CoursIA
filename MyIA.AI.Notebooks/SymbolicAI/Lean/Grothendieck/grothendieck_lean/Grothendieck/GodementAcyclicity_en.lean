@@ -61,6 +61,15 @@ counterpart `Grothendieck.GodementAcyclicity` and re-exports the same
 definitions under the `Grothendieck_en` namespace, prefixed `Grothendieck.` for
 disambiguation. The proof bodies are byte-identical to the FR sibling — the
 sole document is the English docstring at the top of the module.
+
+## Stacks correspondence
+
+**PARTIAL.** The iteration of the canonical resolution exists in Stacks
+(`Topology/Sheaves/Cohomology/GodementResolution/Basic.lean:429`,
+`godementSimplicial_left_obj`, tag 0G5N) and its acyclicity is established there by
+`Cohomology/GodementResolution/StalkHomotopy.lean:558`
+(`quasiIso_godementAugmentation`) — but Stacks carries the acyclicity on the
+**complex**, not on the sequence of units built here.
 -/
 
 universe u

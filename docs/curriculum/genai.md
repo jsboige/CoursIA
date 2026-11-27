@@ -384,10 +384,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 43 | [23. Du notebook a l'application - servir le RAG de la…](../../MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | BETA | Non |
 | 44 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
 | 45 | [TV-00b — Variantes d’attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
-| 46 | [TV-00d — Encodeur seul et encodeur-décodeur : les deux…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | BETA | Oui |
+| 46 | [TV-00d — Encodeur seul et encodeur-décodeur : les deux…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch-Python.ipynb) | BETA | Oui |
 | 47 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
 | 48 | [TV-02 — MoE SOTA : le routage réel d’OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
-| 49 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
+| 49 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop-Python.ipynb) | ALPHA | Oui |
 
 ## GenAI/Vibe-Coding (7 notebooks)
 

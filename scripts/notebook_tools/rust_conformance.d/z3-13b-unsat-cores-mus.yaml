@@ -1,0 +1,196 @@
+# Conformité différentielle de Z3-13b-UnsatCores-MUS (portage Rust).
+#
+# Écrite à la livraison à partir des sorties COMMITÉES des deux carnets :
+# le carnet Rust rejoue la même démonstration que son jumeau Python (le core
+# d'insatisfiabilité, puis le MUS par algorithme deletion-based) par l'API du
+# crate `z3`, et l'on compare ce que les deux côtés ont affiché, grandeur par
+# grandeur.
+#
+# Les deux carnets ont la MÊME structure de cellules (17 cellules, 6 de code,
+# aux mêmes indices) : le portage a conservé l'ordre du jumeau Python, ce qui
+# rend la correspondance des cellules lisible d'un coup d'œil. Aucune
+# correspondance automatique n'est déduite de cela : les cellules sont
+# déclarées explicitement, et l'organe échoue si une extraction lisible ne
+# donne pas de valeur (fail-CLOSED).
+#
+# L'ordre d'assertion est aligné sur celui du jumeau Python (release puis
+# deadline, tâche par tâche) : Z3 renvoie le core dans l'ordre d'assertion,
+# donc les deux carnets affichent les mêmes étiquettes dans le même ordre — le
+# core est donc comparable caractère par caractère, et pas seulement en tant
+# qu'ensemble. C'est aussi pourquoi la liste des contraintes innocentes
+# s'affiche dans le même ordre des deux côtés.
+#
+# Cellules non mesurées (motif relevé à la relecture de la livraison) :
+#   - cellule 1 (Rust et Python) : bannière d'environnement (version de la
+#     bibliothèque Z3 liée dynamiquement sur le poste, contre la version du
+#     paquet `z3-solver` côté Python) — deux bibliothèques distinctes, donc
+#     aucune grandeur commune à comparer ;
+#   - cellules d'exercices (Rust 6, 11, 13 et Python 6, 11, 13) : ce sont des
+#     gabarits non résolus, sans valeur propre à comparer.
+#
+# Aucun jumeau C# n'est déclaré pour cette mesure : la série en a bien un
+# (`Z3-13b-UnsatCores-MUS-CSharp.ipynb`), mais l'organe
+# `check_rust_conformance.py` compare le côté Rust à une référence déclarée
+# ici — la comparaison à trois côtés est portée par l'organe de parité des
+# jumeaux (`check_twin_parity.py`), pas par celui-ci.
+- name: "Z3-13b-UnsatCores-MUS"
+  family: "SymbolicAI/SMT/Z3-API"
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Rust.ipynb
+  measures:
+    - id: verdict_chaine
+      description: "Verdict du systeme de planification surcontrainte (4 taches enchainees) — unsat des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Check : (unsat)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Check : (unsat)"
+          transform: text
+    - id: core_chaine
+      description: "Contenu du core de la chaine de 4 taches, dans l'ordre d'assertion — release_T0, deadline_T3 et les trois precedences des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Core Z3 = \\{ (.*?) \\}"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Core Z3 = \\{ (.*?) \\}"
+          transform: text
+    - id: taille_core_chaine
+      description: "Nombre de contraintes du core de la chaine — 5 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Taille du core : (\\d+) contraintes"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Taille du core : (\\d+) contraintes"
+          transform: int
+    - id: nb_contraintes_chaine
+      description: "Nombre de contraintes du systeme complet — 11 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Taille du core : \\d+ contraintes sur (\\d+)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Taille du core : \\d+ contraintes sur (\\d+)"
+          transform: int
+    - id: nb_innocentes
+      description: "Nombre de contraintes innocentes ecartees du core — 6 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Contraintes innocentes ecartees \\((\\d+)\\)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Contraintes innocentes ecartees \\((\\d+)\\)"
+          transform: int
+    - id: liste_innocentes
+      description: "Liste ordonnee des contraintes innocentes ecartees — les six memes etiquettes, dans le meme ordre, des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Contraintes innocentes ecartees \\(\\d+\\) : (.*)"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Contraintes innocentes ecartees \\(\\d+\\) : (.*)"
+          transform: text
+    - id: verdict_ordonnancement
+      description: "Verdict du modele d'ordonnancement a 5 taches (6 contraintes) — unsat des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Ordonnancement : (unsat)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "Ordonnancement : (unsat)"
+          transform: text
+    - id: core_brut
+      description: "Core brut de Z3 sur le modele d'ordonnancement — dead, e01, e12, e23, e34 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Core Z3 \\(brut\\) : (\\[.*?\\])"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "Core Z3 \\(brut\\) : (\\[.*?\\])"
+          transform: text
+    - id: taille_core_brut
+      description: "Taille du core brut — 5 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Core Z3 \\(brut\\) : \\[.*?\\] - taille (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "Core Z3 \\(brut\\) : \\[.*?\\] - taille (\\d+)"
+          transform: int
+    - id: mus
+      description: "MUS irreductible par l'algorithme deletion-based — dead, e03, e34 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "MUS \\(irreductible\\) : (\\[.*?\\])"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "MUS \\(irreductible\\) : (\\[.*?\\])"
+          transform: text
+    - id: taille_mus
+      description: "Taille du MUS irreductible — 3 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "MUS \\(irreductible\\) : \\[.*?\\] - taille (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "MUS \\(irreductible\\) : \\[.*?\\] - taille (\\d+)"
+          transform: int
+    - id: etiquettes_absentes_du_mus
+      description: "Etiquettes du core brut absentes du MUS — e01, e12, e23 des deux cotes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Etiquettes du core absentes du MUS : (\\[.*?\\])"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "Etiquettes du core absentes du MUS : (\\[.*?\\])"
+          transform: text
