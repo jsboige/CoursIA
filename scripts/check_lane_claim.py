@@ -2515,12 +2515,29 @@ def _run_bounded(cmd, *, timeout, env=None):
 
 
 def _gh_repo_name_with_owner() -> str:
-    """`owner/name` du depot courant (meme resolution que `gh pr list`).
+    """`owner/name` du depot dont on lit le fil : `GH_REPO` d'abord, cwd sinon.
+
+    `GH_REPO` passe AVANT `gh repo view` (mesure 27/11) : `gh repo view` ne le
+    lit pas -- il resout le depot depuis le remote du repertoire COURANT -- alors
+    que `gh issue view` / `gh api` de la jambe ISSUE l'honorent. Lance depuis un
+    autre checkout avec `GH_REPO=jsboige/CoursIA`, l'organe lisait donc l'issue
+    dans CoursIA et les PRs ouvertes dans le depot du cwd : plus aucune PR ne
+    citait le grain, `implicit_occupation: []` avec
+    `implicit_occupation_measured: true` -- un CLEAR qui ne prouve rien
+    (#28097 : un tirage reporte, 0 token, sur ce faux CLEAR).
 
     L'enumeration GraphQL a besoin de l'identifiant du depot ; le CLI ne le
     resout pas tout seul pour une requete `gh api graphql`. La forme rendue
-    est validee par motif : la chaine part dans une requete GraphQL.
+    est validee par motif : la chaine part dans une requete GraphQL, donc un
+    `GH_REPO` mal forme est refuse plutot que propage.
     """
+    override = (os.environ.get("GH_REPO") or "").strip()
+    if override:
+        if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", override):
+            raise RuntimeError(
+                f"GH_REPO n'est pas un slug owner/name : {override!r}"
+            )
+        return override
     try:
         # #21436 -- `_run_bounded` et non `subprocess.run` : sur Windows, ce
         # dernier perd sa borne a la premiere expiration (join infini sur les

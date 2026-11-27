@@ -9575,3 +9575,50 @@ def test_backticked_scope_is_not_read_as_epic_wide():
 def test_lane_reference_index_deduplicates_repeated_issue():
     prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
     assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+
+
+# --- #28097 -- le depot des PRs ouvertes est celui de l'ISSUE --------------
+# Mesure du 2026-11-27 : `gh repo view` ne lit PAS `GH_REPO` (il resout le
+# remote du repertoire COURANT) alors que `gh issue view` / `gh api` de la
+# jambe ISSUE l'honorent. Lance depuis un autre checkout avec
+# `GH_REPO=jsboige/CoursIA`, l'organe lisait l'issue dans CoursIA et les PRs
+# ouvertes dans le depot du cwd : aucune PR ne citait plus le grain, d'ou
+# `implicit_occupation: []` AVEC `implicit_occupation_measured: true` -- un
+# CLEAR qui ne prouve rien (CoursIA#28097 : un tirage reporte, 0 token).
+
+
+def test_repo_des_prs_suit_gh_repo_sans_appeler_gh(monkeypatch):
+    monkeypatch.setenv("GH_REPO", "jsboige/CoursIA")
+
+    def _gh_interdit(*args, **kwargs):
+        raise AssertionError(
+            "gh repo view ne doit pas etre appele quand GH_REPO est pose")
+
+    monkeypatch.setattr(clc, "_run_bounded", _gh_interdit)
+    assert clc._gh_repo_name_with_owner() == "jsboige/CoursIA"
+
+
+def test_gh_repo_mal_forme_est_refuse_avec_sa_valeur(monkeypatch):
+    # La chaine part dans une requete GraphQL : une forme inattendue se refuse
+    # (la jambe devient NON MESUREE, bruyante) au lieu d'etre propagee.
+    monkeypatch.setenv("GH_REPO", "pas/un/slug")
+    monkeypatch.setattr(
+        clc, "_run_bounded",
+        lambda *a, **k: (_ for _ in ()).throw(
+            AssertionError("transport appele pour un GH_REPO invalide")))
+    with pytest.raises(RuntimeError) as excinfo:
+        clc._gh_repo_name_with_owner()
+    assert "pas/un/slug" in str(excinfo.value)
+
+
+def test_gh_repo_absent_garde_la_resolution_par_le_cwd(monkeypatch):
+    # Sans GH_REPO, rien ne change : `gh repo view` resout le depot courant.
+    monkeypatch.delenv("GH_REPO", raising=False)
+
+    class _Proc:
+        returncode = 0
+        stdout = "jsboige/CoursIA\n"
+        stderr = ""
+
+    monkeypatch.setattr(clc, "_run_bounded", lambda *a, **k: _Proc())
+    assert clc._gh_repo_name_with_owner() == "jsboige/CoursIA"
