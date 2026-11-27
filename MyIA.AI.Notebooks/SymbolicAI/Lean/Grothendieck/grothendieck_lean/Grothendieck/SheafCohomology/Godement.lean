@@ -267,4 +267,42 @@ noncomputable def godementZerothCohomologyIso (U : Opens X)
   exact (ShortComplex.homologyMapIso e1 ≪≫ ShortComplex.homologyMapIso e2 ≪≫
     e3 ≪≫ e4 ≪≫ (asIso φ).symm)
 
+/-! ## Correspondance Stacks (groupe #12 de #28537, relevé du 26/11)
+
+Comparaison **énoncé par énoncé** avec le référentiel `AxiomMath/Stacks`
+(`StacksFrontier/Topology/Sheaves/Cohomology/CechDerivedEffaceability/`).
+Références données par `fichier:ligne` du dépôt Stacks.
+
+**Point de méthode — et avertissement de lecture.** Les deux objets portent
+le nom « Godement », mais ce ne sont **pas** les mêmes objets :
+
+- chez Stacks, le **préshaisceau de Godement** `god R M` est défini par
+  `god R M (V) = ∏_{W ≤ V} M(W)` — un produit de **sections** sur les
+  sous-ouverts (`CechDerivedEffaceability/GodementResolution.lean:149`, ses
+  sections `GodSections` `:99`) ;
+- dans le lac, le **complexe canonique** a pour étage 0 le produit des
+  **tiges** `∏_{x ∈ U} Fₓ` (`Grothendieck/Godement.lean:58` et `:76`, préshaisceau
+  `godementPresheaf` `:77`).
+
+Le module qui suit est donc **divergent** sur le degré 0, et il le dit.
+
+| Énoncé | Classe | Référent Stacks | Ce que notre version ajoute / ce qui diverge |
+|---|---|---|---|
+| `sectionsFunctorAdditive` (+ instance `Additive`) | divergent | `CechDerivedEffaceability/GodementResolution.lean:99` (`GodSections`), `:149` (`god`), `:165` (`god_obj`) | Même mot, deux objets : chez Stacks ce sont les sections du **préshaisceau de Godement** (famille de sections de `M` sur les `W ≤ V`) ; ici c'est l'**évaluation** `F ↦ F(U)` d'un préfaisceau de groupes abéliens sur un `TopCat`. Notre version ajoute l'instance `Additive` explicite, dont Stacks n'a pas besoin (son produit est additif par structure). |
+| `godementSectionsComplex` | divergent | `CechDerivedEffaceability/GodementResolution.lean:149` (`god`), `:457` (`homotopyMap`), `:554` (`homotopyMap_id`) | Ici on image le **complexe canonique** du lac (Partie 92) par l'évaluation ; chez Stacks on prend le **complexe de Čech du préshaisceau `god`** et on en prouve la contractibilité. Les degrés 0 diffèrent (tiges contre sections sur les sous-ouverts) ; les degrés supérieurs aussi (complexe canonique contre Čech). |
+| `godementCohomologyObj` | absent | `CechDerivedEffaceability/GodementResolution.lean:594` (`isZero_cechCohomology_god`) | Stacks ne définit **aucun** groupe de cohomologie de Godement : il se sert du préshaisceau `god` pour établir l'effaçabilité du foncteur δ de Čech (Stacks 01EN), et prouve que la cohomologie Čech de `god` s'annule en degré positif. Ici `Hⁿ_God(U,F)` est l'homologie du complexe des sections : la définition existe chez nous, pas chez Stacks. |
+| `godementSectionsComplex_X` | absent | aucun | Recalage définitionnel vers les notations des Parties 89-92 ; aucun pendant. |
+| `godementSectionsComplex_d_zero` | absent | aucun | Idem : Stacks ne définit pas de différentielle de Godement (il dispose du Čech, pas d'un complexe canonique). |
+| `exact_app_toGodement_godementCanonicalDZero` | absent | `CechDerivedEffaceability/GodementResolution.lean:457` et `:554` — **autre route** | L'exactitude du pas B **évaluée en un ouvert** n'a pas de pendant chez Stacks ; Stacks prouve l'exactitude du complexe de Čech de `god` par une **homotopie de contraction** (`homotopyMap`, `homotopyMap_id`). Deux routes pour une exactitude : la nôtre est ponctuelle et gratuite ; celle de Stacks est globale sur le Čech. |
+| `godementZerothCohomologyIso` | partiel | `CechDerivedEffaceability/GodementResolution.lean:181` (`godUnit`), `:193` (`godUnit_app_apply`), `:200` (`mono_godUnit`) | Stacks a le **même mécanisme** — l'inclusion d'une section et de ses restrictions, dont la composante indexée par `V` est l'identité — et en tire un **mono** `M ⟶ god R M`. Notre version en tire un **iso** `F(U) ≅ H⁰_God(U,F)`, mais sur des objets différents (sections du complexe canonique contre sections du préshaisceau de Godement). |
+
+**Ce que Stacks établit et que ce module n'établit pas** : l'annulation de la
+cohomologie Čech du préshaisceau de Godement en degré positif
+(`isZero_cechCohomology_god`, `:594`) et la **contractibilité** du complexe
+de Čech de `god` (`homotopyMap`, `homotopyMap_id`) — la route par laquelle
+Stacks atteint l'effaçabilité de 01EN. Ce module ne porte pas ces deux
+résultats : ils sont du ressort du Čech, pas du complexe des sections.
+
+-/
+
 end Grothendieck.SheafCohomology

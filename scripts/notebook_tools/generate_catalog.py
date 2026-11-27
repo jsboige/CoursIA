@@ -56,7 +56,7 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "_archive", "_archives", "exampl
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
-    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL",
+    "GameTheory", "Sudoku", "Probas", "Physique", "BioMedecine", "IIT", "RL",
 ]
 # Pas d'entrée "EPF" : elle listait une série sans répertoire sous
 # MyIA.AI.Notebooks/ (mesuré #24994 -- aucun dossier EPF sur main). _serie_order
@@ -86,6 +86,8 @@ OWNER_MAP = {
 # #23161). Naming a single owner would credit one lane for another's notebooks,
 # which is exactly what owner_logique feeds (auto-review detection). It stays
 # empty until the EPIC names one owner for the whole serie.
+# "BioMedecine" is absent for the same reason: the serie is founded by a single
+# feuille (#28135) whose plis will be served by several lanes over time.
 
 
 def estimate_duration(cells_code: int, kernel: str, requirements: dict) -> str:
