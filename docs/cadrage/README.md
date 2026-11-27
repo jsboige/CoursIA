@@ -17,6 +17,7 @@ Une **veille** (texte connu et non traité) figure dans le tableau comme une lig
 | Recherche en sûreté de l'IA — veille | — | veille | *Towards Guaranteed Safe AI* | non traité (#16761) |
 | Science ouverte et évaluation | — (section de Leiden tant qu'il n'y a pas de pratique propre) | section | UNESCO Open Science, FAIR, DORA | traité (section du document Leiden) |
 | Fondateurs de la discipline | [`aima-armature.md`](aima-armature.md) | armature | AIMA 4e, textes de position des auteurs, position « benchmark-driven AI » (ICML 2026) | traité (#17541) |
+| Recherche et politiques éducatives | [Quand un dépôt devient-il un curriculum ?](curriculum-unesco-self-audit.md) | self-audit | *Dix clés pour repenser le curriculum* (Opertti, BIE-UNESCO) et présentation institutionnelle du curriculum (UNESCO) | traité ; mise à l’épreuve en séance proposée |
 | Lecture interne transversale | [`grothendieckian-lens.md`](grothendieckian-lens.md) | lens | — | traité (clé de lecture) |
 
 ## Règles d'agrégation

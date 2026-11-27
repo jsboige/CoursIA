@@ -2209,6 +2209,36 @@ _DIFF_SIZE_CAP_SIGNATURES = (
 )
 
 
+# Signature of a `gh pr diff` COMPUTATION refusal -- the third member of the
+# family, after the 300-FILE cap (#14911) and the SIZE cap (#25085).
+#
+# GitHub declines to COMPUTE the diff at all and answers
+# `HTTP 422: Server Error: Sorry, this diff is taking too long to generate`,
+# with `PullRequest.diff not_available` in the payload -- measured 2026-11-27
+# on #28393 (97 files, 30 audio notebooks renamed, base64 outputs sitting on
+# single lines of 850 KB to 3.84 MB; blobs up to 23.5 MB). The SAME command
+# surfaces under a second spelling on a runner (`stream error: stream ID 3;
+# CANCEL; received from peer`): three attempts, two heads, same refusal, so a
+# mere re-run does not lift it.
+#
+# The refusal says nothing about the PERIMETER: `GET /pulls/N/files` returned
+# all 97 files in 0.9 s while the diff was still refused. The blocking
+# perimeter checks read that paginated list; the unified diff only serves the
+# baseline-move detection, which is ADVISORY in `--scan-thread` (the CI
+# wiring, l.2876). So the guard degrades exactly like its two siblings instead
+# of answering "PERIMETRE NON MESURABLE" on a PR whose perimeter it reads
+# perfectly well.
+#
+# The TRANSPORT spelling is deliberately NOT recognised: `stream error ...
+# CANCEL; received from peer` names the stream that closed, not the failure
+# that closed it -- it can carry this refusal or another one, and recognising
+# it would widen the net past what was measured.
+_DIFF_TIME_CAP_SIGNATURES = (
+    "is taking too long to generate",
+    "PullRequest.diff not_available",
+)
+
+
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2261,6 +2291,15 @@ def _pr_diff_text(pr: int) -> str:
     the paginated file list. Only the advisory baseline-move detection is lost,
     and the warning says so.
 
+    The COMPUTATION refusal is the third member of the family, degraded the
+    same way (#28874): GitHub declines to compute the diff at all and answers
+    ``HTTP 422: this diff is taking too long to generate`` /
+    ``PullRequest.diff not_available`` -- measured 2026-11-27 on #28393, where
+    ``/pulls/28393/files`` returned all 97 files in 0.9 s. A re-run does not
+    lift it (three attempts, two heads). Its transport-level spelling
+    (``stream error ... CANCEL``) is left unrecognised on purpose: see
+    ``_DIFF_TIME_CAP_SIGNATURES``.
+
     One failure is a RENDERING refusal, not an unreadable diff: a payload
     carrying terminal escape sequences (ANSI colour codes inside a committed
     artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
@@ -2283,6 +2322,15 @@ def _pr_diff_text(pr: int) -> str:
             f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
             "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
             f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if any(sig in (stderr or "") for sig in _DIFF_TIME_CAP_SIGNATURES):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (GitHub a refuse de "
+            "CALCULER le diff) : detection des baseline-moves retractee a vide ; "
+            f"le perimetre est lu via /pulls/{pr}/files pagine (la liste des "
+            "fichiers reste lisible et sans ce plafond).",
             file=sys.stderr,
         )
         return ""
