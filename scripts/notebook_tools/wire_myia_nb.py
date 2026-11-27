@@ -36,12 +36,13 @@ import re
 import sys
 from pathlib import Path
 
-# Chemin de la crate depuis la racine du depot. Elle vit a cote de l'organe
-# qui la cable (et de `check_rust_conformance.py`, `twin_pairs.d/`), et non
-# sous `MyIA.AI.Notebooks/` : le premier niveau de l'arbre des carnets ne
-# recoit aucune serie nouvelle sans GO ecrit (#27092), et le socle transverse
-# n'y habite pas -- le socle C# partage vit de meme dans `dotnet/`.
-CRATE_REL = "scripts/notebook_tools/myia_nb"
+# Chemin de la crate depuis la racine du depot. Elle vit dans le dossier de
+# support partage des carnets (`Config/`, deja au premier niveau et autorise
+# sur `main`), aux cotes des aides C# `Utils.cs` / `SkiaUtils.cs` /
+# `PythonNetLoader.cs` : un dossier de support n'ajoute pas de premier niveau
+# et ne demande donc pas le GO ecrit que la garde exige (#27092, arbitrage du
+# coordinateur du 27/11).
+CRATE_REL = "MyIA.AI.Notebooks/Config/rust/myia_nb"
 NOTEBOOKS_ROOT = "MyIA.AI.Notebooks"
 
 # Un corps de py_bool acceptable, une fois l'espace normalise. Le nom de

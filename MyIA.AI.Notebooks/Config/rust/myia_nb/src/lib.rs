@@ -20,7 +20,7 @@
 //! # Utilisation dans un carnet
 //!
 //! ```ignore
-//! :dep myia_nb = { path = "../RustSupport/myia_nb" }
+//! :dep myia_nb = { path = "../Config/rust/myia_nb" }
 //! ```
 //!
 //! Le `:dep` se place **en tete** du carnet : ajoute en cours de route, il

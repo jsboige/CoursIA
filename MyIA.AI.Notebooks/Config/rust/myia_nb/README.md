@@ -13,11 +13,11 @@ La crate ne réduit pas le nombre de lignes de chaque carnet, et le `:dep` **co�
 Le `:dep` se pose **en tête du premier bloc de code**, une seule fois :
 
 ```rust
-:dep myia_nb = { path = "../../scripts/notebook_tools/myia_nb" }
+:dep myia_nb = { path = "../Config/rust/myia_nb" }
 use myia_nb::py_bool;
 ```
 
-**Le chemin est relatif au dossier du carnet**, pas à la racine du dépôt : le noyau résout un `path` de dépendance contre son répertoire de travail, qui est celui du carnet. Un carnet deux niveaux sous `MyIA.AI.Notebooks/` porte `../../scripts/notebook_tools/myia_nb`, trois niveaux `../../../…`. Le chemin se calcule, il ne se recopie pas :
+**Le chemin est relatif au dossier du carnet**, pas à la racine du dépôt : le noyau résout un `path` de dépendance contre son répertoire de travail, qui est celui du carnet. Un carnet un niveau sous `MyIA.AI.Notebooks/` (comme `Sudoku/`) porte `../Config/rust/myia_nb`, deux niveaux `../../Config/rust/myia_nb`. Le chemin se calcule, il ne se recopie pas :
 
 ```bash
 python scripts/notebook_tools/wire_myia_nb.py --apply <carnet>
@@ -50,7 +50,7 @@ Un `:dep` ajouté en cours de carnet recompile la session et efface les variable
 ## Construire et tester
 
 ```bash
-cargo test --manifest-path scripts/notebook_tools/myia_nb/Cargo.toml
+cargo test --manifest-path MyIA.AI.Notebooks/Config/rust/myia_nb/Cargo.toml
 ```
 
 Aucune dépendance, aucun réseau : la crate se construit avec la toolchain épinglée du pli 0. Le dossier `target/` et le fichier `Cargo.lock` sont ignorés : une bibliothèque sans dépendance ne publie pas de verrou, dont le format dépend de la version de `cargo` qui l'a produit.

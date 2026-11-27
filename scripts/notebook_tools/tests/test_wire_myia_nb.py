@@ -88,24 +88,24 @@ def _write_nb(path: Path, nb: dict, newline: str = "\n") -> Path:
 @pytest.mark.parametrize(
     "relative_depth, prefix",
     [
-        # La crate vit desormais sous `scripts/`, donc un niveau au-dessus de
-        # `MyIA.AI.Notebooks/` : un carnet a `d` niveaux sous l'arbre des
-        # carnets remonte `d` niveau puis redescend dans `scripts/`.
-        (1, "../"),
-        (2, "../../"),
-        (3, "../../../"),
-        (4, "../../../../"),
+        # La crate vit sous `MyIA.AI.Notebooks/Config/rust/` : un carnet a `d`
+        # niveaux sous l'arbre des carnets remonte `d` niveau pour l'atteindre,
+        # et le carnet a la racine (`d = 0`) y descend sans remonter.
+        (1, ""),
+        (2, "../"),
+        (3, "../../"),
+        (4, "../../../"),
     ],
 )
 def test_dep_est_relatif_au_dossier_du_carnet(
     tmp_path: Path, relative_depth: int, prefix: str
 ) -> None:
-    """Le carnet est a `relative_depth` niveaux sous `MyIA.AI.Notebooks/`."""
+    """Le carnet est a `relative_depth - 1` niveaux sous `MyIA.AI.Notebooks/`."""
     notebook = tmp_path / "MyIA.AI.Notebooks" / Path(*["serie"] * (relative_depth - 1))
     notebook.mkdir(parents=True)
     nb_path = notebook / "Exemple-Rust.ipynb"
     line = _dep_line(nb_path, tmp_path)
-    assert line == ':dep myia_nb = { path = "%sscripts/notebook_tools/myia_nb" }' % prefix
+    assert line == ':dep myia_nb = { path = "%sConfig/rust/myia_nb" }' % prefix
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +155,7 @@ def test_autres_py_signales_jamais_reecrites() -> None:
 
 def test_apply_pose_le_dep_en_tete_du_premier_bloc() -> None:
     nb = _nb("let x = 1;", STRICT)
-    dep = ':dep myia_nb = { path = "../../scripts/notebook_tools/myia_nb" }'
+    dep = ':dep myia_nb = { path = "../Config/rust/myia_nb" }'
     stats = apply_plan(nb, analyse(nb, dep))
     cellules = _sources(nb)
     assert cellules[0].startswith(dep + "\n")
@@ -165,7 +165,7 @@ def test_apply_pose_le_dep_en_tete_du_premier_bloc() -> None:
 
 def test_type_string_prend_py_bool_string_et_garde_le_nom_appele() -> None:
     nb = _nb('let s = py_bool(true);\n' + AS_STRING)
-    apply_plan(nb, analyse(nb, ':dep myia_nb = { path = "../../scripts/notebook_tools/myia_nb" }'))
+    apply_plan(nb, analyse(nb, ':dep myia_nb = { path = "../Config/rust/myia_nb" }'))
     source = _sources(nb)[0]
     assert "use myia_nb::py_bool_string as py_bool;" in source
     # Aucun site d'appel ne bouge.
@@ -173,7 +173,7 @@ def test_type_string_prend_py_bool_string_et_garde_le_nom_appele() -> None:
 
 
 def test_dep_deja_present_n_est_pas_duplique() -> None:
-    dep = ':dep myia_nb = { path = "../../scripts/notebook_tools/myia_nb" }'
+    dep = ':dep myia_nb = { path = "../Config/rust/myia_nb" }'
     nb = _nb(dep + "\nlet x = 1;")
     stats = apply_plan(nb, analyse(nb, dep))
     assert stats["dep_added"] is False
@@ -187,8 +187,8 @@ def test_dep_deja_present_n_est_pas_duplique() -> None:
 
 def test_dep_au_chemin_perime_est_reecrit() -> None:
     """Crate deplacee : la ligne existe, mais son chemin ne resout plus."""
-    perime = ':dep myia_nb = { path = "../RustSupport/myia_nb" }'
-    nouveau = ':dep myia_nb = { path = "../../scripts/notebook_tools/myia_nb" }'
+    perime = ':dep myia_nb = { path = "../AncienRangement/myia_nb" }'
+    nouveau = ':dep myia_nb = { path = "../Config/rust/myia_nb" }'
     nb = _nb(perime + "\nlet x = 1;")
     plan = analyse(nb, nouveau)
     assert plan["dep_present"] is True
@@ -196,11 +196,11 @@ def test_dep_au_chemin_perime_est_reecrit() -> None:
     stats = apply_plan(nb, plan)
     assert stats["dep_path_updated"] is True
     assert _sources(nb)[0].startswith(nouveau + "\n")
-    assert "RustSupport" not in _sources(nb)[0]
+    assert "AncienRangement" not in _sources(nb)[0]
 
 
 def test_check_voit_un_chemin_perime_puis_apply_le_repare(tmp_path: Path) -> None:
-    perime = ':dep myia_nb = { path = "../RustSupport/myia_nb" }'
+    perime = ':dep myia_nb = { path = "../AncienRangement/myia_nb" }'
     path = _write_nb(tmp_path / "Exemple-Rust.ipynb", _nb(perime + "\nlet x = 1;"))
     assert main(["--check", str(path), "--repo-root", str(tmp_path)]) == 1
     assert main(["--apply", str(path), "--repo-root", str(tmp_path)]) == 0
