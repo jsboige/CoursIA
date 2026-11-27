@@ -81,8 +81,8 @@ set_option maxHeartbeats 1000000 in
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
-    subsumed by the closed lemmas `evolve_add` (L2353) + `evolve_half_step`
-    (L2370). This function produces the
+    subsumed by the closed lemmas `evolve_add` + `evolve_half_step`. This
+    function produces the
     `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes.
 
     **Pointwise-proof balisage (c.147 — all three pieces now closed)** —
@@ -306,14 +306,14 @@ noncomputable def p4_succ_membership
       -- Factorization (c.NNNN — defensive extraction): the SW arm is the
       -- NW-SE reflection of the NE arm (c.8122) — same opaque-binder pattern.
       -- Sub-cells are n4/n5/n7/n8 (the SW wave-1 children of the outer
-      -- 16-grandkid layout per `p4_double_nine_shape` L2109 + `p4_wave2_ih`
-      -- L2629-2633). Build the 4 SW wave-1 sub-cells + wave-0 results
-      -- R4/R5/R7/R8, then apply the opaque-binder `p4_sw_membership_arm`.
+      -- 16-grandkid layout per `p4_double_nine_shape` + `p4_wave2_ih`).
+      -- Build the 4 SW wave-1 sub-cells + wave-0 results R4/R5/R7/R8, then
+      -- apply the opaque-binder `p4_sw_membership_arm`.
       -- The whnf-hard step is encapsulated in the arm over opaque `R_j`
       -- (fresh heartbeat budget, set_option at the arm).
       --
       -- IMPORTANT (c.8122 cascade-fix L831): all `hcc_j` and `R_j` literals
-      -- must be sourced from `p4_wave2_ih`'s canonical reference (L2629-2633),
+      -- must be sourced from `p4_wave2_ih`'s canonical reference,
       -- NOT copy-pasted across branches. The 16-grid positions for SW sub-cells
       -- are {4,5,7,8} (NE was {2,3,5,6}; symmetric flip of row-axis):
       --   n4 = node nw_sw nw_se sw_nw sw_ne
@@ -405,12 +405,12 @@ noncomputable def p4_succ_membership
       -- Factorization (c.90 — SE-arm port): the SE arm is the DIAGONAL mirror
       -- of the NW arm — same opaque-binder pattern as NE (c.8122) / SW (c.8123).
       -- Sub-cells are n5/n6/n8/n9 (the SE wave-1 children of the outer
-      -- 16-grandkid layout per `p4_double_nine_shape` L2109 + `p4_wave2_ih`
-      -- L2629-2633). Build the 4 SE wave-1 sub-cells + wave-0 results
-      -- R5/R6/R8/R9, then apply the opaque-binder `p4_se_membership_arm`.
+      -- 16-grandkid layout per `p4_double_nine_shape` + `p4_wave2_ih`).
+      -- Build the 4 SE wave-1 sub-cells + wave-0 results R5/R6/R8/R9, then
+      -- apply the opaque-binder `p4_se_membership_arm`.
       --
       -- IMPORTANT (c.8122 cascade-fix L831): all `hcc_j` and `R_j` literals
-      -- must be sourced from `p4_wave2_ih`'s canonical reference (L2629-2633),
+      -- must be sourced from `p4_wave2_ih`'s canonical reference,
       -- NOT copy-pasted across branches. The 16-grid positions for SE sub-cells
       -- are {5,6,8,9} (diagonal complement of NW's {1,2,4,5}):
       --   n5 = node nw_se ne_sw sw_ne se_nw
@@ -516,8 +516,8 @@ noncomputable def p4_succ_membership
       ⟨hb1, by omega, hb3, by omega⟩
     -- Shared towers, built ONCE for the four branches (the mp branches each
     -- rebuilt their own subset; here the router owns them): the 32 grandchild
-    -- facts, the 9 wave-1 results r1..r9 (canonical reference `p4_wave2_ih`
-    -- L2629-2633), and the outer-NW supercell level anchor.
+    -- facts, the 9 wave-1 results r1..r9 (canonical reference
+    -- `p4_wave2_ih`), and the outer-NW supercell level anchor.
     obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
             hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
             hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
@@ -782,7 +782,7 @@ theorem p4_wf_witness_k2 :
           4 8 := by
   native_decide
 
-/-! ### P4-At : socle du moteur décorrélaté (grain 3, #11161)
+/-! ### P4-At : socle du moteur décorrélaté (#11161)
 
 La brique de base du saut décorrélaté `hashlifeResultAt j` (Hashlife.lean,
 section « Saut à portée découplée ») : au niveau terminal `j + 2` de sa
@@ -790,12 +790,14 @@ récursion, le moteur At délègue au moteur plein `hashlifeResultAux` avec
 le fuel saturé — exactement la forme du P4 prouvé
 (`hashlifeResult_central_correct`). La correction centrale se transfère
 donc TELLE QUELLE, sans hypothèse de capture. C'est le socle de la
-décharge de `OneJumpAtCorrect` (grain 2 du re-cadrage Gosper, #11161) ;
-le contenu restant du grain 3 est le pas inductif `M > j + 2` (assemblage
-mono-ronde en sous-quadrants) puis le pont de localité (`evolve_box_agree`,
-LightCone) avec l'invariant du cadre (grain 1). -/
+décharge de `OneJumpAtCorrect` (re-cadrage Gosper, #11161). Le pas
+inductif `M > j + 2` (assemblage mono-ronde en sous-quadrants) occupe
+la suite du fichier jusqu'à `hashlifeResultAt_central_correct` ; son pont
+de localité est `evolve_box_agree_local` (Foundation, miroir anti-cycle
+de `evolve_box_agree` de LightCone). La décharge effective
+`one_jumpAt_correct` vient ensuite, avec l'invariant du cadre. -/
 
-/-- **P4-At cas de base (grain 3, #11161).** Pour toute cellule bien
+/-- **P4-At cas de base (#11161).** Pour toute cellule bien
     formée de niveau exactement `j + 2` (le niveau terminal de la récursion
     At), `hashlifeResultAt j c` est le moteur plein à fuel saturé et rend
     la fenêtre centrale de `evolve (2^j)` — l'énoncé P4 transféré
@@ -867,7 +869,7 @@ theorem p4at_witness_k2 :
           4 8 := by
   native_decide
 
-/-! ### P4-At pas mono-ronde : socle geometrique (grain 3b, #11161)
+/-! ### P4-At pas mono-ronde : socle geometrique (#11161)
 
 Le pas inductif `M > j + 2` du moteur At assemble la fenetre de sortie en
 SOUS-QUADRANTS des `r_i = hashlifeResultAt j n_i` (recursion mono-ronde,
@@ -888,7 +890,8 @@ geometrique de l'assemblage, sans toucher a `evolve` :
   biconditionnelle point par point.
 
 Les briques de localite (`evolve_box_agree_local`, accord `n_i` vs `c`) et
-les quatre bras d'assemblage consomment ce socle au grain 3b part 2. -/
+les quatre bras d'assemblage consomment ce socle dans la suite du fichier,
+a partir de la partie 2 (accords de grille `n_i` vs `c`). -/
 
 private theorem pow_two_succ_le_int (n : Nat) : (2 ^ n : Int) ≤ (2 ^ (n + 1) : Int) := by
   have hN : 2 ^ n ≤ 2 ^ (n + 1) := by
@@ -1215,7 +1218,7 @@ theorem subNW_toGrid_mem (r : MacroCell) (a b : Int) (p : Int × Int)
       have hlt : p.1 - a < (2 ^ r1.level : Int) := by omega
       omega
 
-/-! ### P4-At pas mono-ronde : unlock du LHS et pont d'extensionnalite (grain 3b)
+/-! ### P4-At pas mono-ronde : unlock du LHS et pont d'extensionnalite
 
 L'egalite de grille du pas se prouve point par point (`p4at_ext_bridge`),
 et le LHS `hashlifeResultAt j c` se reduit, au cran successeur, au noeud
@@ -1275,7 +1278,7 @@ theorem p4at_ext_bridge (c : MacroCell) (j M : Nat)
   unfold restrictGridTo
   exact (canonical_evolve_of_pos (Nat.two_pow_pos j) _).filter _
 
-/-! ### P4-At : invariant niveau/wf du moteur At (grain 3b, partie 3)
+/-! ### P4-At : invariant niveau/wf du moteur At (partie 3)
 
 Miroir de `hashlifeResultAux_level_cellWf` (Foundation, c.142) pour le
 moteur decorrele. Comptage du fuel verifie sur la definition
@@ -1375,8 +1378,8 @@ theorem node4_level_cellWf {a b c d : MacroCell} {m : Nat}
   · exact cellWf.node hwa hwb hwc hwd (by omega) (by omega) (by omega)
 
 set_option maxHeartbeats 4000000 in
-/-- **Pas mono-ronde de l'invariant du moteur At** (grain 3b,
-    partie 3). Corps lourd de `hashlifeResultAtAux_level_cellWf`
+/-- **Pas mono-ronde de l'invariant du moteur At** (partie 3).
+    Corps lourd de `hashlifeResultAtAux_level_cellWf`
     isole dans sa propre commande (budget heartbeats frais,
     miroir du helper prive `hashlifeResultAux_level_cellWf_step`,
     Foundation c.142).
@@ -1526,7 +1529,7 @@ private theorem hashlifeResultAtAux_level_cellWf_mono (fuel j : Nat)
   exact keyFin
 
 set_option maxHeartbeats 4000000 in
-/-- **Invariant niveau/wf du moteur At (grain 3b, partie 3).** Miroir de
+/-- **Invariant niveau/wf du moteur At (partie 3).** Miroir de
     `hashlifeResultAux_level_cellWf` (Foundation, c.142) pour le moteur
     decorrele : pour une cellule bien formee de niveau `F >= j + 2`,
     sous l'invariant du wrapper `hashlifeResultAt` — le fuel EGAL le
@@ -1597,7 +1600,7 @@ theorem hashlifeResultAt_level_cellWf (j : Nat) (c : MacroCell)
   unfold hashlifeResultAt
   exact h
 
-/-! ## Grain 3b partie 2 — accords de grille n_i vs c (briques de localite)
+/-! ## Accords de grille n_i vs c (briques de localite) — partie 2
 
 Le pas inductif de `hashlifeResultAt_central_correct` (niveau `M > j + 2`)
 decompose le resultat mono-ronde en 16 sous-quadrants des `r_i`. Chaque bras
@@ -2660,7 +2663,7 @@ theorem n9_grid_agree {k : Nat}
       rw [← hp'] at h0
       exact Or.inr (Or.inr (Or.inr (((mem_toGrid_shift (c := d4) (r0 := (2^k : Int)) (c0 := (2^k : Int)) (p := (q.1 - (2*(2^k : Int)), q.2 - (2*(2^k : Int))))).mpr h0))))
 
-/-! ### P4-At sortie mono-ronde : decomposition 16-voies (grain 3b, partie 4)
+/-! ### P4-At sortie mono-ronde : decomposition 16-voies (partie 4)
 
 Preparation du LHS du pas inductif de `hashlifeResultAt_central_correct` :
 la fenetre certifiee `[2^(M-2), 2^(M-2) + 2^(M-1))^2` (cf `p4at_ext_bridge`,
@@ -2950,7 +2953,7 @@ theorem out16_toGrid_mem {k : Nat}
         exact Or.inr (Or.inr (Or.inr (h16)))
       exact Or.inr (Or.inr (Or.inr (hQ4)))
 
-/-! ### P5-At pas inductif (a) : reduction de la fenetre LHS (grain 3b, partie 5a)
+/-! ### P5-At pas inductif (5a) : reduction de la fenetre LHS
 
 Premiere brique du pas inductif de `hashlifeResultAt_central_correct` :
 la fenetre certifiee `[2^(M-1), 2^M)^2` de la sortie mono-ronde du moteur
@@ -3285,7 +3288,7 @@ theorem hashlifeResultAt_step_window_nw {M j : Nat} (hj : j + 2 ≤ M)
         (hext.2.2.1 : (2^(M-1) : Int) ≤ p.2),
         hext.2.2.2.trans_eq (Int.add_comm _ _)⟩
 
-/-! ### P5-At pas inductif (b) : ponts d'appartenance des sous-quadrants (grain 3b, partie 5b)
+/-! ### P5-At pas inductif (5b) : ponts d'appartenance des sous-quadrants
 
 Interface de consommation de l'Hypothese d'Induction pour le pas inductif
 de `hashlifeResultAt_central_correct` : lire un sous-quadrant `subX r` a
@@ -3470,7 +3473,7 @@ theorem sub_quadrant_mem_se {r : MacroCell} {k : Nat} {x y : Int} {p : Int × In
       omega
     · exact hm
 
-/-! ### P5-At pas inductif (c) : briques de localite des regions n_i (grain 3b, partie 5c)
+/-! ### P5-At pas inductif (5c) : briques de localite des regions n_i
 
 Consommation prescrite par la partie 2 : les neuf theoremes
 `n1_evolve_agree` .. `n9_evolve_agree` portent chaque accord
@@ -3858,14 +3861,15 @@ theorem n9_evolve_agree {k j : Nat}
     ((mem_toGrid_shift (c := node d1 d2 d3 d4) (r0 := (2*(2^k : Int))) (c0 := (2*(2^k : Int))) (p := q)).trans hagree)
 
 
-/-! ### P4-At 5d : bras d'assemblage du pas inductif (grain 3b, direction
+/-! ### P4-At 5d : bras d'assemblage du pas inductif (direction
 forward)
 
 Briques de la premiere direction du theoreme d'assemblage
 `hashlifeResultAt_central_correct` : chaque bras est l'un des seize
 placements `subX r_i` de la decomposition 16-voies (`out16_toGrid_mem`).
-Le bras SE est le template ; les miroirs SW/NE/NW et l'enveloppe
-16-voies (rcases + enveloppe fenetre) forment les tranches suivantes.
+Le bras SE est le template ; ses miroirs NW, NE et SW occupent la suite
+de cette partie, et l'enveloppe 16-voies (rcases + enveloppe fenetre) la
+partie 5e.
 Chaine par bras : etendue -> point local (`subSE_toGrid_mem`, placement
 `x = o_i + 2*S`) -> re-ancrage IH (`toGrid_origin_iff_placed`, ancre
 `(S, S)`, `S = 2^(M-2)`) -> hypothese d'induction sur `n_i` (niveau `M`,
@@ -4234,7 +4238,7 @@ theorem step_forward_arm_sw {M j : Nat} (hj : j + 2 ≤ M)
     simp only [Nat.cast_pow, Nat.cast_ofNat] at he4 hw4 ⊢
     omega
 
-/-! ### P5-At pas inductif (5e) : enveloppe 16-voies du LHS (grain 3b)
+/-! ### P5-At pas inductif (5e) : enveloppe 16-voies du LHS
 
 Deuxieme brique d'interface du pas inductif de
 `hashlifeResultAt_central_correct` : la sortie mono-ronde du moteur At,
@@ -4438,7 +4442,7 @@ theorem hashlifeResultAt_step_envelope16 {M j : Nat} (hj : j + 2 ≤ M)
       (wf_of_cellWf hres9w) (keyS _ hres9l)
       a b q).mp hq
 
-/-! ### P5-At pas inductif (5f) : direction forward de l'assemblage (grain 3b)
+/-! ### P5-At pas inductif (5f) : direction forward de l'assemblage
 
 Troisieme brique d'interface du pas inductif de
 `hashlifeResultAt_central_correct` : la direction FORWARD, comme
@@ -5275,7 +5279,7 @@ theorem step_converse_arm_nw {M j : Nat} (hj : j + 2 ≤ M)
   · exact hQsub
 
 
-/-! ### P5-At pas inductif (5g) : direction converse de l'assemblage (grain 3b)
+/-! ### P5-At pas inductif (5g) : direction converse de l'assemblage
 
 Quatrieme brique d'interface du pas inductif de
 `hashlifeResultAt_central_correct` : la direction CONVERSE, comme
@@ -5976,9 +5980,9 @@ theorem hashlifeResultAt_step_converse_mem {M j : Nat} (hj : j + 2 ≤ M)
                     | trivial
                   | skip
 
-/-! ### P4-At induction forte : correction de la fenetre centrale (grain 3b, 5h)
+/-! ### P4-At induction forte : correction de la fenetre centrale (5h)
 
-Assemblage final du grain 3b : l'egalite de fenetre certifiee du moteur
+Assemblage final du pas inductif : l'egalite de fenetre certifiee du moteur
 decorrele est etablie par induction ordinaire sur l'excedent de niveau
 `k = level - (j+2)` (forme sans soustraction). Le cas de base `k = 0`
 delegue a `hashlifeResultAt_base_central` (moteur plein a fuel sature) ;
@@ -6429,7 +6433,7 @@ proof would not be. -/
     every side and `cellMargin` is non-strict. So both this witness and the
     analogous `boxAssezGrandN_glider_8` are now `forbidden-axiom-free` — the
     old `by native_decide` was a redundant machine-check on a tautological
-    proposition (c.8207 sub-grain of #9568 cleanup). -/
+    proposition (part of the #9568 cleanup). -/
 theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := boxAssezGrandN_trivial _ _
 
 /-- Same non-vacuity witness on the `glider` spaceship at `n = 8`
@@ -6574,7 +6578,7 @@ private theorem one_jump_toGrid_correct (g : Grid) (off : Int × Int) (mc : Macr
     omega
   rw [hz1, hz2, shift_zero (canonical_evolve_of_pos hnjs g)]
 
-/-! ### Pourquoi il n'y a PAS de mur « préservation de la capture » (b3')
+/-! ### Pourquoi il n'y a PAS de mur « préservation de la capture »
 
 La récursion multi-sauts ci-dessous ne demande PAS un lemme
 `jumpCaptured_jump_preserved` (capture à `t = 0` implique capture à
@@ -6683,17 +6687,14 @@ private theorem evolveHashlifeFastAux_correct (fuel n : Nat) (g : Grid)
     `jumpSize lvl = 2^lvl` generations (via `hashlifeJump = hashlifeResult
     (padCenter2 c)` on the level-`lvl+2` padded cell, certified by P4
     `hashlifeResult_central_correct`) then recurses on `n - jumpSize lvl`.
-    Under the trajectory capture hypothesis (see the b3' re-signing note
+    Under the trajectory capture hypothesis (see the re-signing note
     below), every jump is exact and the engine agrees with `evolve` —
     **sorry-free**, NOT closed by vacuity.
 
-    **Gate status corrected (c.po-2025, 2026-08-14).** The docstring used to
-    say "P4-gated (`p4_succ_membership`, ai-01 turf)". That gate has FALLEN:
+    **Gate status (verified 2026-08-14).** The P4 gate has FALLEN:
     `p4_succ_membership` is proved sorry-free, so **nothing about P4 blocks
-    this sorry anymore** — the note cost weeks of misplaced reservation and
-    is corrected here in the same diff cycle that measured it. The remaining
-    open content, mapped firsthand (po-2025, all ingredients verified on
-    `main`):
+    this sorry**. The remaining open content, mapped firsthand (po-2025, all
+    ingredients verified on `main`):
     - the **one-jump brick already exists and is proved**:
       `hashlifeJump_correct_of_captured` (`JumpCapture.lean` §5) composes P4
       (`hashlifeResult_central_correct`), `wf_padCenter2`/`level_padCenter2`
@@ -6714,7 +6715,7 @@ private theorem evolveHashlifeFastAux_correct (fuel n : Nat) (g : Grid)
       (`window_cheb_cone_in_domain`), i.e. the frame redesign flagged in the
       N1 sub-claim audit below.
 
-    **Re-signed (c.1035, finding #6724 — voie (a)).** The hypothesis was
+    **Re-signed (c.1035, finding #6724).** The hypothesis was
     `BoxAssezGrandN g n`, which is **tautological** (proved by
     `box_assez_grandN_trivial` in `Foundation.lean`, next to `BoxAssezGrandN` —
     relocated c.8206 from `JumpCapture.lean` to break an import cycle) — so the old
@@ -6776,7 +6777,7 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     g).2 = true` is **non-tautological** (witnessed by `jumpCaptured_block`,
     `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`)
     and makes this theorem genuinely informative; the trajectory
-    strengthening (b3') is forced by the proved impossibility lemmas —
+    strengthening is forced by the proved impossibility lemmas —
     see the note above `evolveHashlifeFastAux_correct`.
 
     **Reduction (c.95, ai-01).** The theorem no longer carries a sorry of its
@@ -6795,13 +6796,13 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     content (capture persistence) is carried by the hypothesis.
 
     **Note (c.1035).** The non-vacuity witnesses
-    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` (around L1140) are now
+    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` are now
     orphaned relative to this theorem, since the hypothesis they satisfied is
     gone. They still typecheck standalone and are kept for traceability of
     the c.95 / c.1035 evolution; their substantive role is superseded by
     `jumpCaptured_block` / `jumpCaptured_glider` in `JumpCapture.lean`. The
     `BoxAssezGrandN` predicate itself remains consumed by
-    `hashlife_correctN_le_two` (around L1270), which keeps the witnesses honest.
+    `hashlife_correctN_le_two`, which keeps the witnesses honest.
 
     **Note (c.8207).** Both witnesses are now proved via `boxAssezGrandN_trivial`
     (relocated c.8206 from `JumpCapture.lean` to `Foundation.lean` to break the
@@ -6810,8 +6811,8 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     every `g` and `n` by the construction of `gridFrameN` padding `max 2 n ≥ n`
     and non-strict `cellMargin`. The forbidden-axiom class `native_decide.*`
     (per pr-review-discipline §B) is now eliminated at these two sites
-    (c.8207 sub-grain of #9568 cleanup, follows the same pattern as the c.8205
-    drop on the 4 `supportInMargin_*_k*` sanity checks). -/
+    (part of the #9568 cleanup, following the same pattern as the drop of
+    the 4 `supportInMargin_*_k*` sanity checks). -/
 theorem hashlife_correctN (n : Nat) (g : Grid)
     (hcap : ∀ t ≤ n, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2
       = true) :
@@ -6837,18 +6838,20 @@ theorem hashlife_correctN_le_two (n : Nat) (g : Grid) (hn : n ≤ 2)
   rw [← box_assez_grandN_le_two_eq n g hn]
   exact h
 
-/-! ## N3 decorrelated-reach engine: fuel skeleton (#11161, grain 2)
+/-! ## N3 decorrelated-reach engine: fuel skeleton (#11161)
 
 Adaptation du squelette P5.1 (`evolveHashlifeFastAux_correct`) au moteur
 a portee decorrele `evolveHashlifeFastAtAuxN` (Hashlife.lean). Deux
 differences structurelles : l'hypothese de capture TRAJECTOIRE
 disparait (la brique un-saut `OneJumpAtCorrect` est universellement
 quantifiee, la re-instantiation en `t + js` est gratuite), et le garde
-decorrele est VIABLE (temoins ci-dessous). Le contenu ouvert restant est la
-correction P4-At de `hashlifeResultAt` (recursion mono-ronde) — portee
-par l'hypothese, a decharger au grain 3 (voir #11161). -/
+decorrele est VIABLE (temoins ci-dessous). Ce squelette reste CONDITIONNEL :
+sa brique un-saut `OneJumpAtCorrect` y est une hypothese. Elle est levee
+plus bas (`one_jumpAt_correct`), a partir de la correction P4-At de
+`hashlifeResultAt` (recursion mono-ronde), etablie plus haut
+(`hashlifeResultAt_central_correct`). -/
 
-/-- **Hypothese P4-At (brique un-saut a portee decorrelee, grain 2 #11161).**
+/-- **Hypothese P4-At (brique un-saut a portee decorrelee, #11161).**
     Pour tout re-cadrage conscient de n dont le niveau est au moins 2
     (i.e. tout etat ou le garde de saut de `evolveHashlifeFastAtAuxN`
     tire), le saut decorrele calcule exactement `evolve (jumpSizeAt lvl) g`
@@ -6856,10 +6859,9 @@ par l'hypothese, a decharger au grain 3 (voir #11161). -/
     l'analogique At de la brique un-saut `one_jump_toGrid_correct` (P5.1),
     avec une difference structurelle : PLUS d'hypothese de capture —
     `jumpAt_capture_centered` rend la capture corollaire de l'invariant du
-    cadre (grain 1, #11161). Le contenu encore ouvert est la correction
-    P4-At de `hashlifeResultAt` elle-meme (recursion mono-ronde ; note
-    d'honnetete du meme nom dans Hashlife.lean) — portee ici par
-    l'hypothese, a decharger au grain 3. -/
+    cadre. C'est ici l'hypothese unique des deux theoremes conditionnels
+    qui suivent ; elle est demontree plus bas (`one_jumpAt_correct`), d'ou
+    la forme sans hypothese `evolveHashlifeFastAtN_correct_uncond`. -/
 def OneJumpAtCorrect : Prop :=
   ∀ (n : Nat) (g : Grid),
     2 ≤ (gridToMacroCellWithOffsetN n g).2.level →
@@ -6869,7 +6871,7 @@ def OneJumpAtCorrect : Prop :=
           (gridToMacroCellWithOffsetN n g).2.level)
         = evolve (jumpSizeAt (gridToMacroCellWithOffsetN n g).2.level) g
 
-/-- **Grain 2 (#11161) : squelette d'induction fuel du moteur decorrele.**
+/-- **Squelette d'induction fuel du moteur decorrele (#11161).**
     Sous la brique un-saut `OneJumpAtCorrect`, pour tout `fuel >= n`,
     `evolveHashlifeFastAtAuxN fuel n g = evolve n g`. L'induction est
     l'adaptation de `evolveHashlifeFastAux_correct` (P5.1) avec deux
@@ -6912,12 +6914,13 @@ theorem evolveHashlifeFastAtAuxN_correct (hbr : OneJumpAtCorrect)
         rw [hsum]
       · rfl
 
-/-- **Grain 2 (#11161) : correction conditionnelle de l'API publique.**
+/-- **Correction conditionnelle de l'API publique (#11161).**
     Sous la meme unique hypothese, `evolveHashlifeFastAtN n g = evolve n g`
     pour TOUT n et TOUTE grille — la portee du theoreme n'est plus bornee
-    par une hypothese de capture. Dechargee au grain 3 : `OneJumpAtCorrect`
-    suit de l'invariant du cadre (grain 1) + la correction P4-At de
-    `hashlifeResultAt`. -/
+    par une hypothese de capture. L'hypothese est dechargee plus bas :
+    `OneJumpAtCorrect` suit de l'invariant du cadre + la correction P4-At de
+    `hashlifeResultAt` (`one_jumpAt_correct`), d'ou la forme sans hypothese
+    `evolveHashlifeFastAtN_correct_uncond`. -/
 theorem evolveHashlifeFastAtN_correct (hbr : OneJumpAtCorrect)
     (n : Nat) (g : Grid) :
     evolveHashlifeFastAtN n g = evolve n g :=
@@ -6945,10 +6948,10 @@ def line7 : Grid := [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6)]
 -- nouveau cadre lvl 4 → js' = 4), exercice du bras récursif multi-sauts.
 #eval evolveHashlifeFastAtN 12 glider == evolve 12 glider
 
-/-! ### Grain 3 (#11161) : derivation inconditionnelle de `OneJumpAtCorrect`
+/-! ### Derivation inconditionnelle de `OneJumpAtCorrect` (#11161)
 
-La brique un-saut du squelette (grain 2) cesse d'etre une hypothese :
-l'induction P4-At (tranche 5, `hashlifeResultAt_central_correct`) + la
+La brique un-saut du squelette cesse d'etre une hypothese :
+l'induction P4-At (`hashlifeResultAt_central_correct`) + la
 geometrie du rembourrage central (`padCenter2_toGrid_shift`, contenu a
 l'offset 3·2^(lvl-1)) + la vitesse de la lumiere (`evolve_reach_chebyshev`,
 portee Chebyshev ≤ t) la derivent SANS aucune hypothese de capture.
@@ -7051,7 +7054,7 @@ private theorem evolve_reach_chebyshev_inline (t : Nat) (g : Grid) (q : Int × I
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore_inline r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
-/-- **Saut un-jump At inconditionnel (grain 3, #11161).** Pour toute
+/-- **Saut un-jump At inconditionnel (#11161).** Pour toute
     cellule bien formee de niveau ≥ 2, la lecture centrale du moteur
     decorrele `hashlifeJumpAt (lvl - 2)` rend EXACTEMENT l'evolue 2^(lvl-2)
     du contenu remboure — le restrict de la fenetre centrale se depose par
@@ -7122,7 +7125,7 @@ private theorem hashlifeJumpAt_correct_uncond (c : MacroCell)
   rw [hnp4]
   refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
 
-/-- **Frame mirror du saut un-jump At (grain 3, #11161).** Miroir de
+/-- **Frame mirror du saut un-jump At (#11161).** Miroir de
     `one_jump_toGrid_correct` (c.6517) : la lecture du resultat At a
     l'ancre `jumpResultOff` rend l'evolue 2^(lvl-2) de la grille ORIGINALE,
     l'algebre de decalages etant identique a celle du moteur original
@@ -7178,8 +7181,8 @@ private theorem one_jumpAt_toGrid_correct (g : Grid) (off : Int × Int) (mc : Ma
     omega
   rw [hz1, hz2, shift_zero (canonical_evolve_of_pos hnjs g)]
 
-/-- **Grain 3 (#11161) : `OneJumpAtCorrect` est un theoreme.** La brique
-    un-saut du squelette d'induction fuel (grain 2) se derive
+/-- **`OneJumpAtCorrect` est un theoreme (#11161).** La brique
+    un-saut du squelette d'induction fuel se derive
     inconditionnellement : l'invariant du cadre N (miroir BR1 ci-dessus)
     fournit le `(off, mc)` de l'enonce, la wf vient de `buildFromGrid_wf`,
     et le corps est le frame mirror. Aucune hypothese de capture — c'est
@@ -7204,7 +7207,7 @@ theorem one_jumpAt_correct : OneJumpAtCorrect := by
 
 /-- **Capstone du re-cadrage Gosper (#11161)** : la correction du moteur
     decorrele n'est plus conditionnelle — l'hypothese `hbr` du squelette
-    (grain 2) est dechargee par `one_jumpAt_correct` (grain 3). Pour toute
+    est dechargee par `one_jumpAt_correct`. Pour toute
     grille et tout horizon, `evolveHashlifeFastAtN n g = evolve n g`. -/
 theorem evolveHashlifeFastAtN_correct_uncond (n : Nat) (g : Grid) :
     evolveHashlifeFastAtN n g = evolve n g :=
